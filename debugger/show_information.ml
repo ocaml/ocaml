@@ -88,7 +88,7 @@ let show_one_frame framenum ppf event =
            (pos.Lexing.pos_cnum - pos.Lexing.pos_bol + 1)
 
 (* Display information about the current frame. *)
-(* --- `select frame' must have succeded before calling this function. *)
+(* --- `select frame' must have succeeded before calling this function. *)
 let show_current_frame ppf selected =
   match !selected_event with
   | None ->

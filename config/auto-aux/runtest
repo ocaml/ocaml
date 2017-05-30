@@ -15,10 +15,12 @@
 #*                                                                        *
 #**************************************************************************
 
-if test "$verbose" = yes; then
-echo "runtest: $cc -o tst $* $cclibs" >&2
-$cc -o tst $* $cclibs || exit 100
+cmd="$cc $cflags -o tst $* $ldflags $cclibs"
+
+if $verbose; then
+  echo "runtest: $cmd" >&2
+  $cmd || exit 100
 else
-$cc -o tst $* $cclibs 2> /dev/null || exit 100
+  $cmd 2> /dev/null || exit 100
 fi
 exec ./tst

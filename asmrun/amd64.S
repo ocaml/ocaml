@@ -18,7 +18,7 @@
 
 /* PIC mode support based on contribution by Paul Stravers (see PR#4795) */
 
-#include "../config/m.h"
+#include "caml/m.h"
 
 #if defined(SYS_macosx)
 
@@ -260,9 +260,12 @@
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
 #  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
+   /* Stack probing mustn't be larger than the page size */
+#  define STACK_PROBE_SIZE $4096
 #else
 #  define PREPARE_FOR_C_CALL
 #  define CLEANUP_AFTER_C_CALL
+#  define STACK_PROBE_SIZE $32768
 #endif
 
         .text
@@ -278,13 +281,11 @@ FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
         RECORD_STACK_FRAME(0)
 LBL(caml_call_gc):
-#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subq    $32768, %rsp
+        subq    STACK_PROBE_SIZE, %rsp
         movq    %rax, 0(%rsp)
-        addq    $32768, %rsp
-#endif
+        addq    STACK_PROBE_SIZE, %rsp
     /* Build array of registers, save it into caml_gc_regs */
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
@@ -467,13 +468,11 @@ LBL(caml_c_call):
         STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
 #endif
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
-#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subq    $32768, %rsp
+        subq    STACK_PROBE_SIZE, %rsp
         movq    %rax, 0(%rsp)
-        addq    $32768, %rsp
-#endif
+        addq    STACK_PROBE_SIZE, %rsp
     /* Make the exception handler and alloc ptr available to the C code */
         STORE_VAR(%r15, caml_young_ptr)
         STORE_VAR(%r14, caml_exception_pointer)

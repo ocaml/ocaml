@@ -18,7 +18,7 @@
 module type I = sig
   val string_block_length : Cmm.expression -> Cmm.expression
   val transl_switch :
-      Cmm.expression -> int -> int ->
+      Location.t -> Cmm.expression -> int -> int ->
         (int * Cmm.expression) list -> Cmm.expression ->
           Cmm.expression
 end

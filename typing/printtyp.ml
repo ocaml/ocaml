@@ -48,12 +48,19 @@ let ident ppf id = pp_print_string ppf (ident_name id)
 
 (* Print a path *)
 
-let ident_pervasive = Ident.create_persistent "Pervasives"
+let ident_pervasives = Ident.create_persistent "Pervasives"
+let printing_env = ref Env.empty
+let non_shadowed_pervasive = function
+  | Pdot(Pident id, s, _pos) as path ->
+      Ident.same id ident_pervasives &&
+      (try Path.same path (Env.lookup_type (Lident s) !printing_env)
+       with Not_found -> true)
+  | _ -> false
 
 let rec tree_of_path = function
   | Pident id ->
       Oide_ident (ident_name id)
-  | Pdot(Pident id, s, _pos) when Ident.same id ident_pervasive ->
+  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
       Oide_ident s
   | Pdot(p, s, _pos) ->
       Oide_dot (tree_of_path p, s)
@@ -63,7 +70,7 @@ let rec tree_of_path = function
 let rec path ppf = function
   | Pident id ->
       ident ppf id
-  | Pdot(Pident id, s, _pos) when Ident.same id ident_pervasive ->
+  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
       pp_print_string ppf s
   | Pdot(p, s, _pos) ->
       path ppf p;
@@ -238,7 +245,6 @@ let apply_subst s1 tyl =
 
 type best_path = Paths of Path.t list | Best of Path.t
 
-let printing_env = ref Env.empty
 let printing_depth = ref 0
 let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
@@ -305,8 +311,9 @@ let same_printing_env env =
   Env.same_types !printing_old env && Concr.equal !printing_pers used_pers
 
 let set_printing_env env =
-  printing_env := if !Clflags.real_paths then Env.empty else env;
-  if !printing_env == Env.empty || same_printing_env env then () else
+  printing_env := env;
+  if !Clflags.real_paths
+  || !printing_env == Env.empty || same_printing_env env then () else
   begin
     (* printf "Reset printing_map@."; *)
     printing_old := env;
@@ -604,20 +611,15 @@ let rec tree_of_typexp sch ty =
             let (p', s) = best_type_path p in
             let id = tree_of_path p' in
             let args = tree_of_typlist sch (apply_subst s tyl) in
+            let out_variant =
+              if is_nth s then List.hd args else Otyp_constr (id, args) in
             if row.row_closed && all_present then
-              if is_nth s then List.hd args else Otyp_constr (id, args)
+              out_variant
             else
               let non_gen = is_non_gen sch px in
               let tags =
                 if all_present then None else Some (List.map fst present) in
-              let inh =
-                match args with
-                  [Otyp_constr (i, a)] when is_nth s -> Ovar_name (i, a)
-                | _ ->
-                    (* fallback case, should change outcometree... *)
-                    Ovar_name (tree_of_path p, tree_of_typlist sch tyl)
-              in
-              Otyp_variant (non_gen, inh, row.row_closed, tags)
+              Otyp_variant (non_gen, Ovar_typ out_variant, row.row_closed, tags)
         | _ ->
             let non_gen =
               not (row.row_closed && all_present) && is_non_gen sch px in

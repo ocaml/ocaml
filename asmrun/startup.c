@@ -92,6 +92,9 @@ void (*caml_termination_hook)(void *) = NULL;
 extern value caml_start_program (void);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
+#ifdef _WIN32
+extern void caml_win32_overflow_detection (void);
+#endif
 
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
@@ -100,11 +103,23 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-void caml_main(char **argv)
+value caml_startup_common(char **argv, int pooling)
 {
   char * exe_name, * proc_self_exe;
-  value res;
   char tos;
+
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
+  if (!caml_startup_aux(pooling))
+    return Val_unit;
 
 #ifdef WITH_SPACETIME
   caml_spacetime_initialize();
@@ -116,18 +131,14 @@ void caml_main(char **argv)
 #endif
   caml_init_custom_operations();
   caml_top_of_stack = &tos;
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
   caml_init_gc (caml_init_minor_heap_wsz, caml_init_heap_wsz,
                 caml_init_heap_chunk_sz, caml_init_percent_free,
                 caml_init_max_percent_free, caml_init_major_window);
   init_static();
   caml_init_signals();
+#ifdef _WIN32
+  caml_win32_overflow_detection();
+#endif
   caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
@@ -140,14 +151,36 @@ void caml_main(char **argv)
   caml_sys_init(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
-    return;
+    return Val_unit;
   }
-  res = caml_start_program();
-  if (Is_exception_result(res))
-    caml_fatal_uncaught_exception(Extract_exception(res));
+  return caml_start_program();
+}
+
+value caml_startup_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 0);
 }
 
 void caml_startup(char **argv)
 {
-  caml_main(argv);
+  value res = caml_startup_exn(argv);
+  if (Is_exception_result(res))
+    caml_fatal_uncaught_exception(Extract_exception(res));
+}
+
+void caml_main(char **argv)
+{
+  caml_startup(argv);
+}
+
+value caml_startup_pooled_exn(char **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 1);
+}
+
+void caml_startup_pooled(char **argv)
+{
+  value res = caml_startup_pooled_exn(argv);
+  if (Is_exception_result(res))
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }

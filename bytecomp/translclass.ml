@@ -66,12 +66,8 @@ let transl_meth_list lst =
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
-  let kind =
-    match Typeopt.maybe_pointer expr with
-    | Pointer -> Paddrarray
-    | Immediate -> Pintarray
-  in
-  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr], Location.none)
+  Lprim(Psetfield_computed (Typeopt.maybe_pointer expr, Assignment),
+    [Lvar obj; Lvar id; transl_exp expr], Location.none)
 
 let transl_val tbl create name =
   mkappl (oo_prim (if create then "new_variable" else "get_variable"),
@@ -684,7 +680,7 @@ let transl_class ids cl_id pub_meths cl vflag =
           [lfunction (self :: args)
              (if not (IdentSet.mem env (free_variables body')) then body' else
               Llet(Alias, Pgenval, env,
-                   Lprim(Parrayrefu Paddrarray,
+                   Lprim(Pfield_computed,
                          [Lvar self; Lvar env2],
                          Location.none),
                    body'))]
@@ -695,7 +691,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let env1 = Ident.create "env" and env1' = Ident.create "env'" in
   let copy_env self =
     if top then lambda_unit else
-    Lifused(env2, Lprim(Parraysetu Paddrarray,
+    Lifused(env2, Lprim(Psetfield_computed (Pointer, Assignment),
                         [Lvar self; Lvar env2; Lvar env1'],
                         Location.none))
   and subst_env envs l lam =

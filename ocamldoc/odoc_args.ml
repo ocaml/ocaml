@@ -252,6 +252,8 @@ let default_options = Options.list @
        Odoc_global.files := !Odoc_global.files @ [Odoc_global.Text_file s]),
     M.option_text ;
   "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
+  "-show-missed-crossref", Arg.Set Odoc_global.show_missed_crossref,
+  M.show_missed_crossref;
   "-hide-warnings", Arg.Clear Odoc_config.print_warnings, M.hide_warnings ;
   "-o", Arg.String (fun s -> Odoc_global.out_file := s), M.out_file ;
   "-d", Arg.String (fun s -> Odoc_global.target_dir := s), M.target_dir ;

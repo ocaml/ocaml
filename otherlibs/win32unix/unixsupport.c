@@ -314,3 +314,14 @@ void caml_unix_check_path(value path, char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
 }
+
+int unix_cloexec_default = 0;
+
+int unix_cloexec_p(value cloexec)
+{
+  /* [cloexec] is a [bool option].  */
+  if (Is_block(cloexec))
+    return Bool_val(Field(cloexec, 0));
+  else
+    return unix_cloexec_default;
+}

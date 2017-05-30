@@ -1572,8 +1572,18 @@ lident_list:
   | LIDENT lident_list                { mkrhs $1 1 :: $2 }
 ;
 let_binding_body:
-    val_ident fun_binding
+    val_ident strict_binding
       { (mkpatvar $1 1, $2) }
+  | val_ident type_constraint EQUAL seq_expr
+      { let v = mkpatvar $1 1 in (* PR#7344 *)
+        let t =
+          match $2 with
+            Some t, None -> t
+          | _, Some t -> t
+          | _ -> assert false
+        in
+        (ghpat(Ppat_constraint(v, ghtyp(Ptyp_poly([],t)))),
+         mkexp_constraint $4 $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
       { (ghpat(Ppat_constraint(mkpatvar $1 1,
                                ghtyp(Ptyp_poly(List.rev $3,$5)))),

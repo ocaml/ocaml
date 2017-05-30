@@ -22,7 +22,7 @@
    reasonably efficient: insertion and membership take time
    logarithmic in the size of the set, for instance.
 
-   The [Make] functor constructs implementations for any type, given a
+   The {!Make} functor constructs implementations for any type, given a
    [compare] function.
    For instance:
    {[

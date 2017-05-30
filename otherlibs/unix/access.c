@@ -54,7 +54,7 @@ CAMLprim value unix_access(value path, value perms)
 
   caml_unix_check_path(path, "access");
   cv_flags = caml_convert_flag_list(perms, access_permission_table);
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = access(p, cv_flags);
   caml_leave_blocking_section();

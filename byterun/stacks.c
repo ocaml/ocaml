@@ -53,7 +53,7 @@ void caml_realloc_stack(asize_t required_space)
   value * new_low, * new_high, * new_sp;
   value * p;
 
-  Assert(caml_extern_sp >= caml_stack_low);
+  CAMLassert(caml_extern_sp >= caml_stack_low);
   size = caml_stack_high - caml_stack_low;
   do {
     if (size >= caml_max_stack_size) caml_raise_stack_overflow();

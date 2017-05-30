@@ -368,7 +368,8 @@ let rec transl_module cc rootpath mexp =
                   Lfunction{kind = Curried; params = [param];
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
-                                     is_a_functor = true };
+                                     is_a_functor = true;
+                                     stub = false; };
                             loc = loc;
                             body = transl_module Tcoerce_none bodypath body}
               | Tcoerce_functor(ccarg, ccres) ->
@@ -376,7 +377,8 @@ let rec transl_module cc rootpath mexp =
                   Lfunction{kind = Curried; params = [param'];
                             attr = { inline = inline_attribute;
                                      specialise = Default_specialise;
-                                     is_a_functor = true };
+                                     is_a_functor = true;
+                                     stub = false; };
                             loc = loc;
                             body = Llet(Alias, Pgenval, param,
                                         apply_coercion loc Alias ccarg

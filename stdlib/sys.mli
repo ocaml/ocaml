@@ -105,7 +105,7 @@ type backend_type =
 
 val backend_type : backend_type
 (** Backend type  currently executing the OCaml program.
-    @ since 4.04.0
+    @since 4.04.0
  *)
 
 val unix : bool

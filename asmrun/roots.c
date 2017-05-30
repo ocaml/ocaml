@@ -116,7 +116,7 @@ static void init_frame_descriptors(link *new_frametables)
   intnat tblsize, increase, i;
   link *tail = NULL;
 
-  Assert(new_frametables);
+  CAMLassert(new_frametables);
 
   tail = frametables_list_tail(new_frametables);
   increase = count_descriptors(new_frametables);

@@ -84,7 +84,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         body)
   in
   let pc = Ident.create "pc" in
-  Clet (node, Cop (Cload Word_int, [Cvar node_hole], dbg),
+  Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
     Clet (must_allocate_node,
       Cop (Cand, [Cvar node; Cconst_int 1], dbg),
       Cifthenelse (
@@ -100,7 +100,7 @@ let code_for_function_prologue ~function_name ~node_hole =
               ],
               dbg)),
             Clet (new_node,
-              Cop (Cload Word_int, [Cvar node_hole], dbg),
+              Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
               if no_tail_calls then Cvar new_node
               else
                 Cifthenelse (
@@ -144,14 +144,15 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Cconst_int offset_into_node;
     ], dbg),
     Clet (existing_profinfo,
-        Cop (Cload Word_int, [Cvar address_of_profinfo], dbg),
+        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
+          dbg),
       Clet (profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),
           Cvar existing_profinfo,
           generate_new_profinfo),
         Clet (existing_count,
-          Cop (Cload Word_int, [
+          Cop (Cload (Word_int, Asttypes.Mutable), [
             Cop (Caddi,
               [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg)
           ], dbg),

@@ -73,6 +73,13 @@ val nth_opt: 'a list -> int -> 'a option
 val rev : 'a list -> 'a list
 (** List reversal. *)
 
+val init : int -> (int -> 'a) -> 'a list
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+
+    @raise Invalid_argument if len < 0.
+    @since 4.06.0
+*)
+
 val append : 'a list -> 'a list -> 'a list
 (** Concatenate two lists.  Same as the infix operator [@].
    Not tail-recursive (length of the first argument).  *)
@@ -333,7 +340,7 @@ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
     comparison function [cmp], [merge cmp l1 l2] will return a
-    sorted list containting all the elements of [l1] and [l2].
+    sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).

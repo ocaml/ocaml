@@ -621,7 +621,7 @@ let () =
     {
       section = section_env;
       doc = "Print the signatures of components \
-             from any of the above categories.";
+             from any of the categories below.";
     }
 
 let _ = add_directive "trace"

@@ -53,10 +53,10 @@ let emit_symbol s = Emitaux.emit_symbol '.' s
 (* Output function call *)
 
 let emit_call s =
-   if !pic_code then
-    `brasl	%r14, {emit_symbol s}@PLT`
-   else
-    `brasl	%r14, {emit_symbol s}`
+  if !pic_code then
+   `	brasl	%r14, {emit_symbol s}@PLT\n`
+  else
+   `	brasl	%r14, {emit_symbol s}\n`
 
 (* Output a label *)
 
@@ -83,7 +83,13 @@ let emit_reg r =
 
 (* Special registers *)
 
-let reg_f15 = phys_reg 115
+let check_phys_reg reg_idx name =
+  let reg = phys_reg reg_idx in
+  assert (register_name reg_idx = name);
+  reg
+
+let reg_f15 = check_phys_reg 115 "%f15"
+let reg_r7 = check_phys_reg 5 "%r7"
 
 (* Output a stack reference *)
 
@@ -93,6 +99,14 @@ let emit_stack r =
       let ofs = slot_offset s (register_class r) in `{emit_int ofs}(%r15)`
   | _ -> fatal_error "Emit.emit_stack"
 
+
+(* Output a load of the address of a global symbol *)
+
+let emit_load_symbol_addr reg s =
+  if !pic_code then
+  `	lgrl	{emit_reg reg}, {emit_symbol s}@GOTENT\n`
+  else
+  `	larl	{emit_reg reg}, {emit_symbol s}\n`
 
 (* Output a load or store operation *)
 
@@ -148,7 +162,7 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-let record_frame ?label live raise_ dbg =
+let record_frame_label ?label live raise_ dbg =
   let lbl =
     match label with
     | None -> new_label()
@@ -169,6 +183,10 @@ let record_frame ?label live raise_ dbg =
     ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
+let record_frame ?label live raise_ dbg =
+  let lbl = record_frame_label ?label live raise_ dbg in
+  `{emit_label lbl}:`
+
 (* Record calls to caml_call_gc, emitted out of line. *)
 
 type gc_call =
@@ -179,7 +197,7 @@ type gc_call =
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	{emit_call "caml_call_gc"}\n`;
+  `{emit_label gc.gc_lbl}:`; emit_call "caml_call_gc";
   `{emit_label gc.gc_frame_lbl}:	brcl	15, {emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_ml_array_bound_error, emitted out of line. *)
@@ -194,7 +212,7 @@ let bound_error_call = ref 0
 let bound_error_label ?label dbg =
   if !Clflags.debug then begin
     let lbl_bound_error = new_label() in
-    let lbl_frame = record_frame ?label Reg.Set.empty false dbg in
+    let lbl_frame = record_frame_label ?label Reg.Set.empty false dbg in
     bound_error_sites :=
      { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
    lbl_bound_error
@@ -204,13 +222,14 @@ let bound_error_label ?label dbg =
  end
 
 let emit_call_bound_error bd =
-  `{emit_label bd.bd_lbl}:	{emit_call "caml_ml_array_bound_error"}\n`;
+  `{emit_label bd.bd_lbl}:`; emit_call "caml_ml_array_bound_error";
   `{emit_label bd.bd_frame}:\n`
 
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
-  if !bound_error_call > 0 then
-    `{emit_label !bound_error_call}:	{emit_call "caml_ml_array_bound_error"}\n`
+  if !bound_error_call > 0 then begin
+    `{emit_label !bound_error_call}:`; emit_call "caml_ml_array_bound_error";
+  end
 
 (* Record floating-point and large integer literals *)
 
@@ -315,22 +334,14 @@ let emit_instr i =
         `	larl	%r1, {emit_label lbl}\n`;
         `	ld	{emit_reg i.res.(0)}, 0(%r1)\n`
      | Lop(Iconst_symbol s) ->
-        if !pic_code then
-        `	lgrl	{emit_reg i.res.(0)}, {emit_symbol s}@GOTENT\n`
-        else
-        `	larl	{emit_reg i.res.(0)}, {emit_symbol s}\n`;
+        emit_load_symbol_addr i.res.(0) s
     | Lop(Icall_ind { label_after; }) ->
         `	basr	%r14, {emit_reg i.arg.(0)}\n`;
-        let lbl = record_frame i.live false i.dbg ~label:label_after in
-         `{emit_label lbl}:\n`
+        `{record_frame i.live false i.dbg ~label:label_after}\n`
 
     | Lop(Icall_imm { func; label_after; }) ->
-        if !pic_code then
-        `	brasl	%r14, {emit_symbol func}@PLT\n`
-        else
-        `	brasl	%r14, {emit_symbol func}\n`;
-        let lbl = record_frame i.live false i.dbg ~label:label_after in
-         `{emit_label lbl}:\n`;
+        emit_call func;
+        `{record_frame i.live false i.dbg ~label:label_after}\n`
     | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
@@ -352,22 +363,12 @@ let emit_instr i =
         end
 
      | Lop(Iextcall { func; alloc; label_after; }) ->
-        if alloc then begin
-          if !pic_code then begin
-          `	lgrl	%r7, {emit_symbol func}@GOTENT\n`;
-          `	brasl	%r14, {emit_symbol "caml_c_call"}@PLT\n`
-          end else begin
-          `	larl	%r7, {emit_symbol func}\n`;
-          `	brasl	%r14, {emit_symbol "caml_c_call"}\n`
-          end;
-          let lbl = record_frame i.live false i.dbg ~label:label_after in
-           `{emit_label lbl}:\n`;
-        end else begin
-          if !pic_code then
-          `	brasl	%r14, {emit_symbol func}@PLT\n`
-          else
-          `	brasl	%r14, {emit_symbol func}\n`
-       end
+        if not alloc then emit_call func
+        else begin
+          emit_load_symbol_addr reg_r7 func;
+          emit_call "caml_c_call";
+          `{record_frame i.live false i.dbg ~label:label_after}\n`
+        end
 
      | Lop(Istackoffset n) ->
         emit_stack_adjust n;
@@ -407,7 +408,7 @@ let emit_instr i =
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame i.live false i.dbg ?label:label_after_call_gc
+          record_frame_label i.live false i.dbg ?label:label_after_call_gc
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
@@ -607,9 +608,8 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-          `	{emit_call "caml_raise_exn"}\n`;
-          let lbl = record_frame Reg.Set.empty true i.dbg in
-          `{emit_label lbl}:\n`
+          emit_call "caml_raise_exn";
+          `{record_frame Reg.Set.empty true i.dbg}\n`
         | Cmm.Raise_notrace ->
           `	lg	%r1, 0(%r13)\n`;
           `	lgr	%r15, %r13\n`;

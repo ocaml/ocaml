@@ -339,29 +339,6 @@
   #define CONTEXT_YOUNG_PTR (context->sc_frame.fixreg[31])
   #define CONTEXT_SP (context->sc_frame.fixreg[1])
 
-/****************** SPARC, Solaris */
-
-#elif defined(TARGET_sparc) && defined(SYS_solaris)
-
-  #include <ucontext.h>
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, siginfo_t * info, ucontext_t * context)
-
-  #define SET_SIGACT(sigact,name) \
-     sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
-     sigact.sa_flags = SA_SIGINFO
-
-  typedef long context_reg;
-  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_PC])
-    /* Local register number N is saved on the stack N words
-       after the stack pointer */
-  #define CONTEXT_SP (context->uc_mcontext.gregs[REG_SP])
-  #define SPARC_L_REG(n) ((long *)(context->uc_mcontext.gregs[REG_SP]))[n]
-  #define CONTEXT_EXCEPTION_POINTER (SPARC_L_REG(5))
-  #define CONTEXT_YOUNG_LIMIT (SPARC_L_REG(7))
-  #define CONTEXT_YOUNG_PTR (SPARC_L_REG(6))
-
 /******************** Default */
 
 #else

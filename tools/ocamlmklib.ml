@@ -242,11 +242,27 @@ let transl_path s =
         in Bytes.to_string (aux 0)
     | _ -> s
 
+let flexdll_dirs =
+  let dirs =
+    let expand = Misc.expand_directory Config.standard_library in
+    List.map expand Config.flexdll_dirs
+  in
+  let f dir =
+    let dir =
+      if String.contains dir ' ' then
+        "\"" ^ dir ^ "\""
+      else
+        dir
+    in
+      "-L" ^ dir
+  in
+  List.map f dirs
+
 let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-          (Printf.sprintf "%s %s -o %s %s %s %s %s %s"
+          (Printf.sprintf "%s %s -o %s %s %s %s %s %s %s"
              Config.mkdll
              (if !debug then "-g" else "")
              (prepostfix "dll" !output_c Config.ext_dll)
@@ -255,6 +271,7 @@ let build_libs () =
              (String.concat " " !ld_opts)
              (make_rpath mksharedlibrpath)
              (String.concat " " !c_libs)
+             (String.concat " " flexdll_dirs)
           )
       in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
@@ -278,7 +295,7 @@ let build_libs () =
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt byteccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -292,7 +309,7 @@ let build_libs () =
                   (String.concat " " !native_objs)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt nativeccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 

@@ -48,7 +48,7 @@ external length : bytes -> int = "%bytes_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
-    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
@@ -399,7 +399,7 @@ let bytes_length (s : bytes) =
 
    The caller may not mutate [s] while the string is borrowed (it has
    temporarily given up ownership). This affects concurrent programs,
-   but also higher-order functions: if [String.length] returned
+   but also higher-order functions: if {!String.length} returned
    a closure to be called later, [s] should not be mutated until this
    closure is fully applied and returns ownership.
 *)

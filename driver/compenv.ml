@@ -338,7 +338,7 @@ let read_one_param ppf position name v =
           (Warnings.Bad_env_variable ("OCAMLPARAM",
            "bad value for \"color\", \
             (expected \"auto\", \"always\" or \"never\")"))
-      | Some setting -> color := setting
+      | Some setting -> color := Some setting
       end
 
   | "intf-suffix" -> Config.interface_suffix := v

@@ -33,7 +33,7 @@ CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
-OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
+OTHERS=list.cmo char.cmo uchar.cmo bytes.cmo string.cmo sys.cmo \
   sort.cmo marshal.cmo obj.cmo array.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
@@ -42,13 +42,13 @@ OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
   buffer.cmo camlinternalFormat.cmo printf.cmo \
   arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo hashtbl.cmo weak.cmo \
-  format.cmo uchar.cmo scanf.cmo callback.cmo \
+  format.cmo scanf.cmo callback.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo ephemeron.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
-  spacetime.cmo
+  spacetime.cmo camlinternalBigarray.cmo
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
@@ -138,14 +138,14 @@ $(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):
 	for suff in '' d i; do \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun'$$suff'"' \
-	            header.c -o tmpheader$(EXE) && \
+	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader$$suff && \
-	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
+	  $(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(LDFLAGS) \
 	            -DRUNTIME_NAME='"$(TARGET_BINDIR)/ocamlrun'$$suff'"' \
-	            header.c -o tmpheader$(EXE) && \
+	            header.c $(OUTPUTEXE)tmpheader$(EXE) && \
 	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) target_camlheader$$suff; \
 	done && \
@@ -156,25 +156,25 @@ else # Windows
 # TODO: see whether there is a way to further merge the rules below
 # with those above
 
-camlheader target_camlheader camlheader_ur:
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrun"' headernt.c
+camlheader target_camlheader camlheader_ur: headernt.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader target_camlheader
 	cp camlheader camlheader_ur
 
-camlheaderd target_camlheaderd:
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' headernt.c
+camlheaderd target_camlheaderd: headernt.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderd
 	cp camlheaderd target_camlheaderd
 
-camlheaderi:
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' headernt.c
+camlheaderi: headernt.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
+	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderi
 
@@ -195,7 +195,7 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
 .PHONY: clean
 clean::

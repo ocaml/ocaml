@@ -394,8 +394,8 @@ let rec transl_type env policy styp =
                     check (Env.find_type path env)
                 | _ -> raise Not_found
           in check decl;
-          Location.prerr_warning styp.ptyp_loc
-            (Warnings.Deprecated "old syntax for polymorphic variant type");
+          Location.deprecated styp.ptyp_loc
+            "old syntax for polymorphic variant type";
           (path, decl,true)
         with Not_found -> try
           let lid2 =
@@ -845,7 +845,8 @@ let report_error env ppf = function
           Printtyp.type_expr ty')
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
+      fprintf ppf
+        "@[The type %a@ does not expand to a polymorphic variant type@]"
         Printtyp.type_expr ty;
       begin match ty.desc with
         | Tvar (Some s) ->
@@ -870,7 +871,7 @@ let report_error env ppf = function
       fprintf ppf "Multiple constraints for type %a" longident s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
-        s "Multiple occurences are not allowed."
+        s "Multiple occurrences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
       spellcheck ppf fold_values env lid;

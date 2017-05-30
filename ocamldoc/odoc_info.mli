@@ -15,7 +15,7 @@
 
 (** Interface to the information collected in source files. *)
 
-(** The differents kinds of element references. *)
+(** The different kinds of element references. *)
 type ref_kind = Odoc_types.ref_kind =
     RK_module
   | RK_module_type
@@ -121,7 +121,7 @@ module Name :
       (** [concat t1 t2] returns the concatenation of [t1] and [t2].*)
       val concat : t -> t -> t
 
-      (** Return the depth of the name, i.e. the numer of levels to the root.
+      (** Return the depth of the name, i.e. the number of levels to the root.
          Example : [depth "Toto.Tutu.name"] = [3]. *)
       val depth : t -> int
 
@@ -156,7 +156,7 @@ module Parameter :
 
     (** {3 Functions} *)
 
-    (** Acces to the name as a string. For tuples, parenthesis and commas are added. *)
+    (** Access to the name as a string. For tuples, parentheses and commas are added. *)
     val complete_name : parameter -> string
 
     (** Access to the complete type. *)
@@ -368,7 +368,7 @@ module Class :
           capp_name : Name.t ; (** The complete name of the applied class. *)
           mutable capp_class : t_class option;  (** The associated t_class if we found it. *)
           capp_params : Types.type_expr list; (** The type of expressions the class is applied to. *)
-          capp_params_code : string list ; (** The code of these exprssions. *)
+          capp_params_code : string list ; (** The code of these expressions. *)
         }
 
     and class_constr = Odoc_class.class_constr =

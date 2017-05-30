@@ -37,9 +37,9 @@ EOF
     export PATH=$PREFIX/bin:$PATH
     make world.opt
     make ocamlnat
-    make install
     (cd testsuite && make all)
     (cd testsuite && make USE_RUNTIME="d" all)
+    make install
     # check_all_arches checks tries to compile all backends in place,
     # we need to redo (small parts of) world.opt afterwards
     make check_all_arches

@@ -1853,7 +1853,7 @@ let contains_gadt env p =
         with Not_found -> ()
         end; iter_ppat (loop env) p
       | Ppat_open (lid,sub_p) ->
-        let _, new_env = !type_open Asttypes.Fresh env p.ppat_loc lid in
+        let _, new_env = !type_open Asttypes.Override env p.ppat_loc lid in
         loop new_env sub_p
     | _ -> iter_ppat (loop env) p
   in
@@ -1883,12 +1883,7 @@ let check_absent_variant env =
 let duplicate_ident_types caselist env =
   let caselist =
     List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
-  let idents = all_idents_cases caselist in
-  let upd desc = {desc with val_type = correct_levels desc.val_type} in
-  (* Be careful not the mark the original value as being used, and
-     to keep the same internal 'slot' to track unused opens. *)
-  List.fold_left (fun env s -> Env.update_value s upd env) env idents
-
+  Env.copy_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
 

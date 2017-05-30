@@ -64,6 +64,7 @@
     Ephemerons are defined in a language agnostic way in this paper:
     B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
 
+    @since 4.03.0
 *)
 
 module type S = sig
@@ -116,6 +117,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_key_copy eph] returns [None] if the key of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the key) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_key: ('k,'d) t -> 'k -> unit
@@ -138,8 +141,8 @@ module K1 : sig
 
   val blit_key : ('k,_) t -> ('k,_) t -> unit
   (** [Ephemeron.K1.blit_key eph1 eph2] sets the key of [eph2] with
-      the key of [eph1]. Contrary to using [Ephemeron.K1.get_key]
-      followed by [Ephemeron.K1.set_key] or [Ephemeon.K1.unset_key]
+      the key of [eph1]. Contrary to using {!Ephemeron.K1.get_key}
+      followed by {!Ephemeron.K1.set_key} or {!Ephemeron.K1.unset_key}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 
@@ -151,6 +154,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_data_copy eph] returns [None] if the data of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the data) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_data: ('k,'d) t -> 'd -> unit
@@ -159,7 +164,7 @@ module K1 : sig
   *)
 
   val unset_data: ('k,'d) t -> unit
-  (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
+  (** [Ephemeron.K1.unset_data eph el] sets the key of [eph] to be an
       empty key. The ephemeron starts behaving like a weak pointer.
   *)
 
@@ -172,8 +177,8 @@ module K1 : sig
 
   val blit_data : (_,'d) t -> (_,'d) t -> unit
   (** [Ephemeron.K1.blit_data eph1 eph2] sets the data of [eph2] with
-      the data of [eph1]. Contrary to using [Ephemeron.K1.get_data]
-      followed by [Ephemeron.K1.set_data] or [Ephemeon.K1.unset_data]
+      the data of [eph1]. Contrary to using {!Ephemeron.K1.get_data}
+      followed by {!Ephemeron.K1.set_data} or {!Ephemeron.K1.unset_data}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 
@@ -214,7 +219,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
-  (** Same as {!Ephemeron.K1.get_key} *)
+  (** Same as {!Ephemeron.K1.set_key} *)
 
   val unset_key2: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
@@ -353,10 +358,10 @@ module GenHashTable: sig
     (** [get_key cont] returns the keys if they are all alive *)
 
     val get_data: 'a container -> 'a option
-    (** [get_data cont] return the data if it is alive *)
+    (** [get_data cont] returns the data if it is alive *)
 
     val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modify the key and data *)
+    (** [set_key_data cont] modifies the key and data *)
 
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data

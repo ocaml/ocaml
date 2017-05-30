@@ -69,6 +69,9 @@ val errors : int ref
 (** Indicate if a warning is an error. *)
 val warn_error : bool ref
 
+(** Show code fragments that could be transformed into a cross-reference. *)
+val show_missed_crossref: bool ref
+
 (** Print the given warning, adding it to the list of {!errors}
 if {!warn_error} is [true]. *)
 val pwarning : string -> unit

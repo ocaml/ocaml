@@ -279,7 +279,8 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
           us_actions_consts = const_actions;
           us_index_blocks = block_index;
           us_actions_blocks = block_actions;
-        })
+        },
+        Debuginfo.none)  (* debug info will be added by GPR#855 *)
     in
     (* Check that the [failaction] may be duplicated.  If this is not the
        case, share it through a static raise / static catch. *)
@@ -510,7 +511,7 @@ and to_clambda_set_of_closures t env
     in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
-          let id, env = Env.add_fresh_ident env var in
+          let id, env = Env.add_fresh_ident env (Parameter.var var) in
           env, id :: params)
         function_decl.params (env, [])
     in
@@ -519,6 +520,7 @@ and to_clambda_set_of_closures t env
       params = params @ [env_var];
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = Some env_var;
     }
   in
   let funs = List.map to_clambda_function all_functions in
@@ -549,7 +551,7 @@ and to_clambda_closed_set_of_closures t env symbol
     in
     let env_body, params =
       List.fold_right (fun var (env, params) ->
-          let id, env = Env.add_fresh_ident env var in
+          let id, env = Env.add_fresh_ident env (Parameter.var var) in
           env, id :: params)
         function_decl.params (env, [])
     in
@@ -558,6 +560,7 @@ and to_clambda_closed_set_of_closures t env symbol
       params;
       body = to_clambda t env_body function_decl.body;
       dbg = function_decl.dbg;
+      env = None;
     }
   in
   let ufunct = List.map to_clambda_function functions in

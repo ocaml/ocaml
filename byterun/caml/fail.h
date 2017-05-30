@@ -83,11 +83,19 @@ CAMLextern void caml_raise_with_string (value tag, char const * msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_failwith (char const *)
+CAMLextern void caml_failwith (char const *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_invalid_argument (char const *)
+CAMLextern void caml_failwith_value (value msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument (char const *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument_value (value msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start

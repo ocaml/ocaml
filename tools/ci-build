@@ -17,20 +17,35 @@
 # This script is run on our continuous-integration servers to recompile
 # from scratch and run the test suite.
 
+# To know the slave's architecture, this script looks at the OCAML_ARCH
+# environment variable. For a given node NODe, this variable can be defined
+# in Jenkins at the following address:
+# https://ci.inria.fr/ocaml/computer/NODE/configure
+
 # arguments:
-# 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
-# 2. directory in which to build (trunk, 4.02, etc)
-#    If this is "." then build in the Jenkins-checked out directory
-#    Otherwise, go to $HOME/jenkins-workspace/<dir> and check out a
-#    fresh copy of the branch, then build there.
-# 3. options:
-#    -conf configure-option  add configure-option to configure cmd line
-#    -patch1 file-name       apply patch with -p1
-#    -no-native              do not build "opt" and "opt.opt"
+# -conf configure-option  add configure-option to configure cmd line
+# -patch1 file-name       apply patch with -p1
+# -no-native              do not build "opt" and "opt.opt"
 
 error () {
   echo "$1" >&2
   exit 3
+}
+
+arch_error() {
+  configure_url="https://ci.inria.fr/ocaml/computer/${NODE_NAME}/configure"
+  msg="Unknown architecture. Make sure the OCAML_ARCH environemnt"
+  msg="$msg variable has been defined."
+  msg="$msg\nSee ${configure_url}"
+  error "$msg"
+}
+
+# Kill a task on Windows
+# Errors are ignored
+kill_task()
+{
+  task=$1
+  taskkill /f /im ${task} || true
 }
 
 quote1 () {
@@ -44,19 +59,13 @@ set -x
 #########################################################################
 # Save the current directory (on cygwin, /etc/profile changes it)
 jenkinsdir="$(pwd)"
-
-#########################################################################
-# "Parse" mandatory command-line arguments.
-
-arch="$1"
-branch="$2"
-shift 2
+echo jenkinsdir=${jenkinsdir}
 
 #########################################################################
 # If we are called from a Windows batch script, we must set up the
 # Unix environment variables (e.g. PATH).
 
-case "$arch" in
+case "${OCAML_ARCH}" in
   bsd|macos|linux) ;;
   cygwin|mingw|mingw64)
     . /etc/profile
@@ -72,7 +81,7 @@ case "$arch" in
     . "$HOME/.profile"
     . "$HOME/.msenv64"
   ;;
-  *) error "unknown architecture: $arch";;
+  *) arch_error;;
 esac
 
 #########################################################################
@@ -86,60 +95,68 @@ set -ex
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-makefile=Makefile
 configure=unix
+confoptions="${OCAML_CONFIGURE_OPTIONS}"
+make_native=true
+cleanup=false
+check_make_alldepend=false
 
-case "$branch" in
-  .) workdir="$jenkinsdir"
-     docheckout=false
-     ;;
-  *) workdir="$HOME/jenkins-workspace/$branch"
-     docheckout=true
-     ;;
-esac
-
-case "$arch" in
+case "${OCAML_ARCH}" in
   bsd) make=gmake ;;
   macos) ;;
-  linux) ;;
-  cygwin) ;;
+  linux)
+    confoptions="${confoptions} -with-instrumented-runtime"
+    check_make_alldepend=true
+  ;;
+  cygwin)
+    cleanup=true
+    check_make_alldepend=true
+  ;;
   mingw)
-    instdir=/cygdrive/c/ocamlmgw
-    makefile=Makefile.nt
+    instdir='C:/ocamlmgw'
     configure=nt
+    cleanup=true
+    check_make_alldepend=true
   ;;
   mingw64)
-    instdir=/cygdrive/c/ocamlmgw64
-    makefile=Makefile.nt
+    instdir='C:/ocamlmgw64'
     configure=nt
+    cleanup=true
+    check_make_alldepend=true
   ;;
   msvc)
-    instdir=/cygdrive/c/ocamlms
-    makefile=Makefile.nt
+    instdir='C:/ocamlms'
     configure=nt
+    cleanup=true
   ;;
   msvc64)
-    instdir=/cygdrive/c/ocamlms64
-    makefile=Makefile.nt
+    instdir='C:/ocamlms64'
     configure=nt
+    cleanup=true
   ;;
-  *) error "unknown architecture: $arch";;
+  *) arch_error;;
 esac
+
+# Make sure two builds won't use the same install directory
+instdir="$instdir-$$"
+
+#########################################################################
+# On Windows, cleanup processes that may remain from previous run
+
+if $cleanup; then
+  tasks="tee ocamlrun program"
+  for task in ${tasks}; do kill_task ${task}.exe; done
+fi
 
 #########################################################################
 # Go to the right directory
 
 pwd
-cd "$workdir"
-
-# If Makefile.nt is absent, assume the new makefile system.
-if ! [ -f $makefile ]; then makefile=Makefile; fi
+cd "$jenkinsdir"
 
 #########################################################################
 # parse optional command-line arguments (has to be done after the "cd")
 
-confoptions=""
-make_native=true
 while [ $# -gt 0 ]; do
   case $1 in
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
@@ -156,32 +173,43 @@ done
 # Tell gcc to use only ASCII in its diagnostic outputs.
 export LC_ALL=C
 
-$make -f $makefile distclean || :
+$make distclean || :
 
-if $docheckout; then
-  git fetch origin
-  git reset --hard FETCH_HEAD
-fi
+# `make distclean` does not clean the files from previous versions that
+# are not produced by the current version, so use `git clean` in addition.
+git clean -f -d -x
 
 case $configure in
-  unix) eval "./configure -prefix '$instdir' $confoptions";;
+  unix)
+    confoptions="$confoptions -with-debug-runtime"
+    if $flambda; then
+      confoptions="$confoptions -flambda"
+    fi
+    eval "./configure -prefix '$instdir' $confoptions"
+  ;;
   nt)
-    cp config/m-nt.h config/m.h
-    cp config/s-nt.h config/s.h
-    cp config/Makefile.$arch config/Makefile
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
+    cp config/Makefile.${OCAML_ARCH} config/Makefile
+    sed -i "s%PREFIX=\(.\+\)%PREFIX=${instdir}%" config/Makefile
+    sed -i 's%RUNTIMED=.\+%RUNTIMED=true%' config/Makefile
+    if $flambda; then
+      sed -i 's%FLAMBDA=.\+%FLAMBDA=true%' config/Makefile
+    fi
   ;;
   *) error "internal error";;
 esac
 
-$make -f $makefile coldstart
-$make -f $makefile core
-$make -f $makefile coreboot
-$make -f $makefile world
+$make coldstart
+$make core
+$make coreboot
+$make world
 if $make_native; then
-  $make -f $makefile opt
-  $make -f $makefile opt.opt
+  $make opt
+  $make opt.opt
+  if $check_make_alldepend; then $make alldepend; fi
 fi
-$make -f $makefile install
+$make install
 
 rm -rf "$instdir"
 cd testsuite

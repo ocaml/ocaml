@@ -25,6 +25,7 @@ type file_kind = ML | MLI;;
 let load_path = ref ([] : (string * string array) list)
 let ml_synonyms = ref [".ml"]
 let mli_synonyms = ref [".mli"]
+let shared = ref false
 let native_only = ref false
 let bytecode_only = ref false
 let error_occurred = ref false
@@ -220,15 +221,7 @@ let print_raw_dependencies source_file deps =
 
 let report_err exn =
   error_occurred := true;
-  match exn with
-    | Sys_error msg ->
-        Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-    | x ->
-        match Location.error_of_exn x with
-        | Some err ->
-            Format.fprintf Format.err_formatter "@[%a@]@."
-              Location.report_error err
-        | None -> raise x
+  Location.report_exception Format.err_formatter exn
 
 let tool_name = "ocamldep"
 
@@ -317,6 +310,7 @@ let print_ml_dependencies source_file extracted_deps =
     if !all_dependencies
     then [ basename ^ ".cmx"; basename ^ ".o" ]
     else [ basename ^ ".cmx" ] in
+  let shared_targets = [ basename ^ ".cmxs" ] in
   let init_deps = if !all_dependencies then [source_file] else [] in
   let cmi_name = basename ^ ".cmi" in
   let init_deps, extra_targets =
@@ -332,7 +326,11 @@ let print_ml_dependencies source_file extracted_deps =
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) byt_deps;
   if not !bytecode_only then
-    print_dependencies (native_targets @ extra_targets) native_deps
+    begin
+      print_dependencies (native_targets @ extra_targets) native_deps;
+      if !shared then
+        print_dependencies (shared_targets @ extra_targets) native_deps
+    end
 
 let print_mli_dependencies source_file extracted_deps =
   let basename = Filename.chop_extension source_file in
@@ -546,7 +544,7 @@ let _ =
   Clflags.classic := false;
   add_to_list first_include_dirs Filename.current_dir_name;
   Compenv.readenv ppf Before_args;
-  Arg.parse_expand [
+  Clflags.add_arguments __LOC__ [
      "-absname", Arg.Set Location.absname,
         " Show absolute filenames in error messages";
      "-all", Arg.Set all_dependencies,
@@ -580,10 +578,14 @@ let _ =
         " Output one line per file, regardless of the length";
      "-open", Arg.String (add_to_list Clflags.open_modules),
         "<module>  Opens the module <module> before typing";
+     "-plugin", Arg.String Compplugin.load,
+         "<plugin>  Load dynamic plugin <plugin>";
      "-pp", Arg.String(fun s -> Clflags.preprocessor := Some s),
          "<cmd>  Pipe sources through preprocessor <cmd>";
      "-ppx", Arg.String (add_to_list first_ppx),
          "<cmd>  Pipe abstract syntax trees through preprocessor <cmd>";
+     "-shared", Arg.Set shared,
+         " Generate dependencies for native plugin files (.cmxs targets)";
      "-slash", Arg.Set Clflags.force_slash,
          " (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-sort", Arg.Set sort_files,
@@ -598,7 +600,8 @@ let _ =
      "-args0", Arg.Expand Arg.read_arg0,
          "<file> Read additional NUL separated command line arguments from \n\
          \      <file>"
-    ] file_dependencies usage;
+  ];
+  Clflags.parse_arguments file_dependencies usage;
   Compenv.readenv ppf Before_link;
   if !sort_files then sort_files_by_dependencies !files
   else List.iter print_file_dependencies (List.sort compare !files);

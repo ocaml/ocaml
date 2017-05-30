@@ -27,8 +27,6 @@
 *.annot
 *.exe
 *.exe.manifest
-.depend
-.depend.nt
 .DS_Store
 *.out
 *.out.dSYM
@@ -61,6 +59,7 @@
 /asmrun/afl.c
 /asmrun/array.c
 /asmrun/backtrace.c
+/asmrun/bigarray.c
 /asmrun/callback.c
 /asmrun/compact.c
 /asmrun/compare.c
@@ -106,6 +105,8 @@
 /bytecomp/opcodes.ml
 
 /byterun/caml/jumptbl.h
+/byterun/caml/m.h
+/byterun/caml/s.h
 /byterun/primitives
 /byterun/prims.c
 /byterun/caml/opnames.h
@@ -120,8 +121,6 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/config/m.h
-/config/s.h
 /config/Makefile
 /config/auto-aux/hashbang4
 
@@ -174,7 +173,6 @@
 /ocamldoc/test
 
 /otherlibs/dynlink/extract_crc
-/otherlibs/systhreads/thread.ml
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
 /otherlibs/threads/unix.mli
@@ -201,6 +199,7 @@
 /otherlibs/win32unix/getproto.c
 /otherlibs/win32unix/getserv.c
 /otherlibs/win32unix/gmtime.c
+/otherlibs/win32unix/mmap_ba.c
 /otherlibs/win32unix/putenv.c
 /otherlibs/win32unix/rmdir.c
 /otherlibs/win32unix/socketaddr.c
@@ -270,6 +269,8 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/win-stat/*-file
+
 /testsuite/tests/opaque/*/*.mli
 
 /testsuite/tests/runtime-errors/*.bytecode
@@ -312,6 +313,8 @@
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
+/testsuite/tests/typing-multifile/d.mli
+/testsuite/tests/typing-multifile/e.ml
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
@@ -363,6 +366,8 @@
 /tools/cmpbyt.opt
 /tools/stripdebug
 /tools/stripdebug.opt
+/tools/make_opcodes
+/tools/make_opcodes.ml
 
 /utils/config.ml
 

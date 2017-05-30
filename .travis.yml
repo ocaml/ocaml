@@ -26,3 +26,7 @@ matrix:
   - env: CI_KIND=tests
   allow_failures:
   - env: CI_KIND=tests
+addons:
+  apt:
+    packages:
+    - binutils-dev

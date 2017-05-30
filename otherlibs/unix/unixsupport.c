@@ -21,6 +21,10 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+#include <fcntl.h>
 
 #ifndef E2BIG
 #define E2BIG (-1)
@@ -313,4 +317,31 @@ void uerror(char *cmdname, value cmdarg)
 void caml_unix_check_path(value path, char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+}
+
+int unix_cloexec_default = 0;
+
+int unix_cloexec_p(value cloexec)
+{
+  /* [cloexec] is a [bool option].  */
+  if (Is_block(cloexec))
+    return Bool_val(Field(cloexec, 0));
+  else
+    return unix_cloexec_default;
+}
+
+void unix_set_cloexec(int fd, char *cmdname, value cmdarg)
+{
+  int flags = fcntl(fd, F_GETFD, 0);
+  if (flags == -1 ||
+      fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
+    uerror(cmdname, cmdarg);
+}
+
+void unix_clear_cloexec(int fd, char *cmdname, value cmdarg)
+{
+  int flags = fcntl(fd, F_GETFD, 0);
+  if (flags == -1 ||
+      fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) == -1)
+    uerror(cmdname, cmdarg);
 }

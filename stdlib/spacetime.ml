@@ -15,8 +15,10 @@
 external spacetime_enabled : unit -> bool
   = "caml_spacetime_enabled" [@@noalloc]
 
+let enabled = spacetime_enabled ()
+
 let if_spacetime_enabled f =
-  if spacetime_enabled () then f () else ()
+  if enabled then f () else ()
 
 module Series = struct
   type t = {

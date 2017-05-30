@@ -136,7 +136,7 @@ CAMLprim value unix_gethostbyname(value name)
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
 
 #if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
-  hostname = caml_strdup(String_val(name));
+  hostname = caml_stat_strdup(String_val(name));
 #else
   hostname = String_val(name);
 #endif

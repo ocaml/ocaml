@@ -7263,3 +7263,34 @@ let foo : type a' b'. a' -> b' = fun a -> assert false
 let foo : type t' . t' = fun (type t') -> (assert false : t')
 let foo : 't . 't = fun (type t) -> (assert false : t)
 let foo : type a' b' c' t. a' -> b' -> c' -> t = fun a b c -> assert false
+
+let f x =
+  x.contents <- (print_string "coucou" ; x.contents)
+
+let ( ~$ ) x = Some x
+let g x =
+  ~$ (x.contents)
+
+let ( ~$ ) x y = (x, y)
+let g x y =
+  ~$ (x.contents) (y.contents)
+
+
+
+(* PR#7506: attributes on list tail *)
+
+let tail1 = ([1; 2])[@hello]
+let tail2 = 0::(([1; 2])[@hello])
+let tail3 = 0::(([])[@hello])
+
+let f ~l:(l[@foo]) = l;;
+let test x y = ((+)[@foo]) x y;;
+let test x = ((~-)[@foo]) x;;
+let test contents = { contents = contents[@foo] };;
+class type t = object(_[@foo]) end;;
+let test f x = f ~x:(x[@foo]);;
+let f = function ((`A|`B)[@bar]) | `C -> ();;
+let f = function _::(_::_ [@foo]) -> () | _ -> ();;
+function {contents=contents[@foo]} -> ();;
+fun contents -> {contents=contents[@foo]};;
+((); (((); ())[@foo]));;

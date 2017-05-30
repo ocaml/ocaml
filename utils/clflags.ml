@@ -50,6 +50,7 @@ and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
 and fast = ref false                    (* -unsafe *)
+and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
 and no_check_prims = ref false          (* -no-check-prims *)
@@ -120,6 +121,7 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
+let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let print_timings = ref false           (* -dtimings *)
@@ -358,6 +360,36 @@ let parse_color_setting = function
   | "always" -> Some Misc.Color.Always
   | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Misc.Color.Auto ;; (* -color *)
+let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
+
+let arg_spec = ref []
+let arg_names = ref Misc.StringMap.empty
+let add_arguments loc args =
+  List.iter (function (arg_name, _, _) as arg ->
+    try
+      let loc2 = Misc.StringMap.find arg_name !arg_names in
+      Printf.eprintf
+        "Warning: plugin argument %s is already defined:\n" arg_name;
+      Printf.eprintf "   First definition: %s\n" loc2;
+      Printf.eprintf "   New definition: %s\n" loc;
+    with Not_found ->
+      arg_spec := !arg_spec @ [ arg ];
+      arg_names := Misc.StringMap.add arg_name loc !arg_names
+  ) args
+
+let print_arguments usage =
+  Arg.usage !arg_spec usage
+
+(* This function is almost the same as [Arg.parse_expand], except
+   that [Arg.parse_expand] could not be used because it does not take a
+   reference for [arg_spec].*)
+let parse_arguments f msg =
+  try
+    let argv = ref Sys.argv in
+    let current = ref (!Arg.current) in
+    Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
+  with
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0

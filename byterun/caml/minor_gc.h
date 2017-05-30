@@ -99,7 +99,7 @@ static inline void add_to_ephe_ref_table (struct caml_ephe_ref_table *tbl,
   ephe_ref = tbl->ptr++;
   ephe_ref->ephe = ar;
   ephe_ref->offset = offset;
-  Assert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
+  CAMLassert(ephe_ref->offset < Wosize_val(ephe_ref->ephe));
 }
 
 static inline void add_to_custom_table (struct caml_custom_table *tbl, value v,

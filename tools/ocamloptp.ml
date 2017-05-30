@@ -144,6 +144,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _color s = option_with_arg "-color" s
   let _where = option "-where"
 
+  let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
   let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
@@ -171,6 +172,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = option "-dscheduling"
   let _dlinear = option "-dlinear"
   let _dstartup = option "-dstartup"
+  let _dinterval = option "-dinterval"
   let _dtimings = option "-dtimings"
   let _opaque = option "-opaque"
 

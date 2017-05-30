@@ -151,8 +151,9 @@ let rec reload i before =
   | Iop op ->
       let new_before =
         (* Quick check to see if the register pressure is below the maximum *)
-        if Reg.Set.cardinal i.live + Array.length i.res <=
-           Proc.safe_register_pressure op
+        if !Clflags.use_linscan ||
+           (Reg.Set.cardinal i.live + Array.length i.res <=
+            Proc.safe_register_pressure op)
         then before
         else add_superpressure_regs op i.live i.res before in
       let after =
@@ -327,7 +328,7 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       let before =
         match i.desc with
-          Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _)
+          Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _) | Iop(Ialloc _)
         | Iop(Iintop (Icheckbound _)) | Iop(Iintop_imm((Icheckbound _), _)) ->
             Reg.Set.union before1 !spill_at_raise
         | _ ->

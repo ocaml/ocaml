@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Ocamldoc configuration contants. *)
+(** Ocamldoc configuration constants. *)
 
 (** Default path to search for custom generators and to install them. *)
 val custom_generators_path : string

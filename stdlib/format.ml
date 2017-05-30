@@ -31,15 +31,15 @@ external int_of_size : size -> int = "%identity"
 
 (* The pretty-printing boxes definition:
    a pretty-printing box is either
-   - hbox: horizontal (no split in the line)
-   - vbox: vertical (the line is splitted at every break hint)
-   - hvbox: horizontal/vertical
+   - hbox: horizontal box (no line splitting)
+   - vbox: vertical box (every break hint splits the line)
+   - hvbox: horizontal/vertical box
      (the box behaves as an horizontal box if it fits on
       the current line, otherwise the box behaves as a vertical box)
-   - hovbox: horizontal or vertical
-     (the box is compacting material, printing as much material on every
-     lines)
-   - box: horizontal or vertical with box enhanced structure
+   - hovbox: horizontal or vertical compacting box
+     (the box is compacting material, printing as much material as possible
+      on every lines)
+   - box: horizontal or vertical compacting box with enhanced box structure
      (the box behaves as an horizontal or vertical box but break hints split
       the line if splitting would move to the left)
 *)
@@ -63,7 +63,7 @@ type pp_token =
   | Pp_if_newline              (* to do something only if this very
                                   line has been broken *)
   | Pp_open_tag of tag         (* opening a tag name *)
-  | Pp_close_tag               (* closing the most recently opened tag *)
+  | Pp_close_tag               (* closing the most recently open tag *)
 
 and tag = string
 
@@ -164,9 +164,9 @@ type formatter = {
   mutable pp_left_total : int;
   (* Total width of tokens ever put in queue. *)
   mutable pp_right_total : int;
-  (* Current number of opened boxes. *)
+  (* Current number of open boxes. *)
   mutable pp_curr_depth : int;
-  (* Maximum number of boxes which can be simultaneously opened. *)
+  (* Maximum number of boxes which can be simultaneously open. *)
   mutable pp_max_boxes : int;
   (* Ellipsis string. *)
   mutable pp_ellipsis : string;
@@ -176,8 +176,10 @@ type formatter = {
   mutable pp_out_flush : unit -> unit;
   (* Output of new lines. *)
   mutable pp_out_newline : unit -> unit;
-  (* Output of indentation spaces. *)
+  (* Output of break hints spaces. *)
   mutable pp_out_spaces : int -> unit;
+  (* Output of indentation of new lines. *)
+  mutable pp_out_indent : int -> unit;
   (* Are tags printed ? *)
   mutable pp_print_tags : bool;
   (* Are tags marked ? *)
@@ -207,6 +209,7 @@ type formatter_out_functions = {
   out_flush : unit -> unit;
   out_newline : unit -> unit;
   out_spaces : int -> unit;
+  out_indent : int -> unit;
 }
 
 
@@ -284,6 +287,7 @@ let pp_infinity = 1000000010
 let pp_output_string state s = state.pp_out_string s 0 (String.length s)
 and pp_output_newline state = state.pp_out_newline ()
 and pp_output_spaces state n = state.pp_out_spaces n
+and pp_output_indent state n = state.pp_out_indent n
 
 (* To format a break, indenting a new line. *)
 let break_new_line state offset width =
@@ -294,7 +298,7 @@ let break_new_line state offset width =
   let real_indent = min state.pp_max_indent indent in
   state.pp_current_indent <- real_indent;
   state.pp_space_left <- state.pp_margin - state.pp_current_indent;
-  pp_output_spaces state state.pp_current_indent
+  pp_output_indent state state.pp_current_indent
 
 
 (* To force a line break inside a box: no offset is added. *)
@@ -380,7 +384,7 @@ let format_pp_token state size = function
         | [] -> [n]
         | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
       tabs := add_tab (state.pp_margin - state.pp_space_left) !tabs
-    | [] -> () (* No opened tabulation box. *)
+    | [] -> () (* No open tabulation box. *)
     end
 
   | Pp_tbreak (n, off) ->
@@ -402,13 +406,13 @@ let format_pp_token state size = function
       if offset >= 0
       then break_same_line state (offset + n)
       else break_new_line state (tab + off) state.pp_margin
-    | [] -> () (* No opened tabulation box. *)
+    | [] -> () (* No open tabulation box. *)
     end
 
   | Pp_newline ->
     begin match state.pp_format_stack with
     | Format_elem (_, width) :: _ -> break_line state width
-    | [] -> pp_output_newline state (* No opened box. *)
+    | [] -> pp_output_newline state (* No open box. *)
     end
 
   | Pp_if_newline ->
@@ -437,7 +441,7 @@ let format_pp_token state size = function
       | Pp_vbox -> break_new_line state off width
       | Pp_hbox -> break_same_line state n
       end
-    | [] -> () (* No opened box. *)
+    | [] -> () (* No open box. *)
     end
 
    | Pp_open_tag tag_name ->
@@ -575,7 +579,7 @@ let pp_open_box_gen state indent br_ty =
   then enqueue_string state state.pp_ellipsis
 
 
-(* The box which is always opened. *)
+(* The box which is always open. *)
 let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox
 
 (* Close a box, setting sizes of its sub boxes. *)
@@ -667,9 +671,15 @@ let pp_rinit state =
   state.pp_space_left <- state.pp_margin;
   pp_open_sys_box state
 
+let clear_tag_stack state =
+  List.iter
+    (fun _ -> pp_close_tag state ())
+    state.pp_tag_stack
+
 
 (* Flushing pretty-printer queue. *)
 let pp_flush_queue state b =
+  clear_tag_stack state;
   while state.pp_curr_depth > 1 do
     pp_close_box state ()
   done;
@@ -677,7 +687,6 @@ let pp_flush_queue state b =
   advance_left state;
   if b then pp_output_newline state;
   pp_rinit state
-
 
 (*
 
@@ -722,9 +731,14 @@ and pp_open_hovbox state indent = pp_open_box_gen state indent Pp_hovbox
 and pp_open_box state indent = pp_open_box_gen state indent Pp_box
 
 
-(* Printing all queued text.
-   [print_newline] prints a new line after flushing the queue.
-   [print_flush] on flush the queue without adding a newline. *)
+(* Printing queued text.
+
+   [pp_print_flush] prints all pending items in the pretty-printer queue and
+   then flushes the the low level output device of the formatter to effectively
+   display printing material.
+
+   [pp_print_newline] behaves as [pp_print_flush] after printing an additional
+   new line. *)
 let pp_print_newline state () =
   pp_flush_queue state true; state.pp_out_flush ()
 and pp_print_flush state () =
@@ -873,18 +887,20 @@ let pp_set_formatter_out_functions state {
       out_flush = g;
       out_newline = h;
       out_spaces = i;
+      out_indent = j;
     } =
   state.pp_out_string <- f;
   state.pp_out_flush <- g;
   state.pp_out_newline <- h;
-  state.pp_out_spaces <- i
-
+  state.pp_out_spaces <- i;
+  state.pp_out_indent <- j
 
 let pp_get_formatter_out_functions state () = {
   out_string = state.pp_out_string;
   out_flush = state.pp_out_flush;
   out_newline = state.pp_out_newline;
   out_spaces = state.pp_out_spaces;
+  out_indent = state.pp_out_indent;
 }
 
 
@@ -895,9 +911,6 @@ let pp_set_formatter_output_functions state f g =
 let pp_get_formatter_output_functions state () =
   (state.pp_out_string, state.pp_out_flush)
 
-
-let pp_flush_formatter state =
-  pp_flush_queue state false
 
 (* The default function to output new lines. *)
 let display_newline state () = state.pp_out_string "\n" 0  1
@@ -913,14 +926,17 @@ let rec display_blanks state n =
   end
 
 
+(* The default function to output indentation of new lines. *)
+let display_indent = display_blanks
+
 (* Setting a formatter basic output functions as printing to a given
    [Pervasive.out_channel] value. *)
-let pp_set_formatter_out_channel state os =
-  state.pp_out_string <- output_substring os;
-  state.pp_out_flush <- (fun () -> flush os);
+let pp_set_formatter_out_channel state oc =
+  state.pp_out_string <- output_substring oc;
+  state.pp_out_flush <- (fun () -> flush oc);
   state.pp_out_newline <- display_newline state;
-  state.pp_out_spaces <- display_blanks state
-
+  state.pp_out_spaces <- display_blanks state;
+  state.pp_out_indent <- display_indent state
 
 (*
 
@@ -936,7 +952,7 @@ let default_pp_print_close_tag = ignore
 
 (* Bulding a formatter given its basic output functions.
    Other fields get reasonable default values. *)
-let pp_make_formatter f g h i =
+let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
   let pp_queue = make_queue () in
   let sys_tok =
@@ -967,6 +983,7 @@ let pp_make_formatter f g h i =
     pp_out_flush = g;
     pp_out_newline = h;
     pp_out_spaces = i;
+    pp_out_indent = j;
     pp_print_tags = false;
     pp_mark_tags = false;
     pp_mark_open_tag = default_pp_mark_open_tag;
@@ -977,11 +994,23 @@ let pp_make_formatter f g h i =
   }
 
 
-(* Make a formatter with default functions to output spaces and new lines. *)
+(* Build a formatter out of its out functions. *)
+let formatter_of_out_functions out_funs =
+  pp_make_formatter
+    out_funs.out_string
+    out_funs.out_flush
+    out_funs.out_newline
+    out_funs.out_spaces
+    out_funs.out_indent
+
+
+(* Make a formatter with default functions to output spaces,
+  indentation, and new lines. *)
 let make_formatter output flush =
-  let ppf = pp_make_formatter output flush ignore ignore in
+  let ppf = pp_make_formatter output flush ignore ignore ignore in
   ppf.pp_out_newline <- display_newline ppf;
   ppf.pp_out_spaces <- display_blanks ppf;
+  ppf.pp_out_indent <- display_indent ppf;
   ppf
 
 
@@ -1024,6 +1053,66 @@ let flush_buffer_formatter buf ppf =
 
 (* Flush [str_formatter] and get the contents of [stdbuf]. *)
 let flush_str_formatter () = flush_buffer_formatter stdbuf str_formatter
+
+(*
+  Symbolic pretty-printing
+*)
+
+(*
+  Symbolic pretty-printing is pretty-printing with no low level output.
+
+  When using a symbolic formatter, all regular pretty-printing activities
+  occur but output material is symbolic and stored in a buffer of output
+  items. At the end of pretty-printing, flushing the output buffer allows
+  post-processing of symbolic output before low level output operations.
+*)
+
+type symbolic_output_item =
+  | Output_flush
+  | Output_newline
+  | Output_string of string
+  | Output_spaces of int
+  | Output_indent of int
+
+type symbolic_output_buffer = {
+  mutable symbolic_output_contents : symbolic_output_item list;
+}
+
+let make_symbolic_output_buffer () =
+  { symbolic_output_contents = [] }
+
+let clear_symbolic_output_buffer sob =
+  sob.symbolic_output_contents <- []
+
+let get_symbolic_output_buffer sob =
+  List.rev sob.symbolic_output_contents
+
+let flush_symbolic_output_buffer sob =
+  let items = get_symbolic_output_buffer sob in
+  clear_symbolic_output_buffer sob;
+  items
+
+let add_symbolic_output_item sob item =
+  sob.symbolic_output_contents <- item :: sob.symbolic_output_contents
+
+let formatter_of_symbolic_output_buffer sob =
+  let symbolic_flush sob () =
+    add_symbolic_output_item sob Output_flush
+  and symbolic_newline sob () =
+    add_symbolic_output_item sob Output_newline
+  and symbolic_string sob s i n =
+    add_symbolic_output_item sob (Output_string (String.sub s i n))
+  and symbolic_spaces sob n =
+    add_symbolic_output_item sob (Output_spaces n)
+  and symbolic_indent sob n =
+    add_symbolic_output_item sob (Output_indent n) in
+
+  let f = symbolic_string sob
+  and g = symbolic_flush sob
+  and h = symbolic_newline sob
+  and i = symbolic_spaces sob
+  and j = symbolic_indent sob in
+  pp_make_formatter f g h i j
 
 (*
 
@@ -1295,7 +1384,6 @@ let pp_set_all_formatter_output_functions state
   state.pp_out_newline <- h;
   state.pp_out_spaces <- i
 
-
 (* Deprecated : subsumed by pp_get_formatter_out_functions *)
 let pp_get_all_formatter_output_functions state () =
   (state.pp_out_string, state.pp_out_flush,
@@ -1313,10 +1401,12 @@ let get_all_formatter_output_functions =
 
 
 (* Deprecated : error prone function, do not use it.
-   Define a formatter of your own writing to the buffer,
-   as in
+   This function is neither compositional nor incremental, since it flushes
+   the pretty-printer queue at each call.
+   To get the same functionality, define a formatter of your own writing to
+   the buffer argument, as in
    let ppf = formatter_of_buffer b
-   then use {!fprintf ppf} as useual. *)
+   then use {!fprintf ppf} as usual. *)
 let bprintf b (Format (fmt, _) : ('a, formatter, unit) format) =
   let k ppf acc = output_acc ppf acc; pp_flush_queue ppf false in
   make_printf k (formatter_of_buffer b) End_of_acc fmt

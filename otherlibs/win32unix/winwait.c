@@ -52,10 +52,21 @@ CAMLprim value win_waitpid(value vflags, value vpid_req)
     retcode = WaitForSingleObject(pid_req, INFINITE);
     if (retcode == WAIT_FAILED) err = GetLastError();
     caml_leave_blocking_section();
-    if (err) {
-      win32_maperr(err);
-      uerror("waitpid", Nothing);
-    }
+  } else {
+    /* GPR#1155: we don't rely solely on GetExitCodeProcess to
+       determine whether the process has terminated or not. This is
+       because GetExitCodeProcess might return that the process has
+       terminated before the resources associated with the process are
+       released. This can be a problem since by default one cannot
+       delete a file or directory that is still in use. */
+    retcode = WaitForSingleObject(pid_req, 0);
+    if (retcode == WAIT_TIMEOUT)
+      return alloc_process_status((HANDLE) 0, 0);
+    if (retcode == WAIT_FAILED) err = GetLastError();
+  }
+  if (err) {
+    win32_maperr(err);
+    uerror("waitpid", Nothing);
   }
   if (! GetExitCodeProcess(pid_req, &status)) {
     win32_maperr(GetLastError());

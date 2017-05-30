@@ -17,7 +17,6 @@
 /* Runtime checks to try to catch errors in code generation.
    See flambda_to_clambda.ml for more information. */
 
-#include <assert.h>
 #include <stdio.h>
 
 #include <caml/mlvalues.h>
@@ -46,9 +45,9 @@ value caml_check_value_is_closure(value v, value v_descr)
   }
   if (Tag_val(v) == Infix_tag) {
     v -= Infix_offset_val(v);
-    assert(Tag_val(v) == Closure_tag);
+    CAMLassert(Tag_val(v) == Closure_tag);
   }
-  assert(Wosize_val(v) >= 2);
+  CAMLassert(Wosize_val(v) >= 2);
 
   return orig_v;
 }
@@ -75,7 +74,7 @@ value caml_check_field_access(value v, value pos, value v_descr)
     v -= offset;
     pos += offset / sizeof(value);
   }
-  assert(Long_val(pos) >= 0);
+  CAMLassert(Long_val(pos) >= 0);
   if (Long_val(pos) >= Wosize_val(v)) {
     fprintf(stderr,
       "Access to field %" ARCH_INT64_PRINTF_FORMAT

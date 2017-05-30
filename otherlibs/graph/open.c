@@ -246,7 +246,7 @@ value caml_gr_window_id(void)
 value caml_gr_set_window_title(value n)
 {
   if (window_name != NULL) caml_stat_free(window_name);
-  window_name = caml_strdup(String_val(n));
+  window_name = caml_stat_strdup(String_val(n));
   if (caml_gr_initialized) {
     XStoreName(caml_gr_display, caml_gr_window.win, window_name);
     XSetIconName(caml_gr_display, caml_gr_window.win, window_name);
