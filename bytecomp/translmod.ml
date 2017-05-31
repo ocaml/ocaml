@@ -494,23 +494,17 @@ and transl_structure loc fields cc rootpath final_env = function
           let body, size =
             transl_structure loc (id :: fields) cc rootpath final_env rem
           in
-          let rootpath_inside_module = field_path rootpath id in
           let module_body =
-            transl_module Tcoerce_none rootpath_inside_module mb.mb_expr
+            transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
           in
           let module_body =
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
           in
           let module_body =
-            let path =
-              match rootpath_inside_module with
-              | Some path -> path
-              | None -> Pident id
-            in
             Levent (module_body, {
               lev_loc = mb.mb_loc;
-              lev_kind = Lev_module_definition (Module_or_functor path);
+              lev_kind = Lev_module_definition id;
               lev_repr = None;
               lev_env = Env.summary Env.empty;
             })
@@ -528,18 +522,12 @@ and transl_structure loc fields cc rootpath final_env = function
           let lam =
             compile_recmodule
               (fun id modl loc ->
-                 let rootpath_inside_module = field_path rootpath id in
                  let module_body =
-                   transl_module Tcoerce_none rootpath_inside_module modl
-                 in
-                 let path =
-                   match rootpath_inside_module with
-                   | Some path -> path
-                   | None -> Pident id
+                   transl_module Tcoerce_none (field_path rootpath id) modl
                  in
                  Levent (module_body, {
                    lev_loc = loc;
-                   lev_kind = Lev_module_definition (Module_or_functor path);
+                   lev_kind = Lev_module_definition id;
                    lev_repr = None;
                    lev_env = Env.summary Env.empty;
                  }))

@@ -1036,7 +1036,7 @@ and transl_exp0 e =
       let defining_expr =
         Levent (!transl_module Tcoerce_none None modl, {
           lev_loc = loc.loc;
-          lev_kind = Lev_module_definition (Local_module id);
+          lev_kind = Lev_module_definition id;
           lev_repr = None;
           lev_env = Env.summary Env.empty;
         })
