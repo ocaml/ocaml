@@ -127,7 +127,7 @@ CAMLHEADERS =\
 ifeq "$(HASHBANGSCRIPTS)" "true"
 $(CAMLHEADERS): ../config/Makefile
 	for suff in '' d i; do \
-	  echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
+	  echo '#!$(CAMLRUN)'$$suff > camlheader$$suff && \
 	  echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
 	done && \
 	echo '#!' | tr -d '\012' > camlheader_ur;
