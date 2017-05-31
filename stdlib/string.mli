@@ -58,7 +58,7 @@ external get : string -> int -> char = "%string_safe_get"
    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
 
 
-external set : bytes -> int -> char -> unit = "%bytes_safe_set"
+external set : bytes -> int -> char -> unit = "%string_safe_set"
   [@@ocaml.deprecated "Use Bytes.set instead."]
 (** [String.set s n c] modifies byte sequence [s] in place,
    replacing the byte at index [n] with [c].
@@ -68,7 +68,7 @@ external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 
    @deprecated This is a deprecated alias of {!Bytes.set}.[ ] *)
 
-external create : int -> bytes = "caml_create_bytes"
+external create : int -> bytes = "caml_create_string"
   [@@ocaml.deprecated "Use Bytes.create instead."]
 (** [String.create n] returns a fresh byte sequence of length [n].
    The sequence is uninitialized and contains arbitrary bytes.
@@ -181,11 +181,23 @@ val index : string -> char -> int
 
    Raise [Not_found] if [c] does not occur in [s]. *)
 
+val index_opt: string -> char -> int option
+(** [String.index_opt s c] returns the index of the first
+    occurrence of character [c] in string [s], or
+    [None] if [c] does not occur in [s].
+    @since 4.05 *)
+
 val rindex : string -> char -> int
 (** [String.rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
 
    Raise [Not_found] if [c] does not occur in [s]. *)
+
+val rindex_opt: string -> char -> int option
+(** [String.rindex_opt s c] returns the index of the last occurrence
+    of character [c] in string [s], or [None] if [c] does not occur in
+    [s].
+    @since 4.05 *)
 
 val index_from : string -> int -> char -> int
 (** [String.index_from s i c] returns the index of the
@@ -195,6 +207,17 @@ val index_from : string -> int -> char -> int
    Raise [Invalid_argument] if [i] is not a valid position in [s].
    Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
+val index_from_opt: string -> int -> char -> int option
+(** [String.index_from_opt s i c] returns the index of the
+    first occurrence of character [c] in string [s] after position [i]
+    or [None] if [c] does not occur in [s] after position [i].
+
+    [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
+
+    @since 4.05
+*)
+
 val rindex_from : string -> int -> char -> int
 (** [String.rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
@@ -203,6 +226,19 @@ val rindex_from : string -> int -> char -> int
 
    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
    Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+
+val rindex_from_opt: string -> int -> char -> int option
+(** [String.rindex_from_opt s i c] returns the index of the
+   last occurrence of character [c] in string [s] before position [i+1]
+   or [None] if [c] does not occur in [s] before position [i+1].
+
+   [String.rindex_opt s c] is equivalent to
+   [String.rindex_from_opt s (String.length s - 1) c].
+
+   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+
+    @since 4.05
+*)
 
 val contains : string -> char -> bool
 (** [String.contains s c] tests if character [c]
@@ -302,11 +338,11 @@ val split_on_char: char -> string -> string list
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
   string -> int -> bytes -> int -> int -> unit
   = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]
+  bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]

@@ -101,6 +101,58 @@ let test x v s1 s2 =
      with Not_found ->
        M.is_empty s1);
 
+  checkbool "find_first"
+    (let (l, p, r) = M.split x s1 in
+    if p = None && M.is_empty r then
+      try
+        let _ = M.find_first (fun k -> k >= x) s1 in
+        false
+      with Not_found ->
+        true
+    else
+      let (k, v) = M.find_first (fun k -> k >= x) s1 in
+      match p with
+        None -> (k, v) = M.min_binding r
+      | Some v1 -> (k, v) = (x, v1));
+
+  checkbool "find_first_opt"
+    (let (l, p, r) = M.split x s1 in
+    if p = None && M.is_empty r then
+      match M.find_first_opt (fun k -> k >= x) s1 with
+        None -> true
+      | _ -> false
+    else
+      let Some (k, v) = M.find_first_opt (fun k -> k >= x) s1 in
+      match p with
+        None -> (k, v) = M.min_binding r
+      | Some v1 -> (k, v) = (x, v1));
+
+  checkbool "find_last"
+    (let (l, p, r) = M.split x s1 in
+    if p = None && M.is_empty l then
+      try
+        let _ = M.find_last (fun k -> k <= x) s1 in
+        false
+      with Not_found ->
+        true
+    else
+      let (k, v) = M.find_last (fun k -> k <= x) s1 in
+      match p with
+        None -> (k, v) = M.max_binding l
+      | Some v1 -> (k, v) = (x, v1));
+
+  checkbool "find_last_opt"
+    (let (l, p, r) = M.split x s1 in
+    if p = None && M.is_empty l then
+      match M.find_last_opt (fun k -> k <= x) s1 with
+        None -> true
+      | _ -> false
+    else
+      let Some (k, v) = M.find_last_opt (fun k -> k <= x) s1 in
+      match p with
+        None -> (k, v) = M.max_binding l
+      | Some v1 -> (k, v) = (x, v1));
+
   check "split"
     (let (l, p, r) = M.split x s1 in
      fun i ->

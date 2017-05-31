@@ -41,12 +41,19 @@ default:
 	 && echo " ... testing => skipped" \
 	 || $(SET_LD_PATH) $(MAKE) run
 
+# See run-file in Makefile.several for the use of mktemp (included for
+# completeness; should be unnecessary)
 .PHONY: compile
 compile: $(ML_FILES)
 	@for file in $(C_FILES); do \
 	  $(OCAMLC) -c $(C_INCLUDES) $$file.c; \
 	done
 	@if $(NATIVECODE_ONLY); then : ; else \
+	  test -e program.byte.exe && { \
+	    T="`mktemp -p .`"; \
+	    mv -f program.byte.exe "$$T"; \
+	    rm -f "$$T"; \
+	  } ; \
 	  rm -f program.byte program.byte.exe; \
 	  $(MAKE) $(CMO_FILES) $(MAIN_MODULE).cmo; \
 	  $(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte$(EXE) \
@@ -54,6 +61,11 @@ compile: $(ML_FILES)
 	            $(MAIN_MODULE).cmo; \
 	fi
 	@if $(BYTECODE_ONLY); then : ; else \
+	  test -e program.native.exe && { \
+	    T="`mktemp -p .`"; \
+	    mv -f program.native.exe "$$T"; \
+	    rm -f "$$T"; \
+	  } ; \
 	  rm -f program.native program.native.exe; \
 	  $(MAKE) $(CMX_FILES) $(MAIN_MODULE).cmx; \
 	  $(OCAMLOPT) $(ADD_COMPFLAGS) $(ADD_OPTCOMPFLAGS) \

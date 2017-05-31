@@ -365,13 +365,15 @@ let expression sub exp =
 
     (* Pexp_function can't have a label, so we split in 3 cases. *)
     (* One case, no guard: It's a fun. *)
-    | Texp_function (label, [{c_lhs=p; c_guard=None; c_rhs=e}], _) ->
-        Pexp_fun (label, None, sub.pat sub p, sub.expr sub e)
+    | Texp_function { arg_label; cases = [{c_lhs=p; c_guard=None; c_rhs=e}];
+          _ } ->
+        Pexp_fun (arg_label, None, sub.pat sub p, sub.expr sub e)
     (* No label: it's a function. *)
-    | Texp_function (Nolabel, cases, _) ->
+    | Texp_function { arg_label = Nolabel; cases; _; } ->
         Pexp_function (sub.cases sub cases)
     (* Mix of both, we generate `fun ~label:$name$ -> match $name$ with ...` *)
-    | Texp_function (Labelled s | Optional s as label, cases, _) ->
+    | Texp_function { arg_label = Labelled s | Optional s as label; cases;
+          _ } ->
         let name = fresh_name s exp.exp_env in
         Pexp_fun (label, None, Pat.var ~loc {loc;txt = name },
           Exp.match_ ~loc (Exp.ident ~loc {loc;txt= Lident name})
@@ -738,7 +740,8 @@ let class_field sub cf =
         Pcf_method (lab, priv, Cfk_virtual (sub.typ sub cty))
     | Tcf_method (lab, priv, Tcfk_concrete (o, exp)) ->
         let remove_fun_self = function
-          | { exp_desc = Texp_function(Nolabel, [case], _) }
+          | { exp_desc =
+              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
             when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e
         in
@@ -746,7 +749,8 @@ let class_field sub cf =
         Pcf_method (lab, priv, Cfk_concrete (o, sub.expr sub exp))
     | Tcf_initializer exp ->
         let remove_fun_self = function
-          | { exp_desc = Texp_function(Nolabel, [case], _) }
+          | { exp_desc =
+              Texp_function { arg_label = Nolabel; cases = [case]; _ } }
             when is_self_pat case.c_lhs && case.c_guard = None -> case.c_rhs
           | e -> e
         in

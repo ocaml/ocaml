@@ -60,8 +60,8 @@ CAMLexport void caml_register_custom_operations(struct custom_operations * ops)
 {
   struct custom_operations_list * l =
     caml_stat_alloc(sizeof(struct custom_operations_list));
-  Assert(ops->identifier != NULL);
-  Assert(ops->deserialize != NULL);
+  CAMLassert(ops->identifier != NULL);
+  CAMLassert(ops->deserialize != NULL);
   l->ops = ops;
   l->next = custom_ops_table;
   custom_ops_table = l;
@@ -100,11 +100,13 @@ struct custom_operations * caml_final_custom_operations(final_fun fn)
 
 extern struct custom_operations caml_int32_ops,
                                 caml_nativeint_ops,
-                                caml_int64_ops;
+                                caml_int64_ops,
+                                caml_ba_ops;
 
 void caml_init_custom_operations(void)
 {
   caml_register_custom_operations(&caml_int32_ops);
   caml_register_custom_operations(&caml_nativeint_ops);
   caml_register_custom_operations(&caml_int64_ops);
+  caml_register_custom_operations(&caml_ba_ops);
 }

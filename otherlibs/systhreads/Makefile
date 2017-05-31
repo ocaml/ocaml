@@ -20,6 +20,12 @@ include $(ROOTDIR)/config/Makefile
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
+ifeq "$(wildcard $(ROOTDIR)/flexdll/Makefile)" ""
+export OCAML_FLEXLINK:=
+else
+export OCAML_FLEXLINK:=$(ROOTDIR)/boot/ocamlrun $(ROOTDIR)/flexdll/flexlink.exe
+endif
+
 LIBS = -nostdlib -I $(ROOTDIR)/stdlib -I $(ROOTDIR)/otherlibs/$(UNIXLIB)
 
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc $(LIBS)
@@ -39,6 +45,11 @@ HEADER = st_posix.h
 else # Windows
 HEADER = st_win32.h
 endif
+
+# Note: the header on which object files produced from st_stubs.c
+# should actually depend is known for sure only at compile-time.
+# That's why this dependency is handled in the Makefile directly
+# and removed from the output of the C compiler during make depend
 
 BYTECODE_C_OBJS=st_stubs_b.$(O)
 NATIVECODE_C_OBJS=st_stubs_n.$(O)
@@ -83,43 +94,41 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 
 # The following lines produce two object files st_stubs_b.$(O) and
 # st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
-# twice, each time with different of options).
-# Since the source and object file have a different basename, the name of
-# the object file to produce must be given to the C compiler.
-# For gcc this is done with the -ofoo.$(O) option.
-# For msvc it's the /Fofoo.$(O) option.
+# twice, each time with different options).
 
 ifeq "$(TOOLCHAIN)" "msvc"
   CCOUTPUT=/Fo
 else
-  CCOUTPUT=-o
+  CCOUTPUT=-o 
 endif
 
 st_stubs_b.$(O): st_stubs.c $(HEADER)
-	$(BYTECC) -I$(ROOTDIR)/byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
-	  $(CCOUTPUT)$@ -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
+	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
 
 st_stubs_n.$(O): st_stubs.c $(HEADER)
-	$(NATIVECC) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
-	  $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  $(SHAREDCCCOMPOPTS) -DNATIVE_CODE \
 	  -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
-	  $(CCOUTPUT)$@ -c $<
+	  $(OUTPUTOBJ)$@ -c $<
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.$(A) *.$(O)
+	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 THREADS_LIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
+	if test -f dllthreads$(EXT_DLL); then \
+	  cp dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; fi
 	cp libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
 	mkdir -p "$(THREADS_LIBDIR)"
-	cp $(CMIFILES) threads.cma "$(THREADS_LIBDIR)"
+	cp $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma "$(THREADS_LIBDIR)"
 	cp $(MLIFILES) "$(INSTALL_LIBDIR)"
 	cp threads.h "$(INSTALL_LIBDIR)/caml"
 
@@ -140,12 +149,20 @@ installopt:
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
-ifeq "$(UNIX_OR_WIN32)" "unix"
-depend: $(GENFILES)
-	-$(CC) -MM -I../../byterun *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
-else # Windows
+.PHONY: depend
+ifeq "$(TOOLCHAIN)" "msvc"
 depend:
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+depend:
+	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
+	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
+	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
+	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
+	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
+	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 
 include .depend

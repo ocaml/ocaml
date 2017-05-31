@@ -25,7 +25,7 @@ CAMLprim value unix_setsid(value unit)
 #ifdef HAS_SETSID
   return Val_int(setsid());
 #else
-  invalid_argument("setsid not implemented");
+  caml_invalid_argument("setsid not implemented");
   return Val_unit;
 #endif
 }

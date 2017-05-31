@@ -55,6 +55,7 @@ let code_for_function_prologue ~function_name ~node_hole =
   let must_allocate_node = Ident.create "must_allocate_node" in
   let is_new_node = Ident.create "is_new_node" in
   let no_tail_calls = List.length !direct_tail_call_point_indexes < 1 in
+  let dbg = Debuginfo.none in
   let open Cmm in
   let initialize_direct_tail_call_points_and_return_node =
     let new_node_encoded = Ident.create "new_node_encoded" in
@@ -68,8 +69,8 @@ let code_for_function_prologue ~function_name ~node_hole =
           let offset_in_bytes = index * Arch.size_addr in
           Csequence (
             Cop (Cstore (Word_int, Lambda.Assignment),
-              [Cop (Caddi, [Cvar new_node; Cconst_int offset_in_bytes]);
-               Cvar new_node_encoded]),
+              [Cop (Caddi, [Cvar new_node; Cconst_int offset_in_bytes], dbg);
+               Cvar new_node_encoded], dbg),
             init_code))
         (Cvar new_node)
         indexes
@@ -79,27 +80,31 @@ let code_for_function_prologue ~function_name ~node_hole =
     | _ ->
       Clet (new_node_encoded,
         (* Cf. [Encode_tail_caller_node] in the runtime. *)
-        Cop (Cor, [Cvar new_node; Cconst_int 1]),
+        Cop (Cor, [Cvar new_node; Cconst_int 1], dbg),
         body)
   in
   let pc = Ident.create "pc" in
-  Clet (node, Cop (Cload Word_int, [Cvar node_hole]),
-    Clet (must_allocate_node, Cop (Cand, [Cvar node; Cconst_int 1]),
-      Cifthenelse (Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1]),
+  Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
+    Clet (must_allocate_node,
+      Cop (Cand, [Cvar node; Cconst_int 1], dbg),
+      Cifthenelse (
+        Cop (Ccmpi Cne, [Cvar must_allocate_node; Cconst_int 1], dbg),
         Cvar node,
         Clet (is_new_node,
           Clet (pc, Cconst_symbol function_name,
             Cop (Cextcall ("caml_spacetime_allocate_node",
-              [| Int |], false, Debuginfo.none, None),
+                [| Int |], false, None),
               [Cconst_int (1 (* header *) + !index_within_node);
                Cvar pc;
                Cvar node_hole;
-              ])),
-            Clet (new_node, Cop (Cload Word_int, [Cvar node_hole]),
+              ],
+              dbg)),
+            Clet (new_node,
+              Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
               if no_tail_calls then Cvar new_node
               else
                 Cifthenelse (
-                  Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0]),
+                  Cop (Ccmpi Ceq, [Cvar is_new_node; Cconst_int 0], dbg),
                   Cvar new_node,
                   initialize_direct_tail_call_points_and_return_node))))))
 
@@ -125,9 +130,10 @@ let code_for_blockheader ~value's_header ~node ~dbg =
        a point to a location.
     *)
     Cop (Cextcall ("caml_spacetime_generate_profinfo", [| Int |],
-        false, dbg, Some label),
+        false, Some label),
       [Cvar address_of_profinfo;
-       Cconst_int (index_within_node + 1)])
+       Cconst_int (index_within_node + 1)],
+      dbg)
   in
   (* Check if we have already allocated a profinfo value for this allocation
      point with the current backtrace.  If so, use that value; if not,
@@ -136,29 +142,31 @@ let code_for_blockheader ~value's_header ~node ~dbg =
     Cop (Caddi, [
       Cvar node;
       Cconst_int offset_into_node;
-    ]),
-    Clet (existing_profinfo, Cop (Cload Word_int, [Cvar address_of_profinfo]),
+    ], dbg),
+    Clet (existing_profinfo,
+        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
+          dbg),
       Clet (profinfo,
         Cifthenelse (
-          Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)]),
+          Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),
           Cvar existing_profinfo,
           generate_new_profinfo),
         Clet (existing_count,
-          Cop (Cload Word_int, [
+          Cop (Cload (Word_int, Asttypes.Mutable), [
             Cop (Caddi,
-              [Cvar address_of_profinfo; Cconst_int Arch.size_addr])
-          ]),
+              [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg)
+          ], dbg),
           Csequence (
             Cop (Cstore (Word_int, Lambda.Assignment),
               [Cop (Caddi,
-                [Cvar address_of_profinfo; Cconst_int Arch.size_addr]);
+                [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg);
                 Cop (Caddi, [
                   Cvar existing_count;
                   (* N.B. "*2" since the count is an OCaml integer.
                      The "1 +" is to count the value's header. *)
                   Cconst_int (2 * (1 + Nativeint.to_int num_words));
-                ]);
-              ]),
+                ], dbg);
+              ], dbg),
             (* [profinfo] looks like a black [Infix_tag] header.  Instead of
                having to mask [profinfo] before ORing it with the desired
                header, we can use an XOR trick, to keep code size down. *)
@@ -171,7 +179,7 @@ let code_for_blockheader ~value's_header ~node ~dbg =
                     (* The following is the [Infix_offset_val], in words. *)
                     (Nativeint.of_int (index_within_node + 1)) 10))
             in
-            Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header]))))))
+            Cop (Cxor, [Cvar profinfo; Cconst_natint value's_header], dbg))))))
 
 type callee =
   | Direct of string
@@ -204,9 +212,10 @@ let code_for_call ~node ~callee ~is_tail ~label =
     | Direct _ | Indirect _ -> ()
   end;
   let place_within_node = Ident.create "place_within_node" in
+  let dbg = Debuginfo.none in
   let open Cmm in
   Clet (place_within_node,
-    Cop (Caddi, [node; Cconst_int (index_within_node * Arch.size_addr)]),
+    Cop (Caddi, [node; Cconst_int (index_within_node * Arch.size_addr)], dbg),
     (* The following code returns the address that is to be moved into the
        (hard) node hole pointer register immediately before the call.
        (That move is inserted in [Selectgen].) *)
@@ -218,8 +227,9 @@ let code_for_call ~node ~callee ~is_tail ~label =
         else Cconst_int 1  (* [Val_unit] *)
       in
       Cop (Cextcall ("caml_spacetime_indirect_node_hole_ptr",
-          [| Int |], false, Debuginfo.none, None),
-        [callee; Cvar place_within_node; caller_node]))
+          [| Int |], false, None),
+        [callee; Cvar place_within_node; caller_node],
+        dbg))
 
 class virtual instruction_selection = object (self)
   inherit Selectgen.selector_generic as super
@@ -241,11 +251,11 @@ class virtual instruction_selection = object (self)
     | Some reg -> Some reg
 
   method private instrument_indirect_call ~env ~callee ~is_tail
-        ~label_after =
+      ~label_after =
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = Ident.create "callee" in
-    let env = Tbl.add callee_ident [| callee |] env in
+    let env = Selectgen.env_add callee_ident [| callee |] env in
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
@@ -311,7 +321,7 @@ class virtual instruction_selection = object (self)
       in
       disable_instrumentation <- false;
       let node = Lazy.force !spacetime_node_ident in
-      let node_reg = Tbl.find node env in
+      let node_reg = Selectgen.env_find node env in
       self#insert_moves node_temp_reg node_reg
     end
 
@@ -347,7 +357,7 @@ class virtual instruction_selection = object (self)
 
   method! select_allocation_args env =
     if self#can_instrument () then begin
-      let regs = Tbl.find (Lazy.force !spacetime_node_ident) env in
+      let regs = Selectgen.env_find (Lazy.force !spacetime_node_ident) env in
       match regs with
       | [| reg |] -> [| reg |]
       | _ -> failwith "Expected one register only for spacetime_node_ident"
@@ -384,7 +394,7 @@ class virtual instruction_selection = object (self)
   method! initial_env () =
     let env = super#initial_env () in
     if Config.spacetime then
-      Tbl.add (Lazy.force !spacetime_node_ident)
+      Selectgen.env_add (Lazy.force !spacetime_node_ident)
         (self#regs_for Cmm.typ_int) env
     else
       env

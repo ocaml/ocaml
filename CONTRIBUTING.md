@@ -7,9 +7,15 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
+This document assumes that you have a patch against the sources of the
+compiler distribution, that you wish to submit to the OCaml
+maintainers upstream. See [INSTALL.adoc](INSTALL.adoc) for details on
+how to build the compiler distribution from sources. See
+[HACKING.adoc](HACKING.adoc) for details on how to modify the sources.
+
 ## Contribution
 
-Adding or modifying code is far from the only way to contribute to the
+Modifying its sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
@@ -18,8 +24,8 @@ forums, or asking the good questions that highlight deficiencies in
 existing documentations, also help. We currently have more
 contributors willing to propose changes than contributors willing to
 review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of external
-contributions.
+requests is a good way to increase the integration bandwidth of
+external contributions.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -152,7 +158,7 @@ of the OCaml distribution.
 
 ### Changelog
 
-Any user-visible change should have a Changelog entry:
+Any user-visible change should have a `Changes` entry:
 
 - in the right section (named sections if major feature, generic
   "Bug fixes" and "Feature requests" otherwise)
@@ -163,7 +169,8 @@ Any user-visible change should have a Changelog entry:
   (several numbers separated by commas can be used)
 
 - maintaining the order: each section lists Mantis PRs first in ascending
-  numerical order, followed by Github PRs
+  numerical order, followed by Github PRs in ascending numerical order,
+  followed by changes that are not related to a PR.
 
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users

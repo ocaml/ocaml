@@ -8,7 +8,7 @@ STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
   Parsing.tex Printexc.tex Printf.tex Queue.tex Random.tex Scanf.tex \
   Set.tex Sort.tex Stack.tex Stream.tex String.tex StringLabels.tex Sys.tex \
   Weak.tex Callback.tex Buffer.tex StdLabels.tex \
-  Bytes.tex BytesLabels.tex
+  Bytes.tex BytesLabels.tex Spacetime.tex
 
 COMPILER_LIBS_INTF=Asthelper.tex Astmapper.tex Asttypes.tex \
 	Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex
@@ -51,7 +51,7 @@ VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/ot
 
 etex-files: $(BLURB)
 all: libs
-	./check-stdlib-modules $(CSLDIR)
+	sh ./check-stdlib-modules $(CSLDIR)
 
 libs: $(FILES)
 

@@ -33,28 +33,28 @@ let rec select_addr exp =
   match exp with
     Cconst_symbol s when not !Clflags.dlcode ->
       (Asymbol s, 0)
-  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Csubi, [arg; Cconst_int m]) ->
+  | Cop(Csubi, [arg; Cconst_int m], _) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg], _) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)]) ->
+  | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, 1 lsl shift), n lsl shift)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [arg; Cconst_int(2|4|8 as mult)]) ->
+  | Cop(Cmuli, [arg; Cconst_int(2|4|8 as mult)], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop(Cmuli, [Cconst_int(2|4|8 as mult); arg]) ->
+  | Cop(Cmuli, [Cconst_int(2|4|8 as mult); arg], _) ->
       begin match select_addr arg with
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop((Caddi | Caddv | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg1; arg2], _) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -115,6 +115,8 @@ let pseudoregs_for_operation op arg res =
   (* Other instructions are regular *)
   | _ -> raise Use_default
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
@@ -133,12 +135,20 @@ method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall (fn, _, _, _, _), args)
+  | Cop(Cextcall (fn, _, _, _), args, _)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
       super#is_simple_expr e
+
+method! effects_of e =
+  match e with
+  | Cop(Cextcall(fn, _, _, _), args, _)
+    when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | _ ->
+      super#effects_of e
 
 method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
@@ -170,18 +180,16 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer n when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_symbol s when not (!Clflags.pic_code || !Clflags.dlcode) ->
-      (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
 
-method! select_operation op args =
+method! select_operation op args dbg =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Caddv | Cadda | Csubi ->
-      begin match self#select_addressing Word_int (Cop(op, args)) with
+      begin match self#select_addressing Word_int (Cop(op, args, dbg)) with
         (Iindexed _, _)
-      | (Iindexed2 0, _) -> super#select_operation op args
+      | (Iindexed2 0, _) -> super#select_operation op args dbg
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
   (* Recognize float arithmetic with memory. *)
@@ -193,9 +201,9 @@ method! select_operation op args =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall("sqrt", _, false, _, _) ->
+  | Cextcall("sqrt", _, false, _) ->
      begin match args with
-       [Cop(Cload (Double|Double_u as chunk), [loc])] ->
+       [Cop(Cload ((Double|Double_u as chunk), _), [loc], _dbg)] ->
          let (addr, arg) = self#select_addressing chunk loc in
          (Ispecific(Ifloatsqrtf addr), [arg])
      | [arg] ->
@@ -206,34 +214,35 @@ method! select_operation op args =
   (* Recognize store instructions *)
   | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
-        [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
+        [loc; Cop(Caddi, [Cop(Cload _, [loc'], _); Cconst_int n], _)]
         when loc = loc' && self#is_immediate n ->
           let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
-  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _) ->
       (Ispecific (Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 32), args)
-  | Cextcall("caml_int64_direct_bswap", _, _, _, _)
-  | Cextcall("caml_nativeint_direct_bswap", _, _, _, _) ->
+  | Cextcall("caml_int64_direct_bswap", _, _, _)
+  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->
       (Iintop Imulh, args)
-  | _ -> super#select_operation op args
+  | _ -> super#select_operation op args dbg
 
 (* Recognize float arithmetic with mem *)
 
 method select_floatarith commutative regular_op mem_op args =
   match args with
-    [arg1; Cop(Cload (Double|Double_u as chunk), [loc2])] ->
+    [arg1; Cop(Cload ((Double|Double_u as chunk), _), [loc2], _)] ->
       let (addr, arg2) = self#select_addressing chunk loc2 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg1; arg2])
-  | [Cop(Cload (Double|Double_u as chunk), [loc1]); arg2] when commutative ->
+  | [Cop(Cload ((Double|Double_u as chunk), _), [loc1], _); arg2]
+        when commutative ->
       let (addr, arg1) = self#select_addressing chunk loc1 in
       (Ispecific(Ifloatarithmem(mem_op, addr)),
                  [arg2; arg1])

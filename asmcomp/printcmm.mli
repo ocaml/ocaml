@@ -17,11 +17,12 @@
 
 open Format
 
+val rec_flag : formatter -> Cmm.rec_flag -> unit
 val machtype_component : formatter -> Cmm.machtype_component -> unit
 val machtype : formatter -> Cmm.machtype_component array -> unit
 val comparison : Cmm.comparison -> string
 val chunk : Cmm.memory_chunk -> string
-val operation : Cmm.operation -> string
+val operation : Debuginfo.t -> Cmm.operation -> string
 val expression : formatter -> Cmm.expression -> unit
 val fundecl : formatter -> Cmm.fundecl -> unit
 val data : formatter -> Cmm.data_item list -> unit

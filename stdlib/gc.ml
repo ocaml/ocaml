@@ -47,7 +47,7 @@ external stat : unit -> stat = "caml_gc_stat"
 external quick_stat : unit -> stat = "caml_gc_quick_stat"
 external counters : unit -> (float * float * float) = "caml_gc_counters"
 external minor_words : unit -> (float [@unboxed])
-  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed"
 external get : unit -> control = "caml_gc_get"
 external set : control -> unit = "caml_gc_set"
 external minor : unit -> unit = "caml_gc_minor"
@@ -55,7 +55,7 @@ external major_slice : int -> int = "caml_gc_major_slice"
 external major : unit -> unit = "caml_gc_major"
 external full_major : unit -> unit = "caml_gc_full_major"
 external compact : unit -> unit = "caml_gc_compaction"
-external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+external get_minor_free : unit -> int = "caml_get_minor_free"
 external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
 external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"

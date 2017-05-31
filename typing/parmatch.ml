@@ -92,7 +92,7 @@ let rec compat p q =
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
   | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
   | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
@@ -136,13 +136,6 @@ let get_type_path ty tenv =
 
 open Format
 ;;
-
-let pretty_record_elision_mark ppf = function
-  | [] -> () (* should not happen, empty record pattern *)
-  | (_, lbl, _) :: q ->
-      (* we assume that there is no label repetitions here *)
-      if Array.length lbl.lbl_all > 1 + List.length q then
-        fprintf ppf ";@ _@ "
 
 let is_cons = function
 | {cstr_name = "::"} -> true
@@ -198,9 +191,17 @@ let rec pretty_val ppf v =
           (function
             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
-      fprintf ppf "@[{%a%a}@]"
-        pretty_lvals filtered_lvs
-        pretty_record_elision_mark filtered_lvs
+      begin match filtered_lvs with
+      | [] -> fprintf ppf "_"
+      | (_, lbl, _) :: q ->
+          let elision_mark ppf =
+            (* we assume that there is no label repetitions here *)
+             if Array.length lbl.lbl_all > 1 + List.length q then
+               fprintf ppf ";@ _@ "
+             else () in
+          fprintf ppf "@[{%a%t}@]"
+            pretty_lvals filtered_lvs elision_mark
+      end
   | Tpat_array vs ->
       fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
   | Tpat_lazy v ->
@@ -283,7 +284,7 @@ let pretty_matrix (pss : matrix) =
 let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(_, c1, _), Tpat_construct(_, c2, _) ->
-      c1.cstr_tag = c2.cstr_tag
+      Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
@@ -654,17 +655,39 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| _ -> fatal_error "Parmatch.full_match"
+| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
+| []
+  ->
+    assert false
 
+(* Written as a non-fragile matching, PR7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
 | None -> false
-| Some ext -> match env with
-  | ({pat_desc =
-      Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _)},_)}
-     as p, _) :: _ ->
-      let path = get_type_path p.pat_type p.pat_env in
-      Path.same path ext
-  | _ -> false
+| Some ext -> begin match env with
+  | [] -> assert false
+  | (p,_)::_ ->
+      begin match p.pat_desc with
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
+            let path = get_type_path p.pat_type p.pat_env in
+            Path.same path ext
+      | Tpat_construct
+          (_, {cstr_tag=(Cstr_extension _)},_) -> false
+      | Tpat_constant _|Tpat_tuple _|Tpat_variant _
+      | Tpat_record  _|Tpat_array _ | Tpat_lazy _
+        -> false
+      | Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _
+        -> assert false
+      end
+end
+
+module ConstructorTagHashtbl = Hashtbl.Make(
+  struct
+    type t = Types.constructor_tag
+    let hash = Hashtbl.hash
+    let equal = Types.equal_tag
+  end
+)
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
@@ -676,16 +699,16 @@ let complete_tags nconsts nconstrs tags =
       | Cstr_block i -> seen_constr.(i) <- true
       | _  -> assert false)
     tags ;
-  let r = ref [] in
+  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
   for i = 0 to nconsts-1 do
     if not seen_const.(i) then
-      r := Cstr_constant i :: !r
+      ConstructorTagHashtbl.add r (Cstr_constant i) ()
   done ;
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
-      r := Cstr_block i :: !r
+      ConstructorTagHashtbl.add r (Cstr_block i) ()
   done ;
-  !r
+  r
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
@@ -750,7 +773,9 @@ let complete_constrs p all_tags =
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
-    List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
+    List.filter
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
@@ -1486,7 +1511,7 @@ let rec le_pat p q =
   | _, Tpat_alias(q,_,_) -> le_pat p q
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_construct(_,c1,ps), Tpat_construct(_,c2,qs) ->
-      c1.cstr_tag = c2.cstr_tag && le_pats ps qs
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
       (l1 = l2 && le_pat p1 p2)
   | Tpat_variant(l1,None,_r1), Tpat_variant(l2,None,_) ->
@@ -1536,7 +1561,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     let r = lub p q in
     make_pat (Tpat_lazy r) p.pat_type p.pat_env
 | Tpat_construct (lid, c1,ps1), Tpat_construct (_,c2,ps2)
-      when  c1.cstr_tag = c2.cstr_tag  ->
+      when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
         make_pat (Tpat_construct (lid, c1,rs))
           p.pat_type p.pat_env

@@ -20,15 +20,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../config/s.h"
+#include "caml/s.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "../byterun/caml/mlvalues.h"
-#include "../byterun/caml/exec.h"
+#include "caml/mlvalues.h"
+#include "caml/exec.h"
 
 char * default_runtime_path = RUNTIME_NAME;
 

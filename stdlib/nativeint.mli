@@ -85,7 +85,7 @@ val max_int : nativeint
    or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : nativeint
-(** The greatest representable native integer,
+(** The smallest representable native integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -165,6 +165,10 @@ external of_string : string -> nativeint = "caml_nativeint_of_string"
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
+val of_string_opt: string -> nativeint option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
+
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)
 
@@ -178,7 +182,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for natives ints.
+(** The equal function for native ints.
     @since 4.03.0 *)
 
 (**/**)

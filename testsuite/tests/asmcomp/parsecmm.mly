@@ -20,14 +20,16 @@ let make_switch n selector caselist =
     List.iter (fun pos -> index.(pos) <- i) posl;
     actv.(i) <- e
   done;
-  Cswitch(selector, index, actv)
+  Cswitch(selector, index, actv, Debuginfo.none)
 
 let access_array base numelt size =
   match numelt with
     Cconst_int 0 -> base
-  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)])
+  | Cconst_int n -> Cop(Cadda, [base; Cconst_int(n * size)], Debuginfo.none)
   | _ -> Cop(Cadda, [base;
-                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)])])
+                     Cop(Clsl, [numelt; Cconst_int(Misc.log2 size)],
+                         Debuginfo.none)],
+             Debuginfo.none)
 
 %}
 
@@ -48,6 +50,7 @@ let access_array base numelt size =
 %token CATCH
 %token CHECKBOUND
 %token COLON
+%token DATA
 %token DIVF
 %token DIVI
 %token EOF
@@ -65,6 +68,7 @@ let access_array base numelt size =
 %token GEA
 %token GEF
 %token GEI
+%token GLOBAL
 %token GTA
 %token GTF
 %token GTI
@@ -82,6 +86,7 @@ let access_array base numelt size =
 %token LEI
 %token LET
 %token LOAD
+%token <Location.t> LOCATION
 %token LPAREN
 %token LSL
 %token LSR
@@ -135,11 +140,14 @@ phrase:
   | EOF         { raise End_of_file }
 ;
 fundecl:
-    LPAREN FUNCTION STRING LPAREN params RPAREN sequence RPAREN
+    LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
         {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
-         fun_dbg = Debuginfo.none} }
+         fun_dbg = debuginfo ()} }
 ;
+fun_name:
+    STRING              { $1 }
+  | IDENT               { $1 }
 params:
     oneparam params     { $1 :: $2 }
   | /**/                { [] }
@@ -170,14 +178,15 @@ expr:
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
-  | LPAREN APPLY expr exprlist machtype RPAREN
-                { Cop(Capply($5, Debuginfo.none), $3 :: List.rev $4) }
+  | LPAREN APPLY location expr exprlist machtype RPAREN
+                { Cop(Capply $6, $4 :: List.rev $5, debuginfo ?loc:$3 ()) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-               {Cop(Cextcall($3, $5, false, Debuginfo.none, None), List.rev $4)}
-  | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
-  | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
-  | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
-  | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4]) }
+               {Cop(Cextcall($3, $5, false, None), List.rev $4, debuginfo ())}
+  | LPAREN ALLOC exprlist RPAREN { Cop(Calloc, List.rev $3, debuginfo ()) }
+  | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3], debuginfo ()) }
+  | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4], debuginfo ()) }
+  | LPAREN unaryop expr RPAREN { Cop($2, [$3], debuginfo ()) }
+  | LPAREN binaryop expr expr RPAREN { Cop($2, [$3; $4], debuginfo ()) }
   | LPAREN SEQ sequence RPAREN { $3 }
   | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
@@ -186,26 +195,37 @@ expr:
           match $3 with
             Cconst_int x when x <> 0 -> $4
           | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(0, [], Cloop body, Ctuple []) }
-  | LPAREN CATCH sequence WITH sequence RPAREN { Ccatch(0, [], $3, $5) }
+        Ccatch(Recursive, [0, [], Cloop body], Ctuple []) }
+  | LPAREN EXIT IDENT exprlist RPAREN
+    { Cexit(find_label $3, List.rev $4) }
+  | LPAREN CATCH sequence WITH catch_handlers RPAREN
+    { let handlers = $5 in
+      List.iter (fun (_, l, _) -> List.iter unbind_ident l) handlers;
+      Ccatch(Recursive, handlers, $3) }
   | EXIT        { Cexit(0,[]) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
+  | LPAREN VAL expr expr RPAREN
+      { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+          debuginfo ()) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload Word_val, [access_array $3 $4 Arch.size_addr]) }
+      { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
+          Debuginfo.none) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload Word_int, [access_array $3 $4 Arch.size_int]) }
+      { Cop(Cload (Word_int, Mutable), [access_array $3 $4 Arch.size_int],
+          Debuginfo.none) }
   | LPAREN FLOATAREF expr expr RPAREN
-      { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
+      { Cop(Cload (Double_u, Mutable), [access_array $3 $4 Arch.size_float],
+          Debuginfo.none) }
   | LPAREN ADDRASET expr expr expr RPAREN
       { Cop(Cstore (Word_val, Assignment),
-            [access_array $3 $4 Arch.size_addr; $5]) }
+            [access_array $3 $4 Arch.size_addr; $5], Debuginfo.none) }
   | LPAREN INTASET expr expr expr RPAREN
       { Cop(Cstore (Word_int, Assignment),
-            [access_array $3 $4 Arch.size_int; $5]) }
+            [access_array $3 $4 Arch.size_int; $5], Debuginfo.none) }
   | LPAREN FLOATASET expr expr expr RPAREN
       { Cop(Cstore (Double_u, Assignment),
-            [access_array $3 $4 Arch.size_float; $5]) }
+            [access_array $3 $4 Arch.size_float; $5], Debuginfo.none) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
@@ -234,21 +254,20 @@ chunk:
   | FLOAT32                     { Single }
   | FLOAT64                     { Double }
   | FLOAT                       { Double_u }
-
+  | VAL                         { Word_val }
 ;
 unaryop:
-    LOAD chunk                  { Cload $2 }
-  | ALLOC                       { Calloc Debuginfo.none }
+    LOAD chunk                  { Cload ($2, Mutable) }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
-  | RAISE                       { Craise ($1, Debuginfo.none) }
+  | RAISE                       { Craise $1 }
   | ABSF                        { Cabsf }
 ;
 binaryop:
     STORE chunk                 { Cstore ($2, Assignment) }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
-  | MULI                        { Cmuli }
+  | STAR                        { Cmuli }
   | DIVI                        { Cdivi }
   | MODI                        { Cmodi }
   | AND                         { Cand }
@@ -280,7 +299,7 @@ binaryop:
   | LEF                         { Ccmpf Cle }
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
-  | CHECKBOUND                  { Ccheckbound Debuginfo.none }
+  | CHECKBOUND                  { Ccheckbound }
   | MULH                        { Cmulhi }
 ;
 sequence:
@@ -300,6 +319,7 @@ bind_ident:
 ;
 datadecl:
     LPAREN datalist RPAREN      { List.rev $2 }
+  | LPAREN DATA datalist RPAREN { List.rev $3 }
 ;
 datalist:
     datalist dataitem           { $2 :: $1 }
@@ -316,4 +336,24 @@ dataitem:
   | KSTRING STRING              { Cstring $2 }
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }
+  | GLOBAL STRING               { Cglobal_symbol $2 }
 ;
+catch_handlers:
+  | catch_handler
+    { [$1] }
+  | catch_handler AND catch_handlers
+    { $1 :: $3 }
+
+catch_handler:
+  | sequence
+    { 0, [], $1 }
+  | LPAREN IDENT bind_identlist RPAREN sequence
+    { find_label $2, $3, $5 }
+
+bind_identlist:
+    /**/                        { [] }
+  | bind_ident bind_identlist   { $1 :: $2 }
+
+location:
+    /**/                        { None }
+  | LOCATION                    { Some $1 }

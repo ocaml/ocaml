@@ -190,7 +190,7 @@ let merge (t1 : t) (t2 : t) : t =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
         t2.sets_of_closures;
     closures = Closure_id.Map.disjoint_union t1.closures t2.closures;
-    symbol_id = Symbol.Map.disjoint_union t1.symbol_id t2.symbol_id;
+    symbol_id = Symbol.Map.disjoint_union ~print:Export_id.print t1.symbol_id t2.symbol_id;
     offset_fun = Closure_id.Map.disjoint_union
         ~eq:int_eq t1.offset_fun t2.offset_fun;
     offset_fv = Var_within_closure.Map.disjoint_union
@@ -200,6 +200,7 @@ let merge (t1 : t) (t2 : t) : t =
         t2.constant_sets_of_closures;
     invariant_params =
       Set_of_closures_id.Map.disjoint_union
+        ~print:(Variable.Map.print Variable.Set.print)
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
   }
@@ -293,7 +294,7 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_set_of_closures ppf
-      { set_of_closures_id; bound_vars; aliased_symbol } =
+      { set_of_closures_id; bound_vars; aliased_symbol; results } =
     if Set_of_closures_id.Set.mem set_of_closures_id !printed_set_of_closures
     then fprintf ppf "%a" Set_of_closures_id.print set_of_closures_id
     else begin
@@ -304,10 +305,11 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
         | Some symbol ->
           Format.fprintf ppf "@ (alias: %a)" Symbol.print symbol
       in
-      fprintf ppf "{%a: %a%a}"
+      fprintf ppf "{%a: %a%a => %a}"
         Set_of_closures_id.print set_of_closures_id
         print_binding bound_vars
         print_alias aliased_symbol
+        (Closure_id.Map.print print_approx) results
     end
   and print_binding ppf bound_vars =
     Var_within_closure.Map.iter (fun clos_id approx ->

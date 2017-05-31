@@ -12,16 +12,14 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include <assert.h>
 #include "caml/fail.h"
 #include "caml/mlvalues.h"
 
-int ensure_spacetime_dot_o_is_included = 42;
+int caml_ensure_spacetime_dot_o_is_included = 42;
 
 CAMLprim value caml_spacetime_only_works_for_native_code(value foo, ...)
 {
   caml_failwith("Spacetime profiling only works for native code");
-  assert(0);  /* unreachable */
 }
 
 uintnat caml_spacetime_my_profinfo (void)
@@ -32,4 +30,9 @@ uintnat caml_spacetime_my_profinfo (void)
 CAMLprim value caml_spacetime_enabled (value v_unit)
 {
   return Val_false;  /* running in bytecode */
+}
+
+CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+{
+  return Val_unit;
 }

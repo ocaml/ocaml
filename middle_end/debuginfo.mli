@@ -37,3 +37,7 @@ val concat: t -> t -> t
 val inline: Location.t -> t -> t
 
 val compare : t -> t -> int
+
+val hash : t -> int
+
+val print_compact : Format.formatter -> t -> unit

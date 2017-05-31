@@ -25,8 +25,8 @@ CAMLprim value unix_execve(value path, value args, value env)
   argv = cstringvect(args, "execve");
   envp = cstringvect(env, "execve");
   (void) execve(String_val(path), argv, envp);
-  stat_free((char *) argv);
-  stat_free((char *) envp);
+  caml_stat_free((char *) argv);
+  caml_stat_free((char *) envp);
   uerror("execve", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */

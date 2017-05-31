@@ -1554,7 +1554,7 @@ let inline_lazy_force_switch arg loc =
                            ap_args=[varg];
                            ap_inlined=Default_inline;
                            ap_specialised=Default_specialise}) ];
-               sw_failaction = Some varg } ))))
+               sw_failaction = Some varg }, loc ))))
 
 let inline_lazy_force arg loc =
   if !Clflags.native_code then
@@ -1934,7 +1934,7 @@ module SArg = struct
   let make_isout h arg = Lprim (Pisout, [h ; arg],Location.none)
   let make_isin h arg = Lprim (Pnot,[make_isout h arg],Location.none)
   let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
-  let make_switch arg cases acts =
+  let make_switch loc arg cases acts =
     let l = ref [] in
     for i = Array.length cases-1 downto 0 do
       l := (i,acts.(cases.(i))) ::  !l
@@ -1942,7 +1942,7 @@ module SArg = struct
     Lswitch(arg,
             {sw_numconsts = Array.length cases ; sw_consts = !l ;
              sw_numblocks = 0 ; sw_blocks =  []  ;
-             sw_failaction = None})
+             sw_failaction = None}, loc)
   let make_catch  = make_catch_delayed
   let make_exit = make_exit
 
@@ -2134,10 +2134,10 @@ let as_interval fail low high l =
   | None -> as_interval_nofail l
   | Some act -> as_interval_canfail act low high l)
 
-let call_switcher fail arg low high int_lambda_list =
+let call_switcher loc fail arg low high int_lambda_list =
   let edges, (cases, actions) =
     as_interval fail low high int_lambda_list in
-  Switcher.zyva edges arg cases actions
+  Switcher.zyva loc edges arg cases actions
 
 
 let rec list_as_pat = function
@@ -2239,13 +2239,13 @@ let combine_constant loc arg cst partial ctx def
         let int_lambda_list =
           List.map (function Const_int n, l -> n,l | _ -> assert false)
             const_lambda_list in
-        call_switcher fail arg min_int max_int int_lambda_list
+        call_switcher loc fail arg min_int max_int int_lambda_list
     | Const_char _ ->
         let int_lambda_list =
           List.map (function Const_char c, l -> (Char.code c, l)
             | _ -> assert false)
             const_lambda_list in
-        call_switcher fail arg 0 255 int_lambda_list
+        call_switcher loc fail arg 0 255 int_lambda_list
     | Const_string _ ->
 (* Note as the bytecode compiler may resort to dichotomic search,
    the clauses of stringswitch  are sorted with duplicates removed.
@@ -2377,7 +2377,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               case *)
               Lifthenelse(arg, act2, act1)
           | (n,0,_,[])  -> (* The type defines constant constructors only *)
-              call_switcher fail_opt arg 0 (n-1) consts
+              call_switcher loc fail_opt arg 0 (n-1) consts
           | (n, _, _, _) ->
               let act0  =
                 (* = Some act when all non-const constructors match to act *)
@@ -2392,7 +2392,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
               | Some act ->
                   Lifthenelse
                     (Lprim (Pisint, [arg], loc),
-                     call_switcher
+                     call_switcher loc
                        fail_opt arg
                        0 (n-1) consts,
                      act)
@@ -2404,7 +2404,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
                      sw_failaction = fail_opt} in
                   let hs,sw = share_actions_sw sw in
                   let sw = reintroduce_fail sw in
-                  hs (Lswitch (arg,sw)) in
+                  hs (Lswitch (arg,sw,loc)) in
     lambda1, jumps_union local_jumps total1
   end
 
@@ -2413,14 +2413,14 @@ let make_test_sequence_variant_constant fail arg int_lambda_list =
     as_interval fail min_int max_int int_lambda_list in
   Switcher.test_sequence arg cases actions
 
-let call_switcher_variant_constant fail arg int_lambda_list =
-  call_switcher fail arg min_int max_int int_lambda_list
+let call_switcher_variant_constant loc fail arg int_lambda_list =
+  call_switcher loc fail arg min_int max_int int_lambda_list
 
 
 let call_switcher_variant_constr loc fail arg int_lambda_list =
   let v = Ident.create "variant" in
   Llet(Alias, Pgenval, v, Lprim(Pfield 0, [arg], loc),
-       call_switcher
+       call_switcher loc
          fail (Lvar v) min_int max_int int_lambda_list)
 
 let combine_variant loc row arg partial ctx def
@@ -2466,7 +2466,7 @@ let combine_variant loc row arg partial ctx def
           end
       | (_, _) ->
           let lam_const =
-            call_switcher_variant_constant
+            call_switcher_variant_constant loc
               fail arg consts
           and lam_nonconst =
             call_switcher_variant_constr loc
@@ -2482,7 +2482,7 @@ let combine_array loc arg kind partial ctx def
   let lambda1 =
     let newvar = Ident.create "len" in
     let switch =
-      call_switcher
+      call_switcher loc
         fail (Lvar newvar)
         0 max_int len_lambda_list in
     bind
@@ -2614,12 +2614,12 @@ let rec lower_bind v arg lam = match lam with
         Lifthenelse (cond, ifso, lower_bind v arg ifnot)
     | _,_,_ -> bind Alias v arg lam
     end
-| Lswitch (ls,({sw_consts=[i,act] ; sw_blocks = []} as sw))
+| Lswitch (ls,({sw_consts=[i,act] ; sw_blocks = []} as sw), loc)
     when not (approx_present v ls) ->
-      Lswitch (ls, {sw with sw_consts = [i,lower_bind v arg act]})
-| Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as sw))
+      Lswitch (ls, {sw with sw_consts = [i,lower_bind v arg act]}, loc)
+| Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as sw), loc)
     when not (approx_present v ls) ->
-      Lswitch (ls, {sw with sw_blocks = [i,lower_bind v arg act]})
+      Lswitch (ls, {sw with sw_blocks = [i,lower_bind v arg act]}, loc)
 | Llet (Alias, k, vv, lv, l) ->
     if approx_present v lv then
       bind Alias v arg lam
@@ -2687,7 +2687,7 @@ let rec name_pattern default = function
 let arg_to_var arg cls = match arg with
 | Lvar v -> v,arg
 | _ ->
-    let v = name_pattern "match" cls in
+    let v = name_pattern "*match*" cls in
     v,Lvar v
 
 
@@ -3175,7 +3175,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
       let next, nexts = split_precompile None pm1 in
 
       let size = List.length paraml
-      and idl = List.map (fun _ -> Ident.create "match") paraml in
+      and idl = List.map (fun _ -> Ident.create "*match*") paraml in
       let args =  List.map (fun id -> Lvar id, Alias) idl in
 
       let flat_next = flatten_precompiled size args next
@@ -3212,7 +3212,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
 let param_to_var param = match param with
 | Lvar v -> v,None
-| _ -> Ident.create "match",Some param
+| _ -> Ident.create "*match*",Some param
 
 let bind_opt (v,eo) k = match eo with
 | None -> k

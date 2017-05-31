@@ -31,6 +31,16 @@ val min : t
 val max : t
 (** [max] is U+10FFFF. *)
 
+val bom : t
+(** [bom] is U+FEFF, the
+    {{:http://unicode.org/glossary/#byte_order_mark}byte order mark} (BOM)
+    character. *)
+
+val rep : t
+(** [rep] is U+FFFD, the
+    {{:http://unicode.org/glossary/#replacement_character}replacement}
+    character. *)
+
 val succ : t -> t
 (** [succ u] is the scalar value after [u] in the set of Unicode scalar
     values.
@@ -82,9 +92,3 @@ val compare : t -> t -> int
 
 val hash : t -> int
 (** [hash u] associates a non-negative integer to [u]. *)
-
-val dump : Format.formatter -> t -> unit
-(** [dump ppf u] prints a representation of [u] on [ppf] using
-    only US-ASCII encoded characters according to the Unicode
-    {{:http://www.unicode.org/versions/latest/appA.pdf}notational
-    convention for code points}. *)

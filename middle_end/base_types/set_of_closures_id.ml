@@ -25,3 +25,4 @@ include Identifiable.Make (Unit_id)
 
 let create = Unit_id.create
 let get_compilation_unit = Unit_id.unit
+let name = Unit_id.name

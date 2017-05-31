@@ -220,15 +220,14 @@ let load_lambda ppf ~module_ident ~required_globals lam size =
   in
   let fn = Filename.chop_extension dll in
   if not Config.flambda then
-    Asmgen.compile_implementation_clambda ~source_provenance:Timings.Toplevel
+    Asmgen.compile_implementation_clambda
       ~toplevel:need_symbol fn ppf
       { Lambda.code=slam ; main_module_block_size=size;
         module_ident; required_globals }
   else
-    Asmgen.compile_implementation_flambda ~source_provenance:Timings.Toplevel
+    Asmgen.compile_implementation_flambda
       ~required_globals ~backend ~toplevel:need_symbol fn ppf
-      (Middle_end.middle_end ppf
-         ~source_provenance:Timings.Toplevel ~prefixname:"" ~backend ~size
+      (Middle_end.middle_end ppf ~prefixname:"" ~backend ~size
          ~module_ident ~module_initializer:slam ~filename:"toplevel");
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
   Sys.remove (fn ^ ext_obj);
@@ -281,8 +280,7 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       incr phrase_seqid;
       phrase_name := Printf.sprintf "TOP%i" !phrase_seqid;
-      Compilenv.reset ~source_provenance:Timings.Toplevel
-        ?packname:None !phrase_name;
+      Compilenv.reset ?packname:None !phrase_name;
       Typecore.reset_delayed_checks ();
       let sstr, rewritten =
         match sstr with

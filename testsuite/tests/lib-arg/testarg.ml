@@ -124,6 +124,34 @@ let test_arg args = test spec (ref args);;
 test_arg args1;;
 test_arg args2;;
 
+
+let safe_rm file =
+  try
+    Sys.remove file
+  with _ -> ()
+
+let test_rw argv =
+  safe_rm "test_rw";
+  safe_rm "test_rw0";
+  Arg.write_arg "test_rw" argv;
+  Arg.write_arg0 "test_rw0" argv;
+  let argv' = Arg.read_arg "test_rw" in
+  let argv0 = Arg.read_arg0 "test_rw0" in
+  let f x y =
+    if x <> y then
+      Printf.printf "%20s %c %-20s\n%!" x (if x = y then '=' else '#') y
+  in
+  Array.iter2 f argv argv';
+  Array.iter2 f argv argv0;
+  safe_rm "test_rw";
+  safe_rm "test_rw0";
+;;
+
+test_rw args1;;
+test_rw args2;;
+test_rw (Array.make 0 "");;
+test_rw [|"";""|];;
+
 let f_expand r msg arg s =
   if s <> r then error msg;
   arg;
@@ -159,3 +187,18 @@ let test_expand spec argv reference =
 
 test_expand (expand1@spec) args1 expected1;;
 test_expand (expand2@spec) args2 expected2;;
+
+let test_align () =
+  let spec =
+    [
+      "-foo", Arg.String ignore, "FOO Do foo with FOO";
+      "-bar", Arg.Tuple [Arg.String ignore; Arg.String ignore], "FOO BAR\tDo bar with FOO and BAR";
+      "-cha", Arg.Unit ignore, " Another option";
+      "-sym", Arg.Symbol (["a"; "b"], ignore), "\ty\tfoo";
+      "-sym2", Arg.Symbol (["a"; "b"], ignore), "x bar";
+    ]
+  in
+  print_endline (Arg.usage_string (Arg.align spec) "")
+;;
+
+test_align ();;

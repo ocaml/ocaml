@@ -16,6 +16,7 @@
 BASEDIR=../..
 
 INCLUDES=\
+  -I $(OTOPDIR)/parsing \
   -I $(OTOPDIR)/utils \
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/middle_end \
@@ -39,6 +40,8 @@ all:
 	@$(MAKE) arch codegen
 	@$(MAKE) tests
 
+main.cmo: parsecmm.cmo
+
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
 
@@ -50,13 +53,20 @@ lexcmm.ml: lexcmm.mll
 
 MLCASES=optargs staticalloc bind_tuples is_static register_typing \
   register_typing_switch
+ARGS_optargs=-g
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
-MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2
+MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2 \
+  static_float_array_flambda static_float_array_flambda_opaque
 ARGS_is_static_flambda=\
   -I $(OTOPDIR)/byterun is_in_static_data.c is_static_flambda_dep.ml
+ARGS_static_float_array_flambda=\
+  -I $(OTOPDIR)/byterun is_in_static_data.c simple_float_const.ml
+ARGS_static_float_array_flambda_opaque=\
+  -I $(OTOPDIR)/byterun is_in_static_data.c -opaque simple_float_const_opaque.ml
 
 CASES=fib tak quicksort quicksort2 soli \
-      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
+      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
+      catch-try catch-rec even-odd even-odd-spill pgcd
 ARGS_fib=-DINT_INT -DFUN=fib main.c
 ARGS_tak=-DUNIT_INT -DFUN=takmain main.c
 ARGS_quicksort=-DSORT -DFUN=quicksort main.c
@@ -69,9 +79,15 @@ ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
 ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
+ARGS_catch-try=-DINT_INT -DFUN=catch_exit main.c
+ARGS_catch-rec=-DINT_INT -DFUN=catch_fact main.c
+ARGS_even-odd=-DINT_INT -DFUN=is_even main.c
+ARGS_even-odd-spill=-DINT_INT -DFUN=is_even main.c
+ARGS_pgcd=-DINT_INT -DFUN=pgcd_30030 main.c
 
 skips:
-	@for c in $(CASES) $(MLCASES); do \
+	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
@@ -84,11 +100,11 @@ one_ml_flambda:
 	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
-	   echo "=> skipped"; \
+	   echo " => skipped"; \
 	 fi
 
 one:
-	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
@@ -111,11 +127,9 @@ SKIP=true
 endif
 
 ifeq ($(CCOMPTYPE),msvc)
-CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
-CFLAGS=$(NATIVECCCOMPOPTS)
+CCOMP=set -o pipefail ; $(CC) $(CFLAGS) /Fe$(1) | tail -n +2
 else
-CC=$(NATIVECC) $(CFLAGS) -o $(1)
-CFLAGS=$(NATIVECCCOMPOPTS) -g
+CCOMP=$(CC) $(CFLAGS) -o $(1)
 endif
 tests: $(CASES:=.$(O))
 	@for c in $(CASES); do \

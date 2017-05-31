@@ -117,7 +117,7 @@ static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y,
                                           int button,
                                           int keypressed, int key)
 {
-  value res = alloc_small(5, 0);
+  value res = caml_alloc_small(5, 0);
   Field(res, 0) = Val_int(mouse_x);
   Field(res, 1) = Val_int(grwindow.height - 1 - mouse_y);
   Field(res, 2) = Val_bool(button);

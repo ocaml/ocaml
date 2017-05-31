@@ -222,9 +222,7 @@ let escaped_newlines = ref false
 (* Warn about Latin-1 characters used in idents *)
 
 let warn_latin1 lexbuf =
-  Location.prerr_warning (Location.curr lexbuf)
-    (Warnings.Deprecated "ISO-Latin1 characters in identifiers")
-;;
+  Location.deprecated (Location.curr lexbuf)"ISO-Latin1 characters in identifiers"
 
 let handle_docstrings = ref true
 let comment_list = ref []
@@ -757,13 +755,19 @@ and skip_hash_bang = parse
           Docstrings.register doc;
           add_docstring_comment doc;
           let docs' =
-            match docs, lines with
-            | Initial, (NoLine | NewLine) -> After [doc]
-            | Initial, BlankLine -> Before([], [], [doc])
-            | After a, (NoLine | NewLine) -> After (doc :: a)
-            | After a, BlankLine -> Before (a, [], [doc])
-            | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
-            | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
+            if Docstrings.docstring_body doc = "/*" then
+              match docs with
+              | Initial -> Before([], [doc], [])
+              | After a -> Before (a, [doc], [])
+              | Before(a, f, b) -> Before(a, doc :: b @ f, [])
+            else
+              match docs, lines with
+              | Initial, (NoLine | NewLine) -> After [doc]
+              | Initial, BlankLine -> Before([], [], [doc])
+              | After a, (NoLine | NewLine) -> After (doc :: a)
+              | After a, BlankLine -> Before (a, [], [doc])
+              | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
+              | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
           in
           loop NoLine docs' lexbuf
       | tok ->
