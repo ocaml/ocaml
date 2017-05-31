@@ -601,6 +601,8 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
+       | Lev_module_definition ident ->
+         Format.asprintf "module-defn(%a)" Ident.print ident
       in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname
