@@ -1011,7 +1011,7 @@ case "$arch,$system" in
   arm,netbsd) profiling='true';;
   amd64,gnu) profiling='true';;
   arm,linux*) profiling='true';;
-  power,elf) profiling='true';;
+  power,linux) profiling='true';;
   power,bsd*) profiling='true';;
   *) profiling='false';;
 esac

@@ -931,13 +931,6 @@ let emit_instr i =
 (* Emit the sequence of instructions forming the function's body *)
 
 let emit_all ~fun_body =
-  begin match abi with
-  | ELF32 | ELF64v1 -> ()
-  | ELF64v2 ->
-    `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
-    `	addi	2, 2, (.TOC. - 0b)@l\n`;
-    `	.localentry {emit_symbol (LR.no_reloc !function_name)}, . - 0b\n`
-  end;
   let rec emit_all i =
     match i.desc with
     | Lend -> ()
@@ -977,6 +970,13 @@ let prepare _fundecl =
   stack_offset := 0;
   call_gc_label := 0;
   jumptables := []; jumptables_lbl := -1;
+  begin match abi with
+  | ELF32 | ELF64v1 -> ()
+  | ELF64v2 ->
+    `0:	addis	2, 12, (.TOC. - 0b)@ha\n`;
+    `	addi	2, 2, (.TOC. - 0b)@l\n`;
+    `	.localentry {emit_symbol (LR.no_reloc !function_name)}, . - 0b\n`
+  end;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() in
   if n > 0 then begin
@@ -1029,7 +1029,7 @@ let after_body () =
     List.iter (fun lbl ->
         D.between_labels_32bit ~upper:lbl ~lower:!jumptables_lbl)
       (List.rev !jumptables)
-    end
+  end
 
 let fundecl decl =
   (* Emit the function descriptor if using the ELF64v1 ABI.  The function's

@@ -697,7 +697,7 @@ let emit_instr fallthrough i =
       done;
       D.switch_to_section Text
   | Lsetuptrap lbl ->
-     I.call (label_operand lbl)
+      I.call (label_operand lbl)
   | Lpushtrap ->
       D.cfi_adjust_cfa_offset ~bytes:8;
       I.push r14;
