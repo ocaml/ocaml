@@ -64,9 +64,11 @@ The following modules provides hooks for compiler plugins:
 \item \ahref{libref/Typemod.html}{Module \texttt{Typemod}:
 OCaml module type checking}
 \item \ahref{libref/Simplif.html}{Module \texttt{Simplif}: Lambda simplification}
+\item \ahref{libref/Clflags.html}{Module \texttt{Clflags}: command line flags}
 \end{links}
 \else
 \input{Pparse.tex}
 \input{Typemod.tex}
 \input{Simplif.tex}
+\input{Clflags.tex}
 \fi

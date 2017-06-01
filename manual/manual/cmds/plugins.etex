@@ -27,6 +27,10 @@ Similarly, the intermediary lambda representation can be modified by using the
 hooks provided in the
 \ifouthtml\ahref{libref/Simplif.html}{\texttt{Simplif} module}
 \else\texttt{Simplif} module (see section~\ref{Simplif})\fi.
+A plugin can also add new options to a tool through the
+"Clflags.add_arguments" function (see
+\ifouthtml\ahref{libref/Clflags.html}{\texttt{Clflags} module}
+\else\texttt{Clflags} module (see section~\ref{Clflags})\fi).
 
 Plugins are dynamically loaded and need to be compiled in the same mode (i.e.
 native or bytecode) that the tool they extend.
