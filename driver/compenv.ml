@@ -405,6 +405,7 @@ let read_one_param ppf position name v =
     can_discard := v ::!can_discard
 
   | "timings" -> set "timings" [ print_timings ] v
+  | "live-words" -> set "live-words" [ record_max_live_words ] v
 
   | "plugin" -> !load_plugin v
 

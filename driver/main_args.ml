@@ -463,6 +463,10 @@ let mk_dtimings f =
   "-dtimings", Arg.Unit f, " Print timings"
 ;;
 
+let mk_dlive_words f =
+  "-dlive-words", Arg.Unit f, " Print maximal heap size"
+;;
+
 let mk_unbox_closures f =
   "-unbox-closures", Arg.Unit f,
   " Pass free variables via specialised arguments rather than closures"
@@ -843,6 +847,7 @@ module type Compiler_options = sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+  val _dlive_words : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -1070,6 +1075,7 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
+    mk_dlive_words F._dlive_words;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1263,6 +1269,7 @@ struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dlive_words F._dlive_words;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;

@@ -125,6 +125,7 @@ let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let print_timings = ref false           (* -dtimings *)
+let record_max_live_words = ref false   (* -dlive-words *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
