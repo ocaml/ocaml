@@ -54,6 +54,12 @@ let bind_cases l =
     )
     l
 
+let record_module_binding scope mb =
+  Stypes.record (Stypes.An_ident
+                   (mb.mb_name.loc,
+                    mb.mb_name.txt,
+                    Annot.Idef scope))
+
 let rec iterator ~scope rebuild_env =
   let super = Tast_mapper.default in
   let class_expr sub node =
@@ -99,6 +105,9 @@ let rec iterator ~scope rebuild_env =
     | Texp_function { cases = f; }
     | Texp_try (_, f) ->
         bind_cases f
+    | Texp_letmodule (_, modname, _, body ) ->
+        Stypes.record (Stypes.An_ident
+                       (modname.loc,modname.txt,Annot.Idef body.exp_loc))
     | _ -> ()
     end;
     Stypes.record (Stypes.Ti_expr exp);
@@ -109,21 +118,28 @@ let rec iterator ~scope rebuild_env =
     super.pat sub p
   in
 
-  let structure_item_rem sub s rem =
-    begin match s with
-    | {str_desc = Tstr_value (rec_flag, bindings); str_loc = loc} ->
-        let open Location in
+  let structure_item_rem sub str rem =
+    let open Location in
+    let loc = str.str_loc in
+    begin match str.str_desc with
+    | Tstr_value (rec_flag, bindings) ->
         let doit loc_start = bind_bindings {scope with loc_start} bindings in
         begin match rec_flag, rem with
         | Recursive, _ -> doit loc.loc_start
         | Nonrecursive, [] -> doit loc.loc_end
         | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start
         end
+    | Tstr_module mb ->
+        record_module_binding
+          { scope with Location.loc_start = loc.loc_end } mb
+    | Tstr_recmodule mbs ->
+        List.iter (record_module_binding
+                   { scope with Location.loc_start = loc.loc_start }) mbs
     | _ ->
         ()
     end;
-    Stypes.record_phrase s.str_loc;
-    super.structure_item sub s
+    Stypes.record_phrase loc;
+    super.structure_item sub str
   in
   let structure_item sub s =
     (* This will be used for Partial_structure_item.
@@ -153,19 +169,45 @@ let binary_part iter x =
   | Partial_signature_item x -> app iter.signature_item x
   | Partial_module_type x -> app iter.module_type x
 
-let gen_annot target_filename filename
-              {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
+(* Save cmt information as faked annotations, attached to
+   Location.none, on top of the .annot file. Only when -save-cmt-info is
+   provided to ocaml_cmt.
+*)
+let record_cmt_info cmt =
+  let location_none = {
+    Location.none with Location.loc_ghost = false }
+  in
+  let location_file file = {
+    Location.none with
+      Location.loc_start = {
+        Location.none.Location.loc_start with
+          Lexing.pos_fname = file }}
+  in
+  let record_info name value =
+    let ident = Printf.sprintf ".%s" name in
+    Stypes.record (Stypes.An_ident (location_none, ident,
+                                    Annot.Idef (location_file value)))
+  in
+  let open Cmt_format in
+  (* record in reverse order to get them in correct order... *)
+  List.iter (fun dir -> record_info "include" dir) (List.rev cmt.cmt_loadpath);
+  record_info "chdir" cmt.cmt_builddir;
+  (match cmt.cmt_sourcefile with
+    None -> () | Some file -> record_info "source" file)
+
+let gen_annot ?(save_cmt_info=false) target_filename filename cmt =
   let open Cmt_format in
   Envaux.reset_cache ();
-  Config.load_path := cmt_loadpath;
+  Config.load_path := cmt.cmt_loadpath @ !Config.load_path;
   let target_filename =
     match target_filename with
     | None -> Some (filename ^ ".annot")
     | Some "-" -> None
     | Some _ -> target_filename
   in
-  let iterator = iterator ~scope:Location.none cmt_use_summaries in
-  match cmt_annots with
+  if save_cmt_info then record_cmt_info cmt;
+  let iterator = iterator ~scope:Location.none cmt.cmt_use_summaries in
+  match cmt.cmt_annots with
   | Implementation typedtree ->
       ignore (iterator.structure iterator typedtree);
       Stypes.dump target_filename
@@ -175,26 +217,27 @@ let gen_annot target_filename filename
   | Partial_implementation parts ->
       Array.iter (binary_part iterator) parts;
       Stypes.dump target_filename
-  | _ ->
+  | Packed _ ->
+      Printf.fprintf stderr "Packed files not yet supported\n%!";
+      Stypes.dump target_filename
+  | Partial_interface _ ->
       Printf.fprintf stderr "File was generated with an error\n%!";
       exit 2
-
-
 
 let gen_ml target_filename filename cmt =
   let (printer, ext) =
     match cmt.Cmt_format.cmt_annots with
       | Cmt_format.Implementation typedtree ->
-        (fun ppf -> Pprintast.structure ppf
+          (fun ppf -> Pprintast.structure ppf
                                         (Untypeast.untype_structure typedtree)),
-        ".ml"
+          ".ml"
       | Cmt_format.Interface typedtree ->
-        (fun ppf -> Pprintast.signature ppf
+          (fun ppf -> Pprintast.signature ppf
                                         (Untypeast.untype_signature typedtree)),
-        ".mli"
+          ".mli"
       | _ ->
         Printf.fprintf stderr "File was generated with an error\n%!";
-        exit 2
+          exit 2
   in
   let target_filename = match target_filename with
       None -> Some (filename ^ ext)

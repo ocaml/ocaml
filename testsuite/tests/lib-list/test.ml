@@ -16,6 +16,23 @@ let () =
   assert (not (List.exists (fun a -> a < 0) l));
   assert (not (List.exists (fun a -> a > 9) l));
   assert (List.exists (fun _ -> true) l);
+
+  assert (List.compare_lengths [] [] = 0);
+  assert (List.compare_lengths [1;2] ['a';'b'] = 0);
+  assert (List.compare_lengths [] [1;2] < 0);
+  assert (List.compare_lengths ['a'] [1;2] < 0);
+  assert (List.compare_lengths [1;2] [] > 0);
+  assert (List.compare_lengths [1;2] ['a'] > 0);
+
+  assert (List.compare_length_with [] 0 = 0);
+  assert (List.compare_length_with [] 1 < 0);
+  assert (List.compare_length_with [] (-1) > 0);
+  assert (List.compare_length_with [] max_int < 0);
+  assert (List.compare_length_with [] min_int > 0);
+  assert (List.compare_length_with [1] 0 > 0);
+  assert (List.compare_length_with ['1'] 1 = 0);
+  assert (List.compare_length_with ['1'] 2 < 0);
+  ()
 ;;
 
 (* Empty test case *)

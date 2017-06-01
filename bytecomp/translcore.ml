@@ -576,12 +576,15 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string loc * module_expr
 
-let rec push_defaults loc bindings cases partial =
+let rec push_defaults loc bindings pushing cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] ->
-      let cases = push_defaults exp.exp_loc bindings cases partial in
+        as exp}] when pushing || bindings = [] ->
+      (* Stop pushing when there is a non-labeled argument,
+         and there are default bindings to discharge *)
+      let cases = push_defaults
+          exp.exp_loc bindings (arg_label <> Nolabel) cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
@@ -589,14 +592,14 @@ let rec push_defaults loc bindings cases partial =
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#modulepat"},_];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [case] ->
@@ -625,7 +628,7 @@ let rec push_defaults loc bindings cases partial =
                           })},
              cases, [], partial) }
       in
-      push_defaults loc bindings
+      push_defaults loc bindings pushing
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
           c_guard=None; c_rhs=exp}]
         Total
@@ -740,7 +743,7 @@ and transl_exp0 e =
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] cases partial in
+            let pl = push_defaults e.exp_loc [] true cases partial in
             transl_function e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
@@ -1029,10 +1032,16 @@ and transl_exp0 e =
                             (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(id, _, modl, body) ->
-      Llet(Strict, Pgenval, id,
-           !transl_module Tcoerce_none None modl,
-           transl_exp body)
+  | Texp_letmodule(id, loc, modl, body) ->
+      let defining_expr =
+        Levent (!transl_module Tcoerce_none None modl, {
+          lev_loc = loc.loc;
+          lev_kind = Lev_module_definition id;
+          lev_repr = None;
+          lev_env = Env.summary Env.empty;
+        })
+      in
+      Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
   | Texp_letexception(cd, body) ->
       Llet(Strict, Pgenval,
            cd.ext_id, transl_extension_constructor e.exp_env None cd,

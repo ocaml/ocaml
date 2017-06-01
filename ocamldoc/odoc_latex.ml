@@ -1325,7 +1325,7 @@ class latex =
               self#generate_for_top_module fmt m
           )
           module_list ;
-        if !Global.with_trailer then ps fmt "\\end{document}";
+        if !Global.with_trailer then ps fmt "\\end{document}\n";
         Format.pp_print_flush fmt ();
         close_out chanout
       with

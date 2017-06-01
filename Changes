@@ -31,6 +31,12 @@ Working version
 - GPR#1150: Fix typo in arm64 assembler directives
   (KC Sivaramakrishnan)
 
+- GPR#1143: tweaked several allocation functions in the runtime by
+  checking for likely conditions before unlikely ones and eliminating
+  some redundant checks.
+  (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
+  Mark Shinwell and Leo White)
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.
@@ -40,6 +46,12 @@ Working version
   binding in a map or create a new binding if the key had no binding
   (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
   Gabriel Scherer)
+
+- PR#7515, GPR#1147: Arg.align now optionally uses the tab character '\t' to
+  separate the "unaligned" and "aligned" parts of the documentation string. If
+  tab is not present, then space is used as a fallback. Allows to have spaces in
+  the unaligned part, which is useful for Tuple options.
+  (Nicolas Ojeda Bar, review by Alain Frisch and Gabriel Scherer)
 
 - GPR#1034: Add List.init
   (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
@@ -53,14 +65,28 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- Resurrect tabulation boxes in module Format. Rewrite/extend documentation
+  of tabulation boxes.
+
 ### Compiler user-interface and warnings:
+
+- GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
+  (Hugo Heuzard)
 
 - GPR#948: the compiler now reports warnings-as-errors by prefixing
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
 
+- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
+  attribute is hidden by signature coercion
+  (Alain Frisch, report by bmillwood, review by Leo White)
+
 ### Manual and documentation:
+
+- PR#6548: remove obsolete limitation in the description of private
+  type abbreviations
+  (Florian Angeletti, suggestion by Leo White)
 
 - PR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
@@ -68,10 +94,27 @@ Working version
 - PR#6676, GPR#1112: move local opens to tutorial
   (Florian Angeletti)
 
+- PR#6676, GPR#1153: move overriding class definitions to reference
+  manual and tutorial
+  (Florian Angeletti)
+
+- PR#6709: document the associativity and precedence level of
+  pervasive operators
+  (Florian Angeletti, review by David Allsopp)
+
 - PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
+- PR#7507: Align the description of the printf conversion
+  specification "%g" with the ISO C90 description.
+  (Florian Angeletti)
+
 ### Tools:
+
+- GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
+  to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
+  "boot" directory to reduce its size in the future.
+  (Fabrice Le Fessant)
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
   for native plugin files (i.e. .cmxs files)
@@ -91,6 +134,9 @@ Working version
 
 * PR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
+
+- PR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
+  (Florian Angeletti)
 
 ### Compiler distribution build system
 
@@ -120,6 +166,10 @@ Working version
   included by other header files
   (Sébastien Hinderer)
 
+- GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
+  strings longer than the size specified by the "print_length" directive
+  (Fabrice Le Fessant, initial PR by Junsong Li)
+
 ### Bug fixes
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
@@ -130,6 +180,10 @@ Working version
 
 - PR#6934: nonrec misbehaves with GADTs
   (Jacques Garrigue, report by Markus Mottl)
+
+- PR#7070, GPR#1139: Unexported values can cause non-generalisable variables
+  error
+  (Leo White)
 
 - PR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
@@ -157,6 +211,13 @@ Working version
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
+- PR#7513: List.compare_length_with mishandles negative numbers / overflow
+  (Fabrice Le Fessant, report by Jeremy Yallop)
+
+- PR#7531a: Default argument is not evaluated even after passing a
+  non-labeled argument
+  (Jacques Garrigue, report by Stephen Dolan)
+
 ### Runtime system:
 
 - GPR#71: The runtime can now be shut down gracefully by means of the new
@@ -165,6 +226,9 @@ Working version
   (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
   Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
   François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
+
+- GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
+  (Olivier Andrieu)
 
 Next major version (4.05.0):
 ----------------------------
@@ -192,6 +256,10 @@ Next major version (4.05.0):
   results to lookup tables.
   (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
   Mark Shinwell, and bug report by Gabriel Scherer)
+
+- PR#7533, GPR#1173: Correctly perform side effects for certain
+  cases of "/" and "mod"
+  (Mark Shinwell, report by Jan Mitgaard)
 
 ### Runtime system:
 
@@ -279,7 +347,8 @@ Next major version (4.05.0):
   (Xavier Leroy)
 
 - GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
-  to build ocamldep.
+  to build ocamldep. Add option "-depend" to ocamlc/ocamlopt to behave
+  as ocamldep. Remove any use of ocamldep to build the distribution.
   (Fabrice Le Fessant)
 
 - GPR#1027: various improvements to -dtimings, mostly including time
@@ -442,12 +511,19 @@ Next major version (4.05.0):
   to solve ocamlbuild+doc usability issue (ocaml/ocamlbuild#79)
   (Gabriel Scherer, review by Florian Angeletti, discussion with Daniel Bünzli)
 
+* GPR#1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
+  as the handling of ' characters in identifiers.
+  (Demi Obenour)
+
 - GPR#1017: ocamldoc, add an option to detect code fragments that could be
   transformed into a cross-reference to a known element.
   (Florian Angeletti, review and suggestion by David Allsopp)
 
 - clarify ocamldoc text parsing error messages
   (Gabriel Scherer)
+
+- GPR#1036: ocamlcmt (tools/read_cmt) is installed, converts .cmt to .annot
+  (Fabrice Le Fessant)
 
 ### Compiler distribution build system:
 
@@ -610,6 +686,7 @@ The complete list of changes is listed below.
   (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
 
 - PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
+- PR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
 
 - PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
