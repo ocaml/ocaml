@@ -2452,11 +2452,19 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_env = env }
   | Pexp_while(scond, sbody) ->
       let cond = type_expect env scond Predef.type_bool in
-      let body = type_statement env sbody in
+      let exp_type =
+        match cond.exp_desc with
+        | Texp_construct(_, {cstr_name="true"}, _) ->
+            instance env ty_expected
+        | _ ->
+            instance_def Predef.type_unit
+      in
+      let body_env = Env.add_break exp_type env in
+      let body = type_statement body_env sbody in
       rue {
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];
-        exp_type = instance_def Predef.type_unit;
+        exp_type;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
@@ -2993,6 +3001,38 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }
+
+  | Pexp_extension ({ txt = ("ocaml.break"
+                             |"break"); _ },
+                    payload) ->
+      begin match payload, Env.find_break env with
+      | _, None -> failwith "TODO real error"
+      | PStr [ ], Some break_ty ->
+          let arg_ty = instance_def Predef.type_unit in
+          (try unify_var env arg_ty break_ty with Unify trace ->
+             (* TODO: better error *)
+             raise(Error(loc, env, Expr_type_clash trace)));
+          let exp_type = instance env ty_expected in
+          rue {
+            exp_desc = Texp_break None;
+            exp_loc = loc; exp_extra = [];
+            exp_type;
+            exp_attributes = sexp.pexp_attributes;
+            exp_env = env;
+          }
+      | PStr [ { pstr_desc = Pstr_eval (body, _) } ], Some break_ty ->
+          let body = type_expect env body break_ty in
+          let exp_type = instance env ty_expected in
+          rue {
+            exp_desc = Texp_break (Some body);
+            exp_loc = loc; exp_extra = [];
+            exp_type;
+            exp_attributes = sexp.pexp_attributes;
+            exp_env = env;
+          }
+      | _ ->
+          raise (Error (loc, env, Invalid_extension_constructor_payload))
+      end
 
   | Pexp_extension ({ txt = ("ocaml.return"
                              |"return"); _ },

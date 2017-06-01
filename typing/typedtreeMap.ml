@@ -391,6 +391,8 @@ module MakeMap(Map : MapArgument) = struct
           e
         | Texp_return exp ->
           Texp_return (map_expression exp)
+        | Texp_break exp ->
+          Texp_break (Misc.may_map map_expression exp)
     in
     let exp_extra = List.map map_exp_extra exp.exp_extra in
     Map.leave_expression {

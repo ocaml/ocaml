@@ -61,6 +61,7 @@ val without_cmis: ('a -> 'b) -> 'a -> 'b
 (* Lookup by paths *)
 
 val find_return: t -> Types.type_expr option
+val find_break: t -> Types.type_expr option
 val find_value: Path.t -> t -> value_description
 val find_type: Path.t -> t -> type_declaration
 val find_type_descrs: Path.t -> t -> type_descriptions
@@ -136,6 +137,7 @@ exception Recmodule
 (* Insertion by identifier *)
 
 val add_return: Types.type_expr -> t -> t
+val add_break: Types.type_expr -> t -> t
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t

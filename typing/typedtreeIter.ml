@@ -249,7 +249,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
       end;
       Iter.leave_pattern pat
 
-    and option f x = match x with None -> () | Some e -> f e
+    and option : 'a. ('a -> unit) -> 'a option -> unit =
+      fun f x -> match x with None -> () | Some e -> f e
 
     and iter_expression exp =
       Iter.enter_expression exp;
@@ -361,6 +362,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ()
         | Texp_return exp ->
             iter_expression exp
+        | Texp_break exp ->
+            option iter_expression exp
       end;
       Iter.leave_expression exp;
 

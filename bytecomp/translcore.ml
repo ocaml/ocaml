@@ -699,6 +699,7 @@ let rec cut n l =
 let try_ids = Hashtbl.create 8
 
 let current_return = ref 0
+let current_break = ref 0
 
 let rec transl_exp e =
   List.iter (Translattribute.check_attribute e) e.exp_attributes;
@@ -1016,7 +1017,15 @@ and transl_exp0 e =
   | Texp_sequence(expr1, expr2) ->
       Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
-      Lwhile(transl_exp cond, event_before body (transl_exp body))
+      let prev_break = !current_break in
+      let new_break = next_negative_raise_count () in
+      current_break := new_break;
+      let body = event_before body (transl_exp body) in
+      current_break := prev_break;
+      let break_var = Ident.create "break" in
+      Lstaticcatch
+        (Lwhile(transl_exp cond, body),
+         (new_break, [break_var]), Lvar break_var)
   | Texp_for(param, _, low, high, dir, body) ->
       Lfor(param, transl_exp low, transl_exp high, dir,
            event_before body (transl_exp body))
@@ -1141,6 +1150,13 @@ and transl_exp0 e =
       raise (Error (e.exp_loc, Unreachable_reached))
   | Texp_return exp ->
       Lstaticraise (!current_return, [transl_exp exp])
+  | Texp_break exp ->
+      let args =
+        match exp with
+        | None -> []
+        | Some exp -> [transl_exp exp]
+      in
+      Lstaticraise (!current_break, args)
 
 and transl_list expr_list =
   List.map transl_exp expr_list

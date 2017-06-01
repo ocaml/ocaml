@@ -230,6 +230,7 @@ and expression_desc =
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
   | Texp_return of expression
+  | Texp_break of expression option
 
 and meth =
     Tmeth_name of string

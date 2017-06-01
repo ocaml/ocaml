@@ -456,6 +456,7 @@ type t = {
   gadt_instances: (int * TypeSet.t ref) list;
   flags: int;
   return: Types.type_expr option;
+  break: Types.type_expr option;
 }
 
 and module_components =
@@ -541,6 +542,7 @@ let empty = {
   flags = 0;
   functor_args = Ident.empty;
   return = None;
+  break = None;
 }
 
 let in_signature b env =
@@ -863,8 +865,16 @@ let get_unit_name () =
 let find_return t =
   t.return
 
+let find_break t =
+  t.break
+
 let add_return return t =
-  { t with return = Some return }
+  { t with return = Some return;
+           (* TODO: do that correctly at every point entering a closure *)
+           break = None }
+
+let add_break break t =
+  { t with break = Some break }
 
 (* Lookup by identifier *)
 

@@ -474,6 +474,14 @@ let expression sub exp =
     | Texp_return exp ->
         Pexp_extension ({ txt = "ocaml.return"; loc },
                         PStr [ Str.eval ~loc (sub.expr sub exp) ])
+    | Texp_break exp ->
+        let payload =
+          match exp with
+          | None -> []
+          | Some exp -> [ Str.eval ~loc (sub.expr sub exp) ]
+        in
+        Pexp_extension ({ txt = "ocaml.break"; loc },
+                        PStr payload)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

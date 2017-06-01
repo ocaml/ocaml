@@ -351,6 +351,8 @@ let expr sub x =
         e
     | Texp_return exp ->
         Texp_return (sub.expr sub exp)
+    | Texp_break exp ->
+        Texp_break (opt (sub.expr sub) exp)
   in
   {x with exp_extra; exp_desc; exp_env}
 

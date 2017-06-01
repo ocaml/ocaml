@@ -401,6 +401,9 @@ and expression i ppf x =
   | Texp_return e ->
       line i ppf "Texp_return";
       expression i ppf e
+  | Texp_break e ->
+      line i ppf "Texp_break";
+      option i expression ppf e
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location
