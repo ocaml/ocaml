@@ -48,14 +48,14 @@ ast tree.
 \begin{verbatim}
 let add_hello name (mapper:Ast_mapper.mapper) structure =
   let default = Ast_mapper.default_mapper in
-  (print_ensline name) :: (default.structure default structure)
+  (print_endline name) :: (default.structure default structure)
 
 let ast_mapper name =
   { Ast_mapper.default_mapper with structure = add_hello name }
 \end{verbatim}%
 %
-Once this AST mapped constructed, we need to convert it to a hook and adds this
-hooks to the "Pparse.ImplementationsHooks".
+Once this AST mapper is constructed, we need to convert it to a hook and adds this
+hook to the "Pparse.ImplementationsHooks".
 \begin{verbatim}
 let transform hook_info structure =
         let astm = ast_mapper hook_info.Misc.sourcefile in
