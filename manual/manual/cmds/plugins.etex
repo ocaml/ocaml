@@ -23,6 +23,10 @@ Other hooks are available to analyze the typed tree in the
 after the type-checking phase of the compiler. Since the typed tree relies
 on numerous invariants that play a vital part in ulterior phases of the
 compiler, it is not possible however to transform the typed tree.
+Similarly, the intermediary lambda representation can be modified by using the
+hooks provided in the
+\ifouthtml\ahref{libref/Simplif.html}{\texttt{Simplif} module}
+\else\texttt{Simplif} module (see section~\ref{Simplif})\fi.
 
 Plugins are dynamically loaded and need to be compiled in the same mode (i.e.
 native or bytecode) that the tool they extend.

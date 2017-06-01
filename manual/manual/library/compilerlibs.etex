@@ -63,8 +63,10 @@ The following modules provides hooks for compiler plugins:
 \item \ahref{libref/Pparse.html}{Module \texttt{Pparse}: OCaml parser driver}
 \item \ahref{libref/Typemod.html}{Module \texttt{Typemod}:
 OCaml module type checking}
+\item \ahref{libref/Simplif.html}{Module \texttt{Simplif}: Lambda simplification}
 \end{links}
 \else
 \input{Pparse.tex}
 \input{Typemod.tex}
+\input{Simplif.tex}
 \fi

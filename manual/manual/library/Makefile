@@ -30,6 +30,7 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/parsing/*.mli \
 	$(CSLDIR)/driver/pparse.mli \
 	$(CSLDIR)/typing/typemod.mli \
+	$(CSLDIR)/bytecomp/simplif.mli \
 	$(CSLDIR)/otherlibs/bigarray/bigarray.mli \
 	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
 	$(CSLDIR)/otherlibs/graph/graphics.mli \
@@ -67,6 +68,7 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/parsing \
 	-I $(CSLDIR)/typing \
 	-I $(CSLDIR)/driver \
+	-I $(CSLDIR)/bytecomp \
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \
