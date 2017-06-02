@@ -194,4 +194,10 @@ Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
 #     type 'a t = T : 'a s -> 'a t [@@unboxed]
+#           Characters 42-81:
+  type _ s = S : 'a t -> _ s  [@@unboxed]
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
 # 

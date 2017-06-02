@@ -148,3 +148,9 @@ type t = T : _ s -> t [@@unboxed];;
 
 (* accept *)
 type 'a t = T : 'a s -> 'a t [@@unboxed];;
+
+
+(* Another corner case from GPR#1133 *)
+type _ s = S : 'a t -> _ s  [@@unboxed]
+ and _ t = T : 'a -> 'a s t
+;;

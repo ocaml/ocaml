@@ -305,7 +305,7 @@ let rec check_unboxed_abstract_arg loc univ ty =
     end
   | Tnil
   | Tunivar _ -> ()
-  | Tlink _
+  | Tlink e -> check_unboxed_abstract_arg loc univ e
   | Tsubst _ -> assert false
   | Tvariant { row_fields; row_more; row_name } ->
     List.iter (check_unboxed_abstract_row_field loc univ) row_fields;
