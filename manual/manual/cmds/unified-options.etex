@@ -83,10 +83,12 @@ Read additional newline-terminated command line arguments from \var{filename}.
 \notop{\item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc) in binary format. The information for file \var{src}".ml"
-is put into file \var{src}".cmt".  In case of a type error, dump
+(resp. \var{src}".mli") is put into file \var{src}".cmt"
+(resp. \var{src}".cmti").  In case of a type error, dump
 all the information inferred by the type-checker before the error.
-The "*.cmt" files produced by "-bin-annot" contain more information
-and are much more compact than the files produced by "-annot".
+The "*.cmt" and "*.cmti" files produced by "-bin-annot" contain
+more information and are much more compact than the files produced by
+"-annot".
 }%notop
 
 \notop{\item["-c"]
