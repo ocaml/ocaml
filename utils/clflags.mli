@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Command line flags *)
+
 (** Optimization parameters represented as ints indexed by round number. *)
 module Int_arg_helper : sig
   type parsed

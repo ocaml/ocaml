@@ -109,6 +109,9 @@ Working version
   specification "%g" with the ISO C90 description.
   (Florian Angeletti)
 
+- GPR#1187: Minimal documentation for compiler plugins
+  (Florian Angeletti)
+
 ### Tools:
 
 - GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",

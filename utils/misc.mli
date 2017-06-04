@@ -298,9 +298,9 @@ val delete_eol_spaces : string -> string
 
 
 
-(** {2 Hook machinery} *)
+(** {2 Hook machinery}
 
-(* Hooks machinery:
+    Hooks machinery:
    [add_hook name f] will register a function that will be called on the
     argument of a later call to [apply_hooks]. Hooks are applied in the
     lexicographical order of their names.

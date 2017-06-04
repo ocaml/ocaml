@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Type-checking of the module language *)
+(** Type-checking of the module language and typed ast plugin hooks *)
 
 open Types
 open Format
