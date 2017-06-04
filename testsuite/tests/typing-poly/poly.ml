@@ -1499,3 +1499,13 @@ val f :
 type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit; }
 val f : t -> t = <fun>
 |}]
+
+(* GPR#1142 *)
+
+module M () = struct
+  let f : 'a -> 'a = assert false
+  let g : 'a -> 'a = raise Not_found
+end
+[%%expect{|
+module M : functor () -> sig val f : 'a -> 'a val g : 'a -> 'a end
+|}]
