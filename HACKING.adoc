@@ -132,6 +132,17 @@ independent and should not need further knowledge.
 link:otherlibs/[]:: External libraries such as `unix`, `threads`,
 `dynlink`, `str` and `bigarray`.
 
+Instructions for building the full reference manual are provided in
+link:manual/README.md[]. However, if you only modify the documentation
+comments in `.mli` files in the compiler codebase, you can observe the
+result by running
+
+----
+make html_doc
+----
+
+and then opening link:./ocamldoc/stdlib_html/index.html[] in a web browser.
+
 === Tools
 
 link:lex/[]:: The `ocamllex` lexer generator.
