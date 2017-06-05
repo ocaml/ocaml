@@ -132,6 +132,17 @@ independent and should not need further knowledge.
 link:otherlibs/[]:: External libraries such as `unix`, `threads`,
 `dynlink`, `str` and `bigarray`.
 
+Instructions for building the full reference manual are provided in
+link:manual/README.md[]. However, if you only modify the documentation
+comments in `.mli` files in the compiler codebase, you can observe the
+result by running
+
+----
+make html_doc
+----
+
+and then opening link:./ocamldoc/stdlib_html/index.html[] in a web browser.
+
 === Tools
 
 link:lex/[]:: The `ocamllex` lexer generator.
@@ -223,6 +234,32 @@ found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
 === Continuous integration
 
 ==== Github's CI: Travis and AppVeyor
+
+The script that is run on Travis continuous integration servers is
+link:.travis-ci.sh[]; its configuration can be found as
+a Travis configuration file in link:.travis.yml[].
+
+For example, if you want to reproduce the default build on your
+machine, you can use the configuration values and run command taken from
+link:.travis.yml[]:
+
+----
+CI_KIND=build XARCH=i386 bash -ex .travis-ci.sh
+----
+
+The scripts support two other kinds of tests (values of the
+`CI_KIND` variable) which both inspect the patch submitted as part of
+a pull request. `tests` checks that the testsuite has been modified
+(hopefully, improved) by the patch, and `changes` checks that the
+link:Changes[] file has been modified (hopefully to add a new entry).
+
+These tests rely on the `$TRAVIS_COMMIT_RANGE` variable which you can
+set explicitly to reproduce them locally.
+
+The `changes` check can be disabled by including "(no change
+entry needed)" in one of your commit messages -- but in general all
+patches submitted should come with a Changes entry; see the guidelines
+in link:CONTRIBUTING.md[].
 
 ==== INRIA's Continuous Integration (CI)
 
