@@ -427,6 +427,10 @@ and approx_modtype_info env sinfo =
    mtd_loc = sinfo.pmtd_loc;
   }
 
+let approx_modtype env smty =
+  Warnings.without_warnings
+    (fun () -> approx_modtype env smty)
+
 (* Additional validity checks on type definitions arising from
    recursive modules *)
 
@@ -818,7 +822,10 @@ and transl_recmodule_modtypes env sdecls =
       ids sdecls
   in
   let env0 = make_env init in
-  let dcl1 = transition env0 init in
+  let dcl1 =
+    Warnings.without_warnings
+      (fun () -> transition env0 init)
+  in
   let env1 = make_env2 dcl1 in
   check_recmod_typedecls env1 sdecls dcl1;
   let dcl2 = transition env1 dcl1 in

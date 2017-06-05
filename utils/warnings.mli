@@ -86,6 +86,8 @@ type t =
 
 val parse_options : bool -> string -> unit;;
 
+val without_warnings : (unit -> 'a) -> 'a
+
 val is_active : t -> bool;;
 val is_error : t -> bool;;
 
