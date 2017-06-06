@@ -471,6 +471,15 @@ module Array0 : sig
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
 
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array0.change_layout a layout] returns a big array with the
+      specified [layout], sharing the data with [a]. No copying of elements
+      is involved: the new array and the original array share the same
+      storage space.
+
+      @since 4.06.0
+  *)
+
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is [a]'s {!kind_size_in_bytes}. *)
 
@@ -524,6 +533,16 @@ module Array1 : sig
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array1.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimension as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+
+      @since 4.06.0
+  *)
+
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
@@ -621,6 +640,18 @@ module Array2 :
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array2.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimensions as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+      The dimensions are reversed, such that [get v [| a; b |]] in
+      C layout becomes [get v [| b+1; a+1 |]] in Fortran layout.
+
+      @since 4.06.0
+  *)
+
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
@@ -735,6 +766,18 @@ module Array3 :
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array3.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimensions as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+      The dimensions are reversed, such that [get v [| a; b; c |]] in
+      C layout becomes [get v [| c+1; b+1; a+1 |]] in Fortran layout.
+
+      @since 4.06.0
+  *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
