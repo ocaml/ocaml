@@ -41,6 +41,9 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1192: [Cconst_symbol] expressions now have int register type.
+  (Mark Shinwell)
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.

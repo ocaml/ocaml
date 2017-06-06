@@ -641,7 +641,7 @@ method emit_expr (env:environment) exp =
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
   | Cconst_symbol n ->
-      let r = self#regs_for typ_val in
+      let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)
