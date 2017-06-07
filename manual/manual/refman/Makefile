@@ -7,7 +7,7 @@ TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools
 
 CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2 -caml "TERM=norepeat $(OCAML)" \
--n 80 -v false -implicit-stop
+-n 80 -v false
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
 

@@ -37,14 +37,11 @@ let linelen = ref 72
 let outfile = ref ""
 let cut_at_blanks = ref false
 let files = ref []
-let global_implicit_stop = ref true
 
 let _ =
   Arg.parse ["-n", Arg.Int (fun n -> linelen := n), "line length";
              "-o", Arg.String (fun s -> outfile := s), "output";
              "-caml", Arg.String (fun s -> camllight := s), "toplevel";
-             "-implicit-stop", Arg.Set global_implicit_stop,
-             "does not require \";;\" at the end of examples";
              "-w", Arg.Set cut_at_blanks, "cut at blanks";
              "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
             ]
@@ -236,6 +233,8 @@ let escape_specials s =
 
 exception Missing_double_semicolon of string * int
 
+exception Missing_mode of string * int
+
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -255,7 +254,7 @@ let process_file file =
   let re_spaces = "[ \t]*" in
   let re_start = ~!(
       {|\\begin{caml_example\(\*?\)}|} ^ re_spaces
-      ^ {|\(\[toplevel\]\|\[verbatim\]\)?|} ^ re_spaces
+      ^ {|\({toplevel}\|{verbatim}\)?|} ^ re_spaces
       ^ {|\(\[\(.*\)\]\)?|} ^ re_spaces
       ^ "$"
     ) in
@@ -267,9 +266,9 @@ let process_file file =
       let omit_answer = matched_group 1 !input = "*" in
       let explicit_stop =
         match matched_group 2 !input with
-        | exception Not_found -> not (!global_implicit_stop)
-        | "[toplevel]" -> true
-        | "[verbatim]" -> false
+        | exception Not_found -> raise (Missing_mode(file, !phrase_stop))
+        | "{toplevel}" -> true
+        | "{verbatim}" -> false
         | _ -> assert false in
       let global_expected = try Output.expected @@ matched_group 4 !input
         with Not_found -> Output.Ok in
@@ -385,11 +384,22 @@ let process_file file =
       ( Output.print_parsing_error k s;
         close_in ic; close_out oc; exit 1 )
   | Missing_double_semicolon (file, line_number) ->
-      ( Format.eprintf "Error when evaluating a caml_example environment in \
-                        %s:\nmissing \";;\" at line %d\n" file (line_number-2);
+      ( Format.eprintf "@[<hov 2> Error \
+                        when evaluating a caml_example environment in %s:@;\
+                        missing \";;\" at line %d@]@." file (line_number-2);
         close_in ic; close_out oc;
         exit 1
       )
+  | Missing_mode (file, line_number) ->
+      ( Format.eprintf "@[<hov 2>Error \
+                        when parsing a caml_example environment in %s:@;\
+                        missing mode argument at line %d,@ \
+                        available modes {toplevel,verbatim}@]@."
+          file (line_number-2);
+        close_in ic; close_out oc;
+        exit 1
+      )
+
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
