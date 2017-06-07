@@ -125,23 +125,33 @@ The pseudo-environment `caml_example` evaluates its contents using an ocaml
 interpreter and then translates both the input code and the interpreter output
 to latex code, e.g.
 ```latex
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f x = x;;
 \end{caml_example}
 ```
 Note that the toplevel output can be suppressed by using a `*` suffix:
 ```latex
-\begin{caml_example*}
-let f x = x;;
+\begin{caml_example*}{verbatim}
+let f x = x
 \end{caml_example*}
 ```
+
+The `{verbatim}` or `{toplevel}` argument of the environment corresponds
+to the the mode of the example, two modes are available `toplevel` and
+`verbatim`.
+The `toplevel` mode mimics the appearance and behavior of the toplevel.
+In particular, toplevel examples must end with a double semi-colon `;;`,
+otherwise an error would be raised.
+The `verbatim` does not require a final `;;` and is intended to be
+a lighter mode for code examples.
+
 By default, `caml_tex2` raises an error and stops if the output of one
 the `caml_example` environment contains an unexpected error or warning.
 If such an error or warning is, in fact, expected, it is necessary to
 indicate the expected output status to `caml_tex2` by adding either
 an option to the `caml_example` environment:
 ```latex
-\begin{caml_example}[error]
+\begin{caml_example}{toplevel}[error]
 1 + 2. ;;
 \end{caml_example}
  or for warning
@@ -152,7 +162,7 @@ let f None = None;;
 or an annotation to the concerned phrase:
 
 ```latex
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 1 + 2. [@@expect error] ;;
 let f None = None [@@expect warning 8];;
 3 + 4 [@@expect ok];;
@@ -166,23 +176,12 @@ printing anything:
 \begin{caml_eval}
 let pi = 4. *. atan 1.;;
 \end{caml_eval}
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f x = x +. pi;;
 \end{caml_example}
 ```
 Beware that the detection code for these pseudo-environments is quite brittle
 and the environments must start and end at the beginning of the line.
-
-Note that in the tutorial part of manual, the final `;;` is mandatory
-An error will be raised when this final `;;` is missing.
-Such final `;;` is not required in the language extension chapter.
-
-This behavior can be overrided locally by adding an optional
-argument to the environment *before* the expected status argument:
-
-- `[toplevel]` makes the `;;` mandatory
-- `[verbatim]` makes it optional
-
 
 ###Quoting
 The tool `tools/texquote2` provides support for verbatim-like quotes using

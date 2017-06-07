@@ -119,7 +119,7 @@ Working version
 
 - PR#7551, GPR#1194 : make the final ";;" potentially optional in
   caml_example
-  (Florian Angeletti, suggested by Gabriel Scherer)
+  (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
