@@ -214,18 +214,23 @@ typing/ident.cmo : utils/identifiable.cmi typing/ident.cmi
 typing/ident.cmx : utils/identifiable.cmx typing/ident.cmi
 typing/ident.cmi : utils/identifiable.cmi
 typing/includeclass.cmo : typing/types.cmi typing/printtyp.cmi \
-    typing/ctype.cmi typing/includeclass.cmi
+    typing/path.cmi typing/ctype.cmi parsing/builtin_attributes.cmi \
+    typing/includeclass.cmi
 typing/includeclass.cmx : typing/types.cmx typing/printtyp.cmx \
-    typing/ctype.cmx typing/includeclass.cmi
-typing/includeclass.cmi : typing/types.cmi typing/env.cmi typing/ctype.cmi
+    typing/path.cmx typing/ctype.cmx parsing/builtin_attributes.cmx \
+    typing/includeclass.cmi
+typing/includeclass.cmi : typing/types.cmi parsing/location.cmi \
+    typing/env.cmi typing/ctype.cmi
 typing/includecore.cmo : typing/types.cmi typing/typedtree.cmi \
     typing/path.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \
-    typing/btype.cmi parsing/asttypes.cmi typing/includecore.cmi
+    parsing/builtin_attributes.cmi typing/btype.cmi parsing/asttypes.cmi \
+    typing/includecore.cmi
 typing/includecore.cmx : typing/types.cmx typing/typedtree.cmx \
     typing/path.cmx typing/ident.cmx typing/env.cmx typing/ctype.cmx \
-    typing/btype.cmx parsing/asttypes.cmi typing/includecore.cmi
+    parsing/builtin_attributes.cmx typing/btype.cmx parsing/asttypes.cmi \
+    typing/includecore.cmi
 typing/includecore.cmi : typing/types.cmi typing/typedtree.cmi \
-    typing/ident.cmi typing/env.cmi
+    parsing/location.cmi typing/ident.cmi typing/env.cmi
 typing/includemod.cmo : typing/types.cmi typing/typedtree.cmi utils/tbl.cmi \
     typing/subst.cmi typing/printtyp.cmi typing/primitive.cmi typing/path.cmi \
     typing/mtype.cmi utils/misc.cmi parsing/location.cmi \
@@ -1084,12 +1089,12 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 asmcomp/printmach.cmo : asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printcmm.cmi asmcomp/mach.cmi asmcomp/interval.cmi \
-    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
-    asmcomp/arch.cmo asmcomp/printmach.cmi
+    typing/ident.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/printmach.cmi
 asmcomp/printmach.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printcmm.cmx asmcomp/mach.cmx asmcomp/interval.cmx \
-    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
-    asmcomp/arch.cmx asmcomp/printmach.cmi
+    typing/ident.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
@@ -1197,28 +1202,6 @@ asmcomp/x86_proc.cmo : asmcomp/x86_ast.cmi utils/config.cmi \
 asmcomp/x86_proc.cmx : asmcomp/x86_ast.cmi utils/config.cmx \
     utils/clflags.cmx utils/ccomp.cmx asmcomp/x86_proc.cmi
 asmcomp/x86_proc.cmi : asmcomp/x86_ast.cmi
-asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
-    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi \
-    asmcomp/debug/available_regs.cmi
-asmcomp/debug/available_regs.cmx : asmcomp/debug/reg_with_debug_info.cmx \
-    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
-    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx \
-    asmcomp/debug/available_regs.cmi
-asmcomp/debug/available_regs.cmi : asmcomp/mach.cmi
-asmcomp/debug/reg_availability_set.cmo : \
-    asmcomp/debug/reg_with_debug_info.cmi typing/ident.cmi \
-    asmcomp/debug/reg_availability_set.cmi
-asmcomp/debug/reg_availability_set.cmx : \
-    asmcomp/debug/reg_with_debug_info.cmx typing/ident.cmx \
-    asmcomp/debug/reg_availability_set.cmi
-asmcomp/debug/reg_availability_set.cmi : \
-    asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi
-asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi typing/ident.cmi \
-    asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx typing/ident.cmx \
-    asmcomp/debug/reg_with_debug_info.cmi
-asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi typing/ident.cmi
 middle_end/alias_analysis.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \

@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*            Mark Shinwell and Thomas Refis, Jane Street Europe          *)
 (*                                                                        *)
-(*   Copyright 2013--2016 Jane Street Group LLC                           *)
+(*   Copyright 2013--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -274,7 +274,9 @@ let rec available_regs (instr : M.instruction)
               Reg_availability_set.inter !avail_after
                 (available_regs body ~avail_before:!avail_after)
             in
-            if Reg_availability_set.equal !avail_after avail_after' then raise Exit;
+            if Reg_availability_set.equal !avail_after avail_after' then begin
+              raise Exit
+              end;
             avail_after := avail_after'
           done
         with Exit -> ()
@@ -282,14 +284,13 @@ let rec available_regs (instr : M.instruction)
         Unreachable
       | Icatch (nfail, body, handler) ->
         let avail_after_body =
-          available_regs body ~avail_before:(Reg_availability_set.Ok avail_before)
+          available_regs body
+            ~avail_before:(Reg_availability_set.Ok avail_before)
         in
-        begin match
-          try Some (Hashtbl.find avail_at_exit_table nfail)
-          with Not_found -> None
-        with
-        | None -> avail_after_body  (* The handler is unreachable. *)
-        | Some avail_at_exit ->
+        begin match Hashtbl.find avail_at_exit_table nfail with
+        | exception Not_found ->
+          avail_after_body  (* The handler is unreachable. *)
+        | avail_at_exit ->
           Hashtbl.remove avail_at_exit_table nfail;
           Reg_availability_set.inter avail_after_body
             (available_regs handler ~avail_before:avail_at_exit)
