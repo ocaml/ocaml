@@ -74,7 +74,6 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
   | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
@@ -134,8 +133,6 @@ let rec instr_iter f i =
             instr_iter f cases.(i)
           done;
           instr_iter f i.next
-      | Iloop(body) ->
-          instr_iter f body; instr_iter f i.next
       | Icatch(_, handlers, body) ->
           instr_iter f body;
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
@@ -177,5 +174,5 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat -> false
     end
-  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
+  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false

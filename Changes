@@ -41,6 +41,10 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1193: Remove [Cloop] and [Iloop] Cmm and Mach language
+  constructions in favour of existing continuation constructs.
+  (Mark Shinwell)
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.
