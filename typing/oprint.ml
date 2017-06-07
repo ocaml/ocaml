@@ -190,7 +190,8 @@ and print_simple_out_type ppf =
       fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
         print_ident id
 #if undefined BS_NO_COMPILER_PATCH then         
-  | Otyp_constr ((Oide_dot (Oide_ident "Js", ("fn" | "meth" as name )) as id) ,
+  | Otyp_constr ( (Oide_dot ((Oide_dot (Oide_ident "Js", "Internal")),
+                             ("fn" | "meth" as name )) as id) ,
                  ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
     ->
       (* Otyp_arrow*)
@@ -226,7 +227,7 @@ and print_simple_out_type ppf =
           | _ -> assert false 
           end
       end
-  | Otyp_constr ((Oide_dot (Oide_ident "Js", "meth_callback" ) as id) ,
+  | Otyp_constr ((Oide_dot (Oide_dot (Oide_ident "Js", "Internal"), "meth_callback" ) as id) ,
                  ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
     ->
       let make tys result =
