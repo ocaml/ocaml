@@ -164,14 +164,25 @@ and can be used to evaluate OCaml expressions in the toplevel without
 printing anything:
 ```latex
 \begin{caml_eval}
-let pi = 4. *. atan 1.
+let pi = 4. *. atan 1.;;
 \end{caml_eval}
 \begin{caml_example}
-let f x = x +. pi
+let f x = x +. pi;;
 \end{caml_example}
 ```
 Beware that the detection code for these pseudo-environments is quite brittle
 and the environments must start and end at the beginning of the line.
+
+Note that in the tutorial part of manual, the final `;;` is mandatory
+An error will be raised when this final `;;` is missing.
+Such final `;;` is not required in the language extension chapter.
+
+This behavior can be overrided locally by adding an optional
+argument to the environment *before* the expected status argument:
+
+- `[toplevel]` makes the `;;` mandatory
+- `[verbatim]` makes it optional
+
 
 ###Quoting
 The tool `tools/texquote2` provides support for verbatim-like quotes using
