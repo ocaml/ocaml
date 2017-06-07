@@ -40,6 +40,7 @@ exception Exit
 
 (* Composition operators *)
 
+let (%>) f g x = g (f x)
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
