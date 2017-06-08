@@ -2,7 +2,7 @@
 # stdlib.ml and stdlib.mli
 BEGIN { state=0 }
 NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
-$0 == "(*MODULE_ALIASES*)" { state=1 }
+/\(\*MODULE_ALIASES\*\)\r?/ { state=1 }
 { if (state==0)
     print;
   else if (state==1)

@@ -3,5 +3,5 @@
 # other modules
 BEGIN { in_aliases=0 }
 NR == 1 { printf ("# 1 \"%s\"\n", FILENAME) }
-$0 == "(*MODULE_ALIASES*)" { in_aliases=1 }
+/^\(\*MODULE_ALIASES\*\)\r?$/ { in_aliases=1 }
 !in_aliases { print }
