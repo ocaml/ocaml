@@ -30,6 +30,25 @@
 #define COMPARE_INT(v1, v2) \
   (intnat)(v1 > v2) - (intnat)(v1 < v2)
 
+static const char * parse_base(const char * p,
+                               /*out*/ int * base)
+{
+  *base = 10;
+  if (*p == '0') {
+    switch (p[1]) {
+    case 'x': case 'X':
+      *base = 16; p += 2; break;
+    case 'o': case 'O':
+      *base = 8; p += 2; break;
+    case 'b': case 'B':
+      *base = 2; p += 2; break;
+    case 'u': case 'U':
+      p += 2; break;
+    }
+  }
+  return p;
+}
+
 static const char * parse_sign_and_base(const char * p,
                                         /*out*/ int * base,
                                         /*out*/ int * signedness,
@@ -71,7 +90,9 @@ static int parse_digit(char c)
 
 #define INT_ERRMSG "int_of_string"
 #define INT32_ERRMSG "Int32.of_string"
+#define UINT32_ERRMSG "Uint32.of_string"
 #define INT64_ERRMSG "Int64.of_string"
+#define UINT64_ERRMSG "Uint64.of_string"
 #define INTNAT_ERRMSG "Nativeint.of_string"
 
 static intnat parse_intnat(value s, int nbits, const char *errmsg)
@@ -848,4 +869,309 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 CAMLprim value caml_nativeint_of_string(value s)
 {
   return caml_copy_nativeint(parse_intnat(s, 8 * sizeof(value), INTNAT_ERRMSG));
+}
+
+static int uint32_cmp(value v1, value v2)
+{
+  uint32_t u1 = Uint32_val(v1);
+  uint32_t u2 = Uint32_val(v2);
+  return (u1 > u2) - (u1 < u2);
+}
+
+static intnat uint32_hash(value v)
+{
+  return Uint32_val(v);
+}
+
+static void uint32_serialize(value v, uintnat *wsize_32, uintnat *wsize_64)
+{
+  caml_serialize_int_4(Uint32_val(v));
+  *wsize_32 = *wsize_64 = 4;
+}
+
+static uintnat uint32_deserialize(void *dst)
+{
+  *(uint32_t *)dst = caml_deserialize_uint_4();
+  return 4;
+}
+
+CAMLexport struct custom_operations caml_uint32_ops = {
+  "_u",
+  custom_finalize_default,
+  uint32_cmp,
+  uint32_hash,
+  uint32_serialize,
+  uint32_deserialize,
+  custom_compare_ext_default
+};
+
+CAMLprim value caml_copy_uint32(uint32_t u)
+{
+  value res = caml_alloc_custom(&caml_uint32_ops, 4, 0, 1);
+  Uint32_val(res) = u;
+  return res;
+}
+
+CAMLprim value caml_uint32_add(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) + Uint32_val(b)); }
+
+CAMLprim value caml_uint32_sub(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) - Uint32_val(b)); }
+
+CAMLprim value caml_uint32_mul(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) * Uint32_val(b)); }
+
+CAMLprim value caml_uint32_div(value a, value b)
+{ uint32_t dividend = Uint32_val(a);
+  uint32_t divisor = Uint32_val(b);
+  if (divisor == 0) caml_raise_zero_divide();
+  return caml_copy_uint32(dividend / divisor);
+}
+
+CAMLprim value caml_uint32_mod(value a, value b)
+{
+  uint32_t dividend = Uint32_val(a);
+  uint32_t divisor = Uint32_val(b);
+  if (divisor == 0) caml_raise_zero_divide();
+  return caml_copy_uint32(dividend % divisor);
+}
+
+CAMLprim value caml_uint32_and(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) & Uint32_val(b)); }
+
+CAMLprim value caml_uint32_or(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) | Uint32_val(b)); }
+
+CAMLprim value caml_uint32_xor(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) ^ Uint32_val(b)); }
+
+CAMLprim value caml_uint32_shift_left(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) << Int_val(b)); }
+
+CAMLprim value caml_uint32_shift_right(value a, value b)
+{ return caml_copy_uint32(Uint32_val(a) >> Int_val(b)); }
+
+CAMLprim value caml_uint32_of_int(value a)
+{ return caml_copy_uint32 (Long_val(a)); }
+
+CAMLprim value caml_uint32_to_int(value a)
+{ return Val_long(Uint32_val(a)); }
+
+CAMLprim value caml_uint32_of_int32(value a)
+{ return caml_copy_uint32 (Int32_val(a)); }
+
+CAMLprim value caml_uint32_to_int32(value a)
+{ return caml_copy_int32 (Uint32_val(a)); }
+
+CAMLprim value caml_uint32_of_string(value s)
+{
+  const char * p;
+  uint32_t res, threshold;
+  int base, d;
+
+  p = parse_base(String_val(s), &base);
+  threshold = ((uint32_t) -1) / base;
+  d = parse_digit(*p);
+  if (d < 0 || d >= base) caml_failwith(UINT32_ERRMSG);
+  res = d;
+  for (p++; /*nothing*/; p++) {
+    char c = *p;
+    if (c == '_') continue;
+    d = parse_digit(c);
+    if (d < 0 || d >= base) break;
+    /* Detect overflow in multiplication base * res */
+    if (res > threshold) caml_failwith(UINT32_ERRMSG);
+    res = base * res + d;
+    /* Detect overflow in addition (base * res) + d */
+    if (res < (uint32_t) d) caml_failwith(UINT32_ERRMSG);
+  }
+  if (p != String_val(s) + caml_string_length(s)){
+    caml_failwith(UINT32_ERRMSG);
+  }
+  return caml_copy_uint32(res);
+}
+
+CAMLprim value caml_uint32_format(value fmt, value arg)
+{
+  char format_string[FORMAT_BUFFER_SIZE];
+
+  parse_format(fmt, ARCH_INT32_PRINTF_FORMAT, format_string);
+  return caml_alloc_sprintf(format_string, Uint32_val(arg));
+}
+
+intnat caml_uint32_compare_unboxed(uint32_t i1, uint32_t i2)
+{
+  return (i1 > i2) - (i1 < i2);
+}
+
+CAMLprim value caml_uint32_compare(value v1, value v2)
+{
+  return Val_int(caml_uint32_compare_unboxed(Uint32_val(v1),
+                                             Uint32_val(v2)));
+}
+
+#ifdef ARCH_ALIGN_INT64
+
+CAMLexport uint64_t caml_Uint64_val(value v)
+{
+  union { uint32_t i[2]; uint64_t j; } buffer;
+  buffer.i[0] = ((uint32_t *) Data_custom_val(v))[0];
+  buffer.i[1] = ((uint32_t *) Data_custom_val(v))[1];
+  return buffer.j;
+}
+
+#endif
+
+static int uint64_cmp(value v1, value v2)
+{
+  uint64_t u1 = Uint64_val(v1);
+  uint64_t u2 = Uint64_val(v2);
+  return (u1 > u2) - (u1 < u2);
+}
+
+static intnat uint64_hash(value v)
+{
+  uint64_t x = Uint64_val(v);
+  uint32_t lo = (uint32_t) x, hi = (uint32_t) (x >> 32);
+  return hi ^ lo;
+}
+
+static void uint64_serialize(value v, uintnat *wsize_32, uintnat *wsize_64)
+{
+  caml_serialize_int_8(Uint64_val(v));
+  *wsize_32 = *wsize_64 = 8;
+}
+
+static uintnat uint64_deserialize(void *dst)
+{
+  *(uint64_t *)dst = caml_deserialize_uint_8();
+  return 8;
+}
+
+CAMLexport struct custom_operations caml_uint64_ops = {
+  "_U",
+  custom_finalize_default,
+  uint64_cmp,
+  uint64_hash,
+  uint64_serialize,
+  uint64_deserialize,
+  custom_compare_ext_default
+};
+
+CAMLprim value caml_copy_uint64(uint64_t i)
+{
+  value res = caml_alloc_custom(&caml_uint64_ops, 8, 0, 1);
+#ifndef ARCH_ALIGN_INT64
+  Uint64_val(res) = i;
+#else
+  union { uint32_t i[2]; uint64_t j; } buffer;
+  buffer.j = i;
+  ((uint32_t *) Data_custom_val(res))[0] = buffer.i[0];
+  ((uint32_t *) Data_custom_val(res))[1] = buffer.i[1];
+#endif
+  return res;
+}
+
+CAMLprim value caml_uint64_add(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) + Uint64_val(b)); }
+
+CAMLprim value caml_uint64_sub(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) - Uint64_val(b)); }
+
+CAMLprim value caml_uint64_mul(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) * Uint64_val(b)); }
+
+CAMLprim value caml_uint64_div(value a, value b)
+{ uint64_t dividend = Uint64_val(a);
+  uint64_t divisor = Uint64_val(b);
+  if (divisor == 0) caml_raise_zero_divide();
+  return caml_copy_uint64(dividend / divisor);
+}
+
+CAMLprim value caml_uint64_rem(value a, value b)
+{
+  uint64_t dividend = Uint64_val(a);
+  uint64_t divisor = Uint64_val(b);
+  if (divisor == 0) caml_raise_zero_divide();
+  return caml_copy_uint64(dividend % divisor);
+}
+
+CAMLprim value caml_uint64_and(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) & Uint64_val(b)); }
+
+CAMLprim value caml_uint64_or(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) | Uint64_val(b)); }
+
+CAMLprim value caml_uint64_xor(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) ^ Uint64_val(b)); }
+
+CAMLprim value caml_uint64_shift_left(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) << Int_val(b)); }
+
+CAMLprim value caml_uint64_shift_right(value a, value b)
+{ return caml_copy_uint64(Uint64_val(a) >> Int_val(b)); }
+
+CAMLprim value caml_uint64_of_int(value a)
+{ return caml_copy_uint64 (Long_val(a)); }
+
+CAMLprim value caml_uint64_to_int(value a)
+{ return Val_long(Uint64_val(a)); }
+
+CAMLprim value caml_uint64_of_int64(value a)
+{ return caml_copy_uint64 (Int64_val(a)); }
+
+CAMLprim value caml_uint64_to_int64(value a)
+{ return caml_copy_int64 (Uint64_val(a)); }
+
+CAMLprim value caml_uint64_of_uint32(value a)
+{ return caml_copy_uint64 (Uint32_val(a)); }
+
+CAMLprim value caml_uint64_to_uint32(value a)
+{ return caml_copy_uint32 (Uint64_val(a)); }
+
+CAMLprim value caml_uint64_of_string(value s)
+{
+  const char * p;
+  uint64_t res, threshold;
+  int base, d;
+
+  p = parse_base(String_val(s), &base);
+  threshold = ((uint64_t) -1) / base;
+  d = parse_digit(*p);
+  if (d < 0 || d >= base) caml_failwith(UINT64_ERRMSG);
+  res = d;
+  for (p++; /*nothing*/; p++) {
+    char c = *p;
+    if (c == '_') continue;
+    d = parse_digit(c);
+    if (d < 0 || d >= base) break;
+    /* Detect overflow in multiplication base * res */
+    if (res > threshold) caml_failwith(UINT64_ERRMSG);
+    res = base * res + d;
+    /* Detect overflow in addition (base * res) + d */
+    if (res < (uint64_t) d) caml_failwith(UINT64_ERRMSG);
+  }
+  if (p != String_val(s) + caml_string_length(s)){
+    caml_failwith(UINT64_ERRMSG);
+  }
+  return caml_copy_uint64(res);
+}
+
+CAMLprim value caml_uint64_format(value fmt, value arg)
+{
+  char format_string[FORMAT_BUFFER_SIZE];
+
+  parse_format(fmt, ARCH_INT64_PRINTF_FORMAT, format_string);
+  return caml_alloc_sprintf(format_string, Uint64_val(arg));
+}
+
+intnat caml_uint64_compare_unboxed(uint64_t i1, uint64_t i2)
+{
+  return (i1 > i2) - (i1 < i2);
+}
+
+CAMLprim value caml_uint64_compare(value v1, value v2)
+{
+  return Val_int(caml_uint64_compare_unboxed(Uint64_val(v1),
+                                             Uint64_val(v2)));
 }

@@ -40,8 +40,8 @@ extern "C" {
   bp: Pointer to the first byte of a block.  (a char *)
   op: Pointer to the first field of a block.  (a value *)
   hp: Pointer to the header of a block.  (a char *)
-  int32_t: Four bytes on all architectures.
-  int64_t: Eight bytes on all architectures.
+  int32_t, uint32_t: Four bytes on all architectures.
+  int64_t, uint64_t: Eight bytes on all architectures.
 
   Remark: A block size is always a multiple of the word size, and at least
           one word plus the header.
@@ -341,15 +341,20 @@ CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
 #define Data_custom_val(v) ((void *) &Field((v), 1))
 struct custom_operations;       /* defined in [custom.h] */
 
-/* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
+/* Int32.t, Int64.t, Uint32.t, Uint64.t, and Nativeint.t
+   are represented as custom blocks. */
 
 #define Int32_val(v) (*((int32_t *) Data_custom_val(v)))
+#define Uint32_val(v) (*((uint32_t *) Data_custom_val(v)))
 #define Nativeint_val(v) (*((intnat *) Data_custom_val(v)))
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64_t *) Data_custom_val(v)))
+#define Uint64_val(v) (*((uint64_t *) Data_custom_val(v)))
 #else
 CAMLextern int64_t caml_Int64_val(value v);
+CAMLextern uint64_t caml_Uint64_val(value v);
 #define Int64_val(v) caml_Int64_val(v)
+#define Uint64_val(v) caml_Uint64_val(v)
 #endif
 
 /* 3- Atoms are 0-tuples.  They are statically allocated once and for all. */
