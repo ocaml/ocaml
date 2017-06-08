@@ -219,6 +219,8 @@ clean::
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
+export AWK
+
 %.cmi: %.mli
 	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
@@ -278,11 +280,11 @@ SPACE := $(EMPTY) $(EMPTY)
 depend:
 	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
 	  > .depend.tmp
-	$(CAMLDEP) -slash -pp "awk -f remove_module_aliases.awk" \
+	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
 	  stdlib.ml stdlib.mli >> .depend.tmp
 	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
-	$(CAMLDEP) -slash -pp "awk -f remove_module_aliases.awk" stdlib.ml \
+	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -re \
 	  's#(^| )(${subst ${SPACE},|,${PREFIXED_OBJS:stdlib__%.cmo=%}})[.]#\1stdlib__\2.#g' \

@@ -17,7 +17,7 @@
 case $1 in
   stdlib.cm[iox]|stdlib.p.cmx)
       echo ' -nopervasives -no-alias-deps -w -49' \
-           ' -pp "awk -f expand_module_aliases.awk"';;
+           ' -pp "$AWK -f expand_module_aliases.awk"';;
   stdlib__pervasives.cm[iox]|stdlib__pervasives.p.cmx) echo ' -nopervasives';;
   camlinternalOO.cmx|camlinternalOO.p.cmx) echo ' -inline 0';;
   stdlib__buffer.cmx|stdlib__buffer.p.cmx) echo ' -inline 3';;
