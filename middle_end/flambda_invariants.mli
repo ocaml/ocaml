@@ -16,14 +16,9 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-type flambda_kind =
-  | Normal
-  | Lifted
-
 (** Checking of invariants on Flambda expressions.  Raises an exception if
     a check fails. *)
 val check_exn
-   : ?kind:flambda_kind
-  -> ?cmxfile:bool
+   : ?cmxfile:bool
   -> Flambda.program
   -> unit
