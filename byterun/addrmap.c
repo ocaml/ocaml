@@ -2,7 +2,6 @@
 #include "caml/memory.h"
 #include "caml/addrmap.h"
 
-#define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
 #define MAX_CHAIN 100
 
 static uintnat pos_initial(struct addrmap* t, value key)
