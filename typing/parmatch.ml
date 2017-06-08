@@ -2004,23 +2004,20 @@ let irrefutable pat = le_pat pat omega
    trivial computations (tag/equality tests).
    Patterns containing (lazy _) subpatterns are active. *)
 
-let rec inactive pat = match pat with
-| Tpat_lazy _ ->
-    false
-| Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->
-    true
-| Tpat_tuple ps | Tpat_construct (_, _, ps) | Tpat_array ps ->
-    List.for_all (fun p -> inactive p.pat_desc) ps
-| Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
-    inactive p.pat_desc
-| Tpat_record (ldps,_) ->
-    List.exists (fun (_, _, p) -> inactive p.pat_desc) ldps
-| Tpat_or (p,q,_) ->
-    inactive p.pat_desc && inactive q.pat_desc
-
-(* A `fluid' pattern is both irrefutable and inactive *)
-
-let fluid pat =  irrefutable pat && inactive pat.pat_desc
+let rec inactive pat =
+  match pat.pat_desc with
+  | Tpat_lazy _ ->
+      false
+  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->
+      true
+  | Tpat_tuple ps | Tpat_construct (_, _, ps) | Tpat_array ps ->
+      List.for_all (fun p -> inactive p) ps
+  | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
+      inactive p
+  | Tpat_record (ldps,_) ->
+      List.exists (fun (_, _, p) -> inactive p) ldps
+  | Tpat_or (p,q,_) ->
+      inactive p && inactive q
 
 
 
