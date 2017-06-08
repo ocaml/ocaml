@@ -165,7 +165,13 @@ static void oldify_one (void* st_v, value v, value *p)
         sz = Wosize_hd (hd);
         st->live_bytes += Bhsize_hd(hd);
         result = alloc_shared(sz, tag);
-        for (i = 0; i < sz; i++) Op_val (result)[i] = Op_val(v)[i];
+        for (i = 0; i < sz; i++) {
+          value curr = Op_val(v)[i];
+          /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
+             However, it's a useful debugging aid for now */
+          Assert(!Is_debug_tag(curr));
+          Op_val (result)[i] = curr;
+        }
         Hd_val (v) = 0;            /* Set forward flag */
         Op_val (v)[0] = result;    /*  and forward pointer. */
         // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
@@ -539,6 +545,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
                  domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
                  (unsigned)(minor_allocated_bytes + 512)/1024, rewritten);
+    caml_ev_msg("mempty");
   }
   else {
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);
@@ -579,9 +586,10 @@ void caml_empty_minor_heap ()
 CAMLexport void caml_minor_collection (void)
 {
   caml_ev_pause(EV_PAUSE_GC);
-  caml_ev_start_gc();
 
+  caml_ev_start_gc();
   caml_empty_minor_heap ();
+  caml_ev_end_gc();
 
   caml_major_collection_slice (0);
 
@@ -591,7 +599,6 @@ CAMLexport void caml_minor_collection (void)
 
   Assert (Caml_state->young_end == Caml_state->young_ptr);
 
-  caml_ev_end_gc();
   caml_ev_resume();
 
   /* If the major slice triggered a STW, do that now */

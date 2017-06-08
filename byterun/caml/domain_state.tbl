@@ -62,3 +62,8 @@ DOMAIN_STATE(uint64, call_imm)
 DOMAIN_STATE(uint64, call_ind)
 
 DOMAIN_STATE(uint64, stackoverflow_checks)
+
+
+
+DOMAIN_STATE(intnat, critical_section_nesting)
+DOMAIN_STATE(struct interrupt*, pending_interrupts)

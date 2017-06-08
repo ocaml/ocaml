@@ -236,7 +236,7 @@ struct read_fault_req {
 
 static void send_read_fault(struct read_fault_req*);
 
-static void handle_read_fault(struct domain* target, void* reqp) {
+static void handle_read_fault(struct domain* target, void* reqp, interrupt* done) {
   struct read_fault_req* req = reqp;
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
@@ -256,6 +256,7 @@ static void handle_read_fault(struct domain* target, void* reqp) {
     // caml_gc_log("Stale read fault for domain [%02d]", target->id);
     send_read_fault(req);
   }
+  caml_acknowledge_interrupt(done);
 }
 
 static void send_read_fault(struct read_fault_req* req)
@@ -263,7 +264,9 @@ static void send_read_fault(struct read_fault_req* req)
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v)) {
     // caml_gc_log("Read fault to domain [%02d]", caml_owner_of_young_block(v)->id);
-    caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req);
+    if (!caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req)) {
+      send_read_fault(req);
+    }
     Assert(!Is_minor(req->ret));
     // caml_gc_log("Read fault returned (%p)", (void*)req->ret);
   } else {
@@ -278,6 +281,7 @@ CAMLexport value caml_read_barrier(value obj, int field)
   if (Is_foreign(v)) {
     struct read_fault_req req = {obj, field, Val_unit};
     send_read_fault(&req);
+    Assert (!Is_foreign(req.ret));
     return req.ret;
   } else {
     return v;
@@ -294,7 +298,7 @@ struct bvar_transfer_req {
   int new_owner;
 };
 
-static void handle_bvar_transfer(struct domain* self, void *reqp)
+static void handle_bvar_transfer(struct domain* self, void *reqp, interrupt* done)
 {
   struct bvar_transfer_req *req = reqp;
   value bv = req->bv;
@@ -313,8 +317,11 @@ static void handle_bvar_transfer(struct domain* self, void *reqp)
        and there's nobody left to win the race */
     // caml_gc_log("Stale bvar transfer [%02d] -> [%02d] ([%02d] got there first)",
     //            self->id, req->new_owner, owner);
-    caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, req);
+    if (!caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, req)) {
+      /* if it failed, the calling domain will retry if necessary */
+    }
   }
+  caml_acknowledge_interrupt(done);
 }
 
 /* Get a bvar's status, transferring it if necessary */
@@ -329,7 +336,9 @@ intnat caml_bvar_status(value bv)
     /* Otherwise, need to transfer */
     struct bvar_transfer_req req = {bv, Caml_state->id};
     // caml_gc_log("Transferring bvar from domain [%02d]", owner);
-    caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req);
+    if (!caml_domain_rpc(caml_domain_of_id(owner), &handle_bvar_transfer, &req)) {
+      /* don't care if it failed, since we check ownership next time around */
+    }
 
     /* We may not have ownership at this point: we might have just
        handled an incoming ownership request right after we got
