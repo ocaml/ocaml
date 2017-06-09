@@ -249,6 +249,9 @@ Working version
 - GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
   (Olivier Andrieu)
 
+- GPR#1003: C API additions to support multicore.
+  (Stephen Dolan, review by Mark Shinwell and Damien Doligez)
+
 Next major version (4.05.0):
 ----------------------------
 
