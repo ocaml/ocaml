@@ -13,7 +13,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_API_VERSION 405
+#define CAML_API_VERSION 406
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>

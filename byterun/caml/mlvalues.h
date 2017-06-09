@@ -183,7 +183,7 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 /* Pointer to the first field. */
 #define Op_val(x) ((value *) (x))
 /* Fields are numbered from 0. */
-#if CAML_API_VERSION < 405
+#if CAML_API_VERSION < 406
 #define Field(x, i) (((value *)(x)) [i])           /* Also an l-value. */
 #endif
 

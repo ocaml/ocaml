@@ -47,7 +47,7 @@ CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t bsz);
 CAMLextern void caml_free_dependent_memory (mlsize_t bsz);
-#if CAML_API_VERSION < 405
+#if CAML_API_VERSION < 406
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 #endif
@@ -543,7 +543,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
 #endif /* CAML_API_VERSION < 400 */
 
 
-#if CAML_API_VERSION < 405
+#if CAML_API_VERSION < 406
 
 /* [caml_register_global_root] registers a global C variable as a memory root
    for the duration of the program, or until [caml_remove_global_root] is
@@ -585,7 +585,7 @@ CAMLextern void caml_remove_generational_global_root (value *);
 
 CAMLextern void caml_modify_generational_global_root(value *r, value newval);
 
-#endif /* CAML_API_VERSION < 405 */
+#endif /* CAML_API_VERSION < 406 */
 
 
 typedef struct caml_root_private* caml_root;
