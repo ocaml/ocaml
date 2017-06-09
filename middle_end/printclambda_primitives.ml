@@ -21,11 +21,15 @@ let boxed_integer_name = function
   | Lambda.Pnativeint -> "nativeint"
   | Lambda.Pint32 -> "int32"
   | Lambda.Pint64 -> "int64"
+  | Lambda.Puint32 -> "uint32"
+  | Lambda.Puint64 -> "uint64"
 
 let boxed_integer_mark name = function
   | Lambda.Pnativeint -> Printf.sprintf "Nativeint.%s" name
   | Lambda.Pint32 -> Printf.sprintf "Int32.%s" name
   | Lambda.Pint64 -> Printf.sprintf "Int64.%s" name
+  | Lambda.Puint32 -> Printf.sprintf "UInt32.%s" name
+  | Lambda.Puint64 -> Printf.sprintf "UInt64.%s" name
 
 let print_boxed_integer name ppf bi =
   fprintf ppf "%s" (boxed_integer_mark name bi);;

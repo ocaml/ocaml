@@ -34,6 +34,8 @@ let value_kind =
   | Pboxedintval Pnativeint -> ":nativeint"
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
+  | Pboxedintval Puint32 -> ":uint32"
+  | Pboxedintval Puint64 -> ":uint64"
 
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x

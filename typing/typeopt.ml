@@ -79,7 +79,9 @@ let classify env ty =
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then Addr
+           || Path.same p Predef.path_int64
+           || Path.same p Predef.path_uint32
+           || Path.same p Predef.path_uint64 then Addr
       else begin
         try
           match (Env.find_type p env).type_kind with
@@ -166,6 +168,10 @@ let value_kind env ty =
       Pboxedintval Pint32
   | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
       Pboxedintval Pint64
+  | Tconstr(p, _, _) when Path.same p Predef.path_uint32 ->
+      Pboxedintval Puint32
+  | Tconstr(p, _, _) when Path.same p Predef.path_uint64 ->
+      Pboxedintval Puint64
   | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
       Pboxedintval Pnativeint
   | _ ->

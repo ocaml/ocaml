@@ -159,7 +159,7 @@ and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
 and boxed_integer = Primitive.boxed_integer =
-    Pnativeint | Pint32 | Pint64
+    Pnativeint | Pint32 | Pint64 | Puint32 | Puint64
 
 and bigarray_kind =
     Pbigarray_unknown
@@ -184,9 +184,11 @@ let equal_boxed_integer x y =
   match x, y with
   | Pnativeint, Pnativeint
   | Pint32, Pint32
-  | Pint64, Pint64 ->
+  | Pint64, Pint64
+  | Puint32, Puint32
+  | Puint64, Puint64 ->
     true
-  | (Pnativeint | Pint32 | Pint64), _ ->
+  | (Pnativeint | Pint32 | Pint64 | Puint32 | Puint64), _ ->
     false
 
 let equal_primitive =

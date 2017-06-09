@@ -167,7 +167,7 @@ and block_shape =
   value_kind list option
 
 and boxed_integer = Primitive.boxed_integer =
-    Pnativeint | Pint32 | Pint64
+    Pnativeint | Pint32 | Pint64 | Puint32 | Puint64
 
 and bigarray_kind =
     Pbigarray_unknown
