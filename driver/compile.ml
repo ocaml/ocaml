@@ -27,7 +27,7 @@ open Compenv
 let tool_name = "ocamlc"
 
 let interface ppf sourcefile outputprefix =
-  Timings.time_call sourcefile (fun () ->
+  Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
@@ -36,7 +36,7 @@ let interface ppf sourcefile outputprefix =
 
     if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
     if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
-    Timings.(time_call typing) (fun () ->
+    Profile.(record_call typing) (fun () ->
       let tsg = Typemod.type_interface sourcefile initial_env ast in
       if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
@@ -67,7 +67,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 
 let implementation ppf sourcefile outputprefix =
-  Timings.time_call sourcefile (fun () ->
+  Profile.record_call sourcefile (fun () ->
     Compmisc.init_path false;
     let modulename = module_of_filename ppf sourcefile outputprefix in
     Env.set_unit_name modulename;
@@ -77,7 +77,7 @@ let implementation ppf sourcefile outputprefix =
         Pparse.parse_implementation ~tool_name ppf sourcefile
         ++ print_if ppf Clflags.dump_parsetree Printast.implementation
         ++ print_if ppf Clflags.dump_source Pprintast.structure
-        ++ Timings.(time typing)
+        ++ Profile.(record typing)
             (Typemod.type_implementation sourcefile outputprefix modulename env)
         ++ print_if ppf Clflags.dump_typedtree
           Printtyped.implementation_with_coercion
@@ -88,9 +88,9 @@ let implementation ppf sourcefile outputprefix =
       end else begin
         let bytecode, required_globals =
           (typedtree, coercion)
-          ++ Timings.(time transl)
+          ++ Profile.(record transl)
               (Translmod.transl_implementation modulename)
-          ++ Timings.(time ~accumulate:true generate)
+          ++ Profile.(record ~accumulate:true generate)
               (fun { Lambda.code = lambda; required_globals } ->
                 print_if ppf Clflags.dump_rawlambda Printlambda.lambda lambda
                 ++ Simplif.simplify_lambda sourcefile
@@ -103,7 +103,7 @@ let implementation ppf sourcefile outputprefix =
         let oc = open_out_bin objfile in
         try
           bytecode
-          ++ Timings.(time ~accumulate:true generate)
+          ++ Profile.(record ~accumulate:true generate)
               (Emitcode.to_file oc modulename objfile ~required_globals);
           Warnings.check_fatal ();
           close_out oc;

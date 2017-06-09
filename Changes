@@ -173,6 +173,10 @@ Working version
 - PR#6826, GPR#828, GPR#834: improve compilation time for open
   (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
+- PR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
+  also displays memory allocation and consumption
+  (Valentin Gatien-Baron, report by Gabriel Scherer)
+
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 

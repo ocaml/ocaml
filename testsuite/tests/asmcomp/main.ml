@@ -58,10 +58,10 @@ let main() =
      "-dreload", Arg.Set dump_reload, "";
      "-dscheduling", Arg.Set dump_scheduling, "";
      "-dlinear", Arg.Set dump_linear, "";
-     "-dtimings", Arg.Set print_timings, "";
+     "-dtimings", Arg.Unit (fun () -> profile_columns := [ `Time ]), "";
     ] compile_file usage
 
 let () =
   main ();
-  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0
