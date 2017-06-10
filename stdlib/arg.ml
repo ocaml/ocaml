@@ -309,8 +309,13 @@ let second_word s =
     else if s.[n] = ' ' then loop (n+1)
     else n
   in
-  try loop (String.index s ' ')
-  with Not_found -> len
+  match String.index s '\t' with
+  | n -> loop (n+1)
+  | exception Not_found ->
+      begin match String.index s ' ' with
+      | n -> loop (n+1)
+      | exception Not_found -> len
+      end
 
 
 let max_arg_len cur (kwd, spec, doc) =
@@ -318,6 +323,10 @@ let max_arg_len cur (kwd, spec, doc) =
   | Symbol _ -> max cur (String.length kwd)
   | _ -> max cur (String.length kwd + second_word doc)
 
+
+let replace_leading_tab s =
+  let seen = ref false in
+  String.map (function '\t' when not !seen -> seen := true; ' ' | c -> c) s
 
 let add_padding len ksd =
   match ksd with
@@ -328,16 +337,16 @@ let add_padding len ksd =
   | (kwd, (Symbol _ as spec), msg) ->
       let cutcol = second_word msg in
       let spaces = String.make ((max 0 (len - cutcol)) + 3) ' ' in
-      (kwd, spec, "\n" ^ spaces ^ msg)
+      (kwd, spec, "\n" ^ spaces ^ replace_leading_tab msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
       let kwd_len = String.length kwd in
       let diff = len - kwd_len - cutcol in
       if diff <= 0 then
-        (kwd, spec, msg)
+        (kwd, spec, replace_leading_tab msg)
       else
         let spaces = String.make diff ' ' in
-        let prefix = String.sub msg 0 cutcol in
+        let prefix = String.sub (replace_leading_tab msg) 0 cutcol in
         let suffix = String.sub msg cutcol (String.length msg - cutcol) in
         (kwd, spec, prefix ^ spaces ^ suffix)
 

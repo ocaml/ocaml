@@ -25,6 +25,28 @@ open Cmo_format
 
 module StringSet = Set.Make(String)
 
+type error = Not_compatible_32 of (string * string)
+exception Error of error
+
+(* marshal and possibly check 32bit compat *)
+let marshal_to_channel_with_possibly_32bit_compat ~filename ~kind outchan obj =
+  try
+    Marshal.to_channel outchan obj
+      (if !Clflags.bytecode_compatible_32
+       then [Marshal.Compat_32] else [])
+  with Failure _ ->
+    raise (Error (Not_compatible_32 (filename, kind)))
+
+
+let report_error ppf (file, kind) =
+  Format.fprintf ppf "Generated %s %S cannot be used on a 32-bit platform" kind file
+let () =
+  Location.register_error_of_exn
+    (function
+      | Error (Not_compatible_32 info) -> Some (Location.error_of_printer_file report_error info)
+      | _ -> None
+    )
+
 (* Buffering of bytecode *)
 
 let out_buffer = ref(LongString.create 1024)
@@ -400,7 +422,9 @@ let to_file outchan unit_name objfile ~required_globals code =
   Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
                                            expansion before saving *)
   let pos_compunit = pos_out outchan in
-  output_value outchan compunit;
+  marshal_to_channel_with_possibly_32bit_compat
+    ~filename:objfile ~kind:"bytecode unit"
+    outchan compunit;
   seek_out outchan pos_depl;
   output_binary_int outchan pos_compunit
 

@@ -4,7 +4,7 @@
 
 This chapter describes the OCaml high-performance
 native-code compiler "ocamlopt", which compiles OCaml source files to
-native code object files and link these object files to produce
+native code object files and links these object files to produce
 standalone executables.
 
 The native-code compiler is only available on certain platforms.
@@ -126,15 +126,6 @@ the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
-\paragraph{Options for the Sparc architecture}
-The Sparc code generator supports the following additional options:
-\begin{options}
-\item["-march=v8"] Generate SPARC version 8 code.
-\item["-march=v9"] Generate SPARC version 9 code.
-\end{options}
-The default is to generate code for SPARC version 7, which runs on all
-SPARC processors.
-
 \paragraph{Contextual control of command-line options}
 
 The compiler command line can be modified ``from the outside''
@@ -198,12 +189,9 @@ is handled in one of the following ways, depending on the
 platform used:
 \begin{itemize}
 \item By raising a "Stack_overflow" exception, like the bytecode
-  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX, MS Windows
-  32-bit ports).
+  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX, MS Windows).
 \item By aborting the program on a ``segmentation fault'' signal.
 (All other Unix systems.)
-\item By terminating the program silently.
-(MS Windows 64 bits).
 \end{itemize}
 
 \item On IA32 processors only (Intel and AMD x86 processors in 32-bit

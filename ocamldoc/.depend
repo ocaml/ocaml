@@ -7,19 +7,19 @@ odoc_analyse.cmo : ../utils/warnings.cmi ../typing/types.cmi \
     ../driver/pparse.cmi ../parsing/parse.cmi odoc_types.cmi odoc_text.cmi \
     odoc_sig.cmi odoc_module.cmo odoc_misc.cmi odoc_messages.cmo \
     odoc_merge.cmi odoc_global.cmi odoc_dep.cmo odoc_cross.cmi \
-    odoc_comments.cmi odoc_class.cmo odoc_ast.cmi ../utils/misc.cmi \
-    ../parsing/longident.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
-    ../typing/env.cmi ../utils/config.cmi ../utils/clflags.cmi \
-    ../parsing/asttypes.cmi odoc_analyse.cmi
+    odoc_comments.cmi odoc_class.cmo odoc_ast.cmi ../parsing/longident.cmi \
+    ../parsing/location.cmi ../parsing/lexer.cmi ../typing/env.cmi \
+    ../utils/config.cmi ../utils/clflags.cmi ../parsing/asttypes.cmi \
+    odoc_analyse.cmi
 odoc_analyse.cmx : ../utils/warnings.cmx ../typing/types.cmx \
     ../typing/typemod.cmx ../typing/typedtree.cmx ../parsing/syntaxerr.cmx \
     ../driver/pparse.cmx ../parsing/parse.cmx odoc_types.cmx odoc_text.cmx \
     odoc_sig.cmx odoc_module.cmx odoc_misc.cmx odoc_messages.cmx \
     odoc_merge.cmx odoc_global.cmx odoc_dep.cmx odoc_cross.cmx \
-    odoc_comments.cmx odoc_class.cmx odoc_ast.cmx ../utils/misc.cmx \
-    ../parsing/longident.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
-    ../typing/env.cmx ../utils/config.cmx ../utils/clflags.cmx \
-    ../parsing/asttypes.cmi odoc_analyse.cmi
+    odoc_comments.cmx odoc_class.cmx odoc_ast.cmx ../parsing/longident.cmx \
+    ../parsing/location.cmx ../parsing/lexer.cmx ../typing/env.cmx \
+    ../utils/config.cmx ../utils/clflags.cmx ../parsing/asttypes.cmi \
+    odoc_analyse.cmi
 odoc_analyse.cmi : odoc_module.cmo odoc_global.cmi
 odoc_args.cmo : ../utils/warnings.cmi odoc_types.cmi odoc_texi.cmo \
     odoc_messages.cmo odoc_man.cmo odoc_latex.cmo odoc_html.cmo \

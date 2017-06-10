@@ -276,9 +276,6 @@ declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
-For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
-variant type, but a similar behaviour can be obtained through private
-row types.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
@@ -461,8 +458,8 @@ actually be unified with "int".
 
 The other application is to ensure that some definition is sufficiently
 polymorphic:
-\begin{caml_example}[error]
-let id: 'a. 'a -> 'a = fun x -> x + 1;;
+\begin{caml_example}{verbatim}[error]
+let id: 'a. 'a -> 'a = fun x -> x + 1
 \end{caml_example}
 
 \section{Locally abstract types}
@@ -866,7 +863,7 @@ parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
-\begin{caml_example*}
+\begin{caml_example*}{verbatim}
         module type Printable = sig
           type t
           val print : Format.formatter -> t -> unit
@@ -878,26 +875,26 @@ signatures sharing a type name.
         module type PrintableComparable = sig
           include Printable
           include Comparable with type t := t
-        end;;
+        end
 \end{caml_example*}
 
 One can also use this to completely remove a field:
-\begin{caml_example}
-module type S = Comparable with type t := int;;
+\begin{caml_example}{verbatim}
+module type S = Comparable with type t := int
 \end{caml_example}
 or to rename one:
-\begin{caml_example}
+\begin{caml_example}{verbatim}
 module type S = sig
   type u
   include Comparable with type t := u
-end;;
+end
 \end{caml_example}
 
 Note that you can also remove manifest types, by substituting with the
 same type.
-\begin{caml_example}
+\begin{caml_example}{verbatim}
 module type ComparableInt = Comparable with type t = int ;;
-module type CompareInt = ComparableInt with type t := int ;;
+module type CompareInt = ComparableInt with type t := int
 \end{caml_example}
 
 \section{Type-level module aliases}
@@ -932,8 +929,8 @@ satisfying the above constraints,
 \begin{caml_eval}
 module P = struct end
 \end{caml_eval}
-\begin{caml_example*}
-module N = P;;
+\begin{caml_example*}{verbatim}
+module N = P
 \end{caml_example*}
 has type
 \caml
@@ -1005,34 +1002,6 @@ you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
 %Note that in the above @'Mylib.cmo'@ is actually empty, and one could
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
-
-\section{Explicit overriding in class definitions}\label{s:explicit-overriding}
-\ikwd{method.\@\texttt{method\char33}}
-\ikwd{val.\@\texttt{val\char33}}
-\ikwd{inherit.\@\texttt{inherit\char33}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-class-field:
-      ...
-   |  'inherit!' class-expr ['as' lowercase-ident]
-   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-The keywords @"inherit!"@, @"val!"@ and @"method!"@ have the same semantics
-as @"inherit"@, @"val"@ and @"method"@, but they additionally require the
-definition they introduce to be an overriding. Namely, @"method!"@
-requires @method-name@ to be already defined in this class, @"val!"@
-requires @inst-var-name@ to be already defined in this class, and
-@"inherit!"@ requires @class-expr@ to override some definitions.
-If no such overriding occurs, an error is signaled.
-
-As a side-effect, these 3 keywords avoid the warnings~7
-(method override) and~13 (instance variable override).
-Note that warning~7 is disabled by default.
 
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}
@@ -1318,27 +1287,26 @@ compiler generates these names according to the following nomenclature:
 \item First, types whose name starts with a "$" are existentials.
 \item "$Constr_'a" denotes an existential type introduced for the type
 variable "'a" of the GADT constructor "Constr":
-\begin{caml_example}[error]
+\begin{caml_example}{verbatim}[error]
 type any = Any : 'name -> any
-let escape (Any x) = x;;
+let escape (Any x) = x
 \end{caml_example}
 \item "$Constr" denotes an existential type introduced for an anonymous %$
 type variable in the GADT constructor "Constr":
-\begin{caml_example}[error]
+\begin{caml_example}{verbatim}[error]
 type any = Any : _ -> any
-let escape (Any x) = x;;
+let escape (Any x) = x
 \end{caml_example}
 \item "$'a" if the existential variable was unified with the type %$
 variable "'a" during typing:
-\begin{caml_example}[error]
+\begin{caml_example}{verbatim}[error]
 type ('arg,'result,'aux) fn =
   | Fun: ('a ->'b) -> ('a,'b,unit) fn
   | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
-
  let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
   match f with
   | Fun f -> f x
-  | Mem1 (f,y,fy) -> if x = y then fy else f x;;
+  | Mem1 (f,y,fy) -> if x = y then fy else f x
 \end{caml_example}
 \item "$n" (n a number) is an internally generated existential %$
 which could not be named using one of the previous schemes.
@@ -1839,13 +1807,13 @@ Some extension nodes are understood by the compiler itself:
     constructor slot.
 \end{itemize}
 
-\begin{caml_example*}
+\begin{caml_example*}{verbatim}
 type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
-let y = [%extension_constructor Y];;
+let y = [%extension_constructor Y]
 \end{caml_example*}
-\begin{caml_example}
+\begin{caml_example}{toplevel}
  x <> y;;
 \end{caml_example}
 

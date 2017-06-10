@@ -316,6 +316,9 @@ command on executables produced by
 .BR ocamlc\ \-custom ,
 this would remove the bytecode part of the executable.
 .TP
+.BI \-depend\ ocamldep-args
+Compute dependencies, as ocamldep would do.
+.TP
 .BI \-dllib\ \-l libname
 Arrange for the C shared library
 .BI dll libname .so

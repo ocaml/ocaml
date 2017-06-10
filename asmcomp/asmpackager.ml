@@ -81,7 +81,7 @@ let check_units members =
 
 let make_package_object ppf members targetobj targetname coercion
       ~backend =
-  Timings.time_call (Printf.sprintf "pack(%s)" targetname) (fun () ->
+  Profile.record_call (Printf.sprintf "pack(%s)" targetname) (fun () ->
     let objtemp =
       if !Clflags.keep_asm_file
       then Filename.remove_extension targetobj ^ ".pack" ^ Config.ext_obj

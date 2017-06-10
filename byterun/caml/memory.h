@@ -74,7 +74,7 @@ CAMLextern int caml_huge_fallback_count;
 */
 typedef void* caml_stat_block;
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* The pool must be initialized with a call to [caml_stat_create_pool]
    before it is possible to use any of the [caml_stat_*] functions below.
@@ -94,7 +94,7 @@ CAMLextern void caml_stat_create_pool(void);
 */
 CAMLextern void caml_stat_destroy_pool(void);
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 /* [caml_stat_alloc(size)] allocates a memory block of the requested [size]
    (in bytes) and returns a pointer to it. It throws an OCaml exception in case

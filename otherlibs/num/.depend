@@ -1,6 +1,5 @@
-bng.$(O): bng.c bng.h ../../byterun/caml/config.h \
- ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
- ../../byterun/caml/compatibility.h bng_amd64.c bng_digit.c
+bng.$(O): bng.c bng.h ../../byterun/caml/config.h ../../byterun/caml/m.h \
+ ../../byterun/caml/s.h bng_digit.c
 bng_amd64.$(O): bng_amd64.c
 bng_arm64.$(O): bng_arm64.c
 bng_digit.$(O): bng_digit.c
@@ -8,16 +7,16 @@ bng_ia32.$(O): bng_ia32.c
 bng_ppc.$(O): bng_ppc.c
 bng_sparc.$(O): bng_sparc.c
 nat_stubs.$(O): nat_stubs.c ../../byterun/caml/alloc.h \
- ../../byterun/caml/compatibility.h ../../byterun/caml/misc.h \
- ../../byterun/caml/config.h ../../byterun/caml/../../config/m.h \
- ../../byterun/caml/../../config/s.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/config.h ../../byterun/caml/custom.h \
- ../../byterun/caml/intext.h ../../byterun/caml/io.h \
- ../../byterun/caml/fail.h ../../byterun/caml/hash.h \
- ../../byterun/caml/memory.h ../../byterun/caml/gc.h \
- ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
- ../../byterun/caml/minor_gc.h ../../byterun/caml/address_class.h \
- ../../byterun/caml/mlvalues.h bng.h nat.h
+ ../../byterun/caml/misc.h ../../byterun/caml/config.h \
+ ../../byterun/caml/m.h ../../byterun/caml/s.h \
+ ../../byterun/caml/mlvalues.h ../../byterun/caml/config.h \
+ ../../byterun/caml/custom.h ../../byterun/caml/intext.h \
+ ../../byterun/caml/io.h ../../byterun/caml/fail.h \
+ ../../byterun/caml/hash.h ../../byterun/caml/memory.h \
+ ../../byterun/caml/gc.h ../../byterun/caml/major_gc.h \
+ ../../byterun/caml/freelist.h ../../byterun/caml/minor_gc.h \
+ ../../byterun/caml/address_class.h ../../byterun/caml/mlvalues.h bng.h \
+ nat.h
 arith_flags.cmo : arith_flags.cmi
 arith_flags.cmx : arith_flags.cmi
 arith_flags.cmi :

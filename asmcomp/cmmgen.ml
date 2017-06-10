@@ -409,9 +409,10 @@ let rec div_int c1 c2 is_safe dbg =
       Cop(Cdivi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
-        Cifthenelse(c2,
-                    Cop(Cdivi, [c1; c2], dbg),
-                    raise_symbol dbg "caml_exn_Division_by_zero"))
+        bind "dividend" c1 (fun c1 ->
+          Cifthenelse(c2,
+                      Cop(Cdivi, [c1; c2], dbg),
+                      raise_symbol dbg "caml_exn_Division_by_zero")))
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -445,9 +446,10 @@ let mod_int c1 c2 is_safe dbg =
       Cop(Cmodi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
-        Cifthenelse(c2,
-                    Cop(Cmodi, [c1; c2], dbg),
-                    raise_symbol dbg "caml_exn_Division_by_zero"))
+        bind "dividend" c1 (fun c1 ->
+          Cifthenelse(c2,
+                      Cop(Cmodi, [c1; c2], dbg),
+                      raise_symbol dbg "caml_exn_Division_by_zero")))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)

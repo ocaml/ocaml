@@ -233,6 +233,8 @@ let escape_specials s =
 
 exception Missing_double_semicolon of string * int
 
+exception Missing_mode of string * int
+
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -249,39 +251,55 @@ let process_file file =
       open_out_gen [Open_wronly; Open_creat; Open_append; Open_text]
         0x666 !outfile
     with _ -> failwith "Cannot open output file" in
+  let re_spaces = "[ \t]*" in
+  let re_start = ~!(
+      {|\\begin{caml_example\(\*?\)}|} ^ re_spaces
+      ^ {|\({toplevel}\|{verbatim}\)?|} ^ re_spaces
+      ^ {|\(\[\(.*\)\]\)?|} ^ re_spaces
+      ^ "$"
+    ) in
   try while true do
     let input = ref (input_line ic) in
     incr_phrase_start();
-    if string_match
-        ~!"\\\\begin{caml_example\\(\\*?\\)}[ \t]*\\(\\[\\(.*\\)\\]\\)?[ \t]*$"
-        !input 0
+    if string_match re_start !input 0
     then begin
       let omit_answer = matched_group 1 !input = "*" in
-      let global_expected = try Output.expected @@ matched_group 3 !input
-            with Not_found -> Output.Ok
-      in
+      let explicit_stop =
+        match matched_group 2 !input with
+        | exception Not_found -> raise (Missing_mode(file, !phrase_stop))
+        | "{toplevel}" -> true
+        | "{verbatim}" -> false
+        | _ -> assert false in
+      let global_expected = try Output.expected @@ matched_group 4 !input
+        with Not_found -> Output.Ok in
       start true oc main;
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
         let rec read () =
           let input = incr phrase_stop; input_line ic in
-          if string_match ~!"\\\\end{caml_example\\*?}[ \t]*$"
-              input 0
-          then begin
-            if !phrase_stop = 1 + !phrase_start then
-              raise End_of_file
-            else
-              raise @@ Missing_double_semicolon (file,!phrase_stop)
-          end;
+          let implicit_stop =
+            if string_match ~!"\\\\end{caml_example\\*?}[ \t]*$"
+                input 0
+            then
+              begin
+                if !phrase_stop = 1 + !phrase_start then
+                  raise End_of_file
+                else if explicit_stop then
+                  raise @@ Missing_double_semicolon (file,!phrase_stop)
+                else
+                  true
+              end
+            else false in
           if Buffer.length phrase > 0 then Buffer.add_char phrase '\n';
-          let stop = string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 in
+          let stop = implicit_stop
+                     || string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 in
           if not stop then (
             Buffer.add_string phrase input; read ()
           )
           else begin
             decr phrase_stop;
-            let last_input = matched_group 1 input in
+            let last_input = if implicit_stop then "" else matched_group 1 input in
             let expected =
               if string_match ~!{|\(.*\)\[@@expect \(.*\)\]|} last_input 0 then
                 ( Buffer.add_string phrase (matched_group 1 last_input);
@@ -289,14 +307,15 @@ let process_file file =
               else
                 (Buffer.add_string phrase last_input; global_expected)
             in
-            Buffer.add_string phrase ";;";
-            Buffer.contents phrase, expected
+            if not implicit_stop then Buffer.add_string phrase ";;";
+            implicit_stop, Buffer.contents phrase, expected
           end in
         read ()
       in
       try while true do
-        let phrase, expected = read_phrase () in
-        fprintf caml_output "%s\n" phrase;
+        let implicit_stop, phrase, expected = read_phrase () in
+        fprintf caml_output "%s%s" phrase
+        (if implicit_stop then ";;\n" else "\n");
         flush caml_output;
         output_string caml_output "\"end_of_input\";;\n";
         flush caml_output;
@@ -335,7 +354,8 @@ let process_file file =
           code_env ~newline:false (Output.env status) oc output;
         stop true oc phrase_env;
         flush oc;
-        first := false
+        first := false;
+        if implicit_stop then raise End_of_file
       done
       with End_of_file -> phrase_start:= !phrase_stop; stop true oc main
     end
@@ -364,11 +384,22 @@ let process_file file =
       ( Output.print_parsing_error k s;
         close_in ic; close_out oc; exit 1 )
   | Missing_double_semicolon (file, line_number) ->
-      ( Format.eprintf "Error when evaluating a caml_example environment in \
-                        %s:\nmissing \";;\" at line %d\n" file (line_number-2);
+      ( Format.eprintf "@[<hov 2> Error \
+                        when evaluating a caml_example environment in %s:@;\
+                        missing \";;\" at line %d@]@." file (line_number-2);
         close_in ic; close_out oc;
         exit 1
       )
+  | Missing_mode (file, line_number) ->
+      ( Format.eprintf "@[<hov 2>Error \
+                        when parsing a caml_example environment in %s:@;\
+                        missing mode argument at line %d,@ \
+                        available modes {toplevel,verbatim}@]@."
+          file (line_number-2);
+        close_in ic; close_out oc;
+        exit 1
+      )
+
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin

@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Reloading for the Sparc *)
+val main : unit -> unit
 
-let fundecl f =
-  (new Reloadgen.reload_generic)#fundecl f
+(* entry point when called from the -depend option of ocamlc/ocamlopt *)
+val main_from_option : unit -> unit

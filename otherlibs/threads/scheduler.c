@@ -40,7 +40,7 @@
        defined(HAS_SETITIMER) && \
        defined(HAS_GETTIMEOFDAY) && \
        (defined(HAS_WAITPID) || defined(HAS_WAIT4)))
-#include "Cannot compile libthreads, system calls missing"
+#warning "Cannot compile libthreads, system calls missing"
 #endif
 
 #include <errno.h>

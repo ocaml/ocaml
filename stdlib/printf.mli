@@ -56,7 +56,10 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [e] or [E]: convert a floating-point argument to decimal notation,
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
-     in style [f] or [e], [E] (whichever is more compact).
+     in style [f] or [e], [E] (whichever is more compact). Moreover,
+     any trailing zeros are removed from the fractional part of the result
+     and the decimal-point character is removed if there is no fractional
+     part remaining.
    - [h] or [H]: convert a floating-point argument to hexadecimal notation,
      in the style [0xh.hhhh e+-dd] (hexadecimal mantissa, exponent in
      decimal and denotes a power of 2).

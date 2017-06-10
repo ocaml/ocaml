@@ -27,6 +27,10 @@ type out_ident =
   | Oide_dot of out_ident * string
   | Oide_ident of string
 
+type out_string =
+  | Ostr_string
+  | Ostr_bytes
+
 type out_attribute =
   { oattr_name: string }
 
@@ -43,7 +47,7 @@ type out_value =
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
   | Oval_record of (out_ident * out_value) list
-  | Oval_string of string
+  | Oval_string of string * int * out_string (* string, size-to-print, kind *)
   | Oval_stuff of string
   | Oval_tuple of out_value list
   | Oval_variant of string * out_value option

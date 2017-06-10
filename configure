@@ -635,6 +635,7 @@ echo "#define SIZEOF_LONG $2" >> m.h
 echo "#define SIZEOF_PTR $3" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 echo "#define SIZEOF_LONGLONG $5" >> m.h
+echo "#define INT64_LITERAL(s) s ## LL" >> m.h
 
 # Determine endianness
 
@@ -809,6 +810,16 @@ if $with_sharedlibs; then
       mksharedlibrpath="-Wl,-rpath,"
       natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
+    powerpc-*-aix*)
+      case "$ccfamily" in
+        xlc-*)sharedcccompopts="-qpic"
+              mksharedlib="$cc -qmkshrobj -G"
+              mksharedlibrpath="-Wl,-blibpath,"
+              ldflags="$ldflags -brtl -bexpfull"
+              dl_needs_underscore=false
+              rpath="-Wl,-blibpath,"
+              shared_libraries_supported=true;;
+      esac
   esac
 fi
 
@@ -835,7 +846,6 @@ if $with_sharedlibs; then
     x86_64-*-darwin*)             natdynlink=true;;
     s390x*-*-linux*)              natdynlink=true;;
     powerpc*-*-linux*)            natdynlink=true;;
-    sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
     x86_64-*-dragonfly*)          natdynlink=true;;
@@ -868,10 +878,6 @@ model=default
 system=unknown
 
 case "$target" in
-  sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
-  sparc*-*-*bsd*)               arch=sparc; system=bsd;;
-  sparc*-*-linux*)              arch=sparc; system=linux;;
-  sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-solaris*)         if $arch64; then
@@ -927,7 +933,7 @@ esac
 # Sometimes, it's 32-bit mode that is not supported  (PR#6722).
 
 case "$arch64,$arch,$model" in
-  true,sparc,*|true,power,ppc|false,amd64,*)
+  true,power,ppc|false,amd64,*)
       arch=none; model=default; system=unknown;;
 esac
 
@@ -952,8 +958,8 @@ asppprofflags='-DPROFILING'
 
 case "$arch,$system" in
   amd64,macosx)   if sh ./searchpath clang; then
-                      as='clang -arch x86_64 -c'
-                      aspp='clang -arch x86_64 -c'
+                      as='clang -arch x86_64 -Wno-trigraphs -c'
+                      aspp='clang -arch x86_64 -Wno-trigraphs -c'
                     else
                       as="${TOOLPREF}as -arch x86_64"
                       aspp="${TOOLPREF}gcc -arch x86_64 -c"
@@ -971,22 +977,17 @@ case "$arch,$system" in
                   fi;;
   s390x,elf)      as="${TOOLPREF}as -m 64 -march=$model"
                   aspp="${TOOLPREF}gcc -c -Wa,-march=$model";;
-  sparc,solaris)  as="${TOOLPREF}as"
-                  case "$cc" in
-                    *gcc*) aspp="${TOOLPREF}gcc -c";;
-                    *) aspp="${TOOLPREF}as -P";;
-                  esac;;
   arm,freebsd)    as="${TOOLPREF}cc -c"
                   aspp="${TOOLPREF}cc -c";;
   *,dragonfly)    as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd*,*)
                   as="${TOOLPREF}as"
                   case "$ccfamily" in
                       clang-*)
-                          aspp="${TOOLPREF}clang -c"
+                          aspp="${TOOLPREF}clang -c -Wno-trigraphs"
                           ;;
                       *)
                           aspp="${TOOLPREF}gcc -c"
@@ -1004,10 +1005,6 @@ case "$arch,$system" in
   i386,bsd_elf) profiling='true';;
   amd64,macosx) profiling='true';;
   i386,macosx) profiling='true';;
-  sparc,bsd) profiling='true';;
-  sparc,solaris)
-    profiling='true'
-    case "$cc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,linux) profiling='true';;
   amd64,openbsd) profiling='true';;
   amd64,freebsd) profiling='true';;
@@ -2049,8 +2046,9 @@ echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
 
 
 rm -f tst hasgot.c
-rm -f ../m.h ../s.h ../Makefile
-mv m.h s.h Makefile ..
+rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
+mv m.h s.h ../../byterun/caml/
+mv Makefile ..
 
 # Print a summary
 

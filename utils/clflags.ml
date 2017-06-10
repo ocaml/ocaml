@@ -124,7 +124,7 @@ let dump_linear = ref false             (* -dlinear *)
 let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
-let print_timings = ref false           (* -dtimings *)
+let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
@@ -366,6 +366,11 @@ let unboxed_types = ref false
 
 let arg_spec = ref []
 let arg_names = ref Misc.StringMap.empty
+
+let reset_arguments () =
+  arg_spec := [];
+  arg_names := Misc.StringMap.empty
+
 let add_arguments loc args =
   List.iter (function (arg_name, _, _) as arg ->
     try

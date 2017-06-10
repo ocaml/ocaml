@@ -13,7 +13,7 @@ In this chapter, we show some larger examples using objects, classes
 and modules.  We review many of the object features simultaneously on
 the example of a bank account.  We show how modules taken from the
 standard library can be expressed as classes.  Lastly, we describe a
-programming pattern know of as {\em virtual types} through the example
+programming pattern known as {\em virtual types} through the example
 of window managers.
 
 \section{Extended example: bank accounts}
@@ -52,7 +52,7 @@ module Euro : MONEY =
       end
   end;;
 \end{caml_eval}
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let euro = new Euro.c;;
 let zero = euro 0.;;
 let neg x = x#times (-1.);;
@@ -67,7 +67,7 @@ class account =
 let c = new account in c # deposit (euro 100.); c # withdraw (euro 50.);;
 \end{caml_example}
 We now refine this definition with a method to compute interest.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class account_with_interests =
   object (self)
     inherit account
@@ -81,7 +81,7 @@ that will manage monthly or yearly updates of the account.
 We should soon fix a bug in the current definition: the deposit method can
 be used for withdrawing money by depositing negative amounts. We can
 fix this directly:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class safe_account =
   object
     inherit account
@@ -89,7 +89,7 @@ class safe_account =
   end;;
 \end{caml_example}
 However, the bug might be fixed more safely by  the following definition:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class safe_account =
   object
     inherit account as unsafe
@@ -104,7 +104,7 @@ the method "deposit".
 To keep track of operations, we extend the class with a mutable field
 "history" and a private method "trace" to add an operation in the
 log. Then each method to be traced is redefined.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 type 'a operation = Deposit of 'a | Retrieval of 'a;;
 class account_with_history =
   object (self)
@@ -120,7 +120,7 @@ class account_with_history =
 One may wish to open an account and simultaneously deposit some initial
 amount. Although the initial implementation did not address this
 requirement, it can be achieved by using an initializer.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class account_with_deposit x =
   object
     inherit account_with_history
@@ -128,7 +128,7 @@ class account_with_deposit x =
   end;;
 \end{caml_example}
 A better alternative is:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class account_with_deposit x =
   object (self)
     inherit account_with_history
@@ -138,20 +138,20 @@ class account_with_deposit x =
 Indeed, the latter is safer since the call to "deposit" will automatically
 benefit from safety checks and from the trace.
 Let's test it:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let ccp = new account_with_deposit (euro 100.) in
 let _balance = ccp#withdraw (euro 50.) in
 ccp#history;;
 \end{caml_example}
 Closing an account can be done with the following polymorphic function:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let close c = c#withdraw c#balance;;
 \end{caml_example}
 Of course, this applies to all sorts of accounts.
 
 Finally, we gather several versions of the account into a module "Account"
 abstracted over some currency.
-\begin{caml_example*}
+\begin{caml_example*}{toplevel}
 let today () = (01,01,2000) (* an approximation *)
 module Account (M:MONEY) =
   struct
@@ -215,7 +215,7 @@ the same code can be used to provide accounts in different currencies.
 The class "bank" is the {\em real} implementation of the bank account (it
 could have been inlined). This is the one that will be used for further
 extensions, refinements, etc.  Conversely, the client will only be given the client view.
-\begin{caml_example*}
+\begin{caml_example*}{toplevel}
 module Euro_account = Account(Euro);;
 module Client = Euro_account.Client (Euro_account);;
 new Client.account (new Euro.c 100.);;
@@ -236,7 +236,7 @@ It is important to provide the client's view as a functor
 specialization of the "bank".
 The functor "Client" may remain unchanged and be passed
 the new definition to initialize a client's view of the extended account.
-\begin{caml_example*}
+\begin{caml_example*}{toplevel}
 module Investment_account (M : MONEY) =
   struct
     type m = M.c
@@ -261,7 +261,7 @@ new Client.account (new Euro.c 100.);;
 \end{caml_eval}
 The functor "Client" may also be redefined when some new features of the
 account can be given to the client.
-\begin{caml_example*}
+\begin{caml_example*}{toplevel}
 module Internet_account (M : MONEY) =
   struct
     type m = M.c
@@ -313,7 +313,7 @@ We show here how to do it for strings.
 \label{module:string}
 
 A naive definition of strings as objects could be:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ostring s =
   object
      method get n = String.get s n
@@ -325,7 +325,7 @@ However, the method "escaped" returns an object of the class "ostring",
 and not an object of the current class. Hence, if the class is further
 extended, the method "escaped" will only return an object of the parent
 class.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class sub_string s =
   object
      inherit ostring s
@@ -335,7 +335,7 @@ class sub_string s =
 As seen in section \ref{ss:binary-methods}, the solution is to use
 functional update instead. We need to create an instance variable
 containing the representation "s" of the string.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class better_string s =
   object
      val repr = s
@@ -353,7 +353,7 @@ In order to concatenate a string with another string of the same class,
 one must be able to access the instance variable externally. Thus, a method
 "repr" returning s must be defined. Here is the correct definition of
 strings:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ostring s =
   object (self : 'mytype)
      val repr = s
@@ -367,7 +367,7 @@ class ostring s =
 \end{caml_example}
 Another constructor of the class string can be defined to return a new
 string of a given length:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class cstring n = ostring (String.make n ' ');;
 \end{caml_example}
 Here, exposing the representation of strings is probably harmless.  We do
@@ -381,7 +381,7 @@ There is sometimes an alternative between using modules or classes for
 parametric data types.
 Indeed, there are situations when the two approaches are quite similar.
 For instance, a stack can be  straightforwardly implemented as a class:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 exception Empty;;
 class ['a] stack =
   object
@@ -400,7 +400,7 @@ argument that will be passed to the method "fold".
 %The intuition is that method "fold" should be polymorphic, i.e. of type
 %"All ('a) ('b -> 'a -> 'b) -> 'b -> 'b".
 A naive approach is to make "'b" an extra parameter of class "stack":
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['a, 'b] stack2 =
   object
     inherit ['a] stack
@@ -409,7 +409,7 @@ class ['a, 'b] stack2 =
 \end{caml_example}
 However, the method "fold" of a given object can only be
 applied to functions that all have the same type:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let s = new stack2;;
 s#fold ( + ) 0;;
 s;;
@@ -421,7 +421,7 @@ universally quantified, giving "fold" the polymorphic type
 "Forall 'b. ('b -> 'a -> 'b) -> 'b -> 'b".
 An explicit type declaration on the method "fold" is required, since
 the type checker cannot infer the polymorphic type by itself.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['a] stack3 =
   object
     inherit ['a] stack
@@ -440,7 +440,7 @@ class ['a] stack3 =
 
 A simplified version of object-oriented hash tables should have the
 following class type.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class type ['a, 'b] hash_table =
   object
     method find : 'a -> 'b
@@ -449,7 +449,7 @@ class type ['a, 'b] hash_table =
 \end{caml_example}
 A simple implementation, which is quite reasonable for small hash tables is
 to use an association list:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['a, 'b] small_hashtbl : ['a, 'b] hash_table =
   object
     val mutable table = []
@@ -459,7 +459,7 @@ class ['a, 'b] small_hashtbl : ['a, 'b] hash_table =
 \end{caml_example}
 A better implementation, and one that scales up better, is to use a
 true hash table\ldots\ whose elements are small hash tables!
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['a, 'b] hashtbl size : ['a, 'b] hash_table =
   object (self)
     val table = Array.init size (fun i -> new small_hashtbl)
@@ -492,7 +492,7 @@ parametric in the type of elements, the method "tag" has a parametric type
 the module definition but abstract in its signature.
 From outside, it will then be guaranteed that two objects with a method "tag"
 of the same type will share the same representation.
-\begin{caml_example*}
+\begin{caml_example*}{toplevel}
 module type SET =
   sig
     type 'a tag
@@ -544,7 +544,7 @@ classes that recursively interact with one another.
 
 The class "observer"  has a distinguished method "notify" that requires
 two arguments, a subject and an event to execute an action.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class virtual ['subject, 'event] observer =
   object
     method virtual notify : 'subject ->  'event -> unit
@@ -553,7 +553,7 @@ class virtual ['subject, 'event] observer =
 The class "subject" remembers a list of observers in an instance variable,
 and has a distinguished method "notify_observers" to broadcast the message
 "notify" to all observers with a particular event "e".
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['observer, 'event] subject =
   object (self)
     val mutable observers = ([]:'observer list)
@@ -565,7 +565,7 @@ class ['observer, 'event] subject =
 The difficulty usually lies  in defining instances of the pattern above
 by inheritance. This can be done in a natural and obvious manner in
 OCaml, as shown on the following example manipulating windows.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 type event = Raise | Resize | Move;;
 let string_of_event = function
     Raise -> "Raise" | Resize -> "Resize" | Move -> "Move";;
@@ -586,12 +586,12 @@ class ['subject] window_observer =
   end;;
 \end{caml_example}
 As can be expected, the type of "window" is recursive.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let window = new window_subject;;
 \end{caml_example}
 However, the two classes of "window_subject" and "window_observer" are not
 mutually recursive.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let window_observer = new window_observer;;
 window#add_observer window_observer;;
 window#move 1;;
@@ -600,7 +600,7 @@ window#move 1;;
 Classes "window_observer" and "window_subject" can still be extended by
 inheritance. For instance, one may enrich the "subject" with new
 behaviors and refine the behavior of the observer.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['observer] richer_window_subject =
   object (self)
     inherit ['observer] window_subject
@@ -617,7 +617,7 @@ class ['subject] richer_window_observer =
   end;;
 \end{caml_example}
 We can also create a different kind of observer:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 class ['subject] trace_observer =
   object
     inherit ['subject, event] observer
@@ -627,7 +627,7 @@ class ['subject] trace_observer =
   end;;
 \end{caml_example}
 and attach several observers to the same object:
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let window = new richer_window_subject;;
 window#add_observer (new richer_window_observer);;
 window#add_observer (new trace_observer);;
