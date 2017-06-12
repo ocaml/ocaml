@@ -473,6 +473,9 @@ The complete list of changes is listed below.
   bytecode compiler (even when not using Flambda)
   (Mark Shinwell, Leo White, code review by Pierre Chambart)
 
+- PR#7348: Private row variables can escape their scope
+  (Jacques Garrigue, report by Leo White)
+
 - PR#7407: Two not-quite-standard C idioms rejected by SUNWSPro compilers
   (Xavier Leroy)
 

@@ -46,6 +46,7 @@ val newmarkedgenvar: unit -> type_expr
 
 val is_Tvar: type_expr -> bool
 val is_Tunivar: type_expr -> bool
+val is_Tconstr: type_expr -> bool
 val dummy_method: label
 val default_mty: module_type option -> module_type
 
@@ -80,9 +81,10 @@ val proxy: type_expr -> type_expr
            or a row variable *)
 
 (**** Utilities for private abbreviations with fixed rows ****)
+val row_of_type: type_expr -> type_expr
 val has_constr_row: type_expr -> bool
 val is_row_name: string -> bool
-val is_constr_row: type_expr -> bool
+val is_constr_row: allow_ident:bool -> type_expr -> bool
 
 (**** Utilities for type traversal ****)
 

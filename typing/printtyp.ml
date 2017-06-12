@@ -1323,7 +1323,8 @@ let rec filter_trace keep_last = function
       []
   | (t1, t1') :: (t2, t2') :: rem ->
       let rem' = filter_trace keep_last rem in
-      if is_constr_row t1' || is_constr_row t2'
+      if is_constr_row ~allow_ident:true t1'
+      || is_constr_row ~allow_ident:true t2'
       || same_path t1 t1' && same_path t2 t2' && not (keep_last && rem' = [])
       then rem'
       else (t1, t1') :: (t2, t2') :: rem'
