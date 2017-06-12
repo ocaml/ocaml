@@ -252,6 +252,9 @@ Print the version number of
 .BR ocamlopt (1)
 and a detailed summary of its configuration, then exit.
 .TP
+.BI \-depend\ ocamldep-args
+Compute dependencies, as ocamldep would do.
+.TP
 .BI \-for\-pack \ module\-path
 Generate an object file (.cmx and .o files) that can later be included
 as a sub-module (with the given access path) of a compilation unit

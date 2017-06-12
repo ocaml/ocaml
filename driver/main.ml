@@ -117,7 +117,8 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
 
   let _args = Arg.read_arg
   let _args0 = Arg.read_arg0
@@ -127,6 +128,9 @@ end)
 
 let main () =
   Clflags.add_arguments __LOC__ Options.list;
+  Clflags.add_arguments __LOC__
+    ["-depend", Arg.Unit Makedepend.main_from_option,
+     "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   try
     readenv ppf Before_args;
     Clflags.parse_arguments anonymous usage;
@@ -198,5 +202,5 @@ let main () =
 
 let () =
   main ();
-  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

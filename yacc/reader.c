@@ -31,7 +31,7 @@ int cinc, cache_size;
 int ntags, tagmax;
 char **tag_table;
 
-char saw_eof, unionized;
+char saw_eof;
 char *cptr, *line;
 int linesize;
 
@@ -51,9 +51,38 @@ char *name_pool;
 
 char line_format[] = "# %d \"%s\"\n";
 
+static unsigned char caml_ident_start[32] =
+"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
+static unsigned char caml_ident_body[32] =
+"\000\000\000\000\200\000\377\003\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
 
+#define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
 
 void start_rule (register bucket *bp, int s_lineno);
+
+static char *buffer;
+static size_t length;
+static size_t capacity;
+static void push_stack(char x) {
+    if (length - 1 >= capacity) {
+        buffer = realloc(buffer, capacity = 3*length/2 + 100);
+        if (!buffer) no_space();
+    }
+    buffer[++length] = x;
+    buffer[0] = '\1';
+}
+
+static void pop_stack(char x) {
+    if (!buffer || buffer[length--] != x) {
+        switch (x) {
+            case '{': x = '}'; break;
+            case '(': x = ')'; break;
+            default: break;
+        }
+        fprintf(stderr, "Mismatched parentheses or braces: '%c'\n", x);
+                syntax_error(lineno, line, cptr - 1);
+   }
+}
 
 void cachec(int c)
 {
@@ -158,6 +187,184 @@ void skip_comment(void)
         }
         else
             ++s;
+    }
+}
+
+static void process_quoted_string(char c, FILE *const f)
+{
+    int s_lineno = lineno;
+    char *s_line = dup_line();
+    char *s_cptr = s_line + (cptr - line - 1);
+
+    char quote = c;
+    for (;;)
+    {
+        c = *cptr++;
+        putc(c, f);
+        if (c == quote)
+        {
+            FREE(s_line);
+            return;
+        }
+        if (c == '\n')
+            unterminated_string(s_lineno, s_line, s_cptr);
+        if (c == '\\')
+        {
+            c = *cptr++;
+            putc(c, f);
+            if (c == '\n')
+            {
+                get_line();
+                if (line == 0)
+                    unterminated_string(s_lineno, s_line, s_cptr);
+            }
+        }
+    }
+}
+
+int process_apostrophe(FILE *const f)
+{
+    if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
+        fwrite(cptr, 1, 2, f);
+        cptr += 2;
+    } else if (cptr[0] == '\\'
+            && (isdigit((unsigned char) cptr[1]) || cptr[1] == 'x')
+            && isdigit((unsigned char) cptr[2])
+            && isdigit((unsigned char) cptr[3])
+            && cptr[4] == '\'') {
+        fwrite(cptr, 1, 5, f);
+        cptr += 5;
+    } else if (cptr[0] == '\\' && cptr[2] == '\'') {
+        fwrite(cptr, 1, 3, f);
+        cptr += 3;
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
+void process_apostrophe_body(FILE *f)
+{
+    if (!process_apostrophe(f)) {
+        while (In_bitmap(caml_ident_body, *cptr)) {
+           putc(*cptr, f);
+           cptr++;
+        }
+    }
+}
+
+
+static void process_open_curly_bracket(FILE *f) {
+    if (In_bitmap(caml_ident_start, *cptr) || *cptr == '|')
+    {
+        char *newcptr = cptr;
+        size_t size = 0;
+        char *buf;
+        while(In_bitmap(caml_ident_body, *newcptr)) { newcptr++; }
+        if (*newcptr == '|')
+        { /* Raw string */
+            int s_lineno;
+            char *s_line;
+            char *s_cptr;
+
+            size = newcptr - cptr;
+            buf = MALLOC(size + 2);
+            if (!buf) no_space();
+            memcpy(buf, cptr, size);
+            buf[size] = '}';
+            buf[size + 1] = '\0';
+            fwrite(cptr, 1, size + 1, f);
+            cptr = newcptr + 1;
+            s_lineno = lineno;
+            s_line = dup_line();
+            s_cptr = s_line + (cptr - line - 1);
+
+            for (;;)
+            {
+                char c = *cptr++;
+                putc(c, f);
+                if (c == '|')
+                {
+                    int match = 1;
+                    size_t i;
+                    for (i = 0; i <= size; ++i) {
+                        if (cptr[i] != buf[i]) {
+                            newcptr--;
+                            match = 0;
+                            break;
+                        }
+                    }
+                    if (match) {
+                        FREE(s_line);
+                        FREE(buf);
+                        fwrite(cptr, 1, size, f);
+                        cptr += size;
+                        return;
+                    }
+                }
+                if (c == '\n')
+                {
+                    get_line();
+                    if (line == 0)
+                        unterminated_string(s_lineno, s_line, s_cptr);
+                }
+            }
+            FREE(buf);
+            return;
+        }
+    }
+    return;
+}
+
+static void process_comment(FILE *const f) {
+    char c = *cptr;
+    unsigned depth = 1;
+    if (c == '*')
+    {
+        int c_lineno = lineno;
+        char *c_line = dup_line();
+        char *c_cptr = c_line + (cptr - line - 1);
+
+        putc('*', f);
+        ++cptr;
+        for (;;)
+        {
+            c = *cptr++;
+            putc(c, f);
+
+            switch (c)
+            {
+            case '*':
+                if (*cptr == ')')
+                {
+                    depth--;
+                    if (depth == 0) {
+                        FREE(c_line);
+                        return;
+                    }
+                }
+                continue;
+            case '\n':
+                get_line();
+                if (line == 0)
+                    unterminated_comment(c_lineno, c_line, c_cptr);
+                continue;
+            case '(':
+                if (*cptr == '*') ++depth;
+                continue;
+            case '\'':
+                process_apostrophe(f);
+                continue;
+            case '"':
+                process_quoted_string(c, f);
+                continue;
+            case '{':
+                process_open_curly_bracket(f);
+                continue;
+            default:
+                continue;
+            }
+        }
     }
 }
 
@@ -310,10 +517,6 @@ keyword(void)
             return (NONASSOC);
         if (strcmp(cache, "start") == 0)
             return (START);
-        if (strcmp(cache, "union") == 0)
-            return (UNION);
-        if (strcmp(cache, "ident") == 0)
-            return (IDENT);
     }
     else
     {
@@ -336,40 +539,9 @@ keyword(void)
     return 0;
 }
 
-
-void copy_ident(void)
-{
-    register int c;
-    register FILE *f = output_file;
-
-    c = nextc();
-    if (c == EOF) unexpected_EOF();
-    if (c != '"') syntax_error(lineno, line, cptr);
-    ++outline;
-    fprintf(f, "#ident \"");
-    for (;;)
-    {
-        c = *++cptr;
-        if (c == '\n')
-        {
-            fprintf(f, "\"\n");
-            return;
-        }
-        putc(c, f);
-        if (c == '"')
-        {
-            putc('\n', f);
-            ++cptr;
-            return;
-        }
-    }
-}
-
-
 void copy_text(void)
 {
     register int c;
-    int quote;
     register FILE *f = text_file;
     int need_newline = 0;
     int t_lineno = lineno;
@@ -396,91 +568,19 @@ loop:
         unterminated_text(t_lineno, t_line, t_cptr);
 
     case '"':
-        {
-            int s_lineno = lineno;
-            char *s_line = dup_line();
-            char *s_cptr = s_line + (cptr - line - 1);
-
-            quote = c;
-            putc(c, f);
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, f);
-                if (c == quote)
-                {
-                    need_newline = 1;
-                    FREE(s_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                    unterminated_string(s_lineno, s_line, s_cptr);
-                if (c == '\\')
-                {
-                    c = *cptr++;
-                    putc(c, f);
-                    if (c == '\n')
-                    {
-                        get_line();
-                        if (line == 0)
-                            unterminated_string(s_lineno, s_line, s_cptr);
-                    }
-                }
-            }
-        }
+        putc(c, f);
+        process_quoted_string(c, f);
+        goto loop;
 
     case '\'':
         putc(c, f);
-        if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
-          fwrite(cptr, 1, 2, f);
-          cptr += 2;
-        } else
-        if (cptr[0] == '\\'
-            && isdigit((unsigned char) cptr[1])
-            && isdigit((unsigned char) cptr[2])
-            && isdigit((unsigned char) cptr[3])
-            && cptr[4] == '\'') {
-          fwrite(cptr, 1, 5, f);
-          cptr += 5;
-        } else
-        if (cptr[0] == '\\' && cptr[2] == '\'') {
-          fwrite(cptr, 1, 3, f);
-          cptr += 3;
-        }
+        process_apostrophe_body(f);
         goto loop;
 
     case '(':
         putc(c, f);
         need_newline = 1;
-        c = *cptr;
-        if (c == '*')
-        {
-            int c_lineno = lineno;
-            char *c_line = dup_line();
-            char *c_cptr = c_line + (cptr - line - 1);
-
-            putc('*', f);
-            ++cptr;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, f);
-                if (c == '*' && *cptr == ')')
-                {
-                    putc(')', f);
-                    ++cptr;
-                    FREE(c_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                {
-                    get_line();
-                    if (line == 0)
-                        unterminated_comment(c_lineno, c_line, c_cptr);
-                }
-            }
-        }
-        need_newline = 1;
+        process_comment(f);
         goto loop;
 
     case '%':
@@ -494,133 +594,16 @@ loop:
         }
         /* fall through */
 
+    case '{':
+        putc(c, f);
+        process_open_curly_bracket(f);
+        goto loop;
     default:
         putc(c, f);
         need_newline = 1;
         goto loop;
     }
 }
-
-
-void copy_union(void)
-{
-    register int c;
-    int quote;
-    int depth;
-    int u_lineno = lineno;
-    char *u_line = dup_line();
-    char *u_cptr = u_line + (cptr - line - 6);
-
-    if (unionized) over_unionized(cptr - 6);
-    unionized = 1;
-
-    if (!lflag)
-        fprintf(text_file, line_format, lineno, input_file_name);
-
-    fprintf(text_file, "typedef union");
-    if (dflag) fprintf(union_file, "typedef union");
-
-    depth = 1;
-    cptr++;
-
-loop:
-    c = *cptr++;
-    putc(c, text_file);
-    if (dflag) putc(c, union_file);
-    switch (c)
-    {
-    case '\n':
-        get_line();
-        if (line == 0) unterminated_union(u_lineno, u_line, u_cptr);
-        goto loop;
-
-    case '{':
-        ++depth;
-        goto loop;
-
-    case '}':
-        --depth;
-        if (c == '}' && depth == 0) {
-          fprintf(text_file, " YYSTYPE;\n");
-          FREE(u_line);
-          return;
-        }
-        goto loop;
-
-    case '\'':
-    case '"':
-        {
-            int s_lineno = lineno;
-            char *s_line = dup_line();
-            char *s_cptr = s_line + (cptr - line - 1);
-
-            quote = c;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, text_file);
-                if (dflag) putc(c, union_file);
-                if (c == quote)
-                {
-                    FREE(s_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                    unterminated_string(s_lineno, s_line, s_cptr);
-                if (c == '\\')
-                {
-                    c = *cptr++;
-                    putc(c, text_file);
-                    if (dflag) putc(c, union_file);
-                    if (c == '\n')
-                    {
-                        get_line();
-                        if (line == 0)
-                            unterminated_string(s_lineno, s_line, s_cptr);
-                    }
-                }
-            }
-        }
-
-    case '(':
-        c = *cptr;
-        if (c == '*')
-        {
-            int c_lineno = lineno;
-            char *c_line = dup_line();
-            char *c_cptr = c_line + (cptr - line - 1);
-
-            putc('*', text_file);
-            if (dflag) putc('*', union_file);
-            ++cptr;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, text_file);
-                if (dflag) putc(c, union_file);
-                if (c == '*' && *cptr == ')')
-                {
-                    putc(')', text_file);
-                    if (dflag) putc(')', union_file);
-                    ++cptr;
-                    FREE(c_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                {
-                    get_line();
-                    if (line == 0)
-                        unterminated_comment(c_lineno, c_line, c_cptr);
-                }
-            }
-        }
-        goto loop;
-
-    default:
-        goto loop;
-    }
-}
-
 
 int
 hexval(int c)
@@ -1005,16 +988,8 @@ void read_declarations(void)
         case MARK:
             return;
 
-        case IDENT:
-            copy_ident();
-            break;
-
         case TEXT:
             copy_text();
-            break;
-
-        case UNION:
-            copy_union();
             break;
 
         case TOKEN:
@@ -1259,7 +1234,6 @@ void copy_action(void)
     register int c;
     register int i, n;
     int depth;
-    int quote;
     bucket *item;
     char *tagres;
     register FILE *f = action_file;
@@ -1267,6 +1241,7 @@ void copy_action(void)
     char *a_line = dup_line();
     char *a_cptr = a_line + (cptr - line);
 
+    push_stack('{');
     if (last_was_action) syntax_error (lineno, line, cptr);
     last_was_action = 1;
 
@@ -1321,18 +1296,19 @@ loop:
             goto loop;
         }
     }
-    if (isalpha(c) || c == '_' || c == '$')
+    if (c == '_' || c == '$' || In_bitmap(caml_ident_start, c))
     {
         do
         {
             putc(c, f);
             c = *++cptr;
-        } while (isalnum(c) || c == '_' || c == '$');
+        } while (c == '_' || c == '$' || In_bitmap(caml_ident_body, c));
         goto loop;
     }
     if (c == '}' && depth == 1) {
       fprintf(f, ")\n# 0\n              ");
       cptr++;
+      pop_stack('{');
       tagres = plhs[nrules]->tag;
       if (tagres)
         fprintf(f, " : %s))\n", tagres);
@@ -1355,93 +1331,33 @@ loop:
         unterminated_action(a_lineno, a_line, a_cptr);
 
     case '{':
+        process_open_curly_bracket(f);
+        /* Even if there is a raw string, we deliberately keep the
+         * closing '}' in the buffer */
+        push_stack('{');
         ++depth;
         goto loop;
 
     case '}':
         --depth;
+        pop_stack('{');
         goto loop;
 
     case '"':
-        {
-            int s_lineno = lineno;
-            char *s_line = dup_line();
-            char *s_cptr = s_line + (cptr - line - 1);
-
-            quote = c;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, f);
-                if (c == quote)
-                {
-                    FREE(s_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                    unterminated_string(s_lineno, s_line, s_cptr);
-                if (c == '\\')
-                {
-                    c = *cptr++;
-                    putc(c, f);
-                    if (c == '\n')
-                    {
-                        get_line();
-                        if (line == 0)
-                            unterminated_string(s_lineno, s_line, s_cptr);
-                    }
-                }
-            }
-        }
+        process_quoted_string('"', f);
+        goto loop;
 
     case '\'':
-        if (cptr[0] != 0 && cptr[0] != '\\' && cptr[1] == '\'') {
-          fwrite(cptr, 1, 2, f);
-          cptr += 2;
-        } else
-        if (cptr[0] == '\\'
-            && isdigit((unsigned char) cptr[1])
-            && isdigit((unsigned char) cptr[2])
-            && isdigit((unsigned char) cptr[3])
-            && cptr[4] == '\'') {
-          fwrite(cptr, 1, 5, f);
-          cptr += 5;
-        } else
-        if (cptr[0] == '\\' && cptr[2] == '\'') {
-          fwrite(cptr, 1, 3, f);
-          cptr += 3;
-        }
+        process_apostrophe_body(f);
         goto loop;
 
     case '(':
-        c = *cptr;
-        if (c == '*')
-        {
-            int c_lineno = lineno;
-            char *c_line = dup_line();
-            char *c_cptr = c_line + (cptr - line - 1);
+        push_stack('(');
+        process_comment(f);
+        goto loop;
 
-            putc('*', f);
-            ++cptr;
-            for (;;)
-            {
-                c = *cptr++;
-                putc(c, f);
-                if (c == '*' && *cptr == ')')
-                {
-                    putc(')', f);
-                    ++cptr;
-                    FREE(c_line);
-                    goto loop;
-                }
-                if (c == '\n')
-                {
-                    get_line();
-                    if (line == 0)
-                        unterminated_comment(c_lineno, c_line, c_cptr);
-                }
-            }
-        }
+    case ')':
+        pop_stack('(');
         goto loop;
 
     default:
@@ -1724,13 +1640,6 @@ void pack_symbols(void)
 
     FREE(v);
 }
-
-static unsigned char caml_ident_start[32] =
-"\000\000\000\000\000\000\000\000\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
-static unsigned char caml_ident_body[32] =
-"\000\000\000\000\200\000\377\003\376\377\377\207\376\377\377\007\000\000\000\000\000\000\000\000\377\377\177\377\377\377\177\377";
-
-#define In_bitmap(bm,c) (bm[(unsigned char)(c) >> 3] & (1 << ((c) & 7)))
 
 static int is_polymorphic(char * s)
 {

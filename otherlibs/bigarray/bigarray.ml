@@ -109,6 +109,9 @@ module Array0 = struct
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
 
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+    = "caml_ba_change_layout"
+
   let size_in_bytes arr = kind_size_in_bytes (kind arr)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
@@ -132,6 +135,9 @@ module Array1 = struct
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+    = "caml_ba_change_layout"
 
   let size_in_bytes arr =
     (kind_size_in_bytes (kind arr)) * (dim arr)
@@ -170,6 +176,9 @@ module Array2 = struct
   external dim2: ('a, 'b, 'c) t -> int = "%caml_ba_dim_2"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+    = "caml_ba_change_layout"
 
   let size_in_bytes arr =
     (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr)
@@ -221,6 +230,9 @@ module Array3 = struct
   external dim3: ('a, 'b, 'c) t -> int = "%caml_ba_dim_3"
   external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+
+  external change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+    = "caml_ba_change_layout"
 
   let size_in_bytes arr =
     (kind_size_in_bytes (kind arr)) * (dim1 arr) * (dim2 arr) * (dim3 arr)

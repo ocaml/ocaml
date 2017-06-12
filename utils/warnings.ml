@@ -20,10 +20,16 @@
    - manual/manual/cmds/native.etex
 *)
 
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+  | Deprecated of string * loc * loc        (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -280,7 +286,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s ->
+  | Deprecated (s, _, _) ->
       (* Reduce \r\n to \n:
            - Prevents any \r characters being printed on Unix when processing
              Windows sources
@@ -489,12 +495,21 @@ let message = function
       "Type constraints do not apply to GADT cases of variant types."
 ;;
 
+let sub_locs = function
+  | Deprecated (_, def, use) ->
+      [
+        def, "Definition";
+        use, "Expected signature";
+      ]
+  | _ -> []
+
 let nerrors = ref 0;;
 
 type reporting_information =
   { number : int
   ; message : string
   ; is_error : bool
+  ; sub_locs : (loc * string) list;
   }
 
 let report w =
@@ -502,7 +517,9 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
-    `Active { number = number w; message = message w; is_error = is_error w }
+     `Active { number = number w; message = message w; is_error = is_error w;
+               sub_locs = sub_locs w;
+             }
 ;;
 
 exception Errors;;

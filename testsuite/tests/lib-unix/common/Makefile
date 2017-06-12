@@ -13,7 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR=../..
+BASEDIR=../../..
 LIBRARIES=unix
 ADD_COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix

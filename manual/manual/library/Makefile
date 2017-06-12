@@ -10,8 +10,11 @@ STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
   Weak.tex Callback.tex Buffer.tex StdLabels.tex \
   Bytes.tex BytesLabels.tex Spacetime.tex
 
+COMPILER_LIBS_PLUGIN_HOOKS=Pparse.tex Typemod.tex
+
 COMPILER_LIBS_INTF=Asthelper.tex Astmapper.tex Asttypes.tex \
-	Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex
+	Lexer.tex Location.tex Longident.tex Parse.tex Pprintast.tex Printast.tex \
+	$(COMPILER_LIBS_PLUGIN_HOOKS)
 
 OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
   Num.tex Arithstatus.tex Bigint.tex \
@@ -25,6 +28,9 @@ INTF=$(CORE_INTF) $(STDLIB_INTF) $(COMPILER_LIBS_INTF) $(OTHERLIB_INTF)
 MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/utils/*.mli \
 	$(CSLDIR)/parsing/*.mli \
+	$(CSLDIR)/driver/pparse.mli \
+	$(CSLDIR)/typing/typemod.mli \
+	$(CSLDIR)/bytecomp/simplif.mli \
 	$(CSLDIR)/otherlibs/bigarray/bigarray.mli \
 	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
 	$(CSLDIR)/otherlibs/graph/graphics.mli \
@@ -60,6 +66,9 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/utils \
 	-I $(CSLDIR)/stdlib \
 	-I $(CSLDIR)/parsing \
+	-I $(CSLDIR)/typing \
+	-I $(CSLDIR)/driver \
+	-I $(CSLDIR)/bytecomp \
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \

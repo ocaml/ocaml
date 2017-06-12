@@ -18,6 +18,9 @@ OCAMLDOC=$(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc -hide Pervasives
 MLIS=$(SRC)/stdlib/*.mli \
 	$(SRC)/utils/*.mli \
 	$(SRC)/parsing/*.mli \
+	$(SRC)/driver/pparse.mli \
+	$(SRC)/typing/typemod.mli \
+	$(SRC)/bytecomp/simplif.mli \
 	$(SRC)/otherlibs/bigarray/bigarray.mli \
 	$(SRC)/otherlibs/dynlink/dynlink.mli \
 	$(SRC)/otherlibs/graph/graphics.mli \
@@ -63,6 +66,9 @@ html: files
 	-I $(SRC)/stdlib  \
 	-I $(SRC)/utils  \
 	-I $(SRC)/parsing \
+	-I $(SRC)/driver \
+	-I $(SRC)/typing \
+	-I $(SRC)/bytecomp \
 	-I $(SRC)/otherlibs/bigarray \
 	-I $(SRC)/otherlibs/dynlink \
 	-I $(SRC)/otherlibs/graph \

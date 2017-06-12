@@ -37,13 +37,19 @@ type type_mismatch =
   | Immediate
 
 val value_descriptions:
-    Env.t -> value_description -> value_description -> module_coercion
+  loc:Location.t -> Env.t -> string ->
+  value_description -> value_description -> module_coercion
+
 val type_declarations:
-    ?equality:bool ->
-      Env.t -> string ->
-        type_declaration -> Ident.t -> type_declaration -> type_mismatch list
+  ?equality:bool ->
+  loc:Location.t ->
+  Env.t -> string ->
+  type_declaration -> Ident.t -> type_declaration -> type_mismatch list
+
 val extension_constructors:
-    Env.t -> Ident.t -> extension_constructor -> extension_constructor -> bool
+  loc:Location.t ->
+  Env.t -> Ident.t ->
+  extension_constructor -> extension_constructor -> bool
 (*
 val class_types:
         Env.t -> class_type -> class_type -> bool

@@ -83,10 +83,12 @@ Read additional newline-terminated command line arguments from \var{filename}.
 \notop{\item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc) in binary format. The information for file \var{src}".ml"
-is put into file \var{src}".cmt".  In case of a type error, dump
+(resp. \var{src}".mli") is put into file \var{src}".cmt"
+(resp. \var{src}".cmti").  In case of a type error, dump
 all the information inferred by the type-checker before the error.
-The "*.cmt" files produced by "-bin-annot" contain more information
-and are much more compact than the files produced by "-annot".
+The "*.cmt" and "*.cmti" files produced by "-bin-annot" contain
+more information and are much more compact than the files produced by
+"-annot".
 }%notop
 
 \notop{\item["-c"]
@@ -170,6 +172,12 @@ Never use the "strip" command on executables produced by "ocamlc -custom",
 this would remove the bytecode part of the executable.
 \end{unix}
 }%comp
+
+\notop{%
+\item["-depend" \var{ocamldep-args}]
+Compute dependencies, as the "ocamldep" command would do. The remaining
+arguments are interpreted as if they were given to the "ocamldep" command.
+}%notop
 
 \comp{
 \item["-dllib" "-l"\var{libname}]

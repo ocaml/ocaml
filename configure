@@ -635,6 +635,7 @@ echo "#define SIZEOF_LONG $2" >> m.h
 echo "#define SIZEOF_PTR $3" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 echo "#define SIZEOF_LONGLONG $5" >> m.h
+echo "#define INT64_LITERAL(s) s ## LL" >> m.h
 
 # Determine endianness
 
@@ -957,8 +958,8 @@ asppprofflags='-DPROFILING'
 
 case "$arch,$system" in
   amd64,macosx)   if sh ./searchpath clang; then
-                      as='clang -arch x86_64 -c'
-                      aspp='clang -arch x86_64 -c'
+                      as='clang -arch x86_64 -Wno-trigraphs -c'
+                      aspp='clang -arch x86_64 -Wno-trigraphs -c'
                     else
                       as="${TOOLPREF}as -arch x86_64"
                       aspp="${TOOLPREF}gcc -arch x86_64 -c"
@@ -986,7 +987,7 @@ case "$arch,$system" in
                   as="${TOOLPREF}as"
                   case "$ccfamily" in
                       clang-*)
-                          aspp="${TOOLPREF}clang -c"
+                          aspp="${TOOLPREF}clang -c -Wno-trigraphs"
                           ;;
                       *)
                           aspp="${TOOLPREF}gcc -c"

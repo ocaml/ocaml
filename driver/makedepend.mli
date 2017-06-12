@@ -2,9 +2,9 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*                      Pierre Chambart, OCamlPro                         *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
 (*                                                                        *)
-(*   Copyright 2015 Institut National de Recherche en Informatique et     *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,27 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** Compiler performance recording *)
+val main : unit -> unit
 
-type file = string
-
-val cpu_time : unit -> float
-
-val reset : unit -> unit
-(** erase all recorded times *)
-
-val time_call : ?accumulate:bool -> string -> (unit -> 'a) -> 'a
-(** [time_call pass f] calls [f] and records its runtime. *)
-
-val time : ?accumulate:bool -> string -> ('a -> 'b) -> 'a -> 'b
-(** [time pass f arg] records the runtime of [f arg] *)
-
-val print : ?total:float -> Format.formatter -> unit
-(** Prints all recorded timings to the formatter. *)
-
-(** A few pass names that are needed in several places, and shared to
-    avoid typos. *)
-
-val generate : string
-val transl : string
-val typing : string
+(* entry point when called from the -depend option of ocamlc/ocamlopt *)
+val main_from_option : unit -> unit
