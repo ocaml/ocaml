@@ -510,6 +510,8 @@ This section describes how OCaml data types are encoded in the
 \entree{"string"}{Blocks with tag "String_tag".}
 \entree{"int32"}{Blocks with tag "Custom_tag".}
 \entree{"int64"}{Blocks with tag "Custom_tag".}
+\entree{"uint32"}{Blocks with tag "Custom_tag".}
+\entree{"uint64"}{Blocks with tag "Custom_tag".}
 \entree{"nativeint"}{Blocks with tag "Custom_tag".}
 \end{tableau}
 
@@ -716,6 +718,10 @@ be cast to the type of the data contained in the custom block.
 in the "int32" \var{v}.
 \item "Int64_val("\var{v}")" returns the 64-bit integer contained
 in the "int64" \var{v}.
+\item "Uint32_val("\var{v}")" returns the 32-bit unsigned integer
+contained in the "uint32" \var{v}.
+\item "Uint64_val("\var{v}")" returns the 64-bit unsigned integer
+contained in the "uint64" \var{v}.
 \item "Nativeint_val("\var{v}")" returns the long integer contained
 in the "nativeint" \var{v}.
 \item "caml_field_unboxed("\var{v}")" returns the value of the field
@@ -767,10 +773,11 @@ containing a copy of the null-terminated C string \var{s} (a "char *").
 "caml_copy_double("\var{d}")" returns a floating-point value initialized
 with the "double" \var{d}.
 \item
-"caml_copy_int32("\var{i}")", "caml_copy_int64("\var{i}")" and
-"caml_copy_nativeint("\var{i}")" return a value of OCaml type "int32",
-"int64" and "nativeint", respectively, initialized with the integer
-\var{i}.
+"caml_copy_int32("\var{i}")", "caml_copy_int64("\var{i}")",
+"caml_copy_uint32("\var{i}")", "caml_copy_uint64("\var{i}")"
+and "caml_copy_nativeint("\var{i}")" return a value of OCaml type
+"int32", "int64", "uint32", "uint64" and "nativeint", respectively,
+initialized with the integer \var{i}.
 \item
 "caml_alloc_array("\var{f}", "\var{a}")" allocates an array of values, calling
 function \var{f} over each element of the input array \var{a} to transform it
@@ -2256,6 +2263,8 @@ what C types should be used in correspondence:
 \entree{"float"}{"double"}
 \entree{"int32"}{"int32_t"}
 \entree{"int64"}{"int64_t"}
+\entree{"uint32"}{"uint32_t"}
+\entree{"uint64"}{"uint64_t"}
 \entree{"nativeint"}{"intnat"}
 \end{tableau}
 

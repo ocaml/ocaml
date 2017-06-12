@@ -118,6 +118,24 @@ type int64
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
+type uint32
+\end{ocamldoccode}
+\index{uint32@\verb`uint32`}
+\begin{ocamldocdescription}
+ The type of unsigned 32-bit integers.
+ See the "Uint32"[\moduleref{Uint32}] module.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
+type uint64
+\end{ocamldoccode}
+\index{uint64@\verb`uint64`}
+\begin{ocamldocdescription}
+ The type of unsigned 64-bit integers.
+ See the "Uint64"[\moduleref{Uint64}] module.
+\end{ocamldocdescription}
+
+\begin{ocamldoccode}
 type nativeint
 \end{ocamldoccode}
 \index{nativeint@\verb`nativeint`}
