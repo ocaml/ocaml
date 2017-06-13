@@ -352,9 +352,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       | Pdivbint { size = Pint64 } | Pmodbint { size = Pint64 } ->
         Allocated_const (Int64 0L)
       | Pdivbint { size = Puint32 } | Pmodbint { size = Puint32 } ->
-        Allocated_const (Uint32 Uint32.zero)
+        Allocated_const (Uint32 0u)
       | Pdivbint { size = Puint64 } | Pmodbint { size = Puint64 } ->
-        Allocated_const (Uint64 Uint64.zero)
+        Allocated_const (Uint64 0U)
       | Pdivbint { size = Pnativeint } | Pmodbint { size = Pnativeint } ->
         Allocated_const (Nativeint 0n)
       | _ -> assert false

@@ -1195,12 +1195,12 @@ let build_other ext env =
           build_other_constant
             (function Constant(Const_uint32 i) -> i | _ -> assert false)
             (function i -> Tpat_constant(Const_uint32 i))
-            Uint32.zero Uint32.succ d env
+            0u Uint32.succ d env
       | Constant Const_uint64 _ ->
           build_other_constant
             (function Constant(Const_uint64 i) -> i | _ -> assert false)
             (function i -> Tpat_constant(Const_uint64 i))
-            Uint64.zero Uint64.succ d env
+            0U Uint64.succ d env
       | Constant Const_nativeint _ ->
           build_other_constant
             (function Constant(Const_nativeint i) -> i | _ -> assert false)
