@@ -14,7 +14,8 @@
 #**************************************************************************
 
 # The lexer generator
-include ../config/Makefile
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 

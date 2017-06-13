@@ -188,6 +188,8 @@ Working version
 - GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
   strings longer than the size specified by the "print_length" directive
   (Fabrice Le Fessant, initial PR by Junsong Li)
+- GPR#1168: move config/Makefile to Makefile.config.
+  (Sébastien Hinderer)
 
 ### Bug fixes
 

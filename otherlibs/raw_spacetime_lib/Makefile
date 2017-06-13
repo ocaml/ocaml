@@ -16,7 +16,7 @@
 # Makefile for Raw_spacetime_lib
 
 ROOTDIR=../..
-include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.config
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib

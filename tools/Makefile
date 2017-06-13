@@ -14,7 +14,8 @@
 #**************************************************************************
 
 MAKEFLAGS := -r -R
-include ../config/Makefile
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR:=$(DESTDIR)$(COMPLIBDIR)

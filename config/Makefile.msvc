@@ -96,6 +96,7 @@ LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
 SAFE_STRING=false
 AFL_INSTRUMENT=false
+CONFIG_MAKEFILE=config/Makefile
 
 ########## Configuration for the bytecode compiler
 

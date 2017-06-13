@@ -121,6 +121,8 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
+/config/m.h
+/config/s.h
 /config/Makefile
 /config/auto-aux/hashbang4
 

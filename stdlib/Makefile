@@ -13,7 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
@@ -125,7 +126,7 @@ CAMLHEADERS =\
   camlheaderi target_camlheaderi
 
 ifeq "$(HASHBANGSCRIPTS)" "true"
-$(CAMLHEADERS): ../config/Makefile
+$(CAMLHEADERS): $(ROOTDIR)/$(CONFIG_MAKEFILE)
 	for suff in '' d i; do \
 	  echo '#!$(BINDIR)/ocamlrun'$$suff > camlheader$$suff && \
 	  echo '#!$(TARGET_BINDIR)/ocamlrun'$$suff >target_camlheader$$suff; \
@@ -133,7 +134,7 @@ $(CAMLHEADERS): ../config/Makefile
 	echo '#!' | tr -d '\012' > camlheader_ur;
 else # Hashbang scripts not supported
 
-$(CAMLHEADERS): $(HEADERPROGRAM) ../config/Makefile
+$(CAMLHEADERS): $(HEADERPROGRAM) $(ROOTDIR)/$(CONFIG_MAKEFILE)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 $(CAMLHEADERS):

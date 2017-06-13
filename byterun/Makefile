@@ -13,7 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
-include ../config/Makefile
+ROOTDIR=..
+include $(ROOTDIR)/Makefile.config
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
@@ -98,7 +99,7 @@ PICOBJS=$(OBJS:.$(O)=.pic.$(O))
 .PHONY: all
 all: $(LIBRARIES) $(PROGRAMS)
 
-ld.conf: ../config/Makefile
+ld.conf: $(ROOTDIR)/$(CONFIG_MAKEFILE)
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
@@ -165,7 +166,7 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 clean:
 	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
-	rm -f caml/version.h
+	rm -f caml/version.h caml/m.h caml/s.h
 
 ocamlrun$(EXE): prims.$(O) libcamlrun.$(A)
 	$(call MAKE_OCAMLRUN,$@,$^ $(LIBS))
