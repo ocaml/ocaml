@@ -186,12 +186,25 @@ STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
 PARSING_MLIS := $(wildcard ../parsing/*.mli)
 
 STDLIB_MLIS=\
-  $(STDLIB_MODULES:%=stdlib_non_prefixed/%.mli) \
-  $(PARSING_MLIS:../parsing/%.mli=stdlib_non_prefixed/%.mli) \
-  stdlib_non_prefixed/warnings.mli \
-  stdlib_non_prefixed/unix.mli \
-  stdlib_non_prefixed/str.mli \
-  stdlib_non_prefixed/bigarray.mli
+  $(STDLIB_MODULES:%=%.mli) \
+  $(PARSING_MLIS:../parsing/%.mli=%.mli) \
+  warnings.mli \
+  unix.mli \
+  unixLabels.mli \
+  str.mli \
+  bigarray.mli \
+  arith_status.mli \
+  graphics.mli \
+  graphicsX11.mli \
+  dynlink.mli \
+  thread.mli \
+  mutex.mli \
+  condition.mli \
+  event.mli \
+  threadUnix.mli
+
+STDLIB_MLIS:=$(addprefix stdlib_non_prefixed/, $(STDLIB_MLIS))
+
 
 STDLIB_CMIS=$(STDLIB_MLIS:%.mli=%.cmi)
 
@@ -437,6 +450,16 @@ stdlib_non_prefixed/%.mli: ../otherlibs/str/%.mli
 
 stdlib_non_prefixed/%.mli: ../otherlibs/bigarray/%.mli
 	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/graph/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/threads/%.mli
+	cp $< $@
+
+stdlib_non_prefixed/%.mli: ../otherlibs/dynlink/%.mli
+	cp $< $@
+
 
 stdlib_non_prefixed/pervasives.mli: ../stdlib/stdlib.mli stdlib_non_prefixed/extract_pervasives.awk
 	$(AWK) -f stdlib_non_prefixed/extract_pervasives.awk $< > $@

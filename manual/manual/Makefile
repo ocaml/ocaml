@@ -14,24 +14,37 @@ SRC = $(abspath ../../)
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 
+P :=
+include $(SRC)/stdlib/StdlibModules
+MLIDIR=$(SRC)/ocamldoc/stdlib_non_prefixed/
+
+STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
+PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
+
 OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
  $(SRC)/ocamldoc/ocamldoc.opt,\
  $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
- -hide Pervasives
+ -hide Pervasives -nostdlib -initially-opened-module Pervasives
 
-MLIS=$(SRC)/stdlib/*.mli \
-	$(SRC)/utils/*.mli \
-	$(SRC)/parsing/*.mli \
-	$(SRC)/driver/pparse.mli \
-	$(SRC)/typing/typemod.mli \
-	$(SRC)/bytecomp/simplif.mli \
-	$(SRC)/otherlibs/bigarray/bigarray.mli \
-	$(SRC)/otherlibs/dynlink/dynlink.mli \
-	$(SRC)/otherlibs/graph/graphics.mli \
-	$(SRC)/otherlibs/graph/graphicsX11.mli \
-	$(SRC)/otherlibs/str/*.mli \
-	$(SRC)/otherlibs/systhreads/*.mli \
-	$(SRC)/otherlibs/unix/*.mli
+MLIS=$(STDLIB_MODULES:%=%.mli) \
+  $(PARSING_MLIS:$(SRC)/parsing/%.mli=%.mli) \
+  pparse.mli \
+  typemod.mli \
+  simplif.mli \
+  unix.mli \
+  unixLabels.mli \
+  str.mli \
+  bigarray.mli \
+  graphics.mli \
+  graphicsX11.mli \
+  dynlink.mli \
+  thread.mli \
+  mutex.mli \
+  condition.mli \
+  event.mli \
+  threadUnix.mli
+
+MLIS:= $(addprefix $(MLIDIR), $(MLIS))
 
 manual: files
 	cd texstuff; \
@@ -58,18 +71,7 @@ html: files
 	mkdir -p libref ; \
 	$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
-	-I $(SRC)/stdlib  \
-	-I $(SRC)/utils  \
-	-I $(SRC)/parsing \
-	-I $(SRC)/driver \
-	-I $(SRC)/typing \
-	-I $(SRC)/bytecomp \
-	-I $(SRC)/otherlibs/bigarray \
-	-I $(SRC)/otherlibs/dynlink \
-	-I $(SRC)/otherlibs/graph \
-	-I $(SRC)/otherlibs/str \
-	-I $(SRC)/otherlibs/systhreads \
-	-I $(SRC)/otherlibs/unix \
+	-I $(MLIDIR) \
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds \
