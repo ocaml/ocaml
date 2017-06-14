@@ -1,0 +1,111 @@
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                          Florian Angeletti                             *
+#*                                                                        *
+#*                            Copyright 2017                              *
+#*                                                                        *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+
+include $(SRC)/config/Makefile
+
+P :=
+VPATH=.:$(SRC)
+include $(SRC)/stdlib/StdlibModules
+
+STDLIB_UNPREFIXED=$(SRC)/ocamldoc/stdlib_non_prefixed
+
+STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
+PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
+UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
+TYPING_MLIS := $(wildcard $(SRC)/typing/*.mli)
+BYTECOMP_MLIS := $(wildcard $(SRC)/bytecomp/*.mli)
+
+# Documented modules: stdlib + otherlib + utils(?) + parsing(for compiler-libs)
+STDLIB_MLIS=\
+  $(STDLIB_MODULES:%=%.mli) \
+  $(PARSING_MLIS:$(SRC)/parsing/%.mli=%.mli) \
+  $(UTILS_MLIS:$(SRC)/utils/%.mli=%.mli) \
+  str.mli \
+  unix.mli unixLabels.mli \
+  bigarray.mli \
+  num.mli arith_status.mli big_int.mli ratio.mli \
+  graphics.mli graphicsX11.mli \
+  dynlink.mli \
+  thread.mli mutex.mli condition.mli event.mli threadUnix.mli \
+  pparse.mli
+
+STDLIB_MLIS:=$(addprefix $(STDLIB_UNPREFIXED)/, $(STDLIB_MLIS))
+
+# Dependencies for the documented modules
+STDLIB_DEPS:=$(STDLIB_MLIS) \
+  $(TYPING_MLIS:$(SRC)/typing/%.mli=$(STDLIB_UNPREFIXED)/%.mli) \
+  $(BYTECOMP_MLIS:$(SRC)/bytecomp/%.mli=$(STDLIB_UNPREFIXED)/%.mli) \
+  $(STDLIB_UNPREFIXED)/nat.mli
+
+# Add back the isolated modules in typing and bytecomp
+STDLIB_MLIS:= $(STDLIB_MLIS) \
+$(addprefix $(STDLIB_UNPREFIXED)/, typemod.mli simplif.mli)
+
+
+STDLIB_CMIS=$(STDLIB_DEPS:%.mli=%.cmi)
+
+
+# Copy mli files from the main source directory
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/stdlib/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/camlinternalBigarray.mli: $(SRC)/stdlib/camlinternalBigarray.ml
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/parsing/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/utils/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/$(UNIXLIB)/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/str/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/bigarray/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/num/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/graph/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/threads/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/otherlibs/dynlink/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/driver/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/typing/%.mli
+	cp $< $@
+
+$(STDLIB_UNPREFIXED)/%.mli: $(SRC)/bytecomp/%.mli
+	cp $< $@
+
+#Extract the pervasives module from stdlib.mli
+$(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli $(STDLIB_UNPREFIXED)/extract_pervasives.awk
+	awk -f $(STDLIB_UNPREFIXED)/extract_pervasives.awk $< > $@
+
+# Build cmis file inside the STDLIB_UNPREFIXED directories
+$(STDLIB_CMIS): $(STDLIB_DEPS)
+	cd $(STDLIB_UNPREFIXED); make $(notdir $(STDLIB_CMIS))

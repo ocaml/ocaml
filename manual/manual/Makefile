@@ -14,37 +14,10 @@ SRC = $(abspath ../../)
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 
-P :=
-include $(SRC)/stdlib/StdlibModules
-MLIDIR=$(SRC)/ocamldoc/stdlib_non_prefixed/
-
-STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
-PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
-
 OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
  $(SRC)/ocamldoc/ocamldoc.opt,\
  $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
  -hide Pervasives -nostdlib -initially-opened-module Pervasives
-
-MLIS=$(STDLIB_MODULES:%=%.mli) \
-  $(PARSING_MLIS:$(SRC)/parsing/%.mli=%.mli) \
-  pparse.mli \
-  typemod.mli \
-  simplif.mli \
-  unix.mli \
-  unixLabels.mli \
-  str.mli \
-  bigarray.mli \
-  graphics.mli \
-  graphicsX11.mli \
-  dynlink.mli \
-  thread.mli \
-  mutex.mli \
-  condition.mli \
-  event.mli \
-  threadUnix.mli
-
-MLIS:= $(addprefix $(MLIDIR), $(MLIS))
 
 manual: files
 	cd texstuff; \
@@ -66,13 +39,17 @@ index::
 	  makeindex pdfmanual.idx
 	cd texstuff; makeindex pdfmanual.kwd.idx
 
-html: files
+
+# Copy and unprefix the standard library when needed
+include $(SRC)/ocamldoc/Makefile.unprefix
+
+html: files $(STDLIB_CMIS)
 	cd htmlman; \
 	mkdir -p libref ; \
 	$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
-	-I $(MLIDIR) \
-	$(MLIS) ; \
+	-I $(STDLIB_UNPREFIXED) \
+	$(STDLIB_MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds \
 	         -I ../tutorials -I ../../styles -I ../texstuff manual.hva \
@@ -137,6 +114,7 @@ release:
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .htex
+
 
 .etex.tex:
 	../tools/texquote2 < $*.etex > $*.tex
