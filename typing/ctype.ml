@@ -1346,6 +1346,22 @@ let check_abbrev_env env =
     previous_env := env
   end
 
+exception Occur
+
+let rec simple_occur_rec visited ty0 ty =
+  let ty = repr ty in
+  if ty == ty0  then raise Occur;
+  if TypeSet.mem ty visited then ()
+  else begin
+    let visited = TypeSet.add ty visited in
+    iter_type_expr (simple_occur_rec visited ty0) ty
+  end
+
+let simple_occur ty0 ty =
+  let ty0 = repr ty0 in
+  match simple_occur_rec TypeSet.empty ty0 ty with
+  | () -> false
+  | exception Occur -> true
 
 (* Expand an abbreviation. The expansion is memorized. *)
 (*
@@ -1400,7 +1416,9 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* Hack to name the variant type *)
             begin match repr ty' with
               {desc=Tvariant row} as ty when static_row row ->
-                ty.desc <- Tvariant { row with row_name = Some (path, args) }
+                if not (List.exists (simple_occur ty) args) then begin
+                  ty.desc <- Tvariant { row with row_name = Some (path, args) }
+                end
             | _ -> ()
             end;
             (* For gadts, remember type as non exportable *)
@@ -1579,8 +1597,6 @@ let is_contractive env p =
                               (*  Occur check  *)
                               (*****************)
 
-
-exception Occur
 
 let rec occur_rec env allow_recursive visited ty0 = function
   | {desc=Tlink ty} ->

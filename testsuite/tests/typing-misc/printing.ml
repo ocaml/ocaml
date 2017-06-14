@@ -16,3 +16,10 @@ let f (x:'Id_arg) = x;;
 [%%expect{|
 val f : 'Id_arg -> 'Id_arg = <fun>
 |}];;
+
+type 'a id = 'a
+let f (x : [< [`Foo] id]) = ();;
+[%%expect{|
+type 'a id = 'a
+val f : [< [ `Foo ] id ] -> unit = <fun>
+|}];;
