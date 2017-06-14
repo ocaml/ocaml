@@ -29,6 +29,8 @@ function run {
 
 PREFIX="C:/Program Files/OCaml"
 
+wmic cpu get name
+
 if [[ $1 = "msvc32-only" ]] ; then
   cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
   make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
