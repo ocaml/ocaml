@@ -41,6 +41,9 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- MPR#7531, GPR#1162: Erroneous code transformation at partial applications
+  (Mark Shinwell) 
+
 ### Standard library:
 
 - GRP#1119: Change Set (private) type to inline records.
