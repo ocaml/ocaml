@@ -230,6 +230,9 @@ Working version
 - PR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
+- PR#7543: short-paths printtyp can fail on packed type error messages
+  (Florian Angeletti)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 

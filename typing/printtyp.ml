@@ -238,10 +238,13 @@ let compose l1 = function
   | Nth n  -> Nth (List.nth l1 n)
 
 let apply_subst s1 tyl =
-  match s1 with
-    Nth n1 -> [List.nth tyl n1]
-  | Map l1 -> List.map (List.nth tyl) l1
-  | Id -> tyl
+  if tyl = [] then []
+  (* cf. PR#7543: Typemod.type_package doesn't respect type constructor arity *)
+  else
+    match s1 with
+      Nth n1 -> [List.nth tyl n1]
+    | Map l1 -> List.map (List.nth tyl) l1
+    | Id -> tyl
 
 type best_path = Paths of Path.t list | Best of Path.t
 
@@ -589,7 +592,7 @@ let rec tree_of_typexp sch ty =
     | Tconstr(p, tyl, _abbrev) ->
         let p', s = best_type_path p in
         let tyl' = apply_subst s tyl in
-        if is_nth s then tree_of_typexp sch (List.hd tyl') else
+        if is_nth s && not (tyl'=[]) then tree_of_typexp sch (List.hd tyl') else
         Otyp_constr (tree_of_path p', tree_of_typlist sch tyl')
     | Tvariant row ->
         let row = row_repr row in
