@@ -105,7 +105,7 @@ let eval_path path =
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
 (* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  libray, so we load it beforehand as it cannot be found in the search path. *)
+  library, so we load it beforehand as it cannot be found in the search path. *)
 let () =
   let compiler_libs =
     Filename.concat Config.standard_library "compiler-libs" in

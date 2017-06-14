@@ -625,7 +625,7 @@ open M
     env_init: parameterisation by the local environment
       (env -> params -> obj_init)
       (one for each combination of inherited class_init )
-    env: environnement local
+    env: local environment
    If ids=0 (immediate object), then only env_init is conserved.
 *)
 
@@ -779,7 +779,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   if top && concrete then lclass lbody else
   if top then llets (lbody_virt lambda_unit) else
 
-  (* Now for the hard stuff: prepare for table cacheing *)
+  (* Now for the hard stuff: prepare for table caching *)
   let envs = Ident.create "envs"
   and cached = Ident.create "cached" in
   let lenvs =

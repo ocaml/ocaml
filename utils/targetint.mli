@@ -96,7 +96,7 @@ val logxor : t -> t -> t
 (** Bitwise logical exclusive or. *)
 
 val lognot : t -> t
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 val shift_left : t -> int -> t
 (** [Targetint.shift_left x y] shifts [x] to the left by [y] bits.

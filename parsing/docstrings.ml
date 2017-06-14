@@ -125,7 +125,7 @@ let add_info_attrs info attrs =
   | None | Some {ds_body=""; _} -> attrs
   | Some ds -> attrs @ [info_attr ds]
 
-(* Docstrings not attached to a specifc item *)
+(* Docstrings not attached to a specific item *)
 
 type text = docstring list
 
