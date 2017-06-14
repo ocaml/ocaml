@@ -2,7 +2,7 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*           Damien Doligez, projet Moscova, INRIA Rocqencourt            *)
+(*           Damien Doligez, projet Moscova, INRIA Rocquencourt           *)
 (*                                                                        *)
 (*   Copyright 2002 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)

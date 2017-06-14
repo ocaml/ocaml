@@ -622,7 +622,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
       un_anf_and_moveable ident_info env body
     | Constant, _, true, false
     (* A constant expression bound to an unassigned identifier can replace any
-         occurances of the identifier. *)
+         occurrences of the identifier. *)
     | Moveable, true, true, false  ->
       (* A moveable expression bound to a linear unassigned [Ident.t]
          may replace the single occurrence of the identifier. *)

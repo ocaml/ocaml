@@ -118,7 +118,7 @@ module Analyser :
       (** The name of the analysed file. *)
       val file_name : string ref
 
-      (** This function takes two indexes (start and end) and return the string
+      (** This function takes two indexes (start and end) and returns the string
          corresponding to the indexes in the file global variable. The function
          prepare_file must have been called to fill the file global variable.*)
       val get_string_of_file : int -> int -> string
@@ -150,12 +150,12 @@ module Analyser :
          or an empty list for an abstract type.
          [pos_end] is last char of the complete type definition.
          [pos_limit] is the position of the last char we could use to look for a comment,
-         i.e. usually the beginning on the next element.*)
+         i.e. usually the beginning of the next element.*)
       val name_comment_from_type_decl :
           int -> int -> Parsetree.type_declaration -> int * (string * Odoc_types.info option) list
 
       (** This function converts a [Types.type_expr] into a [Odoc_type.type_kind],
-         by associating the comment found in the parstree of each object field, if any. *)
+         by associating the comment found in the parsetree of each object field, if any. *)
       val manifest_structure :
           Odoc_env.env -> (string * Odoc_types.info option) list ->
             Types.type_expr -> Odoc_type.type_manifest
@@ -173,7 +173,7 @@ module Analyser :
         Odoc_env.env -> int -> Typedtree.constructor_arguments ->
         Odoc_type.constructor_args
 
-      (** This function merge two optional info structures. *)
+      (** This function merges two optional info structures. *)
       val merge_infos :
           Odoc_types.info option -> Odoc_types.info option ->
             Odoc_types.info option

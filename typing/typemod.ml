@@ -318,7 +318,7 @@ let rec map_rec_type_with_row_types ~rec_flag fn decls rem =
       else
         map_rec_type ~rec_flag fn decls rem
 
-(* Add type extension flags to extension contructors *)
+(* Add type extension flags to extension constructors *)
 let map_ext fn exts rem =
   match exts with
   | [] -> rem

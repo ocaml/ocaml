@@ -707,10 +707,10 @@ and skip_hash_bang = parse
     | Initial  (* There have been no docstrings yet *)
     | After of docstring list
         (* There have been docstrings, none of which were
-           preceeded by a blank line *)
+           preceded by a blank line *)
     | Before of docstring list * docstring list * docstring list
         (* There have been docstrings, some of which were
-           preceeded by a blank line *)
+           preceded by a blank line *)
 
   and docstring = Docstrings.docstring
 

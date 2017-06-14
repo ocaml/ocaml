@@ -169,7 +169,7 @@ type summary =
 module TycompTbl =
   struct
     (** This module is used to store components of types (i.e. labels
-        and contructors).  We keep a representation of each nested
+        and constructors).  We keep a representation of each nested
         "open" and the set of local bindings between each of them. *)
 
     type 'a t = {
@@ -819,7 +819,7 @@ let find_pers_struct name =
 let check_pers_struct name =
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
-       whether the check suceeds, to help make builds more
+       whether the check succeeds, to help make builds more
        deterministic. *)
     add_import name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
