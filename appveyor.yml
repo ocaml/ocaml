@@ -31,6 +31,7 @@ environment:
     CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin64/var/cache/setup
+    OCAMLRUNPARAM: v=0,b
     OCAMLROOT: "%PROGRAMFILES%/OCaml"
     OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
