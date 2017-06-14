@@ -334,7 +334,7 @@ module Make(I:I) = struct
 (*
   Switch according to pattern size
   Argument from_ind is the starting index, it can be zero
-  or one (when the swicth on the cell 0 has already been performed.
+  or one (when the switch on the cell 0 has already been performed.
   In that latter case pattern len is string length-1 and is corrected.
  *)
 

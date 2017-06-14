@@ -36,7 +36,7 @@ val breakpoints_at_pc : int -> int list
 
 (*** Set and remove breakpoints ***)
 
-(* Ensure the current version in installed in current checkpoint. *)
+(* Ensure the current version is installed in current checkpoint. *)
 val update_breakpoints : unit -> unit
 
 (* Execute given function with no breakpoint in current checkpoint. *)

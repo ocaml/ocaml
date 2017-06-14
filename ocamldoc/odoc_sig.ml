@@ -131,7 +131,7 @@ module Analyser =
     (** The name of the analysed file. *)
     let file_name = ref ""
 
-    (** This function takes two indexes (start and end) and return the string
+    (** This function takes two indexes (start and end) and returns the string
        corresponding to the indexes in the file global variable. The function
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file the_start the_end =
@@ -245,7 +245,7 @@ module Analyser =
         end_ =  (fun ld -> Loc.start ld.ld_loc);
         (* Beware, Loc.start is correct in the code above:
            type_expr's do not hold location information, and ld.ld_loc
-           ends after the documentation comment, sow e use Loc.start as
+           ends after the documentation comment, so we use Loc.start as
            the least problematic approximation for end_. *)
         inline_record = begin
           fun c -> match c.cd_args with
@@ -968,7 +968,7 @@ module Analyser =
 
         | Parsetree.Psig_module {Parsetree.pmd_name=name; pmd_type=module_type} ->
             let complete_name = Name.concat current_module_name name.txt in
-            (* get the the module type in the signature by the module name *)
+            (* get the module type in the signature by the module name *)
             let sig_module_type =
               try Signature_search.search_module table name.txt
               with Not_found ->
@@ -1007,7 +1007,7 @@ module Analyser =
             new_module.m_info <- merge_infos new_module.m_info info_after_opt ;
             let new_env = Odoc_env.add_module env new_module.m_name in
             let new_env2 =
-              match new_module.m_type with (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
+              match new_module.m_type with (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
                 Types.Mty_signature s -> Odoc_env.add_signature new_env new_module.m_name ~rel: (Name.simple new_module.m_name) s
               | _ -> new_env
             in
@@ -1027,7 +1027,7 @@ module Analyser =
                       raise (Failure (Odoc_messages.module_not_found current_module_name name))
                   in
                   match sig_module_type with
-                    (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
+                    (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
                     Types.Mty_signature s ->
                       Odoc_env.add_signature e complete_name ~rel: name s
                   | _ ->
@@ -1142,7 +1142,7 @@ module Analyser =
             mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
             let new_env = Odoc_env.add_module_type env mt.mt_name in
             let new_env2 =
-              match sig_mtype with (* FIXME : can this be a Tmty_ident? in this case, we would'nt have the signature *)
+              match sig_mtype with (* FIXME : can this be a Tmty_ident? in this case, we wouldn't have the signature *)
                 Some (Types.Mty_signature s) -> Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
               | _ -> new_env
             in
@@ -1592,7 +1592,7 @@ module Analyser =
 (*
       | (Parsetree.Pcty_constr (longident, _) (*of Longident.t * core_type list *),
          Types.Cty_signature class_signature) ->
-           (* FIXME : this for the case of class contraints :
+           (* FIXME : this for the case of class constraints :
               class type cons = object
                 method m : int
               end

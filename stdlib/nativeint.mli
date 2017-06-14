@@ -99,7 +99,7 @@ external logxor : nativeint -> nativeint -> nativeint = "%nativeint_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : nativeint -> nativeint
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : nativeint -> int -> nativeint = "%nativeint_lsl"
 (** [Nativeint.shift_left x y] shifts [x] to the left by [y] bits.

@@ -81,7 +81,7 @@ and core_type_desc =
   | Ptyp_arrow of arg_label * core_type * core_type
         (* T1 -> T2       Simple
            ~l:T1 -> T2    Labelled
-           ?l:T1 -> T2    Otional
+           ?l:T1 -> T2    Optional
          *)
   | Ptyp_tuple of core_type list
         (* T1 * ... * Tn
