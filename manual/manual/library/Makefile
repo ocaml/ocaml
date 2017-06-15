@@ -65,7 +65,8 @@ OCAMLDOC=$(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
   $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc)
 
-$(INTF): $(MLIS)
+$(INTF): interfaces
+interfaces: $(MLIS)
 	$(OCAMLDOC) -latex \
 	-I $(CSLDIR)/utils \
 	-I $(CSLDIR)/stdlib \
