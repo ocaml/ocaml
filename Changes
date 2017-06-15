@@ -171,6 +171,9 @@ Working version
   To enable 64-bit, run both "configure" and "make world" with OBJECT_MODE=64.
   (Konstantin Romanov, Enrique Naudon)
 
+- GPR#1203: speed up the manual build by using ocamldoc.opt
+  (Gabriel Scherer, review by Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - PR#6826, GPR#828, GPR#834: improve compilation time for open
