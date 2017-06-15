@@ -61,8 +61,12 @@ all: libs
 
 libs: $(FILES)
 
+OCAMLDOC=$(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
+  $(CSLDIR)/ocamldoc/ocamldoc.opt,\
+  $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc)
+
 $(INTF): $(MLIS)
-	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
+	$(OCAMLDOC) -latex \
 	-I $(CSLDIR)/utils \
 	-I $(CSLDIR)/stdlib \
 	-I $(CSLDIR)/parsing \
@@ -90,7 +94,7 @@ $(INTF): $(MLIS)
 	mv -f Ast_mapper.tex Astmapper.tex
 
 Tk.tex: tk.mli
-	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
+	$(OCAMLDOC) -latex \
 	-I +labltk tk.mli \
 	-sepfiles \
 	-latextitle "6,subsection*" \

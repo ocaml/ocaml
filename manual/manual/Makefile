@@ -14,7 +14,11 @@ SRC = $(abspath ../../)
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 
-OCAMLDOC=$(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc -hide Pervasives
+OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
+ $(SRC)/ocamldoc/ocamldoc.opt,\
+ $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
+ -hide Pervasives
+
 MLIS=$(SRC)/stdlib/*.mli \
 	$(SRC)/utils/*.mli \
 	$(SRC)/parsing/*.mli \
