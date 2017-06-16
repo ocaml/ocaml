@@ -41,11 +41,6 @@ manual: files
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
 
-labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
-	cd library; $(MAKE) Tk.tex RELEASEDIR=$(SRC)
-	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) latex labltk.tex
-
 index::
 	cd texstuff && \
 	  sh ../../tools/fix_index.sh manual.idx && \

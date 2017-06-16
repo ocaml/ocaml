@@ -94,17 +94,6 @@ interfaces: $(MLIS)
 	mv -f Ast_helper.tex Asthelper.tex
 	mv -f Ast_mapper.tex Astmapper.tex
 
-Tk.tex: tk.mli
-	$(OCAMLDOC) -latex \
-	-I +labltk tk.mli \
-	-sepfiles \
-	-latextitle "6,subsection*" \
-	-latextitle "7,subsubsection*" \
-	-latex-type-prefix "TYP" \
-	-latex-module-prefix "" \
-	-latex-module-type-prefix "" \
-	-latex-value-prefix ""
-
 clean:
 	rm -f $(FILES)
 
