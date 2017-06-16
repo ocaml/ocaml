@@ -21,9 +21,9 @@ CAMLprim value unix_rename(value path1, value path2)
 {
   caml_unix_check_path(path1, "rename");
   caml_unix_check_path(path2, "rename");
-  if (! MoveFileEx(String_val(path1), String_val(path2),
-                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-                   MOVEFILE_COPY_ALLOWED)) {
+  if (! MoveFileExA(String_val(path1), String_val(path2),
+                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                    MOVEFILE_COPY_ALLOWED)) {
     win32_maperr(GetLastError());
     uerror("rename", path1);
   }

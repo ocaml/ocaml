@@ -32,7 +32,7 @@ CAMLprim value unix_readlink(value opath)
   path = caml_stat_strdup(String_val(opath));
 
   caml_enter_blocking_section();
-  attributes = GetFileAttributes(path);
+  attributes = GetFileAttributesA(path);
   caml_leave_blocking_section();
 
   if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -47,13 +47,13 @@ CAMLprim value unix_readlink(value opath)
   }
   else {
     caml_enter_blocking_section();
-    if ((h = CreateFile(path,
-                        FILE_READ_ATTRIBUTES,
-                        FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                        NULL,
-                        OPEN_EXISTING,
-                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                        NULL)) == INVALID_HANDLE_VALUE) {
+    if ((h = CreateFileA(path,
+                         FILE_READ_ATTRIBUTES,
+                         FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                         NULL,
+                         OPEN_EXISTING,
+                         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                         NULL)) == INVALID_HANDLE_VALUE) {
       caml_leave_blocking_section();
       caml_stat_free(path);
       errno = ENOENT;

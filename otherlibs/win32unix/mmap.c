@@ -172,13 +172,13 @@ static void caml_ba_sys_error(void)
   DWORD errnum;
 
   errnum = GetLastError();
-  if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                     NULL,
-                     errnum,
-                     0,
-                     buffer,
-                     sizeof(buffer),
-                     NULL))
+  if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+                      NULL,
+                      errnum,
+                      0,
+                      buffer,
+                      sizeof(buffer),
+                      NULL))
     sprintf(buffer, "Unknown error %ld\n", errnum);
   caml_raise_sys_error(caml_copy_string(buffer));
 }

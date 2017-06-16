@@ -65,13 +65,13 @@ static void caml_win32_sys_error(int errnum)
 {
   char buffer[512];
   value msg;
-  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                    NULL,
-                    errnum,
-                    0,
-                    buffer,
-                    sizeof(buffer),
-                    NULL)) {
+  if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                     NULL,
+                     errnum,
+                     0,
+                     buffer,
+                     sizeof(buffer),
+                     NULL)) {
     msg = caml_copy_string(buffer);
   } else {
     msg = caml_alloc_sprintf("unknown error #%d", errnum);
@@ -181,12 +181,12 @@ CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
   if (fullnamelen < 256) fullnamelen = 256;
   while (1) {
     fullname = caml_stat_alloc(fullnamelen);
-    retcode = SearchPath(NULL,              /* use system search path */
-                         name,
-                         ".exe",            /* add .exe extension if needed */
-                         fullnamelen,
-                         fullname,
-                         &filepart);
+    retcode = SearchPathA(NULL,              /* use system search path */
+                          name,
+                          ".exe",            /* add .exe extension if needed */
+                          fullnamelen,
+                          fullname,
+                          &filepart);
     if (retcode == 0) {
       caml_gc_message(0x100, "%s not found in search path\n", name);
       caml_stat_free(fullname);
@@ -656,7 +656,7 @@ char * caml_executable_name(void)
   namelen = 256;
   while (1) {
     name = caml_stat_alloc(namelen);
-    ret = GetModuleFileName(NULL, name, namelen);
+    ret = GetModuleFileNameA(NULL, name, namelen);
     if (ret == 0) { caml_stat_free(name); return NULL; }
     if (ret < namelen) break;
     caml_stat_free(name);

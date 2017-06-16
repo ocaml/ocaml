@@ -28,7 +28,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
                                 value fd1, value fd2, value fd3)
 {
   PROCESS_INFORMATION pi;
-  STARTUPINFO si;
+  STARTUPINFOA si;
   char * exefile, * envp;
   DWORD flags, err;
   HANDLE hp;
@@ -46,8 +46,8 @@ value win_create_process_native(value cmd, value cmdline, value env,
     envp = NULL;
   }
   /* Prepare stdin/stdout/stderr redirection */
-  ZeroMemory(&si, sizeof(STARTUPINFO));
-  si.cb = sizeof(STARTUPINFO);
+  ZeroMemory(&si, sizeof(STARTUPINFOA));
+  si.cb = sizeof(STARTUPINFOA);
   si.dwFlags = STARTF_USESTDHANDLES;
   /* Duplicate the handles fd1, fd2, fd3 to make sure they are inheritable */
   hp = GetCurrentProcess();
@@ -75,8 +75,8 @@ value win_create_process_native(value cmd, value cmdline, value env,
     si.wShowWindow = SW_HIDE;
   }
   /* Create the process */
-  if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
-                      TRUE, flags, envp, NULL, &si, &pi)) {
+  if (! CreateProcessA(exefile, String_val(cmdline), NULL, NULL,
+                       TRUE, flags, envp, NULL, &si, &pi)) {
     err = GetLastError(); goto ret4;
   }
   CloseHandle(pi.hThread);
@@ -108,8 +108,8 @@ static int win_has_console(void)
   HANDLE h, log;
   int i;
 
-  h = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
-                 OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  h = CreateFileA("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (h == INVALID_HANDLE_VALUE) {
     return 0;
   } else {

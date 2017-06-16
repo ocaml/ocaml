@@ -94,10 +94,10 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
          char * const cmdline)
 {
   char path[MAX_PATH];
-  STARTUPINFO stinfo;
+  STARTUPINFOA stinfo;
   PROCESS_INFORMATION procinfo;
   DWORD retcode;
-  if (SearchPath(NULL, runtime, ".exe", MAX_PATH, path, &runtime) == 0) {
+  if (SearchPathA(NULL, runtime, ".exe", MAX_PATH, path, &runtime) == 0) {
     HANDLE errh;
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
@@ -120,8 +120,8 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
   stinfo.dwFlags = 0;
   stinfo.cbReserved2 = 0;
   stinfo.lpReserved2 = NULL;
-  if (!CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
-                     &stinfo, &procinfo)) {
+  if (!CreateProcessA(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
+                      &stinfo, &procinfo)) {
     HANDLE errh;
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
@@ -150,13 +150,13 @@ void __declspec(noreturn) __cdecl headerentry()
 #endif
 {
   char truename[MAX_PATH];
-  char * cmdline = GetCommandLine();
+  char * cmdline = GetCommandLineA();
   char * runtime_path;
   HANDLE h;
 
-  GetModuleFileName(NULL, truename, sizeof(truename));
-  h = CreateFile(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                 NULL, OPEN_EXISTING, 0, NULL);
+  GetModuleFileNameA(NULL, truename, sizeof(truename));
+  h = CreateFileA(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                  NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE ||
       (runtime_path = read_runtime_path(h)) == NULL) {
     HANDLE errh;

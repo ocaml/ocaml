@@ -24,13 +24,13 @@ CAMLprim value win_findfirst(value name)
 {
   HANDLE h;
   value v;
-  WIN32_FIND_DATA fileinfo;
+  WIN32_FIND_DATAA fileinfo;
   value valname = Val_unit;
   value valh = Val_unit;
 
   caml_unix_check_path(name, "opendir");
   Begin_roots2 (valname,valh);
-    h = FindFirstFile(String_val(name),&fileinfo);
+    h = FindFirstFileA(String_val(name),&fileinfo);
     if (h == INVALID_HANDLE_VALUE) {
       DWORD err = GetLastError();
       if (err == ERROR_NO_MORE_FILES)
@@ -51,10 +51,10 @@ CAMLprim value win_findfirst(value name)
 
 CAMLprim value win_findnext(value valh)
 {
-  WIN32_FIND_DATA fileinfo;
+  WIN32_FIND_DATAA fileinfo;
   BOOL retcode;
 
-  retcode = FindNextFile(Handle_val(valh), &fileinfo);
+  retcode = FindNextFileA(Handle_val(valh), &fileinfo);
   if (!retcode) {
     DWORD err = GetLastError();
     if (err == ERROR_NO_MORE_FILES)

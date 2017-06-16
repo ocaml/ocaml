@@ -25,7 +25,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPTSTR, LPTSTR, DWORD);
+typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPSTR, LPSTR, DWORD);
 
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
@@ -35,8 +35,8 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
   CAMLparam3(to_dir, osource, odest);
   DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
   BOOLEAN result;
-  LPTSTR source;
-  LPTSTR dest;
+  LPSTR source;
+  LPSTR dest;
   caml_unix_check_path(osource, "symlink");
   caml_unix_check_path(odest, "symlink");
 
@@ -46,7 +46,7 @@ again:
   }
 
   if (!pCreateSymbolicLink) {
-    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle("kernel32"), "CreateSymbolicLinkA");
+    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandleA("kernel32"), "CreateSymbolicLinkA");
     no_symlink = !pCreateSymbolicLink;
     goto again;
   }

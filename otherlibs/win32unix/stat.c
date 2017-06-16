@@ -152,13 +152,13 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
   }
   else {
     caml_enter_blocking_section();
-    h = CreateFile(path,
-                   FILE_READ_ATTRIBUTES,
-                   FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                   NULL,
-                   OPEN_EXISTING,
-                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                   NULL);
+    h = CreateFileA(path,
+                    FILE_READ_ATTRIBUTES,
+                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    NULL,
+                    OPEN_EXISTING,
+                    FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                    NULL);
     caml_leave_blocking_section();
   }
   if (h == INVALID_HANDLE_VALUE) {
@@ -206,13 +206,13 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
       if (!is_symlink) {
         CloseHandle(h);
         caml_enter_blocking_section();
-        if ((h = CreateFile(path,
-                            FILE_READ_ATTRIBUTES,
-                            FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                            NULL,
-                            OPEN_EXISTING,
-                            FILE_FLAG_BACKUP_SEMANTICS,
-                            NULL)) == INVALID_HANDLE_VALUE) {
+        if ((h = CreateFileA(path,
+                             FILE_READ_ATTRIBUTES,
+                             FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                             NULL,
+                             OPEN_EXISTING,
+                             FILE_FLAG_BACKUP_SEMANTICS,
+                             NULL)) == INVALID_HANDLE_VALUE) {
           errno = ENOENT;
           caml_leave_blocking_section();
           return 0;

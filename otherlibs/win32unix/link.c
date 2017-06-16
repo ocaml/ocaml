@@ -20,8 +20,8 @@
 
 typedef
 BOOL (WINAPI *tCreateHardLink)(
-  LPCTSTR lpFileName,
-  LPCTSTR lpExistingFileName,
+  LPCSTR lpFileName,
+  LPCSTR lpExistingFileName,
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
 
@@ -29,7 +29,7 @@ CAMLprim value unix_link(value path1, value path2)
 {
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink;
-  hModKernel32 = GetModuleHandle("KERNEL32.DLL");
+  hModKernel32 = GetModuleHandleA("KERNEL32.DLL");
   pCreateHardLink =
     (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
   if (pCreateHardLink == NULL)

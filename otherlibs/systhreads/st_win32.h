@@ -367,13 +367,13 @@ static void st_check_error(DWORD retcode, char * msg)
 
   if (retcode == 0) return;
   if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
-  if (! FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                      NULL,
-                      retcode,
-                      0,
-                      err,
-                      sizeof(err),
-                      NULL)) {
+  if (! FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+                       NULL,
+                       retcode,
+                       0,
+                       err,
+                       sizeof(err),
+                       NULL)) {
     sprintf(err, "error code %lx", retcode);
   }
   msglen = strlen(msg);
