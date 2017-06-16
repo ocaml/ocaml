@@ -10,6 +10,10 @@ Working version
   (Gabriel Radanne, Leo White and Gabriel Scherer,
    request by Bikal Lem)
 
+- #1201: Add built-in types uint32 and uint64
+  (Jeremy Yallop, review by Daniel Bünzli, Gabriel Scherer and
+   Mark Shinwell)
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
