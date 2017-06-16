@@ -760,3 +760,104 @@ int caml_win32_rename(const char * oldpath, const char * newpath)
   }
   return -1;
 }
+
+/* Windows Unicode support */
+static uintnat windows_unicode_enabled = 1;
+
+/* If [windows_unicode_strict] is non-zero, then illegal UTF-8 characters (on
+   the OCaml side) or illegal UTF-16 characters (on the Windows side) cause an
+   error to be signaled.  What happens then depends on the variable
+   [windows_unicode_fallback].
+
+   If [windows_unicode_strict] is zero, then illegal characters are silently
+   dropped. */
+static uintnat windows_unicode_strict = 1;
+
+/* If [windows_unicode_fallback] is non-zero, then if an error is signaled when
+   translating to UTF-16, the translation is re-done under the assumption that
+   the argument string is encoded in the local codepage. */
+static uintnat windows_unicode_fallback = 1;
+
+CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out, int outlen)
+{
+  int retcode;
+
+  CAMLassert (s != NULL);
+
+  if (slen == 0)
+    return 0;
+
+  if (windows_unicode_enabled != 0) {
+    retcode = MultiByteToWideChar(CP_UTF8, windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0, s, slen, out, outlen);
+    if (retcode == 0 && windows_unicode_fallback != 0)
+      retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+  } else {
+    retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+  }
+
+  if (retcode == 0)
+    caml_win32_sys_error(GetLastError());
+
+  return retcode;
+}
+
+#ifndef WC_ERR_INVALID_CHARS /* For old versions of Windows we simply ignore the flag */
+#define WC_ERR_INVALID_CHARS 0
+#endif
+
+CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out, int outlen)
+{
+  int retcode;
+
+  CAMLassert(s != NULL);
+
+  if (slen == 0)
+    return 0;
+
+  if (windows_unicode_enabled != 0)
+    retcode = WideCharToMultiByte(CP_UTF8, windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0, s, slen, out, outlen, NULL, NULL);
+  else
+    retcode = WideCharToMultiByte(CP_THREAD_ACP, 0, s, slen, out, outlen, NULL, NULL);
+
+  if (retcode == 0)
+    caml_win32_sys_error(GetLastError());
+
+  return retcode;
+}
+
+CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
+{
+  int retcode, slen;
+  value v;
+
+  slen = wcslen(s);
+  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0); /* Do not include final NULL */
+  v = caml_alloc_string(retcode);
+  win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
+
+  return v;
+}
+
+CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+{
+  wchar_t * ws;
+  int retcode;
+
+  retcode = win_multi_byte_to_wide_char(s, -1, NULL, 0);
+  ws = malloc(retcode * sizeof(*ws));
+  win_multi_byte_to_wide_char(s, -1, ws, retcode);
+
+  return ws;
+}
+
+CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
+{
+  caml_stat_string out;
+  int retcode;
+
+  retcode = win_wide_char_to_multi_byte(s, -1, NULL, 0);
+  out = caml_stat_alloc(retcode);
+  win_wide_char_to_multi_byte(s, -1, out, retcode);
+
+  return out;
+}

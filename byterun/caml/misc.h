@@ -165,6 +165,75 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
+/* Windows Unicode support */
+
+#ifdef _WIN32
+
+typedef wchar_t charnat;
+
+#define _T(x) L ## x
+
+#define _topen _wopen
+#define _tstat _wstati64
+#define _tunlink _wunlink
+#define _trename _wrename
+#define _tchdir _wchdir
+#define _tgetcwd _wgetcwd
+#define _tgetenv _wgetenv
+#define _tsystem _wsystem
+#define _trmdir _wrmdir
+#define _tutime _wutime
+#define _tputenv _wputenv
+#define _tchmod _wchmod
+#define _texecv _wexecv
+#define _texecve _wexecve
+#define _texecvp _wexecvp
+#define _tcscmp wcscmp
+#define _tcslen wcslen
+#define _stscanf swscanf
+
+#define caml_stat_tcsdup caml_stat_wcsdup
+#define caml_stat_tcsconcat caml_stat_wcsconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup_to_utf16
+#define caml_stat_strdup_of_utf16 caml_stat_strdup_of_utf16
+#define caml_copy_string_of_utf16 caml_copy_string_of_utf16
+
+#else /* _WIN32 */
+
+typedef char charnat;
+
+#define _T(x) x
+
+#define _topen open
+#define _tstat stat
+#define _tunlink unlink
+#define _trename rename
+#define _tchdir chdir
+#define _tgetcwd getcwd
+#define _tgetenv getenv
+#define _tsystem system
+#define _trmdir rmdir
+#define _tutime utime
+#define _tputenv putenv
+#define _tchmod chmod
+#define _texecv execv
+#define _texecve execve
+#define _texecvp execvp
+#define _tcscmp strcmp
+#define _tcslen strlen
+#define _stscanf sscanf
+
+#define caml_stat_tcsdup caml_stat_strdup
+#define caml_stat_tcsconcat caml_stat_strconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup
+#define caml_stat_strdup_of_utf16 caml_stat_strdup
+#define caml_copy_string_of_utf16 caml_copy_string
+
+#endif /* _WIN32 */
+
+
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */

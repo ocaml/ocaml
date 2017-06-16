@@ -93,4 +93,38 @@ extern char *caml_secure_getenv(char const *var);
 
 #endif /* CAML_INTERNALS */
 
+/* Windows Unicode support */
+
+#ifdef _WIN32
+
+extern int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);
+extern int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outlen);
+
+/* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
+   re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
+   [caml_windows_unicode_runtime_enabled] is non-zero **and** [s] is valid
+   UTF-8, or the current Windows code page otherwise.
+
+   The returned string is allocated with [caml_stat_alloc], so it should be free
+   using [caml_stat_free].
+*/
+extern wchar_t* caml_stat_strdup_to_utf16(const char *s);
+
+/* [caml_stat_strdup_of_utf16(s)] returns a NULL-terminated copy of [s],
+   re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
+   the current Windows code page otherwise.
+
+   The returned string is allocated with [caml_stat_alloc], so it should be free
+   using [caml_stat_free].
+*/
+extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
+
+/* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
+   [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
+   or in the current code page otherwise.
+*/
+extern value caml_copy_string_of_utf16(const wchar_t *s);
+
+#endif /* _WIN32 */
+
 #endif /* CAML_OSDEPS_H */
