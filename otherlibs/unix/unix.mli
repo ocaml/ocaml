@@ -128,7 +128,8 @@ val getenv : string -> string
    environment.
    @raise Not_found if the variable is unbound.
 
-   (This function is identical to {!Sys.getenv}.) *)
+   (This function is identical to {!Sys.getenv}.
+   See also {!Sys.secure_getenv}.) *)
 
 val putenv : string -> string -> unit
 (** [Unix.putenv name value] sets the value associated to a

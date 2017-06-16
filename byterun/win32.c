@@ -674,3 +674,9 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
   return len;
 }
 #endif
+
+char *caml_secure_getenv (char const *var)
+{
+  /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
+  return CAML_SYS_GETENV (var);
+}

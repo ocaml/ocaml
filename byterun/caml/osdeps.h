@@ -85,6 +85,11 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
    GetModuleFileName under Windows). */
 extern int caml_executable_name(char * name, int name_len);
 
+/* Secure version of [getenv]: returns NULL if the process has special
+   privileges (setuid bit or capabilities).
+*/
+extern char *caml_secure_getenv(char const *var);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */
