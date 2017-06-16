@@ -612,7 +612,7 @@ void caml_load_plugin(char *plugin)
 
 void caml_cplugins_load(char *env_variable)
 {
-  char *plugins = getenv(env_variable);
+  char *plugins = caml_secure_getenv(env_variable);
   if(plugins != NULL){
     char* curs = plugins;
     while(*curs != 0){

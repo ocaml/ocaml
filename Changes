@@ -1,5 +1,13 @@
-Next minor version (4.04.1):
-----------------------------
+OCaml 4.04.2 (21 Jun 2017):
+---------------------------
+
+### Security fix:
+
+- PR#7557: Local privilege escalation issue with ocaml binaries.
+  (Damien Doligez, report by Eric Milliken, review by Xavier Leroy)
+
+OCaml 4.04.1 (14 Apr 2017):
+---------------------------
 
 ### Code generation and optimizations:
 

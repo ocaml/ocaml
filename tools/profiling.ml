@@ -25,7 +25,7 @@ exception Bad_profile
 
 let dump_counters () =
   let dumpfile =
-    try Sys.getenv "OCAMLPROF_DUMP" with Not_found -> "ocamlprof.dump"
+    try Sys.secure_getenv "OCAMLPROF_DUMP" with Not_found -> "ocamlprof.dump"
   in
   begin try
     let ic = open_in_bin dumpfile in

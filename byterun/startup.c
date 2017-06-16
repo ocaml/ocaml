@@ -372,7 +372,7 @@ CAMLexport void caml_main(char **argv)
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (getenv("CAMLSIGPIPE"))
+  if (caml_secure_getenv("CAMLSIGPIPE"))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
@@ -410,7 +410,7 @@ CAMLexport void caml_startup_code(
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
-  cds_file = getenv("CAML_DEBUG_FILE");
+  cds_file = caml_secure_getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
     caml_cds_file = caml_strdup(cds_file);
   }

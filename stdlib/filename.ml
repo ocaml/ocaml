@@ -84,7 +84,7 @@ module Unix = struct
     String.sub name (String.length name - String.length suff)
                     (String.length suff) = suff
   let temp_dir_name =
-    try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
+    try Sys.secure_getenv "TMPDIR" with Not_found -> "/tmp"
   let quote = generic_quote "'\\''"
   let basename = generic_basename is_dir_sep current_dir_name
   let dirname = generic_dirname is_dir_sep current_dir_name

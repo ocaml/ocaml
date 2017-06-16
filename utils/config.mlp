@@ -31,10 +31,10 @@ let standard_library_default = "%%LIBDIR%%"
 
 let standard_library =
   try
-    Sys.getenv "OCAMLLIB"
+    Sys.secure_getenv "OCAMLLIB"
   with Not_found ->
   try
-    Sys.getenv "CAMLLIB"
+    Sys.secure_getenv "CAMLLIB"
   with Not_found ->
     standard_library_default
 

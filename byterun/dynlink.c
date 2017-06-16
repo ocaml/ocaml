@@ -81,8 +81,8 @@ static char * parse_ld_conf(void)
   struct stat st;
   int ldconf, nread;
 
-  stdlib = getenv("OCAMLLIB");
-  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
+  stdlib = caml_secure_getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = caml_secure_getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = caml_strconcat(3, stdlib, "/", LD_CONF_NAME);
   if (stat(ldconfname, &st) == -1) {
@@ -150,7 +150,7 @@ void caml_build_primitive_table(char * lib_path,
      - directories specified in the executable
      - directories specified in the file <stdlib>/ld.conf */
   tofree1 = caml_decompose_path(&caml_shared_libs_path,
-                                getenv("CAML_LD_LIBRARY_PATH"));
+                                caml_secure_getenv("CAML_LD_LIBRARY_PATH"));
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
