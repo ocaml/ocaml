@@ -623,9 +623,16 @@ val string_of_int : int -> string
 
 external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
-   The string is read in decimal (by default), in hexadecimal (if it
-   begins with [0x] or [0X]), in octal (if it begins with [0o] or [0O]),
-   or in binary (if it begins with [0b] or [0B]).
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]), in hexadecimal (if it begins with [0x] or
+   [0X]), in octal (if it begins with [0o] or [0O]), or in binary
+   (if it begins with [0b] or [0B]).
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*max_int+1]].  If the input exceeds {!max_int}
+   it is converted to the signed integer
+   [min_int + input - max_int - 1].
+
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
    Raise [Failure "int_of_string"] if the given string is not

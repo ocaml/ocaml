@@ -158,10 +158,16 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
 
 external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Nativeint.max_int+1]].  If the input exceeds {!Nativeint.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Nativeint.max_int - 1].
+
+   Raise [Failure "Nativeint.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
