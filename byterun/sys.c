@@ -246,17 +246,13 @@ CAMLprim value caml_sys_is_directory(value name)
 #else
   struct stat st;
 #endif
-  char * p;
+  charnat * p;
   int ret;
 
   caml_sys_check_path(name);
-  p = caml_stat_strdup(String_val(name));
+  p = caml_stat_strdup_to_utf16(String_val(name));
   caml_enter_blocking_section();
-#ifdef _WIN32
-  ret = _stati64(p, &st);
-#else
   ret = CAML_SYS_STAT(p, &st);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 
