@@ -86,6 +86,11 @@ Working version
   (Sébastien Hinderer, review by Damien Doligez, Gabriel Scherer, David
   Allsopp, Nicolás Ojeda Bär, Vincent Laviron)
 
+- #1229: Add functions to Format module for printing strings conditionally
+  on line breaks.
+  (Josh Berdine, Guillaume Petiot, review by Richard Bonichon, Gabriel Scherer
+  and Vladimir Keleshev)
+
 ### Other libraries:
 
 - #10192: Add support for Unix domain sockets on Windows and use them

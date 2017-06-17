@@ -359,6 +359,22 @@ val print_if_newline : unit -> unit
   command.
 *)
 
+val pp_print_string_if_newline : formatter -> string -> unit
+(** Similar to [print_if_newline] followed by [print_string] except that the
+  length of the string does not contribute to the width of the enclosing
+  box. *)
+
+val pp_print_or_newline : formatter -> int -> int -> string -> string -> unit
+(** Print a full break hint and the first string if the preceding line has
+  not just been split. Otherwise, print the second string. *)
+
+val pp_print_fits_or_breaks :
+  formatter -> ?level:int -> string -> int -> int -> string -> unit
+(** [pp_print_fits_or_breaks fmt ?level fits nspaces offset breaks] prints
+  [fits] if the enclosing boxes fits on one line ([level] being the depth of
+  boxes that are checked in the stack). Otherwise, prints a break as per
+  [print_break nspaces offset] followed by [breaks]. *)
+
 (** {1 Pretty-printing termination} *)
 
 val pp_print_flush : formatter -> unit -> unit

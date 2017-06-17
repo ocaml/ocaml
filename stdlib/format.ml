@@ -62,15 +62,18 @@ type box_type = CamlinternalFormatBasics.block_type =
   | Pp_hbox | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits
 
 
+type fits_or_breaks = {
+  fits: string * int * string;   (* when the line is not split *)
+  breaks: string * int * string; (* when the line is split *)
+}
+
+
 (* The pretty-printing tokens definition:
    are either text to print or pretty printing
    elements that drive indentation and line splitting. *)
 type pp_token =
   | Pp_text of string          (* normal text *)
-  | Pp_break of {              (* complete break *)
-      fits: string * int * string;   (* line is not split *)
-      breaks: string * int * string; (* line is split *)
-    }
+  | Pp_break of fits_or_breaks (* complete break *)
   | Pp_tbreak of int * int     (* go to next tabulation *)
   | Pp_stab                    (* set a tabulation *)
   | Pp_begin of int * box_type (* beginning of a box *)
@@ -80,6 +83,16 @@ type pp_token =
   | Pp_newline                 (* to force a newline inside a box *)
   | Pp_if_newline              (* to do something only if this very
                                   line has been broken *)
+  | Pp_string_if_newline of string
+                               (* print a string only if this very
+                                  line has been broken *)
+  | Pp_or_newline of int * int * string * string
+                               (* print a break and the first string if this
+                                  very line has not been broken, otherwise
+                                  print the second string *)
+  | Pp_fits_or_breaks of int * string * int * int * string
+                               (* print a string if the enclosing box fits,
+                                  otherwise print a break and a string *)
   | Pp_open_tag of stag         (* opening a tag name *)
   | Pp_close_tag               (* closing the most recently open tag *)
 
@@ -316,6 +329,33 @@ let pp_skip_token state =
 
 *)
 
+let format_pp_break state size fits breaks =
+  let before, off, _ = breaks in
+  begin match Stack.top_opt state.pp_format_stack with
+  | None -> () (* No open box. *)
+  | Some { box_type; width } ->
+    begin match box_type with
+    | Pp_hovbox ->
+      if size + String.length before > state.pp_space_left
+      then break_new_line state breaks width
+      else break_same_line state fits
+    | Pp_box ->
+      (* Have the line just been broken here ? *)
+      if state.pp_is_new_line then break_same_line state fits else
+      if size + String.length before > state.pp_space_left
+      then break_new_line state breaks width else
+      (* break the line here leads to new indentation ? *)
+      if state.pp_current_indent > state.pp_margin - width + off
+      then break_new_line state breaks width
+      else break_same_line state fits
+    | Pp_hvbox -> break_new_line state breaks width
+    | Pp_fits -> break_same_line state fits
+    | Pp_vbox -> break_new_line state breaks width
+    | Pp_hbox -> break_same_line state fits
+    end
+  end
+
+
 (* Formatting a token with a given size. *)
 let format_pp_token state size = function
 
@@ -384,31 +424,40 @@ let format_pp_token state size = function
     if state.pp_current_indent != state.pp_margin - state.pp_space_left
     then pp_skip_token state
 
+  | Pp_string_if_newline s ->
+    if state.pp_is_new_line
+    then format_string state s
+
   | Pp_break { fits; breaks } ->
-    let before, off, _ = breaks in
-    begin match Stack.top_opt state.pp_format_stack with
-    | None -> () (* No open box. *)
-    | Some { box_type; width } ->
-      begin match box_type with
-      | Pp_hovbox ->
-        if size + String.length before > state.pp_space_left
-        then break_new_line state breaks width
-        else break_same_line state fits
-      | Pp_box ->
-        (* Have the line just been broken here ? *)
-        if state.pp_is_new_line then break_same_line state fits else
-        if size + String.length before > state.pp_space_left
-          then break_new_line state breaks width else
-        (* break the line here leads to new indentation ? *)
-        if state.pp_current_indent > state.pp_margin - width + off
-        then break_new_line state breaks width
-        else break_same_line state fits
-      | Pp_hvbox -> break_new_line state breaks width
-      | Pp_fits -> break_same_line state fits
-      | Pp_vbox -> break_new_line state breaks width
-      | Pp_hbox -> break_same_line state fits
-      end
-    end
+    format_pp_break state size fits breaks
+
+
+  | Pp_or_newline (n, off, fits, breaks) ->
+    if state.pp_is_new_line
+    then format_string state breaks
+    else format_pp_break state size ("", n, fits) ("", off, breaks)
+
+  | Pp_fits_or_breaks (level, fits, n, off, breaks) ->
+     let check_level level { box_type= ty; width } =
+       if level < 0 then level
+       else if ty = Pp_fits then
+         begin
+           if level = 0 then format_string state fits ;
+           level - 1
+         end
+       else
+         begin
+           if off > min_int then
+             begin
+               if size + n + String.length breaks >= state.pp_space_left
+               then break_new_line state ("", off, "") width
+               else break_same_line state ("", n, "")
+             end;
+           format_string state breaks;
+           - 1
+         end
+     in
+     ignore (Stack.fold check_level level state.pp_format_stack)
 
    | Pp_open_tag tag_name ->
      let marker = state.pp_mark_open_tag tag_name in
@@ -482,7 +531,8 @@ let set_size state ty =
       initialize_scan_stack state.pp_scan_stack
     else
       match queue_elem.token with
-      | Pp_break _ | Pp_tbreak (_, _) ->
+      | Pp_break _ | Pp_tbreak (_, _)
+      | Pp_or_newline _ | Pp_fits_or_breaks _ ->
         if ty then begin
           queue_elem.size <- Size.of_int (state.pp_right_total + size);
           Stack.pop_opt state.pp_scan_stack |> ignore
@@ -493,7 +543,8 @@ let set_size state ty =
           Stack.pop_opt state.pp_scan_stack |> ignore
         end
       | Pp_text _ | Pp_stab | Pp_tbegin _ | Pp_tend | Pp_end
-      | Pp_newline | Pp_if_newline | Pp_open_tag _ | Pp_close_tag ->
+      | Pp_newline | Pp_if_newline | Pp_string_if_newline _
+      | Pp_open_tag _ | Pp_close_tag ->
         () (* scan_push is only used for breaks and boxes. *)
 
 
@@ -700,6 +751,15 @@ let pp_print_custom_break state ~fits ~breaks =
     let elem = { size; token; length } in
     scan_push state true elem
 
+(* To format a string, only in case the line has just been broken. *)
+let pp_print_string_if_newline state s =
+  if state.pp_curr_depth < state.pp_max_boxes then
+    let length = String.length s in
+    let size = Size.zero in
+    let token = Pp_string_if_newline s in
+    enqueue_advance state { size; token; length }
+
+
 (* Printing break hints:
    A break hint indicates where a box may be broken.
    If line is broken then offset is added to the indentation of the current
@@ -707,6 +767,26 @@ let pp_print_custom_break state ~fits ~breaks =
 let pp_print_break state width offset =
   pp_print_custom_break state
     ~fits:("", width, "") ~breaks:("", offset, "")
+
+
+(* To format a break and the first string, only in case the line has not just
+   been broken, or the second string, in case the line has just been broken. *)
+let pp_print_or_newline state width offset fits breaks =
+  if state.pp_curr_depth < state.pp_max_boxes then
+    let size = Size.of_int (- state.pp_right_total) in
+    let token = Pp_or_newline (width, offset, fits, breaks) in
+    let width = width + String.length fits in
+    scan_push state true { size; token; length= width }
+
+
+(* To format a string if the enclosing box fits, and otherwise to format a
+   break and a string. *)
+let pp_print_fits_or_breaks state ?(level = 0) fits nspaces offset breaks =
+  if state.pp_curr_depth < state.pp_max_boxes then
+    let size = Size.of_int (- state.pp_right_total) in
+    let token = Pp_fits_or_breaks (level, fits, nspaces, offset, breaks) in
+    let length = String.length fits in
+    scan_push state true { size; token; length }
 
 
 (* Print a space :
