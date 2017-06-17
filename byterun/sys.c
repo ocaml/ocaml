@@ -364,22 +364,22 @@ CAMLprim value caml_sys_getenv(value var)
   return caml_copy_string(res);
 }
 
-char * caml_exe_name;
-char ** caml_main_argv;
+charnat * caml_exe_name;
+charnat ** caml_main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = caml_copy_string(caml_exe_name);
-  argv = caml_copy_string_array((char const **) caml_main_argv);
+  exe_name = caml_copy_string_of_utf16(caml_exe_name);
+  argv = caml_alloc_array((void *)caml_copy_string_of_utf16, (char const **) caml_main_argv);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
   Field(res, 1) = argv;
   CAMLreturn(res);
 }
 
-void caml_sys_init(char * exe_name, char **argv)
+void caml_sys_init(charnat * exe_name, charnat **argv)
 {
 #ifdef CAML_WITH_CPLUGINS
   caml_cplugins_init(exe_name, argv);

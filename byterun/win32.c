@@ -127,16 +127,16 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
+wchar_t * caml_decompose_path(struct ext_table * tbl, wchar_t * path)
 {
-  char * p, * q;
+  wchar_t * p, * q;
   int n;
 
   if (path == NULL) return NULL;
-  p = caml_stat_strdup(path);
+  p = caml_stat_wcsdup(path);
   q = p;
   while (1) {
-    for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
+    for (n = 0; q[n] != 0 && q[n] != L';'; n++) /*nothing*/;
     caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
@@ -146,12 +146,12 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
+wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
 {
-  char * dir, * fullname;
-  const char * p;
+  wchar_t * dir, * fullname;
+  const wchar_t * p;
   int i;
-  struct stat st;
+  struct _stati64 st;
 
   for (p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
@@ -160,37 +160,37 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
     dir = path->contents[i];
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
-    fullname = caml_stat_strconcat(3, dir, "\\", name);
-    caml_gc_message(0x100, "Searching %s\n", fullname);
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
+    fullname = caml_stat_wcsconcat(3, dir, L"\\", name);
+    caml_gc_message(0x100, "Searching %" ARCH_CHARNATSTR_PRINTF_FORMAT "\n", fullname);
+    if (_wstati64(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", name);
-  return caml_stat_strdup(name);
+  caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
+  return caml_stat_wcsdup(name);
 }
 
-CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
+CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
 {
-  char * fullname, * filepart;
+  wchar_t * fullname, * filepart;
   size_t fullnamelen;
   DWORD retcode;
 
-  fullnamelen = strlen(name) + 1;
+  fullnamelen = wcslen(name) + 1;
   if (fullnamelen < 256) fullnamelen = 256;
   while (1) {
-    fullname = caml_stat_alloc(fullnamelen);
-    retcode = SearchPathA(NULL,              /* use system search path */
-                          name,
-                          ".exe",            /* add .exe extension if needed */
-                          fullnamelen,
-                          fullname,
-                          &filepart);
+    fullname = caml_stat_alloc(fullnamelen*sizeof(wchar_t));
+    retcode = SearchPath(NULL,              /* use system search path */
+                         name,
+                         L".exe",            /* add .exe extension if needed */
+                         fullnamelen,
+                         fullname,
+                         &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%s not found in search path\n", name);
+      caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
       caml_stat_free(fullname);
-      return caml_stat_strdup(name);
+      return caml_stat_tcsdup(name);
     }
     if (retcode < fullnamelen)
       return fullname;
@@ -199,12 +199,12 @@ CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
   }
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
+wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
 {
-  caml_stat_string dllname;
-  caml_stat_string res;
+  wchar_t * dllname;
+  wchar_t * res;
 
-  dllname = caml_stat_strconcat(2, name, ".dll");
+  dllname = caml_stat_wcsconcat(2, name, L".dll");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -212,12 +212,12 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * n
 
 #ifdef SUPPORT_DYNAMIC_LINKING
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
-  handle = flexdll_dlopen(libname, flags);
+  handle = flexdll_dlopen(caml_stat_strdup_of_utf16(libname), flags); /* FIXME FIXME */
   if ((handle != NULL) && ((caml_verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
@@ -247,7 +247,7 @@ char * caml_dlerror(void)
 
 #else
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
   return NULL;
 }
@@ -315,12 +315,12 @@ sighandler caml_win32_signal(int sig, sighandler action)
 /* Expansion of @responsefile and *? file patterns in the command line */
 
 static int argc;
-static char ** argv;
+static wchar_t ** argv;
 static int argvsize;
 
-static void store_argument(char * arg);
-static void expand_argument(char * arg);
-static void expand_pattern(char * arg);
+static void store_argument(wchar_t * arg);
+static void expand_argument(wchar_t * arg);
+static void expand_pattern(wchar_t * arg);
 
 static void out_of_memory(void)
 {
@@ -328,22 +328,22 @@ static void out_of_memory(void)
   exit(2);
 }
 
-static void store_argument(char * arg)
+static void store_argument(wchar_t * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv = (char **) caml_stat_resize_noexc(argv, argvsize * sizeof(char *));
+    argv = (wchar_t **) caml_stat_resize_noexc(argv, argvsize * sizeof(wchar_t *));
     if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
 }
 
-static void expand_argument(char * arg)
+static void expand_argument(wchar_t * arg)
 {
-  char * p;
+  wchar_t * p;
 
   for (p = arg; *p != 0; p++) {
-    if (*p == '*' || *p == '?') {
+    if (*p == L'*' || *p == L'?') {
       expand_pattern(arg);
       return;
     }
@@ -351,43 +351,43 @@ static void expand_argument(char * arg)
   store_argument(arg);
 }
 
-static void expand_pattern(char * pat)
+static void expand_pattern(wchar_t * pat)
 {
-  char * prefix, * p, * name;
+  wchar_t * prefix, * p, * name;
   int handle;
-  struct _finddata_t ffblk;
+  struct _wfinddata_t ffblk;
   size_t i;
 
-  handle = _findfirst(pat, &ffblk);
+  handle = _wfindfirst(pat, &ffblk);
   if (handle == -1) {
     store_argument(pat); /* a la Bourne shell */
     return;
   }
-  prefix = caml_stat_strdup(pat);
+  prefix = caml_stat_wcsdup(pat);
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
-  for (i = strlen(prefix); i > 0; i--) {
+  for (i = wcslen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
-    if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
+    if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
   /* No separator was found, it's a filename pattern without a leading directory. */
   if (i == 0)
     prefix[0] = 0;
   do {
-    name = caml_stat_strconcat(2, prefix, ffblk.name);
+    name = caml_stat_wcsconcat(2, prefix, ffblk.name);
     store_argument(name);
-  } while (_findnext(handle, &ffblk) != -1);
+  } while (_wfindnext(handle, &ffblk) != -1);
   _findclose(handle);
   caml_stat_free(prefix);
 }
 
 
-CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
+CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 {
   int i;
   argc = 0;
   argvsize = 16;
-  argv = (char **) caml_stat_alloc_noexc(argvsize * sizeof(char *));
+  argv = (wchar_t **) caml_stat_alloc_noexc(argvsize * sizeof(wchar_t *));
   if (argv == NULL) out_of_memory();
   for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
@@ -439,11 +439,11 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 
 void caml_signal_thread(void * lpParam)
 {
-  char *endptr;
+  wchar_t *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
   h = (HANDLE) (uintptr_t)
-    strtol(caml_secure_getenv("CAMLSIGPIPE"), &endptr, 16);
+    wcstol(caml_secure_getenv(_T("CAMLSIGPIPE")), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
@@ -648,15 +648,15 @@ void caml_install_invalid_parameter_handler()
 
 /* Recover executable name  */
 
-char * caml_executable_name(void)
+wchar_t * caml_executable_name(void)
 {
-  char * name;
+  wchar_t * name;
   DWORD namelen, ret;
 
   namelen = 256;
   while (1) {
-    name = caml_stat_alloc(namelen);
-    ret = GetModuleFileNameA(NULL, name, namelen);
+    name = caml_stat_alloc(namelen*sizeof(wchar_t));
+    ret = GetModuleFileName(NULL, name, namelen);
     if (ret == 0) { caml_stat_free(name); return NULL; }
     if (ret < namelen) break;
     caml_stat_free(name);
@@ -715,7 +715,7 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
 }
 #endif
 
-char *caml_secure_getenv (char const *var)
+wchar_t *caml_secure_getenv (wchar_t const *var)
 {
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
   return CAML_SYS_GETENV (var);

@@ -112,8 +112,8 @@ BYTECCDBGCOMPOPTS=-Zi
 LDFLAGS=
 
 ### Libraries needed
-BYTECCLIBS=advapi32.lib ws2_32.lib
-NATIVECCLIBS=advapi32.lib ws2_32.lib
+BYTECCLIBS=advapi32.lib ws2_32.lib shell32.lib
+NATIVECCLIBS=advapi32.lib ws2_32.lib shell32.lib
 
 ### How to invoke the C preprocessor
 CPP=cl -nologo -EP

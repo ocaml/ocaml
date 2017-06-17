@@ -114,8 +114,8 @@ LDFLAGS=
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
 EXTRALIBS=
-BYTECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
-NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
+BYTECCLIBS=advapi32.lib ws2_32.lib shell32.lib $(EXTRALIBS)
+NATIVECCLIBS=advapi32.lib ws2_32.lib shell32.lib $(EXTRALIBS)
 
 ### How to invoke the C preprocessor
 CPP=$(CC) -nologo -EP
