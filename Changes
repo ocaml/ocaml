@@ -217,6 +217,10 @@ Working version
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
+- MPR#3771, GPR#153, GPR#1200: Unicode support for the Windows runtime.
+  (ygrek, Clement Franchini, Nicolas Ojeda Bar, review by Alain Frisch, David
+  Allsopp, ...)
+
 ### Compiler user-interface and warnings:
 
 - GPR##1332: fix ocamlc handling of "-output-complete-obj"
