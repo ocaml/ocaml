@@ -992,7 +992,7 @@ fun pad prec fmtty -> match prec, type_padding pad fmtty with
 (* Type a format according to an fmtty. *)
 (* If typing succeed, generate a copy of the format with the same
     type parameters as the fmtty. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let rec type_format :
   type a1 b1 c1 d1 e1 f1
        a2 b2 c2 d2 e2 f2  .
@@ -1912,7 +1912,7 @@ let rec strput_acc b acc = match acc with
 (******************************************************************************)
                           (* Error management *)
 
-(* Raise a Failure with a pretty-printed error message. *)
+(* Raise [Failure] with a pretty-printed error message. *)
 let failwith_message (Format (fmt, _)) =
   let buf = Buffer.create 256 in
   let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
@@ -2002,7 +2002,7 @@ fun pad prec fmt ->
                              (* Format parsing *)
 
 (* Parse a string representing a format and create a fmt_ebb. *)
-(* Raise an Failure exception in case of invalid format. *)
+(* Raise [Failure] in case of invalid format. *)
 let fmt_ebb_of_string ?legacy_behavior str =
   (* Parameters naming convention:                                    *)
   (*   - lit_start: start of the literal sequence.                    *)
@@ -2036,7 +2036,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   *)
   in
 
-  (* Raise a Failure with a friendly error message. *)
+  (* Raise [Failure] with a friendly error message. *)
   let invalid_format_message str_ind msg =
     failwith_message
       "invalid format %S: at character number %d, %s"
@@ -2055,7 +2055,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     invalid_format_message str_ind
       "non-zero widths are unsupported for %c conversions"
   in
-  (* Raise a Failure with a friendly error message about an option dependency
+  (* Raise [Failure] with a friendly error message about an option dependency
      problem. *)
   let invalid_format_without str_ind c s =
     failwith_message
@@ -2063,7 +2063,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       str str_ind c s
   in
 
-  (* Raise a Failure with a friendly error message about an unexpected
+  (* Raise [Failure] with a friendly error message about an unexpected
      character. *)
   let expected_character str_ind expected read =
     failwith_message
@@ -2924,7 +2924,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       else incompatible_flag pct_ind str_ind symb "'+'"
     | false, false, _ -> assert false
 
-  (* Raise a Failure with a friendly error message about incompatible options.*)
+  (* Raise [Failure] with a friendly error message about incompatible options.*)
   and incompatible_flag : type a . int -> int -> char -> string -> a =
     fun pct_ind str_ind symb option ->
       let subfmt = String.sub str pct_ind (str_ind - pct_ind) in
@@ -2939,7 +2939,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
                   (* Guarded string to format conversions *)
 
 (* Convert a string to a format according to an fmtty. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let format_of_string_fmtty str fmtty =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
   try Format (type_format fmt fmtty, str)
@@ -2949,7 +2949,7 @@ let format_of_string_fmtty str fmtty =
       str (string_of_fmtty fmtty)
 
 (* Convert a string to a format compatible with an other format. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let format_of_string_format str (Format (fmt', str')) =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
   try Format (type_format fmt (fmtty_of_fmt fmt'), str)
