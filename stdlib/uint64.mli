@@ -85,11 +85,35 @@ val of_int64 : int64 -> uint64
 val to_int64 : uint64 -> int64
 (** Convert the given unsigned 64-bit integer value to an int64. *)
 
+val of_nativeint : nativeint -> uint64
+(** Convert the given native integer (type [nativeint]) to a 64-bit
+    unsigned integer (type [uint64]). *)
+
+val to_nativeint : uint64 -> nativeint
+(** Convert the given 64-bit unsigned integer (type [uint64]) to a
+    native integer. *)
+
 val of_uint32 : uint32 -> uint64
 (** Convert the given uint32 value to an unsigned 64-bit integer. *)
 
 val to_uint32 : uint64 -> uint32
 (** Convert the given unsigned 64-bit integer value to a uint32. *)
+
+val of_int32 : int32 -> uint64
+(** Convert the given int32 value to an unsigned 64-bit integer. *)
+
+val to_int32 : uint64 -> int32
+(** Convert the given unsigned 64-bit integer value to an int32. *)
+
+val of_float : float -> uint64
+(** Convert the given floating-point number to a 64-bit unsigned integer,
+   discarding the fractional part (truncate towards 0).
+   The result of the conversion is undefined if, after truncation,
+   the number is outside the range \[0, {!Uint64.max_int}\]. *)
+
+val to_float : uint64 -> float
+(** Convert the given 64-bit unsigned integer to a floating-point
+    number. *)
 
 val of_string : string -> uint64
 (** Convert the given string to an unsigned 64-bit integer.

@@ -579,6 +579,12 @@ CAMLprim value caml_int64_of_int32(value v)
 CAMLprim value caml_int64_to_int32(value v)
 { return caml_copy_int32((int32_t) (Int64_val(v))); }
 
+CAMLprim value caml_int64_of_uint32(value v)
+{ return caml_copy_int64((int64_t) (Uint32_val(v))); }
+
+CAMLprim value caml_int64_to_uint32(value v)
+{ return caml_copy_uint32((uint32_t) (Int64_val(v))); }
+
 CAMLprim value caml_int64_of_nativeint(value v)
 { return caml_copy_int64((int64_t) (Nativeint_val(v))); }
 
@@ -847,6 +853,12 @@ CAMLprim value caml_nativeint_of_int32(value v)
 CAMLprim value caml_nativeint_to_int32(value v)
 { return caml_copy_int32((int32_t) Nativeint_val(v)); }
 
+CAMLprim value caml_nativeint_of_uint32(value v)
+{ return caml_copy_nativeint(Uint32_val(v)); }
+
+CAMLprim value caml_nativeint_to_uint32(value v)
+{ return caml_copy_uint32(Nativeint_val(v)); }
+
 intnat caml_nativeint_compare_unboxed(intnat i1, intnat i2)
 {
   return COMPARE_INT(i1, i2);
@@ -962,6 +974,12 @@ CAMLprim value caml_uint32_of_int32(value a)
 
 CAMLprim value caml_uint32_to_int32(value a)
 { return caml_copy_int32 (Uint32_val(a)); }
+
+CAMLprim value caml_uint32_of_float(value v)
+{ return caml_copy_uint32((uint32_t)(Double_val(v))); }
+
+CAMLprim value caml_uint32_to_float(value v)
+{ return caml_copy_double((double)(Uint32_val(v))); }
 
 CAMLprim value caml_uint32_of_string(value s)
 {
@@ -1123,11 +1141,29 @@ CAMLprim value caml_uint64_of_int64(value a)
 CAMLprim value caml_uint64_to_int64(value a)
 { return caml_copy_int64 (Uint64_val(a)); }
 
+CAMLprim value caml_uint64_of_nativeint(value a)
+{ return caml_copy_uint64 (Nativeint_val(a)); }
+
+CAMLprim value caml_uint64_to_nativeint(value a)
+{ return caml_copy_nativeint (Uint64_val(a)); }
+
 CAMLprim value caml_uint64_of_uint32(value a)
 { return caml_copy_uint64 (Uint32_val(a)); }
 
 CAMLprim value caml_uint64_to_uint32(value a)
 { return caml_copy_uint32 (Uint64_val(a)); }
+
+CAMLprim value caml_uint64_to_int32(value a)
+{ return caml_copy_int32 (Uint64_val(a)); }
+
+CAMLprim value caml_uint64_of_int32(value a)
+{ return caml_copy_uint64 (Int32_val(a)); }
+
+CAMLprim value caml_uint64_of_float(value v)
+{ return caml_copy_uint64((uint64_t)(Double_val(v))); }
+
+CAMLprim value caml_uint64_to_float(value v)
+{ return caml_copy_double((double)(Uint64_val(v))); }
 
 CAMLprim value caml_uint64_of_string(value s)
 {

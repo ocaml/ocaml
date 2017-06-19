@@ -85,6 +85,15 @@ val of_int32 : int32 -> uint32
 val to_int32 : uint32 -> int32
 (** Convert the given unsigned 32-bit integer value to an int32. *)
 
+val of_float : float -> uint32
+(** Convert the given floating-point number to a 32-bit unsigned integer,
+   discarding the fractional part (truncate towards 0).
+   The result of the conversion is undefined if, after truncation,
+   the number is outside the range \[0, {!Uint32.max_int}\]. *)
+
+val to_float : uint32 -> float
+(** Convert the given 32-bit unsigned integer to a floating-point number. *)
+
 val of_string : string -> uint32
 (** Convert the given string to an unsigned 32-bit integer.
    The string is read in decimal (by default, or if the string begins

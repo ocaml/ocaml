@@ -164,6 +164,18 @@ external to_int32 : int64 -> int32 = "%int64_to_int32"
    is taken modulo 2{^32}, i.e. the top 32 bits are lost
    during the conversion.  *)
 
+external of_uint32 : uint32 -> int64
+  = "caml_int64_of_uint32"
+(** Convert the given 32-bit unsigned integer (type [uint32])
+   to a 64-bit integer (type [int64]). *)
+
+external to_uint32 : int64 -> uint32
+  = "caml_int64_to_uint32"
+(** Convert the given 64-bit integer (type [int64]) to a
+   32-bit unsigned integer (type [uint32]). The 64-bit integer
+   is taken modulo 2{^32}, i.e. the top 32 bits are lost
+   during the conversion.  *)
+
 external of_nativeint : nativeint -> int64 = "%int64_of_nativeint"
 (** Convert the given native integer (type [nativeint])
    to a 64-bit integer (type [int64]). *)

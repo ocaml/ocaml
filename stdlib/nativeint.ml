@@ -37,6 +37,8 @@ external to_float : nativeint -> float
   [@@unboxed] [@@noalloc]
 external of_int32: int32 -> nativeint = "%nativeint_of_int32"
 external to_int32: nativeint -> int32 = "%nativeint_to_int32"
+external of_uint32 : uint32 -> nativeint = "caml_nativeint_of_uint32"
+external to_uint32 : nativeint -> uint32 = "caml_nativeint_to_uint32"
 
 let zero = 0n
 let one = 1n
