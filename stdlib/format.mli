@@ -34,7 +34,7 @@
 
    You may also use the explicit pretty-printing box management and printing
    functions provided by this module. This style is more basic but more
-   verbose than the concise [{!fprintf}] format strings.
+   verbose than the concise [fprintf] format strings.
 
    For instance, the sequence
    [open_box 0; print_string "x ="; print_space ();
@@ -338,7 +338,7 @@ val get_max_indent : unit -> int
   boxes simultaneously open.
 
   Material inside boxes nested deeper is printed as an ellipsis (more
-  precisely as the text returned by [{!get_ellipsis_text} ()]).
+  precisely as the text returned by {!get_ellipsis_text} [()]).
 *)
 
 val set_max_boxes : int -> unit
@@ -346,7 +346,7 @@ val set_max_boxes : int -> unit
   simultaneously open.
 
   Material inside boxes nested deeper is printed as an ellipsis (more
-  precisely as the text returned by [{!get_ellipsis_text} ()]).
+  precisely as the text returned by {!get_ellipsis_text} [()]).
 
   Nothing happens if [max] is smaller than 2.
 *)
@@ -376,7 +376,7 @@ val over_max_boxes : unit -> bool
   Note: printing within tabulation box is line directed, so arbitrary line
   splitting inside a tabulation box leads to poor rendering. Yet, controlled
   use of tabulation boxes allows simple printing of columns within
-  module [{!Format}].
+  module {!Format}.
 *)
 
 val open_tbox : unit -> unit
@@ -499,11 +499,11 @@ type tag = string
   Default tag-printing functions just do nothing.
 
   Tag-marking and tag-printing functions are user definable and can
-  be set by calling [{!set_formatter_tag_functions}].
+  be set by calling {!set_formatter_tag_functions}.
 
-  Semantic tag operations may be set on or off with [{!set_tags}].
-  Tag-marking operations may be set on or off with [{!set_mark_tags}].
-  Tag-printing operations may be set on or off with [{!set_print_tags}].
+  Semantic tag operations may be set on or off with {!set_tags}.
+  Tag-marking operations may be set on or off with {!set_mark_tags}.
+  Tag-printing operations may be set on or off with {!set_print_tags}.
 *)
 
 val open_tag : tag -> unit
@@ -547,7 +547,7 @@ val set_formatter_out_channel : Pervasives.out_channel -> unit
    default output functions printing to the given channel.)
 
   [set_formatter_out_channel] is equivalent to
-  [{!pp_set_formatter_out_channel} std_formatter].
+  {!pp_set_formatter_out_channel} [std_formatter].
 *)
 
 val set_formatter_output_functions :
@@ -603,9 +603,9 @@ type formatter_out_functions = {
 
   By default:
 - fields [out_string] and [out_flush] are output device specific;
-  (e.g. [!Pervasives.output_string] and [!Pervasives.flush] for a
-   [!Pervasives.out_channel] device, or [Buffer.add_substring] and
-   [!Pervasives.ignore] for a [Buffer.t] output device),
+  (e.g. {!Pervasives.output_string} and {!Pervasives.flush} for a
+   {!Pervasives.out_channel} device, or [Buffer.add_substring] and
+   {!Pervasives.ignore} for a [Buffer.t] output device),
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - field [out_spaces] is equivalent to [out_string (String.make n ' ') 0 n];
 - field [out_indent] is the same as field [out_spaces].
@@ -685,14 +685,14 @@ type formatter
   boxes simultaneously open, ellipsis, and so on, are specific to
   each formatter and may be fixed independently.
 
-  For instance, given a [{!Buffer.t}] buffer [b], [{!formatter_of_buffer} b]
+  For instance, given a {!Buffer.t} buffer [b], {!formatter_of_buffer} [b]
   returns a new formatter using buffer [b] as its output device.
-  Similarly, given a [{!Pervasives.out_channel}] output channel [oc],
-  [{!formatter_of_out_channel} oc] returns a new formatter using
+  Similarly, given a {!Pervasives.out_channel} output channel [oc],
+  {!formatter_of_out_channel} [oc] returns a new formatter using
   channel [oc] as its output device.
 
   Alternatively, given [out_funs], a complete set of output functions for a
-  formatter, then [{!formatter_of_out_functions} out_funs] computes a new
+  formatter, then {!formatter_of_out_functions} [out_funs] computes a new
   formatter using those functions for output.
 *)
 
@@ -704,19 +704,19 @@ val formatter_of_out_channel : out_channel -> formatter
 val std_formatter : formatter
 (** The standard formatter to write to standard output.
 
-  It is defined as [{!formatter_of_out_channel} {!Pervasives.stdout}].
+  It is defined as {!formatter_of_out_channel} {!Pervasives.stdout}.
 *)
 
 val err_formatter : formatter
 (** A formatter to write to standard error.
 
-  It is defined as [{!formatter_of_out_channe}l {!Pervasives.stderr}].
+  It is defined as {!formatter_of_out_channel} {!Pervasives.stderr}.
 *)
 
 val formatter_of_buffer : Buffer.t -> formatter
 (** [formatter_of_buffer b] returns a new formatter writing to
   buffer [b]. At the end of pretty-printing, the formatter must be flushed
-  using [{!pp_print_flush}] or [{!pp_print_newline}], to print all the
+  using {!pp_print_flush} or {!pp_print_newline}, to print all the
   pending material into the buffer.
 *)
 
@@ -724,9 +724,9 @@ val stdbuf : Buffer.t
 (** The string buffer in which [str_formatter] writes. *)
 
 val str_formatter : formatter
-(** A formatter to output to the [{!stdbuf}] string buffer.
+(** A formatter to output to the {!stdbuf} string buffer.
 
-  [str_formatter] is defined as [{!formatter_of_buffer} {!stdbuf}].
+  [str_formatter] is defined as {!formatter_of_buffer} {!stdbuf}.
 *)
 
 val flush_str_formatter : unit -> string
@@ -739,13 +739,11 @@ val make_formatter :
 (** [make_formatter out flush] returns a new formatter that outputs with
   function [out], and flushes with function [flush].
 
-  For instance,
-  [
+  For instance, {[
     make_formatter
-      ({!Pervasives.output} oc)
-      (fun () -> {!Pervasives.flush} oc)
-  ]
-  returns a formatter to the [{!Pervasives.out_channel}] [oc].
+      (Pervasives.output oc)
+      (fun () -> Pervasives.flush oc) ]}
+  returns a formatter to the {!Pervasives.out_channel} [oc].
 *)
 
 val formatter_of_out_functions :
@@ -772,13 +770,13 @@ val formatter_of_out_functions :
   operations.
 
   In practice, first define a symbolic output buffer [b] using:
-  - [let sob = {!make_symbolic_output_buffer} ()].
+  - [let sob = make_symbolic_output_buffer ()].
   Then define a symbolic formatter with:
-  - [let ppf = {!formatter_of_symbolic_output_buffer} sob]
+  - [let ppf = formatter_of_symbolic_output_buffer sob]
 
   Use symbolic formatter [ppf] as usual, and retrieve symbolic items at end
   of pretty-printing by flushing symbolic output buffer [sob] with:
-  - [{!flush_symbolic_output_buffer} sob].
+  - [flush_symbolic_output_buffer sob].
 *)
 
 type symbolic_output_item =
@@ -910,7 +908,7 @@ val pp_get_formatter_out_functions :
 (** These functions are the basic ones: usual functions
   operating on the standard formatter are defined via partial
   evaluation of these primitives. For instance,
-  [{!print_string}] is equal to [{!pp_print_string} {!std_formatter}].
+  {!print_string} is equal to {!pp_print_string} {!std_formatter}.
 *)
 
 
@@ -921,7 +919,7 @@ val pp_print_list:
   (formatter -> 'a -> unit) -> (formatter -> 'a list -> unit)
 (** [pp_print_list ?pp_sep pp_v ppf l] prints items of list [l],
   using [pp_v] to print each item, and calling [pp_sep]
-  between items ([pp_sep] defaults to [{!pp_print_cut}].
+  between items ([pp_sep] defaults to {!pp_print_cut}.
   Does nothing on empty lists.
 
   @since 4.02.0
@@ -929,7 +927,7 @@ val pp_print_list:
 
 val pp_print_text : formatter -> string -> unit
 (** [pp_print_text ppf s] prints [s] with spaces and newlines respectively
-  printed using [{!pp_print_space}] and [{!pp_force_newline}].
+  printed using {!pp_print_space} and {!pp_force_newline}.
 
   @since 4.02.0
 *)
@@ -1001,8 +999,8 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
     specification is any character string that does not contain the
     closing character ['>']. If omitted, the tag name defaults to the
     empty string.
-    For more details about semantic tags, see the functions [{!open_tag}] and
-    [{!close_tag}].
+    For more details about semantic tags, see the functions {!open_tag} and
+    {!close_tag}.
   - [@\}]: close the most recently opened semantic tag.
   - [@?]: flush the pretty-printer as with [print_flush ()].
     This is equivalent to the conversion [%!].
