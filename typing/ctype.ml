@@ -1315,7 +1315,7 @@ let subst env level priv abbrev ty params args body =
     raise exn
 
 (*
-   Only the shape of the type matters, not whether is generic or
+   Only the shape of the type matters, not whether it is generic or
    not. [generic_level] might be somewhat slower, but it ensures
    invariants on types are enforced (decreasing levels.), and we don't
    care about efficiency here.
