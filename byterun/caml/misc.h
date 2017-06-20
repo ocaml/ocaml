@@ -52,8 +52,8 @@ typedef char * addr;
 */
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
-  #define CAMLnoreturn_start
-  #define CAMLnoreturn_end __attribute__ ((noreturn))
+  #define CAMLnoreturn_start __attribute__ ((noreturn))
+  #define CAMLnoreturn_end
   #define Noreturn __attribute__ ((noreturn))
 #elif _MSC_VER >= 1500
   #define CAMLnoreturn_start __declspec(noreturn)
