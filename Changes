@@ -882,6 +882,9 @@ Next minor version (4.04.1):
     Bigarray.Genarray.change_layout.
   (Damien Doligez and Xavier Leroy, report by Liang Wang)
 
+- PR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
+  (Damien Doligez, review by Jeremy Yallop and Leo White)
+
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.
   (David Allsopp)
