@@ -185,12 +185,19 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
 external of_uint32 : uint32 -> nativeint
   = "caml_nativeint_of_uint32"
 (** Convert the given 32-bit unsigned integer (type [uint32])
-   to a native integer. *)
+   to a native integer.  On 32-bit platforms the conversion is taken
+    modulo 2{^32}.
+
+   @since 4.11.0 *)
 
 external to_uint32 : nativeint -> uint32
   = "caml_nativeint_to_uint32"
 (** Convert the given native integer to a 32-bit unsigned integer
-    (type [uint32]). *)
+    (type [uint32]).
+
+   The result of [Nativeint.to_uint32 n] is (n + 2{^64} mod 2{^32}.
+
+   @since 4.11.0 *)
 
 external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.

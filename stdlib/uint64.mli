@@ -74,36 +74,51 @@ val shift_right : uint64 -> int -> uint64
     The result is unspecified if [y < 0] or [y >= 64]. *)
 
 val of_int : int -> uint64
-(** Convert the given int value to an unsigned 64-bit integer. *)
+(** Convert the given int value to an unsigned 64-bit integer.
+
+    The result of [Uint64.of_int n] is (n + 2{^64} mod 2{^64}. *)
 
 val to_int : uint64 -> int
-(** Convert the given unsigned 64-bit integer value to an int. *)
+(** Convert the given unsigned 64-bit integer value to an int.
+    The conversion is taken modulo 2{^[Sys.int_size]}. *)
 
 val of_int64 : int64 -> uint64
-(** Convert the given int64 value to an unsigned 64-bit integer. *)
+(** Convert the given int64 value to an unsigned 64-bit integer.
+
+    The result of [Uint64.of_int64 n] is (n + 2{^64}) mod 2{^64}. *)
 
 val to_int64 : uint64 -> int64
-(** Convert the given unsigned 64-bit integer value to an int64. *)
+(** Convert the given unsigned 64-bit integer value to an int64.
+    The conversion is taken modulo 2{^64}, so that input values
+    above [Int64.max_int] produce negative results. *)
 
 val of_nativeint : nativeint -> uint64
 (** Convert the given native integer (type [nativeint]) to a 64-bit
-    unsigned integer (type [uint64]). *)
+    unsigned integer (type [uint64]).
+
+    The result of [Uint64.of_nativeint n] is (n + 2{^64} mod 2{^64}. *)
 
 val to_nativeint : uint64 -> nativeint
 (** Convert the given 64-bit unsigned integer (type [uint64]) to a
-    native integer. *)
+    native integer.
+    The conversion is taken modulo 2{^[Sys.word_size]}. *)
 
 val of_uint32 : uint32 -> uint64
 (** Convert the given uint32 value to an unsigned 64-bit integer. *)
 
 val to_uint32 : uint64 -> uint32
-(** Convert the given unsigned 64-bit integer value to a uint32. *)
+(** Convert the given unsigned 64-bit integer value to a uint32.
+
+    The result of [Uint64.to_uint32 n] is n mod 2{^32}. *)
 
 val of_int32 : int32 -> uint64
-(** Convert the given int32 value to an unsigned 64-bit integer. *)
+(** Convert the given int32 value to an unsigned 64-bit integer.
+
+    The result of [Uint64.of_int32 n] is (n + 2{^64}) mod 2{^64}. *)
 
 val to_int32 : uint64 -> int32
-(** Convert the given unsigned 64-bit integer value to an int32. *)
+(** Convert the given unsigned 64-bit integer value to an int32.
+    The conversion is taken modulo 2{^32}. *)
 
 val of_float : float -> uint64
 (** Convert the given floating-point number to a 64-bit unsigned integer,

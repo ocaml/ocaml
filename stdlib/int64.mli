@@ -167,14 +167,18 @@ external to_int32 : int64 -> int32 = "%int64_to_int32"
 external of_uint32 : uint32 -> int64
   = "caml_int64_of_uint32"
 (** Convert the given 32-bit unsigned integer (type [uint32])
-   to a 64-bit integer (type [int64]). *)
+   to a 64-bit integer (type [int64]).
+
+   @since 4.11.0 *)
 
 external to_uint32 : int64 -> uint32
   = "caml_int64_to_uint32"
 (** Convert the given 64-bit integer (type [int64]) to a
-   32-bit unsigned integer (type [uint32]). The 64-bit integer
-   is taken modulo 2{^32}, i.e. the top 32 bits are lost
-   during the conversion.  *)
+   32-bit unsigned integer (type [uint32]).
+
+   The result of [Int64.to_uint32 n] is (n + 2{^64}) mod 2{^32}.
+
+   @since 4.11.0 *)
 
 external of_nativeint : nativeint -> int64 = "%int64_of_nativeint"
 (** Convert the given native integer (type [nativeint])

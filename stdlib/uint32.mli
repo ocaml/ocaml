@@ -74,16 +74,24 @@ val shift_right : uint32 -> int -> uint32
     The result is unspecified if [y < 0] or [y >= 32]. *)
 
 val of_int : int -> uint32
-(** Convert the given int value to an unsigned 32-bit integer. *)
+(** Convert the given int value to an unsigned 32-bit integer.
+   The result of [Uint32.of_int n] is (n + 2{^63} mod 2{^32}. *)
 
 val to_int : uint32 -> int
-(** Convert the given unsigned 32-bit integer value to an int. *)
+(** Convert the given unsigned 32-bit integer value to an int.
+    On 32-bit platforms the conversion is taken modulo 2{^31}
+    so that input values above [Int32.max_int] produce negative
+    results. *)
+
 
 val of_int32 : int32 -> uint32
-(** Convert the given int32 value to an unsigned 32-bit integer. *)
+(** Convert the given int32 value to an unsigned 32-bit integer.
+    The result of [Uint32.of_int32 n] is (n + 2{^32}) mod 2{^32}. *)
 
 val to_int32 : uint32 -> int32
-(** Convert the given unsigned 32-bit integer value to an int32. *)
+(** Convert the given unsigned 32-bit integer value to an int32.
+    The conversion is taken modulo 2{^32}, so that input values
+    above [Int32.max_int] produce negative results. *)
 
 val of_float : float -> uint32
 (** Convert the given floating-point number to a 32-bit unsigned integer,
