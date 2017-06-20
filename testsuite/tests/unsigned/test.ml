@@ -70,11 +70,11 @@ let () = begin
       List.map Uint32.to_int
         Uint32.[0u; 1000u; 1000_000u; 1000_000_000u; max_int]
       =
-      Int32.[0; 1000; 1000_000; 1000_000_000; 4294967295]);
+      Int32.[0; 1000; 1000_000; 1000_000_000; int_of_string "4294967295"]);
 
-    assert (Uint32.of_int 4294967295 = Uint32.max_int);
+    assert (Uint32.of_int (int_of_string "4294967295") = Uint32.max_int);
     assert (Uint32.of_int (-1) = Uint32.max_int);
-    assert (Uint32.of_int 4294967296 = Uint32.zero);
+    assert (Uint32.of_int (int_of_string "4294967296") = Uint32.zero);
 
   end
   else if Sys.int_size = 31 then begin
@@ -266,9 +266,9 @@ let () = begin
         [1_000_000_000_000U;
          1_000_000_000_000_000U;
          1_000_000_000_000_000_000U]
-        = [1_000_000_000_000;
-           1_000_000_000_000_000;
-           1_000_000_000_000_000_000])
+        = [int_of_string "1_000_000_000_000";
+           int_of_string "1_000_000_000_000_000";
+           int_of_string "1_000_000_000_000_000_000"])
   ;
 
   assert (Uint64.of_int (-1) = Uint64.max_int);
