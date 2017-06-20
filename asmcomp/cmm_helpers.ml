@@ -2519,7 +2519,7 @@ let emit_boxed_uint64_constant_fields n cont =
   if size_int = 8 then
     Csymbol_address caml_uint64_ops :: Cint lo :: cont
   else begin
-    let hi = Int64.to_nativeint (Uint64.to_int64 (Uint64.shift_right n 32)) in
+    let hi = Uint64.to_nativeint (Uint64.shift_right n 32) in
     if big_endian then
       Csymbol_address caml_uint64_ops :: Cint hi :: Cint lo :: cont
     else
