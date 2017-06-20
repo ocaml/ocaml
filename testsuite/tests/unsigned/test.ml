@@ -120,6 +120,43 @@ let () = begin
   | _ -> assert false
   end;
 
+  let check_equal convert l =
+    List.fold_left (fun ok (x, y) -> convert x = y) true l
+  in
+
+  assert (check_equal Int64.to_uint32
+            [Int64.min_int, 0u;
+             -1L,           Uint32.max_int;
+             Int64.zero,    0u;
+             1000L,         1000u;
+             1000_000_000L, 1000_000_000u;
+             Int64.max_int, Uint32.max_int]);
+
+  assert (check_equal Int64.of_uint32
+            [0u,          0L;
+             0x1ffu,      0x1ffL;
+             0xffffffffu, 0xffffffffL]);
+
+  assert (check_equal Nativeint.of_uint32
+            [0u,             0n;
+             0x7fffffffu,    0x7fffffffn;
+             Uint32.max_int, 0xffffffffn]);
+
+  assert (check_equal Nativeint.to_uint32
+            [0n,          0u;
+             0x7fffffffn, 0x7fffffffu;
+             -1n,         Uint32.max_int]);
+
+  assert (check_equal Uint32.of_float
+            [0.3,   0u;
+             1.3,   1u;
+             1e9,  1_000_000_000u]);
+
+  assert (check_equal Uint32.to_float
+            [0u,       0.0;
+             1000u,    1e3;
+             0xfffffu, 0xfffff.]);
+
   (* Uint64 *)
 
   assert (Uint64.max_int = 18446744073709551615U);
@@ -152,7 +189,7 @@ let () = begin
                   max_int]
           =
           List.sort Stdlib.compare
-            Uint64.[1000U; 
+            Uint64.[1000U;
                     1_000_000_000_000U;
                     1_000_000_000_000_000_000U;
                     max_int;
@@ -166,7 +203,7 @@ let () = begin
                   max_int]
           =
           List.sort Uint64.compare
-            Uint64.[1000U; 
+            Uint64.[1000U;
                     1_000_000_000_000U;
                     1_000_000_000_000_000_000U;
                     max_int;
@@ -185,7 +222,7 @@ let () = begin
 
   assert (Marshal.from_string
             (Marshal.to_string
-               Uint64.[0U; 1000U; 1_000_000U; 1_000_000_000U; 
+               Uint64.[0U; 1000U; 1_000_000U; 1_000_000_000U;
                        1_000_000_000_000U;
                        1_000_000_000_000_000U;
                        1_000_000_000_000_000_000U;
@@ -287,4 +324,36 @@ let () = begin
     0xffffffffffffffffU -> ()
   | _ -> assert false
   end;
+
+  assert (check_equal Uint64.to_int32
+            [0U,             0l;
+             0x7fffffffU,    0x7fffffffl;
+             Uint64.max_int, -1l]);
+
+  assert (check_equal Uint64.of_int32
+            [0l,          0U;
+             0x7fffffffl, 0x7fffffffU;
+             -1l,         Uint64.max_int]);
+
+  assert (check_equal Uint64.to_nativeint
+            [0U,             0n;
+             0x7fffffffU,    0x7fffffffn;
+             Uint64.max_int, -1n]);
+
+  assert (check_equal Uint64.of_nativeint
+            [0n,          0U;
+             0x7fffffffn, 0x7fffffffU;
+             -1n,         Uint64.max_int]);
+
+  assert (check_equal Uint64.of_float
+            [0.3,            0U;
+             1.3,            1U;
+             1e10,           10_000_000_000U;
+             0xfffffffffff., 0xfffffffffffU]);
+
+  assert (check_equal Uint64.to_float
+            [0U,              0.;
+             1U,              1.;
+             10_000_000_000U, 1e10;
+             0xfffffffffffU,  0xfffffffffff.]);
 end
