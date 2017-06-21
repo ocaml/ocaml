@@ -22,7 +22,7 @@ void process_fd(char * s)
   } else if (GetLastError() == ERROR_INVALID_HANDLE) {
     printf("closed\n");
   } else {
-    printf("error %d\n", GetLastError());
+    printf("error %lu\n", (unsigned long)(GetLastError()));
   }
 }
 
