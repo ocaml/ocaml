@@ -131,7 +131,6 @@ val getenv : string -> string
 
    (This function is identical to {!Sys.getenv}. *)
 
-(*
 val unsafe_getenv : string -> string
 (** Return the value associated to a variable in the process
    environment.
@@ -142,8 +141,8 @@ val unsafe_getenv : string -> string
    of arbitrary commands through manipulation of the environment
    variables.
 
-   @raise Not_found if the variable is unbound.  *)
-*)
+   @raise Not_found if the variable is unbound.
+   @since 4.06.0  *)
 
 val putenv : string -> string -> unit
 (** [Unix.putenv name value] sets the value associated to a
