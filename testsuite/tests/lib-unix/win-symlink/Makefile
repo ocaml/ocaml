@@ -5,13 +5,12 @@ LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix
 MAIN_MODULE=test
 TEST_TEMP_FILES=link1 link2 test.txt
 
-ifeq ($(OS),Windows_NT)
 test:
-	@$(MAKE) default
-else
-skip:
-	@echo " ... testing => skipped (not on Windows)"
-endif
+	@if $(OCAML) $(ADD_COMPFLAGS) unix.cma precheck.ml; then \
+	  $(MAKE) default; \
+	else \
+	  echo " ... testing => skipped (not on Windows and/or symlinks not allowed)"; \
+	fi
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common
