@@ -535,7 +535,7 @@ let rec transl_normal_path = function
 (* Translation of value identifiers *)
 
 let transl_path ?(loc=Location.none) env path =
-  transl_normal_path (Env.normalize_path (Some loc) env path)
+  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
 
 (* Compile a sequence of expressions *)
 
