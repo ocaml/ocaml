@@ -19,6 +19,7 @@
 
 #define _GNU_SOURCE
            /* Helps finding RTLD_DEFAULT in glibc */
+           /* also secure_getenv */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -400,5 +401,22 @@ char * caml_executable_name(void)
 #else
   return NULL;
 
+#endif
+}
+
+char *caml_secure_getenv (char const *var)
+{
+#ifdef HAS_SECURE_GETENV
+  return secure_getenv (var);
+#elif defined(HAS_ISSETUGID)
+  if (!issetugid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
+#else
+  if (geteuid () == getuid () && getegid () == getgid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
 #endif
 }
