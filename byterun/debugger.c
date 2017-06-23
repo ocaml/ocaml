@@ -27,6 +27,7 @@
 #include "caml/config.h"
 #include "caml/debugger.h"
 #include "caml/misc.h"
+#include "caml/osdeps.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
@@ -172,7 +173,7 @@ void caml_debugger_init(void)
   Store_field(marshal_flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(marshal_flags, 1, Val_emptylist);
 
-  address = getenv("CAML_DEBUG_SOCKET");
+  address = caml_secure_getenv("CAML_DEBUG_SOCKET");
   if (address == NULL) return;
   dbg_addr = address;
 

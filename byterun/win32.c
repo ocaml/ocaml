@@ -442,7 +442,8 @@ void caml_signal_thread(void * lpParam)
   char *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
-  h = (HANDLE) (uintptr_t) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
+  h = (HANDLE) (uintptr_t)
+    strtol(caml_secure_getenv("CAMLSIGPIPE"), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
@@ -688,3 +689,9 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
   return len;
 }
 #endif
+
+char *caml_secure_getenv (char const *var)
+{
+  /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
+  return CAML_SYS_GETENV (var);
+}

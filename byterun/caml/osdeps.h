@@ -86,6 +86,11 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
    string allocated with [caml_stat_alloc] on success. */
 extern char * caml_executable_name(void);
 
+/* Secure version of [getenv]: returns NULL if the process has special
+   privileges (setuid bit or capabilities).
+*/
+extern char *caml_secure_getenv(char const *var);
+
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

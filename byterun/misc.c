@@ -21,6 +21,7 @@
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
+#include "caml/osdeps.h"
 #include "caml/version.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
@@ -242,7 +243,7 @@ void CAML_INSTR_ATEXIT (void)
   FILE *f = NULL;
   char *fname;
 
-  fname = getenv ("OCAML_INSTR_FILE");
+  fname = caml_secure_getenv ("OCAML_INSTR_FILE");
   if (fname != NULL){
     char *mode = "a";
     char buf [1000];

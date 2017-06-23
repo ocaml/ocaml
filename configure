@@ -1141,6 +1141,16 @@ if sh ./hasgot times; then
   echo "#define HAS_TIMES" >> s.h
 fi
 
+if sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h secure_getenv; then
+  inf "secure_getenv() found."
+  echo "#define HAS_SECURE_GETENV" >> s.h
+fi
+
+if sh ./hasgot -i unistd.h issetugid; then
+  inf "issetugid() found."
+  echo "#define HAS_ISSETUGID" >> s.h
+fi
+
 # For the terminfo module
 
 if test "$with_curses" = "yes"; then

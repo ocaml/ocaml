@@ -815,8 +815,17 @@ The complete list of changes is listed below.
 * GPR#1088: Gc.minor_words now returns accurate numbers.
   (Stephen Dolan)
 
-Next minor version (4.04.1):
-----------------------------
+OCaml 4.04.2 (23 Jun 2017):
+---------------------------
+
+### Security fix:
+
+- PR#7557: Local privilege escalation issue with ocaml binaries.
+  (Damien Doligez, report by Eric Milliken, review by Xavier Leroy)
+
+OCaml 4.04.1 (14 Apr 2017):
+---------------------------
+
 - PR#7501, GPR#1089: Consider arrays of length zero as constants
   when using Flambda.
   (Pierre Chambart, review by Mark Shinwell and Leo White)
