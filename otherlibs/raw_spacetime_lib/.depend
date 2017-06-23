@@ -46,3 +46,6 @@ raw_spacetime_lib.cmi :
 raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
 raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
 raw_spacetime_lib.cmi :
+raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
+raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
+raw_spacetime_lib.cmi :
