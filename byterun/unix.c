@@ -390,9 +390,12 @@ char *caml_secure_getenv (char const *var)
 #elif defined(HAS_ISSETUGID)
   if (!issetugid ())
     return CAML_SYS_GETENV (var);
+  else
+    return NULL;
 #else
   if (geteuid () == getuid () && getegid () == getgid ())
     return CAML_SYS_GETENV (var);
+  else
+    return NULL;
 #endif
-  return NULL;
 }

@@ -57,8 +57,8 @@ let flip_ongoing_traversal h =
 
 let randomized_default =
   let params =
-    try Sys.secure_getenv "OCAMLRUNPARAM" with Not_found ->
-    try Sys.secure_getenv "CAMLRUNPARAM" with Not_found -> "" in
+    try Sys.getenv "OCAMLRUNPARAM" with Not_found ->
+    try Sys.getenv "CAMLRUNPARAM" with Not_found -> "" in
   String.contains params 'R'
 
 let randomized = ref randomized_default

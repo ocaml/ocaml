@@ -52,13 +52,6 @@ external getenv : string -> string = "caml_sys_getenv"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
 
-external secure_getenv : string -> string = "caml_sys_secure_getenv"
-(** Same as {!Sys.getenv} but raise Not_found if the process has
-    elevated privileges (setuid bit or capabilities).
-    It is recommended to use this function instead of {!Sys.getenv}
-    for all environment variables that might let the user control
-    the program's execution in any way. *)
-
 external command : string -> int = "caml_sys_system_command"
 (** Execute the given shell command and return its exit code. *)
 

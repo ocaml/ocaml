@@ -314,7 +314,7 @@ CAMLprim value caml_sys_getcwd(value unit)
   return caml_copy_string(buff);
 }
 
-CAMLprim value caml_sys_getenv(value var)
+CAMLprim value caml_sys_unsafe_getenv(value var)
 {
   char * res;
 
@@ -324,7 +324,7 @@ CAMLprim value caml_sys_getenv(value var)
   return caml_copy_string(res);
 }
 
-CAMLprim value caml_sys_secure_getenv(value var)
+CAMLprim value caml_sys_getenv(value var)
 {
   char * res;
 

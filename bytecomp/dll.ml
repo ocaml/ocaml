@@ -152,7 +152,7 @@ let ld_library_path_contents () =
     | "Win32" -> ';'
     | _ -> assert false in
   try
-    split (Sys.secure_getenv "CAML_LD_LIBRARY_PATH") path_separator
+    split (Sys.getenv "CAML_LD_LIBRARY_PATH") path_separator
   with Not_found ->
     []
 
