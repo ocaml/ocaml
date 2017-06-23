@@ -250,6 +250,11 @@ Working version
   non-labeled argument
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7563, GPR#1210: code generation bug when a module alias and
+  an extension constructor have the same name in the same module
+  (Gabriel Scherer, report by Manuel Fähndrich,
+   review by Jacques Garrigue and Leo White)
+
 - GPR#1199: Pretty-printing formatting cleanup in pprintast
   (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
   Florian Angeletti, and Gabriel Scherer)
