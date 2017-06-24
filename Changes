@@ -240,6 +240,10 @@ Working version
 - PR#7543: short-paths printtyp can fail on packed type error messages
   (Florian Angeletti)
 
+- PR#7565: expand object and polymorphic variant types to expose
+  escaping universal type variables in error messages
+  (Florian Angeletti)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
