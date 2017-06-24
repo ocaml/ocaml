@@ -1375,44 +1375,83 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
-let has_explanation t3 t4 =
-  match t3.desc, t4.desc with
-    Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
-  | Tnil, Tconstr _ | Tconstr _, Tnil
-  | _, Tvar _ | Tvar _, _
-  | Tvariant _, Tvariant _ -> true
-  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) -> l = l'
-  | _ -> false
+type pos = First | Second
+let pp_pos ppf pos= Format.pp_print_string ppf
+    (match pos with First -> "first" | Second -> "second")
 
-let rec mismatch = function
+type explanation =
+  | Escaping_self_type
+  | Escaping_type_constructor of Path.t
+  | Escaping_universal of type_expr
+  | Occur_in of type_expr * type_expr
+  | Unifying_self_with_closed
+  | Incompatible_methods of string
+  | No_method of pos * string
+  | Closing_abstract_row of pos
+  | No_intersecting_variants
+  | Not_allowed_variant_tag of pos * (label * row_field) list
+  | Incompatible_tag_types of string
+
+let find_explanation unif t3 t4 = match t3.desc, t4.desc with
+  | Ttuple [], Tvar _ | Tvar _, Ttuple [] -> Some Escaping_self_type
+  | Tconstr (p, _, _), Tvar _
+    when unif && t4.level < Path.binding_time p ->
+      Some (Escaping_type_constructor p)
+  | Tvar _, Tconstr (p, _, _)
+    when unif && t3.level < Path.binding_time p ->
+      Some (Escaping_type_constructor p)
+  | Tvar _, Tunivar _ | Tunivar _, Tvar _  ->
+      Some(Escaping_universal (if is_Tvar t3 then t4 else t3))
+  | Tvar _ , _ | _, Tvar _  ->
+      let v, t = if is_Tvar t3 then t3,t4 else t4,t3 in
+      Some(Occur_in(v,t))
+  | Tfield (lab, _, _, _), _ when lab = dummy_method ->
+      Some Unifying_self_with_closed
+  | _, Tfield (lab, _, _, _) when lab = dummy_method ->
+      Some Unifying_self_with_closed
+  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) when l = l' ->
+      Some (Incompatible_methods l)
+  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
+      Some(No_method (First,l))
+  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
+      Some(No_method (Second,l))
+  | Tnil, Tconstr _ | Tconstr _, Tnil ->
+     Some(Closing_abstract_row(if t4.desc = Tnil then First else Second))
+  | Tvariant row1, Tvariant row2 ->
+      let row1 = row_repr row1 and row2 = row_repr row2 in
+      begin match
+        row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
+      | [], true, [], true -> Some No_intersecting_variants
+      | [], true, (_::_ as fields), _ ->
+          Some(Not_allowed_variant_tag(First,fields))
+      | (_::_ as fields), _, [], true ->
+          Some(Not_allowed_variant_tag(Second,fields))
+      | [l1,_], true, [l2,_], true when l1 = l2 ->
+          Some(Incompatible_tag_types l1)
+      | _ -> None
+      end
+  | _ -> None
+
+let rec mismatch unif = function
     (_, t) :: (_, t') :: rem ->
-      begin match mismatch rem with
+      begin match mismatch unif rem with
         Some _ as m -> m
-      | None ->
-          if has_explanation t t' then Some(t,t') else None
+      | None -> find_explanation unif t t'
       end
   | [] -> None
   | _ -> assert false
 
-let explanation unif t3 t4 ppf =
-  match t3.desc, t4.desc with
-  | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
-      fprintf ppf "@,Self type cannot escape its class"
-  | Tconstr (p, _, _), Tvar _
-    when unif && t4.level < Path.binding_time p ->
+let explanation expl ppf =
+  match expl with
+  | Escaping_self_type -> fprintf ppf "@,Self type cannot escape its class"
+  | Escaping_type_constructor p ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
-  | Tvar _, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
-      fprintf ppf
-        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        path p
-  | Tvar _, Tunivar _ | Tunivar _, Tvar _ ->
+  | Escaping_universal e ->
       fprintf ppf "@,The universal variable %a would escape its scope"
-        type_expr (if is_Tunivar t3 then t3 else t4)
-  | Tvar _, _ | _, Tvar _ ->
-      let t, t' = if is_Tvar t3 then (t3, t4) else (t4, t3) in
+        type_expr e
+  | Occur_in(t,t') ->
       if occur_in Env.empty t t' then
         fprintf ppf "@,@[<hov>The type variable %a occurs inside@ %a@]"
           type_expr t type_expr t'
@@ -1420,44 +1459,26 @@ let explanation unif t3 t4 ppf =
         fprintf ppf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
           type_expr t'
           "it would escape the scope of its equation"
-  | Tfield (lab, _, _, _), _ when lab = dummy_method ->
+  | Unifying_self_with_closed ->
       fprintf ppf
         "@,Self type cannot be unified with a closed object type"
-  | _, Tfield (lab, _, _, _) when lab = dummy_method ->
-      fprintf ppf
-        "@,Self type cannot be unified with a closed object type"
-  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) when l = l' ->
+  | Incompatible_methods l ->
       fprintf ppf "@,Types for method %s are incompatible" l
-  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
+  | No_method (pos,l) ->
       fprintf ppf
-        "@,@[The first object type has no method %s@]" l
-  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
+        "@,@[The %a object type has no method %s@]" pp_pos pos l
+  | Closing_abstract_row pos ->
       fprintf ppf
-        "@,@[The second object type has no method %s@]" l
-  | Tnil, Tconstr _ | Tconstr _, Tnil ->
-      fprintf ppf
-        "@,@[The %s object type has an abstract row, it cannot be closed@]"
-        (if t4.desc = Tnil then "first" else "second")
-  | Tvariant row1, Tvariant row2 ->
-      let row1 = row_repr row1 and row2 = row_repr row2 in
-      begin match
-        row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
-      | [], true, [], true ->
-          fprintf ppf "@,These two variant types have no intersection"
-      | [], true, (_::_ as fields), _ ->
+        "@,@[The %a object type has an abstract row, it cannot be closed@]"
+        pp_pos pos
+  | No_intersecting_variants ->
+      fprintf ppf "@,These two variant types have no intersection"
+  | Not_allowed_variant_tag (pos, fields)->
           fprintf ppf
-            "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
-            print_tags fields
-      | (_::_ as fields), _, [], true ->
-          fprintf ppf
-            "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
-            print_tags fields
-      | [l1,_], true, [l2,_], true when l1 = l2 ->
-          fprintf ppf "@,Types for tag `%s are incompatible" l1
-      | _ -> ()
-      end
-  | _ -> ()
-
+            "@,@[The %a variant type does not allow tag(s)@ @[<hov>%a@]@]"
+            pp_pos pos print_tags fields
+  | Incompatible_tag_types tag ->
+          fprintf ppf "@,Types for tag `%s are incompatible" tag
 
 let warn_on_missing_def env ppf t =
   match t.desc with
@@ -1472,10 +1493,10 @@ let warn_on_missing_def env ppf t =
     end
   | _ -> ()
 
-let explanation unif mis ppf =
+let explanation mis ppf =
   match mis with
     None -> ()
-  | Some (t3, t4) -> explanation unif t3 t4 ppf
+  | Some expl -> explanation expl ppf
 
 let ident_same_name id1 id2 =
   if Ident.equal id1 id2 && not (Ident.same id1 id2) then begin
@@ -1505,7 +1526,7 @@ let unification_error env unif tr txt1 ppf txt2 =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
-  let mis = mismatch tr in
+  let mis = mismatch unif tr in
   match tr with
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
@@ -1524,7 +1545,7 @@ let unification_error env unif tr txt1 ppf txt2 =
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
-        (explanation unif mis);
+        (explanation mis);
       if env <> Env.empty
       then begin
         warn_on_missing_def env ppf t1;
@@ -1560,10 +1581,10 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     and tr2 = List.map prepare_expansion tr2 in
     fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
-    let mis = mismatch tr2 in
+    let mis = mismatch true tr2 in
     fprintf ppf "%a%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
-      (explanation true mis))
+      (explanation mis))
 
 let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
   wrap_printing_env env (fun () ->
