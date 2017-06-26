@@ -28,7 +28,7 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <io.h> /* for isatty */
-#include <direct.h> /* for _wchdir */
+#include <direct.h> /* for _wchdir and _wgetcwd */
 #else
 #include <sys/wait.h>
 #endif
@@ -316,13 +316,15 @@ CAMLprim value caml_sys_chdir(value dirname)
 
 CAMLprim value caml_sys_getcwd(value unit)
 {
-  char buff[4096];
+  charnat buff[4096];
+  charnat * ret;
 #ifdef HAS_GETCWD
-  if (getcwd(buff, sizeof(buff)) == 0) caml_sys_error(NO_ARG);
+  ret = _tgetcwd(buff, sizeof(buff)/sizeof(*buff));
 #else
-  if (getwd(buff) == 0) caml_sys_error(NO_ARG);
+  ret = getwd(buff);
 #endif /* HAS_GETCWD */
-  return caml_copy_string(buff);
+  if (ret == 0) caml_sys_error(NO_ARG);
+  return caml_copy_string_of_utf16(buff);
 }
 
 CAMLprim value caml_sys_unsafe_getenv(value var)
