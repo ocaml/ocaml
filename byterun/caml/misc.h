@@ -249,7 +249,7 @@ typedef char charnat;
 #define CAML_SYS_RENAME(old_name,new_name) _trename(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) _tchdir(dirname)
 #define CAML_SYS_GETENV(varname) _tgetenv(varname)
-#define CAML_SYS_SYSTEM(command) system(command)
+#define CAML_SYS_SYSTEM(command) _tsystem(command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
 #else
@@ -304,7 +304,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_GETENV(varname)                        \
   CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,_tgetenv,varname)
 #define CAML_SYS_SYSTEM(command)                        \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system,command)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,_tsystem,command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
   CAML_SYS_PRIM_2(CAML_CPLUGINS_READ_DIRECTORY,caml_read_directory,     \
                   dirname,tbl)

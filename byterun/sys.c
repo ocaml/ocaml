@@ -390,13 +390,13 @@ CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
   int status, retcode;
-  char *buf;
+  charnat *buf;
 
   if (! caml_string_is_c_safe (command)) {
     errno = EINVAL;
     caml_sys_error(command);
   }
-  buf = caml_stat_strdup(String_val(command));
+  buf = caml_stat_strdup_to_utf16(String_val(command));
   caml_enter_blocking_section ();
   status = CAML_SYS_SYSTEM(buf);
   caml_leave_blocking_section ();
