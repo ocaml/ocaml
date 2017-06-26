@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <io.h> /* for isatty */
+#include <direct.h> /* for _wchdir */
 #else
 #include <sys/wait.h>
 #endif
@@ -301,10 +302,10 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
 CAMLprim value caml_sys_chdir(value dirname)
 {
   CAMLparam1(dirname);
-  char * p;
+  charnat * p;
   int ret;
   caml_sys_check_path(dirname);
-  p = caml_stat_strdup(String_val(dirname));
+  p = caml_stat_strdup_to_utf16(String_val(dirname));
   caml_enter_blocking_section();
   ret = CAML_SYS_CHDIR(p);
   caml_leave_blocking_section();
