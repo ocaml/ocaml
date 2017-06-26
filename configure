@@ -358,7 +358,8 @@ case "$ccfamily" in
     wrn "Consider using GCC version 4.2 or above."
     bytecccompopts="-std=gnu99 -O $gcc_warnings";;
   gcc-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp $gcc_warnings";;
   *)
     bytecccompopts="-O";;
 esac
