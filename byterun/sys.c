@@ -225,17 +225,13 @@ CAMLprim value caml_sys_file_exists(value name)
 #else
   struct stat st;
 #endif
-  char * p;
+  charnat * p;
   int ret;
 
   if (! caml_string_is_c_safe(name)) return Val_false;
-  p = caml_stat_strdup(String_val(name));
+  p = caml_stat_strdup_to_utf16(String_val(name));
   caml_enter_blocking_section();
-#ifdef _WIN32
-  ret = _stati64(p, &st);
-#else
   ret = CAML_SYS_STAT(p, &st);
-#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
 

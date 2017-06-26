@@ -244,7 +244,7 @@ typedef char charnat;
 #define CAML_SYS_EXIT(retcode) exit(retcode)
 #define CAML_SYS_OPEN(filename,flags,perm) _topen(filename,flags,perm)
 #define CAML_SYS_CLOSE(fd) close(fd)
-#define CAML_SYS_STAT(filename,st) stat(filename,st)
+#define CAML_SYS_STAT(filename,st) _tstat(filename,st)
 #define CAML_SYS_UNLINK(filename) unlink(filename)
 #define CAML_SYS_RENAME(old_name,new_name) rename(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) chdir(dirname)
@@ -294,7 +294,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_CLOSE(fd)                      \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CLOSE,close,fd)
 #define CAML_SYS_STAT(filename,st)                      \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,stat,filename,st)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,_tstat,filename,st)
 #define CAML_SYS_UNLINK(filename)                       \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,unlink,filename)
 #define CAML_SYS_RENAME(old_name,new_name)                              \
