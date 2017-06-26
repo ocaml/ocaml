@@ -276,7 +276,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
-  (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+  (charnat*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_VOID_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
   (void)caml_cplugins_prim(code,(intnat) (arg1),0,0)
@@ -314,14 +314,14 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 struct cplugin_context {
   int api_version;
   int prims_bitmap;
-  char *exe_name;
-  char** argv;
-  char *plugin; /* absolute filename of plugin, do a copy if you need it ! */
+  charnat *exe_name;
+  charnat** argv;
+  charnat *plugin; /* absolute filename of plugin, do a copy if you need it ! */
   char *ocaml_version;
 /* end of CAML_CPLUGIN_CONTEXT_API version 0 */
 };
 
-extern void caml_cplugins_init(char * exe_name, char **argv);
+extern void caml_cplugins_init(charnat * exe_name, charnat **argv);
 
 /* A plugin MUST define a symbol "caml_cplugin_init" with the prototype:
 

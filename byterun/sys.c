@@ -644,7 +644,7 @@ value (*caml_cplugins_prim)(int,value,value,value) = NULL;
 
 static struct cplugin_context cplugin_context;
 
-void caml_load_plugin(char *plugin)
+void caml_load_plugin(charnat *plugin)
 {
   void* dll_handle = NULL;
 
@@ -660,17 +660,17 @@ void caml_load_plugin(char *plugin)
    }
   } else {
    fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
-          plugin, caml_dlerror());
+           caml_stat_strdup_of_utf16(plugin), caml_dlerror());
   }
 }
 
-void caml_cplugins_load(char *env_variable)
+void caml_cplugins_load(charnat *env_variable)
 {
-  char *plugins = caml_secure_getenv(env_variable);
+  charnat *plugins = caml_secure_getenv(env_variable);
   if(plugins != NULL){
-    char* curs = plugins;
+    charnat* curs = plugins;
     while(*curs != 0){
-        if(*curs == ','){
+      if(*curs == _T(',')){
           if(curs > plugins){
             *curs = 0;
             caml_load_plugin(plugins);
@@ -683,18 +683,18 @@ void caml_cplugins_load(char *env_variable)
   }
 }
 
-void caml_cplugins_init(char * exe_name, char **argv)
+void caml_cplugins_init(charnat * exe_name, charnat **argv)
 {
   cplugin_context.api_version = CAML_CPLUGIN_CONTEXT_API;
   cplugin_context.prims_bitmap = CAML_CPLUGINS_PRIMS_BITMAP;
   cplugin_context.exe_name = exe_name;
   cplugin_context.argv = argv;
   cplugin_context.ocaml_version = OCAML_VERSION_STRING;
-  caml_cplugins_load("CAML_CPLUGINS");
+  caml_cplugins_load(_T("CAML_CPLUGINS"));
 #ifdef NATIVE_CODE
-  caml_cplugins_load("CAML_NATIVE_CPLUGINS");
+  caml_cplugins_load(_T("CAML_NATIVE_CPLUGINS"));
 #else
-  caml_cplugins_load("CAML_BYTE_CPLUGINS");
+  caml_cplugins_load(_T("CAML_BYTE_CPLUGINS"));
 #endif
 }
 
