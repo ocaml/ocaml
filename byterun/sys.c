@@ -329,22 +329,26 @@ CAMLprim value caml_sys_getcwd(value unit)
 
 CAMLprim value caml_sys_unsafe_getenv(value var)
 {
-  char * res;
+  charnat * res, * p;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
-  res = CAML_SYS_GETENV(String_val(var));
+  p = caml_stat_strdup_to_utf16(String_val(var));
+  res = CAML_SYS_GETENV(p);
+  caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string(res);
+  return caml_copy_string_of_utf16(res);
 }
 
 CAMLprim value caml_sys_getenv(value var)
 {
-  char * res;
+  charnat * res, * p;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
-  res = caml_secure_getenv(String_val(var));
+  p = caml_stat_strdup_to_utf16(String_val(var));
+  res = caml_secure_getenv(p);
+  caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string(res);
+  return caml_copy_string_of_utf16(res);
 }
 
 charnat * caml_exe_name;
