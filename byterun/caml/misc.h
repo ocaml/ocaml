@@ -242,7 +242,7 @@ typedef char charnat;
 #ifndef CAML_WITH_CPLUGINS
 
 #define CAML_SYS_EXIT(retcode) exit(retcode)
-#define CAML_SYS_OPEN(filename,flags,perm) open(filename,flags,perm)
+#define CAML_SYS_OPEN(filename,flags,perm) _topen(filename,flags,perm)
 #define CAML_SYS_CLOSE(fd) close(fd)
 #define CAML_SYS_STAT(filename,st) stat(filename,st)
 #define CAML_SYS_UNLINK(filename) unlink(filename)
@@ -290,7 +290,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_EXIT(retcode) \
   CAML_SYS_VOID_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
 #define CAML_SYS_OPEN(filename,flags,perm)                      \
-  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
+  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,_topen,filename,flags,perm)
 #define CAML_SYS_CLOSE(fd)                      \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CLOSE,close,fd)
 #define CAML_SYS_STAT(filename,st)                      \

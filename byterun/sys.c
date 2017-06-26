@@ -180,7 +180,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 {
   CAMLparam3(path, vflags, vperm);
   int fd, flags, perm;
-  char * p;
+  charnat * p;
 
 #if defined(O_CLOEXEC)
   flags = O_CLOEXEC;
@@ -191,7 +191,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 #endif
 
   caml_sys_check_path(path);
-  p = caml_stat_strdup(String_val(path));
+  p = caml_stat_strdup_to_utf16(String_val(path));
   flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
