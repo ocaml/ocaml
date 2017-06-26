@@ -1852,7 +1852,7 @@ let contains_gadt env p =
         with Not_found -> ()
         end; iter_ppat (loop env) p
       | Ppat_open (lid,sub_p) ->
-        let _, new_env = !type_open Asttypes.Fresh env p.ppat_loc lid in
+        let _, new_env = !type_open Asttypes.Override env p.ppat_loc lid in
         loop new_env sub_p
     | _ -> iter_ppat (loop env) p
   in
