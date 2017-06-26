@@ -412,6 +412,8 @@ char *caml_secure_getenv (char const *var)
 {
 #ifdef HAS_SECURE_GETENV
   return secure_getenv (var);
+#elif defined (HAS___SECURE_GETENV)
+  return __secure_getenv (var);
 #elif defined(HAS_ISSETUGID)
   if (!issetugid ())
     return CAML_SYS_GETENV (var);
