@@ -399,35 +399,35 @@ CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
-int caml_read_directory(char * dirname, struct ext_table * contents)
+int caml_read_directory(wchar_t * dirname, struct ext_table * contents)
 {
   size_t dirnamelen;
-  char * template;
+  wchar_t * template;
 #if _MSC_VER <= 1200
   int h;
 #else
   intptr_t h;
 #endif
-  struct _finddata_t fileinfo;
+  struct _wfinddata_t fileinfo;
 
-  dirnamelen = strlen(dirname);
+  dirnamelen = wcslen(dirname);
   if (dirnamelen > 0 &&
-      (dirname[dirnamelen - 1] == '/'
-       || dirname[dirnamelen - 1] == '\\'
-       || dirname[dirnamelen - 1] == ':'))
-    template = caml_stat_strconcat(2, dirname, "*.*");
+      (dirname[dirnamelen - 1] == L'/'
+       || dirname[dirnamelen - 1] == L'\\'
+       || dirname[dirnamelen - 1] == L':'))
+    template = caml_stat_wcsconcat(2, dirname, L"*.*");
   else
-    template = caml_stat_strconcat(2, dirname, "\\*.*");
-  h = _findfirst(template, &fileinfo);
+    template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
+  h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
     caml_stat_free(template);
     return errno == ENOENT ? 0 : -1;
   }
   do {
-    if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      caml_ext_table_add(contents, caml_stat_strdup(fileinfo.name));
+    if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
+      caml_ext_table_add(contents, caml_stat_strdup_of_utf16(fileinfo.name));
     }
-  } while (_findnext(h, &fileinfo) == 0);
+  } while (_wfindnext(h, &fileinfo) == 0);
   _findclose(h);
   caml_stat_free(template);
   return 0;

@@ -79,7 +79,7 @@ extern char * caml_dlerror(void);
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
-extern int caml_read_directory(char * dirname, struct ext_table * contents);
+extern int caml_read_directory(charnat * dirname, struct ext_table * contents);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
    GetModuleFileName under Windows).  Return NULL on error,

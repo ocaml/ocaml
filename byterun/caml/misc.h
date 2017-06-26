@@ -347,7 +347,7 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
-CAMLextern int caml_read_directory(char * dirname, struct ext_table * contents);
+CAMLextern int caml_read_directory(charnat * dirname, struct ext_table * contents);
 
 
 #ifdef CAML_INTERNALS
