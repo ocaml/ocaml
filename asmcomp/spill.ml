@@ -204,11 +204,13 @@ let rec reload i before =
       let previous_reload_at_exit = !reload_at_exit in
       reload_at_exit := new_sets @ !reload_at_exit ;
       let (new_body, after_body) = reload body before in
+      let date_start = !current_date in
       let rec fixpoint () =
         let at_exits = List.map (fun (nfail, set) -> (nfail, !set)) new_sets in
         let res =
           List.map2 (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
+              current_date := date_start;
               reload handler at_exit) handlers at_exits in
         match rec_flag with
         | Cmm.Nonrecursive ->
