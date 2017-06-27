@@ -2104,6 +2104,7 @@ if [ "$ostype" = Cygwin ]; then
 fi
 config FLAMBDA "$flambda"
 config SAFE_STRING "$safe_string"
+config WINDOWS_UNICODE "0"
 config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"

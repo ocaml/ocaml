@@ -762,7 +762,7 @@ int caml_win32_rename(const char * oldpath, const char * newpath)
 }
 
 /* Windows Unicode support */
-static uintnat windows_unicode_enabled = 1;
+static uintnat windows_unicode_enabled = WINDOWS_UNICODE;
 
 /* If [windows_unicode_strict] is non-zero, then illegal UTF-8 characters (on
    the OCaml side) or illegal UTF-16 characters (on the Windows side) cause an
