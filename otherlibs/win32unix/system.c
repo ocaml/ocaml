@@ -17,6 +17,7 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 #include <process.h>
 #include <stdio.h>
@@ -26,16 +27,13 @@ CAMLprim value win_system(cmd)
 {
   int ret;
   value st;
-  char *buf;
-  intnat len;
+  wchar_t *buf;
 
   caml_unix_check_path(cmd, "system");
-  len = caml_string_length (cmd);
-  buf = caml_stat_alloc (len + 1);
-  memmove (buf, String_val (cmd), len + 1);
+  buf = caml_stat_strdup_to_utf16 (String_val (cmd));
   caml_enter_blocking_section();
   _flushall();
-  ret = system(buf);
+  ret = _wsystem(buf);
   caml_leave_blocking_section();
   caml_stat_free(buf);
   if (ret == -1) uerror("system", Nothing);
