@@ -76,7 +76,8 @@ type instruction = private
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t }
+    mutable live: Reg.Set.t;
+    id: int }
 
 and instruction_desc =
     Iend
@@ -127,3 +128,9 @@ val with_:
       ?desc:instruction_desc -> ?next:instruction -> ?arg:Reg.t array ->
         ?res:Reg.t array -> instruction -> instruction
 val set_live: instruction -> Reg.Set.t -> unit
+
+module Instruction : sig
+  module T : Map.OrderedType
+  module Map : Map.S with type key = instruction
+                      and type 'a t = 'a Map.Make(T).t
+end
