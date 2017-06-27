@@ -63,16 +63,16 @@ CAMLnoreturn_end;
 
 static void caml_win32_sys_error(int errnum)
 {
-  char buffer[512];
+  wchar_t buffer[512];
   value msg;
-  if (FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                     NULL,
-                     errnum,
-                     0,
-                     buffer,
-                     sizeof(buffer),
-                     NULL)) {
-    msg = caml_copy_string(buffer);
+  if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                    NULL,
+                    errnum,
+                    0,
+                    buffer,
+                    sizeof(buffer)/sizeof(wchar_t),
+                    NULL)) {
+    msg = caml_copy_string_of_utf16(buffer);
   } else {
     msg = caml_alloc_sprintf("unknown error #%d", errnum);
   }

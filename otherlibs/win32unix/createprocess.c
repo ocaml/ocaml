@@ -108,8 +108,8 @@ static int win_has_console(void)
   HANDLE h, log;
   int i;
 
-  h = CreateFileA("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  h = CreateFile(L"CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
+                 OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (h == INVALID_HANDLE_VALUE) {
     return 0;
   } else {

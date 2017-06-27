@@ -361,27 +361,28 @@ static DWORD st_event_wait(st_event e)
 
 static void st_check_error(DWORD retcode, char * msg)
 {
-  char err[1024];
-  int errlen, msglen;
+  wchar_t err[1024];
+  int errlen, msglen, ret;
   value str;
 
   if (retcode == 0) return;
   if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
-  if (! FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL,
-                       retcode,
-                       0,
-                       err,
-                       sizeof(err),
-                       NULL)) {
-    sprintf(err, "error code %lx", retcode);
+  ret = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+                      NULL,
+                      retcode,
+                      0,
+                      err,
+                      sizeof(err)/sizeof(wchar_t),
+                      NULL);
+  if (! ret) {
+    ret = swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
   }
   msglen = strlen(msg);
-  errlen = strlen(err);
+  errlen = win_wide_char_to_multi_byte(err, ret, NULL, 0);
   str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
-  memmove (&Byte(str, msglen + 2), err, errlen);
+  win_wide_char_to_multi_byte(err, ret, &Byte(str, msglen + 2), errlen);
   caml_raise_sys_error(str);
 }
 
