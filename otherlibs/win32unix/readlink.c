@@ -17,6 +17,7 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 #include <errno.h>
 #include <winioctl.h>
@@ -26,13 +27,13 @@ CAMLprim value unix_readlink(value opath)
   CAMLparam1(opath);
   CAMLlocal1(result);
   HANDLE h;
-  char* path;
+  wchar_t* path;
   DWORD attributes;
   caml_unix_check_path(opath, "readlink");
-  path = caml_stat_strdup(String_val(opath));
+  path = caml_stat_strdup_to_utf16(String_val(opath));
 
   caml_enter_blocking_section();
-  attributes = GetFileAttributesA(path);
+  attributes = GetFileAttributes(path);
   caml_leave_blocking_section();
 
   if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -47,13 +48,13 @@ CAMLprim value unix_readlink(value opath)
   }
   else {
     caml_enter_blocking_section();
-    if ((h = CreateFileA(path,
-                         FILE_READ_ATTRIBUTES,
-                         FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                         NULL,
-                         OPEN_EXISTING,
-                         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
-                         NULL)) == INVALID_HANDLE_VALUE) {
+    if ((h = CreateFile(path,
+                        FILE_READ_ATTRIBUTES,
+                        FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                        NULL,
+                        OPEN_EXISTING,
+                        FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+                        NULL)) == INVALID_HANDLE_VALUE) {
       caml_leave_blocking_section();
       caml_stat_free(path);
       errno = ENOENT;
@@ -72,25 +73,12 @@ CAMLprim value unix_readlink(value opath)
         if (point->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
           int cbLen = point->SymbolicLinkReparseBuffer.SubstituteNameLength / sizeof(WCHAR);
           int len;
-          len = WideCharToMultiByte(
-                  CP_THREAD_ACP,
-                  0,
-                  point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / 2,
-                  cbLen,
-                  NULL,
-                  0,
-                  NULL,
-                  NULL);
+          len = win_wide_char_to_multi_byte(point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR), cbLen, NULL, 0);
           result = caml_alloc_string(len);
-          WideCharToMultiByte(
-            CP_THREAD_ACP,
-            0,
-            point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / 2,
+          win_wide_char_to_multi_byte(point->SymbolicLinkReparseBuffer.PathBuffer + point->SymbolicLinkReparseBuffer.SubstituteNameOffset / sizeof(WCHAR),
             cbLen,
             String_val(result),
-            len,
-            NULL,
-            NULL);
+            len);
           CloseHandle(h);
         }
         else {
