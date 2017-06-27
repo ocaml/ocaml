@@ -15,13 +15,15 @@
 
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
+#include <caml/memory.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 #include <windows.h>
 
 typedef
 BOOL (WINAPI *tCreateHardLink)(
-  LPCSTR lpFileName,
-  LPCSTR lpExistingFileName,
+  LPCWSTR lpFileName,
+  LPCWSTR lpExistingFileName,
   LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
 
@@ -29,14 +31,25 @@ CAMLprim value unix_link(value path1, value path2)
 {
   HMODULE hModKernel32;
   tCreateHardLink pCreateHardLink;
-  hModKernel32 = GetModuleHandleA("KERNEL32.DLL");
+  BOOL result;
+  wchar_t * wpath1, * wpath2;
+  hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
   pCreateHardLink =
-    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
+    (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkW");
   if (pCreateHardLink == NULL)
     caml_invalid_argument("Unix.link not implemented");
   caml_unix_check_path(path1, "link");
   caml_unix_check_path(path2, "link");
-  if (! pCreateHardLink(String_val(path2), String_val(path1), NULL)) {
+
+  wpath1 = caml_stat_strdup_to_utf16(String_val(path1));
+  wpath2 = caml_stat_strdup_to_utf16(String_val(path2));
+
+  result = pCreateHardLink(wpath2, wpath1, NULL);
+
+  caml_stat_free(wpath1);
+  caml_stat_free(wpath2);
+
+  if (! result) {
     win32_maperr(GetLastError());
     uerror("link", path2);
   }
