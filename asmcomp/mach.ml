@@ -176,3 +176,28 @@ let spacetime_node_hole_pointer_is_live_before insn =
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
+
+let[@inline] with_ ?desc ?next ?arg ?res instr =
+  let desc =
+    match desc with
+    | None -> instr.desc
+    | Some desc -> desc
+  in
+  let next =
+    match next with
+    | None -> instr.next
+    | Some next -> next
+  in
+  let arg =
+    match arg with
+    | None -> instr.arg
+    | Some arg -> arg
+  in
+  let res =
+    match res with
+    | None -> instr.res
+    | Some res -> res
+  in
+  { instr with next; desc; arg; res }
+
+let[@inline] set_live instr live = instr.live <- live

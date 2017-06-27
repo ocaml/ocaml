@@ -41,18 +41,18 @@ let rec deadcode i =
         assert (Array.length i.res > 0);  (* sanity check *)
         (s, before)
       end else begin
-        ({i with next = s}, Reg.add_set_array i.live arg)
+        (Mach.with_ i ~next:s, Reg.add_set_array i.live arg)
       end
   | Iifthenelse(test, ifso, ifnot) ->
       let (ifso', _) = deadcode ifso in
       let (ifnot', _) = deadcode ifnot in
       let (s, _) = deadcode i.next in
-      ({i with desc = Iifthenelse(test, ifso', ifnot'); next = s},
+      (Mach.with_ i ~desc:(Iifthenelse(test, ifso', ifnot')) ~next:s,
        Reg.add_set_array i.live arg)
   | Iswitch(index, cases) ->
       let cases' = Array.map (fun c -> fst (deadcode c)) cases in
       let (s, _) = deadcode i.next in
-      ({i with desc = Iswitch(index, cases'); next = s},
+      (Mach.with_ i ~desc:(Iswitch(index, cases')) ~next:s,
        Reg.add_set_array i.live arg)
   | Icatch(rec_flag, handlers, body) ->
       let (body', _) = deadcode body in
@@ -63,14 +63,14 @@ let rec deadcode i =
           handlers
       in
       let (s, _) = deadcode i.next in
-      ({i with desc = Icatch(rec_flag, handlers', body'); next = s}, i.live)
+      (Mach.with_ i ~desc:(Icatch(rec_flag, handlers', body')) ~next:s, i.live)
   | Iexit _nfail ->
       (i, i.live)
   | Itrywith(body, handler) ->
       let (body', _) = deadcode body in
       let (handler', _) = deadcode handler in
       let (s, _) = deadcode i.next in
-      ({i with desc = Itrywith(body', handler'); next = s}, i.live)
+      (Mach.with_ i ~desc:(Itrywith(body', handler')) ~next:s, i.live)
 
 let fundecl f =
   let (new_body, _) = deadcode f.fun_body in

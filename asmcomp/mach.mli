@@ -70,7 +70,7 @@ type operation =
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
 
-type instruction =
+type instruction = private
   { desc: instruction_desc;
     next: instruction;
     arg: Reg.t array;
@@ -122,3 +122,8 @@ val instr_cons_debug:
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
 val spacetime_node_hole_pointer_is_live_before : instruction -> bool
+
+val with_:
+      ?desc:instruction_desc -> ?next:instruction -> ?arg:Reg.t array ->
+        ?res:Reg.t array -> instruction -> instruction
+val set_live: instruction -> Reg.Set.t -> unit
