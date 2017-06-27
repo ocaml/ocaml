@@ -230,6 +230,9 @@ Working version
 - GPR#1203: speed up the manual build by using ocamldoc.opt
   (Gabriel Scherer, review by Florian Angeletti)
 
+- GPR#1214: harden config/Makefile against '#' characters in PREFIX
+  (Gabriel Scherer, review by David Allsopp and Damien Doligez)
+
 - GPR#1242: disable C plugins loading by default
   (Alexey Egorov)
 
