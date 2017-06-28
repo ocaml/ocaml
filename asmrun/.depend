@@ -1,6 +1,6 @@
 afl.o: afl.c ../byterun/caml/misc.h ../byterun/caml/config.h \
   ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
-  ../byterun/caml/mlvalues.h
+  ../byterun/caml/mlvalues.h ../byterun/caml/osdeps.h
 alloc.o: alloc.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
   ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -380,7 +380,7 @@ weak.o: weak.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/address_class.h ../byterun/caml/weak.h
 afl.p.o: afl.c ../byterun/caml/misc.h ../byterun/caml/config.h \
   ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
-  ../byterun/caml/mlvalues.h
+  ../byterun/caml/mlvalues.h ../byterun/caml/osdeps.h
 alloc.p.o: alloc.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
   ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -760,7 +760,7 @@ weak.p.o: weak.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/address_class.h ../byterun/caml/weak.h
 afl.d.o: afl.c ../byterun/caml/misc.h ../byterun/caml/config.h \
   ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
-  ../byterun/caml/mlvalues.h
+  ../byterun/caml/mlvalues.h ../byterun/caml/osdeps.h
 alloc.d.o: alloc.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
   ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \
@@ -1140,7 +1140,7 @@ weak.d.o: weak.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/address_class.h ../byterun/caml/weak.h
 afl.i.o: afl.c ../byterun/caml/misc.h ../byterun/caml/config.h \
   ../byterun/caml/../../config/m.h ../byterun/caml/../../config/s.h \
-  ../byterun/caml/mlvalues.h
+  ../byterun/caml/mlvalues.h ../byterun/caml/osdeps.h
 alloc.i.o: alloc.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/../../config/m.h \
   ../byterun/caml/../../config/s.h ../byterun/caml/mlvalues.h \

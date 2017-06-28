@@ -1,5 +1,5 @@
 afl.o: afl.c caml/misc.h caml/config.h caml/../../config/m.h \
-  caml/../../config/s.h caml/mlvalues.h
+  caml/../../config/s.h caml/mlvalues.h caml/osdeps.h
 alloc.o: alloc.c caml/alloc.h caml/misc.h caml/config.h \
   caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h \
   caml/custom.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
@@ -212,7 +212,7 @@ weak.o: weak.c caml/alloc.h caml/misc.h caml/config.h \
   caml/fail.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
   caml/minor_gc.h caml/address_class.h caml/weak.h
 afl.d.o: afl.c caml/misc.h caml/config.h caml/../../config/m.h \
-  caml/../../config/s.h caml/mlvalues.h
+  caml/../../config/s.h caml/mlvalues.h caml/osdeps.h
 alloc.d.o: alloc.c caml/alloc.h caml/misc.h caml/config.h \
   caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h \
   caml/custom.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
@@ -429,7 +429,7 @@ weak.d.o: weak.c caml/alloc.h caml/misc.h caml/config.h \
   caml/fail.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
   caml/minor_gc.h caml/address_class.h caml/weak.h
 afl.i.o: afl.c caml/misc.h caml/config.h caml/../../config/m.h \
-  caml/../../config/s.h caml/mlvalues.h
+  caml/../../config/s.h caml/mlvalues.h caml/osdeps.h
 alloc.i.o: alloc.c caml/alloc.h caml/misc.h caml/config.h \
   caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h \
   caml/custom.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
@@ -642,7 +642,7 @@ weak.i.o: weak.c caml/alloc.h caml/misc.h caml/config.h \
   caml/fail.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \
   caml/minor_gc.h caml/address_class.h caml/weak.h
 afl.pic.o: afl.c caml/misc.h caml/config.h caml/../../config/m.h \
-  caml/../../config/s.h caml/mlvalues.h
+  caml/../../config/s.h caml/mlvalues.h caml/osdeps.h
 alloc.pic.o: alloc.c caml/alloc.h caml/misc.h caml/config.h \
   caml/../../config/m.h caml/../../config/s.h caml/mlvalues.h \
   caml/custom.h caml/major_gc.h caml/freelist.h caml/memory.h caml/gc.h \

@@ -1,262 +1,4 @@
-Working version
----------------
-
-(Changes that can break existing programs are marked with a "*")
-
-### Language features:
-
-- GPR#1142: Mark assertions nonexpansive, so that 'assert false'
-  can be used as a placeholder for a polymorphic function.
-  (Stephen Dolan)
-
-### Code generation and optimizations:
-
-- PR#5324, GPR#375: An alternative Linear Scan register allocator for
-  ocamlopt, activated with the -linscan command-line flag. This
-  allocator represents a trade-off between worse generated code
-  performance for higher compilation speed (especially interesting in
-  some cases graph coloring is necessarily quadratic).
-  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
-  Bar, review by Nicolas Ojeda Bar and Alain Frisch)
-
-- MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
-  and shared libraries through -output-obj, generate dylibs instead of
-  bundles.
-  (whitequark)
-
-* GPR#659: Remove support for SPARC native code generation
-  (Mark Shinwell)
-
-- MPR#7501, GPR#1089: Consider arrays of length zero as constants
-- PR#7501, GPR#1089: Consider arrays of length zero as constants
-  when using Flambda.
-  (Pierre Chambart, review by Mark Shinwell and Leo White)
-
-- GPR#1150: Fix typo in arm64 assembler directives
-  (KC Sivaramakrishnan)
-
-- GPR#1143: tweaked several allocation functions in the runtime by
-  checking for likely conditions before unlikely ones and eliminating
-  some redundant checks.
-  (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
-  Mark Shinwell and Leo White)
-
-- MPR#7531, GPR#1162: Erroneous code transformation at partial applications
-  (Mark Shinwell) 
-
-### Standard library:
-
-- GRP#1119: Change Set (private) type to inline records.
-  (Albin Coquereau)
-
-- PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
-  binding in a map or create a new binding if the key had no binding
-  (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
-  Gabriel Scherer)
-
-- PR#7515, GPR#1147: Arg.align now optionally uses the tab character '\t' to
-  separate the "unaligned" and "aligned" parts of the documentation string. If
-  tab is not present, then space is used as a fallback. Allows to have spaces in
-  the unaligned part, which is useful for Tuple options.
-  (Nicolas Ojeda Bar, review by Alain Frisch and Gabriel Scherer)
-
-- GPR#1034: Add List.init
-  (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
-  Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
-
-- GRP#1091 Add the Uchar.{bom,rep} constants.
-  (Daniel Bünzli, Alain Frisch)
-
-- GPR#1091: Add Buffer.add_utf_{8,16le,16be}_uchar to encode Uchar.t
-  values to the corresponding UTF-X transformation formats in Buffer.t
-  values.
-  (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
-
-- GPR#1175: bigarray, add a change_layout function to each Array[N]
-  submodules.
-  (Florian Angeletti)
-
-- Resurrect tabulation boxes in module Format. Rewrite/extend documentation
-  of tabulation boxes.
-
-### Compiler user-interface and warnings:
-
-- GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
-  (Hugo Heuzard)
-
-- GPR#948: the compiler now reports warnings-as-errors by prefixing
-  them with "Error (warning ..):", instead of "Warning ..:" and
-  a trailing "Error: Some fatal warnings were triggered" message.
-  (Valentin Gatien-Baron, review by Alain Frisch)
-
-- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
-  attribute is hidden by signature coercion
-  (Alain Frisch, report by bmillwood, review by Leo White)
-
-### Manual and documentation:
-
-- PR#6548: remove obsolete limitation in the description of private
-  type abbreviations
-  (Florian Angeletti, suggestion by Leo White)
-
-- PR#6676, GPR#1110: move record notation to tutorial
-  (Florian Angeletti, review by Gabriel Scherer)
-
-- PR#6676, GPR#1112: move local opens to tutorial
-  (Florian Angeletti)
-
-- PR#6676, GPR#1153: move overriding class definitions to reference
-  manual and tutorial
-  (Florian Angeletti)
-
-- PR#6709: document the associativity and precedence level of
-  pervasive operators
-  (Florian Angeletti, review by David Allsopp)
-
-- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
-  (Mark Shinwell)
-
-- PR#7507: Align the description of the printf conversion
-  specification "%g" with the ISO C90 description.
-  (Florian Angeletti)
-
-- PR#7551, GPR#1194 : make the final ";;" potentially optional in
-  caml_example
-  (Florian Angeletti, review and suggestion by Gabriel Scherer)
-
-- GPR#1187: Minimal documentation for compiler plugins
-  (Florian Angeletti)
-
-### Tools:
-
-- GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
-  to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
-  "boot" directory to reduce its size in the future.
-  (Fabrice Le Fessant)
-
-- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
-  for native plugin files (i.e. .cmxs files)
-  (Florian Angeletti, suggestion by Sébastien Hinderer)
-
-- MPR#1956, GPR#973: tools/check-symbol-names checks for globally
-  linked names not namespaced with caml_
-  (Stephen Dolan)
-
-- PR#6928: ocamldoc, do not introduce an empty <h1> in index.html when
-  no -title has been provided
-  (Pierre Boutillier)
-
-* PR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
-  backend
-  (Florian Angeletti, request and review by Daniel Bünzli )
-
-* PR#7352,PR#7353: ocamldoc, better paragraphs in html output
-  (Florian Angeletti, request by Daniel Bünzli)
-
-- PR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
-  (Florian Angeletti)
-
-### Compiler distribution build system
-
-- GPR#558: enable shared library and natdynlink support on more Linux
-  platforms
-  (Felix Janda, Mark Shinwell)
-
-* GPR#1104: remove support for the NeXTStep platform
-  (Sébastien Hinderer)
-
-- PR#1130: enable detection of IBM XL C compiler (one need to run configure
-  with "-cc <path to xlc compiler>"). Enable shared library support for
-  bytecode executables on AIX/xlc (tested on AIX 7.1, XL C 12).
-  To enable 64-bit, run both "configure" and "make world" with OBJECT_MODE=64.
-  (Konstantin Romanov, Enrique Naudon)
-
-### Internal/compiler-libs changes:
-
-- PR#6826, GPR#828, GPR#834: improve compilation time for open
-  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
-
-- PR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
-  also displays memory allocation and consumption
-  (Valentin Gatien-Baron, report by Gabriel Scherer)
-
-- GPR#1032: display the output of -dtimings as a hierarchy
-  (Valentin Gatien-Baron, review by Gabriel Scherer)
-
-- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
-  User code should not have to include them directly since they are
-  included by other header files
-  (Sébastien Hinderer)
-
-- GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
-  strings longer than the size specified by the "print_length" directive
-  (Fabrice Le Fessant, initial PR by Junsong Li)
-
-### Bug fixes
-
-- PR#5927: Type equality broken for conjunctive polymorphic variant tags
-  (Jacques Garrigue, report by Leo White)
-
-- PR#6587: only elide Pervasives from printed type paths in unambiguous context
-  (Florian Angeletti and Jacques Garrigue)
-
-- PR#6934: nonrec misbehaves with GADTs
-  (Jacques Garrigue, report by Markus Mottl)
-
-- PR#7070, GPR#1139: Unexported values can cause non-generalisable variables
-  error
-  (Leo White)
-
-- PR#7261: Warn on type constraints in GADT declarations
-  (Jacques Garrigue, report by Fabrice Le Botlan)
-
-- PR#7321: Private type in signature clashes with type definition via
-  functor instantiation
-  (Jacques Garrigue, report by Markus Mottl)
-
-- PR#7372, GPR#834: fix type-checker bug with GADT and inline records
-  (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
-
-- PR#7344: Inconsistent behavior with type annotations on let
-  (Jacques Garrigue, report by Leo White)
-
-- PR#7468: possible GC problem in caml_alloc_sprintf
-  (Xavier Leroy, discovery by Olivier Andrieu)
-
-- PR#7496: Fixed conjunctive polymorphic variant tags do not unify
-  with themselves
-  (Jacques Garrigue, report by Leo White)
-
-- PR#7506: pprintast ignores attributes in tails of a list
-  (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
-
-- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
-  (Jérémie Dimino and David Allsopp)
-
-- PR#7513: List.compare_length_with mishandles negative numbers / overflow
-  (Fabrice Le Fessant, report by Jeremy Yallop)
-
-- PR#7531a: Default argument is not evaluated even after passing a
-  non-labeled argument
-  (Jacques Garrigue, report by Stephen Dolan)
-
-- GPR#1199: Pretty-printing formatting cleanup in pprintast
-  (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
-  Florian Angeletti, and Gabriel Scherer)
-
-### Runtime system:
-
-- GPR#71: The runtime can now be shut down gracefully by means of the new
-  caml_shutdown and caml_startup_pooled functions. The new 'c' flag in
-  OCAMLRUNPARAM enables shutting the runtime properly on process exit.
-  (Max Mouratov, review and discussion by Damien Doligez, Gabriel Scherer,
-  Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
-  François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
-
-- GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
-  (Olivier Andrieu)
-
-Next major version (4.05.0):
+OCaml 4.05.0 (TBD):
 ----------------------------
 
 (Changes that can break existing programs are marked with a "*")
@@ -292,10 +34,6 @@ Next major version (4.05.0):
 
 ### Runtime system:
 
-- MPR#7557, GPR#1213: More security for getenv
-  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
-  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
-
 - MPR#385, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
 
@@ -307,6 +45,10 @@ Next major version (4.05.0):
   were inconvient for dynamically-allocated messages; the messages
   passed to the new functions are handled by the garbage collector.
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
+
+- PR#7557, GPR#1213: More security for getenv
+  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
+  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
@@ -320,7 +62,8 @@ Next major version (4.05.0):
   (Tadeu Zagallo and Gabriel Scherer, report by Jeremy Yallop,
   review by David Allsopp, Jacques Garrigue)
 
-* PR#7414, GPR#929: Soundness bug with non-generalized type variables and functors.
+* PR#7414, GPR#929: Soundness bug with non-generalized type variables and
+  functors.
   (Jacques Garrigue, report by Leo White)
 
 ### Compiler user-interface and warnings:
@@ -396,7 +139,8 @@ Next major version (4.05.0):
 - PR#6975, GPR#902: Truncate function added to stdlib Buffer module
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
-- PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+- PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy
+  custom blocks anymore
   (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
   review by Thomas Braibant and Damien Doligez)
 
