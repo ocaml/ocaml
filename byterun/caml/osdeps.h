@@ -87,7 +87,7 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
 extern char * caml_executable_name(void);
 
 /* Secure version of [getenv]: returns NULL if the process has special
-   privileges (setuid bit or capabilities).
+   privileges (setuid bit, setgid bit, capabilities).
 */
 extern char *caml_secure_getenv(char const *var);
 
