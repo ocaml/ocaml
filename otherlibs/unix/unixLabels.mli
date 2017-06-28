@@ -133,9 +133,10 @@ val unsafe_getenv : string -> string
 
    Unlike {!getenv}, this function returns the value even if the
    process has special privileges. It is considered unsafe because the
-   programmer of a setuid program must be careful to prevent execution
-   of arbitrary commands through manipulation of the environment
-   variables.
+   programmer of a setuid or setgid program must be careful to avoid
+   using maliciously crafted environment variables in the search path
+   for executables, the locations for temporary files or logs, and the
+   like.
 
    @raise Not_found if the variable is unbound.  *)
 *)

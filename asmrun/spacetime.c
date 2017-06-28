@@ -199,7 +199,7 @@ void caml_spacetime_initialize(void)
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
-  ap_interval = getenv ("OCAML_SPACETIME_INTERVAL");
+  ap_interval = caml_secure_getenv ("OCAML_SPACETIME_INTERVAL");
   if (ap_interval != NULL) {
     unsigned int interval = 0;
     sscanf(ap_interval, "%u", &interval);

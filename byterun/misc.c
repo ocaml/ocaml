@@ -229,10 +229,10 @@ void CAML_INSTR_INIT (void)
   char *s;
 
   CAML_INSTR_STARTTIME = 0;
-  s = getenv ("OCAML_INSTR_START");
+  s = caml_secure_getenv ("OCAML_INSTR_START");
   if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
   CAML_INSTR_STOPTIME = LONG_MAX;
-  s = getenv ("OCAML_INSTR_STOP");
+  s = caml_secure_getenv ("OCAML_INSTR_STOP");
   if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
 }
 

@@ -292,6 +292,10 @@ Next major version (4.05.0):
 
 ### Runtime system:
 
+- MPR#7557, GPR#1213: More security for getenv
+  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
+  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
+
 - MPR#385, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
 

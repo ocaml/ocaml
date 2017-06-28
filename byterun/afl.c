@@ -38,8 +38,11 @@ CAMLprim value caml_reset_afl_instrumentation(value unused)
 #include <sys/wait.h>
 #include <stdio.h>
 #include <string.h>
+
+#define CAML_INTERNALS
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/osdeps.h"
 
 static int afl_initialised = 0;
 
@@ -75,7 +78,7 @@ CAMLprim value caml_setup_afl(value unit)
   if (afl_initialised) return Val_unit;
   afl_initialised = 1;
 
-  char* shm_id_str = getenv("__AFL_SHM_ID");
+  char* shm_id_str = caml_secure_getenv("__AFL_SHM_ID");
   if (shm_id_str == NULL) {
     /* Not running under afl-fuzz, continue as normal */
     return Val_unit;
