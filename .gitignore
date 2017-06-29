@@ -186,7 +186,6 @@
 /otherlibs/win32unix/chmod.c
 /otherlibs/win32unix/cst2constr.c
 /otherlibs/win32unix/cstringv.c
-/otherlibs/win32unix/envir.c
 /otherlibs/win32unix/execv.c
 /otherlibs/win32unix/execve.c
 /otherlibs/win32unix/execvp.c
