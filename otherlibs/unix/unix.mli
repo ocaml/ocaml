@@ -121,7 +121,8 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 
 val environment : unit -> string array
 (** Return the process environment, as an array of strings
-    with the format ``variable=value''. *)
+    with the format ``variable=value''.  The returned array
+    is empty if the process has special privileges. *)
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
