@@ -1503,6 +1503,12 @@ if sh ./hasgot accept4; then
   echo "#define HAS_ACCEPT4" >> s.h
 fi
 
+if sh ./hasgot getauxval; then
+  inf "getauxval() found."
+  echo "#define HAS_GETAUXVAL" >> s.h
+fi
+
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then

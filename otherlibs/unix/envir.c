@@ -19,6 +19,9 @@
 #include <unistd.h>
 #endif
 #include <sys/types.h>
+#ifdef HAS_GETAUXVAL
+#include <sys/auxv.h>
+#endif
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -36,7 +39,12 @@ CAMLprim value unix_environment_unsafe(value unit)
 
 static char **secure_environ(void)
 {
-#if defined(HAS_ISSETUGID)
+#ifdef HAS_GETAUXVAL
+  if (!getauxval(AT_SECURE))
+    return environ;
+  else
+   return NULL;
+#elif defined(HAS_ISSETUGID)
   if (!issetugid ())
     return environ;
   else
