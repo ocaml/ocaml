@@ -115,6 +115,8 @@ external ( ** ) : float -> float -> float = "caml_power_float" "pow"
 external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
   [@@unboxed] [@@noalloc]
+external expm1_over_x : float -> float =
+  "caml_expm1_over_x_float" "caml_expm1_over_x" [@@unboxed] [@@noalloc]
 external acos : float -> float = "caml_acos_float" "acos"
   [@@unboxed] [@@noalloc]
 external asin : float -> float = "caml_asin_float" "asin"

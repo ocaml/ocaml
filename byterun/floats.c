@@ -507,6 +507,16 @@ CAMLexport double caml_expm1(double x)
 #endif
 }
 
+CAMLexport double caml_expm1_over_x(double x)
+{
+  double u = exp(x);
+  if (u == 1.)
+    return 1;
+  if (u - 1. == -1.)
+    return -1. / x;
+  return (u - 1.) / log(u);
+}
+
 CAMLexport double caml_log1p(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
@@ -523,6 +533,11 @@ CAMLexport double caml_log1p(double x)
 CAMLprim value caml_expm1_float(value f)
 {
   return caml_copy_double(caml_expm1(Double_val(f)));
+}
+
+CAMLprim value caml_expm1_over_x_float(value f)
+{
+  return caml_copy_double(caml_expm1_over_x(Double_val(f)));
 }
 
 CAMLprim value caml_log1p_float(value f)
