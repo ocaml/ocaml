@@ -28,6 +28,15 @@
 extern char ** environ;
 #endif
 
+CAMLprim value unix_environment_unsafe(value unit)
+{
+  if (environ != NULL) {
+    return caml_copy_string_array((const char**)environ);
+  } else {
+    return Atom(0);
+  }
+}
+
 static char **secure_environ(void)
 {
 #if defined(HAS_ISSETUGID)

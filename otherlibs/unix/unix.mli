@@ -124,6 +124,15 @@ val environment : unit -> string array
     with the format ``variable=value''.  The returned array
     is empty if the process has special privileges. *)
 
+val unsafe_environment : unit -> string array
+(** Return the process environment, as an array of strings with the
+    format ``variable=value''.  Unlike {!environment}, this function
+    returns a populated array even if the process has special
+    privileges.  See the documentation for {!unsafe_getenv} for more
+    details.
+
+    @since 4.06.0 *)
+
 val getenv : string -> string
 (** Return the value associated to a variable in the process
    environment, unless the process has special privileges.
