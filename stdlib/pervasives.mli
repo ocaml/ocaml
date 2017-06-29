@@ -408,8 +408,9 @@ external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
 
 external expm1_over_x : float -> float =
   "caml_expm1_over_x_float" "caml_expm1_over_x" [@@unboxed] [@@noalloc]
-(** [expm1 x] computes [(exp x -. 1.0) / x], giving numerically-accurate
-    results even if [x] is close to [0.0].
+(** [expm1_over_x x] computes [(exp x -. 1.0) / x],
+    giving numerically-accurate results even if [x] is close to [0.0].
+    @since 4.05.0
  *)
 
 external log1p : float -> float = "caml_log1p_float" "caml_log1p"
