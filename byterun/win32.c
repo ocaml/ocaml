@@ -217,7 +217,7 @@ void * caml_dlopen(wchar_t * libname, int for_execution, int global)
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
-  handle = flexdll_dlopen(caml_stat_strdup_of_utf16(libname), flags); /* FIXME FIXME */
+  handle = flexdll_wdlopen(libname, flags);
   if ((handle != NULL) && ((caml_verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
