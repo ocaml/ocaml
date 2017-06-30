@@ -132,6 +132,9 @@ Working version
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
 
+- GPR#1220: Fix "-keep-docs" option in ocamlopt manpage
+  (Etienne Millon)
+
 ### Tools:
 
 - GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
