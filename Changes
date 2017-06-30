@@ -46,6 +46,11 @@ Working version
 
 ### Standard library:
 
+- GPR#1217: Restrict Unix.environment in privileged contexts; add
+  Unix.unsafe_environment.
+  (Jeremy Yallop, review by Mark Shinwell, Nicolas Ojeda Bar,
+  Damien Doligez and Hannes Mehnert)
+
 - GRP#1119: Change Set (private) type to inline records.
   (Albin Coquereau)
 
