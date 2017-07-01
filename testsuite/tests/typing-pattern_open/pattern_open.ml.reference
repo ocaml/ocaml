@@ -1,8 +1,8 @@
 
 #                 val pp : ('a, out_channel, unit) format -> 'a = <fun>
 type 'a box = B of 'a
-module M : sig type c = C type t = { x : c box; } end
-#             module N : sig type d = D val d : d type t = { x : d box; } end
+module M : sig type c = C type t = { x : c box } end
+#             module N : sig type d = D val d : d type t = { x : d box } end
 #   val f : M.t -> 'a -> M.c * 'a = <fun>
 #   val g : int -> int -> int = <fun>
 #         val g : M.c list -> M.c list = <fun>
@@ -11,15 +11,15 @@ module M : sig type c = C type t = { x : c box; } end
 #   #     #               module L :
   sig
     type _ c = C : unit c
-    type t = { t : unit c; }
-    type r = { r : unit c; }
+    type t = { t : unit c }
+    type r = { r : unit c }
     val x : unit -> unit
   end
 #             module K :
   sig
     type _ c = C : unit c
-    type t = { t : unit c; }
-    type r = { r : unit c; }
+    type t = { t : unit c }
+    type r = { r : unit c }
     val x : unit -> unit
   end
 #               Right value K.x
@@ -29,7 +29,7 @@ module M : sig type c = C type t = { x : c box; } end
       sig
         module Boolean :
           sig
-            type t = { b : bool; }
+            type t = { b : bool }
             type wrong = false | true
             val print : unit -> unit
           end

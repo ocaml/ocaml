@@ -56,7 +56,7 @@ Here is an example of a case that is not matched:
 Some A
 val f : int t option -> int = <fun>
 #         type 'a box = Box of 'a
-type 'a pair = { left : 'a; right : 'a; }
+type 'a pair = { left : 'a; right : 'a }
 #   Characters 50-69:
   let f : (int t box pair * bool) option -> unit = function None -> ();;
                                                    ^^^^^^^^^^^^^^^^^^^

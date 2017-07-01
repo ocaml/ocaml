@@ -62,7 +62,7 @@ let check : type s . (s t, s) pair -> bool = function
   | {fst = IntLit ; snd =  6} -> false
 ;;
 [%%expect{|
-type ('a, 'b) pair = { fst : 'a; snd : 'b; }
+type ('a, 'b) pair = { fst : 'a; snd : 'b }
 Line _, characters 45-134:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:

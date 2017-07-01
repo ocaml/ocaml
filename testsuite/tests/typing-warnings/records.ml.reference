@@ -1,6 +1,6 @@
 
 #         module M1 :
-  sig type t = { x : int; y : int; } type u = { x : bool; y : bool; } end
+  sig type t = { x : int; y : int } type u = { x : bool; y : bool } end
 #                 Characters 49-50:
     let f1 (r:t) = r.x (* ok *)
                      ^
@@ -52,7 +52,7 @@ Characters 86-87:
           ^
 Warning 27: unused variable x.
 module F2 : sig val f : M1.t -> int end
-#           module M : sig type t = { x : int; } type u = { x : bool; } end
+#           module M : sig type t = { x : int } type u = { x : bool } end
 # Characters 18-21:
   let f (r:M.t) = r.M.x;; (* ok *)
                     ^^^
@@ -83,8 +83,8 @@ Warning 40: this record of type M.t contains fields that are
 not visible in the current scope: x.
 They will not be selected if the type becomes unknown.
 val f : M.t -> int = <fun>
-#       module M : sig type t = { x : int; y : int; } end
-#     module N : sig type u = { x : bool; y : bool; } end
+#       module M : sig type t = { x : int; y : int } end
+#     module N : sig type u = { x : bool; y : bool } end
 #         Characters 57-58:
     let f (r:M.t) = r.x
                       ^
@@ -97,15 +97,15 @@ Warning 33: unused open N.
 module OK : sig val f : M.t -> int end
 #           module M :
   sig
-    type t = { x : int; }
-    module N : sig type s = t = { x : int; } end
-    type u = { x : bool; }
+    type t = { x : int }
+    module N : sig type s = t = { x : int } end
+    type u = { x : bool }
   end
 #       module OK : sig val f : M.t -> int end
 #           module M :
   sig
-    type u = { x : bool; y : int; z : char; }
-    type t = { x : int; y : bool; }
+    type u = { x : bool; y : int; z : char }
+    type t = { x : int; y : bool }
   end
 #       Characters 37-38:
     let f {x;z} = x,z
@@ -135,8 +135,8 @@ Warning 42: this use of y relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module OK :
   sig
-    type u = { x : int; y : bool; }
-    type t = { x : bool; y : int; z : char; }
+    type u = { x : int; y : bool }
+    type t = { x : bool; y : int; z : char }
     val r : u
   end
 #               Characters 111-112:
@@ -144,8 +144,8 @@ module OK :
                         ^
 Error: This record expression is expected to have type bar
        The field y does not belong to type bar
-#   module M : sig type foo = { x : int; y : int; } end
-# module N : sig type bar = { x : int; y : int; } end
+#   module M : sig type foo = { x : int; y : int } end
+# module N : sig type bar = { x : int; y : int } end
 # Characters 19-22:
   let r = { M.x = 3; N.y = 4; };; (* error: different definitions *)
                      ^^^
@@ -153,13 +153,13 @@ Error: The record field N.y belongs to the type N.bar
        but is mixed here with fields of type M.foo
 #     module MN :
   sig
-    type foo = M.foo = { x : int; y : int; }
-    type bar = N.bar = { x : int; y : int; }
+    type foo = M.foo = { x : int; y : int }
+    type bar = N.bar = { x : int; y : int }
   end
 module NM :
   sig
-    type bar = N.bar = { x : int; y : int; }
-    type foo = M.foo = { x : int; y : int; }
+    type bar = N.bar = { x : int; y : int }
+    type foo = M.foo = { x : int; y : int }
   end
 # Characters 8-28:
   let r = {MN.x = 3; NM.y = 4};; (* error: type would change with order *)
@@ -178,8 +178,8 @@ Error: The record field NM.y belongs to the type NM.foo = M.foo
        but is mixed here with fields of type MN.bar = N.bar
 #             module M :
   sig
-    type foo = { x : int; y : int; }
-    type bar = { x : int; y : int; z : int; }
+    type foo = { x : int; y : int }
+    type bar = { x : int; y : int; z : int }
   end
 #       Characters 65-66:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
@@ -193,9 +193,9 @@ Error: This record expression is expected to have type M.foo
        The field z does not belong to type M.foo
 #       module M :
   sig
-    type foo = M.foo = { x : int; y : int; }
-    type bar = M.bar = { x : int; y : int; z : int; }
-    type other = { a : int; b : int; }
+    type foo = M.foo = { x : int; y : int }
+    type bar = M.bar = { x : int; y : int; z : int }
+    type other = { a : int; b : int }
   end
 #       Characters 66-67:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
@@ -222,8 +222,8 @@ Characters 67-68:
                     ^
 Error: This record expression is expected to have type M.other
        The field x does not belong to type M.other
-#     module A : sig type t = { x : int; } end
-module B : sig type t = { x : int; } end
+#     module A : sig type t = { x : int } end
+module B : sig type t = { x : int } end
 # Characters 20-23:
   let f (r : B.t) = r.A.x;; (* fail *)
                       ^^^
@@ -267,8 +267,8 @@ Characters 114-120:
 Warning 33: unused open M.
 module Shadow1 :
   sig
-    type t = { x : int; }
-    module M : sig type s = { x : string; } end
+    type t = { x : int }
+    module M : sig type s = { x : string } end
     val y : t
   end
 #               Characters 97-103:
@@ -282,8 +282,8 @@ Warning 41: these field labels belong to several types: M.s t
 The first one was selected. Please disambiguate if this is wrong.
 module Shadow2 :
   sig
-    type t = { x : int; }
-    module M : sig type s = { x : string; } end
+    type t = { x : int }
+    module M : sig type s = { x : string } end
     val y : M.s
   end
 #                 Characters 167-170:
@@ -293,8 +293,8 @@ Warning 42: this use of loc relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module P6235 :
   sig
-    type t = { loc : string; }
-    type v = { loc : string; x : int; }
+    type t = { loc : string }
+    type v = { loc : string; x : int }
     type u = [ `Key of t ]
     val f : u -> string
   end
@@ -305,8 +305,8 @@ Warning 42: this use of loc relies on type-directed disambiguation,
 it will not compile with OCaml 4.00 or earlier.
 module P6235' :
   sig
-    type t = { loc : string; }
-    type v = { loc : string; x : int; }
+    type t = { loc : string }
+    type v = { loc : string; x : int }
     type u = [ `Key of t ]
     val f : u -> string
   end

@@ -11,7 +11,7 @@ Error: The type of this packed module contains variables:
 (module S with type t = 'a)
 # val f : (module S with type t = 'a) -> 'a = <fun>
 # - : int = 1
-#   type 'a s = { s : (module S with type t = 'a); }
+#   type 'a s = { s : (module S with type t = 'a) }
 # - : int s = {s = <module>}
 # Characters 9-19:
   let f {s=(module M)} = M.x;; (* Error *)
@@ -19,7 +19,7 @@ Error: The type of this packed module contains variables:
 Error: The type of this packed module contains variables:
 (module S with type t = 'a)
 # val f : 'a s -> 'a = <fun>
-#   type s = { s : (module S with type t = int); }
+#   type s = { s : (module S with type t = int) }
 # val f : s -> int = <fun>
 # val f : s -> s -> int = <fun>
 #   module type S = sig val x : int end

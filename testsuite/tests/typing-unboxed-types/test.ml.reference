@@ -1,9 +1,9 @@
 
 #       type t1 = A of string [@@unboxed]
 #       - : bool = true
-#     type t2 = { f : string; } [@@unboxed]
+#     type t2 = { f : string } [@@unboxed]
 #       - : bool = true
-#     type t3 = B of { g : string; } [@@unboxed]
+#     type t3 = B of { g : string } [@@unboxed]
 #       - : bool = true
 #     Characters 29-58:
   type t4 = C [@@ocaml.unboxed];;  (* no argument *)
@@ -76,13 +76,13 @@ Error: Signature mismatch:
   end..
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = { f : string; } [@@unboxed] end
+         sig type t = { f : string } [@@unboxed] end
        is not included in
-         sig type t = { f : string; } end
+         sig type t = { f : string } end
        Type declarations do not match:
-         type t = { f : string; } [@@unboxed]
+         type t = { f : string } [@@unboxed]
        is not included in
-         type t = { f : string; }
+         type t = { f : string }
        Their internal representations differ:
        the first declaration uses unboxed representation.
 #           Characters 66-102:
@@ -91,13 +91,13 @@ Error: Signature mismatch:
   end..
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = { f : string; } end
+         sig type t = { f : string } end
        is not included in
-         sig type t = { f : string; } [@@unboxed] end
+         sig type t = { f : string } [@@unboxed] end
        Type declarations do not match:
-         type t = { f : string; }
+         type t = { f : string }
        is not included in
-         type t = { f : string; } [@@unboxed]
+         type t = { f : string } [@@unboxed]
        Their internal representations differ:
        the second declaration uses unboxed representation.
 #           Characters 53-112:
@@ -106,13 +106,13 @@ Error: Signature mismatch:
   end..
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = A of { f : string; } [@@unboxed] end
+         sig type t = A of { f : string } [@@unboxed] end
        is not included in
-         sig type t = A of { f : string; } end
+         sig type t = A of { f : string } end
        Type declarations do not match:
-         type t = A of { f : string; } [@@unboxed]
+         type t = A of { f : string } [@@unboxed]
        is not included in
-         type t = A of { f : string; }
+         type t = A of { f : string }
        Their internal representations differ:
        the first declaration uses unboxed representation.
 #           Characters 71-112:
@@ -121,13 +121,13 @@ Error: Signature mismatch:
   end..
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = A of { f : string; } end
+         sig type t = A of { f : string } end
        is not included in
-         sig type t = A of { f : string; } [@@unboxed] end
+         sig type t = A of { f : string } [@@unboxed] end
        Type declarations do not match:
-         type t = A of { f : string; }
+         type t = A of { f : string }
        is not included in
-         type t = A of { f : string; } [@@unboxed]
+         type t = A of { f : string } [@@unboxed]
        Their internal representations differ:
        the second declaration uses unboxed representation.
 #       type t11 = L of float [@@unboxed]
@@ -153,9 +153,9 @@ Error: This type cannot be unboxed because
 Error: Signature mismatch:
        ...
        Type declarations do not match:
-         type u = { f1 : t; f2 : t; }
+         type u = { f1 : t; f2 : t }
        is not included in
-         type u = { f1 : t; f2 : t; }
+         type u = { f1 : t; f2 : t }
        Their internal representations differ:
        the first declaration uses unboxed float representation.
 #     * *           module T : sig type t [@@immediate] end

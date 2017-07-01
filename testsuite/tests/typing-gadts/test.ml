@@ -202,7 +202,7 @@ end;;
 module PR6403 :
   sig
     type (_, _) eq = Refl : ('a, 'a) eq
-    type empty = { bottom : 'a. 'a; }
+    type empty = { bottom : 'a. 'a }
     type ('a, 'b) sum = Left of 'a | Right of 'b
     val notequal : ((int, bool) eq, empty) sum -> empty
   end
@@ -882,7 +882,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | {left=TA; right=D z} -> z
 ;; (* fail *)
 [%%expect{|
-type ('a, 'b) pair = { right : 'a; left : 'b; }
+type ('a, 'b) pair = { right : 'a; left : 'b }
 Line _, characters 25-32:
 Error: This pattern matches values of type 'a array
        but a pattern was expected which matches values of type a
@@ -900,7 +900,7 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | {left=TA; right=D z} -> z
 ;; (* ok *)
 [%%expect{|
-type ('a, 'b) pair = { left : 'a; right : 'b; }
+type ('a, 'b) pair = { left : 'a; right : 'b }
 Line _, characters 2-244:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
