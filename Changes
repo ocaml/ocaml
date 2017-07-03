@@ -137,6 +137,10 @@ Working version
 
 ### Tools:
 
+- MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
+  provides better error messages by default.
+  (Daniel Bünzli)
+
 - GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
   to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
   "boot" directory to reduce its size in the future.
