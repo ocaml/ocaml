@@ -991,35 +991,36 @@ example when main loop of the program is implemented in C++. In this case the
 value of type "value" can be stored outside the OCaml heap for later use. In this
 subsection this external locations will be called \emph{global} values.
 
-Saving an OCaml value outside OCaml heap will work
-well when a value is unboxed integer and may work well when the value is a pointer
-outside OCaml heap. However, if a value is a \emph{pointer to OCaml heap} the
-one needs to register its another location in OCaml runtime.
-Registration of a global variable "v" of type "value" is achieved by calling
+Saving an OCaml value outside OCaml heap in a global value will work
+well when a piece of data is an unboxed integer and may work well when the it is a pointer
+outside OCaml heap. However, if a piece of data is a \emph{pointer to the OCaml heap} the
+one needs to register another location of this data in the OCaml runtime.
+Registration of a global value "v" of type "value" is achieved by calling
 "caml_register_global_root(&v)" just before or just after a valid
 value is stored in "v" for the first time. No any of the OCaml runtime functions
 or macros should be called between registering and storing the value.
 
-A registered global variable "v" can be un-registered by calling
+A registered global value "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
 
 The importance of registering global values consists of two aspects. The first
-is that a value being registered may be sweeped by garbage collector. In that
+is that data being registered may be sweeped by OCaml garbage collector. In that
 case it should be explicitly explained
-to the GC that this value should be \emph{alive} as far as program runs
-(or until the value will be unregistered as global root),
-i.e. the value should be a \emph{root} in the graph of references between
+to the GC that this data should be \emph{alive} as far as program runs
+(or until it will be unregistered using the function above),
+i.e. this value should be a \emph{root} in the graph of references between
 all OCaml values.
 
-The second aspect is related to a number of heaps in OCaml runtime. There are
+The second aspect is related to a number of heaps in the OCaml runtime. There are
 two generations: the minor heaps for ``young'' values and the major one
 for ``old'' ones. When a ``young'' value becomes old enough it is promoted to the
-major heap. If this value was registered as global root the OCaml runtime should
-guarantee that global value still point to the right
-data. This issue is resolved by the function "caml_register_global_root" which
+major heap and moved from old memory address to another to another one . If this
+value was registered as a global root the OCaml runtime should
+guarantee that global value still points to the right
+data (holds new pointer). This issue is resolved by the function "caml_register_global_root" which
 has the signature "void caml_register_global_root(value*)". It takes a
-pointer to a global value and when a value is promoted to the major heap
-the runtime updates global value with new correct OCaml value.
+pointer to a global value and when OCaml value is promoted to the major heap
+the runtime updates global value with new correct OCaml pointer.
 
 If the contents of the global variable "v" are seldom modified after
 registration, better performance can be achieved by calling
