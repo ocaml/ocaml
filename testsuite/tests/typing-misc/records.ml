@@ -2,7 +2,7 @@
 type t = {x:int;y:int};;
 {x=3;z=2};;
 [%%expect{|
-type t = { x : int; y : int; }
+type t = { x : int; y : int }
 Line _, characters 5-6:
 Error: Unbound record field z
 |}];;
@@ -24,7 +24,7 @@ Error: The record field contents belongs to the type 'a ref
 type u = private {mutable u:int};;
 {u=3};;
 [%%expect{|
-type u = private { mutable u : int; }
+type u = private { mutable u : int }
 Line _, characters 0-5:
 Error: Cannot create values of the private type u
 |}];;
@@ -39,7 +39,7 @@ module M = struct
   type t = {x: int; y: int}
 end;;
 [%%expect{|
-module M : sig type t = { x : int; y : int; } end
+module M : sig type t = { x : int; y : int } end
 |}];;
 
 let f {M.x; y} = x+y;;
@@ -55,7 +55,7 @@ val z : int = 3
 type foo = { mutable y:int };;
 let f (r: int) = r.y <- 3;;
 [%%expect{|
-type foo = { mutable y : int; }
+type foo = { mutable y : int }
 Line _, characters 17-18:
 Error: This expression has type int but an expression was expected of type
          foo
@@ -66,8 +66,8 @@ type foo = { y: int; z: int };;
 type bar = { x: int };;
 let f (r: bar) = ({ r with z = 3 } : foo)
 [%%expect{|
-type foo = { y : int; z : int; }
-type bar = { x : int; }
+type foo = { y : int; z : int }
+type bar = { x : int }
 Line _, characters 20-21:
 Error: This expression has type bar but an expression was expected of type
          foo
@@ -76,7 +76,7 @@ Error: This expression has type bar but an expression was expected of type
 type foo = { x: int };;
 let r : foo = { ZZZ.x = 2 };;
 [%%expect{|
-type foo = { x : int; }
+type foo = { x : int }
 Line _, characters 16-21:
 Error: Unbound module ZZZ
 |}];;
@@ -106,7 +106,7 @@ type ('a, 'b) t = { fst : 'a; snd : 'b };;
 let with_fst r fst = { r with fst };;
 with_fst { fst=""; snd="" } 2;;
 [%%expect{|
-type ('a, 'b) t = { fst : 'a; snd : 'b; }
+type ('a, 'b) t = { fst : 'a; snd : 'b }
 val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 - : (int, string) t = {fst = 2; snd = ""}
 |}];;

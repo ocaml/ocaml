@@ -159,11 +159,6 @@ let out_value = ref print_out_value
 
 (* Types *)
 
-let rec print_list_init pr sep ppf =
-  function
-    [] -> ()
-  | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l
-
 let rec print_list pr sep ppf =
   function
     [] -> ()
@@ -258,8 +253,8 @@ and print_simple_out_type ppf =
   | Otyp_attribute (t, attr) ->
       fprintf ppf "@[<1>(%a [@@%s])@]" print_out_type t attr.oattr_name
 and print_record_decl ppf lbls =
-  fprintf ppf "{%a@;<1 -2>}"
-    (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+  fprintf ppf "{@ %a@;<1 -2>}"
+    (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
 and print_fields rest ppf =
   function
     [] ->
@@ -305,7 +300,7 @@ and print_typargs ppf =
       pp_close_box ppf ();
       pp_print_space ppf ()
 and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+  fprintf ppf "@[<2>%s%s :@ %a@]" (if mut then "mutable " else "") name
     print_out_type arg
 
 let out_type = ref print_out_type

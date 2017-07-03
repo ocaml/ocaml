@@ -11,8 +11,8 @@ type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b };;
 let f l = { fold = List.fold_left l };;
 (f [1;2;3]).fold ~f:(+) ~init:0;;
 [%%expect {|
-type 'a t = { t : 'a; }
-type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
+type 'a t = { t : 'a }
+type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b }
 val f : 'a list -> 'a fold = <fun>
 - : int = 6
 |}];;
@@ -589,7 +589,7 @@ type record = { r: < id: 'a. 'a -> 'a > } ;;
 fun x -> x.r#id;;
 fun {r=x} -> x#id;;
 [%%expect {|
-type record = { r : < id : 'a. 'a -> 'a >; }
+type record = { r : < id : 'a. 'a -> 'a > }
 - : record -> 'a -> 'a = <fun>
 - : record -> 'a -> 'a = <fun>
 |}];;
@@ -730,7 +730,7 @@ type bad2 = {mutable bad2 : 'a. 'a option ref option};;
 let bad2 = {bad2 = None};;
 bad2.bad2 <- Some (ref None);;
 [%%expect {|
-type bad = { bad : 'a. 'a option ref; }
+type bad = { bad : 'a. 'a option ref }
 Line _, characters 17-25:
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
@@ -803,7 +803,7 @@ end
 type t = {f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b};;
 [%%expect {|
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
-type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
+type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b }
 |}];;
 
 (* PR#1663 *)
@@ -1254,9 +1254,9 @@ let zero = {f = `Int 0} ;;
 type t = {f: 'a. [< `Int of int] as 'a}
 let zero = {f = `Int 0} ;; (* fails *)
 [%%expect {|
-type t = { f : 'a. [> `B of 'a | `Int of int ] as 'a; }
+type t = { f : 'a. [> `B of 'a | `Int of int ] as 'a }
 val zero : t = {f = `Int 0}
-type t = { f : 'a. [< `Int of int ] as 'a; }
+type t = { f : 'a. [< `Int of int ] as 'a }
 Line _, characters 16-22:
 Error: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
@@ -1296,7 +1296,7 @@ val transf_alist : (int -> t) -> ('a * t) list -> ('a * t) list = <fun>
 type t = {f: 'a. ('a list -> int) Lazy.t}
 let l : t = { f = lazy (raise Not_found)};;
 [%%expect {|
-type t = { f : 'a. ('a list -> int) Lazy.t; }
+type t = { f : 'a. ('a list -> int) Lazy.t }
 val l : t = {f = <lazy>}
 |}];;
 
@@ -1305,7 +1305,7 @@ type t = {f: 'a. 'a -> unit};;
 let f ?x y = () in {f};;
 let f ?x y = y in {f};; (* fail *)
 [%%expect {|
-type t = { f : 'a. 'a -> unit; }
+type t = { f : 'a. 'a -> unit }
 - : t = {f = <fun>}
 Line _, characters 19-20:
 Error: This field value has type unit -> unit which is less general than
@@ -1496,7 +1496,7 @@ let f t = { x = t.x };;
 val f :
   < m : 'a. ([< `Foo of int & float ] as 'a) -> unit > ->
   < m : 'b. ([< `Foo of int & float ] as 'b) -> unit > = <fun>
-type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit; }
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit }
 val f : t -> t = <fun>
 |}]
 

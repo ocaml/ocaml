@@ -126,9 +126,9 @@ type 'a ty =
   | List : 'a ty -> 'a list ty
   | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
   | Record : 'a record -> 'a ty
-and 'a record = { path : string; fields : 'a field_ list; }
+and 'a record = { path : string; fields : 'a field_ list }
 and 'a field_ = Field : ('a, 'b) field -> 'a field_
-and ('a, 'b) field = { label : string; field_type : 'b ty; get : 'a -> 'b; }
+and ('a, 'b) field = { label : string; field_type : 'b ty; get : 'a -> 'b }
 type variant =
     VInt of int
   | VString of string
@@ -199,7 +199,7 @@ and ('a, 'builder) record = {
   path : string;
   fields : ('a, 'builder) field list;
   create_builder : unit -> 'builder;
-  of_builder : 'builder -> 'a;
+  of_builder : 'builder -> 'a
 }
 and ('a, 'builder) field =
     Field : ('a, 'builder, 'b) field_ -> ('a, 'builder) field
@@ -207,7 +207,7 @@ and ('a, 'builder, 'b) field_ = {
   label : string;
   field_type : 'b ty;
   get : 'a -> 'b;
-  set : 'builder -> 'b -> unit;
+  set : 'builder -> 'b -> unit
 }
 val devariantize : 't ty -> variant -> 't = <fun>
 |}];;
@@ -239,7 +239,7 @@ let my_record =
   Record {path = "My_module.my_record"; fields; create_builder; of_builder}
 ;;
 [%%expect{|
-type my_record = { a : int; b : string list; }
+type my_record = { a : int; b : string list }
 val my_record : my_record ty =
   Record
    {path = "My_module.my_record";
@@ -319,7 +319,7 @@ type (_, _) ty =
 and ('a, 'e, 'b) ty_sum = {
   sum_proj : 'a -> string * 'e ty_dyn option;
   sum_cases : (string * ('e, 'b) ty_case) list;
-  sum_inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
+  sum_inj : 'c. ('b, 'c) ty_sel * 'c -> 'a
 }
 and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
 and (_, _) ty_sel =

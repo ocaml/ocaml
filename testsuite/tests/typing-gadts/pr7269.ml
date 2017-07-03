@@ -59,7 +59,7 @@ module M :
   sig
     type s
     type elim = {
-      ex : 'a. ([< `Conj of int & s | `Other of string ] as 'a) -> unit;
+      ex : 'a. ([< `Conj of int & s | `Other of string ] as 'a) -> unit
     }
     val e : elim -> unit
   end

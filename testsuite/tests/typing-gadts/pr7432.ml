@@ -8,7 +8,7 @@ let eql : (s, t) eql = Refl;;
 type (_, _) eql = Refl : ('a, 'a) eql
 type s = x:int -> y:float -> unit
 type t = y:int -> x:float -> unit
-type silly = { silly : 'a. 'a; }
+type silly = { silly : 'a. 'a }
 val eql : (s, t) eql = Refl
 |}]
 
