@@ -21,6 +21,17 @@ MAKE=make SHELL=dash
 # TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
 # TRAVIS_CUR_HEAD is <commit1>
 # TRAVIS_PR_HEAD is <commit2>
+#
+# The following diagram illustrates the relationship between
+# the commits:
+#
+#      (trunk)         (pr branch)
+#  TRAVIS_CUR_HEAD   TRAVIS_PR_HEAD
+#        |            /
+#        …           …
+#        |          /
+#  TRAVIS_MERGE_BASE
+#
 TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD)
