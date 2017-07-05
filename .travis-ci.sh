@@ -111,7 +111,7 @@ EOF
 }
 
 CheckNoChangesMessage () {
-  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_CUR_HEAD}..${TRAVIS_PR_HEAD})"
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
   then echo pass
   elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
        | grep 'no-change-entry-needed')"
@@ -140,7 +140,7 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code testsuite > /dev/null \
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code testsuite > /dev/null \
   && exit 1 || echo pass
 }
 
