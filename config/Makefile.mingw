@@ -108,7 +108,9 @@ BYTECC=$(TOOLPREF)gcc -O -mms-bitfields
 BYTECODE_C_COMPILER=$(BYTECC)
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
+# -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
+# and only works on GCC 4.2 and later.
+BYTECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused -fno-tree-vrp
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-g
@@ -183,7 +185,9 @@ NATIVECC=$(BYTECC)
 NATIVE_C_COMPILER=$(NATIVECC)
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused
+# -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
+# and only works on GCC 4.2 and later.
+NATIVECCCOMPOPTS=-DCAML_NAME_SPACE -Wall -Wno-unused -fno-tree-vrp
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
