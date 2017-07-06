@@ -453,7 +453,8 @@ Next major version (4.05.0):
 
 - GPR#875: Add missing functions to ArrayLabels, BytesLabels,
   ListLabels, MoreLabels, StringLabels so they are compatible with
-  non-labeled counterparts.
+  non-labeled counterparts. Also add missing @@ocaml.deprecated attributes
+  in StringLabels and BytesLabels.
   (Roma Sokolov)
 
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
