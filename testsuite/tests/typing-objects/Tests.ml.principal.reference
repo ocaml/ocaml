@@ -50,14 +50,14 @@ Error: The abbreviation c is used with parameters bool c
     constraint 'b = 'a * < x : 'b > * 'c * 'd
     method f : 'a -> 'b -> unit
   end
-#     val x : '_a list ref = {contents = []}
+#     val x : '_weak1 list ref = {contents = []}
 #     Characters 0-50:
   class ['a] c () = object
     method f = (x : 'a)
   end..
 Error: The type of this class,
        class ['a] c :
-         unit -> object constraint 'a = '_b list ref method f : 'a end,
+         unit -> object constraint 'a = '_weak1 list ref method f : 'a end,
        contains type variables that cannot be generalized
 #       Characters 21-53:
   type 'a c = <f : 'a c; g : 'a d>
@@ -265,7 +265,7 @@ Error: Type int -> bool is not a subtype of int -> int
        Type bool is not a subtype of int 
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
-#   val x : '_a list ref = {contents = []}
+#   val x : '_weak2 list ref = {contents = []}
 #   module F : functor (X : sig  end) -> sig type t = int end
 # - : < m : int > list ref = {contents = []}
 #   type 'a t

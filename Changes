@@ -213,6 +213,10 @@ Working version
 
 ### Bug fixes
 
+- PR#248: unique names for weak type variables
+  (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
+   Gabriel Radanne and Gabriel Scherer)
+
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
