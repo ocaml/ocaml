@@ -22,6 +22,7 @@ open Typedtree
 open Lambda
 open Parmatch
 open Printf
+open Printpat
 
 
 let dbg = false
@@ -399,7 +400,7 @@ let pretty_cases cases =
     (fun (ps,_l) ->
       List.iter
         (fun p ->
-          Parmatch.top_pretty Format.str_formatter p ;
+          top_pretty Format.str_formatter p ;
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
