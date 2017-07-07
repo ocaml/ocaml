@@ -1447,7 +1447,7 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
 
 let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
   let explode = match cases with [_] -> 5 | _ -> 0 in
-  Parmatch.check_partial_gadt
+  Parmatch.check_partial
     (partial_pred ~lev ~explode env expected_ty) loc cases
 
 let check_unused ?(lev=get_current_level ()) env expected_ty cases =
