@@ -5150,7 +5150,7 @@ let report_error env ppf = function
         "@[%s@ %s@ %a@]"
         "This match case could not be refuted."
         "Here is an example of a value that would reach it:"
-        Parmatch.top_pretty pat
+        Printpat.top_pretty pat
   | Invalid_extension_constructor_payload ->
       fprintf ppf
         "Invalid [%%extension_constructor] payload, a constructor is expected."
