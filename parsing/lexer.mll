@@ -141,6 +141,16 @@ let print_warnings = ref true
 let store_escaped_char lexbuf c =
   if in_comment () then store_lexeme lexbuf else store_string_char c
 
+let store_escaped_uchar =
+  let uchar_utf_8_enc = Buffer.create 4 in
+  fun lexbuf u ->
+    if in_comment () then store_lexeme lexbuf else
+    begin
+      Buffer.reset uchar_utf_8_enc;
+      Buffer.add_utf_8_uchar uchar_utf_8_enc u;
+      store_string (Buffer.contents uchar_utf_8_enc);
+    end
+
 let with_comment_buffer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
   comment_start_loc := [start_loc];
@@ -189,6 +199,32 @@ let char_for_hexadecimal_code lexbuf i =
              else d2 - 48
   in
   Char.chr (val1 * 16 + val2)
+
+let uchar_for_uchar_escape lexbuf =
+  let err e =
+    raise
+      (Error (Illegal_escape (Lexing.lexeme lexbuf ^ e), Location.curr lexbuf))
+  in
+  let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
+  let spos = 3 (* skip opening \u{ *) in
+  let epos = len - 2 (* skip closing } *) in
+  let digit_count = epos - spos + 1 in
+  if digit_count > 6
+  then err ", too many digits, expected 1 to 6 hexadecimal digits"
+  else
+  let rec hex_num_value acc i =
+    if i > epos then acc else
+    let digit = Char.code (Lexing.lexeme_char lexbuf i) in
+    let value =
+      if digit >= 97 then digit - 87 else
+      if digit >= 65 then digit - 55 else
+      digit - 48
+    in
+    hex_num_value (16 * acc + value) (i + 1)
+  in
+  let cp = hex_num_value 0 spos in
+  if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
+  err (", " ^ Printf.sprintf "%X" cp ^ " is not a Unicode scalar value")
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
@@ -290,6 +326,8 @@ let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
+let hex_digit =
+  ['0'-'9' 'A'-'F' 'a'-'f']
 let hex_literal =
   '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']['0'-'9' 'A'-'F' 'a'-'f' '_']*
 let oct_literal =
@@ -627,6 +665,9 @@ and string = parse
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
       { store_escaped_char lexbuf (char_for_hexadecimal_code lexbuf 2);
          string lexbuf }
+  | '\\' 'u' '{' hex_digit+ '}'
+        { store_escaped_uchar lexbuf (uchar_for_uchar_escape lexbuf);
+          string lexbuf }
   | '\\' _
       { if not (in_comment ()) then begin
 (*  Should be an error, but we are very lax.
