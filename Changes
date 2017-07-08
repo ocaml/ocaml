@@ -530,6 +530,11 @@ Next major version (4.05.0):
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
   (Tadeu Zagallo, review by David Allsopp)
 
+- GPR#1231: improved printing of unicode texts in the toplevel,
+  unless OCAMLTOP_UTF_8 is set to false.
+  (Florian Angeletti, review by Daniel Bünzli, Xavier Leroy and
+   Gabriel Scherer)
+
 ### Tools:
 
 - PR#5163: ocamlobjinfo, dump globals defined by bytecode executables
