@@ -1795,7 +1795,9 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
           *)
     begin match casel with
     | [] -> ()
-    | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
+    | _  ->
+      if Warnings.is_active Warnings.All_clauses_guarded then
+        Location.prerr_warning loc Warnings.All_clauses_guarded
     end ;
     Partial
 | ps::_  ->
