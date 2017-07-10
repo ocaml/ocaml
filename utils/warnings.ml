@@ -566,9 +566,7 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
-      be\n\
-   \    checked.";  (* Now part of warning 8 *) *)
+   25, "Deprecated: now part of warning 8.";
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";
