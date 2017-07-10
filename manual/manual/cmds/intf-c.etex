@@ -989,7 +989,7 @@ with the garbage collector using the "caml_register_global_root" function.
 The one may need to access values in OCaml heap from external code, for
 example when main loop of the program is implemented in C++. In this case the
 value of type "value" can be stored outside the OCaml heap for later use. In this
-subsection this external locations will be called \emph{global} values.
+subsection these external locations will be called \emph{global} values.
 
 Saving an OCaml value outside OCaml heap in a global value will work
 well when a piece of data is an unboxed integer and may work well when the it is a pointer
@@ -1014,7 +1014,7 @@ all OCaml values.
 The second aspect is related to a number of heaps in the OCaml runtime. There are
 two generations: the minor heaps for ``young'' values and the major one
 for ``old'' ones. When a ``young'' value becomes old enough it is promoted to the
-major heap and moved from old memory address to another to another one . If this
+major heap and moved from old memory address to another one. If this
 value was registered as a global root the OCaml runtime should
 guarantee that global value still points to the right
 data (holds new pointer). This issue is resolved by the function "caml_register_global_root" which
