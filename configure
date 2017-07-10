@@ -868,7 +868,7 @@ fi
 case "$bytecc,$target" in
     *gcc*,x86_64-*|*gcc*,i686-*)
         if sh ./hasgot -Werror -fno-tree-vrp; then
-            bytecccompopts="$bytecccompopts -fno-tree-vrp"
+            byteccprivatecompopts="$byteccprivatecompopts -fno-tree-vrp"
             inf "Adding -fno-tree-vrp option to work around PR#7452"
         fi;;
 esac

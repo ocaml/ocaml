@@ -296,7 +296,7 @@ OCaml 4.05.0 (TBD):
   (Damien Doligez, report by ygrek)
 
 - PR#7452: tweak GCC options to try to avoid the Skylake/Kaby lake bug
-  (Damien Doligez, review by ...)
+  (Damien Doligez, review by David Allsopp and Xavier Leroy)
 
 - GPR#693: fail on unexpected errors or warnings within caml_example
   environment.
