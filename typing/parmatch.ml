@@ -1084,8 +1084,6 @@ let exhaust ext pss n =
   match ret with
     Rnone -> Rnone
   | Rsome lst ->
-      (* The following line is needed to compile stdlib/printf.ml *)
-      if lst = [] then Rsome (omegas n) else
       let singletons =
         List.map
           (function
