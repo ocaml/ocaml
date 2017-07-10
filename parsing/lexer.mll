@@ -163,6 +163,21 @@ let with_comment_buffer comment lexbuf =
 
 (* To translate escape sequences *)
 
+let hex_digit_value d = (* assert (d in '0'..'9' 'a'..'f' 'A'..'F') *)
+  let d = Char.code d in
+  if d >= 97 then d - 87 else
+  if d >= 65 then d - 55 else
+  d - 48
+
+let hex_num_value lexbuf ~first ~last =
+  let rec loop acc i = match i > last with
+  | true -> acc
+  | false ->
+      let value = hex_digit_value (Lexing.lexeme_char lexbuf i) in
+      loop (16 * acc + value) (i + 1)
+  in
+  loop 0 first
+
 let char_for_backslash = function
   | 'n' -> '\010'
   | 'r' -> '\013'
@@ -188,17 +203,8 @@ let char_for_octal_code lexbuf i =
   Char.chr c
 
 let char_for_hexadecimal_code lexbuf i =
-  let d1 = Char.code (Lexing.lexeme_char lexbuf i) in
-  let val1 = if d1 >= 97 then d1 - 87
-             else if d1 >= 65 then d1 - 55
-             else d1 - 48
-  in
-  let d2 = Char.code (Lexing.lexeme_char lexbuf (i+1)) in
-  let val2 = if d2 >= 97 then d2 - 87
-             else if d2 >= 65 then d2 - 55
-             else d2 - 48
-  in
-  Char.chr (val1 * 16 + val2)
+  let byte = hex_num_value lexbuf ~first:i ~last:(i+1) in
+  Char.chr byte
 
 let uchar_for_uchar_escape lexbuf =
   let err e =
@@ -206,25 +212,15 @@ let uchar_for_uchar_escape lexbuf =
       (Error (Illegal_escape (Lexing.lexeme lexbuf ^ e), Location.curr lexbuf))
   in
   let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
-  let spos = 3 (* skip opening \u{ *) in
-  let epos = len - 2 (* skip closing } *) in
-  let digit_count = epos - spos + 1 in
-  if digit_count > 6
-  then err ", too many digits, expected 1 to 6 hexadecimal digits"
-  else
-  let rec hex_num_value acc i =
-    if i > epos then acc else
-    let digit = Char.code (Lexing.lexeme_char lexbuf i) in
-    let value =
-      if digit >= 97 then digit - 87 else
-      if digit >= 65 then digit - 55 else
-      digit - 48
-    in
-    hex_num_value (16 * acc + value) (i + 1)
-  in
-  let cp = hex_num_value 0 spos in
-  if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
-  err (", " ^ Printf.sprintf "%X" cp ^ " is not a Unicode scalar value")
+  let first = 3 (* skip opening \u{ *) in
+  let last = len - 2 (* skip closing } *) in
+  let digit_count = last - first + 1 in
+  match digit_count > 6 with
+  | true -> err ", too many digits, expected 1 to 6 hexadecimal digits"
+  | false ->
+      let cp = hex_num_value lexbuf ~first ~last in
+      if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
+      err (", " ^ Printf.sprintf "%X" cp ^ " is not a Unicode scalar value")
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
