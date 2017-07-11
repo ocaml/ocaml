@@ -472,19 +472,24 @@ let build_default_matrix pss =
     | [] -> [] in
   filter_rec pss
 
-(*
-  Pattern p0 is the discriminating pattern,
-  returns [(q0,pss0) ; ... ; (qn,pssn)]
-  where the qi's are simple patterns and the pssi's are
-  matched matrices.
+(* This function returns a list of [(qi, pssi)] where [qi]s are simple head
+   patterns and the [pssi]s are matched matrices (also called "specialized
+   matrices" in section 3.1 of
+   http://moscova.inria.fr/~maranget/papers/warn/warn.pdf).
 
-  NOTES
-   * (qi,[]) is impossible.
-   * In the case when matching is useless (all-variable case),
-     returns []
+   NOTES:
+   - All the [qi]s are obtained¹ from the first column of [pss].
+     As a consequence we get that (qi, []) is impossible.
+   - In the case when matching is useless (the first column consist only of
+     variables / wildcards), the list returned is empty.
+
+   [1]: by "obtained" we mean that [qi] is either the normalized version (see
+   [normalize_pat]) of a pattern present in the first column of [pss], or a
+   "discriminating pattern" (see [discr_pat]) built along the first column of
+   [pss].
 *)
 
-let filter_all pat0 pss =
+let build_specialized_submatrices pat0 pss =
 
   let rec insert q qs env =
     match env with
@@ -507,6 +512,7 @@ let filter_all pat0 pss =
       filter_rec (insert p ps env) pss
   | _ -> env
 
+  (* adds rows starting with a wildcard to all the specialized submatrices. *)
   and filter_omega env = function
     ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
       filter_omega env ((p::ps)::pss)
@@ -520,13 +526,17 @@ let filter_all pat0 pss =
   | _::pss -> filter_omega env pss
   | [] -> env in
 
-  filter_omega
-    (filter_rec
-      (match pat0.pat_desc with
-        (Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_)) -> [pat0,[]]
-      | _ -> [])
-      pss)
-    pss
+  let initial_env =
+    match pat0.pat_desc with
+    | Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_) ->
+      (* [pat0] comes from [discr_pat], and in this case subsumes any of the
+         patterns we could find on the first column of [pss]. So it is better to
+         use it for our initial environment than any of the normalized pattern
+         we might obtain from the first column. *)
+      [pat0,[]]
+    | _ -> []
+  in
+  filter_omega (filter_rec initial_env pss) pss
 
 (* Variant related functions *)
 
@@ -925,7 +935,7 @@ let rec satisfiable pss qs = match pss with
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let q0 = discr_pat omega pss in
-        begin match filter_all q0 pss with
+        begin match build_specialized_submatrices q0 pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (build_default_matrix pss) qs
         | constrs  ->
@@ -957,7 +967,7 @@ let rec satisfiables pss qs = match pss with
         let q0 = discr_pat omega pss in
         let wild p =
           List.map (fun qs -> p::qs) (satisfiables (build_default_matrix pss) qs) in
-        begin match filter_all q0 pss with
+        begin match build_specialized_submatrices q0 pss with
           (* first column of pss is made of variables only *)
         | [] ->
             wild omega
@@ -1035,7 +1045,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
 | []::_ ->  Rnone
 | pss   ->
     let q0 = discr_pat omega pss in
-    begin match filter_all q0 pss with
+    begin match build_specialized_submatrices q0 pss with
           (* first column of pss is made of variables only *)
     | [] ->
         begin match exhaust ext (build_default_matrix pss) (n-1) with
@@ -1111,7 +1121,7 @@ let rec pressure_variants tdefs = function
   | []::_ -> true
   | pss   ->
       let q0 = discr_pat omega pss in
-      begin match filter_all q0 pss with
+      begin match build_specialized_submatrices q0 pss with
         [] -> pressure_variants tdefs (build_default_matrix pss)
       | constrs ->
           let rec try_non_omega = function
@@ -1128,7 +1138,8 @@ let rec pressure_variants tdefs = function
             let full = full_match true constrs in
             let ok =
               if full then try_non_omega constrs
-              else try_non_omega (filter_all q0 (mark_partial pss))
+              else try_non_omega
+                     (build_specialized_submatrices q0 (mark_partial pss))
             in
             begin match constrs, tdefs with
               ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
