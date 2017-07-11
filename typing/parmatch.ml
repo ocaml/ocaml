@@ -449,8 +449,9 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
-(* filter pss according to pattern q *)
-let filter_one q pss =
+(* Builds the specialized matrix of [pss] according to pattern [q].
+   See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf *)
+let build_specialized_submatrix q pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
         filter_rec ((p::ps)::pss)
@@ -962,7 +963,7 @@ let rec satisfiable pss qs = match pss with
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
         let q0 = discr_pat q pss in
-        satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+        satisfiable (build_specialized_submatrix q0 pss) (simple_match_args q0 q @ qs)
 
 (* Also return the remaining cases, to enable GADT handling *)
 let rec satisfiables pss qs = match pss with
@@ -1004,7 +1005,7 @@ let rec satisfiables pss qs = match pss with
     | q::qs ->
         let q0 = discr_pat q pss in
         List.map (set_args q0)
-          (satisfiables (filter_one q0 pss) (simple_match_args q0 q @ qs))
+          (satisfiables (build_specialized_submatrix q0 pss) (simple_match_args q0 q @ qs))
 
 (*
   Now another satisfiable function that additionally
@@ -1257,7 +1258,7 @@ and push_no_or_column rs = List.map push_no_or rs
 let discr_pat q rs =
   discr_pat q (List.map (fun r -> r.active) rs)
 
-let filter_one q rs =
+let build_specialized_submatrix q rs =
   let rec filter_rec rs = match rs with
   | [] -> []
   | r::rem ->
@@ -1372,7 +1373,7 @@ let rec every_satisfiables pss qs = match qs.active with
 (* standard case, filter matrix *)
         let q0 = discr_pat q pss in
         every_satisfiables
-          (filter_one q0 pss)
+          (build_specialized_submatrix q0 pss)
           {qs with active=simple_match_args q0 q @ rem}
     end
 
