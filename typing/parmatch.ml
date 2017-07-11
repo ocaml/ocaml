@@ -342,6 +342,17 @@ let rec normalize_pat q = match q.pat_desc with
 
 let discr_pat q pss =
 
+  (* folds over the first column of the matrix to refine the accumulator.
+
+     The simple case is when we encounter a row starting with [Tpat_tuple] or
+     [Tpat_lazy]. These constructors are alone in their signature, so they will
+     subsume whatever other pattern we might find. We cannot refine any further,
+     we stop.
+
+     When we find a [Tpat_record] then it is a bit more involved: it is also
+     alone in its signature, however it might only be matching a subset of the
+     record fields. We use these fields to refine our accumulator and keep going
+     as another row might match on different fields. *)
   let rec acc_pat acc pss = match pss with
     ({pat_desc = Tpat_alias (p,_,_)}::ps)::pss ->
         acc_pat acc ((p::ps)::pss)
