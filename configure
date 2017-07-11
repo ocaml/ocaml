@@ -418,7 +418,7 @@ case "$ccfamily" in
     common_cflags="-O";;
 esac
 
-internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
+internal_cppflags="-DCAML_NAME_SPACE -DCAML_CORE $internal_cppflags"
 
 # Adjust according to target
 

@@ -69,15 +69,23 @@ typedef char * addr;
 
 /* Export control (to mark primitives and to handle Windows DLL) */
 #ifdef __cplusplus
-# define CAMLextern extern "C"
+# define CAMLextern extern "C" CAMLexport
 #else
-# define CAMLextern extern
+# define CAMLextern extern CAMLexport
 #endif
 #if defined _WIN32 || defined __CYGWIN__
-# ifdef __GNUC__
-#  define CAMLexport __attribute__((dllexport))
+# ifdef CAML_CORE
+#  ifdef __GNUC__
+#   define CAMLexport __attribute__((dllexport))
+#  else
+#   define CAMLexport __declspec((dllexport)
+#  endif
 # else
-#  define CAMLexport __declspec((dllexport)
+#  ifdef __GNUC__
+#   define CAMLexport __attribute__((dllimport))
+#  else
+#   define CAMLexport __declspec((dllimport))
+#  endif
 # endif
 #elif defined __GNUC__
 # define CAMLexport __attribute__((visibility("default")))
@@ -117,24 +125,20 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLnoreturn_start
-CAMLextern int caml_failed_assert (char *, char *, int)
-CAMLnoreturn_end;
+CAMLextern int caml_failed_assert (char *, char *, int);
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error (char *msg)
-CAMLnoreturn_end;
+CAMLextern void caml_fatal_error (char *msg);
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
-CAMLnoreturn_end;
+CAMLextern void caml_fatal_error_arg (char *fmt, char *arg);
 
 CAMLnoreturn_start
 CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
-CAMLnoreturn_end;
+                                       char *fmt2, char *arg2);
 
 /* Detection of available C built-in functions, the Clang way. */
 
@@ -179,7 +183,7 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
   return __builtin_mul_overflow(a, b, res);
 }
 #else
-extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+CAMLextern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
 /* Use macros for some system calls being called from OCaml itself.
