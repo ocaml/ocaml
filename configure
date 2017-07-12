@@ -864,6 +864,16 @@ else
 fi
 
 
+# Try to work around the Skylake/Kaby Lake processor bug.
+case "$bytecc,$target" in
+    *gcc*,x86_64-*|*gcc*,i686-*)
+        if sh ./hasgot -Werror -fno-tree-vrp; then
+            byteccprivatecompopts="$byteccprivatecompopts -fno-tree-vrp"
+            inf "Adding -fno-tree-vrp option to work around PR#7452"
+        fi;;
+esac
+
+
 # Configure the native-code compiler
 
 # The NATIVECC make variable defines which compiler and options to use

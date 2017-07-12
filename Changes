@@ -296,6 +296,10 @@ OCaml 4.05.0 (TBD):
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
+- PR#7452, GPR#1228: tweak GCC options to try to avoid the
+  Skylake/Kaby lake bug
+  (Damien Doligez, review by David Allsopp, Xavier Leroy and Mark Shinwell)
+
 - GPR#693: fail on unexpected errors or warnings within caml_example
   environment.
   (Florian Angeletti)
