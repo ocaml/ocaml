@@ -62,6 +62,13 @@ let rec error_of_extension ext =
 let cat s1 s2 =
   if s2 = "" then s1 else s1 ^ "\n" ^ s2
 
+let partition_deprecated_attrs =
+  List.partition
+    (function
+      | ({txt = "ocaml.deprecated"|"deprecated"; _}, _) -> true
+      | _ -> false
+    )
+
 let rec deprecated_of_attrs = function
   | [] -> None
   | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) :: _ ->
