@@ -1632,18 +1632,12 @@ let rec initial_matrix = function
   (by a guarded clause)
 *)
 
-
-
-exception NoGuard
-
-let rec initial_all no_guard = function
-  | [] ->
-      if no_guard then
-        raise NoGuard
-      else
-        []
-  | {c_lhs=pat; c_guard; _} :: rem ->
-      ([pat], pat.pat_loc) :: initial_all (no_guard && c_guard = None) rem
+let rec initial_only_guarded = function
+  | [] -> []
+  | { c_guard = None; _} :: rem ->
+      initial_only_guarded rem
+  | { c_lhs = pat; _ } :: rem ->
+      ([pat], pat.pat_loc) :: initial_only_guarded rem
 
 
 let rec do_filter_var = function
@@ -1681,13 +1675,6 @@ let rec do_match pss qs = match qs with
       let q0 = normalize_pat q in
       do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
 
-
-let check_partial_all v casel =
-  try
-    let pss = initial_all true casel in
-    do_match pss [v]
-  with
-  | NoGuard -> None
 
 (************************)
 (* Exhaustiveness check *)
@@ -1812,7 +1799,7 @@ let do_check_partial ~pred loc casel pss = match pss with
                   let buf = Buffer.create 16 in
                   let fmt = Format.formatter_of_buffer buf in
                   Printpat.top_pretty fmt v;
-                  begin match check_partial_all v casel with
+                  begin match do_match (initial_only_guarded casel) [v] with
                   | None -> ()
                   | Some _ ->
                       (* This is 'Some loc', where loc is the location of
@@ -1967,7 +1954,7 @@ let check_unused pred casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with Empty | Not_found | NoGuard -> assert false
+            with Empty | Not_found -> assert false
             end ;
 
           if c_guard <> None then
