@@ -10,7 +10,7 @@ OCaml 4.05.0 (TBD):
 - MPR#7201, GPR#954: Correct wrong optimisation of "0 / <expr>"
   and "0 mod <expr>" in the case when <expr> was a non-constant
   evaluating to zero
-  (Mark Shinwell)
+  (Mark Shinwell, review by Gabriel Scherer, Leo White and Xavier Leroy)
 
 - MPR#7357, GPR#832: Improve compilation time for toplevel
   include(struct ... end : sig ... end)
@@ -76,8 +76,9 @@ OCaml 4.05.0 (TBD):
    and Damien Doligez, discussion with Alain Frisch and Xavier Leroy,
    feature request from the Coq team)
 
-- MPR#7137, GPR#960: "-open" command line flag now accepts a module path
-  (not a module name) (Arseniy Alekseyev and Leo White)
+- MPR#7137, GPR#960: "-open" command line flag now accepts
+  a module path (not a module name)
+  (Arseniy Alekseyev and Leo White)
 
 - MPR#7172, GPR#970: add extra (ocamlc -config) options
   int_size, word_size, ext_exe
@@ -102,7 +103,7 @@ OCaml 4.05.0 (TBD):
 
 - GPR#911: ocamlc/ocamlopt do not pass warnings-related options to C
   compiler when called to compile third-party C source files
-  (Sébastien Hinderer)
+  (Sébastien Hinderer, review by Adrien Nader and David Allsopp)
 
 - GPR#915: fix -dsource (pprintast.ml) bugs
   (Runhang Li, review by Alain Frisch)
@@ -149,7 +150,7 @@ OCaml 4.05.0 (TBD):
 
 - GPR#760: Add a functions List.compare_lengths and
   List.compare_length_with to avoid full list length computations
-  (Fabrice Le Fessant)
+  (Fabrice Le Fessant, review by Leo White, Josh Berdine and Gabriel Scherer)
 
 - GPR#778: Arg: added option Expand that allows to expand a string
   argument to a string array of new arguments
@@ -249,7 +250,7 @@ OCaml 4.05.0 (TBD):
 
 * MPR#7342, GPR#797: fix Unix.read on pipes with no data left on Windows
   it previously raised an EPIPE error, it now returns 0 like other OSes
-  (Jonathan Protzenko)
+  (Jonathan Protzenko, review by Andreas Hauptmann and Damien Doligez)
 
 - GPR#650: in the Unix library, add `?cloexec:bool` optional arguments to
   functions that create file descriptors (`dup`, `dup2`, `pipe`, `socket`,
@@ -259,7 +260,8 @@ OCaml 4.05.0 (TBD):
   reducing the risk of race conditions with `exec` or `create_process`
   calls running in other threads, and improving security.  Also: add a
   `O_KEEPEXEC` flag for `openfile` by symmetry with `O_CLOEXEC`.
-  (Xavier Leroy)
+  (Xavier Leroy, review by Mark Shinwell, David Allsopp and Alain Frisch,
+   request by Romain Beauxis)
 
 - GPR#996: correctly update caml_top_of_stack in systhreads
   (Fabrice Le Fessant)
@@ -335,7 +337,7 @@ OCaml 4.05.0 (TBD):
 
 - GPR#932: install ocaml{c,lex}->ocaml{c,lex}.byte symlink correctly
   when the opt target is built but opt.opt target is not.
-  (whitequark)
+  (whitequark, review by Gabriel Scherer)
 
 - GPR#935: allow build in Android's termux
   (ygrek, review by Gabriel Scherer)
@@ -442,10 +444,10 @@ The complete list of changes is listed below.
 
 - GPR#881: change `Outcometree.out_variant` to be more general.
   `Ovar_name of out_ident * out_type list` becomes `Ovar_type of out_type`.
-  (Valentin Gatien-Baron)
+  (Valentin Gatien-Baron, review by Leo White)
 
 - GPR#908: refactor PIC-handling in the s390x backend
-  (Gabriel Scherer)
+  (Gabriel Scherer, review by Xavier Leroy and Mark Shinwell)
 
 ### Bug fixes
 
@@ -466,11 +468,11 @@ The complete list of changes is listed below.
    Olivier Andrieu)
 
 - MPR#6903: Unix.execvpe doesn't change environment on Cygwin
-  (Xavier Leroy)
+  (Xavier Leroy, report by Adrien Nader)
 
-- MPR#6987: Strange error message probably caused by universal variable escape
-  (with polymorphic variants)
-  (report by Leo White)
+- MPR#6987: Strange error message probably caused by
+  universal variable escape (with polymorphic variants)
+  (Jacques Garrigue, report by Mikhail Mandrykin and Leo White)
 
 - MPR#7216, GPR#949: don't require double parens in Functor((val x))
   (Jacques Garrigue, review by Valentin Gatien-Baron)
@@ -499,10 +501,10 @@ The complete list of changes is listed below.
 
 - MPR#7426, GPR#965: Fix fatal error during object compilation (also
   introduces new [Pfield_computed] and [Psetfield_computed] primitives)
-  (Mark Shinwell)
+  (Mark Shinwell, report by Ulrich Singer)
 
 - MPR#7427, GPR#959: Don't delete let bodies in Cmmgen
-  (Mark Shinwell)
+  (Mark Shinwell, report by Valentin Gatien-Baron)
 
 - MPR#7432: Linking modules compiled with -labels and -nolabels is not safe
   (Jacques Garrigue, report by Jeremy Yallop)
@@ -530,24 +532,18 @@ The complete list of changes is listed below.
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
 
-- GPR#810: check for integer overflow in Array.concat
-  (Jeremy Yallop)
-
-- GPR#814: fix the Buffer.add_substring bounds check to handle overflow
-  (Jeremy Yallop)
-
 - GPR#881: short-paths did not apply to some polymorphic variants
   (Valentin Gatien-Baron, review by Leo White)
 
 - GPR#886: Fix Ctype.moregeneral's handling of row_name
-  (Leo White)
+  (Leo White, review by Jacques Garrigue)
 
 - GPR#934: check for integer overflow in Bytes.extend
   (Jeremy Yallop, review by Gabriel Scherer)
 
 - GPR#956: Keep possibly-effectful expressions when optimizing multiplication
   by zero.
-  (Jeremy Yallop)
+  (Jeremy Yallop, review by Nicolás Ojeda Bär, Xavier Leroy and Mark Shinwell)
 
 - GPR#977: Catch Out_of_range in ocamldebug's "list" command
   (Yunxing Dai)
@@ -561,17 +557,17 @@ The complete list of changes is listed below.
   (Anton Bachin)
 
 - GPR#998: Do not delete unused closures in un_anf.ml.
-  (Leo White)
+  (Leo White, review by Mark Shinwell and Pierre Chambart)
 
 - GPR#1019: Fix fatal error in Flambda mode "[functions] does not map set of
   closures ID"
   (Pierre Chambart, code review by Mark Shinwell and Leo White)
 
 - GPR#1075: Ensure that zero-sized float arrays have zero tags.
-  (Mark Shinwell, Leo White)
+  (Mark Shinwell, Leo White, review by Xavier Leroy)
 
 * GPR#1088: Gc.minor_words now returns accurate numbers.
-  (Stephen Dolan)
+  (Stephen Dolan, review by Pierre Chambart and Xavier Leroy)
 
 OCaml 4.04.2 (23 Jun 2017):
 ---------------------------
