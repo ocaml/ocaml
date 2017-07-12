@@ -335,52 +335,71 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_lazy omega) q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
 
-(*
-  Build normalized (cf. supra) discriminating pattern,
-  in the non-data type case
+(* Consider a pattern matrix whose first column has been simplified
+   to contain only _ or a head constructor
+     | p1, r1...
+     | p2, r2...
+     | p3, r3...
+     | ...
+
+   We build a normalized /discriminating/ pattern from a pattern [q] by folding
+   over the first column of the matrix, "refining" [q] as we go:
+
+   - when we encounter a row starting with [Tpat_tuple] or [Tpat_lazy] then we
+   can stop and return that pattern, as we cannot refine any further. Indeed,
+   these constructors are alone in their signature, so they will subsume
+   whatever other pattern we might find, as well as the pattern we're threading
+   along.
+
+   - when we find a [Tpat_record] then it is a bit more involved: it is also
+   alone in its signature, however it might only be matching a subset of the
+   record fields. We use these fields to refine our accumulator and keep going
+   as another row might match on different fields.
+
+   - rows starting with a wildcard do not bring any information, so we ignore
+   them and keep going
+
+   - if we encounter anything else (i.e. any other constructor), then we just
+   stop and return our accumulator.
 *)
-
 let discr_pat q pss =
-
-  (* folds over the first column of the matrix to refine the accumulator.
-
-     The simple case is when we encounter a row starting with [Tpat_tuple] or
-     [Tpat_lazy]. These constructors are alone in their signature, so they will
-     subsume whatever other pattern we might find. We cannot refine any further,
-     we stop.
-
-     When we find a [Tpat_record] then it is a bit more involved: it is also
-     alone in its signature, however it might only be matching a subset of the
-     record fields. We use these fields to refine our accumulator and keep going
-     as another row might match on different fields. *)
-  let rec acc_pat acc pss = match pss with
-    ({pat_desc = Tpat_alias (p,_,_)}::ps)::pss ->
-        acc_pat acc ((p::ps)::pss)
-  | ({pat_desc = Tpat_or (p1,p2,_)}::ps)::pss ->
-        acc_pat acc ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var _)}::_)::pss ->
-        acc_pat acc pss
-  | (({pat_desc = Tpat_tuple _} as p)::_)::_ -> normalize_pat p
-  | (({pat_desc = Tpat_lazy _} as p)::_)::_ -> normalize_pat p
-  | (({pat_desc = Tpat_record (largs,closed)} as p)::_)::pss ->
-      let new_omegas =
-        List.fold_right
-          (fun (lid, lbl,_) r ->
-            try
-              let _ = get_field lbl.lbl_pos r in
-              r
-            with Not_found ->
-              (lid, lbl,omega)::r)
-          largs (record_arg acc)
-      in
-      acc_pat
-        (make_pat (Tpat_record (new_omegas, closed)) p.pat_type p.pat_env)
-        pss
-  | _ -> acc in
-
-  match normalize_pat q with
-  | {pat_desc= (Tpat_any | Tpat_record _)} as q -> acc_pat q pss
-  | q -> q
+  let rec refine_pat acc = function
+    | [] -> acc
+    | (head, _) :: rows ->
+      match head.pat_desc with
+      | Tpat_or _ | Tpat_var _ | Tpat_alias _ -> assert false
+      | Tpat_any -> refine_pat acc rows
+      | Tpat_tuple _ | Tpat_lazy _ -> normalize_pat head
+      | Tpat_record (largs, closed) ->
+        (* N.B. we could make this case "simpler" by refining the record case
+           using [all_record_args].
+           In which case we wouldn't need to fold over the first column for
+           records.
+           However it makes the witness we generate for the exhaustivity warning
+           less pretty. *)
+        let new_omegas =
+          List.fold_right
+            (fun (lid, lbl,_) r ->
+               try
+                 let _ = get_field lbl.lbl_pos r in
+                 r
+               with Not_found ->
+                 (lid, lbl,omega)::r)
+            largs (record_arg acc)
+        in
+        let new_acc =
+          make_pat (Tpat_record (new_omegas, closed)) head.pat_type head.pat_env
+        in
+        refine_pat new_acc rows
+      | _ -> acc
+  in
+  let q = normalize_pat q in
+  (* short-circuiting: clearly if we have anything other than [Tpat_record] or
+     [Tpat_any] to start with, we're not going to be able refine at all. So
+     there's no point going over the matrix. *)
+  match q.pat_desc with
+  | Tpat_any | Tpat_record _ -> refine_pat q pss
+  | _ -> q
 
 (*
    In case a matching value is found, set actual arguments
@@ -449,17 +468,59 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
+(* Given a matrix of non-empty rows
+   p1 :: r1...
+   p2 :: r2...
+   p3 :: r3...
+
+   Simplify the first column [p1 p2 p3] by splitting all or-patterns.
+   The result is a list of couples
+     (simple pattern, rest of row)
+   where a "simple pattern" starts with either the catch-all pattern omega (_)
+   or a head constructor.
+
+   For example,
+     x :: r1
+     (Some _) as y :: r2
+     (None as x) as y :: r3
+     (Some x | (None as x)) :: r4
+   becomes
+     (_, r1)
+     (Some _, r2)
+     (None, r3)
+     (Some x, r4)
+     (None, r4)
+ *)
+let rec simplify_first_col = function
+  | [] -> []
+  | [] :: _ -> assert false (* the rows are non-empty! *)
+  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+
+and simplify_head_pat p ps k =
+  match p.pat_desc with
+  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+  | Tpat_var (_,_) -> (omega, ps) :: k
+  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+  | _ -> (p, ps) :: k
+
+
 (* Builds the specialized matrix of [pss] according to pattern [q].
-   See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf *)
-let build_specialized_submatrix q pss =
+   See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
+
+   NOTES:
+   - expects [pss] to be a "simplified matrix", cf. [simplify_first_col]
+   - [q] was produced by [discr_pat]
+   - we are polymorphic on the type of matrices we work on, in particular a row
+   might not simply be a [pattern list]. That's why we have the [extend_row]
+   parameter.
+*)
+let build_specialized_submatrix ~extend_row q pss =
   let rec filter_rec = function
-      ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-        filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-        filter_rec ((p1::ps)::(p2::ps)::pss)
-    | (p::ps)::pss ->
+    | ({pat_desc = (Tpat_alias _ | Tpat_or _ | Tpat_var _) }, _) :: _ ->
+        assert false
+    | (p, ps) :: pss ->
         if simple_match q p
-        then (simple_match_args q p @ ps) :: filter_rec pss
+        then extend_row (simple_match_args q p) ps :: filter_rec pss
         else filter_rec pss
     | _ -> [] in
   filter_rec pss
@@ -484,71 +545,88 @@ let build_default_matrix pss =
     | [] -> [] in
   filter_rec pss
 
-(* This function returns a list of [(qi, pssi)] where [qi]s are simple head
-   patterns and the [pssi]s are matched matrices (also called "specialized
-   matrices" in section 3.1 of
-   http://moscova.inria.fr/~maranget/papers/warn/warn.pdf).
+(* Consider a pattern matrix whose first column has been simplified
+   to contain only _ or a head constructor
+     | p1, r1...
+     | p2, r2...
+     | p3, r3...
+     | ...
 
-   NOTES:
-   - All the [qi]s are obtained¹ from the first column of [pss].
-     As a consequence we get that (qi, []) is impossible.
-   - In the case when matching is useless (the first column consist only of
-     variables / wildcards), the list returned is empty.
+   We split this matrix into a list of /specialized/ sub-matrices [1], one for
+   each head constructor appearing in the first column. For each row whose
+   first column starts with a head constructor, remove this head
+   column, prepend one column for each argument of the constructor,
+   and add the resulting row in the sub-matrix corresponding to this
+   head constructor.
 
-   [1]: by "obtained" we mean that [qi] is either the normalized version (see
-   [normalize_pat]) of a pattern present in the first column of [pss], or a
-   "discriminating pattern" (see [discr_pat]) built along the first column of
-   [pss].
+   Rows whose left column is omega (the Any pattern _) may match any
+   head constructor, so they are added to all sub-matrices.
+
+   In the case where all the rows in the matrix have an omega on their first
+   column, then there is only one "specialized" sub-matrix, formed of all these
+   omega rows. The [return_omega_group] parameter is used to control whether
+   this lone sub-matrix should be returned or not.
+
+   [1]: specialized sub-matrices are introduced in section 3.1 of
+   http://moscova.inria.fr/~maranget/papers/warn/warn.pdf .
+
+   See the documentation of [build_specialized_submatrix] for an explanation of
+   the [extend_row] parameter.
+
 *)
+let build_specialized_submatrices ~return_omega_group ~extend_row q rows =
+  let extend_group discr p r rs =
+    let r = extend_row (simple_match_args discr p) r in
+    (discr, r :: rs) in
 
-let build_specialized_submatrices pat0 pss =
+  (* insert a row of head [p] and rest [r] into the right group *)
+  let rec insert_constr p r env = match env with
+  | [] ->
+      (* if no group matched this row, it has a head constructor that
+         was never seen before; add a new sub-matrix for this head *)
+      [extend_group (normalize_pat p) p r []]
+  | (q0,rs) as bd::env ->
+      if simple_match q0 p
+      then extend_group q0 p r rs :: env
+      else bd :: insert_constr p r env in
 
-  let rec insert q qs env =
-    match env with
-      [] ->
-        let q0 = normalize_pat q in
-        [q0, [simple_match_args q0 q @ qs]]
-    | ((q0,pss) as c)::env ->
-        if simple_match q0 q
-        then (q0, ((simple_match_args q0 q @ qs) :: pss)) :: env
-        else c :: insert q qs env in
+  (* insert a row of head omega into all groups *)
+  let insert_omega r env =
+    List.map (fun (q0,rs) -> extend_group q0 omega r rs) env in
 
-  let rec filter_rec env = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      filter_rec env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      filter_rec env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))}::_)::pss ->
-      filter_rec env pss
-  | (p::ps)::pss ->
-      filter_rec (insert p ps env) pss
-  | _ -> env
+  let rec form_groups constr_groups omega_tails = function
+    | [] -> (constr_groups, omega_tails)
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any}, tail) :: rest ->
+       (* note that calling insert_omega here would be wrong
+          as some groups may not have been formed yet, if the
+          first row with this head pattern comes after in the list *)
+       form_groups constr_groups (tail :: omega_tails) rest
+    | (p,r) :: rest ->
+       form_groups (insert_constr p r constr_groups) omega_tails rest in
 
-  (* adds rows starting with a wildcard to all the specialized submatrices. *)
-  and filter_omega env = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      filter_omega env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      filter_omega env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))}::ps)::pss ->
-      filter_omega
-        (List.map (fun (q,qss) -> (q,(simple_match_args q omega @ ps) :: qss))
-           env)
-        pss
-  | _::pss -> filter_omega env pss
-  | [] -> env in
-
-  let initial_env =
-    match pat0.pat_desc with
-    | Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_) ->
-      (* [pat0] comes from [discr_pat], and in this case subsumes any of the
-         patterns we could find on the first column of [pss]. So it is better to
-         use it for our initial environment than any of the normalized pattern
-         we might obtain from the first column. *)
-      [pat0,[]]
-    | _ -> []
+  let constr_groups, omega_tails =
+    let initial_constr_group =
+      match q.pat_desc with
+      | Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_) ->
+        (* [q] comes from [discr_pat], and in this case subsumes any of the
+           patterns we could find on the first column of [rows]. So it is better
+           to use it for our initial environment than any of the normalized
+           pattern we might obtain from the first column. *)
+        [q,[]]
+      | _ -> []
+    in
+    form_groups initial_constr_group [] rows
   in
-  filter_omega (filter_rec initial_env pss) pss
+  if constr_groups = [] then (
+    (* no head constructors: the omega tails form a single submatrix *)
+    if return_omega_group
+    then [q, omega_tails]
+    else []
+  ) else (
+    (* insert omega rows in all groups *)
+    List.fold_right insert_omega omega_tails constr_groups
+  )
 
 (* Variant related functions *)
 
@@ -946,8 +1024,12 @@ let rec satisfiable pss qs = match pss with
     | {pat_desc = Tpat_alias(q,_,_)}::qs ->
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-        let q0 = discr_pat omega pss in
-        begin match build_specialized_submatrices q0 pss with
+        let simplified = simplify_first_col pss in
+        let q0 = discr_pat omega simplified in
+        begin match
+          build_specialized_submatrices ~return_omega_group:false ~extend_row:(@)
+            q0 simplified
+        with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (build_default_matrix pss) qs
         | constrs  ->
@@ -962,8 +1044,10 @@ let rec satisfiable pss qs = match pss with
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
-        let q0 = discr_pat q pss in
-        satisfiable (build_specialized_submatrix q0 pss) (simple_match_args q0 q @ qs)
+        let simplified = simplify_first_col pss in
+        let q0 = discr_pat q simplified in
+        satisfiable (build_specialized_submatrix ~extend_row:(@) q0 simplified)
+          (simple_match_args q0 q @ qs)
 
 (* Also return the remaining cases, to enable GADT handling *)
 let rec satisfiables pss qs = match pss with
@@ -976,10 +1060,14 @@ let rec satisfiables pss qs = match pss with
     | {pat_desc = Tpat_alias(q,_,_)}::qs ->
         satisfiables pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-        let q0 = discr_pat omega pss in
+        let simplified = simplify_first_col pss in
+        let q0 = discr_pat omega simplified in
         let wild p =
           List.map (fun qs -> p::qs) (satisfiables (build_default_matrix pss) qs) in
-        begin match build_specialized_submatrices q0 pss with
+        begin match
+          build_specialized_submatrices ~return_omega_group:false ~extend_row:(@)
+            q0 simplified
+        with
           (* first column of pss is made of variables only *)
         | [] ->
             wild omega
@@ -1003,9 +1091,11 @@ let rec satisfiables pss qs = match pss with
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
     | q::qs ->
-        let q0 = discr_pat q pss in
+        let simplified = simplify_first_col pss in
+        let q0 = discr_pat q simplified in
         List.map (set_args q0)
-          (satisfiables (build_specialized_submatrix q0 pss) (simple_match_args q0 q @ qs))
+          (satisfiables (build_specialized_submatrix ~extend_row:(@) q0 simplified)
+             (simple_match_args q0 q @ qs))
 
 (*
   Now another satisfiable function that additionally
@@ -1056,8 +1146,12 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
 | []    ->  Rsome [omegas n]
 | []::_ ->  Rnone
 | pss   ->
-    let q0 = discr_pat omega pss in
-    begin match build_specialized_submatrices q0 pss with
+    let simplified = simplify_first_col pss in
+    let q0 = discr_pat omega simplified in
+    begin match
+      build_specialized_submatrices ~return_omega_group:false ~extend_row:(@)
+        q0 simplified
+    with
           (* first column of pss is made of variables only *)
     | [] ->
         begin match exhaust ext (build_default_matrix pss) (n-1) with
@@ -1132,8 +1226,12 @@ let rec pressure_variants tdefs = function
   | []    -> false
   | []::_ -> true
   | pss   ->
-      let q0 = discr_pat omega pss in
-      begin match build_specialized_submatrices q0 pss with
+      let simplified = simplify_first_col pss in
+      let q0 = discr_pat omega simplified in
+      begin match
+        build_specialized_submatrices ~return_omega_group:false ~extend_row:(@)
+          q0 simplified
+      with
         [] -> pressure_variants tdefs (build_default_matrix pss)
       | constrs ->
           let rec try_non_omega = function
@@ -1151,7 +1249,9 @@ let rec pressure_variants tdefs = function
             let ok =
               if full then try_non_omega constrs
               else try_non_omega
-                     (build_specialized_submatrices q0 (mark_partial pss))
+                     (build_specialized_submatrices ~return_omega_group:false
+                        ~extend_row:(@) q0
+                        (simplify_first_col (mark_partial pss)))
             in
             begin match constrs, tdefs with
               ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
@@ -1254,29 +1354,20 @@ and push_no_or_column rs = List.map push_no_or rs
 (* Those are adaptations of the previous homonymous functions that
    work on the current column, instead of the first column
 *)
-
-let discr_pat q rs =
-  discr_pat q (List.map (fun r -> r.active) rs)
-
-let build_specialized_submatrix q rs =
-  let rec filter_rec rs = match rs with
+let rec simplify_first_col = function
   | [] -> []
-  | r::rem ->
-      match r.active with
-      | [] -> assert false
-      | {pat_desc = Tpat_alias(p,_,_)}::ps ->
-          filter_rec ({r with active = p::ps}::rem)
-      | {pat_desc = Tpat_or(p1,p2,_)}::ps ->
-          filter_rec
-            ({r with active = p1::ps}::
-             {r with active = p2::ps}::
-             rem)
-      | p::ps ->
-          if simple_match q p then
-            {r with active=simple_match_args q p @ ps} :: filter_rec rem
-          else
-            filter_rec rem in
-  filter_rec rs
+  | row :: rows ->
+    match row.active with
+    | [] -> assert false (* the rows are non-empty! *)
+    | p :: ps ->
+      simplify_head_pat p { row with active = ps } (simplify_first_col rows)
+
+and simplify_head_pat p ps k =
+  match p.pat_desc with
+  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+  | Tpat_var (_,_) -> (omega, ps) :: k
+  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+  | _ -> (p, ps) :: k
 
 
 (* Back to normal matrices *)
@@ -1371,9 +1462,11 @@ let rec every_satisfiables pss qs = match qs.active with
         Unused
     | _ ->
 (* standard case, filter matrix *)
-        let q0 = discr_pat q pss in
+        let simplified = simplify_first_col pss in
+        let q0 = discr_pat q simplified in
         every_satisfiables
-          (build_specialized_submatrix q0 pss)
+          (build_specialized_submatrix q0 simplified
+             ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
           {qs with active=simple_match_args q0 q @ rem}
     end
 
@@ -2073,77 +2166,13 @@ and simplify_head_pat head_bound_variables p ps varsets k =
   | _ ->
     (p, { row = ps; varsets = head_bound_variables :: varsets; }) :: k
 
-(* Consider a pattern matrix whose first column has been simplified
-   to contain only _ or a head constructor
-     | p1, r1...
-     | p2, r2...
-     | p3, r3...
-     | ...
 
-   We split this matrix into a list of sub-matrices, one for each head
-   constructor appearing in the first column. For each row whose
-   first column starts with a head constructor, remove this head
-   column, prepend one column for each argument of the constructor,
-   and add the resulting row in the sub-matrix corresponding to this
-   head constructor.
-
-   Rows whose left column is omega (the Any pattern _) may match any
-   head constructor, so they are added to all groups. If there are no
-   non-omega group, the omega rows form a single group: there is
-   always at least one group in the result.
-*)
 let split_rows rows =
-  (* the head constructor (as a pattern with omega arguments) of
-     a pattern *)
-  let discr_head pat =
-    match pat.pat_desc with
-    | Tpat_record (lbls, closed) ->
-        (* a partial record pattern { f1 = p1; f2 = p2; _ }
-           needs to be expanded, otherwise matching against this head
-           would drop the pattern arguments for non-mentioned fields *)
-        let lbls = all_record_args lbls in
-        normalize_pat { pat with pat_desc = Tpat_record (lbls, closed) }
-    | _ -> normalize_pat pat in
-
-  let extend_group discr p r rs =
-    let r = { r with row = simple_match_args discr p @ r.row } in
-    (discr, r :: rs) in
-
-  (* insert a row of head [p] and rest [r] into the right group *)
-  let rec insert_constr p r env = match env with
-  | [] ->
-      (* if no group matched this row, it has a head constructor that
-         was never seen before; add a new sub-matrix for this head *)
-      [extend_group (discr_head p) p r []]
-  | (q0,rs) as bd::env ->
-      if simple_match q0 p
-      then extend_group q0 p r rs :: env
-      else bd :: insert_constr p r env in
-
-  (* insert a row of head omega into all groups *)
-  let insert_omega r env =
-    List.map (fun (q0,rs) -> extend_group q0 omega r rs) env in
-
-  let rec form_groups constr_groups omega_tails = function
-    | [] -> (constr_groups, omega_tails)
-    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any}, tail) :: rest ->
-       (* note that calling insert_omega here would be wrong
-          as some groups may not have been formed yet, if the
-          first row with this head pattern comes after in the list *)
-       form_groups constr_groups (tail :: omega_tails) rest
-    | (p,r) :: rest ->
-       form_groups (insert_constr p r constr_groups) omega_tails rest in
-
-  let constr_groups, omega_tails = form_groups [] [] rows in
-  if constr_groups = [] then
-    (* no head constructors: the omega tails form a single submatrix *)
-    [omega_tails]
-  else begin
-    (* insert omega rows in all groups *)
-    let full_groups = List.fold_right insert_omega omega_tails constr_groups in
-    List.map snd full_groups
-  end
+  let extend_row columns r =
+    { r with row = columns @ r.row } in
+  let q0 = discr_pat omega rows in
+  build_specialized_submatrices ~return_omega_group:true ~extend_row q0 rows
+  |> List.map snd
 
 (* Compute stable bindings *)
 
