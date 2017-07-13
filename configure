@@ -206,8 +206,10 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
-    -cplugins|--cplugins)
+    -with-cplugins|--with-cplugins)
         with_cplugins=true;;
+    -no-cplugins|--no-cplugins)
+        ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
     -safe-string|--safe-string)
