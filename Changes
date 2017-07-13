@@ -42,7 +42,7 @@ Working version
   Mark Shinwell and Leo White)
 
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
-  (Mark Shinwell) 
+  (Mark Shinwell)
 
 ### Standard library:
 
@@ -295,6 +295,8 @@ Next major version (4.05.0):
 ----------------------------
 OCaml 4.05.0 (TBD):
 ----------------------------
+OCaml 4.05.0 (13 Jul 2017):
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
