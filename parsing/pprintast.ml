@@ -30,7 +30,7 @@ open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%'; '#' ]
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
