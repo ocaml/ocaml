@@ -13,21 +13,39 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Detection of partial matches and unused match cases. *)
+(** Detection of partial matches and unused match cases. *)
+
 open Asttypes
 open Typedtree
 open Types
 
 val omega : pattern
+(** aka. "Tpat_any" or "_"  *)
+
 val omegas : int -> pattern list
+(** [List.init (fun _ -> omega)] *)
+
 val omega_list : 'a list -> pattern list
+(** [List.map (fun _ -> omega)] *)
+
 val normalize_pat : pattern -> pattern
+(** Keep only the "head" of a pattern: all arguments are replaced by [omega], so
+    are variables. *)
+
 val const_compare : constant -> constant -> int
+(** [const_compare c1 c2] compares the actual values represented by [c1] and
+    [c2], while simply using [Pervasives.compare] would compare the
+    representations.
+
+    cf. MPR#5758 *)
 
 val le_pat : pattern -> pattern -> bool
-val le_pats : pattern list -> pattern list -> bool
+(** [le_pat p q]  means: forall V,  V matches q implies V matches p *)
 
-(* Exported compatibility functor, abstracted over constructor equality *)
+val le_pats : pattern list -> pattern list -> bool
+(** [le_pats (p1 .. pm) (q1 .. qn)] means: forall i <= m, [le_pat pi qi] *)
+
+(** Exported compatibility functor, abstracted over constructor equality *)
 module Compat :
   functor
     (Constr: sig
@@ -41,15 +59,21 @@ module Compat :
      end
 
 exception Empty
+
 val lub : pattern -> pattern -> pattern
+(** [lub p q] is a pattern that matches all values matched by [p] and [q].
+    May raise [Empty], when [p] and [q] are not compatible. *)
+
 val lubs : pattern list -> pattern list -> pattern list
+(** [lubs [p1; ...; pn] [q1; ...; qk]], where [n < k], is
+    [[lub p1 q1; ...; lub pk qk]].  *)
 
 val get_mins : ('a -> 'a -> bool) -> 'a list -> 'a list
 
-(* Those two functions recombine one pattern and its arguments:
-   For instance:
-     (_,_)::p1::p2::rem -> (p1, p2)::rem
-   The second one will replace mutable arguments by '_'
+(** Those two functions recombine one pattern and its arguments:
+    For instance:
+      (_,_)::p1::p2::rem -> (p1, p2)::rem
+    The second one will replace mutable arguments by '_'
 *)
 val set_args : pattern -> pattern list -> pattern list
 val set_args_erase_mutable : pattern -> pattern list -> pattern list
