@@ -311,6 +311,10 @@ val set_margin : int -> unit
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the right margin is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
+  If [d] is less than the current maximum indentation limit, the
+  maximum indentation limit is decreased while trying to preserve
+  a minimal ratio [max_indent/margin>=50%] and if possible
+  the current difference [margin - max_indent].
 *)
 
 val get_margin : unit -> int
@@ -327,6 +331,9 @@ val set_max_indent : int -> unit
   Nothing happens if [d] is smaller than 2.
   If [d] is too large, the limit is set to the maximum
   admissible value (which is greater than [10 ^ 9]).
+
+  If [d] is greater or equal than the current margin, it is ignored,
+  and the current maximum indentation limit is kept.
 *)
 
 val get_max_indent : unit -> int
