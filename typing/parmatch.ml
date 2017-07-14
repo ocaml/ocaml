@@ -1255,6 +1255,10 @@ let rec pressure_variants tdefs = function
           let rec try_non_omega = function
             | (_p,pss) :: rem ->
                 let ok = pressure_variants tdefs pss in
+                (* The order below matters : we want [pressure_variants] to be
+                   called on all the specialized submatrices because we might
+                   close some variant in any of them regardless of whether [ok]
+                   is true for [pss] or not *)
                 try_non_omega rem && ok
             | [] -> true
           in
