@@ -954,9 +954,6 @@ The complete list of changes is listed below.
 - MPR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
   (Damien Doligez, review by Jeremy Yallop and Leo White)
 
-- GPR#795: remove 256-character limitation on Sys.executable_name
-  (Xavier Leroy)
-
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
    review by Damien Doligez, Alain Frisch, Daniel Bünzli, Fabrice Le Fessant)
