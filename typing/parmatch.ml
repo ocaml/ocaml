@@ -1094,23 +1094,6 @@ let rec satisfiables pss qs =
   (by a guarded clause)
 *)
 
-let rec do_filter_var = function
-  | (_::ps)::rem -> ps::do_filter_var rem
-  | _ -> []
-
-let do_filter_one q pss =
-  let rec filter_rec = function
-    | ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-        filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-        filter_rec ((p1::ps)::(p2::ps)::pss)
-    | (p::ps)::pss ->
-        if simple_match q p
-        then (simple_match_args q p @ ps) :: filter_rec pss
-        else filter_rec pss
-    | _ -> [] in
-  filter_rec pss
-
 let rec do_match pss qs = match qs with
 | [] ->
     begin match pss  with
@@ -1121,10 +1104,17 @@ let rec do_match pss qs = match qs with
   | {pat_desc = Tpat_or (q1,q2,_)} ->
       do_match pss (q1::qs) || do_match pss (q2::qs)
   | {pat_desc = Tpat_any} ->
-      do_match (do_filter_var pss) qs
+      let rec remove_first_column = function
+        | (_::ps)::rem -> ps::remove_first_column rem
+        | _ -> []
+      in
+      do_match (remove_first_column pss) qs
   | _ ->
       let q0 = normalize_pat q in
-      do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
+      do_match
+        (build_specialized_submatrix ~extend_row:(@) q0
+           (simplify_first_col pss))
+        (simple_match_args q0 q @ qs)
 
 (*
   Now another satisfiable function that additionally
