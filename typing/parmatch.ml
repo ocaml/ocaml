@@ -615,22 +615,26 @@ let build_specialized_submatrices ~extend_row q rows =
 
 (* Variant related functions *)
 
-let rec set_last a = function
-    [] -> []
-  | [_] -> [a]
-  | x::l -> x :: set_last a l
+let set_last a =
+  let rec loop = function
+    | [] -> assert false
+    | [_] -> [a]
+    | x::l -> x :: loop l
+  in
+  function
+  | (_, []) -> (a, [])
+  | (first, row) -> (first, loop row)
 
-(* mark constructor lines for failure when they are incomplete *)
-let rec mark_partial = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      mark_partial ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      mark_partial ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))} :: _ as ps) :: pss ->
-      ps :: mark_partial pss
-  | ps::pss  ->
-      (set_last zero ps) :: mark_partial pss
-  | [] -> []
+(* mark constructor lines for failure when they are incomplete
+
+   Precondition: the input matrix has been simplified so that its
+   first column only contains _ or head constructors. *)
+let mark_partial =
+  List.map (function
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_) -> assert false
+    | ({pat_desc = Tpat_any }, _) as ps -> ps
+    | ps -> set_last zero ps
+  )
 
 let close_variant env row =
   let row = Btype.row_repr row in
@@ -1266,7 +1270,7 @@ let rec pressure_variants tdefs = function
               else (
                 let { constrs = partial_constrs; _ } =
                   build_specialized_submatrices ~extend_row:(@) q0
-                    (simplify_first_col (mark_partial pss))
+                    (mark_partial simplified)
                 in
                 try_non_omega partial_constrs
               )
