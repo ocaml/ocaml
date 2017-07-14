@@ -1084,6 +1084,48 @@ let rec satisfiables pss qs =
                (build_specialized_submatrix ~extend_row:(@) q0 simplified)
                (simple_match_args q0 q @ qs))
 
+(******************************************)
+(* Look for a row that matches some value *)
+(******************************************)
+
+(*
+  Useful for seeing if the example of
+  non-matched value can indeed be matched
+  (by a guarded clause)
+*)
+
+let rec do_filter_var = function
+  | (_::ps)::rem -> ps::do_filter_var rem
+  | _ -> []
+
+let do_filter_one q pss =
+  let rec filter_rec = function
+    | ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
+        filter_rec ((p::ps)::pss)
+    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
+        filter_rec ((p1::ps)::(p2::ps)::pss)
+    | (p::ps)::pss ->
+        if simple_match q p
+        then (simple_match_args q p @ ps) :: filter_rec pss
+        else filter_rec pss
+    | _ -> [] in
+  filter_rec pss
+
+let rec do_match pss qs = match qs with
+| [] ->
+    begin match pss  with
+    | []::_ -> true
+    | _ -> false
+    end
+| q::qs -> match q with
+  | {pat_desc = Tpat_or (q1,q2,_)} ->
+      do_match pss (q1::qs) || do_match pss (q2::qs)
+  | {pat_desc = Tpat_any} ->
+      do_match (do_filter_var pss) qs
+  | _ ->
+      let q0 = normalize_pat q in
+      do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
+
 (*
   Now another satisfiable function that additionally
   supplies an example of a matching value.
@@ -1622,55 +1664,16 @@ let rec initial_matrix = function
   | {c_guard=Some _} :: rem -> initial_matrix rem
   | {c_guard=None; c_lhs=p} :: rem -> [p] :: initial_matrix rem
 
-(******************************************)
-(* Look for a row that matches some value *)
-(******************************************)
-
 (*
-  Useful for seeing if the example of
-  non-matched value can indeed be matched
-  (by a guarded clause)
+   Build up a working pattern matrix by keeping
+   only the patterns which are guarded
 *)
-
 let rec initial_only_guarded = function
   | [] -> []
   | { c_guard = None; _} :: rem ->
       initial_only_guarded rem
   | { c_lhs = pat; _ } :: rem ->
       [pat] :: initial_only_guarded rem
-
-
-let rec do_filter_var = function
-  | (_::ps)::rem -> ps::do_filter_var rem
-  | _ -> []
-
-let do_filter_one q pss =
-  let rec filter_rec = function
-    | ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-        filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-        filter_rec ((p1::ps)::(p2::ps)::pss)
-    | (p::ps)::pss ->
-        if simple_match q p
-        then (simple_match_args q p @ ps) :: filter_rec pss
-        else filter_rec pss
-    | _ -> [] in
-  filter_rec pss
-
-let rec do_match pss qs = match qs with
-| [] ->
-    begin match pss  with
-    | []::_ -> true
-    | _ -> false
-    end
-| q::qs -> match q with
-  | {pat_desc = Tpat_or (q1,q2,_)} ->
-      do_match pss (q1::qs) || do_match pss (q2::qs)
-  | {pat_desc = Tpat_any} ->
-      do_match (do_filter_var pss) qs
-  | _ ->
-      let q0 = normalize_pat q in
-      do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
 
 
 (************************)
