@@ -32,9 +32,13 @@ MAKE=make SHELL=dash
 #        |          /
 #  TRAVIS_MERGE_BASE
 #
+echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
 TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
-TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD)
+case $TRAVIS_EVENT_TYPE in
+   # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
+   pull_request) TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+esac
 
 BuildAndTest () {
   case $XARCH in
