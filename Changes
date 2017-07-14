@@ -24,11 +24,11 @@ Working version
   bundles.
   (whitequark)
 
-- PR#7447, GPR#995: incorrect code generation for nested recursive bindings
+- MPR#7447, GPR#995: incorrect code generation for nested recursive bindings
   (Leo White and Jeremy Yallop, report by Stephen Dolan)
 
 - MPR#7501, GPR#1089: Consider arrays of length zero as constants
-- PR#7501, GPR#1089: Consider arrays of length zero as constants
+- MPR#7501, GPR#1089: Consider arrays of length zero as constants
   when using Flambda.
   (Pierre Chambart, review by Mark Shinwell and Leo White)
 
@@ -57,12 +57,12 @@ Working version
 - GRP#1119: Change Set (private) type to inline records.
   (Albin Coquereau)
 
-- PR#1771, PR#7309, GPR#1026: Add update to maps. Allows to update a
+- MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
   (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
   Gabriel Scherer)
 
-- PR#7515, GPR#1147: Arg.align now optionally uses the tab character '\t' to
+- MPR#7515, GPR#1147: Arg.align now optionally uses the tab character '\t' to
   separate the "unaligned" and "aligned" parts of the documentation string. If
   tab is not present, then space is used as a fallback. Allows to have spaces in
   the unaligned part, which is useful for Tuple options.
@@ -107,32 +107,32 @@ Working version
 
 ### Manual and documentation:
 
-- PR#6548: remove obsolete limitation in the description of private
+- MPR#6548: remove obsolete limitation in the description of private
   type abbreviations
   (Florian Angeletti, suggestion by Leo White)
 
-- PR#6676, GPR#1110: move record notation to tutorial
+- MPR#6676, GPR#1110: move record notation to tutorial
   (Florian Angeletti, review by Gabriel Scherer)
 
-- PR#6676, GPR#1112: move local opens to tutorial
+- MPR#6676, GPR#1112: move local opens to tutorial
   (Florian Angeletti)
 
-- PR#6676, GPR#1153: move overriding class definitions to reference
+- MPR#6676, GPR#1153: move overriding class definitions to reference
   manual and tutorial
   (Florian Angeletti)
 
-- PR#6709: document the associativity and precedence level of
+- MPR#6709: document the associativity and precedence level of
   pervasive operators
   (Florian Angeletti, review by David Allsopp)
 
-- PR#7254, GPR#1096: Rudimentary documentation of ocamlnat
+- MPR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
-- PR#7507: Align the description of the printf conversion
+- MPR#7507: Align the description of the printf conversion
   specification "%g" with the ISO C90 description.
   (Florian Angeletti)
 
-- PR#7551, GPR#1194 : make the final ";;" potentially optional in
+- MPR#7551, GPR#1194 : make the final ";;" potentially optional in
   caml_example
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
@@ -161,18 +161,18 @@ Working version
   linked names not namespaced with caml_
   (Stephen Dolan)
 
-- PR#6928: ocamldoc, do not introduce an empty <h1> in index.html when
+- MPR#6928: ocamldoc, do not introduce an empty <h1> in index.html when
   no -title has been provided
   (Pierre Boutillier)
 
-* PR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
+* MPR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
   backend
   (Florian Angeletti, request and review by Daniel Bünzli )
 
-* PR#7352,PR#7353: ocamldoc, better paragraphs in html output
+* MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
-- PR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
+- MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
 
 - GPR#1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
@@ -188,7 +188,7 @@ Working version
 
 ### Compiler distribution build system
 
-- PR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
+- MPR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
 
 - GPR#558: enable shared library and natdynlink support on more Linux
@@ -209,10 +209,10 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- PR#6826, GPR#828, GPR#834: improve compilation time for open
+- MPR#6826, GPR#828, GPR#834: improve compilation time for open
   (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
-- PR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
+- MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
   also displays memory allocation and consumption
   (Valentin Gatien-Baron, report by Gabriel Scherer)
 
@@ -239,55 +239,56 @@ Working version
    Gabriel Radanne and Gabriel Scherer)
 
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
+- MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
-- PR#6587: only elide Pervasives from printed type paths in unambiguous context
+- MPR#6587: only elide Pervasives from printed type paths in unambiguous context
   (Florian Angeletti and Jacques Garrigue)
 
-- PR#6934: nonrec misbehaves with GADTs
+- MPR#6934: nonrec misbehaves with GADTs
   (Jacques Garrigue, report by Markus Mottl)
 
-- PR#7070, GPR#1139: Unexported values can cause non-generalisable variables
+- MPR#7070, GPR#1139: Unexported values can cause non-generalisable variables
   error
   (Leo White)
 
-- PR#7261: Warn on type constraints in GADT declarations
+- MPR#7261: Warn on type constraints in GADT declarations
   (Jacques Garrigue, report by Fabrice Le Botlan)
 
-- PR#7321: Private type in signature clashes with type definition via
+- MPR#7321: Private type in signature clashes with type definition via
   functor instantiation
   (Jacques Garrigue, report by Markus Mottl)
 
-- PR#7372, GPR#834: fix type-checker bug with GADT and inline records
+- MPR#7372, GPR#834: fix type-checker bug with GADT and inline records
   (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
-- PR#7344: Inconsistent behavior with type annotations on let
+- MPR#7344: Inconsistent behavior with type annotations on let
   (Jacques Garrigue, report by Leo White)
 
-- PR#7468: possible GC problem in caml_alloc_sprintf
+- MPR#7468: possible GC problem in caml_alloc_sprintf
   (Xavier Leroy, discovery by Olivier Andrieu)
 
-- PR#7496: Fixed conjunctive polymorphic variant tags do not unify
+- MPR#7496: Fixed conjunctive polymorphic variant tags do not unify
   with themselves
   (Jacques Garrigue, report by Leo White)
 
-- PR#7506: pprintast ignores attributes in tails of a list
+- MPR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
-- PR#7543: short-paths printtyp can fail on packed type error messages
+- MPR#7543: short-paths printtyp can fail on packed type error messages
   (Florian Angeletti)
 
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
-- PR#7513: List.compare_length_with mishandles negative numbers / overflow
+- MPR#7513: List.compare_length_with mishandles negative numbers / overflow
   (Fabrice Le Fessant, report by Jeremy Yallop)
 
-- PR#7531a: Default argument is not evaluated even after passing a
+- MPR#7531a: Default argument is not evaluated even after passing a
   non-labeled argument
   (Jacques Garrigue, report by Stephen Dolan)
 
-- PR#7563, GPR#1210: code generation bug when a module alias and
+- MPR#7563, GPR#1210: code generation bug when a module alias and
   an extension constructor have the same name in the same module
   (Gabriel Scherer, report by Manuel Fähndrich,
    review by Jacques Garrigue and Leo White)
@@ -950,6 +951,7 @@ The complete list of changes is listed below.
   of similar debugging information location entries
   (Mark Shinwell)
 - PR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
+- MPR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
   (Damien Doligez, review by Jeremy Yallop and Leo White)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
