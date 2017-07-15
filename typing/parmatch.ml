@@ -979,15 +979,6 @@ let build_other ext env = match env with
 | [] -> omega
 | _ -> omega
 
-(*
-  Core function :
-  Is the last row of pattern matrix pss + qs satisfiable ?
-  That is :
-    Does there exists at least one value vector, es such that :
-     1- for all ps in pss ps # es (ps and es are not compatible)
-     2- qs <= es                  (es matches qs)
-*)
-
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
@@ -1004,6 +995,14 @@ and has_instances = function
   | [] -> true
   | q::rem -> has_instance q && has_instances rem
 
+(*
+  Core function :
+  Is the last row of pattern matrix pss + qs satisfiable ?
+  That is :
+    Does there exists at least one value vector, es such that :
+     1- for all ps in pss ps # es (ps and es are not compatible)
+     2- qs <= es                  (es matches qs)
+*)
 let rec satisfiable pss qs = match pss with
 | [] -> has_instances qs
 | _  ->
@@ -1039,22 +1038,30 @@ let rec satisfiable pss qs = match pss with
         satisfiable (build_specialized_submatrix ~extend_row:(@) q0 simplified)
           (simple_match_args q0 q @ qs)
 
-(* Also return the remaining cases, to enable GADT handling *)
-let rec satisfiables pss qs =
+(* While [satisfiable] only checks whether the last row of [pss + qs] is
+   satisfiable, this function returns the (possibly empty) list of vectors [es]
+   which verify:
+     1- for all ps in pss, ps # es (ps and es are not compatible)
+     2- qs <= es                   (es matches qs)
+
+   This is done to enable GADT handling *)
+let rec list_satisfying_vectors pss qs =
   match pss with
   | [] -> if has_instances qs then [qs] else []
   | _  ->
       match qs with
       | [] -> []
       | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
-          satisfiables pss (q1::qs) @ satisfiables pss (q2::qs)
+          list_satisfying_vectors pss (q1::qs) @
+          list_satisfying_vectors pss (q2::qs)
       | {pat_desc = Tpat_alias(q,_,_)}::qs ->
-          satisfiables pss (q::qs)
+          list_satisfying_vectors pss (q::qs)
       | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
           let simplified = simplify_first_col pss in
           let q0 = discr_pat omega simplified in
           let wild default_matrix p =
-            List.map (fun qs -> p::qs) (satisfiables default_matrix qs)
+            List.map (fun qs -> p::qs)
+              (list_satisfying_vectors default_matrix qs)
           in
           begin match
             build_specialized_submatrices ~extend_row:(@) q0 simplified
@@ -1065,12 +1072,17 @@ let rec satisfiables pss qs =
           | { default; constrs = ((p,_)::_ as constrs) } ->
               let for_constrs () =
                 List.flatten (
-                List.map
-                  (fun (p,pss) ->
-                    if is_absent_pat p then [] else
-                    List.map (set_args p)
-                      (satisfiables pss (simple_match_args p omega @ qs)))
-                  constrs )
+                  List.map (fun (p,pss) ->
+                    if is_absent_pat p then
+                      []
+                    else
+                      let witnesses =
+                        list_satisfying_vectors pss
+                          (simple_match_args p omega @ qs)
+                      in
+                      List.map (set_args p) witnesses
+                  ) constrs
+                )
               in
               if full_match false constrs then for_constrs () else
               match p.pat_desc with
@@ -1085,7 +1097,7 @@ let rec satisfiables pss qs =
           let simplified = simplify_first_col pss in
           let q0 = discr_pat q simplified in
           List.map (set_args q0)
-            (satisfiables
+            (list_satisfying_vectors
                (build_specialized_submatrix ~extend_row:(@) q0 simplified)
                (simple_match_args q0 q @ qs))
 
@@ -1921,7 +1933,7 @@ let check_unused pred casel =
                   not(refute || Warnings.is_active Warnings.Unreachable_case) in
                 if skip then r else
                 (* Then look for empty patterns *)
-                let sfs = satisfiables pss qs in
+                let sfs = list_satisfying_vectors pss qs in
                 if sfs = [] then Unused else
                 let sfs =
                   List.map (function [u] -> u | _ -> assert false) sfs in
