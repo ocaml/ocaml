@@ -761,7 +761,7 @@ let complete_tags nconsts nconstrs tags =
   done ;
   r
 
-(* build a pattern from a constructor list *)
+(* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
    Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
@@ -774,6 +774,7 @@ let rec orify_many = function
 | [x] -> x
 | x :: xs -> orify x (orify_many xs)
 
+(* build an or-pattern from a constructor list *)
 let pat_of_constrs ex_pat cstrs =
   if cstrs = [] then raise Empty else
   orify_many (List.map (pat_of_constr ex_pat) cstrs)
@@ -853,7 +854,7 @@ let build_other_constant proj make first next p env =
 
 (*
   Builds a pattern that is incompatible with all patterns in
-  in the first column of env
+  the first column of env
 *)
 
 let build_other ext env = match env with
