@@ -1927,7 +1927,16 @@ let check_unused pred casel =
               (* Do not warn for unused [pat -> .] *)
               if r = Unused && refute then () else
               let r =
-                (* Do not refine if there are no other lines *)
+                (* Do not refine if either:
+                   - we already know the clause is unused
+                   - the clause under consideration is not a refutation clause
+                     and either:
+                     + there are no other lines
+                     + we do not care whether the types prevent this clause to be
+                       reached.
+                     If the clause under consideration *is* a refutation clause
+                     then we do need to check more carefully whether it can be
+                     refuted or not.  *)
                 let skip =
                   r = Unused || (not refute && pref = []) ||
                   not(refute || Warnings.is_active Warnings.Unreachable_case) in
