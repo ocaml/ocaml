@@ -7313,3 +7313,12 @@ class type ct =
     method f : t
   end
 ;;
+
+(* M.(::) notation *)
+module Exotic_list = struct
+  module Inner = struct
+    type ('a,'b) t = [] | (::) of 'a * 'b *  ('a,'b) t
+  end
+
+  let Inner.(::)(x,y, Inner.[]) = Inner.(::)(1,"one",Inner.[])
+end
