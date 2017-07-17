@@ -1948,10 +1948,12 @@ let rec type_exp ?recarg env sexp =
 
 and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_enter_scope ();
-  Builtin_attributes.warning_attribute sexp.pexp_attributes;
-  let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
-  Builtin_attributes.warning_leave_scope ();
+  let exp =
+    Builtin_attributes.warning_scope sexp.pexp_attributes
+      (fun () ->
+         type_expect_ ?in_function ?recarg env sexp ty_expected
+      )
+  in
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
@@ -4115,14 +4117,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               generalize_structure ty'
             end;
             let exp =
-              Builtin_attributes.with_warning_attribute pvb_attributes
+              Builtin_attributes.warning_scope pvb_attributes
                   (fun () -> type_expect exp_env sexp ty')
             in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
         | _ ->
-            Builtin_attributes.with_warning_attribute pvb_attributes (fun () ->
+            Builtin_attributes.warning_scope pvb_attributes (fun () ->
               type_expect exp_env sexp pat.pat_type))
       spat_sexp_list pat_slot_list in
   current_slot := None;
@@ -4130,7 +4132,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
     (* See PR#6677 *)
-    Builtin_attributes.with_warning_attribute pvb_attributes
+    Builtin_attributes.warning_scope pvb_attributes
       (fun () ->
          Location.prerr_warning pvb_pat.ppat_loc Warnings.Unused_rec_flag
       )

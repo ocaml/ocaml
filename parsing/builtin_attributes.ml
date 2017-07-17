@@ -141,18 +141,7 @@ let emit_external_warnings =
   }
 
 
-let warning_scope = ref []
-
-let warning_enter_scope () =
-  warning_scope := (Warnings.backup ()) :: !warning_scope
-let warning_leave_scope () =
-  match !warning_scope with
-  | [] -> assert false
-  | hd :: tl ->
-      Warnings.restore hd;
-      warning_scope := tl
-
-let warning_attribute attrs =
+let warning_attribute =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
@@ -167,26 +156,23 @@ let warning_attribute attrs =
           (Warnings.Attribute_payload
              (txt, "A single string literal is expected"))
   in
-  List.iter
-    (function
-      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
-          process loc txt false payload
-      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
-          process loc txt true payload
-      | _ ->
-          ()
-    )
-    attrs
+  function
+  | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
+      process loc txt false payload
+  | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
+      process loc txt true payload
+  | _ ->
+      ()
 
-let with_warning_attribute attrs f =
+let warning_scope attrs f =
+  let prev = Warnings.backup () in
   try
-    warning_enter_scope ();
-    warning_attribute attrs;
+    List.iter warning_attribute attrs;
     let ret = f () in
-    warning_leave_scope ();
+    Warnings.restore prev;
     ret
   with exn ->
-    warning_leave_scope ();
+    Warnings.restore prev;
     raise exn
 
 

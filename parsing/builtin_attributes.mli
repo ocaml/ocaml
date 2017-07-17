@@ -44,10 +44,21 @@ val check_deprecated_mutable_inclusion:
 
 val error_of_extension: Parsetree.extension -> Location.error
 
-val warning_enter_scope: unit -> unit
-val warning_leave_scope: unit -> unit
-val warning_attribute: Parsetree.attributes -> unit
-val with_warning_attribute: Parsetree.attributes -> (unit -> 'a) -> 'a
+val warning_attribute: Parsetree.attribute -> unit
+  (** Apply warning settings from the specified attribute.
+      "ocaml.warning"/"ocaml.warnerror" (and variants without the prefix)
+      are processed and other attributes are ignored. *)
+
+val warning_scope: Parsetree.attributes -> (unit -> 'a) -> 'a
+  (** Execute a function in a new scope for warning settings.  This
+      means that the effect of any call to [warning_attribute] during
+      the execution of this function will be discarded after
+      execution.
+
+      The function also takes a list of attributes which are processed
+      with [warning_attribute] in the fresh scope before the function
+      is executed.
+  *)
 
 val emit_external_warnings: Ast_iterator.iterator
 
