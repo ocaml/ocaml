@@ -982,6 +982,14 @@ exception Need_backtrack
    explode > 0 => explode Ppat_any for gadts *)
 let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
     sp expected_ty k =
+  Builtin_attributes.warning_scope sp.ppat_attributes
+    (fun () ->
+       type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
+         sp expected_ty k
+    )
+
+and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
+    sp expected_ty k =
   let mode' = if mode = Splitting_or then Normal else mode in
   let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode')
       ?(explode=explode) ?(env=env) =
