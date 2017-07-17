@@ -1,0 +1,10 @@
+File "w03.ml", line 11, characters 10-13:
+Warning 3: deprecated: X.t
+File "w03.ml", line 12, characters 9-12:
+Warning 3: deprecated: X.x
+File "w03.ml", line 16, characters 40-43:
+Warning 3: deprecated: X.t
+File "w03.ml", line 19, characters 9-12:
+Warning 3: deprecated: X.t
+File "w03.ml", line 21, characters 15-17:
+Warning 3: deprecated: t7
