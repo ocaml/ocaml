@@ -140,20 +140,17 @@ let pretty_pat p =
 
 type matrix = pattern list list
 
-let pretty_line ps =
-  List.iter
-    (fun p ->
-      top_pretty Format.str_formatter p ;
-      prerr_string " <" ;
-      prerr_string (Format.flush_str_formatter ()) ;
-      prerr_string ">")
-    ps
+let pretty_line fmt =
+  List.iter (fun p ->
+    Format.fprintf fmt " <";
+    top_pretty fmt p;
+    Format.fprintf fmt ">";
+  )
 
-let pretty_matrix (pss : matrix) =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun ps ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
+let pretty_matrix fmt (pss : matrix) =
+  Format.fprintf fmt "begin matrix\n" ;
+  List.iter (fun ps ->
+    pretty_line fmt ps ;
+    Format.fprintf fmt "\n"
+  ) pss;
+  Format.fprintf fmt "end matrix\n%!"

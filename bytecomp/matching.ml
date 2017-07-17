@@ -71,9 +71,9 @@ let pretty_ctx ctx =
   List.iter
     (fun {left=left ; right=right} ->
       prerr_string "LEFT:" ;
-      pretty_line left ;
+      pretty_line Format.err_formatter left ;
       prerr_string " RIGHT:" ;
-      pretty_line right ;
+      pretty_line Format.err_formatter right ;
       prerr_endline "")
     ctx
 
@@ -164,7 +164,7 @@ let filter_matrix matcher pss =
         end
     | [] -> []
     | _ ->
-        pretty_matrix pss ;
+        pretty_matrix Format.err_formatter pss ;
         fatal_error "Matching.filter_matrix" in
   filter_rec pss
 
@@ -417,7 +417,7 @@ let pretty_def def =
   List.iter
     (fun (pss,i) ->
       Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix pss)
+      pretty_matrix Format.err_formatter pss)
     def ;
   prerr_endline "+++++++++++++++++++++"
 
@@ -437,7 +437,7 @@ let rec pretty_precompiled = function
   | PmOr x ->
       prerr_endline "++++ OR ++++" ;
       pretty_pm x.body ;
-      pretty_matrix x.or_matrix ;
+      pretty_matrix Format.err_formatter x.or_matrix ;
       List.iter
         (fun (_,i,_,pm) ->
           eprintf "++ Handler %d ++\n" i ;
