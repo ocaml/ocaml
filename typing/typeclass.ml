@@ -400,8 +400,13 @@ let add_val lab (mut, virt, ty) val_sig =
   in
   Vars.add lab (mut, virt, ty) val_sig
 
-let rec class_type_field env self_type meths
+let rec class_type_field env self_type meths arg ctf =
+  Builtin_attributes.warning_scope ctf.pctf_attributes
+    (fun () -> class_type_field_aux env self_type meths arg ctf)
+
+and class_type_field_aux env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
+
   let loc = ctf.pctf_loc in
   let mkctf desc =
     { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
@@ -491,6 +496,10 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   }
 
 and class_type env scty =
+  Builtin_attributes.warning_scope scty.pcty_attributes
+    (fun () -> class_type_aux env scty)
+
+and class_type_aux env scty =
   let cltyp desc typ =
     {
      cltyp_desc = desc;
@@ -559,10 +568,13 @@ let class_type env scty =
 
 (*******************************)
 
-let rec class_field self_loc cl_num self_type meths vars
+let rec class_field self_loc cl_num self_type meths vars arg cf =
+  Builtin_attributes.warning_scope cf.pcf_attributes
+    (fun () -> class_field_aux self_loc cl_num self_type meths vars arg cf)
+
+and class_field_aux self_loc cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher,
-     local_meths, local_vals)
-  cf =
+     local_meths, local_vals) cf =
   let loc = cf.pcf_loc in
   let mkcf desc =
     { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes }
@@ -892,6 +904,10 @@ and class_structure cl_num final val_env met_env loc
     cstr_meths = meths}, sign (* redondant, since already in cstr_type *)
 
 and class_expr cl_num val_env met_env scl =
+  Builtin_attributes.warning_scope scl.pcl_attributes
+    (fun () -> class_expr_aux cl_num val_env met_env scl)
+
+and class_expr_aux cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid.txt in

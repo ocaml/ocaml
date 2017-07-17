@@ -1307,7 +1307,11 @@ let transl_type_decl env rec_flag sdecl_list =
         id, None
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration temp_env name_sdecl id in
+    current_slot := slot;
+    Builtin_attributes.warning_scope
+      name_sdecl.ptype_attributes
+      (fun () -> transl_declaration temp_env name_sdecl id)
+  in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
@@ -1765,6 +1769,10 @@ let transl_value_decl env loc valdecl =
     }
   in
   desc, newenv
+
+let transl_value_decl env loc valdecl =
+  Builtin_attributes.warning_scope valdecl.pval_attributes
+    (fun () -> transl_value_decl env loc valdecl)
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)

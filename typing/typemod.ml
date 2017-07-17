@@ -93,7 +93,11 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
 
 let type_open ?toplevel env sod =
   let (path, newenv) =
-    type_open_ ?toplevel sod.popen_override env sod.popen_loc sod.popen_lid
+    Builtin_attributes.warning_scope sod.popen_attributes
+      (fun () ->
+         type_open_ ?toplevel sod.popen_override env sod.popen_loc
+           sod.popen_lid
+      )
   in
   let od =
     {
@@ -331,6 +335,7 @@ let map_ext fn exts rem =
    making them abstract otherwise. *)
 
 let rec approx_modtype env smty =
+  (* Need to process warning attributes here ?? *)
   match smty.pmty_desc with
     Pmty_ident lid ->
       let (path, _info) = Typetexp.find_modtype env smty.pmty_loc lid.txt in
@@ -355,11 +360,14 @@ let rec approx_modtype env smty =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and approx_module_declaration env pmd =
-  {
-    Types.md_type = approx_modtype env pmd.pmd_type;
-    md_attributes = pmd.pmd_attributes;
-    md_loc = pmd.pmd_loc;
-  }
+  Builtin_attributes.warning_scope pmd.pmd_attributes
+    (fun () ->
+       {
+         Types.md_type = approx_modtype env pmd.pmd_type;
+         md_attributes = pmd.pmd_attributes;
+         md_loc = pmd.pmd_loc;
+       }
+    )
 
 and approx_sig env ssg =
   match ssg with
@@ -400,12 +408,15 @@ and approx_sig env ssg =
           let (_path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
-          let smty = sincl.pincl_mod in
-          let mty = approx_modtype env smty in
-          let sg = Subst.signature Subst.identity
-                     (extract_sig env smty.pmty_loc mty) in
-          let newenv = Env.add_signature sg env in
-          sg @ approx_sig newenv srem
+          Builtin_attributes.warning_scope sincl.pincl_attributes
+            (fun () ->
+               let smty = sincl.pincl_mod in
+               let mty = approx_modtype env smty in
+               let sg = Subst.signature Subst.identity
+                   (extract_sig env smty.pmty_loc mty) in
+               let newenv = Env.add_signature sg env in
+               sg @ approx_sig newenv srem
+            )
       | Psig_class sdecls | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
@@ -535,6 +546,10 @@ let mksig desc env loc =
 (* let signature sg = List.map (fun item -> item.sig_type) sg *)
 
 let rec transl_modtype env smty =
+  Builtin_attributes.warning_scope smty.pmty_attributes
+    (fun () -> transl_modtype_aux env smty)
+
+and transl_modtype_aux env smty =
   let loc = smty.pmty_loc in
   match smty.pmty_desc with
     Pmty_ident lid ->
@@ -591,8 +606,7 @@ and transl_signature env sg =
         match item.psig_desc with
         | Psig_value sdesc ->
             let (tdesc, newenv) =
-              Builtin_attributes.warning_scope sdesc.pval_attributes
-                (fun () -> Typedecl.transl_value_decl env item.psig_loc sdesc)
+              Typedecl.transl_value_decl env item.psig_loc sdesc
             in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value tdesc) env loc :: trem,
@@ -669,8 +683,7 @@ and transl_signature env sg =
             final_env
         | Psig_modtype pmtd ->
             let newenv, mtd, sg =
-              Builtin_attributes.warning_scope pmtd.pmtd_attributes
-                (fun () -> transl_modtype_decl names env pmtd)
+              transl_modtype_decl names env pmtd
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
@@ -759,7 +772,11 @@ and transl_signature env sg =
        sg
     )
 
-and transl_modtype_decl names env
+and transl_modtype_decl names env pmtd =
+  Builtin_attributes.warning_scope pmtd.pmtd_attributes
+    (fun () -> transl_modtype_decl_aux names env pmtd)
+
+and transl_modtype_decl_aux names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   check_name check_modtype names pmtd_name;
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
@@ -1076,6 +1093,10 @@ let wrap_constraint env arg mty explicit =
 (* Type a module value expression *)
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
+  Builtin_attributes.warning_scope smod.pmod_attributes
+    (fun () -> type_module_aux ~alias sttn funct_body anchor env smod)
+
+and type_module_aux ~alias sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let path =
@@ -1383,8 +1404,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
         let newenv, mtd, sg =
-          Builtin_attributes.warning_scope pmtd.pmtd_attributes
-            (fun () -> transl_modtype_decl names env pmtd)
+          transl_modtype_decl names env pmtd
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
