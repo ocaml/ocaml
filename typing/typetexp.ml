@@ -522,7 +522,10 @@ and transl_type_aux env policy styp =
       let add_field = function
           Rtag (l, attrs, c, stl) ->
             name := None;
-            let tl = List.map (transl_type env policy) stl in
+            let tl =
+              Builtin_attributes.warning_scope attrs
+                (fun () -> List.map (transl_type env policy) stl)
+            in
             let f = match present with
               Some present when not (List.mem l.txt present) ->
                 let ty_tl = List.map (fun cty -> cty.ctyp_type) tl in
@@ -667,7 +670,10 @@ and transl_fields env policy o fields =
       Hashtbl.add hfields l ty in
   let add_field = function
     | Otag (s, a, ty1) -> begin
-        let ty1 = transl_poly_type env policy ty1 in
+        let ty1 =
+          Builtin_attributes.warning_scope a
+            (fun () -> transl_poly_type env policy ty1)
+        in
         let field = OTtag (s, a, ty1) in
         add_typed_field ty1.ctyp_loc s.txt ty1.ctyp_type;
         field

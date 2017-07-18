@@ -14,7 +14,7 @@ end;;
 [%%expect{|
 Line _, characters 9-10:
 Warning 3: deprecated: t
-module X : sig type t type s val x : t end
+module X : sig type t type s type u val x : t end
 |}]
 
 type t = X.t
@@ -33,7 +33,7 @@ Warning 3: deprecated: X.x
 val x : X.t = <abstr>
 |}]
 
-(* Warning control on type declaration *)
+(* Type declarations *)
 
 type t = X.t * X.s
 ;;
@@ -77,7 +77,7 @@ type t = A of t
 type t = A of t
 |}]
 
-(* Warning control on type expressions *)
+(* Type expressions *)
 
 type t = (X.t * X.s) [@ocaml.warning "-3"]
 ;;
@@ -101,7 +101,7 @@ type t = A of (t [@ocaml.warning "-3"])
 type t = A of t
 |}]
 
-(* Warning control on pattern expressions *)
+(* Pattern expressions *)
 
 let _ = function (_ : X.t) -> ()
 ;;
@@ -118,7 +118,7 @@ let _ = function (_ : X.t)[@ocaml.warning "-3"] -> ()
 |}]
 
 
-(* Warning control on module expression and module declaration *)
+(* Module expressions and module declarations *)
 
 module M = struct let x = X.x end
 ;;
@@ -173,7 +173,7 @@ Warning 3: deprecated: X.x
 module rec M : sig val x : X.t end
 |}]
 
-(* Warning control on module type expression and module type declaration *)
+(* Module type expressions and module type declarations *)
 
 module type S = sig type t = X.t end
 ;;
@@ -196,7 +196,7 @@ module type S = sig type t = X.t end
 |}]
 
 
-(* Warning control on class expressions, class declarations and class fields *)
+(* Class expressions, class declarations and class fields *)
 
 class c = object method x = X.x end
 ;;
@@ -224,7 +224,7 @@ class c = object method x = X.x [@@ocaml.warning "-3"] end
 class c : object method x : X.t end
 |}]
 
-(* Warning control on class type expressions, class type declarations
+(* Class type expressions, class type declarations
    and class type fields *)
 
 class type c = object method x : X.t end
@@ -272,7 +272,24 @@ external foo : unit -> X.t = "foo"
 |}]
 
 
-(* open / include *)
+(* Eval *)
+;;
+X.x
+;;
+[%%expect{|
+Line _, characters 0-3:
+Warning 3: deprecated: X.x
+- : X.t = <abstr>
+|}]
+
+;;
+X.x [@@ocaml.warning "-3"]
+;;
+[%%expect{|
+- : X.t = <abstr>
+|}]
+
+(* Open / include *)
 
 module D = struct end[@@ocaml.deprecated]
 
@@ -302,11 +319,12 @@ include D [@@ocaml.warning "-3"]
 |}]
 
 
-(* type extension *)
+(* Type extensions *)
 
 type ext = ..
 ;;
 [%%expect{|
+type ext = ..
 |}]
 
 type ext +=
@@ -315,6 +333,9 @@ type ext +=
   | C of X.u [@ocaml.warning "-3"]
 ;;
 [%%expect{|
+Line _, characters 9-12:
+Warning 3: deprecated: X.t
+type ext += A of X.t | B of X.s | C of X.u
 |}]
 
 type ext +=
@@ -322,21 +343,26 @@ type ext +=
   [@@ocaml.warning "-3"]
 ;;
 [%%expect{|
+type ext += C of X.t
 |}]
 
 
 exception Foo of X.t
 ;;
 [%%expect{|
+Line _, characters 17-20:
+Warning 3: deprecated: X.t
+exception Foo of X.t
 |}]
 
 exception Foo of X.t [@ocaml.warning "-3"]
 ;;
 [%%expect{|
+exception Foo of X.t
 |}]
 
 
-(* Label/constructor declaration *)
+(* Labels/constructors/fields *)
 
 type t =
   | A of X.t
@@ -344,9 +370,12 @@ type t =
   | C of (X.u [@ocaml.warning "-3"])
 ;;
 [%%expect{|
+Line _, characters 9-12:
+Warning 3: deprecated: X.t
+type t = A of X.t | B of X.s | C of X.u
 |}]
 
-type s =
+type t =
   {
     a: X.t;
     b: X.s [@ocaml.warning "-3"];
@@ -354,4 +383,35 @@ type s =
   }
 ;;
 [%%expect{|
+Line _, characters 7-10:
+Warning 3: deprecated: X.t
+type t = { a : X.t; b : X.s; c : X.u; }
+|}]
+
+
+type t =
+  <
+    a: X.t;
+    b: X.s [@ocaml.warning "-3"];
+    c: (X.u [@ocaml.warning "-3"]);
+  >
+;;
+[%%expect{|
+Line _, characters 7-10:
+Warning 3: deprecated: X.t
+type t = < a : X.t; b : X.s; c : X.u >
+|}]
+
+
+type t =
+  [
+  | `A of X.t
+  | `B of X.s [@ocaml.warning "-3"]
+  | `C of (X.u [@ocaml.warning "-3"])
+  ]
+;;
+[%%expect{|
+Line _, characters 10-13:
+Warning 3: deprecated: X.t
+type t = [ `A of X.t | `B of X.s | `C of X.u ]
 |}]
