@@ -1598,8 +1598,6 @@ Some attributes are understood by the type-checker:
  in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggered by the ``ppwarning'' attribute (see below)
- are issued using the global warning configuration.
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.
