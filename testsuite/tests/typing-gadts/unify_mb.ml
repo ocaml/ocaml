@@ -232,10 +232,10 @@ let t' = subst' d t
 [%%expect{|
 val s : 'a succ succ succ term = Fork (Var FZ, Fork (Var (FS (FS FZ)), Leaf))
 val t : 'a succ succ term = Fork (Var (FS FZ), Var (FS FZ))
-val d : '_a succ succ succ ealist =
+val d : '_weak1 succ succ succ ealist =
   EAlist (Asnoc (Asnoc (Anil, Fork (Var FZ, Leaf), FZ), Var FZ, FZ))
-val s' : '_a succ succ succ term =
+val s' : '_weak1 succ succ succ term =
   Fork (Fork (Var FZ, Leaf), Fork (Var FZ, Leaf))
-val t' : '_a succ succ succ term =
+val t' : '_weak1 succ succ succ term =
   Fork (Fork (Var FZ, Leaf), Fork (Var FZ, Leaf))
 |}];;

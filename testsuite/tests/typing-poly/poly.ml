@@ -1459,8 +1459,9 @@ let x = f 3;;
 [%%expect{|
 type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
-val x : ('_a, '_a) foo = 3
+val x : ('_weak1, '_weak1) foo = 3
 |}]
+
 
 (* PR#7344*)
 let rec f : unit -> < m: 'a. 'a -> 'a> = fun () ->

@@ -1,3 +1,4 @@
+#!/bin/bash
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -16,6 +17,28 @@
 PREFIX=~/local
 
 MAKE=make SHELL=dash
+
+# TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
+# TRAVIS_CUR_HEAD is <commit1>
+# TRAVIS_PR_HEAD is <commit2>
+#
+# The following diagram illustrates the relationship between
+# the commits:
+#
+#      (trunk)         (pr branch)
+#  TRAVIS_CUR_HEAD   TRAVIS_PR_HEAD
+#        |            /
+#        …           …
+#        |          /
+#  TRAVIS_MERGE_BASE
+#
+echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
+TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
+case $TRAVIS_EVENT_TYPE in
+   # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
+   pull_request) TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+esac
 
 BuildAndTest () {
   case $XARCH in
@@ -98,12 +121,12 @@ on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code Changes > /dev/null \
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes > /dev/null \
   && CheckNoChangesMessage || echo pass
 }
 
 CheckNoChangesMessage () {
-  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 $TRAVIS_COMMIT_RANGE)"
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
   then echo pass
   elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
        | grep 'no-change-entry-needed')"
@@ -132,7 +155,7 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code testsuite > /dev/null \
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code testsuite > /dev/null \
   && exit 1 || echo pass
 }
 
