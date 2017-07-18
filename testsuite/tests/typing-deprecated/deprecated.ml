@@ -415,3 +415,70 @@ Line _, characters 10-13:
 Warning 3: deprecated: X.t
 type t = [ `A of X.t | `B of X.s | `C of X.u ]
 |}]
+
+
+(* Test for ocaml.ppwarning, and its interactions with ocaml.warning *)
+
+
+[@@@ocaml.ppwarning "Pp warning!"]
+;;
+[%%expect{|
+Line _, characters 20-33:
+Warning 22: Pp warning!
+|}]
+
+
+let x = () [@ocaml.ppwarning "Pp warning 1!"]
+    [@@ocaml.ppwarning  "Pp warning 2!"]
+;;
+[%%expect{|
+Line _, characters 24-39:
+Warning 22: Pp warning 2!
+Line _, characters 29-44:
+Warning 22: Pp warning 1!
+val x : unit = ()
+|}]
+
+type t = unit
+    [@ocaml.ppwarning "Pp warning!"]
+;;
+[%%expect{|
+Line _, characters 22-35:
+Warning 22: Pp warning!
+type t = unit
+|}]
+
+module X = struct
+  [@@@ocaml.warning "-22"]
+
+  [@@@ocaml.ppwarning "Pp warning1!"]
+
+  [@@@ocaml.warning "+22"]
+
+  [@@@ocaml.ppwarning "Pp warning2!"]
+end
+;;
+[%%expect{|
+Line _, characters 22-36:
+Warning 22: Pp warning2!
+module X : sig  end
+|}]
+
+let x = ((() [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
+;;
+[%%expect{|
+Line _, characters 31-46:
+Warning 22: Pp warning 1!
+val x : unit = ()
+|}]
+
+type t = ((unit [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
+  [@@ocaml.ppwarning "Pp warning 3!"]
+;;
+[%%expect{|
+Line _, characters 21-36:
+Warning 22: Pp warning 3!
+Line _, characters 34-49:
+Warning 22: Pp warning 1!
+type t = unit
+|}]

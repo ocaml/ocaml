@@ -117,30 +117,6 @@ let rec deprecated_of_str = function
   | _ -> None
 
 
-let emit_external_warnings =
-  (* Note: this is run as a preliminary pass when type-checking an
-     interface or implementation.  This allows to cover all kinds of
-     attributes, but the drawback is that it doesn't take local
-     configuration of warnings (with '@@warning'/'@@warnerror'
-     attributes) into account.  We should rather check for
-     'ppwarning' attributes during the actual type-checking, making
-     sure to cover all contexts (easier and more ugly alternative:
-     duplicate here the logic which control warnings locally). *)
-  let open Ast_iterator in
-  {
-    default_iterator with
-    attribute = (fun _ a ->
-        match a with
-        | {txt="ocaml.ppwarning"|"ppwarning"},
-          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (Pconst_string (s, _))},_);
-                pstr_loc}] ->
-            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
-        | _ -> ()
-      )
-  }
-
-
 let warning_attribute =
   let process loc txt errflag payload =
     match string_of_payload payload with
@@ -161,13 +137,18 @@ let warning_attribute =
       process loc txt false payload
   | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
       process loc txt true payload
+  | {txt="ocaml.ppwarning"|"ppwarning"},
+    PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
+                                   (Pconst_string (s, _))},_);
+          pstr_loc}] ->
+      Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
   | _ ->
       ()
 
 let warning_scope attrs f =
   let prev = Warnings.backup () in
   try
-    List.iter warning_attribute attrs;
+    List.iter warning_attribute (List.rev attrs);
     let ret = f () in
     Warnings.restore prev;
     ret

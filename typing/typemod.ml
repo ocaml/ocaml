@@ -1515,10 +1515,6 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.structure iter s
-  end;
   let (str, sg, env) =
     type_structure ~toplevel:true false None env s Location.none in
   let (str, _coerce) = ImplementationHooks.apply_hooks
@@ -1628,11 +1624,6 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.structure iter ast
-  end;
-
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
@@ -1700,10 +1691,6 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
 let type_interface sourcefile env ast =
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.signature iter ast
-  end;
   InterfaceHooks.apply_hooks { Misc.sourcefile } (transl_signature env ast)
 
 (* "Packaging" of several compilation units into one unit

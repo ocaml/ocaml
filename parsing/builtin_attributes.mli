@@ -47,7 +47,10 @@ val error_of_extension: Parsetree.extension -> Location.error
 val warning_attribute: Parsetree.attribute -> unit
   (** Apply warning settings from the specified attribute.
       "ocaml.warning"/"ocaml.warnerror" (and variants without the prefix)
-      are processed and other attributes are ignored. *)
+      are processed and other attributes are ignored.
+
+      Also implement ocaml.ppwarning.
+  *)
 
 val warning_scope: Parsetree.attributes -> (unit -> 'a) -> 'a
   (** Execute a function in a new scope for warning settings.  This
@@ -59,8 +62,6 @@ val warning_scope: Parsetree.attributes -> (unit -> 'a) -> 'a
       with [warning_attribute] in the fresh scope before the function
       is executed.
   *)
-
-val emit_external_warnings: Ast_iterator.iterator
 
 val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
