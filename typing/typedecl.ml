@@ -1265,7 +1265,26 @@ let transl_type_decl env rec_flag sdecl_list =
       fixed_types
     @ sdecl_list
   in
+  (* Remove @@ocaml.deprecated attributes from the type-checked
+     declarations so that references to deprecated types in the
+     current signature/structure does not trigger the deprecation
+     warning.  The attributes will be added back to the final
+     declarations, which will be the ones visible from outside the
+     current signature/structure.
 
+     See MPR#7005
+  *)
+  let sdecl_list, deprecated =
+    List.map
+      (fun sdecl ->
+         let (deprecated, others) =
+           Builtin_attributes.partition_deprecated_attrs sdecl.ptype_attributes
+         in
+         {sdecl with ptype_attributes = others}, deprecated
+      )
+      sdecl_list
+    |> List.split
+  in
   (* Create identifiers. *)
   let id_list =
     List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
@@ -1379,10 +1398,16 @@ let transl_type_decl env rec_flag sdecl_list =
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
+  (* Restore ocaml.deprecated attributes on returned declarations *)
+  let final_decls =
+    List.map2
+      (fun (_id, decl) attrs -> {decl with type_attributes = attrs @ decl.type_attributes})
+      final_decls deprecated
+  in
   (* Keep original declaration *)
   let final_decls =
     List.map2
-      (fun tdecl (_id2, decl) ->
+      (fun tdecl decl ->
         { tdecl with typ_type = decl }
       ) tdecls final_decls
   in
