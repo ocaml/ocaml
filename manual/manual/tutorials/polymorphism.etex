@@ -8,10 +8,10 @@
 
 \noindent This chapter covers more advanced questions related to the
 limitations of polymorphic functions and types. There are some situations
-in OCaml where the type inferred by the type system may be less generic
-than expected. Such non-genericity can stem from interactions between
-side-effect and typing or the difficulties of implicit polymorphic
-recursion or higher-rank polymorphism.
+in OCaml where the type inferred by the type checker may be less generic
+than expected. Such non-genericity can stem either from interactions
+between side-effect and typing or the difficulties of implicit polymorphic
+recursion and higher-rank polymorphism.
 
 This chapter details each of these situations and, if it is possible,
 how to recover genericity.
@@ -275,7 +275,8 @@ We then recover polymorphism:
 The second major class of non-genericity is directly related to the problem
 of type inference for polymorphic function. In some circumstances, the type
 inferred by OCaml might be not general enough to allow the definition of
-some recursive functions on non-regular algebraic data type.
+some recursive functions, in particular for recursive function acting on
+non-regular algebraic data type.
 
 With a regular polymorphic algebraic data type, the type parameters of
 the type constructor are constant within the definition of the type. For
@@ -312,8 +313,8 @@ let rec depth = function
   | Nested n -> 1 + depth n;;
 \end{caml_example}
 The type error here comes from the fact that during the definition of "depth",
-the type checker first assigns to it the type "'a -> 'b ".
-When typing the pattern matching, it becomes "'a nested -> 'b" then
+the type checker first assigns to "depth" the type "'a -> 'b ".
+When typing the pattern matching, "'a -> 'b" becomes "'a nested -> 'b", then
 "'a nested -> int" once the "List" branch is typed.
 However, when typing the application "depth n" in the "Nested" branch,
 the type checker encounters a problem: "depth n" is applied to
@@ -324,7 +325,7 @@ In other words, within its definition, the recursive function "depth" is
 applied to values of type "'a t" with different types "'a" due to the
 non-regularity of the type constructor "nested". This creates a problem because
 the type checker had introduced a new type variable "'a" only at the
-\emph{definition} of the function "depth" whereas, here, it should have used a
+\emph{definition} of the function "depth" whereas, here, we need a
 different type variable for every \emph{application} of the function "depth".
 
 \subsection{Explicitly polymorphic annotations}
