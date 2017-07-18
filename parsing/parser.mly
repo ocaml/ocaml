@@ -260,6 +260,8 @@ let mkpat_attrs d attrs =
 
 let wrap_class_attrs body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
+let wrap_class_type_attrs body attrs =
+  {body with pcty_attributes = attrs @ body.pcty_attributes}
 let wrap_mod_attrs body attrs =
   {body with pmod_attributes = attrs @ body.pmod_attributes}
 let wrap_mty_attrs body attrs =
@@ -1033,6 +1035,8 @@ class_expr:
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
       { class_of_let_bindings $1 $3 }
+  | LET OPEN override_flag attributes mod_longident IN class_expr
+      { wrap_class_attrs (mkclass(Pcl_open($3, mkrhs $5 5, $7))) $4 }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
@@ -1165,6 +1169,8 @@ class_signature:
       { Cty.attr $1 $2 }
   | extension
       { mkcty(Pcty_extension $1) }
+  | LET OPEN override_flag attributes mod_longident IN class_signature
+      { wrap_class_type_attrs (mkcty(Pcty_open($3, mkrhs $5 5, $7))) $4 }
 ;
 class_sig_body:
     class_self_type class_sig_fields

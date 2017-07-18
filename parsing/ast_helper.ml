@@ -286,6 +286,7 @@ module Cl = struct
   let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_let (a, b, c))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcl_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcl_extension a)
+  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_open (a, b, c))
 end
 
 module Cty = struct
@@ -301,6 +302,7 @@ module Cty = struct
   let signature ?loc ?attrs a = mk ?loc ?attrs (Pcty_signature a)
   let arrow ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_arrow (a, b, c))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcty_extension a)
+  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_open (a, b, c))
 end
 
 module Ctf = struct

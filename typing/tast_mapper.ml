@@ -521,6 +521,8 @@ let class_expr sub x =
         )
     | Tcl_ident (path, lid, tyl) ->
         Tcl_ident (path, lid, List.map (sub.typ sub) tyl)
+    | Tcl_open (ovf, p, lid, env, e) ->
+        Tcl_open (ovf, p, lid, sub.env sub env, sub.class_expr sub e)
   in
   {x with cl_desc; cl_env}
 
@@ -541,6 +543,8 @@ let class_type sub x =
            sub.typ sub ct,
            sub.class_type sub cl
           )
+    | Tcty_open (ovf, p, lid, env, e) ->
+        Tcty_open (ovf, p, lid, sub.env sub env, sub.class_type sub e)
   in
   {x with cltyp_desc; cltyp_env}
 
