@@ -27,20 +27,21 @@ let store = ref None ;;
 \end{caml_example}
 Since the type of "None" is "'a option" and the function "ref" has type
 "'b -> 'b ref", a natural deduction for the type of "store" would be
-"'a option ref". However, the inferred type, "'_a option ref", is slightly
-different. Type variables whose name starts with an "_" like "'_a" are weakly
-polymorphic type variables, sometimes shortened as weak type variables. A weak
-type variable is a placeholder for a single type that is currently unknown.
-Once the specific type "t" behind the placeholder type "'_a" known, all
-occurrences of "'_a" will be replaced by "t". For instance, we can define
-another option reference and store an "int" inside:
+"'a option ref". However, the inferred type, "'_weak1 option ref", is
+different. Type variables whose name starts with a "_weak" prefix like
+"'_weak1" are weakly polymorphic type variables, sometimes shortened as
+weak type variables.
+A weak type variable is a placeholder for a single type that is currently
+unknown. Once the specific type "t" behind the placeholder type "'_weak1"
+known, all occurrences of "'_weak1" will be replaced by "t". For instance,
+we can define another option reference and store an "int" inside:
 \begin{caml_example}{toplevel}
 let another_store = ref None ;;
 another_store := Some 0;
 another_store ;;
 \end{caml_example}
 After storing an "int" inside "another_store", the type of "another_store" has
-been updated from "'_a option ref" to "int option ref".
+been updated from "'_weak2 option ref" to "int option ref".
 This distinction between weakly and generic polymorphic type variable protects
 OCaml programs from unsoundness and runtime errors. To understand from where
 unsoundness might come, consider this simple function which swaps a value "x"
@@ -69,7 +70,7 @@ change manually the type of the value stored by "store":
 \begin{caml_example}{toplevel}[error]
 store := Some (fun x -> x);;
 \end{caml_example}
-Indeed, looking at the type of store, we see that the weak type "'_a" has
+Indeed, looking at the type of store, we see that the weak type "'_weak1" has
 been replaced by the type "int"
 \begin{caml_example}{toplevel}
 store;;
@@ -88,7 +89,7 @@ let option_ref = ref None
 \end{verbatim}
 yields a compilation error
 \begin{verbatim}
-Error: The type of this expression, '_a option ref,
+Error: The type of this expression, '_weak1 option ref,
        contains type variables that cannot be generalized
 \end{verbatim}
 To solve this error, it suffices to add an explicit type annotation to
@@ -116,8 +117,9 @@ let fake_id = make_fake_id();;
 \end{caml_example}
 It would be unsound to apply this "fake_id" function to values with different
 types. The function "fake_id" is therefore rightfully assigned the type
-"'_a -> '_a" rather than "'a -> 'a". At the same time, it ought to be possible
-to use a local mutable state without impacting the type of a function.
+"'_weak3 -> '_weak3" rather than "'a -> 'a". At the same time, it ought to
+be possible to use a local mutable state without impacting the type of a
+function.
 %todo: add an example?
 
 To circumvent these dual difficulties, the type checker considers that any value
@@ -146,12 +148,12 @@ There is another partial solution to the problem of unnecessary weak type,
 which is implemented directly within the type checker. Briefly, it is possible
 to prove that weak types that only appear as type parameters in covariant
 positions --also called positive positions-- can be safely generalized to
-polymorphic types. For instance, the type "'a  list" is covariant in "'a":
+polymorphic types. For instance, the type "'a list" is covariant in "'a":
 \begin{caml_example}{toplevel}
   let f () = [];;
   let empty = f ();;
 \end{caml_example}
-Remark that the type inferred for "empty" is "'a list" and not "'_a list"
+Remark that the type inferred for "empty" is "'a list" and not "'_weak5 list"
 that should have occurred with the value restriction since "f ()" is a
 function application.
 
