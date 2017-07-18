@@ -227,10 +227,13 @@ let transl_labels env closed lbls =
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
-    let arg = Ast_helper.Typ.force_poly arg in
-    let cty = transl_simple_type env closed arg in
-    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+    Builtin_attributes.warning_scope attrs
+      (fun () ->
+         let arg = Ast_helper.Typ.force_poly arg in
+         let cty = transl_simple_type env closed arg in
+         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+          ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+      )
   in
   let lbls = List.map mk lbls in
   let lbls' =
@@ -479,6 +482,10 @@ let transl_declaration env sdecl id =
               cd_attributes = scstr.pcd_attributes }
           in
             tcstr, cstr
+        in
+        let make_cstr scstr =
+          Builtin_attributes.warning_scope scstr.pcd_attributes
+            (fun () -> make_cstr scstr)
         in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs

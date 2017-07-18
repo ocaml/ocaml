@@ -334,3 +334,24 @@ exception Foo of X.t [@ocaml.warning "-3"]
 ;;
 [%%expect{|
 |}]
+
+
+(* Label/constructor declaration *)
+
+type t =
+  | A of X.t
+  | B of X.s [@ocaml.warning "-3"]
+  | C of (X.u [@ocaml.warning "-3"])
+;;
+[%%expect{|
+|}]
+
+type s =
+  {
+    a: X.t;
+    b: X.s [@ocaml.warning "-3"];
+    c: (X.u [@ocaml.warning "-3"]);
+  }
+;;
+[%%expect{|
+|}]
