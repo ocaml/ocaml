@@ -275,6 +275,10 @@ Working version
   (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
   Florian Angeletti, and Gabriel Scherer)
 
+- MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
+  created by Unix.symlink under Windows.
+  (Nicolas Ojeda Bar, review by David Allsopp)
+
 - GPR#1223: Fix corruption of the environment when using -short-paths
   with the toplevel.
   (Leo White, review by Alain Frisch)
