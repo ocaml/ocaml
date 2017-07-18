@@ -17,7 +17,7 @@ BASEDIR=../..
 
 
 default:
-	$(MAKE) byte
+	@$(MAKE) byte
 	@if $(BYTECODE_ONLY); then $(MAKE) opt-skipped ; else \
           $(MAKE) opt; \
         fi

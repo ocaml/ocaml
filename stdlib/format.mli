@@ -616,6 +616,7 @@ type formatter_out_functions = {
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
 - field [out_spaces] is equivalent to [out_string (String.make n ' ') 0 n];
 - field [out_indent] is the same as field [out_spaces].
+  @since 4.01.0
 *)
 
 val set_formatter_out_functions : formatter_out_functions -> unit
@@ -916,6 +917,7 @@ val pp_get_formatter_out_functions :
   operating on the standard formatter are defined via partial
   evaluation of these primitives. For instance,
   {!print_string} is equal to {!pp_print_string} {!std_formatter}.
+  @since 4.01.0
 *)
 
 

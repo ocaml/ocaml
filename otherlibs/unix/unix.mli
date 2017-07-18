@@ -541,7 +541,7 @@ val map_file :
 
   [Invalid_argument] or [Failure] may be raised in cases where argument
   validation fails.
-  @since 4.05.0 *)
+  @since 4.06.0 *)
 
 (** {6 Operations on file names} *)
 
@@ -1671,4 +1671,3 @@ val setsid : unit -> int
    its controlling terminal.
 
    On Windows, not implemented. *)
-

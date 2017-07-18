@@ -21,6 +21,7 @@ image: Visual Studio 2015
 branches:
   only:
     - trunk
+    - 4.05
 
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
