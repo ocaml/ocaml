@@ -547,8 +547,10 @@ errors, the intermediate file is deleted afterwards.
 \item["-ppx" \var{command}]
 After parsing, pipe the abstract syntax tree through the preprocessor
 \var{command}. The module "Ast_mapper", described in
-chapter~\ref{Ast-underscoremapper}, implements the external interface
-of a preprocessor.
+\ifouthtml
+chapter~\ref{c:parsinglib}: \ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
+\else section~\ref{Ast-underscoremapper}\fi,
+implements the external interface of a preprocessor.
 
 \item["-principal"]
 Check information path during type-checking, to make sure that all
