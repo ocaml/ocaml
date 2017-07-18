@@ -356,13 +356,13 @@ let declare_method val_env meths self_type lab priv sty loc =
 so that we can get an immediate value. Is that correct ? Ask Jacques. *)
       let returned_cty = ctyp Ttyp_any (Ctype.newty Tnil) val_env loc in
       delayed_meth_specs :=
-      lazy (
-        let cty = transl_simple_type_univars val_env sty' in
-        let ty = cty.ctyp_type in
-        unif ty;
-        returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
-        returned_cty.ctyp_type <- ty;
-        ) ::
+      Warnings.mk_lazy (fun () ->
+            let cty = transl_simple_type_univars val_env sty' in
+            let ty = cty.ctyp_type in
+            unif ty;
+            returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
+            returned_cty.ctyp_type <- ty;
+          ) ::
       !delayed_meth_specs;
       returned_cty
   | _ ->
@@ -731,17 +731,19 @@ and class_field_aux self_loc cl_num self_type meths vars
       let vars_local = !vars in
 
       let field =
-        lazy begin
-          (* Read the generalized type *)
-          let (_, ty) = Meths.find lab.txt !meths in
-          let meth_type =
-            Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
-          Ctype.raise_nongen_level ();
-          vars := vars_local;
-          let texp = type_expect met_env meth_expr meth_type in
-          Ctype.end_def ();
-          mkcf (Tcf_method (lab, priv, Tcfk_concrete (ovf, texp)))
-        end in
+        Warnings.mk_lazy
+          (fun () ->
+             (* Read the generalized type *)
+             let (_, ty) = Meths.find lab.txt !meths in
+             let meth_type =
+               Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
+             Ctype.raise_nongen_level ();
+             vars := vars_local;
+             let texp = type_expect met_env meth_expr meth_type in
+             Ctype.end_def ();
+             mkcf (Tcf_method (lab, priv, Tcfk_concrete (ovf, texp)))
+          )
+      in
       (val_env, met_env, par_env, field::fields,
        Concr.add lab.txt concr_meths, warn_vals, inher,
        Concr.add lab.txt local_meths, local_vals)
@@ -1603,6 +1605,22 @@ let final_decl env define_class
      ci_attributes = cl.pci_attributes;
  })
 (*   (cl.pci_variance, cl.pci_loc)) *)
+
+let class_infos define_class kind
+    (cl, id, ty_id,
+     obj_id, obj_params, obj_ty,
+     cl_id, cl_params, cl_ty,
+     constr_type, dummy_class)
+    (res, env) =
+  Builtin_attributes.warning_scope cl.pci_attributes
+    (fun () ->
+       class_infos define_class kind
+         (cl, id, ty_id,
+          obj_id, obj_params, obj_ty,
+          cl_id, cl_params, cl_ty,
+          constr_type, dummy_class)
+         (res, env)
+    )
 
 let extract_type_decls
     (_id, _id_loc, clty, _ty_id, cltydef, obj_id, obj_abbr, _cl_id, cl_abbr,
