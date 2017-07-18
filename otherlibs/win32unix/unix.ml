@@ -121,7 +121,10 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+(* On Win32 environment access is always considered safe. *)
+let unsafe_environment = environment
 external getenv: string -> string = "caml_sys_getenv"
+external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =

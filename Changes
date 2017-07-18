@@ -46,6 +46,11 @@ Working version
 
 ### Standard library:
 
+- GPR#1217: Restrict Unix.environment in privileged contexts; add
+  Unix.unsafe_environment.
+  (Jeremy Yallop, review by Mark Shinwell, Nicolas Ojeda Bar,
+  Damien Doligez and Hannes Mehnert)
+
 - GRP#1119: Change Set (private) type to inline records.
   (Albin Coquereau)
 
@@ -127,7 +132,14 @@ Working version
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
 
+- GPR#1220: Fix "-keep-docs" option in ocamlopt manpage
+  (Etienne Millon)
+
 ### Tools:
+
+- MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
+  provides better error messages by default.
+  (Daniel Bünzli)
 
 - GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
   to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
@@ -201,6 +213,10 @@ Working version
 
 ### Bug fixes
 
+- PR#248: unique names for weak type variables
+  (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
+   Gabriel Radanne and Gabriel Scherer)
+
 - PR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
@@ -250,6 +266,11 @@ Working version
   non-labeled argument
   (Jacques Garrigue, report by Stephen Dolan)
 
+- PR#7563, GPR#1210: code generation bug when a module alias and
+  an extension constructor have the same name in the same module
+  (Gabriel Scherer, report by Manuel Fähndrich,
+   review by Jacques Garrigue and Leo White)
+
 - GPR#1199: Pretty-printing formatting cleanup in pprintast
   (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
   Florian Angeletti, and Gabriel Scherer)
@@ -257,6 +278,9 @@ Working version
 - MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
   created by Unix.symlink under Windows.
   (Nicolas Ojeda Bar, review by David Allsopp)
+
+- Fix pprintast for #... infix operators
+  (Alain Frisch, report by Omar Chebib)
 
 ### Runtime system:
 
@@ -272,6 +296,10 @@ Working version
 
 Next major version (4.05.0):
 ----------------------------
+OCaml 4.05.0 (TBD):
+----------------------------
+OCaml 4.05.0 (13 Jul 2017):
+---------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
@@ -300,8 +328,26 @@ Next major version (4.05.0):
 - PR#7533, GPR#1173: Correctly perform side effects for certain
   cases of "/" and "mod"
   (Mark Shinwell, report by Jan Mitgaard)
+- GPR#863, GPR#1068, GPR#1069: Optimise matches with constant
+  results to lookup tables.
+  (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
+  Mark Shinwell, and bug report by Gabriel Scherer)
+
+- GPR#1150: Fix typo in arm64 assembler directives
+  (KC Sivaramakrishnan)
+
+- PR#7533, GPR#1173: Correctly perform side effects for certain
+  cases of "/" and "mod"
+  (Mark Shinwell, report by Jan Mitgaard)
 
 ### Runtime system:
+
+- MPR#7557, GPR#1213: More security for getenv
+  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
+  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
+
+- MPR#385, GPR#953: Add caml_startup_exn
+  (Mark Shinwell)
 
 - MPR#385, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
@@ -314,6 +360,13 @@ Next major version (4.05.0):
   were inconvient for dynamically-allocated messages; the messages
   passed to the new functions are handled by the garbage collector.
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
+
+- GPR#795: remove 256-character limitation on Sys.executable_name
+  (Xavier Leroy)
+
+- PR#7557, GPR#1213: More security for getenv
+  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
+  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
 
 - GPR#795: remove 256-character limitation on Sys.executable_name
   (Xavier Leroy)
@@ -331,6 +384,9 @@ Next major version (4.05.0):
   review by David Allsopp, Jacques Garrigue)
 
 * PR#7414, GPR#929: Soundness bug with non-generalized type variables and functors.
+  (Jacques Garrigue, report by Leo White)
+* PR#7414, GPR#929: Soundness bug with non-generalized type variables and
+  functors.
   (Jacques Garrigue, report by Leo White)
 
 ### Compiler user-interface and warnings:
@@ -389,6 +445,8 @@ Next major version (4.05.0):
 - GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
   to build ocamldep. Add option "-depend" to ocamlc/ocamlopt to behave
   as ocamldep. Remove any use of ocamldep to build the distribution.
+- GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
+  to build ocamldep.
   (Fabrice Le Fessant)
 
 - GPR#1027: various improvements to -dtimings, mostly including time
@@ -408,6 +466,14 @@ Next major version (4.05.0):
   (Dhruv Makwana, review by Alain Frisch and Gabriel Scherer)
 
 - PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy anymore custom blocks
+  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
+  review by Thomas Braibant and Damien Doligez)
+
+* PR#7500, GPR#1081: Remove Uchar.dump
+  (Daniel Bünzli)
+
+- PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy
+  custom blocks anymore
   (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
   review by Thomas Braibant and Damien Doligez)
 
@@ -436,7 +502,8 @@ Next major version (4.05.0):
 
 - GPR#875: Add missing functions to ArrayLabels, BytesLabels,
   ListLabels, MoreLabels, StringLabels so they are compatible with
-  non-labeled counterparts.
+  non-labeled counterparts. Also add missing @@ocaml.deprecated attributes
+  in StringLabels and BytesLabels.
   (Roma Sokolov)
 
 - GPR#999: Arg, do not repeat thrice usage_msg when reporting an error
@@ -466,6 +533,20 @@ Next major version (4.05.0):
 
 - PR#7497, GPR#1095: manual, enable numbering for table of contents
   (Florian Angeletti, request by Daniel Bünzli)
+
+- GPR#633: manpage and manual documentation for the `-opaque` option
+  (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
+
+- GPR#916: new tool lintapidiff, use it to update the manual with
+  @since annotations for API changes introduced between 4.00-4.05.
+  (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
+   David Allsopp, Sébastien Hinderer, Damien Doligez and Xavier Leroy)
+
+- PR#7497, GPR#1095: manual, enable numbering for table of contents
+  (Florian Angeletti, request by Daniel Bünzli)
+
+- PR#7539, GPR#1181: manual, update dead links in ocamldoc chapter
+  (Florian Angeletti)
 
 - GPR#633: manpage and manual documentation for the `-opaque` option
   (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
@@ -528,9 +609,12 @@ Next major version (4.05.0):
 - GPR#997, GPR#1077: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
   (Jérémie Dimino and Xavier Leroy)
+### Toplevel:
 
 ### Toplevel:
 
+- PR#7060, GPR#1035: Print exceptions in installed custom printers
+  (Tadeu Zagallo, review by David Allsopp)
 - PR#7060, GPR#1035: Print exceptions in installed custom printers
   (Tadeu Zagallo, review by David Allsopp)
 
@@ -567,8 +651,14 @@ Next major version (4.05.0):
 
 ### Compiler distribution build system:
 
+### Compiler distribution build system:
+
 - PR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
+
+- PR#7452, GPR#1228: tweak GCC options to try to avoid the
+  Skylake/Kaby lake bug
+  (Damien Doligez, review by David Allsopp, Xavier Leroy and Mark Shinwell)
 
 - GPR#693: fail on unexpected errors or warnings within caml_example
   environment.
@@ -734,6 +824,18 @@ The complete list of changes is listed below.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
    Olivier Andrieu)
 
+- PR#6136, GPR#967: Fix Closure so that overapplication evaluation order
+  matches the bytecode compiler and Flambda.
+  (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
+
+- PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
+  (Mark Shinwell)
+
+- PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
+  This is more robust and in particular avoids assembly failures on Win64.
+  (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
+   Olivier Andrieu)
+
 - PR#6903: Unix.execvpe doesn't change environment on Cygwin
   (Xavier Leroy)
 
@@ -797,6 +899,12 @@ The complete list of changes is listed below.
 - PR#7456, GPR#1092: fix slow compilation on source files containing a lot
   of similar debugging information location entries
   (Mark Shinwell)
+- PR#7504: fix warning 8 with unconstrained records
+  (Florian Angeletti, report by John Whitington)
+
+- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
+  of similar debugging information location entries
+  (Mark Shinwell)
 
 - GPR#805, GPR#815, GPR#833: check for integer overflow in String.concat
   (Jeremy Yallop,
@@ -850,6 +958,34 @@ The complete list of changes is listed below.
 
 Next minor version (4.04.1):
 ----------------------------
+OCaml 4.04.2 (23 Jun 2017):
+---------------------------
+
+### Security fix:
+
+- PR#7557: Local privilege escalation issue with ocaml binaries.
+  (Damien Doligez, report by Eric Milliken, review by Xavier Leroy)
+
+OCaml 4.04.1 (14 Apr 2017):
+---------------------------
+
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+OCaml 4.04.2 (23 Jun 2017):
+---------------------------
+
+### Security fix:
+
+- PR#7557: Local privilege escalation issue with ocaml binaries.
+  (Damien Doligez, report by Eric Milliken, review by Xavier Leroy)
+
+OCaml 4.04.1 (14 Apr 2017):
+---------------------------
+
+- PR#7501, GPR#1089: Consider arrays of length zero as constants
+  when using Flambda.
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
 
 ### Standard library:
 
@@ -911,6 +1047,9 @@ Next minor version (4.04.1):
 - PR#7505: Memory cannot be released after calling
     Bigarray.Genarray.change_layout.
   (Damien Doligez and Xavier Leroy, report by Liang Wang)
+
+- PR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
+  (Damien Doligez, review by Jeremy Yallop and Leo White)
 
 - GPR#912: Fix segfault in Unix.create_process on Windows caused by wrong header
   configuration.

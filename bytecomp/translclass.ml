@@ -268,7 +268,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
     Tcl_ident ( path, _, _) ->
       begin match inh_init with
         (obj_init, _path')::inh_init ->
-          let lpath = transl_path ~loc:cl.cl_loc cl.cl_env path in
+          let lpath = transl_class_path ~loc:cl.cl_loc cl.cl_env path in
           (inh_init,
            Llet (Strict, Pgenval, obj_init,
                  mkappl(Lprim(Pfield 1, [lpath], Location.none), Lvar cla ::

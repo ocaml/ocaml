@@ -113,7 +113,7 @@ let iter f a =
 let iteri f a =
   for i = 0 to length a - 1 do f i (unsafe_get a i) done
 
-let ensure_ge x y = if x >= y then x else invalid_arg "Bytes.concat"
+let ensure_ge (x:int) y = if x >= y then x else invalid_arg "Bytes.concat"
 
 let rec sum_lengths acc seplen = function
   | [] -> acc

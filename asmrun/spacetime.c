@@ -38,6 +38,7 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/osdeps.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/stack.h"
@@ -210,7 +211,7 @@ void caml_spacetime_initialize(void)
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
-  ap_interval = getenv ("OCAML_SPACETIME_INTERVAL");
+  ap_interval = caml_secure_getenv ("OCAML_SPACETIME_INTERVAL");
   if (ap_interval != NULL) {
     unsigned int interval = 0;
     sscanf(ap_interval, "%u", &interval);
@@ -221,7 +222,7 @@ void caml_spacetime_initialize(void)
       int dir_ok = 1;
 
       user_specified_automatic_snapshot_dir =
-        getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
+        caml_secure_getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
 
       if (user_specified_automatic_snapshot_dir == NULL) {
 #ifdef HAS_GETCWD

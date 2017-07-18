@@ -154,7 +154,7 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
 let runtime_variant = ref "";;      (* -runtime-variant *)
 
 let keep_docs = ref false              (* -keep-docs *)
-let keep_locs = ref false              (* -keep-locs *)
+let keep_locs = ref true               (* -keep-locs *)
 let unsafe_string = ref (not Config.safe_string)
                                    (* -safe-string / -unsafe-string *)
 

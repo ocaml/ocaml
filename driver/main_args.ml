@@ -233,11 +233,11 @@ let mk_no_keep_docs f =
 ;;
 
 let mk_keep_locs f =
-  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
+  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files (default)"
 ;;
 
 let mk_no_keep_locs f =
-  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files (default)"
+  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files"
 ;;
 
 let mk_labels f =

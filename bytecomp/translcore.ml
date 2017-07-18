@@ -64,7 +64,7 @@ let transl_extension_constructor env path ext =
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
         loc)
   | Text_rebind(path, _lid) ->
-      transl_path ~loc env path
+      transl_extension_path ~loc env path
 
 (* Translation of primitives *)
 
@@ -733,7 +733,7 @@ and transl_exp0 e =
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_path ~loc:e.exp_loc e.exp_env path
+      transl_value_path ~loc:e.exp_loc e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -888,13 +888,13 @@ and transl_exp0 e =
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
-            transl_path e.exp_env path
+            transl_extension_path e.exp_env path
           else
             Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
-                  transl_path e.exp_env path :: ll, e.exp_loc)
+                  transl_extension_path e.exp_env path :: ll, e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
-      transl_path e.exp_env path
+      transl_extension_path e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
@@ -1008,7 +1008,7 @@ and transl_exp0 e =
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
-             ap_func=Lprim(Pfield 0, [transl_path ~loc e.exp_env cl], loc);
+             ap_func=Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
@@ -1353,7 +1353,7 @@ and transl_record loc env fields repres opt_init_expr =
               | Tconstr(p, _, _) -> p
               | _ -> assert false
             in
-            let slot = transl_path env path in
+            let slot = transl_extension_path env path in
             Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
     in
     begin match opt_init_expr with

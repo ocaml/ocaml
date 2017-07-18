@@ -285,13 +285,63 @@ let make_constructor env type_path type_params sargs sret_type =
       widen z;
       targs, Some tret_type, args, Some ret_type
 
+(* Check that the variable [id] is present in the [univ] list. *)
+let check_type_var loc univ id =
+  let f t = (Btype.repr t).id = id in
+  if not (List.exists f univ) then raise (Error (loc, Wrong_unboxed_type_float))
+
+(* Check that all the variables found in [ty] are in [univ].
+   Because [ty] is the argument to an abstract type, the representation
+   of that abstract type could be any subexpression of [ty], in particular
+   any type variable present in [ty].
+*)
+let rec check_unboxed_abstract_arg loc univ ty =
+  match ty.desc with
+  | Tvar _ -> check_type_var loc univ ty.id
+  | Tarrow (_, t1, t2, _)
+  | Tfield (_, _, t1, t2) ->
+    check_unboxed_abstract_arg loc univ t1;
+    check_unboxed_abstract_arg loc univ t2
+  | Ttuple args
+  | Tconstr (_, args, _)
+  | Tpackage (_, _, args) ->
+    List.iter (check_unboxed_abstract_arg loc univ) args
+  | Tobject (fields, r) ->
+    check_unboxed_abstract_arg loc univ fields;
+    begin match !r with
+    | None -> ()
+    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
+    end
+  | Tnil
+  | Tunivar _ -> ()
+  | Tlink e -> check_unboxed_abstract_arg loc univ e
+  | Tsubst _ -> assert false
+  | Tvariant { row_fields; row_more; row_name } ->
+    List.iter (check_unboxed_abstract_row_field loc univ) row_fields;
+    check_unboxed_abstract_arg loc univ row_more;
+    begin match row_name with
+    | None -> ()
+    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
+    end
+  | Tpoly (t, _) -> check_unboxed_abstract_arg loc univ t
+
+and check_unboxed_abstract_row_field loc univ (_, field) =
+  match field with
+  | Rpresent (Some ty) -> check_unboxed_abstract_arg loc univ ty
+  | Reither (_, args, _, r) ->
+    List.iter (check_unboxed_abstract_arg loc univ) args;
+    begin match !r with
+    | None -> ()
+    | Some f -> check_unboxed_abstract_row_field loc univ ("", f)
+    end
+  | Rabsent
+  | Rpresent None -> ()
+
 (* Check that the argument to a GADT constructor is compatible with unboxing
-   the type, given the existential variables introduced by this constructor. *)
-let rec check_unboxed_gadt_arg loc ex env ty =
+   the type, given the universal parameters of the type. *)
+let rec check_unboxed_gadt_arg loc univ env ty =
   match get_unboxed_type_representation env ty with
-  | Some {desc = Tvar _; id} ->
-    let f t = (Btype.repr t).id = id in
-    if List.exists f ex then raise(Error(loc, Wrong_unboxed_type_float))
+  | Some {desc = Tvar _; id} -> check_type_var loc univ id
   | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
                  | Tvariant _; _} ->
     ()
@@ -301,10 +351,10 @@ let rec check_unboxed_gadt_arg loc ex env ty =
     let tydecl = Env.find_type p env in
     assert (not tydecl.type_unboxed.unboxed);
     if tydecl.type_kind = Type_abstract then
-      List.iter (check_unboxed_gadt_arg loc ex env) args
+      List.iter (check_unboxed_abstract_arg loc univ) args
   | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
   | Some {desc = Tunivar _; _} -> ()
-  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc ex env t2
+  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc univ env t2
   | None -> ()
       (* This case is tricky: the argument is another (or the same) type
          in the same recursive definition. In this case we don't have to
@@ -403,10 +453,14 @@ let transl_declaration env sdecl id =
                unboxed (or abstract) type constructor applied to some
                existential type variable. Of course we also have to rule
                out any abstract type constructor applied to anything that
-               might be an existential type variable. *)
+               might be an existential type variable.
+               There is a difficulty with existential variables created
+               out of thin air (rather than bound by the declaration).
+               See PR#7511 and GPR#1133 for details. *)
             match Datarepr.constructor_existentials args ret_type with
             | _, [] -> ()
-            | [argty], ex -> check_unboxed_gadt_arg sdecl.ptype_loc ex env argty
+            | [argty], _ex ->
+                check_unboxed_gadt_arg sdecl.ptype_loc params env argty
             | _ -> assert false
           end;
           let tcstr =

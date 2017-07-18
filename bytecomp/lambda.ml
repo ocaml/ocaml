@@ -532,10 +532,19 @@ let rec transl_normal_path = function
   | Papply _ ->
       fatal_error "Lambda.transl_path"
 
-(* Translation of value identifiers *)
+(* Translation of identifiers *)
 
-let transl_path ?(loc=Location.none) env path =
+let transl_module_path ?(loc=Location.none) env path =
   transl_normal_path (Env.normalize_path (Some loc) env path)
+
+let transl_value_path ?(loc=Location.none) env path =
+  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
+
+let transl_class_path = transl_value_path
+let transl_extension_path = transl_value_path
+
+(* compatibility alias, deprecated in the .mli *)
+let transl_path = transl_value_path
 
 (* Compile a sequence of expressions *)
 
