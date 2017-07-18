@@ -3,10 +3,12 @@
 module X: sig
   type t [@@ocaml.deprecated]
   type s [@@ocaml.deprecated]
+  type u [@@ocaml.deprecated]
   val x: t [@@ocaml.deprecated]
 end = struct
   type t = int
   type s
+  type u
   let x = 0
 end;;
 [%%expect{|
@@ -295,6 +297,40 @@ Warning 3: deprecated: module D
 |}]
 
 include D [@@ocaml.warning "-3"]
+;;
+[%%expect{|
+|}]
+
+
+(* type extension *)
+
+type ext = ..
+;;
+[%%expect{|
+|}]
+
+type ext +=
+  | A of X.t
+  | B of (X.s [@ocaml.warning "-3"])
+  | C of X.u [@ocaml.warning "-3"]
+;;
+[%%expect{|
+|}]
+
+type ext +=
+  | C of X.t
+  [@@ocaml.warning "-3"]
+;;
+[%%expect{|
+|}]
+
+
+exception Foo of X.t
+;;
+[%%expect{|
+|}]
+
+exception Foo of X.t [@ocaml.warning "-3"]
 ;;
 [%%expect{|
 |}]
