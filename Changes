@@ -275,6 +275,10 @@ Working version
 - MPR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
+- MPR#7540, GPR#1179: Fixed setting of breakpoints within packed modules
+  for ocamldebug
+  (Hugo Herbelin, review by Gabriel Scherer, Damien Doligez)
+
 - MPR#7543: short-paths printtyp can fail on packed type error messages
   (Florian Angeletti)
 
