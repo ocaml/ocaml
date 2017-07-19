@@ -1474,14 +1474,17 @@ let expand_head env ty =
 let _ = forward_try_expand_once := try_expand_safe
 
 
-(* Expand until we find a non-abstract type declaration *)
+(* Expand until we find either a non-abstract type declaration or
+   an abstract type declaration associated with visible extension
+   constructors *)
 
 let rec extract_concrete_typedecl env ty =
   let ty = repr ty in
   match ty.desc with
     Tconstr (p, _, _) ->
       let decl = Env.find_type p env in
-      if decl.type_kind <> Type_abstract then (p, p, decl) else
+      if decl.type_kind <> Type_abstract
+      || Env.has_extension_constructors env p then (p, p, decl) else
       let ty =
         try try_expand_once env ty with Cannot_expand -> raise Not_found
       in

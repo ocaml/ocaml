@@ -1,0 +1,73 @@
+
+#                 type t = ..
+type t += Alpha
+module M : sig type w = .. type w += Alpha | Beta  end
+#   module F : functor (X : sig  end) -> sig type t += Gamma end
+# module X : sig  end
+#   Characters 12-16:
+  let x: t = Alha;;
+             ^^^^
+Error: This variant expression is expected to have type t
+       The constructor Alha does not belong to type t
+Hint: Did you mean Alpha?
+# # Characters 12-16:
+  let y : w = Alha;;
+              ^^^^
+Error: This variant expression is expected to have type M.w
+       The constructor Alha does not belong to type M.w
+Hint: Did you mean Alpha?
+# Characters 11-16:
+  let z: t = Alpha;;
+             ^^^^^
+Warning 40: Alpha was selected from type t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val z : t = <extension>
+#   module N : sig type t += Gamma end
+# Characters 11-17:
+  let g: t = N.Gamm ;;
+             ^^^^^^
+Error: Unbound constructor N.Gamm
+Hint: Did you mean Gamma?
+#   Characters 7-16:
+  raise Not_Found;;
+        ^^^^^^^^^
+Error: This variant expression is expected to have type exn
+       The constructor Not_Found does not belong to type exn
+Hint: Did you mean Not_found?
+#   type r = ..
+#                 module M :
+  sig
+    type t = r = ..
+    type s = t = ..
+    module N : sig type u = s = .. type u += Foo end
+  end
+#   type exn += Foo
+#   Characters 13-16:
+  let x : r = Foo;;
+              ^^^
+Warning 40: Foo was selected from type r.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : r = M.N.Foo
+#   #               module M : sig type t type t += Aleph end
+# #     type exn += Aleph
+# Characters 12-17:
+  let x : t = Aleph;;
+              ^^^^^
+Warning 40: Aleph was selected from type M.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : M.t = <abstr>
+#   #         module F : functor (X : sig type t = .. end) -> sig type X.t += Beth end
+module X : sig type t = .. end
+module FX : sig type X.t += Beth end
+type exn += Beth
+# Characters 14-18:
+  let x : X.t = Beth;;
+                ^^^^
+Warning 40: Beth was selected from type X.t.
+It is not visible in the current scope, and will not 
+be selected if the type becomes unknown.
+val x : X.t = <extension>
+# 

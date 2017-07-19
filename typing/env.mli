@@ -88,6 +88,8 @@ val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
+val has_extension_constructors: t -> Path.t -> bool
+
 val has_local_constraints: t -> bool
 val add_gadt_instance_level: int -> t -> t
 val gadt_instance_level: t -> type_expr -> int option
