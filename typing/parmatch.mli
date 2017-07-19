@@ -22,9 +22,6 @@ val omega : pattern
 val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
 val normalize_pat : pattern -> pattern
-val all_record_args :
-    (Longident.t loc * label_description * pattern) list ->
-    (Longident.t loc * label_description * pattern) list
 val const_compare : constant -> constant -> int
 
 val le_pat : pattern -> pattern -> bool

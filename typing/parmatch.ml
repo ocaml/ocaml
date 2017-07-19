@@ -272,19 +272,6 @@ let extract_fields omegas arg =
       with Not_found -> omega)
     omegas
 
-let all_record_args lbls = match lbls with
-| (_,{lbl_all=lbl_all},_)::_ ->
-    let t =
-      Array.map
-        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
-        lbl_all in
-    List.iter
-      (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
-      lbls ;
-    Array.to_list t
-|  _ -> fatal_error "Parmatch.all_record_args"
-
-
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
 let rec simple_match_args p1 p2 = match p2.pat_desc with
 | Tpat_alias (p2,_,_) -> simple_match_args p1 p2
