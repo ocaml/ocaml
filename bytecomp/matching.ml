@@ -61,6 +61,18 @@ let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam ;
   Format.flush_str_formatter ()
 
+let all_record_args lbls = match lbls with
+| (_,{lbl_all=lbl_all},_)::_ ->
+    let t =
+      Array.map
+        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
+        lbl_all in
+    List.iter
+      (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
+      lbls ;
+    Array.to_list t
+|  _ -> fatal_error "Parmatch.all_record_args"
+
 type matrix = pattern list list
 
 let add_omega_column pss = List.map (fun ps -> omega::ps) pss
