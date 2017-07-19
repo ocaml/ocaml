@@ -99,35 +99,14 @@ let keyword_table =
 
 (* To buffer string literals *)
 
-let initial_string_buffer = Bytes.create 256
-let string_buff = ref initial_string_buffer
-let string_index = ref 0
+let string_buffer = Buffer.create 256
+let reset_string_buffer () = Buffer.reset string_buffer
+let get_stored_string () = Buffer.contents string_buffer
 
-let reset_string_buffer () =
-  string_buff := initial_string_buffer;
-  string_index := 0
-
-let store_string_char c =
-  if !string_index >= Bytes.length !string_buff then begin
-    let new_buff = Bytes.create (Bytes.length (!string_buff) * 2) in
-    Bytes.blit !string_buff 0 new_buff 0 (Bytes.length !string_buff);
-    string_buff := new_buff
-  end;
-  Bytes.unsafe_set !string_buff !string_index c;
-  incr string_index
-
-let store_string s =
-  for i = 0 to String.length s - 1 do
-    store_string_char s.[i];
-  done
-
-let store_lexeme lexbuf =
-  store_string (Lexing.lexeme lexbuf)
-
-let get_stored_string () =
-  let s = Bytes.sub_string !string_buff 0 !string_index in
-  string_buff := initial_string_buffer;
-  s
+let store_string_char c = Buffer.add_char string_buffer c
+let store_string_utf_8_uchar u = Buffer.add_utf_8_uchar string_buffer u
+let store_string s = Buffer.add_string string_buffer s
+let store_lexeme lexbuf = store_string (Lexing.lexeme lexbuf)
 
 (* To store the position of the beginning of a string and comment *)
 let string_start_loc = ref Location.none;;
@@ -141,15 +120,8 @@ let print_warnings = ref true
 let store_escaped_char lexbuf c =
   if in_comment () then store_lexeme lexbuf else store_string_char c
 
-let store_escaped_uchar =
-  let uchar_utf_8_enc = Buffer.create 4 in
-  fun lexbuf u ->
-    if in_comment () then store_lexeme lexbuf else
-    begin
-      Buffer.reset uchar_utf_8_enc;
-      Buffer.add_utf_8_uchar uchar_utf_8_enc u;
-      store_string (Buffer.contents uchar_utf_8_enc);
-    end
+let store_escaped_uchar lexbuf u =
+  if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
 
 let with_comment_buffer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
