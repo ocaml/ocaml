@@ -133,7 +133,7 @@ static intnat mark(value initial, intnat budget) {
     //             v, hd_v, Tag_val(v), Wosize_val(v));
     if (Tag_hd (hd_v) == Stack_tag) {
       // caml_gc_log ("mark: stack=%p", (value*)v);
-      caml_scan_stack(&caml_darken, 0, v);
+      caml_darken_stack(v);
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
