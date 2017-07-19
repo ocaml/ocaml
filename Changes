@@ -9,6 +9,10 @@ Working version
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)
 
+- GPR#1249, MPR#6271, MPR#7529: Support "let open M in ..."
+  in class expressions and class type expressions.
+  (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
+
 ### Code generation and optimizations:
 
 - PR#5324, GPR#375: An alternative Linear Scan register allocator for
@@ -42,7 +46,7 @@ Working version
   Mark Shinwell and Leo White)
 
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
-  (Mark Shinwell) 
+  (Mark Shinwell)
 
 ### Standard library:
 
