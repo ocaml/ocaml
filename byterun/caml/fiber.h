@@ -24,6 +24,12 @@
 #define Stack_parent_offset 5
 #define Stack_parent(stk) (*(Op_val(stk) + Stack_parent_offset))
 
+/* States for Stack_dirty_domain field */
+/* A clean fiber does not have pointers into any minor heaps */
+#define FIBER_CLEAN ((struct domain*)0)
+/* A clean fiber is being scanned by a GC thread */
+#define FIBER_SCANNING ((struct domain*)1)
+
 #ifdef NATIVE_CODE
 
 /* Stack layout for native code. Stack grows downwards.
@@ -99,6 +105,7 @@ int caml_switch_stack(value stk);
 value caml_switch_stack(value stk);
 #endif
 value caml_fiber_death();
+void caml_darken_stack(value stack);
 value caml_reverse_fiber_stack(value stack);
 
 #ifdef NATIVE_CODE

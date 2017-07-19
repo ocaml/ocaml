@@ -9,6 +9,7 @@
 #include "caml/platform.h"
 #include "caml/fix_code.h"
 #include "caml/minor_gc.h"
+#include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/memory.h"
 #include "caml/params.h"
@@ -21,15 +22,23 @@ static __thread int stack_is_saved = 0;
 
 static void dirty_stack(value stack)
 {
+  uintnat status;
   /* There is no write barrier (caml_modify) on writes to the stack,
      so a just-run fiber's stack may contain untracked shared->young
      pointers or pointers to unmarked objects. We add the stack to a
      ref table so that the GC can find these pointers. */
   if (!Is_minor(stack)) {
-    Assert(Stack_dirty_domain(stack) == 0 ||
+    Assert(Stack_dirty_domain(stack) == FIBER_CLEAN ||
+           Stack_dirty_domain(stack) == FIBER_SCANNING ||
            Stack_dirty_domain(stack) == caml_domain_self());
-    if (Stack_dirty_domain(stack) == 0) {
-      Stack_dirty_domain(stack) = caml_domain_self();
+    if (Stack_dirty_domain(stack) != caml_domain_self ()) {
+      SPIN_WAIT {
+        status = atomic_load_acq((atomic_uintnat*)&Stack_dirty_domain(stack));
+        if(status == (uintnat)FIBER_SCANNING) continue;
+        if(__sync_bool_compare_and_swap(&Stack_dirty_domain(stack),
+                                        FIBER_CLEAN, caml_domain_self()))
+          break;
+      }
       Ref_table_add(&Caml_state->remembered_set->fiber_ref, (value*)stack);
     }
   }
@@ -43,7 +52,6 @@ static value save_stack ()
   Assert (Hd_val(domain_state->current_stack) &&
           (Is_minor(domain_state->current_stack) || !is_garbage(domain_state->current_stack)));
   value old_stack = domain_state->current_stack;
-  dirty_stack(old_stack);
   return old_stack;
 }
 
@@ -55,6 +63,7 @@ static void load_stack (value stack) {
   domain_state->current_stack = stack;
   if (domain_state->promoted_in_current_cycle)
     caml_scan_stack (forward_pointer, 0, stack);
+  dirty_stack(stack);
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -69,7 +78,7 @@ value caml_alloc_stack (value hval, value hexn, value heff) {
   struct caml_context *ctxt;
 
   stack = caml_alloc(caml_fiber_wsz + caml_params->profile_slop_wsz, Stack_tag);
-  Stack_dirty_domain(stack) = 0;
+  Stack_dirty_domain(stack) = FIBER_CLEAN;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
   Stack_handle_effect(stack) = heff;
@@ -253,24 +262,26 @@ static value save_stack ()
          Stack_base(old_stack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value));
   Assert(domain_state->stack_high == Stack_high(old_stack));
   Assert(domain_state->extern_sp == domain_state->stack_high + Stack_sp(old_stack));
-  dirty_stack(old_stack);
   return old_stack;
 }
 
-static void load_stack(value newstack)
+static void load_stack(value new_stack)
 {
-  Assert (Hd_val(newstack) &&
-          (Is_minor(newstack) || !is_garbage(newstack)));
-  Assert(Tag_val(newstack) == Stack_tag);
+  Assert (Hd_val(new_stack) &&
+          (Is_minor(new_stack) || !is_garbage(new_stack)));
+  Assert(Tag_val(new_stack) == Stack_tag);
   caml_domain_state* domain_state = Caml_state;
-  Assert(Stack_dirty_domain(newstack) == 0 || Stack_dirty_domain(newstack) == caml_domain_self());
+  Assert(Stack_dirty_domain(new_stack) == FIBER_CLEAN
+         || Stack_dirty_domain(new_stack) == FIBER_SCANNING
+         || Stack_dirty_domain(new_stack) == caml_domain_self());
   domain_state->stack_threshold =
-    Stack_base(newstack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
-  domain_state->stack_high = Stack_high(newstack);
-  domain_state->extern_sp = domain_state->stack_high + Stack_sp(newstack);
-  domain_state->current_stack = newstack;
+    Stack_base(new_stack) + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
+  domain_state->stack_high = Stack_high(new_stack);
+  domain_state->extern_sp = domain_state->stack_high + Stack_sp(new_stack);
+  domain_state->current_stack = new_stack;
   if (domain_state->promoted_in_current_cycle)
-    caml_scan_stack (forward_pointer, 0, newstack);
+    caml_scan_stack (forward_pointer, 0, new_stack);
+  dirty_stack(new_stack);
 }
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
@@ -288,7 +299,7 @@ CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
   sp[0] = Val_long(1); /* trapsp ?? */
 
   Stack_sp(stack) = sp - high;
-  Stack_dirty_domain(stack) = 0;
+  Stack_dirty_domain(stack) = FIBER_CLEAN;
   Stack_handle_value(stack) = hval;
   Stack_handle_exception(stack) = hexn;
   Stack_handle_effect(stack) = heff;
@@ -398,7 +409,8 @@ void caml_clean_stack_domain(value stack, struct domain* domain)
 {
   Assert(Tag_val(stack) == Stack_tag);
   if (Stack_dirty_domain(stack) == domain) {
-    Stack_dirty_domain(stack) = 0;
+    atomic_store_rel((atomic_uintnat*)&Stack_dirty_domain(stack),
+                     (uintnat)FIBER_CLEAN);
   }
 }
 
@@ -411,11 +423,29 @@ void caml_scan_dirty_stack_domain(scanning_action f, void* fdata, value stack,
   }
 }
 
+void caml_darken_stack(value stack)
+{
+  Assert(Tag_val(stack) == Stack_tag);
+  if (Stack_dirty_domain(stack) == FIBER_CLEAN) {
+    if (!__sync_bool_compare_and_swap (&Stack_dirty_domain(stack),
+                                      FIBER_CLEAN, FIBER_SCANNING)) {
+      /* Return early if some other mutator or GC thread won the race */
+      return;
+    }
+  } else if (Stack_dirty_domain(stack) != caml_domain_self()) {
+      /* Return early if some other domain owns the fiber or is being scanned. */
+      return;
+  }
+  caml_scan_stack(&caml_darken, 0, stack);
+  if (Stack_dirty_domain(stack) == FIBER_SCANNING)
+    Stack_dirty_domain(stack) = FIBER_CLEAN;
+}
+
 void caml_clean_stack(value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);
   if (Stack_dirty_domain(stack) == caml_domain_self()) {
-    Stack_dirty_domain(stack) = 0;
+    Stack_dirty_domain(stack) = FIBER_CLEAN;
   }
 }
 
@@ -464,8 +494,8 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
     Stack_debugger_slot_offset_to_parent_slot(new_stack);
 #endif
 
-  Stack_dirty_domain(new_stack) = 0;
-  if (Stack_dirty_domain(old_stack)) {
+  Stack_dirty_domain(new_stack) = FIBER_CLEAN;
+  if (Stack_dirty_domain(old_stack) != FIBER_CLEAN) {
     Assert (Stack_dirty_domain(old_stack) == caml_domain_self());
     dirty_stack(new_stack);
   }
@@ -474,7 +504,7 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
 
   /* Reset old stack */
   Stack_sp(old_stack) = 0;
-  Stack_dirty_domain(old_stack) = 0;
+  Stack_dirty_domain(old_stack) = FIBER_CLEAN;
   Stack_handle_value(old_stack) = Val_long(0);
   Stack_handle_exception(old_stack) = Val_long(0);
   Stack_handle_effect(old_stack) = Val_long(0);
@@ -493,7 +523,7 @@ value caml_alloc_main_stack (uintnat init_size)
      which cannot trigger it */
   stack = caml_alloc_shr(init_size, Stack_tag);
   Stack_sp(stack) = 0;
-  Stack_dirty_domain(stack) = 0;
+  Stack_dirty_domain(stack) = FIBER_CLEAN;
   Stack_handle_value(stack) = Val_long(0);
   Stack_handle_exception(stack) = Val_long(0);
   Stack_handle_effect(stack) = Val_long(0);
