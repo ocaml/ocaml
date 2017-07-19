@@ -279,6 +279,10 @@ Working version
   created by Unix.symlink under Windows.
   (Nicolas Ojeda Bar, review by David Allsopp)
 
+- GPR#1223: Fix corruption of the environment when using -short-paths
+  with the toplevel.
+  (Leo White, review by Alain Frisch)
+
 - Fix pprintast for #... infix operators
   (Alain Frisch, report by Omar Chebib)
 
