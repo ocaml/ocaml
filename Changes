@@ -9,6 +9,12 @@ Working version
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)
 
+* GPR#1232: Support Unicode character escape sequences in string
+  literals via the \u{X+} syntax. These escapes are substituted by the
+  UTF-8 encoding of the Unicode character.
+  (Daniel Bünzli, review by Damien Doligez, Alain Frisch, Xavier
+  Leroy and Leo White)
+
 - GPR#1247: M.(::) construction for expressions
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
@@ -214,6 +220,9 @@ Working version
 
 - GPR#1203: speed up the manual build by using ocamldoc.opt
   (Gabriel Scherer, review by Florian Angeletti)
+
+- GPR#1242: disable C plugins loading by default
+  (Alexey Egorov)
 
 ### Internal/compiler-libs changes:
 

@@ -65,7 +65,7 @@ flambda=false
 safe_string=false
 afl_instrument=false
 max_testsuite_dir_retries=0
-with_cplugins=true
+with_cplugins=false
 with_fpic=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -206,8 +206,10 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
+    -with-cplugins|--with-cplugins)
+        with_cplugins=true;;
     -no-cplugins|--no-cplugins)
-        with_cplugins=false;;
+        ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
     -safe-string|--safe-string)

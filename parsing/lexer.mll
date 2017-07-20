@@ -99,35 +99,14 @@ let keyword_table =
 
 (* To buffer string literals *)
 
-let initial_string_buffer = Bytes.create 256
-let string_buff = ref initial_string_buffer
-let string_index = ref 0
+let string_buffer = Buffer.create 256
+let reset_string_buffer () = Buffer.reset string_buffer
+let get_stored_string () = Buffer.contents string_buffer
 
-let reset_string_buffer () =
-  string_buff := initial_string_buffer;
-  string_index := 0
-
-let store_string_char c =
-  if !string_index >= Bytes.length !string_buff then begin
-    let new_buff = Bytes.create (Bytes.length (!string_buff) * 2) in
-    Bytes.blit !string_buff 0 new_buff 0 (Bytes.length !string_buff);
-    string_buff := new_buff
-  end;
-  Bytes.unsafe_set !string_buff !string_index c;
-  incr string_index
-
-let store_string s =
-  for i = 0 to String.length s - 1 do
-    store_string_char s.[i];
-  done
-
-let store_lexeme lexbuf =
-  store_string (Lexing.lexeme lexbuf)
-
-let get_stored_string () =
-  let s = Bytes.sub_string !string_buff 0 !string_index in
-  string_buff := initial_string_buffer;
-  s
+let store_string_char c = Buffer.add_char string_buffer c
+let store_string_utf_8_uchar u = Buffer.add_utf_8_uchar string_buffer u
+let store_string s = Buffer.add_string string_buffer s
+let store_lexeme lexbuf = store_string (Lexing.lexeme lexbuf)
 
 (* To store the position of the beginning of a string and comment *)
 let string_start_loc = ref Location.none;;
@@ -141,6 +120,9 @@ let print_warnings = ref true
 let store_escaped_char lexbuf c =
   if in_comment () then store_lexeme lexbuf else store_string_char c
 
+let store_escaped_uchar lexbuf u =
+  if in_comment () then store_lexeme lexbuf else store_string_utf_8_uchar u
+
 let with_comment_buffer comment lexbuf =
   let start_loc = Location.curr lexbuf  in
   comment_start_loc := [start_loc];
@@ -152,6 +134,21 @@ let with_comment_buffer comment lexbuf =
   s, loc
 
 (* To translate escape sequences *)
+
+let hex_digit_value d = (* assert (d in '0'..'9' 'a'..'f' 'A'..'F') *)
+  let d = Char.code d in
+  if d >= 97 then d - 87 else
+  if d >= 65 then d - 55 else
+  d - 48
+
+let hex_num_value lexbuf ~first ~last =
+  let rec loop acc i = match i > last with
+  | true -> acc
+  | false ->
+      let value = hex_digit_value (Lexing.lexeme_char lexbuf i) in
+      loop (16 * acc + value) (i + 1)
+  in
+  loop 0 first
 
 let char_for_backslash = function
   | 'n' -> '\010'
@@ -178,17 +175,24 @@ let char_for_octal_code lexbuf i =
   Char.chr c
 
 let char_for_hexadecimal_code lexbuf i =
-  let d1 = Char.code (Lexing.lexeme_char lexbuf i) in
-  let val1 = if d1 >= 97 then d1 - 87
-             else if d1 >= 65 then d1 - 55
-             else d1 - 48
+  let byte = hex_num_value lexbuf ~first:i ~last:(i+1) in
+  Char.chr byte
+
+let uchar_for_uchar_escape lexbuf =
+  let err e =
+    raise
+      (Error (Illegal_escape (Lexing.lexeme lexbuf ^ e), Location.curr lexbuf))
   in
-  let d2 = Char.code (Lexing.lexeme_char lexbuf (i+1)) in
-  let val2 = if d2 >= 97 then d2 - 87
-             else if d2 >= 65 then d2 - 55
-             else d2 - 48
-  in
-  Char.chr (val1 * 16 + val2)
+  let len = Lexing.lexeme_end lexbuf - Lexing.lexeme_start lexbuf in
+  let first = 3 (* skip opening \u{ *) in
+  let last = len - 2 (* skip closing } *) in
+  let digit_count = last - first + 1 in
+  match digit_count > 6 with
+  | true -> err ", too many digits, expected 1 to 6 hexadecimal digits"
+  | false ->
+      let cp = hex_num_value lexbuf ~first ~last in
+      if Uchar.is_valid cp then Uchar.unsafe_of_int cp else
+      err (", " ^ Printf.sprintf "%X" cp ^ " is not a Unicode scalar value")
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
@@ -290,6 +294,8 @@ let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
+let hex_digit =
+  ['0'-'9' 'A'-'F' 'a'-'f']
 let hex_literal =
   '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']['0'-'9' 'A'-'F' 'a'-'f' '_']*
 let oct_literal =
@@ -627,6 +633,9 @@ and string = parse
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F']
       { store_escaped_char lexbuf (char_for_hexadecimal_code lexbuf 2);
          string lexbuf }
+  | '\\' 'u' '{' hex_digit+ '}'
+        { store_escaped_uchar lexbuf (uchar_for_uchar_escape lexbuf);
+          string lexbuf }
   | '\\' _
       { if not (in_comment ()) then begin
 (*  Should be an error, but we are very lax.
