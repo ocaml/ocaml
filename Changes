@@ -217,6 +217,9 @@ Working version
 - GPR#1203: speed up the manual build by using ocamldoc.opt
   (Gabriel Scherer, review by Florian Angeletti)
 
+- GPR#1242: disable C plugins loading by default
+  (Alexey Egorov)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
