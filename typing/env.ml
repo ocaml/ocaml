@@ -2078,17 +2078,21 @@ let open_pers_signature name env =
   | Some env -> env
   | None -> assert false (* a compilation unit cannot refer to a functor *)
 
-let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root env =
+let open_signature
+    ?(used_slot = ref false)
+    ?(loc = Location.none) ?(toplevel = false) ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
          || Warnings.is_active (Warnings.Open_shadow_label_constructor ("","")))
   then begin
-    let used = ref false in
+    let used = used_slot in
     !add_delayed_check_forward
       (fun () ->
-        if not !used then
-          Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
+         if not !used then begin
+           used := true;
+           Location.prerr_warning loc (Warnings.Unused_open (Path.name root))
+         end
       );
     let shadowed = ref [] in
     let slot s b =

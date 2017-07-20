@@ -82,9 +82,9 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open_ ?toplevel ovf env loc lid =
+let type_open_ ?used_slot ?toplevel ovf env loc lid =
   let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
-  match Env.open_signature ~loc ?toplevel ovf path env with
+  match Env.open_signature ~loc ?used_slot ?toplevel ovf path env with
   | Some env -> path, env
   | None ->
       let md = Env.find_module path env in

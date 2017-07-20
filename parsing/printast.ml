@@ -482,6 +482,10 @@ and class_type i ppf x =
   | Pcty_extension (s, arg) ->
       line i ppf "Pcty_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcty_open (ovf, m, e) ->
+      line i ppf "Pcty_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_type i ppf e
 
 and class_signature i ppf cs =
   line i ppf "class_signature\n";
@@ -569,6 +573,10 @@ and class_expr i ppf x =
   | Pcl_extension (s, arg) ->
       line i ppf "Pcl_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcl_open (ovf, m, e) ->
+      line i ppf "Pcl_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_expr i ppf e
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";

@@ -479,6 +479,9 @@ and class_type i ppf x =
       arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
+  | Tcty_open (ovf, m, _, _, e) ->
+      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
+      class_type i ppf e
 
 and class_signature i ppf { csig_self = ct; csig_fields = l } =
   line i ppf "class_signature\n";
@@ -560,6 +563,9 @@ and class_expr i ppf x =
       class_expr i ppf ce;
       class_type i ppf ct
   | Tcl_constraint (ce, None, _, _, _) -> class_expr i ppf ce
+  | Tcl_open (ovf, m, _, _, e) ->
+      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf fmt_path m;
+      class_expr i ppf e
 
 and class_structure i ppf { cstr_self = p; cstr_fields = l } =
   line i ppf "class_structure\n";

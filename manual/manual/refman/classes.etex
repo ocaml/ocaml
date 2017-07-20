@@ -27,6 +27,7 @@ class-type:
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
    |  ['[' typexpr {',' typexpr} ']'] classtype-path
+   |  'let' 'open' module-path 'in' class-body-type
 ;
 %\end{syntax} \begin{syntax}
 class-field-spec:
@@ -74,6 +75,10 @@ instance variables and concrete private methods may be omitted).  A
 virtual method will match a concrete method, which makes it possible
 to forget its implementation. An immutable instance variable will match a
 mutable instance variable.
+
+\subsubsection*{Local opens}
+
+Local opens are supported in class types since OCaml 4.06.
 
 \subsubsection*{Inheritance}
 
@@ -173,6 +178,7 @@ class-expr:
    |  'fun' {{parameter}} '->' class-expr
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
    |  'object' class-body 'end'
+   |  'let' 'open' module-path 'in' class-expr
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -258,6 +264,9 @@ definition, it will be evaluated when the class is created (just as if
 the definition was outside of the class).
 Otherwise, it will be evaluated when the object constructor is called.
 
+\subsubsection*{Local opens}
+
+Local opens are supported in class expressions since OCaml 4.06.
 
 \subsubsection*{Class\label{ss:class-body} body}
 \begin{syntax}

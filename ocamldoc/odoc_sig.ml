@@ -606,6 +606,7 @@ module Analyser =
                     ic_text = text_opt ;
                   }
 
+              | Parsetree.Pcty_open _ (* one could also traverse the open *)
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
                     (* we don't have a name for the class signature, so we call it "object ... end"  *)
