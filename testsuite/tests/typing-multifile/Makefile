@@ -14,7 +14,7 @@
 #**************************************************************************
 
 BASEDIR=../..
-GENERATED= a.ml b.ml c.ml d.mli e.ml
+GENERATED= a.ml b.ml c.ml d.mli e.ml f.ml g.ml test
 
 default: pr7325 pr6372 pr7563
 

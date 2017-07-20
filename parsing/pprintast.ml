@@ -30,7 +30,7 @@ open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%'; '#' ]
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
@@ -795,6 +795,9 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
+  | Pcty_open (ovf, lid, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+        (class_type ctxt) e
 
 (* [class type a = object end] *)
 and class_type_declaration_list ctxt f l =
@@ -911,6 +914,9 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
+    | Pcl_open (ovf, lid, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+          (class_expr ctxt) e
 
 and module_type ctxt f x =
   if x.pmty_attributes <> [] then begin

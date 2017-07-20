@@ -314,6 +314,9 @@
 /testsuite/tests/typing-multifile/c.ml
 /testsuite/tests/typing-multifile/d.mli
 /testsuite/tests/typing-multifile/e.ml
+/testsuite/tests/typing-multifile/f.ml
+/testsuite/tests/typing-multifile/g.ml
+/testsuite/tests/typing-multifile/test
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
