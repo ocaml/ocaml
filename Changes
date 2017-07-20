@@ -9,6 +9,12 @@ Working version
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)
 
+* GPR#1232: Support Unicode character escape sequences in string
+  literals via the \u{X+} syntax. These escapes are substituted by the
+  UTF-8 encoding of the Unicode character.
+  (Daniel Bünzli, review by Damien Doligez, Alain Frisch, Xavier
+  Leroy and Leo White)
+
 - GPR#1249, MPR#6271, MPR#7529: Support "let open M in ..."
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
