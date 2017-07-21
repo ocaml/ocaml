@@ -2017,6 +2017,10 @@ if $with_fpic; then
   echo "#define CAML_WITH_FPIC" >> m.h
 fi
 
+if $safe_string; then
+  echo "#define CAML_SAFE_STRING" >> m.h
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"

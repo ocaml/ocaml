@@ -131,9 +131,10 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  const char * p;
+  char * dir, * fullname;
   int i;
   struct stat st;
 
@@ -195,7 +196,7 @@ static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, char 
 
 #endif
 
-caml_stat_string caml_search_exe_in_path(char * name)
+caml_stat_string caml_search_exe_in_path(const char * name)
 {
   struct ext_table path;
   char * tofree;
@@ -213,7 +214,7 @@ caml_stat_string caml_search_exe_in_path(char * name)
   return res;
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   caml_stat_string dllname;
   caml_stat_string res;
@@ -240,7 +241,7 @@ void caml_dlclose(void * handle)
   flexdll_dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return flexdll_dlsym(handle, name);
 }
@@ -276,7 +277,7 @@ void caml_dlclose(void * handle)
   dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
 #ifdef DL_NEEDS_UNDERSCORE
   char _name[1000] = "_";
@@ -286,7 +287,7 @@ void * caml_dlsym(void * handle, char * name)
   return dlsym(handle, name);
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
 #ifdef RTLD_DEFAULT
   return caml_dlsym(RTLD_DEFAULT, name);

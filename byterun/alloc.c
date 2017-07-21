@@ -127,7 +127,7 @@ CAMLexport value caml_copy_string(char const *s)
 
   len = strlen(s);
   res = caml_alloc_string(len);
-  memmove(String_val(res), s, len);
+  memmove((char *)String_val(res), s, len);
   return res;
 }
 
