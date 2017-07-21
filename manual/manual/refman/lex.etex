@@ -80,8 +80,8 @@ float-literal:
           [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
         | ["-"] ("0x"||"0X")
           ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
           [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}
 
@@ -151,7 +151,7 @@ string-literal:
 string-character:
           regular-string-char
         | escape-sequence
-        | "\u{" ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")+ "}"
+        | "\u{" {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }} "}"
         | '\' newline { space || tab }
 \end{syntax}
 
