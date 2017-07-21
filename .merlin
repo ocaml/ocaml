@@ -54,3 +54,6 @@ B ./typing
 
 S ./utils
 B ./utils
+
+S ./ocamltest
+B ./ocamltest
