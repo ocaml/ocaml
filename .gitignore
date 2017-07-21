@@ -172,6 +172,13 @@
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/ocamltest
+/ocamltest/ocamltest.opt
+/ocamltest/ocamltest_config.ml
+/ocamltest/tsl_lexer.ml
+/ocamltest/tsl_parser.ml
+/ocamltest/tsl_parser.mli
+
 /otherlibs/dynlink/extract_crc
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
