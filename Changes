@@ -331,6 +331,9 @@ Working version
   created by Unix.symlink under Windows.
   (Nicolas Ojeda Bar, review by David Allsopp)
 
+- MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
+  (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
+
 - GPR#1223: Fix corruption of the environment when using -short-paths
   with the toplevel.
   (Leo White, review by Alain Frisch)
