@@ -1065,8 +1065,9 @@ let end_assembly() =
 
   D.data ();
   emit_global_label "data_end";
-  D.long (const 0);
+  D.qword (const 0);
 
+  D.align 8;                            (* PR#7591 *)
   emit_global_label "frametable";
 
   let setcnt = ref 0 in
