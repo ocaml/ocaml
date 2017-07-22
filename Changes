@@ -1,3 +1,10 @@
+Working 4.05.x branch
+---------------------
+
+- MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
+  (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
+
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
