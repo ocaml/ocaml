@@ -75,6 +75,7 @@ and as a
 \input{flambda.tex}
 \input{spacetime.tex}
 \input{afl-fuzz.tex}
+\input{plugins}
 
 \part{The OCaml library}
 \label{p:library}

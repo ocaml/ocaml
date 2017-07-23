@@ -14,10 +14,17 @@ SRC = $(abspath ../../)
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 
-OCAMLDOC=$(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc -hide Pervasives
+OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
+ $(SRC)/ocamldoc/ocamldoc.opt,\
+ $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
+ -hide Pervasives
+
 MLIS=$(SRC)/stdlib/*.mli \
 	$(SRC)/utils/*.mli \
 	$(SRC)/parsing/*.mli \
+	$(SRC)/driver/pparse.mli \
+	$(SRC)/typing/typemod.mli \
+	$(SRC)/bytecomp/simplif.mli \
 	$(SRC)/otherlibs/bigarray/bigarray.mli \
 	$(SRC)/otherlibs/dynlink/dynlink.mli \
 	$(SRC)/otherlibs/graph/graphics.mli \
@@ -33,11 +40,6 @@ MLIS=$(SRC)/stdlib/*.mli \
 manual: files
 	cd texstuff; \
 	TEXINPUTS=$(TEXINPUTS) latex manual.tex
-
-labltk: cmds/browser.tex library/liblabltk.tex library/tk.mli
-	cd library; $(MAKE) Tk.tex RELEASEDIR=$(SRC)
-	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) latex labltk.tex
 
 index::
 	cd texstuff && \
@@ -63,6 +65,9 @@ html: files
 	-I $(SRC)/stdlib  \
 	-I $(SRC)/utils  \
 	-I $(SRC)/parsing \
+	-I $(SRC)/driver \
+	-I $(SRC)/typing \
+	-I $(SRC)/bytecomp \
 	-I $(SRC)/otherlibs/bigarray \
 	-I $(SRC)/otherlibs/dynlink \
 	-I $(SRC)/otherlibs/graph \

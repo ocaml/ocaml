@@ -30,7 +30,7 @@ open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%'; '#' ]
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
@@ -276,7 +276,7 @@ and core_type1 ctxt f x =
           (fun f l -> match l with
              |[] -> ()
              |[x]-> pp f "%a@;" (core_type1 ctxt)  x
-             | _ -> list ~first:"(" ~last:")@;" (core_type ctxt) ~sep:"," f l)
+             | _ -> list ~first:"(" ~last:")@;" (core_type ctxt) ~sep:",@;" f l)
           l longident_loc li
     | Ptyp_variant (l, closed, low) ->
         let type_variant_helper f x =
@@ -382,7 +382,7 @@ and pattern1 ctxt (f:Format.formatter) (x:pattern) : unit =
         else
           (match po with
            | Some x -> pp f "%a@;%a"  longident_loc li (simple_pattern ctxt) x
-           | None -> pp f "%a@;"longident_loc li )
+           | None -> pp f "%a" longident_loc li)
     | _ -> simple_pattern ctxt f x
 
 and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
@@ -415,7 +415,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
             pp f "@[<2>{@;%a;_}@]" (list longident_x_pattern ~sep:";@;") l
         end
     | Ppat_tuple l ->
-        pp f "@[<1>(%a)@]" (list  ~sep:"," (pattern1 ctxt))  l (* level1*)
+        pp f "@[<1>(%a)@]" (list  ~sep:",@;" (pattern1 ctxt))  l (* level1*)
     | Ppat_constant (c) -> pp f "%a" constant c
     | Ppat_interval (c1, c2) -> pp f "%a..%a" constant c1 constant c2
     | Ppat_variant (l,None) ->  pp f "`%s" l
@@ -518,7 +518,7 @@ and expression ctxt f x =
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_fun (l, e0, p, e) ->
-        pp f "@[<2>fun@;%a@;->@;%a@]"
+        pp f "@[<2>fun@;%a->@;%a@]"
           (label_exp ctxt) (l, e0, p)
           (expression ctxt) e
     | Pexp_function l ->
@@ -798,6 +798,9 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
+  | Pcty_open (ovf, lid, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+        (class_type ctxt) e
 
 (* [class type a = object end] *)
 and class_type_declaration_list ctxt f l =
@@ -914,6 +917,9 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
+    | Pcl_open (ovf, lid, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+          (class_expr ctxt) e
 
 and module_type ctxt f x =
   if x.pmty_attributes <> [] then begin
@@ -1133,7 +1139,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
       pp f "%a@;: %a@;=@;%a"
         (simple_pattern ctxt) p (core_type ctxt) ct (expression ctxt) e
   | Some (p, tyvars, ct, e) -> begin
-    pp f "%a@;: type@;%a.%a@;=@;%a"
+    pp f "%a@;: type@;%a.@;%a@;=@;%a"
     (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
     (tyvars_str tyvars) (core_type ctxt) ct (expression ctxt) e
     end
@@ -1158,7 +1164,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
 (* [in] is not printed *)
 and bindings ctxt f (rf,l) =
   let binding kwd rf f x =
-    pp f "@[<2>%s %a%a@]@ %a" kwd rec_flag rf
+    pp f "@[<2>%s %a%a@]%a" kwd rec_flag rf
       (binding ctxt) x (item_attributes ctxt) x.pvb_attributes
   in
   match l with
@@ -1296,7 +1302,7 @@ and type_param ctxt f (ct, a) =
 
 and type_params ctxt f = function
   | [] -> ()
-  | l -> pp f "%a " (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",") l
+  | l -> pp f "%a " (list (type_param ctxt) ~first:"(" ~last:")" ~sep:",@;") l
 
 and type_def_list ctxt f (rf, l) =
   let type_decl kwd rf f x =
@@ -1411,7 +1417,7 @@ and constructor_declaration ctxt f (name, args, res, attrs) =
         (fun f -> function
            | Pcstr_tuple [] -> core_type1 ctxt f r
            | Pcstr_tuple l -> pp f "%a@;->@;%a"
-                                (list (core_type1 ctxt) ~sep:"*@;") l
+                                (list (core_type1 ctxt) ~sep:"@;*@;") l
                                 (core_type1 ctxt) r
            | Pcstr_record l ->
                pp f "%a@;->@;%a" (record_declaration ctxt) l (core_type1 ctxt) r

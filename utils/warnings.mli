@@ -44,7 +44,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)

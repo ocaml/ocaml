@@ -54,6 +54,7 @@ with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
+with_spacetime_call_counts=false
 with_profinfo=false
 profinfo_width=0
 no_naked_pointers=false
@@ -64,7 +65,7 @@ flambda=false
 safe_string=false
 afl_instrument=false
 max_testsuite_dir_retries=0
-with_cplugins=true
+with_cplugins=false
 with_fpic=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -184,6 +185,11 @@ while : ; do
         no_naked_pointers=true;;
     -spacetime|--spacetime)
         with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
+    -spacetime-call-counts|--spacetime-call-counts)
+        with_spacetime=true
+        with_profinfo=true
+        profinfo_width=26
+        with_spacetime_call_counts=true;;
     -reserved-header-bits|--reserved-header-bits)
         with_spacetime=false; with_profinfo=true; profinfo_width=$2;shift
         case $profinfo_width in
@@ -200,8 +206,10 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
+    -with-cplugins|--with-cplugins)
+        with_cplugins=true;;
     -no-cplugins|--no-cplugins)
-        with_cplugins=false;;
+        ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
     -safe-string|--safe-string)
@@ -871,6 +879,16 @@ else
 fi
 
 
+# Try to work around the Skylake/Kaby Lake processor bug.
+case "$cc,$target" in
+    *gcc*,x86_64-*|*gcc*,i686-*)
+        if sh ./hasgot -Werror -fno-tree-vrp; then
+            internal_cflags="$internal_cflags -fno-tree-vrp"
+            inf "Adding -fno-tree-vrp option to work around PR#7452"
+        fi;;
+esac
+
+
 # Configure the native-code compiler
 
 arch=none
@@ -1104,6 +1122,19 @@ fi
 if sh ./hasgot times; then
   inf "times() found."
   echo "#define HAS_TIMES" >> s.h
+fi
+
+if sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h secure_getenv; then
+  inf "secure_getenv() found."
+  echo "#define HAS_SECURE_GETENV" >> s.h
+elif sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h __secure_getenv; then
+  inf "__secure_getenv() found."
+  echo "#define HAS___SECURE_GETENV" >> s.h
+fi
+
+if sh ./hasgot -i unistd.h issetugid; then
+  inf "issetugid() found."
+  echo "#define HAS_ISSETUGID" >> s.h
 fi
 
 # For the terminfo module
@@ -1483,6 +1514,12 @@ if sh ./hasgot accept4; then
   inf "accept4() found"
   echo "#define HAS_ACCEPT4" >> s.h
 fi
+
+if sh ./hasgot getauxval; then
+  inf "getauxval() found."
+  echo "#define HAS_GETAUXVAL" >> s.h
+fi
+
 
 # Determine if the debugger is supported
 
@@ -1864,6 +1901,9 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
+    if $with_spacetime_call_counts; then
+      echo "#define WITH_SPACETIME_CALL_COUNTS" >> m.h
+    fi
     if $disable_libunwind; then
       has_libunwind=no
       libunwind_available=false
@@ -2027,6 +2067,7 @@ echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
 echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
 echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
 echo "WITH_SPACETIME=$with_spacetime" >> Makefile
+echo "WITH_SPACETIME_CALL_COUNTS=$with_spacetime_call_counts" >> Makefile
 echo "WITH_PROFINFO=$with_profinfo" >> Makefile
 echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
 echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
@@ -2108,6 +2149,11 @@ else
   fi
   if $with_spacetime; then
     inf "        spacetime profiling....... yes"
+    if test "$with_spacetime_call_counts" = "true"; then
+      inf "          ... with call counts.... yes"
+    else
+      inf "          ... with call counts.... no"
+    fi
     inf "          ... with libunwind...... $has_libunwind"
   else
     inf "        spacetime profiling....... no"

@@ -37,6 +37,18 @@ let events_by_module =
 let all_events_by_module =
   (Hashtbl.create 17 : (string, debug_event list) Hashtbl.t)
 
+let partition_modules evl =
+  let rec partition_modules' ev evl =
+    match evl with
+      [] -> [ev],[]
+    | ev'::evl ->
+       let evl,evll = partition_modules' ev' evl in
+       if ev.ev_module = ev'.ev_module then ev::evl,evll else [ev],evl::evll
+  in
+  match evl with
+    [] -> []
+  | ev::evl -> let evl,evll = partition_modules' ev evl in evl::evll
+
 let relocate_event orig ev =
   ev.ev_pos <- orig + ev.ev_pos;
   match ev.ev_repr with
@@ -67,7 +79,8 @@ let read_symbols' bytecode_file =
     let evl = (input_value ic : debug_event list) in
     (* Relocate events in event list *)
     List.iter (relocate_event orig) evl;
-    eventlists := evl :: !eventlists;
+    let evll = partition_modules evl in
+    eventlists := evll @ !eventlists;
     dirs :=
       List.fold_left (fun s e -> StringSet.add e s) !dirs (input_value ic)
   done;

@@ -1,5 +1,6 @@
 
-# exception A
+#   - : unit = ()
+#   exception A
 # type a = A
 #   Characters 1-2:
   A;;

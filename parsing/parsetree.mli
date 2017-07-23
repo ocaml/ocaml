@@ -505,6 +505,8 @@ and class_type_desc =
          *)
   | Pcty_extension of extension
         (* [%id] *)
+  | Pcty_open of override_flag * Longident.t loc * class_type
+        (* let open M in CT *)
 
 and class_signature =
     {
@@ -594,7 +596,10 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
         (* (CE : CT) *)
   | Pcl_extension of extension
-        (* [%id] *)
+  (* [%id] *)
+  | Pcl_open of override_flag * Longident.t loc * class_expr
+  (* let open M in CE *)
+
 
 and class_structure =
     {

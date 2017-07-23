@@ -176,12 +176,10 @@ Any user-visible change should have a `Changes` entry:
   from a commit message, but it should make sense to end-users
   reading release notes)
 
-- crediting the people that worked on the feature
-
-      The people that wrote the code should be credited of course,
-      but also substantial code reviews or design advice, and the
-      reporter of the bug (if applicable) or designer of the
-      feature request (if novel).
+- crediting the people that worked on the feature. The people that
+  wrote the code should be credited of course, but also substantial
+  code reviews or design advice, and the reporter of the bug
+  (if applicable) or designer of the feature request (if novel).
 
 - following the format
 

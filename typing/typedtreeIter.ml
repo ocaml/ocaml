@@ -511,6 +511,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_ident (_, _, tyl) ->
             List.iter iter_core_type tyl
+
+        | Tcl_open (_, _, _, _, e) ->
+            iter_class_expr e
       end;
       Iter.leave_class_expr cexpr;
 
@@ -524,6 +527,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcty_arrow (_label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
+        | Tcty_open (_, _, _, _, e) ->
+            iter_class_type e
       end;
       Iter.leave_class_type ct;
 

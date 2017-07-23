@@ -103,6 +103,7 @@ be called from C \\
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
 \item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
+\item \ahref{libref/BytesLabels.html}{Module \texttt{BytesLabels}: byte sequences (with labels)}
 \item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering OCaml values with the C runtime}
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
@@ -145,8 +146,10 @@ be called from C \\
 \else
 \input{Arg.tex}
 \input{Array.tex}
+\input{ArrayLabels.tex}
 \input{Buffer.tex}
 \input{Bytes.tex}
+\input{BytesLabels.tex}
 \input{Callback.tex}
 \input{Char.tex}
 \input{Complex.tex}
@@ -162,6 +165,7 @@ be called from C \\
 \input{Lazy.tex}
 \input{Lexing.tex}
 \input{List.tex}
+\input{ListLabels.tex}
 \input{Map.tex}
 \input{Marshal.tex}
 \input{MoreLabels.tex}
@@ -180,6 +184,7 @@ be called from C \\
 \input{StdLabels.tex}
 \input{Stream.tex}
 \input{String.tex}
+\input{StringLabels.tex}
 \input{Sys.tex}
 \input{Uchar.tex}
 \input{Weak.tex}
