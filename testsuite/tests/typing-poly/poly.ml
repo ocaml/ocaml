@@ -1587,9 +1587,9 @@ Line _, characters 11-20:
 Error: Illegal open object type
 |}]
 
-fun (_ : ('a * 'b)) x -> (x : < <m: 'a> ; <m: 'b> >)
+let g = fun (y : ('a * 'b)) x -> (x : < <m: 'a> ; <m: 'b> >)
 [%%expect{|
-'a * 'a -> < m : 'a > -> < m : 'a > = <fun>
+val g : 'a * 'a -> < m : 'a > -> < m : 'a > = <fun>
 |}]
 
 type 'a t = <m: 'a ; m: int>
