@@ -5,6 +5,10 @@ Working version
 
 ### Language features:
 
+- MPR#6271, MPR#7529, GPR#1249: Support "let open M in ..."
+  in class expressions and class type expressions.
+  (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
+
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)
@@ -14,10 +18,6 @@ Working version
   UTF-8 encoding of the Unicode character.
   (Daniel Bünzli, review by Damien Doligez, Alain Frisch, Xavier
   Leroy and Leo White)
-
-- GPR#1249, MPR#6271, MPR#7529: Support "let open M in ..."
-  in class expressions and class type expressions.
-  (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
 ### Code generation and optimizations:
 
@@ -38,7 +38,6 @@ Working version
   (Leo White and Jeremy Yallop, report by Stephen Dolan)
 
 - MPR#7501, GPR#1089: Consider arrays of length zero as constants
-- MPR#7501, GPR#1089: Consider arrays of length zero as constants
   when using Flambda.
   (Pierre Chambart, review by Mark Shinwell and Leo White)
 
@@ -54,18 +53,7 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
-- MPR#7531, GPR#1162: Erroneous code transformation at partial applications
-  (Mark Shinwell)
-
 ### Standard library:
-
-- GPR#1217: Restrict Unix.environment in privileged contexts; add
-  Unix.unsafe_environment.
-  (Jeremy Yallop, review by Mark Shinwell, Nicolas Ojeda Bar,
-  Damien Doligez and Hannes Mehnert)
-
-- GRP#1119: Change Set (private) type to inline records.
-  (Albin Coquereau)
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
@@ -77,6 +65,19 @@ Working version
   tab is not present, then space is used as a fallback. Allows to have spaces in
   the unaligned part, which is useful for Tuple options.
   (Nicolas Ojeda Bar, review by Alain Frisch and Gabriel Scherer)
+
+* GPR#943: Fixed the divergence of the Pervasives module between the stdlib
+  and threads implementations.  In rare circumstances this can change the
+  behavior of existing applications: the implementation of Pervasives.close_out
+  used when compiling with thread support was inconsistent with the manual.
+  It will now not suppress exceptions escaping Pervasives.flush anymore.
+  Developers who want the old behavior should use Pervasives.close_out_noerr
+  instead.  The stdlib implementation, used by applications not compiled
+  with thread support, will now only suppress Sys_error exceptions in
+  Pervasives.flush_all.  This should allow exceedingly unlikely assertion
+  exceptions to escape, which could help reveal bugs in the standard library.
+  (Markus Mottl, review by Hezekiah M. Carty, Jeremie Dimino, Damien Doligez,
+  Alain Frisch, Xavier Leroy, Gabriel Scherer and Mark Shinwell)
 
 - GPR#997, GPR#1077: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
@@ -94,27 +95,26 @@ Working version
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
+- GRP#1119: Change Set (private) type to inline records.
+  (Albin Coquereau)
+
 - GPR#1175: bigarray, add a change_layout function to each Array[N]
   submodules.
   (Florian Angeletti)
 
+- GPR#1217: Restrict Unix.environment in privileged contexts; add
+  Unix.unsafe_environment.
+  (Jeremy Yallop, review by Mark Shinwell, Nicolas Ojeda Bar,
+  Damien Doligez and Hannes Mehnert)
+
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
-* GPR#943: Fixed the divergence of the Pervasives module between the stdlib
-  and threads implementations.  In rare circumstances this can change the
-  behavior of existing applications: the implementation of Pervasives.close_out
-  used when compiling with thread support was inconsistent with the manual.
-  It will now not suppress exceptions escaping Pervasives.flush anymore.
-  Developers who want the old behavior should use Pervasives.close_out_noerr
-  instead.  The stdlib implementation, used by applications not compiled
-  with thread support, will now only suppress Sys_error exceptions in
-  Pervasives.flush_all.  This should allow exceedingly unlikely assertion
-  exceptions to escape, which could help reveal bugs in the standard library.
-  (Markus Mottl, review by Hezekiah M. Carty, Jeremie Dimino, Damien Doligez,
-  Alain Frisch, Xavier Leroy, Gabriel Scherer and Mark Shinwell)
-
 ### Compiler user-interface and warnings:
+
+- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
+  attribute is hidden by signature coercion
+  (Alain Frisch, report by bmillwood, review by Leo White)
 
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
   (Hugo Heuzard)
@@ -123,10 +123,6 @@ Working version
   them with "Error (warning ..):", instead of "Warning ..:" and
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
-
-- MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
-  attribute is hidden by signature coercion
-  (Alain Frisch, report by bmillwood, review by Leo White)
 
 ### Manual and documentation:
 
@@ -167,26 +163,17 @@ Working version
 
 ### Tools:
 
-- MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
-  provides better error messages by default.
-  (Daniel Bünzli)
-
-- GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
-  to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
-  "boot" directory to reduce its size in the future.
-  (Fabrice Le Fessant)
-
-- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
-  for native plugin files (i.e. .cmxs files)
-  (Florian Angeletti, suggestion by Sébastien Hinderer)
-
 - MPR#1956, GPR#973: tools/check-symbol-names checks for globally
   linked names not namespaced with caml_
   (Stephen Dolan)
 
-- MPR#6928: ocamldoc, do not introduce an empty <h1> in index.html when
-  no -title has been provided
+- MPR#6928, GPR#1103: ocamldoc, do not introduce an empty <h1> in index.html
+  when no -title has been provided
   (Pierre Boutillier)
+
+- MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
+  provides better error messages by default.
+  (Daniel Bünzli)
 
 * MPR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
   backend
@@ -197,6 +184,15 @@ Working version
 
 - MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
+
+- GPR#1045: ocamldep, add a "-shared" option to generate dependencies
+  for native plugin files (i.e. .cmxs files)
+  (Florian Angeletti, suggestion by Sébastien Hinderer)
+
+- GPR#1078: add a subcommand "-depend" to "ocamlc" and "ocamlopt",
+  to behave as ocamldep. Should be used mostly to replace "ocamldep" in the
+  "boot" directory to reduce its size in the future.
+  (Fabrice Le Fessant)
 
 - GPR#1012: ocamlyacc, fix parsing of raw strings and nested comments, as well
   as the handling of ' characters in identifiers.
@@ -238,6 +234,10 @@ Working version
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
   (Alain Frisch, review by Frédéric Bour and Jacques Garrigue)
 
+- MPR#7127, GPR#454, GPR#1058: in toplevel, print bytes and strip
+  strings longer than the size specified by the "print_length" directive
+  (Fabrice Le Fessant, initial PR by Junsong Li)
+
 - MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
   also displays memory allocation and consumption
   (Valentin Gatien-Baron, report by Gabriel Scherer)
@@ -254,17 +254,12 @@ Working version
   included by other header files
   (Sébastien Hinderer)
 
-- GPR#1058, MPR#7127, GPR#454: in toplevel, print bytes and strip
-  strings longer than the size specified by the "print_length" directive
-  (Fabrice Le Fessant, initial PR by Junsong Li)
-
 ### Bug fixes
 
-- PR#248: unique names for weak type variables
+- MPR#248, GPR#1225: unique names for weak type variables
   (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
    Gabriel Radanne and Gabriel Scherer)
 
-- PR#5927: Type equality broken for conjunctive polymorphic variant tags
 - MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
@@ -301,31 +296,24 @@ Working version
 - MPR#7506: pprintast ignores attributes in tails of a list
   (Alain Frisch, report by Kenichi Asai and Gabriel Scherer)
 
+- MPR#7513: List.compare_length_with mishandles negative numbers / overflow
+  (Fabrice Le Fessant, report by Jeremy Yallop)
+
 - MPR#7540, GPR#1179: Fixed setting of breakpoints within packed modules
   for ocamldebug
   (Hugo Herbelin, review by Gabriel Scherer, Damien Doligez)
-
-- MPR#7543: short-paths printtyp can fail on packed type error messages
-  (Florian Angeletti)
-
-- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
-  (Jérémie Dimino and David Allsopp)
-
-- MPR#7513: List.compare_length_with mishandles negative numbers / overflow
-  (Fabrice Le Fessant, report by Jeremy Yallop)
 
 - MPR#7531a: Default argument is not evaluated even after passing a
   non-labeled argument
   (Jacques Garrigue, report by Stephen Dolan)
 
+- MPR#7543: short-paths printtyp can fail on packed type error messages
+  (Florian Angeletti)
+
 - MPR#7563, GPR#1210: code generation bug when a module alias and
   an extension constructor have the same name in the same module
   (Gabriel Scherer, report by Manuel Fähndrich,
    review by Jacques Garrigue and Leo White)
-
-- GPR#1199: Pretty-printing formatting cleanup in pprintast
-  (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
-  Florian Angeletti, and Gabriel Scherer)
 
 - MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
   created by Unix.symlink under Windows.
@@ -333,6 +321,13 @@ Working version
 
 - MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
   (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
+
+- GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
+  (Jérémie Dimino and David Allsopp)
+
+- GPR#1199: Pretty-printing formatting cleanup in pprintast
+  (Ethan Aubin, suggestion by Gabriel Scherer, review by David Allsopp,
+  Florian Angeletti, and Gabriel Scherer)
 
 - GPR#1223: Fix corruption of the environment when using -short-paths
   with the toplevel.
@@ -353,12 +348,6 @@ Working version
 - GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
   (Olivier Andrieu)
 
-Next major version (4.05.0):
-----------------------------
-OCaml 4.05.0 (TBD):
-----------------------------
-OCaml 4.05.0 (13 Jul 2017):
----------------------------
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
