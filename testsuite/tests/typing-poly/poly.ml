@@ -1586,8 +1586,18 @@ type t = < int #A.t1 >
 Line _, characters 11-20:
 Error: Illegal open object type
 |}]
-(* GPR#1142 *)
 
+fun (_ : ('a * 'b)) x -> (x : < <m: 'a> ; <m: 'b> >)
+[%%expect{|
+'a * 'a -> < m : 'a > -> < m : 'a > = <fun>
+|}]
+
+type 'a t = <m: 'a ; m: int>
+[%%expect{|
+type 'a t = < m : 'a > constraint 'a = int
+|}]
+
+(* GPR#1142 *)
 module M () = struct
   let f : 'a -> 'a = assert false
   let g : 'a -> 'a = raise Not_found
