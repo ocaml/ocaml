@@ -476,13 +476,15 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+	  ocamltest.opt
 else
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
+         ocamltest.opt
 endif
 
 .PHONY: base.opt
@@ -493,7 +495,7 @@ base.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
@@ -525,7 +527,7 @@ coreboot:
 all: runtime
 	$(MAKE) coreall
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
 # Bootstrap and rebuild the whole system.
 # The compilation of ocaml will fail if the runtime has changed.
@@ -695,8 +697,6 @@ installopt:
 	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
 	fi
 
-
-
 .PHONY: installoptopt
 installoptopt:
 	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
@@ -735,7 +735,7 @@ install-compiler-sources:
 # Run all tests
 
 .PHONY: tests
-tests: opt.opt
+tests: opt.opt ocamltest
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
 # Make clean in the test suite
@@ -976,7 +976,7 @@ clean::
 
 otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
   str systhreads threads unix win32graph win32unix
-subdirs := asmrun byterun debugger lex ocamldoc stdlib tools \
+subdirs := asmrun byterun debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all))
 
 .PHONY: alldepend
@@ -1051,6 +1051,16 @@ ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	$(MAKE) -C ocamldoc opt.opt
+
+# OCamltest
+ocamltest: ocamlc ocamlyacc ocamllex
+	$(MAKE) -C ocamltest
+
+ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
+	$(MAKE) -C ocamltest ocamltest.opt$(EXE)
+
+partialclean::
+	$(MAKE) -C ocamltest clean
 
 # Documentation
 
