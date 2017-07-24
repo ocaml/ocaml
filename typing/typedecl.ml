@@ -54,7 +54,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_repr_attribute
+  | Bad_repr_attribute of type_repr
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
@@ -1164,7 +1164,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
     List.iter (fun (_, decl) ->
       let repr = marked_as_immediate decl in
       if not (Ctype.subtype_repr repr decl.type_repr) then
-        raise (Error (decl.type_loc, Bad_repr_attribute))
+        raise (Error (decl.type_loc, Bad_repr_attribute repr))
       else ())
       new_decls;
     List.iter2
@@ -2113,10 +2113,15 @@ let report_error ppf = function
         "The attribute '%s' should be attached to a direct argument or \
          result of the primitive, it should not occur deeply into its type"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Bad_repr_attribute ->
-      fprintf ppf "@[%s@ %s@]"
-        "Types marked with the immediate attribute must be"
-        "non-pointer types like int or bool"
+  | Bad_repr_attribute repr ->
+      let attr, example = match repr with
+      | Repr_immediate -> "immediate", "non-pointer types like int or bool"
+      | Repr_address -> "address", "any type wich is neither lazy nor float"
+      | Repr_any -> assert false (* Any is compatible with everything *)
+      in
+      fprintf ppf
+        "@[Types marked with the %s attribute must be@ %s@]"
+        attr example
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
   | Wrong_unboxed_type_float ->
