@@ -898,9 +898,9 @@ let rec tree_of_type_decl id decl =
         Public
   in
   let otype_representation =
-    match decl.type_manifest with
-    | None -> decl.type_representation
-    | Some _ -> Asttypes.Generic
+    match decl.type_kind, decl.type_manifest with
+    | Type_abstract, None -> decl.type_representation
+    | _ -> Asttypes.Generic
   in
     { otype_name = name;
       otype_params = args;

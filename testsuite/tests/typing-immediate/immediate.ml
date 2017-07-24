@@ -23,13 +23,7 @@ module A = struct
 end;;
 [%%expect{|
 module A :
-  sig
-    type t [@@immediate]
-    type s = t [@@immediate]
-    type r = s
-    type p = q [@@immediate]
-    and q = int
-  end
+  sig type t [@@immediate] type s = t type r = s type p = q and q = int end
 |}];;
 
 (* Valid using with constraints *)
@@ -103,8 +97,7 @@ module B = struct
 end;;
 [%%expect{|
 Line _, characters 2-31:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Explicit representation attribute (immediate) not compatible with inferred representation (addr)
 |}];;
 
 (* Not guaranteed that t is immediate, so this is an invalid declaration *)
@@ -114,8 +107,7 @@ module C = struct
 end;;
 [%%expect{|
 Line _, characters 2-26:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Explicit representation attribute (immediate) not compatible with inferred representation (generic)
 |}];;
 
 (* Can't ascribe to an immediate type signature with a non-immediate type *)
@@ -133,7 +125,7 @@ Error: Signature mismatch:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       Their runtime representations do not agree.
 |}];;
 
 (* Same as above but with explicit signature *)
@@ -147,7 +139,7 @@ Error: Signature mismatch:
          type t = string
        is not included in
          type t [@@immediate]
-       the first is not an immediate type.
+       Their runtime representations do not agree.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)
@@ -157,6 +149,5 @@ module E = struct
 end;;
 [%%expect{|
 Line _, characters 2-26:
-Error: Types marked with the immediate attribute must be
-       non-pointer types like int or bool
+Error: Explicit representation attribute (immediate) not compatible with inferred representation (addr)
 |}];;

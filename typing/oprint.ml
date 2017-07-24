@@ -521,11 +521,11 @@ and print_out_type_decl kwd ppf td =
   in
   let print_representation ppf =
     match td.otype_representation with
-    | Asttypes.Immediate -> fprintf ppf " [%@%@ocaml.immediate]"
-    | Asttypes.Float -> fprintf ppf " [%@%@ocaml.float]"
-    | Asttypes.Lazy -> fprintf ppf " [%@%@ocaml.lazy]"
-    | Asttypes.Non_float -> fprintf ppf " [%@%@ocaml.non_float]"
-    | Asttypes.Addr -> fprintf ppf " [%@%@ocaml.addr]"
+    | Asttypes.Immediate -> fprintf ppf " [%@%@immediate]"
+    | Asttypes.Float -> fprintf ppf " [%@%@float]"
+    | Asttypes.Lazy -> fprintf ppf " [%@%@lazy]"
+    | Asttypes.Non_float -> fprintf ppf " [%@%@non_float]"
+    | Asttypes.Addr -> fprintf ppf " [%@%@addr]"
     | Asttypes.Generic -> () (*fprintf ppf " (*generic*)"*)
   in
   let print_unboxed ppf =
