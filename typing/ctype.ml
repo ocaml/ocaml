@@ -4590,3 +4590,9 @@ let type_representation env ty =
       Addr
   | _ ->
       Generic
+
+
+let typedecl_representation env decl =
+  match decl.type_manifest with
+  | Some ty -> type_representation env ty
+  | None -> decl.type_representation

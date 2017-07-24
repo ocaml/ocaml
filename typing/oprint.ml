@@ -526,7 +526,7 @@ and print_out_type_decl kwd ppf td =
     | Asttypes.Lazy -> fprintf ppf " [%@%@ocaml.lazy]"
     | Asttypes.Non_float -> fprintf ppf " [%@%@ocaml.non_float]"
     | Asttypes.Addr -> fprintf ppf " [%@%@ocaml.addr]"
-    | Asttypes.Generic -> ()
+    | Asttypes.Generic -> () (*fprintf ppf " (*generic*)"*)
   in
   let print_unboxed ppf =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()

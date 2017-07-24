@@ -315,7 +315,9 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   (* If attempt to assign a non-immediate type (e.g. string) to a type that
    * must be immediate, then we error *)
   let err =
-    if not (Types.Representation.subtype decl1.type_representation decl2.type_representation)
+    let r1 = Ctype.typedecl_representation env decl1 in
+    let r2 = Ctype.typedecl_representation env decl2 in
+    if not (Types.Representation.subtype r1 r2)
     then [Representation]
     else []
   in

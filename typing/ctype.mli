@@ -285,6 +285,7 @@ val reset_reified_var_counter: unit -> unit
 
 val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
 val type_representation: Env.t -> type_expr -> type_representation
+val typedecl_representation: Env.t -> type_declaration -> type_representation
 
 (* Stubs *)
 val package_subtype :
