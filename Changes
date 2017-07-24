@@ -147,6 +147,9 @@ Working version
 - MPR#7254, GPR#1096: Rudimentary documentation of ocamlnat
   (Mark Shinwell)
 
+- MPR#7281, GPR#1259: fix .TH macros in generated manpages
+  (Olaf Hering)
+
 - MPR#7507: Align the description of the printf conversion
   specification "%g" with the ISO C90 description.
   (Florian Angeletti)
