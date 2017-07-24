@@ -1,7 +1,7 @@
 module type S = sig type t [@@immediate] end;;
 module F (M : S) : S = M;;
 [%%expect{|
-module type S = sig type t [@@immediate] end
+module type S = sig type t [@@repr(immediate)] end
 module F : functor (M : S) -> S
 |}];;
 
@@ -24,10 +24,10 @@ end;;
 [%%expect{|
 module A :
   sig
-    type t [@@immediate]
-    type s = t [@@immediate]
+    type t [@@repr(immediate)]
+    type s = t [@@repr(immediate)]
     type r = s
-    type p = q [@@immediate]
+    type p = q [@@repr(immediate)]
     and q = int
   end
 |}];;
@@ -39,7 +39,7 @@ module Z = ((Y : X with type t = int) : sig type t [@@immediate] end);;
 [%%expect{|
 module type X = sig type t end
 module Y : sig type t = int end
-module Z : sig type t [@@immediate] end
+module Z : sig type t [@@repr(immediate)] end
 |}];;
 
 (* Valid using an explicit signature *)
@@ -64,7 +64,7 @@ module Bar : sig type t [@@immediate] val x : t ref end = struct
   let x = ref 0
 end;;
 [%%expect{|
-module Bar : sig type t [@@immediate] val x : t ref end
+module Bar : sig type t [@@repr(immediate)] val x : t ref end
 |}];;
 
 let test f =
@@ -128,12 +128,13 @@ Error: Signature mismatch:
        Modules do not match:
          sig type t = string end
        is not included in
-         sig type t [@@immediate] end
+         sig type t [@@repr(immediate)] end
        Type declarations do not match:
          type t = string
        is not included in
-         type t [@@immediate]
-       the first is not an immediate type.
+         type t [@@repr(immediate)]
+       Their internal representations differ:
+       immediate is not a subrepresentation of any.
 |}];;
 
 (* Same as above but with explicit signature *)
@@ -146,8 +147,9 @@ Error: Signature mismatch:
        Type declarations do not match:
          type t = string
        is not included in
-         type t [@@immediate]
-       the first is not an immediate type.
+         type t [@@repr(immediate)]
+       Their internal representations differ:
+       immediate is not a subrepresentation of any.
 |}];;
 
 (* Can't use a non-immediate type even if mutually recursive *)
