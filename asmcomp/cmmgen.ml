@@ -1611,12 +1611,13 @@ let rec is_unboxed_number ~strict env e =
 type assignment_kind = Caml_modify | Caml_initialize | Simple
 
 let assignment_kind ptr init =
-  match init, ptr with
-  | Assignment, Pointer -> Caml_modify
-  | Heap_initialization, Pointer -> Caml_initialize
-  | Assignment, Immediate
-  | Heap_initialization, Immediate
-  | Root_initialization, (Immediate | Pointer) -> Simple
+  let is_int = match ptr with Immediate -> true | _ -> false in
+  match init, is_int with
+  | Assignment, false -> Caml_modify
+  | Heap_initialization, false -> Caml_initialize
+  | Assignment, true
+  | Heap_initialization, true
+  | Root_initialization, _ -> Simple
 
 (* Translate an expression *)
 
