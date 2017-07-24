@@ -874,7 +874,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^cl.cl_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -932,7 +932,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^ct.clt_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1024,7 +1024,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^mt.mt_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1106,7 +1106,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^m.m_name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
 
@@ -1212,7 +1212,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^name^"\" ");
         bs b !man_section ;
-        bs b (" source: "^Odoc_misc.current_date^" ");
+        bs b (" "^Odoc_misc.current_date^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Global.title with Some t -> t | None -> "")^"\"\n");
         bs b ".SH NAME\n";
