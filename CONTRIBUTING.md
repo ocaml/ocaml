@@ -41,7 +41,9 @@ All changes to the OCaml distribution need to be processed through the
 GitHub Pull Request (PR) system.  In order to propose a change, a
 contributor thus needs to have a GitHub account, fork the ocaml/ocaml
 repository, create a branch for the proposal on their fork and submit
-it as a Pull Request on the upstream repository.
+it as a Pull Request on the upstream repository.  (If you are not yet
+familiar with GitHub, don't worry, all these steps are actually quite
+easy!)
 
 The current rule is that a PR needs to get an explicit approval from
 one of the core maintainer in order to be merged.  Reviews by
