@@ -30,8 +30,8 @@ let prim_size (prim : Lambda.primitive) args =
     | Root_initialization -> 1  (* never causes a write barrier hit *)
     | Assignment | Heap_initialization ->
       match isptr with
-      | Pointer -> 4
       | Immediate -> 1
+      | _ -> 4
     end
   | Pfloatfield _ -> 1
   | Psetfloatfield _ -> 1

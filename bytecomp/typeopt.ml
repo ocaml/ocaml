@@ -16,6 +16,7 @@
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
 open Path
+open Asttypes
 open Types
 open Typedtree
 open Lambda
@@ -26,7 +27,7 @@ let scrape_ty env ty =
   | Tconstr (p, _, _) ->
       begin match Env.find_type p env with
       | {type_unboxed = {unboxed = true; _}; _} ->
-        begin match Typedecl.get_unboxed_type_representation env ty with
+        begin match Ctype.get_unboxed_type_representation env ty with
         | None -> ty
         | Some ty2 -> ty2
         end
@@ -48,63 +49,17 @@ let is_base_type env ty base_ty_path =
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
-let maybe_pointer_type env ty =
-  if Ctype.maybe_pointer_type env ty then
-    Pointer
-  else
-    Immediate
-
-let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
-
-type classification =
-  | Int
-  | Float
-  | Lazy
-  | Addr  (* anything except a float or a lazy *)
-  | Any
-
-let classify env ty =
-  let ty = scrape_ty env ty in
-  if maybe_pointer_type env ty = Immediate then Int
-  else match ty.desc with
-  | Tvar _ | Tunivar _ ->
-      Any
-  | Tconstr (p, _args, _abbrev) ->
-      if Path.same p Predef.path_float then Float
-      else if Path.same p Predef.path_lazy_t then Lazy
-      else if Path.same p Predef.path_string
-           || Path.same p Predef.path_bytes
-           || Path.same p Predef.path_array
-           || Path.same p Predef.path_nativeint
-           || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then Addr
-      else begin
-        try
-          match (Env.find_type p env).type_kind with
-          | Type_abstract ->
-              Any
-          | Type_record _ | Type_variant _ | Type_open ->
-              Addr
-        with Not_found ->
-          (* This can happen due to e.g. missing -I options,
-             causing some .cmi files to be unavailable.
-             Maybe we should emit a warning. *)
-          Any
-      end
-  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
-      Addr
-  | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
-      assert false
+let expr_type_representation exp = Ctype.type_representation exp.exp_env exp.exp_type
 
 let array_type_kind env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
-      begin match classify env elt_ty with
-      | Any -> Pgenarray
+      begin match Ctype.type_representation env elt_ty with
+      | Generic -> Pgenarray
       | Float -> Pfloatarray
-      | Addr | Lazy -> Paddrarray
-      | Int -> Pintarray
+      | Non_float | Addr | Lazy -> Paddrarray
+      | Immediate -> Pintarray
       end
 
   | _ ->
@@ -169,6 +124,6 @@ let value_kind env ty =
 
 
 let lazy_val_requires_forward env ty =
-  match classify env ty with
-  | Any | Float | Lazy -> true
-  | Addr | Int -> false
+  match Ctype.type_representation env ty with
+  | Generic | Float | Lazy | Non_float -> true
+  | Addr | Immediate -> false

@@ -136,6 +136,20 @@ module Variance = struct
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
 end
 
+module Representation = struct
+  type t = type_representation
+
+  let subtype r1 r2 =
+    match r1, r2 with
+    | _, Generic
+    | Immediate, (Immediate | Non_float | Addr)
+    | Float, Float
+    | Lazy, (Lazy | Non_float)
+    | Addr, (Addr | Non_float)
+    | Non_float, Non_float -> true
+    | _ -> false
+end
+
 (* Type definitions *)
 
 type type_declaration =
@@ -148,7 +162,7 @@ type type_declaration =
     type_newtype_level: (int * int) option;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool;
+    type_representation: type_representation;
     type_unboxed: unboxed_status;
  }
 
@@ -322,12 +336,12 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
-let equal_tag t1 t2 = 
+let equal_tag t1 t2 =
   match (t1, t2) with
   | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
   | Cstr_block i1, Cstr_block i2 -> i2 = i1
   | Cstr_unboxed, Cstr_unboxed -> true
-  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> 
+  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) ->
       Path.same path1 path2 && b1 = b2
   | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
 

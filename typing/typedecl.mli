@@ -59,10 +59,6 @@ val compute_variance_decls:
     (Types.type_declaration * Types.type_declaration *
      Types.class_declaration * Types.class_type_declaration) list
 
-(* for typeopt.ml *)
-val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
-
-
 type native_repr_kind = Unboxed | Untagged
 
 type error =
@@ -95,7 +91,8 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Bad_representation_attribute of
+      Asttypes.type_representation * Asttypes.type_representation
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed

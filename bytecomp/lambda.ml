@@ -34,10 +34,6 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
-type immediate_or_pointer =
-  | Immediate
-  | Pointer
-
 type initialization_or_assignment =
   | Assignment
   | Heap_initialization
@@ -62,8 +58,8 @@ type primitive =
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
   | Pfield_computed
-  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
-  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
+  | Psetfield of int * type_representation * initialization_or_assignment
+  | Psetfield_computed of type_representation * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int

@@ -280,6 +280,14 @@ module Variance : sig
   val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
 end
 
+(* Type representation *)
+
+module Representation: sig
+  type t = type_representation
+
+  val subtype: t -> t -> bool
+end
+
 (* Type definitions *)
 
 type type_declaration =
@@ -294,7 +302,7 @@ type type_declaration =
     (* definition level * expansion level *)
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
-    type_immediate: bool; (* true iff type should not be a pointer *)
+    type_representation: type_representation;
     type_unboxed: unboxed_status;
   }
 

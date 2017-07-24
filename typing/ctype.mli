@@ -283,8 +283,8 @@ val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
 
-val maybe_pointer_type : Env.t -> type_expr -> bool
-       (* True if type is possibly pointer, false if definitely not a pointer *)
+val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
+val type_representation: Env.t -> type_expr -> type_representation
 
 (* Stubs *)
 val package_subtype :

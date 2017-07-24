@@ -897,14 +897,19 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest Otyp_open,
         Public
   in
-  let immediate =
-    Builtin_attributes.immediate decl.type_attributes
+  let otype_representation =
+    decl.type_representation
+      (*
+    match decl.type_kind with
+    | Type_abstract -> decl.type_representation
+    | _ -> Asttypes.Generic
+*)
   in
     { otype_name = name;
       otype_params = args;
       otype_type = ty;
       otype_private = priv;
-      otype_immediate = immediate;
+      otype_representation;
       otype_unboxed = decl.type_unboxed.unboxed;
       otype_cstrs = constraints }
 
@@ -1199,7 +1204,7 @@ let dummy =
     type_private = Public; type_manifest = None; type_variance = [];
     type_newtype_level = None; type_loc = Location.none;
     type_attributes = [];
-    type_immediate = false;
+    type_representation = Generic;
     type_unboxed = unboxed_false_default_false;
   }
 

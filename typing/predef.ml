@@ -124,11 +124,12 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
-   type_immediate = false;
+   type_representation = Asttypes.Addr;
    type_unboxed = unboxed_false_default_false;
   }
 
-let decl_abstr_imm = {decl_abstr with type_immediate = true}
+let decl_abstr_imm = {decl_abstr with type_representation = Asttypes.Immediate}
+let decl_float = {decl_abstr with type_representation = Asttypes.Float}
 
 let cstr id args =
   {
@@ -150,11 +151,11 @@ let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = true}
+     type_representation = Asttypes.Immediate}
   and decl_unit =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = true}
+     type_representation = Asttypes.Immediate}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
@@ -163,7 +164,8 @@ let common_initial_env add_type add_extension empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_variance = [Variance.full]}
+     type_variance = [Variance.full];
+    }
   and decl_list =
     let tvar = newgenvar() in
     {decl_abstr with
@@ -184,6 +186,7 @@ let common_initial_env add_type add_extension empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
+     type_representation = Asttypes.Lazy;
      type_variance = [Variance.covariant]}
   in
 
@@ -224,7 +227,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_exn decl_exn (
   add_type ident_unit decl_unit (
   add_type ident_bool decl_bool (
-  add_type ident_float decl_abstr (
+  add_type ident_float decl_float (
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr_imm (
   add_type ident_int decl_abstr_imm (

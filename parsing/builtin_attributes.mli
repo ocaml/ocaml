@@ -55,7 +55,7 @@ val warn_on_literal_pattern: Parsetree.attributes -> bool
 val explicit_arity: Parsetree.attributes -> bool
 
 
-val immediate: Parsetree.attributes -> bool
+val type_representation: Parsetree.attributes -> Asttypes.type_representation
 
 val has_unboxed: Parsetree.attributes -> bool
 val has_boxed: Parsetree.attributes -> bool

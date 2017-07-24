@@ -176,7 +176,7 @@ let primitives_table = create_hashtable 57 [
   "%loc_MODULE", Ploc Loc_MODULE;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, Pointer, Assignment);
+  "%setfield0", Psetfield(0, Generic, Assignment);
   "%makeblock", Pmakeblock(0, Immutable, None);
   "%makemutable", Pmakeblock(0, Mutable, None);
   "%raise", Praise Raise_regular;
@@ -367,15 +367,18 @@ let specialize_comparison table env ty =
            nativeintcomp, int32comp, int64comp, _) = table in
   match () with
   | () when is_base_type env ty Predef.path_int
-         || is_base_type env ty Predef.path_char
-         || (maybe_pointer_type env ty = Immediate)   -> intcomp
+         || is_base_type env ty Predef.path_char      -> intcomp
   | () when is_base_type env ty Predef.path_float     -> floatcomp
   | () when is_base_type env ty Predef.path_string    -> stringcomp
   | () when is_base_type env ty Predef.path_bytes     -> bytescomp
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
   | () when is_base_type env ty Predef.path_int32     -> int32comp
   | () when is_base_type env ty Predef.path_int64     -> int64comp
-  | () -> gencomp
+  | () ->
+      match Ctype.type_representation env ty with
+      | Immediate -> intcomp
+      | Float -> floatcomp
+      | _ -> gencomp
 
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
@@ -402,7 +405,7 @@ let specialize_primitive p env ty ~has_constant_constructor =
     in
     match (p, params) with
       (Psetfield(n, _, init), [_p1; p2]) ->
-        Psetfield(n, maybe_pointer_type env p2, init)
+        Psetfield(n, Ctype.type_representation env p2, init)
     | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
     | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
     | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
@@ -926,11 +929,11 @@ and transl_exp0 e =
         match lbl.lbl_repres with
           Record_regular
         | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+            Psetfield(lbl.lbl_pos, expr_type_representation newval, Assignment)
         | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
         | Record_extension ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
+            Psetfield (lbl.lbl_pos + 1, expr_type_representation newval, Assignment)
       in
       Lprim(access, [transl_exp arg; transl_exp newval], e.exp_loc)
   | Texp_array expr_list ->
@@ -1289,7 +1292,7 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar loc self var expr =
-  Lprim(Psetfield_computed (maybe_pointer expr, Assignment),
+  Lprim(Psetfield_computed (expr_type_representation expr, Assignment),
     [self; transl_normal_path var; transl_exp expr], loc)
 
 and transl_record loc env fields repres opt_init_expr =
@@ -1375,11 +1378,13 @@ and transl_record loc env fields repres opt_init_expr =
             match repres with
               Record_regular
             | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+                Psetfield(lbl.lbl_pos, expr_type_representation expr,
+                          Assignment)
             | Record_unboxed _ -> assert false
             | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
             | Record_extension ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
+                Psetfield(lbl.lbl_pos + 1, expr_type_representation expr,
+                          Assignment)
           in
           Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
     in

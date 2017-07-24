@@ -88,7 +88,7 @@ let constructor_args priv cd_args cd_res path rep =
           type_newtype_level = None;
           type_loc = Location.none;
           type_attributes = [];
-          type_immediate = false;
+          type_representation = Generic;
           type_unboxed;
         }
       in

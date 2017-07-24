@@ -19,9 +19,7 @@ val is_function_type :
       Env.t -> Types.type_expr -> (Types.type_expr * Types.type_expr) option
 val is_base_type : Env.t -> Types.type_expr -> Path.t -> bool
 
-val maybe_pointer_type : Env.t -> Types.type_expr
-  -> Lambda.immediate_or_pointer
-val maybe_pointer : Typedtree.expression -> Lambda.immediate_or_pointer
+val expr_type_representation: Typedtree.expression -> Asttypes.type_representation
 
 val array_type_kind : Env.t -> Types.type_expr -> Lambda.array_kind
 val array_kind : Typedtree.expression -> Lambda.array_kind

@@ -205,12 +205,14 @@ let explicit_arity =
       | _ -> false
     )
 
-let immediate =
-  List.exists
-    (function
-      | ({txt="ocaml.immediate"|"immediate"; _}, _) -> true
-      | _ -> false
-    )
+let rec type_representation = function
+  | [] -> Generic
+  | ({txt="ocaml.immediate"|"immediate"; _}, _) :: _ -> Immediate
+  | ({txt="ocaml.float"|"float"; _}, _) :: _ -> Float
+  | ({txt="ocaml.lazy"|"lazy"; _}, _) :: _ -> Lazy
+  | ({txt="ocaml.non_float"|"non_float"; _}, _) :: _ -> Non_float
+  | ({txt="ocaml.addr"|"addr"; _}, _) :: _ -> Addr
+  | _ :: tl -> type_representation tl
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the

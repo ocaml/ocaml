@@ -519,8 +519,14 @@ and print_out_type_decl kwd ppf td =
     Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> ()
   in
-  let print_immediate ppf =
-    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+  let print_representation ppf =
+    match td.otype_representation with
+    | Asttypes.Immediate -> fprintf ppf " [%@%@ocaml.immediate]"
+    | Asttypes.Float -> fprintf ppf " [%@%@ocaml.float]"
+    | Asttypes.Lazy -> fprintf ppf " [%@%@ocaml.lazy]"
+    | Asttypes.Non_float -> fprintf ppf " [%@%@ocaml.non_float]"
+    | Asttypes.Addr -> fprintf ppf " [%@%@ocaml.addr]"
+    | Asttypes.Generic -> ()
   in
   let print_unboxed ppf =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
@@ -546,7 +552,7 @@ and print_out_type_decl kwd ppf td =
     print_name_params
     print_out_tkind ty
     print_constraints
-    print_immediate
+    print_representation
     print_unboxed
 
 and print_out_constr ppf (name, tyl,ret_type_opt) =

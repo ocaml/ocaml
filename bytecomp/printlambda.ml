@@ -128,6 +128,14 @@ let block_shape ppf shape = match shape with
         t;
       Format.fprintf ppf ")"
 
+let type_representation = function
+  | Asttypes.Immediate -> "imm"
+  | Asttypes.Float -> "float"
+  | Asttypes.Lazy -> "lazy"
+  | Asttypes.Non_float -> "non_float"
+  | Asttypes.Addr -> "addr"
+  | Asttypes.Generic -> "gen"
+
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
@@ -144,32 +152,22 @@ let primitive ppf = function
       fprintf ppf "makemutable %i%a" tag block_shape shape
   | Pfield n -> fprintf ppf "field %i" n
   | Pfield_computed -> fprintf ppf "field_computed"
-  | Psetfield(n, ptr, init) ->
-      let instr =
-        match ptr with
-        | Pointer -> "ptr"
-        | Immediate -> "imm"
-      in
+  | Psetfield(n, repr, init) ->
       let init =
         match init with
         | Heap_initialization -> "(heap-init)"
         | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
-      fprintf ppf "setfield_%s%s %i" instr init n
-  | Psetfield_computed (ptr, init) ->
-      let instr =
-        match ptr with
-        | Pointer -> "ptr"
-        | Immediate -> "imm"
-      in
+      fprintf ppf "setfield_%s%s %i" (type_representation repr) init n
+  | Psetfield_computed (repr, init) ->
       let init =
         match init with
         | Heap_initialization -> "(heap-init)"
         | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
-      fprintf ppf "setfield_%s%s_computed" instr init
+      fprintf ppf "setfield_%s%s_computed" (type_representation repr) init
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield (n, init) ->
       let init =

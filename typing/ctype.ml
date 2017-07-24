@@ -1099,7 +1099,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = false;
+    type_representation = Generic;
     type_unboxed = unboxed_false_default_false;
   }
 
@@ -4400,7 +4400,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
-      type_immediate = decl.type_immediate;
+      type_representation = decl.type_representation;
       type_unboxed = decl.type_unboxed;
     }
   with Not_found ->
@@ -4533,24 +4533,60 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let maybe_pointer_type env typ =
-   match (repr typ).desc with
-  | Tconstr(p, _args, _abbrev) ->
-    begin try
-      let type_decl = Env.find_type p env in
-      not type_decl.type_immediate
-    with Not_found -> true
-    (* This can happen due to e.g. missing -I options,
-       causing some .cmi files to be unavailable.
-       Maybe we should emit a warning. *)
+(* We use the expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  (* should one apply correct_levels first? *)
+  if fuel < 0 then None else
+  let ty = repr (expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> Some ty
+    | {type_unboxed = {unboxed = false}} -> Some ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], _)
+       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
+       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
+
+         -> get_unboxed_type_representation env
+             (apply env type_params ty2 args) (fuel - 1)
+    | {type_kind=Type_abstract} -> None
+          (* This case can occur when checking a recursive unboxed type
+             declaration. *)
+    | _ -> assert false (* only the above can be unboxed *)
     end
+  | _ -> Some ty
+
+let get_unboxed_type_representation env ty =
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
+
+
+let type_representation env ty =
+  let ty = repr (expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr(p, _args, _abbrev) ->
+      begin try
+        let type_decl = Env.find_type p env in
+        type_decl.type_representation
+      with Not_found -> Generic
+      (* This can happen due to e.g. missing -I options,
+         causing some .cmi files to be unavailable.
+         Maybe we should emit a warning. *)
+      end
   | Tvariant row ->
       let row = Btype.row_repr row in
       (* if all labels are devoid of arguments, not a pointer *)
-      not row.row_closed
-      || List.exists
-          (function
-            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
-            | _ -> false)
-          row.row_fields
-  | _ -> true
+      if  row.row_closed
+       && List.for_all
+            (function
+              | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> false
+              | _ -> true)
+            row.row_fields
+      then Immediate
+      else Addr
+  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil ->
+      Addr
+  | _ ->
+      Generic

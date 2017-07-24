@@ -262,7 +262,7 @@ let type_declaration s decl =
       type_newtype_level = None;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
-      type_immediate = decl.type_immediate;
+      type_representation = decl.type_representation;
       type_unboxed = decl.type_unboxed;
     }
   in
