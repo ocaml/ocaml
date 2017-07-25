@@ -82,8 +82,10 @@ let classify env ty =
         try
           let ty = Env.find_type p env in
           match ty.type_repr with
-          | Asttypes.Repr_immediate -> Int
-          | Asttypes.Repr_address -> Addr
+          | Asttypes.Repr_immediate ->
+            Int
+          | Asttypes.Repr_address ->
+            Addr
           | Asttypes.Repr_any ->
             match ty.type_kind with
             | Type_abstract ->

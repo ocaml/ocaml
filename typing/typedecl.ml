@@ -1102,7 +1102,7 @@ let is_hash id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
-let marked_as_immediate decl =
+let type_repr_attr decl =
   Builtin_attributes.type_repr decl.type_attributes
 
 let compute_immediacy env tdecl =
@@ -1122,7 +1122,7 @@ let compute_immediacy env tdecl =
     else
       Repr_immediate
   | (Type_abstract, Some(typ)) -> Ctype.get_type_repr env typ
-  | (Type_abstract, None) -> marked_as_immediate tdecl
+  | (Type_abstract, None) -> type_repr_attr tdecl
   | _ -> Repr_any
 
 (* Computes the fixpoint for the variance and immediacy of type declarations *)
@@ -1130,8 +1130,8 @@ let compute_immediacy env tdecl =
 let rec compute_properties_fixpoint env decls required variances immediacies =
   let new_decls =
     List.map2
-      (fun (id, decl) (variance, immediacy) ->
-         id, {decl with type_variance = variance; type_repr = immediacy})
+      (fun (id, decl) (variance, repr) ->
+         id, {decl with type_variance = variance; type_repr = repr})
       decls (List.combine variances immediacies)
   in
   let new_env =
@@ -1162,7 +1162,7 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
       prerr_endline "")
       new_decls; *)
     List.iter (fun (_, decl) ->
-      let repr = marked_as_immediate decl in
+      let repr = type_repr_attr decl in
       if not (Ctype.subtype_repr repr decl.type_repr) then
         raise (Error (decl.type_loc, Bad_repr_attribute repr))
       else ())

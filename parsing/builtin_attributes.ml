@@ -227,23 +227,28 @@ let type_repr attr =
       Location.prerr_warning loc (warning txt);
       Repr_any
   in
-  let find ({txt; _}, _) = match txt with
-  | "immediate" | "ocaml.immediate" | "repr" | "ocaml.repr" -> true
-  | _ -> false
+  let find ({txt; _}, _) =
+    match txt with
+    | "immediate" | "ocaml.immediate" | "repr" | "ocaml.repr" ->
+      true
+    | _ ->
+      false
   in
   let warn ({txt; loc; _}, _) =
     let warning = Warnings.Duplicated_attribute txt in
     Location.prerr_warning loc warning;
   in
   match List.find_all find attr with
-  | [] -> Repr_any
+  | [] ->
+    Repr_any
   | ({txt = ("repr" | "ocaml.repr")}, _ as attr) :: rem ->
     List.iter warn rem;
     get_repr attr
   | ({txt = ("immediate" | "ocaml.immediate")}, _) :: rem ->
     List.iter warn rem;
     Repr_immediate
-  | _ -> assert false
+  | _ ->
+    assert false
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the

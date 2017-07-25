@@ -4546,26 +4546,43 @@ let rec get_type_repr env typ =
     end
   | Tvariant row ->
       let row = Btype.row_repr row in
-      let is_direct (_, field) = match field with
-      | Rpresent (Some _) | Reither (false, _, _, _) -> false
-      | _ -> true
+      let is_direct (_, field) =
+        match field with
+          | Rpresent (Some _) | Reither (false, _, _, _) ->
+            false
+          | _ ->
+            true
       in
       if not row.row_closed then Repr_address
+      (* if all labels are devoid of arguments, not a pointer *)
       else if List.for_all is_direct row.row_fields then Repr_immediate
       else Repr_address
   | Tarrow _ | Ttuple _ | Tobject _ | Tfield _
-  | Tnil | Tpackage _ -> Repr_address
-  | Tlink typ | Tpoly (typ, _) -> get_type_repr env typ
-  | Tvar _ | Tunivar _ -> Repr_any
-  | Tsubst _ -> assert false
+  | Tnil | Tpackage _ ->
+    Repr_address
+  | Tlink typ | Tpoly (typ, _) ->
+    get_type_repr env typ
+  | Tvar _ | Tunivar _ ->
+    Repr_any
+  | Tsubst _ ->
+    assert false
 
-let maybe_pointer_type env typ = match get_type_repr env typ with
-| Repr_immediate -> false
-| Repr_address | Repr_any -> true
+let maybe_pointer_type env typ =
+  match get_type_repr env typ with
+  | Repr_immediate ->
+    false
+  | Repr_address | Repr_any ->
+    true
 
-let subtype_repr r1 r2 = match r1, r2 with
-| Repr_any, (Repr_any | Repr_immediate | Repr_address) -> true
-| Repr_address, (Repr_immediate | Repr_address) -> true
-| Repr_address, Repr_any -> false
-| Repr_immediate, Repr_immediate -> true
-| Repr_immediate, (Repr_any | Repr_address) -> false
+let subtype_repr r1 r2 =
+  match r1, r2 with
+  | Repr_any, (Repr_any | Repr_immediate | Repr_address) ->
+    true
+  | Repr_address, (Repr_immediate | Repr_address) ->
+    true
+  | Repr_address, Repr_any ->
+    false
+  | Repr_immediate, Repr_immediate ->
+    true
+  | Repr_immediate, (Repr_any | Repr_address) ->
+    false
