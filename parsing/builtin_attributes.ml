@@ -209,7 +209,6 @@ let rec type_representation = function
   | [] -> Generic
   | ({txt="ocaml.immediate"|"immediate"; _}, _) :: _ -> Immediate
   | ({txt="ocaml.float"|"float"; _}, _) :: _ -> Float
-  | ({txt="ocaml.lazy"|"lazy"; _}, _) :: _ -> Lazy
   | ({txt="ocaml.non_float"|"non_float"; _}, _) :: _ -> Non_float
   | ({txt="ocaml.addr"|"addr"; _}, _) :: _ -> Addr
   | _ :: tl -> type_representation tl

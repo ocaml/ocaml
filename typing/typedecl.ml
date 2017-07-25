@@ -351,7 +351,7 @@ let rec check_unboxed_gadt_arg loc univ env ty =
     let tydecl = Env.find_type p env in
     assert (not tydecl.type_unboxed.unboxed);
     begin match tydecl.type_representation with
-    | Immediate | Float | Non_float | Addr | Lazy -> ()
+    | Immediate | Float | Non_float | Addr -> ()
     | Generic ->
         if tydecl.type_kind = Type_abstract then
           List.iter (check_unboxed_abstract_arg loc univ) args
@@ -2136,7 +2136,6 @@ let report_error ppf = function
       let pp = function
         | Asttypes.Immediate -> "immediate"
         | Asttypes.Float -> "float"
-        | Asttypes.Lazy -> "lazy"
         | Asttypes.Non_float -> "non-float"
         | Asttypes.Addr -> "addr"
         | Asttypes.Generic -> "generic"

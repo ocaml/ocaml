@@ -131,7 +131,6 @@ let block_shape ppf shape = match shape with
 let type_representation = function
   | Asttypes.Immediate -> "imm"
   | Asttypes.Float -> "float"
-  | Asttypes.Lazy -> "lazy"
   | Asttypes.Non_float -> "non_float"
   | Asttypes.Addr -> "addr"
   | Asttypes.Generic -> "gen"

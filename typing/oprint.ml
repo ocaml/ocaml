@@ -523,7 +523,6 @@ and print_out_type_decl kwd ppf td =
     match td.otype_representation with
     | Asttypes.Immediate -> fprintf ppf " [%@%@immediate]"
     | Asttypes.Float -> fprintf ppf " [%@%@float]"
-    | Asttypes.Lazy -> fprintf ppf " [%@%@lazy]"
     | Asttypes.Non_float -> fprintf ppf " [%@%@non_float]"
     | Asttypes.Addr -> fprintf ppf " [%@%@addr]"
     | Asttypes.Generic -> () (*fprintf ppf " (*generic*)"*)

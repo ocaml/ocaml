@@ -61,7 +61,6 @@ type variance =
 type type_representation =
   | Immediate
   | Float
-  | Lazy
   | Addr       (* neither float nor lazy *)
-  | Non_float  (* values of the type are never represented as floats *)
+  | Non_float  (* not float, but possibly lazy *)
   | Generic

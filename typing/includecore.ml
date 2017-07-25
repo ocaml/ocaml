@@ -27,7 +27,6 @@ let type_representation r1 r2 =
   | _, Generic
   | Immediate, (Immediate | Non_float | Addr)
   | Float, Float
-  | Lazy, (Lazy | Non_float)
   | Addr, (Addr | Non_float)
   | Non_float, Non_float -> true
   | _ -> false

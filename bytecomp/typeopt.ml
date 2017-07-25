@@ -58,7 +58,7 @@ let array_type_kind env ty =
       begin match Ctype.type_representation env elt_ty with
       | Generic -> Pgenarray
       | Float -> Pfloatarray
-      | Non_float | Addr | Lazy -> Paddrarray
+      | Non_float | Addr -> Paddrarray
       | Immediate -> Pintarray
       end
 
@@ -125,5 +125,5 @@ let value_kind env ty =
 
 let lazy_val_requires_forward env ty =
   match Ctype.type_representation env ty with
-  | Generic | Float | Lazy | Non_float -> true
+  | Generic | Float | Non_float -> true
   | Addr | Immediate -> false

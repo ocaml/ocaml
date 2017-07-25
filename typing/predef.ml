@@ -186,7 +186,7 @@ let common_initial_env add_type add_extension empty_env =
     {decl_abstr with
      type_params = [tvar];
      type_arity = 1;
-     type_representation = Asttypes.Lazy;
+     type_representation = Asttypes.Non_float;
      type_variance = [Variance.covariant]}
   in
 
