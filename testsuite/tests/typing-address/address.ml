@@ -36,6 +36,7 @@ module A :
     type w = Foo | Bar of int [@@repr(address)]
     type p = q [@@repr(address)]
     and q = T of int
+    type u = int [@@repr(address)]
   end
 |}];;
 
@@ -54,7 +55,7 @@ module B = struct
   type t = float [@@repr(address)]
 end;;
 [%%expect{|
-Line _, characters 2-31:
+Line _, characters 2-34:
 Error: Types marked with the address attribute must be
        any type wich is neither lazy nor float
 |}];;
@@ -65,7 +66,7 @@ module C = struct
   type s = t [@@repr(address)]
 end;;
 [%%expect{|
-Line _, characters 2-26:
+Line _, characters 2-30:
 Error: Types marked with the address attribute must be
        any type wich is neither lazy nor float
 |}];;
@@ -75,7 +76,7 @@ module D : sig type t [@@repr(address)] end = struct
   type t = float
 end;;
 [%%expect{|
-Line _, characters 42-70:
+Line _, characters 46-73:
 Error: Signature mismatch:
        Modules do not match:
          sig type t = float end
@@ -86,14 +87,14 @@ Error: Signature mismatch:
        is not included in
          type t [@@repr(address)]
        Their internal representations differ:
-       address is not a subrepresentation of any.
+       the type representation cannot be "address".
 |}];;
 
 (* Same as above but with explicit signature *)
 module M_invalid : S = struct type t = float end;;
 module FM_invalid = F (struct type t = float end);;
 [%%expect{|
-Line _, characters 23-49:
+Line _, characters 23-48:
 Error: Signature mismatch:
        Modules do not match: sig type t = float end is not included in S
        Type declarations do not match:
@@ -101,7 +102,7 @@ Error: Signature mismatch:
        is not included in
          type t [@@repr(address)]
        Their internal representations differ:
-       address is not a subrepresentation of any.
+       the type representation cannot be "address".
 |}];;
 
 (* Can't use a non-address type even if mutually recursive *)
@@ -110,7 +111,7 @@ module E = struct
   and s = float
 end;;
 [%%expect{|
-Line _, characters 2-26:
+Line _, characters 2-30:
 Error: Types marked with the address attribute must be
        any type wich is neither lazy nor float
 |}];;

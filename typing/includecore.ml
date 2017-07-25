@@ -140,6 +140,11 @@ type type_mismatch =
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
+  let pr_repr = function
+  | Repr_any -> "any"
+  | Repr_immediate -> "immediate"
+  | Repr_address -> "address"
+  in
   match err with
     Arity -> pr "They have different arities"
   | Privacy -> pr "A private type would be revealed"
@@ -167,14 +172,13 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
          (if b then second else first) decl
          "uses unboxed representation"
+  (* Special-casing the 'any' type for readability *)
+  | Repr (r1, Repr_any) ->
+      pr "Their internal representations differ:@ the type representation \
+          cannot be \"%s\"" (pr_repr r1)
   | Repr (r1, r2) ->
-      let pr_repr = function
-      | Repr_any -> "any"
-      | Repr_immediate -> "immediate"
-      | Repr_address -> "address"
-      in
-      pr "Their internal representations differ:@ %s is not a \
-          subrepresentation of %s" (pr_repr r1) (pr_repr r2)
+      pr "Their internal representations differ:@ \"%s\" is not \
+          compatible with \"%s\"" (pr_repr r1) (pr_repr r2)
 
 let report_type_mismatch first second decl ppf =
   List.iter
