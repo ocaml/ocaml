@@ -89,6 +89,16 @@ Error: Signature mismatch:
 
 (* Same as above but with explicit signature *)
 module M_invalid : S = struct type t = float end;;
+[%%expect{|
+Line _, characters 23-48:
+Error: Signature mismatch:
+       Modules do not match: sig type t = float end is not included in S
+       Type declarations do not match:
+         type t = float
+       is not included in
+         type t [@@addr]
+       Their runtime representations do not agree.
+|}];;
 module FM_invalid = F (struct type t = float end);;
 [%%expect{|
 Line _, characters 23-48:
@@ -109,4 +119,40 @@ end;;
 [%%expect{|
 Line _, characters 2-21:
 Error: Explicit representation attribute (addr) not compatible with inferred representation (float)
+|}];;
+
+
+(* All-float record representation *)
+
+module M_valid : sig
+  type t [@@float]
+  type r = {x:t; y: t}
+end = struct
+  type t = float
+  type r = {x:t; y: t}
+end;;
+[%%expect{|
+module M_valid : sig type t [@@float] type r = { x : t; y : t; } end
+|}];;
+
+module M_invalid : sig
+  type t
+  type r = {x:t; y: t}
+end = struct
+  type t = float
+  type r = {x:t; y: t}
+end;;
+[%%expect{|
+Line _, characters 6-56:
+Error: Signature mismatch:
+       Modules do not match:
+         sig type t = float type r = { x : t; y : t; } end
+       is not included in
+         sig type t type r = { x : t; y : t; } end
+       Type declarations do not match:
+         type r = { x : t; y : t; }
+       is not included in
+         type r = { x : t; y : t; }
+       Their internal representations differ:
+       the first declaration uses unboxed float representation.
 |}];;
