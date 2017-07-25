@@ -123,6 +123,36 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
+(* We use the expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  (* should one apply correct_levels first? *)
+  if fuel < 0 then None else
+  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> Some ty
+    | {type_unboxed = {unboxed = false}} -> Some ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], _)
+       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
+       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
+
+         -> get_unboxed_type_representation env
+             (Ctype.apply env type_params ty2 args) (fuel - 1)
+    | {type_kind=Type_abstract} -> None
+          (* This case can occur when checking a recursive unboxed type
+             declaration. *)
+    | _ -> assert false (* only the above can be unboxed *)
+    end
+  | _ -> Some ty
+
+let get_unboxed_type_representation env ty =
+  (* Do not give too much fuel: PR#7424 *)
+  get_unboxed_type_representation env ty 100
+;;
+
 (* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
   match Ctype.type_representation env ty with
@@ -311,7 +341,7 @@ and check_unboxed_abstract_row_field loc univ (_, field) =
 (* Check that the argument to a GADT constructor is compatible with unboxing
    the type, given the universal parameters of the type. *)
 let rec check_unboxed_gadt_arg loc univ env ty =
-  match Ctype.get_unboxed_type_representation env ty with
+  match get_unboxed_type_representation env ty with
   | Some {desc = Tvar _; id} -> check_type_var loc univ id
   | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
                  | Tvariant _; _} ->

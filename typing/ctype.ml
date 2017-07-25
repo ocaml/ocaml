@@ -4533,36 +4533,6 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-(* We use the expand_head_opt version of expand_head to get access
-   to the manifest type of private abbreviations. *)
-let rec get_unboxed_type_representation env ty fuel =
-  (* should one apply correct_levels first? *)
-  if fuel < 0 then None else
-  let ty = repr (expand_head_opt env ty) in
-  match ty.desc with
-  | Tconstr (p, args, _) ->
-    begin match Env.find_type p env with
-    | exception Not_found -> Some ty
-    | {type_unboxed = {unboxed = false}} -> Some ty
-    | {type_params; type_kind =
-         Type_record ([{ld_type = ty2; _}], _)
-       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
-       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
-
-         -> get_unboxed_type_representation env
-             (apply env type_params ty2 args) (fuel - 1)
-    | {type_kind=Type_abstract} -> None
-          (* This case can occur when checking a recursive unboxed type
-             declaration. *)
-    | _ -> assert false (* only the above can be unboxed *)
-    end
-  | _ -> Some ty
-
-let get_unboxed_type_representation env ty =
-  (* Do not give too much fuel: PR#7424 *)
-  get_unboxed_type_representation env ty 100
-
-
 let type_representation env ty =
   let ty = repr (expand_head_opt env ty) in
   match ty.desc with

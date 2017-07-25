@@ -283,7 +283,6 @@ val get_current_level: unit -> int
 val wrap_trace_gadt_instances: Env.t -> ('a -> 'b) -> 'a -> 'b
 val reset_reified_var_counter: unit -> unit
 
-val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
 val type_representation: Env.t -> type_expr -> type_representation
 val typedecl_representation: Env.t -> type_declaration -> type_representation
 
