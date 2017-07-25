@@ -280,14 +280,6 @@ module Variance : sig
   val get_lower : t -> bool * bool * bool * bool    (* pos, neg, inv, inj *)
 end
 
-(* Type representation *)
-
-module Representation: sig
-  type t = type_representation
-
-  val subtype: t -> t -> bool
-end
-
 (* Type definitions *)
 
 type type_declaration =

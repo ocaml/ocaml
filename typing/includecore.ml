@@ -20,6 +20,19 @@ open Path
 open Types
 open Typedtree
 
+(* Inclusion between type representations *)
+
+let type_representation r1 r2 =
+  match r1, r2 with
+  | _, Generic
+  | Immediate, (Immediate | Non_float | Addr)
+  | Float, Float
+  | Lazy, (Lazy | Non_float)
+  | Addr, (Addr | Non_float)
+  | Non_float, Non_float -> true
+  | _ -> false
+
+
 (* Inclusion between value descriptions *)
 
 exception Dont_match
@@ -317,7 +330,7 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   let err =
     let r1 = Ctype.typedecl_representation env decl1 in
     let r2 = Ctype.typedecl_representation env decl2 in
-    if not (Types.Representation.subtype r1 r2)
+    if not (type_representation r1 r2)
     then [Representation]
     else []
   in

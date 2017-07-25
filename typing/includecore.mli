@@ -36,6 +36,9 @@ type type_mismatch =
   | Unboxed_representation of bool
   | Representation
 
+val type_representation:
+  Asttypes.type_representation -> Asttypes.type_representation -> bool
+
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->
   value_description -> value_description -> module_coercion

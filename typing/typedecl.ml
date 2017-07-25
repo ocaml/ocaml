@@ -1335,8 +1335,9 @@ let transl_type_decl env rec_flag sdecl_list =
     (fun (_, decl) ->
        let r1 = decl.type_representation in
        let r2 = Builtin_attributes.type_representation decl.type_attributes in
-       if not (Types.Representation.subtype r1 r2)
-       then raise (Error (decl.type_loc, Bad_representation_attribute (r1, r2)))
+       if not (Includecore.type_representation r1 r2)
+       then raise (Error (decl.type_loc,
+                          Bad_representation_attribute (r1, r2)))
     )
     final_decls;
   (* Check unboxing *)

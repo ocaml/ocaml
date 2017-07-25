@@ -136,20 +136,6 @@ module Variance = struct
   let get_lower v = (mem Pos v, mem Neg v, mem Inv v, mem Inj v)
 end
 
-module Representation = struct
-  type t = type_representation
-
-  let subtype r1 r2 =
-    match r1, r2 with
-    | _, Generic
-    | Immediate, (Immediate | Non_float | Addr)
-    | Float, Float
-    | Lazy, (Lazy | Non_float)
-    | Addr, (Addr | Non_float)
-    | Non_float, Non_float -> true
-    | _ -> false
-end
-
 (* Type definitions *)
 
 type type_declaration =
