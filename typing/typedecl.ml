@@ -123,10 +123,9 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-(* We use the expand_head_opt version of expand_head to get access
+(* We use the Ctype.expand_head_opt version of expand_head to get access
    to the manifest type of private abbreviations. *)
 let rec get_unboxed_type_representation env ty fuel =
-  (* should one apply correct_levels first? *)
   if fuel < 0 then None else
   let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
   match ty.desc with
