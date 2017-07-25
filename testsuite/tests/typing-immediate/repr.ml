@@ -122,6 +122,17 @@ Error: Explicit representation attribute (addr) not compatible with inferred rep
 |}];;
 
 
+(* Representation sees through unboxed types *)
+
+module M_valid: sig
+  type t [@@float]
+end = struct
+  type t = A of float [@@float] [@@unboxed]
+end;;
+[%%expect{|
+module M_valid : sig type t [@@float] end
+|}];;
+
 (* All-float record representation *)
 
 module M_valid : sig
@@ -133,6 +144,24 @@ end = struct
 end;;
 [%%expect{|
 module M_valid : sig type t [@@float] type r = { x : t; y : t; } end
+|}];;
+
+module M_valid : sig
+  type t [@@float]
+  and s = A of t [@@unboxed]
+  and r = {x:s; y: s}
+end = struct
+  type t = float
+  and s = A of t [@@unboxed]
+  and r = {x:s; y: s}
+end;;
+[%%expect{|
+module M_valid :
+  sig
+    type t [@@float]
+    and s = A of t [@@unboxed]
+    and r = { x : s; y : s; }
+  end
 |}];;
 
 module M_invalid : sig
@@ -155,4 +184,62 @@ Error: Signature mismatch:
          type r = { x : t; y : t; }
        Their internal representations differ:
        the first declaration uses unboxed float representation.
+|}];;
+
+
+(* (lazy x) does not need to be boxed for "addr" *)
+
+module X : sig type t val x: t end = struct
+  type t = A | B
+  let x = A
+end;;
+(Obj.repr (lazy X.x) == Obj.repr X.x);;
+[%%expect{|
+module X : sig type t val x : t end
+- : bool = false
+|}];;
+
+module X : sig type t [@@addr] val x: t end = struct
+  type t = A | B
+  let x = A
+end;;
+(Obj.repr (lazy X.x) == Obj.repr X.x);;
+[%%expect{|
+module X : sig type t [@@addr] val x : t end
+- : bool = true
+|}];;
+
+
+(* Check interaction with unboxing GADTs *)
+
+type t = A : ('a * ('a -> unit)) Lazy.t -> t [@@unboxed]
+[%%expect{|
+type t = A : ('a * ('a -> unit)) Lazy.t -> t [@@unboxed]
+|}];;
+
+module X : sig
+  type 'a t [@@non_float]
+end = struct
+  type 'a t = { x : 'a }
+end;;
+type t = A : 'a X.t -> t [@@unboxed]
+;;
+[%%expect{|
+module X : sig type 'a t [@@non_float] end
+type t = A : 'a X.t -> t [@@unboxed]
+|}];;
+
+module X : sig
+  type 'a t
+end = struct
+  type 'a t = { x : 'a }
+end;;
+type t = A : 'a X.t -> t [@@unboxed]
+;;
+[%%expect{|
+module X : sig type 'a t end
+Line _, characters 0-36:
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
 |}];;
