@@ -807,7 +807,7 @@ let build_other ext env = match env with
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
     | Some ext ->
-        let path =  (get_type_path p.pat_type p.pat_env) in
+        let path = (get_type_path p.pat_type p.pat_env) in
         (match path with
          | Some path when Path.same ext path -> extra_pat
          | _ -> build_other_constrs env p)
@@ -1880,24 +1880,24 @@ let warn_fragile_type ty env =
   let _,_,decl = Ctype.extract_concrete_typedecl env ty in
   let warn = Warnings.Fragile_match "" in
   match Warnings.status warn with
-    | Warnings.Always -> true
-    | Warnings.Never -> false
-    | Warnings.Implicit | Warnings.Explicit ->
-        Builtin_attributes.with_warning_attribute
-          decl.Types.type_attributes
-          (fun () -> Warnings.(is_active warn))
+  | Warnings.Always -> true
+  | Warnings.Never -> false
+  | Warnings.Implicit | Warnings.Explicit ->
+      Builtin_attributes.with_warning_attribute
+        decl.Types.type_attributes
+        (fun () -> Warnings.(is_active warn))
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
-    (match get_type_path p.pat_type p.pat_env with
-     | Some path ->
-         List.fold_left
-           collect_paths_from_pat
-           (if extendable_path path && warn_fragile_type p.pat_type p.pat_env
-            then add_path path r else r)
-           ps
-     | None -> r)
+    let r =
+      match get_type_path p.pat_type p.pat_env with
+      | Some path
+        when extendable_path path && warn_fragile_type p.pat_type p.pat_env ->
+          add_path path r
+      | _ -> r
+    in
+    List.fold_left collect_paths_from_pat r ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->

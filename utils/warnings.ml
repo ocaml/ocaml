@@ -219,21 +219,21 @@ let is_active x = (!current).active.(number x);;
 let status x =
   let n = number x in
   match (!current).active.(n), (!current).flexible.(n) with
-    | true, false -> Always
-    | true, true -> Implicit
-    | false, true -> Explicit
-    | false, false -> Never
+  | true, false -> Always
+  | true, true -> Implicit
+  | false, true -> Explicit
+  | false, false -> Never
 ;;
 
 let is_error x = (!current).error.(number x);;
 
 let parse_opt error active flexible flags s =
   let set i = flags.(i) <- true; flexible.(i) <- true in
-  let set_strict i = flags.(i) <- true; flexible.(i) <- false in
+  let set_rigid i = flags.(i) <- true; flexible.(i) <- false in
   let clear i = flags.(i) <- false; flexible.(i) <- true in
-  let clear_strict i = flags.(i) <- false; flexible.(i) <- false in
+  let clear_rigid i = flags.(i) <- false; flexible.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true; flexible.(i) <- true in
-  let set_all_strict i =
+  let set_all_rigid i =
     active.(i) <- true; error.(i) <- true; flexible.(i) <- false
   in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
@@ -264,15 +264,15 @@ let parse_opt error active flexible flags s =
        loop (i+1)
     | '+' ->
         need_char i;
-        if s.[i+1] = '+' then loop_letter_num set_strict (i+2)
+        if s.[i+1] = '+' then loop_letter_num set_rigid (i+2)
         else loop_letter_num set (i+1)
     | '-' ->
         need_char i;
-        if s.[i+1] = '-' then loop_letter_num clear_strict (i+2)
+        if s.[i+1] = '-' then loop_letter_num clear_rigid (i+2)
         else loop_letter_num clear (i+1)
     | '@' ->
         need_char i;
-        if s.[i+1] = '@' then loop_letter_num set_all_strict (i+2)
+        if s.[i+1] = '@' then loop_letter_num set_all_rigid (i+2)
         else loop_letter_num set_all (i+1)
     | _ -> error ()
   and loop_letter_num myset i =
