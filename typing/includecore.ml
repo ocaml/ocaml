@@ -25,10 +25,11 @@ open Typedtree
 let type_representation r1 r2 =
   match r1, r2 with
   | _, Generic
-  | Immediate, (Immediate | Non_float | Addr)
-  | Float, Float
-  | Addr, (Addr | Non_float)
-  | Non_float, Non_float -> true
+  | Immediate, (Immediate | Non_float | Addr | Non_contractive)
+  | Float, (Float | Non_contractive)
+  | Addr, (Addr | Non_float | Non_contractive)
+  | Non_float, (Non_float | Non_contractive) -> true
+  | Non_contractive, Non_contractive -> true
   | _ -> false
 
 

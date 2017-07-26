@@ -210,7 +210,9 @@ let rec type_representation = function
   | ({txt="ocaml.immediate"|"immediate"; _}, _) :: _ -> Immediate
   | ({txt="ocaml.float"|"float"; _}, _) :: _ -> Float
   | ({txt="ocaml.non_float"|"non_float"; _}, _) :: _ -> Non_float
+  | ({txt="ocaml.non_contractive"|"non_contractive"; _}, _) :: _ -> Non_contractive
   | ({txt="ocaml.addr"|"addr"; _}, _) :: _ -> Addr
+  | ({txt="ocaml.generic"|"generic"; _}, _) :: _ -> Generic
   | _ :: tl -> type_representation tl
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"

@@ -56,7 +56,7 @@ let array_type_kind env ty =
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
       begin match Ctype.type_representation env elt_ty with
-      | Generic -> Pgenarray
+      | Generic | Non_contractive -> Pgenarray
       | Float -> Pfloatarray
       | Non_float | Addr -> Paddrarray
       | Immediate -> Pintarray
@@ -125,5 +125,5 @@ let value_kind env ty =
 
 let lazy_val_requires_forward env ty =
   match Ctype.type_representation env ty with
-  | Generic | Float | Non_float -> true
+  | Generic | Float | Non_float | Non_contractive -> true
   | Addr | Immediate -> false

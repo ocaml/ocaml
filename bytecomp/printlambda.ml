@@ -133,6 +133,7 @@ let type_representation = function
   | Asttypes.Float -> "float"
   | Asttypes.Non_float -> "non_float"
   | Asttypes.Addr -> "addr"
+  | Asttypes.Non_contractive -> "non_contractive"
   | Asttypes.Generic -> "gen"
 
 let primitive ppf = function

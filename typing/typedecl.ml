@@ -351,7 +351,7 @@ let rec check_unboxed_gadt_arg loc univ env ty =
     let tydecl = Env.find_type p env in
     assert (not tydecl.type_unboxed.unboxed);
     begin match tydecl.type_representation with
-    | Immediate | Float | Non_float | Addr -> ()
+    | Immediate | Float | Non_float | Addr | Non_contractive -> ()
     | Generic ->
         if tydecl.type_kind = Type_abstract then
           List.iter (check_unboxed_abstract_arg loc univ) args
@@ -1357,7 +1357,7 @@ let transl_type_decl env rec_flag sdecl_list =
   let final_decls, final_env =
     compute_properties_fixpoint env decls required
       (List.map init_variance decls)
-      (List.map (fun _ -> Addr) decls)
+      (List.map (fun _ -> Generic) decls)
   in
   (* Check type representation attributes *)
   List.iter
@@ -2138,6 +2138,7 @@ let report_error ppf = function
         | Asttypes.Float -> "float"
         | Asttypes.Non_float -> "non-float"
         | Asttypes.Addr -> "addr"
+        | Asttypes.Non_contractive -> "non_contractive"
         | Asttypes.Generic -> "generic"
       in
       fprintf ppf

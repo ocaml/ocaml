@@ -63,4 +63,5 @@ type type_representation =
   | Float
   | Addr       (* neither float nor lazy *)
   | Non_float  (* not float, but possibly lazy *)
+  | Non_contractive (* for parametric types: the floatiness does not depend on the argument *)
   | Generic

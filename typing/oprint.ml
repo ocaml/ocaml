@@ -525,6 +525,7 @@ and print_out_type_decl kwd ppf td =
     | Asttypes.Float -> fprintf ppf " [%@%@float]"
     | Asttypes.Non_float -> fprintf ppf " [%@%@non_float]"
     | Asttypes.Addr -> fprintf ppf " [%@%@addr]"
+    | Asttypes.Non_contractive -> fprintf ppf " [%@%@non_contractive]"
     | Asttypes.Generic -> () (*fprintf ppf " (*generic*)"*)
   in
   let print_unboxed ppf =

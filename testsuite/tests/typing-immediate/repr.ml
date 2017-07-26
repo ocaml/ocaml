@@ -243,3 +243,33 @@ Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
 |}];;
+
+module F(X : sig type 'a t [@@non_contractive] end) = struct
+  type t = A: 'a X.t -> t [@@unboxed]
+end;;
+[%%expect{|
+|}];;
+
+module M_valid = F(struct type 'a t = float end);;
+[%%expect{|
+|}];;
+
+module M_valid = F(struct type 'a t = A of float  [@@unboxed] end);;
+[%%expect{|
+|}];;
+
+module M_valid = F(struct type 'a t = int end);;
+[%%expect{|
+|}];;
+
+module M_invalid = F(struct type 'a t = 'a end);;
+[%%expect{|
+|}];;
+
+module M_invalid = F(struct type 'a t = A of 'a [@@unboxed] end);;
+[%%expect{|
+|}];;
+
+module M_invalid = F(struct type 'a t = 'b constraint 'a = 'b list end);;
+[%%expect{|
+|}];;
