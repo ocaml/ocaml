@@ -848,7 +848,7 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
 
 /* Generate functions for accessing domain state variables in debug mode */
 #ifdef DEBUG
-  #define DOMAIN_STATE(idx, type, name) \
+  #define DOMAIN_STATE(type, name) \
     type get_##name() { return Caml_state->name; }
   #include "caml/domain_state.tbl"
   #undef DOMAIN_STATE

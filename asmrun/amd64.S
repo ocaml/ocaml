@@ -104,67 +104,49 @@
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
 
-#define DOMAIN_STATE(field_num, c_type, name)             \
-  .macro addr_caml_##name dest_reg:req ;                  \
-  GET_DOMAIN_STATE(\dest_reg) ;                           \
-  leaq    (8 * field_num)(\dest_reg), \dest_reg ;         \
-  .endm ;                                                 \
-  .macro load_caml_##name dest_reg:req ;                  \
-  GET_DOMAIN_STATE(\dest_reg) ;                           \
-  movq    (8 * field_num)(\dest_reg), \dest_reg ;         \
-  .endm ;                                                 \
-  .macro store_caml_##name src_reg:req ;                  \
-  GET_DOMAIN_STATE(%r11) ;                                \
-  movq    \src_reg, (8 * field_num)(%r11) ;               \
-  .endm ;                                                 \
-  .macro test_caml_##name value:req ;                     \
-  GET_DOMAIN_STATE(%r11) ;                                \
-  testq   \value, (8 * field_num)(%r11) ;                 \
-  .endm ;                                                 \
-  .macro cmp_caml_##name reg:req ;                        \
-  GET_DOMAIN_STATE(%rax) ;                                \
-  cmpq  (8 * field_num)(%rax), \reg ;                     \
-  .endm ;                                                 \
-  .macro push_caml_##name ;                               \
-  load_caml_##name %r11 ;                                 \
-        pushq   %r11 ;                                    \
-  .endm ;                                                 \
-  .macro pop_caml_##name ;                                \
-        popq    %r13 ;                                    \
-        store_caml_##name %r13 ;                          \
-  .endm
+        .set    domain_curr_field, 0
+#define DOMAIN_STATE(c_type, name) \
+        .equ    domain_field_caml_##name, domain_curr_field ; \
+        .set    domain_curr_field, domain_curr_field + 1
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
 /* Load address of field from the current domain state block.  Clobbers only
  * the destination. */
 #define ADDR_TL_VAR(var,dstreg) \
-        addr_##var dstreg
+        GET_DOMAIN_STATE(dstreg) ; \
+        leaq (8 * domain_field_##var)(dstreg), dstreg
 
 /* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
-        load_##var dstreg
+        GET_DOMAIN_STATE(dstreg) ; \
+        movq (8 * domain_field_##var)(dstreg), dstreg
 
 /* Store to the current domain state block.  Clobbers %r11. */
 #define STORE_TL_VAR(srcreg, var) \
-        store_##var srcreg
+        GET_DOMAIN_STATE(%r11)  ; \
+        movq srcreg, (8 * domain_field_##var)(%r11)
 
 /* Test against a value in the current domain block.  Clobbers %r11. */
 #define TEST_TL_VAR(value, var) \
-        test_##var value
+        GET_DOMAIN_STATE(%r11)  ; \
+        testq value, (8 * domain_field_##var)(%r11)
 
 /* Compare against a value in the current domain block.  Clobbers %rax. */
 #define CMP_TL_VAR(var, reg) \
-        cmp_##var reg
+        GET_DOMAIN_STATE(%rax)  ; \
+        cmpq (8 * domain_field_##var)(%rax), reg
 
 /* Push a value from the current domain block onto the stack.  Clobbers %r11. */
 #define PUSH_TL_VAR(var) \
-        push_##var
+        LOAD_TL_VAR(var, %r11)  ; \
+        pushq %r11
 
 /* Pop a value from the current domain block onto the stack.
    Clobbers %r11 and %r13. */
 #define POP_TL_VAR(var) \
-        pop_##var
+        popq %r13               ; \
+        STORE_TL_VAR(%r13, var)
 
 /* Load address of global [label] in register [dst]. */
 #if defined(__PIC__) && !defined(SYS_mingw64) && !defined(SYS_cygwin)
