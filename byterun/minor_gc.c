@@ -146,6 +146,7 @@ static void oldify_one (void* st_v, value v, value *p)
             st->todo_list = v;
           } else {
             field0 = Op_val(v)[0];
+            Assert (!Is_debug_tag(field0));
             Hd_val (v) = 0;            /* Set forward flag */
             Op_val(v)[0] = result;     /*  and forward pointer. */
             if (sz > 1){
@@ -235,12 +236,14 @@ static void oldify_mopup (struct oldify_state* st)
       st->todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
       f = Op_val (new_v)[0];
+      Assert (!Is_debug_tag(f));
       if (Is_block (f) && young_ptr <= Hp_val(v)
           && Hp_val(v) < young_end) {
         oldify_one (st, f, Op_val (new_v));
       }
       for (i = 1; i < Wosize_val (new_v); i++){
         f = Op_val (v)[i];
+        Assert (!Is_debug_tag(f));
         if (Is_block (f) && young_ptr <= Hp_val(v)
             && Hp_val(v) < young_end) {
           oldify_one (st, f, Op_val (new_v) + i);
