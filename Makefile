@@ -473,10 +473,10 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    utils/config.mlp > utils/config.ml
 
 utils/domainstate.ml: utils/domainstate.ml.c byterun/caml/domain_state.tbl
-	$(CPP) -I byterun/caml utils/domainstate.ml.c > utils/domainstate.ml
+	$(CPP) -I byterun/caml $< > $@
 
-utils/domainstate.mli: utils/domainstate.ml byterun/caml/domain_state.tbl
-	$(CPP) -I byterun/caml utils/domainstate.mli.c > utils/domainstate.mli
+utils/domainstate.mli: utils/domainstate.mli.c utils/domainstate.ml byterun/caml/domain_state.tbl
+	$(CPP) -I byterun/caml $< > $@
 
 partialclean::
 	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli

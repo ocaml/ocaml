@@ -57,26 +57,22 @@
 /* CR mshinwell: We should optimize the case where there are multiple
    loads/stores in one go to the domain state block. */
 
-#define DOMAIN_STATE(field_num, c_type, name) \
-        .macro load_caml_##name dest_reg:req ; \
-        GET_DOMAIN_STATE(\dest_reg) ; \
-        ldr     \dest_reg, [\dest_reg, (8 * field_num)] ; \
-        .endm ; \
-        .macro store_caml_##name src_reg:req ; \
-        GET_DOMAIN_STATE(TMP) ; \
-        str     \src_reg, [TMP, (8 * field_num)]; \
-        .endm
-
+        .set    domain_curr_field, 0
+#define DOMAIN_STATE(c_type, name) \
+        .equ    domain_field_caml_##name, domain_curr_field ; \
+        .set    domain_curr_field, domain_curr_field + 1
 #include "../byterun/caml/domain_state.tbl"
 #undef DOMAIN_STATE
 
 /* Load from the current domain state block.  Clobbers only the destination. */
 #define LOAD_TL_VAR(var,dstreg) \
-        load_##var dstreg
+        GET_DOMAIN_STATE(dstreg) ; \
+        ldr     dstreg, [dstreg, (8 * domain_field_##var)]
 
 /* Store to the current domain state block.  Clobbers TMP. */
 #define STORE_TL_VAR(srcreg, var) \
-        store_##var srcreg
+        GET_DOMAIN_STATE(TMP)   ; \
+        str     srcreg, [TMP, (8 * domain_field_##var)]
 
 /* Push pair of values from current domain state block to the stack. Clobbers
    TMP. */
