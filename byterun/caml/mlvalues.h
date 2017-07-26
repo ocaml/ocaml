@@ -218,7 +218,11 @@ static inline void caml_read_field(value x, int i, value* ret) {
   *ret = Is_foreign(v) ? caml_read_barrier(x, i) : v;
 }
 
-#define Field_imm(x, i) (Op_val(x)[i] + 0)
+static inline value Field_imm(value x, int i) {
+  value v = (Op_val(x)[i] + 0);
+  Assert (!Is_foreign(v));
+  return v;
+}
 
 #define Int_field(x, i) Int_val(Op_val(x)[i])
 #define Long_field(x, i) Long_val(Op_val(x)[i])

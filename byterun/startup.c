@@ -302,6 +302,7 @@ CAMLexport void caml_main(char **argv)
   caml_seek_section(fd, &trail, "DATA");
   chan = caml_open_descriptor_in(fd);
   caml_modify_root(caml_global_data, caml_input_val(chan));
+  caml_minor_collection(); /* ensure all globals are in major heap */
   caml_close_channel(chan); /* this also closes fd */
   caml_stat_free(trail.section);
 #ifdef _WIN32
@@ -372,6 +373,7 @@ CAMLexport void caml_startup_code(
   caml_build_primitive_table_builtin();
   /* Load the globals */
   caml_modify_root(caml_global_data, caml_input_value_from_block(data, data_size));
+  caml_minor_collection(); /* ensure all globals are in major heap */
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_init_section_table(section_table, section_table_size);
   /* Execute the program */
