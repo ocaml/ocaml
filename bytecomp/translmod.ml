@@ -376,9 +376,10 @@ let merge_functors mexp coercion root_path =
         in
         let arg_coercion, res_coercion =
           match coercion with
-          | Tcoerce_none -> None, Tcoerce_none
+          | Tcoerce_none ->
+              Tcoerce_none, Tcoerce_none
           | Tcoerce_functor (arg_coercion, res_coercion) ->
-            Some arg_coercion, res_coercion
+              arg_coercion, res_coercion
           | _ -> fatal_error "Translmod.merge_functors: bad coercion"
         in
         let loc = mexp.mod_loc in
@@ -400,12 +401,7 @@ let rec compile_functor mexp coercion root_path loc =
   let params, body =
     List.fold_left (fun (params, body) (param, loc, arg_coercion) ->
         let param' = Ident.rename param in
-        let arg =
-          match arg_coercion with
-          | None -> Lvar param'
-          | Some arg_coercion ->
-            apply_coercion loc Alias arg_coercion (Lvar param')
-        in
+        let arg = apply_coercion loc Alias arg_coercion (Lvar param') in
         let params = param' :: params in
         let body = Llet (Alias, Pgenval, param, arg, body) in
         params, body)
