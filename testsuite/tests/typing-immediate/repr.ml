@@ -248,28 +248,67 @@ module F(X : sig type 'a t [@@non_contractive] end) = struct
   type t = A: 'a X.t -> t [@@unboxed]
 end;;
 [%%expect{|
+module F :
+  functor (X : sig type 'a t [@@non_contractive] end) ->
+    sig type t = A : 'a X.t -> t [@@unboxed] end
 |}];;
 
 module M_valid = F(struct type 'a t = float end);;
 [%%expect{|
+module M_valid : sig type t = A : float -> t [@@unboxed] end
 |}];;
 
 module M_valid = F(struct type 'a t = A of float  [@@unboxed] end);;
 [%%expect{|
+module M_valid : sig type t [@@non_contractive] [@@unboxed] end
 |}];;
 
 module M_valid = F(struct type 'a t = int end);;
 [%%expect{|
+module M_valid : sig type t = A : int -> t [@@unboxed] end
 |}];;
 
 module M_invalid = F(struct type 'a t = 'a end);;
 [%%expect{|
+Line _, characters 21-46:
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = 'a end
+       is not included in
+         sig type 'a t [@@non_contractive] end
+       Type declarations do not match:
+         type 'a t = 'a
+       is not included in
+         type 'a t [@@non_contractive]
+       Their runtime representations do not agree.
 |}];;
 
 module M_invalid = F(struct type 'a t = A of 'a [@@unboxed] end);;
 [%%expect{|
+Line _, characters 21-63:
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = A of 'a [@@unboxed] end
+       is not included in
+         sig type 'a t [@@non_contractive] end
+       Type declarations do not match:
+         type 'a t = A of 'a [@@unboxed]
+       is not included in
+         type 'a t [@@non_contractive]
+       Their runtime representations do not agree.
 |}];;
 
 module M_invalid = F(struct type 'a t = 'b constraint 'a = 'b list end);;
 [%%expect{|
+Line _, characters 21-70:
+Error: Signature mismatch:
+       Modules do not match:
+         sig type 'a t = 'b constraint 'a = 'b list end
+       is not included in
+         sig type 'a t [@@non_contractive] end
+       Type declarations do not match:
+         type 'a t = 'b constraint 'a = 'b list
+       is not included in
+         type 'a t [@@non_contractive]
+       Their constraints differ.
 |}];;
