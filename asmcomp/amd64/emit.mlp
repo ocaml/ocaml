@@ -491,7 +491,9 @@ let emit_instr fallthrough i =
           (* caml_c_call preserves the old value of %r15, but this may no longer
              be the correct minor heap pointer, so we reload young_ptr *)
           `	{locate_domain_state ()}, %r15\n`;
-          `	incq	{domain_field Domainstate.Domain_extcall_alloc_stackargs}(%r15)\n`;
+          if Config.stats then begin
+            `	incq	{domain_field Domainstate.Domain_extcall_alloc_stackargs}(%r15)\n`;
+          end;
           `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
           end
         else if alloc then begin
@@ -501,13 +503,17 @@ let emit_instr fallthrough i =
           (* caml_c_call preserves the old value of %r15, but this may no longer
              be the correct minor heap pointer, so we reload young_ptr *)
           `	{locate_domain_state ()}, %r15\n`;
-          `	incq	{domain_field Domainstate.Domain_extcall_alloc}(%r15)\n`;
+          if Config.stats then begin
+            `	incq	{domain_field Domainstate.Domain_extcall_alloc}(%r15)\n`;
+          end;
           `	movq	{domain_field Domainstate.Domain_young_ptr}(%r15), %r15\n`;
         end else begin
           `	movq  %rsp, %r10\n`;
           `	movq  %r15, %r11\n`;
           `	{locate_domain_state ()}, %r11\n`;
-          `	incq	{domain_field Domainstate.Domain_extcall_noalloc}(%r11)\n`;
+          if Config.stats then begin
+            `	incq	{domain_field Domainstate.Domain_extcall_noalloc}(%r11)\n`;
+          end;
           `	.cfi_remember_state\n`;
           `	movq	{domain_field Domainstate.Domain_system_sp}(%r11), %rsp\n`;
           `	.cfi_def_cfa_offset 8\n`;
@@ -603,14 +609,14 @@ let emit_instr fallthrough i =
             `	movsd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         end
     | Lop(Ialloc n) ->
-        `	movq	%r15, %rax\n`;
-        `	{locate_domain_state ()}, %rax\n`;
-        `	incq {domain_field Domainstate.Domain_allocations}(%rax)\n`;
         if !fastcode_flag then begin
           let lbl_redo = new_label() in
           `{emit_label lbl_redo}:	movq	%r15, %rax\n`;
           `	subq	${emit_int n}, %r15\n`;
           `	{locate_domain_state ()}, %rax\n`;
+          if Config.stats then begin
+            `	incq {domain_field Domainstate.Domain_allocations}(%rax)\n`;
+          end;
           `	cmpq	{domain_field Domainstate.Domain_young_limit}(%rax), %r15\n`;
           let lbl_call_gc = new_label() in
           let lbl_frame = record_frame_label i.live Debuginfo.none in
@@ -622,6 +628,11 @@ let emit_instr fallthrough i =
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame } :: !call_gc_sites
         end else begin
+          if Config.stats then begin
+            `	movq	%r15, %rax\n`;
+            `	{locate_domain_state ()}, %rax\n`;
+            `	incq {domain_field Domainstate.Domain_allocations}(%rax)\n`;
+          end;
           begin match n with
             16  -> `	{emit_call "caml_alloc1"}\n`
           | 24 -> `	{emit_call "caml_alloc2"}\n`
@@ -953,7 +964,9 @@ let fundecl fundecl =
 
     ` movq %r15, %r11\n`;
     `	{locate_domain_state ()}, %r11\n`;
-    `	incq	{domain_field Domainstate.Domain_stackoverflow_checks}(%r11)\n`;
+    if Config.stats then begin
+      `	incq	{domain_field Domainstate.Domain_stackoverflow_checks}(%r11)\n`;
+    end;
     `	movq	{domain_field Domainstate.Domain_stack_threshold}(%r11), %r11\n`;
     ` addq ${emit_int s}, %r11\n`;
     ` cmpq %r11, %rsp\n`;
