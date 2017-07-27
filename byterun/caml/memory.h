@@ -79,7 +79,7 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
 #define Count_alloc dom_st->allocations++
 #else
 #define Count_alloc
