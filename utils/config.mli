@@ -90,7 +90,7 @@ val stack_threshold: int
 val profile_slop : int
         (* Size in words of extra stack slop space at the bottom of stack if
            profiling is enabled. See byterun/config.h *)
- 
+
 val architecture: string
         (* Name of processor type for the native-code compiler *)
 val model: string
@@ -130,3 +130,7 @@ val target : string
         (* Whether the compiler is a cross-compiler *)
 
 val print_config : out_channel -> unit;;
+
+val stats : bool
+        (* Whether the compiler records detailed statistics about the program.
+           Warning: Expect a substantial performance hit. *)

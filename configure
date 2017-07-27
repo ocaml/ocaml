@@ -47,6 +47,7 @@ with_frame_pointers=false
 no_naked_pointers=false
 TOOLPREF=""
 with_cfi=true
+stats=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -154,6 +155,8 @@ while : ; do
         no_naked_pointers=true;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+		-enable-stats|--enable-stats)
+			  stats=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -993,6 +996,12 @@ echo "ARCMD=${TOOLPREF}ar" >> Makefile
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
 echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
 
+# Are we collecting stats?
+
+if test $stats = "true"; then
+	echo "#define COLLECT_STATS" >> s.h
+fi
+
 # Do #! scripts work?
 
 if (SHELL=/bin/sh; export SHELL; (./sharpbang || ./sharpbang2) >/dev/null); then
@@ -1750,6 +1759,7 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
+echo "STATS=$stats" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
 echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
   | sed -e 's/ $/\\ /' >> Makefile

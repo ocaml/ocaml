@@ -79,6 +79,12 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
+#ifdef COLLECT_STATS
+#define Count_alloc dom_st->allocations++
+#else
+#define Count_alloc
+#endif
+
 #define Alloc_small(result, wosize, tag, GC) do{CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
@@ -92,6 +98,7 @@ color_t caml_allocation_color (void *hp);
   Hd_hp (dom_st->young_ptr) = Make_header ((wosize), (tag), 0);             \
   (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
+  Count_alloc;                                                              \
 }while(0)
 
 /* </private> */
