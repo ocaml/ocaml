@@ -51,7 +51,7 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
   Assert(field >= 0 && field < Wosize_val(obj));
 
   write_barrier(obj, field, Op_val(obj)[field], val);
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   Caml_state->mutable_stores++;
 #endif
   Op_val(obj)[field] = val;
@@ -222,7 +222,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
     }
   }
   if (tag == Stack_tag) Stack_sp(Val_hp(v)) = 0;
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   dom_st->allocations++;
 #endif
   return Val_hp(v);

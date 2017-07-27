@@ -49,7 +49,7 @@ struct gc_stats {
   struct heap_stats major_heap;
 };
 
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
 struct detailed_stats {
   uint64 allocations;
 

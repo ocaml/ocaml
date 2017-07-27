@@ -740,11 +740,11 @@ void caml_sample_gc_stats(struct gc_stats* buf)
 
 void caml_print_stats () {
   struct gc_stats s;
-  int i;
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   struct detailed_stats ds;
   caml_domain_state* st;
   uint64 total;
+  int i;
 #endif
 
   caml_gc_stat(Val_unit);
@@ -756,7 +756,7 @@ void caml_print_stats () {
   fprintf(stderr, "Minor collections:\t%llu\n", s.minor_collections);
   fprintf(stderr, "Major collections:\t%llu\n", (uint64) Caml_state->stat_major_collections);
 
-#ifdef COLLECT_STATS
+#if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   memset(&ds,0,sizeof(struct detailed_stats));
   for (i=0; i<Max_domains; i++) {
     st = all_domains[i].state.state;
