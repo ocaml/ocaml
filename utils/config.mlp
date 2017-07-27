@@ -97,6 +97,8 @@ let default_executable_name =
 
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
+let stats = %%STATS%%;;
+
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
   let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in

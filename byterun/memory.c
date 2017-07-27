@@ -51,6 +51,9 @@ CAMLexport void caml_modify_field (value obj, int field, value val)
   Assert(field >= 0 && field < Wosize_val(obj));
 
   write_barrier(obj, field, Op_val(obj)[field], val);
+#ifdef COLLECT_STATS
+  Caml_state->mutable_stores++;
+#endif
   Op_val(obj)[field] = val;
 }
 
@@ -198,12 +201,13 @@ CAMLexport void caml_blit_fields (value src, int srcoff, value dst, int dstoff, 
 
 CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 {
-  value* v = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag, 0);
+  caml_domain_state* dom_st = Caml_state;
+  value* v = caml_shared_try_alloc(dom_st->shared_heap, wosize, tag, 0);
   if (v == NULL) {
     caml_raise_out_of_memory ();
   }
-  Caml_state->allocated_words += Whsize_wosize (wosize);
-  if (Caml_state->allocated_words > Wsize_bsize (Caml_state->minor_heap_size)) {
+  dom_st->allocated_words += Whsize_wosize (wosize);
+  if (dom_st->allocated_words > Wsize_bsize (dom_st->minor_heap_size)) {
     caml_urge_major_slice();
   }
 
@@ -217,9 +221,10 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       Op_hp(v)[i] = init_val;
     }
   }
-
   if (tag == Stack_tag) Stack_sp(Val_hp(v)) = 0;
-
+#ifdef COLLECT_STATS
+  dom_st->allocations++;
+#endif
   return Val_hp(v);
 }
 

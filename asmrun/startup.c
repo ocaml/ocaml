@@ -121,6 +121,7 @@ void caml_main(char **argv)
   }
   caml_init_main_stack();
   res = caml_start_program(Caml_state->young_ptr);
+  caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }

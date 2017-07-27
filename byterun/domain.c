@@ -19,6 +19,7 @@
 #include "caml/callback.h"
 #include "caml/minor_gc.h"
 #include "caml/eventlog.h"
+#include "caml/gc_ctrl.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -342,7 +343,7 @@ CAMLprim value caml_domain_spawn(value callback)
   struct domain_thread **dp;
   struct domain_thread *d;
   int err;
-  
+
   th_val = caml_alloc_custom(&domain_ops, sizeof(*dp), 0, 1);
   dp = Domainthreadptr_val(th_val);
   *dp = d = caml_stat_alloc(sizeof(*d));
@@ -678,7 +679,7 @@ static void stw_phase () {
     }
     caml_scan_global_roots(&caml_verify_root, ver);
     caml_verify_heap(ver);
-  
+
     /* synchronise, ensuring no domain continues before all domains verify */
     caml_plat_lock(&verify_lock);
     unsigned gen = verify_gen;
@@ -735,6 +736,80 @@ void caml_sample_gc_stats(struct gc_stats* buf)
     buf->major_heap.large_words += h->large_words;
     buf->major_heap.large_max_words += h->large_max_words;
   }
+}
+
+void caml_print_stats () {
+  struct gc_stats s;
+  int i;
+#ifdef COLLECT_STATS
+  struct detailed_stats ds;
+  caml_domain_state* st;
+  uint64 total;
+#endif
+
+  caml_gc_stat(Val_unit);
+  caml_sample_gc_stats(&s);
+  fprintf(stderr,"**** GC stats ****\n");
+  fprintf(stderr, "Minor words:\t\t%llu\n", s.minor_words);
+  fprintf(stderr, "Promoted words:\t\t%llu\n", s.promoted_words);
+  fprintf(stderr, "Major words:\t\t%llu\n", s.major_words);
+  fprintf(stderr, "Minor collections:\t%llu\n", s.minor_collections);
+  fprintf(stderr, "Major collections:\t%llu\n", (uint64) Caml_state->stat_major_collections);
+
+#ifdef COLLECT_STATS
+  memset(&ds,0,sizeof(struct detailed_stats));
+  for (i=0; i<Max_domains; i++) {
+    st = all_domains[i].state.state;
+    if (st) {
+      ds.allocations += st->allocations;
+
+      ds.mutable_stores += st->mutable_stores;
+      ds.immutable_stores += st->immutable_stores;
+
+      ds.mutable_loads += st->mutable_loads;
+      ds.immutable_loads += st->immutable_loads;
+
+      ds.extcall_noalloc += st->extcall_noalloc;
+      ds.extcall_alloc += st->extcall_alloc;
+      ds.extcall_alloc_stackargs += st->extcall_alloc_stackargs;
+
+      ds.tailcall_imm += st->tailcall_imm;
+      ds.tailcall_ind += st->tailcall_ind;
+      ds.call_imm += st->call_imm;
+      ds.call_ind += st->call_ind;
+
+      ds.stackoverflow_checks += st->stackoverflow_checks;
+    }
+  }
+  fprintf(stderr, "\n**** Other stats ****\n");
+  fprintf(stderr, "Allocations:\t\t%llu\n", ds.allocations);
+
+  total = ds.mutable_loads + ds.immutable_loads;
+  fprintf(stderr, "\nLoads:\t\t\t%llu\n", total);
+  fprintf(stderr, "Mutable:\t\t%llu (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
+  fprintf(stderr, "Immutable:\t\t%llu (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
+
+  total = ds.mutable_stores + ds.immutable_stores;
+  fprintf(stderr, "\nStores:\t\t\t%llu\n", total);
+  fprintf(stderr, "Mutable:\t\t%llu (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
+  fprintf(stderr, "Immutable:\t\t%llu (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
+
+  total = ds.extcall_noalloc + ds.extcall_alloc + ds.extcall_alloc_stackargs;
+  fprintf(stderr, "\nExternal calls:\t\t%llu\n", total);
+  fprintf(stderr, "NoAlloc:\t\t%llu (%.2lf%%)\n", ds.extcall_noalloc, (double)ds.extcall_noalloc * 100.0 / total);
+  fprintf(stderr, "Alloc:\t\t\t%llu (%.2lf%%)\n", ds.extcall_alloc, (double)ds.extcall_alloc * 100.0 / total);
+  fprintf(stderr, "Alloc + stack args:\t%llu (%.2lf%%)\n", ds.extcall_alloc_stackargs, (double)ds.extcall_alloc_stackargs * 100.0 / total);
+
+  total = ds.tailcall_imm + ds.tailcall_ind + ds.call_imm + ds.call_ind;
+  fprintf(stderr, "\nCalls:\t\t\t%llu\n", total);
+  fprintf(stderr, "Imm tail:\t\t%llu (%.2lf%%)\n", ds.tailcall_imm, (double)ds.tailcall_imm * 100.0 / total);
+  fprintf(stderr, "Ind tail:\t\t%llu (%.2lf%%)\n", ds.tailcall_ind, (double)ds.tailcall_ind * 100.0 / total);
+  fprintf(stderr, "Imm non-tail:\t\t%llu (%.2lf%%)\n", ds.call_imm, (double)ds.call_imm * 100.0 / total);
+  fprintf(stderr, "Ind non-tail:\t\t%llu (%.2lf%%)\n", ds.call_ind, (double)ds.call_ind * 100.0 / total);
+
+  fprintf(stderr, "\nStackoverflow checks:\t%llu (%.2lf%%)\n", ds.stackoverflow_checks, (double)ds.stackoverflow_checks * 100.0 / total);
+
+#endif
 }
 
 
@@ -845,6 +920,8 @@ CAMLexport void caml_domain_rpc(struct domain* domain,
   }
   caml_ev_resume();
 }
+
+
 
 /* Generate functions for accessing domain state variables in debug mode */
 #ifdef DEBUG

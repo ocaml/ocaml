@@ -1,6 +1,7 @@
 #ifndef CAML_DOMAIN_H
 #define CAML_DOMAIN_H
 
+#include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
 #include "memory.h"
@@ -44,10 +45,35 @@ struct gc_stats {
   uint64 minor_words;
   uint64 promoted_words;
   uint64 major_words;
-  intnat minor_collections;
+  uint64 minor_collections;
   struct heap_stats major_heap;
 };
+
+#ifdef COLLECT_STATS
+struct detailed_stats {
+  uint64 allocations;
+
+  uint64 mutable_loads;
+  uint64 immutable_loads;
+
+  uint64 mutable_stores;
+  uint64 immutable_stores;
+
+  uint64 extcall_noalloc;
+  uint64 extcall_alloc;
+  uint64 extcall_alloc_stackargs;
+
+  uint64 tailcall_imm;
+  uint64 tailcall_ind;
+  uint64 call_imm;
+  uint64 call_ind;
+
+  uint64 stackoverflow_checks;
+};
+#endif
+
 void caml_sample_gc_stats(struct gc_stats* buf);
+void caml_print_stats(void);
 
 CAMLextern void caml_enter_blocking_section(void);
 CAMLextern void caml_leave_blocking_section(void);

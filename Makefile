@@ -462,6 +462,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%EXT_LIB%%|.a|' \
 	    -e 's|%%EXT_DLL%%|.so|' \
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+			-e 's|%%STATS%%|$(STATS)|' \
 	    -e 's|%%ASM%%|$(ASM)|' \
 	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
 	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \

@@ -20,6 +20,7 @@ struct caml_params {
   int trace_flag;
   int eventlog_enabled;
   int verify_heap;
+  int print_stats;
 
   uintnat percent_free_init;
   uintnat max_percent_free_init;
@@ -40,5 +41,6 @@ int caml_parse_command_line(char** argv);
 void caml_init_argv(const char* exe_name, char** main_argv);
 void caml_init_section_table(const char* section_table,
                              asize_t section_table_size);
+CAMLextern value caml_maybe_print_stats(value);
 
 #endif /* CAML_PARAMS_H */

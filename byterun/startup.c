@@ -45,6 +45,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
+#include "caml/params.h"
 #include "caml/prims.h"
 #include "caml/printexc.h"
 #include "caml/reverse.h"
@@ -313,6 +314,7 @@ CAMLexport void caml_main(char **argv)
   /* Execute the program */
   caml_debugger(PROGRAM_START);
   res = caml_interprete(caml_start_code, caml_code_size);
+  caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res)) {
     Caml_state->exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {

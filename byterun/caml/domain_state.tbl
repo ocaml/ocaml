@@ -42,3 +42,23 @@ DOMAIN_STATE(asize_t, minor_heap_size)
 
 DOMAIN_STATE(struct caml_heap_state*, shared_heap)
 DOMAIN_STATE(int, id)
+
+/* Detailed stats */
+DOMAIN_STATE(uint64, allocations)
+
+DOMAIN_STATE(uint64, mutable_loads)
+DOMAIN_STATE(uint64, immutable_loads)
+
+DOMAIN_STATE(uint64, mutable_stores)
+DOMAIN_STATE(uint64, immutable_stores)
+
+DOMAIN_STATE(uint64, extcall_noalloc)
+DOMAIN_STATE(uint64, extcall_alloc)
+DOMAIN_STATE(uint64, extcall_alloc_stackargs)
+
+DOMAIN_STATE(uint64, tailcall_imm)
+DOMAIN_STATE(uint64, tailcall_ind)
+DOMAIN_STATE(uint64, call_imm)
+DOMAIN_STATE(uint64, call_ind)
+
+DOMAIN_STATE(uint64, stackoverflow_checks)
