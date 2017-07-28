@@ -324,6 +324,7 @@ let emit_literals() =
 
 let emit_load_symbol_addr dst s =
   if (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit s then begin
+    `	.hidden	{emit_symbol s}\n`;
     `	adrp	{emit_reg dst}, {emit_symbol s}\n`;
     `	add	{emit_reg dst}, {emit_reg dst}, #:lo12:{emit_symbol s}\n`
   end else begin
@@ -575,6 +576,7 @@ let emit_instr i =
           `	fmov	{emit_reg i.res.(0)}, #{emit_printf "0x%Lx" f}\n`
         else begin
           let lbl = float_literal f in
+          `	.hidden	{emit_label lbl}\n`;
           `	adrp	{emit_reg reg_tmp1}, {emit_label lbl}\n`;
           `	ldr	{emit_reg i.res.(0)}, [{emit_reg reg_tmp1}, #:lo12:{emit_label lbl}]\n`
         end
@@ -609,6 +611,7 @@ let emit_instr i =
           match addr with
           | Iindexed _ -> i.arg.(0)
           | Ibased(s, ofs) ->
+              `	.hidden	{emit_symbol s}\n`;
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
         begin match size with
@@ -636,6 +639,7 @@ let emit_instr i =
           match addr with
           | Iindexed _ -> i.arg.(1)
           | Ibased(s, ofs) ->
+              `	.hidden	{emit_symbol s}\n`;
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
         begin match size with
