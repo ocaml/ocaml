@@ -44,6 +44,9 @@ Working version
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
   (Mark Shinwell)
 
+- GPR#1250: illegal ARM64 assembly code generated for large combined allocations
+  (report and initial fix by Steve Walk, review and final fix by Xavier Leroy)
+
 ### Standard library:
 
 - GPR#1217: Restrict Unix.environment in privileged contexts; add
