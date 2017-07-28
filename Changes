@@ -4,6 +4,9 @@ Working version
 (Changes that can break existing programs are marked with a "*")
 
 ### Language features:
+- GPR#1118: Support inherited field in object type expression
+  (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
+   and Florian Angeletti)
 
 - MPR#6271, MPR#7529, GPR#1249: Support "let open M in ..."
   in class expressions and class type expressions.
