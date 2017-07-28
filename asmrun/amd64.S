@@ -703,6 +703,7 @@ LBL(caml_alloc1):
         jb      LBL(100)
         ret
 LBL(100):
+        addq    $16, %r15
         SWITCH_OCAML_TO_C(%rax)
         ENTER_FUNCTION
         call    LBL(do_gc)
@@ -719,6 +720,7 @@ LBL(caml_alloc2):
         jb      LBL(101)
         ret
 LBL(101):
+        addq    $24, %r15
         SWITCH_OCAML_TO_C(%rax)
         ENTER_FUNCTION
         call    LBL(do_gc)
@@ -735,6 +737,7 @@ LBL(caml_alloc3):
         jb      LBL(102)
         ret
 LBL(102):
+        addq    $32, %r15
         SWITCH_OCAML_TO_C(%rax)
         ENTER_FUNCTION
         call    LBL(do_gc)
@@ -753,6 +756,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
+        addq    %rax, %r15
         /* Save desired size on system stack */
         LOAD_TL_VAR(caml_system_sp, %rax)
         popq    -8(%rax); CFI_ADJUST(-8)
