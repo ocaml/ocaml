@@ -267,6 +267,12 @@ void caml_init_domain_self(int domain_id) {
 
 static void domain_terminate() {
   caml_gc_log("Domain terminating");
+  caml_stop_interruptor(&domain_self->interruptor);
+  while (caml_sweep(domain_self->state.state->shared_heap, 10) <= 0);
+  caml_empty_minor_heap();
+  caml_finish_marking();
+  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
+  domain_self->state.state->shared_heap = 0;
   caml_enter_blocking_section();
 
   /* FIXME: proper domain termination and reuse */
