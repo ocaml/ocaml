@@ -83,17 +83,11 @@ EOF
           OCAML_NATIVE_TOOLS=true &&
         $MAKE all &&
         $MAKE install)
-
-    # camlp4 is temporarily disabled as GPR#1118 changed the parsetree
-    if false
-    then
     git clone git://github.com/ocaml/camlp4
     (cd camlp4 &&
      ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
        --pkgdir=$PREFIX/lib/ocaml && \
       $MAKE && $MAKE install)
-    fi
-
     # git clone git://github.com/ocaml/opam
     # (cd opam && ./configure --prefix $PREFIX &&\
     #   $MAKE lib-ext && $MAKE && $MAKE install)
