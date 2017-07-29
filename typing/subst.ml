@@ -118,6 +118,12 @@ let type_path s p =
   | LocalExt _ -> type_path s p
   | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
 
+let to_subst_by_type_function s p =
+  match PathMap.find p s.types with
+  | Path _ -> false
+  | Type_function _ -> true
+  | exception Not_found -> false
+
 (* Special type ids for saved signatures *)
 
 let new_id = ref (-1)
@@ -191,7 +197,9 @@ let rec typexp s ty =
                  ref (match !name with
                         None -> None
                       | Some (p, tl) ->
-                          Some (type_path s p, List.map (typexp s) tl)))
+                         if to_subst_by_type_function s p
+                         then None
+                         else Some (type_path s p, List.map (typexp s) tl)))
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -223,8 +231,11 @@ let rec typexp s ty =
               let row =
                 copy_row (typexp s) true row (not dup) more' in
               match row.row_name with
-                Some (p, tl) ->
-                  Tvariant {row with row_name = Some (type_path s p, tl)}
+              | Some (p, tl) ->
+                 Tvariant {row with row_name =
+                                      if to_subst_by_type_function s p
+                                      then None
+                                      else Some (type_path s p, tl)}
               | None ->
                   Tvariant row
           end

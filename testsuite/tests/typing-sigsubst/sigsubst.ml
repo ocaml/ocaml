@@ -91,6 +91,14 @@ module type S = sig type 'a t end with type 'a t := unit
 module type S = sig  end
 |}]
 
+module type S = sig
+  type t = [ `Foo ]
+  type s = private [< t ]
+end with type t := [ `Foo ]
+[%%expect {|
+module type S = sig type s = private [< `Foo ] end
+|}]
+
 (* Issue where the typer expands an alias, which breaks the typing of the rest
    of the signature, but no error is given to the user. *)
 module type S = sig
