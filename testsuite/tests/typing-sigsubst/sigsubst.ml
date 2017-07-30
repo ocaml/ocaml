@@ -170,6 +170,28 @@ module type S =
   end
 |}]
 
+(* Regression test: at some point, expanding S1 twice in the same
+   "with type" would result in a signature with duplicate ids, which
+   would confuse the rewriting (we would end with (M2.x : int)) and
+   only then get refreshened. *)
+module type S = sig
+  module type S1 = sig type t type a val x : t end
+  module M1 : S1
+  type a = M1.t
+  module M2 : S1
+  type b = M2.t
+end with type M1.a = int and type M2.a = int and type M1.t := int;;
+[%%expect {|
+module type S =
+  sig
+    module type S1 = sig type t type a val x : t end
+    module M1 : sig type a = int val x : int end
+    type a = int
+    module M2 : sig type t type a = int val x : t end
+    type b = M2.t
+  end
+|}]
+
 (* And now some corner cases with aliases: *)
 
 module type S = sig
