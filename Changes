@@ -396,6 +396,9 @@ Working version
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
+- GPR#1269: Remove 50ms delay at exit for programs using threads
+  (Valentin Gatien-Baron, review by Stephen Dolan)
+
 * MPR#7594, GPR#1274: String_val now returns 'const char*', not
   'char*' when -safe-string is enabled at configure time.
   New macro Bytes_val for accessing bytes values.
