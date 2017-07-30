@@ -99,6 +99,41 @@ end with type t := [ `Foo ]
 module type S = sig type s = private [< `Foo ] end
 |}]
 
+module type S = sig
+  type t = ..
+  type t += A
+end with type t := exn
+[%%expect {|
+module type S = sig type exn += A end
+|}]
+
+(* We allow type constraints when replacing a path by a path. *)
+type 'a t constraint 'a = 'b list
+module type S = sig
+  type 'a t2 constraint 'a = 'b list
+  type 'a mylist = 'a list
+  val x : int mylist t2
+end with type 'a t2 := 'a t
+[%%expect {|
+type 'a t constraint 'a = 'b list
+module type S = sig type 'a mylist = 'a list val x : int mylist t end
+|}]
+
+(* but not when replacing a path by a type expression *)
+type 'a t constraint 'a = 'b list
+module type S = sig
+  type 'a t2 constraint 'a = 'b list
+  type 'a mylist = 'a list
+  val x : int mylist t2
+end with type 'a t2 := 'a t * bool
+[%%expect {|
+type 'a t constraint 'a = 'b list
+Line _, characters 16-142:
+Error: Destructive substitutions are not supported for constrained
+       types (other than when replacing a type constructor with
+       a type constructor with the same arguments).
+|}]
+
 (* Issue where the typer expands an alias, which breaks the typing of the rest
    of the signature, but no error is given to the user. *)
 module type S = sig

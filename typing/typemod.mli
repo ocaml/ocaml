@@ -63,6 +63,7 @@ type error =
   | With_makes_applicative_functor_ill_typed of
       Longident.t * Path.t * Includemod.error list
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration

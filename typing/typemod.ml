@@ -32,6 +32,7 @@ type error =
   | With_makes_applicative_functor_ill_typed of
       Longident.t * Path.t * Includemod.error list
   | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
@@ -248,6 +249,36 @@ let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
   iterator.Btype.it_signature iterator signature;
   Btype.unmark_iterators.Btype.it_signature Btype.unmark_iterators signature
 
+let type_decl_is_alias sdecl = (* assuming no explicit constraint *)
+  match sdecl.ptype_manifest with
+  | Some {ptyp_desc = Ptyp_constr (lid, stl)}
+       when List.length stl = List.length sdecl.ptype_params ->
+     begin
+       match
+         List.iter2 (fun x (y, _) ->
+             match x, y with
+               {ptyp_desc=Ptyp_var sx}, {ptyp_desc=Ptyp_var sy}
+                  when sx = sy -> ()
+             | _, _ -> raise Exit)
+           stl sdecl.ptype_params;
+       with
+       | exception Exit -> None
+       | () -> Some lid
+     end
+  | _ -> None
+;;
+
+let params_are_constrained =
+  let rec loop = function
+    | [] -> false
+    | hd :: tl ->
+       match (Btype.repr hd).desc with
+       | Tvar _ -> List.memq hd tl || loop tl
+       | _ -> true
+  in
+  loop
+;;
+
 let merge_constraint initial_env loc sg constr =
   let lid =
     match constr with
@@ -363,18 +394,31 @@ let merge_constraint initial_env loc sg constr =
     let sg =
     match tcstr with
     | (_, _, Twith_typesubst tdecl) ->
-       let body =
-         match tdecl.typ_type.type_manifest with
-         | None -> assert false
-         | Some x -> x
+       let how_to_extend_subst =
+         let sdecl =
+           match constr with
+           | Pwith_typesubst (_, sdecl) -> sdecl
+           | _ -> assert false
+         in
+         match type_decl_is_alias sdecl with
+         | Some lid ->
+            let replacement =
+              try Env.lookup_type lid.txt initial_env
+              with Not_found -> assert false
+            in
+            fun s path -> Subst.add_type_path path replacement s
+         | None ->
+            let body =
+              match tdecl.typ_type.type_manifest with
+              | None -> assert false
+              | Some x -> x
+            in
+            let params = tdecl.typ_type.type_params in
+            if params_are_constrained params
+            then raise(Error(loc, initial_env, With_cannot_remove_constrained_type));
+            fun s path -> Subst.add_type_function path ~params ~body s
        in
-       let params = tdecl.typ_type.type_params in
-       let sub =
-         List.fold_left
-           (fun s path -> Subst.add_type_function path ~params ~body s)
-           Subst.identity
-           !real_ids
-       in
+       let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
        Subst.signature sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
        let sub =
@@ -1887,6 +1931,11 @@ let report_error ppf = function
            @[This `with' constraint on %a changes %s, which is aliased @ \
              in the constrained signature (as %s)@].@]"
         longident lid (Path.name path) (Ident.name id)
+  | With_cannot_remove_constrained_type ->
+      fprintf ppf
+        "@[<v>Destructive substitutions are not supported for constrained @ \
+              types (other than when replacing a type constructor with @ \
+              a type constructor with the same arguments).@]"
   | Repeated_name(kind, name) ->
       fprintf ppf
         "@[Multiple definition of the %s name %s.@ \
