@@ -286,6 +286,17 @@ CAMLexport void caml_main(char **argv)
 
   caml_ensure_spacetime_dot_o_is_included++;
 
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (!caml_startup_aux(/* pooling */ caml_cleanup_on_exit))
+    return;
+
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
@@ -295,15 +306,8 @@ CAMLexport void caml_main(char **argv)
   caml_init_custom_operations();
   caml_ext_table_init(&caml_shared_libs_path, 8);
   caml_external_raise = NULL;
-  /* Determine options and position of bytecode file */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
-  caml_parse_ocamlrunparam();
-#ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
-#endif
 
+  /* Determine position of bytecode file */
   pos = 0;
 
   /* First, try argv[0] (when ocamlrun is called by a bytecode program) */
@@ -377,7 +381,7 @@ CAMLexport void caml_main(char **argv)
   caml_sys_init(exe_name, argv + pos);
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (getenv("CAMLSIGPIPE"))
+  if (caml_secure_getenv("CAMLSIGPIPE"))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
@@ -400,24 +404,34 @@ CAMLexport value caml_startup_code_exn(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
+           int pooling,
            char **argv)
 {
   char * cds_file;
   char * exe_name;
+
+  /* Determine options */
+#ifdef DEBUG
+  caml_verb_gc = 0x3F;
+#endif
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+#endif
+  if (caml_cleanup_on_exit)
+    pooling = 1;
+  if (!caml_startup_aux(pooling))
+    return Val_unit;
 
   caml_init_ieee_floats();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
-#ifdef DEBUG
-  caml_verb_gc = 63;
-#endif
-  cds_file = getenv("CAML_DEBUG_FILE");
+  cds_file = caml_secure_getenv("CAML_DEBUG_FILE");
   if (cds_file != NULL) {
-    caml_cds_file = caml_strdup(cds_file);
+    caml_cds_file = caml_stat_strdup(cds_file);
   }
-  caml_parse_ocamlrunparam();
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
   caml_external_raise = NULL;
@@ -467,13 +481,14 @@ CAMLexport void caml_startup_code(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
+           int pooling,
            char **argv)
 {
   value res;
 
   res = caml_startup_code_exn(code, code_size, data, data_size,
                               section_table, section_table_size,
-                              argv);
+                              pooling, argv);
   if (Is_exception_result(res)) {
     caml_exn_bucket = Extract_exception(res);
     if (caml_debugger_in_use) {

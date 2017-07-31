@@ -256,7 +256,7 @@ static struct intern_item * intern_stack_limit = intern_stack_init
 static void intern_free_stack(void)
 {
   if (intern_stack != intern_stack_init) {
-    free(intern_stack);
+    caml_stat_free(intern_stack);
     /* Reinitialize the globals for next time around */
     intern_stack = intern_stack_init;
     intern_stack_limit = intern_stack + INTERN_STACK_INIT_SIZE;
@@ -279,13 +279,13 @@ static struct intern_item * intern_resize_stack(struct intern_item * sp)
 
   if (newsize >= INTERN_STACK_MAX_SIZE) intern_stack_overflow();
   if (intern_stack == intern_stack_init) {
-    newstack = malloc(sizeof(struct intern_item) * newsize);
+    newstack = caml_stat_alloc_noexc(sizeof(struct intern_item) * newsize);
     if (newstack == NULL) intern_stack_overflow();
     memcpy(newstack, intern_stack_init,
            sizeof(struct intern_item) * INTERN_STACK_INIT_SIZE);
   } else {
-    newstack =
-      realloc(intern_stack, sizeof(struct intern_item) * newsize);
+    newstack = caml_stat_resize_noexc(intern_stack,
+                                      sizeof(struct intern_item) * newsize);
     if (newstack == NULL) intern_stack_overflow();
   }
   intern_stack = newstack;
@@ -570,7 +570,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (wosize > Max_wosize || outside_heap) {
+  if (outside_heap || wosize > Max_wosize) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -585,10 +585,12 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     CAMLassert (intern_block == 0);
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
-    if (wosize == 0){
-      intern_block = Atom (String_tag);
-    }else if (wosize <= Max_young_wosize){
-      intern_block = caml_alloc_small (wosize, String_tag);
+    if (wosize <= Max_young_wosize){
+      if (wosize == 0){
+        intern_block = Atom (String_tag);
+      } else {
+        intern_block = caml_alloc_small (wosize, String_tag);
+      }
     }else{
       intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken
@@ -606,7 +608,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
   }
   obj_counter = 0;
   if (num_objects > 0) {
-    intern_obj_table = (value *) malloc(num_objects * sizeof(value));
+    intern_obj_table = (value *) caml_stat_alloc_noexc(num_objects * sizeof(value));
     if (intern_obj_table == NULL) {
       intern_cleanup();
       caml_raise_out_of_memory();

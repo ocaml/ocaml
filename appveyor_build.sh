@@ -27,23 +27,53 @@ function run {
     fi
 }
 
+PREFIX="C:/Program Files/OCaml"
+
+wmic cpu get name
+
+if [[ $1 = "msvc32-only" ]] ; then
+  cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
+  make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
+  cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
+
+  cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
+  cp config/m-nt.h byterun/caml/m.h
+  cp config/s-nt.h byterun/caml/s.h
+
+  eval $(tools/msvs-promote-path)
+
+  PREFIX="C:/Program Files/OCaml-msmvc32"
+  echo "Edit config/Makefile to set PREFIX=$PREFIX"
+  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
+
+  run "make world" make world
+  run "make runtimeopt" make runtimeopt
+  run "make -C otherlibs/systhreads libthreadsnat.lib" make -C otherlibs/systhreads libthreadsnat.lib
+
+  exit 0
+fi
+
 cd $APPVEYOR_BUILD_FOLDER
 
 git worktree add ../build-mingw32 -b appveyor-build-mingw32
+git worktree add ../build-msvc32 -b appveyor-build-msvc32
 
 cd ../build-mingw32
-
 git submodule update --init flexdll
 
 cd $APPVEYOR_BUILD_FOLDER
 
-cp config/m-nt.h config/m.h
-cp config/s-nt.h config/s.h
-cp config/Makefile.msvc64 config/Makefile
+tar -xzf flexdll.tar.gz
+cd flexdll-0.35
+make MSVC_DETECT=0 CHAINS=msvc64 support
+cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
+cd ..
 
-PREFIX="C:/Program Files/OCaml"
+cp config/m-nt.h byterun/caml/m.h
+cp config/s-nt.h byterun/caml/s.h
+
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -i -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make world" make world
@@ -53,13 +83,12 @@ run "make opt.opt" make opt.opt
 
 cd ../build-mingw32
 
-cp config/m-nt.h config/m.h
-cp config/s-nt.h config/s.h
-cp config/Makefile.mingw config/Makefile
+cp config/m-nt.h byterun/caml/m.h
+cp config/s-nt.h byterun/caml/s.h
 
 PREFIX="C:/Program Files/OCaml-mingw32"
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -i -e "s|PREFIX=.*|PREFIX=$PREFIX|" config/Makefile
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make flexdll" make flexdll

@@ -65,14 +65,14 @@ module type S =
 module Make(Ord: OrderedType) =
   struct
     type elt = Ord.t
-    type t = Empty | Node of t * elt * t * int
+    type t = Empty | Node of {l:t; v:elt; r:t; h:int}
 
     (* Sets are represented by balanced binary trees (the heights of the
        children differ by at most 2 *)
 
     let height = function
         Empty -> 0
-      | Node(_, _, _, h) -> h
+      | Node {h} -> h
 
     (* Creates a new node with left son l, value v and right son r.
        We must have all elements of l < v < all elements of r.
@@ -80,9 +80,9 @@ module Make(Ord: OrderedType) =
        Inline expansion of height for better speed. *)
 
     let create l v r =
-      let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h in
-      let hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
-      Node(l, v, r, (if hl >= hr then hl + 1 else hr + 1))
+      let hl = match l with Empty -> 0 | Node {h} -> h in
+      let hr = match r with Empty -> 0 | Node {h} -> h in
+      Node{l; v; r; h=(if hl >= hr then hl + 1 else hr + 1)}
 
     (* Same as create, but performs one step of rebalancing if necessary.
        Assumes l and r balanced and | height l - height r | <= 3.
@@ -90,40 +90,40 @@ module Make(Ord: OrderedType) =
        where no rebalancing is required. *)
 
     let bal l v r =
-      let hl = match l with Empty -> 0 | Node(_,_,_,h) -> h in
-      let hr = match r with Empty -> 0 | Node(_,_,_,h) -> h in
+      let hl = match l with Empty -> 0 | Node {h} -> h in
+      let hr = match r with Empty -> 0 | Node {h} -> h in
       if hl > hr + 2 then begin
         match l with
           Empty -> invalid_arg "Set.bal"
-        | Node(ll, lv, lr, _) ->
+        | Node{l=ll; v=lv; r=lr} ->
             if height ll >= height lr then
               create ll lv (create lr v r)
             else begin
               match lr with
                 Empty -> invalid_arg "Set.bal"
-              | Node(lrl, lrv, lrr, _)->
+              | Node{l=lrl; v=lrv; r=lrr}->
                   create (create ll lv lrl) lrv (create lrr v r)
             end
       end else if hr > hl + 2 then begin
         match r with
           Empty -> invalid_arg "Set.bal"
-        | Node(rl, rv, rr, _) ->
+        | Node{l=rl; v=rv; r=rr} ->
             if height rr >= height rl then
               create (create l v rl) rv rr
             else begin
               match rl with
                 Empty -> invalid_arg "Set.bal"
-              | Node(rll, rlv, rlr, _) ->
+              | Node{l=rll; v=rlv; r=rlr} ->
                   create (create l v rll) rlv (create rlr rv rr)
             end
       end else
-        Node(l, v, r, (if hl >= hr then hl + 1 else hr + 1))
+        Node{l; v; r; h=(if hl >= hr then hl + 1 else hr + 1)}
 
     (* Insertion of one element *)
 
     let rec add x = function
-        Empty -> Node(Empty, x, Empty, 1)
-      | Node(l, v, r, _) as t ->
+        Empty -> Node{l=Empty; v=x; r=Empty; h=1}
+      | Node{l; v; r} as t ->
           let c = Ord.compare x v in
           if c = 0 then t else
           if c < 0 then
@@ -133,7 +133,7 @@ module Make(Ord: OrderedType) =
             let rr = add x r in
             if r == rr then t else bal l v rr
 
-    let singleton x = Node(Empty, x, Empty, 1)
+    let singleton x = Node{l=Empty; v=x; r=Empty; h=1}
 
     (* Beware: those two functions assume that the added v is *strictly*
        smaller (or bigger) than all the present elements in the tree; it
@@ -142,15 +142,15 @@ module Make(Ord: OrderedType) =
        respects this precondition.
     *)
 
-    let rec add_min_element v = function
-      | Empty -> singleton v
-      | Node (l, x, r, _h) ->
-        bal (add_min_element v l) x r
+    let rec add_min_element x = function
+      | Empty -> singleton x
+      | Node {l; v; r} ->
+        bal (add_min_element x l) v r
 
-    let rec add_max_element v = function
-      | Empty -> singleton v
-      | Node (l, x, r, _h) ->
-        bal l x (add_max_element v r)
+    let rec add_max_element x = function
+      | Empty -> singleton x
+      | Node {l; v; r} ->
+        bal l v (add_max_element x r)
 
     (* Same as create and bal, but no assumptions are made on the
        relative heights of l and r. *)
@@ -159,7 +159,7 @@ module Make(Ord: OrderedType) =
       match (l, r) with
         (Empty, _) -> add_min_element v r
       | (_, Empty) -> add_max_element v l
-      | (Node(ll, lv, lr, lh), Node(rl, rv, rr, rh)) ->
+      | (Node{l=ll; v=lv; r=lr; h=lh}, Node{l=rl; v=rv; r=rr; h=rh}) ->
           if lh > rh + 2 then bal ll lv (join lr v r) else
           if rh > lh + 2 then bal (join l v rl) rv rr else
           create l v r
@@ -168,30 +168,30 @@ module Make(Ord: OrderedType) =
 
     let rec min_elt = function
         Empty -> raise Not_found
-      | Node(Empty, v, _, _) -> v
-      | Node(l, _, _, _) -> min_elt l
+      | Node{l=Empty; v} -> v
+      | Node{l} -> min_elt l
 
     let rec min_elt_opt = function
         Empty -> None
-      | Node(Empty, v, _, _) -> Some v
-      | Node(l, _, _, _) -> min_elt_opt l
+      | Node{l=Empty; v} -> Some v
+      | Node{l} -> min_elt_opt l
 
     let rec max_elt = function
         Empty -> raise Not_found
-      | Node(_, v, Empty, _) -> v
-      | Node(_, _, r, _) -> max_elt r
+      | Node{v; r=Empty} -> v
+      | Node{r} -> max_elt r
 
     let rec max_elt_opt = function
         Empty -> None
-      | Node(_, v, Empty, _) -> Some v
-      | Node(_, _, r, _) -> max_elt_opt r
+      | Node{v; r=Empty} -> Some v
+      | Node{r} -> max_elt_opt r
 
     (* Remove the smallest element of the given set *)
 
     let rec remove_min_elt = function
         Empty -> invalid_arg "Set.remove_min_elt"
-      | Node(Empty, _, r, _) -> r
-      | Node(l, v, r, _) -> bal (remove_min_elt l) v r
+      | Node{l=Empty; r} -> r
+      | Node{l; v; r} -> bal (remove_min_elt l) v r
 
     (* Merge two trees l and r into one.
        All elements of l must precede the elements of r.
@@ -222,7 +222,7 @@ module Make(Ord: OrderedType) =
     let rec split x = function
         Empty ->
           (Empty, false, Empty)
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           let c = Ord.compare x v in
           if c = 0 then (l, true, r)
           else if c < 0 then
@@ -238,13 +238,13 @@ module Make(Ord: OrderedType) =
 
     let rec mem x = function
         Empty -> false
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
 
     let rec remove x = function
         Empty -> Empty
-      | (Node(l, v, r, _) as t) ->
+      | (Node{l; v; r} as t) ->
           let c = Ord.compare x v in
           if c = 0 then merge l r
           else
@@ -261,7 +261,7 @@ module Make(Ord: OrderedType) =
       match (s1, s2) with
         (Empty, t2) -> t2
       | (t1, Empty) -> t1
-      | (Node(l1, v1, r1, h1), Node(l2, v2, r2, h2)) ->
+      | (Node{l=l1; v=v1; r=r1; h=h1}, Node{l=l2; v=v2; r=r2; h=h2}) ->
           if h1 >= h2 then
             if h2 = 1 then add v2 s1 else begin
               let (l2, _, r2) = split v1 s2 in
@@ -277,7 +277,7 @@ module Make(Ord: OrderedType) =
       match (s1, s2) with
         (Empty, _) -> Empty
       | (_, Empty) -> Empty
-      | (Node(l1, v1, r1, _), t2) ->
+      | (Node{l=l1; v=v1; r=r1}, t2) ->
           match split v1 t2 with
             (l2, false, r2) ->
               concat (inter l1 l2) (inter r1 r2)
@@ -288,7 +288,7 @@ module Make(Ord: OrderedType) =
       match (s1, s2) with
         (Empty, _) -> Empty
       | (t1, Empty) -> t1
-      | (Node(l1, v1, r1, _), t2) ->
+      | (Node{l=l1; v=v1; r=r1}, t2) ->
           match split v1 t2 with
             (l2, false, r2) ->
               join (diff l1 l2) v1 (diff r1 r2)
@@ -300,7 +300,7 @@ module Make(Ord: OrderedType) =
     let rec cons_enum s e =
       match s with
         Empty -> e
-      | Node(l, v, r, _) -> cons_enum l (More(v, r, e))
+      | Node{l; v; r} -> cons_enum l (More(v, r, e))
 
     let rec compare_aux e1 e2 =
         match (e1, e2) with
@@ -325,35 +325,35 @@ module Make(Ord: OrderedType) =
           true
       | _, Empty ->
           false
-      | Node (l1, v1, r1, _), (Node (l2, v2, r2, _) as t2) ->
+      | Node {l=l1; v=v1; r=r1}, (Node {l=l2; v=v2; r=r2} as t2) ->
           let c = Ord.compare v1 v2 in
           if c = 0 then
             subset l1 l2 && subset r1 r2
           else if c < 0 then
-            subset (Node (l1, v1, Empty, 0)) l2 && subset r1 t2
+            subset (Node {l=l1; v=v1; r=Empty; h=0}) l2 && subset r1 t2
           else
-            subset (Node (Empty, v1, r1, 0)) r2 && subset l1 t2
+            subset (Node {l=Empty; v=v1; r=r1; h=0}) r2 && subset l1 t2
 
     let rec iter f = function
         Empty -> ()
-      | Node(l, v, r, _) -> iter f l; f v; iter f r
+      | Node{l; v; r} -> iter f l; f v; iter f r
 
     let rec fold f s accu =
       match s with
         Empty -> accu
-      | Node(l, v, r, _) -> fold f r (f v (fold f l accu))
+      | Node{l; v; r} -> fold f r (f v (fold f l accu))
 
     let rec for_all p = function
         Empty -> true
-      | Node(l, v, r, _) -> p v && for_all p l && for_all p r
+      | Node{l; v; r} -> p v && for_all p l && for_all p r
 
     let rec exists p = function
         Empty -> false
-      | Node(l, v, r, _) -> p v || exists p l || exists p r
+      | Node{l; v; r} -> p v || exists p l || exists p r
 
     let rec filter p = function
         Empty -> Empty
-      | (Node(l, v, r, _)) as t ->
+      | (Node{l; v; r}) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pv = p v in
@@ -364,7 +364,7 @@ module Make(Ord: OrderedType) =
 
     let rec partition p = function
         Empty -> (Empty, Empty)
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           (* call [p] in the expected left-to-right order *)
           let (lt, lf) = partition p l in
           let pv = p v in
@@ -375,11 +375,11 @@ module Make(Ord: OrderedType) =
 
     let rec cardinal = function
         Empty -> 0
-      | Node(l, _, r, _) -> cardinal l + 1 + cardinal r
+      | Node{l; r} -> cardinal l + 1 + cardinal r
 
     let rec elements_aux accu = function
         Empty -> accu
-      | Node(l, v, r, _) -> elements_aux (v :: elements_aux accu r) l
+      | Node{l; v; r} -> elements_aux (v :: elements_aux accu r) l
 
     let elements s =
       elements_aux [] s
@@ -390,7 +390,7 @@ module Make(Ord: OrderedType) =
 
     let rec find x = function
         Empty -> raise Not_found
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
@@ -398,7 +398,7 @@ module Make(Ord: OrderedType) =
     let rec find_first_aux v0 f = function
         Empty ->
           v0
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_first_aux v f l
           else
@@ -407,7 +407,7 @@ module Make(Ord: OrderedType) =
     let rec find_first f = function
         Empty ->
           raise Not_found
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_first_aux v f l
           else
@@ -416,7 +416,7 @@ module Make(Ord: OrderedType) =
     let rec find_first_opt_aux v0 f = function
         Empty ->
           Some v0
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_first_opt_aux v f l
           else
@@ -425,7 +425,7 @@ module Make(Ord: OrderedType) =
     let rec find_first_opt f = function
         Empty ->
           None
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_first_opt_aux v f l
           else
@@ -434,7 +434,7 @@ module Make(Ord: OrderedType) =
     let rec find_last_aux v0 f = function
         Empty ->
           v0
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_last_aux v f r
           else
@@ -443,7 +443,7 @@ module Make(Ord: OrderedType) =
     let rec find_last f = function
         Empty ->
           raise Not_found
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_last_aux v f r
           else
@@ -452,7 +452,7 @@ module Make(Ord: OrderedType) =
     let rec find_last_opt_aux v0 f = function
         Empty ->
           Some v0
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_last_opt_aux v f r
           else
@@ -461,7 +461,7 @@ module Make(Ord: OrderedType) =
     let rec find_last_opt f = function
         Empty ->
           None
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           if f v then
             find_last_opt_aux v f r
           else
@@ -469,7 +469,7 @@ module Make(Ord: OrderedType) =
 
     let rec find_opt x = function
         Empty -> None
-      | Node(l, v, r, _) ->
+      | Node{l; v; r} ->
           let c = Ord.compare x v in
           if c = 0 then Some v
           else find_opt x (if c < 0 then l else r)
@@ -485,7 +485,7 @@ module Make(Ord: OrderedType) =
 
     let rec map f = function
       | Empty -> Empty
-      | Node (l, v, r, _) as t ->
+      | Node{l; v; r} as t ->
          (* enforce left-to-right evaluation order *)
          let l' = map f l in
          let v' = f v in
@@ -497,10 +497,12 @@ module Make(Ord: OrderedType) =
       let rec sub n l =
         match n, l with
         | 0, l -> Empty, l
-        | 1, x0 :: l -> Node (Empty, x0, Empty, 1), l
-        | 2, x0 :: x1 :: l -> Node (Node(Empty, x0, Empty, 1), x1, Empty, 2), l
+        | 1, x0 :: l -> Node {l=Empty; v=x0; r=Empty; h=1}, l
+        | 2, x0 :: x1 :: l ->
+            Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1; r=Empty; h=2}, l
         | 3, x0 :: x1 :: x2 :: l ->
-            Node (Node(Empty, x0, Empty, 1), x1, Node(Empty, x2, Empty, 1), 2),l
+            Node{l=Node{l=Empty; v=x0; r=Empty; h=1}; v=x1;
+                 r=Node{l=Empty; v=x2; r=Empty; h=1}; h=2}, l
         | n, l ->
           let nl = n / 2 in
           let left, l = sub nl l in

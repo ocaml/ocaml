@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Driver for the parser, external preprocessors and ast plugin hooks *)
+
 open Format
 
 type error =

@@ -29,7 +29,7 @@
    the [Marshal.from_*] functions is given as ['a], but this is
    misleading: the returned OCaml value does not possess type ['a]
    for all ['a]; it has one, unique type which cannot be determined
-   at compile-type.  The programmer should explicitly give the expected
+   at compile-time.  The programmer should explicitly give the expected
    type of the returned value, using the following syntax:
    - [(Marshal.from_channel chan : type)].
    Anything can happen at run-time if the object in the file does not
@@ -90,7 +90,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    digest of the code transmitted along with the code position.)
 
    The exact definition of which free variables are captured in a
-   closure is not specified and can very between bytecode and native
+   closure is not specified and can vary between bytecode and native
    code (and according to optimization flags).  In particular, a
    function value accessing a global reference may or may not include
    the reference in its closure.  If it does, unmarshaling the

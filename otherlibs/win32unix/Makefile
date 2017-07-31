@@ -19,7 +19,7 @@
 
 # Files in this directory
 WIN_FILES = accept.c bind.c channels.c close.c \
-  close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c \
+  close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c envir.c \
   getpeername.c getpid.c getsockname.c gettimeofday.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
   mkdir.c mmap.c open.c pipe.c read.c readlink.c rename.c \
@@ -30,7 +30,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
 
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
-  cstringv.c envir.c execv.c execve.c execvp.c \
+  cstringv.c execv.c execve.c execvp.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
@@ -66,7 +66,8 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CC) -MM $(CFLAGS) $(ALL_FILES) | sed -e 's/\.o/.$$(O)/g' > .depend
+	$(CPP) -MM $(CPPFLAGS) -I../unix $(ALL_FILES) \
+	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
 	  unix.ml >> .depend
 endif

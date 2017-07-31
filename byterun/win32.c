@@ -127,13 +127,13 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-char * caml_decompose_path(struct ext_table * tbl, char * path)
+caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 {
   char * p, * q;
   int n;
 
   if (path == NULL) return NULL;
-  p = caml_strdup(path);
+  p = caml_stat_strdup(path);
   q = p;
   while (1) {
     for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
@@ -146,7 +146,7 @@ char * caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-char * caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
 {
   char * p, * dir, * fullname;
   int i;
@@ -159,7 +159,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
     dir = path->contents[i];
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
-    fullname = caml_strconcat(3, dir, "\\", name);
+    fullname = caml_stat_strconcat(3, dir, "\\", name);
     caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
@@ -167,10 +167,10 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   }
  not_found:
   caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
-  return caml_strdup(name);
+  return caml_stat_strdup(name);
 }
 
-CAMLexport char * caml_search_exe_in_path(char * name)
+CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -190,7 +190,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
       caml_gc_message(0x100, "%s not found in search path\n",
                       (uintnat) name);
       caml_stat_free(fullname);
-      return caml_strdup(name);
+      return caml_stat_strdup(name);
     }
     if (retcode < fullnamelen)
       return fullname;
@@ -199,12 +199,12 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   }
 }
 
-char * caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
 {
-  char * dllname;
-  char * res;
+  caml_stat_string dllname;
+  caml_stat_string res;
 
-  dllname = caml_strconcat(2, name, ".dll");
+  dllname = caml_stat_strconcat(2, name, ".dll");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -332,7 +332,7 @@ static void store_argument(char * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv = (char **) realloc(argv, argvsize * sizeof(char *));
+    argv = (char **) caml_stat_resize_noexc(argv, argvsize * sizeof(char *));
     if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
@@ -363,7 +363,7 @@ static void expand_pattern(char * pat)
     store_argument(pat); /* a la Bourne shell */
     return;
   }
-  prefix = caml_strdup(pat);
+  prefix = caml_stat_strdup(pat);
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
   for (i = strlen(prefix); i > 0; i--) {
@@ -374,7 +374,7 @@ static void expand_pattern(char * pat)
   if (i == 0)
     prefix[0] = 0;
   do {
-    name = caml_strconcat(2, prefix, ffblk.name);
+    name = caml_stat_strconcat(2, prefix, ffblk.name);
     store_argument(name);
   } while (_findnext(handle, &ffblk) != -1);
   _findclose(handle);
@@ -387,7 +387,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
   int i;
   argc = 0;
   argvsize = 16;
-  argv = (char **) malloc(argvsize * sizeof(char *));
+  argv = (char **) caml_stat_alloc_noexc(argvsize * sizeof(char *));
   if (argv == NULL) out_of_memory();
   for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
@@ -415,9 +415,9 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
       (dirname[dirnamelen - 1] == '/'
        || dirname[dirnamelen - 1] == '\\'
        || dirname[dirnamelen - 1] == ':'))
-    template = caml_strconcat(2, dirname, "*.*");
+    template = caml_stat_strconcat(2, dirname, "*.*");
   else
-    template = caml_strconcat(2, dirname, "\\*.*");
+    template = caml_stat_strconcat(2, dirname, "\\*.*");
   h = _findfirst(template, &fileinfo);
   if (h == -1) {
     caml_stat_free(template);
@@ -425,7 +425,7 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   }
   do {
     if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      caml_ext_table_add(contents, caml_strdup(fileinfo.name));
+      caml_ext_table_add(contents, caml_stat_strdup(fileinfo.name));
     }
   } while (_findnext(h, &fileinfo) == 0);
   _findclose(h);
@@ -442,7 +442,8 @@ void caml_signal_thread(void * lpParam)
   char *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
-  h = (HANDLE) (uintptr_t) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
+  h = (HANDLE) (uintptr_t)
+    strtol(caml_secure_getenv("CAMLSIGPIPE"), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
@@ -463,7 +464,7 @@ void caml_signal_thread(void * lpParam)
 
 #endif /* NATIVE_CODE */
 
-#if defined(NATIVE_CODE) && !defined(_WIN64)
+#if defined(NATIVE_CODE)
 
 /* Handling of system stack overflow.
  * Based on code provided by Olivier Andrieu.
@@ -486,7 +487,7 @@ void caml_signal_thread(void * lpParam)
  * exception handler because at this point we are using the page that
  * is to be protected.
  *
- * A solution is to used an alternate stack when restoring the
+ * A solution is to use an alternate stack when restoring the
  * protection. However it's not possible to use _resetstkoflw() then
  * since it determines the stack pointer by calling alloca(): it would
  * try to protect the alternate stack.
@@ -495,28 +496,16 @@ void caml_signal_thread(void * lpParam)
  * caml_raise_exception which switches back to the normal stack, or
  * call caml_fatal_uncaught_exception which terminates the program
  * quickly.
- *
- * NB: The PAGE_GUARD protection is only available on WinNT, not
- * Win9x. There is an equivalent mechanism on Win9x with
- * PAGE_NOACCESS.
- *
- * Currently, does not work under Win64.
  */
 
 static uintnat win32_alt_stack[0x80];
 
 static void caml_reset_stack (void *faulting_address)
 {
-  OSVERSIONINFO osi;
   SYSTEM_INFO si;
   DWORD page_size;
   MEMORY_BASIC_INFORMATION mbi;
   DWORD oldprot;
-
-  /* get the os version (Win9x or WinNT ?) */
-  osi.dwOSVersionInfoSize = sizeof osi;
-  if (! GetVersionEx (&osi))
-    goto failed;
 
   /* get the system's page size. */
   GetSystemInfo (&si);
@@ -526,26 +515,17 @@ static void caml_reset_stack (void *faulting_address)
   if (! VirtualQuery (faulting_address, &mbi, sizeof mbi))
     goto failed;
 
-  /* restore the PAGE_GUARD protection on this page */
-  switch (osi.dwPlatformId) {
-  case VER_PLATFORM_WIN32_NT:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    mbi.Protect | PAGE_GUARD, &oldprot);
-    break;
-  case VER_PLATFORM_WIN32_WINDOWS:
-    VirtualProtect (mbi.BaseAddress, page_size,
-                    PAGE_NOACCESS, &oldprot);
-    break;
-  }
+  VirtualProtect (mbi.BaseAddress, page_size,
+                  mbi.Protect | PAGE_GUARD, &oldprot);
 
  failed:
   caml_raise_stack_overflow();
 }
 
-CAMLextern int caml_is_in_code(void *);
 
+#ifndef _WIN64
 static LONG CALLBACK
-    caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)
+    caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
@@ -572,12 +552,58 @@ static LONG CALLBACK
   return EXCEPTION_CONTINUE_SEARCH;
 }
 
-void caml_win32_overflow_detection()
+#else
+extern char *caml_exception_pointer;
+extern value *caml_young_ptr;
+
+/* Do not use the macro from address_class.h here. */
+#undef Is_in_code_area
+#define Is_in_code_area(pc) \
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+|| ((char *)(pc) >= &caml_system__code_begin && \
+    (char *)(pc) <= &caml_system__code_end)     \
+|| (Classify_addr(pc) & In_code_area) )
+extern char caml_system__code_begin, caml_system__code_end;
+
+
+static LONG CALLBACK
+    caml_stack_overflow_VEH (EXCEPTION_POINTERS* exn_info)
 {
-  SetUnhandledExceptionFilter (caml_UnhandledExceptionFilter);
+  DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
+  CONTEXT *ctx = exn_info->ContextRecord;
+
+  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (ctx->Rip))
+    {
+      uintnat faulting_address;
+      uintnat * alt_rsp;
+
+      /* grab the address that caused the fault */
+      faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
+
+      /* refresh runtime parameters from registers */
+      caml_exception_pointer =  (char *) ctx->R14;
+      caml_young_ptr         = (value *) ctx->R15;
+
+      /* call caml_reset_stack(faulting_address) using the alternate stack */
+      alt_rsp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      ctx->Rcx = faulting_address;
+      ctx->Rsp = (uintnat) (alt_rsp - 4 - 1);
+      ctx->Rip = (uintnat) &caml_reset_stack;
+
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif /* _WIN64 */
+
+void caml_win32_overflow_detection(void)
+{
+  AddVectoredExceptionHandler(1, caml_stack_overflow_VEH);
 }
 
-#endif
+#endif /* NATIVE_CODE */
 
 /* Seeding of pseudo-random number generators */
 
@@ -626,7 +652,7 @@ char * caml_executable_name(void)
 {
   char * name;
   DWORD namelen, ret;
-  
+
   namelen = 256;
   while (1) {
     name = caml_stat_alloc(namelen);
@@ -688,3 +714,9 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
   return len;
 }
 #endif
+
+char *caml_secure_getenv (char const *var)
+{
+  /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
+  return CAML_SYS_GETENV (var);
+}

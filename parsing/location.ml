@@ -19,7 +19,7 @@ let absname = ref false
     (* This reference should be in Clflags, but it would create an additional
        dependency and make bootstrapping Camlp4 more difficult. *)
 
-type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
+type t = Warnings.loc = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let in_file name =
   let loc = {
@@ -310,14 +310,19 @@ let print_error_cur_file ppf () = print_error ppf (in_file !input_name);;
 let default_warning_printer loc ppf w =
   match Warnings.report w with
   | `Inactive -> ()
-  | `Active { Warnings. number; message; is_error } ->
+  | `Active { Warnings. number; message; is_error; sub_locs } ->
     setup_colors ();
     print ppf loc;
     if is_error
     then
       fprintf ppf "%t (%s %d): %s@." print_error_prefix
            (String.uncapitalize_ascii warning_prefix) number message
-    else fprintf ppf "@{<warning>%s@} %d: %s@." warning_prefix number message
+    else fprintf ppf "@{<warning>%s@} %d: %s@." warning_prefix number message;
+    List.iter
+      (fun (loc, msg) ->
+         if loc <> none then fprintf ppf "  %a  %s@." print loc msg
+      )
+      sub_locs
 ;;
 
 let warning_printer = ref default_warning_printer ;;
@@ -474,3 +479,6 @@ let raise_errorf ?(loc = none) ?(sub = []) ?(if_highlight = "") =
   pp_ksprintf
     ~before:print_phanton_error_prefix
     (fun msg -> raise (Error ({loc; msg; sub; if_highlight})))
+
+let deprecated ?(def = none) ?(use = none) loc msg =
+  prerr_warning loc (Warnings.Deprecated (msg, def, use))

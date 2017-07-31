@@ -283,7 +283,7 @@ let gotrel_literals = ref ([] : (label * label) list)
 (* Pending symbol literals *)
 let symbol_literals = ref ([] : (string * label) list)
 (* Total space (in words) occupied by pending literals *)
-let num_literals = ref 0
+let size_literals = ref 0
 
 (* Label a floating-point literal *)
 let float_literal f =
@@ -291,14 +291,14 @@ let float_literal f =
     List.assoc f !float_literals
   with Not_found ->
     let lbl = new_label() in
-    num_literals := !num_literals + 2;
+    size_literals := !size_literals + 2;
     float_literals := (f, lbl) :: !float_literals;
     lbl
 
 (* Label a GOTREL literal *)
 let gotrel_literal l =
   let lbl = new_label() in
-  num_literals := !num_literals + 1;
+  size_literals := !size_literals + 1;
   gotrel_literals := (l, lbl) :: !gotrel_literals;
   lbl
 
@@ -308,7 +308,7 @@ let symbol_literal s =
     List.assoc s !symbol_literals
   with Not_found ->
     let lbl = new_label() in
-    num_literals := !num_literals + 1;
+    size_literals := !size_literals + 1;
     symbol_literals := (s, lbl) :: !symbol_literals;
     lbl
 
@@ -337,7 +337,7 @@ let emit_literals() =
     gotrel_literals := [];
     symbol_literals := []
   end;
-  num_literals := 0
+  size_literals := 0
 
 (* Emit code to load the address of a symbol *)
 
@@ -755,26 +755,31 @@ let emit_instr i =
             tramtbl.(j) <- label i.next;
             `	.short	({emit_label tramtbl.(j)}-.)/2+{emit_int j}\n`
           done;
+          let sz = ref (1 + (Array.length jumptbl + 1) / 2) in
           (* Generate the necessary trampolines *)
           for j = 0 to Array.length tramtbl - 1 do
-            if tramtbl.(j) <> jumptbl.(j) then
-              `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`
-          done
+            if tramtbl.(j) <> jumptbl.(j) then begin
+              `{emit_label tramtbl.(j)}:	b	{emit_label jumptbl.(j)}\n`;
+              incr sz
+            end
+          done;
+          !sz
         end else if not !Clflags.pic_code then begin
           `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
           `	nop\n`;
           for j = 0 to Array.length jumptbl - 1 do
             `	.word	{emit_label jumptbl.(j)}\n`
-          done
+          done;
+          2 + Array.length jumptbl
         end else begin
           (* Slightly slower, but position-independent *)
           `	add	pc, pc, {emit_reg i.arg.(0)}, lsl #2\n`;
           `	nop\n`;
           for j = 0 to Array.length jumptbl - 1 do
             `	b	{emit_label jumptbl.(j)}\n`
-          done
-        end;
-        2 + Array.length jumptbl
+          done;
+          2 + Array.length jumptbl
+        end
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`; 1
     | Lpushtrap ->
@@ -796,29 +801,47 @@ let emit_instr i =
           `	pop	\{trap_ptr, pc}\n`; 2
         end
 
+(* Upper bound on the size of the code sequence for a Linear instruction,
+   in 32-bit words. *)
+
+let max_instruction_size i =
+  match i.desc with
+  | Lswitch jumptbl ->
+      if !arch > ARMv6 && !thumb
+      then 1 + (Array.length jumptbl + 1) / 2 + Array.length jumptbl
+      else 2 + Array.length jumptbl
+  | _ ->
+      8   (* conservative upper bound; the true upper bound is probably 5 *)
+
 (* Emission of an instruction sequence *)
 
-let rec emit_all ninstr i =
+let rec emit_all ninstr fallthrough i =
+  (* ninstr = number of 32-bit code words emitted since last constant island *)
+  (* fallthrough is true if previous instruction can fall through *)
   if i.desc = Lend then () else begin
-    let n = emit_instr i in
-    let ninstr' = ninstr + n in
+    (* Make sure literals not yet emitted remain addressable,
+       or emit them in a new constant island. *)
     (* fldd can address up to +/-1KB, ldr can address up to +/-4KB *)
     let limit = (if !fpu >= VFPv2 && !float_literals <> []
                  then 127
                  else 511) in
-    let limit = limit - !num_literals in
-    if ninstr' >= limit - 64 && not(has_fallthrough i.desc) then begin
-      emit_literals();
-      emit_all 0 i.next
-    end else if !num_literals != 0 && ninstr' >= limit then begin
-      let lbl = new_label() in
-      `	b	{emit_label lbl}\n`;
-      emit_literals();
-      `{emit_label lbl}:\n`;
-      emit_all 0 i.next
-    end else
-      emit_all ninstr' i.next
+    let limit = limit - !size_literals - max_instruction_size i in
+    let ninstr' =
+      if ninstr >= limit - 64 && not fallthrough then begin
+        emit_literals();
+        0
+      end else if !size_literals != 0 && ninstr >= limit then begin
+        let lbl = new_label() in
+        `	b	{emit_label lbl}\n`;
+        emit_literals();
+        `{emit_label lbl}:\n`;
+        0
+      end else
+        ninstr in
+    let n = emit_instr i in
+    emit_all (ninstr' + n) (has_fallthrough i.desc) i.next
   end
+
 
 (* Emission of the profiling prelude *)
 
@@ -862,7 +885,7 @@ let fundecl fundecl =
     end
   end;
   `{emit_label !tailrec_entry_point}:\n`;
-  emit_all 0 fundecl.fun_body;
+  emit_all 0 true fundecl.fun_body;
   emit_literals();
   List.iter emit_call_gc !call_gc_sites;
   List.iter emit_call_bound_error !bound_error_sites;

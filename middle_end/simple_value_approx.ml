@@ -243,7 +243,7 @@ let create_value_set_of_closures
     lazy (
       let functions = Variable.Map.keys function_decls.funs in
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-          let params = Variable.Set.of_list function_decl.params in
+          let params = Parameter.Set.vars function_decl.params in
           let free_vars =
             Variable.Set.diff
               (Variable.Set.diff function_decl.free_variables params)

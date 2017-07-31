@@ -38,7 +38,7 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
-/* Thread-local storage assocaiting a Win32 event to every thread. */
+/* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
 /* OS-specific initialization */
@@ -158,7 +158,7 @@ typedef CRITICAL_SECTION * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = malloc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(m);
   *res = m;
@@ -168,7 +168,7 @@ static DWORD st_mutex_create(st_mutex * res)
 static DWORD st_mutex_destroy(st_mutex m)
 {
   DeleteCriticalSection(m);
-  free(m);
+  caml_stat_free(m);
   return 0;
 }
 
@@ -222,7 +222,7 @@ typedef struct st_condvar_struct {
 
 static DWORD st_condvar_create(st_condvar * res)
 {
-  st_condvar c = malloc(sizeof(struct st_condvar_struct));
+  st_condvar c = caml_stat_alloc_noexc(sizeof(struct st_condvar_struct));
   if (c == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(&c->lock);
   c->waiters = NULL;
@@ -234,7 +234,7 @@ static DWORD st_condvar_destroy(st_condvar c)
 {
   TRACE1("st_condvar_destroy", c);
   DeleteCriticalSection(&c->lock);
-  free(c);
+  caml_stat_free(c);
   return 0;
 }
 

@@ -17,7 +17,8 @@
 
 <pre><span class="keyword">module</span> Documentation_tags: <code class="code"><span class="keyword">sig</span></code> <a href="Documentation_tags.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
-Test the html rendering of ocamldoc documentation tags</div>
+<p>Test the html rendering of ocamldoc documentation tags</p>
+</div>
 </div>
 <hr width="100%">
 

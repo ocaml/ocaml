@@ -101,7 +101,7 @@ struct
               List.iter
                 (fun (n, e) ->
                    Printf.bprintf b "<span style=\"color: %s\">" (col n);
-                   html#html_of_text b e;
+                   html#html_of_text ?with_p:(Some false) b e;
                    p b "</span><br/>\n";
                 )
                 l;

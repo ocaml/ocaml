@@ -17,6 +17,7 @@ include ../config/Makefile
 
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 
 # The PROGRAMS (resp. LIBRARIES) variable list the files to build and
 # install as programs in $(INSTALL_BINDIR) (resp. libraries in
@@ -41,12 +42,8 @@ LIBRARIES += libcamlrun_pic.$(A) libcamlrun_shared.$(SO)
 endif
 endif
 
-CC=$(BYTECC)
-
 ifdef BOOTSTRAPPING_FLEXLINK
-CFLAGS=-DBOOTSTRAPPING_FLEXLINK
-else
-CFLAGS=
+CFLAGS += -DBOOTSTRAPPING_FLEXLINK
 endif
 
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
@@ -55,7 +52,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 CFLAGS += -DOCAML_STDLIB_DIR='"$(LIBDIR)"'
 endif
 
-CFLAGS += $(IFLEXDIR) $(BYTECCCOMPOPTS)
+CFLAGS += $(IFLEXDIR)
 
 DFLAGS=$(CFLAGS) -DDEBUG
 IFLAGS=$(CFLAGS) -DCAML_INSTR
@@ -65,11 +62,6 @@ ifneq "$(CCOMPTYPE)" "msvc"
 DFLAGS += -g
 endif
 
-ifeq "$(CCOMPTYPE)" "msvc"
-OUTPUTOBJ=-Fo
-else
-OUTPUTOBJ=-o
-endif
 DBGO=d.$(O)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
@@ -81,7 +73,7 @@ MAKE_OCAMLRUN = $(MKEXE) -o $(1) $(2)
 endif
 else
 LIBS = $(BYTECCLIBS)
-MAKE_OCAMLRUN = $(MKEXE) $(BYTECCLINKOPTS) -o $(1) $(2)
+MAKE_OCAMLRUN = $(MKEXE) $(LDFLAGS) -o $(1) $(2)
 endif
 
 PRIMS=\
@@ -114,11 +106,8 @@ ld.conf: ../config/Makefile
 install:
 	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
 	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
-	mkdir -p "$(INSTALL_LIBDIR)/caml"
-	for i in caml/*.h; do \
-	  sed -f ../tools/cleanup-header $$i \
-	      > "$(INSTALL_LIBDIR)/$$i"; \
-	done
+	mkdir -p "$(INSTALL_INCDIR)"
+	cp caml/*.h "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -185,13 +174,13 @@ libcamlrun.$(A): $(OBJS)
 	$(call MKLIB,$@, $^)
 
 ocamlrund$(EXE): prims.$(O) libcamlrund.$(A)
-	$(MKEXE) $(MKEXEDEBUGFLAG) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
+	$(MKEXE) $(MKEXEDEBUGFLAG) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 libcamlrund.$(A): $(DOBJS)
 	$(call MKLIB,$@, $^)
 
 ocamlruni$(EXE): prims.$(O) libcamlruni.$(A)
-	$(MKEXE) $(BYTECCLINKOPTS) -o $@ $^ $(LIBS)
+	$(MKEXE) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 libcamlruni.$(A): $(IOBJS)
 	$(call MKLIB,$@, $^)
@@ -203,16 +192,16 @@ libcamlrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(BYTECCLIBS)
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
 
 %.$(DBGO): %.c
-	$(CC) $(DFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) $(IFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) $(PICFLAGS) -c $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 .PHONY: depend
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -220,10 +209,10 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
-	$(CC) -MM $(CFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(DFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(IFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
-	$(CC) -MM $(PICFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/' >> .depend
+	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(DFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/' >> .depend
+	$(CC) -MM $(IFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/' >> .depend
+	$(CC) -MM $(PICFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/' >> .depend
 endif
 
 include .depend

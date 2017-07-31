@@ -30,9 +30,12 @@ let standard_library =
 
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
-let bytecomp_c_compiler = "%%BYTECODE_C_COMPILER%%"
+let c_compiler = "%%CC%%"
+let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
+let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
+let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
+let ocamlopt_cppflags = "%%OCAMLOPT_CPPFLAGS%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
-let native_c_compiler = "%%NATIVE_C_COMPILER%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
@@ -104,6 +107,7 @@ let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
 let spacetime = %%WITH_SPACETIME%%
+let spacetime_call_counts = %%WITH_SPACETIME_CALL_COUNTS%%
 let libunwind_available = %%LIBUNWIND_AVAILABLE%%
 let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
 let profinfo = %%WITH_PROFINFO%%
@@ -126,6 +130,8 @@ let default_executable_name =
 
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
+let flexdll_dirs = [%%FLEXDLL_DIR%%];;
+
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
   let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
@@ -135,9 +141,10 @@ let print_config oc =
   p "standard_library" standard_library;
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
-  p "bytecomp_c_compiler" bytecomp_c_compiler;
+  p "c_compiler" c_compiler;
+  p "ocamlc_cflags" ocamlc_cflags;
+  p "ocamlopt_cflags" ocamlopt_cflags;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
-  p "native_c_compiler" native_c_compiler;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;

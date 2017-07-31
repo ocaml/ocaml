@@ -150,10 +150,18 @@ external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
 
 external of_string : string -> int64 = "caml_int64_of_string"
 (** Convert the given string to a 64-bit integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Int64.max_int+1]].  If the input exceeds {!Int64.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Int64.max_int - 1].
+
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
+   Raise [Failure "Int64.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int64]. *)
 

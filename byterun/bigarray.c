@@ -160,7 +160,7 @@ CAMLexport void caml_ba_finalize(value v)
     } else {
       if (-- b->proxy->refcount == 0) {
         free(b->proxy->data);
-        caml_stat_free(b->proxy);
+        free(b->proxy);
       }
     }
     break;

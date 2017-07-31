@@ -401,10 +401,10 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
     res = caml_alloc_string(n);
     memcpy(String_val(res), buf, n);
   } else {
-    /* PR#7568: if the format is in the Caml heap, the following 
+    /* PR#7568: if the format is in the Caml heap, the following
        caml_alloc_string could move or free the format.  To prevent
        this, take a copy of the format outside the Caml heap. */
-    char * saved_format = caml_strdup(format);
+    char * saved_format = caml_stat_strdup(format);
     /* Allocate a Caml string with length "n" as computed by vsnprintf. */
     res = caml_alloc_string(n);
     /* Re-do the formatting, outputting directly in the Caml string.
@@ -434,10 +434,10 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
     res = caml_alloc_string(n);
     memcpy(String_val(res), buf, n);
   } else {
-    /* PR#7568: if the format is in the Caml heap, the following 
+    /* PR#7568: if the format is in the Caml heap, the following
        caml_alloc_string could move or free the format.  To prevent
        this, take a copy of the format outside the Caml heap. */
-    char * saved_format = caml_strdup(format);
+    char * saved_format = caml_stat_strdup(format);
     /* Determine actual length of output, excluding final '\0' */
     va_start(args, format);
     n = _vscprintf(format, args);

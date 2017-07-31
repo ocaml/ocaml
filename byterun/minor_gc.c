@@ -85,7 +85,8 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (void *) malloc((tbl->size + tbl->reserve) * element_size);
+  new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
+                                             element_size);
   if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
@@ -144,14 +145,14 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
-  new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
+  new_heap = caml_stat_alloc_aligned_noexc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
     caml_raise_out_of_memory();
 
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
-    free (caml_young_base);
+    caml_stat_free (caml_young_base);
   }
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
@@ -488,9 +489,9 @@ static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
  char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
 {
-                                            CAMLassert (tbl->ptr == tbl->limit);
-                                            CAMLassert (tbl->limit <= tbl->end);
-                                      CAMLassert (tbl->limit >= tbl->threshold);
+  CAMLassert (tbl->ptr == tbl->limit);
+  CAMLassert (tbl->limit <= tbl->end);
+  CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
     alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,
@@ -508,7 +509,7 @@ static void realloc_generic_table
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
-    tbl->base = (void *) realloc ((char *) tbl->base, sz);
+    tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error (msg_error);
     }

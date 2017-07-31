@@ -64,7 +64,7 @@ let transl_extension_constructor env path ext =
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
         loc)
   | Text_rebind(path, _lid) ->
-      transl_path ~loc env path
+      transl_extension_path ~loc env path
 
 (* Translation of primitives *)
 
@@ -576,12 +576,15 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string loc * module_expr
 
-let rec push_defaults loc bindings cases partial =
+let rec push_defaults loc bindings pushing cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] ->
-      let cases = push_defaults exp.exp_loc bindings cases partial in
+        as exp}] when pushing || bindings = [] ->
+      (* Stop pushing when there is a non-labeled argument,
+         and there are default bindings to discharge *)
+      let cases = push_defaults
+          exp.exp_loc bindings (arg_label <> Nolabel) cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
@@ -589,14 +592,14 @@ let rec push_defaults loc bindings cases partial =
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#modulepat"},_];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [case] ->
@@ -625,7 +628,7 @@ let rec push_defaults loc bindings cases partial =
                           })},
              cases, [], partial) }
       in
-      push_defaults loc bindings
+      push_defaults loc bindings pushing
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
           c_guard=None; c_rhs=exp}]
         Total
@@ -730,7 +733,7 @@ and transl_exp0 e =
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_path ~loc:e.exp_loc e.exp_env path
+      transl_value_path ~loc:e.exp_loc e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -740,7 +743,7 @@ and transl_exp0 e =
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] cases partial in
+            let pl = push_defaults e.exp_loc [] true cases partial in
             transl_function e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
@@ -885,13 +888,13 @@ and transl_exp0 e =
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
-            transl_path e.exp_env path
+            transl_extension_path e.exp_env path
           else
             Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
-                  transl_path e.exp_env path :: ll, e.exp_loc)
+                  transl_extension_path e.exp_env path :: ll, e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
-      transl_path e.exp_env path
+      transl_extension_path e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
@@ -1005,7 +1008,7 @@ and transl_exp0 e =
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
-             ap_func=Lprim(Pfield 0, [transl_path ~loc e.exp_env cl], loc);
+             ap_func=Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
@@ -1029,10 +1032,16 @@ and transl_exp0 e =
                             (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(id, _, modl, body) ->
-      Llet(Strict, Pgenval, id,
-           !transl_module Tcoerce_none None modl,
-           transl_exp body)
+  | Texp_letmodule(id, loc, modl, body) ->
+      let defining_expr =
+        Levent (!transl_module Tcoerce_none None modl, {
+          lev_loc = loc.loc;
+          lev_kind = Lev_module_definition id;
+          lev_repr = None;
+          lev_env = Env.summary Env.empty;
+        })
+      in
+      Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
   | Texp_letexception(cd, body) ->
       Llet(Strict, Pgenval,
            cd.ext_id, transl_extension_constructor e.exp_env None cd,
@@ -1344,7 +1353,7 @@ and transl_record loc env fields repres opt_init_expr =
               | Tconstr(p, _, _) -> p
               | _ -> assert false
             in
-            let slot = transl_path env path in
+            let slot = transl_extension_path env path in
             Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
     in
     begin match opt_init_expr with

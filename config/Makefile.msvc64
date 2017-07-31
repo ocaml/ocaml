@@ -54,21 +54,23 @@ A=lib
 S=asm
 SO=s.obj
 EXE=.exe
+OUTPUTEXE=-Fe
 EXT_DLL=.dll
 EXT_OBJ=.$(O)
+OUTPUTOBJ=-Fo
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
-MANEXT=1
+PROGRAMS_MAN_SECTION=1
+LIBRARIES_MAN_SECTION=3
 HASHBANGSCRIPTS=false
 PTHREAD_LINK=
 PTHREAD_CAML_LINK=
 X11_INCLUDES=
 X11_LINK=
-BYTECCRPATH=
+RPATH=
 SUPPORTS_SHARED_LIBRARIES=true
 SHAREDCCCOMPOPTS=
 NATIVECCPROFOPTS=
-NATIVECCRPATH=
 ASM=ml64 -nologo -Cp -c -Fo
 ASPP=
 ASPPPROFFLAGS=
@@ -88,6 +90,7 @@ GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_PROFINFO=false
 WITH_SPACETIME=false
+WITH_SPACETIME_CALL_COUNTS=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
@@ -97,20 +100,15 @@ AFL_INSTRUMENT=false
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE -O2 -Gy- -MD
-BYTECODE_C_COMPILER=$(BYTECC)
+CC = cl
+CFLAGS = -nologo -O2 -Gy- -MD
+CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE
+OCAMLC_CFLAGS = -nologo -O2 -Gy- -MD
+OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
-### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-DCAML_NAME_SPACE
-
-### Additional compile-time options for $(BYTECC).  (For debug version.)
 BYTECCDBGCOMPOPTS=-Zi
 
-### Flag to use to rename object files.  (for debug version.)
-NAME_OBJ_FLAG=-Fo
-
-### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=
+LDFLAGS=
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
@@ -119,7 +117,7 @@ BYTECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 
 ### How to invoke the C preprocessor
-CPP=cl -nologo -EP
+CPP=$(CC) -nologo -EP
 
 ### Flexlink
 FLEXLINK_CMD=flexlink
@@ -146,7 +144,7 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console \
            && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library
@@ -178,15 +176,8 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=win64
 
-### Which C compiler to use for the native-code compiler.
-NATIVECC=cl -nologo -O2 -Gy- -MD
-NATIVE_C_COMPILER=$(NATIVECC)
-
-### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-DCAML_NAME_SPACE
-
-### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=
+OCAMLOPT_CFLAGS = -nologo -O2 -Gy- -MD
+OCAMLOPT_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
 ### Build partially-linked object file
 PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'

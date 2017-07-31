@@ -16,6 +16,7 @@
 #define CAML_INTERNALS
 
 #include <stddef.h>
+#include "caml/alloc.h"
 #include "caml/bigarray.h"
 #include "caml/fail.h"
 #include "caml/io.h"

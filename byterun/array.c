@@ -149,12 +149,13 @@ CAMLprim value caml_make_float_vect(value len)
 {
   mlsize_t wosize = Long_val(len) * Double_wosize;
   value result;
-  if (wosize == 0)
-    return Atom(0);
-  else if (wosize <= Max_young_wosize){
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0)
+      return Atom(0);
+    else
 #define Setup_for_gc
 #define Restore_after_gc
-    Alloc_small (result, wosize, Double_array_tag);
+      Alloc_small (result, wosize, Double_array_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
   }else if (wosize > Max_wosize)
@@ -190,13 +191,13 @@ CAMLprim value caml_make_vect(value len, value init)
       Store_double_field(res, i, d);
     }
   } else {
-    if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
       uintnat profinfo;
       Get_my_profinfo_with_cached_backtrace(profinfo, size);
       res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
+    else if (size > Max_wosize) caml_invalid_argument("Array.make");
     else if (Is_block(init) && Is_young(init)) {
       /* We don't want to create so many major-to-minor references,
          so [init] is moved to the major heap by doing a minor GC. */
@@ -337,10 +338,6 @@ static value caml_array_gather(intnat num_arrays,
     }
     CAMLassert(pos == size);
   }
-  else if (size > Max_wosize) {
-    /* Array of values, too big. */
-    caml_invalid_argument("Array.concat");
-  }
   else if (size <= Max_young_wosize) {
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
@@ -352,6 +349,10 @@ static value caml_array_gather(intnat num_arrays,
       pos += lengths[i];
     }
     CAMLassert(pos == size);
+  }
+  else if (size > Max_wosize) {
+    /* Array of values, too big. */
+    caml_invalid_argument("Array.concat");
   } else {
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
@@ -406,12 +407,12 @@ CAMLprim value caml_array_concat(value al)
     lengths = static_lengths;
   } else {
     arrays = caml_stat_alloc(n * sizeof(value));
-    offsets = malloc(n * sizeof(intnat));
+    offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
     if (offsets == NULL) {
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = malloc(n * sizeof(value));
+    lengths = caml_stat_alloc_noexc(n * sizeof(value));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);

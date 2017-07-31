@@ -133,8 +133,8 @@ CSLPROF_IMPORTS=misc.cmo config.cmo identifiable.cmo numbers.cmo \
 
 $(call byte_and_opt,ocamlprof,$(CSLPROF_IMPORTS) profiling.cmo $(CSLPROF),)
 
-ocamlcp_cmos = misc.cmo warnings.cmo config.cmo identifiable.cmo numbers.cmo \
-	       arg_helper.cmo clflags.cmo main_args.cmo
+ocamlcp_cmos = misc.cmo profile.cmo warnings.cmo config.cmo identifiable.cmo \
+               numbers.cmo arg_helper.cmo clflags.cmo main_args.cmo
 
 $(call byte_and_opt,ocamlcp,$(ocamlcp_cmos) ocamlcp.cmo,)
 $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
@@ -149,15 +149,14 @@ installopt::
 
 # To help building mixed-mode libraries (OCaml + C)
 
-$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo \
+$(call byte_and_opt,ocamlmklib,ocamlmklibconfig.cmo config.cmo misc.cmo \
 	         ocamlmklib.cmo,)
 
 
 ocamlmklibconfig.ml: ../config/Makefile Makefile
 	(echo 'let bindir = "$(BINDIR)"'; \
          echo 'let supports_shared_libraries = $(SUPPORTS_SHARED_LIBRARIES)';\
-         echo 'let byteccrpath = "$(BYTECCRPATH)"'; \
-         echo 'let nativeccrpath = "$(NATIVECCRPATH)"'; \
+         echo 'let default_rpath = "$(RPATH)"'; \
          echo 'let mksharedlibrpath = "$(MKSHAREDLIBRPATH)"'; \
          echo 'let toolpref = "$(TOOLPREF)"'; \
          sed -n -e 's/^#ml //p' ../config/Makefile) \
@@ -276,6 +275,13 @@ READ_CMT= \
 # Reading cmt files
 $(call byte_and_opt,read_cmt,$(READ_CMT),)
 
+install::
+	if test -f read_cmt.opt; then \
+		cp read_cmt.opt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	else \
+		cp read_cmt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	fi
+
 
 # The bytecode disassembler
 
@@ -307,16 +313,9 @@ else
 DEF_SYMBOL_PREFIX = '-Dsymbol_prefix=""'
 endif
 
-ifeq "$(CCOMPTYPE)" "msvc"
-CCOUT = -Fe
-else
-EMPTY =
-CCOUT = -o $(EMPTY)
-endif
-
-objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
-	$(BYTECC) $(CCOUT)objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
-          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) objinfo_helper.c $(LIBBFD_LINK)
+objinfo_helper$(EXE): objinfo_helper.c ../byterun/caml/s.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTEXE)$@ \
+          $(DEF_SYMBOL_PREFIX) $(LIBBFD_INCLUDE) $< $(LIBBFD_LINK)
 
 OBJINFO=../compilerlibs/ocamlcommon.cma \
         ../compilerlibs/ocamlbytecomp.cma \

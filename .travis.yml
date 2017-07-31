@@ -21,8 +21,12 @@ script: bash -ex .travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=i386
-  - env: CI_KIND=build XARCH=i386 CONFIG_ARG=-flambda
+  - env: CI_KIND=build XARCH=i386 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
   - env: CI_KIND=changes
   - env: CI_KIND=tests
   allow_failures:
   - env: CI_KIND=tests
+addons:
+  apt:
+    packages:
+    - binutils-dev

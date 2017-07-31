@@ -126,7 +126,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
   if (*num_events == 0)
       CAMLreturnT(struct ev_info *, NULL);
 
-  events = malloc(*num_events * sizeof(struct ev_info));
+  events = caml_stat_alloc_noexc(*num_events * sizeof(struct ev_info));
   if(events == NULL)
     caml_fatal_error ("caml_add_debug_info: out of memory");
 
@@ -142,7 +142,7 @@ static struct ev_info *process_debug_events(code_t code_start, value events_heap
 
       {
         uintnat fnsz = caml_string_length(Field(ev_start, POS_FNAME)) + 1;
-        events[j].ev_filename = (char*)malloc(fnsz);
+        events[j].ev_filename = (char*)caml_stat_alloc_noexc(fnsz);
         if(events[j].ev_filename == NULL)
           caml_fatal_error ("caml_add_debug_info: out of memory");
         memcpy(events[j].ev_filename,
@@ -219,7 +219,8 @@ CAMLprim value caml_remove_debug_info(code_t start)
 
 int caml_alloc_backtrace_buffer(void){
   CAMLassert(caml_backtrace_pos == 0);
-  caml_backtrace_buffer = malloc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
+  caml_backtrace_buffer =
+    caml_stat_alloc_noexc(BACKTRACE_BUFFER_SIZE * sizeof(code_t));
   if (caml_backtrace_buffer == NULL) return -1;
   return 0;
 }

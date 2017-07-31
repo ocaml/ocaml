@@ -46,7 +46,7 @@ static inline void caml_ephe_clean (value v){
   int release_data = 0;
   mlsize_t size, i;
   header_t hd;
-                                    CAMLassert(caml_gc_phase == Phase_clean);
+  CAMLassert(caml_gc_phase == Phase_clean);
 
   hd = Hd_val (v);
   size = Wosize_hd (hd);

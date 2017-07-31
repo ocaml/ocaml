@@ -17,10 +17,10 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
+#include "caml/osdeps.h"
 #include "caml/version.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
@@ -80,33 +80,6 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
   exit(2);
 }
 
-/* [size] and [modulo] are numbers of bytes */
-char *caml_aligned_malloc (asize_t size, int modulo, void **block)
-{
-  char *raw_mem;
-  uintnat aligned_mem;
-                                                  CAMLassert (modulo < Page_size);
-  raw_mem = (char *) malloc (size + Page_size);
-  if (raw_mem == NULL) return NULL;
-  *block = raw_mem;
-  raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
-#ifdef DEBUG
-  {
-    uintnat *p;
-    uintnat *p0 = (void *) *block,
-            *p1 = (void *) (aligned_mem - modulo),
-            *p2 = (void *) (aligned_mem - modulo + size),
-            *p3 = (void *) ((char *) *block + size + Page_size);
-
-    for (p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (p = p2; p < p3; p++) *p = Debug_filler_align;
-  }
-#endif
-  return (char *) (aligned_mem - modulo);
-}
-
 /* If you change the caml_ext_table* functions, also update
    asmrun/spacetime.c:find_trie_node_from_libunwind. */
 
@@ -117,7 +90,7 @@ void caml_ext_table_init(struct ext_table * tbl, int init_capa)
   tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
 }
 
-int caml_ext_table_add(struct ext_table * tbl, void * data)
+int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
@@ -131,7 +104,7 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   return res;
 }
 
-void caml_ext_table_remove(struct ext_table * tbl, void * data)
+void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 {
   int i;
   for (i = 0; i < tbl->size; i++) {
@@ -159,43 +132,7 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
   caml_stat_free(tbl->contents);
 }
 
-CAMLexport char * caml_strdup(const char * s)
-{
-  size_t slen = strlen(s);
-  char * res = caml_stat_alloc(slen + 1);
-  memcpy(res, s, slen + 1);
-  return res;
-}
-
-CAMLexport char * caml_strconcat(int n, ...)
-{
-  va_list args;
-  char * res, * p;
-  size_t len;
-  int i;
-
-  len = 0;
-  va_start(args, n);
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    len += strlen(s);
-  }
-  va_end(args);
-  res = caml_stat_alloc(len + 1);
-  va_start(args, n);
-  p = res;
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    size_t l = strlen(s);
-    memcpy(p, s, l);
-    p += l;
-  }
-  va_end(args);
-  *p = 0;
-  return res;
-}
-
-/* Integer arithmetic with overflow detection */ 
+/* Integer arithmetic with overflow detection */
 
 #if ! (__GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow))
 CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
@@ -273,10 +210,10 @@ void CAML_INSTR_INIT (void)
   char *s;
 
   CAML_INSTR_STARTTIME = 0;
-  s = getenv ("OCAML_INSTR_START");
+  s = caml_secure_getenv ("OCAML_INSTR_START");
   if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
   CAML_INSTR_STOPTIME = LONG_MAX;
-  s = getenv ("OCAML_INSTR_STOP");
+  s = caml_secure_getenv ("OCAML_INSTR_STOP");
   if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
 }
 
@@ -287,7 +224,7 @@ void CAML_INSTR_ATEXIT (void)
   FILE *f = NULL;
   char *fname;
 
-  fname = getenv ("OCAML_INSTR_FILE");
+  fname = caml_secure_getenv ("OCAML_INSTR_FILE");
   if (fname != NULL){
     char *mode = "a";
     char buf [1000];

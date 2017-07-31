@@ -64,7 +64,7 @@ struct caml_thread_descr {
 #define Start_closure(v) (((struct caml_thread_descr *)(v))->start_closure)
 #define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
 
-/* The infos on threads (allocated via malloc()) */
+/* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
   value descr;                  /* The heap-allocated descriptor (root) */
@@ -337,7 +337,7 @@ static uintnat caml_thread_stack_usage(void)
 static caml_thread_t caml_thread_new_info(void)
 {
   caml_thread_t th;
-  th = (caml_thread_t) malloc(sizeof(struct caml_thread_struct));
+  th = (caml_thread_t) caml_stat_alloc_noexc(sizeof(struct caml_thread_struct));
   if (th == NULL) return NULL;
   th->descr = Val_unit;         /* filled later */
 #ifdef NATIVE_CODE
@@ -410,7 +410,7 @@ static void caml_thread_remove_info(caml_thread_t th)
 #ifndef NATIVE_CODE
   caml_stat_free(th->stack_low);
 #endif
-  if (th->backtrace_buffer != NULL) free(th->backtrace_buffer);
+  if (th->backtrace_buffer != NULL) caml_stat_free(th->backtrace_buffer);
 #ifndef WITH_SPACETIME
   caml_stat_free(th);
   /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
@@ -690,7 +690,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
-  free(msg);
+  caml_stat_free(msg);
   if (caml_backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;

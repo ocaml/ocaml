@@ -312,8 +312,8 @@ let compile_recmodule compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
        (List.map
-          (fun {mb_id=id; mb_expr=modl; _} ->
-            (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
+          (fun {mb_id=id; mb_expr=modl; mb_loc=loc; _} ->
+            (id, modl.mod_loc, init_shape modl, compile_rhs id modl loc))
           bindings))
     cont
 
@@ -354,7 +354,7 @@ let rec transl_module cc rootpath mexp =
       match mexp.mod_desc with
         Tmod_ident (path,_) ->
           apply_coercion loc Strict cc
-            (transl_path ~loc mexp.mod_env path)
+            (transl_module_path ~loc mexp.mod_env path)
       | Tmod_structure str ->
           fst (transl_struct loc [] cc rootpath str)
       | Tmod_functor(param, _, _, body) ->
@@ -501,6 +501,14 @@ and transl_structure loc fields cc rootpath final_env = function
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
           in
+          let module_body =
+            Levent (module_body, {
+              lev_loc = mb.mb_loc;
+              lev_kind = Lev_module_definition id;
+              lev_repr = None;
+              lev_env = Env.summary Env.empty;
+            })
+          in
           Llet(pure_module mb.mb_expr, Pgenval, id,
                module_body,
                body), size
@@ -513,8 +521,16 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           let lam =
             compile_recmodule
-              (fun id modl ->
-                 transl_module Tcoerce_none (field_path rootpath id) modl)
+              (fun id modl loc ->
+                 let module_body =
+                   transl_module Tcoerce_none (field_path rootpath id) modl
+                 in
+                 Levent (module_body, {
+                   lev_loc = loc;
+                   lev_kind = Lev_module_definition id;
+                   lev_repr = None;
+                   lev_env = Env.summary Env.empty;
+                 }))
               bindings
               body
           in
@@ -851,7 +867,7 @@ let transl_store_structure glob map prims str =
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
             compile_recmodule
-              (fun id modl ->
+              (fun id modl _loc ->
                  subst_lambda subst
                    (transl_module Tcoerce_none
                       (field_path rootpath id) modl))
@@ -1118,7 +1134,7 @@ let transl_toplevel_item item =
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
-        (fun id modl -> transl_module Tcoerce_none (Some(Pident id)) modl)
+        (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
   | Tstr_class cl_list ->

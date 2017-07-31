@@ -26,14 +26,18 @@ val ccomp_type: string
         (* The "kind" of the C compiler, assembler and linker used: one of
                "cc" (for Unix-style C compilers)
                "msvc" (for Microsoft Visual C++ and MASM) *)
-val bytecomp_c_compiler: string
-        (* The C compiler to use for compiling C files
-           with the bytecode compiler *)
+val c_compiler: string
+        (* The compiler to use for compiling C files *)
+val ocamlc_cflags : string
+        (* The flags ocamlc should pass to the C compiler *)
+val ocamlc_cppflags : string
+        (* The flags ocamlc should pass to the C preprocessor *)
+val ocamlopt_cflags : string
+        (* The flags ocamlopt should pass to the C compiler *)
+val ocamlopt_cppflags : string
+        (* The flags ocamlopt should pass to the C preprocessor *)
 val bytecomp_c_libraries: string
         (* The C libraries to link with custom runtimes *)
-val native_c_compiler: string
-        (* The C compiler to use for compiling C files
-           with the native-code compiler *)
 val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
 val native_pack_linker: string
@@ -128,6 +132,9 @@ val default_executable_name: string
 val systhread_supported : bool
         (* Whether the system thread library is implemented *)
 
+val flexdll_dirs : string list
+        (* Directories needed for the FlexDLL objects *)
+
 val host : string
         (* Whether the compiler is a cross-compiler *)
 
@@ -144,6 +151,8 @@ val flambda : bool
 
 val spacetime : bool
         (* Whether the compiler was configured for Spacetime profiling *)
+val spacetime_call_counts : bool
+        (* Whether call counts are to be available when Spacetime profiling *)
 val profinfo : bool
         (* Whether the compiler was configured for profiling *)
 val profinfo_width : int

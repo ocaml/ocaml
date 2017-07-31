@@ -92,7 +92,7 @@ let rec compat p q =
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
   | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
   | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
@@ -284,7 +284,7 @@ let pretty_matrix (pss : matrix) =
 let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(_, c1, _), Tpat_construct(_, c2, _) ->
-      c1.cstr_tag = c2.cstr_tag
+      Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
@@ -681,6 +681,14 @@ let should_extend ext env = match ext with
       end
 end
 
+module ConstructorTagHashtbl = Hashtbl.Make(
+  struct
+    type t = Types.constructor_tag
+    let hash = Hashtbl.hash
+    let equal = Types.equal_tag
+  end
+)
+
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
   let seen_const = Array.make nconsts false
@@ -691,16 +699,16 @@ let complete_tags nconsts nconstrs tags =
       | Cstr_block i -> seen_constr.(i) <- true
       | _  -> assert false)
     tags ;
-  let r = ref [] in
+  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
   for i = 0 to nconsts-1 do
     if not seen_const.(i) then
-      r := Cstr_constant i :: !r
+      ConstructorTagHashtbl.add r (Cstr_constant i) ()
   done ;
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
-      r := Cstr_block i :: !r
+      ConstructorTagHashtbl.add r (Cstr_block i) ()
   done ;
-  !r
+  r
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
@@ -765,7 +773,9 @@ let complete_constrs p all_tags =
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
-    List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
+    List.filter
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
@@ -1501,7 +1511,7 @@ let rec le_pat p q =
   | _, Tpat_alias(q,_,_) -> le_pat p q
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_construct(_,c1,ps), Tpat_construct(_,c2,qs) ->
-      c1.cstr_tag = c2.cstr_tag && le_pats ps qs
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
       (l1 = l2 && le_pat p1 p2)
   | Tpat_variant(l1,None,_r1), Tpat_variant(l2,None,_) ->
@@ -1551,7 +1561,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     let r = lub p q in
     make_pat (Tpat_lazy r) p.pat_type p.pat_env
 | Tpat_construct (lid, c1,ps1), Tpat_construct (_,c2,ps2)
-      when  c1.cstr_tag = c2.cstr_tag  ->
+      when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
         make_pat (Tpat_construct (lid, c1,rs))
           p.pat_type p.pat_env

@@ -72,8 +72,8 @@ static struct to_do *to_do_tl = NULL;
 /* [size] is a number of elements for the [to_do.item] array */
 static void alloc_to_do (int size)
 {
-  struct to_do *result = malloc (sizeof (struct to_do)
-                                 + size * sizeof (struct final));
+  struct to_do *result = caml_stat_alloc_noexc (sizeof (struct to_do) +
+                                                size * sizeof (struct final));
   if (result == NULL) caml_fatal_error ("out of memory");
   result->next = NULL;
   result->size = size;
@@ -182,7 +182,7 @@ void caml_final_do_calls (void)
     while (1){
       while (to_do_hd != NULL && to_do_hd->size == 0){
         struct to_do *next_hd = to_do_hd->next;
-        free (to_do_hd);
+        caml_stat_free (to_do_hd);
         to_do_hd = next_hd;
         if (to_do_hd == NULL) to_do_tl = NULL;
       }

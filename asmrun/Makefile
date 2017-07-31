@@ -29,8 +29,6 @@ sources := $(LINKEDFILES)
 
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-CC=$(NATIVECC)
-
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
 sources += ../byterun/unix.c
@@ -39,39 +37,30 @@ LN = ln -s
 sources += ../byterun/win32.c
 endif
 
-FLAGS=\
-  -I../byterun \
-  -DNATIVE_CODE -DTARGET_$(ARCH)
+CPPFLAGS += -I../byterun -DNATIVE_CODE -DTARGET_$(ARCH)
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
-FLAGS += -DMODEL_$(MODEL)
+CPPFLAGS += -DMODEL_$(MODEL)
 endif
 
-FLAGS += -DSYS_$(SYSTEM) \
-  $(NATIVECCCOMPOPTS) $(IFLEXDIR) \
-  $(LIBUNWIND_INCLUDE_FLAGS)
+CPPFLAGS += -DSYS_$(SYSTEM) $(IFLEXDIR) $(LIBUNWIND_INCLUDE_FLAGS)
 
 ifeq "$(TOOLCHAIN)" "msvc"
-DFLAGS=$(FLAGS) -DDEBUG
-PFLAGS=$(FLAGS) -DPROFILING $(NATIVECCPROFOPTS)
-OUTPUTOBJ = -Fo
+DFLAGS = $(CFLAGS) -DDEBUG
+PFLAGS=$(CFLAGS) -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH)nt.$(O)
 else
-DFLAGS=$(FLAGS) -g -DDEBUG
-PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
-OUTPUTOBJ = -o
+DFLAGS = $(CFLAGS) -g -DDEBUG
+PFLAGS=$(CFLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH).$(O)
 endif
 
-IFLAGS=$(FLAGS) -DCAML_INSTR
-PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS)
+IFLAGS=$(CFLAGS) -DCAML_INSTR
+PICFLAGS=$(CFLAGS) $(SHAREDCCCOMPOPTS)
 
-ASPPFLAGS = -DSYS_$(SYSTEM)
+ASPPFLAGS = -DSYS_$(SYSTEM) -I../byterun
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ASPPFLAGS += -DMODEL_$(MODEL)
-CFLAGS=$(FLAGS) -g
-else
-CFLAGS=$(FLAGS)
 endif
 
 COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
@@ -142,19 +131,19 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@
 
 %.d.$(O): %.c
-	$(CC) -c $(DFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(DFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.i.$(O): %.c
-	$(CC) -c $(IFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(IFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.p.$(O): %.c
-	$(CC) -c $(PFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.pic.$(O): %.c
-	$(CC) -c $(PICFLAGS) $(OUTPUTOBJ)$@ $<
+	$(CC) -c $(PICFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $<
 
 %.o: %.S
 	$(ASPP) $(ASPPFLAGS) -o $@ $< || \
@@ -190,11 +179,12 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(COBJS:.$(O)=.c) $(sources)
-	$(CC) -MM $(FLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
-	$(CC) -MM $(FLAGS) -DPROFILING $^ | sed -e 's/\.o/.p.$$(O)/' \
+	$(CC) -MM $(CFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.$$(O)/' > .depend
+	$(CC) -MM $(PFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.p.$$(O)/' \
 	  >> .depend
-	$(CC) -MM $(FLAGS) -DDEBUG $^ | sed -e 's/\.o/.d.$$(O)/' >> .depend
-	$(CC) -MM $(FLAGS) -DCAML_INSTR $^ | sed -e 's/\.o/.i.$$(O)/' \
+	$(CC) -MM $(DFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.d.$$(O)/' \
+	  >> .depend
+	$(CC) -MM $(IFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
 endif
 

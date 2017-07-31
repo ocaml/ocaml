@@ -19,21 +19,24 @@
 
 <pre><span class="keyword">module</span> Inline_records: <code class="code"><span class="keyword">sig</span></code> <a href="Inline_records.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
-This test focuses on the printing of documentation for inline record
-  within the latex generator.</div>
+<p>This test focuses on the printing of documentation for inline record
+  within the latex generator.</p>
+</div>
 </div>
 <hr width="100%">
 
 <pre><span id="EXCEPTIONSimple"><span class="keyword">exception</span> Simple</span></pre>
 <div class="info ">
 <div class="info-desc">
-A nice exception</div>
+<p>A nice exception</p>
+</div>
 </div>
 
 <pre><span id="TYPEext"><span class="keyword">type</span> <code class="type"></code>ext</span> = ..</pre>
 <div class="info ">
 <div class="info-desc">
-An open sum type</div>
+<p>An open sum type</p>
+</div>
 </div>
 
 
@@ -45,7 +48,8 @@ An open sum type</div>
 <code><span id="TYPEELTr.lbl">lbl</span>&nbsp;: <code class="type">int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Field documentation for non-inline, <code class="code">lbl&nbsp;:&nbsp;int</code></div>
+<p>Field documentation for non-inline, <code class="code">lbl&nbsp;:&nbsp;int</code></p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -56,7 +60,8 @@ Field documentation for non-inline, <code class="code">lbl&nbsp;:&nbsp;int</code
 <code><span id="TYPEELTr.more">more</span>&nbsp;: <code class="type">int list</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-More documentation for r, <code class="code">more&nbsp;:&nbsp;int&nbsp;list</code></div>
+<p>More documentation for r, <code class="code">more&nbsp;:&nbsp;int&nbsp;list</code></p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -64,7 +69,8 @@ More documentation for r, <code class="code">more&nbsp;:&nbsp;int&nbsp;list</cod
 
 <div class="info ">
 <div class="info-desc">
-A simple record type for reference</div>
+<p>A simple record type for reference</p>
+</div>
 </div>
 
 
@@ -81,7 +87,8 @@ A simple record type for reference</div>
 <code><span id="TYPEELTInline_records.A.lbl">lbl</span>&nbsp;: <code class="type">int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-<code class="code"><span class="constructor">A</span></code> field documentation</div>
+<p><code class="code"><span class="constructor">A</span></code> field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -92,7 +99,8 @@ A simple record type for reference</div>
 <code><span id="TYPEELTInline_records.A.more">more</span>&nbsp;: <code class="type">int list</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-More <code class="code"><span class="constructor">A</span></code> field documentation</div>
+<p>More <code class="code"><span class="constructor">A</span></code> field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -100,14 +108,16 @@ More <code class="code"><span class="constructor">A</span></code> field document
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor documentation</div>
+<p>Constructor documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
 <div class="info-desc">
-A sum type with one inline record</div>
+<p>A sum type with one inline record</p>
+</div>
 </div>
 
 
@@ -124,7 +134,8 @@ A sum type with one inline record</div>
 <code><span id="TYPEELTInline_records.B.a_label_for_B">a_label_for_B</span>&nbsp;: <code class="type">int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-<code class="code"><span class="constructor">B</span></code> field documentation</div>
+<p><code class="code"><span class="constructor">B</span></code> field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -135,7 +146,8 @@ A sum type with one inline record</div>
 <code><span id="TYPEELTInline_records.B.more_label_for_B">more_label_for_B</span>&nbsp;: <code class="type">int list</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-More <code class="code"><span class="constructor">B</span></code> field documentation</div>
+<p>More <code class="code"><span class="constructor">B</span></code> field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -143,7 +155,8 @@ More <code class="code"><span class="constructor">B</span></code> field document
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor B documentation</div>
+<p>Constructor B documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -159,7 +172,8 @@ Constructor B documentation</div>
 <code><span id="TYPEELTInline_records.C.c_has_label_too">c_has_label_too</span>&nbsp;: <code class="type">float</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-<code class="code"><span class="constructor">C</span></code> field documentation</div>
+<p><code class="code"><span class="constructor">C</span></code> field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -170,7 +184,8 @@ Constructor B documentation</div>
 <code><span id="TYPEELTInline_records.C.more_than_one">more_than_one</span>&nbsp;: <code class="type">unit</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-... documentations</div>
+<p>... documentations</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -178,14 +193,16 @@ Constructor B documentation</div>
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor C documentation</div>
+<p>Constructor C documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
 <div class="info-desc">
-A sum type with two inline records</div>
+<p>A sum type with two inline records</p>
+</div>
 </div>
 
 
@@ -202,7 +219,8 @@ A sum type with two inline records</div>
 <code><span id="TYPEELTInline_records.D.any">any</span>&nbsp;: <code class="type">'a</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-<code class="code"><span class="constructor">A</span></code> field <code class="code">any:<span class="keywordsign">'</span>a</code> for <code class="code"><span class="constructor">D</span></code> in <code class="code">any</code>.</div>
+<p><code class="code"><span class="constructor">A</span></code> field <code class="code">any:<span class="keywordsign">'</span>a</code> for <code class="code"><span class="constructor">D</span></code> in <code class="code">any</code>.</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -210,14 +228,16 @@ A sum type with two inline records</div>
  <span class="keyword">-></span> <code class="type"><a href="Inline_records.html#TYPEany">any</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor D documentation</div>
+<p>Constructor D documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
 <div class="info-desc">
-A gadt constructor</div>
+<p>A gadt constructor</p>
+</div>
 </div>
 
 
@@ -229,7 +249,8 @@ A gadt constructor</div>
 <code><span id="TYPEELTInline_records.Error.name">name</span>&nbsp;: <code class="type">string</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Error field documentation <code class="code">name:string</code></div>
+<p>Error field documentation <code class="code">name:string</code></p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -248,7 +269,8 @@ Error field documentation <code class="code">name:string</code></div>
 <code><span id="TYPEELTInline_records.E.yet_another_field">yet_another_field</span>&nbsp;: <code class="type">unit</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Field documentation for <code class="code"><span class="constructor">E</span></code> in ext</div>
+<p>Field documentation for <code class="code"><span class="constructor">E</span></code> in ext</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -256,7 +278,8 @@ Field documentation for <code class="code"><span class="constructor">E</span></c
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor E documentation</div>
+<p>Constructor E documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -272,7 +295,8 @@ Constructor E documentation</div>
 <code><span id="TYPEELTInline_records.F.even_more">even_more</span>&nbsp;: <code class="type">int -> int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Some field documentations for <code class="code"><span class="constructor">F</span></code></div>
+<p>Some field documentations for <code class="code"><span class="constructor">F</span></code></p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -280,7 +304,8 @@ Some field documentations for <code class="code"><span class="constructor">F</sp
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor F documentation</div>
+<p>Constructor F documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -296,7 +321,8 @@ Constructor F documentation</div>
 <code><span id="TYPEELTInline_records.G.last">last</span>&nbsp;: <code class="type">int -> int</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-The last and least field documentation</div>
+<p>The last and least field documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -304,14 +330,16 @@ The last and least field documentation</div>
 </code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <div class="info-desc">
-Constructor G documentation</div>
+<p>Constructor G documentation</p>
+</div>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 <div class="info ">
 <div class="info-desc">
-Two new constructors for ext</div>
+<p>Two new constructors for ext</p>
+</div>
 </div>
 
 </body></html>

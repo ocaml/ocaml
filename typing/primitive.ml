@@ -110,13 +110,11 @@ let parse_declaration valdecl ~native_repr_args ~native_repr_res =
      explicit now (GPR#167): *)
   let old_style_noalloc = old_style_noalloc || old_style_float in
   if old_style_float then
-    Location.prerr_warning valdecl.pval_loc
-      (Warnings.Deprecated "[@@unboxed] + [@@noalloc] should be used instead \
-                            of \"float\"")
+    Location.deprecated valdecl.pval_loc
+      "[@@unboxed] + [@@noalloc] should be used instead of \"float\""
   else if old_style_noalloc then
-    Location.prerr_warning valdecl.pval_loc
-      (Warnings.Deprecated "[@@noalloc] should be used instead of \
-                            \"noalloc\"");
+    Location.deprecated valdecl.pval_loc
+      "[@@noalloc] should be used instead of \"noalloc\"";
   if native_name = "" &&
      not (List.for_all is_ocaml_repr native_repr_args &&
           is_ocaml_repr native_repr_res) then

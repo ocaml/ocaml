@@ -9,7 +9,15 @@ let rec f x =
       raise Stack_overflow
 
 let _ =
+ begin
   try
     ignore(f 0)
   with Stack_overflow ->
     print_string "Stack overflow caught"; print_newline()
+ end ;
+ begin
+  try
+    ignore(f 0)
+  with Stack_overflow ->
+    print_string "second Stack overflow caught"; print_newline()
+ end

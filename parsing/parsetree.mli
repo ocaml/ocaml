@@ -93,7 +93,7 @@ and core_type_desc =
            T tconstr
            (T1, ..., Tn) tconstr
          *)
-  | Ptyp_object of (string loc * attributes * core_type) list * closed_flag
+  | Ptyp_object of object_field list * closed_flag
         (* < l1:T1; ...; ln:Tn >     (flag = Closed)
            < l1:T1; ...; ln:Tn; .. > (flag = Open)
          *)
@@ -142,7 +142,7 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
        *)
 
 and row_field =
-  | Rtag of label * attributes * bool * core_type list
+  | Rtag of string loc * attributes * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
@@ -157,6 +157,10 @@ and row_field =
         *)
   | Rinherit of core_type
         (* [ T ] *)
+
+and object_field =
+  | Otag of string loc * attributes * core_type
+  | Oinherit of core_type
 
 (* Patterns *)
 
@@ -501,6 +505,8 @@ and class_type_desc =
          *)
   | Pcty_extension of extension
         (* [%id] *)
+  | Pcty_open of override_flag * Longident.t loc * class_type
+        (* let open M in CT *)
 
 and class_signature =
     {
@@ -590,7 +596,10 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
         (* (CE : CT) *)
   | Pcl_extension of extension
-        (* [%id] *)
+  (* [%id] *)
+  | Pcl_open of override_flag * Longident.t loc * class_expr
+  (* let open M in CE *)
+
 
 and class_structure =
     {

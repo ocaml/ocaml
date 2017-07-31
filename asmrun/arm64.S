@@ -254,8 +254,8 @@ caml_alloc3:
     /* Try again */
         b       1b
         CFI_ENDPROC
-        .type   caml_alloc2, %function
-        .size   caml_alloc2, .-caml_alloc2
+        .type   caml_alloc3, %function
+        .size   caml_alloc3, .-caml_alloc3
 
         .align  2
         .globl  caml_allocN

@@ -85,7 +85,7 @@ val max_int : nativeint
    or 2{^63} - 1 on a 64-bit platform. *)
 
 val min_int : nativeint
-(** The greatest representable native integer,
+(** The smallest representable native integer,
    either -2{^31} on a 32-bit platform,
    or -2{^63} on a 64-bit platform. *)
 
@@ -158,10 +158,16 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
 
 external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Nativeint.max_int+1]].  If the input exceeds {!Nativeint.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Nativeint.max_int - 1].
+
+   Raise [Failure "Nativeint.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
 
@@ -182,7 +188,7 @@ val compare: t -> t -> int
     {!Set.Make} and {!Map.Make}. *)
 
 val equal: t -> t -> bool
-(** The equal function for natives ints.
+(** The equal function for native ints.
     @since 4.03.0 *)
 
 (**/**)

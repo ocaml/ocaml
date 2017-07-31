@@ -40,7 +40,7 @@
        defined(HAS_SETITIMER) && \
        defined(HAS_GETTIMEOFDAY) && \
        (defined(HAS_WAITPID) || defined(HAS_WAIT4)))
-#include "Cannot compile libthreads, system calls missing"
+#warning "Cannot compile libthreads, system calls missing"
 #endif
 
 #include <errno.h>
@@ -758,7 +758,7 @@ value thread_kill(value thread)       /* ML */
   th->sp = NULL;
   th->trapsp = NULL;
   if (th->backtrace_buffer != NULL) {
-    free(th->backtrace_buffer);
+    caml_stat_free(th->backtrace_buffer);
     th->backtrace_buffer = NULL;
   }
   return retval;
@@ -771,7 +771,7 @@ value thread_uncaught_exception(value exn)  /* ML */
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(curr_thread->ident), msg);
-  free(msg);
+  caml_stat_free(msg);
   if (caml_backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;

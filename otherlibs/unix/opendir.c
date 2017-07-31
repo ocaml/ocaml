@@ -33,7 +33,7 @@ CAMLprim value unix_opendir(value path)
   char * p;
 
   caml_unix_check_path(path, "opendir");
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   d = opendir(p);
   caml_leave_blocking_section();

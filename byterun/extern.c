@@ -103,7 +103,7 @@ static void free_extern_output(void);
 static void extern_free_stack(void)
 {
   if (extern_stack != extern_stack_init) {
-    free(extern_stack);
+    caml_stat_free(extern_stack);
     /* Reinitialize the globals for next time around */
     extern_stack = extern_stack_init;
     extern_stack_limit = extern_stack + EXTERN_STACK_INIT_SIZE;
@@ -118,13 +118,13 @@ static struct extern_item * extern_resize_stack(struct extern_item * sp)
 
   if (newsize >= EXTERN_STACK_MAX_SIZE) extern_stack_overflow();
   if (extern_stack == extern_stack_init) {
-    newstack = malloc(sizeof(struct extern_item) * newsize);
+    newstack = caml_stat_alloc_noexc(sizeof(struct extern_item) * newsize);
     if (newstack == NULL) extern_stack_overflow();
     memcpy(newstack, extern_stack_init,
            sizeof(struct extern_item) * EXTERN_STACK_INIT_SIZE);
   } else {
-    newstack =
-      realloc(extern_stack, sizeof(struct extern_item) * newsize);
+    newstack = caml_stat_resize_noexc(extern_stack,
+                                      sizeof(struct extern_item) * newsize);
     if (newstack == NULL) extern_stack_overflow();
   }
   extern_stack = newstack;
@@ -161,7 +161,7 @@ static void extern_replay_trail(void)
     }
     if (blk == &extern_trail_first) break;
     prevblk = blk->previous;
-    free(blk);
+    caml_stat_free(blk);
     blk = prevblk;
     lim = &(blk->entries[ENTRIES_PER_TRAIL_BLOCK]);
   }
@@ -179,7 +179,7 @@ static void extern_record_location(value obj)
 
   if (extern_flags & NO_SHARING) return;
   if (extern_trail_cur == extern_trail_limit) {
-    struct trail_block * new_block = malloc(sizeof(struct trail_block));
+    struct trail_block * new_block = caml_stat_alloc_noexc(sizeof(struct trail_block));
     if (new_block == NULL) extern_out_of_memory();
     new_block->previous = extern_trail_block;
     extern_trail_block = new_block;
@@ -211,7 +211,7 @@ static struct output_block * extern_output_first, * extern_output_block;
 static void init_extern_output(void)
 {
   extern_userprovided_output = NULL;
-  extern_output_first = malloc(sizeof(struct output_block));
+  extern_output_first = caml_stat_alloc_noexc(sizeof(struct output_block));
   if (extern_output_first == NULL) caml_raise_out_of_memory();
   extern_output_block = extern_output_first;
   extern_output_block->next = NULL;
@@ -233,7 +233,7 @@ static void free_extern_output(void)
   if (extern_userprovided_output != NULL) return;
   for (blk = extern_output_first; blk != NULL; blk = nextblk) {
     nextblk = blk->next;
-    free(blk);
+    caml_stat_free(blk);
   }
   extern_output_first = NULL;
   extern_free_stack();
@@ -252,7 +252,7 @@ static void grow_extern_output(intnat required)
     extra = 0;
   else
     extra = required;
-  blk = malloc(sizeof(struct output_block) + extra);
+  blk = caml_stat_alloc_noexc(sizeof(struct output_block) + extra);
   if (blk == NULL) extern_out_of_memory();
   extern_output_block->next = blk;
   extern_output_block = blk;
@@ -674,7 +674,7 @@ void caml_output_val(struct channel *chan, value v, value flags)
   while (blk != NULL) {
     caml_really_putblock(chan, blk->data, blk->end - blk->data);
     nextblk = blk->next;
-    free(blk);
+    caml_stat_free(blk);
     blk = nextblk;
   }
 }
@@ -712,7 +712,7 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
     memcpy(&Byte(res, ofs), blk->data, n);
     ofs += n;
     nextblk = blk->next;
-    free(blk);
+    caml_stat_free(blk);
     blk = nextblk;
   }
   return res;
@@ -762,7 +762,7 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
 
   init_extern_output();
   data_len = extern_value(v, flags, header, &header_len);
-  res = malloc(header_len + data_len);
+  res = caml_stat_alloc_noexc(header_len + data_len);
   if (res == NULL) extern_out_of_memory();
   *buf = res;
   *len = header_len + data_len;

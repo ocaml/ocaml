@@ -69,9 +69,9 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
   Store_field (v, 7, Val_int (buf->st_rdev));
   Store_field (v, 8,
                use_64 ? caml_copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, caml_copy_double((double) buf->st_atime));
-  Store_field (v, 10, caml_copy_double((double) buf->st_mtime));
-  Store_field (v, 11, caml_copy_double((double) buf->st_ctime));
+  Store_field (v, 9, caml_copy_double((double) buf->st_atime / 10000000.0));
+  Store_field (v, 10, caml_copy_double((double) buf->st_mtime / 10000000.0));
+  Store_field (v, 11, caml_copy_double((double) buf->st_ctime / 10000000.0));
   CAMLreturn (v);
 }
 
@@ -117,23 +117,17 @@ static value stat_aux(int use_64, __int64 st_ino, struct _stat64 *buf)
 
 static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 {
-  SYSTEMTIME sys;
-  FILETIME local;
+  /* Tempting though it may be, MSDN prohibits casting FILETIME directly
+   * to __int64 for alignment concerns. While this doesn't affect our supported
+   * platforms, it's easier to go with the flow...
+   */
+  ULARGE_INTEGER utime = {{time->dwLowDateTime, time->dwHighDateTime}};
 
-  if (time->dwLowDateTime || time->dwHighDateTime) {
-    if (!FileTimeToLocalFileTime(time, &local) ||
-        !FileTimeToSystemTime(&local, &sys))
-    {
-      win32_maperr(GetLastError());
-      return 0;
-    }
-    else
-    {
-      struct tm stamp = {sys.wSecond, sys.wMinute, sys.wHour,
-                         sys.wDay, sys.wMonth - 1, sys.wYear - 1900,
-                         0, 0, 0};
-      *result = _mktime64(&stamp);
-    }
+  if (utime.QuadPart) {
+    /* There are 11644473600000 seconds between 1 January 1601 (the NT Epoch)
+     * and 1 January 1970 (the Unix Epoch). FILETIME is measured in 100ns ticks.
+     */
+    *result = (utime.QuadPart - INT64_LITERAL(116444736000000000U));
   }
   else {
     *result = def;
@@ -304,7 +298,7 @@ static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fst
 {
   char* path;
   int ret;
-  path = caml_strdup(opath);
+  path = caml_stat_strdup(opath);
   ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
   caml_stat_free(path);
   return ret;

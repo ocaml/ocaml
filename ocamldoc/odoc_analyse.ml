@@ -37,16 +37,6 @@ let initial_env () =
     if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
-  let initial =
-    (* Open the Pervasives module by reading directly the corresponding cmi
-       file to avoid troubles when building the documentation for the
-       Pervasives modules.
-       Another option might be to add a -nopervasives option to ocamldoc and update
-       stdlib documentation's build process. *)
-    try
-      Env.open_pers_signature "Pervasives" initial
-    with Not_found ->
-      Misc.fatal_error @@ Printf.sprintf "cannot open pervasives.cmi" in
   let open_mod env m =
     let open Asttypes in
     let lid = {loc = Location.in_file "ocamldoc command line";
@@ -54,7 +44,13 @@ let initial_env () =
     snd (Typemod.type_open_ Override env lid.loc lid) in
   (* Open the list of modules given as arguments of the "-open" flag
      The list is reversed to open the modules in the left-to-right order *)
-  List.fold_left open_mod initial (List.rev !Clflags.open_modules)
+  let to_open = List.rev !Clflags.open_modules in
+  let to_open =
+    if Env.get_unit_name () = "Pervasives"
+    then to_open
+    else "Pervasives" :: to_open
+  in
+  List.fold_left open_mod initial to_open
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =

@@ -409,9 +409,10 @@ let rec div_int c1 c2 is_safe dbg =
       Cop(Cdivi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
-        Cifthenelse(c2,
-                    Cop(Cdivi, [c1; c2], dbg),
-                    raise_symbol dbg "caml_exn_Division_by_zero"))
+        bind "dividend" c1 (fun c1 ->
+          Cifthenelse(c2,
+                      Cop(Cdivi, [c1; c2], dbg),
+                      raise_symbol dbg "caml_exn_Division_by_zero")))
 
 let mod_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -445,9 +446,10 @@ let mod_int c1 c2 is_safe dbg =
       Cop(Cmodi, [c1; c2], dbg)
   | (c1, c2) ->
       bind "divisor" c2 (fun c2 ->
-        Cifthenelse(c2,
-                    Cop(Cmodi, [c1; c2], dbg),
-                    raise_symbol dbg "caml_exn_Division_by_zero"))
+        bind "dividend" c1 (fun c1 ->
+          Cifthenelse(c2,
+                      Cop(Cmodi, [c1; c2], dbg),
+                      raise_symbol dbg "caml_exn_Division_by_zero")))
 
 (* Division or modulo on boxed integers.  The overflow case min_int / -1
    can occur, in which case we force x / -1 = -x and x mod -1 = 0. (PR#5513). *)
@@ -1988,19 +1990,17 @@ and transl_prim_1 env p arg dbg =
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl env arg], dbg)
   | Pctconst c ->
-      let const_of_bool b = tag_int (Cconst_int (if b then 1 else 0)) dbg in
+      let const_of_bool b = int_const (if b then 1 else 0) in
       begin
         match c with
         | Big_endian -> const_of_bool Arch.big_endian
-        | Word_size -> tag_int (Cconst_int (8*Arch.size_int)) dbg
-        | Int_size -> tag_int (Cconst_int ((8*Arch.size_int) - 1)) dbg
-        | Max_wosize ->
-            tag_int (Cconst_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )) dbg
+        | Word_size -> int_const (8*Arch.size_int)
+        | Int_size -> int_const (8*Arch.size_int - 1)
+        | Max_wosize -> int_const ((1 lsl ((8*Arch.size_int) - 10)) - 1)
         | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
-        | Backend_type ->
-            tag_int (Cconst_int 0) dbg (* tag 0 is the same as Native here *)
+        | Backend_type -> int_const 0 (* tag 0 is the same as Native here *)
       end
   | Poffsetint n ->
       if no_overflow_lsl n 1 then

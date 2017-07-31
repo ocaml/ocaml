@@ -17,9 +17,6 @@
 
 include ../config/Makefile
 
-CC=$(BYTECC)
-CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
-
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \
   skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
@@ -30,7 +27,7 @@ ocamlyacc$(EXE): $(OBJS)
 	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
+	echo "#define OCAML_VERSION \"`sed -e 1q $^ | tr -d '\r'`\"" > $@
 
 clean:
 	rm -f *.$(O) ocamlyacc$(EXE) *~ version.h
@@ -54,4 +51,4 @@ warshall.$(O): defs.h
 # also works for .obj files.
 
 %.$(O): %.c
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTOBJ)$@ $<

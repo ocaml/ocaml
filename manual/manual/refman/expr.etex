@@ -75,7 +75,12 @@ expr:
   | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
     [ ':' module-type ] \\ '=' module-expr 'in' expr
-
+  | "let" "open" module-path "in" expr
+  | module-path '.(' expr ')'
+  | module-path '.[' expr ']'
+  | module-path '.[|' expr '|]'
+  | module-path '.{' expr '}'
+  | module-path '.{<' expr '>}'
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -107,7 +112,6 @@ parameter:
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
 See also the following language extensions:
-\hyperref[s:local-opens]{local opens},
 \hyperref[s:object-notations]{object notations},
 \hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
 \hyperref[s-first-class-modules]{first-class modules},
@@ -959,5 +963,21 @@ It then returns the value of @expr@.  For example:
           StringSet.elements
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
+
+\subsubsection*{Local opens}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{open}}
+
+The expressions @"let" "open" module-path "in" expr@ and
+@module-path'.('expr')'@ are strictly equivalent. These
+constructions locally open the module referred to by the module path
+@module-path@ in the respective scope of the expression @expr@.
+
+When the body of a local open expression is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For expression, parentheses can also be omitted for @'{<' '>}'@.
+For example, @module-path'.['expr']'@ is equivalent to
+@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
+equivalent to @module-path'.([|' expr '|])'@.
 
 %% \newpage

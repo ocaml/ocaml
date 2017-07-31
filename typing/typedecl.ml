@@ -58,6 +58,7 @@ type error =
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
+  | Nonrec_gadt
 
 open Typedtree
 
@@ -81,7 +82,15 @@ let get_unboxed_from_attributes sdecl =
 let enter_type rec_flag env sdecl id =
   let needed =
     match rec_flag with
-    | Asttypes.Nonrecursive -> Btype.is_row_name (Ident.name id)
+    | Asttypes.Nonrecursive ->
+        begin match sdecl.ptype_kind with
+        | Ptype_variant scds ->
+            List.iter (fun cd ->
+              if cd.pcd_res <> None then raise (Error(cd.pcd_loc, Nonrec_gadt)))
+              scds
+        | _ -> ()
+        end;
+        Btype.is_row_name (Ident.name id)
     | Asttypes.Recursive -> true
   in
   if not needed then env else
@@ -276,13 +285,63 @@ let make_constructor env type_path type_params sargs sret_type =
       widen z;
       targs, Some tret_type, args, Some ret_type
 
+(* Check that the variable [id] is present in the [univ] list. *)
+let check_type_var loc univ id =
+  let f t = (Btype.repr t).id = id in
+  if not (List.exists f univ) then raise (Error (loc, Wrong_unboxed_type_float))
+
+(* Check that all the variables found in [ty] are in [univ].
+   Because [ty] is the argument to an abstract type, the representation
+   of that abstract type could be any subexpression of [ty], in particular
+   any type variable present in [ty].
+*)
+let rec check_unboxed_abstract_arg loc univ ty =
+  match ty.desc with
+  | Tvar _ -> check_type_var loc univ ty.id
+  | Tarrow (_, t1, t2, _)
+  | Tfield (_, _, t1, t2) ->
+    check_unboxed_abstract_arg loc univ t1;
+    check_unboxed_abstract_arg loc univ t2
+  | Ttuple args
+  | Tconstr (_, args, _)
+  | Tpackage (_, _, args) ->
+    List.iter (check_unboxed_abstract_arg loc univ) args
+  | Tobject (fields, r) ->
+    check_unboxed_abstract_arg loc univ fields;
+    begin match !r with
+    | None -> ()
+    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
+    end
+  | Tnil
+  | Tunivar _ -> ()
+  | Tlink e -> check_unboxed_abstract_arg loc univ e
+  | Tsubst _ -> assert false
+  | Tvariant { row_fields; row_more; row_name } ->
+    List.iter (check_unboxed_abstract_row_field loc univ) row_fields;
+    check_unboxed_abstract_arg loc univ row_more;
+    begin match row_name with
+    | None -> ()
+    | Some (_, args) -> List.iter (check_unboxed_abstract_arg loc univ) args
+    end
+  | Tpoly (t, _) -> check_unboxed_abstract_arg loc univ t
+
+and check_unboxed_abstract_row_field loc univ (_, field) =
+  match field with
+  | Rpresent (Some ty) -> check_unboxed_abstract_arg loc univ ty
+  | Reither (_, args, _, r) ->
+    List.iter (check_unboxed_abstract_arg loc univ) args;
+    begin match !r with
+    | None -> ()
+    | Some f -> check_unboxed_abstract_row_field loc univ ("", f)
+    end
+  | Rabsent
+  | Rpresent None -> ()
+
 (* Check that the argument to a GADT constructor is compatible with unboxing
-   the type, given the existential variables introduced by this constructor. *)
-let rec check_unboxed_gadt_arg loc ex env ty =
+   the type, given the universal parameters of the type. *)
+let rec check_unboxed_gadt_arg loc univ env ty =
   match get_unboxed_type_representation env ty with
-  | Some {desc = Tvar _; id} ->
-    let f t = (Btype.repr t).id = id in
-    if List.exists f ex then raise(Error(loc, Wrong_unboxed_type_float))
+  | Some {desc = Tvar _; id} -> check_type_var loc univ id
   | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
                  | Tvariant _; _} ->
     ()
@@ -292,10 +351,10 @@ let rec check_unboxed_gadt_arg loc ex env ty =
     let tydecl = Env.find_type p env in
     assert (not tydecl.type_unboxed.unboxed);
     if tydecl.type_kind = Type_abstract then
-      List.iter (check_unboxed_gadt_arg loc ex env) args
+      List.iter (check_unboxed_abstract_arg loc univ) args
   | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
   | Some {desc = Tunivar _; _} -> ()
-  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc ex env t2
+  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc univ env t2
   | None -> ()
       (* This case is tricky: the argument is another (or the same) type
          in the same recursive definition. In this case we don't have to
@@ -394,10 +453,14 @@ let transl_declaration env sdecl id =
                unboxed (or abstract) type constructor applied to some
                existential type variable. Of course we also have to rule
                out any abstract type constructor applied to anything that
-               might be an existential type variable. *)
+               might be an existential type variable.
+               There is a difficulty with existential variables created
+               out of thin air (rather than bound by the declaration).
+               See PR#7511 and GPR#1133 for details. *)
             match Datarepr.constructor_existentials args ret_type with
             | _, [] -> ()
-            | [argty], ex -> check_unboxed_gadt_arg sdecl.ptype_loc ex env argty
+            | [argty], _ex ->
+                check_unboxed_gadt_arg sdecl.ptype_loc params env argty
             | _ -> assert false
           end;
           let tcstr =
@@ -611,7 +674,7 @@ let check_coherence env loc id decl =
               else if not (Ctype.equal env false args decl.type_params)
               then [Includecore.Constraint]
               else
-                Includecore.type_declarations ~equality:true env
+                Includecore.type_declarations ~loc ~equality:true env
                   (Path.last path)
                   decl'
                   id
@@ -1738,8 +1801,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   in
   if arity_ok && orig_decl.type_kind <> Type_abstract
   && sdecl.ptype_private = Private then
-    Location.prerr_warning sdecl.ptype_loc
-      (Warnings.Deprecated "spurious use of private");
+    Location.deprecated sdecl.ptype_loc "spurious use of private";
   let type_kind, type_unboxed =
     if arity_ok && man <> None then
       orig_decl.type_kind, orig_decl.type_unboxed
@@ -2059,6 +2121,9 @@ let report_error ppf = function
                    You should annotate it with [%@%@ocaml.boxed].@]"
   | Boxed_and_unboxed ->
       fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
+  | Nonrec_gadt ->
+      fprintf ppf
+        "@[GADT case syntax cannot be used in a 'nonrec' block.@]"
 
 let () =
   Location.register_error_of_exn

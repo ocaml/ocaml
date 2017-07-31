@@ -1,3 +1,15 @@
+|=====
+| Branch `trunk` | Branch `4.05` | Branch `4.04`
+
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=trunk["TravisCI Build Status (trunk branch)",link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=trunk&svg=true["AppVeyor Build Status (trunk branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.05["TravisCI Build Status (4.05 branch)",link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.05&svg=true["AppVeyor Build Status (4.05 branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
+| image:https://travis-ci.org/ocaml/ocaml.svg?branch=4.04["TravisCI Build Status (4.04 branch)",link="https://travis-ci.org/ocaml/ocaml"]
+  image:https://ci.appveyor.com/api/projects/status/github/ocaml/ocaml?branch=4.04&svg=true["AppVeyor Build Status (4.04 branch)",link="https://ci.appveyor.com/project/avsm/ocaml"]
+
+|=====
+
 = README =
 
 == Overview
@@ -33,7 +45,6 @@ AMD64::              FreeBSD, OpenBSD, NetBSD
 IA32 (Pentium)::     NetBSD, OpenBSD, Solaris 9
 PowerPC::            NetBSD
 ARM::                NetBSD
-SPARC::              Solaris, Linux, NetBSD
 
 Other operating systems for the processors above have not been tested, but
 the compiler may work under other operating systems with little work.

@@ -29,10 +29,10 @@ endif
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CFLAGS += $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CPPFLAGS += -I$(ROOTDIR)/byterun
 
 # Compilation options
-CC=$(BYTECC)
 COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
           -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
@@ -113,4 +113,4 @@ clean:: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 .c.$(O):
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<

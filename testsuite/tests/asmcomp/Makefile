@@ -104,7 +104,7 @@ one_ml_flambda:
 	 fi
 
 one:
-	@$(call CC,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
@@ -127,11 +127,9 @@ SKIP=true
 endif
 
 ifeq ($(CCOMPTYPE),msvc)
-CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
-CFLAGS=$(NATIVECCCOMPOPTS)
+CCOMP=set -o pipefail ; $(CC) $(CFLAGS) /Fe$(1) | tail -n +2
 else
-CC=$(NATIVECC) $(CFLAGS) -o $(1)
-CFLAGS=$(NATIVECCCOMPOPTS) -g
+CCOMP=$(CC) $(CFLAGS) -o $(1)
 endif
 tests: $(CASES:=.$(O))
 	@for c in $(CASES); do \

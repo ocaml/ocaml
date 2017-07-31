@@ -45,7 +45,7 @@ static value Val_handle(void* handle) {
 }
 
 static void *getsym(void *handle, char *module, char *name){
-  char *fullname = caml_strconcat(3, "caml", module, name);
+  char *fullname = caml_stat_strconcat(3, "caml", module, name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
@@ -73,7 +73,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup(String_val(filename));
   caml_enter_blocking_section();
   dlhandle = caml_dlopen(p, 1, Int_val(global));
   caml_leave_blocking_section();
@@ -155,7 +155,7 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, 1, 1);
   caml_leave_blocking_section();
