@@ -56,6 +56,11 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1271: Don't generate Ialloc instructions for closures that exceed
+  Max_young_wosize; instead allocate them on the major heap.  (Related
+  to GPR#1250.)
+  (Mark Shinwell)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
