@@ -391,20 +391,6 @@ OCaml 4.05.0 (13 Jul 2017):
   (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
   Mark Shinwell, and bug report by Gabriel Scherer)
 
-- PR#7533, GPR#1173: Correctly perform side effects for certain
-  cases of "/" and "mod"
-  (Mark Shinwell, report by Jan Mitgaard)
-- GPR#863, GPR#1068, GPR#1069: Optimise matches with constant
-  results to lookup tables.
-  (Stephen Dolan, review by Gabriel Scherer, Pierre Chambart,
-  Mark Shinwell, and bug report by Gabriel Scherer)
-
-- GPR#1150: Fix typo in arm64 assembler directives
-  (KC Sivaramakrishnan)
-
-- PR#7533, GPR#1173: Correctly perform side effects for certain
-  cases of "/" and "mod"
-  (Mark Shinwell, report by Jan Mitgaard)
 - GPR#1150: Fix typo in arm64 assembler directives
   (KC Sivaramakrishnan)
 
@@ -413,10 +399,6 @@ OCaml 4.05.0 (13 Jul 2017):
 - MPR#385, GPR#953: Add caml_startup_exn
   (Mark Shinwell)
 
-- MPR#385, GPR#953: Add caml_startup_exn
-  (Mark Shinwell)
-
-- PR#7423, GPR#946: expose new exception-raising functions
 - MPR#7423, GPR#946: expose new exception-raising functions
   `void caml_{failwith,invalid_argument}_value(value msg)`
   in addition to
@@ -427,13 +409,6 @@ OCaml 4.05.0 (13 Jul 2017):
   (Gabriel Scherer, review by Mark Shinwell, request by Immanuel Litzroth)
 
 - MPR#7557, GPR#1213: More security for getenv
-  (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
-  Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
-
-- GPR#795: remove 256-character limitation on Sys.executable_name
-  (Xavier Leroy)
-
-- PR#7557, GPR#1213: More security for getenv
   (Damien Doligez, reports by Seth Arnold and Eric Milliken, review by
   Xavier Leroy, David Allsopp, Stephen Dolan, Hannes Mehnert)
 
@@ -454,9 +429,6 @@ OCaml 4.05.0 (13 Jul 2017):
   (compatibility: some code using module-global mutable state will
    fail at compile-time and is fixed by adding extra annotations;
    see the Mantis and Github discussions.)
-  (Jacques Garrigue, report by Leo White)
-* PR#7414, GPR#929: Soundness bug with non-generalized type variables and
-  functors.
   (Jacques Garrigue, report by Leo White)
 
 ### Compiler user-interface and warnings:
@@ -516,9 +488,6 @@ OCaml 4.05.0 (13 Jul 2017):
 - GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
   to build ocamldep. Add option "-depend" to ocamlc/ocamlopt to behave
   as ocamldep. Remove any use of ocamldep to build the distribution.
-- GPR#1015: add option "-plugin PLUGIN" to ocamldep too. Use compilerlibs
-  to build ocamldep.
-  to build ocamldep.
   (Fabrice Le Fessant)
 
 - GPR#1027: various improvements to -dtimings, mostly including time
@@ -543,14 +512,6 @@ OCaml 4.05.0 (13 Jul 2017):
   review by Thomas Braibant and Damien Doligez)
 
 * MPR#7500, GPR#1081: Remove Uchar.dump
-  (Daniel Bünzli)
-
-- PR#7279 GPR#710: `Weak.get_copy` `Ephemeron.*_copy` doesn't copy
-  custom blocks anymore
-  (François Bobot, Alain Frisch, bug reported by Martin R. Neuhäußer,
-  review by Thomas Braibant and Damien Doligez)
-
-* PR#7500, GPR#1081: Remove Uchar.dump
   (Daniel Bünzli)
 
 - GPR#760: Add a functions List.compare_lengths and
@@ -626,20 +587,6 @@ OCaml 4.05.0 (13 Jul 2017):
   (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
    David Allsopp, Sébastien Hinderer, Damien Doligez and Xavier Leroy)
 
-- PR#7497, GPR#1095: manual, enable numbering for table of contents
-  (Florian Angeletti, request by Daniel Bünzli)
-
-- PR#7539, GPR#1181: manual, update dead links in ocamldoc chapter
-  (Florian Angeletti)
-
-- GPR#633: manpage and manual documentation for the `-opaque` option
-  (Konstantin Romanov, Gabriel Scherer, review by Mark Shinwell)
-
-- GPR#916: new tool lintapidiff, use it to update the manual with
-  @since annotations for API changes introduced between 4.00-4.05.
-  (Edwin Török, review by Gabriel Scherer, discussion with Alain Frisch,
-   David Allsopp, Sébastien Hinderer, Damien Doligez and Xavier Leroy)
-
 - GPR#939: activate the caml_example environment in the language
   extensions section of the manual. Convert some existing code
   examples to this format.
@@ -688,13 +635,10 @@ OCaml 4.05.0 (13 Jul 2017):
 - GPR#997, GPR#1077: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
   (Jérémie Dimino and Xavier Leroy)
-### Toplevel:
 
 ### Toplevel:
 
 - MPR#7060, GPR#1035: Print exceptions in installed custom printers
-  (Tadeu Zagallo, review by David Allsopp)
-- PR#7060, GPR#1035: Print exceptions in installed custom printers
   (Tadeu Zagallo, review by David Allsopp)
 
 ### Tools:
@@ -723,15 +667,8 @@ OCaml 4.05.0 (13 Jul 2017):
 
 ### Compiler distribution build system:
 
-### Compiler distribution build system:
-
-- PR#7377: remove -std=gnu99 for newer gcc versions
 - MPR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
-
-- PR#7452, GPR#1228: tweak GCC options to try to avoid the
-  Skylake/Kaby lake bug
-  (Damien Doligez, review by David Allsopp, Xavier Leroy and Mark Shinwell)
 
 - MPR#7452, GPR#1228: tweak GCC options to try to avoid the
   Skylake/Kaby lake bug
@@ -900,20 +837,6 @@ The complete list of changes is listed below.
   (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
    Olivier Andrieu)
 
-- PR#6136, GPR#967: Fix Closure so that overapplication evaluation order
-  matches the bytecode compiler and Flambda.
-  (Mark Shinwell, report by Jeremy Yallop, review by Frédéric Bour)
-
-- PR#6550, GPR#1094: Allow creation of empty .cmxa files on macOS
-  (Mark Shinwell)
-
-- PR#6594, GPR#955: Remove "Istore_symbol" specific operation on x86-64.
-  This is more robust and in particular avoids assembly failures on Win64.
-  (Mark Shinwell, review by Xavier Leroy, testing by David Allsopp and
-   Olivier Andrieu)
-
-- PR#6903: Unix.execvpe doesn't change environment on Cygwin
-  (Xavier Leroy)
 - MPR#6903: Unix.execvpe doesn't change environment on Cygwin
   (Xavier Leroy, report by Adrien Nader)
 
@@ -972,16 +895,6 @@ The complete list of changes is listed below.
 - MPR#7504: fix warning 8 with unconstrained records
   (Florian Angeletti, report by John Whitington)
 
-- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
-  of similar debugging information location entries
-  (Mark Shinwell)
-- PR#7504: fix warning 8 with unconstrained records
-  (Florian Angeletti, report by John Whitington)
-
-- PR#7456, GPR#1092: fix slow compilation on source files containing a lot
-  of similar debugging information location entries
-  (Mark Shinwell)
-- PR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
 - MPR#7511, GPR#1133: Unboxed type with unboxed argument should not be accepted
   (Damien Doligez, review by Jeremy Yallop and Leo White)
 
