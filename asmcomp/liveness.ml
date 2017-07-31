@@ -43,10 +43,10 @@ let rec live i finally =
   in
   match i.desc with
     Iend ->
-      i.live <- finally;
+      Mach.set_live i finally;
       finally
   | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
-      i.live <- Reg.Set.empty; (* no regs are live across *)
+      Mach.set_live i Reg.Set.empty; (* no regs are live across *)
       Reg.set_of_array arg
   | Iop op ->
       let after = live i.next finally in
@@ -56,7 +56,7 @@ let rec live i finally =
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
       then begin
         (* This operation is dead code.  Ignore its arguments. *)
-        i.live <- after;
+        Mach.set_live i after;
         after
       end else begin
         let across_after = Reg.diff_set_array after i.res in
@@ -73,13 +73,13 @@ let rec live i finally =
                Reg.Set.union across_after !live_at_raise
            | _ ->
                across_after in
-        i.live <- across;
+        Mach.set_live i across;
         Reg.add_set_array across arg
       end
   | Iifthenelse(_test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
-      i.live <- at_fork;
+      Mach.set_live i at_fork;
       Reg.add_set_array at_fork arg
   | Iswitch(_index, cases) ->
       let at_join = live i.next finally in
@@ -87,7 +87,7 @@ let rec live i finally =
       for i = 0 to Array.length cases - 1 do
         at_fork := Reg.Set.union !at_fork (live cases.(i) at_join)
       done;
-      i.live <- !at_fork;
+      Mach.set_live i !at_fork;
       Reg.add_set_array !at_fork arg
   | Icatch(rec_flag, handlers, body) ->
       let at_join = live i.next finally in
@@ -129,11 +129,11 @@ let rec live i finally =
       live_at_exit := (live_at_exit_add before_handler) @ !live_at_exit;
       let before_body = live body at_join in
       live_at_exit := live_at_exit_before;
-      i.live <- before_body;
+      Mach.set_live i before_body;
       before_body
   | Iexit nfail ->
       let this_live = find_live_at_exit nfail in
-      i.live <- this_live ;
+      Mach.set_live i this_live ;
       this_live
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
@@ -142,10 +142,10 @@ let rec live i finally =
       live_at_raise := Reg.Set.remove Proc.loc_exn_bucket before_handler;
       let before_body = live body at_join in
       live_at_raise := saved_live_at_raise;
-      i.live <- before_body;
+      Mach.set_live i before_body;
       before_body
   | Iraise _ ->
-      i.live <- !live_at_raise;
+      Mach.set_live i !live_at_raise;
       Reg.add_set_array !live_at_raise arg
 
 let reset () =

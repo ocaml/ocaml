@@ -114,7 +114,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
 
 (* A-list recording what is destroyed at if-then-else points. *)
 
-let destroyed_at_fork = ref ([] : (instruction * Reg.Set.t) list)
+let destroyed_at_fork = ref (Instruction.Map.empty: Reg.Set.t Instruction.Map.t)
 
 (* First pass: insert reload instructions based on an approximation of
    what is destroyed at pressure points. *)
@@ -175,7 +175,7 @@ let rec reload i before =
       let new_i =
         instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
         i.arg i.res new_next in
-      destroyed_at_fork := (new_i, at_fork) :: !destroyed_at_fork;
+      destroyed_at_fork := Instruction.Map.add new_i at_fork !destroyed_at_fork;
       (add_reloads (Reg.inter_set_array before i.arg) new_i,
        finally)
   | Iswitch(index, cases) ->
@@ -204,11 +204,13 @@ let rec reload i before =
       let previous_reload_at_exit = !reload_at_exit in
       reload_at_exit := new_sets @ !reload_at_exit ;
       let (new_body, after_body) = reload body before in
+      let date_start = !current_date in
       let rec fixpoint () =
         let at_exits = List.map (fun (nfail, set) -> (nfail, !set)) new_sets in
         let res =
           List.map2 (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
+              current_date := date_start;
               reload handler at_exit) handlers at_exits in
         match rec_flag with
         | Cmm.Nonrecursive ->
@@ -325,7 +327,7 @@ let rec spill i finally =
                      i.arg i.res new_next,
          Reg.Set.union before_ifso before_ifnot)
       else begin
-        let destroyed = List.assq i !destroyed_at_fork in
+        let destroyed = Instruction.Map.find i !destroyed_at_fork in
         let spill_ifso_branch =
           Reg.Set.diff (Reg.Set.diff before_ifso before_ifnot) destroyed
         and spill_ifnot_branch =
@@ -414,7 +416,7 @@ let reset () =
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
   current_date := 0;
-  destroyed_at_fork := []
+  destroyed_at_fork := Instruction.Map.empty
 
 let fundecl f =
   reset ();
@@ -425,7 +427,7 @@ let fundecl f =
     add_spills (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
-  destroyed_at_fork := [];
+  destroyed_at_fork := Instruction.Map.empty;
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;
