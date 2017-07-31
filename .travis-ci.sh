@@ -45,15 +45,12 @@ BuildAndTest () {
   i386)
   cat<<EOF
 ------------------------------------------------------------------------
-This test builds the OCaml compiler distribution with your pull request,
-runs its testsuite, and then tries to install some important OCaml software
-(currently camlp4) on top of it.
+This test builds the OCaml compiler distribution with your pull request
+and runs its testsuite.
 
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
-request can be merged. The later installation attempts try to run
-bleeding-edge software, and failures can sometimes be out of your
-control.
+request can be merged.
 ------------------------------------------------------------------------
 EOF
     mkdir -p $PREFIX
@@ -70,38 +67,6 @@ EOF
     $MAKE check_all_arches
     $MAKE world.opt
     $MAKE manual-pregen
-    mkdir external-packages
-    cd external-packages
-    git clone git://github.com/ocaml/ocamlbuild
-    mkdir ocamlbuild-install
-    (cd ocamlbuild &&
-        $MAKE -f configure.make Makefile.config src/ocamlbuild_config.ml \
-          OCAMLBUILD_PREFIX=$PREFIX \
-          OCAMLBUILD_BINDIR=$PREFIX/bin \
-          OCAMLBUILD_LIBDIR=$PREFIX/lib \
-          OCAML_NATIVE=true \
-          OCAML_NATIVE_TOOLS=true &&
-        $MAKE all &&
-        $MAKE install)
-
-    # camlp4 is temporarily disabled as GPR#1118 changed the parsetree
-    if false
-    then
-    git clone git://github.com/ocaml/camlp4
-    (cd camlp4 &&
-     ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
-       --pkgdir=$PREFIX/lib/ocaml && \
-      $MAKE && $MAKE install)
-    fi
-
-    # git clone git://github.com/ocaml/opam
-    # (cd opam && ./configure --prefix $PREFIX &&\
-    #   $MAKE lib-ext && $MAKE && $MAKE install)
-    # git config --global user.email "some@name.com"
-    # git config --global user.name "Some Name"
-    # opam init -y -a git://github.com/ocaml/opam-repository
-    # opam install -y oasis
-    # opam pin add -y utop git://github.com/diml/utop
     ;;
   *)
     echo unknown arch
