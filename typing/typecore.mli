@@ -135,7 +135,8 @@ val report_error: Env.t -> formatter -> error -> unit
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 (* Forward declaration, to be filled in by Typemod.type_open *)
 val type_open:
-    (override_flag -> Env.t -> Location.t -> Longident.t loc -> Path.t * Env.t)
+  (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
+   Longident.t loc -> Path.t * Env.t)
     ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:

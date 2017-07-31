@@ -260,7 +260,7 @@ let call_linker_shared file_list output_name =
   then raise(Error Linking_error)
 
 let link_shared ppf objfiles output_name =
-  Timings.time_call output_name (fun () ->
+  Profile.record_call output_name (fun () ->
     let units_tolink = List.fold_right scan_file objfiles [] in
     List.iter
       (fun (info, file_name, crc) -> check_consistency file_name info crc)
@@ -315,7 +315,7 @@ let call_linker file_list startup_file output_name =
 (* Main entry point *)
 
 let link ppf objfiles output_name =
-  Timings.time_call output_name (fun () ->
+  Profile.record_call output_name (fun () ->
     let stdlib =
       if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
     let stdexit =

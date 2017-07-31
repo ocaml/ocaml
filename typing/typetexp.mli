@@ -56,7 +56,7 @@ type error =
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of Longident.t
-  | Repeated_method_label of string
+  | Method_mismatch of string * type_expr * type_expr
   | Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
@@ -69,6 +69,8 @@ type error =
   | Access_functor_as_structure of Longident.t
   | Apply_structure_as_functor of Longident.t
   | Cannot_scrape_alias of Longident.t * Path.t
+  | Opened_object of Path.t option
+  | Not_an_object of type_expr
 
 exception Error of Location.t * Env.t * error
 

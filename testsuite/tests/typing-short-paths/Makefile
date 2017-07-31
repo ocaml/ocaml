@@ -17,3 +17,7 @@ BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.toplevel
 include $(BASEDIR)/makefiles/Makefile.common
 TOPFLAGS = -short-paths
+
+default: gpr1223_foo.cmi gpr1223_bar.cmi
+
+gpr1223_bar.cmi: gpr1223_foo.cmi

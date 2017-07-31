@@ -54,6 +54,7 @@ type mapper = {
   open_description: mapper -> T.open_description -> open_description;
   pat: mapper -> T.pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
+  object_field: mapper -> T.object_field -> object_field;
   signature: mapper -> T.signature -> signature;
   signature_item: mapper -> T.signature_item -> signature_item;
   structure: mapper -> T.structure -> structure;
@@ -634,6 +635,9 @@ let class_expr sub cexpr =
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
         Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
 
+    | Tcl_open (ovf, _p, lid, _env, e) ->
+        Pcl_open (ovf, lid, sub.class_expr sub e)
+
     | Tcl_ident _ -> assert false
     | Tcl_constraint (_, None, _, _, _) -> assert false
   in
@@ -648,6 +652,8 @@ let class_type sub ct =
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
     | Tcty_arrow (label, ct, cl) ->
         Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
+    | Tcty_open (ovf, _p, lid, _env, e) ->
+        Pcty_open (ovf, lid, sub.class_type sub e)
   in
   Cty.mk ~loc ~attrs desc
 
@@ -686,8 +692,7 @@ let core_type sub ct =
           List.map (sub.typ sub) list)
     | Ttyp_object (list, o) ->
         Ptyp_object
-          (List.map (fun (s, a, t) ->
-               (mkloc s loc, a, sub.typ sub t)) list, o)
+          (List.map (sub.object_field sub) list, o)
     | Ttyp_class (_path, lid, list) ->
         Ptyp_class (map_loc sub lid, List.map (sub.typ sub) list)
     | Ttyp_alias (ct, s) ->
@@ -717,6 +722,12 @@ let row_field sub rf =
     Ttag (label, attrs, bool, list) ->
       Rtag (label, sub.attributes sub attrs, bool, List.map (sub.typ sub) list)
   | Tinherit ct -> Rinherit (sub.typ sub ct)
+
+let object_field sub ofield =
+  match ofield with
+    OTtag (label, attrs, ct) ->
+      Otag (label, sub.attributes sub attrs, sub.typ sub ct)
+  | OTinherit ct -> Oinherit (sub.typ sub ct)
 
 and is_self_pat = function
   | { pat_desc = Tpat_alias(_pat, id, _) } ->
@@ -804,6 +815,7 @@ let default_mapper =
     case = case;
     location = location;
     row_field = row_field ;
+    object_field = object_field ;
   }
 
 let untype_structure ?(mapper=default_mapper) structure =

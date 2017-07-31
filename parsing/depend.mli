@@ -26,6 +26,9 @@ val weaken_map : StringSet.t -> map_tree -> map_tree
 
 val free_structure_names : StringSet.t ref
 
+(* dependencies found by preprocessing tools (plugins) *)
+val pp_deps : string list ref
+
 val open_module : bound_map -> Longident.t -> bound_map
 
 val add_use_file : bound_map -> Parsetree.toplevel_phrase list -> unit

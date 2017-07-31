@@ -26,6 +26,7 @@
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
+#include "caml/osdeps.h"
 #include "caml/startup_aux.h"
 
 
@@ -79,10 +80,10 @@ static void scanmult (char *opt, uintnat *var)
 
 void caml_parse_ocamlrunparam(void)
 {
-  char *opt = getenv ("OCAMLRUNPARAM");
+  char *opt = caml_secure_getenv ("OCAMLRUNPARAM");
   uintnat p;
 
-  if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
+  if (opt == NULL) opt = caml_secure_getenv ("CAMLRUNPARAM");
 
   if (opt != NULL){
     while (*opt != '\0'){
