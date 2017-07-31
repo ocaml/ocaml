@@ -1641,29 +1641,31 @@ let rec transl env e =
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
-      let block_size =
-        fundecls_size fundecls + List.length clos_vars in
       let rec transl_fundecls pos = function
           [] ->
             List.map (transl env) clos_vars
         | f :: rem ->
             Queue.add f functions;
-            let header =
-              if pos = 0
-              then alloc_closure_header block_size f.dbg
-              else alloc_infix_header pos f.dbg in
-            if f.arity = 1 || f.arity = 0 then
-              header ::
-              Cconst_symbol f.label ::
-              int_const f.arity ::
-              transl_fundecls (pos + 3) rem
-            else
-              header ::
-              Cconst_symbol(curry_function f.arity) ::
-              int_const f.arity ::
-              Cconst_symbol f.label ::
-              transl_fundecls (pos + 4) rem in
-      Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
+            let without_header =
+              if f.arity = 1 || f.arity = 0 then
+                Cconst_symbol f.label ::
+                int_const f.arity ::
+                transl_fundecls (pos + 3) rem
+              else
+                Cconst_symbol(curry_function f.arity) ::
+                int_const f.arity ::
+                Cconst_symbol f.label ::
+                transl_fundecls (pos + 4) rem
+            in
+            if pos = 0 then without_header
+            else (alloc_infix_header pos f.dbg) :: without_header
+      in
+      let dbg =
+        match fundecls with
+        | [] -> Debuginfo.none
+        | fundecl::_ -> fundecl.dbg
+      in
+      make_alloc dbg Obj.closure_tag (transl_fundecls 0 fundecls)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
