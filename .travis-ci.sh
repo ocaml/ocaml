@@ -47,7 +47,7 @@ BuildAndTest () {
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request,
 runs its testsuite, and then tries to install some important OCaml software
-(currently camlp4) on top of it.
+(currently ocamlbuild) on top of it.
 
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
@@ -83,16 +83,6 @@ EOF
           OCAML_NATIVE_TOOLS=true &&
         $MAKE all &&
         $MAKE install)
-
-    # camlp4 is temporarily disabled as GPR#1118 changed the parsetree
-    if false
-    then
-    git clone git://github.com/ocaml/camlp4
-    (cd camlp4 &&
-     ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
-       --pkgdir=$PREFIX/lib/ocaml && \
-      $MAKE && $MAKE install)
-    fi
 
     # git clone git://github.com/ocaml/opam
     # (cd opam && ./configure --prefix $PREFIX &&\
