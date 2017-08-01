@@ -60,7 +60,7 @@ Working version
   Mark Shinwell and Leo White)
 
 - GPR#1192: [Cconst_symbol] expressions now have int register type.
-  (Mark Shinwell)
+  (Mark Shinwell, review by Pierre Chambart and Xavier Leroy)
 
 ### Standard library:
 - GPR#1271: Don't generate Ialloc instructions for closures that exceed
