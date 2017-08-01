@@ -82,7 +82,7 @@ struct oldify_state {
 
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
-  void* mem = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag, 0 /* not promotion */);
+  void* mem = caml_shared_try_alloc_for_promotion(Caml_state->shared_heap, wosize, tag);
   Caml_state->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");
@@ -169,7 +169,7 @@ static void oldify_one (void* st_v, value v, value *p)
           value curr = Op_val(v)[i];
           /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
              However, it's a useful debugging aid for now */
-          Assert(!Is_debug_tag(curr));
+          //Assert(!Is_debug_tag(curr));
           Op_val (result)[i] = curr;
         }
         Hd_val (v) = 0;            /* Set forward flag */

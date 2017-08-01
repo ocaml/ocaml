@@ -4,6 +4,7 @@
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
+#include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/domain.h"
 #include "caml/addrmap.h"
@@ -19,30 +20,33 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
 
   Assert (Is_block(obj));
 
-  if (Is_block(new_val)) {
-    // caml_gc_log ("write_barrier: obj=%p field=%d val=%p",
-    //             (value*)obj, field, (value*)val);
-    if (!Is_young(obj)) {
-      if (Is_young(new_val)) {
-        /* If old_val is young, then `Op_val(obj)+field` is already in
-         * major_ref. We can safely skip adding it again. */
-        if (Is_block(old_val) && Is_young(old_val))
-          return;
-        /* Add to remembered set */
-        Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
-      } else {
-        caml_darken(0, new_val, 0);
-      }
-    } else if (Is_young(new_val) && new_val < obj) {
-      /* Both obj and new_val are young and new_val is more recent than obj.
-       * If old_val is also young, and younger than obj, then it must be the
-       * case that `Op_val(obj)+field` is already in minor_ref. We can safely
-       * skip adding it again. */
-      if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
-        return;
+  if (!Is_young(obj)) {
 
-      Ref_table_add(&domain_state->remembered_set->minor_ref, Op_val(obj) + field);
+    caml_darken(0, old_val, 0);
+    if (domain_state->gc_phase == Phase_idle)
+      caml_darken(0, new_val, 0);
+
+    if (Is_block(new_val) && Is_young(new_val)) {
+
+      /* If old_val is young, then `Op_val(obj)+field` is already in
+       * major_ref. We can safely skip adding it again. */
+       if (Is_block(old_val) && Is_young(old_val))
+         return;
+
+      /* Add to remembered set */
+      Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
     }
+  } else if (Is_young(new_val) && new_val < obj) {
+
+    /* Both obj and new_val are young and new_val is more recent than obj.
+      * If old_val is also young, and younger than obj, then it must be the
+      * case that `Op_val(obj)+field` is already in minor_ref. We can safely
+      * skip adding it again. */
+    if (Is_block(old_val) && Is_young(old_val) && old_val < obj)
+      return;
+
+    /* Add to remembered set */
+    Ref_table_add(&domain_state->remembered_set->minor_ref, Op_val(obj) + field);
   }
 }
 
@@ -395,5 +399,28 @@ int is_foreign(value v) {
 
 int is_young(value v) {
   return Is_young(v);
+}
+
+void print_color(value v) {
+  int colour;
+
+  if(Is_block(v) && !Is_minor(v)) {
+    colour = get_status (v);
+    switch(colour) {
+      case 0:
+        fprintf (stderr, "Marked\n");
+        break;
+      case 1:
+        fprintf (stderr, "Unmarked\n");
+        break;
+      case 2:
+        fprintf (stderr, "Garbage\n");
+        break;
+      default:
+        fprintf (stderr, "Not markable\n");
+    }
+  } else {
+    fprintf (stderr, "No color\n");
+  }
 }
 #endif

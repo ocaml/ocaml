@@ -1,6 +1,8 @@
 #ifndef CAML_MAJOR_GC
 #define CAML_MAJOR_GC
 
+typedef enum { Phase_idle, Phase_marking } gc_phase_t;
+
 intnat caml_major_collection_slice (intnat);
 void caml_finish_marking (void);
 void caml_init_major_gc(void);
