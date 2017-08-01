@@ -556,7 +556,7 @@ method extract_core ~end_instr =
   let rec extract res i =
     if i == dummy_instr
     then res
-    else extract {i with next = res} i.next in
+    else extract (Mach.with_ i ~next:res) i.next in
   extract end_instr instr_seq
 
 method extract =
