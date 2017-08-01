@@ -32,6 +32,9 @@ Working version
   (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
   Bar, review by Nicolas Ojeda Bar and Alain Frisch)
 
+- GPR#850: Optimize away some physical equality
+  (Pierre Chambart, review by Mark Shinwell and Leo White)
+
 - MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
   and shared libraries through -output-obj, generate dylibs instead of
   bundles.
