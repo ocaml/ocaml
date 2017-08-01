@@ -13,6 +13,7 @@ struct caml_heap_state* caml_init_shared_heap();
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
 value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag, int is_pinned);
+value* caml_shared_try_alloc_for_promotion(struct caml_heap_state*, mlsize_t wosize, tag_t tag);
 
 void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 
@@ -40,7 +41,7 @@ void caml_cycle_heap(struct caml_heap_state*);
 /* Heap invariant verification (for debugging) */
 
 /* caml_verify_begin must only be called while all domains are paused */
-struct heap_verify_state* caml_verify_begin(); 
+struct heap_verify_state* caml_verify_begin();
 void caml_verify_root(void*, value, value*);
 void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
 
@@ -48,6 +49,8 @@ void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
 /* [is_garbage(v)] returns true if [v] is a garbage value */
 int is_garbage (value);
 
+/* Return 0 => Marked, 1 => Unmarked, 2 => Garbage, 3 => Not_markable */
+int get_status (value);
 #endif
 
 #endif /* CAML_SHARED_HEAP_H */

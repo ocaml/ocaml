@@ -38,6 +38,18 @@ int is_garbage(value v) {
   return Has_status_hd(Hd_val(v), global.GARBAGE);
 }
 
+int get_status(value v) {
+  header_t hd = Hd_val(v);
+  uintnat status = hd & (3 << 8);
+  if (status == global.MARKED)
+    return 0;
+  if (status == global.UNMARKED)
+    return 1;
+  if (status == global.GARBAGE)
+    return 2;
+  return 3;
+}
+
 typedef struct pool {
   struct pool* next;
   value* next_obj;
@@ -294,7 +306,9 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
-value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag_t tag, int pinned) {
+static value* shared_try_alloc_aux(struct caml_heap_state* local, mlsize_t wosize,
+                                   tag_t tag, uintnat colour)
+{
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
   Assert (wosize > 0);
@@ -312,7 +326,7 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
     p = large_allocate(local, Bsize_wsize(whsize));
     if (!p) return 0;
   }
-  Hd_hp (p) = Make_header(wosize, tag, pinned ? NOT_MARKABLE : global.UNMARKED);
+  Hd_hp (p) = Make_header(wosize, tag, colour);
 #ifdef DEBUG
   {
     int i;
@@ -322,6 +336,23 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
   }
 #endif
   return p;
+}
+
+value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
+                             tag_t tag, int pinned)
+{
+  uintnat colour;
+
+  colour = pinned ? NOT_MARKABLE : global.MARKED;
+  return shared_try_alloc_aux(local, wosize, tag, colour);
+}
+
+value* caml_shared_try_alloc_for_promotion(struct caml_heap_state* local,
+                                           mlsize_t wosize, tag_t tag)
+{
+  uintnat colour =
+    Caml_state->gc_phase == Phase_idle ? global.UNMARKED : global.MARKED;
+  return shared_try_alloc_aux(local, wosize, tag, colour);
 }
 
 struct pool* caml_pool_of_shared_block(value v)
@@ -670,7 +701,7 @@ static void verify_swept (struct caml_heap_state* local) {
   Assert(local->stats.pool_live_blocks == pool_stats.live_blocks);
   Assert(local->stats.pool_frag_words == pool_stats.overhead);
   Assert(local->stats.pool_words -
-         (local->stats.pool_live_words + local->stats.pool_frag_words) 
+         (local->stats.pool_live_words + local->stats.pool_frag_words)
          == pool_stats.free);
   Assert(local->stats.large_words == large_stats.alloced);
   Assert(local->stats.large_blocks == large_stats.live_blocks);
