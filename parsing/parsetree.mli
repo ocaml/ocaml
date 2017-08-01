@@ -93,7 +93,7 @@ and core_type_desc =
            T tconstr
            (T1, ..., Tn) tconstr
          *)
-  | Ptyp_object of (string loc * attributes * core_type) list * closed_flag
+  | Ptyp_object of object_field list * closed_flag
         (* < l1:T1; ...; ln:Tn >     (flag = Closed)
            < l1:T1; ...; ln:Tn; .. > (flag = Open)
          *)
@@ -142,7 +142,7 @@ and package_type = Longident.t loc * (Longident.t loc * core_type) list
        *)
 
 and row_field =
-  | Rtag of label * attributes * bool * core_type list
+  | Rtag of label loc * attributes * bool * core_type list
         (* [`A]                   ( true,  [] )
            [`A of T]              ( false, [T] )
            [`A of T1 & .. & Tn]   ( false, [T1;...Tn] )
@@ -157,6 +157,10 @@ and row_field =
         *)
   | Rinherit of core_type
         (* [ T ] *)
+
+and object_field =
+  | Otag of label loc * attributes * core_type
+  | Oinherit of core_type
 
 (* Patterns *)
 
@@ -310,13 +314,13 @@ and expression_desc =
         (* (E :> T)        (None, T)
            (E : T0 :> T)   (Some T0, T)
          *)
-  | Pexp_send of expression * string loc
+  | Pexp_send of expression * label loc
         (*  E # m *)
   | Pexp_new of Longident.t loc
         (* new M.c *)
-  | Pexp_setinstvar of string loc * expression
+  | Pexp_setinstvar of label loc * expression
         (* x <- 2 *)
-  | Pexp_override of (string loc * expression) list
+  | Pexp_override of (label loc * expression) list
         (* {< x1 = E1; ...; Xn = En >} *)
   | Pexp_letmodule of string loc * module_expr * expression
         (* let module M = ME in E *)
@@ -501,6 +505,8 @@ and class_type_desc =
          *)
   | Pcty_extension of extension
         (* [%id] *)
+  | Pcty_open of override_flag * Longident.t loc * class_type
+        (* let open M in CT *)
 
 and class_signature =
     {
@@ -521,9 +527,9 @@ and class_type_field =
 and class_type_field_desc =
   | Pctf_inherit of class_type
         (* inherit CT *)
-  | Pctf_val of (string loc * mutable_flag * virtual_flag * core_type)
+  | Pctf_val of (label loc * mutable_flag * virtual_flag * core_type)
         (* val x: T *)
-  | Pctf_method  of (string loc * private_flag * virtual_flag * core_type)
+  | Pctf_method  of (label loc * private_flag * virtual_flag * core_type)
         (* method x: T
 
            Note: T can be a Ptyp_poly.
@@ -590,7 +596,10 @@ and class_expr_desc =
   | Pcl_constraint of class_expr * class_type
         (* (CE : CT) *)
   | Pcl_extension of extension
-        (* [%id] *)
+  (* [%id] *)
+  | Pcl_open of override_flag * Longident.t loc * class_expr
+  (* let open M in CE *)
+
 
 and class_structure =
     {
@@ -615,11 +624,11 @@ and class_field_desc =
            inherit! CE
            inherit! CE as x
          *)
-  | Pcf_val of (string loc * mutable_flag * class_field_kind)
+  | Pcf_val of (label loc * mutable_flag * class_field_kind)
         (* val x = E
            val virtual x: T
          *)
-  | Pcf_method of (string loc * private_flag * class_field_kind)
+  | Pcf_method of (label loc * private_flag * class_field_kind)
         (* method x = E            (E can be a Pexp_poly)
            method virtual x: T     (T can be a Ptyp_poly)
          *)

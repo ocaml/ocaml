@@ -14,6 +14,7 @@
 Alain Frisch <alain@frisch.fr> alainfrisch <alain@frisch.fr>
 <damien.doligez@inria.fr> <damien.doligez-inria.fr>
 <damien.doligez@inria.fr> <damien.doligez@gmail.com>
+Luc Maranget <luc.maranget@inria.fr>
 <luc.maranget@inria.fr> <Luc.Maranget@inria.fr>
 <luc.maranget@inria.fr> <maranget@pl-59086.rocq.inria.fr>
 <pierre.chambart@ocamlpro.com> <chambart@users.noreply.github.com>
@@ -25,6 +26,7 @@ Damien Doligez <damien.doligez@inria.fr> Some Name <some@name.com>
 Damien Doligez <damien.doligez@inria.fr> doligez <damien.doligez@inria.fr>
 Mohamed Iguernelala <mohamed.iguernelala@gmail.com>
 Jérémie Dimino <jdimino@janestreet.com>
+Jeremy Yallop <yallop@gmail.com> yallop <yallop@gmail.com>
 
 # The aliases below correspond to preference expressed by
 # contributors on the name under which they credited, for example
@@ -60,6 +62,7 @@ Florian Angeletti <octachron>
 Kenji Tokudome <pocarist>
 Philippe Veber <pveber>
 Valentin Gatien-Baron <sliquister>
+Valentin Gatien-Baron <valentin.gatienbaron@gmail.com>
 Stephen Dolan <stedolan>
 Junsong Li <lijunsong@mantis>
 Junsong Li <ljs.darkfish@gmail.com>
@@ -73,13 +76,21 @@ Thomas Leonard <talex@mantis>
 Thomas Leonard <talex5@github>
 Adrien Nader <adrien-n@github>
 Sébastien Hinderer <shindere@github>
+Sébastien Hinderer <Sebastien.Hinderer@inria.fr>
 Gabriel Scherer <gasche@github>
 Immanuel Litzroth <sdev@mantis>
 Jacques Le Normand <rathereasy@github>
 Konstantin Romanov <const-rs@github>
+Arseniy Alekseyev <aalekseyev@janestreet.com>
+Dwight Guth <dwight.guth@runtimeverification.com>
+Dwight Guth <dwightguth@github>
+Andreas Hauptmann <andreashauptmann@t-online.de> fdopen <andreashauptmann@t-online.de>
+Andreas Hauptmann <andreashauptmann@t-online.de> <fdopen@users.noreply.github.com>
+Hendrik Tews <hendrik@askra.de>
+Hugo Heuzard <hugo.heuzard@gmail.com>
 
 # These contributors prefer to be referred to pseudonymously
-<whitequark@mantis> <whitequark@mantis>
+whitequark <whitequark@whitequark.org>
 <william@mantis> <william@mantis>
 tkob <ether4@gmail.com> tkob <ether4@gmail.com>
 ygrek <ygrek@autistici.org> ygrek <ygrek@autistici.org>

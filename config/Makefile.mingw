@@ -97,6 +97,7 @@ UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_SPACETIME=false
+WITH_SPACETIME_CALL_COUNTS=false
 WITH_PROFINFO=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
@@ -108,9 +109,12 @@ AFL_INSTRUMENT=false
 
 ### Which C compiler to use for the bytecode interpreter.
 CC = $(TOOLPREF)gcc
-CFLAGS = -O -mms-bitfields -Wall -Wno-unused
+CFLAGS = -O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
+# -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
+# and only works on GCC 4.2 and later.
 CPPFLAGS = -DCAML_NAME_SPACE
 OCAMLC_CFLAGS = -O -mms-bitfields
+
 BYTECCDBGCOMPOPTS=-g
 
 LDFLAGS=

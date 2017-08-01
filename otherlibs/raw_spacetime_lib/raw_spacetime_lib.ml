@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015--2016 Jane Street Group LLC                           *)
+(*   Copyright 2015--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -101,22 +101,31 @@ module Shape_table = struct
   let _ = Indirect_call 0L
   let _ = Allocation_point 0L
 
-  let part_of_shape_size = function
-    | Direct_call _
+  type raw = (Int64.t * (part_of_shape list)) list
+
+  type t = {
+    shapes : part_of_shape list Int64_map.t;
+    call_counts : bool;
+  }
+
+  let part_of_shape_size t = function
+    | Direct_call _ -> if t.call_counts then 2 else 1
     | Indirect_call _ -> 1
     | Allocation_point _ -> 3
 
-  type raw = (Int64.t * (part_of_shape list)) list
-
-  type t = part_of_shape list Int64_map.t
-
-  let demarshal chn : t =
+  let demarshal chn ~call_counts : t =
     let raw : raw = Marshal.from_channel chn in
-    List.fold_left (fun map (key, data) -> Int64_map.add key data map)
-      Int64_map.empty
-      raw
+    let shapes =
+      List.fold_left (fun map (key, data) -> Int64_map.add key data map)
+        Int64_map.empty
+        raw
+    in
+    { shapes;
+      call_counts;
+    }
 
-  let find_exn = Int64_map.find
+  let find_exn func_id t = Int64_map.find func_id t.shapes
+  let call_counts t = t.call_counts
 end
 
 module Annotation = struct
@@ -132,6 +141,7 @@ module Trace = struct
   type uninstrumented_node
 
   type t = node option
+  type trace = t
 
   (* This function unmarshals into malloc blocks, which mean that we
      obtain a straightforward means of writing [compare] on [node]s. *)
@@ -209,6 +219,16 @@ module Trace = struct
 
       let callee_node (type target) (t : target t) : target =
         callee_node t.node t.offset
+
+      external call_count : ocaml_node -> int -> int
+        = "caml_spacetime_only_works_for_native_code"
+          "caml_spacetime_ocaml_direct_call_point_call_count"
+
+      let call_count t =
+        if Shape_table.call_counts t.shape_table then
+          Some (call_count t.node t.offset)
+        else
+          None
     end
 
     module Indirect_call_point = struct
@@ -222,39 +242,59 @@ module Trace = struct
       module Callee = struct
         (* CR-soon mshinwell: we should think about the names again.  This is
            a "c_node" but it isn't foreign. *)
-        type t = foreign_node
+        type t = {
+          node : foreign_node;
+          call_counts : bool;
+        }
 
-        let is_null = foreign_node_is_null
+        let is_null t = foreign_node_is_null t.node
 
         (* CR-soon mshinwell: maybe rename ...c_node_call_site -> c_node_pc,
            since it isn't a call site in this case. *)
-        external callee : t -> Function_entry_point.t
+        external callee : foreign_node -> Function_entry_point.t
           = "caml_spacetime_only_works_for_native_code"
             "caml_spacetime_c_node_call_site"
 
+        let callee t = callee t.node
+
         (* This can return a node satisfying "is_null" in the case of an
            uninitialised tail call point.  See the comment in the C code. *)
-        external callee_node : t -> node
+        external callee_node : foreign_node -> node
           = "caml_spacetime_only_works_for_native_code"
             "caml_spacetime_c_node_callee_node" "noalloc"
 
-        external next : t -> foreign_node
+        let callee_node t = callee_node t.node
+
+        external call_count : foreign_node -> int
+          = "caml_spacetime_only_works_for_native_code"
+            "caml_spacetime_c_node_call_count"
+
+        let call_count t =
+          if t.call_counts then Some (call_count t.node)
+          else None
+
+        external next : foreign_node -> foreign_node
           = "caml_spacetime_only_works_for_native_code"
             "caml_spacetime_c_node_next" "noalloc"
 
         let next t =
-          let next = next t in
-          if foreign_node_is_null next then None
+          let next = { t with node = next t.node; } in
+          if foreign_node_is_null next.node then None
           else Some next
       end
 
-      external callees : ocaml_node -> int -> Callee.t
+      external callees : ocaml_node -> int -> foreign_node
         = "caml_spacetime_only_works_for_native_code"
           "caml_spacetime_ocaml_indirect_call_point_callees"
           "noalloc"
 
       let callees t =
-        let callees = callees t.node t.offset in
+        let callees =
+          { Callee.
+            node = callees t.node t.offset;
+            call_counts = Shape_table.call_counts t.shape_table;
+          }
+        in
         if Callee.is_null callees then None
         else Some callees
     end
@@ -317,7 +357,9 @@ module Trace = struct
         match t.remaining_layout with
         | [] -> None
         | part_of_shape::remaining_layout ->
-          let size = Shape_table.part_of_shape_size t.part_of_shape in
+          let size =
+            Shape_table.part_of_shape_size t.shape_table t.part_of_shape
+          in
           let offset = t.offset + size in
           assert (offset < Obj.size (Obj.repr t.node));
           let t =
@@ -351,7 +393,8 @@ module Trace = struct
           "caml_spacetime_compare_node" "noalloc"
 
       let fields t ~shape_table =
-        match Shape_table.find_exn (function_identifier t) shape_table with
+        let id = function_identifier t in
+        match Shape_table.find_exn id shape_table with
         | exception Not_found -> None
         | [] -> None
         | part_of_shape::remaining_layout ->
@@ -555,6 +598,7 @@ module Heap_snapshot = struct
       finaliser_traces_by_thread : Trace.t array;
       snapshots : heap_snapshot array;
       events : Event.t list;
+      call_counts : bool;
     }
 
     let pathname_suffix_trace = "trace"
@@ -586,17 +630,26 @@ module Heap_snapshot = struct
       let chn = open_in path in
       let magic_number : int = Marshal.from_channel chn in
       let magic_number_base = magic_number land 0xffff_ffff in
-      let version_number = magic_number lsr 32 in
+      let version_number = (magic_number lsr 32) land 0xffff in
+      let features = (magic_number lsr 48) land 0xffff in
       if magic_number_base <> 0xace00ace then begin
         failwith "Raw_spacetime_lib: not a Spacetime profiling file"
       end else begin
         match version_number with
         | 0 ->
+          let call_counts =
+            match features with
+            | 0 -> false
+            | 1 -> true
+            | _ ->
+              failwith "Raw_spacetime_lib: unknown Spacetime profiling file \
+                feature set"
+          in
           let snapshots, events = read_snapshots_and_events chn [] [] in
           let num_snapshots = Array.length snapshots in
           let time_of_writer_close : float = Marshal.from_channel chn in
           let frame_table = Frame_table.demarshal chn in
-          let shape_table = Shape_table.demarshal chn in
+          let shape_table = Shape_table.demarshal chn ~call_counts in
           let num_threads : int = Marshal.from_channel chn in
           let traces_by_thread = Array.init num_threads (fun _ -> None) in
           let finaliser_traces_by_thread =
@@ -617,6 +670,7 @@ module Heap_snapshot = struct
             finaliser_traces_by_thread;
             snapshots;
             events;
+            call_counts;
           }
         | _ ->
           failwith "Raw_spacetime_lib: unknown Spacetime profiling file \
@@ -640,5 +694,6 @@ module Heap_snapshot = struct
     let shape_table t = t.shape_table
     let time_of_writer_close t = t.time_of_writer_close
     let events t = t.events
+    let has_call_counts t = t.call_counts
   end
 end

@@ -354,7 +354,7 @@ let rec transl_module cc rootpath mexp =
       match mexp.mod_desc with
         Tmod_ident (path,_) ->
           apply_coercion loc Strict cc
-            (transl_path ~loc mexp.mod_env path)
+            (transl_module_path ~loc mexp.mod_env path)
       | Tmod_structure str ->
           fst (transl_struct loc [] cc rootpath str)
       | Tmod_functor(param, _, _, body) ->

@@ -111,9 +111,6 @@ with the comments in implementation files.
 \item["-keep-code"]
 Always keep the source code for values, methods and instance variables,
 when available.
-The source code is always kept when a ".ml"
-file is given, but is by default discarded when a ".mli" is given.
-This option keeps the source code in all cases.
 
 \item["-load" \var{file}]
 Load information from \var{file}, which has been produced by
@@ -1030,12 +1027,13 @@ let _ = Odoc_args.extend_html_generator (module Generator : Odoc_gen.Html_functo
 To know which methods to override and/or which methods are available,
 have a look at the different base implementations, depending on the
 kind of generator you are extending~:
+\newcommand\ocamldocsrc[2]{\href{https://github.com/ocaml/ocaml/blob/{\ocamlversion}/ocamldoc/odoc_#1.ml}{#2}}
 \begin{itemize}
-\item for HTML~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_html.ml?view=markup}{"odoc_html.ml"},
-\item for \LaTeX~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_latex.ml?view=markup}{"odoc_latex.ml"},
-\item for TeXinfo~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_texi.ml?view=markup}{"odoc_texi.ml"},
-\item for man pages~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_man.ml?view=markup}{"odoc_man.ml"},
-\item for graphviz (dot)~: \href{http://caml.inria.fr/cgi-bin/viewvc.cgi/ocaml/version/\ocamlversion/ocamldoc/odoc_dot.ml?view=markup}{"odoc_dot.ml"}.
+\item for HTML~: \ocamldocsrc{html}{"odoc_html.ml"},
+\item for \LaTeX~: \ocamldocsrc{latex}{"odoc_latex.ml"},
+\item for TeXinfo~: \ocamldocsrc{texi}{"odoc_texi.ml"},
+\item for man pages~: \ocamldocsrc{man}{"odoc_man.ml"},
+\item for graphviz (dot)~: \ocamldocsrc{dot}{"odoc_dot.ml"}.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%

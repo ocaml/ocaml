@@ -144,7 +144,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dflambda = set dump_flambda
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
 
   let _args = wrap_expand Arg.read_arg

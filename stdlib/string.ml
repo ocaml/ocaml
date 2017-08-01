@@ -50,7 +50,7 @@ let fill =
 let blit =
   B.blit_string
 
-let ensure_ge x y = if x >= y then x else invalid_arg "String.concat"
+let ensure_ge (x:int) y = if x >= y then x else invalid_arg "String.concat"
 
 let rec sum_lengths acc seplen = function
   | [] -> acc

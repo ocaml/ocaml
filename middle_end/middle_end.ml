@@ -35,7 +35,7 @@ let middle_end ppf ~prefixname ~backend
     ~filename
     ~module_ident
     ~module_initializer =
-  Timings.time_call "flambda" (fun () ->
+  Profile.record_call "flambda" (fun () ->
     let pass_number = ref 0 in
     let round_number = ref 0 in
     let check flam =
@@ -55,15 +55,15 @@ let middle_end ppf ~prefixname ~backend
           !round_number Flambda.print_program flam;
         Format.eprintf "\n@?"
       end;
-      let flam = Timings.time ~accumulate:true name pass flam in
+      let flam = Profile.record ~accumulate:true name pass flam in
       if !Clflags.flambda_invariant_checks then begin
-        Timings.time ~accumulate:true "check" check flam
+        Profile.record ~accumulate:true "check" check flam
       end;
       flam
     in
-    Timings.time_call ~accumulate:true "middle_end" (fun () ->
+    Profile.record_call ~accumulate:true "middle_end" (fun () ->
       let flam =
-        Timings.time_call ~accumulate:true "closure_conversion" (fun () ->
+        Profile.record_call ~accumulate:true "closure_conversion" (fun () ->
           module_initializer
           |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
                ~size ~filename)
