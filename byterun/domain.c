@@ -659,13 +659,13 @@ void caml_print_stats () {
 
   total = ds.mutable_loads + ds.immutable_loads;
   fprintf(stderr, "\nLoads:\t\t\t%llu\n", total);
-  fprintf(stderr, "Mutable:\t\t%llu (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
-  fprintf(stderr, "Immutable:\t\t%llu (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
+  fprintf(stderr, "Mutable loads:\t\t%llu (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
+  fprintf(stderr, "Immutable loads:\t%llu (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
 
   total = ds.mutable_stores + ds.immutable_stores;
   fprintf(stderr, "\nStores:\t\t\t%llu\n", total);
-  fprintf(stderr, "Mutable:\t\t%llu (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
-  fprintf(stderr, "Immutable:\t\t%llu (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
+  fprintf(stderr, "Mutable stores:\t\t%llu (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
+  fprintf(stderr, "Immutable stores:\t%llu (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
 
   total = ds.extcall_noalloc + ds.extcall_alloc + ds.extcall_alloc_stackargs;
   fprintf(stderr, "\nExternal calls:\t\t%llu\n", total);

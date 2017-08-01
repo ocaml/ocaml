@@ -24,6 +24,10 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
     //             (value*)obj, field, (value*)val);
     if (!Is_young(obj)) {
       if (Is_young(new_val)) {
+        /* If old_val is young, then `Op_val(obj)+field` is already in
+         * major_ref. We can safely skip adding it again. */
+        if (Is_block(old_val) && Is_young(old_val))
+          return;
         /* Add to remembered set */
         Ref_table_add(&domain_state->remembered_set->major_ref, Op_val(obj) + field);
       } else {
