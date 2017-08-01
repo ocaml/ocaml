@@ -15,38 +15,42 @@
 
 type machtype_component =
   | Val
-  | Addr
   | Int
   | Float
+  | Derived_val
+  | Arbitrary_out_of_heap
 
 type machtype = machtype_component array
 
 let typ_void = ([||] : machtype_component array)
 let typ_val = [|Val|]
-let typ_addr = [|Addr|]
+let typ_derived_val = [|Derived_val|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
+let typ_arbitrary_out_of_heap = [|Arbitrary_out_of_heap|]
 
 let size_component = function
-  | Val | Addr -> Arch.size_addr
+  | Val | Derived_val | Arbitrary_out_of_heap -> Arch.size_addr
   | Int -> Arch.size_int
   | Float -> Arch.size_float
 
 (** [machtype_component]s are partially ordered as follows:
 
-      Addr     Float
+      Derived_val     Float
        ^
        |
-      Val
-       ^
        |
-      Int
+      Val   Arbitrary_out_of_heap
+       ^    ^
+       |   /
+       |  /
+       Int
 
-  In particular, [Addr] must be above [Val], to ensure that if there is
-  a join point between a code path yielding [Addr] and one yielding [Val]
-  then the result is treated as a derived pointer into the heap (i.e. [Addr]).
-  (Such a result may not be live across any call site or a fatal compiler
-  error will result.)
+  In particular, [Derived_val] must be above [Val], to ensure that if there is
+  a join point between a code path yielding [Derived_val] and one yielding [Val]
+  then the result is treated as a derived pointer into the heap
+  (i.e. [Derived_val]).  (Such a result may not be live across any call site
+  or a fatal compiler error will result.)
 *)
 
 let lub_component comp1 comp2 =
@@ -119,6 +123,11 @@ type raise_kind =
 
 type rec_flag = Nonrecursive | Recursive
 
+type symbol_type =
+  | Function
+  | Value
+  | Other
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -127,6 +136,7 @@ type memory_chunk =
   | Thirtytwo_unsigned
   | Thirtytwo_signed
   | Word_int
+  | Word_out_of_heap
   | Word_val
   | Single
   | Double
@@ -143,7 +153,7 @@ and operation =
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi of comparison
-  | Caddv | Cadda
+  | Caddv | Cadda | Caddov
   | Ccmpa of comparison
   | Cnegf | Cabsf
   | Caddf | Csubf | Cmulf | Cdivf
@@ -156,7 +166,7 @@ type expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
-  | Cconst_symbol of string
+  | Cconst_symbol of string * symbol_type
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t

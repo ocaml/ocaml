@@ -52,9 +52,18 @@ let oper_result_type = function
   | Cextcall(_s, ty, _alloc, _) -> ty
   | Cload (c, _) ->
       begin match c with
+      | Byte_unsigned
+      | Byte_signed
+      | Sixteen_unsigned
+      | Sixteen_signed
+      | Thirtytwo_unsigned
+      | Thirtytwo_signed
+      | Word_int -> typ_int
       | Word_val -> typ_val
+      | Word_out_of_heap Value -> typ_out_of_heap_val
+      | Word_out_of_heap Function
+      | Word_out_of_heap Other -> typ_out_of_heap_other
       | Single | Double | Double_u -> typ_float
-      | _ -> typ_int
       end
   | Calloc -> typ_val
   | Cstore (_c, _) -> typ_void
@@ -62,7 +71,8 @@ let oper_result_type = function
     Cand | Cor | Cxor | Clsl | Clsr | Casr |
     Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
   | Caddv -> typ_val
-  | Cadda -> typ_addr
+  | Cadda -> typ_derived_val
+  | Caddov -> typ_out_of_heap_val
   | Cnegf | Cabsf | Caddf | Csubf | Cmulf | Cdivf -> typ_float
   | Cfloatofint -> typ_float
   | Cintoffloat -> typ_int
@@ -640,8 +650,13 @@ method emit_expr (env:environment) exp =
   | Cconst_float n ->
       let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float (Int64.bits_of_float n)) [||] r)
-  | Cconst_symbol n ->
-      let r = self#regs_for typ_int in  (* Subtle: see discussion on GPR#1192 *)
+  | Cconst_symbol (n, typ) ->
+      let typ =
+        match typ with
+        | Function | Other -> typ_arbitrary_out_of_heap
+        | Value -> typ_int
+      in
+      let r = self#regs_for typ in
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
       let r = self#regs_for typ_val in  (* integer as Caml value *)

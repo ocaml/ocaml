@@ -361,11 +361,12 @@ let validate d m p =
 let raise_regular dbg exc =
   Csequence(
     Cop(Cstore (Thirtytwo_signed, Assignment),
-        [(Cconst_symbol "caml_backtrace_pos"); Cconst_int 0], dbg),
+        [(Cconst_symbol "caml_backtrace_pos", Other);
+         Cconst_int 0], dbg),
       Cop(Craise Raise_withtrace,[exc], dbg))
 
 let raise_symbol dbg symb =
-  raise_regular dbg (Cconst_symbol symb)
+  raise_regular dbg (Cconst_symbol (symb, Value))
 
 let rec div_int c1 c2 is_safe dbg =
   match (c1, c2) with
@@ -555,7 +556,7 @@ let field_address ptr n dbg =
   then ptr
   else Cop(Cadda, [ptr; Cconst_int(n * size_addr)], dbg)
 
-let get_field env ptr n dbg =
+let get_field ?(typ = Word_val) env ptr n dbg =
   let mut =
     match env.environment_param with
     | None -> Mutable
@@ -567,7 +568,10 @@ let get_field env ptr n dbg =
         else Mutable
       | _ -> Mutable
   in
-  Cop(Cload (Word_val, mut), [field_address ptr n dbg], dbg)
+  Cop(Cload (typ, mut), [field_address ptr n dbg], dbg)
+
+let get_code_pointer env ptr n dbg =
+  get_field ~typ:(Word_out_of_heap Function) env ptr n dbg
 
 let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
@@ -626,14 +630,14 @@ let lsl_const c n dbg =
    with the given element [log2size] log2 element size. [ofs] is given as a
    tagged int expression.
    The optional ?typ argument is the C-- type of the result.
-   By default, it is Addr, meaning we are constructing a derived pointer
+   By default, it is Derived_val, meaning we are constructing a derived pointer
    into the heap.  If we know the pointer is outside the heap
    (this is the case for bigarray indexing), we give type Int instead. *)
 
 let array_indexing ?typ log2size ptr ofs dbg =
   let add =
     match typ with
-    | None | Some Addr -> Cadda
+    | None | Some Derived_val -> Cadda
     | Some Int -> Caddi
     | _ -> assert false in
   match ofs with
@@ -717,7 +721,7 @@ let call_cached_method obj tag cache pos args dbg =
   let cache = array_indexing log2_size_addr cache pos dbg in
   Compilenv.need_send_fun arity;
   Cop(Capply typ_val,
-      Cconst_symbol("caml_send" ^ string_of_int arity) ::
+      Cconst_symbol("caml_send" ^ string_of_int arity, Function) ::
         obj :: tag :: cache :: args,
       dbg)
 
@@ -849,11 +853,11 @@ let transl_constant = function
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | Uconst_ref (label, _) ->
-      Cconst_symbol label
+      Cconst_symbol (label, Value)
 
 let transl_structured_constant cst =
   let label = Compilenv.new_structured_constant cst ~shared:true in
-  Cconst_symbol label
+  Cconst_symbol (label, Value)
 
 (* Translate constant closures *)
 
@@ -903,7 +907,7 @@ let box_int dbg bi arg =
         then Cop(Clsl, [arg; Cconst_int 32], dbg)
         else arg in
       Cop(Calloc, [alloc_header_boxed_int bi dbg;
-                   Cconst_symbol(operations_boxed_int bi);
+                   Cconst_symbol(operations_boxed_int bi, Other);
                    arg'], dbg)
 
 let split_int64_for_32bit_target arg dbg =
@@ -1385,7 +1389,7 @@ let make_switch arg cases actions dbg =
     add_cmm_constant (Const_table ((table, Not_global),
         Array.to_list (Array.map (fun act ->
           const_actions.(act)) cases)));
-    addr_array_ref (Cconst_symbol table) (tag_int arg dbg) dbg
+    addr_array_ref (Cconst_symbol (table, Other)) (tag_int arg dbg) dbg
   else
     Cswitch (arg,cases,actions,dbg)
 
@@ -1645,7 +1649,7 @@ let rec transl env e =
       add_cmm_constant (
         Const_closure ((lbl, Not_global), fundecls, []));
       List.iter (fun f -> Queue.add f functions) fundecls;
-      Cconst_symbol lbl
+      Cconst_symbol (lbl, Value)
   | Uclosure(fundecls, clos_vars) ->
       let rec transl_fundecls pos = function
           [] ->
@@ -1654,13 +1658,13 @@ let rec transl env e =
             Queue.add f functions;
             let without_header =
               if f.arity = 1 || f.arity = 0 then
-                Cconst_symbol f.label ::
+                Cconst_symbol (f.label, Function) ::
                 int_const f.arity ::
                 transl_fundecls (pos + 3) rem
               else
-                Cconst_symbol(curry_function f.arity) ::
+                Cconst_symbol(curry_function f.arity, Function) ::
                 int_const f.arity ::
-                Cconst_symbol f.label ::
+                Cconst_symbol (f.label, Function) ::
                 transl_fundecls (pos + 4) rem
             in
             if pos = 0 then without_header
@@ -1679,23 +1683,25 @@ let rec transl env e =
       then ptr
       else Cop(Caddv, [ptr; Cconst_int(offset * size_addr)], Debuginfo.none)
   | Udirect_apply(lbl, args, dbg) ->
-      Cop(Capply typ_val, Cconst_symbol lbl :: List.map (transl env) args, dbg)
+      Cop(Capply typ_val,
+        Cconst_symbol (lbl, Function) :: List.map (transl env) args, dbg)
   | Ugeneric_apply(clos, [arg], dbg) ->
       bind "fun" (transl env clos) (fun clos ->
-        Cop(Capply typ_val, [get_field env clos 0 dbg; transl env arg; clos],
+        Cop(Capply typ_val,
+          [get_code_pointer env clos 0 dbg; transl env arg; clos],
           dbg))
   | Ugeneric_apply(clos, args, dbg) ->
       let arity = List.length args in
-      let cargs = Cconst_symbol(apply_function arity) ::
+      let cargs = Cconst_symbol(apply_function arity, Function) ::
         List.map (transl env) (args @ [clos]) in
       Cop(Capply typ_val, cargs, dbg)
   | Usend(kind, met, obj, args, dbg) ->
       let call_met obj args clos =
         if args = [] then
-          Cop(Capply typ_val, [get_field env clos 0 dbg; obj; clos], dbg)
+          Cop(Capply typ_val, [get_code_pointer env clos 0 dbg; obj; clos], dbg)
         else
           let arity = List.length args + 1 in
-          let cargs = Cconst_symbol(apply_function arity) :: obj ::
+          let cargs = Cconst_symbol(apply_function arity, Function) :: obj ::
             (List.map (transl env) args) @ [clos] in
           Cop(Capply typ_val, cargs, dbg)
       in
@@ -1720,7 +1726,7 @@ let rec transl env e =
   | Uprim(prim, args, dbg) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol (Ident.name id)
+          Cconst_symbol (Ident.name id, Value)
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -1977,8 +1983,8 @@ and transl_prim_1 env p arg dbg =
                        else Cop(Cadda, [ptr; Cconst_int(n * size_float)], dbg)],
             dbg))
   | Pint_as_pointer ->
-     Cop(Caddi, [transl env arg; Cconst_int (-1)], dbg)
-     (* always a pointer outside the heap *)
+     Cop(Caddos, [transl env arg; Cconst_int (-1)], dbg)
+     (* always a pointer outside the heap, assumed scannable *)
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
       Cop(Craise Cmm.Raise_notrace, [transl env arg], dbg)
@@ -3133,12 +3139,15 @@ let apply_function_body arity =
   let rec app_fun clos n =
     if n = arity-1 then
       Cop(Capply typ_val,
-          [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg)
+          [get_code_pointer env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos],
+          dbg)
     else begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
            Cop(Capply typ_val,
-               [get_field env (Cvar clos) 0 dbg; Cvar arg.(n); Cvar clos], dbg),
+               [get_code_pointer env (Cvar clos) 0 dbg; Cvar arg.(n);
+                Cvar clos],
+               dbg),
            app_fun newclos (n+1))
     end in
   let args = Array.to_list arg in
@@ -3146,9 +3155,10 @@ let apply_function_body arity =
   (args, clos,
    if arity = 1 then app_fun clos 0 else
    Cifthenelse(
-   Cop(Ccmpi Ceq, [get_field env (Cvar clos) 1 dbg; int_const arity], dbg),
+   Cop(Ccmpi Ceq, [get_int_field env (Cvar clos) 1 dbg; int_const arity], dbg),
    Cop(Capply typ_val,
-       get_field env (Cvar clos) 2 dbg :: List.map (fun s -> Cvar s) all_args,
+       get_code_pointer env (Cvar clos) 2 dbg
+         :: List.map (fun s -> Cvar s) all_args,
        dbg),
    app_fun clos 0))
 
@@ -3163,7 +3173,7 @@ let send_function arity =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
     let real = Ident.create "real" in
-    let mask = get_field env (Cvar meths) 1 dbg in
+    let mask = get_int_field env (Cvar meths) 1 dbg in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg);
                               Cconst_int(3*size_addr-1)], dbg) in
@@ -3227,7 +3237,8 @@ let tuplify_function arity =
     fun_args = [arg, typ_val; clos, typ_val];
     fun_body =
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg :: access_components 0 @ [Cvar clos],
+          get_code_pointer env (Cvar clos) 2 dbg
+            :: access_components 0 @ [Cvar clos],
           dbg);
     fun_fast = true;
     fun_dbg  = Debuginfo.none;
@@ -3270,7 +3281,7 @@ let final_curry_function arity =
   let rec curry_fun args clos n =
     if n = 0 then
       Cop(Capply typ_val,
-          get_field env (Cvar clos) 2 dbg ::
+          get_code_pointer env (Cvar clos) 2 dbg ::
             args @ [Cvar last_arg; Cvar clos],
           dbg)
     else
@@ -3311,15 +3322,16 @@ let rec intermediate_curry_functions arity num =
          if arity - num > 2 && arity <= max_arity_optimized then
            Cop(Calloc,
                [alloc_closure_header 5 Debuginfo.none;
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1), Function);
                 int_const (arity - num - 1);
-                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app",
+                  Function);
                 Cvar arg; Cvar clos],
                dbg)
          else
            Cop(Calloc,
                 [alloc_closure_header 4 Debuginfo.none;
-                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                 Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1), Function);
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
       fun_fast = true;
@@ -3336,7 +3348,8 @@ let rec intermediate_curry_functions arity num =
           let rec iter i args clos =
             if i = 0 then
               Cop(Capply typ_val,
-                  (get_field env (Cvar clos) 2 dbg) :: args @ [Cvar clos],
+                  (get_code_pointer env (Cvar clos) 2 dbg)
+                    :: args @ [Cvar clos],
                   dbg)
             else
               let newclos = Ident.create "clos" in
@@ -3398,16 +3411,16 @@ let entry_point namelist =
   let dbg = Debuginfo.none in
   let incr_global_inited =
     Cop(Cstore (Word_int, Assignment),
-        [Cconst_symbol "caml_globals_inited";
+        [Cconst_symbol ("caml_globals_inited", Other);
          Cop(Caddi, [Cop(Cload (Word_int, Mutable),
-                       [Cconst_symbol "caml_globals_inited"], dbg);
+                       [Cconst_symbol ("caml_globals_inited", Other)], dbg);
                      Cconst_int 1], dbg)], dbg) in
   let body =
     List.fold_right
       (fun name next ->
         let entry_sym = Compilenv.make_symbol ~unitname:name (Some "entry") in
         Csequence(Cop(Capply typ_void,
-                         [Cconst_symbol entry_sym], dbg),
+                         [Cconst_symbol (entry_sym, Function)], dbg),
                   Csequence(incr_global_inited, next)))
       namelist (Cconst_int 1) in
   Cfunction {fun_name = "caml_program";
