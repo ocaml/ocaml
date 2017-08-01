@@ -61,8 +61,13 @@ all: libs
 
 libs: $(FILES)
 
-$(INTF): $(MLIS)
-	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
+OCAMLDOC=$(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
+  $(CSLDIR)/ocamldoc/ocamldoc.opt,\
+  $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc)
+
+$(INTF): interfaces
+interfaces: $(MLIS)
+	$(OCAMLDOC) -latex \
 	-I $(CSLDIR)/utils \
 	-I $(CSLDIR)/stdlib \
 	-I $(CSLDIR)/parsing \
@@ -88,17 +93,6 @@ $(INTF): $(MLIS)
 	mv -f Big_int.tex Bigint.tex
 	mv -f Ast_helper.tex Asthelper.tex
 	mv -f Ast_mapper.tex Astmapper.tex
-
-Tk.tex: tk.mli
-	$(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc -latex \
-	-I +labltk tk.mli \
-	-sepfiles \
-	-latextitle "6,subsection*" \
-	-latextitle "7,subsubsection*" \
-	-latex-type-prefix "TYP" \
-	-latex-module-prefix "" \
-	-latex-module-type-prefix "" \
-	-latex-value-prefix ""
 
 clean:
 	rm -f $(FILES)

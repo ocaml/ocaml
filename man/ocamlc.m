@@ -315,6 +315,11 @@ Never use the
 command on executables produced by
 .BR ocamlc\ \-custom ,
 this would remove the bytecode part of the executable.
+
+Security warning: never set the "setuid" or "setgid" bits on
+executables produced by
+.BR ocamlc\ \-custom ,
+this would make them vulnerable to attacks.
 .TP
 .BI \-depend\ ocamldep-args
 Compute dependencies, as ocamldep would do.
@@ -835,7 +840,7 @@ clause.
 \ \ Bad module name: the source file name is not a valid OCaml module name.
 
 25
-\ \ Pattern-matching with all clauses guarded.
+\ \ Deprecated: now part of warning 8.
 
 26
 \ \ Suspicious unused variable: unused variable that is bound with

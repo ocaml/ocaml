@@ -6,7 +6,8 @@ TOPDIR=../../..
 
 include $(TOPDIR)/Makefile.tools
 
-CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2
+CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2 -caml "TERM=norepeat $(OCAML)" \
+-n 80 -v false
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
 
@@ -22,8 +23,7 @@ clean:
 .SUFFIXES: .etex .tex
 
 exten.tex:exten.etex
-	@$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -v false \
-                       -o $*.caml_tex_error.tex $*.etex \
+	@$(CAMLLATEX) -o $*.caml_tex_error.tex $*.etex \
 	&& mv $*.caml_tex_error.tex $*.gen.tex \
 	&& $(OCAMLRUN) $(TRANSF) < $*.gen.tex > $*.transf_error.tex \
 	&& mv $*.transf_error.tex $*.gen.tex\

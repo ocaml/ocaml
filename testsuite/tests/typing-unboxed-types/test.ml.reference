@@ -144,7 +144,12 @@ Error: Signature mismatch:
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
-#     type t18 = A : 'a list abs -> t18 [@@unboxed]
+#     Characters 19-69:
+  type t18 = A : _ list abs -> t18 [@@ocaml.unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
 #   *               Characters 176-256:
   ......struct
     type t = A of float [@@ocaml.unboxed]
@@ -159,4 +164,40 @@ Error: Signature mismatch:
        Their internal representations differ:
        the first declaration uses unboxed float representation.
 #     * *           module T : sig type t [@@immediate] end
+#   *   type 'a s = S : 'a -> 'a s [@@unboxed]
+# Characters 0-33:
+  type t = T : _ s -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
+#     type 'a s = S : 'a -> 'a option s [@@unboxed]
+# Characters 0-33:
+  type t = T : _ s -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
+#                 module M :
+  sig type 'a r constraint 'a = unit -> 'b val inj : 'b -> (unit -> 'b) r end
+#     Characters 14-59:
+  type t = T : (unit -> _) M.r -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
+#   type 'a s = S : (unit -> 'a) M.r -> 'a option s [@@unboxed]
+#     Characters 14-47:
+  type t = T : _ s -> t [@@unboxed];;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
+#     type 'a t = T : 'a s -> 'a t [@@unboxed]
+#           Characters 42-81:
+  type _ s = S : 'a t -> _ s  [@@unboxed]
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This type cannot be unboxed because
+       it might contain both float and non-float values.
+       You should annotate it with [@@ocaml.boxed].
 # 

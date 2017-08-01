@@ -163,13 +163,16 @@ let rec core_type i ppf x =
   | Ptyp_object (l, c) ->
       line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter
-        (fun (s, attrs, t) ->
-          line i ppf "method %s\n" s.txt;
-          attributes i ppf attrs;
-          core_type (i + 1) ppf t
-        )
-        l
+      List.iter (
+        function
+          | Otag (l, attrs, t) ->
+            line i ppf "method %s\n" l.txt;
+            attributes i ppf attrs;
+            core_type (i + 1) ppf t
+          | Oinherit ct ->
+              line i ppf "Oinherit\n";
+              core_type (i + 1) ppf ct
+      ) l
   | Ptyp_class (li, l) ->
       line i ppf "Ptyp_class %a\n" fmt_longident_loc li;
       list i core_type ppf l
@@ -482,6 +485,10 @@ and class_type i ppf x =
   | Pcty_extension (s, arg) ->
       line i ppf "Pcty_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcty_open (ovf, m, e) ->
+      line i ppf "Pcty_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_type i ppf e
 
 and class_signature i ppf cs =
   line i ppf "class_signature\n";
@@ -569,6 +576,10 @@ and class_expr i ppf x =
   | Pcl_extension (s, arg) ->
       line i ppf "Pcl_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcl_open (ovf, m, e) ->
+      line i ppf "Pcl_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_expr i ppf e
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";
@@ -878,7 +889,7 @@ and label_x_expression i ppf (l,e) =
 and label_x_bool_x_core_type_list i ppf x =
   match x with
     Rtag (l, attrs, b, ctl) ->
-      line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
+      line i ppf "Rtag \"%s\" %s\n" l.txt (string_of_bool b);
       attributes (i+1) ppf attrs;
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->

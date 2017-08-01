@@ -282,23 +282,24 @@ module Analyser =
           | Ptyp_object (fields, _) ->
             let rec f = function
               | [] -> []
-              | ({txt=""},_,_) :: _ ->
+              | Otag ({txt=""},_,_) :: _ ->
                 (* Fields with no name have been eliminated previously. *)
                 assert false
-
-              | ({txt=name}, _atts, ct) :: [] ->
+              | Otag ({txt=name}, _atts, ct) :: [] ->
                 let pos = Loc.ptyp_end ct in
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
-              | ({txt=name}, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
+              | Otag ({txt=name}, _, ct) ::
+                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
                 (name, comment_opt) :: (f (ele2 :: q))
+              | _ :: q -> f q
             in
             let is_named_field field =
               match field with
-              | ({txt=""},_,_) -> false
+              | Otag ({txt=""},_,_) -> false
               | _ -> true
             in
             (0, f @@ List.filter is_named_field fields)
@@ -606,6 +607,7 @@ module Analyser =
                     ic_text = text_opt ;
                   }
 
+              | Parsetree.Pcty_open _ (* one could also traverse the open *)
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
                     (* we don't have a name for the class signature, so we call it "object ... end"  *)
