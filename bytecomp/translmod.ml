@@ -366,30 +366,27 @@ let merge_inline_attributes attr1 attr2 loc =
 
 let merge_functors mexp coercion root_path =
   let rec merge mexp coercion path acc inline_attribute =
-    let finished () = acc, mexp, path, coercion, inline_attribute in
-    match mexp.mod_type with
-    | Mty_alias _ -> finished ()
-    | _ ->
-      match mexp.mod_desc with
-      | Tmod_functor (param, _, _, body) ->
-        let inline_attribute' =
-          Translattribute.get_inline_attribute mexp.mod_attributes
-        in
-        let arg_coercion, res_coercion =
-          match coercion with
-          | Tcoerce_none -> None, Tcoerce_none
-          | Tcoerce_functor (arg_coercion, res_coercion) ->
-            Some arg_coercion, res_coercion
-          | _ -> fatal_error "Translmod.merge_functors: bad coercion"
-        in
-        let loc = mexp.mod_loc in
-        let path = functor_path path param in
-        let inline_attribute =
-          merge_inline_attributes inline_attribute inline_attribute' loc
-        in
-        merge body res_coercion path ((param, loc, arg_coercion) :: acc)
-          inline_attribute
-      | _ -> finished ()
+    let finished = acc, mexp, path, coercion, inline_attribute in
+    match mexp.mod_desc with
+    | Tmod_functor (param, _, _, body) ->
+      let inline_attribute' =
+        Translattribute.get_inline_attribute mexp.mod_attributes
+      in
+      let arg_coercion, res_coercion =
+        match coercion with
+        | Tcoerce_none -> Tcoerce_none, Tcoerce_none
+        | Tcoerce_functor (arg_coercion, res_coercion) ->
+          arg_coercion, res_coercion
+        | _ -> fatal_error "Translmod.merge_functors: bad coercion"
+      in
+      let loc = mexp.mod_loc in
+      let path = functor_path path param in
+      let inline_attribute =
+        merge_inline_attributes inline_attribute inline_attribute' loc
+      in
+      merge body res_coercion path ((param, loc, arg_coercion) :: acc)
+        inline_attribute
+    | _ -> finished
   in
   merge mexp coercion root_path [] Default_inline
 
@@ -401,12 +398,7 @@ let rec compile_functor mexp coercion root_path loc =
   let params, body =
     List.fold_left (fun (params, body) (param, loc, arg_coercion) ->
         let param' = Ident.rename param in
-        let arg =
-          match arg_coercion with
-          | None -> Lvar param'
-          | Some arg_coercion ->
-            apply_coercion loc Alias arg_coercion (Lvar param')
-        in
+        let arg = apply_coercion loc Alias arg_coercion (Lvar param') in
         let params = param' :: params in
         let body = Llet (Alias, Pgenval, param, arg, body) in
         params, body)
@@ -433,7 +425,7 @@ and transl_module cc rootpath mexp =
     mexp.mod_attributes;
   let loc = mexp.mod_loc in
   match mexp.mod_type with
-    Mty_alias _ -> apply_coercion loc Alias cc lambda_unit
+    Mty_alias (Mta_absent, _) -> apply_coercion loc Alias cc lambda_unit
   | _ ->
       match mexp.mod_desc with
         Tmod_ident (path,_) ->

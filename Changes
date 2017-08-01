@@ -60,7 +60,7 @@ Working version
   earlier in the compiler pipeline; correctly propagate [@@inline]
   attributes on such functors; mark functor coercion veneers as
   stubs.
-  (Mark Shinwell, Leo White)
+  (Mark Shinwell, review by Pierre Chambart and Leo White)
 
 ### Standard library:
 
