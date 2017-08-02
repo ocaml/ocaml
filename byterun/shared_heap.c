@@ -306,11 +306,13 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
-static value* shared_try_alloc_aux(struct caml_heap_state* local, mlsize_t wosize,
-                                   tag_t tag, uintnat colour)
+value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
+                             tag_t tag, int pinned)
 {
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
+  uintnat colour;
+
   Assert (wosize > 0);
   Assert (tag != Infix_tag);
   if (whsize <= SIZECLASS_MAX) {
@@ -326,6 +328,7 @@ static value* shared_try_alloc_aux(struct caml_heap_state* local, mlsize_t wosiz
     p = large_allocate(local, Bsize_wsize(whsize));
     if (!p) return 0;
   }
+  colour = pinned ? NOT_MARKABLE : global.MARKED;
   Hd_hp (p) = Make_header(wosize, tag, colour);
 #ifdef DEBUG
   {
@@ -336,23 +339,6 @@ static value* shared_try_alloc_aux(struct caml_heap_state* local, mlsize_t wosiz
   }
 #endif
   return p;
-}
-
-value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
-                             tag_t tag, int pinned)
-{
-  uintnat colour;
-
-  colour = pinned ? NOT_MARKABLE : global.MARKED;
-  return shared_try_alloc_aux(local, wosize, tag, colour);
-}
-
-value* caml_shared_try_alloc_for_promotion(struct caml_heap_state* local,
-                                           mlsize_t wosize, tag_t tag)
-{
-  uintnat colour =
-    Caml_state->gc_phase == Phase_idle ? global.UNMARKED : global.MARKED;
-  return shared_try_alloc_aux(local, wosize, tag, colour);
 }
 
 struct pool* caml_pool_of_shared_block(value v)

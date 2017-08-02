@@ -37,10 +37,10 @@ static void dirty_stack(value stack)
         if(status == (uintnat)FIBER_SCANNING) continue;
         if(__sync_bool_compare_and_swap(&Stack_dirty_domain(stack),
                                         FIBER_CLEAN, caml_domain_self())) {
-          if (Caml_state->gc_phase == Phase_marking) {
-            caml_darken(0, stack, 0);
-            caml_scan_stack(&caml_darken, 0, stack);
-          }
+          caml_darken(0, stack, 0);
+          /* XXX KC: Optimize. Since we cannot distinguish Grey from
+           * Black, we might scan the stacks multiple times. */
+          caml_scan_stack(&caml_darken, 0, stack);
           break;
         }
       }
@@ -437,6 +437,8 @@ void caml_darken_stack(value stack)
       __sync_bool_compare_and_swap (&Stack_dirty_domain(stack),
                                     FIBER_CLEAN, FIBER_SCANNING)) {
     caml_darken(0, stack, 0);
+    /* XXX KC: Optimize. Since we cannot distinguish Grey from Black,
+     * we might scan the stacks multiple times. */
     caml_scan_stack(&caml_darken, 0, stack);
     atomic_store_rel((atomic_uintnat*)&Stack_dirty_domain(stack),
                     (uintnat)FIBER_CLEAN);

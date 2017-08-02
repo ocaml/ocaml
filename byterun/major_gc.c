@@ -266,7 +266,11 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   domain->state->stat_major_collections++;
   caml_cycle_heap(domain->state->shared_heap);
-  domain->state->gc_phase = Phase_idle;
+
+  /* Mark roots for new cycle */
+  caml_do_local_roots(&caml_darken, 0, caml_domain_self());
+  caml_scan_stack(&caml_darken, 0, Caml_state->current_stack);
+  caml_scan_global_roots(&caml_darken, 0);
 }
 
 void caml_finish_major_cycle() {
@@ -293,12 +297,6 @@ intnat caml_major_collection_slice(intnat howmuch)
   sweep_work = budget;
   budget = caml_sweep(Caml_state->shared_heap, budget);
   sweep_work -= budget;
-
-  if (Caml_state->gc_phase == Phase_idle) {
-    caml_do_local_roots(&caml_darken, 0, caml_domain_self());
-    caml_scan_global_roots(&caml_darken, 0);
-    Caml_state->gc_phase = Phase_marking;
-  }
 
   mark_work = budget;
   if (mark_stack_pop(&v))
