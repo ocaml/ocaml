@@ -220,7 +220,7 @@ let _ =
         incr r
       done
     done;
-    Printf.printf "done %d\n%!" !r;
+    print_string (Printf.sprintf "done %d\n" !r); flush stdout;
     finish ()
   in
     Scheduler.start
