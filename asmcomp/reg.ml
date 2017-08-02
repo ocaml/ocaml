@@ -58,7 +58,7 @@ and stack_location =
 type reg = t
 
 let dummy =
-  { raw_name = Raw_name.Anon; stamp = 0; typ = Int; loc = Unknown;
+  { raw_name = Raw_name.Anon; stamp = 0; typ = Int_reg Can_scan; loc = Unknown;
     spill = false; interf = []; prefer = []; degree = 0; spill_cost = 0;
     visited = false; part = None;
   }

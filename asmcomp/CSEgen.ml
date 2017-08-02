@@ -193,11 +193,13 @@ let set_unknown_regs n rs =
 let remove_load_numbering n =
   { n with num_eqs = Equations.remove_loads n.num_eqs }
 
-(* Forget everything we know about registers of type [Addr]. *)
+(* Forget everything we know about registers that cannot be live at a
+   point when the GC is called. *)
 
-let kill_addr_regs n =
+let kill_regs_that_cannot_be_live_at_gc n =
   { n with num_reg =
-              Reg.Map.filter (fun r _n -> r.Reg.typ <> Cmm.Addr) n.num_reg }
+              Reg.Map.filter (fun r _n ->
+                r.Reg.typ <> Cmm.Int_reg Cmm.Cannot_be_live_at_gc) n.num_reg }
 
 (* Prepend a set of moves before [i] to assign [srcs] to [dsts].  *)
 
@@ -267,7 +269,7 @@ method private cse n i =
          - equations involving memory loads, since the callee can
            perform arbitrary memory stores;
          - equations involving arithmetic operations that can
-           produce [Addr]-typed derived pointers into the heap
+           produce [Cannot_be_live_at_gc]-typed derived pointers into the heap
            (see below for Ialloc);
          - mappings from hardware registers to value numbers,
            since the callee does not preserve these registers.
@@ -281,13 +283,13 @@ method private cse n i =
          pseudoregister across the allocation if this pseudoreg
          is a derived heap pointer (a pointer into the heap that does
          not point to the beginning of a Caml block).  PR#6484 is an
-         example of this situation.  Such pseudoregs have type [Addr].
-         Pseudoregs with types other than [Addr] can be kept.
+         example of this situation.  Such pseudoregs have GC action
+         [Cannot_be_live_at_gc].  Pseudoregs with other GC actions can be kept.
          Moreover, allocation can trigger the asynchronous execution
          of arbitrary Caml code (finalizer, signal handler, context
          switch), which can contain non-initializing stores.
          Hence, all equations over loads must be removed. *)
-       let n1 = kill_addr_regs (self#kill_loads n) in
+       let n1 = kill_regs_that_cannot_be_live_at_gc (self#kill_loads n) in
        let n2 = set_unknown_regs n1 i.res in
        {i with next = self#cse n2 i.next}
   | Iop op ->

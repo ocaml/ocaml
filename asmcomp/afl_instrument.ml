@@ -17,8 +17,8 @@
 open Lambda
 open Cmm
 
-let afl_area_ptr = Cconst_symbol "caml_afl_area_ptr"
-let afl_prev_loc = Cconst_symbol "caml_afl_prev_loc"
+let afl_area_ptr = Cconst_symbol ("caml_afl_area_ptr", Other)
+let afl_prev_loc = Cconst_symbol ("caml_afl_prev_loc", Other)
 let afl_map_size = 1 lsl 16
 
 let rec with_afl_logging b =
@@ -38,16 +38,17 @@ let rec with_afl_logging b =
     let cur_pos = Ident.create "pos" in
     let afl_area = Ident.create "shared_mem" in
     let op oper args = Cop (oper, args, Debuginfo.none) in
-    Clet(afl_area, op (Cload (Word_int, Asttypes.Mutable)) [afl_area_ptr],
-    Clet(cur_pos,  op Cxor [op (Cload (Word_int, Asttypes.Mutable))
+    let cadda = Cadd Cannot_be_live_at_gc in
+    Clet(afl_area, op (Cload (Word Can_scan, Asttypes.Mutable)) [afl_area_ptr],
+    Clet(cur_pos,  op Cxor [op (Cload (Word Can_scan, Asttypes.Mutable))
       [afl_prev_loc]; Cconst_int cur_location],
     Csequence(
       op (Cstore(Byte_unsigned, Assignment))
-         [op Cadda [Cvar afl_area; Cvar cur_pos];
-          op Cadda [op (Cload (Byte_unsigned, Asttypes.Mutable))
-                       [op Cadda [Cvar afl_area; Cvar cur_pos]];
+         [op cadda [Cvar afl_area; Cvar cur_pos];
+          op cadda [op (Cload (Byte_unsigned, Asttypes.Mutable))
+                       [op cadda [Cvar afl_area; Cvar cur_pos]];
                     Cconst_int 1]],
-      op (Cstore(Word_int, Assignment))
+      op (Cstore(Word Can_scan, Assignment))
          [afl_prev_loc; Cconst_int (cur_location lsr 1)]))) in
   Csequence(instrumentation, instrument b)
 

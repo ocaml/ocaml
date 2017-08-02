@@ -95,8 +95,8 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-  | Val | Int | Addr -> 0
-  | Float -> 1
+  | Int_reg _ -> 0
+  | Float_reg -> 1
 
 let num_available_registers = [| 13; 16 |]
 
@@ -113,12 +113,12 @@ let rotate_registers = false
 
 let hard_int_reg =
   let v = Array.make 13 Reg.dummy in
-  for i = 0 to 12 do v.(i) <- Reg.at_location Int (Reg i) done;
+  for i = 0 to 12 do v.(i) <- Reg.at_location (Int_reg Must_scan) (Reg i) done;
   v
 
 let hard_float_reg =
   let v = Array.make 16 Reg.dummy in
-  for i = 0 to 15 do v.(i) <- Reg.at_location Float (Reg (100 + i)) done;
+  for i = 0 to 15 do v.(i) <- Reg.at_location Float_reg (Reg (100 + i)) done;
   v
 
 let all_phys_regs =
@@ -150,7 +150,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-    | Val | Int | Addr as ty ->
+    | (Int_reg _) as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -158,12 +158,12 @@ let calling_conventions first_int last_int first_float last_float make_stack
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
         end
-    | Float ->
+    | Float_reg ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
           incr float
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
+          loc.(i) <- stack_slot (make_stack !ofs) Float_reg;
           ofs := !ofs + size_float
         end
   done;
@@ -218,7 +218,7 @@ let win64_loc_external_arguments arg =
   and ofs = ref 32 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-    | Val | Int | Addr as ty ->
+    | (Int_reg _) as ty ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_int_external_arguments.(!reg);
           incr reg
@@ -226,12 +226,12 @@ let win64_loc_external_arguments arg =
           loc.(i) <- stack_slot (Outgoing !ofs) ty;
           ofs := !ofs + size_int
         end
-    | Float ->
+    | Float_reg ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_float_external_arguments.(!reg);
           incr reg
         end else begin
-          loc.(i) <- stack_slot (Outgoing !ofs) Float;
+          loc.(i) <- stack_slot (Outgoing !ofs) Float_reg;
           ofs := !ofs + size_float
         end
   done;

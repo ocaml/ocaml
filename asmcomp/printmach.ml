@@ -26,7 +26,12 @@ let reg ppf r =
     fprintf ppf "%s" (Reg.name r)
   else
     fprintf ppf "%s"
-      (match r.typ with Val -> "V" | Addr -> "A" | Int -> "I" | Float -> "F");
+      (match r.typ with
+      | Int_reg Must_scan -> "V"
+      | Int_reg Cannot_be_live_at_gc -> "A"
+      | Int_reg Can_scan -> "I"
+      | Int_reg Cannot_scan -> "X"
+      | Float_reg -> "F");
   fprintf ppf "/%i" r.stamp;
   begin match r.loc with
   | Unknown -> ()
@@ -62,8 +67,8 @@ let regsetaddr ppf s =
       if !first then begin first := false; fprintf ppf "%a" reg r end
       else fprintf ppf "@ %a" reg r;
       match r.typ with
-      | Val -> fprintf ppf "*"
-      | Addr -> fprintf ppf "!"
+      | Int_reg Must_scan -> fprintf ppf "*"
+      | Int_reg Cannot_be_live_at_gc -> fprintf ppf "!"
       | _ -> ())
     s
 

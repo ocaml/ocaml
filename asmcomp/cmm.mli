@@ -15,55 +15,60 @@
 
 (* Second intermediate language (machine independent) *)
 
-type machtype_component =
-  | Val
-  | Int
-  | Float
-  | Derived_val
-  | Arbitrary_out_of_heap
-(* - [Val] denotes a valid OCaml value: either a pointer to the beginning
-     of a heap block, an infix pointer if it is preceded by the correct
-     infix header, or a 2n+1 encoded integer.
-   - [Int] is for integers (not necessarily 2n+1 encoded) or out-of-heap
-     pointers to valid OCaml values (which cannot, themselves or transitively,
-     point back into the heap).
-   - [Float] is for unboxed floating-point numbers.
-   - [Derived_val] denotes pointers produced from in-heap [Val] pointers that
-     may point into the middle of heap blocks.  (Example: pointers produced
-     by array indexing.)
-   - [Arbitrary_out_of_heap] denotes an out-of-heap pointer (for example a
-     pointer to the code of a function) that cannot be scanned by the GC.
+(** The semantics of the GC upon the contents of a register. *)
+type gc_action =
+  | Must_scan
+    (** The contents of the register must be scanned and if needs be updated
+        by the GC.  (That is to say, the register will become a GC root.) *)
+  | Can_scan
+    (** The contents of the register do not have to be scanned or updated by
+        the GC.  However it is permissible for it to do so.  (A case where
+        a scan can happen is when there is a conditional with one arm returning
+        [Must_scan] and the other arm returning [Can_scan].  The resulting
+        register will be marked as [Must_scan].)
+        Two examples of values in registers that might be marked [Can_scan]:
+        1. A tagged OCaml integer.
+        2. A pointer to a block living outside of the OCaml heap (which, itself
+           and transitively, does not point back into the heap) but whose
+           structure reflects that of a valid OCaml value. *)
+  | Cannot_scan
+    (** The contents of the register must not be scanned by the GC (for
+        example it may contain a code pointer, or a pointer to arbitrary data
+        outside the OCaml heap).  However, it is permissible for the register
+        to be live across a GC. *)
+  | Cannot_be_live_at_gc
+    (** As for [Cannot_scan] with the additional restriction that the
+        register cannot be live when the GC is called.  This is used for
+        registers holding pointers derived from the addresses of blocks in
+        the heap (for example when indexing into an array; the resulting
+        derived pointer points into the middle of a block).  The values of
+        such derived pointers may change when the GC is invoked. *)
 
-   The purpose of these types is twofold.  First, they guide register
-   allocation: type [Float] goes in FP registers, the other types go
-   into integer registers.  Second, they determine how local variables are
-   tracked by the GC:
-   - Variables of type [Val] are GC roots.  If they are pointers, the
-     GC will not deallocate the addressed heap block, and will update
-     the local variable if the heap block moves.
-   - Variables of type [Int] are not usually registered as GC roots but may be
-     on occasion, for example following a conditional where the other arm
-     returns a [Val].  (Hence the requirement, as above, that out-of-heap
-     pointers of type [Int] must point at blocks that are laid out in the same
-     way as OCaml values.)
-   - Variables of type [Float] and variables of type [Arbitrary_out_of_heap]
-     are never registered as GC roots.  The GC neither examines such variables
-     nor changes their values.
-   - Variables of type [Derived_val] must never be live across an allocation
-     point or function call.  They cannot be given as roots to the GC
-     because they don't point after a well-formed block header of the
-     kind that the GC needs.  However, the GC may move the block pointed
-     into, invalidating the value of the [Derived_val] variable.
-*)
+(** Types of registers.  These guide register allocation and determine how
+    local variables are tracked by the GC. *)
+type machtype_component =
+  | Int_reg of gc_action
+  (** The value is held in an integer register; the GC behaves as given
+      by the [gc_action]. *)
+  | Float_reg
+  (** The value, an unboxed float, is held in a floating-point register.
+      The GC never scans or updates such registers. *)
 
 type machtype = machtype_component array
 
 val typ_void: machtype
+
 val typ_val: machtype
-val typ_derived_val: machtype
+(** Register type for holding arbitrary OCaml values. *)
+
+val typ_derived: machtype
+(** Register type for holding derived pointers into the OCaml heap. *)
+
 val typ_int: machtype
+(** Register type for holding tagged OCaml integers. *)
+
 val typ_float: machtype
-val typ_arbitrary_out_of_heap: machtype
+(** Register type for holding unboxed floating-point numbers. *)
 
 val size_component: machtype_component -> int
 
@@ -102,15 +107,6 @@ type raise_kind =
 
 type rec_flag = Nonrecursive | Recursive
 
-type symbol_type =
-  | Function
-  (** A code pointer. *)
-  | Value
-  (** An out-of-heap value that may be scanned (but of course does not need
-      to be scanned) by the GC. *)
-  | Other
-  (** An out-of-heap value that cannot be scanned by the GC. *)
-
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -118,26 +114,38 @@ type memory_chunk =
   | Sixteen_signed
   | Thirtytwo_unsigned
   | Thirtytwo_signed
-  | Word_int                           (* integer *)
-  | Word_out_of_heap of symbol_type    (* pointer outside heap *)
-  | Word_val                           (* pointer inside heap or encoded int *)
+  | Word of gc_action
   | Single
   | Double                             (* 64-bit-aligned 64-bit float *)
   | Double_u                           (* word-aligned 64-bit float *)
 
-and operation =
+(** Types of pointers to statically-allocated code and data. *)
+type symbol_kind =
+  | Function
+  (** A pointer to the code of a function. *)
+  | Value
+  (** A pointer to a block outside the OCaml heap, which does not (itself and
+      transitively) point back into the heap, which has the correct structure
+      for an OCaml value.  Such blocks should be marked black to avoid wasting
+      GC time.  (They must be marked black if in a read-only section.) *)
+  | Other
+  (** A pointer to arbitrary out-of-heap data. *)
+
+val machtype_component_of_symbol_kind : symbol_kind -> machtype_component
+(** The register type required to hold the address of a symbol with the
+    given kind. *)
+
+type operation =
     Capply of machtype
   | Cextcall of string * machtype * bool * label option
   | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
-  | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
+  | Cadd of gc_action  (* the [gc_action] gives the type of the result *)
+  | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
-  | Ccmpi of comparison
-  | Caddv (* pointer addition that produces a [Val] (well-formed Caml value) *)
-  | Cadda (* ditto that produces a [Derived_val] (derived heap pointer) *)
-  | Caddov (* ditto that produces an [Out_of_heap_val] *)
-  | Ccmpa of comparison
+  | Ccmps of comparison  (* signed integer comparison *)
+  | Ccmpu of comparison  (* unsigned integer comparison *)
   | Cnegf | Cabsf
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
@@ -153,7 +161,7 @@ and expression =
     Cconst_int of int
   | Cconst_natint of nativeint
   | Cconst_float of float
-  | Cconst_symbol of string * symbol_type
+  | Cconst_symbol of string * symbol_kind
   | Cconst_pointer of int
   | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
