@@ -82,7 +82,8 @@ struct oldify_state {
 
 static value alloc_shared(mlsize_t wosize, tag_t tag)
 {
-  void* mem = caml_shared_try_alloc_for_promotion(Caml_state->shared_heap, wosize, tag);
+  void* mem = caml_shared_try_alloc(Caml_state->shared_heap, wosize, tag,
+                                    0 /* not pinned */);
   Caml_state->allocated_words += Whsize_wosize(wosize);
   if (mem == NULL) {
     caml_fatal_error("allocation failure during minor GC");

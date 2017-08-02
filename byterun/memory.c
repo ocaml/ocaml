@@ -23,8 +23,6 @@ static void write_barrier(value obj, int field, value old_val, value new_val)
   if (!Is_young(obj)) {
 
     caml_darken(0, old_val, 0);
-    if (domain_state->gc_phase == Phase_idle)
-      caml_darken(0, new_val, 0);
 
     if (Is_block(new_val) && Is_young(new_val)) {
 

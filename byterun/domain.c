@@ -193,7 +193,6 @@ static void create_domain(uintnat initial_minor_heap_size) {
             sizeof(struct caml_remembered_set));
 
     d->state.state->shared_heap = caml_init_shared_heap();
-    domain_state->gc_phase = Phase_idle;
     caml_init_major_gc();
     caml_reallocate_minor_heap(initial_minor_heap_size);
 

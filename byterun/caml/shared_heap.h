@@ -13,7 +13,6 @@ struct caml_heap_state* caml_init_shared_heap();
 void caml_teardown_shared_heap(struct caml_heap_state* heap);
 
 value* caml_shared_try_alloc(struct caml_heap_state*, mlsize_t wosize, tag_t tag, int is_pinned);
-value* caml_shared_try_alloc_for_promotion(struct caml_heap_state*, mlsize_t wosize, tag_t tag);
 
 void caml_sample_heap_stats(struct caml_heap_state*, struct heap_stats*);
 

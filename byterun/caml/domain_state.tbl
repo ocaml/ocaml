@@ -31,10 +31,6 @@ DOMAIN_STATE(intnat, stat_minor_collections)
 DOMAIN_STATE(intnat, stat_major_collections)
 DOMAIN_STATE(uintnat, stat_blocks_marked)
 
-/* Phase of the current domain's major GC. Phases are
-   not necessarily synchronised between domains. */
-DOMAIN_STATE(int, gc_phase)
-
 DOMAIN_STATE(intnat, critical_section_nesting)
 DOMAIN_STATE(struct interrupt*, pending_interrupts)
 
