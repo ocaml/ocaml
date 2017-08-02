@@ -11,6 +11,9 @@
 #include "caml/fiber.h"
 #include "caml/addrmap.h"
 #include "caml/platform.h"
+#include "caml/params.h"
+#include "caml/eventlog.h"
+#include <string.h>
 
 /*
   FIXME: This is far too small. A better policy would be to match
@@ -177,6 +180,108 @@ void caml_darken(void* state, value v, value* ignored) {
   if (caml_mark_object(v)) mark_stack_push(v);
 }
 
+
+/* This variable is only written with the world stopped,
+   so it need not be atomic */
+static uintnat major_cycles_completed = 0;
+
+/* double-buffered sampled GC stats.
+   At the end of GC cycle N, domains update sampled_gc_stats[N&1],
+   but requests to Gc.stats() read from sampled_gc_stats[!(N&1)].
+   That way, Gc.stats() returns the statistics atomically sampled
+   at the end of the most recently completed GC cycle */
+static struct gc_stats sampled_gc_stats[2][Max_domains];
+
+void caml_sample_gc_stats(struct gc_stats* buf)
+{
+  memset(buf, 0, sizeof(*buf));
+  /* we read from the buffers that are not currently being
+     written to. that way, we pick up the numbers written
+     at the end of the most recently completed GC cycle */
+  int phase = ! (major_cycles_completed & 1);
+  int i;
+  for (i=0; i<Max_domains; i++) {
+    struct gc_stats* s = &sampled_gc_stats[phase][i];
+    struct heap_stats* h = &s->major_heap;
+    buf->minor_words += s->minor_words;
+    buf->promoted_words += s->promoted_words;
+    buf->major_words += s->major_words;
+    buf->minor_collections += s->minor_collections;
+    buf->major_heap.pool_words += h->pool_words;
+    buf->major_heap.pool_max_words += h->pool_max_words;
+    buf->major_heap.pool_live_words += h->pool_live_words;
+    buf->major_heap.pool_live_blocks += h->pool_live_blocks;
+    buf->major_heap.pool_frag_words += h->pool_frag_words;
+    buf->major_heap.large_words += h->large_words;
+    buf->major_heap.large_max_words += h->large_max_words;
+  }
+}
+
+static void major_cycle_callback(struct domain* domain, void* unused)
+{
+  Assert(domain == caml_domain_self());
+
+  caml_gc_log("In STW callback");
+
+  /* finish GC */
+  caml_ev_start_gc();
+  while (caml_sweep(domain->state->shared_heap, 10) <= 0);
+  caml_empty_minor_heap();
+  caml_finish_marking();
+  caml_ev_msg("Finished major gc");
+  caml_ev_end_gc();
+
+  {
+    /* update GC stats */
+    int stats_phase = major_cycles_completed & 1;
+    struct gc_stats* stats = &sampled_gc_stats[stats_phase][domain->state->id];
+    stats->minor_words = domain->state->stat_minor_words;
+    stats->promoted_words = domain->state->stat_promoted_words;
+    stats->major_words = domain->state->stat_major_words;
+    stats->minor_collections = domain->state->stat_minor_collections;
+    caml_sample_heap_stats(domain->state->shared_heap, &stats->major_heap);
+  }
+
+  {
+    /* Cycle major heap */
+    // FIXME: delete caml_cycle_heap_stw and have per-domain copies of the data?
+    barrier_status b = caml_global_barrier_begin();
+    if (caml_global_barrier_is_final(b)) {
+      caml_cycle_heap_stw();
+      /* FIXME: Maybe logging outside the barrier would be better */
+      caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)major_cycles_completed);
+      major_cycles_completed++;
+    }
+    // should interrupts be processed here or not?
+    // depends on whether marking above may need interrupts
+    caml_global_barrier_end(b);
+  }
+
+  /* If the heap is to be verified, do it before the domains continue
+     running OCaml code. */
+  if (caml_params->verify_heap) {
+    struct heap_verify_state* ver = caml_verify_begin();
+    caml_do_local_roots(&caml_verify_root, ver, caml_domain_self());
+    caml_scan_global_roots(&caml_verify_root, ver);
+    caml_verify_heap(ver);
+    caml_gc_log("Heap verified");
+    caml_global_barrier();
+  }
+
+  domain->state->stat_major_collections++;
+  caml_cycle_heap(domain->state->shared_heap);
+}
+
+void caml_finish_major_cycle() {
+  uintnat cycle = major_cycles_completed;
+  /* To handle the case where multiple domains try to finish the major
+     cycle simultaneously, we loop until the current cycle has ended,
+     ignoring whether caml_try_run_on_all_domains succeeds. */
+  while (cycle == major_cycles_completed) {
+    caml_try_run_on_all_domains(&major_cycle_callback, 0);
+  }
+}
+
 intnat caml_major_collection_slice(intnat howmuch)
 {
   intnat computed_work = howmuch ? howmuch : default_slice_budget();
@@ -186,6 +291,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   value v;
 
   caml_save_stack_gc();
+  caml_ev_start_gc();
 
   sweep_work = budget;
   budget = caml_sweep(Caml_state->shared_heap, budget);
@@ -208,10 +314,11 @@ intnat caml_major_collection_slice(intnat howmuch)
               (unsigned long)(Caml_state->stat_blocks_marked - blocks_marked_before));
   Caml_state->stat_major_words += Caml_state->allocated_words;
   Caml_state->allocated_words = 0;
+  caml_ev_end_gc();
   caml_restore_stack_gc();
 
   if (budget > 0) {
-    caml_trigger_stw_gc();
+    caml_finish_major_cycle();
   }
 
 

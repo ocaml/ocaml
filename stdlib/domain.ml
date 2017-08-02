@@ -1,9 +1,11 @@
-type t
+type t = int
 external spawn : (unit -> unit) -> t = "caml_domain_spawn"
 
 external self : unit -> int = "caml_ml_domain_id"
 
 external join : t -> unit = "caml_ml_domain_join"
+
+external yield : unit -> unit = "caml_ml_domain_yield"
 
 module BVar = struct
   type 'a t
