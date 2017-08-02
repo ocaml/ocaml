@@ -650,15 +650,16 @@ let lsl_const c n dbg =
    with the given element [log2size] log2 element size. [ofs] is given as a
    tagged int expression.
    The optional ?typ argument is the C-- type of the result.
-   By default, it is Derived_val, meaning we are constructing a derived pointer
-   into the heap.  If we know the pointer is outside the heap
-   (this is the case for bigarray indexing), we give type Int instead. *)
+   By default, it is Cannot_be_live_at_gc, meaning we are constructing a
+   derived pointer into the heap.  If we know the pointer is outside the heap
+   (this is the case for bigarray indexing), we give type Cannot_scan
+   instead. *)
 
 let array_indexing ?typ log2size ptr ofs dbg =
   let add =
     match typ with
-    | None | Some Cannot_be_live_at_gc -> cadda
-    | Some Can_scan -> caddi
+    | None | Some Cannot_be_live_at_gc -> Cadd Cannot_be_live_at_gc
+    | Some Cannot_scan -> Cadd Cannot_scan
     | _ -> assert false in
   match ofs with
   | Cconst_int n ->
