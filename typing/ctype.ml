@@ -658,6 +658,35 @@ let rec generalize_spine ty =
       List.iter generalize_spine tyl
   | _ -> ()
 
+(*
+   Check whether the abbreviation expands to a well-defined type.
+   During the typing of a class, abbreviations for correspondings
+   types expand to non-generic types.
+*)
+let generic_abbrev env path =
+  try
+    let (_, body, _) = Env.find_type_expansion path env in
+    (repr body).level = generic_level
+  with
+    Not_found ->
+      false
+
+let generic_private_abbrev env path =
+  try
+    match Env.find_type path env with
+      {type_kind = Type_abstract;
+       type_private = Private;
+       type_manifest = Some body} ->
+         (repr body).level = generic_level
+    | _ -> false
+  with Not_found -> false
+
+let is_contractive env p =
+  try
+    let decl = Env.find_type p env in
+    in_pervasives p && decl.type_manifest = None || is_datatype decl
+  with Not_found -> false
+
 let forward_try_expand_once = (* Forward declaration *)
   ref (fun _env _ty -> raise Cannot_expand)
 
@@ -719,6 +748,19 @@ let rec update_level env level ty =
           if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
           iter_type_expr (update_level env level) ty
         end
+    | Tconstr(p, _tl, _abbrev) when generic_abbrev env p ->
+        let snap = snapshot () in
+        begin try
+          set_level ty level;
+          iter_type_expr (update_level env level) ty
+        with Unify _ -> try
+          backtrack snap;
+          link_type ty (!forward_try_expand_once env ty);
+          update_level env level ty
+        with Cannot_expand ->
+          set_level ty level;
+          iter_type_expr (update_level env level) ty
+        end          
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
@@ -1544,35 +1586,6 @@ let full_expand env ty =
       newty2 ty.level (Tobject (fi, ref None))
   | _ ->
       ty
-
-(*
-   Check whether the abbreviation expands to a well-defined type.
-   During the typing of a class, abbreviations for correspondings
-   types expand to non-generic types.
-*)
-let generic_abbrev env path =
-  try
-    let (_, body, _) = Env.find_type_expansion path env in
-    (repr body).level = generic_level
-  with
-    Not_found ->
-      false
-
-let generic_private_abbrev env path =
-  try
-    match Env.find_type path env with
-      {type_kind = Type_abstract;
-       type_private = Private;
-       type_manifest = Some body} ->
-         (repr body).level = generic_level
-    | _ -> false
-  with Not_found -> false
-
-let is_contractive env p =
-  try
-    let decl = Env.find_type p env in
-    in_pervasives p && decl.type_manifest = None || is_datatype decl
-  with Not_found -> false
 
 
                               (*****************)
