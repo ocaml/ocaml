@@ -393,7 +393,7 @@ value caml_switch_stack(value stk)
 
 void caml_save_stack_gc()
 {
-  //Assert(!stack_is_saved);
+  Assert(!stack_is_saved);
   save_stack();
   ++stack_is_saved;
 }

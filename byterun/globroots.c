@@ -54,9 +54,6 @@ CAMLexport caml_root caml_create_root(value init)
   caml_plat_lock(&roots_mutex);
   caml_initialize_field(v, 2, roots_all);
   roots_all = v;
-#ifdef DEBUG
-  caml_gc_log("caml_create_root: root=0x%lx colour=%d", v, get_status(v));
-#endif
   caml_plat_unlock(&roots_mutex);
 
   CAMLreturnT(caml_root, (caml_root)v);
