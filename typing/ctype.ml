@@ -728,7 +728,7 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s, n))
       | _ -> p
 
-let rec update_level env level ty =
+let rec update_level env level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
     begin match Env.gadt_instance_level env ty with
@@ -741,35 +741,30 @@ let rec update_level env level ty =
         begin try
           (* if is_newtype env p then raise Cannot_expand; *)
           link_type ty (!forward_try_expand_once env ty);
-          update_level env level ty
+          update_level env level expand ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
           (* Format.printf "update_level: %i < %i@." level (get_level env p); *)
           if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
-          iter_type_expr (update_level env level) ty
+          iter_type_expr (update_level env level expand) ty
         end
-    | Tconstr(p, _tl, _abbrev) when generic_abbrev env p ->
-        let snap = snapshot () in
+    | Tconstr(_, _ :: _, _) when expand ->
         begin try
-          set_level ty level;
-          iter_type_expr (update_level env level) ty
-        with Unify _ -> try
-          backtrack snap;
           link_type ty (!forward_try_expand_once env ty);
-          update_level env level ty
+          update_level env level expand ty
         with Cannot_expand ->
           set_level ty level;
-          iter_type_expr (update_level env level) ty
+          iter_type_expr (update_level env level expand) ty
         end          
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
-        update_level env level ty
+        update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < get_level env p ->
         set_name nm None;
-        update_level env level ty
+        update_level env level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
@@ -779,14 +774,27 @@ let rec update_level env level ty =
         | _ -> ()
         end;
         set_level ty level;
-        iter_type_expr (update_level env level) ty
+        iter_type_expr (update_level env level expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && (repr ty1).level > level ->
         raise (Unify [(ty1, newvar2 level)])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level) ty
+        iter_type_expr (update_level env level expand) ty
+  end
+
+(* First try without expanding, then expand everything,
+   to avoid combinatorial blow-up *)
+let update_level env level ty =
+  let ty = repr ty in
+  if ty.level > level then begin
+    let snap = snapshot () in
+    try
+      update_level env level false ty
+    with Unify _ ->
+      backtrack snap;
+      update_level env level true ty
   end
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
