@@ -1,3 +1,5 @@
+open Domain.Sync
+
 let n = 25
 let iter = 20
 
@@ -5,10 +7,6 @@ let counts = Array.make n 0
 let running = Array.make n false
 
 let main = Domain.self ()
-
-external critical_section : int -> unit = "caml_ml_domain_critical_section"
-external interrupt : Domain.id -> unit = "caml_ml_domain_interrupt"
-external yield : unit -> unit = "caml_ml_domain_yield"
 
 let rec burn l =
   if List.hd l > 14 then ()
@@ -19,24 +17,19 @@ let go id =
   counts.(id) <- counts.(id) + 1;
   burn [0];
   running.(id) <- false;
-  interrupt main
+  notify main
 
 
-let crit f =
-  critical_section 1;
-  let x = f () in
-  critical_section (-1);
-  x
 
 let rec wait_all () =
-  if crit (fun () ->
+  if critical_section (fun () ->
     let still_running =
       running |> Array.to_list |> List.mapi (fun i r -> i, r) |> List.filter (fun (i, r) -> r) in
     match still_running with
     | [] -> Printf.printf "done\n%!"; true
     | xs ->
        (* Printf.printf "%d... %!" (List.length xs); *)
-       yield ();
+       wait ();
        false)
   then
     ()
