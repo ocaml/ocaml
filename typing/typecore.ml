@@ -2809,7 +2809,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
          type body.exp_type.  Thus, this unification enforces the
          scoping condition on "let module". *)
       begin try
-        Ctype.unify_var new_env ty body.exp_type;
+        Ctype.unify_var new_env ty body.exp_type
       with Unify _ ->
         raise(Error(loc, env, Scoping_let_module(name.txt, body.exp_type)))
       end;
