@@ -7,7 +7,7 @@ let running = Array.make n false
 let main = Domain.self ()
 
 external critical_section : int -> unit = "caml_ml_domain_critical_section"
-external interrupt : Domain.t -> unit = "caml_ml_domain_interrupt"
+external interrupt : Domain.id -> unit = "caml_ml_domain_interrupt"
 external yield : unit -> unit = "caml_ml_domain_yield"
 
 let rec burn l =
