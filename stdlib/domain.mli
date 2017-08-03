@@ -1,17 +1,83 @@
-type t = int
-(** The type of domain. *)
+type 'a t
+(** A domain of type ['a t] runs independently, eventually producing a
+    result of type 'a, or an exception *)
 
-val spawn : (unit -> unit) -> t
-(** Spawn a new domain that runs in parallel with the current domain. *)
+val spawn : (unit -> 'a) -> 'a t
+(** [spawn f] creates a new domain that runs in parallel with the
+    current domain. *)
 
-val join : t -> unit
-(** [join d] blocks until domain [d] runs to completion. If [d] has already 
-      completed, then [join d] returns immediately *)
+val join : 'a t -> 'a
+(** [join d] blocks until domain [d] runs to completion.
+    If [d] results in a value, then that is returned by [join d].
+    If [d] raises an uncaught exception, then that is thrown by [join d].
+    Domains may only be joined once: subsequent uses of [join d]
+    raise Invalid_argument. *)
 
-val yield : unit -> unit
-(** [yield] blocks until an interrupt arrives *)
+type id = private int
+(** Domains have unique integer identifiers *)
 
-val self : unit -> int
+val get_id : 'a t -> id
+
+val self : unit -> id
+(** [self ()] is the identifier of the currently running domain *)
+
+
+module Sync : sig
+  (** Low-level synchronisation primitives.
+
+      The general usage pattern for these primitives is to test a
+      predicate of atomic variables in a critical section and call
+      [wait] if the predicate does not hold. The domain that causes
+      the predicate to become true must then call [notify].
+
+      For example, here one domain waits for another to complete work:
+
+          let done = Atomic.make false
+
+          let rec await_completion () =
+            let success =
+              critical_section (fun () ->
+                if Atomic.get done then true else (wait (); false)) in
+            if success then () else await_completion ()
+
+          let signal_completion waiting_domain =
+            Atomic.set success true;
+            notify waiting_domain
+
+      Semantically, the primitives are similar to having a single
+      monitor (or mutex + condition variable) per domain. That is,
+      [critical_section f] acquires the current domain's mutex and
+      runs [f], [wait f] waits on the current domain's condition
+      variable (releasing the mutex during the wait), and [notify d]
+      acquires domain [d]'s mutex and signals its condition variable.
+      The only difference from standard monitors is that [notify d]
+      waits for the critical sections that were in progress to complete.
+
+      However, the actual implementation is somewhat different. In
+      particular, [critical_section f] is cheaper than acquiring a mutex,
+      and performs no atomic operations *)
+
+  val critical_section : (unit -> 'a) -> 'a
+  (** [critical_section f] runs [f], but blocks notifications until
+      [f] returns. See [notify] below. *)
+
+  val notify : id -> unit
+  (** If the domain [d] is within a critical section (i.e. is evaluating
+      [critical_section f]), then [notify d] waits for this critical
+      section to complete before returning.
+      Otherwise, [notify d] does nothing. In general, when [notify d]
+      returns, all of [d]'s critical sections which began before
+      [notify] was called have ended. *)
+
+  val wait : unit -> unit
+  (** [wait] must be called from within a critical section, and returns
+      only when [notify] is called.
+      It does not matter whether [notify] is called before or after
+      [wait] begins: it is the critical section that is being notified,
+      not the call to wait. If wait is called and finds that the current
+      critical has already been notified, it returns immediately. *)
+
+end
 
 module BVar : sig
   (* A bvar is a reference, either empty or full,
