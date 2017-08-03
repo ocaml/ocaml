@@ -246,6 +246,9 @@ Working version
 - GPR#1242: disable C plugins loading by default
   (Alexey Egorov)
 
+- GPR#1275: correct configure test for Spacetime availability
+  (Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open

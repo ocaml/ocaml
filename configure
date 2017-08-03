@@ -1204,13 +1204,13 @@ otherlibraries="$unixlib str num dynlink bigarray"
 
 # Spacetime profiling is only available for native code on 64-bit targets.
 
-case "$native_compiler" in
-    true)
+case "$arch" in
+    none) ;;
+    *)
       if $arch64; then
         otherlibraries="$otherlibraries raw_spacetime_lib"
       fi
       ;;
-    *) ;;
 esac
 
 # For the Unix library
@@ -1992,7 +1992,8 @@ if $with_spacetime; then
       fi
     fi
   else
-    echo "Spacetime profiling is not available on 32-bit platforms."
+    echo "Spacetime profiling unavailable: it needs a 64-bit platform with"
+    echo "  support for the native code OCaml compiler."
     with_spacetime=false
     libunwind_available=false
     has_libunwind=no
