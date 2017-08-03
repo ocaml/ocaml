@@ -294,9 +294,13 @@ static void* large_allocate(struct caml_heap_state* local, mlsize_t sz) {
   return (char*)a + LARGE_ALLOC_HEADER_SZ;
 }
 
-value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag_t tag, int pinned) {
+value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize,
+                             tag_t tag, int pinned)
+{
   mlsize_t whsize = Whsize_wosize(wosize);
   value* p;
+  uintnat colour;
+
   Assert (wosize > 0);
   Assert (tag != Infix_tag);
   if (whsize <= SIZECLASS_MAX) {
@@ -312,7 +316,8 @@ value* caml_shared_try_alloc(struct caml_heap_state* local, mlsize_t wosize, tag
     p = large_allocate(local, Bsize_wsize(whsize));
     if (!p) return 0;
   }
-  Hd_hp (p) = Make_header(wosize, tag, pinned ? NOT_MARKABLE : global.UNMARKED);
+  colour = pinned ? NOT_MARKABLE : global.MARKED;
+  Hd_hp (p) = Make_header(wosize, tag, colour);
 #ifdef DEBUG
   {
     int i;
@@ -670,7 +675,7 @@ static void verify_swept (struct caml_heap_state* local) {
   Assert(local->stats.pool_live_blocks == pool_stats.live_blocks);
   Assert(local->stats.pool_frag_words == pool_stats.overhead);
   Assert(local->stats.pool_words -
-         (local->stats.pool_live_words + local->stats.pool_frag_words) 
+         (local->stats.pool_live_words + local->stats.pool_frag_words)
          == pool_stats.free);
   Assert(local->stats.large_words == large_stats.alloced);
   Assert(local->stats.large_blocks == large_stats.live_blocks);

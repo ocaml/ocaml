@@ -147,7 +147,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
   while (stw_leader) caml_plat_wait(&all_domains_cond);
 
   for (i = 0;
-       i < Max_domains && 
+       i < Max_domains &&
          !d;
        i++) {
     struct interruptor* s = &all_domains[i].interruptor;
@@ -303,7 +303,7 @@ static void* domain_thread_func(void* v) {
   caml_plat_broadcast(&p->parent->cond);
   caml_plat_unlock(&p->parent->lock);
   /* cannot access p below here */
-  
+
   if (domain_self) {
     caml_gc_log("Domain starting");
     caml_callback(caml_read_root(callback), Val_unit);
@@ -467,7 +467,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.domains_still_running) == 0)
       break;
-    caml_handle_incoming_interrupts(&domain_self->interruptor);    
+    caml_handle_incoming_interrupts(&domain_self->interruptor);
   }
   stw_request.callback(domain, stw_request.data);
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
@@ -882,6 +882,6 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
   if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, 0)) {
     caml_failwith("Domain.Interrupt.interrupt: target domain has already terminated");
   }
-  
+
   CAMLreturn (Val_unit);
 }
