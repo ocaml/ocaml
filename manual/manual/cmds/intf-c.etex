@@ -767,6 +767,10 @@ satisfy the GC constraints.
 "caml_alloc_string("\var{n}")" returns a byte sequence (or string) value of
 length \var{n} bytes. The sequence initially contains uninitialized bytes.
 \item
+"caml_alloc_initialized_string("\var{n}", "\var{p}")" returns a byte sequence
+(or string) value of length \var{n} bytes.  The value is initialized from the
+\var{n} bytes starting at address \var{p}.
+\item
 "caml_copy_string("\var{s}")" returns a string or byte sequence value
 containing a copy of the null-terminated C string \var{s} (a "char *").
 \item
