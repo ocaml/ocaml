@@ -658,35 +658,6 @@ let rec generalize_spine ty =
       List.iter generalize_spine tyl
   | _ -> ()
 
-(*
-   Check whether the abbreviation expands to a well-defined type.
-   During the typing of a class, abbreviations for correspondings
-   types expand to non-generic types.
-*)
-let generic_abbrev env path =
-  try
-    let (_, body, _) = Env.find_type_expansion path env in
-    (repr body).level = generic_level
-  with
-    Not_found ->
-      false
-
-let generic_private_abbrev env path =
-  try
-    match Env.find_type path env with
-      {type_kind = Type_abstract;
-       type_private = Private;
-       type_manifest = Some body} ->
-         (repr body).level = generic_level
-    | _ -> false
-  with Not_found -> false
-
-let is_contractive env p =
-  try
-    let decl = Env.find_type p env in
-    in_pervasives p && decl.type_manifest = None || is_datatype decl
-  with Not_found -> false
-
 let forward_try_expand_once = (* Forward declaration *)
   ref (fun _env _ty -> raise Cannot_expand)
 
@@ -1594,6 +1565,35 @@ let full_expand env ty =
       newty2 ty.level (Tobject (fi, ref None))
   | _ ->
       ty
+
+(*
+   Check whether the abbreviation expands to a well-defined type.
+   During the typing of a class, abbreviations for correspondings
+   types expand to non-generic types.
+*)
+let generic_abbrev env path =
+  try
+    let (_, body, _) = Env.find_type_expansion path env in
+    (repr body).level = generic_level
+  with
+    Not_found ->
+      false
+
+let generic_private_abbrev env path =
+  try
+    match Env.find_type path env with
+      {type_kind = Type_abstract;
+       type_private = Private;
+       type_manifest = Some body} ->
+         (repr body).level = generic_level
+    | _ -> false
+  with Not_found -> false
+
+let is_contractive env p =
+  try
+    let decl = Env.find_type p env in
+    in_pervasives p && decl.type_manifest = None || is_datatype decl
+  with Not_found -> false
 
 
                               (*****************)
