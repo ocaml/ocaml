@@ -704,11 +704,13 @@ $\hbox{"string_length"}(v)-1$.
 or byte sequence \var{v}, with type "unsigned char". Bytes are
 numbered from 0 to $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
-or byte sequence \var{v}, with type "char *". This pointer is a valid C
-string: there is a
-null byte after the last byte in the string. However, OCaml
-strings and byte sequences can contain embedded null bytes, which will confuse
-the usual C functions over strings.
+\var{v}, with type "char *" or, when OCaml is configured with "-safe-string",
+with type "const char *".
+This pointer is a valid C string: there is a null byte after the last
+byte in the string. However, OCaml strings can contain embedded null bytes,
+which will confuse the usual C functions over strings.
+\item "Bytes_val("\var{v}")" returns a pointer to the first byte of the
+byte sequence \var{v}, with type "unsigned char *".
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
 \item "Double_field("\var{v}", "\var{n}")" returns
