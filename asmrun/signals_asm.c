@@ -158,21 +158,9 @@ int caml_set_signal_action(int signo, int action)
 /* Machine- and OS-dependent handling of bound check trap */
 
 #if defined(TARGET_power) \
-  || defined(TARGET_s390x) \
-  || (defined(TARGET_sparc) && defined(SYS_solaris))
+  || defined(TARGET_s390x)
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
-#if defined(SYS_solaris)
-  if (info->si_code != ILL_ILLTRP) {
-    /* Deactivate our exception handler and return. */
-    struct sigaction act;
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(sig, &act, NULL);
-    return;
-  }
-#endif
 #if defined(SYS_rhapsody)
   /* Unblock SIGTRAP */
   { sigset_t mask;
@@ -262,14 +250,6 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
 void caml_init_signals(void)
 {
   /* Bound-check trap handling */
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-  { struct sigaction act;
-    sigemptyset(&act.sa_mask);
-    SET_SIGACT(act, trap_handler);
-    act.sa_flags |= SA_NODEFER;
-    sigaction(SIGILL, &act, NULL);
-  }
-#endif
 
 #if defined(TARGET_power)
   { struct sigaction act;
@@ -304,8 +284,5 @@ void caml_init_signals(void)
     system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
   }
-#endif
-#if defined(_WIN32) && !defined(_WIN64)
-  caml_win32_overflow_detection();
 #endif
 }

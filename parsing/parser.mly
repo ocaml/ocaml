@@ -219,56 +219,6 @@ let exp_of_label lbl pos =
 let pat_of_label lbl pos =
   mkpat (Ppat_var (mkrhs (Longident.last lbl) pos))
 
-let check_variable vl loc v =
-  if List.mem v vl then
-    raise Syntaxerr.(Error(Variable_in_scope(loc,v)))
-
-let varify_constructors var_names t =
-  let var_names = List.map (fun v -> v.txt) var_names in
-  let rec loop t =
-    let desc =
-      match t.ptyp_desc with
-      | Ptyp_any -> Ptyp_any
-      | Ptyp_var x ->
-          check_variable var_names t.ptyp_loc x;
-          Ptyp_var x
-      | Ptyp_arrow (label,core_type,core_type') ->
-          Ptyp_arrow(label, loop core_type, loop core_type')
-      | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
-      | Ptyp_constr( { txt = Lident s }, []) when List.mem s var_names ->
-          Ptyp_var s
-      | Ptyp_constr(longident, lst) ->
-          Ptyp_constr(longident, List.map loop lst)
-      | Ptyp_object (lst, o) ->
-          Ptyp_object
-            (List.map (fun (s, attrs, t) -> (s, attrs, loop t)) lst, o)
-      | Ptyp_class (longident, lst) ->
-          Ptyp_class (longident, List.map loop lst)
-      | Ptyp_alias(core_type, string) ->
-          check_variable var_names t.ptyp_loc string;
-          Ptyp_alias(loop core_type, string)
-      | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
-          Ptyp_variant(List.map loop_row_field row_field_list,
-                       flag, lbl_lst_option)
-      | Ptyp_poly(string_lst, core_type) ->
-        List.iter (fun v ->
-          check_variable var_names t.ptyp_loc v.txt) string_lst;
-          Ptyp_poly(string_lst, loop core_type)
-      | Ptyp_package(longident,lst) ->
-          Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
-      | Ptyp_extension (s, arg) ->
-          Ptyp_extension (s, arg)
-    in
-    {t with ptyp_desc = desc}
-  and loop_row_field  =
-    function
-      | Rtag(label,attrs,flag,lst) ->
-          Rtag(label,attrs,flag,List.map loop lst)
-      | Rinherit t ->
-          Rinherit (loop t)
-  in
-  loop t
-
 let mk_newtypes newtypes exp =
   List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
     newtypes exp
@@ -276,7 +226,7 @@ let mk_newtypes newtypes exp =
 let wrap_type_annotation newtypes core_type body =
   let exp = mkexp(Pexp_constraint(body,core_type)) in
   let exp = mk_newtypes newtypes exp in
-  (exp, ghtyp(Ptyp_poly(newtypes,varify_constructors newtypes core_type)))
+  (exp, ghtyp(Ptyp_poly(newtypes, Typ.varify_constructors newtypes core_type)))
 
 let wrap_exp_attrs body (ext, attrs) =
   (* todo: keep exact location for the entire attribute *)
@@ -310,6 +260,8 @@ let mkpat_attrs d attrs =
 
 let wrap_class_attrs body attrs =
   {body with pcl_attributes = attrs @ body.pcl_attributes}
+let wrap_class_type_attrs body attrs =
+  {body with pcty_attributes = attrs @ body.pcty_attributes}
 let wrap_mod_attrs body attrs =
   {body with pmod_attributes = attrs @ body.pmod_attributes}
 let wrap_mty_attrs body attrs =
@@ -765,13 +717,20 @@ module_expr:
             (fun acc (n, t) -> mkmod(Pmod_functor(n, t, acc)))
             $5 $3
         in wrap_mod_attrs modexp $2 }
-  | module_expr LPAREN module_expr RPAREN
-      { mkmod(Pmod_apply($1, $3)) }
+  | module_expr paren_module_expr
+      { mkmod(Pmod_apply($1, $2)) }
   | module_expr LPAREN RPAREN
       { mkmod(Pmod_apply($1, mkmod (Pmod_structure []))) }
-  | module_expr LPAREN module_expr error
-      { unclosed "(" 2 ")" 4 }
-  | LPAREN module_expr COLON module_type RPAREN
+  | paren_module_expr
+      { $1 }
+  | module_expr attribute
+      { Mod.attr $1 $2 }
+  | extension
+      { mkmod(Pmod_extension $1) }
+;
+
+paren_module_expr:
+    LPAREN module_expr COLON module_type RPAREN
       { mkmod(Pmod_constraint($2, $4)) }
   | LPAREN module_expr COLON module_type error
       { unclosed "(" 1 ")" 5 }
@@ -801,10 +760,6 @@ module_expr:
       { unclosed "(" 1 ")" 6 }
   | LPAREN VAL attributes expr error
       { unclosed "(" 1 ")" 5 }
-  | module_expr attribute
-      { Mod.attr $1 $2 }
-  | extension
-      { mkmod(Pmod_extension $1) }
 ;
 
 structure:
@@ -1080,6 +1035,8 @@ class_expr:
       { mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
       { class_of_let_bindings $1 $3 }
+  | LET OPEN override_flag attributes mod_longident IN class_expr
+      { wrap_class_attrs (mkclass(Pcl_open($3, mkrhs $5 5, $7))) $4 }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
@@ -1212,6 +1169,8 @@ class_signature:
       { Cty.attr $1 $2 }
   | extension
       { mkcty(Pcty_extension $1) }
+  | LET OPEN override_flag attributes mod_longident IN class_signature
+      { wrap_class_type_attrs (mkcty(Pcty_open($3, mkrhs $5 5, $7))) $4 }
 ;
 class_sig_body:
     class_self_type class_sig_fields
@@ -1619,8 +1578,18 @@ lident_list:
   | LIDENT lident_list                { mkrhs $1 1 :: $2 }
 ;
 let_binding_body:
-    val_ident fun_binding
+    val_ident strict_binding
       { (mkpatvar $1 1, $2) }
+  | val_ident type_constraint EQUAL seq_expr
+      { let v = mkpatvar $1 1 in (* PR#7344 *)
+        let t =
+          match $2 with
+            Some t, None -> t
+          | _, Some t -> t
+          | _ -> assert false
+        in
+        (ghpat(Ppat_constraint(v, ghtyp(Ptyp_poly([],t)))),
+         mkexp_constraint $4 $2) }
   | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
       { (ghpat(Ppat_constraint(mkpatvar $1 1,
                                ghtyp(Ptyp_poly(List.rev $3,$5)))),
@@ -2301,9 +2270,10 @@ row_field:
 ;
 tag_field:
     name_tag OF opt_ampersand amper_type_list attributes
-      { Rtag ($1, add_info_attrs (symbol_info ()) $5, $3, List.rev $4) }
+      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $5,
+               $3, List.rev $4) }
   | name_tag attributes
-      { Rtag ($1, add_info_attrs (symbol_info ()) $2, true, []) }
+      { Rtag (mkrhs $1 1, add_info_attrs (symbol_info ()) $2, true, []) }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2331,14 +2301,17 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field_semi meth_list                     { let (f, c) = $2 in ($1 :: f, c) }
+    field_semi meth_list                        { let (f, c) = $2 in ($1 :: f, c) }
+  | inherit_field_semi meth_list                { let (f, c) = $2 in ($1 :: f, c) }
   | field_semi                                  { [$1], Closed }
   | field                                       { [$1], Closed }
+  | inherit_field_semi                          { [$1], Closed }
+  | simple_core_type                            { [Oinherit $1], Closed }
   | DOTDOT                                      { [], Open }
 ;
 field:
   label COLON poly_type_no_attr attributes
-    { (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
+    { Otag (mkrhs $1 1, add_info_attrs (symbol_info ()) $4, $3) }
 ;
 
 field_semi:
@@ -2348,8 +2321,11 @@ field_semi:
         | Some _ as info_before_semi -> info_before_semi
         | None -> symbol_info ()
       in
-      (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3) }
+      ( Otag (mkrhs $1 1, add_info_attrs info ($4 @ $6), $3)) }
 ;
+
+inherit_field_semi:
+  simple_core_type SEMI { Oinherit $1 }
 
 label:
     LIDENT                                      { $1 }

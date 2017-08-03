@@ -13,7 +13,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_NAME_SPACE
 #include <string.h>
 #include <ctype.h>
 #include <caml/mlvalues.h>

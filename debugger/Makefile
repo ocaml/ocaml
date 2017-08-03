@@ -41,6 +41,7 @@ OTHEROBJS=\
   ../utils/consistbl.cmo ../utils/warnings.cmo \
   ../utils/terminfo.cmo \
   ../parsing/location.cmo ../parsing/longident.cmo ../parsing/docstrings.cmo \
+  ../parsing/syntaxerr.cmo \
   ../parsing/ast_helper.cmo ../parsing/ast_mapper.cmo \
   ../parsing/ast_iterator.cmo ../parsing/attr_helper.cmo \
   ../parsing/builtin_attributes.cmo \

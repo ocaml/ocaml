@@ -107,8 +107,10 @@ let build_graph fundecl =
         interf i.next
     | Iloop body ->
         interf body; interf i.next
-    | Icatch(_, body, handler) ->
-        interf body; interf handler; interf i.next
+    | Icatch(_rec_flag, handlers, body) ->
+        interf body;
+        List.iter (fun (_, handler) -> interf handler) handlers;
+        interf i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->
@@ -179,8 +181,18 @@ let build_graph fundecl =
         (* Avoid overflow of weight and spill_cost *)
         prefer (if weight < 1000 then 8 * weight else weight) body;
         prefer weight i.next
-    | Icatch(_, body, handler) ->
-        prefer weight body; prefer weight handler; prefer weight i.next
+    | Icatch(rec_flag, handlers, body) ->
+        prefer weight body;
+        List.iter (fun (_nfail, handler) ->
+            let weight =
+              match rec_flag with
+              | Cmm.Recursive ->
+                  (* Avoid overflow of weight and spill_cost *)
+                  if weight < 1000 then 8 * weight else weight
+              | Cmm.Nonrecursive ->
+                  weight in
+            prefer weight handler) handlers;
+        prefer weight i.next
     | Iexit _ ->
         ()
     | Itrywith(body, handler) ->

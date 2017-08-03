@@ -63,7 +63,7 @@ ifeq "$(UNIX_OR_WIN32)" "unix"
     OCAMLDOC_RUN=$(OCAMLRUN) ./$(OCAMLDOC)
   endif
 else # Windows
-  OCAMLDOC_RUN = PATH="$$PATH":"$(abspath $(ROOTDIR))/otherlibs/$(UNIXLIB)":"$(abspath $(ROOTDIR))/otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
+  OCAMLDOC_RUN = CAML_LD_LIBRARY_PATH="../otherlibs/win32unix;../otherlibs/str" $(OCAMLRUN) ./$(OCAMLDOC)
 endif
 
 OCAMLDOC_OPT=$(OCAMLDOC).opt
@@ -212,7 +212,7 @@ exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 
 .PHONY: generatorsopt
-generatorsopt: $(GENERATORS_CMXS) # Not present in Makefile.nt
+generatorsopt: $(GENERATORS_CMXS)
 
 # TODO: the following debug target could be replaced by a DEBUG variable
 .PHONY: debug
@@ -409,12 +409,12 @@ autotest_stdlib:
 .PHONY: clean
 clean:
 	rm -f *~ \#*\#
-	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
+	rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.cmt *.cmti *.$(A) *.$(O)
 	rm -f odoc_parser.output odoc_text_parser.output
 	rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	rm -rf stdlib_man
-	rm -f generators/*.cm[aiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
+	rm -f generators/*.cm[taiox] generators/*.$(A) generators/*.$(O) generators/*.cmx[as]
 
 .PHONY: depend
 depend:
@@ -424,6 +424,7 @@ depend:
 	$(OCAMLLEX) odoc_lexer.mll
 	$(OCAMLLEX) odoc_ocamlhtml.mll
 	$(OCAMLLEX) odoc_see_lexer.mll
-	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli generators/*.ml > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
+	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
 
 include .depend

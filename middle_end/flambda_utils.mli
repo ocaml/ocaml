@@ -69,7 +69,7 @@ val make_key : Flambda.t -> sharing_key option
 val make_closure_declaration
    : id:Variable.t
   -> body:Flambda.t
-  -> params:Variable.t list
+  -> params:Parameter.t list
   -> stub:bool
   -> Flambda.t
 
@@ -214,3 +214,18 @@ val clean_projections
   -> Flambda.specialised_to Variable.Map.t
 
 val projection_to_named : Projection.t -> Flambda.named
+
+type specialised_to_same_as =
+  | Not_specialised
+  | Specialised_and_aliased_to of Variable.Set.t
+
+(** For each parameter in a given set of function declarations and the usual
+    specialised-args mapping, determine which other parameters are specialised
+    to the same variable as that parameter.
+    The result is presented as a map from [fun_vars] to lists, corresponding
+    componentwise to the usual [params] list in the corresponding function
+    declaration. *)
+val parameters_specialised_to_the_same_variable
+   : function_decls:Flambda.function_declarations
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> specialised_to_same_as list Variable.Map.t

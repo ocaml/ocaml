@@ -37,24 +37,20 @@ let initial_env () =
     if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
-  let initial =
-    (* Open the Pervasives module by reading directly the corresponding cmi
-       file to avoid troubles when building the documentation for the
-       Pervasives modules.
-       Another option might be to add a -nopervasives option to ocamldoc and update
-       stdlib documentation's build process. *)
-    try
-      Env.open_pers_signature "Pervasives" initial
-    with Not_found ->
-      Misc.fatal_error @@ Printf.sprintf "cannot open pervasives.cmi" in
   let open_mod env m =
     let open Asttypes in
     let lid = {loc = Location.in_file "ocamldoc command line";
-               txt = Longident.Lident m } in
+               txt = Longident.parse m } in
     snd (Typemod.type_open_ Override env lid.loc lid) in
   (* Open the list of modules given as arguments of the "-open" flag
      The list is reversed to open the modules in the left-to-right order *)
-  List.fold_left open_mod initial (List.rev !Clflags.open_modules)
+  let to_open = List.rev !Clflags.open_modules in
+  let to_open =
+    if Env.get_unit_name () = "Pervasives"
+    then to_open
+    else "Pervasives" :: to_open
+  in
+  List.fold_left open_mod initial to_open
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
@@ -133,13 +129,11 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. *)
 
 let process_error exn =
-  match Location.error_of_exn exn with
-  | Some err ->
-      fprintf Format.err_formatter "@[%a@]@." Location.report_error err
-  | None ->
-      fprintf Format.err_formatter
-        "Compilation error(%s). Use the OCaml compiler to get more details.@."
-        (Printexc.to_string exn)
+  try Location.report_exception Format.err_formatter exn
+  with exn ->
+    fprintf Format.err_formatter
+      "Compilation error(%s). Use the OCaml compiler to get more details.@."
+      (Printexc.to_string exn)
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file sourcefile =
@@ -164,7 +158,7 @@ let process_file sourcefile =
              None
          | Some (parsetree, typedtree) ->
              let file_module = Ast_analyser.analyse_typed_tree file
-                 !Location.input_name parsetree typedtree
+                 input_file parsetree typedtree
              in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
@@ -192,7 +186,7 @@ let process_file sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file file in
          let file_module = Sig_analyser.analyse_signature file
-             !Location.input_name ast signat.sig_type
+             input_file ast signat.sig_type
          in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;

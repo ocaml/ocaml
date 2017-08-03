@@ -17,10 +17,10 @@ default:
 	  printf " ... testing '$$file':"; \
 	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) $$file && \
 	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) -principal \
-            $$file.corrected && \
-          mv $$file.corrected.corrected $$file.corrected && \
-          cmp $$file $$file.corrected && \
-          echo " => passed" || echo " => failed"; \
+	    $$file.corrected && \
+	  mv $$file.corrected.corrected $$file.corrected && \
+	  $(DIFF) $$file $$file.corrected && \
+	  echo " => passed" || echo " => failed"; \
 	done
 
 promote:

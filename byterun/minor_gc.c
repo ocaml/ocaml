@@ -85,8 +85,9 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
 
   tbl->size = sz;
   tbl->reserve = rsv;
-  new_table = (void *) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                        * element_size);
+  new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
+                                             element_size);
+  if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -133,9 +134,9 @@ void caml_set_minor_heap_size (asize_t bsz)
   char *new_heap;
   void *new_heap_base;
 
-  Assert (bsz >= Bsize_wsize(Minor_heap_min));
-  Assert (bsz <= Bsize_wsize(Minor_heap_max));
-  Assert (bsz % sizeof (value) == 0);
+  CAMLassert (bsz >= Bsize_wsize(Minor_heap_min));
+  CAMLassert (bsz <= Bsize_wsize(Minor_heap_max));
+  CAMLassert (bsz % sizeof (value) == 0);
   if (caml_young_ptr != caml_young_alloc_end){
     CAML_INSTR_INT ("force_minor/set_minor_heap_size@", 1);
     caml_requested_minor_gc = 0;
@@ -144,14 +145,14 @@ void caml_set_minor_heap_size (asize_t bsz)
     caml_empty_minor_heap ();
   }
   CAMLassert (caml_young_ptr == caml_young_alloc_end);
-  new_heap = caml_aligned_malloc(bsz, 0, &new_heap_base);
+  new_heap = caml_stat_alloc_aligned_noexc(bsz, 0, &new_heap_base);
   if (new_heap == NULL) caml_raise_out_of_memory();
   if (caml_page_table_add(In_young, new_heap, new_heap + bsz) != 0)
     caml_raise_out_of_memory();
 
   if (caml_young_start != NULL){
     caml_page_table_remove(In_young, caml_young_start, caml_young_end);
-    free (caml_young_base);
+    caml_stat_free (caml_young_base);
   }
   caml_young_base = new_heap_base;
   caml_young_start = (value *) new_heap;
@@ -183,7 +184,7 @@ void caml_oldify_one (value v, value *p)
 
  tail_call:
   if (Is_block (v) && Is_young (v)){
-    Assert ((value *) Hp_val (v) >= caml_young_ptr);
+    CAMLassert ((value *) Hp_val (v) >= caml_young_ptr);
     hd = Hd_val (v);
     if (hd == 0){         /* If already forwarded */
       *p = Field (v, 0);  /*  then forward pointer is first field. */
@@ -203,7 +204,7 @@ void caml_oldify_one (value v, value *p)
           Field (result, 1) = oldify_todo_list;    /* Add this block */
           oldify_todo_list = v;                    /*  to the "to do" list. */
         }else{
-          Assert (sz == 1);
+          CAMLassert (sz == 1);
           p = &Field (result, 0);
           v = field0;
           goto tail_call;
@@ -224,7 +225,7 @@ void caml_oldify_one (value v, value *p)
         tag_t ft = 0;
         int vv = 1;
 
-        Assert (tag == Forward_tag);
+        CAMLassert (tag == Forward_tag);
         if (Is_block (f)){
           if (Is_young (f)){
             vv = 1;
@@ -238,7 +239,7 @@ void caml_oldify_one (value v, value *p)
         }
         if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
-          Assert (Wosize_hd (hd) == 1);
+          CAMLassert (Wosize_hd (hd) == 1);
           result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
           *p = result;
           Hd_val (v) = 0;             /* Set (GC) forward flag */
@@ -285,7 +286,7 @@ void caml_oldify_mopup (void)
 
   while (oldify_todo_list != 0){
     v = oldify_todo_list;                /* Get the head. */
-    Assert (Hd_val (v) == 0);            /* It must be forwarded. */
+    CAMLassert (Hd_val (v) == 0);            /* It must be forwarded. */
     new_v = Field (v, 0);                /* Follow forward pointer. */
     oldify_todo_list = Field (new_v, 1); /* Remove from list. */
 
@@ -360,7 +361,7 @@ void caml_empty_minor_heap (void)
           if (Hd_val (*key) == 0){ /* Value copied to major heap */
             *key = Field (*key, 0);
           }else{ /* Value not copied so it's dead */
-            Assert(!ephe_check_alive_data(re));
+            CAMLassert(!ephe_check_alive_data(re));
             *key = caml_ephe_none;
             Field(re->ephe,1) = caml_ephe_none;
           }
@@ -488,9 +489,9 @@ static void realloc_generic_table
 (struct generic_table *tbl, asize_t element_size,
  char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
 {
-                                            Assert (tbl->ptr == tbl->limit);
-                                            Assert (tbl->limit <= tbl->end);
-                                      Assert (tbl->limit >= tbl->threshold);
+  CAMLassert (tbl->ptr == tbl->limit);
+  CAMLassert (tbl->limit <= tbl->end);
+  CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
     alloc_generic_table (tbl, caml_minor_heap_wsz / 8, 256,
@@ -508,7 +509,7 @@ static void realloc_generic_table
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
-    tbl->base = (void *) realloc ((char *) tbl->base, sz);
+    tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
       caml_fatal_error (msg_error);
     }

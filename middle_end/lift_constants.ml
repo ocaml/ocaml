@@ -302,26 +302,30 @@ let translate_definition_and_resolve_alias inconstants
         [Array (Pfloatarray, _, _)]
        (which references its contents via variables; it does not contain
         manifest floats). *)
+    let find_float_var_definition var =
+      match Variable.Tbl.find var_to_definition_tbl var with
+      | Allocated_const (Normal (Float f)) -> f
+      | const_defining_value ->
+          Misc.fatal_errorf "Bad definition for float array member %a: %a"
+            Variable.print var
+            Alias_analysis.print_constant_defining_value
+            const_defining_value
+    in
+    let find_float_symbol_definition sym =
+      match Symbol.Map.find sym symbol_definition_map with
+      | Allocated_const (Float f) -> f
+      | const_defining_value ->
+          Misc.fatal_errorf "Bad definition for float array member %a: %a"
+            Symbol.print sym
+            Flambda.print_constant_defining_value
+            const_defining_value
+    in
     let floats =
       List.map (fun var ->
-          let var =
-            match Variable.Map.find var aliases with
-            | exception Not_found -> var
-            | Symbol _ ->
-              Misc.fatal_errorf
-                "Lift_constants.translate_definition_and_resolve_alias: \
-                  Array Pfloatarray %a with Symbol argument: %a"
-                Variable.print var
-                Alias_analysis.print_constant_defining_value definition
-            | Variable var -> var
-          in
-          match Variable.Tbl.find var_to_definition_tbl var with
-          | Allocated_const (Normal (Float f)) -> f
-          | const_defining_value ->
-            Misc.fatal_errorf "Bad definition for float array member %a: %a"
-              Variable.print var
-              Alias_analysis.print_constant_defining_value
-                const_defining_value)
+          match Variable.Map.find var aliases with
+          | exception Not_found -> find_float_var_definition var
+          | Variable var -> find_float_var_definition var
+          | Symbol sym -> find_float_symbol_definition sym)
         vars
     in
     let const : Allocated_const.t =
@@ -837,9 +841,15 @@ let replace_definitions_in_initialize_symbol_and_effects
               var_to_definition_tbl
               var
           in
-          match resolved with
-          | Symbol s -> Symbol s
-          | Const c -> Const c)
+          match named, resolved with
+          | Symbol s1, Symbol s2 ->
+            assert (s1 == s2);  (* physical equality for speed *)
+            named;
+          | Const c1, Const c2 ->
+            assert (c1 == c2);
+            named
+          | _, Symbol s -> Symbol s
+          | _, Const c -> Const c)
   in
   (* This is safe because we only [replace] the current key during
      iteration (cf. https://github.com/ocaml/ocaml/pull/337) *)

@@ -21,6 +21,7 @@
 #ifdef CAML_INTERNALS
 
 #include "misc.h"
+#include "memory.h"
 
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].
    [flags] indicates whether [fd] is a socket
@@ -39,19 +40,18 @@ extern int caml_read_fd(int fd, int flags, void * buf, int n);
 extern int caml_write_fd(int fd, int flags, void * buf, int n);
 
 /* Decompose the given path into a list of directories, and add them
-   to the given table.  Return the block to be freed later. */
-extern char * caml_decompose_path(struct ext_table * tbl, char * path);
+   to the given table. */
+extern caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path);
 
 /* Search the given file in the given list of directories.
-   If not found, return a copy of [name].  Result is allocated with
-   [caml_stat_alloc]. */
-extern char * caml_search_in_path(struct ext_table * path, char * name);
+   If not found, return a copy of [name]. */
+extern caml_stat_string caml_search_in_path(struct ext_table * path, char * name);
 
 /* Same, but search an executable name in the system path for executables. */
-CAMLextern char * caml_search_exe_in_path(char * name);
+CAMLextern caml_stat_string caml_search_exe_in_path(char * name);
 
 /* Same, but search a shared library in the given path. */
-extern char * caml_search_dll_in_path(struct ext_table * path, char * name);
+extern caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and
@@ -85,6 +85,11 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
    GetModuleFileName under Windows).  Return NULL on error,
    string allocated with [caml_stat_alloc] on success. */
 extern char * caml_executable_name(void);
+
+/* Secure version of [getenv]: returns NULL if the process has special
+   privileges (setuid bit, setgid bit, capabilities).
+*/
+extern char *caml_secure_getenv(char const *var);
 
 #endif /* CAML_INTERNALS */
 

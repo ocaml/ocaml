@@ -28,6 +28,7 @@ let include_dirs = Clflags.include_dirs
 let errors = ref 0
 
 let warn_error = ref false
+let show_missed_crossref = ref false
 
 let pwarning s =
   if !Odoc_config.print_warnings then prerr_endline (Odoc_messages.warning^": "^s);

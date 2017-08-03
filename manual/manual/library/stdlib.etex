@@ -91,6 +91,7 @@ be called from C \\
 "Filename" & p.~\pageref{Filename} & operations on file names \\
 "Gc" & p.~\pageref{Gc} & memory management control and statistics \\
 "Printexc" & p.~\pageref{Printexc} & a catch-all exception handler \\
+"Spacetime" & p.~\pageref{Spacetime} & memory profiler \\
 "Sys" & p.~\pageref{Sys} & system interface \\
 \end{tabular}
 \end{latexonly}
@@ -102,6 +103,7 @@ be called from C \\
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
 \item \ahref{libref/Buffer.html}{Module \texttt{Buffer}: extensible buffers}
 \item \ahref{libref/Bytes.html}{Module \texttt{Bytes}: byte sequences}
+\item \ahref{libref/BytesLabels.html}{Module \texttt{BytesLabels}: byte sequences (with labels)}
 \item \ahref{libref/Callback.html}{Module \texttt{Callback}: registering OCaml values with the C runtime}
 \item \ahref{libref/Char.html}{Module \texttt{Char}: character operations}
 \item \ahref{libref/Complex.html}{Module \texttt{Complex}: Complex numbers}
@@ -130,7 +132,8 @@ be called from C \\
 \item \ahref{libref/Random.html}{Module \texttt{Random}: pseudo-random number generator (PRNG)}
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
-\item \ahref{libref/Sort.html}{(deprecated)}
+\item \ahref{libref/Sort.html}{Module \texttt{Sort}: deprecated}
+\item \ahref{libref/Spacetime.html}{Module \texttt{Spacetime}: memory profiler}
 \item \ahref{libref/Stack.html}{Module \texttt{Stack}: last-in first-out stacks}
 \item \ahref{libref/StdLabels.html}{Module \texttt{StdLabels}: Include modules \texttt{Array}, \texttt{List} and \texttt{String} with labels}
 \item \ahref{libref/Stream.html}{Module \texttt{Stream}: streams and parsers}
@@ -143,8 +146,10 @@ be called from C \\
 \else
 \input{Arg.tex}
 \input{Array.tex}
+\input{ArrayLabels.tex}
 \input{Buffer.tex}
 \input{Bytes.tex}
+\input{BytesLabels.tex}
 \input{Callback.tex}
 \input{Char.tex}
 \input{Complex.tex}
@@ -160,6 +165,7 @@ be called from C \\
 \input{Lazy.tex}
 \input{Lexing.tex}
 \input{List.tex}
+\input{ListLabels.tex}
 \input{Map.tex}
 \input{Marshal.tex}
 \input{MoreLabels.tex}
@@ -173,10 +179,12 @@ be called from C \\
 \input{Scanf.tex}
 \input{Set.tex}
 \input{Sort.tex}
+\input{Spacetime.tex}
 \input{Stack.tex}
 \input{StdLabels.tex}
 \input{Stream.tex}
 \input{String.tex}
+\input{StringLabels.tex}
 \input{Sys.tex}
 \input{Uchar.tex}
 \input{Weak.tex}

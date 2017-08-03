@@ -35,6 +35,7 @@ let ignore_function_label (_ : Clambda.function_label) = ()
 let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
 let ignore_ident (_ : Ident.t) = ()
+let ignore_ident_option (_ : Ident.t option) = ()
 let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
@@ -86,7 +87,8 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun ({ Clambda. label; arity; params; body; dbg } as clos) ->
+      List.iter (fun (
+        { Clambda. label; arity; params; body; dbg; env; } as clos) ->
           (match closure_environment_ident clos with
            | None -> ()
            | Some env_var ->
@@ -96,7 +98,8 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
           ignore_int arity;
           ignore_ident_list params;
           loop body;
-          ignore_debuginfo dbg)
+          ignore_debuginfo dbg;
+          ignore_ident_option env)
         functions
     | Uoffset (expr, offset) ->
       loop expr;
@@ -115,12 +118,13 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       List.iter loop args;
       ignore_debuginfo dbg
     | Uswitch (cond, { us_index_consts; us_actions_consts;
-          us_index_blocks; us_actions_blocks }) ->
+          us_index_blocks; us_actions_blocks }, dbg) ->
       loop cond;
       ignore_int_array us_index_consts;
       Array.iter loop us_actions_consts;
       ignore_int_array us_index_blocks;
-      Array.iter loop us_actions_blocks
+      Array.iter loop us_actions_blocks;
+      ignore_debuginfo dbg
     | Ustringswitch (cond, branches, default) ->
       loop cond;
       List.iter (fun (str, branch) ->
@@ -253,14 +257,15 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter (fun { Clambda. label; arity; params; body; dbg; } ->
+      List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
           ignore_function_label label;
           ignore_int arity;
           ignore_ident_list params;
           let_stack := [];
           loop body;
           let_stack := [];
-          ignore_debuginfo dbg)
+          ignore_debuginfo dbg;
+          ignore_ident_option env)
         functions
     | Uoffset (expr, offset) ->
       (* [expr] should usually be a variable. *)
@@ -301,7 +306,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       examine_argument_list args;
       ignore_debuginfo dbg
     | Uswitch (cond, { us_index_consts; us_actions_consts;
-          us_index_blocks; us_actions_blocks }) ->
+          us_index_blocks; us_actions_blocks }, dbg) ->
       examine_argument_list [cond];
       ignore_int_array us_index_consts;
       Array.iter (fun action ->
@@ -313,6 +318,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
           let_stack := [];
           loop action)
         us_actions_blocks;
+      ignore_debuginfo dbg;
       let_stack := []
     | Ustringswitch (cond, branches, default) ->
       examine_argument_list [cond];
@@ -447,7 +453,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Uprim (prim, args, dbg) ->
     let args = substitute_let_moveable_list is_let_moveable env args in
     Uprim (prim, args, dbg)
-  | Uswitch (cond, sw) ->
+  | Uswitch (cond, sw, dbg) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let sw =
       { sw with
@@ -459,7 +465,7 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
             sw.us_actions_blocks;
       }
     in
-    Uswitch (cond, sw)
+    Uswitch (cond, sw, dbg)
   | Ustringswitch (cond, branches, default) ->
     let cond = substitute_let_moveable is_let_moveable env cond in
     let branches =
@@ -520,17 +526,17 @@ and substitute_let_moveable_array is_let_moveable env clams =
 (* We say that an expression is "moveable" iff it has neither effects nor
    coeffects.  (See semantics_of_primitives.mli.)
 *)
-type moveable = Fixed | Moveable | Moveable_not_into_loops
+type moveable = Fixed | Constant | Moveable
 
 let both_moveable a b =
   match a, b with
+  | Constant, Constant -> Constant
+  | Constant, Moveable
+  | Moveable, Constant
   | Moveable, Moveable -> Moveable
-  | Moveable_not_into_loops, Moveable
-  | Moveable, Moveable_not_into_loops
-  | Moveable_not_into_loops, Moveable_not_into_loops -> Moveable_not_into_loops
+  | Constant, Fixed
   | Moveable, Fixed
-  | Moveable_not_into_loops, Fixed
-  | Fixed, Moveable_not_into_loops
+  | Fixed, Constant
   | Fixed, Moveable
   | Fixed, Fixed -> Fixed
 
@@ -559,16 +565,7 @@ let primitive_moveable (prim : Lambda.primitive)
     | Arbitrary_effects, No_coeffects
     | Arbitrary_effects, Has_coeffects -> Fixed
 
-type moveable_for_env = Moveable | Moveable_not_into_loops
-
-(** Called when we are entering a loop or body of a function (which may be
-    called multiple times).  The environment is rewritten such that
-    identifiers previously moveable, but not into loops, are now fixed. *)
-let going_into_loop env =
-  Ident.Map.filter_map env ~f:(fun _var ((moveable : moveable_for_env), def) ->
-    match moveable with
-    | Moveable -> Some (Moveable, def)
-    | Moveable_not_into_loops -> None)
+type moveable_for_env = Constant | Moveable
 
 (** Eliminate, through substitution, [let]-bindings of linear variables with
     moveable defining expressions. *)
@@ -577,8 +574,8 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   match clam with
   | Uvar id ->
     begin match Ident.Map.find id env with
+    | Constant, def -> def, Constant
     | Moveable, def -> def, Moveable
-    | Moveable_not_into_loops, def -> def, Moveable_not_into_loops
     | exception Not_found ->
       let moveable : moveable =
         if Ident.Set.mem id ident_info.assigned then
@@ -590,7 +587,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     end
   | Uconst _ ->
     (* Constant closures are rewritten separately. *)
-    clam, Moveable
+    clam, Constant
   | Udirect_apply (label, args, dbg) ->
     let args = un_anf_list ident_info env args in
     Udirect_apply (label, args, dbg), Fixed
@@ -602,49 +599,47 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     let functions =
       List.map (fun (ufunction : Clambda.ufunction) ->
           { ufunction with
-            body = un_anf ident_info (going_into_loop env) ufunction.body;
+            body = un_anf ident_info env ufunction.body;
           })
         functions
     in
-    let variables_bound_by_the_closure, moveable =
-      un_anf_list_and_moveable ident_info env variables_bound_by_the_closure
+    let variables_bound_by_the_closure =
+      un_anf_list ident_info env variables_bound_by_the_closure
     in
-    Uclosure (functions, variables_bound_by_the_closure),
-      both_moveable moveable Moveable_not_into_loops
+    Uclosure (functions, variables_bound_by_the_closure), Fixed
   | Uoffset (clam, n) ->
     let clam, moveable = un_anf_and_moveable ident_info env clam in
-    Uoffset (clam, n), moveable
+    Uoffset (clam, n), both_moveable Moveable moveable
   | Ulet (_let_kind, _value_kind, id, def, Uvar id') when Ident.same id id' ->
     un_anf_and_moveable ident_info env def
   | Ulet (let_kind, value_kind, id, def, body) ->
     let def, def_moveable = un_anf_and_moveable ident_info env def in
     let is_linear = Ident.Set.mem id ident_info.linear in
     let is_used = Ident.Set.mem id ident_info.used in
-    begin match def_moveable, is_linear, is_used with
-    | (Moveable | Moveable_not_into_loops), _, false ->
+    let is_assigned = Ident.Set.mem id ident_info.assigned in
+    begin match def_moveable, is_linear, is_used, is_assigned with
+    | (Constant | Moveable), _, false, _ ->
       (* A moveable expression that is never used may be eliminated. *)
       un_anf_and_moveable ident_info env body
-    | Moveable, true, true ->
-      (* A moveable expression bound to a linear [Ident.t] may replace the
-         single occurrence of the identifier. *)
-      let env =
-        let def_moveable : moveable_for_env =
-          match def_moveable with
-          | Moveable -> Moveable
-          | Moveable_not_into_loops -> Moveable_not_into_loops
-          | Fixed -> assert false
-        in
-        Ident.Map.add id (def_moveable, def) env
+    | Constant, _, true, false
+    (* A constant expression bound to an unassigned identifier can replace any
+         occurances of the identifier. *)
+    | Moveable, true, true, false  ->
+      (* A moveable expression bound to a linear unassigned [Ident.t]
+         may replace the single occurrence of the identifier. *)
+      let def_moveable =
+        match def_moveable with
+        | Moveable -> Moveable
+        | Constant -> Constant
+        | Fixed -> assert false
       in
+      let env = Ident.Map.add id (def_moveable, def) env in
       un_anf_and_moveable ident_info env body
-    | Moveable_not_into_loops, true, true
-        (* We can't delete the [let] binding in this case because we don't
-           know whether the variable was substituted for its definition
-           (in the case of its linear use not being inside a loop) or not.
-           We could extend the code to cope with this case. *)
-    | (Moveable | Moveable_not_into_loops), false, true
+    | (Constant | Moveable), _, _, true
+        (* Constant or Moveable but assigned. *)
+    | Moveable, false, _, _
         (* Moveable but not used linearly. *)
-    | Fixed, _, _ ->
+    | Fixed, _, _, _ ->
       let body, body_moveable = un_anf_and_moveable ident_info env body in
       Ulet (let_kind, value_kind, id, def, body),
       both_moveable def_moveable body_moveable
@@ -661,7 +656,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
       both_moveable args_moveable (primitive_moveable prim args ident_info)
     in
     Uprim (prim, args, dbg), moveable
-  | Uswitch (cond, sw) ->
+  | Uswitch (cond, sw, dbg) ->
     let cond = un_anf ident_info env cond in
     let sw =
       { sw with
@@ -669,7 +664,7 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
         us_actions_blocks = un_anf_array ident_info env sw.us_actions_blocks;
       }
     in
-    Uswitch (cond, sw), Fixed
+    Uswitch (cond, sw, dbg), Fixed
   | Ustringswitch (cond, branches, default) ->
     let cond = un_anf ident_info env cond in
     let branches =
@@ -703,14 +698,13 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
     let e2 = un_anf ident_info env e2 in
     Usequence (e1, e2), Fixed
   | Uwhile (cond, body) ->
-    let env = going_into_loop env in
     let cond = un_anf ident_info env cond in
     let body = un_anf ident_info env body in
     Uwhile (cond, body), Fixed
   | Ufor (id, low, high, direction, body) ->
     let low = un_anf ident_info env low in
     let high = un_anf ident_info env high in
-    let body = un_anf ident_info (going_into_loop env) body in
+    let body = un_anf ident_info env body in
     Ufor (id, low, high, direction, body), Fixed
   | Uassign (id, expr) ->
     let expr = un_anf ident_info env expr in

@@ -12,13 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Execute a list of phrase from a .ml file and compare the result to the
+(* Execute a list of phrases from a .ml file and compare the result to the
    expected output, written inside [%%expect ...] nodes. At the end, create
    a .corrected file containing the corrected expectations. The test is
-   successul if there is no differences between the two files.
+   successful if there is no differences between the two files.
 
    An [%%expect] node always contains both the expected outcome with and
-   without -principal. When the two differ the expection is written as follow:
+   without -principal. When the two differ the expectation is written as
+   follows:
 
    {[
      [%%expect {|
@@ -137,28 +138,18 @@ module Compiler_messages = struct
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
     Format.fprintf ppf ":@."
 
-  let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error)=
-    print_loc ppf loc;
-    Format.fprintf ppf "%a %s" Location.print_error_prefix () msg;
-    List.iter sub ~f:(fun err ->
-      Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
-
-  let warning_printer loc ppf w =
-    if Warnings.is_active w then begin
-      print_loc ppf loc;
-      Format.fprintf ppf "Warning %a@." Warnings.print w
-    end
-
   let capture ppf ~f =
     Misc.protect_refs
-      [ R (Location.formatter_for_warnings , ppf            )
-      ; R (Location.warning_printer        , warning_printer)
-      ; R (Location.error_reporter         , error_reporter )
+      [ R (Location.formatter_for_warnings , ppf)
+      ; R (Location.printer                , print_loc)
       ]
       f
 end
 
 let collect_formatters buf pps ~f =
+  let ppb = Format.formatter_of_buffer buf in
+  let out_functions = Format.pp_get_formatter_out_functions ppb () in
+
   List.iter (fun pp -> Format.pp_print_flush pp ()) pps;
   let save =
     List.map (fun pp -> Format.pp_get_formatter_out_functions pp ()) pps
@@ -169,13 +160,6 @@ let collect_formatters buf pps ~f =
          Format.pp_print_flush pp ();
          Format.pp_set_formatter_out_functions pp out_functions)
       pps save
-  in
-  let out_string str ofs len = Buffer.add_substring buf str ofs len
-  and out_flush = ignore
-  and out_newline () = Buffer.add_char buf '\n'
-  and out_spaces n = for i = 1 to n do Buffer.add_char buf ' ' done in
-  let out_functions =
-    { Format.out_string; out_flush; out_newline; out_spaces }
   in
   List.iter
     (fun pp -> Format.pp_set_formatter_out_functions pp out_functions)
@@ -314,7 +298,7 @@ let output_corrected oc ~file_contents correction =
   | s  -> Printf.fprintf oc "\n[%%%%expect{|%s|}]\n" s
 
 let write_corrected ~file ~file_contents correction =
-  let oc = open_out_bin file in
+  let oc = open_out file in
   output_corrected oc ~file_contents correction;
   close_out oc
 
@@ -323,7 +307,7 @@ let process_expect_file fname =
   let file_contents =
     let ic = open_in_bin fname in
     match really_input_string ic (in_channel_length ic) with
-    | s           -> close_in ic; s
+    | s           -> close_in ic; Misc.normalise_eol s
     | exception e -> close_in ic; raise e
   in
   let correction = eval_expect_file fname ~file_contents in
@@ -356,6 +340,7 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
 let () =
+  Clflags.error_size := 0;
   try
     Arg.parse args main usage;
     Printf.eprintf "expect_test: no input file\n";

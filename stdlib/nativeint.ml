@@ -54,6 +54,11 @@ let to_string n = format "%d" n
 
 external of_string: string -> nativeint = "caml_nativeint_of_string"
 
+let of_string_opt s =
+  (* TODO: expose a non-raising primitive directly. *)
+  try Some (of_string s)
+  with Failure _ -> None
+
 type t = nativeint
 
 let compare (x: t) (y: t) = Pervasives.compare x y

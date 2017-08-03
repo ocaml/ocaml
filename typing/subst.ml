@@ -24,12 +24,11 @@ type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool;
-    nongen_level: int }
+    for_saving: bool }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false; nongen_level = generic_level }
+    for_saving = false }
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
 
@@ -38,8 +37,6 @@ let add_module id p s = { s with modules = Tbl.add id p s.modules }
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
-
-let set_nongen_level s lev = { s with nongen_level = lev }
 
 let loc s x =
   if s.for_saving && not !Clflags.keep_locs then Location.none else x
@@ -128,12 +125,12 @@ let rec typexp s ty =
           else newty2 ty.level desc
         in
         save_desc ty desc; ty.desc <- Tsubst ty'; ty'
-      else begin (* when adding a module to the environment *)
-        if ty.level < generic_level then
-          ty.level <- min ty.level s.nongen_level;
-        ty
-      end
+      else ty
   | Tsubst ty ->
+      ty
+  | Tfield (m, k, _t1, _t2) when not s.for_saving && m = dummy_method
+      && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
+      (* do not copy the type of self when it is not generalized *)
       ty
 (* cannot do it, since it would omit subsitution
   | Tvariant row when not (static_row row) ->
@@ -142,11 +139,20 @@ let rec typexp s ty =
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
+    let tm = row_of_type ty in
+    let has_fixed_row =
+      not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
     (* Make a stub *)
     let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
-      begin match desc with
+      begin if has_fixed_row then
+        match tm.desc with (* PR#7348 *)
+          Tconstr (Pdot(m,i,pos), tl, _abbrev) ->
+            let i' = String.sub i 0 (String.length i - 4) in
+            Tconstr(type_path s (Pdot(m,i',pos)), tl, ref Mnil)
+        | _ -> assert false
+      else match desc with
       | Tconstr(p, tl, _abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
       | Tpackage(p, n, tl) ->
@@ -157,11 +163,6 @@ let rec typexp s ty =
                         None -> None
                       | Some (p, tl) ->
                           Some (type_path s p, List.map (typexp s) tl)))
-      | Tfield (m, k, t1, t2)
-        when s == identity && (repr t1).level < generic_level
-          && m = dummy_method ->
-          (* not allowed to lower the level of the dummy method *)
-          Tfield (m, k, t1, typexp s t2)
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -436,5 +437,4 @@ let compose s1 s2 =
   { types = merge_tbls (type_path s2) s1.types s2.types;
     modules = merge_tbls (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    for_saving = s1.for_saving || s2.for_saving;
-    nongen_level = min s1.nongen_level s2.nongen_level }
+    for_saving = s1.for_saving || s2.for_saving }

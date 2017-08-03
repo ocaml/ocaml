@@ -667,10 +667,71 @@ let not_found_of_kind kind name =
   | RK_const -> Odoc_messages.cross_const_not_found
   ) name
 
+let query module_list name =
+   match get_known_elements name with
+     | [] ->
+         (
+         try
+           let re = Str.regexp ("^"^(Str.quote name)^"$") in
+            let t = Odoc_search.find_section module_list re in
+            let v2 = (name, Some (RK_section t)) in
+            add_verified v2 ;
+            (name, Some (RK_section t))
+          with
+            Not_found ->
+              (name, None)
+         )
+     | ele :: _ ->
+        (* we look for the first element with this name *)
+        let (name, kind) =
+          match ele with
+            Odoc_search.Res_module m -> (m.m_name, RK_module)
+          | Odoc_search.Res_module_type mt -> (mt.mt_name, RK_module_type)
+          | Odoc_search.Res_class c -> (c.cl_name, RK_class)
+          | Odoc_search.Res_class_type ct -> (ct.clt_name, RK_class_type)
+          | Odoc_search.Res_value v -> (v.val_name, RK_value)
+          | Odoc_search.Res_type t -> (t.ty_name, RK_type)
+          | Odoc_search.Res_extension x -> (x.xt_name, RK_extension)
+          | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
+          | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
+          | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
+          | Odoc_search.Res_section _-> assert false
+          | Odoc_search.Res_recfield (t, f) ->
+              (Printf.sprintf "%s.%s" t.ty_name f.rf_name, RK_recfield)
+          | Odoc_search.Res_const (t, f) ->
+              (Printf.sprintf "%s.%s" t.ty_name f.vc_name, RK_const)
+        in
+        add_verified (name, Some kind) ;
+        (name, Some kind)
+
+
+let rec search_within_ancestry
+    (finalize,initial_name,query as param) ?parent_name name =
+  let name = Odoc_name.normalize_name name in
+  let res = query name in
+  match res with
+  | (name, Some k) -> finalize (Some (name,k))
+  | (_, None) ->
+      match parent_name with
+      | None ->
+          finalize None
+      (* *)
+      | Some p ->
+          let parent_name =
+            match Name.father p with
+              "" -> None
+            | s -> Some s
+          in
+          search_within_ancestry param
+            ?parent_name (Name.concat p initial_name)
+
+let search_within_ancestry finalize query ?parent_name name =
+  search_within_ancestry (finalize, name, query) ?parent_name name
+
+
 let rec assoc_comments_text_elements parent_name module_list t_ele =
   match t_ele with
   | Raw _
-  | Code _
   | CodePre _
   | Latex _
   | Verbatim _ -> t_ele
@@ -689,63 +750,65 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
   | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text parent_name module_list t))
   | Link (s, t) -> Link (s, (assoc_comments_text parent_name module_list t))
   | Ref (initial_name, None, text_option) ->
-      (
-       let rec iter_parent ?parent_name name =
-         let name = Odoc_name.normalize_name name in
-         let res =
-           match get_known_elements name with
-             [] ->
-               (
-                try
-                  let re = Str.regexp ("^"^(Str.quote name)^"$") in
-                  let t = Odoc_search.find_section module_list re in
-                  let v2 = (name, Some (RK_section t)) in
-                  add_verified v2 ;
-                  (name, Some (RK_section t))
-              with
-                  Not_found ->
-                    (name, None)
-               )
-           | ele :: _ ->
-           (* we look for the first element with this name *)
-               let (name, kind) =
-                 match ele with
-                   Odoc_search.Res_module m -> (m.m_name, RK_module)
-                 | Odoc_search.Res_module_type mt -> (mt.mt_name, RK_module_type)
-                 | Odoc_search.Res_class c -> (c.cl_name, RK_class)
-                 | Odoc_search.Res_class_type ct -> (ct.clt_name, RK_class_type)
-                 | Odoc_search.Res_value v -> (v.val_name, RK_value)
-                 | Odoc_search.Res_type t -> (t.ty_name, RK_type)
-                 | Odoc_search.Res_extension x -> (x.xt_name, RK_extension)
-                 | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
-                 | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
-                 | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
-                 | Odoc_search.Res_section _-> assert false
-                 | Odoc_search.Res_recfield (t, f) ->
-                     (Printf.sprintf "%s.%s" t.ty_name f.rf_name, RK_recfield)
-                 | Odoc_search.Res_const (t, f) ->
-                     (Printf.sprintf "%s.%s" t.ty_name f.vc_name, RK_const)
-               in
-               add_verified (name, Some kind) ;
-               (name, Some kind)
-         in
-         match res with
-         | (name, Some k) -> Ref (name, Some k, text_option)
-         | (_, None) ->
-             match parent_name with
-               None ->
-                 Odoc_global.pwarning (Odoc_messages.cross_element_not_found initial_name);
-                 Ref (initial_name, None, text_option)
-             | Some p ->
-                 let parent_name =
-                   match Name.father p with
-                     "" -> None
-                   | s -> Some s
-                 in
-                 iter_parent ?parent_name (Name.concat p initial_name)
-       in
-       iter_parent ~parent_name initial_name
-      )
+      let finalize = function
+        | Some (name,k) -> Ref (name, Some k, text_option)
+        | None ->
+            Odoc_global.pwarning
+              (Odoc_messages.cross_element_not_found initial_name);
+            Ref (initial_name, None, text_option) in
+      search_within_ancestry finalize (query module_list) ~parent_name initial_name
+  | Code s ->
+      if not !Odoc_global.show_missed_crossref then
+        t_ele
+      else (* Check if s could be turned into a valid cross-reference *)
+      let name = String.trim s in
+      begin
+        (* First, we ignore code fragments with more than one space-separated
+           words: "word1 word2" *)
+        try  (ignore (String.index name ' '); t_ele)
+        with Not_found ->
+          if name = "" then t_ele
+          else
+            let first_char = name.[0] in
+            (* Then, we only consider code fragments which start with a
+               distinctly uppercase letter *)
+            if Char.uppercase_ascii first_char <> first_char ||
+               Char.lowercase_ascii first_char = first_char then
+              t_ele
+            else
+              (* Some path analysis auxiliary functions *)
+              let path s =
+                String.split_on_char '.' s
+              in
+              let filter =
+                List.filter
+                  (fun s -> s <> "" && s.[0] = Char.uppercase_ascii s.[0]) in
+              let rec is_prefix prefix full =
+                match prefix, full with
+                | [], _ -> true
+                | a :: pre, b :: f when a = b -> is_prefix pre f
+                | _ -> false in
+              let p = filter @@ path name and parent_p = path parent_name in
+              let is_path_suffix () =
+                is_prefix (List.rev @@ p) (List.rev @@ parent_p ) in
+              (* heuristic:
+                 - if name = parent_name: we are using the name of an element
+                 or module in its definition, no need of cross_reference
+                 - if the path of name is a suffix of the parent path, we
+                 are in the same module, maybe the same function. To decreace
+                 the false positive rate, we stop here *)
+              if name = parent_name || is_path_suffix () then
+                t_ele
+              else
+                let finalize = function
+                  | None -> t_ele
+                  | Some _ ->
+                      Odoc_global.pwarning @@
+                      Odoc_messages.code_could_be_cross_reference name parent_name;
+                      t_ele in
+                search_within_ancestry finalize (query module_list) ~parent_name
+                  name
+      end
   | Ref (initial_name, Some kind, text_option) ->
       (
        let rec iter_parent ?parent_name name =

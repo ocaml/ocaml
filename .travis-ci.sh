@@ -1,3 +1,4 @@
+#!/bin/bash
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -15,62 +16,57 @@
 
 PREFIX=~/local
 
+MAKE=make SHELL=dash
+
+# TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
+# TRAVIS_CUR_HEAD is <commit1>
+# TRAVIS_PR_HEAD is <commit2>
+#
+# The following diagram illustrates the relationship between
+# the commits:
+#
+#      (trunk)         (pr branch)
+#  TRAVIS_CUR_HEAD   TRAVIS_PR_HEAD
+#        |            /
+#        …           …
+#        |          /
+#  TRAVIS_MERGE_BASE
+#
+echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
+TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
+TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
+case $TRAVIS_EVENT_TYPE in
+   # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
+   pull_request) TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+esac
+
 BuildAndTest () {
   case $XARCH in
   i386)
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
-This test builds the OCaml compiler distribution with your pull request,
-runs its testsuite, and then tries to install some important OCaml software
-(currently camlp4) on top of it.
+This test builds the OCaml compiler distribution with your pull request
+and runs its testsuite.
 
 Failing to build the compiler distribution, or testsuite failures are
 critical errors that must be understood and fixed before your pull
-request can be merged. The later installation attempts try to run
-bleeding-edge software, and failures can sometimes be out of your
-control.
+request can be merged.
 ------------------------------------------------------------------------
 EOF
     mkdir -p $PREFIX
     ./configure --prefix $PREFIX -with-debug-runtime \
       -with-instrumented-runtime $CONFIG_ARG
     export PATH=$PREFIX/bin:$PATH
-    make world.opt
-    make ocamlnat
-    make install
-    (cd testsuite && make all)
-    (cd testsuite && make USE_RUNTIME="d" all)
+    $MAKE world.opt
+    $MAKE ocamlnat
+    (cd testsuite && $MAKE all)
+    (cd testsuite && $MAKE USE_RUNTIME="d" all)
+    $MAKE install
     # check_all_arches checks tries to compile all backends in place,
     # we need to redo (small parts of) world.opt afterwards
-    make check_all_arches
-    make world.opt
-    make manual-pregen
-    mkdir external-packages
-    cd external-packages
-    git clone git://github.com/ocaml/ocamlbuild
-    mkdir ocamlbuild-install
-    (cd ocamlbuild &&
-        make -f configure.make Makefile.config src/ocamlbuild_config.ml \
-          OCAMLBUILD_PREFIX=$PREFIX \
-          OCAMLBUILD_BINDIR=$PREFIX/bin \
-          OCAMLBUILD_LIBDIR=$PREFIX/lib \
-          OCAML_NATIVE=true \
-          OCAML_NATIVE_TOOLS=true &&
-        make all &&
-        make install)
-    git clone git://github.com/ocaml/camlp4
-    (cd camlp4 &&
-     ./configure --bindir=$PREFIX/bin --libdir=$PREFIX/lib/ocaml \
-       --pkgdir=$PREFIX/lib/ocaml && \
-      make && make install)
-    # git clone git://github.com/ocaml/opam
-    # (cd opam && ./configure --prefix $PREFIX &&\
-    #   make lib-ext && make && make install)
-    # git config --global user.email "some@name.com"
-    # git config --global user.name "Some Name"
-    # opam init -y -a git://github.com/ocaml/opam-repository
-    # opam install -y oasis
-    # opam pin add -y utop git://github.com/diml/utop
+    $MAKE check_all_arches
+    $MAKE world.opt
+    $MAKE manual-pregen
     ;;
   *)
     echo unknown arch
@@ -80,7 +76,7 @@ EOF
 }
 
 CheckChangesModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the Changes file has been modified by the pull
 request. Most contributions should come with a message in the Changes
@@ -89,16 +85,29 @@ file, as described in our contributor documentation:
   https://github.com/ocaml/ocaml/blob/trunk/CONTRIBUTING.md#changelog
 
 Some very minor changes (typo fixes for example) may not need
-a Changes entry, in which case it is acceptable for this test to fail.
+a Changes entry. In this case, you may explicitly disable this test by
+adding the code word "No change entry needed" (on a single line) to
+a commit message of the PR, or using the "no-change-entry-needed" label
+on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code Changes > /dev/null \
-  && exit 1 || echo pass
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes > /dev/null \
+  && CheckNoChangesMessage || echo pass
+}
+
+CheckNoChangesMessage () {
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
+  then echo pass
+  elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
+       | grep 'no-change-entry-needed')"
+  then echo pass
+  else exit 1
+  fi
 }
 
 CheckTestsuiteModified () {
-  echo<<EOF
+  cat<<EOF
 ------------------------------------------------------------------------
 This test checks that the OCaml testsuite has been modified by the
 pull request. Any new feature should come with tests, bugs should come
@@ -117,14 +126,20 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_COMMIT_RANGE --name-only --exit-code testsuite > /dev/null \
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code testsuite > /dev/null \
   && exit 1 || echo pass
 }
 
 case $CI_KIND in
 build) BuildAndTest;;
-changes) CheckChangesModified;;
-tests) CheckTestsuiteModified;;
+changes)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckChangesModified;;
+    esac;;
+tests)
+    case $TRAVIS_EVENT_TYPE in
+        pull_request) CheckTestsuiteModified;;
+    esac;;
 *) echo unknown CI kind
    exit 1
    ;;

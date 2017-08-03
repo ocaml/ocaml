@@ -105,7 +105,7 @@ module type S =
    val make_isout : act -> act -> act
    val make_isin : act -> act -> act
    val make_if : act -> act -> act -> act
-   val make_switch : act -> int array -> act array -> act
+   val make_switch : Location.t -> act -> int array -> act array -> act
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
  end
@@ -721,7 +721,7 @@ let comp_clusters s =
   min_clusters.(len-1),k
 
 (* Assume j > i *)
-let make_switch  {cases=cases ; actions=actions} i j =
+let make_switch loc {cases=cases ; actions=actions} i j =
   let ll,_,_ = cases.(i)
   and _,hh,_ = cases.(j) in
   let tbl = Array.make (hh-ll+1) 0
@@ -750,14 +750,14 @@ let make_switch  {cases=cases ; actions=actions} i j =
     t ;
   (fun ctx ->
     match -ll-ctx.off with
-    | 0 -> Arg.make_switch ctx.arg tbl acts
+    | 0 -> Arg.make_switch loc ctx.arg tbl acts
     | _ ->
         Arg.bind
           (Arg.make_offset ctx.arg (-ll-ctx.off))
-          (fun arg -> Arg.make_switch arg tbl acts))
+          (fun arg -> Arg.make_switch loc arg tbl acts))
 
 
-let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
+let make_clusters loc ({cases=cases ; actions=actions} as s) n_clusters k =
   let len = Array.length cases in
   let r = Array.make n_clusters (0,0,0)
   and t = Hashtbl.create 17
@@ -790,7 +790,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
     else (* assert i < j *)
       let l,_,_ = cases.(i)
       and _,h,_ = cases.(j) in
-      r.(ir) <- (l,h,add_index (make_switch s i j))
+      r.(ir) <- (l,h,add_index (make_switch loc s i j))
     end ;
     if i > 0 then zyva (i-1) (ir-1) in
 
@@ -801,7 +801,7 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
 ;;
 
 
-let do_zyva (low,high) arg cases actions =
+let do_zyva loc (low,high) arg cases actions =
   let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
@@ -814,7 +814,7 @@ let do_zyva (low,high) arg cases actions =
   prerr_endline "" ;
 *)
   let n_clusters,k = comp_clusters s in
-  let clusters = make_clusters s n_clusters k in
+  let clusters = make_clusters loc s n_clusters k in
   c_test {arg=arg ; off=0} clusters
 
 let abstract_shared actions =
@@ -831,11 +831,11 @@ let abstract_shared actions =
       actions in
   !handlers,actions
 
-let zyva lh arg cases actions =
+let zyva loc lh arg cases actions =
   assert (Array.length cases > 0) ;
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
-  hs (do_zyva lh arg cases actions)
+  hs (do_zyva loc lh arg cases actions)
 
 and test_sequence arg cases actions =
   assert (Array.length cases > 0) ;

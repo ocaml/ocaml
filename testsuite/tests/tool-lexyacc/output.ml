@@ -7,14 +7,14 @@ let oc = ref stdout
 
 (* 1- Generating the actions *)
 
-let copy_buffer = String.create 1024
+let copy_buffer = Bytes.create 1024
 
 let copy_chunk (Location(start,stop)) =
   seek_in !ic start;
   let tocopy = ref(stop - start) in
   while !tocopy > 0 do
     let m =
-      input !ic copy_buffer 0 (min !tocopy (String.length copy_buffer)) in
+      input !ic copy_buffer 0 (min !tocopy (Bytes.length copy_buffer)) in
     output !oc copy_buffer 0 m;
     tocopy := !tocopy - m
   done

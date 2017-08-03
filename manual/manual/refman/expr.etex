@@ -2,13 +2,13 @@
 \pdfsection{Expressions}
 %HEVEA\cutname{expr.html}
 \ikwd{in\@\texttt{in}|see{\texttt{let}}}
-\ikwd{and\@\texttt{and}|see{\texttt{let}, \texttt{type}, \texttt{class}}}
-\ikwd{rec\@\texttt{rec}|see{\texttt{let}}}
+\ikwd{and\@\texttt{and}}
+\ikwd{rec\@\texttt{rec}|see{\texttt{let}, \texttt{module}}}
 \ikwd{let\@\texttt{let}}
 \ikwd{try\@\texttt{try}}
 \ikwd{function\@\texttt{function}}
 \ikwd{fun\@\texttt{fun}}
-\ikwd{with\@\texttt{with}|see{\texttt{match}, \texttt{try}}}
+\ikwd{with\@\texttt{with}}
 \ikwd{done\@\texttt{done}|see{\texttt{while}, \texttt{for}}}
 \ikwd{do\@\texttt{do}|see{\texttt{while}, \texttt{for}}}
 \ikwd{downto\@\texttt{downto}|see{\texttt{for}}}
@@ -17,7 +17,6 @@
 \ikwd{else\@\texttt{else}|see{\texttt{if}}}
 \ikwd{then\@\texttt{then}|see{\texttt{if}}}
 \ikwd{if\@\texttt{if}}
-\ikwd{of\@\texttt{of}|see{\texttt{type}, \texttt{exception}}}
 \ikwd{or\@\texttt{or}}
 \ikwd{match\@\texttt{match}}
 \ikwd{begin\@\texttt{begin}}
@@ -25,6 +24,7 @@
 \ikwd{when\@\texttt{when}}
 \ikwd{new\@\texttt{new}}
 \ikwd{object\@\texttt{object}}
+\ikwd{lazy\@\texttt{lazy}}
 
 \begin{syntax}
 expr:
@@ -39,10 +39,10 @@ expr:
   | expr '::' expr
   | '[' expr { ';' expr } [';'] ']'
   | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
-  | '{' expr 'with' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
+  | '{' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -75,7 +75,12 @@ expr:
   | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
     [ ':' module-type ] \\ '=' module-expr 'in' expr
-
+  | "let" "open" module-path "in" expr
+  | module-path '.(' expr ')'
+  | module-path '.[' expr ']'
+  | module-path '.[|' expr '|]'
+  | module-path '.{' expr '}'
+  | module-path '.{<' expr '>}'
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -106,6 +111,15 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:object-notations]{object notations},
+\hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:explicit-overriding-open]{overriding in open statements},
+\hyperref[s:bigarray-access]{syntax for Bigarray access},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:local-exceptions]{local exceptions}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
@@ -118,6 +132,13 @@ precedence come first. For infix and prefix symbols, we write
 \ikwd{match\@\texttt{match}}%
 \ikwd{try\@\texttt{try}}%
 \ikwd{let\@\texttt{let}}%
+\ikwd{mod\@\texttt{mod}}
+\ikwd{land\@\texttt{land}}
+\ikwd{lor\@\texttt{lor}}
+\ikwd{lxor\@\texttt{lxor}}
+\ikwd{lsl\@\texttt{lsl}}
+\ikwd{lsr\@\texttt{lsr}}
+\ikwd{asr\@\texttt{asr}}
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(   .[   .{" (see section~\ref{s:bigarray-access})}{--}
@@ -548,10 +569,13 @@ value whose tag is @tag-name@, and whose argument is the value of @expr@.
 
 \subsubsection*{Records}
 
-The expression @'{' field_1 '=' expr_1 ';' \ldots ';' field_n '='
-expr_n '}'@ evaluates to the record value
+The expression @'{' field_1 ['=' expr_1] ';' \ldots ';' field_n ['='
+expr_n ']}'@ evaluates to the record value
 $\{ field_1 = v_1; \ldots; field_n = v_n \}$
 where $v_i$ is the value of @expr_i@ for \fromoneto{i}{n}.
+A single identifier @field_k@ stands for @field_k '=' field_k@,
+and a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@.
 The fields @field_1@ to @field_n@ must all belong to the same record
 type; each field of this record type must appear exactly
 once in the record expression, though they can appear in any
@@ -562,12 +586,15 @@ specified. Optional type constraints can be added after each field
 to force the type of @field_k@ to be compatible with @typexpr_k@.
 
 The expression
-@"{" expr "with" field_1 "=" expr_1 ";" \ldots ";" field_n "=" expr_n "}"@
+@"{" expr "with" field_1 ["=" expr_1] ";" \ldots ";" field_n ["=" expr_n] "}"@
 builds a fresh record with fields @field_1 \ldots field_n@ equal to
 @expr_1 \ldots expr_n@, and all other fields having the same value as
 in the record @expr@.  In other terms, it returns a shallow copy of
 the record @expr@, except for the fields @field_1 \ldots field_n@,
-which are initialized to @expr_1 \ldots expr_n@. As previously, it is
+which are initialized to @expr_1 \ldots expr_n@. As previously,
+single identifier @field_k@ stands for @field_k '=' field_k@,
+a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@ and it is
 possible to add an optional type constraint on each field being updated
 with
 @"{" expr "with" field_1 ':' typexpr_1 "=" expr_1 ";" %
@@ -622,6 +649,13 @@ future version. New code should use byte sequences and the "Bytes.set"
 function.
 
 \subsection{Operators}
+\ikwd{mod\@\texttt{mod}}
+\ikwd{land\@\texttt{land}}
+\ikwd{lor\@\texttt{lor}}
+\ikwd{lxor\@\texttt{lxor}}
+\ikwd{lsl\@\texttt{lsl}}
+\ikwd{lsr\@\texttt{lsr}}
+\ikwd{asr\@\texttt{asr}}
 
 Symbols from the class @infix-symbol@, as well as the keywords
 @"*"@, @"+"@, @"-"@, @'-.'@, @"="@, @"!="@, @"<"@, @">"@, @"or"@, @"||"@,
@@ -655,6 +689,13 @@ interpreted respectively as the functions @'(~-)'@ and @'(~-.)'@.
 %% operator by enclosing it in backquotes: @expr_1 '`' ident '`' expr_2@
 %% is interpreted as the application @ident expr_1 expr_2@.
 
+\ikwd{mod\@\texttt{mod}}%
+\ikwd{land\@\texttt{land}}%
+\ikwd{lor\@\texttt{lor}}%
+\ikwd{lxor\@\texttt{lxor}}%
+\ikwd{lsl\@\texttt{lsl}}%
+\ikwd{lsr\@\texttt{lsr}}%
+\ikwd{asr\@\texttt{asr}}%
 \begin{tableau}{|l|p{12cm}|}{Operator}{Initial meaning}
 \entree{"+"}{Integer addition.}
 \entree{"-" (infix)}{Integer subtraction.}
@@ -922,5 +963,21 @@ It then returns the value of @expr@.  For example:
           StringSet.elements
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
+
+\subsubsection*{Local opens}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{open}}
+
+The expressions @"let" "open" module-path "in" expr@ and
+@module-path'.('expr')'@ are strictly equivalent. These
+constructions locally open the module referred to by the module path
+@module-path@ in the respective scope of the expression @expr@.
+
+When the body of a local open expression is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For expression, parentheses can also be omitted for @'{<' '>}'@.
+For example, @module-path'.['expr']'@ is equivalent to
+@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
+equivalent to @module-path'.([|' expr '|])'@.
 
 %% \newpage

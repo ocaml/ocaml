@@ -85,8 +85,14 @@ module T = struct
 
   let row_field sub = function
     | Rtag (l, attrs, b, tl) ->
-        Rtag (l, sub.attributes sub attrs, b, List.map (sub.typ sub) tl)
+        Rtag (map_loc sub l, sub.attributes sub attrs,
+              b, List.map (sub.typ sub) tl)
     | Rinherit t -> Rinherit (sub.typ sub t)
+
+  let object_field sub = function
+    | Otag (l, attrs, t) ->
+        Otag (map_loc sub l, sub.attributes sub attrs, sub.typ sub t)
+    | Oinherit t -> Oinherit (sub.typ sub t)
 
   let map sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     let open Typ in
@@ -101,9 +107,7 @@ module T = struct
     | Ptyp_constr (lid, tl) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_object (l, o) ->
-        let f (s, a, t) =
-          (map_loc sub s, sub.attributes sub a, sub.typ sub t) in
-        object_ ~loc ~attrs (List.map f l) o
+        object_ ~loc ~attrs (List.map (object_field sub) l) o
     | Ptyp_class (lid, tl) ->
         class_ ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_alias (t, s) -> alias ~loc ~attrs (sub.typ sub t) s
@@ -191,6 +195,8 @@ module CT = struct
     | Pcty_arrow (lab, t, ct) ->
         arrow ~loc ~attrs lab (sub.typ sub t) (sub.class_type sub ct)
     | Pcty_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pcty_open (ovf, lid, ct) ->
+        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_type sub ct)
 
   let map_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs}
     =
@@ -451,6 +457,8 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         constraint_ ~loc ~attrs (sub.class_expr sub ce) (sub.class_type sub ct)
     | Pcl_extension x -> extension ~loc ~attrs (sub.extension sub x)
+    | Pcl_open (ovf, lid, ce) ->
+        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_expr sub ce)
 
   let map_kind sub = function
     | Cfk_concrete (o, e) -> Cfk_concrete (o, sub.expr sub e)
@@ -804,9 +812,10 @@ end
 
 let ppx_context = PpxContext.make
 
-let ext_of_exn exn =
+let extension_of_exn exn =
   match error_of_exn exn with
-  | Some error -> extension_of_error error
+  | Some (`Ok error) -> extension_of_error error
+  | Some `Already_displayed -> { loc = Location.none; txt = "ocaml.error" }, PStr []
   | None -> raise exn
 
 
@@ -824,7 +833,7 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.structure mapper ast
       with exn ->
-        [{pstr_desc = Pstr_extension (ext_of_exn exn, []);
+        [{pstr_desc = Pstr_extension (extension_of_exn exn, []);
           pstr_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in
@@ -843,7 +852,7 @@ let apply_lazy ~source ~target mapper =
         let mapper = mapper () in
         mapper.signature mapper ast
       with exn ->
-        [{psig_desc = Psig_extension (ext_of_exn exn, []);
+        [{psig_desc = Psig_extension (extension_of_exn exn, []);
           psig_loc  = Location.none}]
     in
     let fields = PpxContext.update_cookies fields in

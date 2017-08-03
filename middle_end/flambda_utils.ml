@@ -44,7 +44,7 @@ let function_arity (f : Flambda.function_declaration) = List.length f.params
 let variables_bound_by_the_closure cf
       (decls : Flambda.function_declarations) =
   let func = find_declaration cf decls in
-  let params = Variable.Set.of_list func.params in
+  let params = Parameter.Set.vars func.params in
   let functions = Variable.Map.keys decls.funs in
   Variable.Set.diff
     (Variable.Set.diff func.free_variables params)
@@ -191,7 +191,7 @@ and same_named (named1 : Flambda.named) (named2 : Flambda.named) =
 
 and sameclosure (c1 : Flambda.function_declaration)
       (c2 : Flambda.function_declaration) =
-  Misc.Stdlib.List.equal Variable.equal c1.params c2.params
+  Misc.Stdlib.List.equal Parameter.equal c1.params c2.params
     && same c1.body c2.body
 
 and same_set_of_closures (c1 : Flambda.set_of_closures)
@@ -320,7 +320,7 @@ let toplevel_substitution_named sb named =
 
 let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
-  let param_set = Variable.Set.of_list params in
+  let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
     Misc.fatal_error "Flambda_utils.make_closure_declaration"
   end;
@@ -334,8 +334,9 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
      to do something similar to what happens in [Inlining_transforms] now. *)
   let body = toplevel_substitution sb body in
   let subst id = Variable.Map.find id sb in
+  let subst_param param = Parameter.map_var subst param in
   let function_declaration =
-    Flambda.create_function_declaration ~params:(List.map subst params)
+    Flambda.create_function_declaration ~params:(List.map subst_param params)
       ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:false
   in
@@ -803,7 +804,7 @@ let closures_required_by_entry_point ~(entry_point : Closure_id.t) ~backend
 
 let all_functions_parameters (function_decls : Flambda.function_declarations) =
   Variable.Map.fold (fun _ ({ params } : Flambda.function_declaration) set ->
-      Variable.Set.union set (Variable.Set.of_list params))
+      Variable.Set.union set (Parameter.Set.vars params))
     function_decls.funs Variable.Set.empty
 
 let all_free_symbols (function_decls : Flambda.function_declarations) =
@@ -839,3 +840,27 @@ let projection_to_named (projection : Projection.t) : Flambda.named =
   | Move_within_set_of_closures move -> Move_within_set_of_closures move
   | Field (field_index, var) ->
     Prim (Pfield field_index, [var], Debuginfo.none)
+
+type specialised_to_same_as =
+  | Not_specialised
+  | Specialised_and_aliased_to of Variable.Set.t
+
+let parameters_specialised_to_the_same_variable
+      ~(function_decls : Flambda.function_declarations)
+      ~(specialised_args : Flambda.specialised_to Variable.Map.t) =
+  let specialised_arg_aliasing =
+    (* For each external variable involved in a specialisation, which
+       internal variable(s) it maps to via that specialisation. *)
+    Variable.Map.transpose_keys_and_data_set
+      (Variable.Map.map (fun ({ var; _ } : Flambda.specialised_to) -> var)
+        specialised_args)
+  in
+  Variable.Map.map (fun ({ params; _ } : Flambda.function_declaration) ->
+      List.map (fun param ->
+          match Variable.Map.find (Parameter.var param) specialised_args with
+          | exception Not_found -> Not_specialised
+          | { var; _ } ->
+            Specialised_and_aliased_to
+              (Variable.Map.find var specialised_arg_aliasing))
+        params)
+    function_decls.funs

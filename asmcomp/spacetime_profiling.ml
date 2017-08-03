@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015--2016 Jane Street Group LLC                           *)
+(*   Copyright 2015--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -31,7 +31,12 @@ let something_was_instrumented () =
 let next_index_within_node ~part_of_shape ~label =
   let index = !index_within_node in
   begin match part_of_shape with
-  | Mach.Direct_call_point _ | Mach.Indirect_call_point ->
+  | Mach.Direct_call_point _ ->
+    incr index_within_node;
+    if Config.spacetime_call_counts then begin
+      incr index_within_node
+    end
+  | Mach.Indirect_call_point ->
     incr index_within_node
   | Mach.Allocation_point ->
     incr index_within_node;
@@ -84,7 +89,7 @@ let code_for_function_prologue ~function_name ~node_hole =
         body)
   in
   let pc = Ident.create "pc" in
-  Clet (node, Cop (Cload Word_int, [Cvar node_hole], dbg),
+  Clet (node, Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
     Clet (must_allocate_node,
       Cop (Cand, [Cvar node; Cconst_int 1], dbg),
       Cifthenelse (
@@ -100,7 +105,7 @@ let code_for_function_prologue ~function_name ~node_hole =
               ],
               dbg)),
             Clet (new_node,
-              Cop (Cload Word_int, [Cvar node_hole], dbg),
+              Cop (Cload (Word_int, Asttypes.Mutable), [Cvar node_hole], dbg),
               if no_tail_calls then Cvar new_node
               else
                 Cifthenelse (
@@ -144,14 +149,15 @@ let code_for_blockheader ~value's_header ~node ~dbg =
       Cconst_int offset_into_node;
     ], dbg),
     Clet (existing_profinfo,
-        Cop (Cload Word_int, [Cvar address_of_profinfo], dbg),
+        Cop (Cload (Word_int, Asttypes.Mutable), [Cvar address_of_profinfo],
+          dbg),
       Clet (profinfo,
         Cifthenelse (
           Cop (Ccmpi Cne, [Cvar existing_profinfo; Cconst_int 1 (* () *)], dbg),
           Cvar existing_profinfo,
           generate_new_profinfo),
         Clet (existing_count,
-          Cop (Cload Word_int, [
+          Cop (Cload (Word_int, Asttypes.Mutable), [
             Cop (Caddi,
               [Cvar address_of_profinfo; Cconst_int Arch.size_addr], dbg)
           ], dbg),
@@ -219,7 +225,24 @@ let code_for_call ~node ~callee ~is_tail ~label =
        (hard) node hole pointer register immediately before the call.
        (That move is inserted in [Selectgen].) *)
     match callee with
-    | Direct _callee -> Cvar place_within_node
+    | Direct _callee ->
+      if Config.spacetime_call_counts then begin
+        let count_addr = Ident.create "call_count_addr" in
+        let count = Ident.create "call_count" in
+        Clet (count_addr,
+          Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr], dbg),
+          Clet (count,
+            Cop (Cload (Word_int, Asttypes.Mutable), [Cvar count_addr], dbg),
+            Csequence (
+              Cop (Cstore (Word_int, Lambda.Assignment),
+                (* Adding 2 really means adding 1; the count is encoded
+                   as an OCaml integer. *)
+                [Cvar count_addr; Cop (Caddi, [Cvar count; Cconst_int 2], dbg)],
+                dbg),
+              Cvar place_within_node)))
+      end else begin
+        Cvar place_within_node
+      end
     | Indirect callee ->
       let caller_node =
         if is_tail then node
@@ -254,7 +277,7 @@ class virtual instruction_selection = object (self)
     (* [callee] is a pseudoregister, so we have to bind it in the environment
        and reference the variable to which it is bound. *)
     let callee_ident = Ident.create "callee" in
-    let env = Tbl.add callee_ident [| callee |] env in
+    let env = Selectgen.env_add callee_ident [| callee |] env in
     let instrumentation =
       code_for_call
         ~node:(Lazy.force !spacetime_node)
@@ -320,7 +343,7 @@ class virtual instruction_selection = object (self)
       in
       disable_instrumentation <- false;
       let node = Lazy.force !spacetime_node_ident in
-      let node_reg = Tbl.find node env in
+      let node_reg = Selectgen.env_find node env in
       self#insert_moves node_temp_reg node_reg
     end
 
@@ -356,7 +379,7 @@ class virtual instruction_selection = object (self)
 
   method! select_allocation_args env =
     if self#can_instrument () then begin
-      let regs = Tbl.find (Lazy.force !spacetime_node_ident) env in
+      let regs = Selectgen.env_find (Lazy.force !spacetime_node_ident) env in
       match regs with
       | [| reg |] -> [| reg |]
       | _ -> failwith "Expected one register only for spacetime_node_ident"
@@ -393,7 +416,8 @@ class virtual instruction_selection = object (self)
   method! initial_env () =
     let env = super#initial_env () in
     if Config.spacetime then
-      Tbl.add (Lazy.force !spacetime_node_ident) (self#regs_for Cmm.typ_int) env
+      Selectgen.env_add (Lazy.force !spacetime_node_ident)
+        (self#regs_for Cmm.typ_int) env
     else
       env
 

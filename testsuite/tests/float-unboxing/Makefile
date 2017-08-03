@@ -11,9 +11,22 @@
 #(***********************************************************************)
 
 BASEDIR=../..
-MODULES=
+MODULES=float_inline
 MAIN_MODULE=float_subst_boxed_number
 ADD_OPTCOMPFLAGS=-inline 20
 
 include $(BASEDIR)/makefiles/Makefile.one
 include $(BASEDIR)/makefiles/Makefile.common
+
+GENERATED_SOURCES=float_inline.ml *.flambda
+
+float_inline.ml: $(FLAMBDA).flambda
+ifeq ($(FLAMBDA),false)
+	@echo "let eliminate_intermediate_float_record () = ()" > $@
+else
+	@cat float_flambda.ml > $@
+endif
+
+%.flambda:
+	@rm -f float_inline.ml
+	@touch $@

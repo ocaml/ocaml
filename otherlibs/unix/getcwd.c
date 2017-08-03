@@ -36,7 +36,7 @@ CAMLprim value unix_getcwd(value unit)
 {
   char buff[PATH_MAX];
   if (getcwd(buff, sizeof(buff)) == 0) uerror("getcwd", Nothing);
-  return copy_string(buff);
+  return caml_copy_string(buff);
 }
 
 #else
@@ -52,7 +52,7 @@ CAMLprim value unix_getcwd(value unit)
 #else
 
 CAMLprim value unix_getcwd(value unit)
-{ invalid_argument("getcwd not implemented"); }
+{ caml_invalid_argument("getcwd not implemented"); }
 
 #endif
 #endif

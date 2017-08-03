@@ -511,6 +511,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_ident (_, _, tyl) ->
             List.iter iter_core_type tyl
+
+        | Tcl_open (_, _, _, _, e) ->
+            iter_class_expr e
       end;
       Iter.leave_class_expr cexpr;
 
@@ -524,6 +527,8 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcty_arrow (_label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
+        | Tcty_open (_, _, _, _, e) ->
+            iter_class_type e
       end;
       Iter.leave_class_type ct;
 
@@ -563,7 +568,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Ttyp_constr (_path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_object (list, _o) ->
-            List.iter (fun (_, _, t) -> iter_core_type t) list
+            List.iter iter_object_field list
         | Ttyp_class (_path, _, list) ->
             List.iter iter_core_type list
         | Ttyp_alias (ct, _s) ->
@@ -587,6 +592,10 @@ module MakeIterator(Iter : IteratorArgument) : sig
         Ttag (_label, _attrs, _bool, list) ->
           List.iter iter_core_type list
       | Tinherit ct -> iter_core_type ct
+
+    and iter_object_field ofield =
+      match ofield with
+        OTtag (_, _, ct) | OTinherit ct -> iter_core_type ct
 
     and iter_class_field cf =
       Iter.enter_class_field cf;

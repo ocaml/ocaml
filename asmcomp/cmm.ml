@@ -117,6 +117,8 @@ type raise_kind =
   | Raise_withtrace
   | Raise_notrace
 
+type rec_flag = Nonrecursive | Recursive
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -135,7 +137,7 @@ and operation =
   | Cextcall of string * machtype * bool * label option
     (** If specified, the given label will be placed immediately after the
         call (at the same place as any frame descriptor would reference). *)
-  | Cload of memory_chunk
+  | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
@@ -167,7 +169,7 @@ type expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
-  | Ccatch of int * Ident.t list * expression * expression
+  | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 
@@ -196,6 +198,9 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+let ccatch (i, ids, e1, e2)=
+  Ccatch(Nonrecursive, [i, ids, e2], e1)
 
 let reset () =
   label_counter := 99

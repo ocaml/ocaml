@@ -75,6 +75,7 @@ let end_tests () =
 let eq = (==);;
 let eq_int (i: int) (j: int) = (i = j);;
 let eq_string (i: string) (j: string) = (i = j);;
+let eq_bytes (i: bytes) (j: bytes) = (i = j);;
 let eq_nativeint (i: nativeint) (j: nativeint) = (i = j);;
 let eq_int32 (i: int32) (j: int32) = (i = j);;
 let eq_int64 (i: int64) (j: int64) = (i = j);;

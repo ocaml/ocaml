@@ -1867,21 +1867,7 @@ module Analyser =
      let analyse_typed_tree source_file input_file
          (parsetree : Parsetree.structure) (typedtree : typedtree) =
        let (tree_structure, _) = typedtree in
-       let complete_source_file =
-         try
-           let curdir = Sys.getcwd () in
-           let (dirname, basename) = (Filename.dirname source_file, Filename.basename source_file) in
-           Sys.chdir dirname ;
-           let complete = Filename.concat (Sys.getcwd ()) basename in
-           Sys.chdir curdir ;
-           complete
-         with
-           Sys_error s ->
-             prerr_endline s ;
-             incr Odoc_global.errors ;
-             source_file
-       in
-       prepare_file complete_source_file input_file;
+       prepare_file source_file input_file;
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
        let (len,info_opt) = My_ir.first_special !file_name !file in

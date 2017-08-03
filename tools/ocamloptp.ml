@@ -51,6 +51,8 @@ let incompatible o =
 module Options = Main_args.Make_optcomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _absname = option "-absname"
+  let _afl_instrument = option "-afl-instrument"
+  let _afl_inst_ratio n = option_with_int "-afl-inst-ratio" n
   let _annot = option "-annot"
   let _binannot = option "-bin-annot"
   let _c = option "-c"
@@ -142,6 +144,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _color s = option_with_arg "-color" s
   let _where = option "-where"
 
+  let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
   let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
@@ -169,7 +172,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dscheduling = option "-dscheduling"
   let _dlinear = option "-dlinear"
   let _dstartup = option "-dstartup"
+  let _dinterval = option "-dinterval"
   let _dtimings = option "-dtimings"
+  let _dprofile = option "-dprofile"
   let _opaque = option "-opaque"
 
   let _args = Arg.read_arg

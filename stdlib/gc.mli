@@ -97,7 +97,7 @@ type control =
     mutable space_overhead : int;
     (** The major GC speed is computed from this parameter.
        This is the memory that will be "wasted" because the GC does not
-       immediatly collect unreachable blocks.  It is expressed as a
+       immediately collect unreachable blocks.  It is expressed as a
        percentage of the memory used for live data.
        The GC will work more (use more CPU time and collect
        blocks more eagerly) if [space_overhead] is smaller.
@@ -171,12 +171,14 @@ external counters : unit -> float * float * float = "caml_gc_counters"
     is as fast as [quick_stat]. *)
 
 external minor_words : unit -> (float [@unboxed])
-  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed"
 (** Number of words allocated in the minor heap since the program was
     started. This number is accurate in byte-code programs, but only an
     approximation in programs compiled to native code.
 
-    In native code this function does not allocate. *)
+    In native code this function does not allocate.
+
+    @since 4.04 *)
 
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
@@ -217,7 +219,7 @@ val allocated_bytes : unit -> float
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
 
-external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+external get_minor_free : unit -> int = "caml_get_minor_free"
 (** Return the current size of the free space inside the minor heap.
 
     @since 4.03.0 *)
@@ -293,9 +295,14 @@ val finalise : ('a -> unit) -> 'a -> unit
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   Note that values of types [float] and ['a lazy] (for any ['a]) are
-   sometimes allocated and sometimes not, so finalising them is unsafe,
-   and [finalise] will also raise [Invalid_argument] for them.
+   Note that values of types [float] are sometimes allocated and
+   sometimes not, so finalising them is unsafe, and [finalise] will
+   also raise [Invalid_argument] for them. Values of type ['a Lazy.t]
+   (for any ['a]) are like [float] in this respect, except that the
+   compiler sometimes optimizes them in a way that prevents [finalise]
+   from detecting them. In this case, it will not raise
+   [Invalid_argument], but you should still avoid calling [finalise]
+   on lazy values.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
@@ -309,11 +316,13 @@ val finalise_last : (unit -> unit) -> 'a -> unit
     finalisation function. The benefit is that the function is called
     after the value is unreachable for the last time instead of the
     first time. So contrary to {!finalise} the value will never be
-    reachable again or used again. In particular every weak pointers
-    and ephemerons that contained this value as key or data is unset
+    reachable again or used again. In particular every weak pointer
+    and ephemeron that contained this value as key or data is unset
     before running the finalisation function. Moreover the
     finalisation function attached with `GC.finalise` are always
     called before the finalisation function attached with `GC.finalise_last`.
+
+    @since 4.04
 *)
 
 val finalise_release : unit -> unit

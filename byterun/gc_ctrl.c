@@ -64,25 +64,25 @@ extern uintnat caml_allocation_policy;    /*        see freelist.c */
 /* Check that [v]'s header looks good.  [v] must be a block in the heap. */
 static void check_head (value v)
 {
-  Assert (Is_block (v));
-  Assert (Is_in_heap (v));
+  CAMLassert (Is_block (v));
+  CAMLassert (Is_in_heap (v));
 
-  Assert (Wosize_val (v) != 0);
-  Assert (Color_hd (Hd_val (v)) != Caml_blue);
-  Assert (Is_in_heap (v));
+  CAMLassert (Wosize_val (v) != 0);
+  CAMLassert (Color_hd (Hd_val (v)) != Caml_blue);
+  CAMLassert (Is_in_heap (v));
   if (Tag_val (v) == Infix_tag){
     int offset = Wsize_bsize (Infix_offset_val (v));
     value trueval = Val_op (&Field (v, -offset));
-    Assert (Tag_val (trueval) == Closure_tag);
-    Assert (Wosize_val (trueval) > offset);
-    Assert (Is_in_heap (&Field (trueval, Wosize_val (trueval) - 1)));
+    CAMLassert (Tag_val (trueval) == Closure_tag);
+    CAMLassert (Wosize_val (trueval) > offset);
+    CAMLassert (Is_in_heap (&Field (trueval, Wosize_val (trueval) - 1)));
   }else{
-    Assert (Is_in_heap (&Field (v, Wosize_val (v) - 1)));
+    CAMLassert (Is_in_heap (&Field (v, Wosize_val (v) - 1)));
   }
   if (Tag_val (v) ==  Double_tag){
-    Assert (Wosize_val (v) == Double_wosize);
+    CAMLassert (Wosize_val (v) == Double_wosize);
   }else if (Tag_val (v) == Double_array_tag){
-    Assert (Wosize_val (v) % Double_wosize == 0);
+    CAMLassert (Wosize_val (v) % Double_wosize == 0);
   }
 }
 
@@ -98,26 +98,26 @@ static void check_block (header_t *hp)
   case String_tag:
     break;
   case Double_tag:
-    Assert (Wosize_val (v) == Double_wosize);
+    CAMLassert (Wosize_val (v) == Double_wosize);
     break;
   case Double_array_tag:
-    Assert (Wosize_val (v) % Double_wosize == 0);
+    CAMLassert (Wosize_val (v) % Double_wosize == 0);
     break;
   case Custom_tag:
-    Assert (!Is_in_heap (Custom_ops_val (v)));
+    CAMLassert (!Is_in_heap (Custom_ops_val (v)));
     break;
 
   case Infix_tag:
-    Assert (0);
+    CAMLassert (0);
     break;
 
   default:
-    Assert (Tag_hp (hp) < No_scan_tag);
+    CAMLassert (Tag_hp (hp) < No_scan_tag);
     for (i = 0; i < Wosize_hp (hp); i++){
       f = Field (v, i);
       if (Is_block (f) && Is_in_heap (f)){
         check_head (f);
-        Assert (Color_val (f) != Caml_blue);
+        CAMLassert (Color_val (f) != Caml_blue);
       }
     }
   }
@@ -155,14 +155,14 @@ static value heap_stats (int returnstats)
     cur_hp = (header_t *) chunk;
     while (cur_hp < (header_t *) chunk_end){
       cur_hd = Hd_hp (cur_hp);
-      Assert (Next (cur_hp) <= (header_t *) chunk_end);
+      CAMLassert (Next (cur_hp) <= (header_t *) chunk_end);
       switch (Color_hd (cur_hd)){
       case Caml_white:
         if (Wosize_hd (cur_hd) == 0){
           ++ fragments;
-          Assert (prev_hp == NULL
-                  || Color_hp (prev_hp) != Caml_blue
-                  || cur_hp == (header_t *) caml_gc_sweep_hp);
+          CAMLassert (prev_hp == NULL
+                      || Color_hp (prev_hp) != Caml_blue
+                      || cur_hp == (header_t *) caml_gc_sweep_hp);
         }else{
           if (caml_gc_phase == Phase_sweep
               && cur_hp >= (header_t *) caml_gc_sweep_hp){
@@ -181,7 +181,7 @@ static value heap_stats (int returnstats)
         }
         break;
       case Caml_gray: case Caml_black:
-        Assert (Wosize_hd (cur_hd) > 0);
+        CAMLassert (Wosize_hd (cur_hd) > 0);
         ++ live_blocks;
         live_words += Whsize_hd (cur_hd);
 #ifdef DEBUG
@@ -189,21 +189,23 @@ static value heap_stats (int returnstats)
 #endif
         break;
       case Caml_blue:
-        Assert (Wosize_hd (cur_hd) > 0);
+        CAMLassert (Wosize_hd (cur_hd) > 0);
         ++ free_blocks;
         free_words += Whsize_hd (cur_hd);
         if (Whsize_hd (cur_hd) > largest_free){
           largest_free = Whsize_hd (cur_hd);
         }
         /* not true any more with big heap chunks
-        Assert (prev_hp == NULL
-                || (Color_hp (prev_hp) != Caml_blue && Wosize_hp (prev_hp) > 0)
-                || cur_hp == caml_gc_sweep_hp);
-        Assert (Next (cur_hp) == chunk_end
-                || (Color_hp (Next (cur_hp)) != Caml_blue
-                    && Wosize_hp (Next (cur_hp)) > 0)
-                || (Whsize_hd (cur_hd) + Wosize_hp (Next (cur_hp)) > Max_wosize)
-                || Next (cur_hp) == caml_gc_sweep_hp);
+        CAMLassert (prev_hp == NULL
+                    || (Color_hp (prev_hp) != Caml_blue
+                        && Wosize_hp (prev_hp) > 0)
+                    || cur_hp == caml_gc_sweep_hp);
+        CAMLassert (Next (cur_hp) == chunk_end
+                    || (Color_hp (Next (cur_hp)) != Caml_blue 
+                       && Wosize_hp (Next (cur_hp)) > 0)
+                    || (Whsize_hd (cur_hd) + Wosize_hp (Next (cur_hp))
+                       > Max_wosize)
+                    || Next (cur_hp) == caml_gc_sweep_hp);
         */
         break;
       }
@@ -211,7 +213,8 @@ static value heap_stats (int returnstats)
       prev_hp = cur_hp;
 #endif
       cur_hp = Next (cur_hp);
-    }                             Assert (cur_hp == (header_t *) chunk_end);
+    }
+    CAMLassert (cur_hp == (header_t *) chunk_end);
     chunk = Chunk_next (chunk);
   }
 
@@ -219,8 +222,8 @@ static value heap_stats (int returnstats)
   caml_final_invariant_check();
 #endif
 
-  Assert (heap_chunks == caml_stat_heap_chunks);
-  Assert (live_words + free_words + fragments == caml_stat_heap_wsz);
+  CAMLassert (heap_chunks == caml_stat_heap_chunks);
+  CAMLassert (live_words + free_words + fragments == caml_stat_heap_wsz);
 
   if (returnstats){
     CAMLlocal1 (res);
@@ -270,7 +273,7 @@ CAMLprim value caml_gc_stat(value v)
 {
   value result;
   CAML_INSTR_SETUP (tmr, "");
-  Assert (v == Val_unit);
+  CAMLassert (v == Val_unit);
   result = heap_stats (1);
   CAML_INSTR_TIME (tmr, "explicit/gc_stat");
   return result;
@@ -464,7 +467,7 @@ CAMLprim value caml_gc_set(value v)
 CAMLprim value caml_gc_minor(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
-  Assert (v == Val_unit);
+  CAMLassert (v == Val_unit);
   caml_request_minor_gc ();
   caml_gc_dispatch ();
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
@@ -480,7 +483,7 @@ static void test_and_compact (void)
   caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
-  if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
+  if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
   }
@@ -489,7 +492,7 @@ static void test_and_compact (void)
 CAMLprim value caml_gc_major(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
-  Assert (v == Val_unit);
+  CAMLassert (v == Val_unit);
   caml_gc_message (0x1, "Major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -502,7 +505,7 @@ CAMLprim value caml_gc_major(value v)
 CAMLprim value caml_gc_full_major(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
-  Assert (v == Val_unit);
+  CAMLassert (v == Val_unit);
   caml_gc_message (0x1, "Full major GC cycle requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -518,7 +521,7 @@ CAMLprim value caml_gc_full_major(value v)
 CAMLprim value caml_gc_major_slice (value v)
 {
   CAML_INSTR_SETUP (tmr, "");
-  Assert (Is_long (v));
+  CAMLassert (Is_long (v));
   caml_major_collection_slice (Long_val (v));
   CAML_INSTR_TIME (tmr, "explicit/gc_major_slice");
   return Val_long (0);
@@ -527,7 +530,7 @@ CAMLprim value caml_gc_major_slice (value v)
 CAMLprim value caml_gc_compaction(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
-  Assert (v == Val_unit);
+  CAMLassert (v == Val_unit);
   caml_gc_message (0x10, "Heap compaction requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
@@ -635,14 +638,14 @@ CAMLprim value caml_runtime_parameters (value unit)
 {
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,b=%s,H=%lu,i=%lu,l=%lu,o=%lu,O=%lu,p=%d,s=%lu,t=%d,v=%lu,w=%d,W=%lu",
-     /* a */ caml_allocation_policy,
+    ("a=%d,b=%d,H=%lu,i=%lu,l=%lu,o=%lu,O=%lu,p=%d,s=%lu,t=%lu,v=%lu,w=%d,W=%lu",
+     /* a */ (int) caml_allocation_policy,
      /* b */ caml_backtrace_active,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
      /* H */ caml_use_huge_pages,
      /* i */ caml_major_heap_increment,
 #ifdef NATIVE_CODE
-     /* l */ 0,
+     /* l */ 0UL,
 #else
      /* l */ caml_max_stack_size,
 #endif

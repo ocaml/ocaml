@@ -90,6 +90,8 @@ type raise_kind =
   | Raise_withtrace
   | Raise_notrace
 
+type rec_flag = Nonrecursive | Recursive
+
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -106,7 +108,7 @@ type memory_chunk =
 and operation =
     Capply of machtype
   | Cextcall of string * machtype * bool * label option
-  | Cload of memory_chunk
+  | Cload of memory_chunk * Asttypes.mutable_flag
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
@@ -143,7 +145,7 @@ and expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
   | Cloop of expression
-  | Ccatch of int * Ident.t list * expression * expression
+  | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 
@@ -172,5 +174,7 @@ type data_item =
 type phrase =
     Cfunction of fundecl
   | Cdata of data_item list
+
+val ccatch : int * Ident.t list * expression * expression -> expression
 
 val reset : unit -> unit
