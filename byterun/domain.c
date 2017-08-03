@@ -759,12 +759,26 @@ void caml_acknowledge_interrupt(struct interrupt* req)
   caml_plat_unlock(&sender->lock);
 }
 
+static void acknowledge_all_pending_interrupts()
+{
+  Assert(Caml_state->critical_section_nesting == 0);
+  while (Caml_state->pending_interrupts) {
+    interrupt* curr = Caml_state->pending_interrupts;
+    Caml_state->pending_interrupts = curr->next;
+    caml_acknowledge_interrupt(curr);
+  }
+}
+
 void caml_stop_interruptor(struct interruptor* s)
 {
   caml_plat_lock(&s->lock);
   while (handle_incoming(s) != 0) { }
   s->running = 0;
   caml_plat_unlock(&s->lock);
+  if (Caml_state->critical_section_nesting) {
+    Caml_state->critical_section_nesting = 0;
+    acknowledge_all_pending_interrupts();
+  }
 }
 
 void caml_handle_incoming_interrupts(struct interruptor* s)
@@ -844,11 +858,7 @@ CAMLprim value caml_ml_domain_critical_section(value delta)
   if (crit < 0) {
     caml_fatal_error("invalid critical section nesting");
   } else if (crit == 0) {
-    while (Caml_state->pending_interrupts) {
-      interrupt* curr = Caml_state->pending_interrupts;
-      Caml_state->pending_interrupts = curr->next;
-      caml_acknowledge_interrupt(curr);
-    }
+    acknowledge_all_pending_interrupts();
   }
   return Val_unit;
 }
