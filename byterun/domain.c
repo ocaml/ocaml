@@ -52,7 +52,6 @@ int caml_send_interrupt(struct interruptor* self,
 void caml_handle_incoming_interrupts(struct interruptor* self);
 void caml_yield_until_interrupted(struct interruptor* self);
 void caml_start_interruptor(struct interruptor* self);
-void caml_stop_interruptor(struct interruptor* self);
 
 
 struct dom_internal {
@@ -268,21 +267,6 @@ void caml_init_domain_self(int domain_id) {
   SET_Caml_state(domain_self->state.state);
 }
 
-static void domain_terminate() {
-  caml_gc_log("Domain terminating");
-  caml_stop_interruptor(&domain_self->interruptor);
-  while (caml_sweep(domain_self->state.state->shared_heap, 10) <= 0);
-  caml_empty_minor_heap();
-  caml_finish_marking();
-  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
-  domain_self->state.state->shared_heap = 0;
-  caml_enter_blocking_section();
-
-  /* FIXME: proper domain termination and reuse */
-  /* interrupt_word_address must not go away */
-  caml_teardown_eventlog();
-}
-
 enum domain_status { Dom_starting, Dom_started, Dom_failed };
 struct domain_startup_params {
   struct interruptor* parent;
@@ -291,6 +275,7 @@ struct domain_startup_params {
   dom_internal* newdom;
 };
 
+static void domain_terminate();
 static void* domain_thread_func(void* v) {
   struct domain_startup_params* p = v;
   caml_root callback = p->callback;
@@ -769,16 +754,32 @@ static void acknowledge_all_pending_interrupts()
   }
 }
 
-void caml_stop_interruptor(struct interruptor* s)
-{
-  caml_plat_lock(&s->lock);
-  while (handle_incoming(s) != 0) { }
-  s->running = 0;
-  caml_plat_unlock(&s->lock);
+static void domain_terminate() {
+  struct interruptor* s = &domain_self->interruptor;
+  int finished = 0;
+
+  caml_gc_log("Domain terminating");
+  while (!finished) {
+    while (caml_sweep(domain_self->state.state->shared_heap, 10) <= 0);
+    caml_empty_minor_heap();
+    caml_finish_marking();
+
+    caml_plat_lock(&s->lock);
+    if (handle_incoming(s) == 0) {
+      finished = 1;
+      s->running = 0;
+    }
+    caml_plat_unlock(&s->lock);
+  }
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
+
+  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
+  domain_self->state.state->shared_heap = 0;
+  caml_enter_blocking_section();
+  caml_teardown_eventlog();
 }
 
 void caml_handle_incoming_interrupts(struct interruptor* s)
