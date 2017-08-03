@@ -376,6 +376,11 @@ Working version
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
+* MPR#7594, GPR#1274: String_val now returns 'const char*', not
+  'char*' when -safe-string is globally enabled.  New macro Bytes_val
+  for accessing bytes values.
+  (Jeremy Yallop, reviews by Mark Shinwell and Xavier Leroy)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
