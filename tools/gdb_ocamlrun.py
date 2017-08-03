@@ -56,6 +56,7 @@ class BlockPrinter:
             self.p = val.cast(val.type.pointer())
             header = (self.p - 1).dereference()
             self.length = int(header >> 10)
+            self.gc = int(header & (3 << 8))
             self.tag = int(header & 255)
             self.tagname = TAGS.get(self.tag, 'Block')
 
@@ -109,7 +110,15 @@ class BlockPrinter:
             s = '%d, wosize=%d' % (self.tag,self.length)
         else:
             s = 'wosize=%d' % self.length
-        return '%s(%s)' % (self.tagname, s)
+
+        markbits = gdb.lookup_symbol("global")[0].value()
+        gc = {
+            int(markbits['MARKED']): 'MARKED',
+            int(markbits['UNMARKED']): 'UNMARKED',
+            int(markbits['GARBAGE']): 'GARBAGE',
+            (3 << 8): 'NOT_MARKABLE'
+        }
+        return '%s(%s, %s)' % (self.tagname, s, gc[self.gc])
 
 
     def display_hint (self):
