@@ -398,27 +398,4 @@ int is_foreign(value v) {
 int is_young(value v) {
   return Is_young(v);
 }
-
-void print_color(value v) {
-  int colour;
-
-  if(Is_block(v) && !Is_minor(v)) {
-    colour = get_status (v);
-    switch(colour) {
-      case 0:
-        fprintf (stderr, "Marked\n");
-        break;
-      case 1:
-        fprintf (stderr, "Unmarked\n");
-        break;
-      case 2:
-        fprintf (stderr, "Garbage\n");
-        break;
-      default:
-        fprintf (stderr, "Not markable\n");
-    }
-  } else {
-    fprintf (stderr, "No color\n");
-  }
-}
 #endif

@@ -38,18 +38,6 @@ int is_garbage(value v) {
   return Has_status_hd(Hd_val(v), global.GARBAGE);
 }
 
-int get_status(value v) {
-  header_t hd = Hd_val(v);
-  uintnat status = hd & (3 << 8);
-  if (status == global.MARKED)
-    return 0;
-  if (status == global.UNMARKED)
-    return 1;
-  if (status == global.GARBAGE)
-    return 2;
-  return 3;
-}
-
 typedef struct pool {
   struct pool* next;
   value* next_obj;
