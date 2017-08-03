@@ -34,6 +34,8 @@ struct interruptor {
   caml_plat_cond cond;
 
   int running;
+  /* unlike the domain ID, this ID number is not reused */
+  uintnat unique_id;
 
   /* Queue of domains trying to send interrupts here */
   struct interrupt* qhead;
@@ -51,7 +53,6 @@ int caml_send_interrupt(struct interruptor* self,
                         void* data);
 void caml_handle_incoming_interrupts(struct interruptor* self);
 void caml_yield_until_interrupted(struct interruptor* self);
-void caml_start_interruptor(struct interruptor* self);
 
 
 struct dom_internal {
@@ -240,6 +241,7 @@ void caml_init_domains(uintnat minor_size) {
                         &dom->interruptor.lock);
     dom->interruptor.qhead = dom->interruptor.qtail = NULL;
     dom->interruptor.running = 0;
+    dom->interruptor.unique_id = i;
     dom->id = i;
 
     domain_minor_heap_base = minor_heaps_base +
@@ -273,6 +275,7 @@ struct domain_startup_params {
   enum domain_status status;
   caml_root callback;
   dom_internal* newdom;
+  uintnat unique_id;
 };
 
 static void domain_terminate();
@@ -284,13 +287,19 @@ static void* domain_thread_func(void* v) {
   p->newdom = domain_self;
 
   caml_plat_lock(&p->parent->lock);
-  p->status = domain_self ? Dom_started : Dom_failed;
+  if (domain_self) {
+    p->status = Dom_started;
+    p->unique_id = domain_self->interruptor.unique_id;
+  } else {
+    p->status = Dom_failed;
+  }
   caml_plat_broadcast(&p->parent->cond);
   caml_plat_unlock(&p->parent->lock);
   /* cannot access p below here */
 
   if (domain_self) {
-    caml_gc_log("Domain starting");
+    caml_gc_log("Domain starting (unique_id = %"ARCH_INTNAT_PRINTF_FORMAT"u)",
+                domain_self->interruptor.unique_id);
     caml_callback(caml_read_root(callback), Val_unit);
     caml_delete_root(callback);
     domain_terminate();
@@ -337,8 +346,7 @@ CAMLprim value caml_domain_spawn(value callback)
     caml_delete_root(p.callback);
     caml_failwith("failed to allocate domain");
   }
-
-  CAMLreturn (Val_long(p.newdom->id));
+  CAMLreturn (Val_long(p.unique_id));
 }
 
 CAMLprim value caml_ml_domain_join(value domain)
@@ -383,7 +391,7 @@ struct domain* caml_domain_of_id(int id)
 
 CAMLprim value caml_ml_domain_id(value unit)
 {
-  return Val_int(domain_self->id);
+  return Val_int(domain_self->interruptor.unique_id);
 }
 
 static const uintnat INTERRUPT_MAGIC = (uintnat)(-1);
@@ -768,6 +776,7 @@ static void domain_terminate() {
     if (handle_incoming(s) == 0) {
       finished = 1;
       s->running = 0;
+      s->unique_id += Max_domains;
     }
     caml_plat_unlock(&s->lock);
   }
@@ -875,8 +884,12 @@ CAMLprim value caml_ml_domain_yield(value unused)
   return Val_unit;
 }
 
-static void handle_ml_interrupt(struct domain* d, void* unused, interrupt* req)
+static void handle_ml_interrupt(struct domain* d, void* unique_id_p, interrupt* req)
 {
+  if (d->internals->interruptor.unique_id != *(uintnat*)unique_id_p) {
+    caml_acknowledge_interrupt(req);
+    return;
+  }
   if (d->state->critical_section_nesting > 0) {
     req->next = d->state->pending_interrupts;
     d->state->pending_interrupts = req;
@@ -888,11 +901,12 @@ static void handle_ml_interrupt(struct domain* d, void* unused, interrupt* req)
 CAMLprim value caml_ml_domain_interrupt(value domain)
 {
   CAMLparam1 (domain);
-  struct interruptor* target = &all_domains[Int_val(domain)].interruptor;
+  uintnat unique_id = (uintnat)Long_val(domain);
+  struct interruptor* target =
+    &all_domains[unique_id % Max_domains].interruptor;
 
-  if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, 0)) {
-    caml_failwith("Domain.Interrupt.interrupt: target domain has already terminated");
+  if (!caml_send_interrupt(&domain_self->interruptor, target, &handle_ml_interrupt, &unique_id)) {
+    /* the domain might have terminated, but that's fine */
   }
-
   CAMLreturn (Val_unit);
 }

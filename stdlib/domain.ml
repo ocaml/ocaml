@@ -49,6 +49,9 @@ let spawn f =
     let result = match f () with
       | x -> Ok x
       | exception ex -> Error ex in
+    (* Begin a critical section that is ended by domain
+       termination *)
+    Raw.critical_adjust (+1);
     spin (fun () ->
       match Atomic.get state with
       | Running ->
@@ -77,6 +80,10 @@ let join { domain ; state } =
        res
     | Joining _ | Joined ->
        raise (Invalid_argument "This domain has already been joined")) in
+  (* Wait until the domain has terminated.
+     The domain is in a critical section which will be
+     ended by the runtime when it terminates *)
+  Sync.notify domain;
   match res with
   | Ok x -> x
   | Error ex -> raise ex
