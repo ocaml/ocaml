@@ -47,9 +47,6 @@ void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
 #ifdef DEBUG
 /* [is_garbage(v)] returns true if [v] is a garbage value */
 int is_garbage (value);
-
-/* Return 0 => Marked, 1 => Unmarked, 2 => Garbage, 3 => Not_markable */
-int get_status (value);
 #endif
 
 #endif /* CAML_SHARED_HEAP_H */
