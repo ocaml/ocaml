@@ -36,8 +36,13 @@ static void dirty_stack(value stack)
         status = atomic_load_acq((atomic_uintnat*)&Stack_dirty_domain(stack));
         if(status == (uintnat)FIBER_SCANNING) continue;
         if(__sync_bool_compare_and_swap(&Stack_dirty_domain(stack),
-                                        FIBER_CLEAN, caml_domain_self()))
+                                        FIBER_CLEAN, caml_domain_self())) {
+          caml_darken(0, stack, 0);
+          /* XXX KC: Optimize. Since we cannot distinguish Grey from
+           * Black, we might scan the stacks multiple times. */
+          caml_scan_stack(&caml_darken, 0, stack);
           break;
+        }
       }
       Ref_table_add(&Caml_state->remembered_set->fiber_ref, (value*)stack);
     }
@@ -61,9 +66,10 @@ static void load_stack (value stack) {
     + caml_params->profile_slop_wsz + Stack_threshold / sizeof(value);
   domain_state->stack_high = Stack_high(stack);
   domain_state->current_stack = stack;
+  dirty_stack(stack);
+  /* XXX KC: Optimize this. Record minor cycle count. */
   if (domain_state->promoted_in_current_cycle)
     caml_scan_stack (forward_pointer, 0, stack);
-  dirty_stack(stack);
 }
 
 extern void caml_fiber_exn_handler (value) Noreturn;
@@ -279,9 +285,10 @@ static void load_stack(value new_stack)
   domain_state->stack_high = Stack_high(new_stack);
   domain_state->extern_sp = domain_state->stack_high + Stack_sp(new_stack);
   domain_state->current_stack = new_stack;
+  dirty_stack(new_stack);
+  /* XXX KC: Optimize this. Record minor cycle count. */
   if (domain_state->promoted_in_current_cycle)
     caml_scan_stack (forward_pointer, 0, new_stack);
-  dirty_stack(new_stack);
 }
 
 CAMLprim value caml_alloc_stack(value hval, value hexn, value heff)
@@ -426,19 +433,16 @@ void caml_scan_dirty_stack_domain(scanning_action f, void* fdata, value stack,
 void caml_darken_stack(value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);
-  if (Stack_dirty_domain(stack) == FIBER_CLEAN) {
-    if (!__sync_bool_compare_and_swap (&Stack_dirty_domain(stack),
-                                      FIBER_CLEAN, FIBER_SCANNING)) {
-      /* Return early if some other mutator or GC thread won the race */
-      return;
-    }
-  } else if (Stack_dirty_domain(stack) != caml_domain_self()) {
-      /* Return early if some other domain owns the fiber or is being scanned. */
-      return;
+  if (Stack_dirty_domain(stack) == FIBER_CLEAN &&
+      __sync_bool_compare_and_swap (&Stack_dirty_domain(stack),
+                                    FIBER_CLEAN, FIBER_SCANNING)) {
+    caml_darken(0, stack, 0);
+    /* XXX KC: Optimize. Since we cannot distinguish Grey from Black,
+     * we might scan the stacks multiple times. */
+    caml_scan_stack(&caml_darken, 0, stack);
+    atomic_store_rel((atomic_uintnat*)&Stack_dirty_domain(stack),
+                    (uintnat)FIBER_CLEAN);
   }
-  caml_scan_stack(&caml_darken, 0, stack);
-  if (Stack_dirty_domain(stack) == FIBER_SCANNING)
-    Stack_dirty_domain(stack) = FIBER_CLEAN;
 }
 
 void caml_clean_stack(value stack)

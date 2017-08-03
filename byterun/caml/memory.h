@@ -53,7 +53,6 @@ CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 void caml_free_for_heap (char *mem);
 int caml_add_to_heap (char *mem);
-color_t caml_allocation_color (void *hp);
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 

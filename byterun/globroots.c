@@ -21,6 +21,7 @@
 #include "caml/callback.h"
 #include "caml/platform.h"
 #include "caml/alloc.h"
+#include "caml/shared_heap.h"
 #ifdef NATIVE_CODE
 #include "stack.h"
 #endif
