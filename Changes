@@ -59,6 +59,11 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1183: compile curried functors to multi-argument functions
+  earlier in the compiler pipeline; correctly propagate [@@inline]
+  attributes on such functors; mark functor coercion veneers as
+  stubs.
+  (Mark Shinwell, review by Pierre Chambart and Leo White)
 - GPR#1271: Don't generate Ialloc instructions for closures that exceed
   Max_young_wosize; instead allocate them on the major heap.  (Related
   to GPR#1250.)
