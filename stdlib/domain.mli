@@ -47,15 +47,15 @@ module Sync : sig
       Semantically, the primitives are similar to having a single
       monitor (or mutex + condition variable) per domain. That is,
       [critical_section f] acquires the current domain's mutex and
-      runs [f], [wait f] waits on the current domain's condition
+      runs [f], [wait ()] waits on the current domain's condition
       variable (releasing the mutex during the wait), and [notify d]
       acquires domain [d]'s mutex and signals its condition variable.
       The only difference from standard monitors is that [notify d]
-      waits for the critical sections that were in progress to complete.
+      waits for any in-progress critical section to complete.
 
       However, the actual implementation is somewhat different. In
       particular, [critical_section f] is cheaper than acquiring a mutex,
-      and performs no atomic operations *)
+      and performs no more atomic operations than [f] does. *)
 
   val critical_section : (unit -> 'a) -> 'a
   (** [critical_section f] runs [f], but blocks notifications until
@@ -63,20 +63,24 @@ module Sync : sig
 
   val notify : id -> unit
   (** If the domain [d] is within a critical section (i.e. is evaluating
-      [critical_section f]), then [notify d] waits for this critical
-      section to complete before returning.
-      Otherwise, [notify d] does nothing. In general, when [notify d]
-      returns, all of [d]'s critical sections which began before
-      [notify] was called have ended. *)
+      [critical_section f]), then [notify d] marks this critical section
+      as "notified" (causing any call to [wait] to return, see below),
+      and waits for the critical section to complete before returning.
+      If [d] is not in a critical section, then [notify d] does nothing. *)
+
 
   val wait : unit -> unit
   (** [wait] must be called from within a critical section, and returns
-      only when [notify] is called.
+      only when that critical section is notified by a call to [notify].
       It does not matter whether [notify] is called before or after
       [wait] begins: it is the critical section that is being notified,
       not the call to wait. If wait is called and finds that the current
-      critical has already been notified, it returns immediately. *)
+      critical has already been notified, it returns immediately.
 
+      Calling [wait ()] twice within the same critical section is not
+      useful: the first call to [wait ()] returns when the critical
+      section is notified, so the second call to [wait] will always
+      return immediately, as the critical section is already notified. *)
 end
 
 module BVar : sig
