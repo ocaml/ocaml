@@ -146,9 +146,9 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
     pool_freelist.global_large = a;
     released_large++;
   }
-  heap->owner = 0;
   /* FIXME: do something with stats */
   caml_plat_unlock(&pool_freelist.lock);
+  caml_stat_free(heap);
   caml_gc_log("Shutdown shared heap. Released %d active pools, %d large",
               released, released_large);
 }

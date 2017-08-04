@@ -771,13 +771,13 @@ static void domain_terminate() {
     }
     caml_plat_unlock(&s->lock);
   }
+
+  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
+  domain_self->state.state->shared_heap = 0;
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
-
-  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
-  domain_self->state.state->shared_heap = 0;
   caml_enter_blocking_section();
   caml_teardown_eventlog();
 }
