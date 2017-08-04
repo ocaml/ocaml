@@ -282,6 +282,18 @@ let rec available_regs (instr : M.instruction)
         with Exit -> ()
         end;
         Unreachable
+      | Icatch (recursive, handlers, body) ->
+        let aux (nfail, handler) (nfail', after_handler) =
+          assert (nfail = nfail');
+          let after_handler' = available_regs handler ~avail_before in
+          nfail, Reg_availability_set.inter after_handler after_handler'
+        in
+        let aux_equal (nfail, after_handler) (nfail', after_handler') =
+          assert (nfail = nfail');
+          Reg_availability_set.equal after_handler after_handler'
+        in
+
+
       | Icatch (nfail, body, handler) ->
         let avail_after_body =
           available_regs body
