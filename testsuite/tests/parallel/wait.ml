@@ -4,6 +4,9 @@ let rec await r =
 open Domain
 open Domain.Sync
 
+external critical_adjust : int -> unit
+  = "caml_ml_domain_critical_section"
+
 let go () =
   let in_crit = Atomic.make false in
   let woken = Atomic.make false in
@@ -45,12 +48,25 @@ let go () =
   await entered_crit;
   notify (get_id d);
   await in_second_crit;
-  (* some busywork *)
-  join (spawn (fun () -> ()));
+  join (spawn (fun () -> ())); (* some busywork *)
   assert (Atomic.get in_second_crit);
   notify (get_id d);
   (* interrupt returns only after crit ends *)
   assert (not (Atomic.get in_second_crit));
+  join d;
+  (* critical sections end at termination *)
+  let in_crit = Atomic.make false in
+  let d = Domain.spawn (fun () ->
+     critical_adjust (+1);
+     Atomic.set in_crit true;
+     wait ();
+     Atomic.set in_crit false) in
+  await in_crit;
+  for i = 1 to 10000 do
+    assert (Atomic.get in_crit)
+  done;
+  notify (get_id d);
+  assert (not (Atomic.get in_crit));
   join d
 
 
