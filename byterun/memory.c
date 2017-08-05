@@ -237,7 +237,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 struct read_fault_req {
   value obj;
   int field;
-  value ret;
+  value* ret;
 };
 
 static void send_read_fault(struct read_fault_req*);
@@ -247,12 +247,12 @@ static void handle_read_fault(struct domain* target, void* reqp, interrupt* done
   value v = Op_val(req->obj)[req->field];
   if (Is_minor(v) && caml_owner_of_young_block(v) == target) {
     // caml_gc_log("Handling read fault for domain [%02d]", target->id);
-    req->ret = caml_promote(target, v);
+    *req->ret = caml_promote(target, v);
     Assert (!Is_minor(req->ret));
     /* Update the field so that future requests don't fault. We must
        use a CAS here, since another thread may modify the field and
        we must avoid overwriting its update */
-    caml_atomic_cas_field(req->obj, req->field, v, req->ret);
+    caml_atomic_cas_field(req->obj, req->field, v, *req->ret);
   } else {
     /* Race condition: by the time we handled the fault, the field was
        already modified and no longer points to our heap.  We recurse
@@ -273,25 +273,25 @@ static void send_read_fault(struct read_fault_req* req)
     if (!caml_domain_rpc(caml_owner_of_young_block(v), &handle_read_fault, req)) {
       send_read_fault(req);
     }
-    Assert(!Is_minor(req->ret));
+    Assert(!Is_minor(*req->ret));
     // caml_gc_log("Read fault returned (%p)", (void*)req->ret);
   } else {
     // caml_gc_log("Stale read fault: already promoted");
-    req->ret = v;
+    *req->ret = v;
   }
 }
 
 CAMLexport value caml_read_barrier(value obj, int field)
 {
-  value v = Op_val(obj)[field];
+  CAMLparam1(obj);
+  CAMLlocal1(v);
+  v = Op_val(obj)[field];
   if (Is_foreign(v)) {
-    struct read_fault_req req = {obj, field, Val_unit};
+    struct read_fault_req req = {obj, field, &v};
     send_read_fault(&req);
-    Assert (!Is_foreign(req.ret));
-    return req.ret;
-  } else {
-    return v;
+    Assert (!Is_foreign(v));
   }
+  CAMLreturn (v);
 }
 
 CAMLprim value caml_bvar_create(value v)
@@ -354,6 +354,7 @@ intnat caml_bvar_status(value bv)
 
 CAMLprim value caml_bvar_take(value bv)
 {
+  CAMLparam1(bv);
   intnat stat = caml_bvar_status(bv);
   if (stat & BVAR_EMPTY) caml_raise_not_found();
   CAMLassert(stat == Caml_state->id);
@@ -362,11 +363,12 @@ CAMLprim value caml_bvar_take(value bv)
   Op_val(bv)[0] = Val_unit;
   Op_val(bv)[1] = Val_long(Caml_state->id | BVAR_EMPTY);
 
-  return v;
+  CAMLreturn (v);
 }
 
 CAMLprim value caml_bvar_put(value bv, value v)
 {
+  CAMLparam2(bv, v);
   intnat stat = caml_bvar_status(bv);
   if (!(stat & BVAR_EMPTY)) caml_invalid_argument("Put to a full bvar");
   CAMLassert(stat == (Caml_state->id | BVAR_EMPTY));
@@ -374,7 +376,7 @@ CAMLprim value caml_bvar_put(value bv, value v)
   caml_modify_field(bv, 0, v);
   Op_val(bv)[1] = Val_long(Caml_state->id);
 
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_bvar_is_empty(value bv)

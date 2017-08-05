@@ -258,6 +258,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
   if (caml_params->verify_heap) {
     struct heap_verify_state* ver = caml_verify_begin();
     caml_do_local_roots(&caml_verify_root, ver, caml_domain_self());
+    caml_scan_stack(&caml_verify_root, ver, Caml_state->current_stack);
     caml_scan_global_roots(&caml_verify_root, ver);
     caml_verify_heap(ver);
     caml_gc_log("Heap verified");

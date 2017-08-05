@@ -547,6 +547,7 @@ void verify_push(void* st_v, value v, value* p)
 
 void caml_verify_root(void* state, value v, value* p)
 {
+  Assert (!Is_foreign(v));
   verify_push(state, v, p);
 }
 
