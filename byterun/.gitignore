@@ -2,6 +2,7 @@
 program.exe
 jumptbl.h
 primitives
+primitives.new
 prims.c
 opnames.h
 version.h
