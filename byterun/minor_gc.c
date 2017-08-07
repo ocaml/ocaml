@@ -31,7 +31,7 @@
 #include "caml/fiber.h"
 #include "caml/eventlog.h"
 
-void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+static void alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   tbl->size = sz;
   tbl->reserve = rsv;
@@ -56,6 +56,26 @@ static void clear_table (struct caml_ref_table *tbl)
 {
     tbl->ptr = tbl->base;
     tbl->limit = tbl->threshold;
+}
+
+struct caml_remembered_set* caml_alloc_remembered_set()
+{
+  struct caml_remembered_set* r =
+    caml_stat_alloc(sizeof(struct caml_remembered_set));
+  memset(r, 0, sizeof(*r));
+  return r;
+}
+
+void caml_free_remembered_set(struct caml_remembered_set* r)
+{
+  Assert(r->major_ref.ptr == r->major_ref.base);
+  Assert(r->minor_ref.ptr == r->minor_ref.base);
+  Assert(r->fiber_ref.ptr == r->fiber_ref.base + 1);
+  Assert((value)*r->fiber_ref.base == Caml_state->current_stack);
+  reset_table(&r->major_ref);
+  reset_table(&r->minor_ref);
+  reset_table(&r->fiber_ref);
+  caml_stat_free(r);
 }
 
 /* size in bytes */
@@ -619,7 +639,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
                                       Assert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    caml_alloc_table (tbl, Caml_state->minor_heap_size / sizeof (value) / 8, 256);
+    alloc_table (tbl, Caml_state->minor_heap_size / sizeof (value) / 8, 256);
   }else if (tbl->limit == tbl->threshold){
     caml_gc_log ("ref_table threshold crossed");
     tbl->limit = tbl->end;

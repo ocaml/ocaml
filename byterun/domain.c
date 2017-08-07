@@ -195,10 +195,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
 
     domain_state->young_start = domain_state->young_end =
       domain_state->young_ptr = 0;
-    domain_state->remembered_set =
-      caml_stat_alloc(sizeof(struct caml_remembered_set));
-    memset ((void*)domain_state->remembered_set, 0,
-            sizeof(struct caml_remembered_set));
+    domain_state->remembered_set = caml_alloc_remembered_set();
 
     d->state.state->shared_heap = caml_init_shared_heap();
     caml_init_major_gc();
@@ -789,8 +786,12 @@ static void domain_terminate() {
     caml_plat_unlock(&s->lock);
   }
 
+  caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_self->state.state->shared_heap);
   domain_self->state.state->shared_heap = 0;
+  caml_free_remembered_set(domain_self->state.state->remembered_set);
+  domain_self->state.state->remembered_set = 0;
+
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
