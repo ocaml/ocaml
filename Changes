@@ -69,6 +69,9 @@ Working version
   to GPR#1250.)
   (Mark Shinwell)
 
+- GPR#1250: illegal ARM64 assembly code generated for large combined allocations
+  (report and initial fix by Steve Walk, review and final fix by Xavier Leroy)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
