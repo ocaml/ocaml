@@ -543,3 +543,9 @@ void caml_init_major_gc() {
   Caml_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
   Caml_state->mark_stack_count = 0;
 }
+
+void caml_teardown_major_gc() {
+  Assert(Caml_state->mark_stack_count == 0);
+  caml_stat_free(Caml_state->mark_stack);
+  Caml_state->mark_stack = NULL;
+}

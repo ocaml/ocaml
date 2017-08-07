@@ -37,7 +37,8 @@ CAMLextern void caml_minor_collection (void);
 CAMLextern void forward_pointer (void* domain, value v, value* p);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
 extern void caml_realloc_ref_table (struct caml_ref_table *);
-extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
+struct caml_remembered_set* caml_alloc_remembered_set();
+void caml_free_remembered_set(struct caml_remembered_set*);
 struct domain;
 CAMLextern value caml_promote(struct domain*, value root);
 int caml_stack_is_saved (void);
