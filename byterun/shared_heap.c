@@ -57,7 +57,9 @@ CAML_STATIC_ASSERT(sizeof(large_alloc) % sizeof(value) == 0);
 struct {
   caml_plat_mutex lock;
   pool* free;
-  /* these only contain swept memory */
+
+  /* these only contain swept memory of terminated domains*/
+  struct heap_stats stats;
   pool* global_avail_pools[NUM_SIZECLASSES];
   pool* global_full_pools[NUM_SIZECLASSES];
   large_alloc* global_large;
@@ -146,7 +148,7 @@ void caml_teardown_shared_heap(struct caml_heap_state* heap) {
     pool_freelist.global_large = a;
     released_large++;
   }
-  /* FIXME: do something with stats */
+  caml_accum_heap_stats(&pool_freelist.stats, &heap->stats);
   caml_plat_unlock(&pool_freelist.lock);
   caml_stat_free(heap);
   caml_gc_log("Shutdown shared heap. Released %d active pools, %d large",
@@ -719,6 +721,10 @@ void caml_cycle_heap(struct caml_heap_state* local) {
     a->next = local->unswept_large;
     local->unswept_large = a;
     received_l++;
+  }
+  if (received_p || received_l) {
+    caml_accum_heap_stats(&local->stats, &pool_freelist.stats);
+    memset(&pool_freelist.stats, 0, sizeof(pool_freelist.stats));
   }
   caml_plat_unlock(&pool_freelist.lock);
   if (received_p || received_l)

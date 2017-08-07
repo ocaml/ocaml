@@ -188,6 +188,20 @@ static uintnat major_cycles_completed = 0;
    at the end of the most recently completed GC cycle */
 static struct gc_stats sampled_gc_stats[2][Max_domains];
 
+void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* h)
+{
+  acc->pool_words += h->pool_words;
+  if (acc->pool_max_words < h->pool_max_words)
+    acc->pool_max_words = h->pool_max_words;
+  acc->pool_live_words += h->pool_live_words;
+  acc->pool_live_blocks += h->pool_live_blocks;
+  acc->pool_frag_words += h->pool_frag_words;
+  acc->large_words += h->large_words;
+  if (acc->large_max_words < h->large_max_words)
+    acc->large_max_words = h->large_max_words;
+  acc->large_blocks += h->large_blocks;
+}
+
 void caml_sample_gc_stats(struct gc_stats* buf)
 {
   memset(buf, 0, sizeof(*buf));
@@ -196,6 +210,7 @@ void caml_sample_gc_stats(struct gc_stats* buf)
      at the end of the most recently completed GC cycle */
   int phase = ! (major_cycles_completed & 1);
   int i;
+  intnat pool_max = 0, large_max = 0;
   for (i=0; i<Max_domains; i++) {
     struct gc_stats* s = &sampled_gc_stats[phase][i];
     struct heap_stats* h = &s->major_heap;
@@ -203,14 +218,18 @@ void caml_sample_gc_stats(struct gc_stats* buf)
     buf->promoted_words += s->promoted_words;
     buf->major_words += s->major_words;
     buf->minor_collections += s->minor_collections;
-    buf->major_heap.pool_words += h->pool_words;
-    buf->major_heap.pool_max_words += h->pool_max_words;
-    buf->major_heap.pool_live_words += h->pool_live_words;
-    buf->major_heap.pool_live_blocks += h->pool_live_blocks;
-    buf->major_heap.pool_frag_words += h->pool_frag_words;
-    buf->major_heap.large_words += h->large_words;
-    buf->major_heap.large_max_words += h->large_max_words;
+    /* The instantaneous maximum heap size cannot be computed
+       from per-domain statistics, and would be very expensive
+       to maintain directly. Here, we just sum the per-domain
+       maxima, which is statistically dubious.
+
+       FIXME: maybe maintain coarse global maxima? */
+    pool_max += h->pool_max_words;
+    large_max += h->large_max_words;
+    caml_accum_heap_stats(&buf->major_heap, h);
   }
+  buf->major_heap.pool_max_words = pool_max;
+  buf->major_heap.large_max_words = large_max;
 }
 
 static void major_cycle_callback(struct domain* domain, void* unused)

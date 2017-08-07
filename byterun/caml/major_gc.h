@@ -20,6 +20,7 @@ struct heap_stats {
   intnat large_max_words;
   intnat large_blocks;
 };
+void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 
 struct gc_stats {
   uint64 minor_words;
