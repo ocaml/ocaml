@@ -119,7 +119,10 @@ void caml_reallocate_minor_heap(asize_t size)
 
   size = caml_norm_minor_heap_size(size);
 
-  caml_mem_commit((void*)domain_self->minor_heap_area, size);
+  if (!caml_mem_commit((void*)domain_self->minor_heap_area, size)) {
+    /* FIXME: handle this gracefully */
+    caml_fatal_error("Fatal error: No memory for minor heap\n");
+  }
 
 #ifdef DEBUG
   {
@@ -156,8 +159,13 @@ static void create_domain(uintnat initial_minor_heap_size) {
       d = &all_domains[i];
       if (!d->interrupt_word_address) {
         /* never been started before, so set up minor heap */
-        /* FIXME: caml_mem_commit can fail! */
-        caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area));
+        if (!caml_mem_commit((void*)d->tls_area, (d->tls_area_end - d->tls_area))) {
+          /* give up now: if we couldn't get memory for this domain, we're
+             unlikely to have better luck with any other */
+          d = 0;
+          caml_plat_unlock(&s->lock);
+          break;
+        }
         caml_domain_state* domain_state =
           (caml_domain_state*)(d->tls_area);
         atomic_uintnat* young_limit = (atomic_uintnat*)&domain_state->young_limit;
