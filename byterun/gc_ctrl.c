@@ -215,7 +215,15 @@ CAMLprim value caml_gc_major(value v)
 
 CAMLprim value caml_gc_full_major(value v)
 {
-  return caml_gc_major(v);
+  int i;
+  caml_gc_log ("Full Major GC requested");
+  /* In general, it can require up to 3 GC cycles for a
+     currently-unreachable object to be collected. */
+  for (i = 0; i < 3; i++) {
+    caml_empty_minor_heap();
+    caml_finish_major_cycle();
+  }
+  return Val_unit;
 }
 
 CAMLprim value caml_gc_major_slice (value v)
