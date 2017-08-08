@@ -277,7 +277,7 @@ module Directive : sig
     | Named_thing of string
     (** [Named_thing] covers symbols, labels and variables.  (These are all
         represented as [string] rather than [Linkage_name.With_reloc.t] and so
-        forth because name mangling conventions have by now been applied. *)
+        forth because name mangling conventions have by now been applied.) *)
     | Add of constant * constant
     | Sub of constant * constant
     | Div of constant * int

@@ -36,11 +36,11 @@ external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 
 let global_symbol id =
   let sym = Compilenv.symbol_for_global id in
-  try ndl_loadsym sym
+  try ndl_loadsym (Linkage_name.to_string sym)
   with _ -> fatal_error ("Opttoploop.global_symbol " ^ (Ident.unique_name id))
 
 let need_symbol sym =
-  try ignore (ndl_loadsym sym); false
+  try ignore (ndl_loadsym (Linkage_name.to_string sym)); false
   with _ -> true
 
 let dll_run dll entry =
