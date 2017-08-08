@@ -23,6 +23,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 #include "caml/platform.h"
+#include "caml/fiber.h"
 
 static __thread int callback_depth = 0;
 
@@ -113,17 +114,32 @@ value caml_callback3_asm(char* young_ptr, value closure, value* args);
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
+  {
+    CAMLparam2(closure, arg);
+    caml_maybe_expand_stack();
+    CAMLdrop;
+  }
   return caml_callback_asm(Caml_state->young_ptr, closure, arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
+  {
+    CAMLparam3(closure, arg1, arg2);
+    caml_maybe_expand_stack();
+    CAMLdrop;
+  }
   return caml_callback2_asm(Caml_state->young_ptr, closure, arg1, arg2);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
+  {
+    CAMLparam4(closure, arg1, arg2, arg3);
+    caml_maybe_expand_stack();
+    CAMLdrop;
+  }
   /* can only pass 4 args in registers on Windows, so we use an array */
   value args[] = {arg1, arg2, arg3};
   return caml_callback3_asm(Caml_state->young_ptr, closure, args);

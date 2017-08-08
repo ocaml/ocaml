@@ -217,9 +217,8 @@ next_chunk:
   }
 }
 
-void caml_maybe_expand_stack (value* gc_regs)
+void caml_maybe_expand_stack ()
 {
-  CAMLparamN(gc_regs, 5);
   uintnat stack_available;
 
   Assert(Tag_val(Caml_state->current_stack) == Stack_tag);
@@ -231,8 +230,6 @@ void caml_maybe_expand_stack (value* gc_regs)
   if (stack_available < caml_params->profile_slop_wsz
                       + 2 * Stack_threshold / sizeof(value))
     caml_realloc_stack (0, 0, 0);
-
-  CAMLreturn0;
 }
 
 void caml_update_gc_regs_slot (value* gc_regs)

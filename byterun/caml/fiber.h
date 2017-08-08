@@ -100,6 +100,7 @@ void caml_clean_stack(value stack);
 void caml_clean_stack_domain(value stack, struct domain* domain);
 void caml_realloc_stack (asize_t required_size, value* save, int nsave);
 void caml_change_max_stack_size (uintnat new_max_size);
+void caml_maybe_expand_stack();
 int  caml_on_current_stack(value*);
 int  caml_running_main_fiber();
 #ifdef NATIVE_CODE
