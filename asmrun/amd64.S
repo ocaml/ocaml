@@ -219,14 +219,6 @@
         .cfi_def_cfa_offset 16; \
         popq    %r14; CFI_ADJUST(-8)
 
-/* Load [caml_stack_high - %r14] into %rsp. %r14 is an offset. Clobbers %r11. */
-#define RESTORE_EXN_HANDLER_SYS \
-        LOAD_TL_VAR(caml_system_stack_high, %r11); \
-        sub     %r14, %r11; \
-        movq    %r11, %rsp; \
-        .cfi_def_cfa_offset 16; \
-        popq    %r14; CFI_ADJUST(-8)
-
 /* Switch between OCaml stacks.
  * arguments : target stack (%rdi)
  * preserves : %rbx, %r12, %r13 */
@@ -869,12 +861,6 @@ LBL(caml_start_program):
         ADDR_TL_VAR(caml_current_stack, %r13)
         pushq   %r13; CFI_ADJUST(8)
         pushq   $0 ; CFI_ADJUST(8) /* will be filled in at SWITCH_OCAML_TO_C. See OFFXXX. */
-    /* Build a handler for exceptions raised in C */
-        lea     LBL(115)(%rip), %r13
-        pushq   %r13; CFI_ADJUST(8)
-    /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
-     * See SYSCFAXXX. */
-        pushq   $0 ; CFI_ADJUST(8)
     /* System stack is captured unaligned. Hence, any OCaml to C calls
      * are expected to explicitly align stack using ENTER_FUNCTION and such. */
         STORE_TL_VAR(%rsp, caml_system_sp)
@@ -911,7 +897,7 @@ LBL(110):
     /* Return to C stack. */
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
     /* Pop the C exception handler and DWARF cfi info. */
-        addq    $32, %rsp; CFI_ADJUST(-32)
+        addq    $16, %rsp; CFI_ADJUST(-32)
         popq %r10            ; CFI_ADJUST(-8) // alignment word
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
@@ -922,19 +908,6 @@ LBL(109):
     /* Mark the bucket as an exception result and return it */
         orq     $2, %rax
         jmp     LBL(110)
-LBL(115):
-    /* Exception in C code */
-    /* Reinstall handler for exceptions raised in C */
-        lea     LBL(115)(%rip), %r13
-        pushq   %r13; CFI_ADJUST(8)
-        pushq   $0 ; CFI_ADJUST(8)     /* dummy prev trap */
-    /* Prepare for return to OCaml */
-        LOAD_TL_VAR(caml_young_ptr, %r15)
-    /* Load ocaml stack and restore global variables */
-        LEAVE_FUNCTION
-        SWITCH_C_TO_OCAML(%r10)
-    /* Raise the exception in OCaml */
-        jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
 /******************************************************************************/
@@ -984,9 +957,18 @@ FUNCTION(G(caml_raise_exception))
 CFI_STARTPROC
         movq    C_ARG_1, %r15                /* young_ptr */
         movq    C_ARG_2, %rax
+LBL(caml_raise_exception):
         LOAD_TL_VAR(caml_system_exnptr_offset, %r14)
-        RESTORE_EXN_HANDLER_SYS             /* Cut stack */
-        ret
+        LOAD_TL_VAR(caml_system_stack_high, %r11);
+        sub     %r14, %r11;
+        movq    %r11, %rsp;
+    /* Prepare for return to OCaml */
+        LOAD_TL_VAR(caml_young_ptr, %r15)
+    /* Load ocaml stack and restore global variables */
+        LEAVE_FUNCTION
+        SWITCH_C_TO_OCAML(%r10)
+    /* Raise the exception in OCaml */
+        jmp LBL(caml_raise_exn)
 CFI_ENDPROC
 
 /* Raise a Stack_overflow exception on return from segv_handler()
@@ -996,9 +978,7 @@ CFI_ENDPROC
 FUNCTION(G(caml_stack_overflow))
 CFI_STARTPROC
         LEA_VAR(caml_exn_Stack_overflow, %rax)
-        LOAD_TL_VAR(caml_system_exnptr_offset, %r14)
-        RESTORE_EXN_HANDLER_SYS /* cut the stack */
-        ret                     /* jump to handler's code */
+        jmp     LBL(caml_raise_exception)
 CFI_ENDPROC
 
 /******************************************************************************/
