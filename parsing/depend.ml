@@ -104,7 +104,10 @@ let rec add_type bv ty =
   | Ptyp_arrow(_, t1, t2) -> add_type bv t1; add_type bv t2
   | Ptyp_tuple tl -> List.iter (add_type bv) tl
   | Ptyp_constr(c, tl) -> add bv c; List.iter (add_type bv) tl
-  | Ptyp_object (fl, _) -> List.iter (fun (_, _, t) -> add_type bv t) fl
+  | Ptyp_object (fl, _) ->
+      List.iter
+       (function Otag (_, _, t) -> add_type bv t
+         | Oinherit t -> add_type bv t) fl
   | Ptyp_class(c, tl) -> add bv c; List.iter (add_type bv) tl
   | Ptyp_alias(t, _) -> add_type bv t
   | Ptyp_variant(fl, _, _) ->
@@ -167,6 +170,8 @@ let rec add_class_type bv cty =
   | Pcty_arrow(_, ty1, cty2) ->
       add_type bv ty1; add_class_type bv cty2
   | Pcty_extension e -> handle_extension e
+  | Pcty_open (_ovf, m, e) ->
+      let bv = open_module bv m.txt in add_class_type bv e
 
 and add_class_type_field bv pctf =
   match pctf.pctf_desc with
@@ -502,6 +507,8 @@ and add_class_expr bv ce =
   | Pcl_constraint(ce, ct) ->
       add_class_expr bv ce; add_class_type bv ct
   | Pcl_extension e -> handle_extension e
+  | Pcl_open (_ovf, m, e) ->
+      let bv = open_module bv m.txt in add_class_expr bv e
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with

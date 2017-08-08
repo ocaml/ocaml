@@ -55,6 +55,7 @@ type mapper = {
   open_description: mapper -> Typedtree.open_description -> open_description;
   pat: mapper -> Typedtree.pattern -> pattern;
   row_field: mapper -> Typedtree.row_field -> row_field;
+  object_field: mapper -> Typedtree.object_field -> object_field;
   signature: mapper -> Typedtree.signature -> signature;
   signature_item: mapper -> Typedtree.signature_item -> signature_item;
   structure: mapper -> Typedtree.structure -> structure;

@@ -497,6 +497,7 @@ let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
     emit_spacetime_shapes ()
   end;
   D.switch_to_section Data;
+  D.align ~bytes:8;  (* PR#7591 *)
   emit_global_data_symbol_with_size "frametable" ~f:(fun () ->
     emit_frames ());
   if emit_numeric_constants then begin

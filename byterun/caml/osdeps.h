@@ -45,13 +45,13 @@ extern caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name]. */
-extern caml_stat_string caml_search_in_path(struct ext_table * path, char * name);
+extern caml_stat_string caml_search_in_path(struct ext_table * path, const char * name);
 
 /* Same, but search an executable name in the system path for executables. */
-CAMLextern caml_stat_string caml_search_exe_in_path(char * name);
+CAMLextern caml_stat_string caml_search_exe_in_path(const char * name);
 
 /* Same, but search a shared library in the given path. */
-extern caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name);
+extern caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and
@@ -69,9 +69,9 @@ extern void caml_dlclose(void * handle);
 
 /* Look up the given symbol in the given shared library.
    Return [NULL] if not found, or symbol value if found. */
-extern void * caml_dlsym(void * handle, char * name);
+extern void * caml_dlsym(void * handle, const char * name);
 
-extern void * caml_globalsym(char * name);
+extern void * caml_globalsym(const char * name);
 
 /* Return an error message describing the most recent dynlink failure. */
 extern char * caml_dlerror(void);
@@ -85,6 +85,11 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
    GetModuleFileName under Windows).  Return NULL on error,
    string allocated with [caml_stat_alloc] on success. */
 extern char * caml_executable_name(void);
+
+/* Secure version of [getenv]: returns NULL if the process has special
+   privileges (setuid bit, setgid bit, capabilities).
+*/
+extern char *caml_secure_getenv(char const *var);
 
 #endif /* CAML_INTERNALS */
 

@@ -2335,9 +2335,8 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
             let tests =
               List.fold_right
                 (fun (path, act) rem ->
-                   Lifthenelse(Lprim(Pintcomp Ceq,
-                                     [Lvar tag;
-                                      transl_path ex_pat.pat_env path], loc),
+                   let ext = transl_extension_path ex_pat.pat_env path in
+                   Lifthenelse(Lprim(Pintcomp Ceq, [Lvar tag; ext], loc),
                                act, rem))
                 nonconsts
                 default
@@ -2346,8 +2345,8 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
       in
         List.fold_right
           (fun (path, act) rem ->
-             Lifthenelse(Lprim(Pintcomp Ceq,
-                               [arg; transl_path ex_pat.pat_env path], loc),
+             let ext = transl_extension_path ex_pat.pat_env path in
+             Lifthenelse(Lprim(Pintcomp Ceq, [arg; ext], loc),
                          act, rem))
           consts
           nonconst_lambda

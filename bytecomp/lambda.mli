@@ -329,6 +329,13 @@ val free_methods: lambda -> IdentSet.t
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+[@@ocaml.deprecated "use transl_{module,value,extension,class}_path instead"]
+
+val transl_module_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_value_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_extension_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
@@ -361,5 +368,10 @@ val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
 val lam_of_loc : loc_kind -> Location.t -> lambda
+
+val merge_inline_attributes
+   : inline_attribute
+  -> inline_attribute
+  -> inline_attribute option
 
 val reset: unit -> unit

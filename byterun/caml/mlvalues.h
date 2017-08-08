@@ -252,7 +252,12 @@ CAMLextern value caml_hash_variant(char const * tag);
 
 /* Strings. */
 #define String_tag 252
+#ifdef CAML_SAFE_STRING
+#define String_val(x) ((const char *) Bp_val(x))
+#else
 #define String_val(x) ((char *) Bp_val(x))
+#endif
+#define Bytes_val(x) ((unsigned char *) Bp_val(x))
 CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
 CAMLextern int caml_string_is_c_safe (value);
   /* true if string contains no '\0' null characters */

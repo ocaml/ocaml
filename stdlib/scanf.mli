@@ -218,7 +218,7 @@ type ('a, 'b, 'c, 'd) scanner =
     For instance, the {!Scanf.scanf} function below has type
     [('a, 'b, 'c, 'd) scanner], since it is a formatted input function that
     reads from {!Scanning.stdin}: [scanf fmt f] applies [f] to the arguments
-    specified by [fmt], reading those arguments from [!Pervasives.stdin] as
+    specified by [fmt], reading those arguments from {!Pervasives.stdin} as
     expected.
 
     If the format [fmt] has some [%r] indications, the corresponding

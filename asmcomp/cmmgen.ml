@@ -246,8 +246,8 @@ let force_tag_int i dbg =
   match i with
     Cconst_int n ->
       int_const n
-  | Cop(Casr, [c; Cconst_int n], dbg) when n > 0 ->
-      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg; Cconst_int 1], dbg)
+  | Cop(Casr, [c; Cconst_int n], dbg') when n > 0 ->
+      Cop(Cor, [asr_int c (Cconst_int (n - 1)) dbg'; Cconst_int 1], dbg)
   | c ->
       Cop(Cor, [lsl_int c (Cconst_int 1) dbg; Cconst_int 1], dbg)
 
@@ -508,8 +508,8 @@ let rec unbox_float dbg cmm =
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_float dbg e1, unbox_float dbg e2)
   | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
-  | Cswitch(e, tbl, el, dbg) ->
-    Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg)
+  | Cswitch(e, tbl, el, dbg') ->
+    Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg')
   | Ccatch(rec_flag, handlers, body) ->
     map_ccatch (unbox_float dbg) rec_flag handlers body
   | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
@@ -643,11 +643,11 @@ let array_indexing ?typ log2size ptr ofs dbg =
   | Cconst_int n ->
       let i = n asr 1 in
       if i = 0 then ptr else Cop(add, [ptr; Cconst_int(i lsl log2size)], dbg)
-  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], _) ->
-      Cop(add, [ptr; lsl_const c log2size dbg], dbg)
-  | Cop(Caddi, [c; Cconst_int n], _) when log2size = 0 ->
+  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') ->
+      Cop(add, [ptr; lsl_const c log2size dbg], dbg')
+  | Cop(Caddi, [c; Cconst_int n], dbg') when log2size = 0 ->
       Cop(add, [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1)],
-        dbg)
+        dbg')
   | Cop(Caddi, [c; Cconst_int n], _) ->
       Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
                     Cconst_int((n-1) lsl (log2size - 1))], dbg)
@@ -918,12 +918,12 @@ let split_int64_for_32bit_target arg dbg =
 
 let rec unbox_int bi arg dbg =
   match arg with
-    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], dbg)
+    Cop(Calloc, [_hdr; _ops; Cop(Clsl, [contents; Cconst_int 32], dbg')], _dbg)
     when bi = Pint32 && size_int = 8 && big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg'); Cconst_int 32],
         dbg)
-  | Cop(Calloc, [_hdr; _ops; contents], dbg)
+  | Cop(Calloc, [_hdr; _ops; contents], _dbg)
     when bi = Pint32 && size_int = 8 && not big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32], dbg); Cconst_int 32], dbg)
@@ -933,8 +933,8 @@ let rec unbox_int bi arg dbg =
   | Cifthenelse(cond, e1, e2) ->
       Cifthenelse(cond, unbox_int bi e1 dbg, unbox_int bi e2 dbg)
   | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2 dbg)
-  | Cswitch(e, tbl, el, dbg) ->
-      Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg)
+  | Cswitch(e, tbl, el, dbg') ->
+      Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg')
   | Ccatch(rec_flag, handlers, body) ->
       map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
   | Ctrywith(e1, id, e2) ->
@@ -1650,29 +1650,31 @@ let rec transl env e =
       List.iter (fun f -> Queue.add f functions) fundecls;
       Cconst_symbol lbl
   | Uclosure(fundecls, clos_vars) ->
-      let block_size =
-        fundecls_size fundecls + List.length clos_vars in
       let rec transl_fundecls pos = function
           [] ->
             List.map (transl env) clos_vars
         | f :: rem ->
             Queue.add f functions;
-            let header =
-              if pos = 0
-              then alloc_closure_header block_size f.dbg
-              else alloc_infix_header pos f.dbg in
-            if f.arity = 1 || f.arity = 0 then
-              header ::
-              Cconst_symbol f.label ::
-              int_const f.arity ::
-              transl_fundecls (pos + 3) rem
-            else
-              header ::
-              Cconst_symbol (curry_function f.arity) ::
-              int_const f.arity ::
-              Cconst_symbol f.label ::
-              transl_fundecls (pos + 4) rem in
-      Cop(Calloc, transl_fundecls 0 fundecls, Debuginfo.none)
+            let without_header =
+              if f.arity = 1 || f.arity = 0 then
+                Cconst_symbol f.label ::
+                int_const f.arity ::
+                transl_fundecls (pos + 3) rem
+              else
+                Cconst_symbol(curry_function f.arity) ::
+                int_const f.arity ::
+                Cconst_symbol f.label ::
+                transl_fundecls (pos + 4) rem
+            in
+            if pos = 0 then without_header
+            else (alloc_infix_header pos f.dbg) :: without_header
+      in
+      let dbg =
+        match fundecls with
+        | [] -> Debuginfo.none
+        | fundecl::_ -> fundecl.dbg
+      in
+      make_alloc dbg Obj.closure_tag (transl_fundecls 0 fundecls)
   | Uoffset(arg, offset) ->
       (* produces a valid Caml value, pointing just after an infix header *)
       let ptr = transl env arg in
@@ -2646,6 +2648,11 @@ and exit_if_true dbg env cond nfail otherwise =
   | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
   | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
   | Uprim(Psequor, [arg1; arg2], _) ->
+      (* CR-someday pchambart: Since Uifthenelse does not have a debuginfo,
+         this pattern cannot be written to propagate the Psequor operation
+         location. Should it do that ?
+         This also applies to the following pattern for Psequand and the
+         instances in exit_if_false *)
       exit_if_true dbg env arg1 nfail
         (exit_if_true dbg env arg2 nfail otherwise)
   | Uifthenelse (_, _, Uconst (Uconst_ptr 0))

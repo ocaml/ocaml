@@ -60,9 +60,8 @@ module Typ :
                -> core_type
     val tuple: ?loc:loc -> ?attrs:attrs -> core_type list -> core_type
     val constr: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
-    val object_: ?loc:loc -> ?attrs:attrs ->
-                  (str * attributes * core_type) list -> closed_flag ->
-                  core_type
+    val object_: ?loc:loc -> ?attrs:attrs -> object_field list
+                   -> closed_flag -> core_type
     val class_: ?loc:loc -> ?attrs:attrs -> lid -> core_type list -> core_type
     val alias: ?loc:loc -> ?attrs:attrs -> core_type -> string -> core_type
     val variant: ?loc:loc -> ?attrs:attrs -> row_field list -> closed_flag
@@ -353,6 +352,8 @@ module Cty:
     val arrow: ?loc:loc -> ?attrs:attrs -> arg_label -> core_type ->
       class_type -> class_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> class_type
+               -> class_type
   end
 
 (** Class type fields *)
@@ -391,6 +392,8 @@ module Cl:
     val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type ->
       class_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> class_expr
+               -> class_expr
   end
 
 (** Class fields *)

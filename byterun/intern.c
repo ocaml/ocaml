@@ -400,7 +400,7 @@ static void intern_rec(value *dest)
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
       Byte(v, ofs_ind) = ofs_ind - len;
-      readblock(String_val(v), len);
+      readblock((char *)String_val(v), len);
     } else {
       switch(code) {
       case CODE_INT8:

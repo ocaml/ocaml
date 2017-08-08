@@ -367,6 +367,7 @@ and rewrite_class_expr iflag cexpr =
   | Pcl_let (_, spat_sexp_list, cexpr) ->
       rewrite_patexp_list iflag spat_sexp_list;
       rewrite_class_expr iflag cexpr
+  | Pcl_open (_, _, cexpr)
   | Pcl_constraint (cexpr, _) ->
       rewrite_class_expr iflag cexpr
   | Pcl_extension _ -> ()

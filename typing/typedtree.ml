@@ -153,6 +153,7 @@ and class_expr_desc =
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
     (* Visible instance variables, methods and concretes methods *)
+  | Tcl_open of override_flag * Path.t * Longident.t loc * Env.t * class_expr
 
 and class_structure =
   {
@@ -370,7 +371,7 @@ and core_type_desc =
   | Ttyp_arrow of arg_label * core_type * core_type
   | Ttyp_tuple of core_type list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
-  | Ttyp_object of (string * attributes * core_type) list * closed_flag
+  | Ttyp_object of object_field list * closed_flag
   | Ttyp_class of Path.t * Longident.t loc * core_type list
   | Ttyp_alias of core_type * string
   | Ttyp_variant of row_field list * closed_flag * label list option
@@ -385,8 +386,12 @@ and package_type = {
 }
 
 and row_field =
-    Ttag of label * attributes * bool * core_type list
+    Ttag of string loc * attributes * bool * core_type list
   | Tinherit of core_type
+
+and object_field =
+  | OTtag of string loc * attributes * core_type
+  | OTinherit of core_type
 
 and value_description =
   { val_id: Ident.t;
@@ -478,6 +483,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
+  | Tcty_open of override_flag * Path.t * Longident.t loc * Env.t * class_type
 
 and class_signature = {
     csig_self: core_type;

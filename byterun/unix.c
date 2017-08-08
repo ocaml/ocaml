@@ -19,6 +19,7 @@
 
 #define _GNU_SOURCE
            /* Helps finding RTLD_DEFAULT in glibc */
+           /* also secure_getenv */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -130,9 +131,10 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  const char * p;
+  char * dir, * fullname;
   int i;
   struct stat st;
 
@@ -194,7 +196,7 @@ static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, char 
 
 #endif
 
-caml_stat_string caml_search_exe_in_path(char * name)
+caml_stat_string caml_search_exe_in_path(const char * name)
 {
   struct ext_table path;
   char * tofree;
@@ -212,7 +214,7 @@ caml_stat_string caml_search_exe_in_path(char * name)
   return res;
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   caml_stat_string dllname;
   caml_stat_string res;
@@ -239,7 +241,7 @@ void caml_dlclose(void * handle)
   flexdll_dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return flexdll_dlsym(handle, name);
 }
@@ -275,7 +277,7 @@ void caml_dlclose(void * handle)
   dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
 #ifdef DL_NEEDS_UNDERSCORE
   char _name[1000] = "_";
@@ -285,7 +287,7 @@ void * caml_dlsym(void * handle, char * name)
   return dlsym(handle, name);
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
 #ifdef RTLD_DEFAULT
   return caml_dlsym(RTLD_DEFAULT, name);
@@ -400,5 +402,24 @@ char * caml_executable_name(void)
 #else
   return NULL;
 
+#endif
+}
+
+char *caml_secure_getenv (char const *var)
+{
+#ifdef HAS_SECURE_GETENV
+  return secure_getenv (var);
+#elif defined (HAS___SECURE_GETENV)
+  return __secure_getenv (var);
+#elif defined(HAS_ISSETUGID)
+  if (!issetugid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
+#else
+  if (geteuid () == getuid () && getegid () == getgid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
 #endif
 }
