@@ -889,28 +889,6 @@ LBL(caml_start_program):
         LOAD_TL_VAR(caml_system_stack_high, %r14)
         subq    %rsp, %r14
         STORE_TL_VAR(%r14, caml_system_exnptr_offset)
-    /* Save callback args */
-        subq    $8, %rsp; CFI_ADJUST(8)
-        pushq   %r12; CFI_ADJUST(8)
-        pushq   %rax; CFI_ADJUST(8)
-        pushq   %rbx; CFI_ADJUST(8)
-        pushq   %rdi; CFI_ADJUST(8)
-        pushq   %rsi; CFI_ADJUST(8)
-    /* Create a register array since caml_maybe_expand_stack may GC */
-        movq    %rsp, C_ARG_1
-    /* Expand the current stack if needed */
-        LEA_VAR(caml_maybe_expand_stack, %r12)
-        PREPARE_FOR_C_CALL
-        call    *%r12
-        CLEANUP_AFTER_C_CALL
-    /* Now caml_current_stack corresponds to the new stack. Still on C stack.
-     * Restore callback args. */
-        popq    %rsi; CFI_ADJUST(-8)
-        popq    %rdi; CFI_ADJUST(-8)
-        popq    %rbx; CFI_ADJUST(-8)
-        popq    %rax; CFI_ADJUST(-8)
-        popq    %r12; CFI_ADJUST(-8)
-        addq    $8, %rsp; CFI_ADJUST(-8)
     /* Switch from C to OCaml stack. CFA offset -8 refers to OCAMLCFAXXX. */
         SWITCH_C_TO_OCAML_NO_CTXT(%r10,-8)
     /* Setup alloc ptr */
