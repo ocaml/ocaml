@@ -864,16 +864,7 @@ CFI_STARTPROC
         movq    $0, %rsi  /* dummy */
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
-    /* Save system stack state. System stack is captured unalinged. Hence, any
-     * OCaml to C calls are expected to explicitly align stack using
-     * ENTER_FUNCTION and such. */
-        PUSH_TL_VAR(caml_system_exnptr_offset); CFI_ADJUST(8)
-        PUSH_TL_VAR(caml_system_sp); CFI_ADJUST(8)
-    /* Save the reference to parent stack on C stack and reset it in
-     * the OCaml stack */
-        LOAD_TL_VAR(caml_current_stack, %r13)
-        pushq   Stack_parent(%r13); CFI_ADJUST(8)
-        movq    $1, Stack_parent(%r13)
+        pushq   $0   ; CFI_ADJUST(8) // alignment word
     /* Build context on system stack for DWARF CFI */
         ADDR_TL_VAR(caml_current_stack, %r13)
         pushq   %r13; CFI_ADJUST(8)
@@ -884,6 +875,8 @@ LBL(caml_start_program):
     /* dummy prev trap. Important that this is 0 for indicating CFI last frame.
      * See SYSCFAXXX. */
         pushq   $0 ; CFI_ADJUST(8)
+    /* System stack is captured unaligned. Hence, any OCaml to C calls
+     * are expected to explicitly align stack using ENTER_FUNCTION and such. */
         STORE_TL_VAR(%rsp, caml_system_sp)
     /* Load C exception handler */
         LOAD_TL_VAR(caml_system_stack_high, %r14)
@@ -919,12 +912,7 @@ LBL(110):
         SWITCH_OCAML_TO_C_NO_CTXT(%r10)
     /* Pop the C exception handler and DWARF cfi info. */
         addq    $32, %rsp; CFI_ADJUST(-32)
-    /* Restore previous parent stack */
-        LOAD_TL_VAR(caml_current_stack, %r10)
-        popq    Stack_parent(%r10); CFI_ADJUST(-8)
-    /* Restore previous system stack state */
-        POP_TL_VAR(caml_system_sp); CFI_ADJUST(-8)
-        POP_TL_VAR(caml_system_exnptr_offset); CFI_ADJUST(-8)
+        popq %r10            ; CFI_ADJUST(-8) // alignment word
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -1024,7 +1012,7 @@ CFI_STARTPROC
     /* Initial loading of arguments */
         movq    C_ARG_1, %r15      /* young_ptr */
         movq    C_ARG_2, %rbx      /* closure */
-        movq    C_ARG_3, %rax      /* argument */
+        movq    0(C_ARG_3), %rax   /* argument */
         movq    0(%rbx), %r12      /* code pointer */
         movq    $0, %rdi           /* dummy */
         movq    $0, %rsi           /* dummy */
@@ -1038,8 +1026,8 @@ CFI_STARTPROC
     /* Initial loading of arguments */
         movq    C_ARG_1, %r15      /* young_ptr */
         movq    C_ARG_2, %rdi      /* closure */
-        movq    C_ARG_3, %rax      /* first argument */
-        movq    C_ARG_4, %rbx      /* second argument */
+        movq    0(C_ARG_3), %rax   /* first argument */
+        movq    8(C_ARG_3), %rbx   /* second argument */
         LEA_VAR(caml_apply2, %r12) /* code pointer */
         movq    $0, %rsi           /* dummy */
         jmp     LBL(caml_start_program)

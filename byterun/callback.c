@@ -108,41 +108,65 @@ static void init_callback_code(void)
 {
 }
 
-value caml_callback_asm(char* young_ptr, value closure, value arg);
-value caml_callback2_asm(char* young_ptr, value closure, value arg1, value arg2);
-value caml_callback3_asm(char* young_ptr, value closure, value* args);
+typedef value (callback_stub)(char* young, value closure, value* args);
+
+callback_stub caml_callback_asm, caml_callback2_asm, caml_callback3_asm;
+
+static void check_stack(int nargs, value* args)
+{
+  CAMLparamN(args, nargs);
+  caml_maybe_expand_stack();
+  CAMLreturn0;
+}
+
+struct caml_saved_context {
+  char* system_sp;
+  uintnat system_exnptr_offset;
+  value* stack_parent;
+};
+
+static value do_callback(callback_stub* cbstub, value closure,
+                         int nargs, value* args)
+{
+  /* we don't put the args in a CAMLparam, because we don't want
+     to keep them alive for the whole duration of the callback */
+  CAMLparam1(closure);
+  CAMLlocal1(saved_parent);
+  value ret;
+
+  struct caml_saved_context old_context =
+    { Caml_state->system_sp,
+      Caml_state->system_exnptr_offset,
+      &saved_parent };
+  saved_parent = Stack_parent(Caml_state->current_stack);
+  Stack_parent(Caml_state->current_stack) = Val_unit;
+
+  check_stack(nargs, args);
+  ret = cbstub(Caml_state->young_ptr, closure, args);
+
+  Caml_state->system_sp = old_context.system_sp;
+  Caml_state->system_exnptr_offset = old_context.system_exnptr_offset;
+  Stack_parent(Caml_state->current_stack) = saved_parent;
+
+  CAMLreturn(ret);
+}
 
 CAMLexport value caml_callback_exn(value closure, value arg)
 {
-  {
-    CAMLparam2(closure, arg);
-    caml_maybe_expand_stack();
-    CAMLdrop;
-  }
-  return caml_callback_asm(Caml_state->young_ptr, closure, arg);
+  return do_callback(&caml_callback_asm, closure, 1, &arg);
 }
 
 CAMLexport value caml_callback2_exn(value closure, value arg1, value arg2)
 {
-  {
-    CAMLparam3(closure, arg1, arg2);
-    caml_maybe_expand_stack();
-    CAMLdrop;
-  }
-  return caml_callback2_asm(Caml_state->young_ptr, closure, arg1, arg2);
+  value args[] = {arg1, arg2};
+  return do_callback(&caml_callback2_asm, closure, 2, args);
 }
 
 CAMLexport value caml_callback3_exn(value closure,
                                     value arg1, value arg2, value arg3)
 {
-  {
-    CAMLparam4(closure, arg1, arg2, arg3);
-    caml_maybe_expand_stack();
-    CAMLdrop;
-  }
-  /* can only pass 4 args in registers on Windows, so we use an array */
   value args[] = {arg1, arg2, arg3};
-  return caml_callback3_asm(Caml_state->young_ptr, closure, args);
+  return do_callback(&caml_callback3_asm, closure, 3, args);
 }
 
 /* Native-code callbacks.  caml_callback[123]_exn are implemented in asm. */
