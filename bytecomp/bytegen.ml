@@ -443,6 +443,7 @@ let is_immed n = immed_min <= n && n <= immed_max
 module Storer =
   Switch.Store
     (struct type t = lambda type key = lambda
+      let compare_key = Pervasives.compare
       let make_key = Lambda.make_key end)
 
 (* Compile an expression.

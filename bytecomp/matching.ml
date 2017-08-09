@@ -467,6 +467,7 @@ module StoreExp =
     (struct
       type t = lambda
       type key = lambda
+      let compare_key = Pervasives.compare
       let make_key = Lambda.make_key
     end)
 
