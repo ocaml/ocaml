@@ -204,6 +204,13 @@ Working version
 * MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
+
+* MPR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
+  comments that occur after the first module element. This change may break
+  existing documenation. In particular, module preambles must now come before
+  any `open` statement.
+  (Florian Angeletti, review by David Allsopp and report by Daniel Bünzli)
+
 - MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
 

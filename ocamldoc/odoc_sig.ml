@@ -185,6 +185,14 @@ module Analyser =
         !file_name
         (get_string_of_file pos_start pos_end)
 
+    let preamble filename file proj ast =
+      let info = My_ir.first_special filename file in
+      (* Only use as module preamble documentation comments that occur before
+           any module elements *)
+      match ast with
+      | a :: _ when  Loc.start (proj a) < fst info -> (0,None)
+      | _ -> info
+
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options
 
     (** Module for extracting documentation comments for record from different
@@ -1626,7 +1634,8 @@ module Analyser =
       let mod_name = String.capitalize_ascii
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))
       in
-      let (len,info_opt) = My_ir.first_special !file_name !file in
+      let len, info_opt = preamble !file_name !file
+          (fun x -> x.Parsetree.psig_loc) ast in
       let elements =
         analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast
       in
