@@ -13,34 +13,4 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.shared
-
-allopt: stdlib.cmxa std_exit.cmx
-
-installopt:
-	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx "$(INSTALL_LIBDIR)"
-
-camlheader target_camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrun"' headernt.c
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	rm -f camlheader.exe
-	mv tmpheader.exe camlheader
-	cp camlheader target_camlheader
-	cp camlheader camlheader_ur
-
-camlheaderd target_camlheaderd: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' headernt.c
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderd
-	cp camlheaderd target_camlheaderd
-
-camlheaderi: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' headernt.c
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderi
-
-# TODO: do not call flexlink to build tmpheader.exe (we don't need
-# the export table)
+include Makefile

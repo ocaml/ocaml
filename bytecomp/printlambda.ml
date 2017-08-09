@@ -130,6 +130,8 @@ let block_shape ppf shape = match shape with
 
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
+  | Pbytes_to_string -> fprintf ppf "bytes_to_string"
+  | Pbytes_of_string -> fprintf ppf "bytes_of_string"
   | Pignore -> fprintf ppf "ignore"
   | Prevapply -> fprintf ppf "revapply"
   | Pdirapply -> fprintf ppf "dirapply"
@@ -141,6 +143,7 @@ let primitive ppf = function
   | Pmakeblock(tag, Mutable, shape) ->
       fprintf ppf "makemutable %i%a" tag block_shape shape
   | Pfield n -> fprintf ppf "field %i" n
+  | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
         match ptr with
@@ -149,15 +152,30 @@ let primitive ppf = function
       in
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s %i" instr init n
+  | Psetfield_computed (ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s_computed" instr init
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield (n, init) ->
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfloatfield%s %i" init n
@@ -172,8 +190,10 @@ let primitive ppf = function
   | Paddint -> fprintf ppf "+"
   | Psubint -> fprintf ppf "-"
   | Pmulint -> fprintf ppf "*"
-  | Pdivint -> fprintf ppf "/"
-  | Pmodint -> fprintf ppf "mod"
+  | Pdivint Safe -> fprintf ppf "/"
+  | Pdivint Unsafe -> fprintf ppf "/u"
+  | Pmodint Safe -> fprintf ppf "mod"
+  | Pmodint Unsafe -> fprintf ppf "mod_unsafe"
   | Pandint -> fprintf ppf "and"
   | Porint -> fprintf ppf "or"
   | Pxorint -> fprintf ppf "xor"
@@ -204,9 +224,13 @@ let primitive ppf = function
   | Pfloatcomp(Cge) -> fprintf ppf ">=."
   | Pstringlength -> fprintf ppf "string.length"
   | Pstringrefu -> fprintf ppf "string.unsafe_get"
-  | Pstringsetu -> fprintf ppf "string.unsafe_set"
   | Pstringrefs -> fprintf ppf "string.get"
-  | Pstringsets -> fprintf ppf "string.set"
+  | Pbyteslength -> fprintf ppf "bytes.length"
+  | Pbytesrefu -> fprintf ppf "bytes.unsafe_get"
+  | Pbytessetu -> fprintf ppf "bytes.unsafe_set"
+  | Pbytesrefs -> fprintf ppf "bytes.get"
+  | Pbytessets -> fprintf ppf "bytes.set"
+
   | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
   | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
   | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
@@ -237,8 +261,14 @@ let primitive ppf = function
   | Paddbint bi -> print_boxed_integer "add" ppf bi
   | Psubbint bi -> print_boxed_integer "sub" ppf bi
   | Pmulbint bi -> print_boxed_integer "mul" ppf bi
-  | Pdivbint bi -> print_boxed_integer "div" ppf bi
-  | Pmodbint bi -> print_boxed_integer "mod" ppf bi
+  | Pdivbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "div" ppf bi
+  | Pdivbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "div_unsafe" ppf bi
+  | Pmodbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "mod" ppf bi
+  | Pmodbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "mod_unsafe" ppf bi
   | Pandbint bi -> print_boxed_integer "and" ppf bi
   | Porbint bi -> print_boxed_integer "or" ppf bi
   | Pxorbint bi -> print_boxed_integer "xor" ppf bi
@@ -299,6 +329,8 @@ let primitive ppf = function
 
 let name_of_primitive = function
   | Pidentity -> "Pidentity"
+  | Pbytes_of_string -> "Pbytes_of_string"
+  | Pbytes_to_string -> "Pbytes_to_string"
   | Pignore -> "Pignore"
   | Prevapply -> "Prevapply"
   | Pdirapply -> "Pdirapply"
@@ -307,7 +339,9 @@ let name_of_primitive = function
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
   | Pfield _ -> "Pfield"
+  | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
+  | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"
   | Psetfloatfield _ -> "Psetfloatfield"
   | Pduprecord _ -> "Pduprecord"
@@ -321,8 +355,8 @@ let name_of_primitive = function
   | Paddint -> "Paddint"
   | Psubint -> "Psubint"
   | Pmulint -> "Pmulint"
-  | Pdivint -> "Pdivint"
-  | Pmodint -> "Pmodint"
+  | Pdivint _ -> "Pdivint"
+  | Pmodint _ -> "Pmodint"
   | Pandint -> "Pandint"
   | Porint -> "Porint"
   | Pxorint -> "Pxorint"
@@ -343,9 +377,12 @@ let name_of_primitive = function
   | Pfloatcomp _ -> "Pfloatcomp"
   | Pstringlength -> "Pstringlength"
   | Pstringrefu -> "Pstringrefu"
-  | Pstringsetu -> "Pstringsetu"
   | Pstringrefs -> "Pstringrefs"
-  | Pstringsets -> "Pstringsets"
+  | Pbyteslength -> "Pbyteslength"
+  | Pbytesrefu -> "Pbytesrefu"
+  | Pbytessetu -> "Pbytessetu"
+  | Pbytesrefs -> "Pbytesrefs"
+  | Pbytessets -> "Pbytessets"
   | Parraylength _ -> "Parraylength"
   | Pmakearray _ -> "Pmakearray"
   | Pduparray _ -> "Pduparray"
@@ -393,9 +430,11 @@ let name_of_primitive = function
   | Pint_as_pointer -> "Pint_as_pointer"
   | Popaque -> "Popaque"
 
-let function_attribute ppf { inline; specialise; is_a_functor } =
+let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then
     fprintf ppf "is_a_functor@ ";
+  if stub then
+    fprintf ppf "stub@ ";
   begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
@@ -479,7 +518,7 @@ let rec lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" primitive prim lams largs
-  | Lswitch(larg, sw) ->
+  | Lswitch(larg, sw, _loc) ->
       let switch ppf sw =
         let spc = ref false in
         List.iter
@@ -562,6 +601,8 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
+       | Lev_module_definition ident ->
+         Format.asprintf "module-defn(%a)" Ident.print ident
       in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname

@@ -107,6 +107,8 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
 let calling_conventions first_int last_int first_float last_float make_stack

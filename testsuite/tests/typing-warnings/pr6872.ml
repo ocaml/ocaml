@@ -1,3 +1,6 @@
+(* Ignore OCAMLRUNPARAM=b to be reproducible *)
+Printexc.record_backtrace false;;
+
 exception A;;
 type a = A;;
 

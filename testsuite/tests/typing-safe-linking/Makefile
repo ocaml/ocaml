@@ -5,7 +5,7 @@ OBJECTS = $(SOURCES:%.ml=%.cmo)
 
 all: a.cmo
 	@printf " ... testing 'b_bad.ml'"
-	@$(OCAMLC) -c -safe-string -warn-error +8 b_bad.ml 2> /dev/null \
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c -safe-string -warn-error +8 b_bad.ml 2> /dev/null \
 	 && echo " => failed" || echo " => passed"
 
 clean:
@@ -13,3 +13,8 @@ clean:
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common
+
+# The second test (`A.y`) is unnecessary, indeed cannot be compiled, under -safe-string
+ifeq ($(SAFE_STRING),true)
+ADD_COMPFLAGS=-pp "sed -e '\$$d'"
+endif

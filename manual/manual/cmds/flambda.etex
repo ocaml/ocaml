@@ -983,7 +983,7 @@ let f x =
     | [] -> 4
     | y::ys -> y - loop' ys inv_0 inv_1
   in
-  Printf.printf "%d\n" (loop' (x + 42) (x + 43) [1; 2; 3])
+  Printf.printf "%d\n" (loop' [1; 2; 3] (x + 42) (x + 43))
 \end{verbatim}
 The allocation of the pair within {\tt f} has been removed.  (Since the
 two closures for {\tt loop'} and {\tt loop2'} are constant they will also be

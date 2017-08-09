@@ -142,7 +142,9 @@ let rec check_recordwith_updates id e =
   | _ -> false
 ;;
 
-let rec size_of_lambda = function
+let rec size_of_lambda env = function
+  | Lvar id ->
+      begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Lfunction{params} as funct ->
       RHS_function (1 + IdentSet.cardinal(free_variables funct),
                     List.length params)
@@ -154,8 +156,14 @@ let rec size_of_lambda = function
       | Record_float -> RHS_floatblock size
       | Record_extension -> RHS_block (size + 1)
       end
-  | Llet(_str, _k, _id, _arg, body) -> size_of_lambda body
-  | Lletrec(_bindings, body) -> size_of_lambda body
+  | Llet(_str, _k, id, arg, body) ->
+      size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
+  | Lletrec(bindings, body) ->
+      let env = List.fold_right
+        (fun (id, e) env -> Ident.add id (size_of_lambda env e) env)
+        bindings env
+      in
+      size_of_lambda env body
   | Lprim(Pmakeblock _, args, _) -> RHS_block (List.length args)
   | Lprim (Pmakearray ((Paddrarray|Pintarray), _), args, _) ->
       RHS_block (List.length args)
@@ -169,8 +177,8 @@ let rec size_of_lambda = function
   | Lprim (Pduprecord (Record_extension, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
-  | Levent (lam, _) -> size_of_lambda lam
-  | Lsequence (_lam, lam') -> size_of_lambda lam'
+  | Levent (lam, _) -> size_of_lambda env lam
+  | Lsequence (_lam, lam') -> size_of_lambda env lam'
   | _ -> RHS_nonrec
 
 (**** Merging consecutive events ****)
@@ -315,7 +323,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, _mut, _) -> Kmakeblock(List.length args, tag)
   | Pfield n -> Kgetfield n
+  | Pfield_computed -> Kgetvectitem
   | Psetfield(n, _ptr, _init) -> Ksetfield n
+  | Psetfield_computed(_ptr, _init) -> Ksetvectitem
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield (n, _init) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
@@ -324,8 +334,8 @@ let comp_primitive p args =
   | Paddint -> Kaddint
   | Psubint -> Ksubint
   | Pmulint -> Kmulint
-  | Pdivint -> Kdivint
-  | Pmodint -> Kmodint
+  | Pdivint _ -> Kdivint
+  | Pmodint _ -> Kmodint
   | Pandint -> Kandint
   | Porint -> Korint
   | Pxorint -> Kxorint
@@ -349,10 +359,12 @@ let comp_primitive p args =
   | Pfloatcomp Cle -> Kccall("caml_le_float", 2)
   | Pfloatcomp Cge -> Kccall("caml_ge_float", 2)
   | Pstringlength -> Kccall("caml_ml_string_length", 1)
+  | Pbyteslength -> Kccall("caml_ml_bytes_length", 1)
   | Pstringrefs -> Kccall("caml_string_get", 2)
-  | Pstringsets -> Kccall("caml_string_set", 3)
-  | Pstringrefu -> Kgetstringchar
-  | Pstringsetu -> Ksetstringchar
+  | Pbytesrefs -> Kccall("caml_bytes_get", 2)
+  | Pbytessets -> Kccall("caml_bytes_set", 3)
+  | Pstringrefu | Pbytesrefu -> Kgetstringchar
+  | Pbytessetu -> Ksetstringchar
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
   | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
   | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)
@@ -380,7 +392,7 @@ let comp_primitive p args =
        | Max_wosize -> "max_wosize"
        | Ostype_unix -> "ostype_unix"
        | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin" 
+       | Ostype_cygwin -> "ostype_cygwin"
        | Backend_type -> "backend_type" in
      Kccall(Printf.sprintf "caml_sys_const_%s" const_name, 1)
   | Pisint -> Kisint
@@ -398,8 +410,8 @@ let comp_primitive p args =
   | Paddbint bi -> comp_bint_primitive bi "add" args
   | Psubbint bi -> comp_bint_primitive bi "sub" args
   | Pmulbint bi -> comp_bint_primitive bi "mul" args
-  | Pdivbint bi -> comp_bint_primitive bi "div" args
-  | Pmodbint bi -> comp_bint_primitive bi "mod" args
+  | Pdivbint { size = bi } -> comp_bint_primitive bi "div" args
+  | Pmodbint { size = bi } -> comp_bint_primitive bi "mod" args
   | Pandbint bi -> comp_bint_primitive bi "and" args
   | Porbint bi -> comp_bint_primitive bi "or" args
   | Pxorbint bi -> comp_bint_primitive bi "xor" args
@@ -540,7 +552,7 @@ let rec comp_expr env exp sz cont =
                        (add_pop ndecl cont)))
       end else begin
         let decl_size =
-          List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
+          List.map (fun (id, exp) -> (id, exp, size_of_lambda Ident.empty exp)) decl in
         let rec comp_init new_env sz = function
           | [] -> comp_nonrec new_env sz ndecl decl_size
           | (id, _exp, RHS_floatblock blocksize) :: rem ->
@@ -580,7 +592,8 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque), [arg], _) ->
+  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _)
+    ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
@@ -751,7 +764,7 @@ let rec comp_expr env exp sz cont =
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
               Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, _loc) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
 
@@ -856,6 +869,8 @@ let rec comp_expr env exp sz cont =
           let ev = event (Event_after ty) info in
           let cont1 = add_event ev cont in
           comp_expr env lam sz cont1
+      | Lev_module_definition _ ->
+          comp_expr env lam sz cont
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont

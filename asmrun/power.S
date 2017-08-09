@@ -380,9 +380,6 @@ FUNCTION(caml_raise_exn)
     /* Branch to handler */
         bctr
 .L111:
-        li      0, 0
-        Storeglobal32(0, caml_backtrace_pos, 11)
-.L112:
         mr      28, 3           /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r3 */
         mflr    4               /* arg2: PC of raise */
@@ -397,20 +394,6 @@ FUNCTION(caml_raise_exn)
         mr      3, 28           /* restore exn bucket */
         b       .L110           /* raise the exn */
 ENDFUNCTION(caml_raise_exn)
-
-FUNCTION(caml_reraise_exn)
-        Loadglobal32(0, caml_backtrace_active, 11)
-        cmpwi   0, 0
-        bne-    .L112
-    /* Pop trap frame */
-        lg      0, TRAP_HANDLER_OFFSET(29)
-        mr      1, 29
-        mtctr   0
-        lg      29, TRAP_PREVIOUS_OFFSET(1)
-        addi    1, 1, TRAP_SIZE
-    /* Branch to handler */
-        bctr
-ENDFUNCTION(caml_reraise_exn)
 
 /* Raise an exception from C */
 

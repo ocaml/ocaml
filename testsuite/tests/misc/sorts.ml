@@ -120,8 +120,8 @@ let chkfloats rstate n a =
 ;;
 
 type record = {
-  s1 : string;
-  s2 : string;
+  s1 : bytes;
+  s2 : bytes;
   i1 : int;
   i2 : int;
 };;

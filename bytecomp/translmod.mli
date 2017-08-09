@@ -19,7 +19,8 @@
 open Typedtree
 open Lambda
 
-val transl_implementation: string -> structure * module_coercion -> Lambda.program
+val transl_implementation:
+      string -> structure * module_coercion -> Lambda.program
 val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:
       string -> structure * module_coercion -> Lambda.program
@@ -43,6 +44,7 @@ val primitive_declarations: Primitive.description list ref
 
 type error =
   Circular_dependency of Ident.t
+| Conflicting_inline_attributes
 
 exception Error of Location.t * error
 

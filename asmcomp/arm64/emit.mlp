@@ -135,12 +135,8 @@ let record_frame_label ?label live raise_ dbg =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
 let record_frame ?label live raise_ dbg =
@@ -428,7 +424,7 @@ module BR = Branch_relaxation.Make (struct
   let instr_size = function
     | Lend -> 0
     | Lop (Imove | Ispill | Ireload) -> 1
-    | Lop (Iconst_int n | Iconst_blockheader n) ->
+    | Lop (Iconst_int n) ->
       num_instructions_for_intconst n
     | Lop (Iconst_float _) -> 2
     | Lop (Iconst_symbol _) -> 2
@@ -493,10 +489,9 @@ module BR = Branch_relaxation.Make (struct
     | Lpushtrap -> 3
     | Lpoptrap -> 1
     | Lraise k ->
-      begin match !Clflags.debug, k with
-      | true, (Lambda.Raise_regular | Lambda.Raise_reraise) -> 1
-      | false, _
-      | true, Lambda.Raise_notrace -> 4
+      begin match k with
+      | Cmm.Raise_withtrace -> 1
+      | Cmm.Raise_notrace -> 4
       end
 
   let relax_allocation ~num_words ~label_after_call_gc =
@@ -571,7 +566,7 @@ let emit_instr i =
           | _ ->
               assert false
         end
-    | Lop(Iconst_int n | Iconst_blockheader n) ->
+    | Lop(Iconst_int n) ->
         emit_intconst i.res.(0) n
     | Lop(Iconst_float f) ->
         if f = 0L then
@@ -854,12 +849,11 @@ let emit_instr i =
         cfi_adjust_cfa_offset (-16);
         stack_offset := !stack_offset - 16
     | Lraise k ->
-        begin match !Clflags.debug, k with
-        | true, (Lambda.Raise_regular | Lambda.Raise_reraise) ->
+        begin match k with
+        | Cmm.Raise_withtrace ->
           `	bl	{emit_symbol "caml_raise_exn"}\n`;
           `{record_frame Reg.Set.empty true i.dbg}\n`
-        | false, _
-        | true, Lambda.Raise_notrace ->
+        | Cmm.Raise_notrace ->
           `	mov	sp, {emit_reg reg_trap_ptr}\n`;
           `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
           `	ldr	{emit_reg reg_trap_ptr}, [sp], 16\n`;

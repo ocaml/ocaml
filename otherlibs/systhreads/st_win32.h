@@ -15,6 +15,7 @@
 
 /* Win32 implementation of the "st" interface */
 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <winerror.h>
@@ -37,7 +38,7 @@ typedef DWORD st_retcode;
 
 #define SIGPREEMPTION SIGTERM
 
-/* Thread-local storage assocaiting a Win32 event to every thread. */
+/* Thread-local storage associating a Win32 event to every thread. */
 static DWORD st_thread_sem_key;
 
 /* OS-specific initialization */
@@ -157,7 +158,7 @@ typedef CRITICAL_SECTION * st_mutex;
 
 static DWORD st_mutex_create(st_mutex * res)
 {
-  st_mutex m = malloc(sizeof(CRITICAL_SECTION));
+  st_mutex m = caml_stat_alloc_noexc(sizeof(CRITICAL_SECTION));
   if (m == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(m);
   *res = m;
@@ -167,7 +168,7 @@ static DWORD st_mutex_create(st_mutex * res)
 static DWORD st_mutex_destroy(st_mutex m)
 {
   DeleteCriticalSection(m);
-  free(m);
+  caml_stat_free(m);
   return 0;
 }
 
@@ -221,7 +222,7 @@ typedef struct st_condvar_struct {
 
 static DWORD st_condvar_create(st_condvar * res)
 {
-  st_condvar c = malloc(sizeof(struct st_condvar_struct));
+  st_condvar c = caml_stat_alloc_noexc(sizeof(struct st_condvar_struct));
   if (c == NULL) return ERROR_NOT_ENOUGH_MEMORY;
   InitializeCriticalSection(&c->lock);
   c->waiters = NULL;
@@ -233,7 +234,7 @@ static DWORD st_condvar_destroy(st_condvar c)
 {
   TRACE1("st_condvar_destroy", c);
   DeleteCriticalSection(&c->lock);
-  free(c);
+  caml_stat_free(c);
   return 0;
 }
 
@@ -365,7 +366,7 @@ static void st_check_error(DWORD retcode, char * msg)
   value str;
 
   if (retcode == 0) return;
-  if (retcode == ERROR_NOT_ENOUGH_MEMORY) raise_out_of_memory();
+  if (retcode == ERROR_NOT_ENOUGH_MEMORY) caml_raise_out_of_memory();
   if (! FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL,
                       retcode,
@@ -377,11 +378,11 @@ static void st_check_error(DWORD retcode, char * msg)
   }
   msglen = strlen(msg);
   errlen = strlen(err);
-  str = alloc_string(msglen + 2 + errlen);
+  str = caml_alloc_string(msglen + 2 + errlen);
   memmove (&Byte(str, 0), msg, msglen);
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
-  raise_sys_error(str);
+  caml_raise_sys_error(str);
 }
 
 /* Variable used to stop the "tick" thread */
@@ -412,12 +413,12 @@ static DWORD st_atfork(void (*fn)(void))
 
 value caml_thread_sigmask(value cmd, value sigs) /* ML */
 {
-  invalid_argument("Thread.sigmask not implemented");
+  caml_invalid_argument("Thread.sigmask not implemented");
   return Val_int(0);            /* not reached */
 }
 
 value caml_wait_signal(value sigs) /* ML */
 {
-  invalid_argument("Thread.wait_signal not implemented");
+  caml_invalid_argument("Thread.wait_signal not implemented");
   return Val_int(0);            /* not reached */
 }

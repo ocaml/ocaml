@@ -30,4 +30,5 @@ GENERATED_SOURCES+=cached_cmi.ml
 EXEC_ARGS=$(OCFLAGS) -noinit input.ml
 
 cached_cmi.ml: foo.cmi gen_cached_cmi.ml
-	@$(OCAML) ../../../compilerlibs/ocamlcommon.cma -I $(OTOPDIR)/typing gen_cached_cmi.ml > $@
+	@$(OCAML) ../../../compilerlibs/ocamlcommon.cma -I $(OTOPDIR)/typing \
+	          gen_cached_cmi.ml > $@

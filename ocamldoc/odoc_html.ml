@@ -270,8 +270,44 @@ class virtual text =
       | None -> Printf.sprintf "%d_%s" n (self#label_of_text t)
 
     (** Print the html code corresponding to the [text] parameter. *)
-    method html_of_text b t =
-      List.iter (self#html_of_text_element b) t
+    method html_of_text ?(with_p=false) b t =
+      if not with_p then
+        List.iter (self#html_of_text_element b) t
+      else
+        self#html_of_text_with_p b t
+
+    method html_of_text_with_p b t =
+      (* In order to enclose the generated text in <p> </p>, we first
+         output the content inside a inner buffer b', and then generate
+         the whole paragraph, if the content is not empty,
+         either at the end of the text, at a Newline element or when
+         encountering an element that cannot be part of a paragraph element
+      *)
+      let b' = Buffer.create 17 (* paragraph buffer *) in
+      let flush b' =
+        (* trim the inner string to avoid outputing empty <p></p> *)
+        let s = String.trim @@ Buffer.contents b' in
+        if s <> "" then
+          begin
+            bp b "<p>";
+            bs b s;
+            bp b "</p>\n"
+          end;
+        Buffer.clear b' in
+      let rec iter txt =
+        match txt with
+        | [] ->
+            flush b' (* flush b' at the end of the text *)
+        | (List _ | Enum _ | Title _ | CodePre _ | Verbatim _ | Center _
+          | Left _ | Right _ | Newline | Index_list ) as a :: q
+          (* these elements cannot be part of <p> element *)
+          ->
+            flush b'; (* stop the current paragraph *)
+            self#html_of_text_element b a; (*output [a] directly on [b] *)
+            iter q
+        | a :: q  -> self#html_of_text_element b' a; iter q
+      in
+      iter t
 
     (** Print the html code for the [text_element] in parameter. *)
     method html_of_text_element b txt =
@@ -413,7 +449,7 @@ class virtual text =
         tl;
       bs b "</OL>\n"
 
-    method html_of_Newline b = bs b "\n<p>\n"
+    method html_of_Newline b = bs b "\n"
 
     method html_of_Block b t =
       bs b "<blockquote>\n";
@@ -441,7 +477,7 @@ class virtual text =
 
     method html_of_Link b s t =
       bs b "<a href=\"";
-      bs b s ;
+      bs b (self#escape s);
       bs b "\">";
       self#html_of_text b t;
       bs b "</a>"
@@ -498,7 +534,7 @@ class virtual text =
     method virtual html_of_info_first_sentence : _
 
     method html_of_Module_list b l =
-      bs b "<br>\n<table class=\"indextable\">\n";
+      bs b "\n<table class=\"indextable module-list\">\n";
       List.iter
         (fun name ->
           bs b "<tr><td class=\"module\">";
@@ -572,43 +608,44 @@ class virtual info =
     val mutable tag_functions = ([] : (string * (Odoc_info.text -> string)) list)
 
     (** The method used to get html code from a [text]. *)
-    method virtual html_of_text : Buffer.t -> Odoc_info.text -> unit
+    method virtual html_of_text :
+      ?with_p:bool -> Buffer.t -> Odoc_info.text -> unit
 
     (** Print html for an author list. *)
     method html_of_author_list b l =
       match l with
         [] -> ()
       | _ ->
-          bp b "<b>%s:</b> " Odoc_messages.authors;
+          bp b "<li><b>%s:</b> " Odoc_messages.authors;
           self#html_of_text b [Raw (String.concat ", " l)];
-          bs b "<br>\n"
+          bs b "</li>\n"
 
     (** Print html code for the given optional version information.*)
     method html_of_version_opt b v_opt =
       match v_opt with
         None -> ()
       | Some v ->
-           bp b "<b>%s:</b> " Odoc_messages.version;
+           bp b "<li><b>%s:</b> " Odoc_messages.version;
            self#html_of_text b [Raw v];
-           bs b "<br>\n"
+           bs b "</li>\n"
 
     (** Print html code for the given optional since information.*)
     method html_of_since_opt b s_opt =
       match s_opt with
         None -> ()
       | Some s ->
-          bp b "<b>%s</b> " Odoc_messages.since;
+          bp b "<li><b>%s</b> " Odoc_messages.since;
           self#html_of_text b [Raw s];
-          bs b "<br>\n"
+          bs b "</li>\n"
 
     (** Print html code for the given "before" information.*)
     method html_of_before b l =
       let f (v, text) =
-        bp b "<b>%s " Odoc_messages.before;
+        bp b "<li><b>%s " Odoc_messages.before;
         self#html_of_text b [Raw v];
         bs b " </b> ";
         self#html_of_text b text;
-        bs b "<br>\n"
+        bs b "</li>\n"
       in
       List.iter f l
 
@@ -617,13 +654,13 @@ class virtual info =
       match l with
         [] -> ()
       | (s, t) :: [] ->
-          bp b "<b>%s</b> <code>%s</code> "
+          bp b "<li><b>%s</b> <code>%s</code> "
             Odoc_messages.raises
             s;
           self#html_of_text b t;
-          bs b "<br>\n"
+          bs b "</li>\n"
       | _ ->
-          bp b "<b>%s</b><ul>" Odoc_messages.raises;
+          bp b "<li><b>%s</b><ul>" Odoc_messages.raises;
           List.iter
             (fun (ex, desc) ->
               bp b "<li><code>%s</code> " ex ;
@@ -631,7 +668,7 @@ class virtual info =
               bs b "</li>\n"
             )
             l;
-          bs b "</ul>\n"
+          bs b "</ul></li>\n"
 
     (** Print html code for the given "see also" reference. *)
     method html_of_see b (see_ref, t)  =
@@ -648,11 +685,11 @@ class virtual info =
       match l with
         [] -> ()
       | see :: [] ->
-          bp b "<b>%s</b> " Odoc_messages.see_also;
+          bp b "<li><b>%s</b> " Odoc_messages.see_also;
           self#html_of_see b see;
-          bs b "<br>\n"
+          bs b "</li>\n"
       | _ ->
-          bp b "<b>%s</b><ul>" Odoc_messages.see_also;
+          bp b "<li><b>%s</b><ul>" Odoc_messages.see_also;
           List.iter
             (fun see ->
               bs b "<li>" ;
@@ -660,16 +697,16 @@ class virtual info =
               bs b "</li>\n"
             )
             l;
-          bs b "</ul>\n"
+          bs b "</ul></li>\n"
 
     (** Print html code for the given optional return information.*)
     method html_of_return_opt b return_opt =
       match return_opt with
         None -> ()
       | Some s ->
-          bp b "<b>%s</b> " Odoc_messages.returns;
+          bp b "<li><b>%s</b> " Odoc_messages.returns;
           self#html_of_text b s;
-          bs b "<br>\n"
+          bs b "</li>\n"
 
     (** Print html code for the given list of custom tagged texts. *)
     method html_of_custom b l =
@@ -698,27 +735,39 @@ class virtual info =
           (
            match info.M.i_deprecated with
             None -> ()
-           | Some d ->
+          | Some d ->
+               bs b "<div class=\"info-deprecated\">\n";
                bs b "<span class=\"warning\">";
                bs b Odoc_messages.deprecated ;
                bs b "</span>" ;
                self#html_of_text b d;
-               bs b "<br>\n"
+               bs b "</div>\n"
           );
           (
            match info.M.i_desc with
              None -> ()
            | Some d when d = [Odoc_info.Raw ""] -> ()
-           | Some d -> self#html_of_text b d; bs b "<br>\n"
+           | Some d ->
+               bs b "<div class=\"info-desc\">\n";
+               self#html_of_text ~with_p:true b d;
+               bs b "</div>\n"
           );
-          self#html_of_author_list b info.M.i_authors;
-          self#html_of_version_opt b info.M.i_version;
-          self#html_of_before b info.M.i_before;
-          self#html_of_since_opt b info.M.i_since;
-          self#html_of_raised_exceptions b info.M.i_raised_exceptions;
-          self#html_of_return_opt b info.M.i_return_value;
-          self#html_of_sees b info.M.i_sees;
-          self#html_of_custom b info.M.i_custom;
+
+          let b' = Buffer.create 17 in
+          self#html_of_author_list b' info.M.i_authors;
+          self#html_of_version_opt b' info.M.i_version;
+          self#html_of_before b' info.M.i_before;
+          self#html_of_since_opt b' info.M.i_since;
+          self#html_of_raised_exceptions b' info.M.i_raised_exceptions;
+          self#html_of_return_opt b' info.M.i_return_value;
+          self#html_of_sees b' info.M.i_sees;
+          self#html_of_custom b' info.M.i_custom;
+          if Buffer.length b' > 0 then
+            begin
+              bs b "<ul class=\"info-attributes\">\n";
+              Buffer.add_buffer b b';
+              bs b "</ul>\n"
+            end;
           if indent then bs b "</div>\n"
 
     (** Print html code for the first sentence of a description.
@@ -736,7 +785,7 @@ class virtual info =
              None -> ()
            | Some d when d = [Odoc_info.Raw ""] -> ()
            | Some d ->
-               self#html_of_text b
+               self#html_of_text ~with_p:true b
                  (Odoc_info.text_no_title_no_list
                     (Odoc_info.first_sentence_of_text d));
                bs b "\n"
@@ -781,10 +830,14 @@ class html =
 
     val mutable doctype =
       "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
-    method character_encoding () =
-      Printf.sprintf
+    method character_encoding b =
+      bp b
         "<meta content=\"text/html; charset=%s\" http-equiv=\"Content-Type\">\n"
         !charset
+
+    method meta b =
+      self#character_encoding b;
+      bs b "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
 
     (** The default style options. *)
     val mutable default_style_options =
@@ -857,7 +910,7 @@ class html =
         ".indextable {border: 1px #ddd solid; border-collapse: collapse}";
         ".indextable td, .indextable th {border: 1px #ddd solid; min-width: 80px}";
         ".indextable td.module {background-color: #eee ;  padding-left: 2px; padding-right: 2px}";
-        ".indextable td.module a {color: 4E6272; text-decoration: none; display: block; width: 100%}";
+        ".indextable td.module a {color: #4E6272; text-decoration: none; display: block; width: 100%}";
         ".indextable td.module a:hover {text-decoration: underline; background-color: transparent}";
         ".deprecated {color: #888; font-style: italic}" ;
 
@@ -865,6 +918,9 @@ class html =
 
         "ul.indexlist { margin-left: 0; padding-left: 0;}";
         "ul.indexlist li { list-style-type: none ; margin-left: 0; padding-left: 0; }";
+        "ul.info-attributes {list-style: none; margin: 0; padding: 0; }";
+        "div.info > p:first-child { margin-top:0; }";
+        "div.info-desc > p:first-child { margin-top:0; margin-bottom:0; }"
       ]
 
     (** The style file for all pages. *)
@@ -1023,7 +1079,7 @@ class html =
         in
         bs b "<head>\n";
         bs b style;
-        bs b (self#character_encoding ()) ;
+        self#meta b;
         bs b "<link rel=\"Start\" href=\"";
         bs b self#index;
         bs b "\">\n" ;
@@ -1154,14 +1210,14 @@ class html =
     method constructor s = "<span class=\"constructor\">"^s^"</span>"
 
     (** Output the given ocaml code to the given file name. *)
-    method private output_code in_title file code =
+    method private output_code ?(with_pre=true) in_title file code =
       try
         let chanout = open_out file in
         let b = new_buf () in
         bs b "<html>";
         self#print_header b (self#inner_title in_title);
         bs b"<body>\n";
-        self#html_of_code b code;
+        self#html_of_code ~with_pre b code;
         bs b "</body></html>";
         Buffer.output_buffer chanout b;
         close_out chanout
@@ -1287,9 +1343,13 @@ class html =
           (
            match modu with
              None ->
+               (* first we close the current <pre> tag, since the following
+                  list of module elements is not preformatted *)
+               bs b "</pre>";
                bs b "<div class=\"sig_block\">";
                List.iter (self#html_of_module_element b father) eles;
-               bs b "</div>"
+               bs b "</div>";
+               bs b "\n<pre>"
            | Some m ->
                let (html_file, _) = Naming.html_files m.m_name in
                bp b " <a href=\"%s\">..</a> " html_file
@@ -1398,9 +1458,13 @@ class html =
                (
                 match modu with
                   None ->
+                    (*close the current <pre> tag, to avoid anarchic line breaks
+                      in the list of module elements *)
+                    bs b "</pre>";
                     bs b "<div class=\"sig_block\">";
                     List.iter (self#html_of_module_element b father) eles;
-                    bs b "</div>"
+                    bs b "</div>";
+                    bs b "<pre>";
                 | Some m ->
                     let (html_file, _) = Naming.html_files m.m_name in
                     bp b " <a href=\"%s\">..</a> " html_file
@@ -1435,12 +1499,12 @@ class html =
     (** Generate a file containing the module type in the given file name. *)
     method output_module_type in_title file mtyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_module_type ~complete: true mtyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Generate a file containing the class type in the given file name. *)
     method output_class_type in_title file ctyp =
       let s = Odoc_info.remove_ending_newline (Odoc_info.string_of_class_type ~complete: true ctyp) in
-      self#output_code in_title file s
+      self#output_code ~with_pre:false in_title file s
 
     (** Print html code for a value. *)
     method html_of_value b v =
@@ -1848,12 +1912,14 @@ class html =
             match Parameter.desc_by_name p n with
               None -> ()
             | Some t ->
+                bs b "<div class=\"parameter-desc\">\n";
                 bs b "<code>";
                 bs b n;
                 bs b "</code> : ";
-                self#html_of_text b t
+                self#html_of_text b t;
+                bs b "</div>\n"
           in
-          print_concat b "<br>\n" print_one l2
+          List.iter print_one l2
 
     (** Print html code for a list of parameters. *)
     method html_of_parameter_list b m_name l =
@@ -1877,8 +1943,9 @@ class html =
               );
             bs b "</td>\n<td align=\"center\" valign=\"top\">:</td>\n";
             bs b "<td>";
+            bs b "<div class=\"paramer-type\">\n";
             self#html_of_type_expr b m_name (Parameter.typ p);
-            bs b "<br>\n";
+            bs b "<div>\n";
             self#html_of_parameter_description b p;
             bs b "\n</tr>\n";
           in
@@ -1930,8 +1997,9 @@ class html =
                match desc_opt with
                  None -> ()
                | Some t ->
-                   bs b "<br>";
+                   bs b "<div class=\"parameter-desc\" >";
                    self#html_of_text b t;
+                   bs b "\n</div>\n";
                    bs b "\n</tr>\n" ;
               )
             )
@@ -2219,9 +2287,7 @@ class html =
 
     (** Print html code for a module comment.*)
     method html_of_module_comment b text =
-      bs b "<br>\n";
-      self#html_of_text b text;
-      bs b "<br>\n"
+      self#html_of_text ~with_p:true b text
 
     (** Print html code for a class comment.*)
     method html_of_class_comment b text =
@@ -2232,7 +2298,7 @@ class html =
             (Odoc_info.Title (2, None, [Odoc_info.Raw s])) :: q
         | _ -> text
       in
-      self#html_of_text b text2
+      self#html_of_text ~with_p:true b text2
 
     (** Generate html code for the given list of inherited classes.*)
     method generate_inheritance_info b inher_l =
@@ -2332,9 +2398,9 @@ class html =
                   'A'..'Z' as c -> String.make 1 c
                 | _ -> ""
               in
-              bs b "<tr><td align=\"left\"><br>";
+              bs b "<tr><td align=\"left\"><div>";
               bs b s ;
-              bs b "</td></tr>\n" ;
+              bs b "</div></td></tr>\n" ;
               List.iter f_ele l
         in
         bs b "<table>\n";
@@ -2560,7 +2626,10 @@ class html =
           );
         bs b "</h1>\n";
 
-        if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
+        if not modu.m_text_only then
+          self#html_of_module b ~with_link: false modu
+        else
+          self#html_of_info ~indent:false b modu.m_info;
 
         (* parameters for functors *)
         self#html_of_module_parameter_list b
@@ -2597,7 +2666,7 @@ class html =
         match modu.m_code with
           None -> ()
         | Some code ->
-            self#output_code
+            self#output_code ~with_pre:false
               modu.m_name
               (Filename.concat !Global.target_dir code_file)
               code
@@ -2611,15 +2680,20 @@ class html =
       try
         let chanout = open_out (Filename.concat !Global.target_dir self#index) in
         let b = new_buf () in
-        let title = match !Global.title with None -> "" | Some t -> self#escape t in
         bs b doctype ;
         bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
 
-        bs b "<h1>";
-        bs b title;
-        bs b "</h1>\n" ;
+        (
+        match !Global.title with
+        | None -> ()
+        | Some t ->
+            bs b "<h1>";
+            bs b (self#escape t);
+            bs b "</h1>\n"
+        );
+
         let info = Odoc_info.apply_opt
             (Odoc_info.info_of_comment_file module_list)
             !Odoc_info.Global.intro_file
@@ -2627,8 +2701,9 @@ class html =
         (
          match info with
            None ->
+             bs b "<div class = \"index-list\">\n";
              self#html_of_Index_list b;
-             bs b "<br/>";
+             bs b "</div>\n";
              self#html_of_Module_list b
                (List.map (fun m -> m.m_name) module_list);
          | Some _ -> self#html_of_info ~indent: false b info

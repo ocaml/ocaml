@@ -215,14 +215,13 @@ let insert_move srcs dsts i =
 
 class cse_generic = object (self)
 
-(* Default classification of operations.  Can be overriden in
+(* Default classification of operations.  Can be overridden in
    processor-specific files to classify specific operations better. *)
 
 method class_of_operation op =
   match op with
   | Imove | Ispill | Ireload -> assert false   (* treated specially *)
-  | Iconst_int _ | Iconst_float _ | Iconst_symbol _
-  | Iconst_blockheader _ -> Op_pure
+  | Iconst_int _ | Iconst_float _ | Iconst_symbol _ -> Op_pure
   | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ -> assert false                 (* treated specially *)
   | Istackoffset _ -> Op_other
@@ -241,7 +240,7 @@ method class_of_operation op =
 
 method is_cheap_operation op =
   match op with
-  | Iconst_int _ | Iconst_blockheader _ -> true
+  | Iconst_int _ -> true
   | _ -> false
 
 (* Forget all equations involving memory loads.  Performed after a
@@ -350,9 +349,11 @@ method private cse n i =
   | Iloop(body) ->
       {i with desc = Iloop(self#cse empty_numbering body);
               next = self#cse empty_numbering i.next}
-  | Icatch(nfail, body, handler) ->
-      {i with desc = Icatch(nfail, self#cse n body,
-                            self#cse empty_numbering handler);
+  | Icatch(rec_flag, handlers, body) ->
+      let aux (nfail, handler) =
+        nfail, self#cse empty_numbering handler
+      in
+      {i with desc = Icatch(rec_flag, List.map aux handlers, self#cse n body);
               next = self#cse empty_numbering i.next}
   | Itrywith(body, handler) ->
       {i with desc = Itrywith(self#cse n body,

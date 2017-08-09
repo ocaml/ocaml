@@ -45,7 +45,7 @@ let rec list_truncate =
   | (_, [])     -> []
   | (n, (a::l)) -> a::(list_truncate (n - 1) l)
 
-(* Separe the `n' first elements of `l' and the others *)
+(* Separate the `n' first elements of `l' and the others *)
 (* ### n list -> (first, last) *)
 let rec list_truncate2 =
   fun

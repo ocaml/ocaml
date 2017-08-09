@@ -46,7 +46,7 @@ static struct custom_operations nat_operations = {
 CAMLprim value initialize_nat(value unit)
 {
   bng_init();
-  register_custom_operations(&nat_operations);
+  caml_register_custom_operations(&nat_operations);
   return Val_unit;
 }
 
@@ -54,7 +54,7 @@ CAMLprim value create_nat(value size)
 {
   mlsize_t sz = Long_val(size);
 
-  return alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
+  return caml_alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
 }
 
 CAMLprim value length_nat(value nat)
@@ -335,7 +335,7 @@ CAMLprim value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
    - 32-bit word: number of 32-bit words in nat
    - N 32-bit words (big-endian format)
    For little-endian platforms, the memory layout between 32-bit and 64-bit
-   machines is identical, so we can write the nat using serialize_block_4.
+   machines is identical, so we can write the nat using caml_serialize_block_4.
    For big-endian 64-bit platforms, we need to swap the two 32-bit halves
    of 64-bit words to obtain the correct behavior. */
 
@@ -348,19 +348,19 @@ static void serialize_nat(value nat,
 #ifdef ARCH_SIXTYFOUR
   len = len * 2; /* two 32-bit words per 64-bit digit  */
   if (len >= ((mlsize_t)1 << 32))
-    failwith("output_value: nat too big");
+    caml_failwith("output_value: nat too big");
 #endif
-  serialize_int_4((int32_t) len);
+  caml_serialize_int_4((int32_t) len);
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
   { int32_t * p;
     mlsize_t i;
     for (i = len, p = Data_custom_val(nat); i > 0; i -= 2, p += 2) {
-      serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
-      serialize_int_4(p[0]);    /* high 32 bits of 64-bit digit */
+      caml_serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
+      caml_serialize_int_4(p[0]);    /* high 32 bits of 64-bit digit */
     }
   }
 #else
-  serialize_block_4(Data_custom_val(nat), len);
+  caml_serialize_block_4(Data_custom_val(nat), len);
 #endif
   *wsize_32 = len * 4;
   *wsize_64 = len * 4;
@@ -370,22 +370,22 @@ static uintnat deserialize_nat(void * dst)
 {
   mlsize_t len;
 
-  len = deserialize_uint_4();
+  len = caml_deserialize_uint_4();
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
   { uint32_t * p;
     mlsize_t i;
     for (i = len, p = dst; i > 1; i -= 2, p += 2) {
-      p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
-      p[0] = deserialize_uint_4();   /* high 32 bits of 64-bit digit */
+      p[1] = caml_deserialize_uint_4();   /* low 32 bits of 64-bit digit */
+      p[0] = caml_deserialize_uint_4();   /* high 32 bits of 64-bit digit */
     }
     if (i > 0){
-      p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
+      p[1] = caml_deserialize_uint_4();   /* low 32 bits of 64-bit digit */
       p[0] = 0;                      /* high 32 bits of 64-bit digit */
       ++ len;
     }
   }
 #else
-  deserialize_block_4(dst, len);
+  caml_deserialize_block_4(dst, len);
 #if defined(ARCH_SIXTYFOUR)
   if (len & 1){
     ((uint32_t *) dst)[len] = 0;

@@ -164,27 +164,13 @@ let record_value_dependency vd1 vd2 =
   if vd1.Types.val_loc <> vd2.Types.val_loc then
     value_deps := (vd1, vd2) :: !value_deps
 
-let save_cmt filename modname binary_annots sourcefile initial_env sg =
+let save_cmt filename modname binary_annots sourcefile initial_env cmi =
   if !Clflags.binary_annotations && not !Clflags.print_types then begin
-    let imports = Env.imports () in
-    let flags =
-      List.concat [
-        if !Clflags.recursive_types then [Cmi_format.Rectypes] else [];
-        if !Clflags.opaque then [Cmi_format.Opaque] else [];
-        ]
-    in
     let oc = open_out_bin filename in
     let this_crc =
-      match sg with
-          None -> None
-        | Some (sg) ->
-          let cmi = {
-            cmi_name = modname;
-            cmi_sign = sg;
-            cmi_flags = flags;
-            cmi_crcs = imports;
-          } in
-          Some (output_cmi filename oc cmi)
+      match cmi with
+      | None -> None
+      | Some cmi -> Some (output_cmi filename oc cmi)
     in
     let source_digest = Misc.may_map Digest.file sourcefile in
     let cmt = {
@@ -199,7 +185,7 @@ let save_cmt filename modname binary_annots sourcefile initial_env sg =
       cmt_source_digest = source_digest;
       cmt_initial_env = if need_to_clear_env then
           keep_only_summary initial_env else initial_env;
-      cmt_imports = List.sort compare imports;
+      cmt_imports = List.sort compare (Env.imports ());
       cmt_interface_digest = this_crc;
       cmt_use_summaries = need_to_clear_env;
     } in

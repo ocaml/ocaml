@@ -39,11 +39,18 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  | Initialization
   | Assignment
+  | Heap_initialization
+  | Root_initialization
+
+type is_safe =
+  | Safe
+  | Unsafe
 
 type primitive =
-    Pidentity
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
   | Pignore
   | Prevapply
   | Pdirapply
@@ -54,7 +61,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
+  | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
@@ -67,7 +76,8 @@ type primitive =
   (* Boolean operations *)
   | Psequand | Psequor | Pnot
   (* Integer operations *)
-  | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
+  | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of comparison
@@ -79,7 +89,8 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
+  | Pstringlength | Pstringrefu  | Pstringrefs
+  | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
   | Pmakearray of array_kind * mutable_flag
   | Pduparray of array_kind * mutable_flag
@@ -102,8 +113,8 @@ type primitive =
   | Paddbint of boxed_integer
   | Psubbint of boxed_integer
   | Pmulbint of boxed_integer
-  | Pdivbint of boxed_integer
-  | Pmodbint of boxed_integer
+  | Pdivbint of { size : boxed_integer; is_safe : is_safe }
+  | Pmodbint of { size : boxed_integer; is_safe : is_safe }
   | Pandbint of boxed_integer
   | Porbint of boxed_integer
   | Pxorbint of boxed_integer
@@ -205,6 +216,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   is_a_functor: bool;
+  stub: bool;
 }
 
 type lambda =
@@ -215,7 +227,7 @@ type lambda =
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch
+  | Lswitch of lambda * lambda_switch * Location.t
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
@@ -263,6 +275,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
   | Lev_pseudo
+  | Lev_module_definition of Ident.t
 
 type program =
   { module_ident : Ident.t;
@@ -278,7 +291,11 @@ let default_function_attribute = {
   inline = Default_inline;
   specialise = Default_specialise;
   is_a_functor = false;
+  stub = false;
 }
+
+let default_stub_attribute =
+  { default_function_attribute with stub = true }
 
 (* Build sharing keys *)
 (*
@@ -314,6 +331,8 @@ let make_key e =
     | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
+    | Llet ((Strict | StrictOpt),_k,x,ex,Lvar v) when Ident.same v x ->
+        tr_rec env ex
     | Llet (str,k,x,ex,e) ->
      (* Because of side effects, keep other lets with normalized names *)
         let ex = tr_rec env ex in
@@ -321,8 +340,8 @@ let make_key e =
         Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
     | Lprim (p,es,_) ->
         Lprim (p,tr_recs env es, Location.none)
-    | Lswitch (e,sw) ->
-        Lswitch (tr_rec env e,tr_sw env sw)
+    | Lswitch (e,sw,loc) ->
+        Lswitch (tr_rec env e,tr_sw env sw,loc)
     | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
@@ -403,7 +422,7 @@ let iter f = function
       List.iter (fun (_id, exp) -> f exp) decl
   | Lprim(_p, args, _loc) ->
       List.iter f args
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw,_) ->
       f arg;
       List.iter (fun (_key, case) -> f case) sw.sw_consts;
       List.iter (fun (_key, case) -> f case) sw.sw_blocks;
@@ -505,16 +524,27 @@ let rec patch_guarded patch = function
 
 let rec transl_normal_path = function
     Pident id ->
-      if Ident.global id then Lprim(Pgetglobal id, [], Location.none) else Lvar id
+      if Ident.global id
+      then Lprim(Pgetglobal id, [], Location.none)
+      else Lvar id
   | Pdot(p, _s, pos) ->
       Lprim(Pfield pos, [transl_normal_path p], Location.none)
   | Papply _ ->
       fatal_error "Lambda.transl_path"
 
-(* Translation of value identifiers *)
+(* Translation of identifiers *)
 
-let transl_path ?(loc=Location.none) env path =
+let transl_module_path ?(loc=Location.none) env path =
   transl_normal_path (Env.normalize_path (Some loc) env path)
+
+let transl_value_path ?(loc=Location.none) env path =
+  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
+
+let transl_class_path = transl_value_path
+let transl_extension_path = transl_value_path
+
+(* compatibility alias, deprecated in the .mli *)
+let transl_path = transl_value_path
 
 (* Compile a sequence of expressions *)
 
@@ -543,11 +573,12 @@ let subst_lambda s lam =
   | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
   | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, loc) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction = subst_opt  sw.sw_failaction; })
+                       sw_failaction = subst_opt  sw.sw_failaction; },
+              loc)
   | Lstringswitch (arg,cases,default,loc) ->
       Lstringswitch
         (subst arg,List.map subst_strcase cases,subst_opt default,loc)
@@ -594,14 +625,15 @@ let rec map f lam =
         Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
     | Lprim (p, el, loc) ->
         Lprim (p, List.map (map f) el, loc)
-    | Lswitch (e, sw) ->
+    | Lswitch (e, sw, loc) ->
         Lswitch (map f e,
           { sw_numconsts = sw.sw_numconsts;
             sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
             sw_numblocks = sw.sw_numblocks;
             sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
             sw_failaction = Misc.may_map (map f) sw.sw_failaction;
-          })
+          },
+          loc)
     | Lstringswitch (e, sw, default, loc) ->
         Lstringswitch (
           map f e,
@@ -679,6 +711,14 @@ let lam_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+
+let merge_inline_attributes attr1 attr2 =
+  match attr1, attr2 with
+  | Default_inline, _ -> Some attr2
+  | _, Default_inline -> Some attr1
+  | _, _ ->
+    if attr1 = attr2 then Some attr1
+    else None
 
 let reset () =
   raise_count := 0

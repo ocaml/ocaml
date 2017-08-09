@@ -69,7 +69,7 @@ let occurs_var var u =
     | Uletrec(decls, body) ->
         List.exists (fun (_id, u) -> occurs u) decls || occurs body
     | Uprim(_p, args, _) -> List.exists occurs args
-    | Uswitch(arg, s) ->
+    | Uswitch(arg, s, _dbg) ->
         occurs arg ||
         occurs_array s.us_actions_consts || occurs_array s.us_actions_blocks
     | Ustringswitch(arg,sw,d) ->
@@ -103,15 +103,15 @@ let occurs_var var u =
 
 let prim_size prim args =
   match prim with
-    Pidentity -> 0
+    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
-    | Initialization -> 1  (* never causes a write barrier hit *)
-    | Assignment ->
+    | Root_initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment | Heap_initialization ->
       match isptr with
       | Pointer -> 4
       | Immediate -> 1
@@ -122,7 +122,9 @@ let prim_size prim args =
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pbyteslength -> 5
+  | Pstringrefs  -> 6
+  | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength kind -> if kind = Pgenarray then 6 else 2
   | Parrayrefu kind -> if kind = Pgenarray then 12 else 2
@@ -158,7 +160,7 @@ let lambda_smaller lam threshold =
     | Uprim(prim, args, _) ->
         size := !size + prim_size prim args;
         lambda_list_size args
-    | Uswitch(lam, cases) ->
+    | Uswitch(lam, cases, _dbg) ->
         if Array.length cases.us_actions_consts > 1 then size := !size + 5 ;
         if Array.length cases.us_actions_blocks > 1 then size := !size + 5 ;
         lambda_size lam;
@@ -200,16 +202,19 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
+let is_pure_prim p =
+  let open Semantics_of_primitives in
+  match Semantics_of_primitives.for_primitive p with
+  | (No_effects | Only_generative_effects), _ -> true
+  | Arbitrary_effects, _ -> false
+
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Uprim(_, args, _) -> List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -264,8 +269,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddint -> make_const_int (n1 + n2)
       | Psubint -> make_const_int (n1 - n2)
       | Pmulint -> make_const_int (n1 * n2)
-      | Pdivint when n2 <> 0 -> make_const_int (n1 / n2)
-      | Pmodint when n2 <> 0 -> make_const_int (n1 mod n2)
+      | Pdivint _ when n2 <> 0 -> make_const_int (n1 / n2)
+      | Pmodint _ when n2 <> 0 -> make_const_int (n1 mod n2)
       | Pandint -> make_const_int (n1 land n2)
       | Porint -> make_const_int (n1 lor n2)
       | Pxorint -> make_const_int (n1 lxor n2)
@@ -313,9 +318,9 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pnativeint -> make_const_natint (Nativeint.add n1 n2)
       | Psubbint Pnativeint -> make_const_natint (Nativeint.sub n1 n2)
       | Pmulbint Pnativeint -> make_const_natint (Nativeint.mul n1 n2)
-      | Pdivbint Pnativeint when n2 <> 0n ->
+      | Pdivbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.div n1 n2)
-      | Pmodbint Pnativeint when n2 <> 0n ->
+      | Pmodbint {size=Pnativeint} when n2 <> 0n ->
           make_const_natint (Nativeint.rem n1 n2)
       | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
       | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
@@ -351,8 +356,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint32 -> make_const_int32 (Int32.add n1 n2)
       | Psubbint Pint32 -> make_const_int32 (Int32.sub n1 n2)
       | Pmulbint Pint32 -> make_const_int32 (Int32.mul n1 n2)
-      | Pdivbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.div n1 n2)
-      | Pmodbint Pint32 when n2 <> 0l -> make_const_int32 (Int32.rem n1 n2)
+      | Pdivbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.div n1 n2)
+      | Pmodbint {size=Pint32} when n2 <> 0l ->
+          make_const_int32 (Int32.rem n1 n2)
       | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
       | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
       | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
@@ -387,8 +394,10 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Paddbint Pint64 -> make_const_int64 (Int64.add n1 n2)
       | Psubbint Pint64 -> make_const_int64 (Int64.sub n1 n2)
       | Pmulbint Pint64 -> make_const_int64 (Int64.mul n1 n2)
-      | Pdivbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.div n1 n2)
-      | Pmodbint Pint64 when n2 <> 0L -> make_const_int64 (Int64.rem n1 n2)
+      | Pdivbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.div n1 n2)
+      | Pmodbint {size=Pint64} when n2 <> 0L ->
+          make_const_int64 (Int64.rem n1 n2)
       | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
       | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
       | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
@@ -444,10 +453,12 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
-  | Pstringlength, _, [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
+  | (Pstringlength | Pbyteslength),
+     _,
+     [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
   (* Identity *)
-  | Pidentity, [arg1], [app1] ->
+  | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
       (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
@@ -467,7 +478,8 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type -> make_const_ptr 0 (* tag 0 is the same as Native here *)
+        | Backend_type ->
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -560,7 +572,7 @@ let rec substitute loc fpc sb ulam =
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
-  | Uswitch(arg, sw) ->
+  | Uswitch(arg, sw, dbg) ->
       let sarg = substitute loc fpc sb arg in
       let action =
         (* Unfortunately, we cannot easily deal with the
@@ -585,7 +597,8 @@ let rec substitute loc fpc sb ulam =
                       Array.map (substitute loc fpc sb) sw.us_actions_consts;
                     us_actions_blocks =
                       Array.map (substitute loc fpc sb) sw.us_actions_blocks;
-                  })
+                  },
+                  dbg)
       end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
@@ -645,7 +658,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_simple_argument u
+  | u -> is_pure_clambda u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
@@ -681,10 +694,7 @@ let bind_params loc fpc params args body =
 let rec is_pure = function
     Lvar _ -> true
   | Lconst _ -> true
-  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
-           Pccall _ | Praise _ | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
-  | Lprim(_, args, _) -> List.for_all is_pure args
+  | Lprim(p, args,_) -> is_pure_prim p && List.for_all is_pure args
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
@@ -801,11 +811,11 @@ let rec close fenv cenv = function
             str (Uconst_string s)
         | Const_base (Const_string (s, _)) ->
               (* Strings (even literal ones) must be assumed to be mutable...
-                 except when OCaml has been
-                 configured with -safe-string.  Passing -safe-string at compilation time
-                 is not enough, since the unit could be linked with another one
-                 compiled without -safe-string, and that one could modify our
-                 string literal.  *)
+                 except when OCaml has been configured with
+                 -safe-string.  Passing -safe-string at compilation
+                 time is not enough, since the unit could be linked
+                 with another one compiled without -safe-string, and
+                 that one could modify our string literal.  *)
             str ~shared:Config.safe_string (Uconst_string s)
         | Const_base(Const_float x) -> str (Uconst_float (float_of_string x))
         | Const_base(Const_int32 x) -> str (Uconst_int32 x)
@@ -816,7 +826,7 @@ let rec close fenv cenv = function
   | Lfunction _ as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
 
-    (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
+    (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
@@ -834,7 +844,7 @@ let rec close fenv cenv = function
             direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
-      | ((_ufunct, Value_closure(fundesc, _approx_res)), uargs)
+      | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
           (Ident.create "arg", arg) ) uargs in
@@ -852,32 +862,48 @@ let rec close fenv cenv = function
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
+        let funct_var = Ident.create "funct" in
+        let fenv = Tbl.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
                params = final_args;
                body = Lapply{ap_should_be_tailcall=false;
                              ap_loc=loc;
-                             ap_func=funct;
+                             ap_func=(Lvar funct_var);
                              ap_args=internal_args;
                              ap_inlined=Default_inline;
                              ap_specialised=Default_specialise};
                loc;
                attr = default_function_attribute})
         in
-        let new_fun = iter first_args new_fun in
+        let new_fun =
+          iter first_args
+            (Ulet (Immutable, Pgenval, funct_var, ufunct, new_fun))
+        in
         warning_if_forced_inline ~loc ~attribute "Partial application";
         (new_fun, approx)
 
       | ((ufunct, Value_closure(fundesc, _approx_res)), uargs)
         when fundesc.fun_arity > 0 && nargs > fundesc.fun_arity ->
-          let (first_args, rem_args) = split_list fundesc.fun_arity uargs in
+          let args = List.map (fun arg -> Ident.create "arg", arg) uargs in
+          let (first_args, rem_args) = split_list fundesc.fun_arity args in
+          let first_args = List.map (fun (id, _) -> Uvar id) first_args in
+          let rem_args = List.map (fun (id, _) -> Uvar id) rem_args in
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Over-application";
-          (Ugeneric_apply(direct_apply ~loc ~attribute
-                            fundesc funct ufunct first_args,
-                          rem_args, dbg),
-           Value_unknown)
+          let body =
+            Ugeneric_apply(direct_apply ~loc ~attribute
+                              fundesc funct ufunct first_args,
+                           rem_args, dbg)
+          in
+          let result =
+            List.fold_left (fun body (id, defining_expr) ->
+                Ulet (Immutable, Pgenval, id, defining_expr, body))
+              body
+              args
+          in
+          result, Value_unknown
       | ((ufunct, _), uargs) ->
           let dbg = Debuginfo.from_location loc in
           warning_if_forced_inline ~loc ~attribute "Unknown function";
@@ -953,7 +979,7 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
                             (field_approx n approx)
-  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc) ->
+  | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
@@ -969,7 +995,7 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) dbg
-  | Lswitch(arg, sw) ->
+  | Lswitch(arg, sw, dbg) ->
       let fn fail =
         let (uarg, _) = close fenv cenv arg in
         let const_index, const_actions, fconst =
@@ -982,7 +1008,9 @@ let rec close fenv cenv = function
              {us_index_consts = const_index;
               us_actions_consts = const_actions;
               us_index_blocks = block_index;
-              us_actions_blocks = block_actions})  in
+              us_actions_blocks = block_actions},
+             Debuginfo.from_location dbg)
+        in
         (fconst (fblock ulam),Value_unknown) in
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let fail = sw.sw_failaction in
@@ -1081,16 +1109,16 @@ and close_functions fenv cenv fun_defs =
       (List.map
          (function
            | (id, Lfunction{kind; params; body; attr; loc}) ->
-               Simplif.split_default_wrapper id kind params body attr loc
+               Simplif.split_default_wrapper ~id ~kind ~params
+                 ~body ~attr ~loc
            | _ -> assert false
          )
          fun_defs)
   in
   let inline_attribute = match fun_defs with
-    | [_, Lfunction{attr = { inline }}] -> inline
+    | [_, Lfunction{attr = { inline; }}] -> inline
     | _ -> Default_inline (* recursive functions can't be inlined *)
   in
-
   (* Update and check nesting depth *)
   incr function_nesting_depth;
   let initially_closed =
@@ -1156,6 +1184,7 @@ and close_functions fenv cenv fun_defs =
         params = fun_params;
         body   = ubody;
         dbg;
+        env = Some env_param;
       }
     in
     (* give more chance of function with default parameters (i.e.
@@ -1307,7 +1336,7 @@ let collect_exported_structured_constants a =
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2
     | Uletrec (l, u) -> List.iter (fun (_, u) -> ulam u) l; ulam u
     | Uprim (_, ul, _) -> List.iter ulam ul
-    | Uswitch (u, sl) ->
+    | Uswitch (u, sl, _dbg) ->
         ulam u;
         Array.iter ulam sl.us_actions_consts;
         Array.iter ulam sl.us_actions_blocks

@@ -423,13 +423,13 @@ let rec class_type_field env self_type meths
       (mkctf (Tctf_inherit parent) :: fields,
        val_sig, concr_meths, inher)
 
-  | Pctf_val (lab, mut, virt, sty) ->
+  | Pctf_val ({txt=lab}, mut, virt, sty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
       add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
-  | Pctf_method (lab, priv, virt, sty)  ->
+  | Pctf_method ({txt=lab}, priv, virt, sty)  ->
       let cty =
         declare_method env meths self_type lab priv sty  ctf.pctf_loc in
       let concr_meths =
@@ -540,6 +540,12 @@ and class_type env scty =
       let clty = class_type env scty in
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
+
+  | Pcty_open (ovf, lid, e) ->
+      let (path, newenv) = !Typecore.type_open ovf env scty.pcty_loc lid in
+      let clty = class_type newenv e in
+      cltyp (Tcty_open (ovf, path, lid, newenv, clty)) clty.cltyp_type
+
   | Pcty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
@@ -590,17 +596,17 @@ let rec class_field self_loc cl_num self_type meths vars
           cl_sig.csig_concr []
       in
       (* Super *)
-      let (val_env, met_env, par_env) =
+      let (val_env, met_env, par_env,super) =
         match super with
           None ->
-            (val_env, met_env, par_env)
-        | Some name ->
+            (val_env, met_env, par_env,None)
+        | Some {txt=name} ->
             let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
                 sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
             in
-            (val_env, met_env, par_env)
+            (val_env, met_env, par_env,Some name)
       in
       (val_env, met_env, par_env,
        lazy (mkcf (Tcf_inherit (ovf, parent, super, inh_vars, inh_meths)))
@@ -1191,6 +1197,17 @@ and class_expr cl_num val_env met_env scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
+  | Pcl_open (ovf, lid, e) ->
+      let used_slot = ref false in
+      let (path, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
+      let (_path, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let cl = class_expr cl_num new_val_env new_met_env e in
+      rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
+          cl_loc = scl.pcl_loc;
+          cl_type = cl.cl_type;
+          cl_env = val_env;
+          cl_attributes = scl.pcl_attributes;
+         }
   | Pcl_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
@@ -1243,7 +1260,7 @@ let temp_abbrev loc env id arity =
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
        type_immediate = false;
-       type_unboxed = { unboxed = false; default = false };
+       type_unboxed = unboxed_false_default_false;
       }
       env
   in
@@ -1491,7 +1508,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
-     type_unboxed = { unboxed = false; default = false };
+     type_unboxed = unboxed_false_default_false;
     }
   in
   let (cl_params, cl_ty) =
@@ -1510,7 +1527,7 @@ let class_infos define_class kind
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
      type_immediate = false;
-     type_unboxed = { unboxed = false; default = false };
+     type_unboxed = unboxed_false_default_false;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
@@ -1704,6 +1721,7 @@ let rec unify_parents env ty cl =
       | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
+  | Tcl_open (_, _, _, _, cl)
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_apply (cl, _)
   | Tcl_let (_, _, _, cl)
@@ -1833,7 +1851,7 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [params; cstrs];
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
-           wich are incompatible with constraints@ %a@]"
+           which are incompatible with constraints@ %a@]"
         Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
   | Class_match_failure error ->
       Includeclass.report_error ppf error

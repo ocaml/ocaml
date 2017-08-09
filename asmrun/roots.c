@@ -116,7 +116,7 @@ static void init_frame_descriptors(link *new_frametables)
   intnat tblsize, increase, i;
   link *tail = NULL;
 
-  Assert(new_frametables);
+  CAMLassert(new_frametables);
 
   tail = frametables_list_tail(new_frametables);
   increase = count_descriptors(new_frametables);
@@ -334,7 +334,7 @@ void caml_oldify_local_roots (void)
   /* Global C roots */
   caml_scan_global_young_roots(&caml_oldify_one);
   /* Finalised values */
-  caml_final_do_young_roots (&caml_oldify_one);
+  caml_final_oldify_young_roots ();
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
@@ -428,7 +428,7 @@ void caml_do_roots (scanning_action f, int do_globals)
   caml_scan_global_roots(f);
   CAML_INSTR_TIME (tmr, "major_roots/C");
   /* Finalised values */
-  caml_final_do_strong_roots (f);
+  caml_final_do_roots (f);
   CAML_INSTR_TIME (tmr, "major_roots/finalised");
   /* Hook */
   if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(f);

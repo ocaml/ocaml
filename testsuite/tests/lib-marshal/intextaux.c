@@ -16,13 +16,15 @@
 #include <caml/mlvalues.h>
 #include <caml/intext.h>
 
+#define CAML_INTERNALS
+
 value marshal_to_block(value vbuf, value vlen, value v, value vflags)
 {
-  return Val_long(output_value_to_block(v, vflags,
+  return Val_long(caml_output_value_to_block(v, vflags,
                                         (char *) vbuf, Long_val(vlen)));
 }
 
 value marshal_from_block(value vbuf, value vlen)
 {
-  return input_value_from_block((char *) vbuf, Long_val(vlen));
+  return caml_input_value_from_block((char *) vbuf, Long_val(vlen));
 }

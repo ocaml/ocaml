@@ -8,6 +8,7 @@ TEXQUOTE=../../tools/texquote2
 
 ALLFILES=$(FILES)
 
+etex-files: $(ALLFILES)
 all: $(ALLFILES)
 
 clean:
@@ -17,6 +18,11 @@ clean:
 .SUFFIXES: .etex .tex
 
 .etex.tex:
-	$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -o - $*.etex | $(TEXQUOTE) > $*.tex
+	@$(CAMLLATEX) -caml "TERM=norepeat $(OCAML)" -n 80 -v false\
+                       -o $*.caml_tex_error.tex $*.etex\
+	&& mv $*.caml_tex_error.tex $*.gen.tex\
+	&& $(TEXQUOTE) < $*.gen.tex > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
+	|| printf "Failure when generating %s\n" $*.tex
 
 $(ALLFILES): $(CAMLLATEX) $(TEXQUOTE)

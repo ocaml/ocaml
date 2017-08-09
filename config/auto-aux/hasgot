@@ -24,6 +24,7 @@ while : ; do
   case "$1" in
     -i) echo "#include <$2>" >> hasgot.c; shift;;
     -t) echo "$2 $var;" >> hasgot.c; var="x$var"; shift;;
+    -Xl) libs="$libs $2"; shift;;
     -l*|-L*|-F*) libs="$libs $1";;
     -framework) libs="$libs $1 $2"; shift;;
     -*) opts="$opts $1";;
@@ -36,9 +37,11 @@ done
  for f in $*; do echo "  $f();"; done
  echo "  return 0; }") >> hasgot.c
 
-if test "$verbose" = yes; then
-  echo "hasgot $args: $cc $opts -o tst hasgot.c $libs" >&2
-  exec $cc $opts -o tst hasgot.c $libs > /dev/null
+cmd="$cc $cflags $opts -o tst hasgot.c $ldflags $libs"
+
+if $verbose; then
+  echo "hasgot $args: $cmd" >&2
+  exec $cmd > /dev/null
 else
-  exec $cc $opts -o tst hasgot.c $libs > /dev/null 2>/dev/null
+  exec $cmd > /dev/null 2>/dev/null
 fi

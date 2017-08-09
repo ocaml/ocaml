@@ -29,11 +29,12 @@ endif
 CAMLC=$(CAMLRUN) $(ROOTDIR)/ocamlc -nostdlib -I $(ROOTDIR)/stdlib
 CAMLOPT=$(CAMLRUN) $(ROOTDIR)/ocamlopt -nostdlib \
         -I $(ROOTDIR)/stdlib
-CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CFLAGS += $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CPPFLAGS += -I$(ROOTDIR)/byterun
 
 # Compilation options
-CC=$(BYTECC)
-COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
+COMPFLAGS=-absname -w +a-4-9-41-42-44-45-48 -warn-error A -bin-annot -g \
+          -safe-string -strict-sequence -strict-formats $(EXTRACAMLFLAGS)
 ifeq "$(FLAMBDA)" "true"
 OPTCOMPFLAGS=-O3
 else
@@ -83,7 +84,8 @@ install::
 	  cp dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/"; fi
 	cp lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) "$(INSTALL_LIBDIR)/"
+	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
+          $(CMIFILES:.cmi=.cmti) "$(INSTALL_LIBDIR)/"
 	if test -n "$(HEADERS)"; then \
 	  cp $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; fi
 
@@ -111,4 +113,4 @@ clean:: partialclean
 	$(CAMLOPT) -c $(COMPFLAGS) $(OPTCOMPFLAGS) $<
 
 .c.$(O):
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<

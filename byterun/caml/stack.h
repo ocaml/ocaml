@@ -22,11 +22,6 @@
 
 /* Macros to access the stack frame */
 
-#ifdef TARGET_sparc
-#define Saved_return_address(sp) *((intnat *)((sp) + 92))
-#define Callback_link(sp) ((struct caml_context *)((sp) + 104))
-#endif
-
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
 #ifndef SYS_win32
@@ -81,6 +76,9 @@ struct caml_context {
   char * bottom_of_stack;       /* beginning of OCaml stack chunk */
   uintnat last_retaddr;         /* last return address in OCaml code */
   value * gc_regs;              /* pointer to register block */
+#ifdef WITH_SPACETIME
+  void* trie_node;
+#endif
 };
 
 /* Structure of frame descriptors */

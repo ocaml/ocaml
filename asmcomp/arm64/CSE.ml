@@ -31,7 +31,7 @@ method! class_of_operation op =
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int n | Iconst_blockheader n -> n <= 65535n && n >= 0n
+  | Iconst_int n -> n <= 65535n && n >= 0n
   | _ -> false
 
 end

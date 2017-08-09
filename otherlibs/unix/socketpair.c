@@ -24,15 +24,25 @@
 
 extern int socket_domain_table[], socket_type_table[];
 
-CAMLprim value unix_socketpair(value domain, value type, value proto)
+CAMLprim value unix_socketpair(value cloexec, value domain,
+                               value type, value proto)
 {
   int sv[2];
   value res;
+  int ty = socket_type_table[Int_val(type)];
+#ifdef SOCK_CLOEXEC
+  if (unix_cloexec_p(cloexec)) ty |= SOCK_CLOEXEC;
+#endif
   if (socketpair(socket_domain_table[Int_val(domain)],
-                 socket_type_table[Int_val(type)],
-                 Int_val(proto), sv) == -1)
+                 ty, Int_val(proto), sv) == -1)
     uerror("socketpair", Nothing);
-  res = alloc_small(2, 0);
+#ifndef SOCK_CLOEXEC
+  if (unix_cloexec_p(cloexec)) {
+    unix_set_cloexec(sv[0], "socketpair", Nothing);
+    unix_set_cloexec(sv[1], "socketpair", Nothing);
+  }
+#endif
+  res = caml_alloc_small(2, 0);
   Field(res,0) = Val_int(sv[0]);
   Field(res,1) = Val_int(sv[1]);
   return res;
@@ -41,6 +51,6 @@ CAMLprim value unix_socketpair(value domain, value type, value proto)
 #else
 
 CAMLprim value unix_socketpair(value domain, value type, value proto)
-{ invalid_argument("socketpair not implemented"); }
+{ caml_invalid_argument("socketpair not implemented"); }
 
 #endif

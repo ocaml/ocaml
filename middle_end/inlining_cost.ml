@@ -27,8 +27,8 @@ let prim_size (prim : Lambda.primitive) args =
   | Pfield _ -> 1
   | Psetfield (_, isptr, init) ->
     begin match init with
-    | Initialization -> 1  (* never causes a write barrier hit *)
-    | Assignment ->
+    | Root_initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment | Heap_initialization ->
       match isptr with
       | Pointer -> 4
       | Immediate -> 1
@@ -39,7 +39,9 @@ let prim_size (prim : Lambda.primitive) args =
   | Pccall p -> (if p.Primitive.prim_alloc then 10 else 4) + List.length args
   | Praise _ -> 4
   | Pstringlength -> 5
-  | Pstringrefs | Pstringsets -> 6
+  | Pbyteslength -> 5
+  | Pstringrefs -> 6
+  | Pbytesrefs | Pbytessets -> 6
   | Pmakearray _ -> 5 + List.length args
   | Parraylength Pgenarray -> 6
   | Parraylength _ -> 2

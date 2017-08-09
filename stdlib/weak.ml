@@ -52,6 +52,7 @@ module type S = sig
   val add : t -> data -> unit
   val remove : t -> data -> unit
   val find : t -> data -> data
+  val find_opt : t -> data -> data option
   val find_all : t -> data -> data list
   val mem : t -> data -> bool
   val iter : (data -> unit) -> t -> unit
@@ -200,7 +201,9 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let sz = length bucket in
     let rec loop i =
       if i >= sz then begin
-        let newsz = min (3 * sz / 2 + 3) (Sys.max_array_length - 1) in
+        let newsz =
+          min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
+        in
         if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
         let newbucket = weak_create newsz in
         let newhashes = Array.make newsz 0 in
@@ -256,6 +259,26 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
 
 
   let find t d = find_or t d (fun _h _index -> raise Not_found)
+
+  let find_opt t d =
+    let h = H.hash d in
+    let index = get_index t h in
+    let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
+    let sz = length bucket in
+    let rec loop i =
+      if i >= sz then None
+      else if h = hashes.(i) then begin
+        match get_copy bucket i with
+        | Some v when H.equal v d
+           -> begin match get bucket i with
+              | Some _ as v -> v
+              | None -> loop (i + 1)
+              end
+        | _ -> loop (i + 1)
+      end else loop (i + 1)
+    in
+    loop 0
 
 
   let find_shadow t d iffound ifnotfound =

@@ -282,23 +282,24 @@ module Analyser =
           | Ptyp_object (fields, _) ->
             let rec f = function
               | [] -> []
-              | ("",_,_) :: _ ->
+              | Otag ({txt=""},_,_) :: _ ->
                 (* Fields with no name have been eliminated previously. *)
                 assert false
-
-              | (name, _atts, ct) :: [] ->
+              | Otag ({txt=name}, _atts, ct) :: [] ->
                 let pos = Loc.ptyp_end ct in
                 let (_,comment_opt) = just_after_special pos pos_end in
                 [name, comment_opt]
-              | (name, _atts, ct) :: ((_name2, _atts2, ct2) as ele2) :: q ->
+              | Otag ({txt=name}, _, ct) ::
+                  ((Oinherit ct2 | Otag (_, _, ct2)) as ele2) :: q ->
                 let pos = Loc.ptyp_end ct in
                 let pos2 = Loc.ptyp_start ct2 in
                 let (_,comment_opt) = just_after_special pos pos2 in
                 (name, comment_opt) :: (f (ele2 :: q))
+              | _ :: q -> f q
             in
             let is_named_field field =
               match field with
-              | ("",_,_) -> false
+              | Otag ({txt=""},_,_) -> false
               | _ -> true
             in
             (0, f @@ List.filter is_named_field fields)
@@ -525,7 +526,7 @@ module Analyser =
               let loc = item.Parsetree.pctf_loc in
               match item.Parsetree.pctf_desc with
 
-        | Parsetree.Pctf_val (name, mutable_flag, virtual_flag, _) ->
+        | Parsetree.Pctf_val ({txt=name}, mutable_flag, virtual_flag, _) ->
             (* of (string * mutable_flag * core_type option * Location.t)*)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos
                 (Loc.start loc) in
@@ -563,7 +564,7 @@ module Analyser =
             let (inher_l, eles) = f (pos_end + maybe_more) q in
             (inher_l, eles_comments @ ((Class_attribute att) :: eles))
 
-        | Parsetree.Pctf_method (name, private_flag, virtual_flag, _) ->
+        | Parsetree.Pctf_method ({txt=name}, private_flag, virtual_flag, _) ->
             (* of (string * private_flag * virtual_flag * core_type) *)
             let (comment_opt, eles_comments) =
               get_comments_in_class last_pos (Loc.start  loc) in
@@ -606,6 +607,7 @@ module Analyser =
                     ic_text = text_opt ;
                   }
 
+              | Parsetree.Pcty_open _ (* one could also traverse the open *)
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
                     (* we don't have a name for the class signature, so we call it "object ... end"  *)
@@ -1619,21 +1621,7 @@ module Analyser =
 
     let analyse_signature source_file input_file
         (ast : Parsetree.signature) (signat : Types.signature) =
-      let complete_source_file =
-        try
-          let curdir = Sys.getcwd () in
-          let (dirname, basename) = (Filename.dirname source_file, Filename.basename source_file) in
-          Sys.chdir dirname ;
-          let complete = Filename.concat (Sys.getcwd ()) basename in
-          Sys.chdir curdir ;
-          complete
-        with
-          Sys_error s ->
-            prerr_endline s ;
-            incr Odoc_global.errors ;
-            source_file
-      in
-      prepare_file complete_source_file input_file;
+      prepare_file source_file input_file;
       (* We create the t_module for this file. *)
       let mod_name = String.capitalize_ascii
           (Filename.basename (try Filename.chop_extension source_file with _ -> source_file))

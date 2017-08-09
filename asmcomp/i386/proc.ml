@@ -94,6 +94,8 @@ let edx = phys_reg 3
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Instruction selection *)
 
 let word_addressed = false

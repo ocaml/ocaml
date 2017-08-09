@@ -91,6 +91,10 @@ let print_out_value ppf tree =
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
     | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0)
+    | Oval_string (_,_, Ostr_bytes) as tree ->
+      pp_print_char ppf '(';
+      print_simple_tree ppf tree;
+      pp_print_char ppf ')';
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
@@ -100,8 +104,20 @@ let print_out_value ppf tree =
     | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> pp_print_string ppf (float_repres f)
     | Oval_char c -> fprintf ppf "%C" c
-    | Oval_string s ->
-        begin try fprintf ppf "%S" s with
+    | Oval_string (s, maxlen, kind) ->
+       begin try
+               let len = String.length s in
+                fprintf ppf "%s%S%s"
+                  (match kind with
+                  | Ostr_string -> ""
+                  | Ostr_bytes -> "Bytes.of_string ")
+                  (if len > maxlen then String.sub s 0 maxlen else s)
+                  (if len > maxlen then
+                      Printf.sprintf
+                        "... (* string length %d; truncated *)" len
+                   else ""
+                  )
+          with
           Invalid_argument _ (* "String.create" *)-> fprintf ppf "<huge string>"
         end
     | Oval_list tl ->
@@ -212,8 +228,8 @@ and print_simple_out_type ppf =
           Ovar_fields fields ->
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
               ppf fields
-        | Ovar_name (id, tyl) ->
-            fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+        | Ovar_typ typ ->
+           print_simple_out_type ppf typ
       in
       fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "

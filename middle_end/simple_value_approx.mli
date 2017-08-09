@@ -30,8 +30,12 @@ type value_string = {
   size : int;
 }
 
+type unresolved_value =
+  | Set_of_closures_id of Set_of_closures_id.t
+  | Symbol of Symbol.t
+
 type unknown_because_of =
-  | Unresolved_symbol of Symbol.t
+  | Unresolved_value of unresolved_value
   | Other
 
 (** A value of type [t] corresponds to an "approximation" of the result of
@@ -131,7 +135,8 @@ and descr = private
   | Value_bottom
   | Value_extern of Export_id.t
   | Value_symbol of Symbol.t
-  | Value_unresolved of Symbol.t (* No description was found for this symbol *)
+  | Value_unresolved of unresolved_value
+    (* No description was found for this value *)
 
 and value_closure = {
   set_of_closures : t;
@@ -203,7 +208,7 @@ val value_block : Tag.t -> t array -> t
 val value_extern : Export_id.t -> t
 val value_symbol : Symbol.t -> t
 val value_bottom : t
-val value_unresolved : Symbol.t -> t
+val value_unresolved : unresolved_value -> t
 
 (** Construct a closure approximation given the approximation of the
     corresponding set of closures and the closure ID of the closure to
@@ -366,9 +371,9 @@ val strict_check_approx_for_set_of_closures
 
 type checked_approx_for_set_of_closures =
   | Wrong
-  | Unresolved of Symbol.t
+  | Unresolved of unresolved_value
   | Unknown
-  | Unknown_because_of_unresolved_symbol of Symbol.t
+  | Unknown_because_of_unresolved_value of unresolved_value
   (* In the [Ok] case, there may not be a variable associated with the set of
      closures; it might be out of scope. *)
   | Ok of Variable.t option * value_set_of_closures
@@ -392,9 +397,9 @@ val check_approx_for_closure : t -> checked_approx_for_closure
 
 type checked_approx_for_closure_allowing_unresolved =
   | Wrong
-  | Unresolved of Symbol.t
+  | Unresolved of unresolved_value
   | Unknown
-  | Unknown_because_of_unresolved_symbol of Symbol.t
+  | Unknown_because_of_unresolved_value of unresolved_value
   | Ok of value_closure * Variable.t option
           * Symbol.t option * value_set_of_closures
 
@@ -409,3 +414,15 @@ val check_approx_for_float : t -> float option
 
 (** Returns the value if it can be proved to be a constant float array *)
 val float_array_as_constant : value_float_array -> float list option
+
+(** Returns the value if it can be proved to be a constant string *)
+val check_approx_for_string : t -> string option
+
+type switch_branch_selection =
+  | Cannot_be_taken
+  | Can_be_taken
+  | Must_be_taken
+
+(** Check that the branch is compatible with the approximation *)
+val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
+val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection

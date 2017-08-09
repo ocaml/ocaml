@@ -145,9 +145,6 @@ caml_raise_exn:
     /* Branch to handler */
         br      %r1
 .L110:
-        lgfi      %r0, 0
-        Storeglobal32(%r0, caml_backtrace_pos)
-.L114:
         ldgr    %f15, %r2       /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r3 */
         lgr     %r3,%r14        /* arg2: PC of raise */
@@ -158,20 +155,6 @@ caml_raise_exn:
         agfi    %r15, 160
         lgdr    %r2,%f15        /* restore exn bucket */
         j       .L111           /* raise the exn */
-
-        .globl  caml_reraise_exn
-        .type   caml_reraise_exn, @function
-caml_reraise_exn:
-        Loadglobal32(%r0, caml_backtrace_active)
-        cgfi    %r0, 0
-        jne    .L114
-    /* Pop trap frame */
-        lg     %r1, 0(%r13)
-        lgr    %r15, %r13
-        lg    %r13, 8(%r13)
-        agfi   %r15, 16
-    /* Branch to handler */
-        br     %r1;
 
 /* Raise an exception from C */
 
@@ -195,7 +178,7 @@ caml_raise_exception:
 .L112:
         lgfi      %r0, 0
         Storeglobal32(%r0, caml_backtrace_pos)
-	ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
+        ldgr    %f15,%r2        /* preserve exn bucket in callee-save reg */
                                 /* arg1: exception bucket, already in r2 */
         Loadglobal(%r3, caml_last_return_address) /* arg2: PC of raise */
         Loadglobal(%r4, caml_bottom_of_stack)     /* arg3: SP of raise */
@@ -331,8 +314,8 @@ caml_callback3_exn:
         .globl  caml_ml_array_bound_error
         .type   caml_ml_array_bound_error, @function
 caml_ml_array_bound_error:
-	/* Save return address before decrementing SP, otherwise
-	   the frame descriptor for the call site is not correct */
+        /* Save return address before decrementing SP, otherwise
+           the frame descriptor for the call site is not correct */
         Storeglobal(%r15, caml_bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
         larl    %r7, caml_array_bound_error

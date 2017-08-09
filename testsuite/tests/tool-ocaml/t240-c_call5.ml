@@ -1,7 +1,7 @@
 open Lib;;
-let s = "abcdefgh" in
-String.unsafe_blit s 3 s 0 3;
-if s.[0] <> 'd' then raise Not_found
+let s = Bytes.of_string "abcdefgh" in
+Bytes.unsafe_blit s 3 s 0 3;
+if Bytes.get s 0 <> 'd' then raise Not_found
 ;;
 
 (**

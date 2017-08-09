@@ -36,7 +36,6 @@ val identity: t
 val add_type: Ident.t -> Path.t -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
-val set_nongen_level: t -> int -> t
 val for_saving: t -> t
 val reset_for_saving: unit -> unit
 

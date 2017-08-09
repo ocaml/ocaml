@@ -32,21 +32,28 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
     if (Descr_kind_val(fd) == KIND_SOCKET) {
       int ret;
       SOCKET s = Socket_val(fd);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       ret = recv(s, iobuf, numbytes, 0);
       if (ret == SOCKET_ERROR) err = WSAGetLastError();
-      leave_blocking_section();
+      caml_leave_blocking_section();
       numread = ret;
     } else {
       HANDLE h = Handle_val(fd);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       if (! ReadFile(h, iobuf, numbytes, &numread, NULL))
         err = GetLastError();
-      leave_blocking_section();
+      caml_leave_blocking_section();
     }
     if (err) {
-      win32_maperr(err);
-      uerror("read", Nothing);
+      if (err == ERROR_BROKEN_PIPE) {
+        // The write handle for an anonymous pipe has been closed. We match the
+        // Unix behavior, and treat this as a zero-read instead of a Unix_error.
+        err = 0;
+        numread = 0;
+      } else {
+        win32_maperr(err);
+        uerror("read", Nothing);
+      }
     }
     memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);
   End_roots();

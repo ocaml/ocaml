@@ -13,7 +13,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Config
 open Clflags
 open Compenv
 
@@ -35,64 +34,7 @@ module Backend = struct
 end
 let backend = (module Backend : Backend_intf.S)
 
-let process_interface_file ppf name =
-  let opref = output_prefix name in
-  Optcompile.interface ppf name opref;
-  if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-
-let process_implementation_file ppf name =
-  let opref = output_prefix name in
-  Optcompile.implementation ppf name opref ~backend;
-  objfiles := (opref ^ ".cmx") :: !objfiles
-
-let cmxa_present = ref false;;
-
-let process_file ppf name =
-  if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then
-    process_implementation_file ppf name
-  else if Filename.check_suffix name !Config.interface_suffix then
-    process_interface_file ppf name
-  else if Filename.check_suffix name ".cmx" then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".cmxa" then begin
-    cmxa_present := true;
-    objfiles := name :: !objfiles
-  end else if Filename.check_suffix name ".cmi" && !make_package then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ext_obj
-       || Filename.check_suffix name ext_lib then
-    ccobjs := name :: !ccobjs
-  else if Filename.check_suffix name ".c" then begin
-    Optcompile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
-  else
-    raise(Arg.Bad("don't know what to do with " ^ name))
-
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
-
-(* Error messages to standard error formatter *)
-let ppf = Format.err_formatter
-
-let process_thunks = ref []
-let schedule fn =
-  process_thunks := fn :: !process_thunks
-
-let anonymous filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename);
-    process_file ppf filename)
-
-let impl filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename);
-    process_implementation_file ppf filename)
-
-let intf filename =
-  schedule (fun () ->
-    readenv ppf (Before_compile filename); process_interface_file ppf filename)
 
 let show_config () =
   Config.print_config stdout;
@@ -105,11 +47,13 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _a = set make_archive
   let _absname = set Location.absname
+  let _afl_instrument = set afl_instrument
+  let _afl_inst_ratio n = afl_inst_ratio := n
   let _annot = set annotations
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
-  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
+  let _cclib s = defer (ProcessObjects (Misc.rev_split_words s))
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
@@ -176,6 +120,7 @@ module Options = Main_args.Make_optcomp_options (struct
        inline_max_depth
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _linscan = set use_linscan
   let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _no_float_const_prop = clear float_const_prop
@@ -243,9 +188,9 @@ module Options = Main_args.Make_optcomp_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
   let _color option =
-    begin match Clflags.parse_color_setting option with
+    begin match parse_color_setting option with
           | None -> ()
-          | Some setting -> Clflags.color := setting
+          | Some setting -> color := Some setting
     end
   let _where () = print_standard_library ()
 
@@ -277,9 +222,14 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dreload = set dump_reload
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
+  let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
   let _opaque = set opaque
+
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
 
   let anonymous = anonymous
 end);;
@@ -289,17 +239,28 @@ let main () =
   let ppf = Format.err_formatter in
   try
     readenv ppf Before_args;
-    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
-    if !output_name <> None && !compile_only &&
-          List.length !process_thunks > 1 then
-      fatal "Options -c -o are incompatible with compiling multiple files";
-    let final_output_name = !output_name in
-    if !output_name <> None && not !compile_only then
-      (* We're invoked like: ocamlopt -o foo bar.c baz.ml.
-         Make sure the intermediate products don't clash with the final one. *)
-      output_name := None;
-    List.iter (fun f -> f ()) (List.rev !process_thunks);
-    output_name := final_output_name;
+    Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+    Clflags.add_arguments __LOC__
+      ["-depend", Arg.Unit Makedepend.main_from_option,
+       "<options> Compute dependencies (use 'ocamlopt -depend -help' for details)"];
+    Clflags.parse_arguments anonymous usage;
+    Compmisc.read_color_env ppf;
+    if !gprofile && not Config.profiling then
+      fatal "Profiling with \"gprof\" is not supported on this platform.";
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Optcompile.implementation ~backend,
+         Optcompile.interface,
+         ".cmx",
+         ".cmxa");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Clflags.print_arguments usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
@@ -308,8 +269,6 @@ let main () =
     then
       fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin
-      if !cmxa_present then
-        fatal "Option -a cannot be used with .cmxa input files.";
       Compmisc.init_path true;
       let target = extract_output !output_name in
       Asmlibrarian.create_archive (get_objfiles ~with_ocamlparam:false) target;
@@ -352,7 +311,7 @@ let main () =
       Location.report_exception ppf x;
       exit 2
 
-let _ =
-  Timings.(time All) main ();
-  if !Clflags.print_timings then Timings.print Format.std_formatter;
+let () =
+  main ();
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

@@ -100,7 +100,7 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
-    Assert (channel == caml_all_opened_channels);
+    CAMLassert (channel == caml_all_opened_channels);
     caml_all_opened_channels = caml_all_opened_channels->next;
     if (caml_all_opened_channels != NULL)
       caml_all_opened_channels->prev = NULL;
@@ -112,7 +112,7 @@ static void unlink_channel(struct channel *channel)
 
 CAMLexport void caml_close_channel(struct channel *channel)
 {
-  CAML_SYS_CLOSE(channel->fd); 
+  CAML_SYS_CLOSE(channel->fd);
   if (channel->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(channel);
   unlink_channel(channel);
@@ -474,7 +474,7 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   struct channel * channel = Channel(vchannel);
   caml_stat_free(channel->name);
   if (caml_string_length(vname) > 0)
-    channel->name = caml_strdup(String_val(vname));
+    channel->name = caml_stat_strdup(String_val(vname));
   else
     channel->name = NULL;
   return Val_unit;
@@ -649,7 +649,7 @@ CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
   CAMLreturn (Val_int(res));
 }
 
-CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+CAMLprim value caml_ml_output_bytes(value vchannel, value buff, value start,
                               value length)
 {
   CAMLparam4 (vchannel, buff, start, length);
@@ -667,6 +667,12 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
     }
   Unlock(channel);
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_output(value vchannel, value buff, value start,
+                              value length)
+{
+  return caml_ml_output_bytes (vchannel, buff, start, length);
 }
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)

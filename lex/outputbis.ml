@@ -44,7 +44,7 @@ let output_auto_defs oc has_refill =
 \n    end\
 \n  end else begin\
 \n    let i = lexbuf.Lexing.lex_curr_pos in\
-\n    let c = lexbuf.Lexing.lex_buffer.[i] in\
+\n    let c = Bytes.get lexbuf.Lexing.lex_buffer i in\
 \n    lexbuf.Lexing.lex_curr_pos <- i+1 ;\
 \n    state lexbuf k (Char.code c)\
 \n  end\
@@ -61,7 +61,7 @@ let output_auto_defs oc has_refill =
 \n    end\
 \n  end else begin\
 \n    let i = lexbuf.Lexing.lex_curr_pos in\
-\n    let c = lexbuf.Lexing.lex_buffer.[i] in\
+\n    let c = Bytes.get lexbuf.Lexing.lex_buffer i in\
 \n    lexbuf.Lexing.lex_curr_pos <- i+1 ;\
 \n    Char.code c\
 \n  end\

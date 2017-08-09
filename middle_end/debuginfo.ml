@@ -76,6 +76,11 @@ let inline loc t =
 let concat dbg1 dbg2 =
   dbg1 @ dbg2
 
+(* CR-someday afrisch: FWIW, the current compare function does not seem very
+   good, since it reverses the two lists. I don't know how long the lists are,
+   nor if the specific currently implemented ordering is useful in other
+   contexts, but if one wants to use Map, a more efficient comparison should
+   be considered. *)
 let compare dbg1 dbg2 =
   let rec loop ds1 ds2 =
     match ds1, ds2 with
@@ -94,3 +99,23 @@ let compare dbg1 dbg2 =
       loop ds1 ds2
   in
   loop (List.rev dbg1) (List.rev dbg2)
+
+let hash t =
+  List.fold_left (fun hash item -> Hashtbl.hash (hash, item)) 0 t
+
+let rec print_compact ppf t =
+  let print_item item =
+    Format.fprintf ppf "%a:%i"
+      Location.print_filename item.dinfo_file
+      item.dinfo_line;
+    if item.dinfo_char_start >= 0 then begin
+      Format.fprintf ppf ",%i--%i" item.dinfo_char_start item.dinfo_char_end
+    end
+  in
+  match t with
+  | [] -> ()
+  | [item] -> print_item item
+  | item::t ->
+    print_item item;
+    Format.fprintf ppf ";";
+    print_compact ppf t

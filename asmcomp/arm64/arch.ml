@@ -60,6 +60,12 @@ and arith_operation =
     Ishiftadd
   | Ishiftsub
 
+let spacetime_node_hole_pointer_is_live_before = function
+  | Ifar_alloc _ | Ifar_intop_checkbound _ | Ifar_intop_imm_checkbound _
+  | Ishiftarith _ | Ishiftcheckbound _ | Ifar_shiftcheckbound _ -> false
+  | Imuladd | Imulsub | Inegmulf | Imuladdf | Inegmuladdf | Imulsubf
+  | Inegmulsubf | Isqrtf | Ibswap _ -> false
+
 (* Sizes, endianness *)
 
 let big_endian = false

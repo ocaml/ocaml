@@ -61,8 +61,8 @@ type 'a tbl
 val empty: 'a tbl
 val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
-val find_name: string -> 'a tbl -> 'a
-val find_all: string -> 'a tbl -> 'a list
+val find_name: string -> 'a tbl -> t * 'a
+val find_all: string -> 'a tbl -> (t * 'a) list
 val fold_name: (t -> 'a -> 'b -> 'b) -> 'a tbl -> 'b -> 'b
 val fold_all: (t -> 'a -> 'b -> 'b) -> 'a tbl -> 'b -> 'b
 val iter: (t -> 'a -> unit) -> 'a tbl -> unit

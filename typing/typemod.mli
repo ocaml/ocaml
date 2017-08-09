@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Type-checking of the module language *)
+(** Type-checking of the module language and typed ast plugin hooks *)
 
 open Types
 open Format
@@ -36,7 +36,7 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
 val type_open_:
-        ?toplevel:bool -> Asttypes.override_flag ->
+        ?used_slot:bool ref -> ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
 val modtype_of_package:
         Env.t -> Location.t ->
@@ -47,7 +47,7 @@ val path_of_module : Typedtree.module_expr -> Path.t option
 
 val save_signature:
   string -> Typedtree.signature -> string -> string ->
-  Env.t -> Types.signature_item list -> unit
+  Env.t -> Cmi_format.cmi_infos -> unit
 
 val package_units:
   Env.t -> string list -> string -> string -> Typedtree.module_coercion

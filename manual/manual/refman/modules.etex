@@ -10,6 +10,7 @@ for the specifications expressed in module types.
 \ikwd{end\@\texttt{end}}
 \ikwd{functor\@\texttt{functor}}
 \ikwd{let\@\texttt{let}}
+\ikwd{and\@\texttt{and}}
 \ikwd{external\@\texttt{external}}
 \ikwd{type\@\texttt{type}}
 \ikwd{exception\@\texttt{exception}}
@@ -44,6 +45,13 @@ definition:
         | 'open' module-path
         | 'include' module-expr
 \end{syntax}
+See also the following language extensions:
+\hyperref[s-recursive-modules]{recursive modules},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:explicit-overriding-open]{overriding in open statements},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes} and
+\hyperref[s:generative-functors]{generative functors}.
 
 \subsection{Simple module expressions}
 

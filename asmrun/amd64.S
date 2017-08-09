@@ -18,7 +18,7 @@
 
 /* PIC mode support based on contribution by Paul Stravers (see PR#4795) */
 
-#include "../config/m.h"
+#include "caml/m.h"
 
 #if defined(SYS_macosx)
 
@@ -260,9 +260,12 @@
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
 #  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
+   /* Stack probing mustn't be larger than the page size */
+#  define STACK_PROBE_SIZE $4096
 #else
 #  define PREPARE_FOR_C_CALL
 #  define CLEANUP_AFTER_C_CALL
+#  define STACK_PROBE_SIZE $32768
 #endif
 
         .text
@@ -278,13 +281,11 @@ FUNCTION(G(caml_call_gc))
         CFI_STARTPROC
         RECORD_STACK_FRAME(0)
 LBL(caml_call_gc):
-#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subq    $32768, %rsp
+        subq    STACK_PROBE_SIZE, %rsp
         movq    %rax, 0(%rsp)
-        addq    $32768, %rsp
-#endif
+        addq    STACK_PROBE_SIZE, %rsp
     /* Build array of registers, save it into caml_gc_regs */
 #ifdef WITH_FRAME_POINTERS
         ENTER_FUNCTION          ;
@@ -307,6 +308,9 @@ LBL(caml_call_gc):
     /* Save caml_young_ptr, caml_exception_pointer */
         STORE_VAR(%r15, caml_young_ptr)
         STORE_VAR(%r14, caml_exception_pointer)
+#ifdef WITH_SPACETIME
+        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
+#endif
     /* Save floating-point registers */
         subq    $(16*8), %rsp; CFI_ADJUST (16*8);
         movsd   %xmm0, 0*8(%rsp)
@@ -435,12 +439,15 @@ LBL(103):
         CFI_ADJUST(8)
         RECORD_STACK_FRAME(8)
 #ifdef WITH_FRAME_POINTERS
-        /* Do we need 16-byte alignment here ? */
+        /* ensure 16 byte alignment by subq + enter using 16-bytes, PR#7417 */
+        subq    $8, %rsp; CFI_ADJUST (8)
         ENTER_FUNCTION
 #endif
         call    LBL(caml_call_gc)
 #ifdef WITH_FRAME_POINTERS
+        /* ensure 16 byte alignment by leave + addq using 16-bytes PR#7417 */
         LEAVE_FUNCTION
+        addq    $8, %rsp; CFI_ADJUST (-8)
 #endif
         popq    %rax; CFI_ADJUST(-8)       /* recover desired size */
         jmp     LBL(caml_allocN)
@@ -455,14 +462,17 @@ LBL(caml_c_call):
         popq    %r12; CFI_ADJUST(-8)
         STORE_VAR(%r12, caml_last_return_address)
         STORE_VAR(%rsp, caml_bottom_of_stack)
+#ifdef WITH_SPACETIME
+    /* Record the trie node hole pointer that corresponds to
+       [caml_last_return_address] */
+        STORE_VAR(%r13, caml_spacetime_trie_node_ptr)
+#endif
         subq    $8, %rsp; CFI_ADJUST(8) /* equivalent to pushq %r12 */
-#if !defined(SYS_mingw64) && !defined(SYS_cygwin)
     /* Touch the stack to trigger a recoverable segfault
        if insufficient space remains */
-        subq    $32768, %rsp
+        subq    STACK_PROBE_SIZE, %rsp
         movq    %rax, 0(%rsp)
-        addq    $32768, %rsp
-#endif
+        addq    STACK_PROBE_SIZE, %rsp
     /* Make the exception handler and alloc ptr available to the C code */
         STORE_VAR(%r15, caml_young_ptr)
         STORE_VAR(%r14, caml_exception_pointer)
@@ -483,10 +493,29 @@ FUNCTION(G(caml_start_program))
     /* Common code for caml_start_program and caml_callback* */
 LBL(caml_start_program):
     /* Build a callback link */
+#ifdef WITH_SPACETIME
+        PUSH_VAR(caml_spacetime_trie_node_ptr)
+#else
         subq    $8, %rsp; CFI_ADJUST (8)        /* stack 16-aligned */
+#endif
         PUSH_VAR(caml_gc_regs)
         PUSH_VAR(caml_last_return_address)
         PUSH_VAR(caml_bottom_of_stack)
+#ifdef WITH_SPACETIME
+        /* Save arguments to caml_callback* */
+        pushq   %rax; CFI_ADJUST (8)
+        pushq   %rbx; CFI_ADJUST (8)
+        pushq   %rdi; CFI_ADJUST (8)
+        pushq   %rsi; CFI_ADJUST (8)
+        /* No need to push %r12: it's callee-save. */
+        movq    %r12, %rdi
+        LEA_VAR(caml_start_program, %rsi)
+        call    GCALL(caml_spacetime_c_to_ocaml)
+        popq    %rsi; CFI_ADJUST (-8)
+        popq    %rdi; CFI_ADJUST (-8)
+        popq    %rbx; CFI_ADJUST (-8)
+        popq    %rax; CFI_ADJUST (-8)
+#endif
     /* Setup alloc ptr and exception ptr */
         LOAD_VAR(caml_young_ptr, %r15)
         LOAD_VAR(caml_exception_pointer, %r14)
@@ -495,6 +524,9 @@ LBL(caml_start_program):
         pushq   %r13; CFI_ADJUST(8)
         pushq   %r14; CFI_ADJUST(8)
         movq    %rsp, %r14
+#ifdef WITH_SPACETIME
+        LOAD_VAR(caml_spacetime_trie_node_ptr, %r13)
+#endif
     /* Call the OCaml code */
         call    *%r12
 LBL(107):
@@ -509,7 +541,11 @@ LBL(109):
         POP_VAR(caml_bottom_of_stack)
         POP_VAR(caml_last_return_address)
         POP_VAR(caml_gc_regs)
+#ifdef WITH_SPACETIME
+        POP_VAR(caml_spacetime_trie_node_ptr)
+#else
         addq    $8, %rsp; CFI_ADJUST (-8);
+#endif
     /* Restore callee-save registers. */
         POP_CALLEE_SAVE_REGS
     /* Return to caller. */
@@ -545,8 +581,6 @@ CFI_STARTPROC
         popq    %r14
         ret
 LBL(110):
-        STORE_VAR32($0, caml_backtrace_pos)
-LBL(111):
         movq    %rax, %r12            /* Save exception bucket */
         movq    %rax, C_ARG_1         /* arg 1: exception bucket */
 #ifdef WITH_FRAME_POINTERS
@@ -563,15 +597,6 @@ LBL(111):
         PREPARE_FOR_C_CALL            /* no need to cleanup after */
         call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
-        movq    %r14, %rsp
-        popq    %r14
-        ret
-CFI_ENDPROC
-
-FUNCTION(G(caml_reraise_exn))
-CFI_STARTPROC
-        TESTL_VAR($1, caml_backtrace_active)
-        jne     LBL(111)
         movq    %r14, %rsp
         popq    %r14
         ret
@@ -680,6 +705,19 @@ G(caml_system__frametable):
         .quad   16
         .quad   0
         .string "amd64.S"
+
+#ifdef WITH_SPACETIME
+        .data
+        .globl  G(caml_system__spacetime_shapes)
+        .align  EIGHT_ALIGN
+G(caml_system__spacetime_shapes):
+        .quad   G(caml_start_program)
+        .quad   2           /* indirect call point to OCaml code */
+        .quad   LBL(107)    /* in caml_start_program / caml_callback* */
+        .quad   0           /* end of shapes for caml_start_program */
+        .quad   0           /* end of shape table */
+        .align  EIGHT_ALIGN
+#endif
 
 #if defined(SYS_macosx)
         .literal16

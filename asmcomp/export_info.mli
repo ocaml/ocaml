@@ -143,6 +143,7 @@ val nest_eid_map
 
 (**/**)
 (* Debug printing functions. *)
-val print_approx : Format.formatter -> t -> unit
+val print_approx : Format.formatter -> t * Symbol.t list -> unit
+val print_functions : Format.formatter -> t -> unit
 val print_offsets : Format.formatter -> t -> unit
-val print_all : Format.formatter -> t -> unit
+val print_all : Format.formatter -> t * Symbol.t list -> unit

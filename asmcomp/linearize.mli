@@ -38,7 +38,7 @@ and instruction_desc =
   | Lsetuptrap of label
   | Lpushtrap
   | Lpoptrap
-  | Lraise of Lambda.raise_kind
+  | Lraise of Cmm.raise_kind
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction
@@ -50,6 +50,8 @@ type fundecl =
   { fun_name: string;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : Mach.spacetime_shape option;
+  }
 
 val fundecl: Mach.fundecl -> fundecl

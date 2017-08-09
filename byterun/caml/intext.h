@@ -24,7 +24,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #include "io.h"
 
 /* Magic number */
@@ -103,7 +103,7 @@
 void caml_output_val (struct channel * chan, value v, value flags);
   /* Output [v] with flags [flags] on the channel [chan]. */
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 extern "C" {

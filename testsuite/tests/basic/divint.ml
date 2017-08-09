@@ -138,3 +138,8 @@ let _ =
 (* PR#6879 *)
 let f n = assert (1 mod n = 0)
 let () = f 1
+
+
+type t = {x: int; y:int}
+let f x = {x; y = x/0}.x
+let () = try ignore (f 1); assert false with Division_by_zero -> ()

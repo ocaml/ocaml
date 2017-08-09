@@ -132,7 +132,7 @@ let eliminate_ref_of_expr flam =
     let aux (flam : Flambda.t) : Flambda.t =
       match flam with
       | Let { var;
-              defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable, shape), l, _);
+              defining_expr = Prim(Pmakeblock(0, Asttypes.Mutable, shape), l,_);
               body }
         when convertible_variable var ->
         let shape = match shape with
