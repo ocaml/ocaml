@@ -1541,6 +1541,10 @@ if sh ./hasgot getauxval; then
   echo "#define HAS_GETAUXVAL" >> s.h
 fi
 
+if sh ./hasgot -i sys/shm.h; then
+  inf "sys/shm.h found."
+  echo "#define HAS_SYS_SHM_H" >> s.h
+fi
 
 # Determine if the debugger is supported
 
