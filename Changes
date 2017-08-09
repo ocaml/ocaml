@@ -1369,7 +1369,7 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - PR#7259 and GPR#603: flambda does not collapse pattern matching
   in some cases
-  (Pierre Chambart, report by Reed Wilson)
+  (Pierre Chambart, report by Reed Wilson, review by Mark Shinwell)
 
 - PR#7260: GADT + subtyping compile time crash
   (Jacques Garrigue, report by Nicolas Ojeda Bar)
