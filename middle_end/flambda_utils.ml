@@ -732,11 +732,11 @@ let substitute_read_symbol_field_for_variables
   in
   Flambda_iterators.map_toplevel f (fun v -> v) expr
 
-module Stored = struct
-
+module Switch_storer = Switch.Store (struct
   type t = Flambda.t
 
-  (* Comparable subset of Flambda.t *)
+  (* An easily-comparable subset of [Flambda.t]: currently this only
+     supports that required to share switch branches. *)
   type key =
     | Var of Variable.t
     | Let of Variable.t * key_named * key
@@ -749,69 +749,47 @@ module Stored = struct
 
   exception Not_comparable
 
-  let rec make_expr_key (expr:Flambda.t) : key =
+  let rec make_expr_key (expr : Flambda.t) : key =
     match expr with
-    | Var v ->
-      Var v
-    | Let { var; defining_expr; body } ->
+    | Var v -> Var v
+    | Let { var; defining_expr; body; } ->
       Let (var, make_named_key defining_expr, make_expr_key body)
-    | Static_raise (e, args) ->
-      Static_raise (e, args)
-    | _ ->
-      raise Not_comparable
-
+    | Static_raise (e, args) -> Static_raise (e, args)
+    | _ -> raise Not_comparable
   and make_named_key (named:Flambda.named) : key_named =
     match named with
-    | Symbol s ->
-      Symbol s
-    | Const c ->
-      Const c
-    | Expr e ->
-      Expr (make_expr_key e)
-    | Prim (prim, args, _dbg) ->
-      Prim (prim, args)
-    | _ ->
-      raise Not_comparable
+    | Symbol s -> Symbol s
+    | Const c -> Const c
+    | Expr e -> Expr (make_expr_key e)
+    | Prim (prim, args, _dbg) -> Prim (prim, args)
+    | _ -> raise Not_comparable
 
   let make_key expr =
-    try Some (make_expr_key expr)
-    with Not_comparable ->
-      None
+    match make_expr_key expr with
+    | exception Not_comparable -> None
+    | key -> Some key
 
   let compare_key e1 e2 =
-    (* The environment is the mapping from variable from e1 to
-       variables from e2. Every variable to compare in e2 must have an
-       equivalent in e1, otherwise the comparison wouldn't have gone
-       past the Let binding. Hence Variable.Map.find is safe here *)
+    (* The environment [env] maps variables bound in [e2] to the corresponding
+       bound variables in [e1]. Every variable to compare in [e2] must have an
+       equivalent in [e1], otherwise the comparison wouldn't have gone
+       past the [Let] binding.  Hence [Variable.Map.find] is safe here. *)
     let compare_var env v1 v2 =
       match Variable.Map.find v2 env with
       | exception Not_found ->
-        (* The variable is free in the expression, hence we can
-           compare the variables directly *)
+        (* The variable is free in the expression [e2], hence we can
+           compare it with [v1] directly. *)
         Variable.compare v1 v2
       | bound ->
         Variable.compare v1 bound
     in
-
-    let rec compare_var_list env l1 l2 =
-      match l1, l2 with
-      | [], [] -> 0
-      | h1 :: t1, h2 :: t2 ->
-        let c = compare_var env h1 h2 in
-        if c <> 0 then c
-        else compare_var_list env t1 t2
-      | [], _ :: _ -> -1
-      | _ :: _, [] ->  1
-    in
-
-    let rec compare_expr env (e1:key) (e2:key) : int =
+    let rec compare_expr env (e1 : key) (e2 : key) : int =
       match e1, e2 with
       | Var v1, Var v2 ->
         compare_var env v1 v2
       | Var _, (Let _| Static_raise _) -> -1
       | (Let _| Static_raise _), Var _ ->  1
-      | Let ( v1, n1, b1 ),
-        Let ( v2, n2, b2 ) ->
+      | Let (v1, n1, b1), Let (v2, n2, b2) ->
         let comp_named = compare_named env n1 n2 in
         if comp_named <> 0 then comp_named
         else
@@ -822,34 +800,25 @@ module Stored = struct
       | Static_raise (sexn1, args1), Static_raise (sexn2, args2) ->
         let comp_sexn = Static_exception.compare sexn1 sexn2 in
         if comp_sexn <> 0 then comp_sexn
-        else
-          compare_var_list env args1 args2
-
+        else Misc.Stdlib.List.compare (compare_var env) args1 args2
     and compare_named env (n1:key_named) (n2:key_named) : int =
       match n1, n2 with
-      | Symbol s1, Symbol s2 ->
-        Symbol.compare s1 s2
+      | Symbol s1, Symbol s2 -> Symbol.compare s1 s2
       | Symbol _, (Const _ | Expr _ | Prim _) -> -1
       | (Const _ | Expr _ | Prim _), Symbol _ ->  1
-      | Const c1, Const c2 ->
-        compare c1 c2
+      | Const c1, Const c2 -> compare c1 c2
       | Const _, (Expr _ | Prim _) -> -1
       | (Expr _ | Prim _), Const _ ->  1
-      | Expr e1, Expr e2 ->
-        compare_expr env e1 e2
+      | Expr e1, Expr e2 -> compare_expr env e1 e2
       | Expr _, Prim _ -> -1
       | Prim _, Expr _ ->  1
       | Prim (prim1, args1), Prim (prim2, args2) ->
         let comp_prim = Pervasives.compare prim1 prim2 in
         if comp_prim <> 0 then comp_prim
-        else
-          compare_var_list env args1 args2
+        else Misc.Stdlib.List.compare (compare_var env) args1 args2
     in
     compare_expr Variable.Map.empty e1 e2
-
-end
-
-module Switch_storer = Switch.Store(Stored)
+end)
 
 let fun_vars_referenced_in_decls
       (function_decls : Flambda.function_declarations) ~backend =
