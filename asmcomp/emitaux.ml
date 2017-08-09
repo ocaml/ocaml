@@ -273,7 +273,7 @@ let reset_debug_info () =
   file_pos_nums := [];
   file_pos_num_cnt := 1
 
-(* We only diplay .file if the file has not been seen before. We
+(* We only display .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&

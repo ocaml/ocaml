@@ -484,7 +484,7 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
-(* filter pss acording to pattern q *)
+(* filter pss according to pattern q *)
 let filter_one q pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
@@ -501,7 +501,7 @@ let filter_one q pss =
 (*
   Filter pss in the ``extra case''. This applies :
   - According to an extra constructor (datatype case, non-complete signature).
-  - Acordinng to anything (all-variables case).
+  - According to anything (all-variables case).
 *)
 let filter_extra pss =
   let rec filter_rec = function
@@ -660,7 +660,7 @@ let full_match closing env =  match env with
   ->
     assert false
 
-(* Written as a non-fragile matching, PR7451 originated from a fragile matching below. *)
+(* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> begin match env with
@@ -1255,7 +1255,7 @@ let rec pressure_variants tdefs = function
       end
 
 
-(* Yet another satisfiable fonction *)
+(* Yet another satisfiable function *)
 
 (*
    This time every_satisfiable pss qs checks the
@@ -1906,7 +1906,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 (*
   Actual fragile check
    1. Collect data types in the patterns of the match.
-   2. One exhautivity check per datatype, considering that
+   2. One exhaustivity check per datatype, considering that
       the type is extended.
 *)
 
@@ -2029,9 +2029,9 @@ let fluid pat =  irrefutable pat && inactive pat.pat_desc
 
 
 
-(********************************)
-(* Exported exhustiveness check *)
-(********************************)
+(*********************************)
+(* Exported exhaustiveness check *)
+(*********************************)
 
 (*
    Fragile check is performed when required and
@@ -2278,7 +2278,7 @@ let all_rhs_idents exp =
       | _ -> ()
 
 (* Very hackish, detect unpack pattern  compilation
-   and perfom "indirect check for them" *)
+   and perform "indirect check for them" *)
     let is_unpack exp =
       List.exists
         (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes

@@ -60,10 +60,10 @@ module Naming =
     (** The prefix for methods marks. *)
     let mark_method = "METHOD"
 
-    (** The prefix for code files.. *)
+    (** The prefix for code files. *)
     let code_prefix = "code_"
 
-    (** The prefix for type files.. *)
+    (** The prefix for type files. *)
     let type_prefix = "type_"
 
     (** Return the two html files names for the given module or class name.*)
@@ -285,7 +285,7 @@ class virtual text =
       *)
       let b' = Buffer.create 17 (* paragraph buffer *) in
       let flush b' =
-        (* trim the inner string to avoid outputing empty <p></p> *)
+        (* trim the inner string to avoid outputting empty <p></p> *)
         let s = String.trim @@ Buffer.contents b' in
         if s <> "" then
           begin

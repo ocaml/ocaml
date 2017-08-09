@@ -141,7 +141,7 @@ let indices_names = [
 (** Module for generating various Texinfo things (menus, xrefs, ...) *)
 module Texi =
 struct
-  (** Associations of strings to subsitute in Texinfo code. *)
+  (** Associations of strings to substitute in Texinfo code. *)
   let subst_strings = [
     (Str.regexp "@", "@@") ;
     (Str.regexp "{", "@{") ;

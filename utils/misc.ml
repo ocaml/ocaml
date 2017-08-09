@@ -563,7 +563,7 @@ module Color = struct
 
   let color_enabled = ref true
 
-  (* either prints the tag of [s] or delegate to [or_else] *)
+  (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in
