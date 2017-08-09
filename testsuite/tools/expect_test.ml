@@ -136,7 +136,7 @@ module Compiler_messages = struct
     Format.fprintf ppf "Line _";
     if startchar >= 0 then
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
-    Format.fprintf ppf ":@."
+    Format.fprintf ppf ":@,"
 
   let capture ppf ~f =
     Misc.protect_refs
