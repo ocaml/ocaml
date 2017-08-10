@@ -2165,6 +2165,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         | [] -> List.rev vc, List.rev ec
         | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
             split_cases vc ({c with pc_lhs = p} :: ec) rest
+        | {pc_lhs = {ppat_desc=Ppat_alias ({ppat_desc=Ppat_exception p;},
+                                           aloc)}} as c :: rest ->
+            let ppat_desc = Ppat_alias (p, aloc) in
+            split_cases vc ({c with pc_lhs = {c.pc_lhs with ppat_desc}} :: ec) rest
         | c :: rest ->
             split_cases (c :: vc) ec rest
       in
