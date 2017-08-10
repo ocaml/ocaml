@@ -22,6 +22,10 @@ Working version
   (Daniel Bünzli, review by Damien Doligez, Alain Frisch, Xavier
   Leroy and Leo White)
 
+- GPR#1283: Accept aliases in exception patterns,
+  i.e. "match ... with ... | exception (E ... as e) -> ..."
+  (Xavier Clerc)
+
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
