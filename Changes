@@ -64,12 +64,20 @@ Working version
   (Mark Shinwell)
 
 ### Standard library:
+
+- GPR#1183: compile curried functors to multi-argument functions
+  earlier in the compiler pipeline; correctly propagate [@@inline]
+  attributes on such functors; mark functor coercion veneers as
+  stubs.
+  (Mark Shinwell, review by Pierre Chambart and Leo White)
+
 - GPR#1271: Don't generate Ialloc instructions for closures that exceed
   Max_young_wosize; instead allocate them on the major heap.  (Related
   to GPR#1250.)
   (Mark Shinwell)
 
-### Standard library:
+- GPR#1250: illegal ARM64 assembly code generated for large combined allocations
+  (report and initial fix by Steve Walk, review and final fix by Xavier Leroy)
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
@@ -176,6 +184,10 @@ Working version
 
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
+  
+- GPR#1202: Fix Typos in comments as well as basic grammar errors.
+  (JP Rodi, review and suggestions by David Allsopp, Max Mouratov, 
+  Florian Angeletti, Xavier Leroy, Mark Shinwell and Damien Doligez)
 
 - GPR#1220: Fix "-keep-docs" option in ocamlopt manpage
   (Etienne Millon)
@@ -200,6 +212,13 @@ Working version
 
 * MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
+
+
+* MPR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
+  comments that occur after the first module element. This change may break
+  existing documenation. In particular, module preambles must now come before
+  any `open` statement.
+  (Florian Angeletti, review by David Allsopp and report by Daniel Bünzli)
 
 - MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
@@ -251,6 +270,12 @@ Working version
 - GPR#1242: disable C plugins loading by default
   (Alexey Egorov)
 
+- GPR#1275: correct configure test for Spacetime availability
+  (Mark Shinwell)
+
+- GPR#1278: discover presence of <sys/shm.h> during configure for afl runtime
+  (Hannes Mehnert)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
@@ -275,6 +300,9 @@ Working version
   User code should not have to include them directly since they are
   included by other header files
   (Sébastien Hinderer)
+
+- GPR#1281: avoid formatter flushes inside exported printers in Location
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Bug fixes
 
@@ -372,6 +400,11 @@ Working version
 
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
+
+* MPR#7594, GPR#1274: String_val now returns 'const char*', not
+  'char*' when -safe-string is enabled at configure time.
+  New macro Bytes_val for accessing bytes values.
+  (Jeremy Yallop, reviews by Mark Shinwell and Xavier Leroy)
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
@@ -1363,6 +1396,10 @@ OCaml 4.04.0 (4 Nov 2016):
 - PR#7257, GPR#583: revert a 4.03 change of behavior on (Unix.sleep 0.),
   it now calls (nano)sleep for 0 seconds as in (< 4.03) versions.
   (Hannes Mehnert, review by Damien Doligez)
+
+- PR#7259 and GPR#603: flambda does not collapse pattern matching
+  in some cases
+  (Pierre Chambart, report by Reed Wilson, review by Mark Shinwell)
 
 - PR#7260: GADT + subtyping compile time crash
   (Jacques Garrigue, report by Nicolas Ojeda Bar)

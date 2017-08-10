@@ -132,7 +132,7 @@ let rec typexp s ty =
       && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
       (* do not copy the type of self when it is not generalized *)
       ty
-(* cannot do it, since it would omit subsitution
+(* cannot do it, since it would omit substitution
   | Tvariant row when not (static_row row) ->
       ty
 *)

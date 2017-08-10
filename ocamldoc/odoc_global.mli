@@ -45,7 +45,7 @@ val no_stop : bool ref
 (** We must raise an exception when we find an unknown @-tag. *)
 val no_custom_tags : bool ref
 
-(** We must remove the the first characters of each comment line, until the first asterisk '*'. *)
+(** We must remove the first characters of each comment line, until the first asterisk '*'. *)
 val remove_stars : bool ref
 
 (** To keep the code while merging, when we have both .ml and .mli files for a module. *)

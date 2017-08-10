@@ -219,12 +219,12 @@ module Analyser =
     (** The name of the analysed file. *)
     let file_name = Sig.file_name
 
-    (** This function takes two indexes (start and end) and return the string
+    (** This function takes two indexes (start and end) and returns the string
        corresponding to the indexes in the file global variable. The function
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file = Sig.get_string_of_file
 
-    (** This function loads the given file in the file global variable.
+    (** This function loads the given file in the file global variable
        and sets file_name.*)
     let prepare_file = Sig.prepare_file
 
@@ -677,7 +677,7 @@ module Analyser =
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)
 
-    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a a couple (class parameters, class kind). *)
+    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a pair (class parameters, class kind). *)
     let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp table =
       match (p_class_expr.Parsetree.pcl_desc, tt_class_exp.Typedtree.cl_desc) with
         (Parsetree.Pcl_constr (lid, _), tt_class_exp_desc ) ->
@@ -1424,7 +1424,7 @@ module Analyser =
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
-                 (* FIXME : can this be Tmty_ident? In this case, we would'nt have the signature *)
+                 (* FIXME : can this be Tmty_ident? In this case, we wouldn't have the signature *)
                  Types.Mty_signature s ->
                    Odoc_env.add_signature new_env new_module.m_name
                      ~rel: (Name.simple new_module.m_name) s
@@ -1528,7 +1528,7 @@ module Analyser =
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
             match sig_mtype with
-              (* FIXME : can this be Tmty_ident? In this case, we would'nt have the signature *)
+              (* FIXME : can this be Tmty_ident? In this case, we wouldn't have the signature *)
               Some (Types.Mty_signature s) ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ ->
@@ -1870,8 +1870,8 @@ module Analyser =
        prepare_file source_file input_file;
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
-       let (len,info_opt) = My_ir.first_special !file_name !file in
-
+       let len, info_opt = Sig.preamble !file_name !file
+           (fun x -> x.Parsetree.pstr_loc) parsetree in
        (* we must complete the included modules *)
        let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in
        let included_modules_from_tt = tt_get_included_module_list tree_structure in

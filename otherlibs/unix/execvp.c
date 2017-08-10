@@ -37,7 +37,7 @@ CAMLprim value unix_execvp(value path, value args)
 
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
-  char * exefile;
+  const char * exefile;
   char ** argv;
   char ** envp;
   caml_unix_check_path(path, "execvpe");
@@ -45,7 +45,7 @@ CAMLprim value unix_execvpe(value path, value args, value env)
   argv = cstringvect(args, "execvpe");
   envp = cstringvect(env, "execvpe");
   (void) execve(exefile, argv, envp);
-  caml_stat_free(exefile);
+  caml_stat_free((char *)exefile);
   caml_stat_free((char *) argv);
   caml_stat_free((char *) envp);
   uerror("execvpe", path);

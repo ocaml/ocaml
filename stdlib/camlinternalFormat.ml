@@ -403,7 +403,7 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
 
 (***)
 
-(* Print the optionnal '+', ' ' or '#' associated to an int conversion. *)
+(* Print the optional '+', ' ' or '#' associated to an int conversion. *)
 let bprint_iconv_flag buf iconv = match iconv with
   | Int_pd | Int_pi -> buffer_add_char buf '+'
   | Int_sd | Int_si -> buffer_add_char buf ' '
@@ -431,7 +431,7 @@ let bprint_altint_fmt buf ign_flag iconv pad prec c =
 
 (***)
 
-(* Print the optionnal '+' associated to a float conversion. *)
+(* Print the optional '+' associated to a float conversion. *)
 let bprint_fconv_flag buf fconv = match fconv with
   | Float_pf | Float_pe | Float_pE
   | Float_pg | Float_pG | Float_ph | Float_pH ->
@@ -992,7 +992,7 @@ fun pad prec fmtty -> match prec, type_padding pad fmtty with
 (* Type a format according to an fmtty. *)
 (* If typing succeed, generate a copy of the format with the same
     type parameters as the fmtty. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let rec type_format :
   type a1 b1 c1 d1 e1 f1
        a2 b2 c2 d2 e2 f2  .
@@ -1304,7 +1304,7 @@ let recast :
 (******************************************************************************)
                              (* Printing tools *)
 
-(* Add padding spaces arround a string. *)
+(* Add padding spaces around a string. *)
 let fix_padding padty width str =
   let len = String.length str in
   let width, padty =
@@ -1910,9 +1910,9 @@ let rec strput_acc b acc = match acc with
   | End_of_acc               -> ()
 
 (******************************************************************************)
-                          (* Error managment *)
+                          (* Error management *)
 
-(* Raise a Failure with a pretty-printed error message. *)
+(* Raise [Failure] with a pretty-printed error message. *)
 let failwith_message (Format (fmt, _)) =
   let buf = Buffer.create 256 in
   let k () acc = strput_acc buf acc; failwith (Buffer.contents buf) in
@@ -1984,7 +1984,7 @@ fun prec fmt -> match prec with
   | Lit_precision p -> Precision_fmt_EBB (Lit_precision p, fmt)
   | Arg_precision   -> Precision_fmt_EBB (Arg_precision, fmt)
 
-(* Create a padprec_fmt_ebb forma a padding, a precision and a format. *)
+(* Create a padprec_fmt_ebb from a padding, a precision and a format. *)
 (* Copy the padding and the precision to disjoin type parameters of arguments
    and result. *)
 let make_padprec_fmt_ebb : type x y z t .
@@ -2002,7 +2002,7 @@ fun pad prec fmt ->
                              (* Format parsing *)
 
 (* Parse a string representing a format and create a fmt_ebb. *)
-(* Raise an Failure exception in case of invalid format. *)
+(* Raise [Failure] in case of invalid format. *)
 let fmt_ebb_of_string ?legacy_behavior str =
   (* Parameters naming convention:                                    *)
   (*   - lit_start: start of the literal sequence.                    *)
@@ -2030,20 +2030,20 @@ let fmt_ebb_of_string ?legacy_behavior str =
 
       A typical example would be "%+ d": specifying both '+' (if the
       number is positive, pad with a '+' to get the same width as
-      negative numbres) and ' ' (if the number is positive, pad with
+      negative numbers) and ' ' (if the number is positive, pad with
       a space) does not make sense, but the legacy (< 4.02)
       implementation was happy to just ignore the space.
   *)
   in
 
-  (* Raise a Failure with a friendly error message. *)
+  (* Raise [Failure] with a friendly error message. *)
   let invalid_format_message str_ind msg =
     failwith_message
       "invalid format %S: at character number %d, %s"
       str str_ind msg;
   in
 
-  (* Used when the end of the format (or the current sub-format) was encoutered
+  (* Used when the end of the format (or the current sub-format) was encountered
       unexpectedly. *)
   let unexpected_end_of_format end_ind =
     invalid_format_message end_ind
@@ -2055,7 +2055,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     invalid_format_message str_ind
       "non-zero widths are unsupported for %c conversions"
   in
-  (* Raise Failure with a friendly error message about an option dependencie
+  (* Raise [Failure] with a friendly error message about an option dependency
      problem. *)
   let invalid_format_without str_ind c s =
     failwith_message
@@ -2063,7 +2063,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       str str_ind c s
   in
 
-  (* Raise Failure with a friendly error message about an unexpected
+  (* Raise [Failure] with a friendly error message about an unexpected
      character. *)
   let expected_character str_ind expected read =
     failwith_message
@@ -2196,7 +2196,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | '0' .. '9' -> parse_literal minus str_ind
     | ('+' | '-') as symb when legacy_behavior ->
       (* Legacy mode would accept and ignore '+' or '-' before the
-         integer describing the desired precision; not that this
+         integer describing the desired precision; note that this
          cannot happen for padding width, as '+' and '-' already have
          a semantics there.
 
@@ -2271,7 +2271,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
          first pad with zeros... To add insult to the injury, the
          legacy implementation ignores the 0-padding indication and
          does the 5 padding with spaces instead. We reuse this
-         interpretation for compatiblity, but statically reject this
+         interpretation for compatibility, but statically reject this
          format when the legacy mode is disabled, to protect strict
          users from this corner case. *)
        match get_pad (), get_prec () with
@@ -2591,7 +2591,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     )
     | _ -> ()
 
-  (* Try to read the optionnal <name> after "@{" or "@[". *)
+  (* Try to read the optional <name> after "@{" or "@[". *)
   and parse_tag : type e f . bool -> int -> int -> (_, _, e, f) fmt_ebb =
   fun is_open_tag str_ind end_ind ->
     try
@@ -2617,7 +2617,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         if is_open_tag then Open_tag sub_format else Open_box sub_format in
       Fmt_EBB (Formatting_gen (formatting, fmt_rest))
 
-  (* Try to read the optionnal <width offset> after "@;". *)
+  (* Try to read the optional <width offset> after "@;". *)
   and parse_good_break : type e f . int -> int -> (_, _, e, f) fmt_ebb =
   fun str_ind end_ind ->
     let next_ind, formatting_lit =
@@ -2924,7 +2924,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
       else incompatible_flag pct_ind str_ind symb "'+'"
     | false, false, _ -> assert false
 
-  (* Raise a Failure with a friendly error message about incompatible options.*)
+  (* Raise [Failure] with a friendly error message about incompatible options.*)
   and incompatible_flag : type a . int -> int -> char -> string -> a =
     fun pct_ind str_ind symb option ->
       let subfmt = String.sub str pct_ind (str_ind - pct_ind) in
@@ -2939,7 +2939,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
                   (* Guarded string to format conversions *)
 
 (* Convert a string to a format according to an fmtty. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let format_of_string_fmtty str fmtty =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
   try Format (type_format fmt fmtty, str)
@@ -2949,7 +2949,7 @@ let format_of_string_fmtty str fmtty =
       str (string_of_fmtty fmtty)
 
 (* Convert a string to a format compatible with an other format. *)
-(* Raise a Failure with an error message in case of type mismatch. *)
+(* Raise [Failure] with an error message in case of type mismatch. *)
 let format_of_string_format str (Format (fmt', str')) =
   let Fmt_EBB fmt = fmt_ebb_of_string str in
   try Format (type_format fmt (fmtty_of_fmt fmt'), str)

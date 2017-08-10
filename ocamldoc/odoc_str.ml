@@ -254,7 +254,7 @@ let string_of_type t =
       )
 
   | M.Type_open ->
-      "= .." (* FIXME MG: when introducing new constuctors next time,
+      "= .." (* FIXME MG: when introducing new constructors next time,
                 thanks to setup a minimal correct output *)
   | M.Type_record l ->
      P.sprintf "= %s{\n%s\n}\n" (if priv then "private " else "")

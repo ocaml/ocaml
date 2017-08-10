@@ -31,7 +31,7 @@
 
 #include "caml/hooks.h"
 
-CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
+CAMLexport void (*caml_natdynlink_hook)(void* handle, const char* unit) = NULL;
 
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +44,7 @@ static value Val_handle(void* handle) {
   return res;
 }
 
-static void *getsym(void *handle, char *module, char *name){
+static void *getsym(void *handle, const char *module, const char *name){
   char *fullname = caml_stat_strconcat(3, "caml", module, name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
@@ -103,7 +103,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   struct code_fragment * cf;
 
 #define optsym(n) getsym(handle,unit,n)
-  char *unit;
+  const char *unit;
   void (*entrypoint)(void);
 
   unit = String_val(symbol);

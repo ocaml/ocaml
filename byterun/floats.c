@@ -261,7 +261,8 @@ static int caml_float_of_hex(const char * s, double * res)
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
-  char * buf, * src, * dst, * end;
+  char * buf, * dst, * end;
+  const char *src;
   mlsize_t len;
   int sign;
   double d;
