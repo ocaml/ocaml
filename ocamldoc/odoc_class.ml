@@ -43,7 +43,7 @@ and class_apply = {
 
 and class_constr = {
     cco_name : Name.t ; (** The complete name of the applied class *)
-    mutable cco_class : cct option;  (** The associated class of class type if we found it *)
+    mutable cco_class : cct option;  (** The associated class of the class type if we found it *)
     cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed *)
   }
 

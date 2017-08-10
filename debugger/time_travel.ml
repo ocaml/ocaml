@@ -499,7 +499,7 @@ let rec run () =
   if not !interrupted then
     run ()
 
-(* Run backward the program from current time. *)
+(* Run the program backward from current time. *)
 (* Stop at the first breakpoint, or at the beginning of the program. *)
 let back_run () =
   if current_time () > _0 then

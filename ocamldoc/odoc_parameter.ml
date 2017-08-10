@@ -37,7 +37,7 @@ type parameter = param_info
 
 (** Functions *)
 
-(** access to the name as a string. For tuples, parenthesis and commas are added. *)
+(** access to the name as a string. For tuples, parentheses and commas are added. *)
 let complete_name p =
   let rec iter pi =
     match pi with

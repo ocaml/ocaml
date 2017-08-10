@@ -1317,7 +1317,7 @@ let subst env level priv abbrev ty params args body =
 (*
    Only the shape of the type matters, not whether it is generic or
    not. [generic_level] might be somewhat slower, but it ensures
-   invariants on types are enforced (decreasing levels.), and we don't
+   invariants on types are enforced (decreasing levels), and we don't
    care about efficiency here.
 *)
 let apply env params body args =

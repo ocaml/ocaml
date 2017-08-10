@@ -571,7 +571,7 @@ let up_ok (ps,act_p) l =
 
 
 (*
-   Simplify function normalize the first column of the match
+   The simplify function normalizes the first column of the match
      - records are expanded so that they possess all fields
      - aliases are removed and replaced by bindings in actions.
    However or-patterns are simplified differently,
@@ -2813,7 +2813,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    or lazy pattern execute arbitrary code that may perform side effects
    and change the subject values.
 LM:
-   Lazy pattern was PR#5992, initial patch by lwp25.
+   Lazy pattern was PR#5992, initial patch by lpw25.
    I have  generalized the patch, so as to also find mutable fields.
 *)
 

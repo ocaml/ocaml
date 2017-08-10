@@ -1188,7 +1188,7 @@ let stopper_of_formatting_lit fmting =
 
 
 (******************************************************************************)
-                           (* Readers management *)
+                           (* Reader management *)
 
 (* A call to take_format_readers on a format is evaluated into functions
    taking readers as arguments and aggregate them into an heterogeneous list *)

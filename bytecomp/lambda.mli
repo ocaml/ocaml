@@ -219,7 +219,7 @@ type let_kind = Strict | Alias | StrictOpt | Variable
     Strict: e may have side-effects; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
        we may still substitute e'[x/e].)
-    Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrence
+    Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrences
       in e'
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'

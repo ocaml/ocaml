@@ -734,7 +734,7 @@ and pp_open_box state indent = pp_open_box_gen state indent Pp_box
 (* Printing queued text.
 
    [pp_print_flush] prints all pending items in the pretty-printer queue and
-   then flushes the low level output device of the formatter to effectively
+   then flushes the low level output device of the formatter to actually
    display printing material.
 
    [pp_print_newline] behaves as [pp_print_flush] after printing an additional

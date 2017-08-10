@@ -180,7 +180,7 @@ Working version
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
   
-- GPR#1202: Fix comments typos as well as basic grammar errors.
+- GPR#1202: Fix Typos in comments as well as basic grammar errors.
   (JP Rodi, review and suggestions by David Allsopp, Max Mouratov, 
   Florian Angeletti, Xavier Leroy, Mark Shinwell and Damien Doligez)
 

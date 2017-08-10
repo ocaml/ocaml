@@ -90,7 +90,7 @@ let print_concat fmt sep f =
 (** Generation of LaTeX code from text structures. *)
 class text =
   object (self)
-    (** Return latex code to make a sectioning according to the given level,
+    (** Return latex code to make a section according to the given level,
        and with the given latex code. *)
     method section_style level s =
       try

@@ -933,7 +933,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   (* Prepare *)
   let params = List.map Btype.repr decl.type_params in
   let tvl = ref TypeMap.empty in
-  (* Compute occurrences in body *)
+  (* Compute occurrences in the body *)
   let open Variance in
   List.iter
     (fun (cn,ty) ->

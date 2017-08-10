@@ -677,7 +677,7 @@ module Analyser =
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)
 
-    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a couple (class parameters, class kind). *)
+    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a pair (class parameters, class kind). *)
     let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp table =
       match (p_class_expr.Parsetree.pcl_desc, tt_class_exp.Typedtree.cl_desc) with
         (Parsetree.Pcl_constr (lid, _), tt_class_exp_desc ) ->

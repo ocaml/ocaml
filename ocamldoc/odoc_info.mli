@@ -489,7 +489,7 @@ module Module :
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
-          mutable im_info : Odoc_types.info option ; (** comment associated to the include directive *)
+          mutable im_info : Odoc_types.info option ; (** comment associated with the include directive *)
         }
 
     and module_alias = Odoc_module.module_alias =
@@ -681,7 +681,7 @@ val reset_type_names : unit -> unit
    the given information means "covariant", ["-"] if it means
    "contravariant", orelse [""], and always [""] if the given
    type is not an abstract type with no manifest (i.e. no need
-   for the variance to be printed.*)
+   for the variance to be printed).*)
 val string_of_variance : Type.t_type -> (bool * bool) -> string
 
 (** This function returns a string representing a Types.type_expr. *)
@@ -1024,7 +1024,7 @@ module Scan :
 (** Computation of dependencies. *)
 module Dep :
   sig
-    (** Modify the modules dependencies of the given list of modules,
+    (** Modify the module dependencies of the given list of modules,
        to get the minimum transitivity kernel. *)
     val kernel_deps_of_modules : Module.t_module list -> unit
 
