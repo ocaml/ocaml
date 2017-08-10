@@ -296,6 +296,9 @@ Working version
   included by other header files
   (Sébastien Hinderer)
 
+- GPR#1281: avoid formatter flushes inside exported printers in Location
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Bug fixes
 
 - MPR#248, GPR#1225: unique names for weak type variables
