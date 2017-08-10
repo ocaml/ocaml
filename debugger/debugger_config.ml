@@ -82,6 +82,6 @@ let make_checkpoints = ref
     "Win32" -> false
   | _ -> true)
 
-(*** Environment variables for debugee. ***)
+(*** Environment variables for debuggee. ***)
 
 let environment = ref []

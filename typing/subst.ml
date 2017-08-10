@@ -132,18 +132,27 @@ let rec typexp s ty =
       && field_kind_repr k <> Fabsent && (repr ty).level < generic_level ->
       (* do not copy the type of self when it is not generalized *)
       ty
-(* cannot do it, since it would omit subsitution
+(* cannot do it, since it would omit substitution
   | Tvariant row when not (static_row row) ->
       ty
 *)
   | _ ->
     let desc = ty.desc in
     save_desc ty desc;
+    let tm = row_of_type ty in
+    let has_fixed_row =
+      not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm in
     (* Make a stub *)
     let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
-      begin match desc with
+      begin if has_fixed_row then
+        match tm.desc with (* PR#7348 *)
+          Tconstr (Pdot(m,i,pos), tl, _abbrev) ->
+            let i' = String.sub i 0 (String.length i - 4) in
+            Tconstr(type_path s (Pdot(m,i',pos)), tl, ref Mnil)
+        | _ -> assert false
+      else match desc with
       | Tconstr(p, tl, _abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
       | Tpackage(p, n, tl) ->

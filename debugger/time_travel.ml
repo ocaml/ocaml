@@ -147,7 +147,7 @@ let cut2 t0 t l =
     let (after, before) = cut (t0 -- _1) l in
       after::(cut2_t0 t before)
 
-(* Separate first elements and last element of a list of checkpoint. *)
+(* Separate first elements and last element of a list of checkpoints. *)
 let chk_merge2 cont =
   let rec chk_merge2_cont =
     function
@@ -216,7 +216,7 @@ let find_checkpoint_before time =
   in find !checkpoints
 
 (* Make a copy of the current checkpoint and clean the checkpoint list. *)
-(* --- The new checkpoint in not put in the list. *)
+(* --- The new checkpoint is not put in the list. *)
 let duplicate_current_checkpoint () =
   let checkpoint = !current_checkpoint in
     if not checkpoint.c_valid then
@@ -499,14 +499,14 @@ let rec run () =
   if not !interrupted then
     run ()
 
-(* Run backward the program form current time. *)
+(* Run the program backward from current time. *)
 (* Stop at the first breakpoint, or at the beginning of the program. *)
 let back_run () =
   if current_time () > _0 then
     back_to _0 (current_time ())
 
 (* Step in any direction. *)
-(* Stop at the first brakpoint, or after `duration' steps. *)
+(* Stop at the first breakpoint, or after `duration' steps. *)
 let step duration =
   if duration >= _0 then
     step_forward duration

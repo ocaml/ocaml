@@ -1,7 +1,7 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
   depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex \
   warnings-help.tex ocamlbuild.tex flambda.tex spacetime.tex \
-  afl-fuzz.tex unified-options.tex
+  afl-fuzz.tex plugins.tex unified-options.tex
 
 TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools

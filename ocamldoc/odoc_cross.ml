@@ -795,7 +795,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                  - if name = parent_name: we are using the name of an element
                  or module in its definition, no need of cross_reference
                  - if the path of name is a suffix of the parent path, we
-                 are in the same module, maybe the same function. To decreace
+                 are in the same module, maybe the same function. To decrease
                  the false positive rate, we stop here *)
               if name = parent_name || is_path_suffix () then
                 t_ele

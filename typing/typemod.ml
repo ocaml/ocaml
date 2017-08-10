@@ -82,9 +82,9 @@ let extract_sig_open env loc mty =
 
 (* Compute the environment after opening a module *)
 
-let type_open_ ?toplevel ovf env loc lid =
+let type_open_ ?used_slot ?toplevel ovf env loc lid =
   let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
-  match Env.open_signature ~loc ?toplevel ovf path env with
+  match Env.open_signature ~loc ?used_slot ?toplevel ovf path env with
   | Some env -> path, env
   | None ->
       let md = Env.find_module path env in
@@ -318,7 +318,7 @@ let rec map_rec_type_with_row_types ~rec_flag fn decls rem =
       else
         map_rec_type ~rec_flag fn decls rem
 
-(* Add type extension flags to extension contructors *)
+(* Add type extension flags to extension constructors *)
 let map_ext fn exts rem =
   match exts with
   | [] -> rem
@@ -1565,6 +1565,8 @@ let type_package env m p nl =
   let tl' =
     List.map
       (fun name -> Btype.newgenty (Tconstr (mkpath mp name,[],ref Mnil)))
+      (* beware of interactions with Printtyp and short-path:
+         mp.name may have an arity > 0, cf. PR#7534 *)
       nl in
   (* go back to original level *)
   Ctype.end_def ();

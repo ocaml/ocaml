@@ -90,6 +90,13 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
+
+  module Array : sig
+    val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+    (* Same as [Array.exists], but for a two-argument predicate. Raise
+       Invalid_argument if the two arrays are determined to have
+       different lengths. *)
+  end
 end
 
 val find_in_path: string list -> string -> string
@@ -298,9 +305,9 @@ val delete_eol_spaces : string -> string
 
 
 
-(** {2 Hook machinery} *)
+(** {2 Hook machinery}
 
-(* Hooks machinery:
+    Hooks machinery:
    [add_hook name f] will register a function that will be called on the
     argument of a later call to [apply_hooks]. Hooks are applied in the
     lexicographical order of their names.

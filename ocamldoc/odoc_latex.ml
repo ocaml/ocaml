@@ -90,7 +90,7 @@ let print_concat fmt sep f =
 (** Generation of LaTeX code from text structures. *)
 class text =
   object (self)
-    (** Return latex code to make a sectionning according to the given level,
+    (** Return latex code to make a section according to the given level,
        and with the given latex code. *)
     method section_style level s =
       try
@@ -460,7 +460,7 @@ class virtual info =
     (** The method used to get LaTeX code from a [text]. *)
     method virtual latex_of_text : Format.formatter -> Odoc_info.text -> unit
 
-    (** The method used to get a [text] from an optionel info structure. *)
+    (** The method used to get a [text] from an optional info structure. *)
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
@@ -817,7 +817,7 @@ class latex =
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: modify when Module_with will be more detailled *)
+          (* TODO: modify when Module_with will be more detailed *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
@@ -1076,7 +1076,7 @@ class latex =
       in
       self#latex_of_text fmt t;
       self#latex_of_class_parameter_list fmt father c;
-      (* avoid a big gap if the kind is a consrt *)
+      (* avoid a big gap if the kind is a constr *)
       (
        match c.cl_kind with
          Class.Class_constr _ ->
@@ -1268,7 +1268,7 @@ class latex =
       )
 
 
-    (** Generate the LaTeX style file, if it does not exists. *)
+    (** Generate the LaTeX style file, if it does not exist. *)
     method generate_style_file =
       try
         let dir = Filename.dirname !Global.out_file in

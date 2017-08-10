@@ -398,8 +398,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
     /* All output characters were written to buf, including the
        terminating '\0'.  Allocate a Caml string with length "n"
        as computed by vsnprintf, and copy the output of vsnprintf into it. */
-    res = caml_alloc_string(n);
-    memcpy(String_val(res), buf, n);
+    res = caml_alloc_initialized_string(n, buf);
   } else {
     /* PR#7568: if the format is in the Caml heap, the following
        caml_alloc_string could move or free the format.  To prevent
@@ -411,7 +410,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
        Note that caml_alloc_string left room for a '\0' at position n,
        so the size passed to vsnprintf is n+1. */
     va_start(args, format);
-    vsnprintf(String_val(res), n + 1, saved_format, args);
+    vsnprintf((char *)String_val(res), n + 1, saved_format, args);
     va_end(args);
     caml_stat_free(saved_format);
   }

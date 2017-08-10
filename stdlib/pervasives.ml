@@ -187,7 +187,7 @@ external classify_float : (float [@unboxed]) -> fpclass =
 (* String and byte sequence operations -- more in modules String and Bytes *)
 
 external string_length : string -> int = "%string_length"
-external bytes_length : bytes -> int = "%string_length"
+external bytes_length : bytes -> int = "%bytes_length"
 external bytes_create : int -> bytes = "caml_create_bytes"
 external string_blit : string -> int -> bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
@@ -258,7 +258,6 @@ let int_of_string_opt s =
   try Some (int_of_string s)
   with Failure _ -> None
 
-
 external string_get : string -> int -> char = "%string_safe_get"
 
 let valid_float_lexem s =
@@ -270,7 +269,6 @@ let valid_float_lexem s =
     | _ -> s
   in
   loop 0
-
 
 let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 
@@ -332,7 +330,13 @@ external out_channels_list : unit -> out_channel list
 let flush_all () =
   let rec iter = function
       [] -> ()
-    | a :: l -> (try flush a with _ -> ()); iter l
+    | a::l ->
+        begin try
+            flush a
+        with Sys_error _ ->
+          () (* ignore channels closed during a preceding flush. *)
+        end;
+        iter l
   in iter (out_channels_list ())
 
 external unsafe_output : out_channel -> bytes -> int -> int -> unit

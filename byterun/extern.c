@@ -332,17 +332,17 @@ static inline void write(int c)
   *extern_ptr++ = c;
 }
 
-static void writeblock(char * data, intnat len)
+static void writeblock(const char * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memcpy(extern_ptr, data, len);
   extern_ptr += len;
 }
 
-static inline void writeblock_float8(double * data, intnat ndoubles)
+static inline void writeblock_float8(const double * data, intnat ndoubles)
 {
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
-  writeblock((char *) data, ndoubles * 8);
+  writeblock((const char *) data, ndoubles * 8);
 #else
   caml_serialize_block_float_8(data, ndoubles);
 #endif
@@ -588,7 +588,7 @@ static void extern_rec(value v)
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((char *) cf->digest, 16);
+    writeblock((const char *)cf->digest, 16);
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }

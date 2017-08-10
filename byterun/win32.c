@@ -146,9 +146,10 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  char * dir, * fullname;
+  const char * p;
   int i;
   struct stat st;
 
@@ -170,7 +171,7 @@ caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
   return caml_stat_strdup(name);
 }
 
-CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
+CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -199,7 +200,7 @@ CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
   }
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   caml_stat_string dllname;
   caml_stat_string res;
@@ -230,12 +231,12 @@ void caml_dlclose(void * handle)
   flexdll_dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return flexdll_dlsym(handle, name);
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
   return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
 }
@@ -256,12 +257,12 @@ void caml_dlclose(void * handle)
 {
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return NULL;
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
   return NULL;
 }
@@ -442,7 +443,8 @@ void caml_signal_thread(void * lpParam)
   char *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
-  h = (HANDLE) (uintptr_t) strtol(getenv("CAMLSIGPIPE"), &endptr, 16);
+  h = (HANDLE) (uintptr_t)
+    strtol(caml_secure_getenv("CAMLSIGPIPE"), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
@@ -713,3 +715,9 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
   return len;
 }
 #endif
+
+char *caml_secure_getenv (char const *var)
+{
+  /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
+  return CAML_SYS_GETENV (var);
+}

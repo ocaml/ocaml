@@ -115,14 +115,8 @@ let rec live i finally =
         Reg.Set.equal before_handler before_handler'
       in
       let live_at_exit_before = !live_at_exit in
-      let live_at_exit_add before_handlers =
-        List.map (fun (nfail, before_handler) ->
-            (nfail, before_handler))
-          before_handlers
-      in
       let rec fixpoint before_handlers =
-        let live_at_exit_add = live_at_exit_add before_handlers in
-        live_at_exit := live_at_exit_add @ !live_at_exit;
+        live_at_exit := before_handlers @ !live_at_exit;
         let before_handlers' = List.map2 aux handlers before_handlers in
         live_at_exit := live_at_exit_before;
         match rec_flag with
@@ -140,7 +134,7 @@ let rec live i finally =
       (* We could use handler.live instead of Reg.Set.empty as the initial
          value but we would need to clean the live field before doing the
          analysis (to remove remnants of previous passes). *)
-      live_at_exit := (live_at_exit_add before_handler) @ !live_at_exit;
+      live_at_exit := before_handler @ !live_at_exit;
       let before_body = live body at_join in
       live_at_exit := live_at_exit_before;
       i.live <- before_body;

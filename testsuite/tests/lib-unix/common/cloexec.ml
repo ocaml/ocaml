@@ -6,7 +6,11 @@
 let string_of_fd (fd: Unix.file_descr) : string =
   match Sys.os_type with
   | "Unix" | "Cygwin" ->  string_of_int (Obj.magic fd : int)
-  | "Win32"           ->  Int32.to_string (Obj.magic fd : int32)
+  | "Win32" ->
+      if Sys.word_size = 32 then
+        Int32.to_string (Obj.magic fd : int32)
+      else
+        Int64.to_string (Obj.magic fd : int64)
   | _ -> assert false
 
 let _ =
@@ -33,7 +37,7 @@ let _ =
     try Unix.(socketpair ~cloexec:true PF_UNIX SOCK_STREAM 0)
     with Invalid_argument _ -> (p2, p2') in
 
-  let fds = [| f0;f1;f2; d0;d1;d2; 
+  let fds = [| f0;f1;f2; d0;d1;d2;
                p0;p0';p1;p1';p2;p2';
                s0;s1;s2;
                x0;x0';x1;x1';x2;x2' |] in
@@ -45,4 +49,3 @@ let _ =
   ignore (Unix.waitpid [] pid);
   Array.iter (fun fd -> try Unix.close fd with Unix.Unix_error _ -> ()) fds;
   Sys.remove "tmp.txt"
-

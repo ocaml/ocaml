@@ -410,7 +410,7 @@ module Scanning : SCANNING = struct
      More precisely, given [ic], all successive calls [fscanf ic] must read
      from the same scanning buffer.
      This obliged this library to allocated scanning buffers that were
-     not properly garbbage collectable, hence leading to memory leaks.
+     not properly garbage collectable, hence leading to memory leaks.
      If you need to read from a [Pervasives.in_channel] input channel
      [ic], simply define a [Scanning.in_channel] formatted input channel as in
      [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
@@ -655,7 +655,7 @@ let scan_digit_star digitp width ib =
 
 let scan_digit_plus basis digitp width ib =
   (* Ensure we have got enough width left,
-     and read at list one digit. *)
+     and read at least one digit. *)
   if width = 0 then bad_token_length "digits" else
   let c = Scanning.checked_peek_char ib in
   if digitp c then
@@ -1188,7 +1188,7 @@ let stopper_of_formatting_lit fmting =
 
 
 (******************************************************************************)
-                           (* Readers managment *)
+                           (* Reader management *)
 
 (* A call to take_format_readers on a format is evaluated into functions
    taking readers as arguments and aggregate them into an heterogeneous list *)
@@ -1296,7 +1296,7 @@ fun k ign fmt -> match ign with
 
 (* Make a generic scanning function. *)
 (* Scan a stream according to a format and readers obtained by
-   take_format_readers, and aggegate scanned values into an
+   take_format_readers, and aggregate scanned values into an
    heterogeneous list. *)
 (* Return the heterogeneous list of scanned values. *)
 let rec make_scanf : type a c d e f.
