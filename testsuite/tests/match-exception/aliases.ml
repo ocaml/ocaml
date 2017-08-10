@@ -9,7 +9,7 @@ let test_multiple_handlers =
   let print_nat_pred n =
     match nat_pred n with
     | m -> print_int m
-    | exception (Failure _ as f) -> raise f
+    | exception Failure _ as f -> raise f
     | exception Not_found -> () in
   let safe_print_nat_pred n =
     try
