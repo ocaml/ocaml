@@ -192,3 +192,10 @@ let spacetime_node_hole_pointer_is_live_before insn =
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
+
+let operation_can_raise op =
+  match op with
+  | Icall_ind _ | Icall_imm _ | Iextcall _
+  | Iintop (Icheckbound _) | Iintop_imm (Icheckbound _, _)
+  | Ialloc _ -> true
+  | _ -> false
