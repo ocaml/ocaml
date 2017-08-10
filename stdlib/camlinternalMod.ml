@@ -50,7 +50,7 @@ let rec update_mod shape o n =
   match shape with
   | Function ->
       if Obj.tag n = Obj.closure_tag && Obj.size n <= Obj.size o
-      then begin overwrite o n; Obj.truncate o (Obj.size n) (* PR #4008 *) end
+      then begin overwrite o n; Obj.truncate o (Obj.size n) (* PR#4008 *) end
       else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
       if Obj.tag n = Obj.lazy_tag then

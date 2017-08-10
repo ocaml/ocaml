@@ -122,7 +122,7 @@ type specific_operation =
   | Imulsubf      (* floating-point multiply and subtract *)
   | Inegmulsubf   (* floating-point negate, multiply and subtract *)
   | Isqrtf        (* floating-point square root *)
-  | Ibswap of int (* endianess conversion *)
+  | Ibswap of int (* endianness conversion *)
 
 and arith_operation =
     Ishiftadd
