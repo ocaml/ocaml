@@ -4,23 +4,23 @@ LD_PATH=
 
 .PHONY: default
 default:
+	@printf " ... testing 'ocamlobjinfo'"
 	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) ; then \
-	  echo 'skipped (.cmxs not built)'; \
+	  echo ' => skipped (.cmxs not built)'; \
 	elif ! grep -q HAS_LIBBFD $(TOPDIR)/byterun/caml/s.h ; then \
-	  echo 'skipped (BFD library not available)'; \
+	  echo ' => skipped (BFD library not available)'; \
 	else \
 	  case " $(OTHERLIBRARIES) " in \
 	    *' unix '* | *' win32unix '*) \
 	       $(SET_LD_PATH) OCAMLLIB=$(TOPDIR)/tools $(MAKE) run;; \
-	    *) echo 'skipped (unix.cmxs not available)';; \
+	    *) echo ' => skipped (unix.cmxs not available)';; \
 	  esac \
 	fi
 
 .PHONY: run
 run:
-	@printf " ... testing 'ocamlobjinfo'"
 	@rm -f $(MAIN_MODULE).result
-	@$(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/tools/ocamlobjinfo$(EXE)` \
+	@$(OCAMLRUN) `$(CYGPATH) $(TOPDIR)/tools/ocamlobjinfo` \
 	             $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix/unix.cmxs \
 	             > test.raw.result 2>&1 \
 	 && sed -e 's/\([^0-9a-z]\)[0-9a-z]\{32\}\([^0-9a-z]\|$$\)/\1<MD5>\2/' \
