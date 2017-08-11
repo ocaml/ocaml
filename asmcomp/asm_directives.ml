@@ -26,6 +26,8 @@ module L = Linkage_name
 module LR = Linkage_name.With_reloc
 module TS = Target_system
 
+let dwarf_supported = not (TS.windows ())
+
 type constant =
   | Const of Targetint.t
   | This
@@ -726,7 +728,10 @@ let initialize ~(emit : Directive.t -> unit) =
         | Eight_byte_literals
         | Sixteen_byte_literals
         | Jump_tables -> switch_to_section section
-        | DWARF _ -> if !Clflags.debug then switch_to_section section
+        | DWARF _ ->
+          if !Clflags.debug && dwarf_supported then begin
+            switch_to_section section
+          end
         | POWER (Function_descriptors | Table_of_contents) ->
           begin match TS.architecture () with
           | POWER -> switch_to_section section
@@ -744,9 +749,9 @@ let initialize ~(emit : Directive.t -> unit) =
 
 let define_data_symbol symbol =
   emit (New_label (L.to_string symbol, Machine_width_data));
-  begin match TS.assembler () with
-  | GAS_like -> type_ symbol ~type_:"STT_OBJECT"
-  | MacOS | MASM -> ()
+  begin match TS.assembler (), TS.windows () with
+  | GAS_like, false -> type_ symbol ~type_:"STT_OBJECT"
+  | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
 let define_function_symbol symbol =
@@ -755,9 +760,9 @@ let define_function_symbol symbol =
       emitting to a text section"
   end;
   emit (New_label (L.to_string symbol, Code));
-  begin match TS.assembler () with
-  | GAS_like -> type_ symbol ~type_:"STT_FUNC"
-  | MacOS | MASM -> ()
+  begin match TS.assembler (), TS.windows () with
+  | GAS_like, false -> type_ symbol ~type_:"STT_FUNC"
+  | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
 let symbol sym = const_machine_width (Symbol_reloc sym)
