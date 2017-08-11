@@ -51,7 +51,8 @@ value caml_gr_clear_graph(void);
 value caml_gr_open_graph(value arg)
 {
   char display_name[256], geometry_spec[64];
-  char * p, * q;
+  const char * p;
+  char * q;
   XSizeHints hints;
   int ret;
   XEvent event;
@@ -366,7 +367,7 @@ value caml_gr_sigio_handler(void)
 
 static value * graphic_failure_exn = NULL;
 
-void caml_gr_fail(char *fmt, char *arg)
+void caml_gr_fail(const char *fmt, const char *arg)
 {
   char buffer[1024];
 

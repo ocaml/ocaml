@@ -285,7 +285,7 @@ extern int code_of_unix_error (value error)
   }
 }
 
-void unix_error(int errcode, char *cmdname, value cmdarg)
+void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
@@ -309,12 +309,12 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
   caml_raise(res);
 }
 
-void uerror(char *cmdname, value cmdarg)
+void uerror(const char *cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
 
-void caml_unix_check_path(value path, char * cmdname)
+void caml_unix_check_path(value path, const char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
 }

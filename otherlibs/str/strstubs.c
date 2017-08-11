@@ -286,18 +286,18 @@ static value re_match(value re,
     case ACCEPT:
       goto accept;
     case SIMPLEOPT: {
-      char * set = String_val(Field(cpool, Arg(instr)));
+      const char * set = String_val(Field(cpool, Arg(instr)));
       if (txt < endtxt && In_bitset(set, *txt, c)) txt++;
       break;
     }
     case SIMPLESTAR: {
-      char * set = String_val(Field(cpool, Arg(instr)));
+      const char * set = String_val(Field(cpool, Arg(instr)));
       while (txt < endtxt && In_bitset(set, *txt, c))
         txt++;
       break;
     }
     case SIMPLEPLUS: {
-      char * set = String_val(Field(cpool, Arg(instr)));
+      const char * set = String_val(Field(cpool, Arg(instr)));
       if (txt == endtxt) goto prefix_match;
       if (! In_bitset(set, *txt, c)) goto backtrack;
       txt++;
@@ -483,7 +483,8 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
   CAMLparam3(repl, groups, orig);
   CAMLlocal1(res);
   mlsize_t start, end, len, n;
-  char * p, * q;
+  const char * p;
+  char * q;
   int c;
 
   len = 0;
@@ -517,7 +518,7 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
   }
   res = caml_alloc_string(len);
   p = String_val(repl);
-  q = String_val(res);
+  q = (char *)String_val(res);
   n = caml_string_length(repl);
   while (n > 0) {
     c = *p++; n--;

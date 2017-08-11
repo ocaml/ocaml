@@ -35,6 +35,30 @@ proposals against the OCaml distribution. (Code changes, but also
 improvement to documentation or implementation comments, which are
 valuable changes on their own.)
 
+## Workflow
+
+All changes to the OCaml distribution need to be processed through the
+GitHub Pull Request (PR) system.  In order to propose a change, a
+contributor thus needs to have a GitHub account, fork the ocaml/ocaml
+repository, create a branch for the proposal on their fork and submit
+it as a Pull Request on the upstream repository.  (If you are not yet
+familiar with GitHub, don't worry, all these steps are actually quite
+easy!)
+
+The current rule is that a PR needs to get an explicit approval from
+one of the core maintainer in order to be merged.  Reviews by
+external contributors are very much appreciated.
+
+Since core maintainers cannot push directly without going through an
+approved PR, they need to be able to apply small changes to the
+contributed branches themselves.  Such changes include fixing
+conflicts, adjusting a Changelog entry, or applying some code changes
+required by the reviewers.  Contributors are thus strongly advised to
+check the [**Allow edits from maintainer**](https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/)
+flag on their PRs in the GitHub interface.  Failing to do so might
+significantly delay the inclusion of an otherwise perfectly ok
+contribution.
+
 
 ## Coding guidelines
 

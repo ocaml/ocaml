@@ -85,8 +85,14 @@ module T = struct
 
   let row_field sub = function
     | Rtag (l, attrs, b, tl) ->
-        Rtag (l, sub.attributes sub attrs, b, List.map (sub.typ sub) tl)
+        Rtag (map_loc sub l, sub.attributes sub attrs,
+              b, List.map (sub.typ sub) tl)
     | Rinherit t -> Rinherit (sub.typ sub t)
+
+  let object_field sub = function
+    | Otag (l, attrs, t) ->
+        Otag (map_loc sub l, sub.attributes sub attrs, sub.typ sub t)
+    | Oinherit t -> Oinherit (sub.typ sub t)
 
   let map sub {ptyp_desc = desc; ptyp_loc = loc; ptyp_attributes = attrs} =
     let open Typ in
@@ -101,9 +107,7 @@ module T = struct
     | Ptyp_constr (lid, tl) ->
         constr ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_object (l, o) ->
-        let f (s, a, t) =
-          (map_loc sub s, sub.attributes sub a, sub.typ sub t) in
-        object_ ~loc ~attrs (List.map f l) o
+        object_ ~loc ~attrs (List.map (object_field sub) l) o
     | Ptyp_class (lid, tl) ->
         class_ ~loc ~attrs (map_loc sub lid) (List.map (sub.typ sub) tl)
     | Ptyp_alias (t, s) -> alias ~loc ~attrs (sub.typ sub t) s
@@ -915,7 +919,7 @@ let run_main mapper =
       let mapper () =
         try mapper (Array.to_list (Array.sub a 1 (n - 3)))
         with exn ->
-          (* PR #6463 *)
+          (* PR#6463 *)
           let f _ _ = raise exn in
           {default_mapper with structure = f; signature = f}
       in

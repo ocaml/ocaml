@@ -933,7 +933,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   (* Prepare *)
   let params = List.map Btype.repr decl.type_params in
   let tvl = ref TypeMap.empty in
-  (* Compute occurences in body *)
+  (* Compute occurrences in the body *)
   let open Variance in
   List.iter
     (fun (cn,ty) ->
@@ -1012,7 +1012,7 @@ let compute_variance_type env check (required, loc) decl tyl =
 
 let add_false = List.map (fun ty -> false, ty)
 
-(* A parameter is constrained if either is is instantiated,
+(* A parameter is constrained if it is either instantiated,
    or it is a variable appearing in another parameter *)
 let constrained vars ty =
   match ty.desc with
@@ -1348,7 +1348,7 @@ let transl_type_decl env rec_flag sdecl_list =
       decl to_check)
     decls;
   List.iter (check_abbrev_recursion newenv id_loc_list to_check) tdecls;
-  (* Check that all type variable are closed *)
+  (* Check that all type variables are closed *)
   List.iter2
     (fun sdecl tdecl ->
       let decl = tdecl.typ_type in
@@ -1566,7 +1566,7 @@ let transl_type_extension check_open env loc styext =
        Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
        may Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
-  (* Check that all type variable are closed *)
+  (* Check that all type variables are closed *)
   List.iter
     (fun ext ->
        match Ctype.closed_extension_constructor ext.ext_type with
@@ -1608,7 +1608,7 @@ let transl_exception env sext =
   (* Generalize types *)
   Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
   may Ctype.generalize ext.ext_type.ext_ret_type;
-  (* Check that all type variable are closed *)
+  (* Check that all type variables are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
     Some ty ->
       raise (Error(ext.ext_loc, Unbound_type_var_ext(ty, ext.ext_type)))

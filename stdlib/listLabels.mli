@@ -86,8 +86,8 @@ val append : 'a list -> 'a list -> 'a list
    operator is not tail-recursive either. *)
 
 val rev_append : 'a list -> 'a list -> 'a list
-(** [List.rev_append l1 l2] reverses [l1] and concatenates it to [l2].
-   This is equivalent to {!List.rev}[ l1 @ l2], but [rev_append] is
+(** [List.rev_append l1 l2] reverses [l1] and concatenates it with [l2].
+   This is equivalent to [(]{!List.rev}[ l1) @ l2], but [rev_append] is
    tail-recursive and more efficient. *)
 
 val concat : 'a list list -> 'a list
