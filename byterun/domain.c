@@ -482,15 +482,13 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
 
   caml_gc_log("requesting STW");
 
-  /* First, take the lock by setting ourselves as the stw_leader.
-     This may require handling interrupts for a while, until any
-     in-progress STW sections are completed */
-  caml_handle_incoming_interrupts(&domain_self->interruptor);
+  /* Try to take the lock by setting ourselves as the stw_leader.
+     If it fails, handle interrupts (probably participating in
+     an STW section) and return. */
   caml_plat_lock(&all_domains_lock);
   if (stw_leader) {
     caml_plat_unlock(&all_domains_lock);
-    // FIXME: is yield OK here? deadlock?
-    caml_yield_until_interrupted(&domain_self->interruptor);
+    caml_handle_incoming_interrupts(&domain_self->interruptor);
     return 0;
   } else {
       stw_leader = domain_self;
