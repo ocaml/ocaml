@@ -22,6 +22,10 @@ Working version
   (Daniel Bünzli, review by Damien Doligez, Alain Frisch, Xavier
   Leroy and Leo White)
 
+- GPR#1247: M.(::) construction for expressions
+  and patterns (plus fix printing of (::) in the toplevel)
+  (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
