@@ -492,7 +492,15 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
+let reset () =
+  reset_debug_info ();
+  frame_descriptors := [];
+  symbols_defined := L.Set.empty;
+  symbols_used := L.Set.empty;
+  size_constants := 0
+
 let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
+  reset ();  (* XXX check this fixes msvc problem *)
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
@@ -534,13 +542,6 @@ let data l =
   D.switch_to_section Data;
   D.align ~bytes:(Targetint.size / 8);
   List.iter emit_item l
-
-let reset () =
-  reset_debug_info ();
-  frame_descriptors := [];
-  symbols_defined := L.Set.empty;
-  symbols_used := L.Set.empty;
-  size_constants := 0
 
 let binary_backend_available = ref false
 let create_asm_file = ref true

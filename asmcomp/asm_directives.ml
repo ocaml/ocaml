@@ -184,6 +184,7 @@ let string_of_label label_name = label_prefix ^ (string_of_int label_name)
 module Directive = struct
   type constant =
     | Const32 of Int32.t
+    (* CR mshinwell: Change Const -> Const64 *)
     | Const of int64
     | This
     | Named_thing of string
