@@ -262,15 +262,19 @@ let untag_int i dbg =
   | Cop(Cor, [c; Cconst_int 1], _) -> Cop(Casr, [c; Cconst_int 1], dbg)
   | c -> Cop(Casr, [c; Cconst_int 1], dbg)
 
-(* Approximation of the "then" and "else" continuations in [transl_if] *)
-type then_else_approx =
-  | Cond (* then => true, else => false *)
-  | NotCond (* then => false, else => true *)
+(* Description of the "then" and "else" continuations in [transl_if]. If
+   the "then" continuation is true and the "else" continuation is false then
+   we can use the condition directly as the result. Similarly, if the "then"
+   continuation is false and the "else" continuation is true then we can use
+   the negation of the condition directly as the result. *)
+type then_else =
+  | Then_true_else_false
+  | Then_false_else_true
   | Unknown
 
 let invert_then_else = function
-  | Cond -> NotCond
-  | NotCond -> Cond
+  | Then_true_else_false -> Then_false_else_true
+  | Then_false_else_true -> Then_true_else_false
   | Unknown -> Unknown
 
 let mk_if_then_else cond ifso ifnot =
@@ -2045,7 +2049,7 @@ and transl_prim_1 env p arg dbg =
       end
   (* Boolean operations *)
   | Pnot ->
-      transl_if env arg dbg NotCond
+      transl_if env arg dbg Then_false_else_true
         (Cconst_pointer 1) (Cconst_pointer 3)
   (* Test integer/block *)
   | Pisint ->
@@ -2108,14 +2112,14 @@ and transl_prim_2 env p arg1 arg2 dbg =
   (* Boolean operations *)
   | Psequand ->
       let dbg' = Debuginfo.none in
-      transl_sequand env arg1 dbg arg2 dbg' Cond
+      transl_sequand env arg1 dbg arg2 dbg' Then_true_else_false
         (Cconst_pointer 3) (Cconst_pointer 1)
       (* let id = Ident.create "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
       let dbg' = Debuginfo.none in
-      transl_sequor env arg1 dbg arg2 dbg' Cond
+      transl_sequor env arg1 dbg arg2 dbg' Then_true_else_false
         (Cconst_pointer 3) (Cconst_pointer 1)
   (* Integer operations *)
   | Paddint ->
@@ -2676,9 +2680,9 @@ and transl_if env cond dbg approx then_ else_ =
         then_
   | _ -> begin
       match approx with
-      | Cond ->
+      | Then_true_else_false ->
           transl env cond
-      | NotCond ->
+      | Then_false_else_true ->
           mk_not dbg (transl env cond)
       | Unknown ->
           mk_if_then_else (test_bool dbg (transl env cond)) then_ else_
