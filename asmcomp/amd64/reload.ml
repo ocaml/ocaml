@@ -95,7 +95,7 @@ method! reload_operation op arg res =
       then (arg, res)
       else super#reload_operation op arg res
   | Iconst_symbol _ ->
-      if !Clflags.pic_code || !Clflags.dlcode || Arch.win64
+      if !Clflags.pic_code || !Clflags.dlcode || Target_system.windows ()
       then super#reload_operation op arg res
       else (arg, res)
   | _ -> (* Other operations: all args and results in registers *)

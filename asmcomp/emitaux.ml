@@ -426,6 +426,7 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
     | Some alternative_name -> alternative_name
   in
   D.define_function_symbol fun_symbol;
+  add_def_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
   prepare fundecl;
@@ -514,10 +515,12 @@ let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section code_section;
   emit_global_data_symbol "code_end";
-  D.int64 0L;
+  D.int32 0l;
+  D.int32 0l;
   D.switch_to_section Data;
   emit_global_data_symbol "data_end";
-  D.int64 0L
+  D.int32 0l;
+  D.int32 0l
 
 (* Emission of data *)
 
