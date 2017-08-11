@@ -408,7 +408,7 @@ module Directive = struct
       bprintf buf "\tDWORD\t%a%s" cst n comment
     | Const64 (n, comment) ->
       let comment = masm_comment_opt comment in
-      bprintf buf "\tQUAD\t%a%s" cst n comment
+      bprintf buf "\tQWORD\t%a%s" cst n comment
     | Global s -> bprintf buf "\tPUBLIC\t%s" s
     | Section ([".data"], None, []) -> bprintf buf "\t.DATA"
     | Section ([".text"], None, []) -> bprintf buf "\t.CODE"
