@@ -426,6 +426,7 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
     | Some alternative_name -> alternative_name
   in
   D.define_function_symbol fun_symbol;
+  add_def_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
   prepare fundecl;
