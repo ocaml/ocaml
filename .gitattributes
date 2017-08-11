@@ -131,14 +131,12 @@ manual/tools/htmltbl text eol=lf
 manual/tools/htmlthread text eol=lf
 manual/tools/texexpand text eol=lf
 
-# Checking out the parsetree test files with \r\n endings causes all the
-# locations to change, so use \n endings only, even on Windows
+# Tests which include references spanning multiple lines fail with \r\n
+# endings, so use \n endings only, even on Windows.
 testsuite/tests/parsing/*.ml text eol=lf
-
-# Similarly, the docstring tests fail for the same reason on Windows
 testsuite/tests/docstrings/empty.ml text eol=lf
-
-# And w04.ml
+testsuite/tests/functors/functors.ml.reference text eol=lf
+testsuite/tests/translprim/module_coercion.ml
 testsuite/tests/warnings/w04.ml text eol=lf
 
 # These are forced to \n to allow the Cygwin testsuite to pass on a
