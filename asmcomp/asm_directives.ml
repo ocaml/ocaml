@@ -27,7 +27,7 @@ module LR = Linkage_name.With_reloc
 module TS = Target_system
 
 type constant =
-  | Const of int64
+  | Const of Targetint.t
   | This
   | Label of Cmm.label
   | Symbol of L.t
@@ -183,7 +183,7 @@ let string_of_label label_name = label_prefix ^ (string_of_int label_name)
 
 module Directive = struct
   type constant =
-    | Const32 of Int32.t
+    | Const32 of int32
     | Const of int64
     | This
     | Named_thing of string
@@ -441,7 +441,11 @@ end
 
 let rec lower_constant (cst : constant) : Directive.constant =
   match cst with
-  | Const i -> Const i
+  | Const i ->
+    begin match Targetint.repr i with
+    | Int32 i -> Const32 i
+    | Int64 i -> Const i
+    end
   | This -> This
   | Label lbl -> Named_thing (string_of_label lbl)
   | Symbol sym -> Named_thing (L.to_string sym)
@@ -759,8 +763,7 @@ let define_function_symbol symbol =
 let symbol sym = const_machine_width (Symbol_reloc sym)
 
 let symbol_plus_offset sym ~offset_in_bytes =
-  let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-  const64 (Add (Symbol_reloc sym, Const offset_in_bytes))
+  const_machine_width (Add (Symbol_reloc sym, Const offset_in_bytes))
 
 let new_temp_var () =
   let id = !temp_var_counter in
@@ -796,7 +799,6 @@ let between_labels_32bit ~upper ~lower =
   const32 (force_relocatable expr)
 
 let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
-  let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (
       Add (Label upper, Const offset_upper),
@@ -805,7 +807,6 @@ let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
   const_machine_width (force_relocatable expr)
 
 let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
-  let offset_lower = Targetint.to_int64 offset_lower in
   let expr =
     Sub (
       Symbol_reloc upper,
@@ -814,7 +815,6 @@ let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
   const_machine_width (force_relocatable expr)
 
 let between_this_and_label_offset_32bit ~upper ~offset_upper =
-  let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (Add (Label upper, Const offset_upper), This)
   in
@@ -864,21 +864,21 @@ let offset_into_section_symbol ~section ~symbol:upper ~width =
   constant_with_width expr ~width
 
 let int8 i =
-  const8 (Const (Int64.of_int (Int8.to_int i)))
+  const8 (Const (Targetint.of_int (Int8.to_int i)))
 
 let int16 i =
-  const16 (Const (Int64.of_int (Int16.to_int i)))
+  const16 (Const (Targetint.of_int (Int16.to_int i)))
 
 let int32 i =
-  const32 (Const (Int64.of_int32 i))
+  const32 (Const (Targetint.of_int32 i))
 
 let int64 i =
-  const64 (Const i)
+  const64 (Const (Targetint.of_int64 i)) (* XXX Incorrect *)
 
 let targetint n =
   match TS.machine_width () with
-  | Thirty_two -> const32 (Const (Int64.of_int32 (Targetint.to_int32 n)))
-  | Sixty_four -> const64 (Const (Targetint.to_int64 n))
+  | Thirty_two -> const32 (Const n)
+  | Sixty_four -> const64 (Const n)
 
 let cache_string str =
   match List.assoc str !cached_strings with
