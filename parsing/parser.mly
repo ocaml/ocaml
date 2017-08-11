@@ -1660,7 +1660,8 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
+                                                { (None, []) }
+  |  simple_expr WITH lbl_expr_list             { (Some $1, $3) }
   | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
@@ -1980,7 +1981,8 @@ type_parameter_list:
   | type_parameter_list COMMA type_parameter    { $3 :: $1 }
 ;
 constructor_declarations:
-    constructor_declaration                              { [$1] }
+  | BAR                                                  { [  ] }
+  | constructor_declaration                              { [$1] }
   | bar_constructor_declaration                          { [$1] }
   | constructor_declarations bar_constructor_declaration { $2 :: $1 }
 ;
@@ -2037,8 +2039,8 @@ constructor_arguments:
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
-    label_declaration                           { [$1] }
-  | label_declaration_semi                      { [$1] }
+    /*empty*/                                   { [  ] }
+  | label_declaration                           { [$1] }
   | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
 label_declaration:

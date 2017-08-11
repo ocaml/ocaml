@@ -217,7 +217,6 @@ let make_params env params =
     List.map make_param params
 
 let transl_labels env closed lbls =
-  assert (lbls <> []);
   let all_labels = ref StringSet.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
@@ -421,7 +420,6 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        assert (scstrs <> []);
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
             [] -> ()
