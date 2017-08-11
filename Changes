@@ -26,10 +26,6 @@ Working version
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
 
-- GPR#1249, MPR#6271, MPR#7529: Support "let open M in ..."
-  in class expressions and class type expressions.
-  (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
-
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
