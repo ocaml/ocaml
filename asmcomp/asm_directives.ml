@@ -420,20 +420,20 @@ module Directive = struct
       | Thirty_two -> bprintf buf "%s LABEL DWORD" label
       | Sixty_four -> bprintf buf "%s LABEL QWORD" label
       end
-    | Cfi_adjust_cfa_offset _
-    | Cfi_endproc
-    | Cfi_offset _
-    | Cfi_startproc
-    | File _
-    | Indirect_symbol _
-    | Loc _
-    | Private_extern _
-    | Size _
-    | Sleb128 _
-    | Type _
-    | Uleb128 _
+    | Cfi_adjust_cfa_offset _ -> Misc.fatal_error "Unsupported asm directive (Cfi_adjust_cfa_offset) for MASM"
+    | Cfi_endproc -> Misc.fatal_error "Unsupported asm directive (Cfi_endproc) for MASM"
+    | Cfi_offset _ -> Misc.fatal_error "Unsupported asm directive (Cfi_offset) for MASM"
+    | Cfi_startproc -> Misc.fatal_error "Unsupported asm directive (Cfi_startproc) for MASM"
+    | File _ -> Misc.fatal_error "Unsupported asm directive (File) for MASM"
+    | Indirect_symbol _ -> Misc.fatal_error "Unsupported asm directive (Indirect_symbol) for MASM"
+    | Loc _ -> Misc.fatal_error "Unsupported asm directive (Loc) for MASM"
+    | Private_extern _ -> Misc.fatal_error "Unsupported asm directive (Private_extern) for MASM"
+    | Size _ -> Misc.fatal_error "Unsupported asm directive (Size) for MASM"
+    | Sleb128 _ -> Misc.fatal_error "Unsupported asm directive (Sleb128) for MASM"
+    | Type _ -> Misc.fatal_error "Unsupported asm directive (Type) for MASM"
+    | Uleb128 _ -> Misc.fatal_error "Unsupported asm directive (Uleb128) for MASM"
     | Direct_assignment _ ->
-      Misc.fatal_error "Unsupported asm directive for MASM"
+      Misc.fatal_error "Unsupported asm directive (Direct_assignemnt) for MASM"
 
   let print b t =
     match TS.assembler () with
