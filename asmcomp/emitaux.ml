@@ -506,10 +506,12 @@ let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section code_section;
   emit_global_data_symbol "code_end";
-  D.int64 0L;
+  D.int32 0l;
+  D.int32 0l;
   D.switch_to_section Data;
   emit_global_data_symbol "data_end";
-  D.int64 0L
+  D.int32 0l;
+  D.int32 0l
 
 (* Emission of data *)
 
