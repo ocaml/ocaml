@@ -241,9 +241,10 @@ static void major_cycle_callback(struct domain* domain, void* unused)
   /* finish GC */
   caml_ev_start_gc();
   while (caml_sweep(domain->state->shared_heap, 10) <= 0);
+  caml_ev_end_gc();
   caml_empty_minor_heap();
+  caml_ev_start_gc();
   caml_finish_marking();
-  caml_ev_msg("Finished major gc");
   caml_ev_end_gc();
 
   {
@@ -265,6 +266,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
       caml_cycle_heap_stw();
       /* FIXME: Maybe logging outside the barrier would be better */
       caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)major_cycles_completed);
+      caml_ev_msg("GC cycle completed");
       major_cycles_completed++;
     }
     // should interrupts be processed here or not?
@@ -352,13 +354,12 @@ void caml_empty_mark_stack () {
 }
 
 void caml_finish_marking () {
-  //caml_gc_log ("caml_finish_marking(0)");
   caml_save_stack_gc();
   caml_empty_mark_stack();
   Caml_state->stat_major_words += Caml_state->allocated_words;
   Caml_state->allocated_words = 0;
   caml_restore_stack_gc();
-  //caml_gc_log ("caml_finish_marking(1)");
+  caml_ev_msg("Mark stack empty");
 }
 
 void caml_empty_mark_stack_domain (struct domain* domain)
