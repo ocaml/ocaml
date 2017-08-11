@@ -661,7 +661,7 @@ let switch_to_section (section : section) =
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Sixteen_byte_literals, _, Win64 ->
+    | Sixteen_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
       data ()
     | Sixteen_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
@@ -669,16 +669,20 @@ let switch_to_section (section : section) =
       ["__TEXT";"__literal8"], None, ["8byte_literals"]
     | Eight_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Eight_byte_literals, _, Win64 ->
+    | Eight_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
       data ()
     | Eight_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
     | Jump_tables, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
+    | Jump_tables, _, (MinGW_32 | Win32) -> (* XXX Cygwin32? *)
+      data ()
     | Jump_tables, _, (MacOS_like | Win64) ->
       text () (* with LLVM/OS X and MASM, use the text segment *)
     | Jump_tables, _, _ ->
       [".rodata"], None, []
+    | Read_only_data, _, (MinGW_32 | Win32) -> (* XXX Cygwin32? *)
+      data ()
     | Read_only_data, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Read_only_data, _, _ ->
