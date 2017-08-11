@@ -32,6 +32,7 @@
 #include "caml/signals.h"
 #include "caml/startup.h"
 #include "caml/domain.h"
+#include "caml/eventlog.h"
 
 uintnat caml_max_stack_size;
 uintnat caml_fiber_wsz;
@@ -207,9 +208,11 @@ CAMLprim value caml_gc_minor(value v)
 CAMLprim value caml_gc_major(value v)
 {                                                    Assert (v == Val_unit);
   caml_gc_log ("Major GC cycle requested");
+  caml_ev_pause(EV_PAUSE_GC);
   caml_empty_minor_heap ();
   caml_finish_major_cycle();
   /* !! caml_final_do_calls (); */
+  caml_ev_resume();
   return Val_unit;
 }
 
@@ -217,12 +220,14 @@ CAMLprim value caml_gc_full_major(value v)
 {
   int i;
   caml_gc_log ("Full Major GC requested");
+  caml_ev_pause(EV_PAUSE_GC);
   /* In general, it can require up to 3 GC cycles for a
      currently-unreachable object to be collected. */
   for (i = 0; i < 3; i++) {
     caml_empty_minor_heap();
     caml_finish_major_cycle();
   }
+  caml_ev_resume();
   return Val_unit;
 }
 
@@ -230,8 +235,10 @@ CAMLprim value caml_gc_major_slice (value v)
 {
   intnat res;
   Assert (Is_long (v));
+  caml_ev_pause(EV_PAUSE_GC);
   caml_empty_minor_heap ();
   res = caml_major_collection_slice(Long_val(v));
+  caml_ev_resume();
   caml_handle_gc_interrupt();
   return Val_long (res);
 }

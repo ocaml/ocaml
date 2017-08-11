@@ -282,6 +282,9 @@ void caml_ev_pause(long reason)
   } else if (reason == EV_PAUSE_TERMINATE) {
     p = write_16(p, 5 /* ThreadFinished */);
     p = write_32(p, 0 /* Unused */);
+  } else if (reason == EV_PAUSE_YIELD) {
+    p = write_16(p, 3 /* ThreadYielding */);
+    p = write_32(p, 0 /* Unused */);
   } else {
     /* reason == EV_PAUSE_RPC(dom) */
     p = write_16(p, 8 /* BlockedOnBlackHole */);

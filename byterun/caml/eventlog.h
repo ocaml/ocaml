@@ -14,6 +14,7 @@ void caml_ev_request_stw();
 #define EV_PAUSE_BLOCK -1
 #define EV_PAUSE_GC -2
 #define EV_PAUSE_TERMINATE -3
+#define EV_PAUSE_YIELD -4
 #define EV_PAUSE_RPC(domain) (domain)
 void caml_ev_pause(long reason);
 void caml_ev_resume();

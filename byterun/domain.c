@@ -563,7 +563,7 @@ void caml_handle_gc_interrupt() {
     while (atomic_load_acq(young_limit) == INTERRUPT_MAGIC) {
       atomic_cas(young_limit, INTERRUPT_MAGIC, domain_self->minor_heap_area);
     }
-    caml_ev_pause(EV_PAUSE_GC);
+    caml_ev_pause(EV_PAUSE_YIELD);
     caml_handle_incoming_interrupts(&domain_self->interruptor);
     caml_ev_resume();
   }
@@ -772,8 +772,12 @@ static void domain_terminate() {
   int finished = 0;
 
   caml_gc_log("Domain terminating");
+  caml_ev_pause(EV_PAUSE_TERMINATE);
   while (!finished) {
+    caml_ev_start_gc();
     while (caml_sweep(domain_self->state.state->shared_heap, 10) <= 0);
+    caml_ev_end_gc();
+
     caml_empty_minor_heap();
     caml_finish_marking();
 
