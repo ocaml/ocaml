@@ -463,6 +463,11 @@ let emit (d : Directive.t) =
   | Some emit -> emit d
   | None -> Misc.fatal_error "initialize not called"
 
+let emit_non_masm (d : Directive.t) =
+  match TS.assembler () with
+  | MASM ->  ()
+  | MacOS | GAS_like -> emit d
+
 let section segment flags args = emit (Section (segment, flags, args))
 let align ~bytes = emit (Align { bytes; })
 
@@ -492,11 +497,9 @@ let cfi_startproc () =
 let comment s = emit (Comment s)
 let direct_assignment var cst =
   emit (Direct_assignment (LR.to_string var, lower_constant cst))
-let file ~file_num ~file_name =
-  emit (File { file_num = Some file_num; filename = file_name; })
 let global s = emit (Global (L.to_string s))
 let indirect_symbol s = emit (Indirect_symbol (L.to_string s))
-let loc ~file_num ~line ~col = emit (Loc { file_num; line; col; })
+let loc ~file_num ~line ~col = emit_non_masm (Loc { file_num; line; col; })
 let private_extern s = emit (Private_extern (L.to_string s))
 let size name cst = emit (Size (L.to_string name, (lower_constant cst)))
 let sleb128 i = emit (Sleb128 (Const i))
@@ -716,6 +719,9 @@ let reset () =
   sections_seen := [];
   temp_var_counter := 0
 
+let file ?file_num ~file_name () =
+  emit_non_masm (File { file_num = file_num; filename = file_name; })
+
 let initialize ~(emit : Directive.t -> unit) =
   emit_ref := Some emit;
   reset ();
@@ -748,8 +754,10 @@ let initialize ~(emit : Directive.t -> unit) =
           end)
       all_sections_in_order
   end;
-  emit (File { file_num = None; filename = ""; });  (* PR#7037 *)
+  file ~file_name:"" ();  (* PR#7037 *)
   switch_to_section Text
+
+let file ~file_num ~file_name = file ~file_num ~file_name ()
 
 let define_data_symbol symbol =
   emit (New_label (L.to_string symbol, Machine_width_data));
