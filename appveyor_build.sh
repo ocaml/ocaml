@@ -33,6 +33,18 @@ function run {
     fi
 }
 
+function set_configuration {
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
+
+    FILE=$(pwd | cygpath -f - -m)/config/Makefile
+    echo "Edit $FILE to set PREFIX=$2"
+    sed -e "/PREFIX=/s|=.*|=$2|" \
+        -e "/^ *CFLAGS *=/s/\r\?$/ $3\0/" \
+         config/Makefile.$1 > config/Makefile
+#    run "Content of $FILE" cat config/Makefile
+}
+
 PREFIX=$(echo $OCAMLROOT| cygpath -f - -m)
 APPVEYOR_BUILD_FOLDER=$(echo $APPVEYOR_BUILD_FOLDER| cygpath -f -)
 
@@ -47,22 +59,22 @@ case "$1" in
     ;;
   msvc32-only)
 #    cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
-#    make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
+#    make MSVC_DETECT=0 \
+#         CHAINS=msvc \
+#         MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" \
+#         support
 #    cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
 
     cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
 
-    PREFIX="C:/Program Files/OCaml-msvc32"
-    echo "Edit config/Makefile to set PREFIX=$PREFIX"
-    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
+    set_configuration msvc "C:/Program Files/OCaml-msmvc32" -WX
 
     # Temporarily bootstrap flexdll
     run "make flexdll" make flexdll
     run "make world" make world
     run "make runtimeopt" make runtimeopt
-    run "make -C otherlibs/systhreads libthreadsnat.lib" make -C otherlibs/systhreads libthreadsnat.lib
+    run "make -C otherlibs/systhreads libthreadsnat.lib" \
+         make -C otherlibs/systhreads libthreadsnat.lib
 
     exit 0
     ;;
@@ -81,22 +93,11 @@ case "$1" in
     # cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
     # cd ..
 
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
-
-    echo "Edit config/Makefile to set PREFIX=$PREFIX"
-    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
-    #run "Content of config/Makefile" cat config/Makefile
+    set_configuration msvc64 "$PREFIX" -WX
 
     cd ../build-mingw32
 
-    cp config/m-nt.h byterun/caml/m.h
-    cp config/s-nt.h byterun/caml/s.h
-
-    PREFIX=$(echo $OCAMLROOT2| cygpath -f - -m)
-    echo "Edit config/Makefile to set PREFIX=$PREFIX"
-    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
-    #run "Content of config/Makefile" cat config/Makefile
+    set_configuration mingw "$(echo $OCAMLROOT2| cygpath -f - -m)" -Werror
 
     cd $APPVEYOR_BUILD_FOLDER
 

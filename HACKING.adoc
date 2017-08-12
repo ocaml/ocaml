@@ -1,4 +1,4 @@
-= Hacking the compiler 🐫
+= Hacking the compiler :camel:
 
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
@@ -58,8 +58,9 @@ newcomers. Here are various potential projects:
 * http://caml.inria.fr/mantis/view_all_bug_page.php[The OCaml
   bugtracker] contains reported bugs and feature requests. Some
   changes that should be accessible to newcomers are marked with the
-  tag
-  http://caml.inria.fr/mantis/search.php?project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job[junior_job].
+  tag link:++http://caml.inria.fr/mantis/search.php?
+project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job++[
+  junior_job].
 
 * The
   https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCaml
