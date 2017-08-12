@@ -801,34 +801,34 @@ type symbolic_output_item =
   - [Output_spaces n]: symbolic command to output [n] spaces.
   - [Output_indent i]: symbolic indentation of size [i].
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 type symbolic_output_buffer
 (**
   The output buffer of a symbolic pretty-printer.
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 val make_symbolic_output_buffer : unit -> symbolic_output_buffer
 (** [make_symbolic_output_buffer ()] returns a fresh buffer for
   symbolic output.
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 val clear_symbolic_output_buffer : symbolic_output_buffer -> unit
 (** [clear_symbolic_output_buffer sob] resets buffer [sob].
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 val get_symbolic_output_buffer :
   symbolic_output_buffer -> symbolic_output_item list
 (** [get_symbolic_output_buffer sob] returns the contents of buffer [sob].
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 val flush_symbolic_output_buffer :
@@ -839,7 +839,7 @@ val flush_symbolic_output_buffer :
   [let items = get_symbolic_output_buffer sob in
    clear_symbolic_output_buffer sob; items]
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 val add_symbolic_output_item :
@@ -851,7 +851,7 @@ val formatter_of_symbolic_output_buffer : symbolic_output_buffer -> formatter
 (** [formatter_of_symbolic_output_buffer sob] returns a symbolic formatter
   that outputs to [symbolic_output_buffer] [sob].
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 (** {6 Basic functions for formatters} *)
