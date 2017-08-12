@@ -102,8 +102,9 @@ CAMLextern void caml_stat_destroy_pool(void);
 */
 CAMLextern caml_stat_block caml_stat_alloc(asize_t);
 
-/* [caml_stat_alloc_noexc(size)] allocates a memory block of the requested [size]
-   (in bytes) and returns a pointer to it, or NULL in case the request fails.
+/* [caml_stat_alloc_noexc(size)] allocates a memory block of the requested
+   [size] (in bytes) and returns a pointer to it, or NULL in case the request
+   fails.
 */
 CAMLextern caml_stat_block caml_stat_alloc_noexc(asize_t);
 

@@ -192,8 +192,8 @@ OCaml 4.07
 - GPR#1638: add a Float module.
   (Nicolás Ojeda Bär, review by Alain Frisch and Jeremy Yallop)
 
-- GPR#1697: Tune [List.init] tailrec threshold so that it does not stack overflow
-  when compiled with the Js_of_ocaml backend.
+- GPR#1697: Tune [List.init] tailrec threshold so that it does not stack
+  overflow when compiled with the Js_of_ocaml backend.
   (Hugo Heuzard, reviewed by Gabriel Scherer)
 
 ### Other libraries:
@@ -273,8 +273,8 @@ OCaml 4.07
 - GPR#1618: add the -dno-unique-ids and -dunique-ids compiler flags
   (Sébastien Hinderer, review by Leo White and Damien Doligez)
 
-- GPR#1649 change compilation order of toplevel definitions, so that some warnings
-  emitted by the bytecode compiler appear more in-order than before.
+- GPR#1649 change compilation order of toplevel definitions, so that some
+  warnings emitted by the bytecode compiler appear more in-order than before.
   (Luc Maranget, advice and review by Damien Doligez)
 
 - GPR#1806: add linscan to OCAMLPARAM options
@@ -492,7 +492,8 @@ OCaml 4.07
 
 - GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
   For instance users can now use a largeFile.ml file in their project.
-  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel
+  Radanne)
 
 - GPR#1516: Allow float array construction in recursive bindings
   when configured with -no-flat-float-array
@@ -852,9 +853,10 @@ OCaml 4.06.0 (3 Nov 2017):
   pretty-printing items. New fields have been added to the
   formatter_out_functions record, thus this change will break any code building
   such record from scratch.
-  When building Format.formatter_out_functions values redefining the out_spaces field,
-  "{ fmt_out_funs with out_spaces = f; }" should be replaced by
-  "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old behavior.
+  When building Format.formatter_out_functions values redefining the out_spaces
+  field, "{ fmt_out_funs with out_spaces = f; }" should be replaced by
+  "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old
+  behavior.
   (Richard Bonichon and Pierre Weis, review by Alain Frisch, original request by
   Spiros Eliopoulos in GPR#506)
 

@@ -226,7 +226,8 @@ let escaped_newlines = ref false
 (* Warn about Latin-1 characters used in idents *)
 
 let warn_latin1 lexbuf =
-  Location.deprecated (Location.curr lexbuf)"ISO-Latin1 characters in identifiers"
+  Location.deprecated (Location.curr lexbuf)
+                      "ISO-Latin1 characters in identifiers"
 
 let handle_docstrings = ref true
 let comment_list = ref []

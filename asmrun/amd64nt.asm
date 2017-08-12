@@ -498,7 +498,7 @@ caml_ml_array_bound_error:
         lea     rax, caml_array_bound_error
         jmp     caml_c_call
 
-	PUBLIC caml_system__code_end
+        PUBLIC caml_system__code_end
 caml_system__code_end:
 
         .DATA

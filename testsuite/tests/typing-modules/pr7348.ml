@@ -33,7 +33,7 @@ module A : sig end = struct
     let x : < foo: int; ..> = X.x
   end
 
-  module N = F(M)                
+  module N = F(M)
   let _ = (N.x = M.x)
 end;;
 [%%expect{|

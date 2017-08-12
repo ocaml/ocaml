@@ -180,7 +180,8 @@ static void caml_ba_sys_error(void)
                      buffer,
                      sizeof(buffer)/sizeof(wchar_t),
                      NULL))
-    swprintf(buffer, sizeof(buffer)/sizeof(wchar_t), L"Unknown error %ld\n", errnum);
+    swprintf(buffer, sizeof(buffer)/sizeof(wchar_t),
+             L"Unknown error %ld\n", errnum);
   caml_raise_sys_error(caml_copy_string_of_utf16(buffer));
 }
 

@@ -1526,7 +1526,8 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
     when is_unit env ty1 && unifiable env t3 ty2 ->
       Some (fun ppf ->
         fprintf ppf
-          "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
+          "@,@[Hint: Did you forget to wrap the expression using \
+           `fun () ->'?@]")
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
@@ -1584,7 +1585,8 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
       Some (fun ppf ->
         let row1 = row_repr row1 and row2 = row_repr row2 in
         begin match
-          row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
+          row1.row_fields, row1.row_closed,
+          row2.row_fields, row2.row_closed with
         | [], true, [], true ->
             fprintf ppf "@,These two variant types have no intersection"
         | [], true, (_::_ as fields), _ ->

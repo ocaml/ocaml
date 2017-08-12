@@ -53,25 +53,30 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 val filter : ('a -> bool) -> 'a t -> 'a t
 (** Remove from the sequence the elements that do not satisfy the
     given predicate.
-    This transformation is lazy, it only applies when the result is traversed. *)
+    This transformation is lazy, it only applies when the result is
+    traversed. *)
 
 val filter_map : ('a -> 'b option) -> 'a t -> 'b t
 (** Apply the function to every element; if [f x = None] then [x] is dropped;
     if [f x = Some y] then [y] is returned.
-    This transformation is lazy, it only applies when the result is traversed. *)
+    This transformation is lazy, it only applies when the result is
+    traversed. *)
 
 val flat_map : ('a -> 'b t) -> 'a t -> 'b t
 (** Map each element to a subsequence, then return each element of this
     sub-sequence in turn.
-    This transformation is lazy, it only applies when the result is traversed. *)
+    This transformation is lazy, it only applies when the result is
+    traversed. *)
 
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
 (** Traverse the sequence from left to right, combining each element with the
     accumulator using the given function.
-    The traversal happens immediately and will not terminate on infinite sequences.
+    The traversal happens immediately and will not terminate on infinite
+    sequences.
 
     Also see {!List.fold_left} *)
 
 val iter : ('a -> unit) -> 'a t -> unit
 (** Iterate on the sequence, calling the (imperative) function on every element.
-    The traversal happens immediately and will not terminate on infinite sequences. *)
+    The traversal happens immediately and will not terminate on infinite
+    sequences. *)

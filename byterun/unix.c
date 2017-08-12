@@ -172,7 +172,8 @@ static int cygwin_file_exists(const char * name)
   return ret == 0 && S_ISREG(st.st_mode);
 }
 
-static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path, const char * name)
+static caml_stat_string cygwin_search_exe_in_path(struct ext_table * path,
+                                                  const char * name)
 {
   const char * p;
   char * dir, * fullname;
@@ -219,7 +220,8 @@ caml_stat_string caml_search_exe_in_path(const char * name)
   return res;
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path,
+                                         const char * name)
 {
   caml_stat_string dllname;
   caml_stat_string res;
@@ -443,5 +445,3 @@ int caml_num_rows_fd(int fd)
   return -1;
 #endif
 }
-
-

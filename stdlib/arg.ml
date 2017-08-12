@@ -38,8 +38,8 @@ type spec =
                                   function with each remaining argument *)
   | Expand of (string -> string array) (* If the remaining arguments to process
                                           are of the form
-                                          [["-foo"; "arg"] @ rest] where "foo" is
-                                          registered as [Expand f], then the
+                                          [["-foo"; "arg"] @ rest] where "foo"
+                                          is registered as [Expand f], then the
                                           arguments [f "arg" @ rest] are
                                           processed. Only allowed in
                                           [parse_and_expand_argv_dynamic]. *)
@@ -129,7 +129,8 @@ let float_of_string_opt x =
   try Some (float_of_string x)
   with Failure _ -> None
 
-let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun errmsg =
+let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
+                                      errmsg =
   let initpos = !current in
   let convert_error error =
     (* convert an internal error to a Bad/Help exception
@@ -137,7 +138,8 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
        to an user-raised Bad exception.
     *)
     let b = Buffer.create 200 in
-    let progname = if initpos < (Array.length !argv) then !argv.(initpos) else "(?)" in
+    let progname =
+      if initpos < (Array.length !argv) then !argv.(initpos) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
@@ -249,12 +251,15 @@ let parse_and_expand_argv_dynamic_aux allow_expand current argv speclist anonfun
             done;
         | Expand f ->
             if not allow_expand then
-              raise (Invalid_argument "Arg.Expand is is only allowed with Arg.parse_and_expand_argv_dynamic");
+              raise (Invalid_argument "Arg.Expand is is only allowed with \
+                                       Arg.parse_and_expand_argv_dynamic");
             let arg = get_arg () in
             let newarg = f arg in
             consume_arg ();
             let before = Array.sub !argv 0 (!current + 1)
-            and after = Array.sub !argv (!current + 1) ((Array.length !argv) - !current - 1) in
+            and after =
+              Array.sub !argv (!current + 1)
+                        ((Array.length !argv) - !current - 1) in
             argv:= Array.concat [before;newarg;after];
         in
         treat_action action end
@@ -269,7 +274,8 @@ let parse_and_expand_argv_dynamic current argv speclist anonfun errmsg =
   parse_and_expand_argv_dynamic_aux true current argv speclist anonfun errmsg
 
 let parse_argv_dynamic ?(current=current) argv speclist anonfun errmsg =
-  parse_and_expand_argv_dynamic_aux false current (ref argv) speclist anonfun errmsg
+  parse_and_expand_argv_dynamic_aux false current (ref argv) speclist anonfun
+    errmsg
 
 
 let parse_argv ?(current=current) argv speclist anonfun errmsg =

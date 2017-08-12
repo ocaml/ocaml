@@ -175,7 +175,8 @@ let find_value env loc lid =
   r
 
 let lookup_module ?(load=false) env loc lid =
-  find_component (fun ?loc ?mark lid env -> (Env.lookup_module ~load ?loc ?mark lid env))
+  find_component
+    (fun ?loc ?mark lid env -> (Env.lookup_module ~load ?loc ?mark lid env))
     (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =

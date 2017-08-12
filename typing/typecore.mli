@@ -120,13 +120,15 @@ type error =
   | Or_pattern_type_clash of Ident.t * (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t * Ident.t list
-  | Expr_type_clash of (type_expr * type_expr) list * type_forcing_context option
+  | Expr_type_clash of
+      (type_expr * type_expr) list * type_forcing_context option
   | Apply_non_function of type_expr
   | Apply_wrong_label of arg_label * type_expr
   | Label_multiply_defined of string
   | Label_missing of Ident.t list
   | Label_not_mutable of Longident.t
-  | Wrong_name of string * type_expected * string * Path.t * string * string list
+  | Wrong_name of
+      string * type_expected * string * Path.t * string * string list
   | Name_type_mismatch of
       string * Longident.t * (Path.t * Path.t) * (Path.t * Path.t) list
   | Invalid_format of string

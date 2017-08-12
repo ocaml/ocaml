@@ -45,7 +45,8 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
   let check_to_seq_of_seq h =
     let h' = H.create (H.length h) in
     H.add_seq h' (H.to_seq h);
-    (*printf "h.len=%d, h'.len=%d\n" (List.length @@ to_list_ h) (List.length @@ to_list_ h');*)
+    (*printf "h.len=%d, h'.len=%d\n" (List.length @@ to_list_ h)
+                                     (List.length @@ to_list_ h');*)
     assert (to_list_ h = to_list_ h')
 
   let test data =

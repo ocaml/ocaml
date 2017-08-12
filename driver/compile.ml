@@ -38,7 +38,8 @@ let interface ppf sourcefile outputprefix =
     if !Clflags.dump_source then fprintf ppf "%a@." Pprintast.signature ast;
     Profile.(record_call typing) (fun () ->
       let tsg = Typemod.type_interface sourcefile initial_env ast in
-      if !Clflags.dump_typedtree then fprintf ppf "%a@." Printtyped.interface tsg;
+      if !Clflags.dump_typedtree then
+        fprintf ppf "%a@." Printtyped.interface tsg;
       let sg = tsg.sig_type in
       if !Clflags.print_types then
         Printtyp.wrap_printing_env ~error:false initial_env (fun () ->

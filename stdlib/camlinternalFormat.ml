@@ -281,9 +281,9 @@ let buffer_contents buf =
 
 (* Convert an integer conversion to char. *)
 let char_of_iconv iconv = match iconv with
-  | Int_d | Int_pd | Int_sd | Int_Cd -> 'd' | Int_i | Int_pi | Int_si | Int_Ci -> 'i'
-  | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o | Int_Co -> 'o'
-  | Int_u | Int_Cu -> 'u'
+  | Int_d | Int_pd | Int_sd | Int_Cd -> 'd' | Int_i | Int_pi | Int_si
+  | Int_Ci -> 'i' | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o
+  | Int_Co -> 'o' | Int_u | Int_Cu -> 'u'
 
 (* Convert a float conversion to char. *)
 let char_of_fconv fconv = match fconv with
@@ -407,7 +407,8 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
 let bprint_iconv_flag buf iconv = match iconv with
   | Int_pd | Int_pi -> buffer_add_char buf '+'
   | Int_sd | Int_si -> buffer_add_char buf ' '
-  | Int_Cx | Int_CX | Int_Co | Int_Cd | Int_Ci | Int_Cu -> buffer_add_char buf '#'
+  | Int_Cx | Int_CX | Int_Co | Int_Cd | Int_Ci | Int_Cu ->
+      buffer_add_char buf '#'
   | Int_d | Int_i | Int_x | Int_X | Int_o | Int_u -> ()
 
 (* Print an complete int format in a buffer (ex: "%3.*d"). *)
@@ -885,7 +886,8 @@ fun fmtty -> match fmtty with
 
   | Char rest                  -> Char_ty (fmtty_of_fmt rest)
   | Caml_char rest             -> Char_ty (fmtty_of_fmt rest)
-  | Bool (pad, rest)           -> fmtty_of_padding_fmtty pad (Bool_ty (fmtty_of_fmt rest))
+  | Bool (pad, rest)           ->
+      fmtty_of_padding_fmtty pad (Bool_ty (fmtty_of_fmt rest))
   | Alpha rest                 -> Alpha_ty (fmtty_of_fmt rest)
   | Theta rest                 -> Theta_ty (fmtty_of_fmt rest)
   | Custom (arity, _, rest)    -> fmtty_of_custom arity (fmtty_of_fmt rest)
@@ -1435,17 +1437,22 @@ let transform_int_alt iconv s =
     let left = ref ((digits - 1) mod 3 + 1) in
     for i = 0 to String.length s - 1 do
       match String.unsafe_get s i with
-      | '0'..'9' as c -> if !left = 0 then (put '_'; left := 3); decr left; put c
+      | '0'..'9' as c ->
+          if !left = 0 then (put '_'; left := 3); decr left; put c
       | c -> put c
     done;
     Bytes.unsafe_to_string buf
   | _ -> s
 
 (* Convert an integer to a string according to a conversion. *)
-let convert_int iconv n = transform_int_alt iconv (format_int (format_of_iconv iconv) n)
-let convert_int32 iconv n = transform_int_alt iconv (format_int32 (format_of_iconvl iconv) n)
-let convert_nativeint iconv n = transform_int_alt iconv (format_nativeint (format_of_iconvn iconv) n)
-let convert_int64 iconv n = transform_int_alt iconv (format_int64 (format_of_iconvL iconv) n)
+let convert_int iconv n =
+  transform_int_alt iconv (format_int (format_of_iconv iconv) n)
+let convert_int32 iconv n =
+  transform_int_alt iconv (format_int32 (format_of_iconvl iconv) n)
+let convert_nativeint iconv n =
+  transform_int_alt iconv (format_nativeint (format_of_iconvn iconv) n)
+let convert_int64 iconv n =
+  transform_int_alt iconv (format_int64 (format_of_iconvL iconv) n)
 
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)

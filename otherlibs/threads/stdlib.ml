@@ -629,7 +629,7 @@ let at_exit f =
   (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
   let f_already_ran = ref false in
   exit_function :=
-    (fun () -> 
+    (fun () ->
       if not !f_already_ran then begin f_already_ran := true; f() end;
       g())
 

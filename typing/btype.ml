@@ -210,7 +210,7 @@ let proxy ty =
 
 (**** Utilities for fixed row private types ****)
 
-let row_of_type t = 
+let row_of_type t =
   match (repr t).desc with
     Tobject(t,_) ->
       let rec get_row t =

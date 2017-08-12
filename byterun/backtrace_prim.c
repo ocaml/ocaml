@@ -109,8 +109,9 @@ static int cmp_ev_info(const void *a, const void *b)
   return 0;
 }
 
-static struct ev_info *process_debug_events(code_t code_start, value events_heap,
-                                     mlsize_t *num_events)
+static struct ev_info *process_debug_events(code_t code_start,
+                                            value events_heap,
+                                            mlsize_t *num_events)
 {
   CAMLparam1(events_heap);
   CAMLlocal3(l, ev, ev_start);

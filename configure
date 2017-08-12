@@ -2182,7 +2182,8 @@ inf
 inf "Directories where OCaml will be installed:"
 inf "        binaries.................. $bindir"
 inf "        standard library.......... $libdir"
-inf "        manual pages.............. $mandir (with extension .$programs_man_section)"
+inf "        manual pages.............. $mandir (with extension" \
+                                       ".$programs_man_section)"
 
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $cc"

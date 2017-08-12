@@ -266,7 +266,8 @@ static int st_event_create(st_event * res)
   rc = pthread_mutex_init(&e->lock, NULL);
   if (rc != 0) { caml_stat_free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0) { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
+  if (rc != 0)
+  { pthread_mutex_destroy(&e->lock); caml_stat_free(e); return rc; }
   e->status = 0;
   *res = e;
   return 0;

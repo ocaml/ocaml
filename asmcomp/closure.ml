@@ -645,7 +645,8 @@ let rec substitute loc fpc sb rn ulam =
           (fun id id' s -> Tbl.add id (Uvar id') s)
           ids ids' sb
       in
-      Ucatch(nfail, ids', substitute loc fpc sb rn u1, substitute loc fpc sb' rn u2)
+      Ucatch(nfail, ids', substitute loc fpc sb rn u1,
+                          substitute loc fpc sb' rn u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
       Utrywith(substitute loc fpc sb rn u1, id',
@@ -653,11 +654,15 @@ let rec substitute loc fpc sb rn ulam =
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc fpc sb rn u1 with
         Uconst (Uconst_ptr n) ->
-          if n <> 0 then substitute loc fpc sb rn u2 else substitute loc fpc sb rn u3
+          if n <> 0 then
+            substitute loc fpc sb rn u2
+          else
+            substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute loc fpc sb rn u2, substitute loc fpc sb rn u3)
+          Uifthenelse(su1, substitute loc fpc sb rn u2,
+                           substitute loc fpc sb rn u3)
       end
   | Usequence(u1, u2) ->
       Usequence(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)

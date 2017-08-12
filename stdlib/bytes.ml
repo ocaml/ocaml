@@ -261,8 +261,10 @@ let index_from s i c =
 (* duplicated in string.ml *)
 let index_from_opt s i c =
   let l = length s in
-  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
-  index_rec_opt s l i c
+  if i < 0 || i > l then
+    invalid_arg "String.index_from_opt / Bytes.index_from_opt"
+  else
+    index_rec_opt s l i c
 
 (* duplicated in string.ml *)
 let rec rindex_rec s i c =
@@ -366,4 +368,3 @@ let of_seq i =
        incr n)
     i;
   sub !buf 0 !n
-

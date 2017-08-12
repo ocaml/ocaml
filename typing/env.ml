@@ -78,9 +78,9 @@ module EnvLazy : sig
   val create : 'a -> ('a,'b) t
   val get_arg : ('a,'b) t -> 'a option
 
-  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns [None] then
-     [t] is recorded in [log]. [backtrack log] will then reset all the recorded [t]s back
-     to their original state. *)
+  (* [force_logged log f t] is equivalent to [force f t] but if [f] returns
+     [None] then [t] is recorded in [log]. [backtrack log] will then reset all
+     the recorded [t]s back to their original state. *)
   val log : unit -> log
   val force_logged : log -> ('a -> 'b option) -> ('a,'b option) t -> 'b option
   val backtrack : log -> unit
@@ -386,7 +386,8 @@ module IdTbl =
 
 
     let rec find_all name tbl =
-      List.map (fun (id, desc) -> Pident id, desc) (Ident.find_all name tbl.current) @
+      List.map (fun (id, desc) -> Pident id, desc)
+        (Ident.find_all name tbl.current) @
       match tbl.opened with
       | None -> []
       | Some {root; using = _; next; components} ->
@@ -397,7 +398,10 @@ module IdTbl =
             find_all name next
 
     let rec fold_name f tbl acc =
-      let acc = Ident.fold_name (fun id d -> f (Ident.name id) (Pident id, d)) tbl.current acc in
+      let acc =
+        Ident.fold_name (fun id d -> f (Ident.name id) (Pident id, d))
+          tbl.current acc
+      in
       match tbl.opened with
       | Some {root; using = _; next; components} ->
           acc
@@ -420,7 +424,9 @@ module IdTbl =
       match tbl.opened with
       | Some {root; using = _; next; components} ->
           Tbl.iter
-            (fun s (x, pos) -> f (Ident.hide (Ident.create s) (* ??? *)) (Pdot (root, s, pos), x))
+            (fun s (x, pos) ->
+              f (Ident.hide (Ident.create s) (* ??? *))
+                (Pdot (root, s, pos), x))
             components;
           iter f next
       | None -> ()
@@ -1285,8 +1291,10 @@ type copy_of_types = {
 }
 
 let make_copy_of_types l env : copy_of_types =
-  let f desc = { desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
-  let values = List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
+  let f desc =
+    {desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
+  let values =
+    List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
   {to_copy = l; initial_values = env.values; new_values = values}
 
 let do_copy_types { to_copy = l; initial_values; new_values = values } env =

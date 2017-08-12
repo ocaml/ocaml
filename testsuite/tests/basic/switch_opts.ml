@@ -20,7 +20,8 @@ let testcases = [
   Test (3, 3., function 1 -> 1. | 2 -> 2. | 3 -> 3. | _ -> 0.);
   Test (3, Sys.opaque_identity "c" ^ Sys.opaque_identity "c",
         function 1 -> "a" | 2 -> "b" | 3 -> "cc" | _ -> "");
-  Test (3, List.rev [3;2;1], function 1 -> [] | 2 -> [42] | 3 -> [1;2;3] | _ -> [415]);
+  Test (3, List.rev [3;2;1],
+        function 1 -> [] | 2 -> [42] | 3 -> [1;2;3] | _ -> [415]);
 
   Test (C, 3, function A -> 1 | B -> 2 | C -> 3);
   Test (C, -3, function A -> 1 | B -> 2 | C -> -3);
@@ -62,4 +63,3 @@ let run_test (Test (a, b, f)) =
 let () =
   List.iter run_test testcases;
   Printf.printf "%d tests passed\n" !passes
-

@@ -232,7 +232,9 @@ and compare_records ~loc env params1 params2 n
   | ld1::rem1, ld2::rem2 ->
       if Ident.name ld1.ld_id <> Ident.name ld2.ld_id
       then [Field_names (n, ld1.ld_id, ld2.ld_id)]
-      else if ld1.ld_mutable <> ld2.ld_mutable then [Field_mutable ld1.ld_id] else begin
+      else if ld1.ld_mutable <> ld2.ld_mutable then
+        [Field_mutable ld1.ld_id]
+      else begin
         Builtin_attributes.check_deprecated_mutable_inclusion
           ~def:ld1.ld_loc
           ~use:ld2.ld_loc

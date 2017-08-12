@@ -401,10 +401,12 @@ external symlink_stub : bool -> string -> string -> unit = "unix_symlink"
    Windows call GetFullPathName to do this because we need relative paths to
    stay relative. *)
 let normalize_slashes path =
-  if String.length path >= 4 && path.[0] = '\\' && path.[1] = '\\' && path.[2] = '?' && path.[3] = '\\' then
+  if String.length path >= 4 && path.[0] = '\\' && path.[1] = '\\'
+                             && path.[2] = '?' && path.[3] = '\\' then
     path
   else
-    String.init (String.length path) (fun i -> match path.[i] with '/' -> '\\' | c -> c)
+    String.init (String.length path)
+                (fun i -> match path.[i] with '/' -> '\\' | c -> c)
 
 let symlink ?to_dir source dest =
   let to_dir =
@@ -579,7 +581,8 @@ type msg_flag =
 external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
-let socketpair ?cloexec:_ _dom _ty _proto = invalid_arg "Unix.socketpair not implemented"
+let socketpair ?cloexec:_ _dom _ty _proto =
+  invalid_arg "Unix.socketpair not implemented"
 external accept :
   ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
@@ -932,7 +935,8 @@ let open_process_cmdline prog cmdline =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc prog cmdline None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog cmdline None
+                (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
@@ -970,10 +974,14 @@ let open_process_cmdline_full prog cmdline env =
   close err_write;
   (inchan, outchan, errchan)
 
-let open_process_args_in prog args = open_process_cmdline_in prog (make_cmdline args)
-let open_process_args_out prog args = open_process_cmdline_out prog (make_cmdline args)
-let open_process_args prog args = open_process_cmdline prog (make_cmdline args)
-let open_process_args_full prog args = open_process_cmdline_full prog (make_cmdline args)
+let open_process_args_in prog args =
+  open_process_cmdline_in prog (make_cmdline args)
+let open_process_args_out prog args =
+  open_process_cmdline_out prog (make_cmdline args)
+let open_process_args prog args =
+  open_process_cmdline prog (make_cmdline args)
+let open_process_args_full prog args =
+  open_process_cmdline_full prog (make_cmdline args)
 
 let open_process_shell fn cmd =
   let shell =

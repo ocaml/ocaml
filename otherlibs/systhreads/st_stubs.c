@@ -87,17 +87,17 @@ struct caml_thread_struct {
   value* spacetime_finaliser_trie_root;
 #endif
 #else
-  value * stack_low;            /* The execution stack for this thread */
+  value * stack_low;         /* The execution stack for this thread */
   value * stack_high;
   value * stack_threshold;
-  value * sp;                   /* Saved value of caml_extern_sp for this thread */
-  value * trapsp;               /* Saved value of caml_trapsp for this thread */
+  value * sp;                /* Saved value of caml_extern_sp for this thread */
+  value * trapsp;            /* Saved value of caml_trapsp for this thread */
   struct caml__roots_block * local_roots; /* Saved value of caml_local_roots */
   struct longjmp_buffer * external_raise; /* Saved caml_external_raise */
 #endif
-  int backtrace_pos;            /* Saved caml_backtrace_pos */
-  backtrace_slot * backtrace_buffer;    /* Saved caml_backtrace_buffer */
-  value backtrace_last_exn;     /* Saved caml_backtrace_last_exn (root) */
+  int backtrace_pos;         /* Saved caml_backtrace_pos */
+  backtrace_slot * backtrace_buffer; /* Saved caml_backtrace_buffer */
+  value backtrace_last_exn;  /* Saved caml_backtrace_last_exn (root) */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -676,7 +676,8 @@ CAMLexport int caml_c_thread_unregister(void)
 
 CAMLprim value caml_thread_self(value unit)         /* ML */
 {
-  if (curr_thread == NULL) caml_invalid_argument("Thread.self: not initialized");
+  if (curr_thread == NULL)
+    caml_invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
 }
 
@@ -706,7 +707,8 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
 
-  if (curr_thread == NULL) caml_invalid_argument("Thread.exit: not initialized");
+  if (curr_thread == NULL)
+    caml_invalid_argument("Thread.exit: not initialized");
 
   /* In native code, we cannot call pthread_exit here because on some
      systems this raises a C++ exception, and ocamlopt-generated stack

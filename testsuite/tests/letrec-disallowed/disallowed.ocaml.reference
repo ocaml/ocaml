@@ -120,6 +120,6 @@ Error: This kind of expression is not allowed as right-hand side of `let rec'
 Characters 15-98:
   ..match let _ = y in raise Not_found with
       _ -> "x"
-    | exception Not_found -> "z".
+    | exception Not_found -> "z"
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 

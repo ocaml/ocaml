@@ -21,4 +21,3 @@ and N:sig val x: int end = struct let x = M.f () end;;
 [%%expect {|
 Exception: Undefined_recursive_module ("", 1, 43).
 |}]
-

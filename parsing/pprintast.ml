@@ -779,7 +779,8 @@ and item_extension ctxt f (s, e) =
   pp f "@[<2>[%%%%%s@ %a]@]" s.txt (payload ctxt) e
 
 and exception_declaration ctxt f x =
-  pp f "@[<hov2>exception@ %a@]%a" (extension_constructor ctxt) x.ptyexn_constructor
+  pp f "@[<hov2>exception@ %a@]%a"
+    (extension_constructor ctxt) x.ptyexn_constructor
     (item_attributes ctxt) x.ptyexn_attributes
 
 and class_signature ctxt f { pcsig_self = ct; pcsig_fields = l ;_} =

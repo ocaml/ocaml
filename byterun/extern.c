@@ -179,7 +179,8 @@ static void extern_record_location(value obj)
 
   if (extern_flags & NO_SHARING) return;
   if (extern_trail_cur == extern_trail_limit) {
-    struct trail_block * new_block = caml_stat_alloc_noexc(sizeof(struct trail_block));
+    struct trail_block * new_block =
+      caml_stat_alloc_noexc(sizeof(struct trail_block));
     if (new_block == NULL) extern_out_of_memory();
     new_block->previous = extern_trail_block;
     extern_trail_block = new_block;

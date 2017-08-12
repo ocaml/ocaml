@@ -201,7 +201,7 @@ static value heap_stats (int returnstats)
                         && Wosize_hp (prev_hp) > 0)
                     || cur_hp == caml_gc_sweep_hp);
         CAMLassert (Next (cur_hp) == chunk_end
-                    || (Color_hp (Next (cur_hp)) != Caml_blue 
+                    || (Color_hp (Next (cur_hp)) != Caml_blue
                        && Wosize_hp (Next (cur_hp)) > 0)
                     || (Whsize_hd (cur_hd) + Wosize_hp (Next (cur_hp))
                        > Max_wosize)
@@ -651,7 +651,8 @@ CAMLprim value caml_runtime_parameters (value unit)
 
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
+    ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,"
+     "s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
      /* a */ (int) caml_allocation_policy,
      /* b */ caml_backtrace_active,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */

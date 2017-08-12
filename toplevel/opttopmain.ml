@@ -32,9 +32,11 @@ let is_expanded pos = pos < !first_nonexpanded_pos
 
 let expand_position pos len =
   if pos < !first_nonexpanded_pos then
-    first_nonexpanded_pos := !first_nonexpanded_pos + len (* Shift the position *)
+    (* Shift the position *)
+    first_nonexpanded_pos := !first_nonexpanded_pos + len
   else
-    first_nonexpanded_pos :=  pos + len + 2 (* New last position *)
+    (* New last position *)
+    first_nonexpanded_pos := pos + len + 2
 
 
 let prepare ppf =
@@ -63,8 +65,8 @@ let file_argument name =
        than the original argv.
     *)
     Printf.eprintf "For implementation reasons, the toplevel does not support\
-    \ having script files (here %S) inside expanded arguments passed through the\
-    \ -args{,0} command-line option.\n" name;
+    \ having script files (here %S) inside expanded arguments passed through\
+    \ the -args{,0} command-line option.\n" name;
     exit 2
   end else begin
     let newargs = Array.sub !argv !Arg.current

@@ -38,21 +38,23 @@ LIB=../../stdlib
 # Object file prefix
 P=stdlib__
 
-LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo					\
-  $(LIB)/$(P)seq.cmo $(LIB)/$(P)array.cmo $(LIB)/$(P)list.cmo $(LIB)/$(P)char.cmo $(LIB)/$(P)bytes.cmo	\
-  $(LIB)/$(P)string.cmo $(LIB)/$(P)sys.cmo $(LIB)/$(P)sort.cmo marshal.cmo		\
-  $(LIB)/$(P)obj.cmo $(LIB)/$(P)int32.cmo $(LIB)/$(P)int64.cmo				\
-  $(LIB)/$(P)nativeint.cmo $(LIB)/$(P)lexing.cmo $(LIB)/$(P)parsing.cmo			\
-  $(LIB)/$(P)set.cmo $(LIB)/$(P)map.cmo $(LIB)/$(P)stack.cmo $(LIB)/$(P)queue.cmo	\
-  $(LIB)/camlinternalLazy.cmo $(LIB)/$(P)lazy.cmo $(LIB)/$(P)stream.cmo			\
-  $(LIB)/$(P)buffer.cmo $(LIB)/camlinternalFormat.cmo $(LIB)/$(P)printf.cmo		\
-  $(LIB)/$(P)arg.cmo $(LIB)/$(P)printexc.cmo $(LIB)/$(P)gc.cmo $(LIB)/$(P)digest.cmo	\
-  $(LIB)/$(P)random.cmo $(LIB)/$(P)hashtbl.cmo $(LIB)/$(P)format.cmo			\
-  $(LIB)/$(P)scanf.cmo $(LIB)/$(P)callback.cmo $(LIB)/camlinternalOO.cmo		\
-  $(LIB)/$(P)oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/$(P)genlex.cmo			\
-  $(LIB)/$(P)weak.cmo $(LIB)/$(P)ephemeron.cmo $(LIB)/$(P)filename.cmo			\
-  $(LIB)/$(P)complex.cmo $(LIB)/$(P)arrayLabels.cmo $(LIB)/$(P)listLabels.cmo		\
-  $(LIB)/$(P)bytesLabels.cmo $(LIB)/$(P)stringLabels.cmo				\
+LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo stdlib.cmo \
+  $(LIB)/$(P)seq.cmo $(LIB)/$(P)array.cmo $(LIB)/$(P)list.cmo \
+  $(LIB)/$(P)char.cmo $(LIB)/$(P)bytes.cmo $(LIB)/$(P)string.cmo \
+  $(LIB)/$(P)sys.cmo $(LIB)/$(P)sort.cmo marshal.cmo \
+  $(LIB)/$(P)obj.cmo $(LIB)/$(P)int32.cmo $(LIB)/$(P)int64.cmo \
+  $(LIB)/$(P)nativeint.cmo $(LIB)/$(P)lexing.cmo $(LIB)/$(P)parsing.cmo \
+  $(LIB)/$(P)set.cmo $(LIB)/$(P)map.cmo $(LIB)/$(P)stack.cmo \
+  $(LIB)/$(P)queue.cmo $(LIB)/camlinternalLazy.cmo $(LIB)/$(P)lazy.cmo \
+  $(LIB)/$(P)stream.cmo $(LIB)/$(P)buffer.cmo $(LIB)/camlinternalFormat.cmo \
+  $(LIB)/$(P)printf.cmo $(LIB)/$(P)arg.cmo $(LIB)/$(P)printexc.cmo \
+  $(LIB)/$(P)gc.cmo $(LIB)/$(P)digest.cmo \
+  $(LIB)/$(P)random.cmo $(LIB)/$(P)hashtbl.cmo $(LIB)/$(P)format.cmo \
+  $(LIB)/$(P)scanf.cmo $(LIB)/$(P)callback.cmo $(LIB)/camlinternalOO.cmo \
+  $(LIB)/$(P)oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/$(P)genlex.cmo \
+  $(LIB)/$(P)weak.cmo $(LIB)/$(P)ephemeron.cmo $(LIB)/$(P)filename.cmo \
+  $(LIB)/$(P)complex.cmo $(LIB)/$(P)arrayLabels.cmo $(LIB)/$(P)listLabels.cmo \
+  $(LIB)/$(P)bytesLabels.cmo $(LIB)/$(P)stringLabels.cmo \
   $(LIB)/$(P)moreLabels.cmo $(LIB)/$(P)stdLabels.cmo
 
 UNIXLIB=../unix

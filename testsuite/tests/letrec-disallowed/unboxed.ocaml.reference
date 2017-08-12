@@ -8,7 +8,7 @@ Characters 12-15:
   let rec y = A y;;
               ^^^
 Error: This kind of expression is not allowed as right-hand side of `let rec'
-Characters 77-150:
+Characters 63-136:
   ..{a=
       (if Sys.opaque_identity true then
          X a

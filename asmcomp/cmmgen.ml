@@ -612,7 +612,7 @@ let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
 
 let non_profinfo_mask =
-  if Config.profinfo 
+  if Config.profinfo
   then (1 lsl (64 - Config.profinfo_width)) - 1
   else 0 (* [non_profinfo_mask] is unused in this case *)
 
@@ -1106,13 +1106,14 @@ let bigarray_get unsafe elt_kind layout b args dbg =
       Pbigarray_complex32 | Pbigarray_complex64 ->
         let kind = bigarray_word_kind elt_kind in
         let sz = bigarray_elt_size elt_kind / 2 in
-        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
-          bind "reval"
-            (Cop(Cload (kind, Mutable), [addr], dbg)) (fun reval ->
-              bind "imval"
-                (Cop(Cload (kind, Mutable),
-                     [Cop(Cadda, [addr; Cconst_int sz], dbg)], dbg)) (fun imval ->
-          box_complex dbg reval imval)))
+        bind "addr"
+          (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+            bind "reval"
+              (Cop(Cload (kind, Mutable), [addr], dbg)) (fun reval ->
+                bind "imval"
+                  (Cop(Cload (kind, Mutable),
+                       [Cop(Cadda, [addr; Cconst_int sz], dbg)], dbg))
+                  (fun imval -> box_complex dbg reval imval)))
     | _ ->
         Cop(Cload (bigarray_word_kind elt_kind, Mutable),
             [bigarray_indexing unsafe elt_kind layout b args dbg],
@@ -2081,7 +2082,8 @@ and transl_prim_1 env p arg dbg =
               bind "header" hdr (fun hdr ->
                 Cifthenelse(is_addr_array_hdr hdr dbg,
                             Cop(Clsr, [hdr; Cconst_int wordsize_shift], dbg),
-                            Cop(Clsr, [hdr; Cconst_int numfloat_shift], dbg))) in
+                            Cop(Clsr, [hdr; Cconst_int numfloat_shift], dbg)))
+          in
           Cop(Cor, [len; Cconst_int 1], dbg)
       | Paddrarray | Pintarray ->
           Cop(Cor, [addr_array_length hdr dbg; Cconst_int 1], dbg)
@@ -2213,23 +2215,28 @@ and transl_prim_2 env p arg1 arg2 dbg =
   (* Float operations *)
   | Paddfloat ->
       box_float dbg (Cop(Caddf,
-                    [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
+                    [transl_unbox_float dbg env arg1;
+                     transl_unbox_float dbg env arg2],
                     dbg))
   | Psubfloat ->
       box_float dbg (Cop(Csubf,
-                    [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
+                    [transl_unbox_float dbg env arg1;
+                     transl_unbox_float dbg env arg2],
                     dbg))
   | Pmulfloat ->
       box_float dbg (Cop(Cmulf,
-                    [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
+                    [transl_unbox_float dbg env arg1;
+                     transl_unbox_float dbg env arg2],
                     dbg))
   | Pdivfloat ->
       box_float dbg (Cop(Cdivf,
-                    [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
+                    [transl_unbox_float dbg env arg1;
+                     transl_unbox_float dbg env arg2],
                     dbg))
   | Pfloatcomp cmp ->
       tag_int(Cop(Ccmpf(transl_float_comparison cmp),
-                  [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
+                  [transl_unbox_float dbg env arg1;
+                   transl_unbox_float dbg env arg2],
                   dbg)) dbg
 
   (* String operations *)
@@ -2404,7 +2411,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
                       untag_int(transl env arg2) dbg], dbg))
   | Plsrbint bi ->
       box_int dbg bi (Cop(Clsr,
-                     [make_unsigned_int bi (transl_unbox_int dbg env bi arg1) dbg;
+                     [make_unsigned_int bi (transl_unbox_int dbg env bi arg1)
+                                        dbg;
                       untag_int(transl env arg2) dbg], dbg))
   | Pasrbint bi ->
       box_int dbg bi (Cop(Casr,
@@ -3331,7 +3339,8 @@ let final_curry_function arity =
           let newclos = Ident.create "clos" in
           Clet(newclos,
                get_field env (Cvar clos) 4 dbg,
-               curry_fun (get_field env (Cvar clos) 3 dbg :: args) newclos (n-1))
+               curry_fun (get_field env (Cvar clos) 3 dbg :: args)
+                         newclos (n-1))
     end in
   Cfunction
    {fun_name = "caml_curry" ^ string_of_int arity ^

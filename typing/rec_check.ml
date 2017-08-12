@@ -66,7 +66,8 @@ struct
     (** The address of a subexpression is not used, but may be bound *)
 
     val inspect : t -> t
-    (** The value of a subexpression is inspected with match, application, etc. *)
+    (** The value of a subexpression is inspected with match, application,
+        etc. *)
 
     val delay : t -> t
     (** An expression appears under 'fun p ->' or 'lazy' *)
@@ -636,7 +637,8 @@ and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     Use.(join ty
             (join (expression env c_rhs)
                 (inspect (option expression env c_guard))))
-and value_bindings : rec_flag -> Env.env -> Typedtree.value_binding list -> Env.env * Use.t =
+and value_bindings :
+  rec_flag -> Env.env -> Typedtree.value_binding list -> Env.env * Use.t =
   fun rec_flag env bindings ->
     match rec_flag with
     | Recursive ->
@@ -692,7 +694,8 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_variant _ -> true
     | Tpat_record (_, _) -> true
     | Tpat_array _ -> true
-    | Tpat_or (l,r,_) -> is_destructuring_pattern l || is_destructuring_pattern r
+    | Tpat_or (l,r,_) ->
+        is_destructuring_pattern l || is_destructuring_pattern r
     | Tpat_lazy _ -> true
 
 let is_valid_recursive_expression idlist expr =
