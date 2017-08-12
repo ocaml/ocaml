@@ -1124,12 +1124,13 @@ endif
 
 # Lint @since and @deprecated annotations
 
+VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
 lintapidiff:
 	$(MAKE) -C tools lintapidiff.opt
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
-	    tools/lintapidiff.opt $(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
+	    tools/lintapidiff.opt $VERSIONS
 
 # Make clean in the test suite
 
