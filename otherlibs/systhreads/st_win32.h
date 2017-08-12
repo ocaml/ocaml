@@ -381,7 +381,8 @@ static void st_check_error(DWORD retcode, char * msg)
                       sizeof(err)/sizeof(wchar_t),
                       NULL);
   if (! ret) {
-    ret = swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
+    ret =
+      swprintf(err, sizeof(err)/sizeof(wchar_t), L"error code %lx", retcode);
   }
   msglen = strlen(msg);
   errlen = win_wide_char_to_multi_byte(err, ret, NULL, 0);

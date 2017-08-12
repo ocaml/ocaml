@@ -96,7 +96,7 @@ Visual C/C++ Compiler as well as the Build Tools for Visual Studio.
 
 |=====
 |                    | `cl` Version | Express                 | SDK/Build Tools
-| Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |                                                    
+| Visual Studio 2005 | 14.00.x.x    | 32-bit only <<vs1,(*)>> |
 | Visual Studio 2008 | 15.00.x.x    | 32-bit only             | Windows SDK 7.0 also provides 32/64-bit compilers
 | Visual Studio 2010 | 16.00.x.x    | 32-bit only             | Windows SDK 7.1 also provides 32/64-bit compilers
 | Visual Studio 2012 | 17.00.x.x    | 32/64-bit               |

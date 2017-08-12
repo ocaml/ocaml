@@ -52,13 +52,15 @@ extern char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name]. */
-extern char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
+extern char_os * caml_search_in_path(struct ext_table * path,
+                                     const char_os * name);
 
 /* Same, but search an executable name in the system path for executables. */
 CAMLextern char_os * caml_search_exe_in_path(const char_os * name);
 
 /* Same, but search a shared library in the given path. */
-extern char_os * caml_search_dll_in_path(struct ext_table * path, const char_os * name);
+extern char_os * caml_search_dll_in_path(struct ext_table * path,
+                                         const char_os * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and
@@ -115,8 +117,14 @@ extern wchar_t *caml_win32_getenv(wchar_t const *);
 
 /* Windows Unicode support */
 
-extern int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);
-extern int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outlen);
+extern int win_multi_byte_to_wide_char(const char* s,
+                                       int slen,
+                                       wchar_t *out,
+                                       int outlen);
+extern int win_wide_char_to_multi_byte(const wchar_t* s,
+                                       int slen,
+                                       char *out,
+                                       int outlen);
 
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if

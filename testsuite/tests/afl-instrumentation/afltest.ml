@@ -8,7 +8,7 @@
          module = "test.ml"
          flags = "-afl-instrument"
    ***** ocamlopt.byte
-	  module = ""
+          module = ""
           program = "${test_build_directory}/test"
           flags = "-afl-inst-ratio 0"
           all_modules = "test.cmx harness.ml"

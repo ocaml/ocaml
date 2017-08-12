@@ -219,7 +219,8 @@ module MakeMap(Map : MapArgument) = struct
     let tyexn_constructor =
       map_extension_constructor tyexn.tyexn_constructor
     in
-    Map.leave_type_exception { tyexn with tyexn_constructor = tyexn_constructor }
+    Map.leave_type_exception
+      { tyexn with tyexn_constructor = tyexn_constructor }
 
   and map_extension_constructor ext =
     let ext = Map.enter_extension_constructor ext in

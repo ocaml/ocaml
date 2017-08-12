@@ -79,7 +79,8 @@ let parenthesize_if_neg ppf fmt v isneg =
   if isneg then pp_print_char ppf ')'
 
 let escape_string s =
-  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\' and '"' *)
+  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\'
+     and '"' *)
    let n = ref 0 in
   for i = 0 to String.length s - 1 do
     n := !n +
@@ -151,7 +152,9 @@ let print_out_value ppf tree =
     | Oval_int32 i -> parenthesize_if_neg ppf "%lil" i (i < 0l)
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
-    | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0 || 1. /. f = neg_infinity)
+    | Oval_float f ->
+        parenthesize_if_neg ppf "%s" (float_repres f)
+                                     (f < 0.0 || 1. /. f = neg_infinity)
     | Oval_string (_,_, Ostr_bytes) as tree ->
       pp_print_char ppf '(';
       print_simple_tree ppf tree;

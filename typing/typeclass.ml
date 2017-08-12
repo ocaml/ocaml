@@ -1228,8 +1228,10 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_open (ovf, lid, e) ->
       let used_slot = ref false in
-      let (path, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
-      let (_path, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let (path, new_val_env) =
+        !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
+      let (_path, new_met_env) =
+        !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
       let cl = class_expr cl_num new_val_env new_met_env e in
       rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
           cl_loc = scl.pcl_loc;

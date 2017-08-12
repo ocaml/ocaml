@@ -693,7 +693,8 @@ val open_process_args : string -> string array -> in_channel * out_channel
     @since 4.08.0 *)
 
 val open_process_args_full :
-  string -> string array -> string array -> in_channel * out_channel * in_channel
+  string -> string array -> string array ->
+    in_channel * out_channel * in_channel
 (** Similar to {!Unix.open_process_args}, but the third argument specifies the
    environment passed to the command.  The result is a triple of channels
    connected respectively to the standard output, standard input, and standard

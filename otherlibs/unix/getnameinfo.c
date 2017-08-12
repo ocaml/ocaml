@@ -50,7 +50,8 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
     getnameinfo((const struct sockaddr *) &addr.s_gen, addr_len,
                 host, sizeof(host), serv, sizeof(serv), opts);
   caml_leave_blocking_section();
-  if (retcode != 0) caml_raise_not_found(); /* TODO: detailed error reporting? */
+  /* TODO: detailed error reporting? */
+  if (retcode != 0) caml_raise_not_found();
   vhost = caml_copy_string(host);
   vserv = caml_copy_string(serv);
   vres = caml_alloc_small(2, 0);

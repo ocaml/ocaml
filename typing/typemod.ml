@@ -470,7 +470,8 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             in
             let params = tdecl.typ_type.type_params in
             if params_are_constrained params
-            then raise(Error(loc, initial_env, With_cannot_remove_constrained_type));
+            then raise(Error(loc, initial_env,
+                             With_cannot_remove_constrained_type));
             fun s path -> Subst.add_type_function path ~params ~body s
        in
        let sub = Subst.change_locs Subst.identity loc in
@@ -844,7 +845,9 @@ and transl_signature env sg =
             let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception) :: rem,
+            Sig_typext(ext.tyexn_constructor.ext_id,
+                       ext.tyexn_constructor.ext_type,
+                       Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
@@ -968,7 +971,9 @@ and transl_signature env sg =
     (fun () ->
        let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
        let rem = simplify_signature rem in
-       let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
+       let sg =
+         { sig_items = trem; sig_type = rem; sig_final_env = final_env }
+       in
        Cmt_format.set_saved_types
          ((Cmt_format.Partial_signature sg) :: previous_saved_types);
        sg
@@ -1526,7 +1531,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         check_name check_typext names sext.ptyexn_constructor.pext_name;
         let (ext, newenv) = Typedecl.transl_type_exception env sext in
         Tstr_exception ext,
-        [Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception)],
+        [Sig_typext(ext.tyexn_constructor.ext_id,
+                    ext.tyexn_constructor.ext_type,
+                    Text_exception)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;
@@ -1982,7 +1989,8 @@ let package_units initial_env objfiles cmifile modulename =
           (prefix ^ ".cmi") imports
       in
       Cmt_format.save_cmt (prefix ^ ".cmt")  modulename
-        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env (Some cmi)
+        (Cmt_format.Packed (cmi.Cmi_format.cmi_sign, objfiles)) None initial_env
+        (Some cmi)
     end;
     Tcoerce_none
   end

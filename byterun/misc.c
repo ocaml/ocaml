@@ -266,11 +266,15 @@ void CAML_INSTR_ATEXIT (void)
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 (long) Get_time (p, i), (long) Get_time(p, i+1), p->tag[i+1]);
+                 (long) Get_time (p, i),
+                 (long) Get_time(p, i+1),
+                 p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 (long) Get_time (p, 0), (long) Get_time(p, p->index), p->tag[0]);
+                 (long) Get_time (p, 0),
+                 (long) Get_time(p, p->index),
+                 p->tag[0]);
       }
     }
     fclose (f);

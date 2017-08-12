@@ -158,17 +158,17 @@ following files.
 .BI \-plugin \ plugin
 Dynamically load the code of the given
 .I plugin
-(a .cmo, .cma or .cmxs file) in 
+(a .cmo, .cma or .cmxs file) in
 .BR ocamldep (1).
 The plugin must exist in
 the same kind of code as the tool (
-.BR ocamldep.byte 
+.BR ocamldep.byte
 must load bytecode
-plugins, while 
+plugins, while
 .BR ocamldep.opt
 must load native code plugins), and
 extension adaptation is done automatically for .cma files (to .cmxs files
-if 
+if
 .BR ocamldep (1)
 is compiled in native code).
 .TP

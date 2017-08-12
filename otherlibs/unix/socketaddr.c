@@ -115,7 +115,8 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       mlsize_t path_length =
         strnlen(adr->s_unix.sun_path,
                 adr_len - offsetof(struct sockaddr_un, sun_path));
-      n = caml_alloc_initialized_string(path_length, (char *)adr->s_unix.sun_path);
+      n = caml_alloc_initialized_string(path_length,
+                                        (char *)adr->s_unix.sun_path);
       Begin_root (n);
         res = caml_alloc_small(1, 0);
         Field(res,0) = n;

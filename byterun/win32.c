@@ -342,7 +342,8 @@ static void store_argument(wchar_t * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv = (wchar_t **) caml_stat_resize_noexc(argv, argvsize * sizeof(wchar_t *));
+    argv =
+      (wchar_t **) caml_stat_resize_noexc(argv, argvsize * sizeof(wchar_t *));
     if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
@@ -380,7 +381,8 @@ static void expand_pattern(wchar_t * pat)
     wchar_t c = prefix[i - 1];
     if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
-  /* No separator was found, it's a filename pattern without a leading directory. */
+  /* No separator was found, it's a filename pattern without a leading
+     directory. */
   if (i == 0)
     prefix[0] = 0;
   do {
@@ -828,7 +830,8 @@ static uintnat windows_unicode_strict = 1;
    the argument string is encoded in the local codepage. */
 static uintnat windows_unicode_fallback = 1;
 
-CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out, int outlen)
+CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen,
+                                           wchar_t *out, int outlen)
 {
   int retcode;
 
@@ -838,7 +841,10 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out
     return 0;
 
   if (windows_unicode_enabled != 0) {
-    retcode = MultiByteToWideChar(CP_UTF8, windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0, s, slen, out, outlen);
+    retcode =
+      MultiByteToWideChar(CP_UTF8,
+                          windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0,
+                          s, slen, out, outlen);
     if (retcode == 0 && windows_unicode_fallback != 0)
       retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
   } else {
@@ -851,11 +857,13 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out
   return retcode;
 }
 
-#ifndef WC_ERR_INVALID_CHARS /* For old versions of Windows we simply ignore the flag */
+/* For old versions of Windows we simply ignore the flag */
+#ifndef WC_ERR_INVALID_CHARS
 #define WC_ERR_INVALID_CHARS 0
 #endif
 
-CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out, int outlen)
+CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen,
+                                           char *out, int outlen)
 {
   int retcode;
 
@@ -865,9 +873,13 @@ CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out
     return 0;
 
   if (windows_unicode_enabled != 0)
-    retcode = WideCharToMultiByte(CP_UTF8, windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0, s, slen, out, outlen, NULL, NULL);
+    retcode =
+      WideCharToMultiByte(CP_UTF8,
+                          windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0,
+                          s, slen, out, outlen, NULL, NULL);
   else
-    retcode = WideCharToMultiByte(CP_THREAD_ACP, 0, s, slen, out, outlen, NULL, NULL);
+    retcode =
+      WideCharToMultiByte(CP_THREAD_ACP, 0, s, slen, out, outlen, NULL, NULL);
 
   if (retcode == 0)
     caml_win32_sys_error(GetLastError());
@@ -881,7 +893,8 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   value v;
 
   slen = wcslen(s);
-  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0); /* Do not include final NULL */
+  /* Do not include final NULL */
+  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0);
   v = caml_alloc_string(retcode);
   win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
 
@@ -963,19 +976,23 @@ static int caml_win32_is_cygwin_pty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
-  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = INVALID_HANDLE_VALUE;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx =
+    INVALID_HANDLE_VALUE;
 
   if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
     pGetFileInformationByHandleEx =
-      (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
-                                                    "GetFileInformationByHandleEx");
+      (tGetFileInformationByHandleEx)GetProcAddress(
+        GetModuleHandle(L"KERNEL32.DLL"), "GetFileInformationByHandleEx");
 
   if (pGetFileInformationByHandleEx == NULL)
     return 0;
 
-  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the string, so reduce
-     the buffer size to allow for adding one. */
-  if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the
+     string, so reduce the buffer size to allow for adding one. */
+  if (! pGetFileInformationByHandleEx(hFile,
+                                      FileNameInfo,
+                                      buffer,
+                                      sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
   nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
@@ -983,7 +1000,8 @@ static int caml_win32_is_cygwin_pty(HANDLE hFile)
   /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
      or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
   if ((wcsstr(nameinfo->FileName, L"msys-") ||
-       wcsstr(nameinfo->FileName, L"cygwin-")) && wcsstr(nameinfo->FileName, L"-pty"))
+       wcsstr(nameinfo->FileName, L"cygwin-")) &&
+         wcsstr(nameinfo->FileName, L"-pty"))
     return 1;
 
   return 0;

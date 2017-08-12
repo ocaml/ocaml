@@ -24,7 +24,8 @@ let tests = [
 ; [], ignore, ["-help" ]
 
 (** wrong argument type *)
-; ["-int", Arg.Int ignore, "wrong argument type" ], ignore, ["-int"; "not_an_int" ]
+; ["-int", Arg.Int ignore, "wrong argument type" ], ignore,
+  ["-int"; "not_an_int" ]
 
 (** unknown option *)
 ; [], ignore, [ "-an-unknown-option" ]

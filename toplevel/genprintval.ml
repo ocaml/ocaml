@@ -152,7 +152,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     ] : (Path.t * printer) list)
 
     let exn_printer ppf path exn =
-      fprintf ppf "<printer %a raised an exception: %s>" Printtyp.path path (Printexc.to_string exn)
+      fprintf ppf "<printer %a raised an exception: %s>" Printtyp.path path
+        (Printexc.to_string exn)
 
     let out_exn path exn =
       Oval_printer (fun ppf -> exn_printer ppf path exn)
@@ -583,7 +584,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     and apply_generic_printer path printer args =
       match (printer, args) with
-      | (Zero fn, []) -> (fun (obj : O.t)-> try fn obj with exn -> out_exn path exn)
+      | (Zero fn, []) ->
+          (fun (obj : O.t)-> try fn obj with exn -> out_exn path exn)
       | (Succ fn, arg :: args) ->
           let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
           apply_generic_printer path printer args

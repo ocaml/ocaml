@@ -1057,7 +1057,8 @@ let open_process_args prog args =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc prog args None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog args None
+                (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;

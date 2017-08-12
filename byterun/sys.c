@@ -381,7 +381,9 @@ CAMLprim value caml_sys_get_argv(value unit)
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
   exe_name = caml_copy_string_of_os(caml_exe_name);
-  argv = caml_alloc_array((void *)caml_copy_string_of_os, (char const **) caml_main_argv);
+  argv =
+    caml_alloc_array((void *)caml_copy_string_of_os,
+                     (char const **) caml_main_argv);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
   Field(res, 1) = argv;
@@ -483,7 +485,8 @@ double caml_sys_time_include_children_unboxed(value include_children)
 
 CAMLprim value caml_sys_time_include_children(value include_children)
 {
-  return caml_copy_double(caml_sys_time_include_children_unboxed(include_children));
+  return caml_copy_double(
+      caml_sys_time_include_children_unboxed(include_children));
 }
 
 double caml_sys_time_unboxed(value unit) {

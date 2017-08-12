@@ -51,4 +51,3 @@ let () =
   let module Baz = String_id2.Make(struct let module_name="Baz" end) in
   let baz = Baz.of_string "baz" in
   Printf.printf "baz = %s\n" (baz :> string)
-

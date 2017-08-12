@@ -1061,7 +1061,8 @@ let open_process_args prog args =
     let (out_read, out_write) = pipe ~cloexec:true () in
     let outchan = out_channel_of_descr out_write in
     try
-      open_proc prog args None (Process(inchan, outchan)) out_read in_write stderr;
+      open_proc prog args None
+                (Process(inchan, outchan)) out_read in_write stderr;
       close out_read;
       close in_write;
       (inchan, outchan)

@@ -508,8 +508,8 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
          match expr with
          | Apply ({ kind = Direct closure_id } as apply) -> begin
              match
-               rewrite_direct_call ~specialised_args ~funs ~direct_call_surrogates
-                 ~state:!state_ref ~closure_id ~apply
+               rewrite_direct_call ~specialised_args ~funs
+                 ~direct_call_surrogates ~state:!state_ref ~closure_id ~apply
              with
              | None -> expr
              | Some (state, expr) ->

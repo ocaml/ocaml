@@ -820,7 +820,8 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
 
-(* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
+(* Written as a non-fragile matching, PR#7451 originated from a fragile matching
+   below. *)
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> begin match env with
@@ -1361,7 +1362,8 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
                 exhaust
                   ext pss (List.length (simple_match_args p omega) + n - 1)
               with
-              | Witnesses r -> Witnesses (List.map (fun row ->  (set_args p row)) r)
+              | Witnesses r ->
+                  Witnesses (List.map (fun row ->  (set_args p row)) r)
               | r       -> r in
           let before = try_many try_non_omega constrs in
           if
@@ -1973,7 +1975,7 @@ let do_check_partial ~pred loc casel pss = match pss with
                     Buffer.add_string buf
                       "\nMatching over values of extensible variant types \
                          (the *extension* above)\n\
-                      must include a wild card pattern in order to be exhaustive."
+                    must include a wild card pattern in order to be exhaustive."
                   ;
                   Buffer.contents buf
                 with _ ->
@@ -2082,8 +2084,8 @@ let check_unused pred casel =
                    - the clause under consideration is not a refutation clause
                      and either:
                      + there are no other lines
-                     + we do not care whether the types prevent this clause to be
-                       reached.
+                     + we do not care whether the types prevent this clause to
+                       be reached.
                      If the clause under consideration *is* a refutation clause
                      then we do need to check more carefully whether it can be
                      refuted or not.  *)

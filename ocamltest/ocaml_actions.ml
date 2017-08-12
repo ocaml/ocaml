@@ -70,7 +70,7 @@ let libraries backend env =
 let binary_modules backend env =
   let extension = Ocaml_backends.module_extension backend in
   filelist env Ocaml_variables.binary_modules extension
-  
+
 let backend_default_flags env =
   get_backend_value_from_env env
     Ocaml_variables.ocamlc_default_flags
@@ -384,7 +384,7 @@ let setup_ocamlc_byte_build_env =
     Ocaml_compilers.ocamlc_byte
 
 let setup_ocamlc_opt_build_env =
-  native_action 
+  native_action
     (mk_compiler_env_setup
       "setup-ocamlc.opt-build-env"
       Ocaml_compilers.ocamlc_opt)
@@ -414,7 +414,7 @@ let setup_ocamlnat_build_env =
 
 let compile (compiler : Ocaml_compilers.compiler) log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  match Environments.lookup_nonempty Builtin_variables.commandline env with  
+  match Environments.lookup_nonempty Builtin_variables.commandline env with
   | None ->
     begin
       match Environments.lookup_nonempty Ocaml_variables.module_ env with
@@ -443,7 +443,7 @@ let compile (compiler : Ocaml_compilers.compiler) log env =
           what (String.concat " " commandline) exit_status) in
       (Result.fail_with_reason reason, env)
     end
-    
+
 (* Compile actions *)
 
 let ocamlc_byte =
@@ -560,7 +560,7 @@ let mklib log env =
   let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
   Printf.fprintf log "%s\n%!" what;
   let ocamlc_command =
-    String.concat " " 
+    String.concat " "
     [
       Ocaml_commands.ocamlrun_ocamlc ocamlsrcdir;
       Ocaml_flags.stdlib ocamlsrcdir;
@@ -644,7 +644,7 @@ let run_codegen log env =
   Printf.fprintf log "%s\n%!" what;
   let test_build_directory =
     Actions_helpers.test_build_directory env in
-  let compiler_output = 
+  let compiler_output =
     Filename.make_path [test_build_directory; "compiler-output"]
   in
   let env =
@@ -671,7 +671,7 @@ let run_codegen log env =
     let testfile_basename = Filename.chop_extension testfile in
     let finalise =
        if Ocamltest_config.ccomptype="msvc"
-      then finalise_codegen_msvc 
+      then finalise_codegen_msvc
       else finalise_codegen_cc
     in
     finalise ocamlsrcdir testfile_basename log env
@@ -977,7 +977,7 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
         Environments.lookup_as_bool
           Ocaml_variables.ocaml_script_as_argument env
       with
-      | None -> false 
+      | None -> false
       | Some b -> b
     in
     let commandline =
@@ -1051,7 +1051,8 @@ let config_variables _log env =
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
     Ocaml_variables.csc, Ocamltest_config.csc;
     Ocaml_variables.csc_flags, Ocamltest_config.csc_flags;
-    Ocaml_variables.shared_library_cflags, Ocamltest_config.shared_library_cflags;
+    Ocaml_variables.shared_library_cflags,
+      Ocamltest_config.shared_library_cflags;
     Ocaml_variables.objext, Ocamltest_config.objext;
     Ocaml_variables.sharedobjext, Ocamltest_config.sharedobjext;
     Ocaml_variables.ocamlc_default_flags,

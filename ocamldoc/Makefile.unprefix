@@ -93,7 +93,8 @@ $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/bytecomp/%.mli
 	cp $< $@
 
 #Extract the pervasives module from stdlib.mli
-$(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli $(STDLIB_UNPREFIXED)/extract_pervasives.awk
+$(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli \
+                                     $(STDLIB_UNPREFIXED)/extract_pervasives.awk
 	$(AWK) -f $(STDLIB_UNPREFIXED)/extract_pervasives.awk $< > $@
 
 # Build cmis file inside the STDLIB_UNPREFIXED directories

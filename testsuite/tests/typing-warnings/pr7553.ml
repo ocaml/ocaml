@@ -22,4 +22,3 @@ module rec D : sig
     end
   end
 end = D;;
-

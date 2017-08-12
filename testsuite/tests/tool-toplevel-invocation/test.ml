@@ -13,14 +13,16 @@ ocaml_exit_status = "2"
 
 ** ocaml
 flags = "-args ${test_source_directory}/indirect_first_arg_fail.txt"
-compiler_reference = "${test_source_directory}/indirect_first_arg_fail.txt.reference"
+compiler_reference =
+  "${test_source_directory}/indirect_first_arg_fail.txt.reference"
 compiler_output = "${test_build_directory}/indirect_first_arg_fail.output"
 ocaml_exit_status = "2"
 *** check-ocaml-output
 
 ** ocaml
 flags = "-args ${test_source_directory}/indirect_last_arg_fail.txt"
-compiler_reference = "${test_source_directory}/indirect_last_arg_fail.txt.reference"
+compiler_reference =
+  "${test_source_directory}/indirect_last_arg_fail.txt.reference"
 compiler_output = "${test_build_directory}/indirect_last_arg_fail.output"
 ocaml_exit_status = "2"
 *** check-ocaml-output

@@ -87,7 +87,7 @@ static int read_trailer(int fd, struct exec_trailer *trail)
   fixup_endianness_trailer(&trail->num_sections);
   memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
   magicstr[EXEC_MAGIC_LENGTH] = 0;
-  
+
   if (print_magic) {
     printf("%s\n", magicstr);
     exit(0);
@@ -202,7 +202,8 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
 
 #ifdef _WIN32
 
-static char_os * read_section_to_os(int fd, struct exec_trailer *trail, char *name)
+static char_os * read_section_to_os(int fd, struct exec_trailer *trail,
+                                    char *name)
 {
   int32_t len, wlen;
   char * data;
@@ -380,7 +381,8 @@ CAMLexport void caml_main(char_os **argv)
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_fatal_error("cannot find file '%s'", caml_stat_strdup_of_os(argv[pos]));
+      caml_fatal_error("cannot find file '%s'",
+                       caml_stat_strdup_of_os(argv[pos]));
       break;
     case BAD_BYTECODE:
       caml_fatal_error(

@@ -559,7 +559,9 @@ and transl_structure loc fields cc rootpath final_env = function
             transl_structure loc (id :: fields) cc rootpath final_env rem
           in
           Llet(Strict, Pgenval, id,
-               transl_extension_constructor item.str_env path ext.tyexn_constructor, body),
+               transl_extension_constructor item.str_env
+                                            path
+                                            ext.tyexn_constructor, body),
           size
       | Tstr_module mb ->
           let id = mb.mb_id in
@@ -795,7 +797,9 @@ and all_idents = function
     | Tstr_include{incl_type; incl_mod={mod_desc =
                              Tmod_constraint ({mod_desc = Tmod_structure str},
                                               _, _, _)}} ->
-        bound_value_identifiers incl_type @ all_idents str.str_items @ all_idents rem
+        bound_value_identifiers incl_type
+        @ all_idents str.str_items
+        @ all_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
 
@@ -873,7 +877,11 @@ let transl_store_structure glob map prims str =
         | Tstr_exception ext ->
             let id = ext.tyexn_constructor.ext_id in
             let path = field_path rootpath id in
-            let lam = transl_extension_constructor item.str_env path ext.tyexn_constructor in
+            let lam =
+              transl_extension_constructor item.str_env
+                                           path
+                                           ext.tyexn_constructor
+            in
             Lsequence(Llet(Strict, Pgenval, id, Lambda.subst subst lam,
                            store_ident ext.tyexn_constructor.ext_loc id),
                       transl_store rootpath (add_ident false id subst) rem)

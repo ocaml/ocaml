@@ -541,10 +541,11 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
           let try_inlining =
             if self_call then
               Don't_try_it S.Not_inlined.Self_call
-            else if not (E.inlining_allowed env function_decl.closure_origin) then
-              Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
             else
-              Try_it
+              if not (E.inlining_allowed env function_decl.closure_origin) then
+                Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
+              else
+                Try_it
           in
           match try_inlining with
           | Don't_try_it decision -> Original decision
@@ -553,17 +554,20 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
             let body, r =
               Inlining_transforms.inline_by_copying_function_body ~env
                 ~r ~function_body ~lhs_of_application
-                ~closure_id_being_applied ~specialise_requested ~inline_requested
-                ~function_decl ~fun_vars ~args ~dbg ~simplify
+                ~closure_id_being_applied ~specialise_requested
+                ~inline_requested ~function_decl ~fun_vars ~args ~dbg ~simplify
             in
             let env = E.note_entering_inlined env in
             let env =
               (* We decrement the unrolling count even if the function is not
                  recursive to avoid having to check whether or not it is
                  recursive *)
-              E.inside_unrolled_function env function_decls.set_of_closures_origin
+              E.inside_unrolled_function env
+                                         function_decls.set_of_closures_origin
             in
-            let env = E.inside_inlined_function env function_decl.closure_origin in
+            let env =
+              E.inside_inlined_function env function_decl.closure_origin
+            in
             Changed ((simplify env r body), S.Inlined.Classic_mode)
       in
       let res, decision =
@@ -619,7 +623,8 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
           Inline_and_simplify_aux.initial_inlining_toplevel_threshold
             ~round:(E.round env)
         else
-          Inline_and_simplify_aux.initial_inlining_threshold ~round:(E.round env)
+          Inline_and_simplify_aux.initial_inlining_threshold
+            ~round:(E.round env)
       in
       let unthrottled_inlining_threshold =
         match raw_inlining_threshold with
@@ -680,12 +685,14 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
             let size_from_approximation =
               let fun_var = Closure_id.unwrap closure_id_being_applied in
               match
-                Variable.Map.find fun_var (Lazy.force value_set_of_closures.size)
+                Variable.Map.find fun_var
+                                  (Lazy.force value_set_of_closures.size)
               with
               | size -> size
               | exception Not_found ->
                 Misc.fatal_errorf "Approximation does not give a size for the \
-                                   function having fun_var %a.  value_set_of_closures: %a"
+                                   function having fun_var %a.  \
+                                   value_set_of_closures: %a"
                   Variable.print fun_var
                   A.print_value_set_of_closures value_set_of_closures
             in

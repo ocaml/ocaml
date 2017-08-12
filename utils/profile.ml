@@ -310,7 +310,8 @@ let print ppf columns =
        | None -> Measure.zero
      in
      let total = Measure_diff.of_diff Measure.zero (Measure.create ()) in
-     display_rows ppf (rows_of_hierarchy !hierarchy total initial_measure columns)
+     display_rows ppf
+       (rows_of_hierarchy !hierarchy total initial_measure columns)
 
 let column_mapping = [
   "time", `Time;

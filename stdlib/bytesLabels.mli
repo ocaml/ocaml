@@ -193,7 +193,8 @@ val index_from : bytes -> int -> char -> int
 
 val index_from_opt: bytes -> int -> char -> int option
 (** [index_from _opts i c] returns the index of the first occurrence of
-    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s] after position [i].
+    byte [c] in [s] after position [i] or [None] if [c] does not occur in [s]
+    after position [i].
     [Bytes.index_opt s c] is equivalent to [Bytes.index_from_opt s 0 c].
 
     Raise [Invalid_argument] if [i] is not a valid position in [s].

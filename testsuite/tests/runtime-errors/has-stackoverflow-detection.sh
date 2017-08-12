@@ -2,7 +2,7 @@
 if grep -q HAS_STACK_OVERFLOW_DETECTION ${ocamlsrcdir}/byterun/caml/s.h; then
   test_result=${TEST_PASS};
 else
-  test_result=${TEST_SKIP}; 
+  test_result=${TEST_SKIP};
 fi
 
 exit ${test_result}

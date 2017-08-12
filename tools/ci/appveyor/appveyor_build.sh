@@ -65,7 +65,8 @@ case "$1" in
     for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
       cp $f "$OCAMLROOT/bin/flexdll/"
     done
-    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile
+    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
+      >> ~/.bash_profile
     ;;
   msvc32-only)
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32
@@ -107,7 +108,9 @@ case "$1" in
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
 
     export TERM=ansi
-    script --quiet --return --command "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" ../$BUILD_PREFIX-mingw32/build.log >/dev/null 2>/dev/null &
+    script --quiet --return --command \
+      "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
+      ../$BUILD_PREFIX-mingw32/build.log >/dev/null 2>/dev/null &
     BUILD_PID=$!
 
     run "make world" make world
@@ -117,8 +120,12 @@ case "$1" in
 
     set +e
 
-    # For an explanation of the sed command, see https://github.com/appveyor/ci/issues/1824
-    tail --pid=$BUILD_PID -n +1 -f ../$BUILD_PREFIX-mingw32/build.log | sed -e 's/\d027\[K//g' -e 's/\d027\[m/\d027[0m/g' -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
+    # For an explanation of the sed command, see
+    # https://github.com/appveyor/ci/issues/1824
+    tail --pid=$BUILD_PID -n +1 -f ../$BUILD_PREFIX-mingw32/build.log | \
+      sed -e 's/\d027\[K//g' \
+          -e 's/\d027\[m/\d027[0m/g' \
+          -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
     TAIL_PID=$!
     wait $BUILD_PID
     STATUS=$?

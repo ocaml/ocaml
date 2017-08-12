@@ -333,7 +333,7 @@ static void do_compaction (void)
         }else{
           CAMLassert (Ecolor (q) == 3);
           /* This is guaranteed only if caml_compact_heap was called after a
-             nonincremental major GC:       CAMLassert (Tag_ehd (q) == String_tag);
+             nonincremental major GC:    CAMLassert (Tag_ehd (q) == String_tag);
           */
           /* No pointers to the header and no infix header:
              the object was free. */

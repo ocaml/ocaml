@@ -183,8 +183,8 @@ $(call byte_and_opt,ocamlmktop,$(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP),)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
-OCAML299TO3= lexer299.cmo ocaml299to3.cmo
-LIBRARY3= config.cmo misc.cmo warnings.cmo build_path_prefix_map.cmo location.cmo
+OCAML299TO3=lexer299.cmo ocaml299to3.cmo
+LIBRARY3=config.cmo misc.cmo warnings.cmo build_path_prefix_map.cmo location.cmo
 
 ocaml299to3: $(OCAML299TO3)
 	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)

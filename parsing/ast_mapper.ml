@@ -829,7 +829,8 @@ let ppx_context = PpxContext.make
 let extension_of_exn exn =
   match error_of_exn exn with
   | Some (`Ok error) -> extension_of_error error
-  | Some `Already_displayed -> { loc = Location.none; txt = "ocaml.error" }, PStr []
+  | Some `Already_displayed ->
+      { loc = Location.none; txt = "ocaml.error" }, PStr []
   | None -> raise exn
 
 

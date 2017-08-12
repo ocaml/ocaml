@@ -327,8 +327,10 @@ let dump_obj filename =
   end
 
 let arg_list = [
-  "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
-  "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions";
+  "-no-approx", Arg.Set no_approx,
+    " Do not print module approximation information";
+  "-no-code", Arg.Set no_code,
+    " Do not print code from exported flambda functions";
   "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\

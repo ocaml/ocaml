@@ -25,7 +25,7 @@ let g (x:m) =
 val g : m -> 'a = <fun>
 |}]
 
-let f : t option -> int = function None -> 3 
+let f : t option -> int = function None -> 3
 [%%expect{|
 val f : t option -> int = <fun>
 |}]

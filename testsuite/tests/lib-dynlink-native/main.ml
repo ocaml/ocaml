@@ -8,7 +8,7 @@ files = "a.ml api.ml b.ml bug.ml c.ml factorial.c pack_client.ml \
 include systhreads
 include dynlink
 
-set subdir = "${test_source_directory}/sub" 
+set subdir = "${test_source_directory}/sub"
 
 * native-dynlink
 libraries = "" (* We will add them manually where appropriated *)

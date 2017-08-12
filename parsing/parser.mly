@@ -1194,7 +1194,8 @@ class_sig_field:
     post_item_attributes
       {
        let (p, v) = $3 in
-       mkctf (Pctf_method (mkrhs $4 4, p, v, $6)) ~attrs:($2@$7) ~docs:(symbol_docs ())
+       mkctf (Pctf_method (mkrhs $4 4, p, v, $6))
+             ~attrs:($2@$7) ~docs:(symbol_docs ())
       }
   | CONSTRAINT attributes constrain_field post_item_attributes
       { mkctf (Pctf_constraint $3) ~attrs:($2@$4) ~docs:(symbol_docs ()) }
@@ -2343,8 +2344,10 @@ core_type_list:
   | core_type_list STAR simple_core_type        { $3 :: $1 }
 ;
 meth_list:
-    field_semi meth_list                        { let (f, c) = $2 in ($1 :: f, c) }
-  | inherit_field_semi meth_list                { let (f, c) = $2 in ($1 :: f, c) }
+    field_semi meth_list
+      { let (f, c) = $2 in ($1 :: f, c) }
+  | inherit_field_semi meth_list
+      { let (f, c) = $2 in ($1 :: f, c) }
   | field_semi                                  { [$1], Closed }
   | field                                       { [$1], Closed }
   | inherit_field_semi                          { [$1], Closed }

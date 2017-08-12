@@ -85,7 +85,9 @@ static char* buffer_of_bytes_array(value ls, asize_t *len)
   CAMLreturnT (char*, ret);
 }
 
-CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo, value digest_opt)
+CAMLprim value caml_reify_bytecode(value ls_prog,
+                                   value debuginfo,
+                                   value digest_opt)
 {
   CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal3(clos, bytecode, retval);
