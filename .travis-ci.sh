@@ -28,7 +28,7 @@ MAKE=make SHELL=dash
 #      (trunk)         (pr branch)
 #  TRAVIS_CUR_HEAD   TRAVIS_PR_HEAD
 #        |            /
-#        …           …
+#       ...         ...
 #        |          /
 #  TRAVIS_MERGE_BASE
 #

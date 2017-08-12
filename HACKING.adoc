@@ -1,4 +1,4 @@
-= Hacking the compiler 🐫
+= Hacking the compiler :camel:
 
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
