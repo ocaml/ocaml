@@ -788,20 +788,16 @@ val formatter_of_out_functions :
 *)
 
 type symbolic_output_item =
-  | Output_flush
-  | Output_newline
+  | Output_flush (** symbolic flush command *)
+  | Output_newline (** symbolic newline command *)
   | Output_string of string
+  (** [Output_string s]: symbolic output for string [s]*)
   | Output_spaces of int
+  (** [Output_spaces n]: symbolic command to output [n] spaces *)
   | Output_indent of int
-(**
-  The output items that symbolic pretty-printers will produce:
-  - [Output_flush]: symbolic flush command.
-  - [Output_newline]: symbolic newline command.
-  - [Output_string s]: symbolic output for string [s].
-  - [Output_spaces n]: symbolic command to output [n] spaces.
-  - [Output_indent i]: symbolic indentation of size [i].
-
-  @since 4.06.0
+  (** [Output_indent i]: symbolic indentation of size [i] *)
+(** Items produced by symbolic pretty-printers
+    @since 4.06.0
 *)
 
 type symbolic_output_buffer
