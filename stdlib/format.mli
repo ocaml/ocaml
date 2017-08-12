@@ -16,14 +16,37 @@
 (** Pretty-printing.
 
    This module implements a pretty-printing facility to format values
-   within 'pretty-printing boxes'. The pretty-printer splits lines
-   at specified break hints, and indents lines according to the box
-   structure.
+   within {{!boxes}'pretty-printing boxes'} and {{!tags}'semantic tags'}
+   combined with a set of {{!fpp}printf-like functions}.
+   The pretty-printer splits lines at specified {{!breaks}break hints},
+   and indents lines according to the box structure.
+   Similarly, {{!tags}semantic tags} can be used to decouple text
+   presentation from its contents.
 
+   This printer-printing facility is implemented as an overlay on top of
+   abstract {{!section:formatter}formatters} which provide basic output
+   functions.
+   There are three predefined formatters:
+   - {!std_formatter} outputs to {{!Pervasives.stdout}stdout}
+   - {!err_formatter} outputs to {{!Pervasives.stderr}stderr}
+   - {!str_formatter} outputs to the {!stdbuf} {{!Buffer}buffer}
+
+   All functions in the {!Format} module comes in two variants:
+   a short version that operate on {!std_formatter} and the
+   generic version prefixed by [pp_] that takes a formatter
+   as its first argument.
+
+   More formatters can be created with {!formatter_of_out_channel},
+   {!formatter_of_buffer}, {!formatter_of_symbolic_output_buffer}
+   or using {{!section:formatter}custom formatters}.
+
+*)
+
+(** {6 Introduction}
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
    {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
-    http://caml.inria.fr/resources/doc/guides/format.en.html}.
+   http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line splitting. The addition of
@@ -85,7 +108,7 @@
 
 *)
 
-(** {6 Pretty-printing boxes} *)
+(** {6:boxes Pretty-printing boxes} *)
 
 (** The pretty-printing engine uses the concepts of pretty-printing box and
   break hint to drive indentation and line splitting behavior of the
@@ -199,7 +222,7 @@ val print_char : char -> unit
 val print_bool : bool -> unit
 (** Print a boolean in the current pretty-printing box. *)
 
-(** {6 Break hints} *)
+(** {6:breaks Break hints} *)
 
 (** A 'break hint' tells the pretty-printer to output some space or split the
   line whichever way is more appropriate to the current pretty-printing box
@@ -680,7 +703,7 @@ val get_formatter_tag_functions : unit -> formatter_tag_functions
 (** Return the current semantic tag operation functions of the standard
   pretty-printer. *)
 
-(** {6 Defining formatters} *)
+(** {6:formatter Defining formatters} *)
 
 type formatter
 (** Abstract data corresponding to a pretty-printer (also called a
@@ -765,7 +788,7 @@ val formatter_of_out_functions :
   @since 4.04.0
 *)
 
-(** {7 Symbolic pretty-printing} *)
+(** {7:symbolic Symbolic pretty-printing} *)
 
 (**
   Symbolic pretty-printing is pretty-printing using a symbolic formatter,
@@ -941,7 +964,7 @@ val pp_print_text : formatter -> string -> unit
   @since 4.02.0
 *)
 
-(** {6 Formatted pretty-printing} *)
+(** {6:fpp Formatted pretty-printing} *)
 
 (**
   Module [Format] provides a complete set of [printf] like functions for
