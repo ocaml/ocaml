@@ -96,12 +96,6 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-ifeq "$(TOOLCHAIN)" "msvc"
-  CCOUTPUT=/Fo
-else
-  CCOUTPUT=-o 
-endif
-
 st_stubs_b.$(O): st_stubs.c $(HEADER)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
 	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
