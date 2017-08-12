@@ -204,7 +204,8 @@ IGNORE_DIRS="
           }
         }
 
-        match($0, /[\200-\377]/) {
+        match($0, /[\200-\377]/) \
+        && state != "authors" && state != "copyright" {
           err("non-ascii", "non-ASCII character(s)");
         }
 
@@ -233,6 +234,12 @@ IGNORE_DIRS="
         }
 
         # Header-recognition automaton. Read this from bottom to top.
+        # Valid UTF-8 chars are recognised in copyright and authors
+        # TODO: ensure all files are valid UTF-8 before awking them.
+        # Note that this code also assumes that combining characters are NOT
+        # used (i.e. that every Unicode code-point corresponds to exactly
+        # one displayed character, i.e. no Camels and no including
+        # weird-and-wonderful ways of encoded accented letters).
 
         state == "close" && $0 ~ /\*{74}/ { state = "OK"; }
         state == "close" { state = "(last line)"; }
@@ -242,11 +249,14 @@ IGNORE_DIRS="
                                                  { state = "blurb"; }
         state == "blurb1" { state = "(blurb line 1)"; }
         state == "copyright" && $0 ~ /\* {72}\*/ { state = "blurb1"; }
-        state == "copyright" && $0 !~ /\*   Copyright [0-9]{4}.{54} \*/ \
-                             && $0 !~ /\*     .{66} \*/ \
+        state == "copyright" \
+          && $0 !~ /\*   Copyright [0-9]{4}([\300-\367][\200-\277]+|.){54} \*/ \
+          && $0 !~ /\*     ([\300-\367][\200-\277]+|.){66} \*/ \
                       { state = "(copyright lines)"; }
         state == "authors" && $0 ~ /\* {72}\*/ { state = "copyright"; }
-        state == "authors" && $0 !~ /\* .{70} \*/ { state = "(authors)"; }
+        state == "authors" \
+          && $0 !~ /\* ([\300-\367][\200-\277]+|.){70} \*/ \
+                      { state = "(authors)"; }
         state == "blank2" && $0 ~ /\* {72}\*/ { state = "authors"; }
         state == "blank2" { state = "(blank line 2)"; }
         state == "title" && $0 ~ /\* {33}OCaml {34}\*/ { state = "blank2"; }
