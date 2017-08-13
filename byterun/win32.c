@@ -499,7 +499,7 @@ void caml_signal_thread(void * lpParam)
  * quickly.
  */
 
-static uintnat win32_alt_stack[0x80];
+static uintnat win32_alt_stack[0x100];
 
 static void caml_reset_stack (void *faulting_address)
 {

@@ -394,8 +394,8 @@ Working version
   Mark Shinwell, Thomas Braibant, Stephen Dolan, Pierre Chambart,
   François Bobot, Jacques Garrigue, David Allsopp, and Alain Frisch)
 
-- GPR#938, GPR#1170: Stack overflow detection on 64-bit Windows
-  (Olivier Andrieu)
+- GPR#938, GPR#1170, GPR#1289: Stack overflow detection on 64-bit Windows
+  (Olivier Andrieu, tweaked by David Allsopp)
 
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
