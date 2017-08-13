@@ -181,6 +181,9 @@ Working version
   caml_example
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- MPR#7588, GPR#1291: make format documentation predictable
+  (Florian Angeletti)
+
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
   
