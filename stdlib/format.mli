@@ -762,7 +762,7 @@ val formatter_of_out_functions :
   See definition of type {!formatter_out_functions} for the meaning of argument
   [out_funs].
 
-  @since 4.04.0
+  @since 4.06.0
 *)
 
 (** {7 Symbolic pretty-printing} *)
