@@ -61,9 +61,12 @@ module Sync : sig
       particular, [critical_section f] is cheaper than acquiring a mutex,
       and performs no more atomic operations than [f] does. *)
 
+  exception Retry
+
   val critical_section : (unit -> 'a) -> 'a
   (** [critical_section f] runs [f], but blocks notifications until
-      [f] returns. See [notify] below. *)
+      [f] returns. See [notify] below.
+      If [f] raises [Retry], then the critical section is restarted. *)
 
   val notify : id -> unit
   (** If the domain [d] is within a critical section (i.e. is evaluating
