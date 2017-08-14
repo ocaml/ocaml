@@ -21,6 +21,10 @@ val get_id : 'a t -> id
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
+type nanoseconds = int64
+val timer_ticks : unit -> nanoseconds
+(** Returns the number of nanoseconds elapsed since the OCaml
+    runtime started. *)
 
 module Sync : sig
   (** Low-level synchronisation primitives.

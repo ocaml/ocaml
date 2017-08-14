@@ -20,6 +20,7 @@
 #include "caml/minor_gc.h"
 #include "caml/eventlog.h"
 #include "caml/gc_ctrl.h"
+#include "caml/osdeps.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -82,6 +83,8 @@ static struct dom_internal all_domains[Max_domains];
 
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
+
+static int64 startup_timestamp;
 
 #ifdef __APPLE__
   /* OSX has issues with dynamic loading + exported TLS.
@@ -266,6 +269,7 @@ void caml_init_domains(uintnat minor_size) {
   if (!domain_self) caml_fatal_error("Failed to create main domain");
 
   caml_init_signal_handling();
+  startup_timestamp = caml_time_counter();
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -918,4 +922,9 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
     /* the domain might have terminated, but that's fine */
   }
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_domain_ticks(value unused)
+{
+  return caml_copy_int64(caml_time_counter() - startup_timestamp);
 }

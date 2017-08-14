@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef __CYGWIN__
@@ -320,3 +321,22 @@ int caml_executable_name(char * name, int name_len)
 }
 
 #endif
+
+int64 caml_time_counter(void)
+{
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return
+    (int64)t.tv_sec  * (int64)1000000000 +
+    (int64)t.tv_nsec;
+#elif defined(HAS_GETTIMEOFDAY)
+  struct timeval t;
+  gettimeofday(&t, 0);
+  return
+    (int64)t.tv_sec  * (int64)1000000000 +
+    (int64)t.tv_usec * (int64)1000
+#else
+# error "No timesource available"
+#endif
+}
