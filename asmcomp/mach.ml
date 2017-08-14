@@ -66,7 +66,8 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t }
+    mutable live: Reg.Set.t;
+    id: int }
 
 and instruction_desc =
     Iend
@@ -74,7 +75,6 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
   | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
@@ -102,7 +102,8 @@ let rec dummy_instr =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    id = -1 }
 
 let end_instr () =
   { desc = Iend;
@@ -110,14 +111,21 @@ let end_instr () =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    id = -2 }
+
+let next_id =
+  let count = ref 0 in
+  fun () -> incr count; !count
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    id = next_id () }
 
 let instr_cons_debug d a r dbg n =
-  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty }
+  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
+    id = next_id () }
 
 let rec instr_iter f i =
   match i.desc with
@@ -134,8 +142,6 @@ let rec instr_iter f i =
             instr_iter f cases.(i)
           done;
           instr_iter f i.next
-      | Iloop(body) ->
-          instr_iter f body; instr_iter f i.next
       | Icatch(_, handlers, body) ->
           instr_iter f body;
           List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
@@ -177,5 +183,39 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat -> false
     end
-  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
+  | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
+
+let[@inline] with_ ?desc ?next ?arg ?res instr =
+  let desc =
+    match desc with
+    | None -> instr.desc
+    | Some desc -> desc
+  in
+  let next =
+    match next with
+    | None -> instr.next
+    | Some next -> next
+  in
+  let arg =
+    match arg with
+    | None -> instr.arg
+    | Some arg -> arg
+  in
+  let res =
+    match res with
+    | None -> instr.res
+    | Some res -> res
+  in
+  { instr with next; desc; arg; res; id = next_id () }
+
+let[@inline] set_live instr live = instr.live <- live
+
+module Instruction = struct
+  module T = struct
+    type t = instruction
+    let compare i1 i2 =
+      compare i1.id i2.id
+  end
+  module Map = Map.Make(T)
+end

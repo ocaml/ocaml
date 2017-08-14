@@ -63,11 +63,18 @@ Working version
   (Markus Mottl, review by Alain Frisch, Xavier Leroy, Gabriel Scherer,
   Mark Shinwell and Leo White)
 
+- GPR#1193: Remove [Cloop] and [Iloop] Cmm and Mach language
+  constructions in favour of existing continuation constructs.
+  (Mark Shinwell)
+
+### Standard library:
+
 - GPR#1183: compile curried functors to multi-argument functions
   earlier in the compiler pipeline; correctly propagate [@@inline]
   attributes on such functors; mark functor coercion veneers as
   stubs.
   (Mark Shinwell, review by Pierre Chambart and Leo White)
+
 - GPR#1271: Don't generate Ialloc instructions for closures that exceed
   Max_young_wosize; instead allocate them on the major heap.  (Related
   to GPR#1250.)
@@ -75,8 +82,6 @@ Working version
 
 - GPR#1250: illegal ARM64 assembly code generated for large combined allocations
   (report and initial fix by Steve Walk, review and final fix by Xavier Leroy)
-
-### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding

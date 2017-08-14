@@ -86,19 +86,19 @@ method private reload i =
   | Iop(Itailcall_ind _) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
-        {i with arg = newarg}
+        (Mach.with_ i ~arg:newarg)
   | Iop(Icall_imm _ | Iextcall _) ->
-      {i with next = self#reload i.next}
+      Mach.with_ i ~next:(self#reload i.next)
   | Iop(Icall_ind _) ->
       let newarg = self#makereg1 i.arg in
       insert_moves i.arg newarg
-        {i with arg = newarg; next = self#reload i.next}
+        (Mach.with_ i ~arg:newarg ~next:(self#reload i.next))
   | Iop op ->
       let (newarg, newres) = self#reload_operation op i.arg i.res in
       insert_moves i.arg newarg
-        {i with arg = newarg; res = newres; next =
-          (insert_moves newres i.res
-            (self#reload i.next))}
+        (Mach.with_ i ~arg:newarg ~res:newres
+           ~next:(insert_moves newres i.res
+                    (self#reload i.next)))
   | Iifthenelse(tst, ifso, ifnot) ->
       let newarg = self#reload_test tst i.arg in
       insert_moves i.arg newarg
@@ -110,8 +110,6 @@ method private reload i =
       insert_moves i.arg newarg
         (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
           (self#reload i.next))
-  | Iloop body ->
-      instr_cons (Iloop(self#reload body)) [||] [||] (self#reload i.next)
   | Icatch(rec_flag, handlers, body) ->
       let new_handlers = List.map
           (fun (nfail, handler) -> nfail, self#reload handler)
