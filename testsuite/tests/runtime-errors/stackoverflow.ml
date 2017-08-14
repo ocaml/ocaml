@@ -15,6 +15,8 @@ let _ =
   with Stack_overflow ->
     print_string "Stack overflow caught"; print_newline()
  end ;
+ (* GPR#1289 *)
+ Printexc.record_backtrace true;
  begin
   try
     ignore(f 0)
