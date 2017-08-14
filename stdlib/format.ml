@@ -734,7 +734,7 @@ and pp_open_box state indent = pp_open_box_gen state indent Pp_box
 (* Printing queued text.
 
    [pp_print_flush] prints all pending items in the pretty-printer queue and
-   then flushes the the low level output device of the formatter to effectively
+   then flushes the low level output device of the formatter to actually
    display printing material.
 
    [pp_print_newline] behaves as [pp_print_flush] after printing an additional
@@ -950,7 +950,7 @@ let default_pp_mark_close_tag s = "</" ^ s ^ ">"
 let default_pp_print_open_tag = ignore
 let default_pp_print_close_tag = ignore
 
-(* Bulding a formatter given its basic output functions.
+(* Building a formatter given its basic output functions.
    Other fields get reasonable default values. *)
 let pp_make_formatter f g h i j =
   (* The initial state of the formatter contains a dummy box. *)
@@ -1041,7 +1041,7 @@ and str_formatter = formatter_of_buffer stdbuf
 
 
 (* [flush_buffer_formatter buf ppf] flushes formatter [ppf],
-   then return the contents of buffer [buff] thst is reset.
+   then returns the contents of buffer [buf] that is reset.
    Formatter [ppf] is supposed to print to buffer [buf], otherwise this
    function is not really useful. *)
 let flush_buffer_formatter buf ppf =

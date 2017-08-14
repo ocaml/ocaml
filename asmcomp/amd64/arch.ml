@@ -39,7 +39,7 @@ type specific_operation =
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
-  | Ibswap of int                      (* endiannes conversion *)
+  | Ibswap of int                      (* endianness conversion *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
 and float_operation =

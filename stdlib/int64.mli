@@ -84,7 +84,7 @@ external logxor : int64 -> int64 -> int64 = "%int64_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : int64 -> int64
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : int64 -> int -> int64 = "%int64_lsl"
 (** [Int64.shift_left x y] shifts [x] to the left by [y] bits.

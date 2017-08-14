@@ -135,7 +135,7 @@ let simplify_exits lam =
       end
   | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
-      (* i will be replaced by j in l1, so each occurence of i in l1
+      (* i will be replaced by j in l1, so each occurrence of i in l1
          increases j's ref count *)
       count l1 ;
       let ic = count_exit i in
