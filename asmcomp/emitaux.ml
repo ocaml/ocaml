@@ -391,8 +391,15 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
     emit_call L.caml_ml_array_bound_error
   end
 
-let begin_assembly ?(code_section = D.Text) () =
+let reset () =
   reset_debug_info ();
+  frame_descriptors := [];
+  symbols_defined := L.Set.empty;
+  symbols_used := L.Set.empty;
+  size_constants := 0
+
+let begin_assembly ?(code_section = D.Text) () =
+  reset ();
   all_functions := [];
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
@@ -494,15 +501,7 @@ let emit_spacetime_shapes () =
   D.int64 0L;
   D.comment "End of Spacetime shapes."
 
-let reset () =
-  reset_debug_info ();
-  frame_descriptors := [];
-  symbols_defined := L.Set.empty;
-  symbols_used := L.Set.empty;
-  size_constants := 0
-
 let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
-  reset ();  (* XXX check this fixes msvc problem *)
   if Config.spacetime then begin
     emit_spacetime_shapes ()
   end;
