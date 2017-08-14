@@ -2069,7 +2069,14 @@ struct
       | Texp_function { cases } ->
         Use.delay (list (case ~scrutinee:Use.empty) env cases)
       | Texp_lazy e ->
-        Use.delay (expression env e)
+         begin match Typeopt.classify_lazy_argument e with
+         | `Constant_or_function
+         | `Identifier _
+         | `Float ->
+            expression env e
+         | `Other ->
+            Use.delay (expression env e)
+         end
       | Texp_unreachable ->
         Use.empty
       | Texp_extension_constructor _ ->
