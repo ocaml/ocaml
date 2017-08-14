@@ -101,6 +101,12 @@ let parse_arguments argv =
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
+      let s =
+        if Config.ccomp_type = "msvc" then
+          String.sub s 2 (String.length s - 2) ^ ".lib"
+        else
+          s
+      in
       c_libs := s :: !c_libs
     else if starts_with s "-L" then
      (c_Lopts := s :: !c_Lopts;

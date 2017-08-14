@@ -147,6 +147,9 @@ Working version
   a trailing "Error: Some fatal warnings were triggered" message.
   (Valentin Gatien-Baron, review by Alain Frisch)
 
+* GPR#1189: allow MSVC ports to use -l option in ocamlmklib
+  (David Allsopp)
+
 ### Manual and documentation:
 
 - MPR#6548: remove obsolete limitation in the description of private
