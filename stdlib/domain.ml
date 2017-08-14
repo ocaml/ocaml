@@ -14,16 +14,20 @@ module Raw = struct
     = "caml_domain_spawn"
   external self : unit -> t
     = "caml_ml_domain_id"
+  external cpu_relax : unit -> unit
+    = "caml_ml_domain_cpu_relax"
 end
 
 type nanoseconds = int64
 external timer_ticks : unit -> nanoseconds = "caml_ml_domain_ticks"
 
 module Sync = struct
-  let critical_section f =
+  exception Retry
+  let rec critical_section f =
     Raw.critical_adjust (+1);
     match f () with
     | x -> Raw.critical_adjust (-1); x
+    | exception Retry -> Raw.critical_adjust (-1); Raw.cpu_relax (); critical_section f
     | exception ex -> Raw.critical_adjust (-1); raise ex
 
   let notify d = Raw.interrupt d
