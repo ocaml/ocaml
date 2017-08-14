@@ -12,6 +12,9 @@ module Raw = struct
     = "caml_ml_domain_id"
 end
 
+type nanoseconds = int64
+external timer_ticks : unit -> nanoseconds = "caml_ml_domain_ticks"
+
 module Sync = struct
   let critical_section f =
     Raw.critical_adjust (+1);

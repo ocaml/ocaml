@@ -65,4 +65,13 @@ extern int caml_read_directory(char * dirname, struct ext_table * contents);
    GetModuleFileName under Windows). */
 extern int caml_executable_name(char * name, int name_len);
 
+/* Returns the current value of a counter that increments once per nanosecond.
+   On systems that support it, this uses a monotonic timesouce which ignores
+   changes in the system time (so that this counter increases by 1000000 each
+   millisecond, even if the system clock was set back by an hour during that
+   millisecond). This makes it useful for benchmarking and timeouts, but not
+   for telling the time. The units are always nanoseconds, but the achieved
+   resolution may be less. The starting point is unspecified. */
+extern int64 caml_time_counter(void);
+
 #endif /* CAML_OSDEPS_H */
