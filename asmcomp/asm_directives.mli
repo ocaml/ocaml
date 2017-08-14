@@ -144,7 +144,7 @@ val align : bytes:int -> unit
 
 (** Emit a directive giving the displacement between the given symbol and
     the current position.  This should only be used to state sizes of
-    blocks (e.g. functions) just emitted into the assembly stream.
+    blocks (e.g. functions) emitted immediately prior into the assembly stream.
     [size_of] may be specified when the symbol used for measurement differs
     from that whose size is being stated (e.g. on POWER with ELF ABI v1). *)
 val size : ?size_of:Linkage_name.t -> Linkage_name.t -> unit
