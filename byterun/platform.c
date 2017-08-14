@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/time.h>
 #include "caml/platform.h"
 #include "caml/fail.h"
 
@@ -70,7 +71,12 @@ void caml_plat_mutex_free(caml_plat_mutex* m)
 /* Condition variables */
 void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
 {
-  pthread_cond_init(&cond->cond, 0);
+  pthread_condattr_t attr;
+  pthread_condattr_init(&attr);
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+  pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+#endif
+  pthread_cond_init(&cond->cond, &attr);
   cond->mutex = m;
 }
 
@@ -78,6 +84,20 @@ void caml_plat_wait(caml_plat_cond* cond)
 {
   caml_plat_assert_locked(cond->mutex);
   check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
+}
+
+int caml_plat_timedwait(caml_plat_cond* cond, int64 until)
+{
+  struct timespec t;
+  int err;
+  t.tv_sec  = until / 1000000000;
+  t.tv_nsec = until % 1000000000;
+  err = pthread_cond_timedwait(&cond->cond, cond->mutex, &t);
+  if (err == ETIMEDOUT) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 void caml_plat_broadcast(caml_plat_cond* cond)

@@ -5,7 +5,11 @@ module Raw = struct
     = "caml_ml_domain_critical_section"
   external interrupt : t -> unit
     = "caml_ml_domain_interrupt"
-  external wait : unit -> unit = "caml_ml_domain_yield"
+  external wait : unit -> unit
+    = "caml_ml_domain_yield"
+  type timeout_or_notified = Timeout | Notified
+  external wait_until : int64 -> timeout_or_notified
+    = "caml_ml_domain_yield_until"
   external spawn : (unit -> unit) -> t
     = "caml_domain_spawn"
   external self : unit -> t
@@ -24,6 +28,11 @@ module Sync = struct
 
   let notify d = Raw.interrupt d
   let wait () = Raw.wait ()
+  type timeout_or_notified =
+    Raw.timeout_or_notified =
+      Timeout | Notified
+  let wait_until t = Raw.wait_until t
+  let wait_for dt = Raw.wait_until (Int64.add (timer_ticks ()) dt)
 end
 
 type id = Raw.t
