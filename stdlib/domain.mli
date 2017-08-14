@@ -97,6 +97,10 @@ module Sync : sig
   (** [wait_until t] is the same as [wait ()], but returns once
       [timer_ticks () > t], regardless of whether [notify] is
       called *)
+
+  val cpu_relax : unit -> unit
+  (** If busy-waiting, calling cpu_relax () between iterations
+      will improve performance on some CPU architectures *)
 end
 
 module BVar : sig
