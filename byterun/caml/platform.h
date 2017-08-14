@@ -169,6 +169,8 @@ typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;
 #define CAML_PLAT_COND_INITIALIZER(m) { PTHREAD_COND_INITIALIZER, m }
 void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
 void caml_plat_wait(caml_plat_cond*);
+/* returns 1 if the timer expires */
+int caml_plat_timedwait(caml_plat_cond*, int64);
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 
