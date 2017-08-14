@@ -17,6 +17,7 @@
 
 open Path
 open Types
+open Asttypes
 open Typedtree
 open Lambda
 
@@ -170,8 +171,34 @@ let value_kind env ty =
       Pgenval
 
 
+(** Whether a forward block is needed for a lazy thunk on a value, i.e.
+    if the value can be represented as a float/forward/lazy *)
 let lazy_val_requires_forward env ty =
   match classify env ty with
   | Any | Lazy -> true
   | Float -> Config.flat_float_array
   | Addr | Int -> false
+
+(** The compilation of the expression [lazy e] depends on the form of e:
+    constants, floats and identifiers are optimized.  The optimization must be
+    taken into account when determining whether a recursive binding is safe. *)
+let classify_lazy_argument : Typedtree.expression ->
+                             [`Constant_or_function
+                             |`Float
+                             |`Identifier of [`Forward_value|`Other]
+                             |`Other] =
+  fun e -> match e.exp_desc with
+    | Texp_constant
+        ( Const_int _ | Const_char _ | Const_string _
+        | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
+    | Texp_function _
+    | Texp_construct (_, {cstr_arity = 0}, _) ->
+       `Constant_or_function
+    | Texp_constant(Const_float _) ->
+       `Float
+    | Texp_ident _ when lazy_val_requires_forward e.exp_env e.exp_type ->
+       `Identifier `Forward_value
+    | Texp_ident _ ->
+       `Identifier `Other
+    | _ ->
+       `Other

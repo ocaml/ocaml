@@ -1020,35 +1020,30 @@ and transl_exp0 e =
       (* when e needs no computation (constants, identifiers, ...), we
          optimize the translation just as Lazy.lazy_from_val would
          do *)
-      begin match e.exp_desc with
+      begin match Typeopt.classify_lazy_argument e with
+      | `Constant_or_function ->
         (* a constant expr of type <> float gets compiled as itself *)
-      | Texp_constant
-          ( Const_int _ | Const_char _ | Const_string _
-          | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-      | Texp_function _
-      | Texp_construct (_, {cstr_arity = 0}, _)
-        -> transl_exp e
-      | Texp_constant(Const_float _) ->
+         transl_exp e
+      | `Float -> 
           (* We don't need to wrap with Popaque: this forward
              block will never be shortcutted since it points to a float. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
                 [transl_exp e], e.exp_loc)
-      | Texp_ident _ ->
-          (* CR-someday mshinwell: Consider adding a new primitive
-             that expresses the construction of forward_tag blocks.
-             We need to use [Popaque] here to prevent unsound
-             optimisation in Flambda, but the concept of a mutable
-             block doesn't really match what is going on here.  This
-             value may subsequently turn into an immediate... *)
-          if Typeopt.lazy_val_requires_forward e.exp_env e.exp_type
-          then
-            Lprim (Popaque,
-                   [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                          [transl_exp e], e.exp_loc)],
-                   e.exp_loc)
-          else transl_exp e
-      (* other cases compile to a lazy block holding a function *)
-      | _ ->
+      | `Identifier `Forward_value ->
+         (* CR-someday mshinwell: Consider adding a new primitive
+            that expresses the construction of forward_tag blocks.
+            We need to use [Popaque] here to prevent unsound
+            optimisation in Flambda, but the concept of a mutable
+            block doesn't really match what is going on here.  This
+            value may subsequently turn into an immediate... *)
+         Lprim (Popaque,
+                [Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                       [transl_exp e], e.exp_loc)],
+                e.exp_loc)
+      | `Identifier `Other ->
+         transl_exp e
+      | `Other ->
+         (* other cases compile to a lazy block holding a function *)
          let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
