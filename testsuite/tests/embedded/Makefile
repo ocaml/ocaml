@@ -25,7 +25,7 @@ compile:
 	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmstub.c
 	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmmain.c
 	@$(OCAMLC) -c cmcaml.ml
-	@$(OCAMLC) -custom -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
+	@$(OCAMLC) -custom $(if $(filter mingw,$(TOOLCHAIN)),-ccopt -link -ccopt -municode,) -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
 
 .PHONY: run
 run:
