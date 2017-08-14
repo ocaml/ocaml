@@ -197,8 +197,7 @@ let reset_debug_info () =
 (* We only emit .file if the file has not been seen before. We
    emit .loc for every instruction. *)
 let emit_debug_info dbg =
-  if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers) then begin
+  if !Clflags.debug || Config.with_frame_pointers then begin
     match List.rev dbg with
     | [] -> ()
     | { Debuginfo.dinfo_line = line;
