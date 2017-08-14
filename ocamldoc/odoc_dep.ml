@@ -180,7 +180,7 @@ let type_deps t =
 
   !l
 
-(** Modify the modules depencies of the given list of modules,
+(** Modify the module dependencies of the given list of modules,
    to get the minimum transitivity kernel. *)
 let kernel_deps_of_modules modules =
   let graph = List.map

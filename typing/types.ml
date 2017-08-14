@@ -279,7 +279,7 @@ and module_declaration =
 
 and modtype_declaration =
   {
-    mtd_type: module_type option;  (* Nonte: abstract *)
+    mtd_type: module_type option;  (* Note: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
   }

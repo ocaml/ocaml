@@ -46,8 +46,8 @@ exception Use_code of string
 
 (** Return the given module type where methods and vals have been removed
    from the signatures. Used when we don't want to print a too long module type.
-   @param code when the code is given, we raise the [Use_code] exception is we
-   encouter a signature, to that the calling function can use the code rather
+   @param code when the code is given, we raise the [Use_code] exception if we
+   encounter a signature, so that the calling function can use the code rather
    than the "emptied" type.
 *)
 let simpl_module_type ?code t =

@@ -208,7 +208,7 @@ let find_double e = do_find_double e
 
 (*
    Type of variables:
-    A variable is bound to a char when all its occurences
+    A variable is bound to a char when all its occurrences
     bind a pattern of length 1.
      The typical case is:
        (_ as x) -> char
@@ -577,7 +577,7 @@ let rec firstpos = function
   | Star r     -> firstpos r
 
 
-(* Berry-sethi followpos *)
+(* Berry-Sethi followpos *)
 let followpos size entry_list =
   let v = Array.make size TransSet.empty in
   let rec fill s = function
@@ -749,8 +749,8 @@ let reset_state () =
 
 (* Reset state before processing a given automata.
    We clear both the memory mapping and
-   the state mapping, as state sharing beetween different
-   automata may lead to incorret estimation of the cell memory size
+   the state mapping, as state sharing between different
+   automata may lead to incorrect estimation of the cell memory size
    BUG ID 0004517 *)
 
 
@@ -1040,7 +1040,7 @@ let comp_shift gen chars follow st =
 
 let reachs chars follow st =
   let gen = create_new_addr_gen () in
-(* build a association list (char set -> new state) *)
+(* build an association list (char set -> new state) *)
   let env = comp_shift gen chars follow st in
 (* change it into (char set -> new state_num) *)
   let env =

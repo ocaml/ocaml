@@ -919,7 +919,7 @@ let run_main mapper =
       let mapper () =
         try mapper (Array.to_list (Array.sub a 1 (n - 3)))
         with exn ->
-          (* PR #6463 *)
+          (* PR#6463 *)
           let f _ _ = raise exn in
           {default_mapper with structure = f; signature = f}
       in

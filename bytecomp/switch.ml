@@ -27,12 +27,13 @@ exception Not_simple
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
 module Store(A:Stored) = struct
   module AMap =
-    Map.Make(struct type t = A.key let compare = Pervasives.compare end)
+    Map.Make(struct type t = A.key let compare = A.compare_key end)
 
   type intern =
       { mutable map : (bool * int)  AMap.t ;
@@ -358,7 +359,7 @@ let make_key  cases =
 
 
 (*
-  Intervall test x in [l,h] works by checking x-l in [0,h-l]
+  Interval test x in [l,h] works by checking x-l in [0,h-l]
    * This may be false for arithmetic modulo 2^31
    * Subtracting l may change the relative ordering of values
      and invalid the invariant that matched values are given in
@@ -658,7 +659,7 @@ and enum top cases =
 (* Minimal density of switches *)
 let theta = ref 0.33333
 
-(* Minmal number of tests to make a switch *)
+(* Minimal number of tests to make a switch *)
 let switch_min = ref 3
 
 (* Particular case 0, 1, 2 *)
@@ -698,7 +699,7 @@ let dense {cases} i j =
    Adaptation of the correction to Bernstein
    ``Correction to `Producing Good Code for the Case Statement' ''
    S.K. Kannan and T.A. Proebsting
-   Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
+   Software Practice and Experience Vol. 24(2) 233 (Feb 1994)
 *)
 
 let comp_clusters s =

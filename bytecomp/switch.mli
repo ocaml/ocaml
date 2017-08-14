@@ -42,6 +42,7 @@ exception Not_simple
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
@@ -94,7 +95,7 @@ module type S =
     - actions is an array of actions.
 
   All these arguments specify a switch construct and zyva
-  returns an action that performs the switch,
+  returns an action that performs the switch.
 *)
 module Make :
   functor (Arg : S) ->

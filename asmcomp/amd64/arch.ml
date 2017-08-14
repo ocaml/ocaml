@@ -39,7 +39,7 @@ type specific_operation =
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
-  | Ibswap of int                      (* endiannes conversion *)
+  | Ibswap of int                      (* endianness conversion *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
 and float_operation =
@@ -127,8 +127,3 @@ let print_specific_operation printreg op ppf arg =
                    (Array.sub arg 1 (Array.length arg - 1))
   | Ibswap i ->
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
-
-let win64 =
-  match Config.system with
-  | "win64" | "mingw64" | "cygwin" -> true
-  | _                   -> false

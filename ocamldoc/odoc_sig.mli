@@ -118,7 +118,7 @@ module Analyser :
       (** The name of the analysed file. *)
       val file_name : string ref
 
-      (** This function takes two indexes (start and end) and return the string
+      (** This function takes two indexes (start and end) and returns the string
          corresponding to the indexes in the file global variable. The function
          prepare_file must have been called to fill the file global variable.*)
       val get_string_of_file : int -> int -> string
@@ -126,6 +126,15 @@ module Analyser :
       (** [prepare_file f input_f] sets [file_name] with [f] and loads the file
          [input_f] into [file].*)
       val prepare_file : string -> string -> unit
+
+      (** [preamble f input_f loc ast ] retrieves the position and contents of
+          the preamble for the file [f]: i.e, the first documentation comment
+          before any elements in [ast].
+          If there is no such preamble, [0,None] is returned.
+          The function [loc] is used to obtain the location of this
+          first element of [ast].*)
+      val preamble: string -> string -> ('a -> Location.t) -> 'a list
+        -> int * Odoc_types.info option
 
       (** The function used to get the comments in a class. *)
       val get_comments_in_class : int -> int ->
@@ -141,12 +150,12 @@ module Analyser :
          or an empty list for an abstract type.
          [pos_end] is last char of the complete type definition.
          [pos_limit] is the position of the last char we could use to look for a comment,
-         i.e. usually the beginning on the next element.*)
+         i.e. usually the beginning of the next element.*)
       val name_comment_from_type_decl :
           int -> int -> Parsetree.type_declaration -> int * (string * Odoc_types.info option) list
 
       (** This function converts a [Types.type_expr] into a [Odoc_type.type_kind],
-         by associating the comment found in the parstree of each object field, if any. *)
+         by associating the comment found in the parsetree of each object field, if any. *)
       val manifest_structure :
           Odoc_env.env -> (string * Odoc_types.info option) list ->
             Types.type_expr -> Odoc_type.type_manifest
@@ -164,7 +173,7 @@ module Analyser :
         Odoc_env.env -> int -> Typedtree.constructor_arguments ->
         Odoc_type.constructor_args
 
-      (** This function merge two optional info structures. *)
+      (** This function merges two optional info structures. *)
       val merge_infos :
           Odoc_types.info option -> Odoc_types.info option ->
             Odoc_types.info option

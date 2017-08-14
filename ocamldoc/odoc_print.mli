@@ -21,7 +21,7 @@ val string_of_type_expr : Types.type_expr -> string
 
 (** This function returns a string representing a [Types.module_type].
    @param complete indicates if we must print complete signatures
-   or just [sig end]. Default if [false].
+   or just [sig end]. Default is [false].
    @param code if [complete = false] and the type contains something else
    than identificators and functors, then the given code is used.
 *)
@@ -29,6 +29,6 @@ val string_of_module_type : ?code: string -> ?complete: bool -> Types.module_typ
 
 (** This function returns a string representing a [Types.class_type].
    @param complete indicates if we must print complete signatures
-   or just [object end]. Default if [false].
+   or just [object end]. Default is [false].
 *)
 val string_of_class_type : ?complete: bool -> Types.class_type -> string

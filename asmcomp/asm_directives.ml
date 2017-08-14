@@ -26,8 +26,10 @@ module L = Linkage_name
 module LR = Linkage_name.With_reloc
 module TS = Target_system
 
+let dwarf_supported = not (TS.windows ())
+
 type constant =
-  | Const of int64
+  | Const of Targetint.t
   | This
   | Label of Cmm.label
   | Symbol of L.t
@@ -406,7 +408,7 @@ module Directive = struct
       bprintf buf "\tDWORD\t%a%s" cst n comment
     | Const64 (n, comment) ->
       let comment = masm_comment_opt comment in
-      bprintf buf "\tQUAD\t%a%s" cst n comment
+      bprintf buf "\tQWORD\t%a%s" cst n comment
     | Global s -> bprintf buf "\tPUBLIC\t%s" s
     | Section ([".data"], None, []) -> bprintf buf "\t.DATA"
     | Section ([".text"], None, []) -> bprintf buf "\t.CODE"
@@ -418,20 +420,20 @@ module Directive = struct
       | Thirty_two -> bprintf buf "%s LABEL DWORD" label
       | Sixty_four -> bprintf buf "%s LABEL QWORD" label
       end
-    | Cfi_adjust_cfa_offset _
-    | Cfi_endproc
-    | Cfi_offset _
-    | Cfi_startproc
-    | File _
-    | Indirect_symbol _
-    | Loc _
-    | Private_extern _
-    | Size _
-    | Sleb128 _
-    | Type _
-    | Uleb128 _
+    | Cfi_adjust_cfa_offset _ -> Misc.fatal_error "Unsupported asm directive (Cfi_adjust_cfa_offset) for MASM"
+    | Cfi_endproc -> Misc.fatal_error "Unsupported asm directive (Cfi_endproc) for MASM"
+    | Cfi_offset _ -> Misc.fatal_error "Unsupported asm directive (Cfi_offset) for MASM"
+    | Cfi_startproc -> Misc.fatal_error "Unsupported asm directive (Cfi_startproc) for MASM"
+    | File _ -> Misc.fatal_error "Unsupported asm directive (File) for MASM"
+    | Indirect_symbol _ -> Misc.fatal_error "Unsupported asm directive (Indirect_symbol) for MASM"
+    | Loc _ -> Misc.fatal_error "Unsupported asm directive (Loc) for MASM"
+    | Private_extern _ -> Misc.fatal_error "Unsupported asm directive (Private_extern) for MASM"
+    | Size _ -> Misc.fatal_error "Unsupported asm directive (Size) for MASM"
+    | Sleb128 _ -> Misc.fatal_error "Unsupported asm directive (Sleb128) for MASM"
+    | Type _ -> Misc.fatal_error "Unsupported asm directive (Type) for MASM"
+    | Uleb128 _ -> Misc.fatal_error "Unsupported asm directive (Uleb128) for MASM"
     | Direct_assignment _ ->
-      Misc.fatal_error "Unsupported asm directive for MASM"
+      Misc.fatal_error "Unsupported asm directive (Direct_assignemnt) for MASM"
 
   let print b t =
     match TS.assembler () with
@@ -441,7 +443,11 @@ end
 
 let rec lower_constant (cst : constant) : Directive.constant =
   match cst with
-  | Const i -> Const i
+  | Const i ->
+    begin match Targetint.repr i with
+    | Int32 i -> Const32 i
+    | Int64 i -> Const i
+    end
   | This -> This
   | Label lbl -> Named_thing (string_of_label lbl)
   | Symbol sym -> Named_thing (L.to_string sym)
@@ -456,6 +462,11 @@ let emit (d : Directive.t) =
   match !emit_ref with
   | Some emit -> emit d
   | None -> Misc.fatal_error "initialize not called"
+
+let emit_non_masm (d : Directive.t) =
+  match TS.assembler () with
+  | MASM ->  ()
+  | MacOS | GAS_like -> emit d
 
 let section segment flags args = emit (Section (segment, flags, args))
 let align ~bytes = emit (Align { bytes; })
@@ -486,11 +497,9 @@ let cfi_startproc () =
 let comment s = emit (Comment s)
 let direct_assignment var cst =
   emit (Direct_assignment (LR.to_string var, lower_constant cst))
-let file ~file_num ~file_name =
-  emit (File { file_num = Some file_num; filename = file_name; })
 let global s = emit (Global (L.to_string s))
 let indirect_symbol s = emit (Indirect_symbol (L.to_string s))
-let loc ~file_num ~line ~col = emit (Loc { file_num; line; col; })
+let loc ~file_num ~line ~col = emit_non_masm (Loc { file_num; line; col; })
 let private_extern s = emit (Private_extern (L.to_string s))
 let size name cst = emit (Size (L.to_string name, (lower_constant cst)))
 let sleb128 i = emit (Sleb128 (Const i))
@@ -655,7 +664,7 @@ let switch_to_section (section : section) =
       ["__TEXT";"__literal16"], None, ["16byte_literals"]
     | Sixteen_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Sixteen_byte_literals, _, Win64 ->
+    | Sixteen_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
       data ()
     | Sixteen_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
@@ -663,16 +672,20 @@ let switch_to_section (section : section) =
       ["__TEXT";"__literal8"], None, ["8byte_literals"]
     | Eight_byte_literals, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
-    | Eight_byte_literals, _, Win64 ->
+    | Eight_byte_literals, _, (MinGW_32 | Win32 | Win64) ->
       data ()
     | Eight_byte_literals, _, _ ->
       [".rodata.cst8"], Some "a", ["@progbits"]
     | Jump_tables, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
+    | Jump_tables, _, (MinGW_32 | Win32) -> (* XXX Cygwin32? *)
+      data ()
     | Jump_tables, _, (MacOS_like | Win64) ->
       text () (* with LLVM/OS X and MASM, use the text segment *)
     | Jump_tables, _, _ ->
       [".rodata"], None, []
+    | Read_only_data, _, (MinGW_32 | Win32) -> (* XXX Cygwin32? *)
+      data ()
     | Read_only_data, _, (MinGW_64 | Cygwin) ->
       [".rdata"], Some "dr", []
     | Read_only_data, _, _ ->
@@ -706,6 +719,9 @@ let reset () =
   sections_seen := [];
   temp_var_counter := 0
 
+let file ?file_num ~file_name () =
+  emit_non_masm (File { file_num = file_num; filename = file_name; })
+
 let initialize ~(emit : Directive.t -> unit) =
   emit_ref := Some emit;
   reset ();
@@ -722,7 +738,10 @@ let initialize ~(emit : Directive.t -> unit) =
         | Eight_byte_literals
         | Sixteen_byte_literals
         | Jump_tables -> switch_to_section section
-        | DWARF _ -> if !Clflags.debug then switch_to_section section
+        | DWARF _ ->
+          if !Clflags.debug && dwarf_supported then begin
+            switch_to_section section
+          end
         | POWER (Function_descriptors | Table_of_contents) ->
           begin match TS.architecture () with
           | POWER -> switch_to_section section
@@ -735,14 +754,16 @@ let initialize ~(emit : Directive.t -> unit) =
           end)
       all_sections_in_order
   end;
-  emit (File { file_num = None; filename = ""; });  (* PR#7037 *)
+  file ~file_name:"" ();  (* PR#7037 *)
   switch_to_section Text
+
+let file ~file_num ~file_name = file ~file_num ~file_name ()
 
 let define_data_symbol symbol =
   emit (New_label (L.to_string symbol, Machine_width_data));
-  begin match TS.assembler () with
-  | GAS_like -> type_ symbol ~type_:"STT_OBJECT"
-  | MacOS | MASM -> ()
+  begin match TS.assembler (), TS.windows () with
+  | GAS_like, false -> type_ symbol ~type_:"STT_OBJECT"
+  | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
 let define_function_symbol symbol =
@@ -751,16 +772,15 @@ let define_function_symbol symbol =
       emitting to a text section"
   end;
   emit (New_label (L.to_string symbol, Code));
-  begin match TS.assembler () with
-  | GAS_like -> type_ symbol ~type_:"STT_FUNC"
-  | MacOS | MASM -> ()
+  begin match TS.assembler (), TS.windows () with
+  | GAS_like, false -> type_ symbol ~type_:"STT_FUNC"
+  | GAS_like, true | MacOS, _ | MASM, _ -> ()
   end
 
 let symbol sym = const_machine_width (Symbol_reloc sym)
 
 let symbol_plus_offset sym ~offset_in_bytes =
-  let offset_in_bytes = Targetint.to_int64 offset_in_bytes in
-  const64 (Add (Symbol_reloc sym, Const offset_in_bytes))
+  const_machine_width (Add (Symbol_reloc sym, Const offset_in_bytes))
 
 let new_temp_var () =
   let id = !temp_var_counter in
@@ -796,7 +816,6 @@ let between_labels_32bit ~upper ~lower =
   const32 (force_relocatable expr)
 
 let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
-  let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (
       Add (Label upper, Const offset_upper),
@@ -805,7 +824,6 @@ let between_symbol_and_label_offset ~upper ~lower ~offset_upper =
   const_machine_width (force_relocatable expr)
 
 let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
-  let offset_lower = Targetint.to_int64 offset_lower in
   let expr =
     Sub (
       Symbol_reloc upper,
@@ -814,7 +832,6 @@ let between_symbol_and_label_offset' ~upper ~lower ~offset_lower =
   const_machine_width (force_relocatable expr)
 
 let between_this_and_label_offset_32bit ~upper ~offset_upper =
-  let offset_upper = Targetint.to_int64 offset_upper in
   let expr =
     Sub (Add (Label upper, Const offset_upper), This)
   in
@@ -864,21 +881,21 @@ let offset_into_section_symbol ~section ~symbol:upper ~width =
   constant_with_width expr ~width
 
 let int8 i =
-  const8 (Const (Int64.of_int (Int8.to_int i)))
+  const8 (Const (Targetint.of_int (Int8.to_int i)))
 
 let int16 i =
-  const16 (Const (Int64.of_int (Int16.to_int i)))
+  const16 (Const (Targetint.of_int (Int16.to_int i)))
 
 let int32 i =
-  const32 (Const (Int64.of_int32 i))
+  const32 (Const (Targetint.of_int32 i))
 
 let int64 i =
-  const64 (Const i)
+  const64 (Const (Targetint.of_int64 i)) (* XXX Incorrect *)
 
 let targetint n =
   match TS.machine_width () with
-  | Thirty_two -> const32 (Const (Int64.of_int32 (Targetint.to_int32 n)))
-  | Sixty_four -> const64 (Const (Targetint.to_int64 n))
+  | Thirty_two -> const32 (Const n)
+  | Sixty_four -> const64 (Const n)
 
 let cache_string str =
   match List.assoc str !cached_strings with

@@ -197,7 +197,7 @@ let reset_debug_info () =
 (* We only emit .file if the file has not been seen before. We
    emit .loc for every instruction. *)
 let emit_debug_info dbg =
-  if !Clflags.debug then begin
+  if !Clflags.debug || Config.with_frame_pointers then begin
     match List.rev dbg with
     | [] -> ()
     | { Debuginfo.dinfo_line = line;
@@ -390,8 +390,15 @@ let emit_call_bound_errors ~emit_call ~spacetime_before_uninstrumented_call =
     emit_call L.caml_ml_array_bound_error
   end
 
-let begin_assembly ?(code_section = D.Text) () =
+let reset () =
   reset_debug_info ();
+  frame_descriptors := [];
+  symbols_defined := L.Set.empty;
+  symbols_used := L.Set.empty;
+  size_constants := 0
+
+let begin_assembly ?(code_section = D.Text) () =
+  reset ();
   all_functions := [];
   D.switch_to_section Data;
   emit_global_data_symbol "data_begin";
@@ -426,6 +433,7 @@ let fundecl ?branch_relaxation ?after_body ?alternative_name
     | Some alternative_name -> alternative_name
   in
   D.define_function_symbol fun_symbol;
+  add_def_symbol fun_symbol;
   emit_debug_info fundecl.fun_dbg;
   D.cfi_startproc ();
   prepare fundecl;
@@ -506,10 +514,12 @@ let end_assembly ?(code_section = D.Text) ~emit_numeric_constants () =
   D.mark_stack_non_executable ();  (* PR#4564 *)
   D.switch_to_section code_section;
   emit_global_data_symbol "code_end";
-  D.int64 0L;
+  D.int32 0l;
+  D.int32 0l;
   D.switch_to_section Data;
   emit_global_data_symbol "data_end";
-  D.int64 0L
+  D.int32 0l;
+  D.int32 0l
 
 (* Emission of data *)
 
@@ -534,13 +544,6 @@ let data l =
   D.switch_to_section Data;
   D.align ~bytes:(Targetint.size / 8);
   List.iter emit_item l
-
-let reset () =
-  reset_debug_info ();
-  frame_descriptors := [];
-  symbols_defined := L.Set.empty;
-  symbols_used := L.Set.empty;
-  size_constants := 0
 
 let binary_backend_available = ref false
 let create_asm_file = ref true
