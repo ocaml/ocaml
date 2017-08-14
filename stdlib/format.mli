@@ -29,10 +29,9 @@
    There are three predefined formatters:
    - {!std_formatter} outputs to {{!Pervasives.stdout}stdout}
    - {!err_formatter} outputs to {{!Pervasives.stderr}stderr}
-   - {!str_formatter} outputs to the {!stdbuf} {{!Buffer}buffer}
 
    All functions in the {!Format} module comes in two variants:
-   a short version that operate on {!std_formatter} and the
+   a short version that operates on {!std_formatter} and the
    generic version prefixed by [pp_] that takes a formatter
    as its first argument.
 
@@ -46,7 +45,7 @@
    For a gentle introduction to the basics of pretty-printing using
    [Format], read
    {{:http://caml.inria.fr/resources/doc/guides/format.en.html}
-   http://caml.inria.fr/resources/doc/guides/format.en.html}.
+    http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line splitting. The addition of

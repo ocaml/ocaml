@@ -182,7 +182,7 @@ Working version
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
 - MPR#7588, GPR#1291: make format documentation predictable
-  (Florian Angeletti)
+  (Florian Angeletti, review by Gabriel Radanne)
 
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
