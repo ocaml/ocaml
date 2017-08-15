@@ -32,8 +32,10 @@ value gb_classic_register(value v)
 {
   CAMLparam1(v);
   CAMLlocal1(b);
-  b = caml_alloc(Abstract_tag, 1);
-  Root_val(b) = caml_create_root(v);
+  caml_root r;
+  b = caml_alloc(1, Abstract_tag);
+  r = caml_create_root(v);
+  Root_val(b) = r;
   CAMLreturn (b);
 }
 
