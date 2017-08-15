@@ -65,6 +65,7 @@ afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=true
 with_fpic=false
+skip_secure_getenv_detection=false
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -208,6 +209,8 @@ while : ; do
         safe_string=true;;
     -afl-instrument)
         afl_instrument=true;;
+    -skip-secure-getenv-detection)
+        skip_secure_getenv_detection=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -1151,7 +1154,9 @@ if sh ./hasgot times; then
   echo "#define HAS_TIMES" >> s.h
 fi
 
-if sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h secure_getenv; then
+if $skip_secure_getenv_detection; then
+  inf "skip secure_getenv detection."
+elif sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h secure_getenv; then
   inf "secure_getenv() found."
   echo "#define HAS_SECURE_GETENV" >> s.h
 elif sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h __secure_getenv; then
