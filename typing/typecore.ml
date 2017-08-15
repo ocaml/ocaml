@@ -2204,6 +2204,8 @@ struct
           Use.(inspect (join ty (class_expr env ce)))
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
+      | Tcl_open (_, _, _, _, ce) ->
+          class_expr env ce
   and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     fun env { Typedtree.c_lhs; c_guard; c_rhs } ~scrutinee:ty ->
       let ty =
@@ -2301,6 +2303,8 @@ struct
             let _, ty = value_bindings rec_flag env valbinds in
             Use.join ty (class_expr env ce)
         | Tcl_constraint (ce, _, _, _, _) ->
+            class_expr env ce
+        | Tcl_open (_, _, _, _, ce) ->
             class_expr env ce
     in
     match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
