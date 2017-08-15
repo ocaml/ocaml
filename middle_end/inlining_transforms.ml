@@ -57,7 +57,9 @@ let which_function_parameters_can_we_specialise ~params ~args
     user-specified function as an [Flambda.named] value that projects the
     variable from its closure. *)
 let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
-      ~lhs_of_application ~function_decls ~init ~f =
+      ~lhs_of_application
+      ~(bound_variables : Variable.Set.t)
+      ~init ~f =
   Variable.Set.fold (fun var acc ->
       let expr : Flambda.named =
         Project_var {
@@ -67,8 +69,7 @@ let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
         }
       in
       f ~acc ~var ~expr)
-    (Flambda_utils.variables_bound_by_the_closure closure_id_being_applied
-      function_decls)
+    bound_variables
     init
 
 let set_inline_attribute_on_all_apply body inline specialise =
@@ -80,7 +81,7 @@ let set_inline_attribute_on_all_apply body inline specialise =
 (** Assign fresh names for a function's parameters and rewrite the body to
     use these new names. *)
 let copy_of_function's_body_with_freshened_params env
-      ~(function_decl : Flambda.function_declaration) =
+      ~(function_decl : Simple_value_approx.function_declaration) =
   let params = function_decl.params in
   let param_vars = Parameter.List.vars params in
   (* We cannot avoid the substitution in the case where we are inlining
@@ -114,12 +115,13 @@ let copy_of_function's_body_with_freshened_params env
     (= "variables bound by the closure"), and any function identifiers
     introduced by the corresponding set of closures. *)
 let inline_by_copying_function_body ~env ~r
-      ~(function_decls : Flambda.function_declarations)
+      ~(function_decls : Simple_value_approx.function_declarations)
       ~lhs_of_application
       ~(inline_requested : Lambda.inline_attribute)
       ~(specialise_requested : Lambda.specialise_attribute)
       ~closure_id_being_applied
-      ~(function_decl : Flambda.function_declaration) ~args ~dbg ~simplify =
+      ~(function_decl : Simple_value_approx.function_declaration)
+      ~args ~dbg ~simplify =
   assert (E.mem env lhs_of_application);
   assert (List.for_all (E.mem env) args);
   let r =
@@ -151,8 +153,19 @@ let inline_by_copying_function_body ~env ~r
   in
   (* Add bindings for the variables bound by the closure. *)
   let bindings_for_vars_bound_by_closure_and_params_to_args =
+    let bound_variables =
+      let func =
+        Variable.Map.find (Closure_id.unwrap closure_id_being_applied)
+          function_decls.funs
+      in
+      let params = Parameter.Set.vars func.params in
+      let functions = Variable.Map.keys function_decls.funs in
+      Variable.Set.diff
+        (Variable.Set.diff func.free_variables params)
+        functions
+    in
     fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
-      ~lhs_of_application ~function_decls ~init:bindings_for_params_to_args
+      ~lhs_of_application ~bound_variables ~init:bindings_for_params_to_args
       ~f:(fun ~acc:body ~var ~expr -> Flambda.create_let var expr body)
   in
   (* Add bindings for variables corresponding to the functions introduced by
@@ -272,8 +285,19 @@ let inline_by_copying_function_declaration ~env ~r
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
+      let bound_variables =
+        let func =
+          Variable.Map.find (Closure_id.unwrap closure_id_being_applied)
+            function_decls.funs
+        in
+        let params = Parameter.Set.vars func.params in
+        let functions = Variable.Map.keys function_decls.funs in
+        Variable.Set.diff
+          (Variable.Set.diff func.free_variables params)
+          functions
+      in
       fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
-        ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
+        ~lhs_of_application ~bound_variables ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure : Flambda.specialised_to =
             { var = new_var "from_closure";

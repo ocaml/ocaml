@@ -19,7 +19,6 @@
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
 module R = Inline_and_simplify_aux.Result
-module U = Flambda_utils
 module W = Inlining_cost.Whether_sufficient_benefit
 module T = Inlining_cost.Threshold
 module S = Inlining_stats_types
@@ -34,8 +33,9 @@ type 'b good_idea =
   | Don't_try_it of 'b
 
 let inline env r ~lhs_of_application
-    ~(function_decls : Flambda.function_declarations)
-    ~closure_id_being_applied ~(function_decl : Flambda.function_declaration)
+    ~(function_decls : Simple_value_approx.function_declarations)
+    ~closure_id_being_applied
+    ~(function_decl : Simple_value_approx.function_declaration)
     ~value_set_of_closures ~only_use_of_function ~original ~recursive
     ~(args : Variable.t list) ~size_from_approximation ~dbg ~simplify
     ~(inline_requested : Lambda.inline_attribute)
@@ -159,7 +159,7 @@ let inline env r ~lhs_of_application
             ~new_size:body_size
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.Flambda.is_a_functor
+            ~lifting:function_decl.A.is_a_functor
             ~round:(E.round env)
             ~benefit
         in
@@ -242,7 +242,7 @@ let inline env r ~lhs_of_application
         W.create ~original body
           ~toplevel:(E.at_toplevel env)
           ~branch_depth:(E.branch_depth env)
-          ~lifting:function_decl.Flambda.is_a_functor
+          ~lifting:function_decl.A.is_a_functor
           ~round:(E.round env)
           ~benefit:(R.benefit r_inlined)
       in
@@ -268,7 +268,7 @@ let inline env r ~lhs_of_application
           W.create ~original body
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.Flambda.is_a_functor
+            ~lifting:function_decl.A.is_a_functor
             ~round:(E.round env)
             ~benefit:(R.benefit r_inlined)
         in
@@ -489,9 +489,9 @@ let specialise env r ~lhs_of_application
         Original decision
     end
 
-let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
+let for_call_site ~env ~r ~(function_decls : A.function_declarations)
       ~lhs_of_application ~closure_id_being_applied
-      ~(function_decl : Flambda.function_declaration)
+      ~(function_decl : A.function_declaration)
       ~(value_set_of_closures : Simple_value_approx.value_set_of_closures)
       ~args ~args_approxs ~dbg ~simplify ~inline_requested
       ~specialise_requested =
@@ -593,18 +593,50 @@ let for_call_site ~env ~r ~(function_decls : Flambda.function_declarations)
                 ~size_from_approximation:None)
         in
         let fun_var =
-          U.find_declaration_variable closure_id_being_applied function_decls
+          let var = Closure_id.unwrap closure_id_being_applied in
+          if not (Variable.Map.mem var function_decls.funs)
+          then raise Not_found
+          else var
+        in
+        let to_flambda_function_decl
+              (func_decl : A.function_declaration) =
+          let params = func_decl.params in
+          let body = func_decl.body in
+          let stub = func_decl.stub in
+          let dbg = func_decl.dbg in
+          let inline = func_decl.inline in
+          let specialise = func_decl.specialise in
+          let is_a_functor = func_decl.is_a_functor in
+          Flambda.create_function_declaration
+            ~params ~body ~stub ~dbg ~inline ~specialise ~is_a_functor
+        in
+        let flambda_function_decls =
+          let funs =
+            Variable.Map.map to_flambda_function_decl function_decls.funs
+          in
+          Flambda.create_function_declarations ~funs
         in
         let recursive =
           lazy
             (Variable.Set.mem fun_var
                ((Find_recursive_functions.in_function_declarations
-                  function_decls
+                  flambda_function_decls
                   ~backend:(E.backend env))))
         in
+        (* CR fquah: [specialise] and [inline] take different types due
+           to [Inlining_transform.inline_by_copying_function_body] and
+           [Inlining_transform.inline_by_copying_function_declaration]
+           having using different input types.
+
+           I am unsure having [to_flambda_function_decl] below is a correct
+           thing to do.
+        *)
         let specialise_result =
-          specialise env r ~lhs_of_application ~function_decls ~recursive
-            ~closure_id_being_applied ~function_decl ~value_set_of_closures
+          specialise env r
+            ~function_decls:flambda_function_decls
+            ~function_decl:(to_flambda_function_decl function_decl)
+            ~lhs_of_application  ~recursive ~closure_id_being_applied
+            ~value_set_of_closures
             ~args ~args_approxs ~dbg ~simplify ~original ~inline_requested
             ~specialise_requested ~fun_cost ~self_call ~inlining_threshold
         in

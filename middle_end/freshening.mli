@@ -82,6 +82,22 @@ val apply_static_exception : t -> Static_exception.t -> Static_exception.t
 
     If the renaming is inactive, this is the identity.
 *)
+
+(* CR fquah: This doesn't perform a rewrite on the approximation - the
+   rewrite is performed on the terms itself. The rewrite is used at two
+   places:
+
+   - Inline_and_simplify.simplify_set_of_closures
+   - Inlining_transform.inline_by_copying_function_declaration
+
+   In the latter case, it is possible to change the type of this function
+   to [Simple_value_approx.function_declarations], whereas in the former
+   case, it is tricky (Set of closure contains
+   [Flambda.function_declarations].
+
+   It looks like this function is meant to operate on terms, hence I keep
+   it as a function that operates on Flambda.function_declarations.
+*)
 val rewrite_recursive_calls_with_symbols
    : t
   -> Flambda.function_declarations

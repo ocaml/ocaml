@@ -66,8 +66,26 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
+and function_declarations = {
+  set_of_closures_id : Set_of_closures_id.t;
+  set_of_closures_origin : Set_of_closures_origin.t;
+  funs : function_declaration Variable.Map.t;
+}
+
+and function_declaration = {
+  free_variables : Variable.Set.t;
+  free_symbols : Symbol.Set.t;
+  params : Parameter.t list;
+  body : Flambda.t;
+  stub : bool;
+  dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
+  specialise : Lambda.specialise_attribute;
+  is_a_functor : bool;
+}
+
 and value_set_of_closures = {
-  function_decls : Flambda.function_declarations;
+  function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
@@ -236,15 +254,18 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
   }
 
 let create_value_set_of_closures
-      ~(function_decls : Flambda.function_declarations) ~bound_vars
+      ~(function_decls : function_declarations) ~bound_vars
       ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let size =
     lazy (
       let functions = Variable.Map.keys function_decls.funs in
-      Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
+      Variable.Map.map (fun (function_decl : function_declaration) ->
           let params = Parameter.Set.vars function_decl.params in
           let free_vars =
+            (* CR fquah: Assuming [function_decl.free_variables]  is an
+               [Variable.Set.t option], what should the below be?
+            *)
             Variable.Set.diff
               (Variable.Set.diff function_decl.free_variables params)
               functions
@@ -660,15 +681,18 @@ let freshen_and_check_closure_id
       value_set_of_closures.freshening closure_id
   in
   try
-    ignore (Flambda_utils.find_declaration closure_id
-      value_set_of_closures.function_decls);
+    ignore (
+      Variable.Map.find (Closure_id.unwrap closure_id)
+        value_set_of_closures.function_decls.funs
+    );
     closure_id
   with Not_found ->
     Misc.fatal_error (Format.asprintf
-      "Function %a not found in the set of closures@ %a@.%a@."
+      "Function %a not found in the set of closures@ %a@."
       Closure_id.print closure_id
       print_value_set_of_closures value_set_of_closures
-      Flambda.print_function_declarations value_set_of_closures.function_decls)
+      (* Flambda.print_function_declarations
+         value_set_of_closures.function_decls *))
 
 type checked_approx_for_set_of_closures =
   | Wrong
@@ -859,3 +883,24 @@ let potentially_taken_block_switch_branch t tag =
     Cannot_be_taken
   | Value_bottom ->
     Cannot_be_taken
+
+let function_declarations_of_flambda flambda =
+  let { Flambda. set_of_closures_id ; set_of_closures_origin ; funs } =
+    flambda
+  in
+  let funs : function_declaration Variable.Map.t =
+    Variable.Map.map
+      (fun (fun_decl : Flambda.function_declaration) ->
+         { params         = fun_decl.params
+         ; body           = fun_decl.body
+         ; stub           = fun_decl.stub
+         ; dbg            = fun_decl.dbg
+         ; inline         = fun_decl.inline
+         ; specialise     = fun_decl.specialise
+         ; is_a_functor   = fun_decl.is_a_functor
+         ; free_variables = fun_decl.free_variables
+         ; free_symbols   = fun_decl.free_symbols
+         })
+      funs
+  in
+  { set_of_closures_id ; set_of_closures_origin ; funs }

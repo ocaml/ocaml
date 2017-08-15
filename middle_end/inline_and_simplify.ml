@@ -643,6 +643,9 @@ and simplify_set_of_closures original_env r
       ~backend:(E.backend env))
   in
   let value_set_of_closures =
+    let function_decls =
+      A.function_declarations_of_flambda function_decls
+    in
     A.create_value_set_of_closures ~function_decls
       ~bound_vars:internal_value_set_of_closures.bound_vars
       ~invariant_params
@@ -727,8 +730,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           let function_decls = value_set_of_closures.function_decls in
           let function_decl =
             try
-              Flambda_utils.find_declaration closure_id_being_applied
-                function_decls
+              Variable.Map.find
+                (Closure_id.unwrap closure_id_being_applied)
+                function_decls.funs
             with
             | Not_found ->
               Misc.fatal_errorf "When handling application expression, \
@@ -742,7 +746,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
             | Direct _ -> r
           in
           let nargs = List.length args in
-          let arity = Flambda_utils.function_arity function_decl in
+          let arity = List.length function_decl.params in
           let result, r =
             if nargs = arity then
               simplify_full_application env r ~function_decls
@@ -772,6 +776,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
 and simplify_full_application env r ~function_decls ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~value_set_of_closures ~args
       ~args_approxs ~dbg ~inline_requested ~specialise_requested =
+
   Inlining_decision.for_call_site ~env ~r ~function_decls
     ~lhs_of_application ~closure_id_being_applied ~function_decl
     ~value_set_of_closures ~args ~args_approxs ~dbg ~simplify
@@ -780,7 +785,7 @@ and simplify_full_application env r ~function_decls ~lhs_of_application
 and simplify_partial_application env r ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~dbg
       ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = List.length function_decl.A.params in
   assert (arity > List.length args);
   (* For simplicity, we disallow [@inline] attributes on partial
      applications.  The user may always write an explicit wrapper instead
@@ -807,7 +812,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.A.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -845,7 +850,7 @@ and simplify_partial_application env r ~lhs_of_application
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
       ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = List.length function_decl.A.params in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let full_app_args, remaining_args =
@@ -1458,6 +1463,9 @@ let constant_defining_value_approx
         ~backend:(E.backend env))
     in
     let value_set_of_closures =
+      let function_decls =
+        A.function_declarations_of_flambda function_decls
+      in
       A.create_value_set_of_closures ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
         ~invariant_params

@@ -143,10 +143,28 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
+and function_declarations = {
+  set_of_closures_id : Set_of_closures_id.t;
+  set_of_closures_origin : Set_of_closures_origin.t;
+  funs : function_declaration Variable.Map.t;
+}
+
+and function_declaration = {
+  free_variables : Variable.Set.t;
+  free_symbols : Symbol.Set.t;
+  params : Parameter.t list;
+  body : Flambda.t;
+  stub : bool;
+  dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
+  specialise : Lambda.specialise_attribute;
+  is_a_functor : bool;
+}
+
 (* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
 and value_set_of_closures = private {
-  function_decls : Flambda.function_declarations;
+  function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
@@ -180,7 +198,7 @@ val print_value_set_of_closures
   -> unit
 
 val create_value_set_of_closures
-   : function_decls:Flambda.function_declarations
+   : function_decls:function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
@@ -426,3 +444,6 @@ type switch_branch_selection =
 (** Check that the branch is compatible with the approximation *)
 val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
 val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection
+
+val function_declarations_of_flambda
+  : Flambda.function_declarations -> function_declarations
