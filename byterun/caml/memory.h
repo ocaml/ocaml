@@ -318,8 +318,13 @@ struct caml__roots_block {
 
 #define CAMLnoreturn ((void) caml__frame)
 
-  /* modify a field */
-#define Store_field(block, offset, val) caml_modify_field(block, offset, val)
+
+/* convenience macro */
+#define Store_field(block, offset, val) do{ \
+  mlsize_t caml__temp_offset = (offset); \
+  value caml__temp_val = (val); \
+  caml_modify_field ((block), caml__temp_offset, caml__temp_val); \
+}while(0)
 
 /*
    NOTE: [Begin_roots] and [End_roots] are superseded by [CAMLparam]*,
