@@ -72,11 +72,15 @@ and function_declarations = {
   funs : function_declaration Variable.Map.t;
 }
 
-and function_declaration = {
+and function_body = {
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
-  params : Parameter.t list;
   body : Flambda.t;
+}
+
+and function_declaration = {
+  function_body : function_body option;
+  params : Parameter.t list;
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
@@ -85,6 +89,7 @@ and function_declaration = {
 }
 
 and value_set_of_closures = {
+  with_empty_body : bool;
   function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
@@ -253,39 +258,95 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
     symbol = None;
   }
 
+let function_declarations_of_flambda ~with_empty_body flambda =
+  let { Flambda. set_of_closures_id ; set_of_closures_origin ; funs } =
+    flambda
+  in
+  let funs : function_declaration Variable.Map.t =
+    Variable.Map.map
+      (fun (fun_decl : Flambda.function_declaration) ->
+         let function_body =
+           if with_empty_body
+           then None
+           else begin
+             Some
+               { body = fun_decl.body;
+                 free_variables = fun_decl.free_variables;
+                 free_symbols = fun_decl.free_symbols
+               }
+           end
+         in
+         { function_body;
+           params         = fun_decl.params;
+           stub           = fun_decl.stub;
+           dbg            = fun_decl.dbg;
+           inline         = fun_decl.inline;
+           specialise     = fun_decl.specialise;
+           is_a_functor   = fun_decl.is_a_functor;
+         })
+      funs
+  in
+  { set_of_closures_id ; set_of_closures_origin ; funs }
+
 let create_value_set_of_closures
-      ~(function_decls : function_declarations) ~bound_vars
+      ~with_empty_body
+      ~(function_decls : Flambda.function_declarations) ~bound_vars
       ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
-  let size =
-    lazy (
-      let functions = Variable.Map.keys function_decls.funs in
-      Variable.Map.map (fun (function_decl : function_declaration) ->
-          let params = Parameter.Set.vars function_decl.params in
-          let free_vars =
-            (* CR fquah: Assuming [function_decl.free_variables]  is an
-               [Variable.Set.t option], what should the below be?
-            *)
-            Variable.Set.diff
-              (Variable.Set.diff function_decl.free_variables params)
-              functions
-          in
-          let num_free_vars = Variable.Set.cardinal free_vars in
-          let max_size =
-            Inlining_cost.maximum_interesting_size_of_function_body
-              num_free_vars
-          in
-          Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
-        function_decls.funs)
-  in
-  { function_decls;
-    bound_vars;
-    invariant_params;
-    size;
-    specialised_args;
-    freshening;
-    direct_call_surrogates;
-  }
+  if with_empty_body then begin
+    let size = lazy Variable.Map.empty in
+    let invariant_params = lazy Variable.Map.empty in
+    let function_decls =
+      function_declarations_of_flambda ~with_empty_body function_decls
+    in
+    { with_empty_body;
+      function_decls;
+      bound_vars;
+      invariant_params;
+      size;
+      specialised_args;
+      freshening;
+      direct_call_surrogates;
+    }
+  end else begin
+    let size =
+      lazy (
+        let functions = Variable.Map.keys function_decls.funs in
+        Variable.Map.map
+          (fun (function_decl : Flambda.function_declaration) ->
+            let params = Parameter.Set.vars function_decl.params in
+            let free_vars =
+              Variable.Set.diff
+                (Variable.Set.diff function_decl.free_variables params)
+                functions
+            in
+            let num_free_vars = Variable.Set.cardinal free_vars in
+            let max_size =
+              Inlining_cost.maximum_interesting_size_of_function_body
+                num_free_vars
+            in
+            Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
+          function_decls.funs)
+    in
+    let function_decls =
+      function_declarations_of_flambda ~with_empty_body function_decls
+    in
+    { with_empty_body;
+      function_decls;
+      bound_vars;
+      invariant_params;
+      size;
+      specialised_args;
+      freshening;
+      direct_call_surrogates;
+    }
+  end
+
+let create_classic_value_set_of_closures =
+  create_value_set_of_closures ~with_empty_body:true
+
+let create_normal_value_set_of_closures =
+  create_value_set_of_closures ~with_empty_body:false
 
 let update_freshening_of_value_set_of_closures value_set_of_closures
       ~freshening =
@@ -884,23 +945,10 @@ let potentially_taken_block_switch_branch t tag =
   | Value_bottom ->
     Cannot_be_taken
 
-let function_declarations_of_flambda flambda =
-  let { Flambda. set_of_closures_id ; set_of_closures_origin ; funs } =
-    flambda
-  in
-  let funs : function_declaration Variable.Map.t =
-    Variable.Map.map
-      (fun (fun_decl : Flambda.function_declaration) ->
-         { params         = fun_decl.params
-         ; body           = fun_decl.body
-         ; stub           = fun_decl.stub
-         ; dbg            = fun_decl.dbg
-         ; inline         = fun_decl.inline
-         ; specialise     = fun_decl.specialise
-         ; is_a_functor   = fun_decl.is_a_functor
-         ; free_variables = fun_decl.free_variables
-         ; free_symbols   = fun_decl.free_symbols
-         })
-      funs
-  in
-  { set_of_closures_id ; set_of_closures_origin ; funs }
+let get_function_body_exn (fun_decl : function_declaration) =
+  (* CR fquah: Write a proper error message (and probably a proper
+     [print_function_declaration] as well *)
+  match fun_decl.function_body with
+  | Some body -> body
+  | None -> Misc.fatal_error "Cannot get [function_body] of a function \
+                              declaration with an empty body."

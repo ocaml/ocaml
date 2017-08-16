@@ -95,14 +95,22 @@ let copy_of_function's_body_with_freshened_params env
   if E.does_not_bind env param_vars
     && E.does_not_freshen env param_vars
   then
-    params, function_decl.body
+    let function_body =
+      Simple_value_approx.get_function_body_exn function_decl
+    in
+    params, function_body.body
   else
     let freshened_params = List.map (fun p -> Parameter.rename p) params in
     let subst =
       Variable.Map.of_list
         (List.combine param_vars (Parameter.List.vars freshened_params))
     in
-    let body = Flambda_utils.toplevel_substitution subst function_decl.body in
+    let body =
+      let function_body =
+        Simple_value_approx.get_function_body_exn function_decl
+      in
+      Flambda_utils.toplevel_substitution subst function_body.body
+    in
     freshened_params, body
 
 (* CR-soon mshinwell: Add a note somewhere to explain why "bound by the closure"
@@ -124,6 +132,9 @@ let inline_by_copying_function_body ~env ~r
       ~args ~dbg ~simplify =
   assert (E.mem env lhs_of_application);
   assert (List.for_all (E.mem env) args);
+  let function_body =
+    Simple_value_approx.get_function_body_exn function_decl
+  in
   let r =
     if function_decl.stub then r
     else R.map_benefit r B.remove_call
@@ -161,7 +172,7 @@ let inline_by_copying_function_body ~env ~r
       let params = Parameter.Set.vars func.params in
       let functions = Variable.Map.keys function_decls.funs in
       Variable.Set.diff
-        (Variable.Set.diff func.free_variables params)
+        (Variable.Set.diff function_body.free_variables params)
         functions
     in
     fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
@@ -177,7 +188,7 @@ let inline_by_copying_function_body ~env ~r
     Variable.Map.fold (fun another_closure_in_the_same_set _ expr ->
       let used =
         Variable.Set.mem another_closure_in_the_same_set
-           function_decl.free_variables
+           function_body.free_variables
       in
       if used then
         Flambda.create_let another_closure_in_the_same_set

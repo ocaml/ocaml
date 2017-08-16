@@ -143,17 +143,21 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
-and function_declarations = {
+and function_declarations = private {
   set_of_closures_id : Set_of_closures_id.t;
   set_of_closures_origin : Set_of_closures_origin.t;
   funs : function_declaration Variable.Map.t;
 }
 
-and function_declaration = {
+and function_body = private {
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
-  params : Parameter.t list;
   body : Flambda.t;
+}
+
+and function_declaration = private {
+  function_body : function_body option;
+  params : Parameter.t list;
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
@@ -161,9 +165,16 @@ and function_declaration = {
   is_a_functor : bool;
 }
 
+
 (* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
+(* The invariance here is when [classic_mode] is true, then
+   [invariant_params] and [size] are guranteed to be empty maps and all the
+   functions in [function_declarations.fun] will have None for its
+   [function_body] field.
+*)
 and value_set_of_closures = private {
+  with_empty_body: bool;
   function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
@@ -197,8 +208,17 @@ val print_value_set_of_closures
   -> value_set_of_closures
   -> unit
 
-val create_value_set_of_closures
-   : function_decls:function_declarations
+val create_classic_value_set_of_closures
+   : function_decls:Flambda.function_declarations
+  -> bound_vars:t Var_within_closure.Map.t
+  -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> freshening:Freshening.Project_var.t
+  -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
+  -> value_set_of_closures
+
+val create_normal_value_set_of_closures
+   : function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
@@ -445,5 +465,4 @@ type switch_branch_selection =
 val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
 val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection
 
-val function_declarations_of_flambda
-  : Flambda.function_declarations -> function_declarations
+val get_function_body_exn : function_declaration -> function_body

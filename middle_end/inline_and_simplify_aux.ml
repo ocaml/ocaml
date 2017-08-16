@@ -618,10 +618,7 @@ let prepare_to_simplify_set_of_closures ~env
           Var_within_closure.Map.add (Var_within_closure.wrap id) desc map)
         free_vars Var_within_closure.Map.empty
     in
-    let function_decls =
-      A.function_declarations_of_flambda function_decls
-    in
-    A.create_value_set_of_closures ~function_decls ~bound_vars
+    A.create_normal_value_set_of_closures ~function_decls ~bound_vars
       ~invariant_params:(lazy Variable.Map.empty) ~specialised_args
       ~freshening ~direct_call_surrogates
   in
