@@ -121,17 +121,20 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
+  bytecomp/meta.cmo bytecomp/opcodes.cmo \
+  bytecomp/bytesections.cmo bytecomp/dll.cmo \
+  bytecomp/symtable.cmo \
   driver/pparse.cmo driver/main_args.cmo \
-  driver/compenv.cmo driver/compmisc.cmo
+  driver/compenv.cmo driver/compmisc.cmo \
+  driver/compdynlink.cmo driver/compplugin.cmo driver/makedepend.cmo
+
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
 
-BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
-  bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
-  bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
+BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
+  bytecomp/printinstr.cmo bytecomp/emitcode.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo \
-  driver/compdynlink.cmo driver/compplugin.cmo \
-  driver/errors.cmo driver/compile.cmo driver/makedepend.cmo
+  driver/errors.cmo driver/compile.cmo
 
 ARCH_SPECIFIC =\
   asmcomp/arch.ml asmcomp/proc.ml asmcomp/CSE.ml asmcomp/selection.ml \
@@ -769,7 +772,7 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cma
 
 ocamlopt: compilerlibs/ocamlcommon.cma compilerlibs/ocamloptcomp.cma \
-          compilerlibs/ocamlbytecomp.cma $(OPTSTART)
+          $(OPTSTART)
 	$(CAMLC) $(LINKFLAGS) -o $@ $^
 
 partialclean::
@@ -874,7 +877,6 @@ partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
 
 ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
-              compilerlibs/ocamlbytecomp.cmxa  \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o $@ $^
 

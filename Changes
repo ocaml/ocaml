@@ -276,6 +276,9 @@ Working version
 - GPR#1214: harden config/Makefile against '#' characters in PREFIX
   (Gabriel Scherer, review by David Allsopp and Damien Doligez)
 
+- GPR#1216: move Compplugin and friends from BYTECOMP to COMP
+  (Leo White, review by Mark Shinwell)
+
 - GPR#1242: disable C plugins loading by default
   (Alexey Egorov)
 
