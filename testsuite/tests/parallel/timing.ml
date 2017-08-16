@@ -24,9 +24,18 @@ let flag = Atomic.make false
 
 let d1 () =
   critical_section (fun () ->
+      let r = wait_until (at (-1)) in
+      assert (r = Timeout));
+  check_before 1;
+  critical_section (fun () ->
       let r = wait_until (at 1) in
       assert (r = Timeout));
   check_after 1;
+  check_before 2;
+  critical_section (fun () ->
+      let r = wait_for (Int64.of_int (- step)) in
+      assert (r = Timeout));
+  check_before 2;
   critical_section (fun () ->
       let r = wait_for (Int64.of_int step) in
       assert (r = Timeout));
