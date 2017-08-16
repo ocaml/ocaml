@@ -40,7 +40,7 @@ static void add_char(struct stringbuf *buf, char c)
   if (buf->ptr < buf->end) *(buf->ptr++) = c;
 }
 
-static void add_string(struct stringbuf *buf, char *s)
+static void add_string(struct stringbuf *buf, const char *s)
 {
   int len = strlen(s);
   if (buf->ptr + len > buf->end) len = buf->end - buf->ptr;

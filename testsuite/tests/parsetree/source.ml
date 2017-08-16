@@ -7294,3 +7294,31 @@ let f = function _::(_::_ [@foo]) -> () | _ -> ();;
 function {contents=contents[@foo]} -> ();;
 fun contents -> {contents=contents[@foo]};;
 ((); (((); ())[@foo]));;
+
+(* https://github.com/LexiFi/gen_js_api/issues/61 *)
+
+let () = foo##.bar := ();;
+
+(* "let open" in classes and class types *)
+
+class c =
+  let open M in
+  object
+    method f : t = x
+  end
+;;
+class type ct =
+  let open M in
+  object
+    method f : t
+  end
+;;
+
+(* M.(::) notation *)
+module Exotic_list = struct
+  module Inner = struct
+    type ('a,'b) t = [] | (::) of 'a * 'b *  ('a,'b) t
+  end
+
+  let Inner.(::)(x,y, Inner.[]) = Inner.(::)(1,"one",Inner.[])
+end

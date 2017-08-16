@@ -333,7 +333,7 @@ Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
 .TP
-.B \-keep-locs
+.B \-keep-docs
 Keep documentation strings in generated .cmi files.
 .TP
 .B \-keep-locs

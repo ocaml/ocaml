@@ -26,7 +26,7 @@ open Btype
    If one wants to manipulate a type after type inference (for
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
-   function [correct_levels]. Then, this type can be correctely
+   function [correct_levels]. Then, this type can be correctly
    manipulated by [apply], [expand_head] and [moregeneral].
 *)
 
@@ -1194,7 +1194,7 @@ let instance_class params cty =
   cleanup_types ();
   (params', cty')
 
-(**** Instanciation for types with free universal variables ****)
+(**** Instantiation for types with free universal variables ****)
 
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
@@ -1315,9 +1315,9 @@ let subst env level priv abbrev ty params args body =
     raise exn
 
 (*
-   Only the shape of the type matters, not whether is is generic or
+   Only the shape of the type matters, not whether it is generic or
    not. [generic_level] might be somewhat slower, but it ensures
-   invariants on types are enforced (decreasing levels.), and we don't
+   invariants on types are enforced (decreasing levels), and we don't
    care about efficiency here.
 *)
 let apply env params body args =
@@ -1332,10 +1332,10 @@ let apply env params body args =
                               (****************************)
 
 (*
-   If the environnement has changed, memorized expansions might not
+   If the environment has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overridden in the environnement.
+   type or module definition is overridden in the environment.
 *)
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
@@ -1700,8 +1700,8 @@ let rec unify_univar t1 t2 = function
       end
   | [] -> raise (Unify [])
 
-(* Test the occurence of free univars in a type *)
-(* that's way too expansive. Must do some kind of cacheing *)
+(* Test the occurrence of free univars in a type *)
+(* that's way too expensive. Must do some kind of caching *)
 let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
@@ -1866,7 +1866,7 @@ let deep_occur t0 ty =
       types are kept distincts, but they are made to (temporally)
       expand to the same type.
    2. Abbreviations with at least one parameter are systematically
-      expanded. The overhead does not seem to high, and that way
+      expanded. The overhead does not seem too high, and that way
       abbreviations where some parameters does not appear in the
       expansion, such as ['a t = int], are correctly handled. In
       particular, for this example, unifying ['a t] with ['b t] keeps
@@ -2275,7 +2275,7 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
 
-(* force unification in Reither when one side has as non-conjunctive type *)
+(* force unification in Reither when one side has a non-conjunctive type *)
 let rigid_variants = ref false
 
 (* drop not force unification in Reither, even in fixed case
@@ -3104,10 +3104,10 @@ let moregen inst_nongen type_pairs env patt subj =
   moregen inst_nongen type_pairs env patt subj
 
 (*
-   Non-generic variable can be instanciated only if [inst_nongen] is
+   Non-generic variable can be instantiated only if [inst_nongen] is
    true. So, [inst_nongen] should be set to false if the subject might
    contain non-generic variables (and we do not want them to be
-   instanciated).
+   instantiated).
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
@@ -3769,8 +3769,8 @@ let rec build_subtype env visited loops posi level t =
                 ty1, tl1
             | _ -> raise Not_found
           in
-          (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
-             as this occurence might break the occur check.
+          (* Fix PR#4505: do not set ty to Tvar when it appears in tl1,
+             as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar None;
@@ -4038,7 +4038,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
   in
   List.fold_left
     (fun cstrs (_, _k1, t1, _k2, t2) ->
-      (* Theses fields are always present *)
+      (* These fields are always present *)
       subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
     cstrs pairs
 
@@ -4499,7 +4499,7 @@ let nondep_cltype_declaration env id decl =
   clear_hash ();
   decl
 
-(* collapse conjonctive types in class parameters *)
+(* collapse conjunctive types in class parameters *)
 let rec collapse_conj env visited ty =
   let ty = repr ty in
   if List.memq ty visited then () else

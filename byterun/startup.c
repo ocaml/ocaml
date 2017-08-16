@@ -97,12 +97,11 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   char buf [2];
 
   truename = caml_search_exe_in_path(*name);
-  caml_gc_message(0x100, "Opening bytecode executable %s\n",
-                  (uintnat) truename);
+  caml_gc_message(0x100, "Opening bytecode executable %s\n", truename);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
     caml_stat_free(truename);
-    caml_gc_message(0x100, "Cannot open file\n", 0);
+    caml_gc_message(0x100, "Cannot open file\n");
     return FILE_NOT_FOUND;
   }
   if (!do_open_script) {
@@ -110,7 +109,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
     if (err < 2 || (buf [0] == '#' && buf [1] == '!')) {
       close(fd);
       caml_stat_free(truename);
-      caml_gc_message(0x100, "Rejected #! script\n", 0);
+      caml_gc_message(0x100, "Rejected #! script\n");
       return BAD_BYTECODE;
     }
   }
@@ -118,7 +117,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   if (err != 0) {
     close(fd);
     caml_stat_free(truename);
-    caml_gc_message(0x100, "Not a bytecode executable\n", 0);
+    caml_gc_message(0x100, "Not a bytecode executable\n");
     return err;
   }
   *name = truename;
@@ -292,7 +291,7 @@ CAMLexport void caml_main(char **argv)
 #endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
   if (!caml_startup_aux(/* pooling */ caml_cleanup_on_exit))
     return;
@@ -416,7 +415,7 @@ CAMLexport value caml_startup_code_exn(
 #endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
   if (caml_cleanup_on_exit)
     pooling = 1;

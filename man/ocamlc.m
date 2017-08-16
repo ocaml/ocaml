@@ -840,7 +840,7 @@ clause.
 \ \ Bad module name: the source file name is not a valid OCaml module name.
 
 25
-\ \ Pattern-matching with all clauses guarded.
+\ \ Deprecated: now part of warning 8.
 
 26
 \ \ Suspicious unused variable: unused variable that is bound with

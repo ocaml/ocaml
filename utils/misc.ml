@@ -163,6 +163,17 @@ module Stdlib = struct
       | None -> default
       | Some a -> f a
   end
+
+  module Array = struct
+    let exists2 p a1 a2 =
+      let n = Array.length a1 in
+      if Array.length a2 <> n then invalid_arg "Misc.Stdlib.Array.exists2";
+      let rec loop i =
+        if i = n then false
+        else if p (Array.unsafe_get a1 i) (Array.unsafe_get a2 i) then true
+        else loop (succ i) in
+      loop 0
+  end
 end
 
 let may = Stdlib.Option.iter
@@ -552,7 +563,7 @@ module Color = struct
 
   let color_enabled = ref true
 
-  (* either prints the tag of [s] or delegate to [or_else] *)
+  (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in

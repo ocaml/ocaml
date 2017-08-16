@@ -80,8 +80,8 @@ float-literal:
           [("e"||"E") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
         | ["-"] ("0x"||"0X")
           ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
-          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+          { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" } \\
+          ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
           [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
 \end{syntax}
 
@@ -151,13 +151,20 @@ string-literal:
 string-character:
           regular-string-char
         | escape-sequence
+        | "\u{" {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }} "}"
         | '\' newline { space || tab }
 \end{syntax}
 
 String literals are delimited by @'"'@ (double quote) characters.
 The two double quotes enclose a sequence of either characters
 different from @'"'@ and @'\'@, or escape sequences from the
-table given above for character literals.
+table given above for character literals, or a Unicode character
+escape sequence.
+
+A Unicode character escape sequence is substituted by the UTF-8
+encoding of the specified Unicode scalar value. The Unicode scalar
+value, an integer in the ranges 0x0000...0xD7FF or 0xE000...0x10FFFF,
+is defined using 1 to 6 hexadecimal digits; leading zeros are allowed.
 
 To allow splitting long string literals across lines, the sequence
 "\\"\var{newline}~\var{spaces-or-tabs} (a backslash at the end of a line

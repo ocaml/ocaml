@@ -1020,6 +1020,15 @@ specification:
 expr:
        ...
      | 'let' 'open!' module-path 'in' expr
+;
+class-body-type:
+       ...
+   |  'let' 'open!' module-path 'in' class-body-type
+;
+class-expr:
+       ...
+   |  'let' 'open!' module-path 'in' class-expr
+;
 \end{syntax}
 
 Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
@@ -1027,6 +1036,8 @@ Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
 character after the @"open"@ keyword indicates that such a shadowing is
 intentional and should not trigger the warning.
 
+This is also available (since OCaml 4.06) for local opens in class
+expressions and class type expressions.
 
 \section{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
 \ikwd{match\@\texttt{match}} \label{s:gadts}
@@ -1768,7 +1779,7 @@ specification: ...
 class-field-spec: ...
    | item-extension
 ;
-class-field:
+class-field: ...
    | item-extension
 ;
 \end{syntax}
@@ -2032,7 +2043,7 @@ float-literal:
      | ["-"] ("0x"||"0X")
        ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
        { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
        [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
        ["g"\ldots"z"||"G"\ldots"Z"]
 ;

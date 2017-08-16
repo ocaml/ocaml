@@ -62,7 +62,7 @@ let preprocess sourcefile =
     exit 2
 
 (** Analysis of an implementation file. Returns (Some typedtree) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 
 let tool_name = "ocamldoc"
 
@@ -105,7 +105,7 @@ let process_implementation_file sourcefile =
           raise e
 
 (** Analysis of an interface file. Returns (Some signature) if
-   no error occured, else None and an error message is printed.*)
+   no error occurred, else None and an error message is printed.*)
 let process_interface_file sourcefile =
   init_path ();
   let prefixname = Filename.chop_extension sourcefile in
@@ -282,7 +282,7 @@ let rec remove_class_elements_between_stop_in_class_kind k =
       Odoc_class.Class_constraint (remove_class_elements_between_stop_in_class_kind k1,
                         remove_class_elements_between_stop_in_class_type_kind ctk)
 
-(** Remove the class elements beetween the stop special comments in a class type kind. *)
+(** Remove the class elements between the stop special comments in a class type kind. *)
 and remove_class_elements_between_stop_in_class_type_kind tk =
   match tk with
     Odoc_class.Class_signature (inher, l) ->

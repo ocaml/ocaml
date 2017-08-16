@@ -121,7 +121,17 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 
 val environment : unit -> string array
 (** Return the process environment, as an array of strings
-    with the format ``variable=value''. *)
+    with the format ``variable=value''.  The returned array
+    is empty if the process has special privileges. *)
+
+val unsafe_environment : unit -> string array
+(** Return the process environment, as an array of strings with the
+    format ``variable=value''.  Unlike {!environment}, this function
+    returns a populated array even if the process has special
+    privileges.  See the documentation for {!unsafe_getenv} for more
+    details.
+
+    @since 4.06.0 *)
 
 val getenv : string -> string
 (** Return the value associated to a variable in the process
@@ -531,7 +541,7 @@ val map_file :
 
   [Invalid_argument] or [Failure] may be raised in cases where argument
   validation fails.
-  @since 4.05.0 *)
+  @since 4.06.0 *)
 
 (** {6 Operations on file names} *)
 
@@ -1661,4 +1671,3 @@ val setsid : unit -> int
    its controlling terminal.
 
    On Windows, not implemented. *)
-

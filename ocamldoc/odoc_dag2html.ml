@@ -313,7 +313,7 @@ let ancestors d =
 
 let get_children d parents =
   (* XXXX merge_children used to be declared as a recursive function,
-     but it was not.  I've not idea if it a bug or not.  One should
+     but it was not.  I've no idea if it is a bug or not.  One should
      either fix it (if this is a bug), or simplify the code otherwise. *)
 
   let merge_children children el =

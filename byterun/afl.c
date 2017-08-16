@@ -13,9 +13,9 @@
 /**************************************************************************/
 
 /* Runtime support for afl-fuzz */
+#include "caml/config.h"
 
-/* Android's libc does not implement System V shared memory. */
-#if defined(_WIN32) || defined(__ANDROID__)
+#if !defined(HAS_SYS_SHM_H)
 
 #include "caml/mlvalues.h"
 
@@ -159,4 +159,4 @@ CAMLprim value caml_reset_afl_instrumentation(value full)
   return Val_unit;
 }
 
-#endif /* _WIN32 */
+#endif /* HAS_SYS_SHM_H */

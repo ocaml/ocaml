@@ -144,7 +144,7 @@ let highlight_dumb ppf lb loc =
     end
   done;
   (* Print character location (useful for Emacs) *)
-  Format.fprintf ppf "Characters %i-%i:@."
+  Format.fprintf ppf "@[<v>Characters %i-%i:@,"
                  loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
   (* Print the input, underlining the location *)
   Format.pp_print_string ppf "  ";
@@ -155,7 +155,7 @@ let highlight_dumb ppf lb loc =
     | '\n' ->
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)
-        Format.fprintf ppf "@.  ";
+        Format.fprintf ppf "@,  ";
         for _i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
           Format.pp_print_char ppf ' '
         done;
@@ -164,7 +164,7 @@ let highlight_dumb ppf lb loc =
         done
       end;
       if !line >= !line_start && !line <= !line_end then begin
-        Format.fprintf ppf "@.";
+        Format.fprintf ppf "@,";
         if pos < loc.loc_end.pos_cnum then Format.pp_print_string ppf "  "
       end;
       incr line;
@@ -191,7 +191,8 @@ let highlight_dumb ppf lb loc =
       else if !line > !line_start && !line < !line_end then
         (* intermediate line of multiline loc: print whole line *)
         Format.pp_print_char ppf c
-  done
+  done;
+  Format.fprintf ppf "@]"
 
 (* Highlight the location using one of the supported modes. *)
 
@@ -276,7 +277,7 @@ let default_printer ppf loc =
   setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
-  else fprintf ppf "@{<loc>%a@}%s@." print_loc loc msg_colon
+  else fprintf ppf "@{<loc>%a@}%s@," print_loc loc msg_colon
 ;;
 
 let printer = ref default_printer
@@ -312,17 +313,19 @@ let default_warning_printer loc ppf w =
   | `Inactive -> ()
   | `Active { Warnings. number; message; is_error; sub_locs } ->
     setup_colors ();
+    fprintf ppf "@[<v>";
     print ppf loc;
     if is_error
     then
-      fprintf ppf "%t (%s %d): %s@." print_error_prefix
+      fprintf ppf "%t (%s %d): %s@," print_error_prefix
            (String.uncapitalize_ascii warning_prefix) number message
-    else fprintf ppf "@{<warning>%s@} %d: %s@." warning_prefix number message;
+    else fprintf ppf "@{<warning>%s@} %d: %s@," warning_prefix number message;
     List.iter
       (fun (loc, msg) ->
-         if loc <> none then fprintf ppf "  %a  %s@." print loc msg
+         if loc <> none then fprintf ppf "  %a  %s@," print loc msg
       )
-      sub_locs
+      sub_locs;
+    fprintf ppf "@]"
 ;;
 
 let warning_printer = ref default_warning_printer ;;
@@ -417,8 +420,9 @@ let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   if highlighted then
     Format.pp_print_string ppf if_highlight
   else begin
-    fprintf ppf "%a %s" print_error loc msg;
-    List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
+    fprintf ppf "@[<v>%a %s" print_error loc msg;
+    List.iter (Format.fprintf ppf "@,@[<2>%a@]" default_error_reporter) sub;
+    fprintf ppf "@]"
   end
 
 let error_reporter = ref default_error_reporter

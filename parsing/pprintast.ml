@@ -30,10 +30,10 @@ open Ast_helper
 
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
-                      '$'; '%' ]
+                      '$'; '%'; '#' ]
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
-  ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!=" ]
+  ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
 
 (* determines if the string is an infix string.
    checks backwards, first allowing a renaming postfix ("_102") which
@@ -282,7 +282,7 @@ and core_type1 ctxt f x =
         let type_variant_helper f x =
           match x with
           | Rtag (l, attrs, _, ctl) ->
-              pp f "@[<2>%a%a@;%a@]" string_quot l
+              pp f "@[<2>%a%a@;%a@]" string_quot l.txt
                 (fun f l -> match l with
                    |[] -> ()
                    | _ -> pp f "@;of@;%a"
@@ -307,9 +307,12 @@ and core_type1 ctxt f x =
                  pp f ">@ %a"
                    (list string_quot) xs) low
     | Ptyp_object (l, o) ->
-        let core_field_type f (s, attrs, ct) =
-          pp f "@[<hov2>%s: %a@ %a@ @]" s.txt
-            (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+        let core_field_type f = function
+          | Otag (l, attrs, ct) ->
+            pp f "@[<hov2>%s: %a@ %a@ @]" l.txt
+              (core_type ctxt) ct (attributes ctxt) attrs (* Cf #7200 *)
+          | Oinherit ct ->
+            pp f "@[<hov2>%a@ @]" (core_type ctxt) ct
         in
         let field_var f = function
           | Asttypes.Closed -> ()
@@ -530,7 +533,7 @@ and expression ctxt f x =
           (expression reset_ctxt) e  (case_list ctxt) l
     | Pexp_let (rf, l, e) ->
         (* pp f "@[<2>let %a%a in@;<1 -2>%a@]"
-           (*no identation here, a new line*) *)
+           (*no indentation here, a new line*) *)
         (*   rec_flag rf *)
         pp f "@[<2>%a in@;<1 -2>%a@]"
           (bindings reset_ctxt) (rf,l)
@@ -795,6 +798,9 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
+  | Pcty_open (ovf, lid, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+        (class_type ctxt) e
 
 (* [class type a = object end] *)
 and class_type_declaration_list ctxt f l =
@@ -911,6 +917,9 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
+    | Pcl_open (ovf, lid, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+          (class_expr ctxt) e
 
 and module_type ctxt f x =
   if x.pmty_attributes <> [] then begin

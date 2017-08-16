@@ -146,9 +146,10 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
 {
-  char * p, * dir, * fullname;
+  char * dir, * fullname;
+  const char * p;
   int i;
   struct stat st;
 
@@ -160,17 +161,17 @@ caml_stat_string caml_search_in_path(struct ext_table * path, char * name)
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
     fullname = caml_stat_strconcat(3, dir, "\\", name);
-    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
+    caml_gc_message(0x100, "Searching %s\n", fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
+  caml_gc_message(0x100, "%s not found in search path\n", name);
   return caml_stat_strdup(name);
 }
 
-CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
+CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
 {
   char * fullname, * filepart;
   size_t fullnamelen;
@@ -187,8 +188,7 @@ CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%s not found in search path\n",
-                      (uintnat) name);
+      caml_gc_message(0x100, "%s not found in search path\n", name);
       caml_stat_free(fullname);
       return caml_stat_strdup(name);
     }
@@ -199,7 +199,7 @@ CAMLexport caml_stat_string caml_search_exe_in_path(char * name)
   }
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, char * name)
+caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
 {
   caml_stat_string dllname;
   caml_stat_string res;
@@ -230,12 +230,12 @@ void caml_dlclose(void * handle)
   flexdll_dlclose(handle);
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return flexdll_dlsym(handle, name);
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
   return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
 }
@@ -256,12 +256,12 @@ void caml_dlclose(void * handle)
 {
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return NULL;
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
   return NULL;
 }
@@ -498,7 +498,7 @@ void caml_signal_thread(void * lpParam)
  * quickly.
  */
 
-static uintnat win32_alt_stack[0x80];
+static uintnat win32_alt_stack[0x100];
 
 static void caml_reset_stack (void *faulting_address)
 {

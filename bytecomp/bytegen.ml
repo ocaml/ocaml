@@ -443,6 +443,7 @@ let is_immed n = immed_min <= n && n <= immed_max
 module Storer =
   Switch.Store
     (struct type t = lambda type key = lambda
+      let compare_key = Pervasives.compare
       let make_key = Lambda.make_key end)
 
 (* Compile an expression.
@@ -678,7 +679,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env (Lprim (Pccall prim_obj_dup, [arg], loc)) sz cont
   | Lprim (Pduparray _, _, _) ->
       Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
-(* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
+(* Integer first for enabling further optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in

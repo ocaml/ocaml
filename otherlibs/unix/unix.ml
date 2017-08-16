@@ -186,6 +186,7 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+external unsafe_environment : unit -> string array = "unix_environment_unsafe"
 external getenv: string -> string = "caml_sys_getenv"
 external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "unix_putenv"

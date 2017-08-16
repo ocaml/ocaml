@@ -140,7 +140,7 @@ let exec_with_runtime =
                      (Filename.quote !program_name)
                      !arguments)
 
-(* Excute the program directly *)
+(* Execute the program directly *)
 let exec_direct =
   generic_exec
     (function () ->

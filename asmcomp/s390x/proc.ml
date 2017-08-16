@@ -33,7 +33,7 @@ let word_addressed = false
     0                   temporary, null register for some operations (volatile)
     1                   temporary (volatile)
     2 - 5               function arguments and results (volatile)
-    6                   function arguments and results (persevered by C)
+    6                   function arguments and results (preserved by C)
     7 - 9               general purpose, preserved by C
     10                  allocation limit (preserved by C)
     11                  allocation pointer (preserved by C)

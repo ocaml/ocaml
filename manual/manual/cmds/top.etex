@@ -1,10 +1,10 @@
-\chapter{The toplevel system (ocaml)} \label{c:camllight}
-\pdfchapter{The toplevel system (ocaml)}
+\chapter{The toplevel system or REPL (ocaml)} \label{c:camllight}
+\pdfchapter{The toplevel system or REPL (ocaml)}
 %HEVEA\cutname{toplevel.html}
 
 This chapter describes the toplevel system for OCaml, that permits
 interactive use of the OCaml system
-through a read-eval-print loop. In this mode, the system repeatedly
+through a read-eval-print loop (REPL). In this mode, the system repeatedly
 reads OCaml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
 any. The system prints a "#" (sharp) prompt before reading each

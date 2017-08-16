@@ -110,6 +110,14 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   return result;
 }
 
+/* [len] is a number of bytes (chars) */
+CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
+{
+  value result = caml_alloc_string (len);
+  memcpy((char *)String_val(result), p, len);
+  return result;
+}
+
 /* [len] is a number of words.
    [mem] and [max] are relative (without unit).
 */
@@ -126,8 +134,7 @@ CAMLexport value caml_copy_string(char const *s)
   value res;
 
   len = strlen(s);
-  res = caml_alloc_string(len);
-  memmove(String_val(res), s, len);
+  res = caml_alloc_initialized_string(len, s);
   return res;
 }
 

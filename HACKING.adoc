@@ -164,7 +164,6 @@ has excellent documentation.
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
   Makefile.nt::           Windows Makefile (deprecated)
-  Makefile.shared::       common Makefile
   Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
