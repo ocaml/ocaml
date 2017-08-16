@@ -188,6 +188,9 @@ Working version
   caml_example
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- MPR#7604: Minor Ephemeron documentation fixes
+  (Miod Vallat, review by Florian Angeletti)
+
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
   
