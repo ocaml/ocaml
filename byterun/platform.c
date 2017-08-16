@@ -90,6 +90,12 @@ int caml_plat_timedwait(caml_plat_cond* cond, int64 until)
 {
   struct timespec t;
   int err;
+  if (until < 0) {
+    /* until < 0 has definitely timed out, long ago.
+       letting the code below run risks feeding negative tv_nsec
+       to timedwait, since (-1 % 1000000000) = -1. */
+    return 1;
+  }
   t.tv_sec  = until / 1000000000;
   t.tv_nsec = until % 1000000000;
   err = pthread_cond_timedwait(&cond->cond, cond->mutex, &t);
