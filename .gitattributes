@@ -50,7 +50,7 @@ README*                  ocaml-typo=missing-header
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
-asmcomp/power/NOTES.md   ocaml-typo=missing-header,long-line
+asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
 asmrun/i386.S            ocaml-typo=long-line
 
