@@ -183,6 +183,7 @@ report:
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
 	@awk -f makefiles/summarize.awk <_log
 
+.PHONY: retry-list
 retry-list:
 	@while read LINE; do \
 	  if [ -n "$$LINE" ] ; then \
@@ -193,6 +194,7 @@ retry-list:
 	done <_retries;
 	@$(MAKE) $(NO_PRINT) retries
 
+.PHONY: retries
 retries:
 	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
 	     -f makefiles/summarize.awk <_log >_retries
