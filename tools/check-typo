@@ -222,9 +222,13 @@ IGNORE_DIRS="
         }
 
         $0 !~ /\t/ && length($0) > 80 {
-          RSTART = 81;
-          RLENGTH = 0;
-          err("long-line", "line is over 80 columns");
+          t = $0;
+          sub(/https?:[A-Za-z0-9._~:/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          if (length(t) > 80) {
+            RSTART = 81;
+            RLENGTH = 0;
+            err("long-line", "line is over 80 columns");
+          }
         }
 
         $0 !~ /\t/ && length($0) > 132 {
