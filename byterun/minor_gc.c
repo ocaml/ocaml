@@ -120,6 +120,7 @@ static void oldify_one (void* st_v, value v, value *p)
   value result;
   header_t hd;
   mlsize_t sz, i;
+  mlsize_t infix_offset;
   tag_t tag;
   int stack_used;
   caml_domain_state* domain_state =
@@ -131,107 +132,122 @@ static void oldify_one (void* st_v, value v, value *p)
           domain_state->young_ptr <= domain_state->young_end);
 
  tail_call:
-  if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
+  if (!Is_block(v)
+      || !(young_ptr <= Hp_val(v) && Hp_val(v) < young_end)) {
+    /* not a minor block */
+    *p = v;
+    return;
+  }
+
+  infix_offset = 0;
+  while (1) {
     hd = Hd_val (v);
+    if (hd == 0) {
+      /* already forwarded, forward pointer is first field. */
+      *p = Op_val(v)[0] + infix_offset;
+      return;
+    }
+    tag = Tag_hd (hd);
+    if (tag == Infix_tag) {
+      /* Infix header, retry with the real block */
+      Assert (infix_offset == 0);
+      infix_offset = Infix_offset_hd (hd);
+      Assert(infix_offset > 0);
+      v -= infix_offset;
+      continue;
+    }
+    break;
+  }
 
-    if (hd == 0){         /* If already forwarded */
-      *p = Op_val(v)[0];  /*  then forward pointer is first field. */
+  if (((value)Hp_val(v)) > st->oldest_promoted) {
+    st->oldest_promoted = (value)Hp_val(v);
+  }
+
+  if (tag < Infix_tag){
+    value field0;
+
+    if (tag == Stack_tag && !st->should_promote_stacks) {
+      /* Stacks are not promoted unless explicitly requested. */
+      Ref_table_add(&remembered_set->major_ref, p);
     } else {
-      if (((value)Hp_val(v)) > st->oldest_promoted) {
-        st->oldest_promoted = (value)Hp_val(v);
-      }
-      tag = Tag_hd (hd);
-      if (tag < Infix_tag){
-        value field0;
+      sz = Wosize_hd (hd);
+      st->live_bytes += Bhsize_hd(hd);
+      result = alloc_shared (sz, tag);
+      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
+      *p = result + infix_offset;
+      if (tag == Stack_tag) {
+        /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
+         * always returns 16-byte aligned down address. */
+        stack_used = -Stack_sp(v);
+        memcpy((void*)result, (void*)v, sizeof(value) * Stack_ctx_words);
+        memcpy(Stack_high(result) - stack_used, Stack_high(v) - stack_used,
+               stack_used * sizeof(value));
 
-        if (tag == Stack_tag && !st->should_promote_stacks) {
-          /* Stacks are not promoted unless explicitly requested. */
-          Ref_table_add(&remembered_set->major_ref, p);
-        } else {
-          sz = Wosize_hd (hd);
-          st->live_bytes += Bhsize_hd(hd);
-          result = alloc_shared (sz, tag);
-          // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
-          *p = result;
-          if (tag == Stack_tag) {
-            /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
-             * always returns 16-byte aligned down address. */
-            stack_used = -Stack_sp(v);
-            memcpy((void*)result, (void*)v, sizeof(value) * Stack_ctx_words);
-            memcpy(Stack_high(result) - stack_used, Stack_high(v) - stack_used,
-                   stack_used * sizeof(value));
-
-            Hd_val (v) = 0;
-            Op_val(v)[0] = result;
-            Op_val(v)[1] = st->todo_list;
-            st->todo_list = v;
-          } else {
-            field0 = Op_val(v)[0];
-            Assert (!Is_debug_tag(field0));
-            Hd_val (v) = 0;            /* Set forward flag */
-            Op_val(v)[0] = result;     /*  and forward pointer. */
-            if (sz > 1){
-              Op_val (result)[0] = field0;
-              Op_val (result)[1] = st->todo_list;    /* Add this block */
-              st->todo_list = v;                     /*  to the "to do" list. */
-            }else{
-              Assert (sz == 1);
-              p = Op_val(result);
-              v = field0;
-              goto tail_call;
-            }
-          }
-        }
-      } else if (tag >= No_scan_tag) {
-        sz = Wosize_hd (hd);
-        st->live_bytes += Bhsize_hd(hd);
-        result = alloc_shared(sz, tag);
-        for (i = 0; i < sz; i++) {
-          value curr = Op_val(v)[i];
-          /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
-             However, it's a useful debugging aid for now */
-          //Assert(!Is_debug_tag(curr));
-          Op_val (result)[i] = curr;
-        }
-        Hd_val (v) = 0;            /* Set forward flag */
-        Op_val (v)[0] = result;    /*  and forward pointer. */
-        // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
-        *p = result;
-      } else if (tag == Infix_tag) {
-        mlsize_t offset = Infix_offset_hd (hd);
-        oldify_one (st, v - offset, p);   /* Cannot recurse deeper than 1. */
-        *p += offset;
+        Hd_val (v) = 0;
+        Op_val(v)[0] = result;
+        Op_val(v)[1] = st->todo_list;
+        st->todo_list = v;
       } else {
-        Assert (tag == Forward_tag);
-
-        value f = Forward_val (v);
-        tag_t ft = 0;
-
-        if (Is_block (f)) {
-          ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
-        }
-
-        if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
-          /* Do not short-circuit the pointer.  Copy as a normal block. */
-          Assert (Wosize_hd (hd) == 1);
-          st->live_bytes += Bhsize_hd(hd);
-          result = alloc_shared (1, Forward_tag);
-          // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
-          //             (value*)v, p, tag, (value)1, (value*)result);
-          *p = result;
-          Hd_val (v) = 0;             /* Set (GC) forward flag */
-          Op_val (v)[0] = result;      /*  and forward pointer. */
-          p = Op_val (result);
-          v = f;
+        field0 = Op_val(v)[0];
+        Assert (!Is_debug_tag(field0));
+        Hd_val (v) = 0;            /* Set forward flag */
+        Op_val(v)[0] = result;     /*  and forward pointer. */
+        if (sz > 1){
+          Op_val (result)[0] = field0;
+          Op_val (result)[1] = st->todo_list;    /* Add this block */
+          st->todo_list = v;                     /*  to the "to do" list. */
+        }else{
+          Assert (sz == 1);
+          p = Op_val(result);
+          v = field0;
           goto tail_call;
-        } else {
-          v = f;                        /* Follow the forwarding */
-          goto tail_call;               /*  then oldify. */
         }
       }
     }
+  } else if (tag >= No_scan_tag) {
+    sz = Wosize_hd (hd);
+    st->live_bytes += Bhsize_hd(hd);
+    result = alloc_shared(sz, tag);
+    for (i = 0; i < sz; i++) {
+      value curr = Op_val(v)[i];
+      /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
+         However, it's a useful debugging aid for now */
+      //Assert(!Is_debug_tag(curr));
+      Op_val (result)[i] = curr;
+    }
+    Hd_val (v) = 0;            /* Set forward flag */
+    Op_val (v)[0] = result;    /*  and forward pointer. */
+    // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
+    Assert (infix_offset == 0);
+    *p = result;
   } else {
-    *p = v;
+    Assert (tag == Forward_tag);
+    Assert (infix_offset == 0);
+
+    value f = Forward_val (v);
+    tag_t ft = 0;
+
+    if (Is_block (f)) {
+      ft = Tag_val (Hd_val (f) == 0 ? Op_val (f)[0] : f);
+    }
+
+    if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
+      /* Do not short-circuit the pointer.  Copy as a normal block. */
+      Assert (Wosize_hd (hd) == 1);
+      st->live_bytes += Bhsize_hd(hd);
+      result = alloc_shared (1, Forward_tag);
+      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
+      //             (value*)v, p, tag, (value)1, (value*)result);
+      *p = result;
+      Hd_val (v) = 0;             /* Set (GC) forward flag */
+      Op_val (v)[0] = result;      /*  and forward pointer. */
+      p = Op_val (result);
+      v = f;
+      goto tail_call;
+    } else {
+      v = f;                        /* Follow the forwarding */
+      goto tail_call;               /*  then oldify. */
+    }
   }
 }
 
