@@ -4,7 +4,8 @@ let () = Printexc.record_backtrace true
 let () =
    let bt =
      try
-       Hashtbl.find (Hashtbl.create 1) 1;
+       let h = (Hashtbl.create 1 : (int, unit) Hashtbl.t) in
+       Hashtbl.find h 1;
        assert false
      with Not_found ->
        Printexc.get_raw_backtrace ()
