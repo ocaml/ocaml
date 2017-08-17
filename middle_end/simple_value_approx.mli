@@ -208,6 +208,12 @@ val print_value_set_of_closures
   -> value_set_of_closures
   -> unit
 
+val create_classic_function_declarations
+   : Flambda.function_declarations -> function_declarations
+
+val create_normal_function_declarations
+   : Flambda.function_declarations -> function_declarations
+
 val create_classic_value_set_of_closures
    : function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
@@ -225,6 +231,15 @@ val create_normal_value_set_of_closures
   -> freshening:Freshening.Project_var.t
   -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
   -> value_set_of_closures
+
+val import_value_set_of_closures
+    : function_decls: function_declarations
+   -> bound_vars: t Var_within_closure.Map.t
+   -> invariant_params: Variable.Set.t Variable.Map.t lazy_t
+   -> specialised_args: Flambda.specialised_to Variable.Map.t
+   -> freshening: Freshening.Project_var.t
+   -> direct_call_surrogates: Closure_id.t Closure_id.Map.t
+   -> value_set_of_closures
 
 val update_freshening_of_value_set_of_closures
    : value_set_of_closures
@@ -466,3 +481,32 @@ val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
 val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection
 
 val get_function_body_exn : function_declaration -> function_body
+
+val print_function_declarations
+   : Format.formatter
+  -> function_declarations
+  -> unit
+
+val import_function_declarations_for_pack
+   : function_declarations
+  -> (Set_of_closures_id.t -> Set_of_closures_id.t)
+  -> (Set_of_closures_origin.t -> Set_of_closures_origin.t)
+  -> function_declarations
+
+(** Create a set of function declarations based on another set of function
+    declarations. *)
+val update_function_declarations
+   : function_declarations
+  -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
+val update_function_decl_body
+    : function_declaration
+   -> (Flambda.t -> Flambda.t)
+   -> function_declaration
+
+(** Like [make_closure_map], but takes a mapping from set of closures IDs to
+    function declarations, instead of a [program]. *)
+val make_closure_map'
+   : function_declarations Set_of_closures_id.Map.t
+  -> function_declarations Closure_id.Map.t

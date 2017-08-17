@@ -19,7 +19,7 @@
 type for_one_or_more_units = {
   fun_offset_table : int Closure_id.Map.t;
   fv_offset_table : int Var_within_closure.Map.t;
-  closures : Flambda.function_declarations Closure_id.Map.t;
+  closures : Simple_value_approx.function_declarations Closure_id.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
 }
 
@@ -664,10 +664,15 @@ type result = {
 
 let convert (program, exported) : result =
   let current_unit =
+    let closures =
+      Flambda_utils.make_closure_map program
+      |> Closure_id.Map.map (fun decls ->
+          Inline_and_simplify_aux.approximate_function_declarations decls)
+    in
     let offsets = Closure_offsets.compute program in
     { fun_offset_table = offsets.function_offsets;
       fv_offset_table = offsets.free_variable_offsets;
-      closures = Flambda_utils.make_closure_map program;
+      closures;
       constant_sets_of_closures =
         Flambda_utils.all_lifted_constant_sets_of_closures program;
     }

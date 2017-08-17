@@ -361,3 +361,16 @@ val prepare_to_simplify_closure
   -> parameter_approximations:Simple_value_approx.t Variable.Map.t
   -> set_of_closures_env:Env.t
   -> Env.t
+
+val approximate_function_declarations
+   : Flambda.function_declarations
+  -> Simple_value_approx.function_declarations
+
+val create_value_set_of_closures
+   : function_decls:Flambda.function_declarations
+  -> bound_vars:Simple_value_approx.t Var_within_closure.Map.t
+  -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
+  -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> freshening:Freshening.Project_var.t
+  -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
+  -> Simple_value_approx.value_set_of_closures

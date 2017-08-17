@@ -288,6 +288,7 @@ let function_declarations_of_flambda ~with_empty_body flambda =
   in
   { set_of_closures_id ; set_of_closures_origin ; funs }
 
+
 let create_value_set_of_closures
       ~with_empty_body
       ~(function_decls : Flambda.function_declarations) ~bound_vars
@@ -341,6 +342,59 @@ let create_value_set_of_closures
       direct_call_surrogates;
     }
   end
+
+let import_value_set_of_closures ~(function_decls : function_declarations)
+      ~bound_vars ~invariant_params ~specialised_args ~freshening
+      ~direct_call_surrogates =
+  let with_empty_body =
+    Variable.Map.exists
+      (fun _key func_decl ->
+         match func_decl.function_body with
+         | None -> true
+         | Some _ -> false)
+      function_decls.funs
+  in
+  let size =
+    if with_empty_body
+    then lazy Variable.Map.empty
+    else lazy (
+      let functions = Variable.Map.keys function_decls.funs in
+      Variable.Map.map
+        (fun (function_decl : function_declaration) ->
+           match function_decl.function_body with
+           | None ->
+             assert false  (* This code path shouldn't be taken since *)
+           | Some { free_variables ; body ; free_symbols = _ } ->
+             let params = Parameter.Set.vars function_decl.params in
+             let free_vars =
+               Variable.Set.diff (Variable.Set.diff free_variables params)
+                 functions
+             in
+             let num_free_vars = Variable.Set.cardinal free_vars in
+             let max_size =
+               Inlining_cost.maximum_interesting_size_of_function_body
+                 num_free_vars
+             in
+             Inlining_cost.lambda_smaller' body ~than:max_size)
+        function_decls.funs)
+  in
+  { with_empty_body;
+    function_decls;
+    bound_vars;
+    invariant_params;
+    size;
+    specialised_args;
+    freshening;
+    direct_call_surrogates;
+  }
+
+let create_classic_function_declarations
+      (function_decls : Flambda.function_declarations) =
+  function_declarations_of_flambda ~with_empty_body:true function_decls
+
+let create_normal_function_declarations
+      (function_decls : Flambda.function_declarations) =
+  function_declarations_of_flambda ~with_empty_body:false function_decls
 
 let create_classic_value_set_of_closures =
   create_value_set_of_closures ~with_empty_body:true
@@ -952,3 +1006,95 @@ let get_function_body_exn (fun_decl : function_declaration) =
   | Some body -> body
   | None -> Misc.fatal_error "Cannot get [function_body] of a function \
                               declaration with an empty body."
+
+let fprintf = Format.fprintf
+
+let print_function_declaration ppf var (f : function_declaration) =
+  let param ppf p =
+    Variable.print ppf (Parameter.var p)
+  in
+  let params ppf =
+    List.iter (fprintf ppf "@ %a" param) in
+  let stub =
+    if f.stub then
+      " *stub*"
+    else
+      ""
+  in
+  let is_a_functor =
+    if f.is_a_functor then
+      " *functor*"
+    else
+      ""
+  in
+  let inline =
+    match f.inline with
+    | Always_inline -> " *inline*"
+    | Never_inline -> " *never_inline*"
+    | Unroll _ -> " *unroll*"
+    | Default_inline -> ""
+  in
+  let specialise =
+    match f.specialise with
+    | Always_specialise -> " *specialise*"
+    | Never_specialise -> " *never_specialise*"
+    | Default_specialise -> ""
+  in
+  let print_function_body ppf = function
+    | Some _ -> fprintf ppf "<Function Body>"
+    | None -> fprintf ppf "<Classic_mode,no_body>"
+  in
+  fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2><%a>@])@]@ "
+    Variable.print var stub is_a_functor inline specialise
+    params f.params
+    print_function_body f.function_body
+
+let print_function_declarations ppf (fd : function_declarations) =
+  let funs ppf =
+    Variable.Map.iter (print_function_declaration ppf)
+  in
+  fprintf ppf "@[<2>(%a)@]" funs fd.funs
+
+let import_function_declarations_for_pack function_decls
+    import_set_of_closures_id import_set_of_closures_origin =
+  { set_of_closures_id =
+      import_set_of_closures_id function_decls.set_of_closures_id;
+    set_of_closures_origin =
+      import_set_of_closures_origin function_decls.set_of_closures_origin;
+    funs = function_decls.funs;
+  }
+
+let update_function_declarations function_decls ~funs =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  let set_of_closures_origin = function_decls.set_of_closures_origin in
+  { set_of_closures_id;
+    set_of_closures_origin;
+    funs;
+  }
+
+let update_function_decl_body
+      (function_decl : function_declaration)
+      (f : Flambda.t -> Flambda.t) =
+  match function_decl.function_body with
+  | None -> function_decl
+  | Some function_body ->
+    let new_function_body =
+      let body = f function_body.body in
+      let free_variables = Flambda.free_variables body in
+      let free_symbols = Flambda.free_symbols body in
+      { free_variables; free_symbols; body }
+    in
+    { function_decl with function_body = Some new_function_body }
+
+let make_closure_map' input =
+  let map = ref Closure_id.Map.empty in
+  let add_set_of_closures _ (function_decls : function_declarations) =
+    Variable.Map.iter (fun var _ ->
+        let closure_id = Closure_id.wrap var in
+        map := Closure_id.Map.add closure_id function_decls !map)
+      function_decls.funs
+  in
+  Set_of_closures_id.Map.iter add_set_of_closures input;
+  !map
+

@@ -502,11 +502,16 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in
+    let approx_func_decl =
+      Inline_and_simplify_aux.approximate_function_declarations
+    in
     let sets_of_closures =
       Flambda_utils.all_function_decls_indexed_by_set_of_closures_id program
+      |> Set_of_closures_id.Map.map approx_func_decl
     in
     let closures =
       Flambda_utils.all_function_decls_indexed_by_closure_id program
+      |> Closure_id.Map.map approx_func_decl
     in
     let invariant_params =
       Set_of_closures_id.Map.map
