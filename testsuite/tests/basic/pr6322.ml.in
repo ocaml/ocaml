@@ -7,5 +7,4 @@ let test x = match x with
 let () =
   let s1 = test true in
   let s2 = test false in
-  s1.[0] <- 'p';
-  if s1 <> s2 then Printf.printf "PR#6322=Ok\n%!"
+  if s1 != s2 then Printf.printf "PR#6322=Ok\n%!"
