@@ -1460,7 +1460,8 @@ let constant_defining_value_approx
         ~backend:(E.backend env))
     in
     let value_set_of_closures =
-      A.create_normal_value_set_of_closures ~function_decls
+      Inline_and_simplify_aux.create_value_set_of_closures
+        ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
         ~invariant_params
         ~specialised_args:Variable.Map.empty

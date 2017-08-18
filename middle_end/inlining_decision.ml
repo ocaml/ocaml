@@ -83,7 +83,12 @@ let inline env r ~lhs_of_application
     else Lazy.force fun_cost
   in
   let try_inlining =
-    if unrolling then
+    if begin match function_decl.function_body with
+      | None -> true
+      | Some _ -> false
+    end then
+      Don't_try_it S.Not_inlined.Classic_mode
+    else if unrolling then
       Try_it
     else if self_call then
       Don't_try_it S.Not_inlined.Self_call
@@ -639,10 +644,13 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
                   (Lazy.force flambda_function_decls)
                   ~backend:(E.backend env))))
         in
-        let specialise_result =
-          match function_decl.function_body with
-          | None -> Original S.Not_specialised.Classic_mode
-          | Some _ ->
+        match function_decl.function_body with
+        | None ->
+          Original (
+            D.Unchanged
+              (S.Not_specialised.Classic_mode, S.Not_inlined.Classic_mode))
+        | Some _ ->
+          let specialise_result =
             specialise env r
               ~function_decls:(Lazy.force flambda_function_decls)
               ~function_decl:(Lazy.force flambda_function_decl)
@@ -650,37 +658,39 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
               ~value_set_of_closures
               ~args ~args_approxs ~dbg ~simplify ~original ~inline_requested
               ~specialise_requested ~fun_cost ~self_call ~inlining_threshold
-        in
-        match specialise_result with
-        | Changed (res, spec_reason) ->
-          Changed (res, D.Specialised spec_reason)
-        | Original spec_reason ->
-          let only_use_of_function = false in
-          (* If we didn't specialise then try inlining *)
-          let size_from_approximation =
-            match
-              Variable.Map.find fun_var (Lazy.force value_set_of_closures.size)
-            with
-            | size -> size
-            | exception Not_found ->
-                Misc.fatal_errorf "Approximation does not give a size for the \
-                  function having fun_var %a.  value_set_of_closures: %a"
+          in
+          match specialise_result with
+          | Changed (res, spec_reason) ->
+            Changed (res, D.Specialised spec_reason)
+          | Original spec_reason ->
+            let only_use_of_function = false in
+            (* If we didn't specialise then try inlining *)
+            let size_from_approximation =
+              match
+                Variable.Map.find fun_var
+                  (Lazy.force value_set_of_closures.size)
+              with
+              | size -> size
+              | exception Not_found ->
+                Misc.fatal_errorf
+                  "Approximation does not give a size for the function \
+                   having fun_var %a.  value_set_of_closures: %a"
                   Variable.print fun_var
                   A.print_value_set_of_closures value_set_of_closures
-          in
-          let inline_result =
-            inline env r ~function_decls ~lhs_of_application
-              ~closure_id_being_applied ~function_decl ~value_set_of_closures
-              ~only_use_of_function ~original ~recursive
-              ~inline_requested ~specialise_requested ~args
-              ~size_from_approximation ~dbg ~simplify ~fun_cost ~self_call
-              ~inlining_threshold
-          in
-          match inline_result with
-          | Changed (res, inl_reason) ->
-            Changed (res, D.Inlined (spec_reason, inl_reason))
-          | Original inl_reason ->
-            Original (D.Unchanged (spec_reason, inl_reason))
+            in
+            let inline_result =
+              inline env r ~function_decls ~lhs_of_application
+                ~closure_id_being_applied ~function_decl ~value_set_of_closures
+                ~only_use_of_function ~original ~recursive
+                ~inline_requested ~specialise_requested ~args
+                ~size_from_approximation ~dbg ~simplify ~fun_cost ~self_call
+                ~inlining_threshold
+            in
+            match inline_result with
+            | Changed (res, inl_reason) ->
+              Changed (res, D.Inlined (spec_reason, inl_reason))
+            | Original inl_reason ->
+              Original (D.Unchanged (spec_reason, inl_reason))
       end
     in
     let res, decision =
