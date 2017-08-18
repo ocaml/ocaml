@@ -41,8 +41,7 @@ case $TRAVIS_EVENT_TYPE in
 esac
 
 BuildAndTest () {
-  case $XARCH in
-  x64)
+  mkdir -p $PREFIX
   cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
@@ -53,26 +52,35 @@ critical errors that must be understood and fixed before your pull
 request can be merged.
 ------------------------------------------------------------------------
 EOF
-    mkdir -p $PREFIX
+  case $XARCH in
+  x64)
     ./configure --prefix $PREFIX -with-debug-runtime \
       -with-instrumented-runtime $CONFIG_ARG
-    export PATH=$PREFIX/bin:$PATH
-    $MAKE world.opt
-    $MAKE ocamlnat
-    (cd testsuite && $MAKE all)
-    (cd testsuite && $MAKE USE_RUNTIME="d" all)
-    $MAKE install
-    # check_all_arches checks tries to compile all backends in place,
-    # we need to redo (small parts of) world.opt afterwards
-    $MAKE check_all_arches
-    $MAKE world.opt
-    $MAKE manual-pregen
+    ;;
+  i386)
+    ./configure --prefix $PREFIX -with-debug-runtime \
+      -with-instrumented-runtime $CONFIG_ARG \
+      -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
+      -partialld "ld -r -melf_i386" \
+      -host i686-pc-linux-gnu
     ;;
   *)
     echo unknown arch
     exit 1
     ;;
   esac
+
+  export PATH=$PREFIX/bin:$PATH
+  $MAKE world.opt
+  $MAKE ocamlnat
+  (cd testsuite && $MAKE all)
+  (cd testsuite && $MAKE USE_RUNTIME="d" all)
+  $MAKE install
+  # check_all_arches checks tries to compile all backends in place,
+  # we need to redo (small parts of) world.opt afterwards
+  $MAKE check_all_arches
+  $MAKE world.opt
+  $MAKE manual-pregen
 }
 
 CheckChangesModified () {
