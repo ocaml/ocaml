@@ -33,6 +33,10 @@
 #include <stdint.h>
 #endif
 
+#ifndef ARCH_SIZET_PRINTF_FORMAT
+#define ARCH_SIZET_PRINTF_FORMAT "z"
+#endif
+
 /* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 

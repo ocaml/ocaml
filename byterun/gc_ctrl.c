@@ -461,7 +461,7 @@ CAMLprim value caml_gc_set(value v)
   newminwsz = norm_minsize (Long_val (Field (v, 0)));
   if (newminwsz != caml_minor_heap_wsz){
     caml_gc_message (0x20, "New minor heap size: %"
-                     ARCH_INTNAT_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
+                     ARCH_SIZET_PRINTF_FORMAT "uk words\n", newminwsz / 1024);
     caml_set_minor_heap_size (Bsize_wsize (newminwsz));
   }
   CAML_INSTR_TIME (tmr, "explicit/gc_set");
@@ -603,7 +603,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_init_major_heap (major_heap_size);
   caml_major_window = norm_window (window);
   caml_gc_message (0x20, "Initial minor heap size: %"
-                   ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
+                   ARCH_SIZET_PRINTF_FORMAT "uk words\n",
                    caml_minor_heap_wsz / 1024);
   caml_gc_message (0x20, "Initial major heap size: %"
                    ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
@@ -647,10 +647,11 @@ extern int caml_parser_trace;
 CAMLprim value caml_runtime_parameters (value unit)
 {
 #define F_Z ARCH_INTNAT_PRINTF_FORMAT
+#define F_S ARCH_SIZET_PRINTF_FORMAT
 
   CAMLassert (unit == Val_unit);
   return caml_alloc_sprintf
-    ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,s=%"F_Z"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
+    ("a=%d,b=%d,H=%"F_Z"u,i=%"F_Z"u,l=%"F_Z"u,o=%"F_Z"u,O=%"F_Z"u,p=%d,s=%"F_S"u,t=%"F_Z"u,v=%"F_Z"u,w=%d,W=%"F_Z"u",
      /* a */ (int) caml_allocation_policy,
      /* b */ caml_backtrace_active,
      /* h */ /* missing */ /* FIXME add when changed to min_heap_size */
@@ -672,6 +673,7 @@ CAMLprim value caml_runtime_parameters (value unit)
      /* W */ caml_runtime_warnings
      );
 #undef F_Z
+#undef F_S
 }
 
 /* Control runtime warnings */
