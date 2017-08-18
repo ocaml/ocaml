@@ -42,7 +42,7 @@ esac
 
 BuildAndTest () {
   case $XARCH in
-  i386)
+  x64)
   cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
