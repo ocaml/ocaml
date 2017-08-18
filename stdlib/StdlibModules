@@ -59,6 +59,7 @@ STDLIB_MODULES=\
   $(P)oo \
   $(P)option \
   $(P)parsing \
+  $(P)pervasives \
   $(P)printexc \
   $(P)printf \
   $(P)queue \

@@ -21,7 +21,6 @@ include $(SRC)/stdlib/StdlibModules
 
 STDLIB_UNPREFIXED=$(SRC)/ocamldoc/stdlib_non_prefixed
 
-STDLIB_MODULES := pervasives $(filter-out stdlib,$(STDLIB_MODULES))
 PARSING_MLIS := $(wildcard $(SRC)/parsing/*.mli)
 UTILS_MLIS := $(wildcard $(SRC)/utils/*.mli)
 TYPING_MLIS := $(wildcard $(SRC)/typing/*.mli)
@@ -59,6 +58,10 @@ STDLIB_CMIS=$(STDLIB_DEPS:%.mli=%.cmi)
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/stdlib/%.mli
 	cp $< $@
 
+$(STDLIB_UNPREFIXED)/pervasives.mli:
+	echo '[@@@deprecated "Use Stdlib instead"]' > $@
+	echo 'include module type of struct include Stdlib end' >> $@
+
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/parsing/%.mli
 	cp $< $@
 
@@ -92,10 +95,10 @@ $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/typing/%.mli
 $(STDLIB_UNPREFIXED)/%.mli: $(SRC)/bytecomp/%.mli
 	cp $< $@
 
-#Extract the pervasives module from stdlib.mli
-$(STDLIB_UNPREFIXED)/pervasives.mli: $(SRC)/stdlib/stdlib.mli \
-                                     $(STDLIB_UNPREFIXED)/extract_pervasives.awk
-	$(AWK) -f $(STDLIB_UNPREFIXED)/extract_pervasives.awk $< > $@
+# Remove aliases from stdlib.mli
+$(STDLIB_UNPREFIXED)/stdlib.mli: $(SRC)/stdlib/stdlib.mli \
+                                 $(SRC)/stdlib/remove_module_aliases.awk
+	$(AWK) -f $(SRC)/stdlib/remove_module_aliases.awk $< > $@
 
 # Build cmis file inside the STDLIB_UNPREFIXED directories
 .PHONY: unprefix_stdlib_for_ocamldoc

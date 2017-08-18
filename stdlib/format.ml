@@ -937,9 +937,9 @@ let pp_make_buffer () = Buffer.create pp_buffer_size
 let stdbuf = pp_make_buffer ()
 
 (* Predefined formatters standard formatter to print
-   to [Pervasives.stdout], [Pervasives.stderr], and {!stdbuf}. *)
-let std_formatter = formatter_of_out_channel Pervasives.stdout
-and err_formatter = formatter_of_out_channel Pervasives.stderr
+   to [Stdlib.stdout], [Stdlib.stderr], and {!stdbuf}. *)
+let std_formatter = formatter_of_out_channel Stdlib.stdout
+and err_formatter = formatter_of_out_channel Stdlib.stderr
 and str_formatter = formatter_of_buffer stdbuf
 
 
@@ -1020,7 +1020,7 @@ let formatter_of_symbolic_output_buffer sob =
 (*
 
   Basic functions on the 'standard' formatter
-  (the formatter that prints to [Pervasives.stdout]).
+  (the formatter that prints to [Stdlib.stdout]).
 
 *)
 

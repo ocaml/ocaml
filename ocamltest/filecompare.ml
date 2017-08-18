@@ -174,7 +174,7 @@ let diff files =
     "> " ^ temporary_file
   ] in
   let result =
-    if (Sys.command diff_commandline) = 2 then Pervasives.Error "diff"
+    if (Sys.command diff_commandline) = 2 then Stdlib.Error "diff"
     else Ok (Sys.string_of_file temporary_file)
   in
   Sys.force_remove temporary_file;

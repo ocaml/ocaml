@@ -791,7 +791,7 @@ val open_process_out : string -> out_channel
    the command to a pipe.  Data written to the returned output channel
    is sent to the standard input of the command.
    Warning: writes on output channels are buffered, hence be careful
-   to call {!Pervasives.flush} at the right times to ensure
+   to call {!Stdlib.flush} at the right times to ensure
    correct synchronization. *)
 
 val open_process : string -> in_channel * out_channel
@@ -1464,7 +1464,7 @@ val getsockopt_error : file_descr -> error option
 val open_connection : sockaddr -> in_channel * out_channel
 (** Connect to a server at the given address.
    Return a pair of buffered channels connected to the server.
-   Remember to call {!Pervasives.flush} on the output channel at the right
+   Remember to call {!Stdlib.flush} on the output channel at the right
    times to ensure correct synchronization. *)
 
 val shutdown_connection : in_channel -> unit
@@ -1472,7 +1472,7 @@ val shutdown_connection : in_channel -> unit
    that is, transmit an end-of-file condition to the server reading
    on the other side of the connection. This does not fully close the
    file descriptor associated with the channel, which you must remember
-   to free via {!Pervasives.close_in}. *)
+   to free via {!Stdlib.close_in}. *)
 
 val establish_server : (in_channel -> out_channel -> unit) -> sockaddr -> unit
 (** Establish a server on the given address.

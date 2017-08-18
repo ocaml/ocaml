@@ -54,11 +54,11 @@
    notation, e.g. [Array1.t] or [Array2.sub].
 
    Big arrays support all the OCaml ad-hoc polymorphic operations:
-   - comparisons ([=], [<>], [<=], etc, as well as {!Pervasives.compare});
+   - comparisons ([=], [<>], [<=], etc, as well as {!Stdlib.compare});
    - hashing (module [Hash]);
    - and structured input-output (the functions from the
-     {!Marshal} module, as well as {!Pervasives.output_value}
-     and {!Pervasives.input_value}).
+     {!Marshal} module, as well as {!Stdlib.output_value}
+     and {!Stdlib.input_value}).
 *)
 
 (** {1 Element kinds} *)

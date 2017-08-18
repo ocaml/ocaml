@@ -569,7 +569,7 @@ value thread_sleep(value unit)        /* ML */
 static value thread_wait_rw(int kind, value fd)
 {
   /* Don't do an error if we're not initialized yet
-     (we can be called from thread-safe Pervasives before initialization),
+     (we can be called from thread-safe Stdlib before initialization),
      just return immediately. */
   if (curr_thread == NULL) return RESUMED_WAKEUP;
   /* As a special case, if we're in a callback, don't fail but block

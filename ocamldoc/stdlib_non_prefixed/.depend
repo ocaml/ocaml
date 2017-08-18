@@ -55,8 +55,8 @@ envaux.cmi : subst.cmi path.cmi format.cmi env.cmi
 ephemeron.cmi : hashtbl.cmi
 event.cmi :
 filename.cmi :
-float.cmi : pervasives.cmi
-format.cmi : pervasives.cmi buffer.cmi
+float.cmi : stdlib.cmi
+format.cmi : stdlib.cmi buffer.cmi
 gc.cmi :
 genlex.cmi : stream.cmi
 graphics.cmi :
@@ -104,7 +104,7 @@ parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi
 parsetree.cmi : longident.cmi location.cmi asttypes.cmi
 parsing.cmi : obj.cmi lexing.cmi
 path.cmi : set.cmi map.cmi ident.cmi
-pervasives.cmi : camlinternalFormatBasics.cmi
+pervasives.cmi : stdlib.cmi
 pparse.cmi : parsetree.cmi misc.cmi lexing.cmi format.cmi
 pprintast.cmi : parsetree.cmi format.cmi
 predef.cmi : types.cmi path.cmi ident.cmi
@@ -124,7 +124,7 @@ random.cmi : nativeint.cmi int64.cmi int32.cmi
 rec_check.cmi : typedtree.cmi ident.cmi
 result.cmi : seq.cmi
 runtimedef.cmi :
-scanf.cmi : pervasives.cmi
+scanf.cmi : stdlib.cmi
 semantics_of_primitives.cmi : lambda.cmi
 seq.cmi :
 set.cmi : seq.cmi
@@ -133,6 +133,7 @@ spacetime.cmi :
 stack.cmi : seq.cmi
 stdLabels.cmi : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
     arrayLabels.cmi
+stdlib.cmi : camlinternalFormatBasics.cmi
 str.cmi :
 stream.cmi :
 string.cmi : seq.cmi
