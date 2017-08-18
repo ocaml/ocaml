@@ -60,8 +60,6 @@ EOF
   i386)
     ./configure --prefix $PREFIX -with-debug-runtime \
       -with-instrumented-runtime $CONFIG_ARG \
-      -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c" \
-      -partialld "ld -r -melf_i386" \
       -host i686-pc-linux-gnu
     ;;
   *)
