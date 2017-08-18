@@ -21,13 +21,13 @@
 *)
 
 module Pervasives : sig
-(** Pervasives operations.
+(** Pervasive operations.
 
     This module provides the basic operations over the built-in types
     (numbers, booleans, byte sequences, strings, exceptions, references,
     lists, arrays, input-output channels, ...).
 
-    This module is included in the toplevel {!Stdlib} module.
+    This module is included in the toplevel [Stdlib] module.
 *)
 
 

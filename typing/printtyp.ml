@@ -72,6 +72,60 @@ let non_shadowed_pervasive = function
        with Not_found -> true)
   | _ -> false
 
+let find_double_underscore s =
+  let len = String.length s in
+  let rec loop i =
+    if i + 1 >= len then
+      None
+    else if s.[i] = '_' && s.[i + 1] = '_' then
+      Some i
+    else
+      loop (i + 1)
+  in
+  loop 0
+
+let rec module_path_is_an_alias_of env path ~alias_of =
+  match Env.find_module path env with
+  | { md_type = Mty_alias (_, path'); _ } ->
+    Path.same path' alias_of ||
+    module_path_is_an_alias_of env path' ~alias_of
+  | _ -> false
+  | exception Not_found -> false
+
+(* Simple heuristic to print Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
+   for Foo__bar. This pattern is used by the stdlib. *)
+let rec rewrite_double_underscore_paths env p =
+  match p with
+  | Pdot (p, s, n) ->
+    Pdot (rewrite_double_underscore_paths env p, s, n)
+  | Papply (a, b) ->
+    Papply (rewrite_double_underscore_paths env a,
+            rewrite_double_underscore_paths env b)
+  | Pident id ->
+    let name = Ident.name id in
+    match find_double_underscore name with
+    | None -> p
+    | Some i ->
+      let better_lid =
+        Ldot
+          (Lident (String.sub name 0 i),
+           String.capitalize_ascii
+             (String.sub name (i + 2) (String.length name - i - 2)))
+      in
+      match Env.lookup_module ~load:true better_lid env with
+      | exception Not_found -> p
+      | p' ->
+        if module_path_is_an_alias_of env p' ~alias_of:p then
+          p'
+        else
+          p
+
+let rewrite_double_underscore_paths env p =
+  if env == Env.empty then
+    p
+  else
+    rewrite_double_underscore_paths env p
+
 let rec tree_of_path = function
   | Pident id ->
       Oide_ident (ident_name id)
@@ -81,7 +135,8 @@ let rec tree_of_path = function
   | Pdot(p, s, _pos) ->
       Oide_dot (tree_of_path p, s)
   | Papply(p1, p2) ->
-      Oide_apply (tree_of_path p1, tree_of_path p2)
+    Oide_apply (tree_of_path p1,
+                tree_of_path p2)
 
 let rec path ppf = function
   | Pident id ->
@@ -95,6 +150,11 @@ let rec path ppf = function
       pp_print_string ppf s
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
+
+let tree_of_path p =
+  tree_of_path (rewrite_double_underscore_paths !printing_env p)
+let path ppf p =
+  path ppf (rewrite_double_underscore_paths !printing_env p)
 
 let rec string_of_out_ident = function
   | Oide_ident s -> s
@@ -305,18 +365,6 @@ let rec normalize_type_path ?(cache=false) env p =
     Not_found ->
       (Env.normalize_path None env p, Id)
 
-let find_double_underscore s =
-  let len = String.length s in
-  let rec loop i =
-    if i + 1 >= len then
-      None
-    else if s.[i] = '_' && s.[i + 1] = '_' then
-      Some i
-    else
-      loop (i + 1)
-  in
-  loop 0
-
 let penalty s =
   if s <> "" && s.[0] = '_' then
     10
@@ -406,46 +454,11 @@ let rec get_best_path r =
         l;
       get_best_path r
 
-let rec module_path_is_an_alias_of env path ~alias_of =
-  match Env.find_module path env with
-  | { md_type = Mty_alias (_, path'); _ } ->
-    Path.same path' alias_of ||
-    module_path_is_an_alias_of env path' ~alias_of
-  | _ -> false
-  | exception Not_found -> false
-
-(* Simple heuristic to print Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
-   for Foo__bar. This pattern is used by the stdlib. *)
-let rec rewrite_double_underscore_paths env p =
-  match p with
-  | Pdot (p, s, n) -> Pdot (rewrite_double_underscore_paths env p, s, n)
-  | Papply (a, b) ->
-    Papply (rewrite_double_underscore_paths env a,
-            rewrite_double_underscore_paths env b)
-  | Pident id ->
-    let name = Ident.name id in
-    match find_double_underscore name with
-    | None -> p
-    | Some i ->
-      let better_lid =
-        Ldot
-          (Lident (String.sub name 0 i),
-           String.capitalize_ascii
-             (String.sub name (i + 2) (String.length name - i - 2)))
-      in
-      match Env.lookup_module ~load:true better_lid env with
-      | exception Not_found -> p
-      | p' ->
-        if module_path_is_an_alias_of env p' ~alias_of:p then
-          p'
-        else
-          p
-
 let best_type_path p =
   if !printing_env == Env.empty
   then (p, Id)
   else if !Clflags.real_paths
-  then (rewrite_double_underscore_paths !printing_env p, Id)
+  then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
     let get_path () = get_best_path (PathMap.find  p' !printing_map) in
@@ -457,7 +470,7 @@ let best_type_path p =
     done;
     let p'' = try get_path () with Not_found -> p' in
     (* Format.eprintf "%a = %a -> %a@." path p path p' path p''; *)
-    (rewrite_double_underscore_paths !printing_env p'', s)
+    (p'', s)
 
 (* Print a type expression *)
 
@@ -1728,6 +1741,3 @@ let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
            @]"
           txt2 type_path_list tpl
           txt3 (type_path_expansion tp0) tp0')
-
-let tree_of_path p = tree_of_path (rewrite_double_underscore_paths !printing_env p)
-let path ppf p = path ppf (rewrite_double_underscore_paths !printing_env p)

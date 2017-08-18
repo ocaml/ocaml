@@ -75,12 +75,13 @@ unix.cma: $(UNIXLIB_OBJS)
 
 stdlib.cmo: stdlib.mli stdlib.cmi stdlib.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives \
-	  -pp "awk -f $(LIB)/expand_module_aliases.awk" -o $@ -c stdlib.ml
+	  -pp "$(AWK) -f $(LIB)/expand_module_aliases.awk" -o $@ -c stdlib.ml
 
 stdlib.mli: $(LIB)/stdlib.mli
 	ln -s $(LIB)/stdlib.mli stdlib.mli
 
 stdlib.cmi: $(LIB)/stdlib.cmi
+	rm -f stdlib.cmi
 	ln -s $(LIB)/stdlib.cmi stdlib.cmi
 
 $(P)marshal.cmo: marshal.mli $(P)marshal.cmi marshal.ml

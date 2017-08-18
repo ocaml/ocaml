@@ -1,7 +1,6 @@
 annot.cmi : location.cmi
 arg.cmi :
 arg_helper.cmi : map.cmi
-arith_status.cmi :
 array.cmi :
 arrayLabels.cmi :
 ast_helper.cmi : parsetree.cmi longident.cmi location.cmi docstrings.cmi \
@@ -11,12 +10,11 @@ ast_iterator.cmi : parsetree.cmi location.cmi
 ast_mapper.cmi : parsetree.cmi location.cmi
 asttypes.cmi : location.cmi
 attr_helper.cmi : parsetree.cmi location.cmi format.cmi asttypes.cmi
-big_int.cmi : nat.cmi
 bigarray.cmi : unix.cmi complex.cmi camlinternalBigarray.cmi
 btype.cmi : types.cmi set.cmi path.cmi map.cmi hashtbl.cmi format.cmi \
     asttypes.cmi
 buffer.cmi : uchar.cmi
-builtin_attributes.cmi : parsetree.cmi location.cmi ast_iterator.cmi
+builtin_attributes.cmi : parsetree.cmi location.cmi
 bytegen.cmi : lambda.cmi instruct.cmi
 bytelibrarian.cmi : format.cmi
 bytelink.cmi : symtable.cmi format.cmi digest.cmi cmo_format.cmi
@@ -33,7 +31,7 @@ camlinternalMod.cmi : obj.cmi
 camlinternalOO.cmi : obj.cmi
 ccomp.cmi :
 char.cmi :
-clflags.cmi : misc.cmi arg.cmi
+clflags.cmi : profile.cmi misc.cmi arg.cmi
 cmi_format.cmi : types.cmi format.cmi digest.cmi
 cmo_format.cmi : tbl.cmi lambda.cmi ident.cmi digest.cmi
 cmt_format.cmi : types.cmi typedtree.cmi location.cmi env.cmi digest.cmi \
@@ -50,9 +48,9 @@ dll.cmi :
 docstrings.cmi : parsetree.cmi location.cmi lexing.cmi lazy.cmi
 dynlink.cmi : digest.cmi
 emitcode.cmi : instruct.cmi ident.cmi cmo_format.cmi
-env.cmi : warnings.cmi types.cmi subst.cmi path.cmi map.cmi longident.cmi \
-    location.cmi ident.cmi format.cmi digest.cmi consistbl.cmi cmi_format.cmi \
-    asttypes.cmi
+env.cmi : warnings.cmi types.cmi subst.cmi path.cmi misc.cmi map.cmi \
+    longident.cmi location.cmi ident.cmi format.cmi digest.cmi consistbl.cmi \
+    cmi_format.cmi asttypes.cmi
 envaux.cmi : subst.cmi path.cmi format.cmi env.cmi
 ephemeron.cmi : hashtbl.cmi
 event.cmi :
@@ -73,8 +71,8 @@ includemod.cmi : types.cmi typedtree.cmi path.cmi location.cmi \
 instruct.cmi : types.cmi subst.cmi location.cmi lambda.cmi ident.cmi env.cmi
 int32.cmi :
 int64.cmi :
-lambda.cmi : types.cmi set.cmi primitive.cmi path.cmi location.cmi ident.cmi \
-    env.cmi asttypes.cmi
+lambda.cmi : types.cmi primitive.cmi path.cmi location.cmi ident.cmi env.cmi \
+    asttypes.cmi
 lazy.cmi :
 lexer.cmi : parser.cmi location.cmi lexing.cmi format.cmi
 lexing.cmi :
@@ -90,16 +88,14 @@ misc.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
 moreLabels.cmi : set.cmi map.cmi hashtbl.cmi
 mtype.cmi : types.cmi path.cmi ident.cmi env.cmi
 mutex.cmi :
-nat.cmi :
 nativeint.cmi :
-num.cmi : ratio.cmi nat.cmi big_int.cmi
 numbers.cmi : set.cmi int64.cmi identifiable.cmi
 obj.cmi : int32.cmi
 oo.cmi : camlinternalOO.cmi
 oprint.cmi : outcometree.cmi format.cmi
 outcometree.cmi : format.cmi asttypes.cmi
-parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi longident.cmi \
-    location.cmi hashtbl.cmi format.cmi env.cmi asttypes.cmi
+parmatch.cmi : types.cmi typedtree.cmi parsetree.cmi location.cmi \
+    hashtbl.cmi env.cmi asttypes.cmi
 parse.cmi : parsetree.cmi lexing.cmi
 parser.cmi : parsetree.cmi location.cmi lexing.cmi docstrings.cmi
 parsetree.cmi : longident.cmi location.cmi asttypes.cmi
@@ -115,12 +111,13 @@ printexc.cmi :
 printf.cmi : buffer.cmi
 printinstr.cmi : instruct.cmi format.cmi
 printlambda.cmi : lambda.cmi format.cmi
+printpat.cmi : typedtree.cmi format.cmi asttypes.cmi
 printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi ident.cmi \
     format.cmi env.cmi asttypes.cmi
 printtyped.cmi : typedtree.cmi format.cmi
+profile.cmi : format.cmi
 queue.cmi :
 random.cmi : nativeint.cmi int64.cmi int32.cmi
-ratio.cmi : nat.cmi big_int.cmi
 runtimedef.cmi :
 scanf.cmi : pervasives.cmi
 semantics_of_primitives.cmi : lambda.cmi
@@ -149,7 +146,6 @@ tbl.cmi : format.cmi
 terminfo.cmi :
 thread.cmi : unix.cmi
 threadUnix.cmi : unix.cmi
-timings.cmi : format.cmi
 translattribute.cmi : typedtree.cmi parsetree.cmi location.cmi lambda.cmi
 translclass.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi format.cmi \
     asttypes.cmi
@@ -175,11 +171,11 @@ typeopt.cmi : types.cmi typedtree.cmi path.cmi lambda.cmi env.cmi
 types.cmi : set.cmi primitive.cmi path.cmi parsetree.cmi map.cmi \
     longident.cmi location.cmi ident.cmi asttypes.cmi
 typetexp.cmi : types.cmi typedtree.cmi path.cmi parsetree.cmi longident.cmi \
-    location.cmi format.cmi env.cmi asttypes.cmi
+    location.cmi includemod.cmi format.cmi env.cmi asttypes.cmi
 uchar.cmi :
 unix.cmi : camlinternalBigarray.cmi
-unixLabels.cmi : unix.cmi
+unixLabels.cmi : unix.cmi camlinternalBigarray.cmi
 untypeast.cmi : typedtree.cmi path.cmi parsetree.cmi longident.cmi \
     location.cmi asttypes.cmi
-warnings.cmi : lexing.cmi
+warnings.cmi : lexing.cmi lazy.cmi
 weak.cmi : hashtbl.cmi

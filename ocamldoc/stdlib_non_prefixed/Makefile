@@ -1,4 +1,4 @@
-TOPDIR=$(abspath ../..)
+TOPDIR=../..
 include $(TOPDIR)/Makefile.tools
 
 .SUFFIXES:

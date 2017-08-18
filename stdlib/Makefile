@@ -201,15 +201,6 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
-# The user write stdlib.ml, but we don't use it as it to build
-# stdlib.cmo. First we do the following rewriting via an awk
-# preprocessor:
-#
-# [module FooBar = FooBar] --> [module FooBar = Stdlib__fooBar]
-#
-# This way the "Stdlib__" names stay hidden to the user and are just
-# used as a compilation strategy.
-
 .PHONY: clean
 clean::
 	rm -f sys.ml
