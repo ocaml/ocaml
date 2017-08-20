@@ -127,6 +127,9 @@ static int steal_mark_work () {
   pl.thief = Caml_state;
   pl.major_cycle = major_cycles_completed;
 
+  if (atomic_load_acq(&marking_is_done))
+    return 0;
+
   /* First round of stealing. If work was found, return early. Otherwise,
    * record the number of times the victim's mark stack became empty. */
   for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
