@@ -63,17 +63,14 @@ CAMLextern void (*caml_leave_blocking_section_hook)(void);
 void caml_init_domains(uintnat minor_heap_size);
 void caml_init_domain_self(int);
 
-
 struct domain* caml_domain_self();
+struct domain* caml_owner_of_young_block(value);
+struct domain* caml_domain_of_id(int);
 
 typedef struct interrupt interrupt;
 typedef void (*domain_rpc_handler)(struct domain*, void*, interrupt*);
 
 int caml_domain_alone();
-
-struct domain* caml_owner_of_young_block(value);
-
-struct domain* caml_domain_of_id(int);
 
 CAMLcheckresult
 int caml_domain_rpc(struct domain*,
@@ -90,6 +87,7 @@ typedef uintnat barrier_status;
 barrier_status caml_global_barrier_begin();
 int caml_global_barrier_is_final(barrier_status);
 void caml_global_barrier_end(barrier_status);
+int caml_global_barrier_num_domains();
 
 
 #endif /* CAML_DOMAIN_H */

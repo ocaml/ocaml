@@ -458,6 +458,11 @@ void caml_global_barrier()
   caml_global_barrier_end(b);
 }
 
+int caml_global_barrier_num_domains()
+{
+  return stw_request.num_domains;
+}
+
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
   caml_ev_msg("starting STW");

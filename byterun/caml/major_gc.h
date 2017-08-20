@@ -32,5 +32,4 @@ struct gc_stats {
 };
 void caml_sample_gc_stats(struct gc_stats* buf);
 
-
 #endif /* CAML_MAJOR_GC_H */

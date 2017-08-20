@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "caml/config.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/fail.h"
@@ -23,6 +24,15 @@
 #define MARK_STACK_SIZE (1 << 14)
 
 uintnat caml_percent_free = Percent_free_def;
+
+/* This variable is only written with the world stopped,
+   so it need not be atomic */
+static uintnat major_cycles_completed = 0;
+
+static atomic_uintnat num_domains_to_sweep = {0};
+/* Indicates whether marking is done for the current cycle. Under deletion /
+ * yuasa / snapshot barrier, the marking work for a cycle is a constant. */
+static atomic_uintnat marking_is_done = {1};
 
 static uintnat default_slice_budget() {
   /*
@@ -68,6 +78,112 @@ static uintnat default_slice_budget() {
   //return 1ll << 50;
 }
 
+struct steal_payload {
+  caml_domain_state* thief;
+  int steal_success;
+  uint64 num_mark_stack_emptied;
+  uintnat major_cycle;
+};
+
+static void handle_steal_req (struct domain* targetd, void* plv,
+                              interrupt* done) {
+  struct steal_payload* pl = plv;
+  uintnat steal_size, new_size;
+  caml_domain_state* target = targetd->state;
+
+  if (target->mark_stack_count == 0 ||
+      /* Ignore steal requests from previous cycle */
+      pl->major_cycle != major_cycles_completed) {
+
+    pl->num_mark_stack_emptied = target->num_mark_stack_emptied;
+    pl->steal_success = 0;
+
+  } else {
+
+    Assert(pl->thief->mark_stack_count == 0);
+
+    steal_size = target->mark_stack_count / 2 + target->mark_stack_count % 2;
+    new_size = target->mark_stack_count - steal_size;
+    memcpy(pl->thief->mark_stack, &target->mark_stack[new_size],
+           steal_size * sizeof(value));
+    target->mark_stack_count = new_size;
+    pl->thief->mark_stack_count = steal_size;
+
+    pl->steal_success = 1;
+  }
+  caml_acknowledge_interrupt(done);
+}
+
+static void steal_mark_work () {
+  struct steal_payload pl;
+  uint64 mark_stack_emptied_sample[Max_domains];
+  uint64 count;
+  struct domain* domain_self = caml_domain_self ();
+  int my_id = domain_self->state->id;
+  struct domain* victim;
+  int i;
+
+  pl.thief = Caml_state;
+  pl.major_cycle = major_cycles_completed;
+
+  /* First round of stealing. If work was found, return early. Otherwise,
+   * record the number of times the victim's mark stack became empty. */
+  for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
+    count = 0;
+    victim = caml_domain_of_id(i);
+
+    if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
+      if (pl.steal_success) {
+        caml_gc_log("Stolen mark work (size=%lu) from domain %d",
+                    domain_self->state->mark_stack_count, i);
+        return;
+      }
+      count = pl.num_mark_stack_emptied;
+    }
+
+    /* Abort stealing if either some other domain discovered that marking is
+     * finished or a major cycle was completed. */
+    if (atomic_load_acq(&marking_is_done) ||
+        pl.major_cycle != major_cycles_completed) {
+      return;
+    }
+
+    mark_stack_emptied_sample[i] = count;
+  }
+
+  /* First round of stealing did not yield any work. Attempt a second round of
+   * stealing. In the case of no work, verify that victims' the mark stacks
+   * remain the "same" empty. */
+  for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
+    count = 0;
+    victim = caml_domain_of_id(i);
+
+    if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
+      if (pl.steal_success) {
+        caml_gc_log("Stolen mark work (size=%lu) from domain %d",
+                    domain_self->state->mark_stack_count, i);
+        return;
+      }
+      count = pl.num_mark_stack_emptied;
+    }
+
+    /* Abort stealing if either some other domain discovered that marking is
+     * finished or a major cycle was completed. */
+    if (atomic_load_acq(&marking_is_done) ||
+        pl.major_cycle != major_cycles_completed) {
+      return;
+    }
+
+    /* If the counts don't match, marking work isn't done yet. Return early and
+     * try again later. */
+    if (count != mark_stack_emptied_sample[i])
+      return;
+  }
+
+  /* If control reaches here, marking is done */
+  atomic_store_rel(&marking_is_done, 1);
+}
+
 static void mark_stack_prune();
 static struct pool* find_pool_to_rescan();
 
@@ -95,6 +211,10 @@ static int mark_stack_pop(value* ret) {
     }
   }
   *ret = domain_state->mark_stack[--domain_state->mark_stack_count];
+
+  if(domain_state->mark_stack_count == 0)
+    domain_state->num_mark_stack_emptied++;
+
   return 1;
 }
 
@@ -177,10 +297,6 @@ void caml_darken(void* state, value v, value* ignored) {
 }
 
 
-/* This variable is only written with the world stopped,
-   so it need not be atomic */
-static uintnat major_cycles_completed = 0;
-
 /* double-buffered sampled GC stats.
    At the end of GC cycle N, domains update sampled_gc_stats[N&1],
    but requests to Gc.stats() read from sampled_gc_stats[!(N&1)].
@@ -238,14 +354,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   caml_gc_log("In STW callback");
 
-  /* finish GC */
-  caml_ev_start_gc();
-  while (caml_sweep(domain->state->shared_heap, 10) <= 0);
-  caml_ev_end_gc();
   caml_empty_minor_heap();
-  caml_ev_start_gc();
-  caml_finish_marking();
-  caml_ev_end_gc();
 
   {
     /* update GC stats */
@@ -268,6 +377,11 @@ static void major_cycle_callback(struct domain* domain, void* unused)
       caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)major_cycles_completed);
       caml_ev_msg("GC cycle completed");
       major_cycles_completed++;
+
+      /* This number of domains must be swept in the next cycle. */
+      atomic_store_rel(&num_domains_to_sweep,
+        (uintnat)caml_global_barrier_num_domains());
+      atomic_store_rel(&marking_is_done, 0);
     }
     // should interrupts be processed here or not?
     // depends on whether marking above may need interrupts
@@ -288,6 +402,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   domain->state->stat_major_collections++;
   caml_cycle_heap(domain->state->shared_heap);
+  domain->state->sweep_acknowledged = 0;
 
   /* Mark roots for new cycle */
   caml_do_local_roots(&caml_darken, 0, caml_domain_self());
@@ -307,37 +422,51 @@ void caml_finish_major_cycle() {
 
 intnat caml_major_collection_slice(intnat howmuch)
 {
+  caml_domain_state* domain_state = Caml_state;
   intnat computed_work = howmuch ? howmuch : default_slice_budget();
   intnat budget = computed_work;
   intnat sweep_work, mark_work;
-  uintnat blocks_marked_before = Caml_state->stat_blocks_marked;
+  uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   value v;
 
   caml_save_stack_gc();
   caml_ev_start_gc();
 
   sweep_work = budget;
-  budget = caml_sweep(Caml_state->shared_heap, budget);
+  budget = caml_sweep(domain_state->shared_heap, budget);
   sweep_work -= budget;
 
+  if (budget > 0 && !domain_state->sweep_acknowledged) {
+    domain_state->sweep_acknowledged = 1;
+    atomic_fetch_add(&num_domains_to_sweep, -1);
+  }
+
   mark_work = budget;
-  if (mark_stack_pop(&v))
-    budget = mark(v, budget);
+  while (budget > 0 && !atomic_load_acq(&marking_is_done)) {
+    if (mark_stack_pop(&v))
+      budget = mark(v, budget);
+
+    if(budget > 0) {
+      caml_ev_msg("Start stealing");
+      steal_mark_work();
+      caml_ev_msg("Finish stealing");
+    }
+  }
   mark_work -= budget;
 
   caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
-              (unsigned long)Caml_state->allocated_words,
+              (unsigned long)domain_state->allocated_words,
               (long)computed_work, (long)sweep_work, (long)mark_work,
-              (unsigned long)(Caml_state->stat_blocks_marked - blocks_marked_before));
-  Caml_state->stat_major_words += Caml_state->allocated_words;
-  Caml_state->allocated_words = 0;
+              (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
+  domain_state->stat_major_words += domain_state->allocated_words;
+  domain_state->allocated_words = 0;
   caml_ev_end_gc();
   caml_restore_stack_gc();
 
-  if (budget > 0) {
+  if (atomic_load_acq(&num_domains_to_sweep) == 0 && //Sweeping is done on all domains
+      atomic_load_acq(&marking_is_done)) {
     caml_finish_major_cycle();
   }
-
 
   return computed_work;
 }
@@ -362,16 +491,6 @@ void caml_finish_marking () {
   caml_ev_msg("Mark stack empty");
 }
 
-void caml_empty_mark_stack_domain (struct domain* domain)
-{
-  caml_domain_state* state = domain->state;
-
-  while (state->mark_stack_count) {
-    state->mark_stack_count = state->mark_stack_count - 1;
-    mark (state->mark_stack[state->mark_stack_count], 10000000);
-  }
-}
-
 static struct pool** pools_to_rescan;
 static int pools_to_rescan_count;
 static int pools_to_rescan_len;
@@ -390,8 +509,6 @@ static struct pool* find_pool_to_rescan()
   caml_plat_unlock(&pools_to_rescan_lock);
   return p;
 }
-
-
 
 struct pool_count {
   struct pool* pool;
@@ -539,10 +656,12 @@ static void mark_stack_prune ()
   caml_plat_unlock(&pools_to_rescan_lock);
 }
 
-
 void caml_init_major_gc() {
   Caml_state->mark_stack = caml_stat_alloc(MARK_STACK_SIZE * sizeof(value));
   Caml_state->mark_stack_count = 0;
+  /* Fresh domain does not need to acknowledge sweeps. */
+  Caml_state->sweep_acknowledged = 1;
+  Caml_state->num_mark_stack_emptied = 0;
 }
 
 void caml_teardown_major_gc() {
