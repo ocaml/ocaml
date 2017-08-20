@@ -114,7 +114,8 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   caml_acknowledge_interrupt(done);
 }
 
-static void steal_mark_work () {
+/* Return 1 if stolen successfully. */
+static int steal_mark_work () {
   struct steal_payload pl;
   uint64 mark_stack_emptied_sample[Max_domains];
   uint64 count;
@@ -136,7 +137,7 @@ static void steal_mark_work () {
       if (pl.steal_success) {
         caml_gc_log("Stolen mark work (size=%lu) from domain %d",
                     domain_self->state->mark_stack_count, i);
-        return;
+        return 1;
       }
       count = pl.num_mark_stack_emptied;
     }
@@ -145,15 +146,15 @@ static void steal_mark_work () {
      * finished or a major cycle was completed. */
     if (atomic_load_acq(&marking_is_done) ||
         pl.major_cycle != major_cycles_completed) {
-      return;
+      return 0;
     }
 
     mark_stack_emptied_sample[i] = count;
   }
 
   /* First round of stealing did not yield any work. Attempt a second round of
-   * stealing. In the case of no work, verify that victims' the mark stacks
-   * remain the "same" empty. */
+   * stealing. In the case of no work, verify that the victim's mark stack
+   * remains the "same" empty. */
   for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
     count = 0;
     victim = caml_domain_of_id(i);
@@ -162,7 +163,7 @@ static void steal_mark_work () {
       if (pl.steal_success) {
         caml_gc_log("Stolen mark work (size=%lu) from domain %d",
                     domain_self->state->mark_stack_count, i);
-        return;
+        return 1;
       }
       count = pl.num_mark_stack_emptied;
     }
@@ -171,17 +172,18 @@ static void steal_mark_work () {
      * finished or a major cycle was completed. */
     if (atomic_load_acq(&marking_is_done) ||
         pl.major_cycle != major_cycles_completed) {
-      return;
+      return 0;
     }
 
     /* If the counts don't match, marking work isn't done yet. Return early and
      * try again later. */
     if (count != mark_stack_emptied_sample[i])
-      return;
+      return 0;
   }
 
   /* If control reaches here, marking is done */
   atomic_store_rel(&marking_is_done, 1);
+  return 0;
 }
 
 static void mark_stack_prune();
@@ -428,6 +430,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   intnat sweep_work, mark_work;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   value v;
+  int success;
 
   caml_save_stack_gc();
   caml_ev_start_gc();
@@ -442,14 +445,15 @@ intnat caml_major_collection_slice(intnat howmuch)
   }
 
   mark_work = budget;
-  while (budget > 0 && !atomic_load_acq(&marking_is_done)) {
+  while (budget > 0) {
     if (mark_stack_pop(&v))
       budget = mark(v, budget);
 
     if(budget > 0) {
       caml_ev_msg("Start stealing");
-      steal_mark_work();
+      success = steal_mark_work();
       caml_ev_msg("Finish stealing");
+      if (!success) break;
     }
   }
   mark_work -= budget;
