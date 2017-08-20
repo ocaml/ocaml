@@ -1598,7 +1598,8 @@ let_binding_body:
   | pattern_no_exn EQUAL seq_expr
       { ($1, $3) }
   | simple_pattern_not_ident COLON core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint($1, $3)), $5) }
+      { (ghpat(Ppat_constraint($1, $3)),
+         ghexp(Pexp_constraint($5, $3))) }
 ;
 let_bindings:
     let_binding                                 { $1 }

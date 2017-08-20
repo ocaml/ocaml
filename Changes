@@ -80,6 +80,12 @@ Working version
   to GPR#1250.)
   (Mark Shinwell)
 
+### Type system:
+
+- GPR#1298: improve propagation of type annotations in let-bindings of the form
+    let <pattern> : <type> = <expr>
+  (Gabriel Scherer, request by Alexey Egorov)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
