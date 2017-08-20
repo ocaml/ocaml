@@ -190,11 +190,7 @@ WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
-
-### Name of the target architecture for the "num" library
-BNG_ARCH=generic
-BNG_ASM_LEVEL=0
+OTHERLIBRARIES=win32unix systhreads str win32graph dynlink bigarray
 
 ############# for the testsuite makefiles
 #ml let topdir = "" and wintopdir = "";;
