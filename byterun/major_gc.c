@@ -192,8 +192,9 @@ static int steal_mark_work () {
           Caml_state->mark_stack_count = pl.result_data.stolen_size;
           return 1;
         case Not_shared:
-          exists_stingy_domain = 1;
-          break;
+          /* If a domain chooses not to share in the verify phase, abort
+           * stealing. We should try later. */
+          return 0;
         default:
           count = pl.result_data.num_mark_stack_emptied;
       }
