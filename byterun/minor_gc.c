@@ -140,7 +140,7 @@ static void oldify_one (void* st_v, value v, value *p)
   }
 
   infix_offset = 0;
-  while (1) {
+  do {
     hd = Hd_val (v);
     if (hd == 0) {
       /* already forwarded, forward pointer is first field. */
@@ -154,10 +154,8 @@ static void oldify_one (void* st_v, value v, value *p)
       infix_offset = Infix_offset_hd (hd);
       Assert(infix_offset > 0);
       v -= infix_offset;
-      continue;
     }
-    break;
-  }
+  } while (tag == Infix_tag);
 
   if (((value)Hp_val(v)) > st->oldest_promoted) {
     st->oldest_promoted = (value)Hp_val(v);
