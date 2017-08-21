@@ -388,7 +388,18 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   caml_gc_log("In STW callback");
 
+  /* finish GC */
+  if (!domain->state->sweep_acknowledged) {
+    caml_ev_start_gc();
+    while (caml_sweep(domain->state->shared_heap, 10) <= 0);
+    caml_ev_end_gc();
+  }
   caml_empty_minor_heap();
+  if (!atomic_load_acq(&marking_is_done)) {
+    caml_ev_start_gc();
+    caml_finish_marking();
+    caml_ev_end_gc();
+  }
 
   {
     /* update GC stats */
