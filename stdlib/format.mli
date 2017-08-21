@@ -23,14 +23,14 @@
    Similarly, {{!tags}semantic tags} can be used to decouple text
    presentation from its contents.
 
-   This printer-printing facility is implemented as an overlay on top of
+   This pretty-printing facility is implemented as an overlay on top of
    abstract {{!section:formatter}formatters} which provide basic output
    functions.
-   There are three predefined formatters:
+   Some formatters are predefined, notably:
    - {!std_formatter} outputs to {{!Pervasives.stdout}stdout}
    - {!err_formatter} outputs to {{!Pervasives.stderr}stderr}
 
-   All functions in the {!Format} module comes in two variants:
+   Most functions in the {!Format} module come in two variants:
    a short version that operates on {!std_formatter} and the
    generic version prefixed by [pp_] that takes a formatter
    as its first argument.
