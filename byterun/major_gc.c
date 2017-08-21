@@ -78,11 +78,18 @@ static uintnat default_slice_budget() {
   //return 1ll << 50;
 }
 
+enum steal_result { Shared, Not_shared, No_work };
+
 struct steal_payload {
   caml_domain_state* thief;
-  int steal_success;
-  uint64 num_mark_stack_emptied;
+  /* The major cycle at which the stealing was initiated. */
   uintnat major_cycle;
+
+  enum steal_result result;
+  union {
+    uint64 stolen_size;             //valid when result == shared
+    uint64 num_mark_stack_emptied;  //valid when result == no_work
+  } result_data;
 };
 
 static void handle_steal_req (struct domain* targetd, void* plv,
@@ -94,10 +101,12 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   if (target->mark_stack_count == 0 ||
       /* Ignore steal requests from previous cycle */
       pl->major_cycle != major_cycles_completed) {
-
-    pl->num_mark_stack_emptied = target->num_mark_stack_emptied;
-    pl->steal_success = 0;
-
+    if (atomic_load_acq(&target->incoming_mark_work)) {
+      pl->result = Not_shared;
+    } else {
+      pl->result = No_work;
+      pl->result_data.num_mark_stack_emptied = target->num_mark_stack_emptied;
+    }
   } else {
 
     Assert(pl->thief->mark_stack_count == 0);
@@ -107,9 +116,10 @@ static void handle_steal_req (struct domain* targetd, void* plv,
     memcpy(pl->thief->mark_stack, &target->mark_stack[new_size],
            steal_size * sizeof(value));
     target->mark_stack_count = new_size;
-    pl->thief->mark_stack_count = steal_size;
 
-    pl->steal_success = 1;
+    pl->result = Shared;
+    pl->result_data.stolen_size = steal_size;
+    atomic_store_rel(&pl->thief->incoming_mark_work, 1);
   }
   caml_acknowledge_interrupt(done);
 }
@@ -122,7 +132,7 @@ static int steal_mark_work () {
   struct domain* domain_self = caml_domain_self ();
   int my_id = domain_self->state->id;
   struct domain* victim;
-  int i;
+  int i, exists_stingy_domain = 0;
 
   pl.thief = Caml_state;
   pl.major_cycle = major_cycles_completed;
@@ -137,12 +147,19 @@ static int steal_mark_work () {
     victim = caml_domain_of_id(i);
 
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
-      if (pl.steal_success) {
-        caml_gc_log("Stolen mark work (size=%lu) from domain %d",
-                    domain_self->state->mark_stack_count, i);
-        return 1;
+      switch (pl.result) {
+        case Shared:
+          caml_gc_log("Stolen mark work (size=%llu) from domain %d",
+                      domain_self->state->mark_stack_count, i);
+          Caml_state->mark_stack_count = pl.result_data.stolen_size;
+          atomic_store_rel(&Caml_state->incoming_mark_work, 0);
+          return 1;
+        case Not_shared:
+          exists_stingy_domain = 1;
+          break;
+        default:
+          count = pl.result_data.num_mark_stack_emptied;
       }
-      count = pl.num_mark_stack_emptied;
     }
 
     /* Abort stealing if either some other domain discovered that marking is
@@ -156,19 +173,28 @@ static int steal_mark_work () {
   }
 
   /* First round of stealing did not yield any work. Attempt a second round of
-   * stealing. In the case of no work, verify that the victim's mark stack
-   * remains the "same" empty. */
+   * stealing if no domain was stingy in the first round. In the case of no
+   * work, verify that the victim's mark stack remains the "same" empty. */
+  if (exists_stingy_domain)
+    return 0;
+
   for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
     count = 0;
     victim = caml_domain_of_id(i);
 
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
-      if (pl.steal_success) {
-        caml_gc_log("Stolen mark work (size=%lu) from domain %d",
-                    domain_self->state->mark_stack_count, i);
-        return 1;
+      switch (pl.result) {
+        case Shared:
+          caml_gc_log("Stolen mark work (size=%llu) from domain %d",
+                      domain_self->state->mark_stack_count, i);
+          Caml_state->mark_stack_count = pl.result_data.stolen_size;
+          return 1;
+        case Not_shared:
+          exists_stingy_domain = 1;
+          break;
+        default:
+          count = pl.result_data.num_mark_stack_emptied;
       }
-      count = pl.num_mark_stack_emptied;
     }
 
     /* Abort stealing if either some other domain discovered that marking is
@@ -453,9 +479,11 @@ intnat caml_major_collection_slice(intnat howmuch)
       budget = mark(v, budget);
 
     if(budget > 0) {
+      caml_ev_end_gc ();
       caml_ev_msg("Start stealing");
       success = steal_mark_work();
       caml_ev_msg("Finish stealing");
+      caml_ev_start_gc ();
       if (!success) break;
     }
   }
@@ -669,6 +697,7 @@ void caml_init_major_gc() {
   /* Fresh domain does not need to acknowledge sweeps. */
   Caml_state->sweep_acknowledged = 1;
   Caml_state->num_mark_stack_emptied = 0;
+  atomic_store_rel(&Caml_state->incoming_mark_work, 0);
 }
 
 void caml_teardown_major_gc() {
