@@ -151,10 +151,10 @@ static int steal_mark_work () {
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
       switch (pl.result) {
         case Shared:
-          caml_gc_log("Stolen mark work (size=%llu) from domain %d",
-                      domain_self->state->mark_stack_count, i);
           Caml_state->mark_stack_count = pl.result_data.stolen_size;
           atomic_store_rel(&Caml_state->incoming_mark_work, 0);
+          caml_gc_log("Stolen mark work (size=%llu) from domain %d",
+                      domain_self->state->mark_stack_count, i);
           return 1;
         case Not_shared:
           exists_stingy_domain = 1;
@@ -177,8 +177,10 @@ static int steal_mark_work () {
   /* First round of stealing did not yield any work. Attempt a second round of
    * stealing if no domain was stingy in the first round. In the case of no
    * work, verify that the victim's mark stack remains the "same" empty. */
-  if (exists_stingy_domain)
+  if (exists_stingy_domain) {
+    caml_gc_log("Stealing: exiting due to stingy domain");
     return 0;
+  }
 
   for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
     count = 0;
@@ -215,6 +217,7 @@ static int steal_mark_work () {
 
   /* If control reaches here, marking is done */
   atomic_store_rel(&marking_is_done, 1);
+  caml_gc_log("Marking is done for the cycle");
   return 0;
 }
 
@@ -389,17 +392,9 @@ static void major_cycle_callback(struct domain* domain, void* unused)
   caml_gc_log("In STW callback");
 
   /* finish GC */
-  if (!domain->state->sweep_acknowledged) {
-    caml_ev_start_gc();
-    while (caml_sweep(domain->state->shared_heap, 10) <= 0);
-    caml_ev_end_gc();
-  }
+  caml_finish_sweeping();
   caml_empty_minor_heap();
-  if (!atomic_load_acq(&marking_is_done)) {
-    caml_ev_start_gc();
-    caml_finish_marking();
-    caml_ev_end_gc();
-  }
+  caml_finish_marking();
 
   {
     /* update GC stats */
@@ -532,12 +527,24 @@ void caml_empty_mark_stack () {
 }
 
 void caml_finish_marking () {
+  caml_ev_start_gc();
   caml_save_stack_gc();
   caml_empty_mark_stack();
   Caml_state->stat_major_words += Caml_state->allocated_words;
   Caml_state->allocated_words = 0;
   caml_restore_stack_gc();
   caml_ev_msg("Mark stack empty");
+  caml_ev_end_gc();
+}
+
+void caml_finish_sweeping () {
+  if (!Caml_state->sweep_acknowledged) {
+    caml_ev_start_gc();
+    while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
+    Caml_state->sweep_acknowledged = 1;
+    atomic_fetch_add(&num_domains_to_sweep, -1);
+    caml_ev_end_gc();
+  }
 }
 
 static struct pool** pools_to_rescan;
