@@ -98,9 +98,11 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   uintnat steal_size, new_size;
   caml_domain_state* target = targetd->state;
 
-  if (target->mark_stack_count == 0 ||
-      /* Ignore steal requests from previous cycle */
-      pl->major_cycle != major_cycles_completed) {
+
+  if (pl->major_cycle != major_cycles_completed) {
+    /* Ignore steal requests from previous cycle */
+    pl->result = Not_shared;
+  } else if (target->mark_stack_count == 0) {
     if (atomic_load_acq(&target->incoming_mark_work)) {
       pl->result = Not_shared;
     } else {
