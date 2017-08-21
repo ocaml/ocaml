@@ -43,7 +43,8 @@ void caml_init_stack (uintnat initial_max_size)
   caml_trapsp = caml_stack_high;
   caml_trap_barrier = caml_stack_high + 1;
   caml_max_stack_size = initial_max_size;
-  caml_gc_message (0x08, "Initial stack limit: %luk bytes\n",
+  caml_gc_message (0x08, "Initial stack limit: %"
+                   ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                    caml_max_stack_size / 1024 * sizeof (value));
 }
 
@@ -99,7 +100,8 @@ void caml_change_max_stack_size (uintnat new_max_size)
 
   if (new_max_size < size) new_max_size = size;
   if (new_max_size != caml_max_stack_size){
-    caml_gc_message (0x08, "Changing stack limit to %luk bytes\n",
+    caml_gc_message (0x08, "Changing stack limit to %"
+                     ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                      new_max_size * sizeof (value) / 1024);
   }
   caml_max_stack_size = new_max_size;

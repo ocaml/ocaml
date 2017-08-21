@@ -866,24 +866,24 @@ possible."
  (if (eq major-mode 'caml-mode)
      (let (skip bol beg end)
        (save-excursion
-         (set-buffer
-          (if (boundp 'compilation-last-buffer)
-              compilation-last-buffer   ;Emacs 19
-            "*compilation*"))           ;Emacs 18
-         (save-excursion
-           (goto-char (window-point (get-buffer-window (current-buffer))))
-           (if (looking-at caml-error-chars-regexp)
-               (setq beg
-                     (caml-string-to-int
-                      (buffer-substring (match-beginning 1) (match-end 1)))
-                     end
-                     (caml-string-to-int
-                      (buffer-substring (match-beginning 2) (match-end 2)))))
-           (next-line)
-           (beginning-of-line)
-           (if (and (looking-at "Warning")
-                    caml-next-error-skip-warnings-flag)
-               (setq skip 't))))
+         (with-current-buffer
+             (if (boundp 'compilation-last-buffer)
+                 compilation-last-buffer   ;Emacs 19
+               "*compilation*")           ;Emacs 18
+           (save-excursion
+             (goto-char (window-point (get-buffer-window (current-buffer))))
+             (if (looking-at caml-error-chars-regexp)
+                 (setq beg
+                       (caml-string-to-int
+                        (buffer-substring (match-beginning 1) (match-end 1)))
+                       end
+                       (caml-string-to-int
+                        (buffer-substring (match-beginning 2) (match-end 2)))))
+             (forward-line 1)
+             (beginning-of-line)
+             (if (and (looking-at "Warning")
+                      caml-next-error-skip-warnings-flag)
+                 (setq skip 't)))))
        (cond
         (skip (next-error))
         (beg

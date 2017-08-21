@@ -254,4 +254,5 @@ let main () =
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
   end;
   if not (prepare Format.err_formatter) then exit 2;
+  Compmisc.init_path true;
   Opttoploop.loop Format.std_formatter

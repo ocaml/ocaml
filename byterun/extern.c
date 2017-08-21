@@ -300,7 +300,7 @@ static void extern_failwith(char *msg)
 
 static void extern_stack_overflow(void)
 {
-  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n");
   extern_replay_trail();
   free_extern_output();
   caml_raise_out_of_memory();

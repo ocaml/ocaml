@@ -168,4 +168,5 @@ let main () =
   end;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
+  Compmisc.init_path false;
   Toploop.loop Format.std_formatter
