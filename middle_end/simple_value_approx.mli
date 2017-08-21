@@ -168,13 +168,15 @@ and function_declaration = private {
 
 (* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
-(* The invariance here is when [classic_mode] is true, then
-   [invariant_params] and [size] are guranteed to be empty maps and all the
-   functions in [function_declarations.fun] will have None for its
-   [function_body] field.
+(* when [is_classic_mode] is [false], functions in [function_declarations]
+   are guranteed to have function bodies (ie:
+   [function_declaration.function_body] will be of the [Some] variant).
+
+   When it [is_classic_mode] is [true], however, no gurantees about the
+   function_bodies are given.
 *)
 and value_set_of_closures = private {
-  with_empty_body: bool;
+  is_classic_mode: bool;
   function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
@@ -209,13 +211,15 @@ val print_value_set_of_closures
   -> unit
 
 val create_classic_function_declarations
-   : Flambda.function_declarations -> function_declarations
+   : keep_body_check:(Flambda.function_declaration -> bool)
+  -> Flambda.function_declarations -> function_declarations
 
 val create_normal_function_declarations
    : Flambda.function_declarations -> function_declarations
 
 val create_classic_value_set_of_closures
-   : function_decls:Flambda.function_declarations
+   : keep_body_check:(Flambda.function_declaration -> bool)
+  -> function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
@@ -233,7 +237,8 @@ val create_normal_value_set_of_closures
   -> value_set_of_closures
 
 val import_value_set_of_closures
-    : function_decls: function_declarations
+    : is_classic_mode: bool
+   -> function_decls: function_declarations
    -> bound_vars: t Var_within_closure.Map.t
    -> invariant_params: Variable.Set.t Variable.Map.t lazy_t
    -> specialised_args: Flambda.specialised_to Variable.Map.t

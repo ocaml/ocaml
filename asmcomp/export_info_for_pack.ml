@@ -81,7 +81,8 @@ let import_set_of_closures_origin_for_pack units pack
 let import_set_of_closures units pack
       (set_of_closures : Export_info.value_set_of_closures)
       : Export_info.value_set_of_closures =
-  { set_of_closures_id =
+  { is_classic_mode = set_of_closures.is_classic_mode;
+    set_of_closures_id =
       import_set_of_closures_id_for_pack units pack
         set_of_closures.set_of_closures_id;
     bound_vars =

@@ -328,6 +328,8 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
         Env.find_approx env spec_to.var)
       set.specialised_args
   in
+  (* CR fquah: Is this correct? *)
+  let is_classic_mode = !Clflags.classic_inlining in
   let closures_approx =
     (* To build an approximation of the results, we need an
        approximation of the functions. The first one we can build is
@@ -341,6 +343,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     *)
     let initial_value_set_of_closures =
       { Export_info.
+        is_classic_mode;
         set_of_closures_id = set.function_decls.set_of_closures_id;
         bound_vars = Var_within_closure.wrap_map bound_vars_approx;
         results =
@@ -374,6 +377,7 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     bound_vars = Var_within_closure.wrap_map bound_vars_approx;
     results = Closure_id.wrap_map results;
     aliased_symbol = None;
+    is_classic_mode;
   }
 
 let approx_of_constant_defining_value_block_field env

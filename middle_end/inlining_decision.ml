@@ -537,7 +537,8 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
   let original_r =
     R.set_approx (R.seen_direct_application r) (A.value_unknown Other)
   in
-  if function_decl.stub then
+  if function_decl.stub then begin
+    (* Format.printf "%a" A.print_function_declarations function_decls;*)
     let body, r =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r ~function_decls ~lhs_of_application
@@ -545,6 +546,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         ~function_decl ~args ~dbg ~simplify
     in
     simplify env r body
+  end
   else if E.never_inline env then
     (* This case only occurs when examining the body of a stub function
        but not in the context of inlining said function.  As such, there
@@ -651,13 +653,32 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
               (S.Not_specialised.Classic_mode, S.Not_inlined.Classic_mode))
         | Some _ ->
           let specialise_result =
-            specialise env r
-              ~function_decls:(Lazy.force flambda_function_decls)
-              ~function_decl:(Lazy.force flambda_function_decl)
-              ~lhs_of_application  ~recursive ~closure_id_being_applied
-              ~value_set_of_closures
-              ~args ~args_approxs ~dbg ~simplify ~original ~inline_requested
-              ~specialise_requested ~fun_cost ~self_call ~inlining_threshold
+            (* [specialize] is valid if and only if all entries of
+               [function_declaration] contains a body.
+            *)
+            (* CR fquah: Maybe this implies that [.is_classic_mode] should
+               really be a field in [function_declarations] rather than
+               [value_set_of_closures] ?
+            *)
+            let all_has_body =
+              Variable.Map.for_all
+                (fun (_ : Variable.t) (function_decl : A.function_declaration) ->
+                   match function_decl.function_body with
+                   | None -> false
+                   | Some _ -> true)
+                function_decls.funs
+            in
+            if all_has_body
+            then
+              specialise env r
+                ~function_decls:(Lazy.force flambda_function_decls)
+                ~function_decl:(Lazy.force flambda_function_decl)
+                ~lhs_of_application  ~recursive ~closure_id_being_applied
+                ~value_set_of_closures
+                ~args ~args_approxs ~dbg ~simplify ~original ~inline_requested
+                ~specialise_requested ~fun_cost ~self_call ~inlining_threshold
+            else
+              Original S.Not_specialised.Classic_mode
           in
           match specialise_result with
           | Changed (res, spec_reason) ->
