@@ -93,6 +93,12 @@ Working version
   the unaligned part, which is useful for Tuple options.
   (Nicolas Ojeda Bar, review by Alain Frisch and Gabriel Scherer)
 
+* GPR#615: Format, add symbolic formatters that output symbolic
+  pretty-printing items. New fields have been added to the
+  formatter_out_functions record, thus this change will break any code building
+  such record from scratch.
+  (Richard Bonichon and Pierre Weiss, review by Alain Frisch)
+
 * GPR#943: Fixed the divergence of the Pervasives module between the stdlib
   and threads implementations.  In rare circumstances this can change the
   behavior of existing applications: the implementation of Pervasives.close_out
