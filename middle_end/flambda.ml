@@ -1033,6 +1033,15 @@ let update_function_declarations function_decls ~funs =
     funs;
   }
 
+let create_function_declarations_with_closures_origin
+      ~funs ~set_of_closures_origin =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  { set_of_closures_id;
+    set_of_closures_origin;
+    funs
+  }
+
 let import_function_declarations_for_pack function_decls
     import_set_of_closures_id import_set_of_closures_origin =
   { set_of_closures_id =

@@ -711,18 +711,19 @@ let keep_body_in_classic_mode (fun_decl : Flambda.function_declaration) =
 
 let approximate_function_declarations
       (function_decls : Flambda.function_declarations) =
-  if !Clflags.classic_inlining
-  then A.create_classic_function_declarations
-         ~keep_body_check:keep_body_in_classic_mode function_decls
-  else A.create_normal_function_declarations function_decls
+  if !Clflags.classic_inlining then begin
+    A.create_classic_function_declarations
+      ~keep_body_check:keep_body_in_classic_mode function_decls
+  end else begin
+    A.create_normal_function_declarations function_decls
+  end
 
 let create_value_set_of_closures
       ~(function_decls : Flambda.function_declarations) ~bound_vars
       ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let create =
-    if !Clflags.classic_inlining
-    then begin
+    if !Clflags.classic_inlining then begin
       A.create_classic_value_set_of_closures
         ~keep_body_check:keep_body_in_classic_mode
     end else begin

@@ -567,6 +567,11 @@ val update_function_declarations
   -> funs:function_declaration Variable.Map.t
   -> function_declarations
 
+val create_function_declarations_with_closures_origin
+   : funs:function_declaration Variable.Map.t
+  -> set_of_closures_origin:Set_of_closures_origin.t
+  -> function_declarations
+
 val import_function_declarations_for_pack
    : function_declarations
   -> (Set_of_closures_id.t -> Set_of_closures_id.t)

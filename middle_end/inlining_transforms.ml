@@ -202,7 +202,8 @@ let inline_by_copying_function_body ~env ~r
       function_decls.funs
       bindings_for_vars_bound_by_closure_and_params_to_args
   in
-  let env = E.activate_freshening (E.set_never_inline env) in
+  let env = E.set_never_inline env in
+  let env = E.activate_freshening env in
   let env = E.set_inline_debuginfo ~dbg env in
   simplify env r expr
 

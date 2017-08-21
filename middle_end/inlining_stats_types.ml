@@ -35,12 +35,16 @@ let print_calculation ~depth ~title ~subfunctions ppf wsb =
 module Inlined = struct
 
   type t =
+    | Classic_mode
     | Annotation
     | Decl_local_to_application
     | Without_subfunctions of Wsb.t
     | With_subfunctions of Wsb.t * Wsb.t
 
   let summary ppf = function
+    | Classic_mode ->
+        Format.pp_print_text ppf
+        "This function was inlined because it is in classic mode"
     | Annotation ->
       Format.pp_print_text ppf
         "This function was inlined because of an annotation."
@@ -57,6 +61,7 @@ module Inlined = struct
          the expected benefit outweighed the change in code size."
 
   let calculation ~depth ppf = function
+    | Classic_mode -> ()
     | Annotation -> ()
     | Decl_local_to_application -> ()
     | Without_subfunctions wsb ->
