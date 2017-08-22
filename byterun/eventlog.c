@@ -94,7 +94,7 @@ void caml_setup_eventlog() {
   caml_plat_lock(&lock);
   num_users++;
   if (!output) {
-    sprintf(filename, "%.200s.eventlog", 
+    sprintf(filename, "%.200s.eventlog",
             caml_params->exe_name ? caml_params->exe_name : "program");
     output = fopen(filename, "w");
     if (!output) {
@@ -252,12 +252,20 @@ static void output_initial_events()
 void caml_ev_start_gc()
 {
   if (!output) return;
+#ifdef DEBUG
+  Assert(Caml_state->gc_event_nesting_depth == 0);
+  Caml_state->gc_event_nesting_depth++;
+#endif
   append_event(&ev_gc_start);
 }
 
 void caml_ev_end_gc()
 {
   if (!output) return;
+#ifdef DEBUG
+  Assert(Caml_state->gc_event_nesting_depth == 1);
+  Caml_state->gc_event_nesting_depth--;
+#endif
   append_event(&ev_gc_end);
 }
 

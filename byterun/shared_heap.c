@@ -448,6 +448,10 @@ int caml_mark_object(value p) {
        - NOT_MARKABLE: this object should be ignored by the GC */
   Assert (h && !Has_status_hd(h, global.GARBAGE));
   if (Has_status_hd(h, global.UNMARKED)) {
+    if (Caml_state->marking_done) {
+      caml_increment_domains_marking ();
+      Caml_state->marking_done = 0;
+    }
     Hd_val(p) = With_status_hd(h, global.MARKED);
     // caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
     return 1;
