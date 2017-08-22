@@ -593,7 +593,6 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_leave_blocking_section() {
   caml_plat_lock(&domain_self->roots_lock);
-  caml_ev_resume();
   caml_leave_blocking_section_hook();
   caml_restore_stack_gc();
   caml_process_pending_signals();
@@ -603,7 +602,6 @@ CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
   caml_enter_blocking_section_hook();
-  caml_ev_pause(EV_PAUSE_BLOCK);
   caml_plat_unlock(&domain_self->roots_lock);
 }
 
