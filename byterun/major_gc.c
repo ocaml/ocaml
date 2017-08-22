@@ -527,12 +527,18 @@ void caml_empty_mark_stack () {
 }
 
 void caml_finish_marking () {
+  /* This function could be called from steal_mark_work(),
+   * where the stack has already been saved. */
+  int stack_is_saved = caml_stack_is_saved ();
+
   caml_ev_start_gc();
-  caml_save_stack_gc();
+  if (!stack_is_saved)
+    caml_save_stack_gc();
   caml_empty_mark_stack();
   Caml_state->stat_major_words += Caml_state->allocated_words;
   Caml_state->allocated_words = 0;
-  caml_restore_stack_gc();
+  if (!stack_is_saved)
+    caml_restore_stack_gc();
   caml_ev_msg("Mark stack empty");
   caml_ev_end_gc();
 }
@@ -543,6 +549,18 @@ void caml_finish_sweeping () {
     while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
     Caml_state->sweep_acknowledged = 1;
     atomic_fetch_add(&num_domains_to_sweep, -1);
+    caml_ev_end_gc();
+  }
+}
+
+void caml_sweep_and_acknowledge (intnat budget) {
+  if (!Caml_state->sweep_acknowledged) {
+    caml_ev_start_gc();
+    budget = caml_sweep(Caml_state->shared_heap, budget);
+    if (budget > 0) {
+      Caml_state->sweep_acknowledged = 1;
+      atomic_fetch_add(&num_domains_to_sweep, -1);
+    }
     caml_ev_end_gc();
   }
 }
