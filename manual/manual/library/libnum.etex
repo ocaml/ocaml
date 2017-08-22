@@ -1,10 +1,10 @@
-\chapter{The legacy num library}
-\pdfchapterfold{-3}{The legacy num library}
+\chapter{The num library: arbitrary-precision rational arithmetic}
+\pdfchapterfold{-3}{The num library: arbitrary-precision integer and rational arithmetic}
 %HEVEA\cutname{libnum.html}
 
-The legacy "num" library implemented integer arithmetic and rational
-arithmetic in arbitrary precision. It has been split off from the core
-OCaml distribution starting from the 4.06.0 release and can be found
+The "num" library implements integer arithmetic and rational
+arithmetic in arbitrary precision. It was split off the core
+OCaml distribution starting with the 4.06.0 release, and can now be found
 at \url{https://github.com/ocaml/num}.
 
 New applications that need arbitrary-precision arithmetic should use the
