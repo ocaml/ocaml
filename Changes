@@ -201,6 +201,9 @@ Working version
   caml_example
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- MPR#7588, GPR#1291: make format documentation predictable
+  (Florian Angeletti, review by Gabriel Radanne)
+
 - MPR#7604: Minor Ephemeron documentation fixes
   (Miod Vallat, review by Florian Angeletti)
 
