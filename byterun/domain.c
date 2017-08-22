@@ -775,7 +775,8 @@ static void domain_terminate() {
   int finished = 0;
 
   caml_gc_log("Domain terminating");
-  caml_ev_pause(EV_PAUSE_TERMINATE);
+  caml_ev_msg("Domain terminating");
+  caml_ev_pause(EV_PAUSE_YIELD);
   while (!finished) {
     caml_finish_sweeping();
     caml_empty_minor_heap();
@@ -800,7 +801,9 @@ static void domain_terminate() {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
+  caml_ev_resume();
   caml_enter_blocking_section();
+  caml_ev_resume();
   caml_teardown_eventlog();
 }
 
@@ -813,17 +816,20 @@ void caml_handle_incoming_interrupts(struct interruptor* s)
 
 void caml_yield_until_interrupted(struct interruptor* s)
 {
+  caml_ev_msg("wait");
+  caml_ev_pause(EV_PAUSE_YIELD);
   caml_plat_lock(&s->lock);
   while (handle_incoming(s) == 0) {
     if (!Caml_state->sweeping_done) {
       caml_plat_unlock(&s->lock);
-      caml_sweep_and_acknowledge(10);
+      caml_sweep_and_acknowledge(128);
       caml_plat_lock(&s->lock);
     } else {
       caml_plat_wait(&s->cond);
     }
   }
   caml_plat_unlock(&s->lock);
+  caml_ev_resume();
 }
 
 int caml_send_interrupt(struct interruptor* self,
