@@ -410,7 +410,8 @@ let transl_declaration env sdecl id =
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
       | Ptype_variant [{pcd_args = Pcstr_record
                           [{pld_mutable = Immutable; _}]; _}]
-      | Ptype_record [{pld_mutable = Immutable; _}] ->
+      | Ptype_record [{pld_mutable = Immutable; _}]
+      | Ptype_record [] ->
     raw_status
     | _ -> (* The type is not unboxable, mark it as boxed *)
       unboxed_false_default_false

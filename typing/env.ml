@@ -920,9 +920,11 @@ let type_of_cstr path = function
 let find_type_full path env =
   match Path.constructor_typath path with
   | Regular p ->
+      Format.eprintf "Regular@.";
       (try (PathMap.find p env.local_constraints, ([], []))
        with Not_found -> find_type_full p env)
   | Cstr (ty_path, s) ->
+      Format.eprintf "Cstr@.";
       let (_, (cstrs, _)) =
         try find_type_full ty_path env
         with Not_found -> assert false
@@ -933,12 +935,14 @@ let find_type_full path env =
       in
       type_of_cstr path cstr
   | LocalExt id ->
+      Format.eprintf "LocalExt@.";
       let cstr =
         try TycompTbl.find_same id env.constrs
         with Not_found -> assert false
       in
       type_of_cstr path cstr
   | Ext (mod_path, s) ->
+      Format.eprintf "Ext@.";
       let comps =
         try find_module_descr mod_path env
         with Not_found -> assert false

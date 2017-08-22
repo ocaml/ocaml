@@ -2246,7 +2246,6 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
-      assert (lid_sexp_list <> []);
       let opt_exp =
         match opt_sexp with
           None -> None
@@ -2267,13 +2266,14 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             Some (p0, p, ty.level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
+        Format.eprintf "First expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
         match get_path ty_expected with
           None ->
             begin match opt_exp with
-              None -> newvar (), None
+              None -> Format.eprintf "here1@."; newvar (), None
             | Some exp ->
                 match get_path exp.exp_type with
-                  None -> newvar (), None
+                  None -> Format.eprintf "here2@."; newvar (), None
                 | Some (_, p', _) as op ->
                     let decl = Env.find_type p' env in
                     begin_def ();
@@ -2283,7 +2283,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                     generalize_structure ty;
                     ty, op
             end
-        | op -> ty_expected, op
+        | op -> Format.eprintf "here3@."; ty_expected, op
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
@@ -2293,7 +2293,13 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
              opath lid_sexp_list)
           (fun x -> x)
       in
+      Format.eprintf "Start unification@.";
+      Format.eprintf "expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+      Format.eprintf "record raw_type_expr: %a@." Printtyp.raw_type_expr ty_record;
       unify_exp_types loc env ty_record (instance env ty_expected);
+      Format.eprintf "After unification@.";
+      Format.eprintf "expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+      Format.eprintf "record raw_type_expr: %a@." Printtyp.raw_type_expr ty_record;
 
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
@@ -2307,6 +2313,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       in
       check_duplicates lbl_exp_list;
       let opt_exp, label_definitions =
+        if lbl_exp_list = [] then None, [| |] else begin
         let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
         let matching_label lbl =
           List.find
@@ -2355,23 +2362,26 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             in
             let label_definitions = Array.map unify_kept lbl.lbl_all in
             Some {exp with exp_type = ty_exp}, label_definitions
-      in
+        end in
       let num_fields =
-        match lbl_exp_list with [] -> assert false
+        match lbl_exp_list with [] -> 0
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
+      (* should we support let x = {} let y = {x with} *)
       let opt_exp =
         if opt_sexp <> None && List.length lid_sexp_list = num_fields then
           (Location.prerr_warning loc Warnings.Useless_record_with; None)
         else opt_exp
       in
       let label_descriptions, representation =
-        let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
-        lbl_all, lbl_repres
+        match lbl_exp_list with
+        | [] -> [| |], Record_unboxed false
+        | (_, { lbl_all; lbl_repres }, _) :: _ -> lbl_all, lbl_repres
       in
       let fields =
         Array.map2 (fun descr def -> descr, def)
           label_descriptions label_definitions
       in
+      Format.eprintf "expect 2 type_expr: %a@." Printtyp.type_expr ty_expected;
       re {
         exp_desc = Texp_record {
             fields; representation;
@@ -3355,7 +3365,9 @@ and type_label_exp create env loc ty_expected
     generalize_structure ty_res
   end;
   begin try
-    unify env (instance_def ty_res) (instance env ty_expected)
+    Format.eprintf "label< raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+    unify env (instance_def ty_res) (instance env ty_expected);
+    Format.eprintf "label> raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected
   with Unify trace ->
     raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
   end;
