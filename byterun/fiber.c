@@ -393,7 +393,7 @@ value caml_switch_stack(value stk)
 
 void caml_save_stack_gc()
 {
-  Assert(!stack_is_saved);
+  Assert(stack_is_saved >= 0);
   save_stack();
   ++stack_is_saved;
 }
@@ -406,10 +406,11 @@ int caml_stack_is_saved ()
 void caml_restore_stack_gc()
 {
   caml_domain_state* domain_state = Caml_state;
-  Assert(stack_is_saved);
+  Assert(stack_is_saved > 0);
   Assert(Tag_val(domain_state->current_stack) == Stack_tag);
-  load_stack(domain_state->current_stack);
   --stack_is_saved;
+  if (stack_is_saved == 0)
+    load_stack(domain_state->current_stack);
 }
 
 void caml_clean_stack_domain(value stack, struct domain* domain)

@@ -12,9 +12,8 @@ DOMAIN_STATE(value**, gc_regs_slot)
 DOMAIN_STATE(struct caml_remembered_set*, remembered_set)
 DOMAIN_STATE(value*, mark_stack)
 DOMAIN_STATE(uint64, mark_stack_count)
-DOMAIN_STATE(uintnat, sweep_acknowledged)
-DOMAIN_STATE(uint64, num_mark_stack_emptied)
-DOMAIN_STATE(atomic_uintnat, incoming_mark_work)
+DOMAIN_STATE(uintnat, marking_done)
+DOMAIN_STATE(uintnat, sweeping_done)
 DOMAIN_STATE(uintnat, allocated_words)
 DOMAIN_STATE(struct caml__roots_block*, local_roots)
 DOMAIN_STATE(intnat, backtrace_pos)
@@ -64,3 +63,6 @@ DOMAIN_STATE(uint64, call_imm)
 DOMAIN_STATE(uint64, call_ind)
 
 DOMAIN_STATE(uint64, stackoverflow_checks)
+
+/* Event logs */
+DOMAIN_STATE(intnat, gc_event_nesting_depth)
