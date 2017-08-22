@@ -815,7 +815,13 @@ void caml_yield_until_interrupted(struct interruptor* s)
 {
   caml_plat_lock(&s->lock);
   while (handle_incoming(s) == 0) {
-    caml_plat_wait(&s->cond);
+    if (!Caml_state->sweep_acknowledged) {
+      caml_plat_unlock(&s->lock);
+      caml_sweep_and_acknowledge(10);
+      caml_plat_lock(&s->lock);
+    } else {
+      caml_plat_wait(&s->cond);
+    }
   }
   caml_plat_unlock(&s->lock);
 }
