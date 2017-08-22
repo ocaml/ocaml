@@ -1,5 +1,5 @@
 let rec await r =
-  if Atomic.get r then () else await r
+  if Atomic.get r then () else (Atomic.make (); await r)
 
 open Domain
 open Domain.Sync
