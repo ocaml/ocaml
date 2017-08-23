@@ -866,6 +866,7 @@ let map_fold_cont f xs k =
     xs (fun ys -> k (List.rev ys)) []
 
 let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
+  Format.eprintf "type label a list@.";
   let lbl_a_list =
     match lid_a_list, labels with
       ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
@@ -895,6 +896,7 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
       (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
       lbl_a_list
   in
+  Format.eprintf "begin folding@.";
   map_fold_cont type_lbl_a lbl_a_list k
 ;;
 
@@ -3353,6 +3355,7 @@ and type_format loc str env =
 
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
+  Format.eprintf "type_label_exp@.";
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
   let separate = !Clflags.principal || Env.has_local_constraints env in
@@ -3364,10 +3367,13 @@ and type_label_exp create env loc ty_expected
     generalize_structure ty_arg;
     generalize_structure ty_res
   end;
+  Format.eprintf "type_label_exp generalize done@.";
   begin try
-    Format.eprintf "label< raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+    Format.eprintf "ty_expected< raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+    Format.eprintf "tyres< raw_type_expr: %a@." Printtyp.raw_type_expr ty_res;
     unify env (instance_def ty_res) (instance env ty_expected);
-    Format.eprintf "label> raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected
+    Format.eprintf "ty_expected> raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
+    Format.eprintf "tyres> raw_type_expr: %a@." Printtyp.raw_type_expr ty_res;
   with Unify trace ->
     raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
   end;
