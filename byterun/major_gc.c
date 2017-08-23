@@ -437,6 +437,7 @@ intnat caml_major_collection_slice(intnat howmuch)
       budget = mark(v, budget);
 
     if(budget > 0) {
+      caml_ev_end_gc();
       caml_ev_msg("Start stealing");
 
       if (!domain_state->marking_done) {
@@ -446,6 +447,7 @@ intnat caml_major_collection_slice(intnat howmuch)
 
       success = steal_mark_work();
       caml_ev_msg("Finish stealing");
+      caml_ev_start_gc();
       if (!success) break;
     }
   }
