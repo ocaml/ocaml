@@ -420,6 +420,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   int success;
 
   caml_save_stack_gc();
+  caml_ev_msg("Start sweeping");
   caml_ev_start_gc();
 
   sweep_work = budget;
@@ -431,6 +432,14 @@ intnat caml_major_collection_slice(intnat howmuch)
     atomic_fetch_add(&num_domains_to_sweep, -1);
   }
 
+  caml_ev_end_gc();
+  caml_ev_msg("End sweeping");
+
+  caml_handle_incoming_interrupts();
+
+  caml_ev_msg("Start marking");
+  caml_ev_start_gc();
+
   mark_work = budget;
   while (budget > 0) {
     if (mark_stack_pop(&v))
@@ -438,6 +447,7 @@ intnat caml_major_collection_slice(intnat howmuch)
 
     if(budget > 0) {
       caml_ev_end_gc();
+      caml_ev_msg("End marking");
       caml_ev_msg("Start stealing");
 
       if (!domain_state->marking_done) {
@@ -446,12 +456,14 @@ intnat caml_major_collection_slice(intnat howmuch)
       }
 
       success = steal_mark_work();
-      caml_ev_msg("Finish stealing");
       caml_ev_start_gc();
+      caml_ev_msg("Finish stealing");
+      caml_ev_msg("Start marking");
       if (!success) break;
     }
   }
   mark_work -= budget;
+  caml_ev_msg("End marking");
 
   caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
               (unsigned long)domain_state->allocated_words,
@@ -460,6 +472,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
   caml_ev_end_gc();
+
   caml_restore_stack_gc();
 
   if (atomic_load_acq(&num_domains_to_sweep) == 0 &&
