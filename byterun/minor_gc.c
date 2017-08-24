@@ -534,6 +534,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   if (minor_allocated_bytes != 0) {
     uintnat prev_alloc_words = domain_state->allocated_words;
     caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
+    caml_ev_msg("Start minor");
     caml_ev_start_gc();
     caml_do_local_roots(&oldify_one, &st, domain);
 
@@ -578,6 +579,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
     caml_ev_end_gc();
+    caml_ev_msg("End minor");
     caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
                  domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
@@ -625,6 +627,7 @@ CAMLexport void caml_minor_collection (void)
   caml_ev_pause(EV_PAUSE_GC);
 
   caml_empty_minor_heap ();
+  caml_handle_incoming_interrupts ();
   caml_major_collection_slice (0);
 
   /* FIXME: run finalisers.
