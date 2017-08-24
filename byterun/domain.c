@@ -52,7 +52,7 @@ int caml_send_interrupt(struct interruptor* self,
                         struct interruptor* target,
                         domain_rpc_handler handler,
                         void* data);
-void caml_handle_incoming_interrupts(struct interruptor* self);
+void caml_handle_incoming_interrupts(void);
 
 
 struct dom_internal {
@@ -473,7 +473,7 @@ static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
   SPIN_WAIT {
     if (atomic_load_acq(&stw_request.domains_still_running) == 0)
       break;
-    caml_handle_incoming_interrupts(&domain_self->interruptor);
+    caml_handle_incoming_interrupts();
   }
   stw_request.callback(domain, stw_request.data);
   atomic_fetch_add(&stw_request.num_domains_still_processing, -1);
@@ -496,7 +496,7 @@ int caml_try_run_on_all_domains(void (*handler)(struct domain*, void*), void* da
   caml_plat_lock(&all_domains_lock);
   if (stw_leader) {
     caml_plat_unlock(&all_domains_lock);
-    caml_handle_incoming_interrupts(&domain_self->interruptor);
+    caml_handle_incoming_interrupts();
     return 0;
   } else {
       stw_leader = domain_self;
@@ -570,7 +570,7 @@ void caml_handle_gc_interrupt() {
       atomic_cas(young_limit, INTERRUPT_MAGIC, domain_self->minor_heap_area);
     }
     caml_ev_pause(EV_PAUSE_YIELD);
-    caml_handle_incoming_interrupts(&domain_self->interruptor);
+    caml_handle_incoming_interrupts();
     caml_ev_resume();
   }
 
@@ -808,8 +808,9 @@ static void domain_terminate() {
   caml_teardown_eventlog();
 }
 
-void caml_handle_incoming_interrupts(struct interruptor* s)
+void caml_handle_incoming_interrupts()
 {
+  struct interruptor* s = &domain_self->interruptor;
   caml_plat_lock(&s->lock);
   handle_incoming(s);
   caml_plat_unlock(&s->lock);
@@ -890,10 +891,15 @@ CAMLprim value caml_ml_domain_yield(value unused)
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
+      caml_ev_pause(EV_PAUSE_YIELD);
+      caml_ev_msg("timed wait");
       caml_plat_wait(&s->cond);
+      caml_ev_resume();
     } else {
       caml_plat_unlock(&s->lock);
+      caml_ev_pause(EV_PAUSE_YIELD);
       caml_sweep_and_acknowledge(16384);
+      caml_ev_resume();
       caml_plat_lock(&s->lock);
     }
   }
@@ -938,19 +944,28 @@ CAMLprim value caml_ml_domain_yield_until(value t)
   int64 ts = Int64_val(t) + startup_timestamp;
   struct interruptor* s = &domain_self->interruptor;
   value ret = Val_int(1); /* Domain.Sync.Notify */
+  int res;
+
   if (Caml_state->critical_section_nesting == 0){
     caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
   }
+
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
-    if (handle_incoming(s) == 0 &&
-        Caml_state->sweeping_done &&
-        caml_plat_timedwait(&s->cond, ts)) {
-      ret = Val_int(0); /* Domain.Sync.Timeout */
-      break;
+    if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
+      caml_ev_pause(EV_PAUSE_YIELD);
+      caml_ev_msg("timed wait");
+      res = caml_plat_timedwait(&s->cond, ts);
+      caml_ev_resume();
+      if (res) {
+        ret = Val_int(0); /* Domain.Sync.Timeout */
+        break;
+      }
     } else {
       caml_plat_unlock(&s->lock);
+      caml_ev_pause(EV_PAUSE_YIELD);
       caml_sweep_and_acknowledge(16384);
+      caml_ev_resume();
       caml_plat_lock(&s->lock);
     }
   }
