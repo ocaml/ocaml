@@ -2,7 +2,10 @@
 #define CAML_MAJOR_GC
 
 intnat caml_major_collection_slice (intnat);
+void caml_finish_sweeping(void);
+void caml_sweep_and_acknowledge (intnat budget);
 void caml_finish_marking (void);
+void caml_increment_domains_marking(void);
 void caml_init_major_gc(void);
 void caml_teardown_major_gc(void);
 void caml_darken(void*, value, value* ignored);
@@ -31,6 +34,5 @@ struct gc_stats {
   struct heap_stats major_heap;
 };
 void caml_sample_gc_stats(struct gc_stats* buf);
-
 
 #endif /* CAML_MAJOR_GC_H */

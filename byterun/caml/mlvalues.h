@@ -25,6 +25,12 @@ typedef intnat value;
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
 
+/* atomic_uintnat is declared as a struct type to prevent accidental
+   accesses that don't use the primitives of platform.h */
+typedef struct atomic_uintnat {
+  volatile uintnat val;
+} atomic_uintnat;
+
 #include "domain_state.h"
 
 #ifdef __cplusplus
@@ -67,12 +73,6 @@ typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
 typedef uintnat color_t;
 typedef uintnat mark_t;
-
-/* atomic_uintnat is declared as a struct type to prevent accidental
-   accesses that don't use the primitives of platform.h */
-typedef struct atomic_uintnat {
-  volatile uintnat val;
-} atomic_uintnat;
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
