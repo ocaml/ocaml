@@ -1,8 +1,8 @@
-let rec await r =
-  if Atomic.get r then () else (Atomic.make (); await r)
-
 open Domain
 open Domain.Sync
+
+let rec await r =
+  if Atomic.get r then () else (cpu_relax(); await r)
 
 external critical_adjust : int -> unit
   = "caml_ml_domain_critical_section"
