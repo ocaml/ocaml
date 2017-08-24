@@ -434,6 +434,7 @@ intnat caml_major_collection_slice(intnat howmuch)
   int steal_result;
 
   caml_save_stack_gc();
+  caml_ev_msg("Start sweeping");
   caml_ev_start_gc();
 
   if (!domain_state->sweeping_done) {
@@ -457,7 +458,6 @@ intnat caml_major_collection_slice(intnat howmuch)
     caml_handle_incoming_interrupts();
   }
 
-
   mark_work = budget;
   while (budget > 0) {
     if (domain_state->mark_stack_count) {
@@ -473,6 +473,7 @@ intnat caml_major_collection_slice(intnat howmuch)
 
     if(budget > 0) {
       caml_ev_end_gc();
+      caml_ev_msg("End marking");
       caml_ev_msg("Start stealing");
 
       if (!domain_state->marking_done) {
