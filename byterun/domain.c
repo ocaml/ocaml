@@ -461,6 +461,11 @@ void caml_global_barrier()
   caml_global_barrier_end(b);
 }
 
+int caml_global_barrier_num_domains()
+{
+  return stw_request.num_domains;
+}
+
 static void stw_handler(struct domain* domain, void* unused2, interrupt* done)
 {
   caml_ev_msg("starting STW");
@@ -771,12 +776,10 @@ static void domain_terminate() {
   int finished = 0;
 
   caml_gc_log("Domain terminating");
-  caml_ev_pause(EV_PAUSE_TERMINATE);
+  caml_ev_msg("Domain terminating");
+  caml_ev_pause(EV_PAUSE_YIELD);
   while (!finished) {
-    caml_ev_start_gc();
-    while (caml_sweep(domain_self->state.state->shared_heap, 10) <= 0);
-    caml_ev_end_gc();
-
+    caml_finish_sweeping();
     caml_empty_minor_heap();
     caml_finish_marking();
 
@@ -799,7 +802,9 @@ static void domain_terminate() {
     Caml_state->critical_section_nesting = 0;
     acknowledge_all_pending_interrupts();
   }
+  caml_ev_resume();
   caml_enter_blocking_section();
+  caml_ev_resume();
   caml_teardown_eventlog();
 }
 
@@ -884,8 +889,13 @@ CAMLprim value caml_ml_domain_yield(value unused)
   }
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
-    if (handle_incoming(s) == 0)
+    if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
       caml_plat_wait(&s->cond);
+    } else {
+      caml_plat_unlock(&s->lock);
+      caml_sweep_and_acknowledge(16384);
+      caml_plat_lock(&s->lock);
+    }
   }
   caml_plat_unlock(&s->lock);
   return Val_unit;
@@ -934,9 +944,14 @@ CAMLprim value caml_ml_domain_yield_until(value t)
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 &&
+        Caml_state->sweeping_done &&
         caml_plat_timedwait(&s->cond, ts)) {
       ret = Val_int(0); /* Domain.Sync.Timeout */
       break;
+    } else {
+      caml_plat_unlock(&s->lock);
+      caml_sweep_and_acknowledge(16384);
+      caml_plat_lock(&s->lock);
     }
   }
   caml_plat_unlock(&s->lock);
