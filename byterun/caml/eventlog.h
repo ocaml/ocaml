@@ -20,6 +20,6 @@ void caml_ev_pause(long reason);
 void caml_ev_resume();
 void caml_ev_wakeup(struct domain* domain);
 
-void caml_ev_msg(const char* msg);
+void caml_ev_msg(char* msg, ...);
 
 #endif
