@@ -811,6 +811,7 @@ static void domain_terminate() {
 void caml_handle_incoming_interrupts()
 {
   struct interruptor* s = &domain_self->interruptor;
+  if (s->qhead == NULL) return;
   caml_plat_lock(&s->lock);
   handle_incoming(s);
   caml_plat_unlock(&s->lock);
@@ -882,28 +883,31 @@ CAMLprim value caml_ml_domain_critical_section(value delta)
   return Val_unit;
 }
 
+#define Chunk_size 0x10000
+
 CAMLprim value caml_ml_domain_yield(value unused)
 {
   struct interruptor* s = &domain_self->interruptor;
   if (Caml_state->critical_section_nesting == 0) {
     caml_failwith("Domain.Sync.wait must be called from within a critical section");
   }
+
+  caml_ev_pause(EV_PAUSE_YIELD);
+
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
-      caml_ev_pause(EV_PAUSE_YIELD);
-      caml_ev_msg("timed wait");
+      caml_ev_msg("wait");
       caml_plat_wait(&s->cond);
-      caml_ev_resume();
     } else {
       caml_plat_unlock(&s->lock);
-      caml_ev_pause(EV_PAUSE_YIELD);
-      caml_sweep_and_acknowledge(16384);
-      caml_ev_resume();
+      caml_sweep_and_acknowledge(Chunk_size);
       caml_plat_lock(&s->lock);
     }
   }
   caml_plat_unlock(&s->lock);
+
+  caml_ev_resume();
   return Val_unit;
 }
 
@@ -950,26 +954,27 @@ CAMLprim value caml_ml_domain_yield_until(value t)
     caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
   }
 
+  caml_ev_pause(EV_PAUSE_YIELD);
   caml_plat_lock(&s->lock);
+
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
-      caml_ev_pause(EV_PAUSE_YIELD);
       caml_ev_msg("timed wait");
       res = caml_plat_timedwait(&s->cond, ts);
-      caml_ev_resume();
       if (res) {
         ret = Val_int(0); /* Domain.Sync.Timeout */
         break;
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_ev_pause(EV_PAUSE_YIELD);
-      caml_sweep_and_acknowledge(16384);
-      caml_ev_resume();
+      caml_sweep_and_acknowledge(Chunk_size);
       caml_plat_lock(&s->lock);
     }
   }
+
   caml_plat_unlock(&s->lock);
+  caml_ev_resume();
+
   return ret;
 }
 
