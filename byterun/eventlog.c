@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -317,17 +318,22 @@ void caml_ev_wakeup(struct domain* dom)
   p = write_32(p, dom->state->id);
 }
 
-void caml_ev_msg(const char* msg)
+void caml_ev_msg(char* format, ...)
 {
+  char buffer[512];
+  va_list args;
+  va_start (args, format);
   char* p;
   int len;
   if (!output) return;
-  len = strlen(msg);
+  vsprintf(buffer, format, args);
+  len = strlen(buffer);
   struct event_details ev = ev_user_msg;
   ev.payload_size = 2 + len;
   p = append_event(&ev);
   p = write_16(p, len);
-  p = write_string(p, msg);
+  p = write_string(p, buffer);
+  va_end(args);
 }
 
 void caml_teardown_eventlog()
