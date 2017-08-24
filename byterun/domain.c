@@ -20,6 +20,7 @@
 #include "caml/minor_gc.h"
 #include "caml/eventlog.h"
 #include "caml/gc_ctrl.h"
+#include "caml/osdeps.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -52,7 +53,6 @@ int caml_send_interrupt(struct interruptor* self,
                         domain_rpc_handler handler,
                         void* data);
 void caml_handle_incoming_interrupts(struct interruptor* self);
-void caml_yield_until_interrupted(struct interruptor* self);
 
 
 struct dom_internal {
@@ -82,6 +82,8 @@ static struct dom_internal all_domains[Max_domains];
 
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
+
+static int64 startup_timestamp;
 
 #ifdef __APPLE__
   /* OSX has issues with dynamic loading + exported TLS.
@@ -266,6 +268,7 @@ void caml_init_domains(uintnat minor_size) {
   if (!domain_self) caml_fatal_error("Failed to create main domain");
 
   caml_init_signal_handling();
+  startup_timestamp = caml_time_counter();
 }
 
 void caml_init_domain_self(int domain_id) {
@@ -598,7 +601,6 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 
 CAMLexport void caml_leave_blocking_section() {
   caml_plat_lock(&domain_self->roots_lock);
-  caml_ev_resume();
   caml_leave_blocking_section_hook();
   caml_restore_stack_gc();
   caml_process_pending_signals();
@@ -608,7 +610,6 @@ CAMLexport void caml_enter_blocking_section() {
   caml_process_pending_signals();
   caml_save_stack_gc();
   caml_enter_blocking_section_hook();
-  caml_ev_pause(EV_PAUSE_BLOCK);
   caml_plat_unlock(&domain_self->roots_lock);
 }
 
@@ -814,24 +815,6 @@ void caml_handle_incoming_interrupts(struct interruptor* s)
   caml_plat_unlock(&s->lock);
 }
 
-void caml_yield_until_interrupted(struct interruptor* s)
-{
-  caml_ev_msg("wait");
-  caml_ev_pause(EV_PAUSE_YIELD);
-  caml_plat_lock(&s->lock);
-  while (handle_incoming(s) == 0) {
-    if (!Caml_state->sweeping_done) {
-      caml_plat_unlock(&s->lock);
-      caml_sweep_and_acknowledge(16384);
-      caml_plat_lock(&s->lock);
-    } else {
-      caml_plat_wait(&s->cond);
-    }
-  }
-  caml_plat_unlock(&s->lock);
-  caml_ev_resume();
-}
-
 int caml_send_interrupt(struct interruptor* self,
                          struct interruptor* target,
                          domain_rpc_handler handler,
@@ -900,12 +883,21 @@ CAMLprim value caml_ml_domain_critical_section(value delta)
 
 CAMLprim value caml_ml_domain_yield(value unused)
 {
+  struct interruptor* s = &domain_self->interruptor;
   if (Caml_state->critical_section_nesting == 0) {
-    caml_failwith("Domain.Interrupt.wait must be called from within critical section");
+    caml_failwith("Domain.Sync.wait must be called from within a critical section");
   }
+  caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
-    caml_yield_until_interrupted(&domain_self->interruptor);
+    if (handle_incoming(s) == 0 && Caml_state->sweeping_done) {
+      caml_plat_wait(&s->cond);
+    } else {
+      caml_plat_unlock(&s->lock);
+      caml_sweep_and_acknowledge(16384);
+      caml_plat_lock(&s->lock);
+    }
   }
+  caml_plat_unlock(&s->lock);
   return Val_unit;
 }
 
@@ -934,4 +926,45 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
     /* the domain might have terminated, but that's fine */
   }
   CAMLreturn (Val_unit);
+}
+
+CAMLprim value caml_ml_domain_ticks(value unused)
+{
+  return caml_copy_int64(caml_time_counter() - startup_timestamp);
+}
+
+CAMLprim value caml_ml_domain_yield_until(value t)
+{
+  int64 ts = Int64_val(t) + startup_timestamp;
+  struct interruptor* s = &domain_self->interruptor;
+  value ret = Val_int(1); /* Domain.Sync.Notify */
+  if (Caml_state->critical_section_nesting == 0){
+    caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
+  }
+  caml_plat_lock(&s->lock);
+  while (!Caml_state->pending_interrupts) {
+    if (handle_incoming(s) == 0 &&
+        Caml_state->sweeping_done &&
+        caml_plat_timedwait(&s->cond, ts)) {
+      ret = Val_int(0); /* Domain.Sync.Timeout */
+      break;
+    } else {
+      caml_plat_unlock(&s->lock);
+      caml_sweep_and_acknowledge(16384);
+      caml_plat_lock(&s->lock);
+    }
+  }
+  caml_plat_unlock(&s->lock);
+  return ret;
+}
+
+CAMLprim value caml_ml_domain_cpu_relax(value t)
+{
+  int interrupts;
+  struct interruptor* s = &domain_self->interruptor;
+  caml_plat_lock(&s->lock);
+  interrupts = handle_incoming(s);
+  caml_plat_unlock(&s->lock);
+  if (!interrupts) cpu_relax();
+  return Val_unit;
 }
