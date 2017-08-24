@@ -105,7 +105,12 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   } else {
     Assert(pl->thief->mark_stack_count == 0);
 
-    steal_size = target->mark_stack_count / 2 + target->mark_stack_count % 2;
+    if (target->mark_stack_count < 16) {
+      steal_size = target->mark_stack_count;
+    } else {
+      steal_size = target->mark_stack_count / 2
+                 + target->mark_stack_count % 2;
+    }
     new_size = target->mark_stack_count - steal_size;
     memcpy(pl->thief->mark_stack, &target->mark_stack[new_size],
            steal_size * sizeof(value));
@@ -128,7 +133,7 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   caml_acknowledge_interrupt(done);
 }
 
-/* Return 1 if stolen successfully. */
+/* Return domain_id of victim if success. Otherwise, return -1. */
 static int steal_mark_work () {
   struct steal_payload pl;
   struct domain* domain_self = caml_domain_self ();
@@ -140,7 +145,7 @@ static int steal_mark_work () {
   pl.major_cycle = major_cycles_completed;
 
   if (atomic_load_acq(&num_domains_to_mark) == 0)
-    return 0;
+    return -1;
 
   for (i = (my_id + 1) % Max_domains; i != my_id; i = (i + 1) % Max_domains) {
     victim = caml_domain_of_id(i);
@@ -151,7 +156,7 @@ static int steal_mark_work () {
         Caml_state->marking_done = 0;
         caml_gc_log("Stolen mark work (size=%llu) from domain %d",
                     domain_self->state->mark_stack_count, i);
-        return 1;
+        return i;
       }
     }
 
@@ -162,7 +167,7 @@ static int steal_mark_work () {
   }
 
   caml_gc_log("Mark work stealing failure");
-  return 0;
+  return -1;
 }
 
 static void mark_stack_prune();
@@ -390,9 +395,15 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 
   /* Mark roots for new cycle */
   domain->state->marking_done = 0;
+
+  caml_ev_start_gc();
+  caml_ev_msg("Start marking roots");
   caml_do_local_roots(&caml_darken, 0, caml_domain_self());
   caml_scan_stack(&caml_darken, 0, Caml_state->current_stack);
   caml_scan_global_roots(&caml_darken, 0);
+  caml_ev_msg("End marking roots");
+  caml_ev_end_gc();
+
   if (domain->state->mark_stack_count == 0) {
     atomic_fetch_add(&num_domains_to_mark, -1);
     domain->state->marking_done = 1;
@@ -409,45 +420,59 @@ void caml_finish_major_cycle() {
   }
 }
 
+#define Chunk_size 0x4000
+
 intnat caml_major_collection_slice(intnat howmuch)
 {
   caml_domain_state* domain_state = Caml_state;
   intnat computed_work = howmuch ? howmuch : default_slice_budget();
   intnat budget = computed_work;
-  intnat sweep_work, mark_work;
+  intnat sweep_work = 0, mark_work = 0;
+  intnat available, left;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
   value v;
-  int success;
+  int steal_result;
 
   caml_save_stack_gc();
-  caml_ev_msg("Start sweeping");
   caml_ev_start_gc();
 
-  sweep_work = budget;
-  budget = caml_sweep(domain_state->shared_heap, budget);
-  sweep_work -= budget;
+  if (!domain_state->sweeping_done) {
+    caml_ev_msg("Start sweeping");
 
-  if (budget > 0 && !domain_state->sweeping_done) {
-    domain_state->sweeping_done = 1;
-    atomic_fetch_add(&num_domains_to_sweep, -1);
+    sweep_work = budget;
+    do {
+      available = budget > Chunk_size ? Chunk_size : budget;
+      left = caml_sweep(domain_state->shared_heap, available);
+      budget -= available - left;
+      caml_handle_incoming_interrupts();
+    } while (budget > 0 && available != left);
+
+    if (budget > 0) {
+      domain_state->sweeping_done = 1;
+      atomic_fetch_add(&num_domains_to_sweep, -1);
+    }
+
+    caml_ev_msg("End sweeping");
+
+    caml_handle_incoming_interrupts();
   }
 
-  caml_ev_end_gc();
-  caml_ev_msg("End sweeping");
-
-  caml_handle_incoming_interrupts();
-
-  caml_ev_msg("Start marking");
-  caml_ev_start_gc();
 
   mark_work = budget;
   while (budget > 0) {
-    if (mark_stack_pop(&v))
-      budget = mark(v, budget);
+    if (domain_state->mark_stack_count) {
+      caml_ev_msg("Start marking");
+      while (budget > 0 && mark_stack_pop(&v)) {
+        available = budget > Chunk_size ? Chunk_size : budget;
+        left = mark(v, available);
+        budget -= available - left;
+        caml_handle_incoming_interrupts();
+      }
+      caml_ev_msg("End marking");
+    }
 
     if(budget > 0) {
       caml_ev_end_gc();
-      caml_ev_msg("End marking");
       caml_ev_msg("Start stealing");
 
       if (!domain_state->marking_done) {
@@ -455,15 +480,15 @@ intnat caml_major_collection_slice(intnat howmuch)
         domain_state->marking_done = 1;
       }
 
-      success = steal_mark_work();
+      steal_result = steal_mark_work();
+      caml_ev_msg("Finish stealing from domain %d size=%llu",
+                  steal_result, domain_state->mark_stack_count);
       caml_ev_start_gc();
-      caml_ev_msg("Finish stealing");
-      caml_ev_msg("Start marking");
-      if (!success) break;
+      if (steal_result == -1) break;
     }
   }
   mark_work -= budget;
-  caml_ev_msg("End marking");
+  caml_ev_end_gc();
 
   caml_gc_log("Major slice: %lu alloc, %ld work, %ld sweep, %ld mark (%lu blocks)",
               (unsigned long)domain_state->allocated_words,
@@ -471,7 +496,6 @@ intnat caml_major_collection_slice(intnat howmuch)
               (unsigned long)(domain_state->stat_blocks_marked - blocks_marked_before));
   domain_state->stat_major_words += domain_state->allocated_words;
   domain_state->allocated_words = 0;
-  caml_ev_end_gc();
 
   caml_restore_stack_gc();
 
