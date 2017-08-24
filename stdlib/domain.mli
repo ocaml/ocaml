@@ -21,6 +21,10 @@ val get_id : 'a t -> id
 val self : unit -> id
 (** [self ()] is the identifier of the currently running domain *)
 
+type nanoseconds = int64
+val timer_ticks : unit -> nanoseconds
+(** Returns the number of nanoseconds elapsed since the OCaml
+    runtime started. *)
 
 module Sync : sig
   (** Low-level synchronisation primitives.
@@ -57,9 +61,12 @@ module Sync : sig
       particular, [critical_section f] is cheaper than acquiring a mutex,
       and performs no more atomic operations than [f] does. *)
 
+  exception Retry
+
   val critical_section : (unit -> 'a) -> 'a
   (** [critical_section f] runs [f], but blocks notifications until
-      [f] returns. See [notify] below. *)
+      [f] returns. See [notify] below.
+      If [f] raises [Retry], then the critical section is restarted. *)
 
   val notify : id -> unit
   (** If the domain [d] is within a critical section (i.e. is evaluating
@@ -81,6 +88,22 @@ module Sync : sig
       useful: the first call to [wait ()] returns when the critical
       section is notified, so the second call to [wait] will always
       return immediately, as the critical section is already notified. *)
+
+  type timeout_or_notified = Timeout | Notified
+
+  val wait_for : nanoseconds -> timeout_or_notified
+  (** Same as [wait], but returns once the specified number of
+      nanoseconds has elapsed, regardless of whether [notify]
+      is called *)
+
+  val wait_until : nanoseconds -> timeout_or_notified
+  (** [wait_until t] is the same as [wait ()], but returns once
+      [timer_ticks () > t], regardless of whether [notify] is
+      called *)
+
+  val cpu_relax : unit -> unit
+  (** If busy-waiting, calling cpu_relax () between iterations
+      will improve performance on some CPU architectures *)
 end
 
 module BVar : sig
