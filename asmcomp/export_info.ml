@@ -58,6 +58,8 @@ and value_set_of_closures = {
   is_classic_mode : bool;
   set_of_closures_id : Set_of_closures_id.t;
   bound_vars : approx Var_within_closure.Map.t;
+  (* CR fquah: Is it possible to compute [free_vars] on loading cmx files instead? *)
+  free_vars : Flambda.specialised_to Variable.Map.t;
   results : approx Closure_id.Map.t;
   aliased_symbol : Symbol.t option;
 }

@@ -645,6 +645,7 @@ and simplify_set_of_closures original_env r
   let value_set_of_closures =
     Inline_and_simplify_aux.create_value_set_of_closures
       ~function_decls
+      ~free_vars:internal_value_set_of_closures.free_vars
       ~bound_vars:internal_value_set_of_closures.bound_vars
       ~invariant_params
       ~specialised_args:internal_value_set_of_closures.specialised_args
@@ -1463,6 +1464,7 @@ let constant_defining_value_approx
       Inline_and_simplify_aux.create_value_set_of_closures
         ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
+        ~free_vars:free_vars
         ~invariant_params
         ~specialised_args:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty

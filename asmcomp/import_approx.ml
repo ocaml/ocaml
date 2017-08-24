@@ -72,7 +72,7 @@ let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.get_compilation_unit ex));
   let ex_info = Compilenv.approx_env () in
   let import_value_set_of_closures
-        ~is_classic_mode ~set_of_closures_id ~bound_vars
+        ~is_classic_mode ~set_of_closures_id ~bound_vars ~free_vars
         ~(ex_info : Export_info.t) ~what : A.value_set_of_closures option =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     match
@@ -92,6 +92,7 @@ let rec import_ex ex =
           ~is_classic_mode
           ~function_decls
           ~bound_vars
+          ~free_vars
           ~invariant_params:(lazy invariant_params)
           ~specialised_args:Variable.Map.empty
           ~freshening:Freshening.Project_var.empty
@@ -130,10 +131,11 @@ let rec import_ex ex =
           { is_classic_mode;
             set_of_closures_id;
             bound_vars;
+            free_vars;
             aliased_symbol } } ->
     let value_set_of_closures =
       import_value_set_of_closures
-        ~is_classic_mode ~set_of_closures_id ~bound_vars ~ex_info
+        ~is_classic_mode ~set_of_closures_id ~bound_vars ~free_vars ~ex_info
         ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
     in
     begin match value_set_of_closures with
@@ -145,10 +147,11 @@ let rec import_ex ex =
   | Value_set_of_closures { is_classic_mode;
                             set_of_closures_id;
                             bound_vars;
+                            free_vars;
                             aliased_symbol } ->
     let value_set_of_closures =
       import_value_set_of_closures ~is_classic_mode ~set_of_closures_id
-        ~bound_vars ~ex_info ~what:"Value_set_of_closures"
+        ~bound_vars ~free_vars ~ex_info ~what:"Value_set_of_closures"
     in
     match value_set_of_closures with
     | None ->

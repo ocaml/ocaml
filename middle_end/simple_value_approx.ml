@@ -92,6 +92,7 @@ and value_set_of_closures = {
   is_classic_mode : bool;
   function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
+  free_vars  : Flambda.specialised_to Variable.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
   specialised_args : Flambda.specialised_to Variable.Map.t;
@@ -265,7 +266,7 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
 
 let import_value_set_of_closures
       ~is_classic_mode ~(function_decls : function_declarations)
-      ~bound_vars ~invariant_params ~specialised_args ~freshening
+      ~bound_vars ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let size =
     lazy (
@@ -290,6 +291,7 @@ let import_value_set_of_closures
   { is_classic_mode;
     function_decls;
     bound_vars;
+    free_vars;
     invariant_params;
     size;
     specialised_args;
@@ -340,7 +342,7 @@ let create_normal_function_declarations
 
 let create_classic_value_set_of_closures ~keep_body_check
       ~(function_decls : Flambda.function_declarations) ~bound_vars
-      ~invariant_params ~specialised_args ~freshening
+      ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let function_decls =
     create_classic_function_declarations ~keep_body_check function_decls
@@ -374,6 +376,7 @@ let create_classic_value_set_of_closures ~keep_body_check
   { is_classic_mode = true;
     function_decls;
     bound_vars;
+    free_vars;
     invariant_params;
     size;
     specialised_args;
@@ -383,7 +386,7 @@ let create_classic_value_set_of_closures ~keep_body_check
 
 let create_normal_value_set_of_closures
       ~(function_decls : Flambda.function_declarations) ~bound_vars
-      ~invariant_params ~specialised_args ~freshening
+      ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let size =
     lazy (
@@ -410,6 +413,7 @@ let create_normal_value_set_of_closures
   { is_classic_mode = false;
     function_decls;
     bound_vars;
+    free_vars;
     invariant_params;
     size;
     specialised_args;

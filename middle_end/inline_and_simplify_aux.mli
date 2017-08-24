@@ -369,6 +369,7 @@ val approximate_function_declarations
 val create_value_set_of_closures
    : function_decls:Flambda.function_declarations
   -> bound_vars:Simple_value_approx.t Var_within_closure.Map.t
+  -> free_vars:Flambda.specialised_to Variable.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
   -> freshening:Freshening.Project_var.t
