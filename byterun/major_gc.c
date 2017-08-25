@@ -186,99 +186,106 @@ static void mark_stack_push_act(void* state, value v, value* ignored) {
   mark_stack_push(v);
 }
 
-static int mark_stack_pop(value* ret) {
-  caml_domain_state* domain_state = Caml_state;
-  if (domain_state->mark_stack_count == 0) {
-    struct pool* p = find_pool_to_rescan();
-    if (p) {
-      caml_redarken_pool(p, &mark_stack_push_act, 0);
-    } else {
-      return 0;
-    }
-  }
-  *ret = domain_state->mark_stack[--domain_state->mark_stack_count];
-
-  return 1;
-}
-
 #ifdef DEBUG
 #define Is_markable(v) (Is_block(v) && !Is_minor(v) && v != Debug_free_major)
 #else
 #define Is_markable(v) (Is_block(v) && !Is_minor(v))
 #endif
 
-static value mark_normalise(value v) {
-  Assert(Is_markable(v));
-  if (Tag_val(v) == Forward_tag) {
-    /* FIXME: short-circuiting lazy values is a useful optimisation */
-  } else if (Tag_val(v) == Infix_tag) {
-    v -= Infix_offset_val(v);
-  }
-  return v;
-}
-
-static intnat mark(value initial, intnat budget) {
-  value next = initial;
-  int found_next = 1;
+/* mark until the budget runs out or the mark stack empties */
+static intnat do_some_marking(intnat budget) {
   caml_domain_state* domain_state = Caml_state;
+  status UNMARKED = global.UNMARKED;
+  status MARKED = global.MARKED;
+  value* stack = Caml_state->mark_stack;
+  uint64 stack_count = Caml_state->mark_stack_count;
+  uintnat blocks_marked = 0;
 
-  while (budget > 0 && found_next) {
-    value v = next;
+  while (budget > 0 && stack_count > 0) {
+    value v = stack[--stack_count];
     header_t hd_v;
-    found_next = 0;
 
     Assert(Is_markable(v));
-    Assert(v == mark_normalise(v));
+    Assert(Tag_val(v) != Infix_tag);
 
-    domain_state->stat_blocks_marked++;
+    blocks_marked++;
     /* mark the current object */
     hd_v = Hd_val(v);
-    // caml_gc_log ("mark: v=0x%lx hd=0x%lx tag=%d sz=%lu",
-    //             v, hd_v, Tag_val(v), Wosize_val(v));
     if (Tag_hd (hd_v) == Stack_tag) {
-      // caml_gc_log ("mark: stack=%p", (value*)v);
+      Caml_state->mark_stack_count = stack_count;
       caml_darken_stack(v);
+      stack = Caml_state->mark_stack;
+      stack_count = Caml_state->mark_stack_count;
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
         value child = Op_val(v)[i];
-        // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
         /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
            However, it's a useful debugging aid for now */
         Assert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
         if (Is_markable(child)) {
-          child = mark_normalise(child);
-          if (caml_mark_object(child)) {
-            if (!found_next) {
-              next = child;
-              found_next = 1;
-            } else {
-              mark_stack_push(child);
+          header_t hd = Hd_val(child);
+          if (Tag_hd(hd) == Infix_tag) {
+            child -= Infix_offset_hd(hd);
+            hd = Hd_val(child);
+          }
+          /* FIXME: short-circuit Forward_tag here? */
+          Assert (!Has_status_hd(hd, global.GARBAGE));
+          if (Has_status_hd(hd, UNMARKED)) {
+            Hd_val(child) = With_status_hd(hd, MARKED);
+            if (stack_count >= MARK_STACK_SIZE) {
+              Caml_state->mark_stack_count = stack_count;
+              mark_stack_prune();
+              stack = Caml_state->mark_stack;
+              stack_count = Caml_state->mark_stack_count;
             }
+            stack[stack_count++] = child;
           }
         }
       }
     }
     budget -= Whsize_hd(hd_v);
-
-    /* if we haven't found any markable children, pop an object to mark */
-    if (!found_next) {
-      found_next = mark_stack_pop(&next);
-    }
   }
-  if (found_next) {
-    mark_stack_push(next);
+  Caml_state->stat_blocks_marked += blocks_marked;
+  Caml_state->mark_stack_count = stack_count;
+  return budget;
+}
+
+/* mark until the budget runs out or marking is done */
+static intnat mark(intnat budget) {
+  while (budget > 0 && !Caml_state->marking_done) {
+    budget = do_some_marking(budget);
+    if (budget > 0) {
+      struct pool* p = find_pool_to_rescan();
+      if (p) {
+        caml_redarken_pool(p, &mark_stack_push_act, 0);
+      } else {
+        Caml_state->marking_done = 1;
+        atomic_fetch_add(&num_domains_to_mark, -1);
+      }
+    }
   }
   return budget;
 }
 
 void caml_darken(void* state, value v, value* ignored) {
-
+  header_t hd;
   /* Assert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
 
-  v = mark_normalise(v);
-  if (caml_mark_object(v)) mark_stack_push(v);
+  hd = Hd_val(v);
+  if (Tag_hd(hd) == Infix_tag) {
+    v -= Infix_offset_hd(hd);
+    hd = Hd_val(v);
+  }
+  if (Has_status_hd(hd, global.UNMARKED)) {
+    if (Caml_state->marking_done) {
+      caml_increment_domains_marking();
+      Caml_state->marking_done = 0;
+    }
+    Hd_val(v) = With_status_hd(hd, global.MARKED);
+    mark_stack_push(v);
+  }
 }
 
 
@@ -430,7 +437,6 @@ intnat caml_major_collection_slice(intnat howmuch)
   intnat sweep_work = 0, mark_work = 0;
   intnat available, left;
   uintnat blocks_marked_before = domain_state->stat_blocks_marked;
-  value v;
   int steal_result;
 
   caml_save_stack_gc();
@@ -459,28 +465,16 @@ intnat caml_major_collection_slice(intnat howmuch)
   }
 
   mark_work = budget;
+  caml_ev_msg("Start marking");
   while (budget > 0) {
-    if (domain_state->mark_stack_count) {
-      caml_ev_msg("Start marking");
-      while (budget > 0 && mark_stack_pop(&v)) {
-        available = budget > Chunk_size ? Chunk_size : budget;
-        left = mark(v, available);
-        budget -= available - left;
-        caml_handle_incoming_interrupts();
-      }
-      caml_ev_msg("End marking");
-    }
-
-    if(budget > 0) {
+    if (!domain_state->marking_done) {
+      available = budget > Chunk_size ? Chunk_size : budget;
+      left = mark(available);
+      budget -= available - left;
+      caml_handle_incoming_interrupts();
+    } else {
       caml_ev_end_gc();
-      caml_ev_msg("End marking");
       caml_ev_msg("Start stealing");
-
-      if (!domain_state->marking_done) {
-        atomic_fetch_add(&num_domains_to_mark, -1);
-        domain_state->marking_done = 1;
-      }
-
       steal_result = steal_mark_work();
       caml_ev_msg("Finish stealing from domain %d size=%llu",
                   steal_result, domain_state->mark_stack_count);
@@ -509,13 +503,8 @@ intnat caml_major_collection_slice(intnat howmuch)
 }
 
 void caml_empty_mark_stack () {
-  value v;
-
-  if (!Caml_state->marking_done) {
-    while (mark_stack_pop(&v)) mark(v, 10000000);
-    Caml_state->marking_done = 1;
-    atomic_fetch_add(&num_domains_to_mark, -1);
-  }
+  while (!Caml_state->marking_done)
+    mark(10000000);
 
   if (Caml_state->stat_blocks_marked)
     caml_gc_log("Finished marking major heap. Marked %u blocks",
