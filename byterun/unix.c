@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <time.h>
 #include "caml/config.h"
@@ -324,7 +325,7 @@ int caml_executable_name(char * name, int name_len)
 
 int64 caml_time_counter(void)
 {
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return
@@ -335,7 +336,7 @@ int64 caml_time_counter(void)
   gettimeofday(&t, 0);
   return
     (int64)t.tv_sec  * (int64)1000000000 +
-    (int64)t.tv_usec * (int64)1000
+    (int64)t.tv_usec * (int64)1000;
 #else
 # error "No timesource available"
 #endif
