@@ -217,6 +217,28 @@ static value mark_normalise(value v) {
   return v;
 }
 
+
+static int caml_mark_object(value p) {
+  Assert (Is_block(p));
+  header_t h = Hd_val(p);
+  /* An object should have one of these statuses:
+       - UNMARKED:     this object has not yet been traced
+       - MARKED:       this object has already been traced or is being traced
+       - NOT_MARKABLE: this object should be ignored by the GC */
+  Assert (h && !Has_status_hd(h, global.GARBAGE));
+  if (Has_status_hd(h, global.UNMARKED)) {
+    if (Caml_state->marking_done) {
+      caml_increment_domains_marking ();
+      Caml_state->marking_done = 0;
+    }
+    Hd_val(p) = With_status_hd(h, global.MARKED);
+    // caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 static intnat mark(value initial, intnat budget) {
   value next = initial;
   int found_next = 1;
