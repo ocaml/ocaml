@@ -324,7 +324,7 @@ int caml_executable_name(char * name, int name_len)
 
 int64 caml_time_counter(void)
 {
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return
