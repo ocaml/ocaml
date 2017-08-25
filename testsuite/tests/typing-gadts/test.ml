@@ -1092,7 +1092,9 @@ Error: This pattern matches values of type int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}, Principal{|
-Line _, characters 17-18:
-Warning 12: this sub-pattern is unused.
-val bar : 'a i -> 'a -> unit = <fun>
+Line _, characters 4-19:
+Error: This pattern matches values of type a i * a
+       but a pattern was expected which matches values of type a i * 'a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]

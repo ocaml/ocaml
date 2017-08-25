@@ -3867,7 +3867,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           if !Clflags.principal then begin
             end_def ();
             iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
-            { pat with pat_type = instance env pat.pat_type }
+            { pat with pat_type = instance ext_env pat.pat_type }
           end else pat
         in
         (pat, (ext_env, unpacks)))
