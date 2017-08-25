@@ -207,42 +207,12 @@ static int mark_stack_pop(value* ret) {
 #define Is_markable(v) (Is_block(v) && !Is_minor(v))
 #endif
 
-static value mark_normalise(value v) {
-  Assert(Is_markable(v));
-  if (Tag_val(v) == Forward_tag) {
-    /* FIXME: short-circuiting lazy values is a useful optimisation */
-  } else if (Tag_val(v) == Infix_tag) {
-    v -= Infix_offset_val(v);
-  }
-  return v;
-}
-
-
-static int caml_mark_object(value p) {
-  Assert (Is_block(p));
-  header_t h = Hd_val(p);
-  /* An object should have one of these statuses:
-       - UNMARKED:     this object has not yet been traced
-       - MARKED:       this object has already been traced or is being traced
-       - NOT_MARKABLE: this object should be ignored by the GC */
-  Assert (h && !Has_status_hd(h, global.GARBAGE));
-  if (Has_status_hd(h, global.UNMARKED)) {
-    if (Caml_state->marking_done) {
-      caml_increment_domains_marking ();
-      Caml_state->marking_done = 0;
-    }
-    Hd_val(p) = With_status_hd(h, global.MARKED);
-    // caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 static intnat mark(value initial, intnat budget) {
   value next = initial;
   int found_next = 1;
   caml_domain_state* domain_state = Caml_state;
+  status UNMARKED = global.UNMARKED;
+  status MARKED = global.MARKED;
 
   while (budget > 0 && found_next) {
     value v = next;
@@ -250,7 +220,7 @@ static intnat mark(value initial, intnat budget) {
     found_next = 0;
 
     Assert(Is_markable(v));
-    Assert(v == mark_normalise(v));
+    Assert(Tag_val(v) != Infix_tag);
 
     domain_state->stat_blocks_marked++;
     /* mark the current object */
@@ -269,8 +239,15 @@ static intnat mark(value initial, intnat budget) {
            However, it's a useful debugging aid for now */
         Assert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
         if (Is_markable(child)) {
-          child = mark_normalise(child);
-          if (caml_mark_object(child)) {
+          header_t hd = Hd_val(child);
+          if (Tag_hd(hd) == Infix_tag) {
+            child -= Infix_offset_hd(hd);
+            hd = Hd_val(child);
+          }
+          /* FIXME: short-circuit Forward_tag here? */
+          Assert (!Has_status_hd(hd, global.GARBAGE));
+          if (Has_status_hd(hd, UNMARKED)) {
+            Hd_val(child) = With_status_hd(hd, MARKED);
             if (!found_next) {
               next = child;
               found_next = 1;
@@ -295,12 +272,23 @@ static intnat mark(value initial, intnat budget) {
 }
 
 void caml_darken(void* state, value v, value* ignored) {
-
+  header_t hd;
   /* Assert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
 
-  v = mark_normalise(v);
-  if (caml_mark_object(v)) mark_stack_push(v);
+  hd = Hd_val(v);
+  if (Tag_hd(hd) == Infix_tag) {
+    v -= Infix_offset_hd(hd);
+    hd = Hd_val(v);
+  }
+  if (Has_status_hd(hd, global.UNMARKED)) {
+    if (Caml_state->marking_done) {
+      caml_increment_domains_marking();
+      Caml_state->marking_done = 0;
+    }
+    Hd_val(v) = With_status_hd(hd, global.MARKED);
+    mark_stack_push(v);
+  }
 }
 
 
