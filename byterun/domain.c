@@ -784,7 +784,9 @@ static void domain_terminate() {
     caml_finish_marking();
 
     caml_plat_lock(&s->lock);
-    if (handle_incoming(s) == 0) {
+    if (handle_incoming(s) == 0 &&
+        Caml_state->marking_done &&
+        Caml_state->sweeping_done) {
       finished = 1;
       s->running = 0;
       s->unique_id += Max_domains;
