@@ -374,7 +374,7 @@ char * caml_executable_name(void)
     name = caml_stat_alloc(namelen + 1);
     retcode = readlink("/proc/self/exe", name, namelen);
     if (retcode == -1) { caml_stat_free(name); return NULL; }
-    if (retcode <= namelen) break;
+    if (retcode < namelen) break;
     caml_stat_free(name);
     if (namelen >= 1024*1024) return NULL; /* avoid runaway and overflow */
     namelen *= 2;
