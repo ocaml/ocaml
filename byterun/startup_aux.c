@@ -138,11 +138,11 @@ int caml_startup_aux(int pooling)
   return 1;
 }
 
-static void do_at_exit()
+static void call_registered_value(char* name)
 {
-  value *at_exit = caml_named_value("Pervasives.do_at_exit");
-  if (at_exit != NULL)
-    caml_callback_exn(*at_exit, Val_unit);
+  value *f = caml_named_value(name);
+  if (f != NULL)
+    caml_callback_exn(*f, Val_unit);
 }
 
 CAMLexport void caml_shutdown(void)
@@ -156,7 +156,8 @@ CAMLexport void caml_shutdown(void)
   if (startup_count > 0)
     return;
 
-  do_at_exit();
+  call_registered_value("Pervasives.do_at_exit");
+  call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();
