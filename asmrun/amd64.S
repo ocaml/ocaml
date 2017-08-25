@@ -756,6 +756,7 @@ LBL(caml_allocN):
         addq    $8, %rsp; CFI_ADJUST (-8)  /* drop desired size */
         ret
 LBL(103):
+        movq    (%rsp), %rax
         addq    %rax, %r15
         /* Save desired size on system stack */
         LOAD_TL_VAR(caml_system_sp, %rax)
