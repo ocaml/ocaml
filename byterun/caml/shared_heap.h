@@ -23,7 +23,29 @@ struct domain* caml_owner_of_shared_block(value v);
 
 void caml_shared_unpin(value v);
 
-int caml_mark_object(value);
+/* always readable by all threads
+   written only by a single thread during STW periods */
+typedef uintnat status;
+struct global_heap_state {
+  status MARKED, UNMARKED, GARBAGE;
+};
+extern struct global_heap_state global;
+
+/* CR mshinwell: ensure this matches [Emitaux] */
+enum {NOT_MARKABLE = 3 << 8};
+
+static inline int Has_status_hd(header_t hd, status s) {
+  return (hd & (3 << 8)) == s;
+}
+
+static inline header_t With_status_hd(header_t hd, status s) {
+  return (hd & ~(3 << 8)) | s;
+}
+
+static inline int is_garbage(value v) {
+  return Has_status_hd(Hd_val(v), global.GARBAGE);
+}
+
 
 void caml_redarken_pool(struct pool*, scanning_action, void*);
 
