@@ -1,5 +1,11 @@
 language: c
 script: bash -ex .travis-ci.sh
+os:
+  - linux
+  - osx
+compiler:
+  - clang
+  - gcc
 env:
-   - XARCH=x86_64
-   - XARCH=i386
+  - XARCH=x86_64
+  - XARCH=i386
