@@ -225,16 +225,12 @@ static intnat mark(value initial, intnat budget) {
     domain_state->stat_blocks_marked++;
     /* mark the current object */
     hd_v = Hd_val(v);
-    // caml_gc_log ("mark: v=0x%lx hd=0x%lx tag=%d sz=%lu",
-    //             v, hd_v, Tag_val(v), Wosize_val(v));
     if (Tag_hd (hd_v) == Stack_tag) {
-      // caml_gc_log ("mark: stack=%p", (value*)v);
       caml_darken_stack(v);
     } else if (Tag_hd (hd_v) < No_scan_tag) {
       int i;
       for (i = 0; i < Wosize_hd(hd_v); i++) {
         value child = Op_val(v)[i];
-        // caml_gc_log ("mark: v=%p i=%u child=%p",(value*)v,i,(value*)child);
         /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
            However, it's a useful debugging aid for now */
         Assert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
