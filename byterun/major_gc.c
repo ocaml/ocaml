@@ -199,6 +199,7 @@ static intnat do_some_marking(intnat budget) {
   status MARKED = global.MARKED;
   value* stack = Caml_state->mark_stack;
   uint64 stack_count = Caml_state->mark_stack_count;
+  uintnat blocks_marked = 0;
 
   while (budget > 0 && stack_count > 0) {
     value v = stack[--stack_count];
@@ -207,7 +208,7 @@ static intnat do_some_marking(intnat budget) {
     Assert(Is_markable(v));
     Assert(Tag_val(v) != Infix_tag);
 
-    domain_state->stat_blocks_marked++;
+    blocks_marked++;
     /* mark the current object */
     hd_v = Hd_val(v);
     if (Tag_hd (hd_v) == Stack_tag) {
@@ -245,6 +246,7 @@ static intnat do_some_marking(intnat budget) {
     }
     budget -= Whsize_hd(hd_v);
   }
+  Caml_state->stat_blocks_marked += blocks_marked;
   Caml_state->mark_stack_count = stack_count;
   return budget;
 }
