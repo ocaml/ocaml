@@ -14,29 +14,7 @@
 #include "caml/fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
-typedef uintnat status;
-
-/* always readable by all threads
-   written only by a single thread during STW periods */
-struct global_heap_state {
-  status MARKED, UNMARKED, GARBAGE;
-};
 struct global_heap_state global = {0 << 8, 1 << 8, 2 << 8};
-/* CR mshinwell: ensure this matches [Emitaux] */
-enum {NOT_MARKABLE = 3 << 8};
-
-
-static int Has_status_hd(header_t hd, status s) {
-  return (hd & (3 << 8)) == s;
-}
-
-static header_t With_status_hd(header_t hd, status s) {
-  return (hd & ~(3 << 8)) | s;
-}
-
-int is_garbage(value v) {
-  return Has_status_hd(Hd_val(v), global.GARBAGE);
-}
 
 typedef struct pool {
   struct pool* next;
@@ -437,27 +415,6 @@ intnat caml_sweep(struct caml_heap_state* local, intnat work) {
 
 uintnat caml_heap_size(struct caml_heap_state* local) {
   return Bsize_wsize(local->stats.pool_words + local->stats.large_words);
-}
-
-int caml_mark_object(value p) {
-  Assert (Is_block(p));
-  header_t h = Hd_val(p);
-  /* An object should have one of these statuses:
-       - UNMARKED:     this object has not yet been traced
-       - MARKED:       this object has already been traced or is being traced
-       - NOT_MARKABLE: this object should be ignored by the GC */
-  Assert (h && !Has_status_hd(h, global.GARBAGE));
-  if (Has_status_hd(h, global.UNMARKED)) {
-    if (Caml_state->marking_done) {
-      caml_increment_domains_marking ();
-      Caml_state->marking_done = 0;
-    }
-    Hd_val(p) = With_status_hd(h, global.MARKED);
-    // caml_gc_log ("caml_mark_object: %p hd=%p", (value*)p, (value*)Hd_val(p));
-    return 1;
-  } else {
-    return 0;
-  }
 }
 
 void caml_redarken_pool(struct pool* r, scanning_action f, void* fdata) {

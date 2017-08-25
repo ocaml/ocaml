@@ -73,7 +73,7 @@ void caml_plat_cond_init(caml_plat_cond* cond, caml_plat_mutex* m)
 {
   pthread_condattr_t attr;
   pthread_condattr_init(&attr);
-#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
   pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
 #endif
   pthread_cond_init(&cond->cond, &attr);
