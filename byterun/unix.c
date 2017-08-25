@@ -371,7 +371,7 @@ char * caml_executable_name(void)
      to determine the size of the buffer.  Instead, we guess and adjust. */
   namelen = 256;
   while (1) {
-    name = caml_stat_alloc(namelen + 1);
+    name = caml_stat_alloc(namelen);
     retcode = readlink("/proc/self/exe", name, namelen);
     if (retcode == -1) { caml_stat_free(name); return NULL; }
     if (retcode < namelen) break;
@@ -379,7 +379,8 @@ char * caml_executable_name(void)
     if (namelen >= 1024*1024) return NULL; /* avoid runaway and overflow */
     namelen *= 2;
   }
-  /* readlink() does not zero-terminate its result */
+  /* readlink() does not zero-terminate its result.
+     There is room for a final zero since retcode < namelen. */
   name[retcode] = 0;
   /* Make sure that the contents of /proc/self/exe is a regular file.
      (Old Linux kernels return an inode number instead.) */
