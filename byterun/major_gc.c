@@ -36,6 +36,10 @@ void caml_increment_domains_marking () {
   atomic_fetch_add(&num_domains_to_mark, 1);
 }
 
+uintnat caml_get_num_domains_to_mark () {
+  return atomic_load_acq(&num_domains_to_mark);
+}
+
 static uintnat default_slice_budget() {
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
@@ -531,18 +535,6 @@ void caml_finish_sweeping () {
     while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
     Caml_state->sweeping_done = 1;
     atomic_fetch_add(&num_domains_to_sweep, -1);
-    caml_ev_end_gc();
-  }
-}
-
-void caml_sweep_and_acknowledge (intnat budget) {
-  if (!Caml_state->sweeping_done) {
-    caml_ev_start_gc();
-    budget = caml_sweep(Caml_state->shared_heap, budget);
-    if (budget > 0) {
-      Caml_state->sweeping_done = 1;
-      atomic_fetch_add(&num_domains_to_sweep, -1);
-    }
     caml_ev_end_gc();
   }
 }
