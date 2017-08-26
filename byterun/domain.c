@@ -901,7 +901,8 @@ CAMLprim value caml_ml_domain_yield(value unused)
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0
         && Caml_state->sweeping_done
-        && caml_get_num_domains_to_mark() == 0) {
+        //&& caml_get_num_domains_to_mark() == 0) {
+        && Caml_state->marking_done) {
       caml_ev_msg("wait");
       caml_plat_wait(&s->cond);
     } else {
@@ -968,7 +969,8 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       break;
     } else if (handle_incoming(s) == 0
                && Caml_state->sweeping_done
-               && caml_get_num_domains_to_mark() == 0) {
+               //&& caml_get_num_domains_to_mark() == 0) {
+               && Caml_state->marking_done) {
       caml_ev_msg("timed wait");
       res = caml_plat_timedwait(&s->cond, ts);
       if (res) {

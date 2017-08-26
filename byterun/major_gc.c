@@ -141,6 +141,8 @@ static int steal_mark_work () {
   struct domain* victim;
   int i;
 
+  return -1;
+
   pl.thief = Caml_state;
   pl.major_cycle = major_cycles_completed;
 
