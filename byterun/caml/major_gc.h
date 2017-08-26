@@ -4,7 +4,6 @@
 intnat caml_major_collection_slice (intnat);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
-void caml_increment_domains_marking(void);
 uintnat caml_get_num_domains_to_mark(void);
 void caml_init_major_gc(void);
 void caml_teardown_major_gc(void);
