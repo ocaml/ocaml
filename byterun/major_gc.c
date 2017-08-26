@@ -32,10 +32,6 @@ static uintnat major_cycles_completed = 0;
 static atomic_uintnat num_domains_to_sweep = {0};
 static atomic_uintnat num_domains_to_mark = {0};
 
-void caml_increment_domains_marking () {
-  atomic_fetch_add(&num_domains_to_mark, 1);
-}
-
 uintnat caml_get_num_domains_to_mark () {
   return atomic_load_acq(&num_domains_to_mark);
 }
@@ -284,7 +280,7 @@ void caml_darken(void* state, value v, value* ignored) {
   }
   if (Has_status_hd(hd, global.UNMARKED)) {
     if (Caml_state->marking_done) {
-      caml_increment_domains_marking();
+      atomic_fetch_add(&num_domains_to_mark, 1);
       Caml_state->marking_done = 0;
     }
     Hd_val(v) = With_status_hd(hd, global.MARKED);

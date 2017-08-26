@@ -253,21 +253,20 @@ static void output_initial_events()
 void caml_ev_start_gc()
 {
   if (!output) return;
-#ifdef DEBUG
-  Assert(Caml_state->gc_event_nesting_depth == 0);
+  /* Calls to `caml_handle_incoming_interrupts` from
+   * `caml_major_collection_slice` may invoke a GC. To avoid producing nested
+   * GC events, we keep track of the nesting depth. */
+  if (Caml_state->gc_event_nesting_depth == 0)
+    append_event(&ev_gc_start);
   Caml_state->gc_event_nesting_depth++;
-#endif
-  append_event(&ev_gc_start);
 }
 
 void caml_ev_end_gc()
 {
   if (!output) return;
-#ifdef DEBUG
-  Assert(Caml_state->gc_event_nesting_depth == 1);
   Caml_state->gc_event_nesting_depth--;
-#endif
-  append_event(&ev_gc_end);
+  if (Caml_state->gc_event_nesting_depth == 0)
+    append_event(&ev_gc_end);
 }
 
 void caml_ev_request_stw()
