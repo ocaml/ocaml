@@ -141,8 +141,6 @@ static int steal_mark_work () {
   struct domain* victim;
   int i;
 
-  return -1;
-
   pl.thief = Caml_state;
   pl.major_cycle = major_cycles_completed;
 
@@ -477,7 +475,7 @@ intnat caml_major_collection_slice(intnat howmuch)
       left = mark(available);
       budget -= available - left;
       caml_handle_incoming_interrupts();
-    } else {
+    } else if (0) {
       if (was_marking) {
         caml_ev_msg("End marking");
         was_marking = 0;
@@ -489,6 +487,8 @@ intnat caml_major_collection_slice(intnat howmuch)
                   steal_result, domain_state->mark_stack_count);
       caml_ev_start_gc();
       if (steal_result == -1) break;
+    } else {
+      break;
     }
   }
   if (was_marking)
