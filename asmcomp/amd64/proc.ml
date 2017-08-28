@@ -64,9 +64,16 @@ let win64 = Arch.win64
      xmm0 - xmm3: C function arguments
      rbx, rbp, rsi, rdi r12-r15 are preserved by C
      xmm6-xmm15 are preserved by C
-   Note (PR#5707): r11 should not be used for parameter passing, as it
-     can be destroyed by the dynamic loader according to SVR4 ABI.
-     Linux's dynamic loader also destroys r10.
+   Note (PR#5707, GPR#1304): PLT stubs (used for dynamic resolution of symbols
+     on Unix-like platforms) may clobber any register except those used for:
+       1. C parameter passing;
+       2. C return values;
+       3. C callee-saved registers.
+     This translates to the set { r10, r11 }.  These registers hence cannot
+     be used for OCaml parameter passing and must also be marked as
+     destroyed across [Ialloc] (otherwise a call to caml_call_gc@PLT might
+     clobber these two registers before the assembly stub saves them into
+     the GC regs block).
 *)
 
 let max_arguments_for_tailcalls = 10
@@ -129,9 +136,18 @@ let phys_reg n =
 
 let rax = phys_reg 0
 let rdx = phys_reg 4
+let r10 = phys_reg 10
+let r11 = phys_reg 11
 let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
+
+let destroyed_by_plt_stub =
+  if not X86_proc.use_plt then [| |] else [| r10; r11 |]
+
+let num_destroyed_by_plt_stub = Array.length destroyed_by_plt_stub
+
+let destroyed_by_plt_stub_set = Reg.set_of_array destroyed_by_plt_stub
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
@@ -157,7 +173,8 @@ let calling_conventions first_int last_int first_float last_float make_stack
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
-        end
+        end;
+        assert (not (Reg.Set.mem loc.(i) destroyed_by_plt_stub_set))
     | Float ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
@@ -268,6 +285,15 @@ let destroyed_at_c_call =
        100;101;102;103;104;105;106;107;
        108;109;110;111;112;113;114;115])
 
+let destroyed_at_alloc =
+  let regs =
+    if Config.spacetime then
+      [| rax; loc_spacetime_node_hole |]
+    else
+      [| rax |]
+  in
+  Array.concat [regs; destroyed_by_plt_stub]
+
 let destroyed_at_oper = function
     Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
     all_phys_regs
@@ -275,9 +301,8 @@ let destroyed_at_oper = function
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
-  | Iop(Ialloc _) when Config.spacetime
-        -> [| rax; loc_spacetime_node_hole |]
-  | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
+  | Iop(Ialloc _) -> destroyed_at_alloc
+  | Iop(Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
   | Iop (Iintop (Icheckbound _)) when Config.spacetime ->
       [| loc_spacetime_node_hole |]
@@ -309,7 +334,10 @@ let max_register_pressure = function
         if fp then [| 3; 0 |] else  [| 4; 0 |]
   | Iintop(Idiv | Imod) | Iintop_imm((Idiv | Imod), _) ->
     if fp then [| 10; 16 |] else [| 11; 16 |]
-  | Ialloc _ | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
+  | Ialloc _ ->
+    if fp then [| 11 - num_destroyed_by_plt_stub; 16 |]
+    else [| 12 - num_destroyed_by_plt_stub; 16 |]
+  | Iintop(Icomp _) | Iintop_imm((Icomp _), _) ->
     if fp then [| 11; 16 |] else [| 12; 16 |]
   | Istore(Single, _, _) ->
     if fp then [| 12; 15 |] else [| 13; 15 |]

@@ -139,11 +139,6 @@ let mem__imp s =
 let rel_plt s =
   if windows && !Clflags.dlcode then mem__imp s
   else
-    let use_plt =
-      match system with
-      | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
-      | _ -> !Clflags.dlcode
-    in
     sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
 let emit_call s = I.call (rel_plt s)

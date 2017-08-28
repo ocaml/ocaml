@@ -9,6 +9,11 @@ Working 4.05.x branch
   to GPR#1250.)
   (Mark Shinwell)
 
+- GPR#1304: Mark registers clobbered by PLT stubs as destroyed across
+  allocations.
+  (Mark Shinwell, Xavier Clerc, report and initial debugging by
+  Valentin Gatien-Baron)
+
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
