@@ -74,11 +74,11 @@ EOF
   (cd testsuite && $MAKE all)
   [ $XARCH =  "i386" ] ||  (cd testsuite && $MAKE USE_RUNTIME="d" all)
   $MAKE install
-  # check_all_arches checks tries to compile all backends in place,
-  # we need to redo (small parts of) world.opt afterwards
-  $MAKE check_all_arches
-  $MAKE world.opt
   $MAKE manual-pregen
+  # check_all_arches checks tries to compile all backends in place,
+  # we would need to redo (small parts of) world.opt afterwards to
+  # use the compiler again
+  $MAKE check_all_arches
 }
 
 CheckChangesModified () {
