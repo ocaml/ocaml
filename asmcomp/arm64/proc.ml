@@ -99,22 +99,12 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let reg_x15 = phys_reg 15
-let reg_x16 = phys_reg 26
-let reg_x17 = phys_reg 27
 let reg_d7 = phys_reg 107
 
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
 let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
-
-(* cf. "Procedure Call Standard for the ARM 64-Bit Architecture"
-   (ARM IHI 0055B) page 14 and also section 5.3.1.1. *)
-let destroyed_by_plt_stub = [| reg_x16; reg_x17 |]
-
-let num_destroyed_by_plt_stub = Array.length destroyed_by_plt_stub
-
-let destroyed_by_plt_stub_set = Reg.set_of_array destroyed_by_plt_stub
 
 (* Calling conventions *)
 
@@ -133,8 +123,7 @@ let calling_conventions
         end else begin
           loc.(i) <- stack_slot (make_stack !ofs) ty;
           ofs := !ofs + size_int
-        end;
-        assert (not (Reg.Set.mem loc.(i) destroyed_by_plt_stub_set))
+        end
     | Float ->
         if !float <= last_float then begin
           loc.(i) <- phys_reg !float;
@@ -196,16 +185,13 @@ let destroyed_at_c_call =
      116;117;118;119;120;121;122;123;
      124;125;126;127;128;129;130;131])
 
-let destroyed_at_alloc =
-  Array.concat [[| reg_x15 |]; destroyed_by_plt_stub]
-
 let destroyed_at_oper = function
   | Iop(Icall_ind _ | Icall_imm _) | Iop(Iextcall { alloc = true; }) ->
       all_phys_regs
   | Iop(Iextcall { alloc = false; }) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
-      destroyed_at_alloc
+      [| reg_x15 |]
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| reg_d7 |]            (* d7 / s7 destroyed *)
   | _ -> [||]
@@ -221,7 +207,7 @@ let safe_register_pressure = function
 
 let max_register_pressure = function
   | Iextcall _ -> [| 10; 8 |]
-  | Ialloc _ -> [| 25 - num_destroyed_by_plt_stub; 32 |]
+  | Ialloc _ -> [| 25; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 26; 31 |]
   | _ -> [| 26; 32 |]
