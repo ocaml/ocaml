@@ -143,7 +143,7 @@ let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
 
 let destroyed_by_plt_stub =
-  if win64 then [| |] else [| r10; r11 |]
+  if not X86_proc.use_plt then [| |] else [| r10; r11 |]
 
 let num_destroyed_by_plt_stub = Array.length destroyed_by_plt_stub
 
