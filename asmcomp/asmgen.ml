@@ -68,8 +68,8 @@ let raw_clambda_dump_if ppf
       Format.fprintf ppf "@.clambda:@.";
       Printclambda.clambda ppf ulambda;
       List.iter (fun {Clambda.symbol; definition} ->
-          Format.fprintf ppf "%s:@ %a@."
-            symbol
+          Format.fprintf ppf "%a:@ %a@."
+            Linkage_name.print symbol
             Printclambda.structured_constant definition)
         structured_constants
     end;
@@ -77,7 +77,7 @@ let raw_clambda_dump_if ppf
 
 let rec regalloc ppf round fd =
   if round > 50 then
-    fatal_error(fd.Mach.fun_name ^
+    fatal_error((Linkage_name.name fd.Mach.fun_name) ^
                 ": function too complex, cannot complete register allocation");
   dump_if ppf dump_live "Liveness analysis" fd;
   if !use_linscan then begin
@@ -131,7 +131,7 @@ let compile_phrase ppf p =
   if !dump_cmm then fprintf ppf "%a@." Printcmm.phrase p;
   match p with
   | Cfunction fd -> compile_fundecl ppf fd
-  | Cdata dl -> Emit.data dl
+  | Cdata dl -> Emitaux.data dl
 
 
 (* For the native toplevel: generates generic functions unless
@@ -190,7 +190,9 @@ let end_gen_implementation ?toplevel ppf
 
   compile_phrase ppf
     (Cmmgen.reference_symbols
-       (List.filter (fun s -> s <> "" && s.[0] <> '%')
+       (Misc.Stdlib.List.filter_map (fun s ->
+            if s <> "" && s.[0] <> '%' then Some (Linkage_name.create s)
+            else None)
           (List.map Primitive.native_name !Translmod.primitive_declarations))
     );
   Emit.end_assembly ()
@@ -207,13 +209,13 @@ let flambda_gen_implementation ?toplevel ~backend ppf
                 structured_constants; exported; } ->
              (* "init_code" following the name used in
                 [Cmmgen.compunit_and_constants]. *)
-           Un_anf.apply expr ~what:"init_code", preallocated_blocks,
-           structured_constants, exported)
+           Un_anf.apply expr ~what:(Linkage_name.create "init_code"),
+             preallocated_blocks, structured_constants, exported)
       ++ set_export_info)
   in
   let constants =
     List.map (fun (symbol, definition) ->
-        { Clambda.symbol = Linkage_name.to_string (Symbol.label symbol);
+        { Clambda.symbol = Symbol.label symbol;
           exported = true;
           definition })
       (Symbol.Map.bindings constants)

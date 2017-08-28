@@ -91,6 +91,12 @@ module Stdlib : sig
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
 
+  module String : sig
+    type t = string
+
+    val is_prefix : t -> of_:t -> bool
+  end
+
   module Array : sig
     val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
     (* Same as [Array.exists], but for a two-argument predicate. Raise

@@ -145,7 +145,7 @@ let print_cmx_infos (ui, crc) =
     if not !no_approx then begin
       let cu =
         Compilation_unit.create (Ident.create_persistent ui.ui_name)
-          (Linkage_name.create "__dummy__")
+          (Linkage_name.__dummy__)
       in
       Compilation_unit.set_current cu;
       let root_symbols =

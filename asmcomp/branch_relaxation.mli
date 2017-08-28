@@ -16,7 +16,7 @@
 
 (* Fix up conditional branches that exceed hardware-allowed ranges. *)
 
-module Make (T : Branch_relaxation_intf.S) : sig
+module type S = sig
   val relax
      : Linearize.instruction
     (* [max_offset_of_out_of_line_code] specifies the furthest distance,
@@ -24,6 +24,8 @@ module Make (T : Branch_relaxation_intf.S) : sig
        of the function, that may be branched to from within the function in
        order to execute "out of line" code blocks such as call GC and
        bounds check points. *)
-    -> max_out_of_line_code_offset:T.distance
+    -> max_out_of_line_code_offset:int
     -> unit
 end
+
+module Make (T : Branch_relaxation_intf.S) : S

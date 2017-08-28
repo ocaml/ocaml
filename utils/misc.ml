@@ -164,6 +164,14 @@ module Stdlib = struct
       | Some a -> f a
   end
 
+  module String = struct
+    type t = string
+
+    let is_prefix t ~of_ =
+      String.length t <= String.length of_
+        && String.sub of_ 0 (String.length t) = t
+  end
+
   module Array = struct
     let exists2 p a1 a2 =
       let n = Array.length a1 in

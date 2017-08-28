@@ -152,7 +152,7 @@ class virtual selector_generic : object
   method select_checkbound_extra_args : unit -> Cmm.expression list
   method emit_blockheader
      : environment
-    -> nativeint
+    -> Targetint.t
     -> Debuginfo.t
     -> Reg.t array option
   method about_to_emit_call

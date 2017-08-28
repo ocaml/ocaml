@@ -31,7 +31,9 @@ method! class_of_operation op =
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int n -> n <= 65535n && n >= 0n
+  | Iconst_int n ->
+      Targetint.compare n (Targetint.of_int 65535) <= 0
+        && Targetint.compare n Targetint.zero >= 0
   | _ -> false
 
 end

@@ -24,10 +24,6 @@ open Mach
 
 let fp = Config.with_frame_pointers
 
-(* Which ABI to use *)
-
-let win64 = Arch.win64
-
 (* Registers available for register allocation *)
 
 (* Register map:
@@ -242,7 +238,7 @@ let loc_external_arguments arg =
     Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
   in
   let loc, alignment =
-    if win64 then win64_loc_external_arguments arg
+    if Target_system.windows () then win64_loc_external_arguments arg
     else unix_loc_external_arguments arg
   in
   Array.map (fun reg -> [|reg|]) loc, alignment
@@ -256,7 +252,7 @@ let regs_are_volatile _rs = false
 (* Registers destroyed by operations *)
 
 let destroyed_at_c_call =
-  if win64 then
+  if Target_system.windows () then
     (* Win64: rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 preserved *)
     Array.of_list(List.map phys_reg
       [0;4;5;6;7;10;11;
@@ -298,12 +294,12 @@ let destroyed_at_raise = all_phys_regs
 
 
 let safe_register_pressure = function
-    Iextcall _ -> if win64 then if fp then 7 else 8 else 0
+    Iextcall _ -> if Target_system.windows () then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
 let max_register_pressure = function
     Iextcall _ ->
-      if win64 then
+      if Target_system.windows () then
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
         if fp then [| 3; 0 |] else  [| 4; 0 |]

@@ -20,11 +20,13 @@ INCLUDES=\
   -I $(OTOPDIR)/utils \
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/middle_end \
+  -I $(OTOPDIR)/middle_end/base_types \
   -I $(OTOPDIR)/bytecomp \
   -I $(OTOPDIR)/asmcomp
 
 OTHEROBJS=\
   $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
+  $(OTOPDIR)/compilerlibs/ocamlmiddleend.cma \
   $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo

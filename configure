@@ -917,8 +917,8 @@ model=default
 system=unknown
 
 case "$target" in
-  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
-  i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
+  i[3456]86-*-linux*)           arch=i386; system=linux;;
+  i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-solaris*)         if $arch64; then
                                   arch=amd64; system=solaris
                                 else
@@ -934,13 +934,13 @@ case "$target" in
                                 fi;;
   i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   i[3456]86-*-mingw*)           arch=i386; system=mingw;;
-  powerpc64le*-*-linux*)        arch=power; model=ppc64le; system=elf;;
+  powerpc64le*-*-linux*)        arch=power; model=ppc64le; system=linux;;
   powerpc*-*-linux*)            arch=power;
                                 if $arch64; then model=ppc64; else model=ppc; fi
-                                system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
-  powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
-  s390x*-*-linux*)              arch=s390x; model=z10; system=elf;;
+                                system=linux;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=netbsd;;
+  powerpc-*-openbsd*)           arch=power; model=ppc; system=openbsd;;
+  s390x*-*-linux*)              arch=s390x; model=z10; system=linux;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
   arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
@@ -1007,14 +1007,14 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}gcc -m64 -c";;
   i386,solaris)   as="${TOOLPREF}as"
                   aspp="${TOOLPREF}gcc -c";;
-  power,elf)      if $arch64; then
+  power,linux)    if $arch64; then
                     as="${TOOLPREF}as -a64 -mppc64"
                     aspp="${TOOLPREF}gcc -m64 -c"
                   else
                     as="${TOOLPREF}as -mppc"
                     aspp="${TOOLPREF}gcc -m32 -c"
                   fi;;
-  s390x,elf)      as="${TOOLPREF}as -m 64 -march=$model"
+  s390x,linux)    as="${TOOLPREF}as -m 64 -march=$model"
                   aspp="${TOOLPREF}gcc -c -Wa,-march=$model";;
   arm,freebsd)    as="${TOOLPREF}cc -c"
                   aspp="${TOOLPREF}cc -c";;
@@ -1039,9 +1039,9 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$system" in
-  i386,linux_elf) profiling='true';;
+  i386,linux) profiling='true';;
   i386,gnu) profiling='true';;
-  i386,bsd_elf) profiling='true';;
+  i386,bsd) profiling='true';;
   amd64,macosx) profiling='true';;
   i386,macosx) profiling='true';;
   amd64,linux) profiling='true';;
@@ -1051,7 +1051,7 @@ case "$arch,$system" in
   arm,netbsd) profiling='true';;
   amd64,gnu) profiling='true';;
   arm,linux*) profiling='true';;
-  power,elf) profiling='true';;
+  power,linux) profiling='true';;
   power,bsd*) profiling='true';;
   *) profiling='false';;
 esac
@@ -1192,7 +1192,7 @@ fi
 # Configuration for the libraries
 
 case "$system" in
-  mingw) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
+  mingw*) unix_or_win32="win32"; unixlib="win32unix"; graphlib="win32graph";;
   *) unix_or_win32="unix"; unixlib="unix"; graphlib="graph";;
 esac
 
@@ -1561,8 +1561,8 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
-  |amd64,openbsd|i386,bsd_elf)
+  i386,linux|amd64,linux|power,rhapsody|amd64,macosx|i386,macosx \
+  |amd64,openbsd|i386,bsd)
     inf "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)

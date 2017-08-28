@@ -216,8 +216,7 @@ let to_uconst_symbol env symbol : Clambda.ustructured_constant option =
   | Some _ -> None
 
 let to_clambda_symbol' env sym : Clambda.uconstant =
-  let lbl = Linkage_name.to_string (Symbol.label sym) in
-  Uconst_ref (lbl, to_uconst_symbol env sym)
+  Uconst_ref (Symbol.label sym, to_uconst_symbol env sym)
 
 let to_clambda_symbol env sym : Clambda.ulambda =
   Uconst (to_clambda_symbol' env sym)
@@ -564,8 +563,7 @@ and to_clambda_closed_set_of_closures t env symbol
     }
   in
   let ufunct = List.map to_clambda_function functions in
-  let closure_lbl = Linkage_name.to_string (Symbol.label symbol) in
-  Uconst_closure (ufunct, closure_lbl, [])
+  Uconst_closure (ufunct, Symbol.label symbol, [])
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =
@@ -669,7 +667,7 @@ let convert (program, exported) : result =
   let preallocated_blocks =
     List.map (fun (symbol, tag, fields) ->
         { Clambda.
-          symbol = Linkage_name.to_string (Symbol.label symbol);
+          symbol = Symbol.label symbol;
           exported = true;
           tag = Tag.to_int tag;
           size = List.length fields;

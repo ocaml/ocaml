@@ -16,14 +16,14 @@
 (* From lambda to assembly code *)
 
 val compile_implementation_flambda :
-    ?toplevel:(string -> bool) ->
+    ?toplevel:(Linkage_name.t -> bool) ->
     string ->
     required_globals:Ident.Set.t ->
     backend:(module Backend_intf.S) ->
     Format.formatter -> Flambda.program -> unit
 
 val compile_implementation_clambda :
-    ?toplevel:(string -> bool) ->
+    ?toplevel:(Linkage_name.t -> bool) ->
     string ->
     Format.formatter -> Lambda.program -> unit
 

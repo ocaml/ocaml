@@ -73,7 +73,7 @@ let arg_mem b {arch; typ; idx; scale; base; sym; displ} =
   Buffer.add_char b ']'
 
 let arg b = function
-  | Sym s -> bprintf b "OFFSET %s" s
+  | Named_thing s -> bprintf b "OFFSET %s" s
   | Imm n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L -> bprintf b "%Ld" n
   | Imm int -> bprintf b "0%LxH" int (* force ml64 to use mov reg, imm64 *)
   | Reg8L x -> Buffer.add_string b (string_of_reg8l x)
@@ -92,26 +92,12 @@ let arg b = function
       else if displ < 0 then bprintf b "%d" displ
   | Mem addr -> arg_mem b addr
 
-let rec cst b = function
-  | ConstLabel _ | Const _ | ConstThis as c -> scst b c
-  | ConstAdd (c1, c2) -> bprintf b "%a + %a" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "%a - %a" scst c1 scst c2
-
-and scst b = function
-  | ConstThis -> Buffer.add_string b "THIS BYTE"
-  | ConstLabel l -> Buffer.add_string b l
-  | Const n when n <= 0x7FFF_FFFFL && n >= -0x8000_0000L ->
-      Buffer.add_string b (Int64.to_string n)
-  | Const n -> bprintf b "0%LxH" n
-  | ConstAdd (c1, c2) -> bprintf b "(%a + %a)" scst c1 scst c2
-  | ConstSub (c1, c2) -> bprintf b "(%a - %a)" scst c1 scst c2
-
 let i0 b s = bprintf b "\t%s" s
 let i1 b s x = bprintf b "\t%s\t%a" s arg x
 let i2 b s x y = bprintf b "\t%s\t%a, %a" s arg y arg x
 
 let i1_call_jmp b s = function
-  | Sym x -> bprintf b "\t%s\t%s" s x
+  | Named_thing x -> bprintf b "\t%s\t%s" s x
   | x -> i1 b s x
 
 let print_instr b = function
@@ -214,39 +200,12 @@ let print_instr b = function
 
 let print_line b = function
   | Ins instr -> print_instr b instr
-
-  | Align (_data,n) -> bprintf b "\tALIGN\t%d" n
-  | Byte n -> bprintf b "\tBYTE\t%a" cst n
-  | Bytes s -> buf_bytes_directive b "BYTE" s
-  | Comment s -> bprintf b " ; %s " s
-  | Global s -> bprintf b "\tPUBLIC\t%s" s
-  | Long n -> bprintf b "\tDWORD\t%a" cst n
-  | NewLabel (s, NONE) -> bprintf b "%s:" s
-  | NewLabel (s, ptr) -> bprintf b "%s LABEL %s" s (string_of_datatype ptr)
-  | Quad n -> bprintf b "\tQWORD\t%a" cst n
-  | Section ([".data"], None, []) -> bprintf b "\t.DATA"
-  | Section ([".text"], None, []) -> bprintf b "\t.CODE"
-  | Section _ -> assert false
-  | Space n -> bprintf b "\tBYTE\t%d DUP (?)" n
-  | Word n -> bprintf b "\tWORD\t%a" cst n
-
-  (* windows only *)
-  | External (s, ptr) -> bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
-  | Mode386 -> bprintf b "\t.386"
-  | Model name -> bprintf b "\t.MODEL %s" name (* name = FLAT *)
-
-  (* gas only *)
-  | Cfi_adjust_cfa_offset _
-  | Cfi_endproc
-  | Cfi_startproc
-  | File _
-  | Indirect_symbol _
-  | Loc _
-  | Private_extern _
-  | Set _
-  | Size _
-  | Type _
-    -> assert false
+  | Directive d -> Asm_directives.Directive.print b d
+  | MASM_directive (External (s, ptr)) ->
+    bprintf b "\tEXTRN\t%s: %s" s (string_of_datatype ptr)
+  | MASM_directive Mode386 -> bprintf b "\t.386"
+  | MASM_directive (Model name) ->
+    bprintf b "\t.MODEL %s" name (* name = FLAT *)
 
 let generate_asm oc lines =
   let b = Buffer.create 10000 in

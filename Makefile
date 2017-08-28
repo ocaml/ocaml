@@ -88,7 +88,8 @@ UTILS=utils/config.cmo utils/misc.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/targetint.cmo
+  utils/targetint.cmo \
+  utils/target_system.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -155,10 +156,12 @@ ARCH_SPECIFIC_ASMCOMP=$(INTEL_ASM)
 endif
 
 ASMCOMP=\
-  $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/reg.cmo asmcomp/mach.cmo \
+  asmcomp/asm_directives.cmo \
+  $(ARCH_SPECIFIC_ASMCOMP) \
+  asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
   asmcomp/export_info.cmo \
   asmcomp/export_info_for_pack.cmo \
