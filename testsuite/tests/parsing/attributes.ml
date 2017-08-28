@@ -1,6 +1,6 @@
 [@@@foo]
 
-let (x[@foo]) : unit [@foo] = ()[@foo]
+let ((x[@foo]) : unit [@foo]) = ()[@foo]
   [@@foo]
 
 type t =
