@@ -44,7 +44,7 @@ if [[ $1 = "msvc32-only" ]] ; then
 
   PREFIX="C:/Program Files/OCaml-msmvc32"
   echo "Edit config/Makefile to set PREFIX=$PREFIX"
-  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
+  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
 
   run "make world" make world
   run "make runtimeopt" make runtimeopt
@@ -73,7 +73,7 @@ cp config/m-nt.h byterun/caml/m.h
 cp config/s-nt.h byterun/caml/s.h
 
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make world" make world
@@ -88,7 +88,7 @@ cp config/s-nt.h byterun/caml/s.h
 
 PREFIX="C:/Program Files/OCaml-mingw32"
 echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/\(BYTE\|NATIVE\)CCCOMPOPTS=./s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
+sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
 run "make flexdll" make flexdll

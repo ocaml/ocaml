@@ -243,7 +243,7 @@ machine, you can use the configuration values and run command taken from
 link:.travis.yml[]:
 
 ----
-CI_KIND=build XARCH=i386 bash -ex .travis-ci.sh
+CI_KIND=build XARCH=x64 bash -ex .travis-ci.sh
 ----
 
 The scripts support two other kinds of tests (values of the

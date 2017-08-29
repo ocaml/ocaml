@@ -100,9 +100,6 @@ char *nullable;
 #if !defined(HAS_MKSTEMP)
 extern char *mktemp(char *);
 #endif
-#ifdef _WIN32
-extern char *getenv(const char *);
-#endif
 
 
 void done(int k)
