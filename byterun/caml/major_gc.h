@@ -1,7 +1,7 @@
 #ifndef CAML_MAJOR_GC
 #define CAML_MAJOR_GC
 
-intnat caml_major_collection_slice (intnat);
+intnat caml_major_collection_slice (intnat, intnat* left /* out */);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
 uintnat caml_get_num_domains_to_mark(void);

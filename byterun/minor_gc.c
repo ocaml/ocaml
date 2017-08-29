@@ -629,7 +629,7 @@ CAMLexport void caml_minor_collection (void)
   caml_handle_incoming_interrupts ();
   caml_empty_minor_heap ();
   caml_handle_incoming_interrupts ();
-  caml_major_collection_slice (0);
+  caml_major_collection_slice (0, 0);
 
   /* FIXME: run finalisers.
      If finalisers run, need to rerun caml_empty_minor_heap.
