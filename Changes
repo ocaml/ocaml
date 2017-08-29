@@ -316,6 +316,9 @@ Working version
 - MPR#7513: List.compare_length_with mishandles negative numbers / overflow
   (Fabrice Le Fessant, report by Jeremy Yallop)
 
+- MPR#7519: Incorrect rejection of program due to faux scope escape
+  (Jacques Garrigue, report by Markus Mottl)
+
 - MPR#7540, GPR#1179: Fixed setting of breakpoints within packed modules
   for ocamldebug
   (Hugo Herbelin, review by Gabriel Scherer, Damien Doligez)
