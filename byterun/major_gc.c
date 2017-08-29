@@ -474,7 +474,7 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
       left = mark(available);
       budget -= available - left;
       caml_handle_incoming_interrupts();
-    } else {
+    } else if (0) {
       if (was_marking) {
         caml_ev_msg("End marking");
         was_marking = 0;
@@ -486,6 +486,8 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
                   steal_result, domain_state->mark_stack_count);
       caml_ev_start_gc();
       if (steal_result == -1) break;
+    } else {
+      break;
     }
   }
   if (was_marking)
