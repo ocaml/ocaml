@@ -84,9 +84,24 @@ type t =
   | Constraint_on_gadt                      (* 62 *)
 ;;
 
+(* For warnings that can be enabled by attributes on external declarations,
+    the status indicates whether we should follow the current state of the
+    warning or the one given by those external declarations.
+
+    An example of such warning is Fragile_match, which can be (de)activated on a
+    per-type basis. See PR#7310 for an extended discussion.
+*)
+type status =
+  | Always (* warning always active. *)
+  | Implicit (* warning active, but external declarations may deactivate it.*)
+  | Explicit (* warning not active, external declaration may activate it.*)
+  | Never (* warning never active. *)
+;;
+
 val parse_options : bool -> string -> unit;;
 
 val is_active : t -> bool;;
+val status : t -> status;;
 val is_error : t -> bool;;
 
 val defaults_w : string;;
