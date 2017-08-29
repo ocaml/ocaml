@@ -890,6 +890,8 @@ CAMLprim value caml_ml_domain_critical_section(value delta)
 CAMLprim value caml_ml_domain_yield(value unused)
 {
   struct interruptor* s = &domain_self->interruptor;
+  int found_work = 1;
+  intnat left;
 
   if (Caml_state->critical_section_nesting == 0) {
     caml_failwith("Domain.Sync.wait must be called from within a critical section");
@@ -900,13 +902,14 @@ CAMLprim value caml_ml_domain_yield(value unused)
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0
-        && Caml_state->sweeping_done
-        && caml_get_num_domains_to_mark() == 0) {
+        && !found_work) {
       caml_ev_msg("wait");
       caml_plat_wait(&s->cond);
     } else {
       caml_plat_unlock(&s->lock);
-      caml_major_collection_slice(Chunk_size);
+      caml_major_collection_slice(Chunk_size, &left);
+      if (left == Chunk_size)
+        found_work = 0;
       caml_plat_lock(&s->lock);
     }
   }
@@ -954,6 +957,8 @@ CAMLprim value caml_ml_domain_yield_until(value t)
   struct interruptor* s = &domain_self->interruptor;
   value ret = Val_int(1); /* Domain.Sync.Notify */
   int res;
+  intnat left;
+  int found_work = 1;
 
   if (Caml_state->critical_section_nesting == 0){
     caml_failwith("Domain.Sync.wait_until must be called from within a critical section");
@@ -967,8 +972,7 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       ret = Val_int(0); /* Domain.Sync.Timeout */
       break;
     } else if (handle_incoming(s) == 0
-               && Caml_state->sweeping_done
-               && caml_get_num_domains_to_mark() == 0) {
+               && !found_work) {
       caml_ev_msg("timed wait");
       res = caml_plat_timedwait(&s->cond, ts);
       if (res) {
@@ -977,7 +981,9 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       }
     } else {
       caml_plat_unlock(&s->lock);
-      caml_major_collection_slice(Chunk_size);
+      caml_major_collection_slice(Chunk_size, &left);
+      if (left == Chunk_size)
+        found_work = 0;
       caml_plat_lock(&s->lock);
     }
   }
