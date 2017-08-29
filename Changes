@@ -4,6 +4,10 @@ Working 4.05.x branch
 - MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
   (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
 
+- MPR#7601, GPR#1272: It seems like a hidden non-generalized type variable
+  remains in some inferred signatures, which leads to strange errors.
+  (Jacques Garrigue, report by Mandrikin)
+
 - GPR#1271: Don't generate Ialloc instructions for closures that exceed
   Max_young_wosize; instead allocate them on the major heap.  (Related
   to GPR#1250.)
