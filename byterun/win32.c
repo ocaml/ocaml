@@ -720,3 +720,34 @@ char *caml_secure_getenv (char const *var)
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
   return CAML_SYS_GETENV (var);
 }
+
+/* The rename() implementation in MSVC's CRT is based on MoveFile()
+   and therefore fails if the new name exists.  This is inconsistent
+   with POSIX and a problem in practice.  Here we reimplement
+   rename() using MoveFileEx() to make it more POSIX-like.
+   There are no official guarantee that the rename operation is atomic,
+   but it is widely believed to be atomic on NTFS. */
+
+int caml_win32_rename(const char * oldpath, const char * newpath)
+{
+  if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+    return 0;
+  /* Modest attempt at mapping Win32 error codes to POSIX error codes.
+     The __dosmaperr() function from the CRT does a better job but is
+     generally not accessible. */
+  switch (GetLastError()) {
+  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
+    errno = ENOENT; break;
+  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTEXT: case ERROR_CANNOT_MAKE:
+    errno = EACCESS; break;
+  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
+    errno = EBUSY; break;
+  case ERROR_NOT_SAME_DEVICE:
+    errno = EXDEV; break;
+  case ERROR_ALREADY_EXISTS:
+    errno = EEXIST; break;
+  default:
+    errno = EINVAL;
+  }
+  return -1;
+}
