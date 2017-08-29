@@ -902,7 +902,6 @@ CAMLprim value caml_ml_domain_yield(value unused)
   caml_plat_lock(&s->lock);
   while (!Caml_state->pending_interrupts) {
     if (handle_incoming(s) == 0
-        && Caml_state->sweeping_done
         && !found_work) {
       caml_ev_msg("wait");
       caml_plat_wait(&s->cond);
@@ -973,7 +972,6 @@ CAMLprim value caml_ml_domain_yield_until(value t)
       ret = Val_int(0); /* Domain.Sync.Timeout */
       break;
     } else if (handle_incoming(s) == 0
-               && Caml_state->sweeping_done
                && !found_work) {
       caml_ev_msg("timed wait");
       res = caml_plat_timedwait(&s->cond, ts);
