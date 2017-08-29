@@ -738,8 +738,8 @@ int caml_win32_rename(const char * oldpath, const char * newpath)
   switch (GetLastError()) {
   case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
     errno = ENOENT; break;
-  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTEXT: case ERROR_CANNOT_MAKE:
-    errno = EACCESS; break;
+  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
+    errno = EACCES; break;
   case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
     errno = EBUSY; break;
   case ERROR_NOT_SAME_DEVICE:
