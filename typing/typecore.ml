@@ -2800,7 +2800,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
-      let body = type_expect new_env sbody (correct_levels ty_expected) in
+      let body = type_expect new_env sbody ty_expected in
       (* go back to original level *)
       end_def ();
       (* Unification of body.exp_type with the fresh variable ty
@@ -2808,12 +2808,15 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
          i.e. if generative types rooted at id show up in the
          type body.exp_type.  Thus, this unification enforces the
          scoping condition on "let module". *)
+      (* Note that this code will only be reached if ty_expected
+         is a generic type variable, otherwise the error will occur
+         above in type_expect *)
       begin try
         Ctype.unify_var new_env ty body.exp_type
       with Unify _ ->
         raise(Error(loc, env, Scoping_let_module(name.txt, body.exp_type)))
       end;
-      rue {
+      re {
         exp_desc = Texp_letmodule(id, name, modl, body);
         exp_loc = loc; exp_extra = [];
         exp_type = ty;
