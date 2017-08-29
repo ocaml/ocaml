@@ -237,7 +237,7 @@ CAMLprim value caml_gc_major_slice (value v)
   Assert (Is_long (v));
   caml_ev_pause(EV_PAUSE_GC);
   caml_empty_minor_heap ();
-  res = caml_major_collection_slice(Long_val(v));
+  res = caml_major_collection_slice(Long_val(v), 0);
   caml_ev_resume();
   caml_handle_gc_interrupt();
   return Val_long (res);
