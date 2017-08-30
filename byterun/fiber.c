@@ -593,17 +593,17 @@ void caml_restore_stack()
 value caml_reverse_fiber_stack (value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);
-  value next = Stack_parent(stack);
-  value next_of_next = Val_unit;
+  value next;
+  value prev = Val_unit;
 
-  while (next != Val_unit) {
-    next_of_next = Stack_parent(next);
-    Stack_parent(next) = stack;
+  while (stack != Val_unit) {
+    next = Stack_parent(stack);
+    Stack_parent(stack) = prev;
+    prev = stack;
     stack = next;
-    next = next_of_next;
   }
 
-  return stack;
+  return prev;
 }
 
 #ifdef DEBUG
