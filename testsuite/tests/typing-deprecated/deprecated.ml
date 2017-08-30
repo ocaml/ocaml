@@ -467,8 +467,8 @@ module X : sig  end
 let x = ((() [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@ocaml.ppwarning  "Pp warning 2!"]
 ;;
 [%%expect{|
-Line _, characters 31-46:
-Warning 22: Pp warning 1!
+Line _, characters 93-108:
+Warning 22: Pp warning 2!
 val x : unit = ()
 |}]
 
@@ -478,7 +478,7 @@ type t = ((unit [@ocaml.ppwarning "Pp warning 1!"]) [@ocaml.warning "-22"])  [@o
 [%%expect{|
 Line _, characters 21-36:
 Warning 22: Pp warning 3!
-Line _, characters 34-49:
-Warning 22: Pp warning 1!
+Line _, characters 96-111:
+Warning 22: Pp warning 2!
 type t = unit
 |}]
