@@ -730,8 +730,17 @@ char *caml_secure_getenv (char const *var)
 
 int caml_win32_rename(const char * oldpath, const char * newpath)
 {
-  if (MoveFileEx(oldpath, newpath, MOVEFILE_REPLACE_EXISTING))
+  /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
+     MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
+       paths are on different devices, so we do the same here for
+       compatibility with the old rename()-based implementation.
+     MOVEFILE_WRITE_THROUGH: not sure it's useful; affects only
+       the case where a copy is done. */
+  if (MoveFileEx(oldpath, newpath,
+                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                 MOVEFILE_COPY_ALLOWED)) {
     return 0;
+  }
   /* Modest attempt at mapping Win32 error codes to POSIX error codes.
      The __dosmaperr() function from the CRT does a better job but is
      generally not accessible. */
