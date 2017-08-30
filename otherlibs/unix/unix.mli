@@ -557,7 +557,12 @@ val unlink : string -> unit
 *)
 
 val rename : string -> string -> unit
-(** [rename old new] changes the name of a file from [old] to [new]. *)
+(** [rename old new] changes the name of a file from [old] to [new],
+    moving it between directories if needed.  If [new] already
+    exists, its contents will be replaced with those of [old].
+    Depending on the operating system, the metadata (permissions,
+    owner, etc) of [new] can either be preserved or be replaced by
+    those of [old].  *)
 
 val link : string -> string -> unit
 (** [link source dest] creates a hard link named [dest] to the file

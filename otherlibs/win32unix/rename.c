@@ -19,25 +19,11 @@
 
 CAMLprim value unix_rename(value path1, value path2)
 {
-  static int supports_MoveFileEx = -1; /* don't know yet */
-  BOOL ok;
-
   caml_unix_check_path(path1, "rename");
   caml_unix_check_path(path2, "rename");
-  if (supports_MoveFileEx < 0) {
-    OSVERSIONINFO VersionInfo;
-    VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    supports_MoveFileEx =
-      (GetVersionEx(&VersionInfo) != 0)
-      && (VersionInfo.dwPlatformId == VER_PLATFORM_WIN32_NT);
-  }
-  if (supports_MoveFileEx > 0)
-    ok = MoveFileEx(String_val(path1), String_val(path2),
-                    MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-                    MOVEFILE_COPY_ALLOWED);
-  else
-    ok = MoveFile(String_val(path1), String_val(path2));
-  if (! ok) {
+  if (! MoveFileEx(String_val(path1), String_val(path2),
+                   MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                   MOVEFILE_COPY_ALLOWED)) {
     win32_maperr(GetLastError());
     uerror("rename", path1);
   }
