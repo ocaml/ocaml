@@ -182,7 +182,9 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
-#ifdef _WIN32
+#if defined(O_CLOEXEC)
+  flags = O_CLOEXEC;
+#elif defined(_WIN32)
   flags = _O_NOINHERIT;
 #else
   flags = 0;
@@ -196,7 +198,8 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   caml_enter_blocking_section();
   fd = CAML_SYS_OPEN(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
-#if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32)
+#if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32) \
+  && !defined(O_CLOEXEC)
   if (fd != -1)
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif
