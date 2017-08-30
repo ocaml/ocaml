@@ -516,8 +516,14 @@ let build_export_info ~(backend : (module Backend_intf.S))
       |> Set_of_closures_id.Map.map approx_func_decl
     in
     let closures =
-      Flambda_utils.all_function_decls_indexed_by_closure_id program
-      |> Closure_id.Map.map approx_func_decl
+      let aux_fun function_decls fun_var _ map =
+        let closure_id = Closure_id.wrap fun_var in
+        Closure_id.Map.add closure_id function_decls map
+      in
+      let aux _ (function_decls : Simple_value_approx.function_declarations) map =
+        Variable.Map.fold (aux_fun function_decls) function_decls.funs map
+      in
+      Set_of_closures_id.Map.fold aux sets_of_closures Closure_id.Map.empty
     in
     let invariant_params =
       Set_of_closures_id.Map.map
