@@ -335,7 +335,6 @@ let map_ext fn exts rem =
    making them abstract otherwise. *)
 
 let rec approx_modtype env smty =
-  (* Need to process warning attributes here ?? *)
   match smty.pmty_desc with
     Pmty_ident lid ->
       let (path, _info) = Typetexp.find_modtype env smty.pmty_loc lid.txt in
