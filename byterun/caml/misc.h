@@ -38,6 +38,7 @@ typedef size_t asize_t;
 
 #ifdef CAML_INTERNALS
 typedef char * addr;
+#define CAML_UNSIGNED_VALUE
 #endif /* CAML_INTERNALS */
 
 /* Noreturn is preserved for compatibility reasons.
@@ -411,7 +412,13 @@ int caml_runtime_warnings_active(void);
 /* Note: the first argument is in fact a [value] but we don't have this
    type available yet because we can't include [mlvalues.h] in this file.
 */
-extern void caml_set_fields (intnat v, unsigned long, unsigned long);
+#ifdef CAML_UNSIGNED_VALUE
+#define value uintnat
+#else
+#define value intnat
+#endif
+extern void caml_set_fields (value v, unsigned long, unsigned long);
+#undef value
 #endif /* DEBUG */
 
 
