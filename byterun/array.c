@@ -123,6 +123,24 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
     return Field(array, Long_val(index));
 }
 
+/* [ floatarray -> int -> float ] */
+CAMLprim value caml_floatarray_unsafe_get(value array, value index)
+{
+  intnat idx = Long_val(index);
+  double d;
+  value res;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  d = Double_flat_field(array, idx);
+#define Setup_for_gc
+#define Restore_after_gc
+  Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+  Store_double_val(res, d);
+  return res;
+}
+
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
@@ -144,8 +162,18 @@ CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
     return caml_array_unsafe_set_addr(array, index, newval);
 }
 
-/* [len] is a [value] representing number of floats */
-CAMLprim value caml_make_float_vect(value len)
+/* [ floatarray -> int -> float -> unit ] */
+CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
+{
+  intnat idx = Long_val(index);
+  double d = Double_val (newval);
+  Store_double_flat_field(array, idx, d);
+  return Val_unit;
+}
+
+/* [len] is a [value] representing number of floats. */
+/* [ int -> floatarray ] */
+CAMLprim value caml_floatarray_create(value len)
 {
   mlsize_t wosize = Long_val(len) * Double_wosize;
   value result;
@@ -165,6 +193,12 @@ CAMLprim value caml_make_float_vect(value len)
     result = caml_check_urgent_gc (result);
   }
   return result;
+}
+
+/* [len] is a [value] representing number of floats */
+CAMLprim value caml_make_float_vect(value len)
+{
+  return caml_floatarray_create (len);
 }
 
 /* [len] is a [value] representing number of words or floats */

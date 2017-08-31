@@ -283,6 +283,11 @@ CAMLextern void caml_Store_double_val (value,double);
   double caml__temp_d = (d); \
   Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
+
+/* temporary definitions for bootstrapping */
+#define Double_flat_field Double_field
+#define Store_double_flat_field Store_double_field
+
 CAMLextern mlsize_t caml_array_length (value);   /* size in items */
 CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
 
