@@ -700,9 +700,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
       } else {
         block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
       }
-      Store_double_field(block, 0, Double_val(accu));
+      Store_double_flat_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
-        Store_double_field(block, i, Double_val(*sp));
+        Store_double_flat_field(block, i, Double_val(*sp));
         ++ sp;
       }
       accu = block;
@@ -722,7 +722,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETFIELD):
       accu = Field(accu, *pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
-      double d = Double_field(accu, *pc);
+      double d = Double_flat_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag);
       Store_double_val(accu, d);
       pc++;
@@ -751,7 +751,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(SETFLOATFIELD):
-      Store_double_field(accu, *pc, Double_val(*sp));
+      Store_double_flat_field(accu, *pc, Double_val(*sp));
       accu = Val_unit;
       sp++;
       pc++;
@@ -760,6 +760,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Array operations */
 
     Instruct(VECTLENGTH): {
+      /* Todo: when FLAT_FLOAT_ARRAY is false, this instruction should
+         be split into VECTLENGTH and FLOATVECTLENGTH because we know
+         statically which one it is. */
       mlsize_t size = Wosize_val(accu);
       if (Tag_val(accu) == Double_array_tag) size = size / Double_wosize;
       accu = Val_long(size);

@@ -13,6 +13,9 @@
 #*                                                                        *
 #**************************************************************************
 
+ADD_COMPFLAGS = -I $(OTOPDIR)/utils
+MODULES = config
+
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

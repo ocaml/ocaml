@@ -421,7 +421,11 @@ static void extern_rec(value v)
       value f = Forward_val (v);
       if (Is_block (f)
           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
+              || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+              || Tag_val (f) == Double_tag
+#endif
+              )){
         /* Do not short-circuit the pointer. */
       }else{
         v = f;

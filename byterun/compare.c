@@ -228,9 +228,9 @@ static intnat do_compare_val(struct compare_stack* stk,
       mlsize_t i;
       if (sz1 != sz2) return sz1 - sz2;
       for (i = 0; i < sz1; i++) {
-        double d1 = Double_field(v1, i);
-        double d2 = Double_field(v2, i);
-#ifdef LACKS_SANE_NAN
+        double d1 = Double_flat_field(v1, i);
+        double d2 = Double_flat_field(v2, i);
+  #ifdef LACKS_SANE_NAN
         if (isnan(d2)) {
           if (! total) return UNORDERED;
           if (isnan(d1)) break;
@@ -239,17 +239,17 @@ static intnat do_compare_val(struct compare_stack* stk,
           if (! total) return UNORDERED;
           return LESS;
         }
-#endif
+  #endif
         if (d1 < d2) return LESS;
         if (d1 > d2) return GREATER;
-#ifndef LACKS_SANE_NAN
+  #ifndef LACKS_SANE_NAN
         if (d1 != d2) {
           if (! total) return UNORDERED;
           /* See comment for Double_tag case */
           if (d1 == d1) return GREATER;
           if (d2 == d2) return LESS;
         }
-#endif
+  #endif
       }
       break;
     }

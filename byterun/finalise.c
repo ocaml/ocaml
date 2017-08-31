@@ -375,7 +375,9 @@ static void generic_final_register (struct finalisable *final, value f, value v)
   if (!Is_block (v)
       || !Is_in_heap_or_young(v)
       || Tag_val (v) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
       || Tag_val (v) == Double_tag
+#endif
       || Tag_val (v) == Forward_tag) {
     caml_invalid_argument ("Gc.finalise");
   }

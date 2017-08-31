@@ -355,6 +355,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    -e 's|%%WITH_SPACETIME_CALL_COUNTS%%|$(WITH_SPACETIME_CALL_COUNTS)|' \
+	    -e 's|%%FLAT_FLOAT_ARRAY%%|$(FLAT_FLOAT_ARRAY)|' \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
