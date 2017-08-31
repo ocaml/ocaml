@@ -1027,18 +1027,20 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_to_non_mutable_value
         end;
-        let kind = match A.descr block_approx, A.descr value_approx with
-          | (Value_float_array _, _)
-          | (_, Value_float _) ->
-            begin match kind with
+        let kind =
+          let check () =
+            match kind with
             | Pfloatarray | Pgenarray -> ()
             | Paddrarray | Pintarray ->
               (* CR pchambart: Do a proper warning here *)
               Misc.fatal_errorf "Assignment of a float to a specialised \
                                  non-float array: %a"
                 Flambda.print_named tree
-            end;
-            Lambda.Pfloatarray
+          in
+          match A.descr block_approx, A.descr value_approx with
+          | (Value_float_array _, _) -> check (); Lambda.Pfloatarray
+          | (_, Value_float _) when Config.flat_float_array ->
+            check (); Lambda.Pfloatarray
             (* CR pchambart: This should be accounted by the benefit *)
           | _ ->
             kind

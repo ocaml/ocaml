@@ -106,6 +106,12 @@ Working version
   to GPR#1250.)
   (Mark Shinwell)
 
+- GPR#1294: Add a configure-time option to remove the dynamic float array
+  optimization and add a floatarray type to let the user choose when to
+  flatten float arrays. Note that float-only records are unchanged: they
+  are still optimized by unboxing their fields.
+  (Damien Doligez, review by Alain Frisch and Mark Shinwell)
+
 - GPR#1304: Mark registers clobbered by PLT stubs as destroyed across
   allocations.
   (Mark Shinwell, Xavier Clerc, report and initial debugging by

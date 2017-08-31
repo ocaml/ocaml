@@ -376,16 +376,16 @@ let comp_primitive p args =
   | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
   | Parraylength _ -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
-  | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
+  | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2)
   | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
+  | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
-  | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
+  | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2)
   | Parrayrefu _ -> Kgetvectitem
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
+  | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pctconst c ->
      let const_name = match c with

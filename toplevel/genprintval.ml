@@ -25,11 +25,14 @@ open Outcometree
 module type OBJ =
   sig
     type t
+    val repr : 'a -> t
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    val double_array_tag : int
+    val double_field : t -> int -> float
   end
 
 module type EVALPATH =
@@ -493,9 +496,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 if pos = 0 then tree_of_label env path name
                 else Oide_ident name
               and v =
-                if unboxed
-                then tree_of_val (depth - 1) obj ty_arg
-                else nest tree_of_val (depth - 1) (O.field obj pos) ty_arg
+                if unboxed then
+                  tree_of_val (depth - 1) obj ty_arg
+                else begin
+                  let fld =
+                    if O.tag obj = O.double_array_tag then
+                      O.repr (O.double_field obj pos)
+                    else
+                      O.field obj pos
+                  in
+                  nest tree_of_val (depth - 1) fld ty_arg
+                end
               in
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in

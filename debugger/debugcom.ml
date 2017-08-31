@@ -201,6 +201,8 @@ module Remote_value =
   struct
     type t = Remote of string | Local of Obj.t
 
+    let repr x = Local (Obj.repr x)
+
     let obj = function
     | Local obj -> Obj.obj obj
     | Remote v ->
@@ -254,6 +256,25 @@ module Remote_value =
             String.unsafe_blit buf 0 (Obj.magic floatbuf) 0 8;
             Local(Obj.repr floatbuf)
           end
+
+    let double_field v n =
+      match v with
+      | Local obj -> Obj.double_field obj n
+      | Remote v ->
+          output_char !conn.io_out 'F';
+          output_remote_value !conn.io_out v;
+          output_binary_int !conn.io_out n;
+          flush !conn.io_out;
+          if input_byte !conn.io_in = 0 then
+            raise Marshalling_error
+          else begin
+            let buf = really_input_string !conn.io_in 8 in
+            let floatbuf = float n (* force allocation of a new float *) in
+            String.unsafe_blit buf 0 (Obj.magic floatbuf) 0 8;
+            floatbuf
+          end
+
+    let double_array_tag = Obj.double_array_tag
 
     let of_int n =
       Local(Obj.repr n)
