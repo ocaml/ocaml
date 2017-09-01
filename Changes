@@ -85,6 +85,11 @@ Working version
   (Mark Shinwell, Xavier Clerc, report and initial debugging by
   Valentin Gatien-Baron)
 
+- MPR#7614, GPR#1313: Ensure that inlining does not depend on the order
+  of symbols (flambda)
+  (Leo White, Xavier Clerc, report by Alex, review by Gabriel Scherer
+  and Pierre Chambart)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
