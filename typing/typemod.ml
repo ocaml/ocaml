@@ -320,7 +320,7 @@ let params_are_constrained =
   loop
 ;;
 
-let merge_constraint initial_env loc sg constr =
+let merge_constraint initial_env remove_aliases loc sg constr =
   let lid =
     match constr with
     | Pwith_type (lid, _) | Pwith_module (lid, _)
@@ -400,7 +400,14 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
-        let md'' = {md' with md_type = Mtype.remove_aliases env md'.md_type} in
+        let mty = md'.md_type in
+        let mty =
+          if remove_aliases then
+            Mtype.remove_aliases env mty
+          else
+            Mtype.scrape_for_type_of env mty
+        in
+        let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
@@ -705,6 +712,15 @@ let simplify_signature sg =
   let (sg, _) = aux sg in
   sg
 
+let has_remove_aliases_attribute attr =
+  let remove_aliases =
+    Attr_helper.get_no_payload_attribute
+      ["remove_aliases"; "ocaml.remove_aliases"] attr
+  in
+  match remove_aliases with
+  | None -> false
+  | Some _ -> true
+
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
@@ -764,10 +780,12 @@ and transl_modtype_aux env smty =
   | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
+      let remove_aliases = has_remove_aliases_attribute smty.pmty_attributes in
       let (rev_tcstrs, final_sg) =
         List.fold_left
           (fun (rev_tcstrs,sg) sdecl ->
-            let (tcstr, sg) = merge_constraint env smty.pmty_loc sg sdecl
+            let (tcstr, sg) =
+              merge_constraint env remove_aliases smty.pmty_loc sg sdecl
             in
             (tcstr :: rev_tcstrs, sg)
         )
@@ -1738,19 +1756,26 @@ and normalize_signature_item env = function
 (* Extract the module type of a module expression *)
 
 let type_module_type_of env smod =
+  let remove_aliases = has_remove_aliases_attribute smod.pmod_attributes in
   let tmty =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
         let path, md = Typetexp.find_module env smod.pmod_loc lid.txt in
-        rm { mod_desc = Tmod_ident (path, lid);
-             mod_type = md.md_type;
-             mod_env = env;
-             mod_attributes = smod.pmod_attributes;
-             mod_loc = smod.pmod_loc }
-    | _ -> type_module env smod in
+          rm { mod_desc = Tmod_ident (path, lid);
+               mod_type = md.md_type;
+               mod_env = env;
+               mod_attributes = smod.pmod_attributes;
+               mod_loc = smod.pmod_loc }
+    | _ -> type_module env smod
+  in
   let mty = tmty.mod_type in
-  (* PR#6307: expand aliases at root and submodules *)
-  let mty = Mtype.remove_aliases env mty in
+  let mty =
+    if remove_aliases then
+      (* PR#6307: expand aliases at root and submodules *)
+      Mtype.remove_aliases env mty
+    else
+      Mtype.scrape_for_type_of env mty
+  in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));

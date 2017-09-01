@@ -107,6 +107,21 @@ and strengthen_decl ~aliasable env md p =
 
 let () = Env.strengthen := strengthen
 
+let scrape_for_type_of env mty =
+  let rec loop env path mty =
+    match mty, path with
+    | Mty_alias(_, path), _ -> begin
+        try
+          let md = Env.find_module path env in
+          loop env (Some path) md.md_type
+        with Not_found -> mty
+      end
+    | mty, Some path ->
+        strengthen ~aliasable:false env mty path
+    | _ -> mty
+  in
+  loop env None mty
+
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
    traversed. *)
