@@ -751,11 +751,7 @@ let build_export_info ~(backend : (module Backend_intf.S))
       Set_of_closures_id.Map.filter_map
         sets_of_closures
         ~f:(fun key fun_decls ->
-          (* CR fquah: Do we want to do this optimization if we are not in
-             -Oclassic?
-          *)
-          if not !Clflags.classic_inlining ||
-             Set_of_closures_id.Set.mem key relevant_set_of_closures then
+          if Set_of_closures_id.Set.mem key relevant_set_of_closures then
             Some fun_decls
           else if
             Set_of_closures_id.Set.mem key
