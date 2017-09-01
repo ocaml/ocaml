@@ -502,6 +502,13 @@ type queue_elem =
   | Q_set_of_closures_id of Set_of_closures_id.t
   | Q_export_id of Export_id.t
 
+type symbols_to_export =
+  { symbols                             : Symbol.Set.t;
+    export_ids                          : Export_id.Set.t;
+    set_of_closure_ids                  : Set_of_closures_id.Set.t;
+    set_of_closure_ids_keep_declaration : Set_of_closures_id.Set.t;
+  }
+
 let traverse_for_exported_symbols
       ~(closure_id_to_set_of_closures_id : Set_of_closures_id.t Closure_id.Map.t)
       ~(sets_of_closures : A.function_declarations Set_of_closures_id.Map.t)
@@ -515,6 +522,9 @@ let traverse_for_exported_symbols
 
      This code is a mess (with all these repetition). Consider refactoring.
   *)
+  let relevant_set_of_closures_declaration_only =
+    ref Set_of_closures_id.Set.empty
+  in
   let relevant_symbols = ref (Symbol.Set.singleton root_symbol) in
   let relevant_set_of_closures = ref Set_of_closures_id.Set.empty in
   let relevant_export_ids = ref Export_id.Set.empty in
@@ -619,9 +629,25 @@ let traverse_for_exported_symbols
                    | Set_of_closures soc ->
                      conditionally_add_set_of_closures_id
                        soc.function_decls.set_of_closures_id
-                   | Project_closure _
-                   | Move_within_set_of_closures _
-                   | Project_var _
+                   | Project_closure { closure_id; _ }
+                   | Move_within_set_of_closures
+                       { start_from = closure_id; _ }
+                   (* [start_from] and [move_to] are from the same set of
+                      closures, so we only need to look at (any) one of them.
+                   *)
+                   | Project_var { closure_id ; _ } ->
+                     begin match
+                       Closure_id.Map.find
+                         closure_id
+                         closure_id_to_set_of_closures_id
+                     with
+                     | exception Not_found -> ()
+                     | set_of_closure_id ->
+                       relevant_set_of_closures_declaration_only :=
+                         Set_of_closures_id.Set.add
+                           set_of_closure_id
+                           !relevant_set_of_closures_declaration_only
+                     end
                    | Prim _
                    | Expr _
                    | Const _
@@ -636,7 +662,11 @@ let traverse_for_exported_symbols
   in
   Queue.add (Q_symbol root_symbol) queue;
   loop ();
-  (!relevant_set_of_closures, !relevant_symbols, !relevant_export_ids)
+  { symbols                            = !relevant_symbols;
+    export_ids                         = !relevant_export_ids;
+    set_of_closure_ids                 = !relevant_set_of_closures;
+    set_of_closure_ids_keep_declaration = !relevant_set_of_closures_declaration_only;
+  }
 
 let build_export_info ~(backend : (module Backend_intf.S))
       (program : Flambda.program) : Export_info.t =
@@ -691,7 +721,12 @@ let build_export_info ~(backend : (module Backend_intf.S))
     in
     let values = Export_info.nest_eid_map unnested_values in
     let symbol_id = Env.Global.symbol_to_export_id_map env in
-    let relevant_set_of_closures, relevant_symbols, relevant_export_ids =
+    let { set_of_closure_ids = relevant_set_of_closures;
+          symbols = relevant_symbols;
+          export_ids = relevant_export_ids;
+          set_of_closure_ids_keep_declaration =
+            relevant_set_of_closures_declaration_only;
+        } =
       let closure_id_to_set_of_closures_id =
         Set_of_closures_id.Map.fold
           (fun set_of_closure_id
@@ -713,13 +748,22 @@ let build_export_info ~(backend : (module Backend_intf.S))
         ~root_symbol:(Compilenv.current_unit_symbol ())
     in
     let sets_of_closures =
-      Set_of_closures_id.Map.mapi (fun key fun_decls ->
+      Set_of_closures_id.Map.filter_map
+        sets_of_closures
+        ~f:(fun key fun_decls ->
+          (* CR fquah: Do we want to do this optimization if we are not in
+             -Oclassic?
+          *)
           if not !Clflags.classic_inlining ||
              Set_of_closures_id.Set.mem key relevant_set_of_closures then
-            fun_decls
+            Some fun_decls
+          else if
+            Set_of_closures_id.Set.mem key
+              relevant_set_of_closures_declaration_only
+          then
+            Some (A.clear_function_bodies fun_decls)
           else
-            A.clear_function_bodies fun_decls)
-        sets_of_closures
+            None)
     in
     let closures =
       let aux_fun function_decls fun_var _ map =
