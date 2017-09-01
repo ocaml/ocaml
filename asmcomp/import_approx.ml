@@ -75,28 +75,33 @@ let rec import_ex ex =
         ~is_classic_mode ~set_of_closures_id ~bound_vars ~free_vars
         ~(ex_info : Export_info.t) ~what : A.value_set_of_closures option =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
-    match
-      Set_of_closures_id.Map.find set_of_closures_id ex_info.invariant_params
-    with
-    | exception Not_found ->
-      Misc.fatal_errorf "Set of closures ID %a not found in invariant_params \
-          (when importing [%a: %s])"
-        Set_of_closures_id.print set_of_closures_id
-        Export_id.print ex
-        what
-    | invariant_params ->
-      match import_set_of_closures set_of_closures_id with
-      | None -> None
-      | Some function_decls ->
-        Some (A.import_value_set_of_closures
-          ~is_classic_mode
-          ~function_decls
-          ~bound_vars
-          ~free_vars
-          ~invariant_params:(lazy invariant_params)
-          ~specialised_args:Variable.Map.empty
-          ~freshening:Freshening.Project_var.empty
-          ~direct_call_surrogates:Closure_id.Map.empty)
+    let invariant_params =
+      match
+        Set_of_closures_id.Map.find set_of_closures_id ex_info.invariant_params
+      with
+      | exception Not_found ->
+        if is_classic_mode then
+          Variable.Map.empty
+        else
+          Misc.fatal_errorf "Set of closures ID %a not found in \
+              invariant_params (when importing [%a: %s])"
+            Set_of_closures_id.print set_of_closures_id
+            Export_id.print ex
+            what
+      | found -> found
+    in
+    match import_set_of_closures set_of_closures_id with
+    | None -> None
+    | Some function_decls ->
+      Some (A.import_value_set_of_closures
+        ~is_classic_mode
+        ~function_decls
+        ~bound_vars
+        ~free_vars
+        ~invariant_params:(lazy invariant_params)
+        ~specialised_args:Variable.Map.empty
+        ~freshening:Freshening.Project_var.empty
+        ~direct_call_surrogates:Closure_id.Map.empty)
   in
   match Export_info.find_description ex_info ex with
   | exception Not_found -> A.value_unknown Other
