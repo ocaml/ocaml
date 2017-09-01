@@ -2159,20 +2159,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
-  let (temp_filename, oc) =
-    Filename.open_temp_file
-       ~mode:[Open_binary] ~perms:0o666
-       ~temp_dir:(Filename.dirname filename)
-       (Filename.basename filename) "" in
-    (* The 0o666 permissions will be modified by the umask.  It's just
-       like what [open_out_bin] does.
-       With temp_dir = dirname filename, we ensure that the returned
-       temp file is in the same directory as filename itself, making
-       it safe to rename temp_filename to filename later.
-       With prefix = basename filename, we are almost certain that
-       the first generated name will be unique.  A fixed prefix
-       would work too but might generate more collisions if many
-       .cmi files are being produced simultaneously in the same directory. *)
   try
     let cmi = {
       cmi_name = modname;
@@ -2180,9 +2166,10 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       cmi_crcs = imports;
       cmi_flags = flags;
     } in
-    let crc = output_cmi temp_filename oc cmi in
-    close_out oc;
-    Sys.rename temp_filename filename;
+    let crc =
+      output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
+         ~mode: [Open_binary] filename
+         (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
@@ -2200,8 +2187,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     save_pers_struct crc ps;
     cmi
   with exn ->
-    close_out oc;
-    remove_file temp_filename;
     remove_file filename;
     raise exn
 
