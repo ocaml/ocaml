@@ -330,7 +330,6 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
         Env.find_approx env spec_to.var)
       set.specialised_args
   in
-  (* CR fquah: Is this correct? *)
   let is_classic_mode = !Clflags.classic_inlining in
   let closures_approx =
     (* To build an approximation of the results, we need an
@@ -514,19 +513,15 @@ type symbols_to_export =
   }
 
 let traverse_for_exported_symbols
-      ~(sets_of_closures_map : Flambda.set_of_closures Set_of_closures_id.Map.t)
-      ~(closure_id_to_set_of_closures_id : Set_of_closures_id.t Closure_id.Map.t)
-      ~(function_declarations_map : A.function_declarations Set_of_closures_id.Map.t)
+      ~(sets_of_closures_map :
+          Flambda.set_of_closures Set_of_closures_id.Map.t)
+      ~(closure_id_to_set_of_closures_id :
+          Set_of_closures_id.t Closure_id.Map.t)
+      ~(function_declarations_map :
+          A.function_declarations Set_of_closures_id.Map.t)
       ~(values : Export_info.descr Export_id.Map.t)
       ~(symbol_id : Export_id.t Symbol.Map.t)
-      ~(root_symbol: Symbol.t)
-  =
-  (* CR fquah: The code incorrectly assumes that there is only one
-     compilation unit , which is an incorrect assumption in general, but
-     accurate for the current version of flambda.
-
-     This code is a mess (with all these repetition). Consider refactoring.
-  *)
+      ~(root_symbol: Symbol.t) =
   let relevant_set_of_closures_declaration_only =
     ref Set_of_closures_id.Set.empty
   in
@@ -535,7 +530,9 @@ let traverse_for_exported_symbols
   let relevant_export_ids = ref Export_id.Set.empty in
   let relevant_imported_closure_ids = ref Closure_id.Set.empty in
   let relevant_local_closure_ids = ref Closure_id.Set.empty in
-  let relevant_imported_vars_within_closure = ref Var_within_closure.Set.empty in
+  let relevant_imported_vars_within_closure =
+    ref Var_within_closure.Set.empty
+  in
   let relevant_local_vars_with_closure = ref Var_within_closure.Set.empty in
   let (queue : queue_elem Queue.t) = Queue.create () in
   let conditionally_add_symbol symbol =
@@ -549,7 +546,8 @@ let traverse_for_exported_symbols
     if not (Set_of_closures_id.Set.mem
          set_of_closures_id !relevant_set_of_closures) then begin
       relevant_set_of_closures :=
-        Set_of_closures_id.Set.add set_of_closures_id !relevant_set_of_closures;
+        Set_of_closures_id.Set.add set_of_closures_id
+          !relevant_set_of_closures;
       Queue.add (Q_set_of_closures_id set_of_closures_id) queue
     end
   in
@@ -568,7 +566,8 @@ let traverse_for_exported_symbols
       conditionally_add_symbol symbol
     | Value_unknown -> ()
   in
-  let process_value_set_of_closures (soc : Export_info.value_set_of_closures) =
+  let process_value_set_of_closures
+        (soc : Export_info.value_set_of_closures) =
     conditionally_add_set_of_closures_id soc.set_of_closures_id;
     Var_within_closure.Map.iter
       (fun _ value -> process_approx value) soc.bound_vars;
@@ -614,7 +613,8 @@ let traverse_for_exported_symbols
                Closure_id.Set.add closure_id !relevant_local_closure_ids;
              relevant_set_of_closures_declaration_only :=
                Set_of_closures_id.Set.add
-                 set_of_closure_id !relevant_set_of_closures_declaration_only
+                 set_of_closure_id
+                 !relevant_set_of_closures_declaration_only
          in
          match named with
          | Symbol symbol

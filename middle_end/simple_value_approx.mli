@@ -489,6 +489,8 @@ type switch_branch_selection =
 val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
 val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection
 
+val function_arity : function_declaration -> int
+
 val get_function_body_exn : function_declaration -> function_body
 
 val print_function_declarations

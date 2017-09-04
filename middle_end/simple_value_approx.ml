@@ -1066,9 +1066,10 @@ let potentially_taken_block_switch_branch t tag =
   | Value_bottom ->
     Cannot_be_taken
 
+let function_arity (fun_decl : function_declaration) =
+  List.length fun_decl.params
+
 let get_function_body_exn (fun_decl : function_declaration) =
-  (* CR fquah: Write a proper error message (and probably a proper
-     [print_function_declaration] as well *)
   match fun_decl.function_body with
   | Some body -> body
   | None -> Misc.fatal_error "Cannot get [function_body] of a function \

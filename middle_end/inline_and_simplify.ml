@@ -745,7 +745,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
             | Direct _ -> r
           in
           let nargs = List.length args in
-          let arity = List.length function_decl.params in
+          let arity = A.function_arity function_decl in
           let result, r =
             if nargs = arity then
               simplify_full_application env r ~function_decls
@@ -783,7 +783,7 @@ and simplify_full_application env r ~function_decls ~lhs_of_application
 and simplify_partial_application env r ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~dbg
       ~inline_requested ~specialise_requested =
-  let arity = List.length function_decl.A.params in
+  let arity = A.function_arity function_decl in
   assert (arity > List.length args);
   (* For simplicity, we disallow [@inline] attributes on partial
      applications.  The user may always write an explicit wrapper instead
@@ -848,7 +848,7 @@ and simplify_partial_application env r ~lhs_of_application
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
       ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested =
-  let arity = List.length function_decl.A.params in
+  let arity = A.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let full_app_args, remaining_args =
