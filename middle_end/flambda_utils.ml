@@ -500,22 +500,6 @@ let all_sets_of_closures_map program =
           set_of_closures !r);
   !r
 
-let all_function_decls_indexed_by_set_of_closures_id program =
-  Set_of_closures_id.Map.map
-    (fun { Flambda. function_decls; _ } -> function_decls)
-    (all_sets_of_closures_map program)
-
-let all_function_decls_indexed_by_closure_id program =
-  let aux_fun function_decls fun_var _ map =
-    let closure_id = Closure_id.wrap fun_var in
-    Closure_id.Map.add closure_id function_decls map
-  in
-  let aux _ ({ function_decls; _ } : Flambda.set_of_closures) map =
-    Variable.Map.fold (aux_fun function_decls) function_decls.funs map
-  in
-  Set_of_closures_id.Map.fold aux (all_sets_of_closures_map program)
-    Closure_id.Map.empty
-
 let make_variable_symbol var =
   Symbol.create (Compilation_unit.get_current_exn ())
     (Linkage_name.create

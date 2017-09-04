@@ -36,8 +36,10 @@ type ('a, 'b) declaration_position =
 let get_fun_offset t closure_id =
   let fun_offset_table =
     if Closure_id.in_compilation_unit closure_id (Compilenv.current_unit ())
-    then t.current_unit.fun_offset_table
-    else t.imported_units.fun_offset_table
+    then
+      t.current_unit.fun_offset_table
+    else
+      t.imported_units.fun_offset_table
   in
   try Closure_id.Map.find closure_id fun_offset_table
   with Not_found ->
@@ -662,7 +664,7 @@ type result = {
   exported : Export_info.t;
 }
 
-let convert (program, exported) : result =
+let convert (program, exported_transient) : result =
   let current_unit =
     let closures =
       Flambda_utils.make_closure_map program
@@ -699,17 +701,13 @@ let convert (program, exported) : result =
   let expr, structured_constants =
     to_clambda_program t Env.empty Symbol.Map.empty program
   in
-  let offset_fun, offset_fv =
-    Closure_offsets.compute_reexported_offsets program
-      ~current_unit_offset_fun:current_unit.fun_offset_table
-      ~current_unit_offset_fv:current_unit.fv_offset_table
-      ~imported_units_offset_fun:imported_units.fun_offset_table
-      ~imported_units_offset_fv:imported_units.fv_offset_table
-  in
   let exported =
-    Export_info.add_clambda_info exported
-      ~offset_fun
-      ~offset_fv
+    Export_info.t_of_transient exported_transient
+      ~program
+      ~local_offset_fun:current_unit.fun_offset_table
+      ~local_offset_fv:current_unit.fv_offset_table
+      ~imported_offset_fun:imported_units.fun_offset_table
+      ~imported_offset_fv:imported_units.fv_offset_table
       ~constant_sets_of_closures:current_unit.constant_sets_of_closures
   in
   { expr; preallocated_blocks; structured_constants; exported; }

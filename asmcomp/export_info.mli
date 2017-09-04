@@ -99,8 +99,22 @@ type t = private {
      indexed by set of closures ID. *)
 }
 
+type transient = private {
+  sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
+  closures : A.function_declarations Closure_id.Map.t;
+  values : descr Export_id.Map.t Compilation_unit.Map.t;
+  symbol_id : Export_id.t Symbol.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
+  relevant_local_closure_ids : Closure_id.Set.t;
+  relevant_imported_closure_ids : Closure_id.Set.t;
+  relevant_local_vars_within_closure  : Var_within_closure.Set.t;
+  relevant_imported_vars_within_closure : Var_within_closure.Set.t;
+}
+
 (** Export information for a compilation unit that exports nothing. *)
 val empty : t
+
+val empty_transient : transient
 
 (** Create a new export information structure. *)
 val create
@@ -114,6 +128,18 @@ val create
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
   -> t
 
+val create_transient
+   : sets_of_closures:(A.function_declarations Set_of_closures_id.Map.t)
+  -> closures:A.function_declarations Closure_id.Map.t
+  -> values:descr Export_id.Map.t Compilation_unit.Map.t
+  -> symbol_id:Export_id.t Symbol.Map.t
+  -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
+  -> relevant_local_closure_ids: Closure_id.Set.t
+  -> relevant_imported_closure_ids : Closure_id.Set.t
+  -> relevant_local_vars_within_closure : Var_within_closure.Set.t
+  -> relevant_imported_vars_within_closure : Var_within_closure.Set.t
+  -> transient
+
 (* CR-someday pchambart: Should we separate [t] in 2 types: one created by the
    current [create] function, returned by [Build_export_info]. And
    another built using t and offset_informations returned by
@@ -123,10 +149,13 @@ val create
 (** Record information about the layout of closures and which sets of
     closures are constant.  These are all worked out during the
     [Flambda_to_clambda] pass. *)
-val add_clambda_info
-   : t
-  -> offset_fun:int Closure_id.Map.t
-  -> offset_fv:int Var_within_closure.Map.t
+val t_of_transient
+   : transient
+  -> program: Flambda.program
+  -> local_offset_fun:int Closure_id.Map.t
+  -> local_offset_fv:int Var_within_closure.Map.t
+  -> imported_offset_fun:int Closure_id.Map.t
+  -> imported_offset_fv:int Var_within_closure.Map.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> t
 

@@ -503,15 +503,20 @@ type queue_elem =
   | Q_export_id of Export_id.t
 
 type symbols_to_export =
-  { symbols                             : Symbol.Set.t;
-    export_ids                          : Export_id.Set.t;
-    set_of_closure_ids                  : Set_of_closures_id.Set.t;
-    set_of_closure_ids_keep_declaration : Set_of_closures_id.Set.t;
+  { symbols                               : Symbol.Set.t;
+    export_ids                            : Export_id.Set.t;
+    set_of_closure_ids                    : Set_of_closures_id.Set.t;
+    set_of_closure_ids_keep_declaration   : Set_of_closures_id.Set.t;
+    relevant_imported_closure_ids         : Closure_id.Set.t;
+    relevant_local_closure_ids            : Closure_id.Set.t;
+    relevant_imported_vars_within_closure : Var_within_closure.Set.t;
+    relevant_local_vars_within_closure    : Var_within_closure.Set.t;
   }
 
 let traverse_for_exported_symbols
+      ~(sets_of_closures_map : Flambda.set_of_closures Set_of_closures_id.Map.t)
       ~(closure_id_to_set_of_closures_id : Set_of_closures_id.t Closure_id.Map.t)
-      ~(sets_of_closures : A.function_declarations Set_of_closures_id.Map.t)
+      ~(function_declarations_map : A.function_declarations Set_of_closures_id.Map.t)
       ~(values : Export_info.descr Export_id.Map.t)
       ~(symbol_id : Export_id.t Symbol.Map.t)
       ~(root_symbol: Symbol.t)
@@ -528,6 +533,10 @@ let traverse_for_exported_symbols
   let relevant_symbols = ref (Symbol.Set.singleton root_symbol) in
   let relevant_set_of_closures = ref Set_of_closures_id.Set.empty in
   let relevant_export_ids = ref Export_id.Set.empty in
+  let relevant_imported_closure_ids = ref Closure_id.Set.empty in
+  let relevant_local_closure_ids = ref Closure_id.Set.empty in
+  let relevant_imported_vars_within_closure = ref Var_within_closure.Set.empty in
+  let relevant_local_vars_with_closure = ref Var_within_closure.Set.empty in
   let (queue : queue_elem Queue.t) = Queue.create () in
   let conditionally_add_symbol symbol =
     if not (Symbol.Set.mem symbol !relevant_symbols) then begin
@@ -551,13 +560,13 @@ let traverse_for_exported_symbols
       Queue.add (Q_export_id export_id) queue
     end
   in
-  let process_approx =
-    function
-    | Export_info.Value_id export_id ->
+  let process_approx (approx : Export_info.approx) =
+    match approx with
+    | Value_id export_id ->
       conditionally_add_export_id export_id
-    | Export_info.Value_symbol symbol ->
+    | Value_symbol symbol ->
       conditionally_add_symbol symbol
-    | Export_info.Value_unknown -> ()
+    | Value_unknown -> ()
   in
   let process_value_set_of_closures (soc : Export_info.value_set_of_closures) =
     conditionally_add_set_of_closures_id soc.set_of_closures_id;
@@ -565,6 +574,90 @@ let traverse_for_exported_symbols
       (fun _ value -> process_approx value) soc.bound_vars;
     Closure_id.Map.iter
       (fun _ value -> process_approx value) soc.results
+  in
+  let process_function_body (function_body : A.function_body) =
+    Flambda_iterators.iter_toplevel
+      (fun (term : Flambda.t) ->
+         match term with
+         | Flambda.Apply { kind ; _ } ->
+           begin match kind with
+           | Indirect -> ()
+           | Direct closure_id ->
+             begin match
+               Closure_id.Map.find
+                 closure_id
+                 closure_id_to_set_of_closures_id
+             with
+             | exception Not_found ->
+               relevant_imported_closure_ids :=
+                 Closure_id.Set.add closure_id
+                   !relevant_imported_closure_ids
+             | set_of_closures_id ->
+               relevant_local_closure_ids :=
+                 Closure_id.Set.add closure_id
+                   !relevant_local_closure_ids;
+               conditionally_add_set_of_closures_id
+                 set_of_closures_id
+             end
+           end
+         | _ -> ())
+      (fun (named : Flambda.named) ->
+         let process_closure_id closure_id =
+           match
+             Closure_id.Map.find closure_id closure_id_to_set_of_closures_id
+           with
+           | exception Not_found ->
+             relevant_imported_closure_ids :=
+               Closure_id.Set.add closure_id !relevant_imported_closure_ids
+           | set_of_closure_id ->
+             relevant_local_closure_ids :=
+               Closure_id.Set.add closure_id !relevant_local_closure_ids;
+             relevant_set_of_closures_declaration_only :=
+               Set_of_closures_id.Set.add
+                 set_of_closure_id !relevant_set_of_closures_declaration_only
+         in
+         match named with
+         | Symbol symbol
+         | Read_symbol_field (symbol, _) ->
+           conditionally_add_symbol symbol
+         | Set_of_closures soc ->
+           conditionally_add_set_of_closures_id
+             soc.function_decls.set_of_closures_id
+         | Project_closure { closure_id; _ } ->
+           process_closure_id closure_id
+         | Move_within_set_of_closures { start_from; move_to; _ } ->
+           process_closure_id start_from;
+           process_closure_id move_to
+         | Project_var { closure_id ; var; _ } ->
+           begin match
+             Closure_id.Map.find
+               closure_id closure_id_to_set_of_closures_id
+           with
+           | exception Not_found ->
+             relevant_imported_closure_ids :=
+               Closure_id.Set.add closure_id
+                 !relevant_imported_closure_ids;
+             relevant_imported_vars_within_closure :=
+               Var_within_closure.Set.add var
+                 !relevant_imported_vars_within_closure
+           | set_of_closure_id ->
+             relevant_local_closure_ids :=
+               Closure_id.Set.add closure_id
+                 !relevant_local_closure_ids;
+             relevant_local_vars_with_closure :=
+               Var_within_closure.Set.add var
+                 !relevant_local_vars_with_closure;
+             relevant_set_of_closures_declaration_only :=
+               Set_of_closures_id.Set.add
+                 set_of_closure_id
+                 !relevant_set_of_closures_declaration_only
+           end
+         | Prim _
+         | Expr _
+         | Const _
+         | Allocated_const _
+         | Read_mutable _ -> ())
+      function_body.body
   in
   let rec loop () =
     if Queue.is_empty queue then
@@ -580,7 +673,7 @@ let traverse_for_exported_symbols
            [value_set_of_closures.Export_info.results]. We want that
            traversal decision to be decided by the pattern match with
            [Q_set_of_closures_id set_of_closures_id], where the traversal
-           is decided based upon the body is inlined or not.
+           is decided based upon whether the body is exported in the cmx.
         *)
         | Value_closure value_closure ->
           process_value_set_of_closures value_closure.set_of_closures
@@ -594,84 +687,66 @@ let traverse_for_exported_symbols
         | export_id -> conditionally_add_export_id export_id
         end
       | Q_set_of_closures_id set_of_closures_id ->
-        let function_declarations =
-          Set_of_closures_id.Map.find set_of_closures_id sets_of_closures
-        in
-        Variable.Map.iter
-          (fun (_ : Variable.t) (fun_decl : A.function_declaration) ->
-            match fun_decl.function_body with
-            | None -> ()
-            | Some function_body ->
-              Flambda_iterators.iter_toplevel
-                (fun (term : Flambda.t) ->
-                   match term with
-                   | Flambda.Apply { kind ; _ } ->
-                     begin match kind with
-                     | Indirect -> ()
-                     | Direct closure_id ->
-                       begin match
-                         Closure_id.Map.find
-                           closure_id
-                           closure_id_to_set_of_closures_id
-                       with
-                       | exception Not_found -> ()
-                       | set_of_closures_id ->
-                         conditionally_add_set_of_closures_id
-                           set_of_closures_id
-                       end
-                     end
-                   | _ -> ())
-                (fun (named : Flambda.named) ->
-                   match named with
-                   | Symbol symbol
-                   | Read_symbol_field (symbol, _) ->
-                     conditionally_add_symbol symbol
-                   | Set_of_closures soc ->
-                     conditionally_add_set_of_closures_id
-                       soc.function_decls.set_of_closures_id
-                   | Project_closure { closure_id; _ }
-                   | Move_within_set_of_closures
-                       { start_from = closure_id; _ }
-                   (* [start_from] and [move_to] are from the same set of
-                      closures, so we only need to look at (any) one of them.
-                   *)
-                   | Project_var { closure_id ; _ } ->
-                     begin match
-                       Closure_id.Map.find
-                         closure_id
-                         closure_id_to_set_of_closures_id
-                     with
-                     | exception Not_found -> ()
-                     | set_of_closure_id ->
-                       relevant_set_of_closures_declaration_only :=
-                         Set_of_closures_id.Set.add
-                           set_of_closure_id
-                           !relevant_set_of_closures_declaration_only
-                     end
-                   | Prim _
-                   | Expr _
-                   | Const _
-                   | Allocated_const _
-                   | Read_mutable _ ->
-                     ())
-                function_body.body)
-          function_declarations.funs
+        begin match
+          Set_of_closures_id.Map.find
+            set_of_closures_id function_declarations_map
+        with
+        | exception Not_found -> ()
+        | function_declarations ->
+          Variable.Map.iter
+            (fun (_ : Variable.t) (fun_decl : A.function_declaration) ->
+               match fun_decl.function_body with
+               | None -> ()
+               | Some function_body -> process_function_body function_body)
+            function_declarations.funs
+        end
       end;
       loop ()
     end
   in
   Queue.add (Q_symbol root_symbol) queue;
   loop ();
-  { symbols                            = !relevant_symbols;
-    export_ids                         = !relevant_export_ids;
-    set_of_closure_ids                 = !relevant_set_of_closures;
-    set_of_closure_ids_keep_declaration = !relevant_set_of_closures_declaration_only;
+
+  Closure_id.Map.iter (fun closure_id set_of_closure_id ->
+      if Set_of_closures_id.Set.mem
+           set_of_closure_id !relevant_set_of_closures
+      then begin
+        relevant_local_closure_ids :=
+          Closure_id.Set.add closure_id !relevant_local_closure_ids
+      end)
+    closure_id_to_set_of_closures_id;
+
+  Set_of_closures_id.Set.iter (fun set_of_closures_id ->
+      match
+        Set_of_closures_id.Map.find set_of_closures_id sets_of_closures_map
+      with
+      | exception Not_found -> ()
+      | set_of_closures ->
+        Variable.Map.iter (fun var _ ->
+            relevant_local_vars_with_closure :=
+              Var_within_closure.Set.add
+                (Var_within_closure.wrap var)
+                !relevant_local_vars_with_closure)
+          set_of_closures.free_vars)
+    !relevant_set_of_closures;
+
+  { symbols                             = !relevant_symbols;
+    export_ids                          = !relevant_export_ids;
+    set_of_closure_ids                  = !relevant_set_of_closures;
+    set_of_closure_ids_keep_declaration =
+      !relevant_set_of_closures_declaration_only;
+    relevant_imported_closure_ids       = !relevant_imported_closure_ids;
+    relevant_local_closure_ids          = !relevant_local_closure_ids;
+    relevant_imported_vars_within_closure =
+      !relevant_imported_vars_within_closure;
+    relevant_local_vars_within_closure =
+      !relevant_local_vars_with_closure;
   }
 
-let build_export_info ~(backend : (module Backend_intf.S))
-      (program : Flambda.program) : Export_info.t =
+let build_transient ~(backend : (module Backend_intf.S))
+      (program : Flambda.program) : Export_info.transient =
   if !Clflags.opaque then
-    Export_info.empty
+    Export_info.empty_transient
   else
     (* CR-soon pchambart: Should probably use that instead of the ident of
        the module as global identifier.
@@ -681,12 +756,16 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in
-    let approx_func_decl =
-      Inline_and_simplify_aux.approximate_function_declarations
+    let sets_of_closures_map =
+      Flambda_utils.all_sets_of_closures_map program
     in
-    let sets_of_closures =
-      Flambda_utils.all_function_decls_indexed_by_set_of_closures_id program
-      |> Set_of_closures_id.Map.map approx_func_decl
+    let function_declarations_map =
+      let approx_func_decl =
+        Inline_and_simplify_aux.approximate_function_declarations
+      in
+      Set_of_closures_id.Map.map (fun { Flambda. function_decls; _ } ->
+          approx_func_decl function_decls)
+        sets_of_closures_map
     in
     let unnested_values =
       Env.Global.export_id_to_descr_map env
@@ -703,9 +782,9 @@ let build_export_info ~(backend : (module Backend_intf.S))
             (Flambda_utils.all_sets_of_closures_map program)
         in
         let export = Compilenv.approx_env () in
-        Export_id.Map.fold (fun _eid (descr:Export_info.descr)
-                             (invariant_params) ->
-            match descr with
+        Export_id.Map.fold
+          (fun _eid (descr:Export_info.descr) (invariant_params) ->
+            match (descr : Export_info.descr) with
             | Value_closure { set_of_closures }
             | Value_set_of_closures set_of_closures ->
               let { Export_info.set_of_closures_id } = set_of_closures in
@@ -716,9 +795,18 @@ let build_export_info ~(backend : (module Backend_intf.S))
               | exception Not_found ->
                 invariant_params
               | (set : Variable.Set.t Variable.Map.t) ->
-                Set_of_closures_id.Map.add set_of_closures_id set invariant_params
+                Set_of_closures_id.Map.add
+                  set_of_closures_id set invariant_params
               end
-            | _ ->
+            | Export_info.Value_boxed_int (_, _)
+            | Value_block _
+            | Value_mutable_block _
+            | Value_int _
+            | Value_char _
+            | Value_constptr _
+            | Value_float _
+            | Value_float_array _
+            | Value_string _ ->
               invariant_params)
           unnested_values invariant_params
       end
@@ -730,6 +818,10 @@ let build_export_info ~(backend : (module Backend_intf.S))
           export_ids = relevant_export_ids;
           set_of_closure_ids_keep_declaration =
             relevant_set_of_closures_declaration_only;
+          relevant_local_closure_ids;
+          relevant_imported_closure_ids;
+          relevant_local_vars_within_closure;
+          relevant_imported_vars_within_closure;
         } =
       let closure_id_to_set_of_closures_id =
         Set_of_closures_id.Map.fold
@@ -741,19 +833,20 @@ let build_export_info ~(backend : (module Backend_intf.S))
                   Closure_id.Map.add closure_id set_of_closure_id acc)
                function_declarations.funs
                acc)
-          sets_of_closures
+          function_declarations_map
           Closure_id.Map.empty
       in
       traverse_for_exported_symbols
+        ~sets_of_closures_map
         ~closure_id_to_set_of_closures_id
-        ~sets_of_closures
+        ~function_declarations_map
         ~values:(Compilation_unit.Map.find (Compilenv.current_unit ()) values)
         ~symbol_id
         ~root_symbol:(Compilenv.current_unit_symbol ())
     in
     let sets_of_closures =
       Set_of_closures_id.Map.filter_map
-        sets_of_closures
+        function_declarations_map
         ~f:(fun key fun_decls ->
           if Set_of_closures_id.Set.mem key relevant_set_of_closures then
             Some fun_decls
@@ -787,10 +880,11 @@ let build_export_info ~(backend : (module Backend_intf.S))
         (fun key _ -> Symbol.Set.mem key relevant_symbols)
         symbol_id
     in
-    Export_info.create ~values
+    Export_info.create_transient ~values
       ~symbol_id
-      ~offset_fun:Closure_id.Map.empty
-      ~offset_fv:Var_within_closure.Map.empty
       ~sets_of_closures ~closures
-      ~constant_sets_of_closures:Set_of_closures_id.Set.empty
       ~invariant_params
+      ~relevant_local_closure_ids
+      ~relevant_imported_closure_ids
+      ~relevant_local_vars_within_closure
+      ~relevant_imported_vars_within_closure
