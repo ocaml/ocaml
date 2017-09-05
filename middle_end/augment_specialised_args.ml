@@ -669,8 +669,10 @@ module Make (T : S) = struct
         ~(set_of_closures : Flambda.set_of_closures) ~benefit
         ~new_lifted_defns_indexed_by_new_outer_vars =
     let body =
-      Flambda_utils.name_expr (Set_of_closures set_of_closures)
-        ~name:("set_of_closures" ^ T.variable_suffix)
+      Flambda_utils.name_expr
+        ~name:Variable_name.Set_of_closures
+        ~suffix:T.variable_suffix
+        (Set_of_closures set_of_closures)
     in
     Variable.Map.fold (fun new_outer_var (projection : Projection.t)
           (expr, benefit) ->

@@ -172,8 +172,8 @@ let eliminate_ref_of_expr flam =
          | Some (var,size) ->
            if size = 1
            then begin
-             let mut = Variable.create "read_mutable" in
-             let new_value = Variable.create "offseted" in
+             let mut = Variable.create Variable_name.Read_mutable in
+             let new_value = Variable.create Variable_name.Offsetted in
              let expr =
                Flambda.create_let mut (Read_mutable var)
                  (Flambda.create_let new_value

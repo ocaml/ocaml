@@ -28,7 +28,11 @@
 
 include Identifiable.S
 
-val create : ?current_compilation_unit:Compilation_unit.t -> string -> t
+val create
+   : ?current_compilation_unit:Compilation_unit.t
+  -> ?suffix:string
+  -> Variable_name.base
+  -> t
 val create_with_same_name_as_ident : Ident.t -> t
 
 val clambda_name : t -> string

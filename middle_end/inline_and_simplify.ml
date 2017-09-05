@@ -119,7 +119,9 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         in
         let body =
           match body with
-          | Is_named body -> Flambda_utils.name_expr body ~name:"simplify_fv"
+          | Is_named body ->
+            let name = Variable_name.Simplify_fv in
+            Flambda_utils.name_expr body ~name
           | Is_expr body -> body
         in
         Is_expr (W.create_let_reusing_defining_expr var named body), r
@@ -357,13 +359,17 @@ let simplify_move_within_set_of_closures env r
             | Some _ | None ->
               match set_of_closures_symbol with
               | Some set_of_closures_symbol ->
-                let set_of_closures_var = Variable.create "symbol" in
+                let set_of_closures_var =
+                  Variable.create Variable_name.Symbol
+                in
                 let project_closure : Flambda.project_closure =
                   { set_of_closures = set_of_closures_var;
                     closure_id = move_to;
                   }
                 in
-                let project_closure_var = Variable.create "project_closure" in
+                let project_closure_var =
+                  Variable.create Variable_name.Project_closure
+                in
                 let let1 =
                   Flambda.create_let project_closure_var
                     (Project_closure project_closure)
@@ -849,7 +855,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
       ~inline_requested ~specialise_requested
   in
-  let func_var = Variable.create "full_apply" in
+  let func_var = Variable.create Variable_name.Full_apply in
   let expr : Flambda.t =
     Flambda.create_let func_var (Expr expr)
       (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg;
@@ -960,7 +966,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           | Some set_of_closures ->
             let expr =
               Flambda_utils.name_expr (Set_of_closures set_of_closures)
-                ~name:"remove_unused_arguments"
+                ~name:Variable_name.Remove_unused_arguments
             in
             simplify env r expr ~pass_name:"Remove_unused_arguments"
           | None ->
