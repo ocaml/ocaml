@@ -853,10 +853,15 @@ let build_transient ~(backend : (module Backend_intf.S))
           else if
             Set_of_closures_id.Set.mem key
               relevant_set_of_closures_declaration_only
-          then
-            Some (A.clear_function_bodies fun_decls)
-          else
-            None)
+          then begin
+            if !Clflags.classic_inlining then
+              Some (A.clear_function_bodies fun_decls)
+            else
+              Some fun_decls
+          end
+          else begin
+            None
+          end)
     in
     let closures =
       let aux_fun function_decls fun_var _ map =
