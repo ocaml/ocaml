@@ -127,6 +127,15 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
 val string_of_file: in_channel -> string
         (* [string_of_file ic] reads the contents of file [ic] and copies
            them to a string. It stops when encountering EOF on [ic]. *)
+val output_to_file_via_temporary:
+      ?mode:open_flag list -> string -> (string -> out_channel -> 'a) -> 'a
+        (* Produce output in temporary file, then rename it
+           (as atomically as possible) to the desired output file name.
+           [output_to_file_via_temporary filename fn] opens a temporary file
+           which is passed to [fn] (name + output channel).  When [fn] returns,
+           the channel is closed and the temporary file is renamed to
+           [filename]. *)
+
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
            if [n] is a power of 2*)

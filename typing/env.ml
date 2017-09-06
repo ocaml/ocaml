@@ -2159,7 +2159,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       (match deprecated with Some s -> [Deprecated s] | None -> []);
     ]
   in
-  let oc = open_out_bin filename in
   try
     let cmi = {
       cmi_name = modname;
@@ -2167,8 +2166,10 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       cmi_crcs = imports;
       cmi_flags = flags;
     } in
-    let crc = output_cmi filename oc cmi in
-    close_out oc;
+    let crc =
+      output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
+         ~mode: [Open_binary] filename
+         (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
@@ -2186,7 +2187,6 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     save_pers_struct crc ps;
     cmi
   with exn ->
-    close_out oc;
     remove_file filename;
     raise exn
 
