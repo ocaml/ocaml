@@ -190,6 +190,10 @@ Working version
   with an OPAM package called "num".
   (Xavier Leroy)
 
+- GPR#1321: Reimplement Unix.isatty on Windows. It no longer returns true for
+  the null device.
+  (David Allsopp)
+
 ### Manual and documentation:
 
 - MPR#6548: remove obsolete limitation in the description of private
