@@ -3840,7 +3840,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
   if propagate then begin_def (); (* propagation of the argument *)
-  let ty_arg' = newvar () in
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
     Printtyp.raw_type_expr ty_arg; *)
@@ -3867,15 +3866,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           if !Clflags.principal then begin
             end_def ();
             iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
-            { pat with pat_type = instance env pat.pat_type }
+            { pat with pat_type = instance ext_env pat.pat_type }
           end else pat
         in
         (pat, (ext_env, unpacks)))
       caselist in
-  (* Unify cases (delayed to keep it order-free) *)
-  let patl = List.map fst pat_env_list in
-  List.iter (fun pat -> unify_pat env pat ty_arg') patl;
+  (* If there are polymorphics variants, then unify cases
+     (delayed to keep it order-free) *)
+  let unify_pats sch =
+    List.iter (fun (pat, (ext_env, _)) ->
+      unify_pat ext_env pat (instance ext_env sch)) pat_env_list in
+  if contains_polyvars then unify_pats (newvar ());
   (* Check for polymorphic variants to close *)
+  let patl = List.map fst pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
@@ -3883,15 +3886,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  let unify_pats ty = List.iter (fun pat -> unify_pat env pat ty) patl in
+  if propagate || erase_either then unify_pats ty_arg;
   if propagate then begin
     List.iter
       (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
-    unify_pats (instance env ty_arg);
     end_def ();
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
-  end
-  else if erase_either then unify_pats (instance env ty_arg);
+  end;
+  (*else if erase_either then unify_pats (instance env ty_arg)*)
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
