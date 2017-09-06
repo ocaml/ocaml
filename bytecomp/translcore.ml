@@ -624,12 +624,12 @@ let event_after exp lam =
 let event_function exp lam =
   if !Clflags.debug && not !Clflags.native_code then
     let repr = Some (ref 0) in
-    let (info, body) = lam repr in
-    (info,
-     Levent(body, {lev_loc = exp.exp_loc;
+    let (info, (body, ty)) = lam repr in
+    info,
+    (Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
-                   lev_env = Env.summary exp.exp_env}))
+                   lev_env = Env.summary exp.exp_env}), ty)
   else
     lam None
 
@@ -721,12 +721,12 @@ and transl_exp0 e =
         event_function e
           (function repr ->
             let pl = push_defaults e.exp_loc [] cases partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial
+            transl_function e.exp_env e.exp_type e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
       (* TODO: compute types for parameters/result *)
-      let params = List.map (fun id -> id, Pgenval) params in
-      let body = body, Pgenval in
+      (*let params = List.map (fun id -> id, Pgenval) params in*)
+      (*let body = body, Pgenval in*)
       (* XXX *)
       let attr = {
         default_function_attribute with
@@ -1196,16 +1196,23 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function loc untuplify_fn repr partial param cases =
+and transl_function env fun_type loc untuplify_fn repr partial param cases =
+  let param_ty, res_ty =
+    match Typeopt.is_function_type env fun_type with
+    | None -> assert false
+    | Some (t1, t2) -> t1, t2
+  in
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
         partial = partial'; }} as exp}]
     when Parmatch.inactive ~partial pat ->
-      let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' param' cases in
-      ((Curried, param :: params),
-       Matching.for_function loc None (Lvar param) [pat, body] partial)
+      let ((_, params), (body, ty)) =
+        transl_function exp.exp_env exp.exp_type exp.exp_loc false repr
+          partial' param' cases
+      in
+      ((Curried, (param, Typeopt.value_kind env param_ty) :: params),
+       (Matching.for_function loc None (Lvar param) [pat, body] partial, ty))
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -1214,19 +1221,29 @@ and transl_function loc untuplify_fn repr partial param cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
-        let params = List.map (fun _ -> Ident.create "param") pl in
+        let params =
+          List.map
+            (fun p -> Ident.create "param",
+                      Typeopt.value_kind p.pat_env p.pat_type
+             (* is this safe? (with GADTs, could one have
+                different type on different branches?) *)
+            ) pl
+        in
         ((Tupled, params),
-         Matching.for_tupled_function loc params
-           (transl_tupled_cases pats_expr_list) partial)
+         (Matching.for_tupled_function loc (List.map fst params)
+            (transl_tupled_cases pats_expr_list) partial,
+         Typeopt.value_kind env res_ty))
       with Matching.Cannot_flatten ->
-        ((Curried, [param]),
-         Matching.for_function loc repr (Lvar param)
-           (transl_cases cases) partial)
+        ((Curried, [param, Typeopt.value_kind env param_ty]),
+         (Matching.for_function loc repr (Lvar param)
+            (transl_cases cases) partial,
+          Typeopt.value_kind env res_ty))
       end
   | _ ->
-      ((Curried, [param]),
-       Matching.for_function loc repr (Lvar param)
-         (transl_cases cases) partial)
+      ((Curried, [param, Typeopt.value_kind env param_ty]),
+       (Matching.for_function loc repr (Lvar param)
+          (transl_cases cases) partial,
+        Typeopt.value_kind env res_ty))
 
 and transl_let rec_flag pat_expr_list body =
   match rec_flag with
