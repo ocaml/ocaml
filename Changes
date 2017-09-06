@@ -54,6 +54,9 @@ Working version
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
   (Mark Shinwell)
 
+- MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
+  (Jacques Garrigue, report by Jun Furuse)
+
 * GPR#659: Remove support for SPARC native code generation
   (Mark Shinwell)
 

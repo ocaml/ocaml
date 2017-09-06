@@ -4,7 +4,7 @@ SOURCES = pr7620_bad.ml
 
 all: 
 	@printf " ... testing '$(SOURCES)'"
-	$(OCAMLC) -i $(SOURCES) 2>&1 > /dev/null \
+	@$(OCAMLC) -i $(SOURCES) 2> /dev/null \
 	 && echo " => failed" || echo " => passed"
 
 clean: defaultclean
