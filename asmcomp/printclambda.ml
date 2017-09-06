@@ -50,10 +50,13 @@ let rec structured_constant ppf = function
   | Uconst_string s -> fprintf ppf "%S" s
   | Uconst_closure(clos, sym, fv) ->
       let idents ppf =
-        List.iter (fprintf ppf "@ %a" Ident.print)in
+        List.iter
+          (fun (p, ty) -> fprintf ppf "@ %a%s" Ident.print p (value_kind ty))
+      in
       let one_fun ppf f =
-        fprintf ppf "(fun@ %s@ %d@ @[<2>%a@]@ @[<2>%a@])"
-          f.label f.arity idents f.params lam f.body in
+        let (body, ty) = f.body in
+        fprintf ppf "(fun@ %s%s@ %d@ @[<2>%a@]@ @[<2>%a@])"
+          f.label (value_kind ty) f.arity idents f.params lam body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let sconsts ppf scl =
@@ -82,10 +85,13 @@ and lam ppf = function
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs
   | Uclosure(clos, fv) ->
       let idents ppf =
-        List.iter (fprintf ppf "@ %a" Ident.print)in
+        List.iter
+          (fun (p, ty) -> fprintf ppf "@ %a%s" Ident.print p (value_kind ty))
+      in
       let one_fun ppf f =
-        fprintf ppf "@[<2>(fun@ %s@ %d @[<2>%a@]@ @[<2>%a@]@])"
-          f.label f.arity idents f.params lam f.body in
+        let (body, ty) = f.body in
+        fprintf ppf "(fun@ %s%s@ %d@ @[<2>%a@]@ @[<2>%a@])"
+          f.label (value_kind ty) f.arity idents f.params lam body in
       let funs ppf =
         List.iter (fprintf ppf "@ %a" one_fun) in
       let lams ppf =

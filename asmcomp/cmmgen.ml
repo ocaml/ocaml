@@ -2816,10 +2816,11 @@ and transl_letrec env bindings cont =
 
 let transl_function f =
   let body =
+    let body = fst f.body in
     if Config.flambda then
-      Un_anf.apply f.body ~what:f.label
+      Un_anf.apply body ~what:f.label
     else
-      f.body
+      body
   in
   let cmm_body =
     let env = create_env ~environment_param:f.env in
@@ -2828,7 +2829,7 @@ let transl_function f =
     else
       transl env body in
   Cfunction {fun_name = f.label;
-             fun_args = List.map (fun id -> (id, typ_val)) f.params;
+             fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
              fun_body = cmm_body;
              fun_fast = !Clflags.optimize_for_speed;
              fun_dbg  = f.dbg}

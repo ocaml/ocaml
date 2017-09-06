@@ -62,8 +62,8 @@ and ulambda =
 and ufunction = {
   label  : function_label;
   arity  : int;
-  params : Ident.t list;
-  body   : ulambda;
+  params : (Ident.t * value_kind) list;
+  body   : (ulambda * value_kind);
   dbg    : Debuginfo.t;
   env    : Ident.t option;
 }

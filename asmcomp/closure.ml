@@ -1177,14 +1177,16 @@ and close_functions fenv cenv fun_defs =
         uncurried_defs clos_offsets cenv_fv in
     let (ubody, approx) = close fenv_rec cenv_body (fst body) in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
-    let params = List.map fst params in
-    let fun_params = if !useless_env then params else params @ [env_param] in
+    let fun_params =
+      if !useless_env then params
+      else params @ [env_param, Pgenval]
+    in
     let f =
       {
         label  = fundesc.fun_label;
         arity  = fundesc.fun_arity;
         params = fun_params;
-        body   = ubody;
+        body   = (ubody, snd body);
         dbg;
         env = Some env_param;
       }
@@ -1193,7 +1195,7 @@ and close_functions fenv cenv fun_defs =
        their wrapper functions) to be inlined *)
     let n =
       List.fold_left
-        (fun n id -> n + if Ident.name id = "*opt*" then 8 else 1)
+        (fun n (id, _) -> n + if Ident.name id = "*opt*" then 8 else 1)
         0
         fun_params
     in
@@ -1210,7 +1212,7 @@ and close_functions fenv cenv fun_defs =
       | Unroll _ -> assert false
     in
     if lambda_smaller ubody threshold
-    then fundesc.fun_inline <- Some(fun_params, ubody);
+    then fundesc.fun_inline <- Some(List.map fst fun_params, ubody);
 
     (f, (id, env_pos, Value_closure(fundesc, approx))) in
   (* Translate all function definitions. *)
@@ -1332,7 +1334,7 @@ let collect_exported_structured_constants a =
     | Udirect_apply (_, ul, _) -> List.iter ulam ul
     | Ugeneric_apply (u, ul, _) -> ulam u; List.iter ulam ul
     | Uclosure (fl, ul) ->
-        List.iter (fun f -> ulam f.body) fl;
+        List.iter (fun f -> ulam (fst f.body)) fl;
         List.iter ulam ul
     | Uoffset(u, _) -> ulam u
     | Ulet (_str, _kind, _, u1, u2) -> ulam u1; ulam u2

@@ -40,6 +40,7 @@ let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
 let ignore_ident_list (_ : Ident.t list) = ()
+let ignore_params (_ : (Ident.t * Lambda.value_kind) list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
@@ -50,7 +51,7 @@ let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 let closure_environment_ident (ufunction:Clambda.ufunction) =
   (* The argument after the arity is the environment *)
   if List.length ufunction.params = ufunction.arity + 1 then
-    let env_var = List.nth ufunction.params ufunction.arity in
+    let (env_var, _) = List.nth ufunction.params ufunction.arity in
     assert(Ident.name env_var = "env");
     Some env_var
   else
@@ -96,8 +97,8 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
                Ident.Set.add env_var !environment_idents);
           ignore_function_label label;
           ignore_int arity;
-          ignore_ident_list params;
-          loop body;
+          ignore_params params;
+          loop (fst body);
           ignore_debuginfo dbg;
           ignore_ident_option env)
         functions
@@ -260,9 +261,9 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
           ignore_function_label label;
           ignore_int arity;
-          ignore_ident_list params;
+          ignore_params params;
           let_stack := [];
-          loop body;
+          loop (fst body);
           let_stack := [];
           ignore_debuginfo dbg;
           ignore_ident_option env)
@@ -420,8 +421,9 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
   | Uclosure (functions, variables_bound_by_the_closure) ->
     let functions =
       List.map (fun (ufunction : Clambda.ufunction) ->
+          let ubody, ty = ufunction.body in
           { ufunction with
-            body = substitute_let_moveable is_let_moveable env ufunction.body;
+            body = (substitute_let_moveable is_let_moveable env ubody, ty);
           })
         functions
     in
@@ -597,8 +599,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Uclosure (functions, variables_bound_by_the_closure) ->
     let functions =
       List.map (fun (ufunction : Clambda.ufunction) ->
+          let ubody, ty = ufunction.body in
           { ufunction with
-            body = un_anf ident_info env ufunction.body;
+            body = (un_anf ident_info env ubody, ty);
           })
         functions
     in
