@@ -3893,7 +3893,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     end_def ();
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
   end;
-  (*else if erase_either then unify_pats (instance env ty_arg)*)
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
