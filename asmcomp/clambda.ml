@@ -21,6 +21,8 @@ open Lambda
 
 type function_label = string
 
+type fun_unboxing = (value_kind list * value_kind) option
+
 type ustructured_constant =
   | Uconst_float of float
   | Uconst_int32 of int32
@@ -39,7 +41,13 @@ and uconstant =
 and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
-  | Udirect_apply of function_label * ulambda list * Debuginfo.t
+  | Udirect_apply of
+      {
+        label:function_label;
+        args: ulambda list;
+        dbg: Debuginfo.t;
+        unboxed: fun_unboxing;
+      }
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
@@ -79,6 +87,7 @@ and ulambda_switch =
 type function_description =
   { fun_label: function_label;          (* Label of direct entry point *)
     fun_arity: int;                     (* Number of arguments *)
+    fun_unboxed: fun_unboxing;
     mutable fun_closed: bool;           (* True if environment not used *)
     mutable fun_inline: (Ident.t list * ulambda) option;
     mutable fun_float_const_prop: bool  (* Can propagate FP consts *)

@@ -78,7 +78,7 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
          of the closures will be traversed when this function is called from
          [Cmmgen.transl_function].) *)
       ignore_uconstant const
-    | Udirect_apply (label, args, dbg) ->
+    | Udirect_apply {label; args; dbg; unboxed = _} ->
       ignore_function_label label;
       List.iter loop args;
       ignore_debuginfo dbg
@@ -245,7 +245,7 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
       end
     | Uconst const ->
       ignore_uconstant const
-    | Udirect_apply (label, args, dbg) ->
+    | Udirect_apply {label; args; dbg; unboxed = _} ->
       ignore_function_label label;
       examine_argument_list args;
       (* We don't currently traverse [args]; they should all be variables
@@ -411,9 +411,9 @@ let rec substitute_let_moveable is_let_moveable env (clam : Clambda.ulambda)
           Ident.print id
       end
   | Uconst _ -> clam
-  | Udirect_apply (label, args, dbg) ->
-    let args = substitute_let_moveable_list is_let_moveable env args in
-    Udirect_apply (label, args, dbg)
+  | Udirect_apply ap ->
+    let args = substitute_let_moveable_list is_let_moveable env ap.args in
+    Udirect_apply {ap with args}
   | Ugeneric_apply (func, args, dbg) ->
     let func = substitute_let_moveable is_let_moveable env func in
     let args = substitute_let_moveable_list is_let_moveable env args in
@@ -589,9 +589,9 @@ let rec un_anf_and_moveable ident_info env (clam : Clambda.ulambda)
   | Uconst _ ->
     (* Constant closures are rewritten separately. *)
     clam, Constant
-  | Udirect_apply (label, args, dbg) ->
-    let args = un_anf_list ident_info env args in
-    Udirect_apply (label, args, dbg), Fixed
+  | Udirect_apply ap ->
+    let args = un_anf_list ident_info env ap.args in
+    Udirect_apply {ap with args}, Fixed
   | Ugeneric_apply (func, args, dbg) ->
     let func = un_anf ident_info env func in
     let args = un_anf_list ident_info env args in

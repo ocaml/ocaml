@@ -61,7 +61,7 @@ let occurs_var var u =
   let rec occurs = function
       Uvar v -> v = var
     | Uconst _ -> false
-    | Udirect_apply(_lbl, args, _) -> List.exists occurs args
+    | Udirect_apply {args; _} -> List.exists occurs args
     | Ugeneric_apply(funct, args, _) -> occurs funct || List.exists occurs args
     | Uclosure(_fundecls, clos) -> List.exists occurs clos
     | Uoffset(u, _ofs) -> occurs u
@@ -145,7 +145,7 @@ let lambda_smaller lam threshold =
     match lam with
       Uvar _ -> ()
     | Uconst _ -> incr size
-    | Udirect_apply(_, args, _) ->
+    | Udirect_apply{args; _} ->
         size := !size + 4; lambda_list_size args
     | Ugeneric_apply(fn, args, _) ->
         size := !size + 6; lambda_size fn; lambda_list_size args
@@ -532,9 +532,12 @@ let rec substitute loc fpc sb ulam =
     Uvar v ->
       begin try Tbl.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
-  | Udirect_apply(lbl, args, dbg) ->
-      let dbg = subst_debuginfo loc dbg in
-      Udirect_apply(lbl, List.map (substitute loc fpc sb) args, dbg)
+  | Udirect_apply ap ->
+      Udirect_apply
+        {ap with
+         args = List.map (substitute loc fpc sb) ap.args;
+         dbg = subst_debuginfo loc ap.dbg;
+        }
   | Ugeneric_apply(fn, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
       Ugeneric_apply(substitute loc fpc sb fn,
@@ -711,10 +714,16 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
   let app =
     match fundesc.fun_inline, attribute with
     | _, Never_inline | None, _ ->
-      let dbg = Debuginfo.from_location loc in
+        let dbg = Debuginfo.from_location loc in
         warning_if_forced_inline ~loc ~attribute
           "Function information unavailable";
-        Udirect_apply(fundesc.fun_label, app_args, dbg)
+        Udirect_apply
+          {
+            label = fundesc.fun_label;
+            args = app_args;
+            dbg;
+            unboxed = fundesc.fun_unboxed;
+          }
     | Some(params, body), _  ->
         bind_params loc fundesc.fun_float_const_prop params app_args body
   in
@@ -1136,9 +1145,17 @@ and close_functions fenv cenv fun_defs =
           (id, Lfunction{kind; params; body; loc}) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
+            let params_typs = List.map snd params in
+            let result_typ = snd body in
+            let fun_unboxed =
+              if List.mem Pfloatval params_typs || Pfloatval = result_typ
+              then Some (params_typs, result_typ)
+              else None
+            in
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
+               fun_unboxed;
                fun_closed = initially_closed;
                fun_inline = None;
                fun_float_const_prop = !Clflags.float_const_prop } in
@@ -1331,7 +1348,7 @@ let collect_exported_structured_constants a =
   and ulam = function
     | Uvar _ -> ()
     | Uconst c -> const c
-    | Udirect_apply (_, ul, _) -> List.iter ulam ul
+    | Udirect_apply {args; _} -> List.iter ulam args
     | Ugeneric_apply (u, ul, _) -> ulam u; List.iter ulam ul
     | Uclosure (fl, ul) ->
         List.iter (fun f -> ulam (fst f.body)) fl;

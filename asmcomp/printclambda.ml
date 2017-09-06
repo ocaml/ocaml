@@ -75,10 +75,19 @@ and lam ppf = function
   | Uvar id ->
       Ident.print ppf id
   | Uconst c -> uconstant ppf c
-  | Udirect_apply(f, largs, _) ->
+  | Udirect_apply{label; args; unboxed; dbg = _} ->
       let lams ppf largs =
-        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(apply*@ %s %a)@]" f lams largs
+        List.iter (fun l -> fprintf ppf "@ %a" lam l) largs
+      in
+      let print_unboxed ppf = function
+        | None -> ()
+        | Some (params, res) ->
+            fprintf ppf "[(%s)->%s]"
+              (String.concat "," (List.map value_kind params))
+              (value_kind res)
+      in
+      fprintf ppf "@[<2>(apply*@ %s%a %a)@]"
+        label print_unboxed unboxed lams args
   | Ugeneric_apply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in

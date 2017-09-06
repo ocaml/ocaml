@@ -1743,8 +1743,27 @@ let rec transl env e =
       if offset = 0
       then ptr
       else Cop(Caddv, [ptr; Cconst_int(offset * size_addr)], Debuginfo.none)
-  | Udirect_apply(lbl, args, dbg) ->
-      Cop(Capply typ_val, Cconst_symbol lbl :: List.map (transl env) args, dbg)
+  | Udirect_apply{label; args; dbg; unboxed = None} ->
+      Cop(Capply typ_val, Cconst_symbol label :: List.map (transl env) args, dbg)
+  | Udirect_apply{label; args; dbg; unboxed = Some (ty_args, ty_res)} ->
+      let rec transl_args ty_args args =
+        match ty_args, args with
+        | [], arg :: args ->
+            transl env arg :: transl_args [] args
+        | Pfloatval :: ty_args, arg :: args ->
+            transl_unbox_float dbg env arg :: transl_args ty_args args
+        | _ :: ty_args, arg :: args ->
+            transl env arg :: transl_args ty_args args
+        | _, [] -> []
+      in
+      let args =
+        Cconst_symbol (label ^ "$unboxed") ::
+        transl_args ty_args args
+      in
+      begin match ty_res with
+      | Pfloatval -> box_float dbg (Cop(Capply typ_float, args, dbg))
+      | _ -> Cop(Capply typ_val, args, dbg)
+      end
   | Ugeneric_apply(clos, [arg], dbg) ->
       bind "fun" (transl env clos) (fun clos ->
         Cop(Capply typ_val, [get_field env clos 0 dbg; transl env arg; clos],
@@ -2814,25 +2833,71 @@ and transl_letrec env bindings cont =
 
 (* Translate a function definition *)
 
-let transl_function f =
+let transl_function f cont =
+  let body, res_ty = f.body in
   let body =
-    let body = fst f.body in
     if Config.flambda then
       Un_anf.apply body ~what:f.label
     else
       body
   in
-  let cmm_body =
-    let env = create_env ~environment_param:f.env in
-    if !Clflags.afl_instrument then
-      Afl_instrument.instrument_function (transl env body)
+  let env = create_env ~environment_param:f.env in
+
+  let unboxed_env =
+    List.fold_left
+      (fun env (id, ty) ->
+         match ty with
+         | Pfloatval ->
+             let unboxed_id = Ident.create (Ident.name id) in
+             add_unboxed_id id unboxed_id
+               (Boxed_float Debuginfo.none) env
+         | _ ->
+             env
+      )
+      env f.params
+  in
+  let map_arg env (id, _) =
+    match is_unboxed_id id env with
+    | None -> (id, typ_val)
+    | Some (unboxed_id, Boxed_float _dbg) -> (unboxed_id, typ_float)
+    | _ -> assert false
+  in
+  let cont =
+    if unboxed_env == env && res_ty <> Pfloatval then cont
     else
-      transl env body in
-  Cfunction {fun_name = f.label;
-             fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
-             fun_body = cmm_body;
-             fun_fast = !Clflags.optimize_for_speed;
-             fun_dbg  = f.dbg}
+      let cmm_body =
+        match res_ty with
+        | Pfloatval -> transl_unbox_float f.dbg unboxed_env body
+        | _ -> transl unboxed_env body
+      in
+      let cmm_body =
+        if !Clflags.afl_instrument then
+          Afl_instrument.instrument_function cmm_body
+        else
+          cmm_body
+      in
+      (f.dbg,
+       Cfunction {fun_name = f.label ^ "$unboxed";
+                  fun_args = List.map (map_arg unboxed_env) f.params;
+                  fun_body = cmm_body;
+                  fun_fast = !Clflags.optimize_for_speed;
+                  fun_dbg  = f.dbg}
+      ) :: cont
+  in
+  let cmm_body = transl env body in
+  let cmm_body =
+    if !Clflags.afl_instrument then
+      Afl_instrument.instrument_function cmm_body
+    else
+      cmm_body
+  in
+  (f.dbg,
+   Cfunction {fun_name = f.label;
+              fun_args = List.map (fun (id, _) -> (id, typ_val)) f.params;
+              fun_body = cmm_body;
+              fun_fast = !Clflags.optimize_for_speed;
+              fun_dbg  = f.dbg}
+  ) :: cont
 
 (* Translate all function definitions *)
 
@@ -2850,7 +2915,7 @@ let rec transl_all_functions already_translated cont =
     else begin
       transl_all_functions
         (StringSet.add f.label already_translated)
-        ((f.dbg, transl_function f) :: cont)
+        (transl_function f cont)
     end
   with Queue.Empty ->
     cont, already_translated
