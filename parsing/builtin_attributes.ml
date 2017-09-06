@@ -198,6 +198,13 @@ let warn_on_literal_pattern =
       | _ -> false
     )
 
+let private_decl =
+  List.exists
+    (function
+      | ({txt="ocaml.private"|"private"; _}, _) -> true
+      | _ -> false
+    )
+
 let explicit_arity =
   List.exists
     (function
