@@ -112,7 +112,7 @@ let simplify_exits lam =
   let rec count = function
   | (Lvar _| Lconst _) -> ()
   | Lapply ap -> count ap.ap_func; List.iter count ap.ap_args
-  | Lfunction {body} -> count body
+  | Lfunction {body = (body, _)} -> count body
   | Llet(_str, _kind, _v, l1, l2) ->
       count l2; count l1
   | Lletrec(bindings, body) ->
@@ -201,8 +201,8 @@ let simplify_exits lam =
   | Lapply ap ->
       Lapply{ap with ap_func = simplif ap.ap_func;
                      ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr; loc} ->
-     Lfunction{kind; params; body = simplif l; attr; loc}
+  | Lfunction{kind; params; body = (l, ty); attr; loc} ->
+     Lfunction{kind; params; body = (simplif l, ty); attr; loc}
   | Llet(str, kind, v, l1, l2) -> Llet(str, kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
@@ -357,16 +357,17 @@ let simplify_lets lam =
   | Lconst _ -> ()
   | Lvar v ->
       use_var bv v 1
-  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
+  | Lapply{ap_func = Lfunction{kind = Curried; params; body = (body, _)};
+           ap_args = args}
     when optimize && List.length params = List.length args ->
-      count bv (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+      count bv (beta_reduce (List.map fst params) body args)
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body = (body, _)};
            ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
-      count bv (beta_reduce params body args)
+      count bv (beta_reduce (List.map fst params) body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
       count bv l1; List.iter (count bv) ll
-  | Lfunction {body} ->
+  | Lfunction {body = (body, _)} ->
       count Tbl.empty body
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
@@ -450,22 +451,23 @@ let simplify_lets lam =
         l
       end
   | Lconst _ as l -> l
-  | Lapply{ap_func = Lfunction{kind = Curried; params; body}; ap_args = args}
+  | Lapply{ap_func = Lfunction{kind = Curried; params; body = (body, _)};
+           ap_args = args}
     when optimize && List.length params = List.length args ->
-      simplif (beta_reduce params body args)
-  | Lapply{ap_func = Lfunction{kind = Tupled; params; body};
+      simplif (beta_reduce (List.map fst params) body args)
+  | Lapply{ap_func = Lfunction{kind = Tupled; params; body = (body, _)};
            ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
-      simplif (beta_reduce params body args)
+      simplif (beta_reduce (List.map fst params) body args)
   | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
                                  ap_args = List.map simplif ap.ap_args}
-  | Lfunction{kind; params; body = l; attr; loc} ->
+  | Lfunction{kind; params; body = (l, ty); attr; loc} ->
       begin match simplif l with
         Lfunction{kind=Curried; params=params'; body; attr; loc}
         when kind = Curried && optimize ->
           Lfunction{kind; params = params @ params'; body; attr; loc}
       | body ->
-          Lfunction{kind; params; body; attr; loc}
+          Lfunction{kind; params; body = (body, ty); attr; loc}
       end
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       Hashtbl.add subst v (simplif (Lvar w));
@@ -561,7 +563,7 @@ let rec emit_tail_infos is_tail lambda =
       list_emit_tail_infos false ap.ap_args;
       if !Clflags.annotations then
         Stypes.record (Stypes.An_call (ap.ap_loc, call_kind ap.ap_args))
-  | Lfunction {body = lam} ->
+  | Lfunction {body = (lam, _)} ->
       emit_tail_infos true lam
   | Llet (_str, _k, _, lam, body) ->
       emit_tail_infos false lam;
@@ -638,7 +640,7 @@ and list_emit_tail_infos is_tail =
 let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
-        Ident.name optparam = "*opt*" && List.mem optparam params
+        Ident.name optparam = "*opt*" && List.mem_assoc optparam params
           && not (List.mem_assoc optparam map)
       ->
         let wrapper_body, inner = aux ((optparam, id) :: map) rest in
@@ -651,7 +653,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
 
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
-        let map_param p = try List.assoc p map with Not_found -> p in
+        let map_param (p, _ty) = try List.assoc p map with Not_found -> p in
         let args = List.map (fun p -> Lvar (map_param p)) params in
         let wrapper_body =
           Lapply {
@@ -670,16 +672,19 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
                Ident.add id (Lvar new_id) s)
             Ident.empty inner_params new_ids
         in
-        let body = Lambda.subst_lambda subst body in
+        let body = Lambda.subst_lambda subst body, Pgenval in
         let inner_fun =
-          Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
+          Lfunction { kind = Curried;
+                      params = List.map (fun id -> id, Pgenval) new_ids;
+                      body; attr; loc; }
         in
         (wrapper_body, (inner_id, inner_fun))
   in
   try
+    let body, ty = body in
     let body, inner = aux [] body in
     let attr = default_stub_attribute in
-    [(fun_id, Lfunction{kind; params; body; attr; loc}); inner]
+    [(fun_id, Lfunction{kind; params; body = (body, ty); attr; loc}); inner]
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 

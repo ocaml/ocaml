@@ -474,22 +474,32 @@ let rec lam ppf = function
         apply_tailcall_attribute ap.ap_should_be_tailcall
         apply_inlined_attribute ap.ap_inlined
         apply_specialised_attribute ap.ap_specialised
-  | Lfunction{kind; params; body; attr} ->
+  | Lfunction{kind; params; body = (body, ty); attr} ->
       let pr_params ppf params =
         match kind with
         | Curried ->
-            List.iter (fun param -> fprintf ppf "@ %a" Ident.print param) params
+            List.iter
+              (fun (param, ty) ->
+                 fprintf ppf "@ %a%s"
+                   Ident.print param
+                   (value_kind ty)
+              ) params
         | Tupled ->
             fprintf ppf " (";
             let first = ref true in
             List.iter
-              (fun param ->
-                if !first then first := false else fprintf ppf ",@ ";
-                Ident.print ppf param)
+              (fun (param, ty) ->
+                 if !first then first := false else fprintf ppf ",@ ";
+                 fprintf ppf "%a%s"
+                   Ident.print param
+                   (value_kind ty)
+              )
               params;
             fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%a@ %a%a)@]" pr_params params
-        function_attribute attr lam body
+      fprintf ppf "@[<2>(function%s%a@ %a%a)@]"
+        (value_kind ty)
+        pr_params params
+        function_attribute attr lam  body
   | Llet(str, k, id, arg, body) ->
       let kind = function
           Alias -> "a" | Strict -> "" | StrictOpt -> "o" | Variable -> "v"

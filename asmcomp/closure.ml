@@ -867,13 +867,14 @@ let rec close fenv cenv = function
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
-               params = final_args;
+               params = List.map (fun p -> p, Pgenval) final_args;
                body = Lapply{ap_should_be_tailcall=false;
                              ap_loc=loc;
                              ap_func=(Lvar funct_var);
                              ap_args=internal_args;
                              ap_inlined=Default_inline;
-                             ap_specialised=Default_specialise};
+                             ap_specialised=Default_specialise},
+                      Pgenval;
                loc;
                attr = default_function_attribute})
         in
@@ -1174,8 +1175,9 @@ and close_functions fenv cenv fun_defs =
         (fun (id, _params, _body, _fundesc, _dbg) pos env ->
           Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
         uncurried_defs clos_offsets cenv_fv in
-    let (ubody, approx) = close fenv_rec cenv_body body in
+    let (ubody, approx) = close fenv_rec cenv_body (fst body) in
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
+    let params = List.map fst params in
     let fun_params = if !useless_env then params else params @ [env_param] in
     let f =
       {

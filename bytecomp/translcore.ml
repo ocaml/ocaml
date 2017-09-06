@@ -476,8 +476,9 @@ let transl_primitive loc p env ty path =
   match prim with
   | Plazyforce ->
       let parm = Ident.create "prim" in
-      Lfunction{kind = Curried; params = [parm];
-                body = Matching.inline_lazy_force (Lvar parm) Location.none;
+      Lfunction{kind = Curried; params = [parm, Pgenval];
+                body = Matching.inline_lazy_force (Lvar parm) Location.none,
+                       Pgenval;
                 loc = loc;
                 attr = default_stub_attribute }
   | Ploc kind ->
@@ -486,21 +487,27 @@ let transl_primitive loc p env ty path =
       | 0 -> lam
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
-        Lfunction{kind = Curried; params = [param];
+        Lfunction{kind = Curried; params = [param, Pgenval];
                   attr = default_stub_attribute;
                   loc = loc;
                   body = Lprim(Pmakeblock(0, Immutable, None),
-                               [lam; Lvar param], loc)}
+                               [lam; Lvar param], loc),
+                         Pgenval
+                 }
       | _ -> assert false
     end
   | _ ->
       let rec make_params n =
-        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
+        if n <= 0 then []
+        else (Ident.create "prim", Pgenval) :: make_params (n-1)
+      in
       let params = make_params p.prim_arity in
       Lfunction{ kind = Curried; params;
                  attr = default_stub_attribute;
                  loc = loc;
-                 body = Lprim(prim, List.map (fun id -> Lvar id) params, loc) }
+                 body = Lprim(prim,
+                              List.map (fun (id, _ty) -> Lvar id) params, loc),
+                        Pgenval }
 
 let transl_primitive_application loc prim env ty path args =
   let prim_name = prim.prim_name in
@@ -675,18 +682,29 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction{kind = Curried; params = [obj; meth];
+        Lfunction{kind = Curried; params = [obj, Pgenval; meth, Pgenval];
                   attr = default_stub_attribute;
                   loc = e.exp_loc;
-                  body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
+                  body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc),
+                         Pgenval
+                 }
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
-        Lfunction{kind = Curried; params = [obj; meth; cache; pos];
+        Lfunction{kind = Curried;
+                  params =
+                    [
+                      obj, Pgenval;
+                      meth, Pgenval;
+                      cache, Pgenval;
+                      pos, Pgenval
+                    ];
                   attr = default_stub_attribute;
                   loc = e.exp_loc;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
-                               [Lvar cache; Lvar pos], e.exp_loc)}
+                               [Lvar cache; Lvar pos], e.exp_loc),
+                         Pgenval
+                 }
       else
         transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
@@ -706,6 +724,10 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
+      (* TODO: compute types for parameters/result *)
+      let params = List.map (fun id -> id, Pgenval) params in
+      let body = body, Pgenval in
+      (* XXX *)
       let attr = {
         default_function_attribute with
         inline = Translattribute.get_inline_attribute e.exp_attributes;
@@ -1021,7 +1043,7 @@ and transl_exp0 e =
       | `Constant_or_function ->
         (* a constant expr of type <> float gets compiled as itself *)
          transl_exp e
-      | `Float -> 
+      | `Float ->
           (* We don't need to wrap with Popaque: this forward
              block will never be shortcutted since it points to a float. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
@@ -1041,10 +1063,10 @@ and transl_exp0 e =
          transl_exp e
       | `Other ->
          (* other cases compile to a lazy block holding a function *)
-         let fn = Lfunction {kind = Curried; params = [Ident.create "param"];
+         let fn = Lfunction {kind = Curried; params = [Ident.create "param", Pgenval];
                              attr = default_function_attribute;
                              loc = e.exp_loc;
-                             body = transl_exp e} in
+                             body = transl_exp e, Pgenval} in
           Lprim(Pmakeblock(Config.lazy_tag, Mutable, None), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->
@@ -1147,15 +1169,18 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
         and id_arg = Ident.create "param" in
         let body =
           match build_apply handle ((Lvar id_arg, optional)::args') l with
-            Lfunction{kind = Curried; params = ids; body = lam; attr; loc} ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+            Lfunction{kind = Curried; params = ids; body; attr; loc} ->
+              Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
+                        body; attr;
                         loc}
           | Levent(Lfunction{kind = Curried; params = ids;
-                             body = lam; attr; loc}, _) ->
-              Lfunction{kind = Curried; params = id_arg::ids; body = lam; attr;
+                             body; attr; loc}, _) ->
+              Lfunction{kind = Curried; params = (id_arg, Pgenval)::ids;
+                        body; attr;
                         loc}
           | lam ->
-              Lfunction{kind = Curried; params = [id_arg]; body = lam;
+              Lfunction{kind = Curried; params = [id_arg, Pgenval];
+                        body = lam, Pgenval;
                         attr = default_stub_attribute; loc = loc}
         in
         List.fold_left
