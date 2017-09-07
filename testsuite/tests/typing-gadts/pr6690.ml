@@ -35,12 +35,11 @@ type 'a local_visit_action
 type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
-Line _, characters 4-9:
-Error: This pattern matches values of type
-         ($0, $0 * insert, visit_action) context
+Line _, characters 4-10:
+Error: This pattern matches values of type ($1, $1, visit_action) context
        but a pattern was expected which matches values of type
-         ('a, 'b, visit_action) context
-       The type constructor $0 would escape its scope
+         ($0, $0 * insert, visit_action) context
+       Type $1 is not compatible with type $0
 |}];;
 
 let vexpr (type visit_action)
@@ -57,12 +56,11 @@ Error: This pattern matches values of type
          ($'a, $'a * insert, visit_action) context
        The type constructor $'a would escape its scope
 |}, Principal{|
-Line _, characters 4-9:
-Error: This pattern matches values of type
-         ($0, $0 * insert, visit_action) context
+Line _, characters 4-10:
+Error: This pattern matches values of type ($1, $1, visit_action) context
        but a pattern was expected which matches values of type
-         ('a, 'result, visit_action) context
-       The type constructor $0 would escape its scope
+         ($0, $0 * insert, visit_action) context
+       Type $1 is not compatible with type $0
 |}];;
 
 let vexpr (type result) (type visit_action)

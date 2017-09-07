@@ -39,3 +39,12 @@ Line _, characters 4-29:
 Warning 11: this match case is unused.
 val fails : ('a, 'b) eq -> 'c list = <fun>
 |}]
+
+(* branches must be unified! *)
+let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
+[%%expect{|
+Line _, characters 35-40:
+Error: This pattern matches values of type float list
+       but a pattern was expected which matches values of type string list
+       Type float is not compatible with type string
+|}]
