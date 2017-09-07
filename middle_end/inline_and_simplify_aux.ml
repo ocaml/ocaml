@@ -700,9 +700,16 @@ let keep_body_in_classic_mode (fun_decl : Flambda.function_declaration) =
     if not fun_decl.stub then begin
       (* In classic-inlining mode, the inlining decision is taken at
          definition site (here). If the function is small enough
-         (below the -inline threshold) it will always be inlined. *)
+         (below the -inline threshold) it will always be inlined.
+
+         Closure gives a bonus of [8] to optional arguments. In classic
+         mode, however, we would inline functions with the "*opt*" argument
+         in all cases, as it is a stub. (This is ensured by
+         [middle_end/closure_conversion.ml])
+      *)
       let inlining_threshold = initial_inlining_threshold ~round:0 in
-      Inlining_cost.can_inline fun_decl.body inlining_threshold ~bonus:0
+      let bonus = Flambda_utils.function_arity fun_decl in
+      Inlining_cost.can_inline fun_decl.body inlining_threshold ~bonus
     end else begin
       true
     end
