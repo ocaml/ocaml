@@ -523,6 +523,7 @@ let check_recursive_lambda idlist lam =
     | Lprim (Pmakearray (Pfloatarray, _), _, _) -> false
     | Lprim (Pmakearray _, args, _) ->
         List.for_all (check idlist) args
+    | Lstaticcatch (lam1, _, lam2)
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
