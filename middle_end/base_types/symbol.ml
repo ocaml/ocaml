@@ -16,11 +16,27 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+type label_kind =
+  | Unsafe
+  | Safe
+
 type t = {
   compilation_unit : Compilation_unit.t;
   label : Linkage_name.t;
+  label_kind : label_kind;
   hash : int;
 }
+
+let label { label ; compilation_unit ; label_kind; hash = _ } =
+  match label_kind with
+  | Safe ->
+    let unit_linkage_name =
+      Linkage_name.to_string
+        (Compilation_unit.get_linkage_name compilation_unit)
+    in
+    Linkage_name.create
+      (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
+  | Unsafe -> label
 
 include Identifiable.Make (struct
   type nonrec t = t
@@ -32,7 +48,7 @@ include Identifiable.Make (struct
     else
       let c = compare t1.hash t2.hash in
       if c <> 0 then c
-      else Linkage_name.compare t1.label t2.label
+      else Linkage_name.compare (label t1) (label t2)
 
   let equal x y =
     if x == y then true
@@ -45,31 +61,23 @@ include Identifiable.Make (struct
   let print ppf t =
     Compilation_unit.print ppf t.compilation_unit;
     Format.pp_print_string ppf ".";
-    Linkage_name.print ppf t.label
+    Linkage_name.print ppf (label t)
 end)
 
 let create compilation_unit label =
-  let unit_linkage_name =
-    Linkage_name.to_string
-      (Compilation_unit.get_linkage_name compilation_unit)
-  in
-  let label =
-    Linkage_name.create
-      (unit_linkage_name ^ "__" ^ (Linkage_name.to_string label))
-  in
   let hash = Linkage_name.hash label in
-  { compilation_unit; label; hash; }
+  { compilation_unit; label; hash; label_kind = Safe }
 
 let unsafe_create compilation_unit label =
   let hash = Linkage_name.hash label in
-  { compilation_unit; label; hash; }
+  { compilation_unit; label; hash; label_kind = Unsafe }
 
 let import_for_pack ~pack:compilation_unit symbol =
-  let hash = Linkage_name.hash symbol.label in
-  { compilation_unit; label = symbol.label; hash; }
+  let hash = Linkage_name.hash (label symbol) in
+  { compilation_unit; label = symbol.label; hash;
+    label_kind = symbol.label_kind; }
 
 let compilation_unit t = t.compilation_unit
-let label t = t.label
 
 let print_opt ppf = function
   | None -> Format.fprintf ppf "<no symbol>"
