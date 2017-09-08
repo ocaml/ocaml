@@ -1151,11 +1151,19 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
     in
     let body, r = simplify body_env r body in
     Let_rec (defs, body), r
-  | Static_raise (i, args) ->
+  | Static_raise (i, args, ta) ->
     let i = Freshening.apply_static_exception (E.freshening env) i in
+    let freshen_traps cl =
+      List.map (Freshening.apply_static_exception (E.freshening env)) cl
+    in
+    let ta = match ta with
+      | Flambda.No_action -> Flambda.No_action
+      | Flambda.Pop cl -> Flambda.Pop (freshen_traps cl)
+      | Flambda.Push cl -> Flambda.Push (freshen_traps cl)
+    in
     simplify_free_variables env args ~f:(fun _env args _args_approxs ->
       let r = R.use_static_exception r i in
-      Static_raise (i, args), ret r A.value_bottom)
+      Static_raise (i, args, ta), ret r A.value_bottom)
   | Static_catch (i, vars, body, handler) ->
     begin
       match body with
@@ -1174,7 +1182,7 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
           body, r
         else begin
           match (body : Flambda.t) with
-          | Static_raise (j, args) ->
+          | Static_raise (j, args, No_action) ->
             assert (Static_exception.equal i j);
             let handler =
               List.fold_left2 (fun body var arg ->
@@ -1198,13 +1206,15 @@ and simplify env r (tree : Flambda.t) : Flambda.t * R.t =
               R.meet_approx r env approx
         end
     end
-  | Try_with (body, id, handler) ->
+  | Try_with (body, cont, id, handler) ->
+    let cont, sb = Freshening.add_static_exception (E.freshening env) cont in
+    let env = E.set_freshening env sb in
     let body, r = simplify env r body in
     let id, sb = Freshening.add_variable (E.freshening env) id in
     let env = E.add (E.set_freshening env sb) id (A.value_unknown Other) in
     let env = E.inside_branch env in
     let handler, r = simplify env r handler in
-    Try_with (body, id, handler), ret r (A.value_unknown Other)
+    Try_with (body, cont, id, handler), ret r (A.value_unknown Other)
   | If_then_else (arg, ifso, ifnot) ->
     (* When arg is the constant false or true (or something considered
        as true), we can drop the if and replace it by a sequence.

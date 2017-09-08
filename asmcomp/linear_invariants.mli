@@ -2,10 +2,11 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2016 OCamlPro SAS                                          *)
+(*   Copyright 2016 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,14 +14,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Lambda
+(** Invariant checks on code produced by [Linearize]. *)
 
-open Format
-
-val trap_action: formatter -> trap_action -> unit
-val structured_constant: formatter -> structured_constant -> unit
-val lambda: formatter -> lambda -> unit
-val program: formatter -> program -> unit
-val primitive: formatter -> primitive -> unit
-val name_of_primitive : primitive -> string
-val value_kind : value_kind -> string
+val check : Linearize.fundecl -> Linearize.fundecl

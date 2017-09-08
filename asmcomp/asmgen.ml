@@ -111,6 +111,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_combine "After allocation combining"
   ++ Profile.record ~accumulate:true "cse" CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
+  ++ Profile.record ~accumulate:true "trap_analysis" Trap_analysis.run
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
@@ -124,7 +125,9 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
+  ++ Linear_invariants.check
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
+  ++ Linear_invariants.check
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
   ++ Profile.record ~accumulate:true "emit" Emit.fundecl
 

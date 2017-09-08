@@ -79,6 +79,13 @@ let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
   | Char _, _ -> -1
   | _, Char _ -> 1
 
+let same_traps (t1: Flambda.trap_action) (t2: Flambda.trap_action) =
+  match t1, t2 with
+  | No_action, No_action -> true
+  | Pop l1, Pop l2
+  | Push l1, Push l2 -> Misc.Stdlib.List.equal Static_exception.equal l1 l2
+  | (No_action | Pop _ | Push _), _ -> false
+
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
                  it is the same original branch *)
@@ -115,8 +122,9 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
         (fun (s1, e1) (s2, e2) -> s1 = s2 && same e1 e2) s1 s2
       && Misc.Stdlib.Option.equal same d1 d2
   | String_switch _, _ | _, String_switch _ -> false
-  | Static_raise (e1, a1), Static_raise (e2, a2) ->
+  | Static_raise (e1, a1, t1), Static_raise (e2, a2, t2) ->
     Static_exception.equal e1 e2 && Misc.Stdlib.List.equal Variable.equal a1 a2
+    && same_traps t1 t2
   | Static_raise _, _ | _, Static_raise _ -> false
   | Static_catch (s1, v1, a1, b1), Static_catch (s2, v2, a2, b2) ->
     Static_exception.equal s1 s2
@@ -124,8 +132,9 @@ let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
       && same a1 a2
       && same b1 b2
   | Static_catch _, _ | _, Static_catch _ -> false
-  | Try_with (a1, v1, b1), Try_with (a2, v2, b2) ->
-    same a1 a2 && Variable.equal v1 v2 && same b1 b2
+  | Try_with (a1, c1, v1, b1), Try_with (a2, c2, v2, b2) ->
+    same a1 a2 && Static_exception.equal c1 c2 && Variable.equal v1 v2
+    && same b1 b2
   | Try_with _, _ | _, Try_with _ -> false
   | If_then_else (a1, b1, c1), If_then_else (a2, b2, c2) ->
     Variable.equal a1 a2 && same b1 b2 && same c1 c2
@@ -263,9 +272,9 @@ let toplevel_substitution sb tree =
       let from_value = sb from_value in
       let to_value = sb to_value in
       For { bound_var; from_value; to_value; direction; body }
-    | Static_raise (static_exn, args) ->
+    | Static_raise (static_exn, args, ta) ->
       let args = List.map sb args in
-      Static_raise (static_exn, args)
+      Static_raise (static_exn, args, ta)
     | Static_catch _ | Try_with _ | While _
     | Let _ | Let_rec _ | Proved_unreachable -> flam
   in
@@ -452,7 +461,8 @@ let might_raise_static_exn flam stexn =
   try
     Flambda_iterators.iter_on_named
       (function
-        | Flambda.Static_raise (ex, _) when Static_exception.equal ex stexn ->
+        | Flambda.Static_raise (ex, _, _)
+          when Static_exception.equal ex stexn ->
           raise Exit
         | _ -> ())
       (fun _ -> ())
@@ -695,12 +705,12 @@ let substitute_read_symbol_field_for_variables
       bind new_value fresh (Assign { being_assigned; new_value = fresh })
     | Assign _ ->
       expr
-    | Static_raise (exn, args) ->
+    | Static_raise (exn, args, ta) ->
       let args, bind_args =
         List.split (List.map make_var_subst args)
       in
       List.fold_right (fun f expr -> f expr) bind_args @@
-        Flambda.Static_raise (exn, args)
+        Flambda.Static_raise (exn, args, ta)
     | For { bound_var; from_value; to_value; direction; body } ->
       let from_value, bind_from_value = make_var_subst from_value in
       let to_value, bind_to_value = make_var_subst to_value in
@@ -756,7 +766,7 @@ module Switch_storer = Switch.Store (struct
     | Var v -> Var v
     | Let { var; defining_expr; body; } ->
       Let (var, make_named_key defining_expr, make_expr_key body)
-    | Static_raise (e, args) -> Static_raise (e, args)
+    | Static_raise (e, args, _ta) -> Static_raise (e, args)
     | _ -> raise Not_comparable
   and make_named_key (named:Flambda.named) : key_named =
     match named with

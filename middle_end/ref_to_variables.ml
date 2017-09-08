@@ -73,7 +73,7 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
     | Static_catch (_, _, body, handler) ->
       loop body;
       loop handler
-    | Try_with (body, _, handler) ->
+    | Try_with (body, _, _, handler) ->
       loop body;
       loop handler
     | While (cond, body) ->
@@ -83,7 +83,7 @@ let variables_not_used_as_local_reference (tree:Flambda.t) =
       set := Variable.Set.add from_value !set;
       set := Variable.Set.add to_value !set;
       loop body
-    | Static_raise (_, args) ->
+    | Static_raise (_, args, _) ->
       set := Variable.Set.union (Variable.Set.of_list args) !set
     | Proved_unreachable | Apply _ | Send _ | Assign _ ->
       set := Variable.Set.union !set (Flambda.free_variables flam)

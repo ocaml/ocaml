@@ -106,7 +106,7 @@ let lambda_smaller' lam ~than:threshold =
     | Static_raise _ -> ()
     | Static_catch (_, _, body, handler) ->
       incr size; lambda_size body; lambda_size handler
-    | Try_with (body, _, handler) ->
+    | Try_with (body, _, _, handler) ->
       size := !size + 8; lambda_size body; lambda_size handler
     | If_then_else (_, ifso, ifnot) ->
       size := !size + 2;

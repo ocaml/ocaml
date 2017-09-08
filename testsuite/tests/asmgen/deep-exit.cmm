@@ -1,0 +1,10 @@
+
+(function "deep_exit" (b:val)
+  (catch
+    (try
+      (try
+        (if (and b 1) (exit l (raise_notrace 1))
+          1a)
+      with vartwo 123)
+     with var 456)
+   with (l x) x))

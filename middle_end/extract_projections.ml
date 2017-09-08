@@ -100,7 +100,7 @@ let rec analyse_expr ~which_variables expr =
     | Switch (var, _)
     | String_switch (var, _, _) ->
       check_free_variable var
-    | Static_raise (_, args) ->
+    | Static_raise (_, args, _) ->
       List.iter check_free_variable args
     | For { from_value; to_value; _ } ->
       check_free_variable from_value;

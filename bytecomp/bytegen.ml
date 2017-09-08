@@ -276,7 +276,7 @@ let find_raise_label i =
 
 (* Will the translation of l lead to a jump to label ? *)
 let code_as_jump l sz = match l with
-| Lstaticraise (i,[]) ->
+| Lstaticraise (i,[],No_action) ->
     let label,size,tb = find_raise_label i in
     if sz = size && tb == !try_blocks then
       Some label
@@ -715,7 +715,7 @@ let rec comp_expr env exp sz cont =
         end in
       sz_static_raises := List.tl !sz_static_raises ;
       r
-  | Lstaticraise (i, args) ->
+  | Lstaticraise (i, args, _ta) ->
       let cont = discard_dead_code cont in
       let label,size,tb = find_raise_label i in
       let cont = branch_to label cont in
@@ -731,7 +731,7 @@ let rec comp_expr env exp sz cont =
           comp_expr env arg sz cont
       | _ -> comp_exit_args env args sz size cont
       end
-  | Ltrywith(body, id, handler) ->
+  | Ltrywith(body, _c, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
       let body_cont =

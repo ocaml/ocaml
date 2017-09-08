@@ -237,6 +237,18 @@ type function_attribute = {
   stub: bool;
 }
 
+type trap_action =
+  | No_action
+  | Pop of int list
+(* Trap actions annotate static raise constructs.
+   No_action means that the raise is under the same trywith context as its
+   handler, Pop l means that the raise is nested within the
+   trywith blocks in l (the head of l being the deepest such block).
+   Pop refers to the operaions Kpoptrap and Lpoptrap (respectively in
+   bytecode and native code) that have to be inserted before the jump.
+   Some optimizations that move code around are only legal on No_action
+   static raises. *)
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
@@ -250,9 +262,9 @@ type lambda =
    strings are pairwise distinct *)
   | Lstringswitch of
       lambda * (string * lambda) list * lambda option * Location.t
-  | Lstaticraise of int * lambda list
+  | Lstaticraise of int * lambda list * trap_action
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
-  | Ltrywith of lambda * Ident.t * lambda
+  | Ltrywith of lambda * int * Ident.t * lambda
   | Lifthenelse of lambda * lambda * lambda
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda

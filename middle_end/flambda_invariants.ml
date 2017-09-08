@@ -39,6 +39,7 @@ let ignore_int_set (_ : Numbers.Int.Set.t) = ()
 let ignore_bool (_ : bool) = ()
 let ignore_string (_ : string) = ()
 let ignore_static_exception (_ : Static_exception.t) = ()
+let ignore_trap_action (_ : Flambda.trap_action) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_primitive ( _ : Lambda.primitive) = ()
 let ignore_const (_ : Flambda.const) = ()
@@ -184,7 +185,8 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ignore_static_exception static_exn;
       loop env body;
       loop (add_binding_occurrences env vars) handler
-    | Try_with (body, var, handler) ->
+    | Try_with (body, cont, var, handler) ->
+      ignore_static_exception cont;
       loop env body;
       loop (add_binding_occurrence env var) handler
     (* Everything else: *)
@@ -225,8 +227,9 @@ let variable_and_symbol_invariants (program : Flambda.program) =
           loop env case)
         cases;
       Misc.may (loop env) e_opt
-    | Static_raise (static_exn, es) ->
+    | Static_raise (static_exn, es, ta) ->
       ignore_static_exception static_exn;
+      ignore_trap_action ta;
       List.iter (check_variable_is_bound env) es
     | While (e1, e2) ->
       loop env e1;
@@ -617,7 +620,7 @@ let every_used_var_within_closure_from_current_compilation_unit_is_declared
 let every_static_exception_is_caught flam =
   let check env (flam : Flambda.t) =
     match flam with
-    | Static_raise (exn, _) ->
+    | Static_raise (exn, _, _) ->
       if not (Static_exception.Set.mem exn env)
       then raise (Static_exception_not_caught exn)
     | _ -> ()

@@ -230,6 +230,13 @@ let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
   | Const (Char c) -> Uconst_int (Char.code c)
   | Const (Const_pointer i) -> Uconst_ptr i
 
+let to_clambda_trap_action (ta: Flambda.trap_action)
+      : Clambda.trap_action =
+  match ta with
+  | No_action -> No_action
+  | Pop cl -> Pop (List.map Static_exception.to_int cl)
+  | Push cl -> Push (List.map Static_exception.to_int cl)
+
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
   | Var var -> subst_var env var
@@ -295,7 +302,7 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
       let exn = Static_exception.create () in
       let sw =
         { sw with
-          failaction = Some (Flambda.Static_raise (exn, []));
+          failaction = Some (Flambda.Static_raise (exn, [], No_action));
         }
       in
       let expr : Flambda.t =
@@ -308,9 +315,9 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
     let sw = List.map (fun (s, e) -> s, to_clambda t env e) sw in
     let def = Misc.may_map (to_clambda t env) def in
     Ustringswitch (arg, sw, def)
-  | Static_raise (static_exn, args) ->
+  | Static_raise (static_exn, args, ta) ->
     Ustaticfail (Static_exception.to_int static_exn,
-      List.map (subst_var env) args)
+      List.map (subst_var env) args, to_clambda_trap_action ta)
   | Static_catch (static_exn, vars, body, handler) ->
     let env_handler, ids =
       List.fold_right (fun var (env, ids) ->
@@ -318,11 +325,16 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
           env, id :: ids)
         vars (env, [])
     in
-    Ucatch (Static_exception.to_int static_exn, ids,
-      to_clambda t env body, to_clambda t env_handler handler)
-  | Try_with (body, var, handler) ->
+    Ucatch (Normal Asttypes.Nonrecursive,
+      [Static_exception.to_int static_exn, ids,
+       to_clambda t env_handler handler],
+      to_clambda t env body)
+  | Try_with (body, cont, var, handler) ->
     let id, env_handler = Env.add_fresh_ident env var in
-    Utrywith (to_clambda t env body, id, to_clambda t env_handler handler)
+    let cont = Static_exception.to_int cont in
+    let ubody = to_clambda t env body in
+    let uhandler = to_clambda t env_handler handler in
+    Clambda.trywith ubody cont id uhandler
   | If_then_else (arg, ifso, ifnot) ->
     Uifthenelse (subst_var env arg, to_clambda t env ifso,
       to_clambda t env ifnot)

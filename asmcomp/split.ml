@@ -121,6 +121,15 @@ let find_exit_subst k =
     List.assoc k !exit_subst with
   | Not_found -> Misc.fatal_error "Split.find_exit_subst"
 
+let find_raise_subst ~trap_stack =
+  match trap_stack with
+  | [] -> ref None  (* raise to toplevel exception handler *)
+  | cont::_ ->
+    match find_exit_subst cont with
+    | exception Not_found ->
+      Misc.fatal_errorf "No substitution for start of continuation %d" cont
+    | subst -> subst
+
 let rec rename i sub =
   match i.desc with
     Iend ->
@@ -139,7 +148,17 @@ let rec rename i sub =
           (instr_cons i.desc i.arg [|newr|] new_next,
            sub_next)
       end
-  | Iop _ ->
+  | Iop op ->
+      begin match op with
+      | Icall_ind { trap_stack; _ }
+      | Icall_imm { trap_stack; _ }
+      | Iextcall { trap_stack; _ }
+      | Iintop (Icheckbound { trap_stack; _ })
+      | Iintop_imm (Icheckbound { trap_stack; _ }, _) ->
+        let r = find_raise_subst ~trap_stack in
+        r := merge_substs !r sub i
+      | _ -> ()
+      end;
       let (new_next, sub_next) = rename i.next sub in
       (instr_cons_debug i.desc (subst_regs i.arg sub) (subst_regs i.res sub)
                         i.dbg new_next,
@@ -165,13 +184,15 @@ let rec rename i sub =
       let (new_next, sub_next) = rename i.next (merge_substs sub sub_body i) in
       (instr_cons (Iloop(new_body)) [||] [||] new_next,
        sub_next)
-  | Icatch(rec_flag, handlers, body) ->
-      let new_subst = List.map (fun (nfail, _) -> nfail, ref None)
+  | Icatch(rec_flag, is_exn_handler, handlers, body) ->
+      let new_subst = List.map (fun (nfail, _, _) -> nfail, ref None)
           handlers in
       let previous_exit_subst = !exit_subst in
       exit_subst := new_subst @ !exit_subst;
       let (new_body, sub_body) = rename body sub in
-      let res = List.map2 (fun (_, handler) (_, new_subst) -> rename handler !new_subst)
+      let res =
+        List.map2 (fun (_, _, handler) (_, new_subst) ->
+            rename handler !new_subst)
           handlers new_subst in
       exit_subst := previous_exit_subst;
       let merged_subst =
@@ -179,24 +200,21 @@ let rec rename i sub =
             merge_substs acc sub_handler i.next)
           sub_body res in
       let (new_next, sub_next) = rename i.next merged_subst in
-      let new_handlers = List.map2 (fun (nfail, _) (handler, _) ->
-          (nfail, handler)) handlers res in
+      let new_handlers = List.map2 (fun (nfail, trap_stack, _) (handler, _) ->
+          (nfail, trap_stack, handler)) handlers res in
       (instr_cons
-         (Icatch(rec_flag, new_handlers, new_body)) [||] [||] new_next,
+         (Icatch(rec_flag, is_exn_handler, new_handlers, new_body))
+         [||] [||] new_next,
        sub_next)
-  | Iexit nfail ->
+  | Iexit (nfail, _ta) ->
       let r = find_exit_subst nfail in
       r := merge_substs !r sub i;
       (i, None)
-  | Itrywith(body, handler) ->
-      let (new_body, sub_body) = rename body sub in
-      let (new_handler, sub_handler) = rename handler sub in
-      let (new_next, sub_next) =
-        rename i.next (merge_substs sub_body sub_handler i.next) in
-      (instr_cons (Itrywith(new_body, new_handler)) [||] [||] new_next,
-       sub_next)
-  | Iraise k ->
-      (instr_cons_debug (Iraise k) (subst_regs i.arg sub) [||] i.dbg i.next,
+  | Iraise (k, trap_stack) ->
+      let r = find_raise_subst ~trap_stack in
+      r := merge_substs !r sub i;
+      (instr_cons_debug (Iraise (k, trap_stack)) (subst_regs i.arg sub) [||]
+        i.dbg i.next,
        None)
 
 (* Second pass: replace registers by their final representatives *)

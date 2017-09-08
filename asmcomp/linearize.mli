@@ -23,7 +23,9 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    live: Reg.Set.t }
+    live: Reg.Set.t;
+    trap_depth: int;
+  }
 
 and instruction_desc =
     Lend
@@ -35,8 +37,9 @@ and instruction_desc =
   | Lcondbranch of Mach.test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
-  | Lsetuptrap of label
-  | Lpushtrap
+  | Ladjust_trap_depth of int
+  | Lentertrap
+  | Lpushtrap of { handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
 

@@ -24,9 +24,13 @@ let find_live_at_exit k =
   try
     List.assoc k !live_at_exit
   with
-  | Not_found -> Misc.fatal_error "Liveness.find_live_at_exit"
+  | Not_found ->
+    Misc.fatal_errorf "No live-at-exit information for continuation %d" k
 
-let live_at_raise = ref Reg.Set.empty
+let find_live_at_raise ~trap_stack =
+  match trap_stack with
+  | [] -> Reg.Set.empty  (* raise to toplevel exception handler *)
+  | cont::_ -> find_live_at_exit cont
 
 let rec live i finally =
   (* finally is the set of registers live after execution of the
@@ -62,17 +66,22 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind _ | Icall_imm _ | Iextcall _ | Ialloc _
-          | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
+          | Icall_ind { trap_stack; _ }
+          | Icall_imm { trap_stack; _ }
+          | Iextcall { trap_stack; _ }
+          | Iintop (Icheckbound { trap_stack; _ })
+          | Iintop_imm (Icheckbound { trap_stack; _ }, _)
+          | Ialloc { trap_stack; _ } ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks
                  and allocation (for the latter: finalizers may throw
                  exceptions, as may signal handlers).
                  Hence, everything that must be live at the beginning of
                  the exception handler must also be live across this instr. *)
-               Reg.Set.union across_after !live_at_raise
-           | _ ->
-               across_after in
+              let live_at_raise = find_live_at_raise ~trap_stack in
+              Reg.Set.union across_after live_at_raise
+          | _ ->
+              across_after in
         i.live <- across;
         Reg.add_set_array across arg
       end
@@ -103,11 +112,18 @@ let rec live i finally =
       end;
       i.live <- !at_top;
       !at_top
-  | Icatch(rec_flag, handlers, body) ->
+  | Icatch(rec_flag, is_exn_handler, handlers, body) ->
       let at_join = live i.next finally in
-      let aux (nfail,handler) (nfail', before_handler) =
+      let aux (nfail, _, handler) (nfail', before_handler) =
         assert(nfail = nfail');
-        let before_handler' = live handler at_join in
+        let before_handler' =
+          let before_handler' = live handler at_join in
+          if not is_exn_handler then before_handler'
+          else begin
+            assert (List.length handlers = 1);
+            Reg.Set.remove Proc.loc_exn_bucket before_handler'
+          end
+        in
         nfail, Reg.Set.union before_handler before_handler'
       in
       let aux_equal (nfail, before_handler) (nfail', before_handler') =
@@ -128,7 +144,7 @@ let rec live i finally =
             else fixpoint before_handlers'
       in
       let init_state =
-        List.map (fun (nfail, _handler) -> nfail, Reg.Set.empty) handlers
+        List.map (fun (nfail, _, _handler) -> nfail, Reg.Set.empty) handlers
       in
       let before_handler = fixpoint init_state in
       (* We could use handler.live instead of Reg.Set.empty as the initial
@@ -139,25 +155,16 @@ let rec live i finally =
       live_at_exit := live_at_exit_before;
       i.live <- before_body;
       before_body
-  | Iexit nfail ->
+  | Iexit (nfail, _ta) ->
       let this_live = find_live_at_exit nfail in
       i.live <- this_live ;
       this_live
-  | Itrywith(body, handler) ->
-      let at_join = live i.next finally in
-      let before_handler = live handler at_join in
-      let saved_live_at_raise = !live_at_raise in
-      live_at_raise := Reg.Set.remove Proc.loc_exn_bucket before_handler;
-      let before_body = live body at_join in
-      live_at_raise := saved_live_at_raise;
-      i.live <- before_body;
-      before_body
-  | Iraise _ ->
-      i.live <- !live_at_raise;
-      Reg.add_set_array !live_at_raise arg
+  | Iraise (_, trap_stack) ->
+      let live_at_raise = find_live_at_raise ~trap_stack in
+      i.live <- live_at_raise;
+      Reg.add_set_array live_at_raise arg
 
 let reset () =
-  live_at_raise := Reg.Set.empty;
   live_at_exit := []
 
 let fundecl ppf f =

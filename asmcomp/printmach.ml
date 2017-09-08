@@ -67,6 +67,15 @@ let regsetaddr ppf s =
       | _ -> ())
     s
 
+let print_trap_stack ppf trap_stack =
+  match trap_stack with
+  | [] -> Format.fprintf ppf "[no traps]"
+  | trap_stack ->
+    Format.fprintf ppf "[traps %a]"
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf "; ")
+        Format.pp_print_int)
+      trap_stack
+
 let intcomp = function
   | Isigned c -> Printf.sprintf " %ss " (Printcmm.comparison c)
   | Iunsigned c -> Printf.sprintf " %su " (Printcmm.comparison c)
@@ -88,10 +97,12 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound { label_after_error; spacetime_index; } ->
-    if not Config.spacetime then " check > "
+  | Icheckbound { label_after_error; spacetime_index; trap_stack } ->
+    if not Config.spacetime then
+      Format.asprintf " check%a > " print_trap_stack trap_stack
     else
-      Printf.sprintf "check[lbl=%s,index=%d] > "
+      Format.asprintf "check%a[lbl=%s,index=%d] > "
+        print_trap_stack trap_stack
         begin
           match label_after_error with
           | None -> ""
@@ -123,12 +134,15 @@ let operation op arg ppf res =
   | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
   | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Icall_ind _ -> fprintf ppf "call %a" regs arg
-  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Icall_ind { trap_stack; _ } ->
+    fprintf ppf "call%a %a" print_trap_stack trap_stack regs arg
+  | Icall_imm { func; trap_stack; _ } ->
+    fprintf ppf "call%a \"%s\" %a" print_trap_stack trap_stack func regs arg
   | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
   | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
-  | Iextcall { func; alloc; _ } ->
-      fprintf ppf "extcall \"%s\" %a%s" func regs arg
+  | Iextcall { func; alloc; trap_stack; _ } ->
+      fprintf ppf "extcall%a \"%s\" %a%s" print_trap_stack trap_stack
+        func regs arg
       (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
@@ -208,11 +222,14 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(flag, handlers, body) ->
-      fprintf ppf "@[<v 2>catch%a@,%a@;<0 -2>with"
+  | Icatch(flag, is_exn_handler, handlers, body) ->
+      fprintf ppf "@[<v 2>catch%s%a@,%a@;<0 -2>with"
+        (if is_exn_handler then "_exn" else "")
         Printcmm.rec_flag flag instr body;
-      let h (nfail, handler) =
-        fprintf ppf "(%d)@,%a@;" nfail instr handler in
+      let h (nfail, trap_stack, handler) =
+        fprintf ppf "(%d%a)@,%a@;" nfail print_trap_stack trap_stack
+          instr handler
+      in
       let rec aux = function
         | [] -> ()
         | [v] -> h v
@@ -221,14 +238,13 @@ let rec instr ppf i =
             fprintf ppf "@ and";
             aux t
       in
-      aux handlers
-  | Iexit i ->
-      fprintf ppf "exit(%d)" i
-  | Itrywith(body, handler) ->
-      fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
-             instr body instr handler
-  | Iraise k ->
-      fprintf ppf "%a %a" Printcmm.raise_kind k reg i.arg.(0)
+      aux handlers;
+      fprintf ppf "@]"
+  | Iexit (i, ta) ->
+      fprintf ppf "exit%a(%d)" Printclambda.trap_action ta i
+  | Iraise (k, trap_stack) ->
+      fprintf ppf "%a%a %a" Printcmm.raise_kind k
+        print_trap_stack trap_stack reg i.arg.(0)
   end;
   if not (Debuginfo.is_none i.dbg) then
     fprintf ppf "%s" (Debuginfo.to_string i.dbg);

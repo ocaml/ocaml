@@ -87,6 +87,12 @@ type specialised_to = {
       either the [free_vars] or the [specialised_args]. *)
 }
 
+(** Trap actions that decorate jumps *)
+type trap_action =
+  | No_action
+  | Pop of Static_exception.t list
+  | Push of Static_exception.t list
+
 (** Flambda terms are partitioned in a pseudo-ANF manner; many terms are
     required to be [let]-bound.  This in particular ensures there is always
     a variable name for an expression that may be lifted out (for example
@@ -106,9 +112,9 @@ type t =
   | Switch of Variable.t * switch
   | String_switch of Variable.t * (string * t) list * t option
   (** Restrictions on [Lambda.Lstringswitch] also apply to [String_switch]. *)
-  | Static_raise of Static_exception.t * Variable.t list
+  | Static_raise of Static_exception.t * Variable.t list * trap_action
   | Static_catch of Static_exception.t * Variable.t list * t * t
-  | Try_with of t * Variable.t * t
+  | Try_with of t * Static_exception.t * Variable.t * t
   | While of t * t
   | For of for_loop
   | Proved_unreachable

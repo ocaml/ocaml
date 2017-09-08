@@ -462,6 +462,18 @@ let apply_specialised_attribute ppf = function
   | Always_specialise -> fprintf ppf " always_specialise"
   | Never_specialise -> fprintf ppf " never_specialise"
 
+let conts ppf = function
+  | [] -> fprintf ppf "(none)"
+  | [c] -> fprintf ppf "%d" c
+  | hd :: tl ->
+      fprintf ppf "[%d" hd;
+      List.iter (fun c -> fprintf ppf ",%d" c) tl;
+      fprintf ppf "]"
+
+let trap_action ppf = function
+  | No_action -> ()
+  | Pop cl -> fprintf ppf "{pop %a} " conts cl
+
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
@@ -557,10 +569,10 @@ let rec lam ppf = function
         end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" lam arg switch cases
-  | Lstaticraise (i, ls)  ->
+  | Lstaticraise (i, ls, ta)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
+      fprintf ppf "@[<2>(exit@ %a%d%a)@]" trap_action ta i lams ls;
   | Lstaticcatch(lbody, (i, vars), lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i
@@ -572,9 +584,9 @@ let rec lam ppf = function
                 vars)
         vars
         lam lhandler
-  | Ltrywith(lbody, param, lhandler) ->
-      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
-        lam lbody Ident.print param lam lhandler
+  | Ltrywith(lbody, cont, param, lhandler) ->
+      fprintf ppf "@[<2>(try@ %a@;<1 -1>with {%d} %a@ %a)@]"
+        lam lbody cont Ident.print param lam lhandler
   | Lifthenelse(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Lsequence(l1, l2) ->

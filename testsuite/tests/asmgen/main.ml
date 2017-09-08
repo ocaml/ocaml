@@ -13,8 +13,9 @@ let compile_file filename =
   lb.Lexing.lex_curr_p <- { lb.Lexing.lex_curr_p with pos_fname = filename };
   try
     while true do
-      Asmgen.compile_phrase Format.std_formatter
-                            (Parsecmm.phrase Lexcmm.token lb)
+      let phrase = Parsecmm.phrase Lexcmm.token lb in
+      let phrase = Parsecmmaux.adjust_traps_at_exit phrase in
+      Asmgen.compile_phrase Format.std_formatter phrase
     done
   with
       End_of_file ->

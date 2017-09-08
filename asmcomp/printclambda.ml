@@ -32,6 +32,19 @@ let value_kind =
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
 
+let conts ppf = function
+  | [] -> fprintf ppf "(none)"
+  | [c] -> fprintf ppf "%d" c
+  | hd :: tl ->
+      fprintf ppf "[%d" hd;
+      List.iter (fun c -> fprintf ppf ",%d" c) tl;
+      fprintf ppf "]"
+
+let trap_action ppf = function
+  | No_action -> ()
+  | Pop cl -> fprintf ppf "{pop %a} " conts cl
+  | Push cl -> fprintf ppf "{push %a} " conts cl
+
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
@@ -150,24 +163,30 @@ and lam ppf = function
         end in
       fprintf ppf
         "@[<1>(switch %a@ @[<v 0>%a@])@]" lam larg switch sw
-  | Ustaticfail (i, ls)  ->
+  | Ustaticfail (i, ls, ta) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
-  | Ucatch(i, vars, lbody, lhandler) ->
-      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
-        lam lbody i
-        (fun ppf vars -> match vars with
-          | [] -> ()
-          | _ ->
-              List.iter
-                (fun x -> fprintf ppf " %a" Ident.print x)
-                vars)
-        vars
-        lam lhandler
-  | Utrywith(lbody, param, lhandler) ->
-      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
-        lam lbody Ident.print param lam lhandler
+      fprintf ppf "@[<2>(exit@ %a%d%a)@]" trap_action ta i lams ls;
+  | Ucatch(kind, handlers, lbody) ->
+      let print_handler ppf (cont, params, lhandler) =
+        fprintf ppf "@[<2>(%d%a)@ %a@]"
+          cont
+          (fun ppf vars -> match vars with
+             | [] -> ()
+             | _ ->
+                 List.iter
+                   (fun x -> fprintf ppf " %a" Ident.print x)
+                   vars)
+          params
+          lam lhandler
+      in
+      fprintf ppf "@[<2>(catch%s@ %a@;<1 -1>with %a)@]"
+        (match kind with
+          | Normal Asttypes.Nonrecursive -> ""
+          | Normal Asttypes.Recursive -> "_rec"
+          | Exn_handler -> "_exn")
+        lam lbody
+        (Format.pp_print_list print_handler) handlers
   | Uifthenelse(lcond, lif, lelse) ->
       fprintf ppf "@[<2>(if@ %a@ %a@ %a)@]" lam lcond lam lif lam lelse
   | Usequence(l1, l2) ->

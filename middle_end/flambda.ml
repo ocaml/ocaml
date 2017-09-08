@@ -56,6 +56,11 @@ type specialised_to = {
   projection : Projection.t option;
 }
 
+type trap_action =
+  | No_action
+  | Pop of Static_exception.t list
+  | Push of Static_exception.t list
+
 type t =
   | Var of Variable.t
   | Let of let_expr
@@ -67,9 +72,9 @@ type t =
   | If_then_else of Variable.t * t * t
   | Switch of Variable.t * switch
   | String_switch of Variable.t * (string * t) list * t option
-  | Static_raise of Static_exception.t * Variable.t list
+  | Static_raise of Static_exception.t * Variable.t list * trap_action
   | Static_catch of Static_exception.t * Variable.t list * t * t
-  | Try_with of t * Variable.t * t
+  | Try_with of t * Static_exception.t * Variable.t * t
   | While of t * t
   | For of for_loop
   | Proved_unreachable
@@ -298,9 +303,10 @@ let rec lam ppf (flam : t) =
         end in
       fprintf ppf
        "@[<1>(stringswitch %a@ @[<v 0>%a@])@]" Variable.print arg switch cases
-  | Static_raise (i, ls)  ->
+  | Static_raise (i, ls, _ta)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" Variable.print l) largs in
+      (* CR-vlaviron: print the trap action *)
       fprintf ppf "@[<2>(exit@ %a%a)@]" Static_exception.print i lams ls;
   | Static_catch(i, vars, lbody, lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%a%a)@ %a)@]"
@@ -313,7 +319,8 @@ let rec lam ppf (flam : t) =
                  vars)
         vars
         lam lhandler
-  | Try_with(lbody, param, lhandler) ->
+  | Try_with(lbody, _cont, param, lhandler) ->
+      (* CR-vlaviron: print the Static_exception continuation *)
       fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@ %a)@]"
         lam lbody Variable.print param lam lhandler
   | If_then_else(lcond, lif, lelse) ->
@@ -564,13 +571,13 @@ let rec variables_usage ?ignore_uses_as_callee ?ignore_uses_as_argument
         free_variable scrutinee;
         List.iter (fun (_, e) -> aux e) cases;
         Misc.may aux failaction
-      | Static_raise (_, es) ->
+      | Static_raise (_, es, _) ->
         List.iter free_variable es
       | Static_catch (_, vars, e1, e2) ->
         List.iter bound_variable vars;
         aux e1;
         aux e2
-      | Try_with (e1, var, e2) ->
+      | Try_with (e1, _, var, e2) ->
         aux e1;
         bound_variable var;
         aux e2
@@ -773,7 +780,7 @@ let iter_general ~toplevel f f_named maybe_named =
       | Let_rec (defs, body) ->
         List.iter (fun (_,l) -> aux_named l) defs;
         aux body
-      | Try_with (f1,_,f2)
+      | Try_with (f1,_,_,f2)
       | While (f1,f2)
       | Static_catch (_,_,f1,f2) ->
         aux f1; aux f2

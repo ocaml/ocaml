@@ -171,6 +171,13 @@ let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then D.align 4;
   def_label lbl
 
+let load_label_addr s arg =
+  (* CR mshinwell: this needs more testing *)
+  if !Clflags.pic_code then
+    I.lea (mem64_rip NONE (emit_label s)) arg
+  else
+    I.mov (sym (emit_label s)) arg
+
 (* Output a pseudo-register *)
 
 let reg = function
@@ -823,14 +830,20 @@ let emit_instr fallthrough i =
                          ConstLabel lbl))
       done;
       D.text ()
-  | Lsetuptrap lbl ->
-      I.call (label lbl)
-  | Lpushtrap ->
-      cfi_adjust_cfa_offset 8;
-      I.push r14;
-      cfi_adjust_cfa_offset 8;
-      I.mov rsp r14;
-      stack_offset := !stack_offset + 16
+  | Lentertrap ->
+      ()
+  | Ladjust_trap_depth delta ->
+      let delta = 16 * delta in
+      cfi_adjust_cfa_offset delta;
+      stack_offset := !stack_offset + delta
+  | Lpushtrap { handler; } ->
+      cfi_adjust_cfa_offset 16;
+      I.sub (int 16) rsp;
+      stack_offset := !stack_offset + 16;
+      I.mov r14 (mem64 QWORD 0 RSP);
+      load_label_addr handler r14;
+      I.mov r14 (mem64 QWORD 8 RSP);
+      I.mov rsp r14
   | Lpoptrap ->
       I.pop r14;
       cfi_adjust_cfa_offset (-8);
@@ -848,7 +861,8 @@ let emit_instr fallthrough i =
       | Cmm.Raise_notrace ->
           I.mov r14 rsp;
           I.pop r14;
-          I.ret ()
+          I.pop r11;
+          I.jmp r11
       end
 
 let rec emit_all fallthrough i =

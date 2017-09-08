@@ -38,7 +38,7 @@ let rec combine i allocstate =
           let (newnext, newsz) =
             combine i.next (Pending_alloc(i.res.(0), sz)) in
           (instr_cons_debug (Iop(Ialloc {words = newsz; spacetime_index = 0;
-              label_after_call_gc = None; }))
+              label_after_call_gc = None; trap_stack = []; }))
             i.arg i.res i.dbg newnext, 0)
       | Pending_alloc(reg, ofs) ->
           if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
@@ -50,7 +50,7 @@ let rec combine i allocstate =
             let (newnext, newsz) =
               combine i.next (Pending_alloc(i.res.(0), sz)) in
             (instr_cons_debug (Iop(Ialloc { words = newsz; spacetime_index = 0;
-                label_after_call_gc = None; }))
+                label_after_call_gc = None; trap_stack = []; }))
               i.arg i.res i.dbg newnext, ofs)
           end
       end
@@ -77,18 +77,16 @@ let rec combine i allocstate =
       let newbody = combine_restart body in
       (instr_cons (Iloop(newbody)) i.arg i.res i.next,
        allocated_size allocstate)
-  | Icatch(rec_flag, handlers, body) ->
+  | Icatch(rec_flag, is_exn_handler, handlers, body) ->
       let (newbody, sz) = combine body allocstate in
       let newhandlers =
-        List.map (fun (io, handler) -> io, combine_restart handler) handlers in
+        List.map (fun (io, trap_stack, handler) ->
+            io, trap_stack, combine_restart handler)
+          handlers
+      in
       let newnext = combine_restart i.next in
-      (instr_cons (Icatch(rec_flag, newhandlers, newbody))
+      (instr_cons (Icatch(rec_flag, is_exn_handler, newhandlers, newbody))
          i.arg i.res newnext, sz)
-  | Itrywith(body, handler) ->
-      let (newbody, sz) = combine body allocstate in
-      let newhandler = combine_restart handler in
-      let newnext = combine_restart i.next in
-      (instr_cons (Itrywith(newbody, newhandler)) i.arg i.res newnext, sz)
 
 and combine_restart i =
   let (newi, _) = combine i No_alloc in newi

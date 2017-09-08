@@ -597,7 +597,7 @@ let rec push_defaults loc bindings cases partial =
 (* Insertion of debugging events *)
 
 let event_before exp lam = match lam with
-| Lstaticraise (_,_) -> lam
+| Lstaticraise (_,_,_) -> lam
 | _ ->
   if !Clflags.debug && not !Clflags.native_code
   then Levent(lam, {lev_loc = exp.exp_loc;
@@ -820,7 +820,8 @@ and transl_exp0 e =
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
       let id = Typecore.name_pattern "exn" pat_expr_list in
-      Ltrywith(transl_exp body, id,
+      let cont = Lambda.next_raise_count () in
+      Ltrywith(transl_exp body, cont, id,
                Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
       let ll, shape = transl_list_with_shape el in
@@ -1348,9 +1349,10 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   and exn_cases = transl_cases_try exn_pat_expr_list in
   let static_catch body val_ids handler =
     let static_exception_id = next_raise_count () in
+    let trap = next_raise_count () in
     Lstaticcatch
-      (Ltrywith (Lstaticraise (static_exception_id, body), id,
-                 Matching.for_trywith (Lvar id) exn_cases),
+      (Ltrywith (Lstaticraise (static_exception_id, body, Pop [trap]),
+                 trap, id, Matching.for_trywith (Lvar id) exn_cases),
        (static_exception_id, val_ids),
        handler)
   in

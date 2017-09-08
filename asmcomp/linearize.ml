@@ -26,7 +26,9 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    live: Reg.Set.t }
+    live: Reg.Set.t;
+    trap_depth: int;
+  }
 
 and instruction_desc =
     Lend
@@ -38,8 +40,9 @@ and instruction_desc =
   | Lcondbranch of test * label
   | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
-  | Lsetuptrap of label
-  | Lpushtrap
+  | Ladjust_trap_depth of int
+  | Lentertrap
+  | Lpushtrap of { handler : label; }
   | Lpoptrap
   | Lraise of Cmm.raise_kind
 
@@ -79,27 +82,67 @@ let rec end_instr =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    trap_depth = 0;
+  }
 
-(* Cons an instruction (live, debug empty) *)
+(* Add directives to compensate for differences in exception trap depths
+   when blocks are juxtaposed. *)
+
+let adjust_trap_depth ~before ~after =
+  let adjustment = after.trap_depth - before in
+  if adjustment = 0 then
+    after
+  else
+    match after.desc with
+    | Ladjust_trap_depth delta ->
+      if delta + adjustment = 0 then after.next
+      else { after with desc = Ladjust_trap_depth (delta + adjustment);
+                        trap_depth = before; }
+    | _ ->
+      { desc = Ladjust_trap_depth adjustment;
+        next = after;
+        arg = [||];
+        res = [||];
+        dbg = Debuginfo.none;
+        live = Reg.Set.empty;
+        trap_depth = before;
+      }
+
+(* Cons an instruction (live, debug empty) assuming that no trap depth
+   adjustments need doing.  (Currently only used by [Branch_relaxation].) *)
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    trap_depth = n.trap_depth;
+  }
 
 (* Cons a simple instruction (arg, res, live empty) *)
 
 let cons_instr d n =
   { desc = d; next = n; arg = [||]; res = [||];
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    trap_depth = n.trap_depth;
+  }
 
 (* Build an instruction with arg, res, dbg, live taken from
    the given Mach.instruction *)
 
 let copy_instr d i n =
+  let trap_depth =
+    match d with
+    | Lpushtrap _ ->
+      assert (n.trap_depth > 0);
+      n.trap_depth - 1
+    | Lpoptrap -> n.trap_depth + 1
+    | _ -> n.trap_depth
+  in
   { desc = d; next = n;
     arg = i.Mach.arg; res = i.Mach.res;
-    dbg = i.Mach.dbg; live = i.Mach.live }
+    dbg = i.Mach.dbg; live = i.Mach.live;
+    trap_depth;
+  }
 
 (*
    Label the beginning of the given instruction sequence.
@@ -112,6 +155,14 @@ let get_label n = match n.desc with
   | Llabel lbl -> (lbl, n)
   | Lend -> (-1, n)
   | _ -> let lbl = Cmm.new_label() in (lbl, cons_instr (Llabel lbl) n)
+
+let get_real_label n =
+  match n.desc with
+  | Lbranch lbl -> (lbl, n)
+  | Llabel lbl -> (lbl, n)
+  | _ ->
+    let lbl = Cmm.new_label () in
+    (lbl, cons_instr (Llabel lbl) n)
 
 (* Check the fallthrough label *)
 let check_label n = match n.desc with
@@ -127,10 +178,15 @@ let rec discard_dead_code n =
   match n.desc with
     Lend -> n
   | Llabel _ -> n
-(* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
-   as this may cause a stack imbalance later during assembler generation. *)
-  | Lpoptrap | Lpushtrap -> n
-  | Lop(Istackoffset _) -> n
+    (* Do not discard Lpoptrap/Lpushtrap or Istackoffset instructions,
+       as this may cause a stack imbalance later during assembler generation.
+       However it's ok to eliminate dead instructions after them. *)
+  | Lpoptrap | Lpushtrap _
+  | Lop(Istackoffset _) -> { n with next = discard_dead_code n.next; }
+  | Ladjust_trap_depth _ ->
+    let before = n.trap_depth in
+    let after = discard_dead_code n.next in
+    adjust_trap_depth ~before ~after
   | _ -> discard_dead_code n.next
 
 (*
@@ -149,29 +205,24 @@ let add_branch lbl n =
   else
     discard_dead_code n
 
-let try_depth = ref 0
-
-(* Association list: exit handler -> (handler label, try-nesting factor) *)
+(* Association list: exit handler -> (handler label, trap depth) *)
 
 let exit_label = ref []
 
-let find_exit_label_try_depth k =
+let find_exit_label_trap_depth k =
   try
     List.assoc k !exit_label
   with
   | Not_found -> Misc.fatal_error "Linearize.find_exit_label"
 
 let find_exit_label k =
-  let (label, t) = find_exit_label_try_depth k in
-  assert(t = !try_depth);
+  let (label, _trap_depth') = find_exit_label_trap_depth k in
   label
 
-let is_next_catch n = match !exit_label with
-| (n0,(_,t))::_  when n0=n && t = !try_depth -> true
-| _ -> false
-
-let local_exit k =
-  snd (find_exit_label_try_depth k) = !try_depth
+let is_next_catch n ~trap_depth =
+  match !exit_label with
+  | (n0,(_,t))::_  when n0=n && t = trap_depth -> true
+  | _ -> false
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -179,6 +230,7 @@ let rec linear i n =
   match i.Mach.desc with
     Iend -> n
   | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
+      let n = adjust_trap_depth ~before:0 ~after:n in
       if not Config.spacetime then
         copy_instr (Lop op) i (discard_dead_code n)
       else
@@ -189,27 +241,29 @@ let rec linear i n =
   | Iop op ->
       copy_instr (Lop op) i (linear i.Mach.next n)
   | Ireturn ->
+      let n = adjust_trap_depth ~before:0 ~after:n in
       let n1 = copy_instr Lreturn i (discard_dead_code n) in
       if !Proc.contains_calls
       then cons_instr Lreloadretaddr n1
       else n1
   | Iifthenelse(test, ifso, ifnot) ->
       let n1 = linear i.Mach.next n in
+      let trap_depth = n1.trap_depth in
       begin match (ifso.Mach.desc, ifnot.Mach.desc, n1.desc) with
         Iend, _, Lbranch lbl ->
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
-      | Iexit nfail1, Iexit nfail2, _
-            when is_next_catch nfail1 && local_exit nfail2 ->
+      | Iexit (nfail1, Clambda.No_action), Iexit (nfail2, Clambda.No_action), _
+            when is_next_catch nfail1 ~trap_depth ->
           let lbl2 = find_exit_label nfail2 in
           copy_instr
             (Lcondbranch (invert_test test, lbl2)) i (linear ifso n1)
-      | Iexit nfail, _, _ when local_exit nfail ->
+      | Iexit (nfail, Clambda.No_action), _, _ ->
           let n2 = linear ifnot n1
           and lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(test, lbl)) i n2
-      | _,  Iexit nfail, _ when local_exit nfail ->
+      | _,  Iexit (nfail, Clambda.No_action), _ ->
           let n2 = linear ifso n1 in
           let lbl = find_exit_label nfail in
           copy_instr (Lcondbranch(invert_test test, lbl)) i n2
@@ -253,62 +307,100 @@ let rec linear i n =
       let n1 = linear i.Mach.next n in
       let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
       cons_instr (Llabel lbl_head) n2
-  | Icatch(_rec_flag, handlers, body) ->
-      let (lbl_end, n1) = get_label(linear i.Mach.next n) in
+  | Icatch(_rec_flag, is_exn_handler, handlers, body) ->
+      (* CR mshinwell: There were two problems:
+         1. The patch to introduce multiple handlers had forgotten to put
+            a branch at the end of each handler to the join point.
+         2. For:
+              catch
+                catch
+                  ...
+                with k1 -> ...
+              with k2 -> ...
+              Iend
+            then the "lbl_end" for the outermost catch is -1.  This means that
+            the recursive call to linearize the body of the catch would never
+            add a branch before the handler k2, since the code before that
+            branch must be unreachable.  So when we come to the second Icatch
+            then "lbl_end" ends up getting the label from the start of [k2],
+            which can cause dead "goto"s to jump to exception handling
+            continuations.  (Causes [Linear_invariants] to fail.)
+            It also seems as if the dead code elimination won't correctly
+            propagate backwards at present due to this -1 being lost.  It's
+            unclear to me whether there is any solution other than passing
+            [lbl_end] to [linear].
+            For the moment we don't use this -1 label at all, and make sure
+            there's a real label there.
+            Maybe there should be a separate pass for doing the dead code
+            elimination on Linear?
+      *)
+      (* CR mshinwell: Change the type to make this statically checked *)
+      assert (not is_exn_handler || List.length handlers = 1);
+      let (lbl_end, n1) = get_real_label (linear i.Mach.next n) in
       (* CR mshinwell for pchambart:
          1. rename "io"
          2. Make sure the test cases cover the "Iend" cases too *)
-      let labels_at_entry_to_handlers = List.map (fun (_nfail, handler) ->
+      let labels_at_entry_to_handlers = List.map (fun (_nfail, _, handler) ->
           match handler.Mach.desc with
           | Iend -> lbl_end
           | _ -> Cmm.new_label ())
           handlers in
-      let exit_label_add = List.map2
-          (fun (nfail, _) lbl -> (nfail, (lbl, !try_depth)))
-          handlers labels_at_entry_to_handlers in
       let previous_exit_label = !exit_label in
+      let exit_label_add =
+        List.map2 (fun (cont, trap_stack, _) lbl ->
+            (cont, (lbl, List.length trap_stack)))
+          handlers labels_at_entry_to_handlers
+      in
       exit_label := exit_label_add @ !exit_label;
-      let n2 = List.fold_left2 (fun n (_nfail, handler) lbl_handler ->
-          match handler.Mach.desc with
-          | Iend -> n
-          | _ -> cons_instr (Llabel lbl_handler) (linear handler n))
+      let n2 =
+        List.fold_left2 (fun n (_nfail, trap_stack, handler) lbl_handler ->
+            match handler.Mach.desc with
+            | Iend -> n
+            | _ ->
+              let trap_depth = List.length trap_stack in
+              let n = adjust_trap_depth ~before:trap_depth ~after:n in
+              let handler = linear handler (add_branch lbl_end n) in
+              let handler =
+                if is_exn_handler then
+                  cons_instr Lentertrap handler
+                else
+                  handler
+              in
+              cons_instr (Llabel lbl_handler) handler)
           n1 handlers labels_at_entry_to_handlers
       in
+      let n2 = adjust_trap_depth ~before:n1.trap_depth ~after:n2 in
       let n3 = linear body (add_branch lbl_end n2) in
       exit_label := previous_exit_label;
       n3
-  | Iexit nfail ->
-      let lbl, t = find_exit_label_try_depth nfail in
-      (* We need to re-insert dummy pushtrap (which won't be executed),
-         so as to preserve stack offset during assembler generation.
-         It would make sense to have a special pseudo-instruction
-         only to inform the later pass about this stack offset
-         (corresponding to N traps).
-       *)
-      let rec loop i tt =
-        if t = tt then i
-        else loop (cons_instr Lpushtrap i) (tt - 1)
-      in
-      let n1 = loop (linear i.Mach.next n) !try_depth in
-      let rec loop i tt =
-        if t = tt then i
-        else loop (cons_instr Lpoptrap i) (tt - 1)
-      in
-      loop (add_branch lbl n1) !try_depth
-  | Itrywith(body, handler) ->
-      let (lbl_join, n1) = get_label (linear i.Mach.next n) in
-      incr try_depth;
-      assert (i.Mach.arg = [| |] || Config.spacetime);
-      let (lbl_body, n2) =
-        get_label (instr_cons Lpushtrap i.Mach.arg [| |]
-                    (linear body (cons_instr Lpoptrap n1))) in
-      decr try_depth;
-      instr_cons (Lsetuptrap lbl_body) i.Mach.arg [| |]
-        (linear handler (add_branch lbl_join n2))
-  | Iraise k ->
+  | Iexit (nfail, ta) ->
+      let lbl, trap_depth = find_exit_label_trap_depth nfail in
+      let n1 = linear i.Mach.next n in
+      let n2 = adjust_trap_depth ~before:trap_depth ~after:n1 in
+      let n3 = add_branch lbl n2 in
+      begin match ta with
+      | Clambda.No_action -> n3
+      | Clambda.Pop cl ->
+          let add_poptrap _ n =
+            { (cons_instr Lpoptrap n) with trap_depth = n.trap_depth + 1 }
+          in
+          List.fold_right add_poptrap cl n3
+      | Clambda.Push cl ->
+        let add_pushtrap cont n =
+          assert (n.trap_depth > 0);
+          let handler = find_exit_label cont in
+          { (cons_instr (Lpushtrap { handler; }) n)
+            with trap_depth = n.trap_depth - 1; }
+        in
+        List.fold_right add_pushtrap cl n3
+      end
+  | Iraise (k, trap_stack) ->
+      let trap_depth = List.length trap_stack in
+      let n = adjust_trap_depth ~before:trap_depth ~after:n in
       copy_instr (Lraise k) i (discard_dead_code n)
 
 let fundecl f =
+  exit_label := [];
   { fun_name = f.Mach.fun_name;
     fun_body = linear f.Mach.fun_body end_instr;
     fun_fast = f.Mach.fun_fast;

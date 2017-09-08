@@ -21,16 +21,16 @@
         (while (< i j)
           (catch
               (while 1
-                (if (>= i hi) exit [])
-                (if (> (addraref a i) pivot) exit [])
+                (if (>= i hi) (exit l1) [])
+                (if (> (addraref a i) pivot) (exit l1) [])
                 (assign i (+ i 1)))
-           with [])
+           with (l1) [])
           (catch
               (while 1
-                (if (<= j lo) exit [])
-                (if (< (addraref a j) pivot) exit [])
+                (if (<= j lo) (exit l2) [])
+                (if (< (addraref a j) pivot) (exit l2) [])
                 (assign j (- j 1)))
-           with [])
+           with (l2) [])
           (if (< i j)
               (let temp (addraref a i)
                    (addraset a i (addraref a j))

@@ -1,0 +1,17 @@
+(* This program makes the invariant in trap_analysis fail.
+   The decision has been taken to consider this program broken, rather
+   than fix trap_analysis, but the program is left for reference. *)
+
+(function "double_exit" (b:val)
+  (let
+    x
+      (catch
+        (if (and b 1) (exit l 1a)
+          3a)
+      with (l x) x)
+    (try
+      (catch
+        (if (and b 1) (exit l 1a)
+          3a)
+      with (l x) x)
+     with var 456)))

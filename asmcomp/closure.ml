@@ -76,9 +76,10 @@ let occurs_var var u =
         occurs arg ||
         List.exists (fun (_,e) -> occurs e) sw ||
         (match d with None -> false | Some d -> occurs d)
-    | Ustaticfail (_, args) -> List.exists occurs args
-    | Ucatch(_, _, body, hdlr) -> occurs body || occurs hdlr
-    | Utrywith(body, _exn, hdlr) -> occurs body || occurs hdlr
+    | Ustaticfail (_, args, _) -> List.exists occurs args
+    | Ucatch(_, handlers, body) ->
+        occurs body
+          || List.exists (fun (_, _, handler) -> occurs handler) handlers
     | Uifthenelse(cond, ifso, ifnot) ->
         occurs cond || occurs ifso || occurs ifnot
     | Usequence(u1, u2) -> occurs u1 || occurs u2
@@ -175,11 +176,14 @@ let lambda_smaller lam threshold =
             lambda_size lam)
           sw ;
         Misc.may lambda_size d
-    | Ustaticfail (_,args) -> lambda_list_size args
-    | Ucatch(_, _, body, handler) ->
-        incr size; lambda_size body; lambda_size handler
-    | Utrywith(body, _id, handler) ->
-        size := !size + 8; lambda_size body; lambda_size handler
+    | Ustaticfail (_, args, No_action) ->
+        lambda_list_size args
+    | Ustaticfail (_, args, (Push cl | Pop cl)) ->
+        size := !size + 4 * (List.length cl);
+        lambda_list_size args
+    | Ucatch(_, handlers, body) ->
+        incr size; lambda_size body;
+        List.iter (fun (_, _, handler) -> lambda_size handler) handlers
     | Uifthenelse(cond, ifso, ifnot) ->
         size := !size + 2;
         lambda_size cond; lambda_size ifso; lambda_size ifnot
@@ -527,18 +531,21 @@ let subst_debuginfo loc dbg =
   else
     dbg
 
-let rec substitute loc fpc sb ulam =
+(* [rn] stands for renaming, and is used to guarantee unicity of continuations
+   by alpha-renaming *)
+
+let rec substitute loc fpc sb rn ulam =
   match ulam with
     Uvar v ->
       begin try Tbl.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Udirect_apply(lbl, List.map (substitute loc fpc sb) args, dbg)
+      Udirect_apply(lbl, List.map (substitute loc fpc sb rn) args, dbg)
   | Ugeneric_apply(fn, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Ugeneric_apply(substitute loc fpc sb fn,
-                     List.map (substitute loc fpc sb) args, dbg)
+      Ugeneric_apply(substitute loc fpc sb rn fn,
+                     List.map (substitute loc fpc sb rn) args, dbg)
   | Uclosure(defs, env) ->
       (* Question: should we rename function labels as well?  Otherwise,
          there is a risk that function labels are not globally unique.
@@ -548,12 +555,12 @@ let rec substitute loc fpc sb ulam =
          - When we substitute offsets for idents bound by let rec
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
-      Uclosure(defs, List.map (substitute loc fpc sb) env)
-  | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb u, ofs)
+      Uclosure(defs, List.map (substitute loc fpc sb rn) env)
+  | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb rn u, ofs)
   | Ulet(str, kind, id, u1, u2) ->
       let id' = Ident.rename id in
-      Ulet(str, kind, id', substitute loc fpc sb u1,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) u2)
+      Ulet(str, kind, id', substitute loc fpc sb rn u1,
+           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
@@ -563,17 +570,17 @@ let rec substitute loc fpc sb ulam =
           bindings1 sb in
       Uletrec(
         List.map
-           (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rhs))
+           (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rn rhs))
            bindings1,
-        substitute loc fpc sb' body)
+        substitute loc fpc sb' rn body)
   | Uprim(p, args, dbg) ->
-      let sargs = List.map (substitute loc fpc sb) args in
+      let sargs = List.map (substitute loc fpc sb rn) args in
       let dbg = subst_debuginfo loc dbg in
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw, dbg) ->
-      let sarg = substitute loc fpc sb arg in
+      let sarg = substitute loc fpc sb rn arg in
       let action =
         (* Unfortunately, we cannot easily deal with the
            case of a constructed block (makeblock) bound to a local
@@ -589,64 +596,84 @@ let rec substitute loc fpc sb ulam =
         | _ -> None
       in
       begin match action with
-      | Some u -> substitute loc fpc sb u
+      | Some u -> substitute loc fpc sb rn u
       | None ->
           Uswitch(sarg,
                   { sw with
                     us_actions_consts =
-                      Array.map (substitute loc fpc sb) sw.us_actions_consts;
+                      Array.map (substitute loc fpc sb rn) sw.us_actions_consts;
                     us_actions_blocks =
-                      Array.map (substitute loc fpc sb) sw.us_actions_blocks;
+                      Array.map (substitute loc fpc sb rn) sw.us_actions_blocks;
                   },
                   dbg)
       end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
-        (substitute loc fpc sb arg,
-         List.map (fun (s,act) -> s,substitute loc fpc sb act) sw,
-         Misc.may_map (substitute loc fpc sb) d)
-  | Ustaticfail (nfail, args) ->
-      Ustaticfail (nfail, List.map (substitute loc fpc sb) args)
-  | Ucatch(nfail, ids, u1, u2) ->
-      let ids' = List.map Ident.rename ids in
-      let sb' =
-        List.fold_right2
-          (fun id id' s -> Tbl.add id (Uvar id') s)
-          ids ids' sb
+        (substitute loc fpc sb rn arg,
+         List.map (fun (s,act) -> s,substitute loc fpc sb rn act) sw,
+         Misc.may_map (substitute loc fpc sb rn) d)
+  | Ustaticfail (nfail, args, ta) ->
+      (* nfail and ta can refer to continuations outside the
+         scope of the call to substitute (e.g. when translating letrecs)
+         so finding a continuation not in the table is not an error. *)
+      let rename_if_possible cont =
+        try Tbl.find cont rn
+        with Not_found -> cont
       in
-      Ucatch(nfail, ids', substitute loc fpc sb u1, substitute loc fpc sb' u2)
-  | Utrywith(u1, id, u2) ->
-      let id' = Ident.rename id in
-      Utrywith(substitute loc fpc sb u1, id',
-               substitute loc fpc (Tbl.add id (Uvar id') sb) u2)
+      let ta = match ta with
+        | No_action -> No_action
+        | Pop cl -> Pop (List.map rename_if_possible cl)
+        | Push cl -> Push (List.map rename_if_possible cl)
+      in
+      Ustaticfail (rename_if_possible nfail,
+                   List.map (substitute loc fpc sb rn) args, ta)
+  | Ucatch(kind, handlers, body) ->
+      let rn' = ref rn in
+      let subst_handler (nfail, ids, handler) =
+        let ids' = List.map Ident.rename ids in
+        let sb' =
+          List.fold_right2
+            (fun id id' s -> Tbl.add id (Uvar id') s)
+            ids ids' sb
+        in
+        let nfail' = Lambda.next_raise_count () in
+        rn' := Tbl.add nfail nfail' !rn';
+        nfail', ids', substitute loc fpc sb' rn handler
+      in
+      let handlers = List.map subst_handler handlers in
+      Ucatch(kind, handlers, substitute loc fpc sb !rn' body)
   | Uifthenelse(u1, u2, u3) ->
-      begin match substitute loc fpc sb u1 with
+      begin match substitute loc fpc sb rn u1 with
         Uconst (Uconst_ptr n) ->
-          if n <> 0 then substitute loc fpc sb u2 else substitute loc fpc sb u3
+          if n <> 0 then
+            substitute loc fpc sb rn u2
+          else substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
-          substitute loc fpc sb u2
+          substitute loc fpc sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute loc fpc sb u2, substitute loc fpc sb u3)
+          Uifthenelse(su1,
+                      substitute loc fpc sb rn u2,
+                      substitute loc fpc sb rn u3)
       end
   | Usequence(u1, u2) ->
-      Usequence(substitute loc fpc sb u1, substitute loc fpc sb u2)
+      Usequence(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
   | Uwhile(u1, u2) ->
-      Uwhile(substitute loc fpc sb u1, substitute loc fpc sb u2)
+      Uwhile(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = Ident.rename id in
-      Ufor(id', substitute loc fpc sb u1, substitute loc fpc sb u2, dir,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) u3)
+      Ufor(id', substitute loc fpc sb rn u1, substitute loc fpc sb rn u2, dir,
+           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u3)
   | Uassign(id, u) ->
       let id' =
         try
           match Tbl.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
-      Uassign(id', substitute loc fpc sb u)
+      Uassign(id', substitute loc fpc sb rn u)
   | Usend(k, u1, u2, ul, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Usend(k, substitute loc fpc sb u1, substitute loc fpc sb u2,
-            List.map (substitute loc fpc sb) ul, dbg)
+      Usend(k, substitute loc fpc sb rn u1, substitute loc fpc sb rn u2,
+            List.map (substitute loc fpc sb rn) ul, dbg)
   | Uunreachable ->
       Uunreachable
 
@@ -662,7 +689,7 @@ let no_effects = function
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
-    ([], []) -> substitute loc fpc subst body
+    ([], []) -> substitute loc fpc subst Tbl.empty body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
         bind_params_rec loc fpc (Tbl.add p1 a1 subst) pl al body
@@ -773,7 +800,12 @@ let excessive_function_nesting_depth = 5
    The approximation environment [fenv] maps idents to approximations.
    Idents not bound in [fenv] approximate to [Value_unknown].
    The closure environment [cenv] maps idents to [ulambda] terms.
-   It is used to substitute environment accesses for free identifiers. *)
+   It is used to substitute environment accesses for free identifiers.
+   The exception stacks [estacks] is a couple [(cur_stack, cont_stacks)]
+   where [cur_stack] is the current exception stack and [cont_stacks] maps
+   continuations to the exception stack of the handler.
+   It is used to insert push/poptrap instructions at staticraise points
+   that cross a trywith boundary. *)
 
 exception NotClosed
 
@@ -831,7 +863,9 @@ let rec close fenv cenv = function
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
       let nargs = List.length args in
-      begin match (close fenv cenv funct, close_list fenv cenv args) with
+      let ufunct = close fenv cenv funct in
+      let uargs = close_list fenv cenv args in
+      begin match (ufunct, uargs) with
         ((ufunct, Value_closure(fundesc, approx_res)),
          [Uprim(Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
@@ -941,13 +975,15 @@ let rec close fenv cenv = function
             (fun (id, _pos, approx) fenv -> Tbl.add id approx fenv)
             infos fenv in
         let (ubody, approx) = close fenv_body cenv body in
+        let fpc = !Clflags.float_const_prop in
         let sb =
           List.fold_right
             (fun (id, pos, _approx) sb ->
               Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
+        let rn = Tbl.empty in
         (Ulet(Immutable, Pgenval, clos_ident, clos,
-              substitute Location.none !Clflags.float_const_prop sb ubody),
+              substitute Location.none fpc sb rn ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
@@ -1015,16 +1051,17 @@ let rec close fenv cenv = function
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let fail = sw.sw_failaction in
       begin match fail with
-      | None|Some (Lstaticraise (_,_)) -> fn fail
+      | None|Some (Lstaticraise (_,_,_)) -> fn fail
       | Some lamfail ->
           if
             (sw.sw_numconsts - List.length sw.sw_consts) +
             (sw.sw_numblocks - List.length sw.sw_blocks) > 1
           then
             let i = next_raise_count () in
-            let ubody,_ = fn (Some (Lstaticraise (i,[])))
+            let ubody,_ = fn (Some (Lstaticraise (i,[],No_action)))
             and uhandler,_ = close fenv cenv lamfail in
-            Ucatch (i,[],ubody,uhandler),Value_unknown
+            Ucatch (Normal Nonrecursive, [i, [], uhandler], ubody),
+              Value_unknown
           else fn fail
       end
   | Lstringswitch(arg,sw,d,_) ->
@@ -1041,16 +1078,23 @@ let rec close fenv cenv = function
             let ud,_ = close fenv cenv d in
             ud) d in
       Ustringswitch (uarg,usw,ud),Value_unknown
-  | Lstaticraise (i, args) ->
-      (Ustaticfail (i, close_list fenv cenv args), Value_unknown)
+  | Lstaticraise (i, args, ta) ->
+      let uargs = close_list fenv cenv args in
+      let ta: Clambda.trap_action =
+        match ta with
+        | No_action -> No_action
+        | Pop cl -> Pop cl
+      in
+      (Ustaticfail (i, uargs, ta), Value_unknown)
   | Lstaticcatch(body, (i, vars), handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(i, vars, ubody, uhandler), Value_unknown)
-  | Ltrywith(body, id, handler) ->
+      (Ucatch(Normal Nonrecursive, [i, vars, uhandler], ubody),
+        Value_unknown)
+  | Ltrywith(body, cont, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Utrywith(ubody, id, uhandler), Value_unknown)
+      (Clambda.trywith ubody cont id uhandler, Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
         (uarg, Value_const (Uconst_ptr n)) ->
@@ -1276,7 +1320,7 @@ and close_switch fenv cenv cases num_keys default =
   let actions =
     Array.map
       (function
-        | Single lam|Shared (Lstaticraise (_,[]) as lam) ->
+        | Single lam|Shared (Lstaticraise (_,[],_) as lam) ->
             let ulam,_ = close fenv cenv lam in
             ulam
         | Shared lam ->
@@ -1291,8 +1335,9 @@ and close_switch fenv cenv cases num_keys default =
                 (string_of_lambda lam) ;
 *)
             let ohs = !hs in
-            hs := (fun e -> Ucatch (i,[],ohs e,ulam)) ;
-            Ustaticfail (i,[]))
+            hs := (fun e ->
+              Ucatch (Normal Nonrecursive, [i, [], ulam], ohs e)) ;
+            Ustaticfail (i,[],No_action))
       acts in
   match actions with
   | [| |] -> [| |], [| |], !hs (* May happen when default is None *)
@@ -1344,9 +1389,10 @@ let collect_exported_structured_constants a =
         ulam u ;
         List.iter (fun (_,act) -> ulam act) sw ;
         Misc.may ulam d
-    | Ustaticfail (_, ul) -> List.iter ulam ul
-    | Ucatch (_, _, u1, u2)
-    | Utrywith (u1, _, u2)
+    | Ustaticfail (_, ul, _) -> List.iter ulam ul
+    | Ucatch (_, handlers, body) ->
+        List.iter (fun (_, _, handler) -> ulam handler) handlers;
+        ulam body
     | Usequence (u1, u2)
     | Uwhile (u1, u2)  -> ulam u1; ulam u2
     | Uifthenelse (u1, u2, u3)

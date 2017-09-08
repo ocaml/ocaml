@@ -21,6 +21,8 @@
     behaviour should be checked. *)
 type label = Cmm.label
 
+type trap_stack = int list
+
 type integer_comparison =
     Isigned of Cmm.comparison
   | Iunsigned of Cmm.comparison
@@ -30,7 +32,7 @@ type integer_operation =
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
   | Icheckbound of { label_after_error : label option;
-        spacetime_index : int; }
+        spacetime_index : int; trap_stack : trap_stack; }
     (** For Spacetime only, [Icheckbound] operations take two arguments, the
         second being the pointer to the trie node for the current function
         (and the first being as per non-Spacetime mode). *)
@@ -51,17 +53,19 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
+  | Icall_ind of { label_after : label; trap_stack : trap_stack; }
+  | Icall_imm of { func : string; label_after : label;
+      trap_stack : trap_stack; }
   | Itailcall_ind of { label_after : label; }
   | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Iextcall of { func : string; alloc : bool; label_after : label;
+      trap_stack : trap_stack; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
                                  (* false = initialization, true = assignment *)
   | Ialloc of { words : int; label_after_call_gc : label option;
-      spacetime_index : int; }
+      spacetime_index : int; trap_stack : trap_stack; }
     (** For Spacetime only, Ialloc instructions take one argument, being the
         pointer to the trie node for the current function. *)
   | Iintop of integer_operation
@@ -89,6 +93,12 @@ type instruction =
     mutable available_across: Reg_availability_set.t option;
   }
 
+(** The CFG successor edges at exception-raising instructions are those
+    given naturally by the [desc] together with the exception handlers
+    (referenced by continuation number) given by the [trap_stack] attached
+    to such instructions.
+    [Icatch] is also annotated with the trap stack at the start of each of
+    its handlers. *)
 and instruction_desc =
     Iend
   | Iop of operation
@@ -96,10 +106,11 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
-  | Iexit of int
-  | Itrywith of instruction * instruction
-  | Iraise of Cmm.raise_kind
+  (* CR mshinwell: Use Clambda.catch_kind or similar *)
+  | Icatch of Cmm.rec_flag * bool * (int * trap_stack * instruction) list
+      * instruction
+  | Iexit of int * Clambda.trap_action
+  | Iraise of Cmm.raise_kind * trap_stack
 
 type spacetime_part_of_shape =
   | Direct_call_point of { callee : string; (* the symbol *) }

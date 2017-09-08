@@ -22,6 +22,20 @@ let rec_flag ppf = function
   | Nonrecursive -> ()
   | Recursive -> fprintf ppf " rec"
 
+let conts ppf = function
+  | [] -> fprintf ppf "(none)"
+  | [c] -> fprintf ppf "%d" c
+  | hd :: tl ->
+      fprintf ppf "[%d" hd;
+      List.iter (fun c -> fprintf ppf ",%d" c) tl;
+      fprintf ppf "]"
+
+(* Copied from Printclambda to avoid changing the linking order *)
+let trap_action ppf = function
+  | Clambda.No_action -> ()
+  | Clambda.Pop cl -> fprintf ppf "{pop %a} " conts cl
+  | Clambda.Push cl -> fprintf ppf "{push %a} " conts cl
+
 let machtype_component ppf = function
   | Val -> fprintf ppf "val"
   | Addr -> fprintf ppf "addr"
@@ -167,7 +181,7 @@ let rec expr ppf = function
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
-  | Ccatch(flag, handlers, e1) ->
+  | Ccatch(kind, handlers, e1) ->
       let print_handler ppf (i, ids, e2) =
         fprintf ppf "(%d%a)@ %a"
           i
@@ -181,17 +195,17 @@ let rec expr ppf = function
         List.iter (print_handler ppf) l
       in
       fprintf ppf
-        "@[<2>(catch%a@ %a@;<1 -2>with%a)@]"
-        rec_flag flag
+        "@[<2>(catch%s@ %a@;<1 -2>with%a)@]"
+        (match kind with
+          | Clambda.Normal Asttypes.Nonrecursive -> ""
+          | Clambda.Normal Asttypes.Recursive -> "_rec"
+          | Clambda.Exn_handler -> "_exn")
         sequence e1
         print_handlers handlers
-  | Cexit (i, el) ->
-      fprintf ppf "@[<2>(exit %d" i;
+  | Cexit (i, el, ta) ->
+      fprintf ppf "@[<2>(exit %a%d" trap_action ta i;
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       fprintf ppf ")@]"
-  | Ctrywith(e1, id, e2) ->
-      fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
-             sequence e1 Ident.print id sequence e2
 
 and sequence ppf = function
   | Csequence(e1, e2) -> fprintf ppf "%a@ %a" sequence e1 sequence e2

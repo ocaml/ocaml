@@ -14,7 +14,7 @@ let rec make_letdef def body =
 let make_switch n selector caselist =
   let index = Array.make n 0 in
   let casev = Array.of_list caselist in
-  let actv = Array.make (Array.length casev) (Cexit(0,[])) in
+  let actv = Array.make (Array.length casev) (Cexit(0,[],No_action)) in
   for i = 0 to Array.length casev - 1 do
     let (posl, e) = casev.(i) in
     List.iter (fun pos -> index.(pos) <- i) posl;
@@ -191,20 +191,30 @@ expr:
   | LPAREN IF expr expr expr RPAREN { Cifthenelse($3, $4, $5) }
   | LPAREN SWITCH INTCONST expr caselist RPAREN { make_switch $3 $4 $5 }
   | LPAREN WHILE expr sequence RPAREN
-      { let body =
+      { let cont = Lambda.next_raise_count () in
+        let body =
           match $3 with
             Cconst_int x when x <> 0 -> $4
-          | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(Recursive, [0, [], Cloop body], Ctuple []) }
+          | _ -> Cifthenelse($3, $4, (Cexit(cont,[],No_action))) in
+        Ccatch(Normal Recursive, [cont, [], Cloop body], Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
-    { Cexit(find_label $3, List.rev $4) }
+    { Cexit(find_label $3, List.rev $4,No_action) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
     { let handlers = $5 in
       List.iter (fun (_, l, _) -> List.iter unbind_ident l) handlers;
-      Ccatch(Recursive, handlers, $3) }
-  | EXIT        { Cexit(0,[]) }
+      Ccatch(Normal Recursive, handlers, $3) }
+  | EXIT        { Cexit(0,[],No_action) }
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
-                { unbind_ident $5; Ctrywith($3, $5, $6) }
+    { unbind_ident $5;
+      let cont = Lambda.next_raise_count () in
+      let cont1 = Lambda.next_raise_count () in
+      let cont2 = Lambda.next_raise_count () in
+      let result = bind_ident "result" in
+      Ccatch (Exn_handler, [cont, [$5], $6],
+        Ccatch (Normal Nonrecursive, [cont2, [result], Cvar result],
+          Ccatch (Normal Nonrecursive, [cont1, [], Cexit (cont2, [$3], Pop [cont])],
+            Cexit (cont1, [], Push [cont]))))
+    }
   | LPAREN VAL expr expr RPAREN
       { Cop(Cload (Word_val, Mutable), [access_array $3 $4 Arch.size_addr],
           debuginfo ()) }

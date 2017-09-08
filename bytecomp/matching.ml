@@ -488,18 +488,18 @@ module StoreExp =
     end)
 
 
-let make_exit i = Lstaticraise (i,[])
+let make_exit i = Lstaticraise (i,[],No_action)
 
 (* Introduce a catch, if worth it *)
 let make_catch d k = match d with
-| Lstaticraise (_,[]) -> k d
+| Lstaticraise (_,[],No_action) -> k d
 | _ ->
     let e = next_raise_count () in
     Lstaticcatch (k (make_exit e),(e,[]),d)
 
 (* Introduce a catch, if worth it, delayed version *)
 let rec as_simple_exit = function
-  | Lstaticraise (i,[]) -> Some i
+  | Lstaticraise (i,[],No_action) -> Some i
   | Llet (Alias,_k,_,_,e) -> as_simple_exit e
   | _ -> None
 
@@ -513,7 +513,7 @@ let make_catch_delayed handler = match as_simple_exit handler with
 *)
     i,
     (fun body -> match body with
-    | Lstaticraise (j,_) ->
+    | Lstaticraise (j,_,No_action) ->
         if i=j then handler else body
     | _ -> Lstaticcatch (body,(i,[]),handler))
 
@@ -1118,7 +1118,7 @@ and precompile_or argo cls ors args def k = match ors with
 
           let mk_new_action vs =
             Lstaticraise
-              (or_num, List.map (fun v -> Lvar v) vs) in
+              (or_num, List.map (fun v -> Lvar v) vs, No_action) in
 
           let body,handlers = do_cases rem in
           explode_or_pat
@@ -2140,7 +2140,7 @@ let mk_failaction_neg partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
-        Some (Lstaticraise (idef,[])),jumps_singleton idef ctx
+        Some (Lstaticraise (idef,[],No_action)),jumps_singleton idef ctx
     | [] ->
        (* Act as Total, this means
           If no appropriate default matrix exists,
@@ -2163,7 +2163,7 @@ let mk_failaction_pos partial seen ctx defs  =
   | ([],_)|(_,[]) ->
       List.fold_left
         (fun  (klist,jumps) (pats,i)->
-          let action = Lstaticraise (i,[]) in
+          let action = Lstaticraise (i,[],No_action) in
           let klist =
             List.fold_right
               (fun pat r -> (get_key_constr pat,action)::r)
@@ -2531,7 +2531,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           let handler_i, total_i =
             compile_fun ctx pm in
           match raw_action r with
-          | Lstaticraise (j,args) ->
+          | Lstaticraise (j,args,No_action) ->
               if i=j then
                 List.fold_right2 (bind Alias) vars args handler_i,
                 jumps_map (ctx_rshift_num (ncols mat)) total_i
@@ -2568,7 +2568,7 @@ let compile_test compile_fun partial divide combine ctx to_match =
 (* Approximation of v present in lam *)
 let rec approx_present v = function
   | Lconst _ -> false
-  | Lstaticraise (_,args) ->
+  | Lstaticraise (_,args,_) ->
       List.exists (fun lam -> approx_present v lam) args
   | Lprim (_,args,_) ->
       List.exists (fun lam -> approx_present v lam) args
@@ -2610,7 +2610,7 @@ let bind_check str v arg lam = match str,arg with
 | _,_     -> bind str v arg lam
 
 let comp_exit ctx m = match m.default with
-| (_,i)::_ -> Lstaticraise (i,[]), jumps_singleton i ctx
+| (_,i)::_ -> Lstaticraise (i,[],No_action), jumps_singleton i ctx
 | _        -> fatal_error "Matching.comp_exit"
 
 
@@ -2965,18 +2965,19 @@ let simple_for_let loc param pat body =
    catch/exit.
 *)
 
-let rec map_return f = function
-  | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f l2)
-  | Lletrec (l1, l2) -> Lletrec (l1, map_return f l2)
+let rec map_return f tr = function
+  | Llet (str, k, id, l1, l2) -> Llet (str, k, id, l1, map_return f tr l2)
+  | Lletrec (l1, l2) -> Lletrec (l1, map_return f tr l2)
   | Lifthenelse (lcond, lthen, lelse) ->
-      Lifthenelse (lcond, map_return f lthen, map_return f lelse)
-  | Lsequence (l1, l2) -> Lsequence (l1, map_return f l2)
-  | Levent (l, ev) -> Levent (map_return f l, ev)
-  | Ltrywith (l1, id, l2) -> Ltrywith (map_return f l1, id, map_return f l2)
+      Lifthenelse (lcond, map_return f tr lthen, map_return f tr lelse)
+  | Lsequence (l1, l2) -> Lsequence (l1, map_return f tr l2)
+  | Levent (l, ev) -> Levent (map_return f tr l, ev)
+  | Ltrywith (l1, c, id, l2) ->
+      Ltrywith (map_return f (c :: tr) l1, c, id, map_return f tr l2)
   | Lstaticcatch (l1, b, l2) ->
-      Lstaticcatch (map_return f l1, b, map_return f l2)
+      Lstaticcatch (map_return f tr l1, b, map_return f tr l2)
   | Lstaticraise _ | Lprim(Praise _, _, _) as l -> l
-  | l -> f l
+  | l -> f tr l
 
 (* The 'opt' reference indicates if the optimization is worthy.
 
@@ -2993,7 +2994,7 @@ let rec map_return f = function
    can be costly (one unnecessary tuple allocation).
 *)
 
-let assign_pat opt nraise catch_ids loc pat lam =
+let assign_pat opt nraise catch_ids loc pat traps lam =
   let rec collect acc pat lam = match pat.pat_desc, lam with
   | Tpat_tuple patl, Lprim(Pmakeblock _, lams, _) ->
       opt := true;
@@ -3022,7 +3023,12 @@ let assign_pat opt nraise catch_ids loc pat lam =
     let add_ids acc (ids, _pat, _lam) = List.fold_left add acc ids in
     let tbl = List.fold_left add_ids Ident.empty rev_sublets in
     let fresh_var id = Lvar (Ident.find_same id tbl) in
-    Lstaticraise(nraise, List.map fresh_var catch_ids)
+    let ta =
+      match traps with
+      | [] -> No_action
+      | l -> Pop l
+    in
+    Lstaticraise(nraise, List.map fresh_var catch_ids, ta)
   in
   let push_sublet code (_ids, pat, lam) = simple_for_let loc lam pat code in
   List.fold_left push_sublet exit rev_sublets
@@ -3041,7 +3047,9 @@ let for_let loc param pat body =
       let opt = ref false in
       let nraise = next_raise_count () in
       let catch_ids = pat_bound_idents pat in
-      let bind = map_return (assign_pat opt nraise catch_ids loc pat) param in
+      let bind =
+        map_return (assign_pat opt nraise catch_ids loc pat) [] param
+      in
       if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
       else simple_for_let loc param pat body
 

@@ -42,7 +42,7 @@ let rec no_effects (flam : Flambda.t) =
     List.for_all (fun (_, lam) -> no_effects lam) sw
       && Misc.Stdlib.Option.value_default no_effects def
         ~default:true
-  | Static_catch (_, _, body, _) | Try_with (body, _, _) ->
+  | Static_catch (_, _, body, _) | Try_with (body, _, _, _) ->
     (* If there is a [raise] in [body], the whole [Try_with] may have an
        effect, so there is no need to test the handler. *)
     no_effects body

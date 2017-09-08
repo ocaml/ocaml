@@ -17,6 +17,8 @@
 
 type label = Cmm.label
 
+type trap_stack = int list
+
 type integer_comparison =
     Isigned of Cmm.comparison
   | Iunsigned of Cmm.comparison
@@ -26,7 +28,7 @@ type integer_operation =
   | Iand | Ior | Ixor | Ilsl | Ilsr | Iasr
   | Icomp of integer_comparison
   | Icheckbound of { label_after_error : label option;
-        spacetime_index : int; }
+        spacetime_index : int; trap_stack : trap_stack; }
 
 type test =
     Itruetest
@@ -44,16 +46,18 @@ type operation =
   | Iconst_int of nativeint
   | Iconst_float of int64
   | Iconst_symbol of string
-  | Icall_ind of { label_after : label; }
-  | Icall_imm of { func : string; label_after : label; }
+  | Icall_ind of { label_after : label; trap_stack : trap_stack; }
+  | Icall_imm of { func : string; label_after : label;
+      trap_stack : trap_stack; }
   | Itailcall_ind of { label_after : label; }
   | Itailcall_imm of { func : string; label_after : label; }
-  | Iextcall of { func : string; alloc : bool; label_after : label; }
+  | Iextcall of { func : string; alloc : bool; label_after : label;
+      trap_stack : trap_stack; }
   | Istackoffset of int
   | Iload of Cmm.memory_chunk * Arch.addressing_mode
   | Istore of Cmm.memory_chunk * Arch.addressing_mode * bool
   | Ialloc of { words : int; label_after_call_gc : label option;
-        spacetime_index : int; }
+        spacetime_index : int; trap_stack : trap_stack; }
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
@@ -80,10 +84,10 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
-  | Iexit of int
-  | Itrywith of instruction * instruction
-  | Iraise of Cmm.raise_kind
+  | Icatch of Cmm.rec_flag * bool * (int * trap_stack * instruction) list
+      * instruction
+  | Iexit of int * Clambda.trap_action
+  | Iraise of Cmm.raise_kind * trap_stack
 
 type spacetime_part_of_shape =
   | Direct_call_point of { callee : string; }
@@ -153,13 +157,11 @@ let rec instr_iter f i =
           instr_iter f i.next
       | Iloop(body) ->
           instr_iter f body; instr_iter f i.next
-      | Icatch(_, handlers, body) ->
+      | Icatch(_, _, handlers, body) ->
           instr_iter f body;
-          List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
+          List.iter (fun (_n, _, handler) -> instr_iter f handler) handlers;
           instr_iter f i.next
       | Iexit _ -> ()
-      | Itrywith(body, handler) ->
-          instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise _ -> ()
       | _ ->
           instr_iter f i.next
@@ -192,11 +194,11 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
     | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-    | Ifloatofint | Iintoffloat
+    | Ifloatofint | Iintoffloat -> false
     | Iname_for_debugger _ -> false
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
-  | Iexit _ | Itrywith _ | Iraise _ -> false
+  | Iexit _ | Iraise _ -> false
 
 let operation_can_raise op =
   match op with

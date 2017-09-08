@@ -360,8 +360,10 @@ method schedule_fundecl f =
   let rec schedule i try_nesting =
     match i.desc with
     | Lend -> i
-    | Lpushtrap -> { i with next = schedule i.next (try_nesting + 1) }
+    | Lpushtrap _ -> { i with next = schedule i.next (try_nesting + 1) }
     | Lpoptrap -> { i with next = schedule i.next (try_nesting - 1) }
+    | Ladjust_trap_depth delta ->
+      { i with next = schedule i.next (try_nesting + delta) }
     | _ ->
         if self#instr_in_basic_block i try_nesting then begin
           clear_code_dag();

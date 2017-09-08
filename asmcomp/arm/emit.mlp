@@ -783,13 +783,22 @@ let emit_instr i =
           done;
           2 + Array.length jumptbl
         end
-    | Lsetuptrap lbl ->
-        `	bl	{emit_label lbl}\n`; 1
-    | Lpushtrap ->
+    | Lentertrap ->
+        0
+    | Ladjust_trap_depth delta ->
+        let delta = 8 * delta in
+        cfi_adjust_cfa_offset delta;
+        stack_offset := !stack_offset + delta; 0
+    | Lpushtrap { handler; } ->
+        (* Using lr since :
+           - it was used by the previous version (because of a bl jump)
+           - its position relative to trap_ptr is the same as pc,
+             so the pop instruction in Lraise is correct *)
+        `	ldr	lr, {emit_label handler}\n`;
         stack_offset := !stack_offset + 8;
         `	push	\{trap_ptr, lr}\n`;
         cfi_adjust_cfa_offset 8;
-        `	mov	trap_ptr, sp\n`; 2
+        `	mov	trap_ptr, sp\n`; 3
     | Lpoptrap ->
         `	pop	\{trap_ptr, lr}\n`;
         cfi_adjust_cfa_offset (-8);

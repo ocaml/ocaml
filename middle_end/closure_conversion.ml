@@ -157,6 +157,13 @@ let close_const t (const : Lambda.structured_constant)
   | Symbol s, name ->
     Symbol s, name
 
+let close_traps env tl = List.map (Env.find_static_exception env) tl
+
+let close_trap_action env (ta: Lambda.trap_action) : Flambda.trap_action =
+  match ta with
+  | No_action -> No_action
+  | Pop l -> Pop (close_traps env l)
+
 let rec close t env (lam : Lambda.lambda) : Flambda.t =
   match lam with
   | Lvar id ->
@@ -487,22 +494,25 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       (String_switch (scrutinee,
         List.map (fun (s, e) -> s, close t env e) sw,
         Misc.may_map (close t env) def))
-  | Lstaticraise (i, args) ->
+  | Lstaticraise (i, args, ta) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
       ~name:"staticraise_arg"
       ~create_body:(fun args ->
         let static_exn = Env.find_static_exception env i in
-        Static_raise (static_exn, args))
+        let ta = close_trap_action env ta in
+        Static_raise (static_exn, args, ta))
   | Lstaticcatch (body, (i, ids), handler) ->
     let st_exn = Static_exception.create () in
     let env = Env.add_static_exception env i st_exn in
     let vars = List.map (Variable.create_with_same_name_as_ident) ids in
     Static_catch (st_exn, vars, close t env body,
       close t (Env.add_vars env ids vars) handler)
-  | Ltrywith (body, id, handler) ->
+  | Ltrywith (body, cont, id, handler) ->
     let var = Variable.create_with_same_name_as_ident id in
-    Try_with (close t env body, var, close t (Env.add_var env id var) handler)
+    let st_exn = Static_exception.create () in
+    Try_with (close t (Env.add_static_exception env cont st_exn) body,
+              st_exn, var, close t (Env.add_var env id var) handler)
   | Lifthenelse (cond, ifso, ifnot) ->
     let cond = close t env cond in
     let cond_var = Variable.create "cond" in

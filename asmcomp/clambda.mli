@@ -21,6 +21,25 @@ open Lambda
 
 type function_label = string
 
+type catch_kind = Normal of Asttypes.rec_flag | Exn_handler
+
+type trap_action =
+  | No_action
+  | Pop of int list
+  | Push of int list
+(* Same as Lambda.trap_action, with the additional Push action
+   that encodes entering a trywith block.
+   Unlike with trywith blocks, you can have several staticfails
+   annotated with the same traps, as long as:
+   - each Push is in the scope of the corresponding handlers
+   - on each path through the control flow graph, pushes and pops
+   are well-parenthesized
+   - all control flow paths leading to a given expression result in
+   the same trap context
+
+   Those invariants are checked later in the compilation process by
+   Trap_analysis. *)
+
 type ustructured_constant =
   | Uconst_float of float
   | Uconst_int32 of int32
@@ -48,9 +67,8 @@ and ulambda =
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch * Debuginfo.t
   | Ustringswitch of ulambda * (string * ulambda) list * ulambda option
-  | Ustaticfail of int * ulambda list
-  | Ucatch of int * Ident.t list * ulambda * ulambda
-  | Utrywith of ulambda * Ident.t * ulambda
+  | Ustaticfail of int * ulambda list * trap_action
+  | Ucatch of catch_kind * (int * Ident.t list * ulambda) list * ulambda
   | Uifthenelse of ulambda * ulambda * ulambda
   | Usequence of ulambda * ulambda
   | Uwhile of ulambda * ulambda
@@ -112,3 +130,8 @@ type preallocated_constant = {
   exported : bool;
   definition : ustructured_constant;
 }
+
+(* Convenience function to compile a trywith to catch handlers *)
+
+val trywith:
+        ulambda -> int -> Ident.t -> ulambda -> ulambda

@@ -350,15 +350,12 @@ method private cse n i =
   | Iloop(body) ->
       {i with desc = Iloop(self#cse empty_numbering body);
               next = self#cse empty_numbering i.next}
-  | Icatch(rec_flag, handlers, body) ->
-      let aux (nfail, handler) =
-        nfail, self#cse empty_numbering handler
+  | Icatch(rec_flag, is_exn_handler, handlers, body) ->
+      let aux (nfail, trap_stack, handler) =
+        nfail, trap_stack, self#cse empty_numbering handler
       in
-      {i with desc = Icatch(rec_flag, List.map aux handlers, self#cse n body);
-              next = self#cse empty_numbering i.next}
-  | Itrywith(body, handler) ->
-      {i with desc = Itrywith(self#cse n body,
-                              self#cse empty_numbering handler);
+      {i with desc = Icatch(rec_flag, is_exn_handler, List.map aux handlers,
+                self#cse n body);
               next = self#cse empty_numbering i.next}
 
 method fundecl f =

@@ -543,7 +543,6 @@ let rec unbox_float dbg cmm =
     Cswitch(e, tbl, Array.map (unbox_float dbg) el, dbg')
   | Ccatch(rec_flag, handlers, body) ->
     map_ccatch (unbox_float dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2)
   | c -> Cop(Cload (Double_u, Immutable), [c], dbg)
 
 (* Complex *)
@@ -570,15 +569,13 @@ let rec remove_unit = function
       Cswitch(sel, index, Array.map remove_unit cases, dbg)
   | Ccatch(rec_flag, handlers, body) ->
       map_ccatch remove_unit rec_flag handlers body
-  | Ctrywith(body, exn, handler) ->
-      Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
       Clet(id, c1, remove_unit c2)
   | Cop(Capply _mty, args, dbg) ->
       Cop(Capply typ_void, args, dbg)
   | Cop(Cextcall(proc, _mty, alloc, label_after), args, dbg) ->
       Cop(Cextcall(proc, typ_void, alloc, label_after), args, dbg)
-  | Cexit (_,_) as c -> c
+  | Cexit (_,_,_) as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
@@ -972,8 +969,6 @@ let rec unbox_int bi arg dbg =
       Cswitch(e, tbl, Array.map (fun e -> unbox_int bi e dbg) el, dbg')
   | Ccatch(rec_flag, handlers, body) ->
       map_ccatch (fun e -> unbox_int bi e dbg) rec_flag handlers body
-  | Ctrywith(e1, id, e2) ->
-      Ctrywith(unbox_int bi e1 dbg, id, unbox_int bi e2 dbg)
   | _ ->
       if size_int = 4 && bi = Pint64 then
         split_int64_for_32bit_target arg dbg
@@ -1452,7 +1447,7 @@ struct
   let bind arg body = bind "switcher" arg body
 
   let make_catch handler = match handler with
-  | Cexit (i,[]) -> i,fun e -> e
+  | Cexit (i,[],No_action) -> i,fun e -> e
   | _ ->
       let i = next_raise_count () in
 (*
@@ -1461,13 +1456,14 @@ struct
       Printf.eprintf "%s\n" (Format.flush_str_formatter ()) ;
 *)
       i,
-      (fun body -> match body with
+(* XXX this cannot be done with recursive cases *)
+      (fun body -> (*match body with
       | Cexit (j,_) ->
           if i=j then handler
           else body
-      | _ ->  ccatch (i,[],body,handler))
+      | _ -> *) Ccatch (Normal Asttypes.Nonrecursive, [i, [], handler], body))
 
-  let make_exit i = Cexit (i,[])
+  let make_exit i = Cexit (i,[],No_action)
 
 end
 
@@ -1486,7 +1482,7 @@ module StoreExpForSwitch =
       let make_key index expr =
         let continuation =
           match expr with
-          | Cexit (i,[]) -> Some i
+          | Cexit (i,[],No_action) -> Some i
           | _ -> None
         in
         Some (continuation, index)
@@ -1503,7 +1499,7 @@ module StoreExp =
       type t = expression
       type key = int
       let make_key = function
-        | Cexit (i,[]) -> Some i
+        | Cexit (i,[],No_action) -> Some i
         | _ -> None
       let compare_key = Pervasives.compare
     end)
@@ -1665,7 +1661,8 @@ let rec is_unboxed_number ~strict env e =
       | Some default -> join k default
       end
   | Ustaticfail _ -> No_result
-  | Uifthenelse (_, e1, e2) | Ucatch (_, _, e1, e2) | Utrywith (e1, _, e2) ->
+  | Uifthenelse (_, e1, e2)
+  | Ucatch ((Normal Nonrecursive | Exn_handler), [_, _, e1], e2) ->
       join (is_unboxed_number ~strict env e1) e2
   | _ -> No_unboxing
 
@@ -1882,14 +1879,15 @@ let rec transl env e =
         (fun arg ->
           strmatch_compile dbg arg (Misc.may_map (transl env) d)
             (List.map (fun (s,act) -> s,transl env act) sw))
-  | Ustaticfail (nfail, args) ->
-      Cexit (nfail, List.map (transl env) args)
-  | Ucatch(nfail, [], body, handler) ->
-      make_catch nfail (transl env body) (transl env handler)
-  | Ucatch(nfail, ids, body, handler) ->
-      ccatch(nfail, ids, transl env body, transl env handler)
-  | Utrywith(body, exn, handler) ->
-      Ctrywith(transl env body, exn, transl env handler)
+  | Ustaticfail (nfail, args, conts) ->
+      Cexit (nfail, List.map (transl env) args, conts)
+  | Ucatch (kind, conts, body) ->
+      let conts =
+        List.map (fun (cont, params, handler) ->
+            cont, params, transl env handler)
+          conts
+      in
+      Ccatch (kind, conts, transl env body)
   | Uifthenelse(cond, ifso, ifnot) ->
       let dbg = Debuginfo.none in
       transl_if env cond dbg Unknown
@@ -1900,12 +1898,11 @@ let rec transl env e =
       let dbg = Debuginfo.none in
       let raise_num = next_raise_count () in
       return_unit
-        (ccatch
-           (raise_num, [],
+        (Ccatch
+           (Normal Asttypes.Nonrecursive, [raise_num, [], Ctuple []],
             Cloop(transl_if env cond dbg Unknown
                     (remove_unit(transl env body))
-                    (Cexit (raise_num,[]))),
-            Ctuple []))
+                    (Cexit (raise_num,[],No_action)))))
   | Ufor(id, low, high, dir, body) ->
       let dbg = Debuginfo.none in
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
@@ -1916,11 +1913,11 @@ let rec transl env e =
         (Clet
            (id, transl env low,
             bind_nonvar "bound" (transl env high) (fun high ->
-              ccatch
-                (raise_num, [],
+              Ccatch
+                (Normal Asttypes.Nonrecursive, [raise_num, [], Ctuple []],
                  Cifthenelse
                    (Cop(Ccmpi tst, [Cvar id; high], dbg),
-                    Cexit (raise_num, []),
+                    Cexit (raise_num, [], No_action),
                     Cloop
                       (Csequence
                          (remove_unit(transl env body),
@@ -1932,8 +1929,8 @@ let rec transl env e =
                              Cifthenelse
                                (Cop(Ccmpi Ceq, [Cvar id_prev; high],
                                   dbg),
-                                Cexit (raise_num,[]), Ctuple [])))))),
-                 Ctuple []))))
+                                Cexit (raise_num,[],No_action),
+                                Ctuple []))))))))))
   | Uassign(id, exp) ->
       let dbg = Debuginfo.none in
       begin match is_unboxed_id id env with
@@ -2659,23 +2656,19 @@ and transl_let env str kind id exp body =
       Clet(unboxed_id, transl_unbox_number dbg env boxed_number exp,
            transl (add_unboxed_id id unboxed_id boxed_number env) body)
 
-and make_catch ncatch body handler = match body with
-| Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  ccatch (ncatch, [], body, handler)
-
 and is_shareable_cont exp =
   match exp with
-  | Cexit (_,[]) -> true
+  | Cexit (_,[],No_action) -> true
   | _ -> false
 
 and make_shareable_cont mk exp =
   if is_shareable_cont exp then mk exp
   else begin
     let nfail = next_raise_count () in
-    make_catch
-      nfail
-      (mk (Cexit (nfail,[])))
-      exp
+    Ccatch (
+      Normal Asttypes.Nonrecursive, (* CR mshinwell: pass as parameter? *)
+      [nfail, [], exp],
+      mk (Cexit (nfail,[],No_action)))
   end
 
 and transl_if env cond dbg approx then_ else_ =
@@ -3110,8 +3103,8 @@ let cache_public_method meths tag cache dbg =
   Clet (
   hi, Cop(Cload (Word_int, Mutable), [meths], dbg),
   Csequence(
-  ccatch
-    (raise_num, [],
+  Ccatch
+    (Normal Asttypes.Nonrecursive, [raise_num, [], Ctuple []],
      Cloop
        (Clet(
         mi,
@@ -3132,9 +3125,9 @@ let cache_public_method meths tag cache dbg =
            Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2], dbg)),
            Cassign(li, Cvar mi)),
         Cifthenelse
-          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg), Cexit (raise_num, []),
-           Ctuple [])))),
-     Ctuple []),
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi], dbg),
+           Cexit (raise_num, [], No_action),
+           Ctuple []))))),
   Clet (
     tagged,
       Cop(Cadda, [lsl_const (Cvar li) log2_size_addr dbg;
