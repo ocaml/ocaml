@@ -304,7 +304,7 @@ let simplify_exits lam =
 *)
 
 let beta_reduce params body args =
-  List.fold_left2 (fun l param arg -> Llet(Strict, Pgenval, param, arg, l))
+  List.fold_left2 (fun l (param, ty) arg -> Llet(Strict, ty, param, arg, l))
                   body params args
 
 (* Simplification of lets *)
@@ -360,11 +360,11 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body = (body, _)};
            ap_args = args}
     when optimize && List.length params = List.length args ->
-      count bv (beta_reduce (List.map fst params) body args)
+      count bv (beta_reduce params body args)
   | Lapply{ap_func = Lfunction{kind = Tupled; params; body = (body, _)};
            ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
-      count bv (beta_reduce (List.map fst params) body args)
+      count bv (beta_reduce params body args)
   | Lapply{ap_func = l1; ap_args = ll} ->
       count bv l1; List.iter (count bv) ll
   | Lfunction {body = (body, _)} ->
@@ -454,11 +454,11 @@ let simplify_lets lam =
   | Lapply{ap_func = Lfunction{kind = Curried; params; body = (body, _)};
            ap_args = args}
     when optimize && List.length params = List.length args ->
-      simplif (beta_reduce (List.map fst params) body args)
+      simplif (beta_reduce params body args)
   | Lapply{ap_func = Lfunction{kind = Tupled; params; body = (body, _)};
            ap_args = [Lprim(Pmakeblock _, args, _)]}
     when optimize && List.length params = List.length args ->
-      simplif (beta_reduce (List.map fst params) body args)
+      simplif (beta_reduce params body args)
   | Lapply ap -> Lapply {ap with ap_func = simplif ap.ap_func;
                                  ap_args = List.map simplif ap.ap_args}
   | Lfunction{kind; params; body = (l, ty); attr; loc} ->
