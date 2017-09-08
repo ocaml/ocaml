@@ -1,3 +1,8 @@
+(* TEST
+  arguments = "io.ml"
+  files = "test-file-short-lines"
+*)
+
 (* Test a file copy function *)
 
 let test msg funct f1 f2 =
