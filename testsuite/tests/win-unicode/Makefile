@@ -12,7 +12,7 @@ test:
 	  $(MAKE) printargv.exe printenv.exe symlink_tests.precheck && \
 	  $(MAKE) check; \
 	else \
-	  echo " .. skipped (Windows Unicode is not activated)"; \
+	  $(MAKE) SKIP=true C_FILES= run-all; \
 	fi
 
 .PHONY: symlink_tests.precheck
