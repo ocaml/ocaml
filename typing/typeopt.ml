@@ -39,8 +39,9 @@ let scrape_ty env ty =
 let scrape env ty =
   (scrape_ty env ty).desc
 
-let is_function_type env ty =
+let rec is_function_type env ty =
   match scrape env ty with
+  | Tpoly (ty, _) -> is_function_type env ty
   | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
   | _ -> None
 

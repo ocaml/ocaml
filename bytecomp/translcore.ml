@@ -1199,7 +1199,9 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
 and transl_function env fun_type loc untuplify_fn repr partial param cases =
   let param_ty, res_ty =
     match Typeopt.is_function_type env fun_type with
-    | None -> assert false
+    | None ->
+        Format.printf "%a%a@." Location.print_loc loc Printtyp.raw_type_expr fun_type;
+        assert false
     | Some (t1, t2) -> t1, t2
   in
   match cases with
