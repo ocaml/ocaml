@@ -17,6 +17,8 @@
 
 val is_function_type :
       Env.t -> Types.type_expr -> (Types.type_expr * Types.type_expr) option
+val is_tuple_type :
+      Env.t -> Types.type_expr -> Types.type_expr list option
 val is_base_type : Env.t -> Types.type_expr -> Path.t -> bool
 
 val maybe_pointer_type : Env.t -> Types.type_expr

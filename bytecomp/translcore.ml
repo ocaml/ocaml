@@ -1199,9 +1199,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
 and transl_function env fun_type loc untuplify_fn repr partial param cases =
   let param_ty, res_ty =
     match Typeopt.is_function_type env fun_type with
-    | None ->
-        Format.printf "%a%a@." Location.print_loc loc Printtyp.raw_type_expr fun_type;
-        assert false
+    | None -> assert false
     | Some (t1, t2) -> t1, t2
   in
   match cases with
@@ -1223,13 +1221,32 @@ and transl_function env fun_type loc untuplify_fn repr partial param cases =
             (fun {c_lhs; c_guard; c_rhs} ->
               (Matching.flatten_pattern size c_lhs, c_guard, c_rhs))
             cases in
+          (* All cases do not necessarily have the same types,
+             as in:
+
+             type _ t = F: float t | I: int t
+             let f: type s. (s t * s) -> bool = function
+             | F, 0. -> true
+             | I, 0 -> true
+             | _ -> false
+
+             So one cannot just use the first case to derive
+             an approximation of the type for each argument.
+
+             One could consider all cases and take the "lub" of their
+             type approximation for each position, or just decompose
+             the type of the function argument into a tuple type.
+             We do the latter below.
+          *)
+        let param_tys =
+          match Typeopt.is_tuple_type env param_ty with
+          | None -> assert false
+          | Some l -> l
+        in
         let params =
           List.map
-            (fun p -> Ident.create "param",
-                      Typeopt.value_kind p.pat_env p.pat_type
-             (* is this safe? (with GADTs, could one have
-                different type on different branches?) *)
-            ) pl
+            (fun t -> Ident.create "param", Typeopt.value_kind env t)
+            param_tys
         in
         ((Tupled, params),
          (Matching.for_tupled_function loc (List.map fst params)

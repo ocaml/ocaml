@@ -45,6 +45,13 @@ let rec is_function_type env ty =
   | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
   | _ -> None
 
+let rec is_tuple_type env ty =
+  match scrape env ty with
+  | Tpoly (ty, _) -> is_tuple_type env ty
+  | Ttuple l -> Some l
+  | _ -> None
+
+
 let is_base_type env ty base_ty_path =
   match scrape env ty with
   | Tconstr(p, _, _) -> Path.same p base_ty_path
