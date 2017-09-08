@@ -525,18 +525,6 @@ let all_function_decls_indexed_by_closure_id program =
   Set_of_closures_id.Map.fold aux (all_sets_of_closures_map program)
     Closure_id.Map.empty
 
-let make_variable_symbol var =
-  Symbol.create (Compilation_unit.get_current_exn ())
-    (Linkage_name.create
-       (Variable.unique_name (Variable.rename var)))
-
-let make_variables_symbol vars =
-  let name =
-    String.concat "_and_"
-      (List.map (fun var -> Variable.unique_name (Variable.rename var)) vars)
-  in
-  Symbol.create (Compilation_unit.get_current_exn ()) (Linkage_name.create name)
-
 let substitute_read_symbol_field_for_variables
     (substitution : (Symbol.t * int list) Variable.Map.t)
     (expr : Flambda.t) =

@@ -155,9 +155,6 @@ val all_function_decls_indexed_by_closure_id
    : Flambda.program
   -> Flambda.function_declarations Closure_id.Map.t
 
-val make_variable_symbol : Variable.t -> Symbol.t
-val make_variables_symbol : Variable.t list -> Symbol.t
-
 (* CR-someday pchambart: A more general version of this function might
    take a [named] instead of a symbol and be called with
    [Read_symbol_field (symbol, 0)]. *)

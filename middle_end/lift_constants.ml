@@ -28,11 +28,6 @@ let closure_symbol ~(backend : (module Backend_intf.S)) closure_id =
   let module Backend = (val backend) in
   Backend.closure_symbol closure_id
 
-let make_variable_symbol prefix var =
-  Symbol.create (Compilation_unit.get_current_exn ())
-    (Linkage_name.create
-       (prefix ^ Variable.unique_name (Variable.rename var)))
-
 (** Traverse the given expression assigning symbols to [let]- and [let rec]-
     bound constant variables.  At the same time collect the definitions of
     such variables. *)
@@ -46,7 +41,7 @@ let assign_symbols_and_collect_constant_definitions
   let assign_symbol var (named : Flambda.named) =
     if not (Inconstant_idents.variable var inconstants) then begin
       let assign_symbol () =
-        let symbol = make_variable_symbol "" var in
+        let symbol = Symbol.of_variable (Variable.rename var) in
         Variable.Tbl.add var_to_symbol_tbl var symbol
       in
       let assign_existing_symbol = Variable.Tbl.add var_to_symbol_tbl var in
@@ -754,12 +749,9 @@ let var_to_block_field
   var_to_block_field_tbl
 
 let program_symbols ~backend (program : Flambda.program) =
-  let new_fake_symbol =
-    let r = ref 0 in
-    fun () ->
-      incr r;
-      Symbol.create (Compilation_unit.get_current_exn ())
-        (Linkage_name.create ("fake_effect_symbol_" ^ string_of_int !r))
+  let new_fake_symbol () =
+    let var = Variable.create Internal_variable_names.fake_effect_symbol in
+    Symbol.of_variable var
   in
   let initialize_symbol_tbl = Symbol.Tbl.create 42 in
   let effect_tbl = Symbol.Tbl.create 42 in
@@ -870,15 +862,10 @@ let project_closure_map symbol_definition_map =
     symbol_definition_map
     Symbol.Map.empty
 
-let the_dead_constant_index = ref 0
-
 let lift_constants (program : Flambda.program) ~backend =
   let the_dead_constant =
-    let index = !the_dead_constant_index in
-    incr the_dead_constant_index;
-    let name = Printf.sprintf "the_dead_constant_%d" index in
-    Symbol.create (Compilation_unit.get_current_exn ())
-      (Linkage_name.create name)
+    let var = Variable.create Internal_variable_names.the_dead_constant in
+    Symbol.of_variable var
   in
   let program_body : Flambda.program_body =
     Let_symbol (the_dead_constant, Allocated_const (Nativeint 0n),

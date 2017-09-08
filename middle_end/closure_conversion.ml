@@ -101,13 +101,8 @@ let tupled_function_call_stub original_params unboxed_version
 
 let register_const t (constant:Flambda.constant_defining_value) name
       : Flambda.constant_defining_value_block_field * string =
-  let current_compilation_unit = Compilation_unit.get_current_exn () in
-  (* Create a variable to ensure uniqueness of the symbol *)
-  let var = Variable.create ~current_compilation_unit name in
-  let symbol =
-    Symbol.create current_compilation_unit
-      (Linkage_name.create (Variable.unique_name var))
-  in
+  let var = Variable.create name in
+  let symbol = Symbol.of_variable var in
   t.declared_symbols <- (symbol, constant) :: t.declared_symbols;
   Symbol symbol, name
 
@@ -648,8 +643,8 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
   in
   let module_symbol = Backend.symbol_for_global' module_ident in
   let block_symbol =
-    let linkage_name = Linkage_name.create "module_as_block" in
-    Symbol.create compilation_unit linkage_name
+    let var = Variable.create Internal_variable_names.module_as_block in
+    Symbol.of_variable var
   in
   (* The global module block is built by accessing the fields of all the
      introduced symbols. *)
