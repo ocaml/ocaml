@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <signal.h>
 
+#include <caml/osdeps.h>
+
 #define INLINE __inline
 
 #if 1
