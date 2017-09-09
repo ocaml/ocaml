@@ -279,22 +279,15 @@ CAMLprim value caml_sys_remove(value name)
   CAMLreturn(Val_unit);
 }
 
-#ifdef _WIN32
-extern int caml_win32_rename(const char * oldpath, const char * newpath);
-/* This #define is a hack but ensures that CAML_SYS_RENAME
-   resolves to the correct function */
-#define rename caml_win32_rename
-#endif
-
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
-  char * p_old;
-  char * p_new;
+  charnat * p_old;
+  charnat * p_new;
   int ret;
   caml_sys_check_path(oldname);
   caml_sys_check_path(newname);
-  p_old = caml_stat_strdup(String_val(oldname));
-  p_new = caml_stat_strdup(String_val(newname));
+  p_old = caml_stat_strdup_to_utf16(String_val(oldname));
+  p_new = caml_stat_strdup_to_utf16(String_val(newname));
   caml_enter_blocking_section();
   ret = CAML_SYS_RENAME(p_old, p_new);
   caml_leave_blocking_section();
@@ -304,11 +297,6 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
     caml_sys_error(NO_ARG);
   return Val_unit;
 }
-
-#ifdef _WIN32
-/* End of rename hack */
-#undef rename
-#endif
 
 CAMLprim value caml_sys_chdir(value dirname)
 {

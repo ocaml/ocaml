@@ -176,7 +176,7 @@ typedef wchar_t charnat;
 #define _topen _wopen
 #define _tstat _wstati64
 #define _tunlink _wunlink
-#define _trename _wrename
+#define _trename caml_win32_rename
 #define _tchdir _wchdir
 #define _tgetcwd _wgetcwd
 #define _tgetenv _wgetenv
@@ -246,7 +246,7 @@ typedef char charnat;
 #define CAML_SYS_CLOSE(fd) close(fd)
 #define CAML_SYS_STAT(filename,st) _tstat(filename,st)
 #define CAML_SYS_UNLINK(filename) _tunlink(filename)
-#define CAML_SYS_RENAME(old_name,new_name) rename(old_name, new_name)
+#define CAML_SYS_RENAME(old_name,new_name) _trename(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) chdir(dirname)
 #define CAML_SYS_GETENV(varname) getenv(varname)
 #define CAML_SYS_SYSTEM(command) system(command)
@@ -298,7 +298,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_UNLINK(filename)                       \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,_tunlink,filename)
 #define CAML_SYS_RENAME(old_name,new_name)                              \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,rename,old_name,new_name)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,_trename,old_name,new_name)
 #define CAML_SYS_CHDIR(dirname)                         \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir,dirname)
 #define CAML_SYS_GETENV(varname)                        \

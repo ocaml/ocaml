@@ -728,7 +728,7 @@ wchar_t *caml_secure_getenv (wchar_t const *var)
    There are no official guarantee that the rename operation is atomic,
    but it is widely believed to be atomic on NTFS. */
 
-int caml_win32_rename(const char * oldpath, const char * newpath)
+int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
 {
   /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
      MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
