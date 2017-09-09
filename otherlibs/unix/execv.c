@@ -25,7 +25,7 @@ CAMLprim value unix_execv(value path, value args)
   caml_unix_check_path(path, "execv");
   argv = cstringvect(args, "execv");
   wpath = caml_stat_strdup_to_utf16(String_val(path));
-  (void) _texecv(wpath, argv);
+  (void) _texecv(wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
   cstringvect_free(argv);
   uerror("execv", path);

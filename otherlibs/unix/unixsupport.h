@@ -55,4 +55,6 @@ extern void unix_clear_cloexec(int fd, char * cmdname, value arg);
 }
 #endif
 
+#define EXECV_CAST
+
 #endif /* CAML_UNIXSUPPORT_H */

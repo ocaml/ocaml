@@ -128,4 +128,6 @@ typedef struct _REPARSE_DATA_BUFFER
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
 
+#define EXECV_CAST (const charnat * const *)
+
 #endif /* CAML_UNIXSUPPORT_H */
