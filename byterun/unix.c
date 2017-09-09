@@ -314,12 +314,12 @@ void caml_dlclose(void * handle)
 {
 }
 
-void * caml_dlsym(void * handle, char * name)
+void * caml_dlsym(void * handle, const char * name)
 {
   return NULL;
 }
 
-void * caml_globalsym(char * name)
+void * caml_globalsym(const char * name)
 {
   return NULL;
 }
