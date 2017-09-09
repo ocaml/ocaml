@@ -100,6 +100,7 @@ confoptions="${OCAML_CONFIGURE_OPTIONS}"
 make_native=true
 cleanup=false
 check_make_alldepend=false
+dorebase=false
 
 case "${OCAML_ARCH}" in
   bsd) make=gmake ;;
@@ -111,6 +112,7 @@ case "${OCAML_ARCH}" in
   cygwin)
     cleanup=true
     check_make_alldepend=true
+    dorebase=true
   ;;
   mingw)
     instdir='C:/ocamlmgw'
@@ -208,6 +210,11 @@ if $make_native; then
   $make opt
   $make opt.opt
   if $check_make_alldepend; then $make alldepend; fi
+fi
+if $dorebase; then
+    # temporary solution to the cygwin fork problem
+    rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
+    rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
 fi
 $make install
 
