@@ -175,7 +175,7 @@ done
 # Tell gcc to use only ASCII in its diagnostic outputs.
 export LC_ALL=C
 
-$make distclean || :
+$make -s distclean || :
 
 # `make distclean` does not clean the files from previous versions that
 # are not produced by the current version, so use `git clean` in addition.
