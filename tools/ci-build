@@ -22,10 +22,15 @@
 # in Jenkins at the following address:
 # https://ci.inria.fr/ocaml/computer/NODE/configure
 
-# arguments:
+# Other environments variables that are honored:
+#   OCAML_CONFIGURE_OPTIONS   additional options for configure
+#   OCAML_JOBS                number of jobs to run in parallel (make -j)
+
+# Command-line arguments:
 # -conf configure-option  add configure-option to configure cmd line
 # -patch1 file-name       apply patch with -p1
 # -no-native              do not build "opt" and "opt.opt"
+# -jNN                    pass "-jNN" option to make for parallel builds
 
 error () {
   echo "$1" >&2
@@ -106,6 +111,7 @@ make_native=true
 cleanup=false
 check_make_alldepend=false
 dorebase=false
+jobs=''
 
 case "${OCAML_ARCH}" in
   bsd) make=gmake ;;
@@ -147,6 +153,10 @@ esac
 # Make sure two builds won't use the same install directory
 instdir="$instdir-$$"
 
+case "${OCAML_JOBS}" in
+  [1-9]|[1-9][0-9]) jobs="-j${OCAML_JOBS}" ;;
+esac
+
 #########################################################################
 # On Windows, cleanup processes that may remain from previous run
 
@@ -169,6 +179,7 @@ while [ $# -gt 0 ]; do
     -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
     -patch1) patch -f -p1 <"$2"; shift;;
     -no-native) make_native=false;;
+    -j[1-9]|-j[1-9][0-9]) jobs="$1";;
     *) error "unknown option $1";;
   esac
   shift
@@ -207,13 +218,13 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make coldstart
-$make core
-$make coreboot
-$make world
+$make $jobs coldstart
+$make $jobs core
+$make $jobs coreboot
+$make $jobs world
 if $make_native; then
-  $make opt
-  $make opt.opt
+  $make $jobs opt
+  $make $jobs opt.opt
   if $check_make_alldepend; then $make alldepend; fi
 fi
 if $dorebase; then
