@@ -1070,3 +1070,31 @@ let f : type a b. (a,b) eq -> (b,int) eq -> a -> b -> _ = fun ab bint a b ->
 [%%expect{|
 val f : ('a, 'b) eq -> ('b, int) eq -> 'a -> 'b -> unit = <fun>
 |}];;
+
+(* More ambiguous *)
+
+type _ i = I : int i
+;;
+
+[%%expect{|
+type _ i = I : int i
+|}]
+
+let bar (type a) (x : a i) y =
+  match x, y with
+  | I, ((_: a) | 0) -> ()
+;;
+
+[%%expect{|
+Line _, characters 17-18:
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}, Principal{|
+Line _, characters 4-19:
+Error: This pattern matches values of type a i * a
+       but a pattern was expected which matches values of type a i * 'a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+|}]
