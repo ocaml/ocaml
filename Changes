@@ -26,6 +26,9 @@ Working version
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
 
+- GPR#1253: Private extensible variants
+  (Leo White, review by Alain Frisch)
+
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
