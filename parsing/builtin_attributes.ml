@@ -117,7 +117,7 @@ let rec deprecated_of_str = function
   | _ -> None
 
 
-let warning_attribute =
+let warning_attribute ?(ppwarning = true) =
   let process loc txt errflag payload =
     match string_of_payload payload with
     | Some s ->
@@ -140,15 +140,15 @@ let warning_attribute =
   | {txt="ocaml.ppwarning"|"ppwarning"},
     PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
                                    (Pconst_string (s, _))},_);
-          pstr_loc}] ->
+          pstr_loc}] when ppwarning ->
       Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
   | _ ->
       ()
 
-let warning_scope attrs f =
+let warning_scope ?ppwarning attrs f =
   let prev = Warnings.backup () in
   try
-    List.iter warning_attribute (List.rev attrs);
+    List.iter (warning_attribute ?ppwarning) (List.rev attrs);
     let ret = f () in
     Warnings.restore prev;
     ret

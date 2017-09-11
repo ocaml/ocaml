@@ -1469,7 +1469,13 @@ let type_pattern ~lev env spat scope expected_ty =
 let type_pattern_list env spatl scope expected_tys allow =
   reset_pattern scope allow;
   let new_env = ref env in
-  let patl = List.map2 (type_pat new_env) spatl expected_tys in
+  let type_pat (attrs, pat) ty =
+    Builtin_attributes.warning_scope ~ppwarning:false attrs
+      (fun () ->
+         type_pat new_env pat ty
+      )
+  in
+  let patl = List.map2 type_pat spatl expected_tys in
   let new_env, unpacks = add_pattern_variables !new_env in
   (patl, new_env, get_ref pattern_force, unpacks)
 
@@ -3995,7 +4001,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let spatl =
     List.map
-      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=_} ->
+      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=attrs} ->
+        attrs,
         match spat.ppat_desc, sexp.pexp_desc with
           (Ppat_any | Ppat_constraint _), _ -> spat
         | _, Pexp_coerce (_, _, sty)
@@ -4140,15 +4147,21 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
     (* See PR#6677 *)
-    Builtin_attributes.warning_scope pvb_attributes
+    Builtin_attributes.warning_scope ~ppwarning:false pvb_attributes
       (fun () ->
          Location.prerr_warning pvb_pat.ppat_loc Warnings.Unused_rec_flag
       )
   end;
   List.iter2
-    (fun pat exp ->
-      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
-    pat_list exp_list;
+    (fun pat (attrs, exp) ->
+       Builtin_attributes.warning_scope ~ppwarning:false attrs
+         (fun () ->
+            ignore(check_partial env pat.pat_type pat.pat_loc
+                     [case pat exp])
+         )
+    )
+    pat_list
+    (List.map2 (fun (attrs, _) e -> attrs, e) spatl exp_list);
   end_def();
   List.iter2
     (fun pat exp ->

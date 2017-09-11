@@ -482,3 +482,18 @@ Line _, characters 96-111:
 Warning 22: Pp warning 2!
 type t = unit
 |}]
+
+let ([][@ocaml.ppwarning "XX"]) = []
+;;
+[%%expect{|
+Line _, characters 25-29:
+Warning 22: XX
+Line _, characters 4-31:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+_::_
+|}]
+let[@ocaml.warning "-8-22"] ([][@ocaml.ppwarning "XX"]) = []
+;;
+[%%expect{|
+|}]
