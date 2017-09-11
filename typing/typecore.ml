@@ -2452,15 +2452,18 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         exp_env = env }
   | Pexp_while(scond, sbody) ->
       let cond = type_expect env scond Predef.type_bool in
+      let unit_type = instance_def Predef.type_unit in
       let exp_type =
         match cond.exp_desc with
         | Texp_construct(_, {cstr_name="true"}, _) ->
             instance env ty_expected
         | _ ->
-            instance_def Predef.type_unit
+            unit_type
       in
-      let body_env = Env.add_break exp_type env in
+      let break, body_env = Env.add_break exp_type env in
       let body = type_statement body_env sbody in
+      if not (Env.used_break break) then
+        unify env exp_type unit_type;
       rue {
         exp_desc = Texp_while(cond, body);
         exp_loc = loc; exp_extra = [];

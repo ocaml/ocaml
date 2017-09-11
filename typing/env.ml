@@ -440,6 +440,10 @@ type type_descriptions =
 let in_signature_flag = 0x01
 let implicit_coercion_flag = 0x02
 
+type break =
+  { break_argument : Types.type_expr;
+    mutable used : bool }
+
 type t = {
   values: value_description IdTbl.t;
   constrs: constructor_description TycompTbl.t;
@@ -456,7 +460,7 @@ type t = {
   gadt_instances: (int * TypeSet.t ref) list;
   flags: int;
   return: Types.type_expr option;
-  break: Types.type_expr option;
+  break: break option;
 }
 
 and module_components =
@@ -866,15 +870,22 @@ let find_return t =
   t.return
 
 let find_break t =
-  t.break
+  match t.break with
+  | None -> None
+  | Some break ->
+      break.used <- true;
+      Some break.break_argument
 
 let add_return return t =
   { t with return = Some return;
            (* TODO: do that correctly at every point entering a closure *)
            break = None }
 
-let add_break break t =
-  { t with break = Some break }
+let add_break break_argument t =
+  let break = { break_argument; used = false } in
+  break, { t with break = Some break }
+
+let used_break break = break.used
 
 (* Lookup by identifier *)
 

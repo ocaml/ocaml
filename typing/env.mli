@@ -136,8 +136,12 @@ exception Recmodule
 
 (* Insertion by identifier *)
 
+type break
+
+val used_break: break -> bool
+
 val add_return: Types.type_expr -> t -> t
-val add_break: Types.type_expr -> t -> t
+val add_break: Types.type_expr -> t -> break * t
 val add_value:
     ?check:(string -> Warnings.t) -> Ident.t -> value_description -> t -> t
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
