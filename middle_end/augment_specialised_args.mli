@@ -58,6 +58,7 @@ module Make (T : S) : sig
          env:Inline_and_simplify_aux.Env.t
       -> set_of_closures:Flambda.set_of_closures
       -> fun_var:Variable.t
+      -> new_fun_var:Variable.t
       -> Flambda.function_declaration
         * Flambda.specialised_to Variable.Map.t)
     -> set_of_closures:Flambda.set_of_closures

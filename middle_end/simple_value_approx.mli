@@ -156,6 +156,7 @@ and function_body = private {
 }
 
 and function_declaration = private {
+  closure_origin: Closure_origin.t;
   function_body : function_body option;
   params : Parameter.t list;
   stub : bool;

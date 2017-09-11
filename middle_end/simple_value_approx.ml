@@ -79,6 +79,7 @@ and function_body = {
 }
 
 and function_declaration = {
+  closure_origin: Closure_origin.t;
   function_body : function_body option;
   params : Parameter.t list;
   stub : bool;
@@ -320,6 +321,7 @@ let function_declarations_of_flambda ~keep_body_check flambda =
            end
          in
          { function_body;
+           closure_origin = fun_decl.closure_origin;
            params         = fun_decl.params;
            stub           = fun_decl.stub;
            dbg            = fun_decl.dbg;
