@@ -481,14 +481,7 @@ let inline_by_copying_function_declaration ~env ~r
             | _ -> expr)
           body_substituted
       in
-      Flambda.create_function_declaration
-        ~params:fun_decl.params
-        ~stub:fun_decl.stub
-        ~dbg:fun_decl.dbg
-        ~inline:fun_decl.inline
-        ~specialise:fun_decl.specialise
-        ~is_a_functor:fun_decl.is_a_functor
-        ~body
+      Flambda.update_body_of_function_declaration ~body fun_decl
     in
     let funs =
       Variable.Map.map rewrite_function function_decls.funs
