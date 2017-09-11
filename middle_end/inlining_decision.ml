@@ -595,7 +595,9 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
                recursive to avoid having to check whether or not it is recursive *)
             E.inside_unrolled_function env function_decls.set_of_closures_origin
           in
-          let env = E.inside_inlined_function env function_decl.closure_origin in
+          let env =
+            E.inside_inlined_function env function_decl.closure_origin
+          in
           Changed ((simplify env r body), S.Inlined.Classic_mode)
     in
     let res, decision =
