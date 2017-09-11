@@ -39,7 +39,7 @@ type error =
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
-  | Not_open_type of Path.t
+  | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
@@ -1507,7 +1507,7 @@ let transl_extension_constructor env type_path type_params
       Typedtree.ext_loc = sext.pext_loc;
       Typedtree.ext_attributes = sext.pext_attributes; }
 
-let transl_type_extension check_open env loc styext =
+let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
   let (type_path, type_decl) =
@@ -1516,19 +1516,23 @@ let transl_type_extension check_open env loc styext =
   in
   begin
     match type_decl.type_kind with
-      Type_open -> ()
-    | Type_abstract ->
-        if check_open then begin
-          try
-            let {pext_loc} =
-              List.find (function {pext_kind = Pext_decl _} -> true
-                                | {pext_kind = Pext_rebind _} -> false)
-                        styext.ptyext_constructors
-            in
-              raise (Error(pext_loc, Not_open_type type_path))
-          with Not_found -> ()
-        end
-    | _ -> raise (Error(loc, Not_extensible_type type_path))
+    | Type_open -> begin
+        match type_decl.type_private with
+        | Private when extend -> begin
+            match
+              List.find
+                (function {pext_kind = Pext_decl _} -> true
+                        | {pext_kind = Pext_rebind _} -> false)
+                styext.ptyext_constructors
+            with
+            | {pext_loc} ->
+                raise (Error(pext_loc, Cannot_extend_private_type type_path))
+            | exception Not_found -> ()
+          end
+        | _ -> ()
+      end
+    | _ ->
+        raise (Error(loc, Not_extensible_type type_path))
   end;
   let type_variance =
     List.map (fun v ->
@@ -2014,13 +2018,13 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this extension constructor";
       let args = tys_of_constr_args ext.ext_args in
       explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
-  | Not_open_type path ->
+  | Cannot_extend_private_type path ->
       fprintf ppf "@[%s@ %a@]"
-        "Cannot extend type definition"
+        "Cannot extend private type definition"
         Printtyp.path path
   | Not_extensible_type path ->
       fprintf ppf "@[%s@ %a@ %s@]"
-        "Type"
+        "Type definition"
         Printtyp.path path
         "is not extensible"
   | Extension_mismatch (path, errs) ->
