@@ -44,6 +44,9 @@ let import_set_of_closures =
           match function_decl.function_body with
           | None -> function_decl
           | Some _ ->
+            let body =
+              Flambda_iterators.map_toplevel_named f_named function_decl.body
+            in
             A.update_function_decl_body function_decl
               (Flambda_iterators.map_toplevel_named f_named))
         clos.funs
