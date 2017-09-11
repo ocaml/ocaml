@@ -603,31 +603,10 @@ and simplify_set_of_closures original_env r
             function_decls.set_of_closures_origin body_env);
           simplify body_env r function_decl.body)
     in
-    let inline : Lambda.inline_attribute =
-      match function_decl.inline with
-      | Default_inline ->
-        if !Clflags.classic_inlining && not function_decl.stub then
-          (* In classic-inlining mode, the inlining decision is taken at
-             definition site (here). If the function is small enough
-             (below the -inline threshold) it will always be inlined. *)
-          let inlining_threshold =
-            Inline_and_simplify_aux.initial_inlining_threshold
-              ~round:(E.round env)
-          in
-          if Inlining_cost.can_inline body inlining_threshold ~bonus:0
-          then
-            Always_inline
-          else
-            Default_inline
-        else
-          Default_inline
-      | inline ->
-        inline
-    in
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-        ~inline ~specialise:function_decl.specialise
+        ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
         ~closure_origin:function_decl.closure_origin
     in
@@ -642,12 +621,14 @@ and simplify_set_of_closures original_env r
   let function_decls =
     Flambda.update_function_declarations function_decls ~funs
   in
+  let backend = E.backend env in
   let invariant_params =
     lazy (Invariant_params.invariant_params_in_recursion function_decls
-      ~backend:(E.backend env))
+      ~backend)
   in
   let value_set_of_closures =
     Inline_and_simplify_aux.create_value_set_of_closures
+      ~backend
       ~function_decls
       ~free_vars:internal_value_set_of_closures.free_vars
       ~bound_vars:internal_value_set_of_closures.bound_vars
@@ -1463,12 +1444,14 @@ let constant_defining_value_approx
     assert(E.freshening env = Freshening.empty);
     assert(Variable.Map.is_empty free_vars);
     assert(Variable.Map.is_empty specialised_args);
+    let backend = E.backend env in
     let invariant_params =
       lazy (Invariant_params.invariant_params_in_recursion function_decls
-        ~backend:(E.backend env))
+        ~backend)
     in
     let value_set_of_closures =
       Inline_and_simplify_aux.create_value_set_of_closures
+        ~backend
         ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
         ~free_vars:free_vars

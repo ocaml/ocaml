@@ -664,12 +664,13 @@ type result = {
   exported : Export_info.t;
 }
 
-let convert (program, exported_transient) : result =
+let convert ~backend (program, exported_transient) : result =
   let current_unit =
     let closures =
       Flambda_utils.make_closure_map program
       |> Closure_id.Map.map (fun decls ->
-          Inline_and_simplify_aux.approximate_function_declarations decls)
+        Inline_and_simplify_aux.approximate_function_declarations ~backend
+          decls)
     in
     let offsets = Closure_offsets.compute program in
     { fun_offset_table = offsets.function_offsets;

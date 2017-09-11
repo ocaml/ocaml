@@ -357,11 +357,13 @@ val prepare_to_simplify_closure
   -> Env.t
 
 val approximate_function_declarations
-   : Flambda.function_declarations
+   : backend:(module Backend_intf.S)
+  -> Flambda.function_declarations
   -> Simple_value_approx.function_declarations
 
 val create_value_set_of_closures
-   : function_decls:Flambda.function_declarations
+   : backend:(module Backend_intf.S)
+  -> function_decls:Flambda.function_declarations
   -> bound_vars:Simple_value_approx.t Var_within_closure.Map.t
   -> free_vars:Flambda.specialised_to Variable.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t

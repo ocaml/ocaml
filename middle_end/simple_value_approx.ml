@@ -305,10 +305,10 @@ let function_declarations_of_flambda ~keep_body_check flambda =
     flambda
   in
   let funs : function_declaration Variable.Map.t =
-    Variable.Map.map
-      (fun (fun_decl : Flambda.function_declaration) ->
+    Variable.Map.mapi
+      (fun (key : Variable.t) (fun_decl : Flambda.function_declaration) ->
          let function_body =
-           if keep_body_check fun_decl
+           if keep_body_check key fun_decl
            then begin
              Some
                { body = fun_decl.body;
@@ -339,7 +339,7 @@ let create_classic_function_declarations ~keep_body_check
 
 let create_normal_function_declarations
       (function_decls : Flambda.function_declarations) =
-  function_declarations_of_flambda ~keep_body_check:(fun _ -> true)
+  function_declarations_of_flambda ~keep_body_check:(fun _ _ -> true)
     function_decls
 
 let create_classic_value_set_of_closures ~keep_body_check

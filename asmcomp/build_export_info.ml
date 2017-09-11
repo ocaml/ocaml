@@ -513,7 +513,7 @@ let build_transient ~(backend : (module Backend_intf.S))
     in
     let function_declarations_map =
       let approx_func_decl =
-        Inline_and_simplify_aux.approximate_function_declarations
+        Inline_and_simplify_aux.approximate_function_declarations ~backend
       in
       Set_of_closures_id.Map.map (fun { Flambda. function_decls; _ } ->
           approx_func_decl function_decls)

@@ -35,4 +35,7 @@ type result = {
     For direct calls, the hidden closure parameter is added.  Switch
     tables are also built.
 *)
-val convert : Flambda.program * Export_info.transient -> result
+val convert
+   : backend:(module Backend_intf.S)
+  -> Flambda.program * Export_info.transient
+  -> result
