@@ -724,10 +724,6 @@ and transl_exp0 e =
             transl_function e.exp_env e.exp_type e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
-      (* TODO: compute types for parameters/result *)
-      (*let params = List.map (fun id -> id, Pgenval) params in*)
-      (*let body = body, Pgenval in*)
-      (* XXX *)
       let attr = {
         default_function_attribute with
         inline = Translattribute.get_inline_attribute e.exp_attributes;
