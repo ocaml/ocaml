@@ -359,14 +359,11 @@ let rec approx_modtype env smty =
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and approx_module_declaration env pmd =
-  Builtin_attributes.warning_scope pmd.pmd_attributes
-    (fun () ->
-       {
-         Types.md_type = approx_modtype env pmd.pmd_type;
-         md_attributes = pmd.pmd_attributes;
-         md_loc = pmd.pmd_loc;
-       }
-    )
+  {
+    Types.md_type = approx_modtype env pmd.pmd_type;
+    md_attributes = pmd.pmd_attributes;
+    md_loc = pmd.pmd_loc;
+  }
 
 and approx_sig env ssg =
   match ssg with
@@ -407,15 +404,12 @@ and approx_sig env ssg =
           let (_path, mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
-          Builtin_attributes.warning_scope sincl.pincl_attributes
-            (fun () ->
-               let smty = sincl.pincl_mod in
-               let mty = approx_modtype env smty in
-               let sg = Subst.signature Subst.identity
-                   (extract_sig env smty.pmty_loc mty) in
-               let newenv = Env.add_signature sg env in
-               sg @ approx_sig newenv srem
-            )
+          let smty = sincl.pincl_mod in
+          let mty = approx_modtype env smty in
+          let sg = Subst.signature Subst.identity
+              (extract_sig env smty.pmty_loc mty) in
+          let newenv = Env.add_signature sg env in
+          sg @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
           let decls = Typeclass.approx_class_declarations env sdecls in
           let rem = approx_sig env srem in
