@@ -285,6 +285,13 @@ let transl_type_param env styp =
           ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | _ -> assert false
 
+let transl_type_param env styp =
+  (* Currently useless, since type parameters cannot hold attributes
+     (but this could easily be lifted in the future). *)
+  Builtin_attributes.warning_scope styp.ptyp_attributes
+    (fun () -> transl_type_param env styp)
+
+
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 
