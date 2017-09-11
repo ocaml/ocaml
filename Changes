@@ -73,6 +73,10 @@ Working version
   stubs.
   (Mark Shinwell, review by Pierre Chambart and Leo White)
 
+- GPR#1195: Merge functions based on partiality rather than
+  Parmatch.irrefutable.
+  (Leo White, review by Thomas Refis, Alain Frisch and Gabriel Scherer)
+
 - GPR#1215: Improve compilation of short-circuit operators
   (Leo White, review by Frédéric Bour and Mark Shinwell)
 
@@ -451,6 +455,9 @@ Working version
 
 - Fix pprintast for #... infix operators
   (Alain Frisch, report by Omar Chebib)
+
+- GPR#1308: Only treat pure patterns as inactive
+  (Leo White, review by Alain Frisch and Gabriel Scherer)
 
 ### Runtime system:
 
