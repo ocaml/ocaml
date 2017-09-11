@@ -426,6 +426,9 @@ Working version
 - MPR#7543: short-paths printtyp can fail on packed type error messages
   (Florian Angeletti)
 
+- MPR#7553, GPR#1191: Prevent repeated warnings with recursive modules.
+  (Leo White, review by Josh Berdine and Alain Frisch)
+
 - MPR#7563, GPR#1210: code generation bug when a module alias and
   an extension constructor have the same name in the same module
   (Gabriel Scherer, report by Manuel Fähndrich,
