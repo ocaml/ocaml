@@ -93,7 +93,11 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
 
 let type_open ?toplevel env sod =
   let (path, newenv) =
-    type_open_ ?toplevel sod.popen_override env sod.popen_loc sod.popen_lid
+    Builtin_attributes.warning_scope sod.popen_attributes
+      (fun () ->
+         type_open_ ?toplevel sod.popen_override env sod.popen_loc
+           sod.popen_lid
+      )
   in
   let od =
     {
@@ -403,7 +407,7 @@ and approx_sig env ssg =
           let smty = sincl.pincl_mod in
           let mty = approx_modtype env smty in
           let sg = Subst.signature Subst.identity
-                     (extract_sig env smty.pmty_loc mty) in
+              (extract_sig env smty.pmty_loc mty) in
           let newenv = Env.add_signature sg env in
           sg @ approx_sig newenv srem
       | Psig_class sdecls | Psig_class_type sdecls ->
@@ -535,6 +539,10 @@ let mksig desc env loc =
 (* let signature sg = List.map (fun item -> item.sig_type) sg *)
 
 let rec transl_modtype env smty =
+  Builtin_attributes.warning_scope smty.pmty_attributes
+    (fun () -> transl_modtype_aux env smty)
+
+and transl_modtype_aux env smty =
   let loc = smty.pmty_loc in
   match smty.pmty_desc with
     Pmty_ident lid ->
@@ -591,8 +599,7 @@ and transl_signature env sg =
         match item.psig_desc with
         | Psig_value sdesc ->
             let (tdesc, newenv) =
-              Builtin_attributes.with_warning_attribute sdesc.pval_attributes
-                (fun () -> Typedecl.transl_value_decl env item.psig_loc sdesc)
+              Typedecl.transl_value_decl env item.psig_loc sdesc
             in
             let (trem,rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_value tdesc) env loc :: trem,
@@ -634,7 +641,7 @@ and transl_signature env sg =
             check_name check_module names pmd.pmd_name;
             let id = Ident.create pmd.pmd_name.txt in
             let tmty =
-              Builtin_attributes.with_warning_attribute pmd.pmd_attributes
+              Builtin_attributes.warning_scope pmd.pmd_attributes
                 (fun () -> transl_modtype env pmd.pmd_type)
             in
             let md = {
@@ -669,8 +676,7 @@ and transl_signature env sg =
             final_env
         | Psig_modtype pmtd ->
             let newenv, mtd, sg =
-              Builtin_attributes.with_warning_attribute pmtd.pmtd_attributes
-                (fun () -> transl_modtype_decl names env pmtd)
+              transl_modtype_decl names env pmtd
             in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_modtype mtd) env loc :: trem,
@@ -684,7 +690,7 @@ and transl_signature env sg =
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
             let tmty =
-              Builtin_attributes.with_warning_attribute sincl.pincl_attributes
+              Builtin_attributes.warning_scope sincl.pincl_attributes
                 (fun () -> transl_modtype env smty)
             in
             let mty = tmty.mty_type in
@@ -742,23 +748,28 @@ and transl_signature env sg =
                  classes [rem]),
             final_env
         | Psig_attribute x ->
-            Builtin_attributes.warning_attribute [x];
+            Builtin_attributes.warning_attribute x;
             let (trem,rem, final_env) = transl_sig env srem in
             mksig (Tsig_attribute x) env loc :: trem, rem, final_env
         | Psig_extension (ext, _attrs) ->
             raise (Error_forward (Builtin_attributes.error_of_extension ext))
   in
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_enter_scope ();
-  let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
-  let rem = simplify_signature rem in
-  let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
-  Builtin_attributes.warning_leave_scope ();
-  Cmt_format.set_saved_types
-    ((Cmt_format.Partial_signature sg) :: previous_saved_types);
-  sg
+  Builtin_attributes.warning_scope []
+    (fun () ->
+       let (trem, rem, final_env) = transl_sig (Env.in_signature true env) sg in
+       let rem = simplify_signature rem in
+       let sg = { sig_items = trem; sig_type =  rem; sig_final_env = final_env } in
+       Cmt_format.set_saved_types
+         ((Cmt_format.Partial_signature sg) :: previous_saved_types);
+       sg
+    )
 
-and transl_modtype_decl names env
+and transl_modtype_decl names env pmtd =
+  Builtin_attributes.warning_scope pmtd.pmtd_attributes
+    (fun () -> transl_modtype_decl_aux names env pmtd)
+
+and transl_modtype_decl_aux names env
     {pmtd_name; pmtd_type; pmtd_attributes; pmtd_loc} =
   check_name check_modtype names pmtd_name;
   let tmty = Misc.may_map (transl_modtype env) pmtd_type in
@@ -794,7 +805,7 @@ and transl_recmodule_modtypes env sdecls =
     List.map2
       (fun pmd (id, id_loc, _mty) ->
         let tmty =
-          Builtin_attributes.with_warning_attribute pmd.pmd_attributes
+          Builtin_attributes.warning_scope pmd.pmd_attributes
             (fun () -> transl_modtype env_c pmd.pmd_type)
         in
         (id, id_loc, tmty))
@@ -1075,6 +1086,10 @@ let wrap_constraint env arg mty explicit =
 (* Type a module value expression *)
 
 let rec type_module ?(alias=false) sttn funct_body anchor env smod =
+  Builtin_attributes.warning_scope smod.pmod_attributes
+    (fun () -> type_module_aux ~alias sttn funct_body anchor env smod)
+
+and type_module_aux ~alias sttn funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let path =
@@ -1227,7 +1242,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     match desc with
     | Pstr_eval (sexpr, attrs) ->
         let expr =
-          Builtin_attributes.with_warning_attribute attrs
+          Builtin_attributes.warning_scope attrs
             (fun () -> Typecore.type_expression env sexpr)
         in
         Tstr_eval (expr, attrs), [], env
@@ -1290,7 +1305,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         check_name check_module names name;
         let id = Ident.create name.txt in (* create early for PR#6752 *)
         let modl =
-          Builtin_attributes.with_warning_attribute attrs
+          Builtin_attributes.warning_scope attrs
             (fun () ->
                type_module ~alias:true true funct_body
                  (anchor_submodule name.txt anchor) env smodl
@@ -1343,7 +1358,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
           List.map2
             (fun {md_id=id; md_type=mty} (name, _, smodl, attrs, loc) ->
                let modl =
-                 Builtin_attributes.with_warning_attribute attrs
+                 Builtin_attributes.warning_scope attrs
                    (fun () ->
                       type_module true funct_body (anchor_recmodule id)
                         newenv smodl
@@ -1382,8 +1397,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_modtype pmtd ->
         (* check that it is non-abstract *)
         let newenv, mtd, sg =
-          Builtin_attributes.with_warning_attribute pmtd.pmtd_attributes
-            (fun () -> transl_modtype_decl names env pmtd)
+          transl_modtype_decl names env pmtd
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
@@ -1443,7 +1457,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_include sincl ->
         let smodl = sincl.pincl_mod in
         let modl =
-          Builtin_attributes.with_warning_attribute sincl.pincl_attributes
+          Builtin_attributes.warning_scope sincl.pincl_attributes
             (fun () -> type_module true funct_body None env smodl)
         in
         (* Rename all identifiers bound by this signature to avoid clashes *)
@@ -1462,7 +1476,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     | Pstr_extension (ext, _attrs) ->
         raise (Error_forward (Builtin_attributes.error_of_extension ext))
     | Pstr_attribute x ->
-        Builtin_attributes.warning_attribute [x];
+        Builtin_attributes.warning_attribute x;
         Tstr_attribute x, [], env
   in
   let rec type_struct env sstr =
@@ -1482,20 +1496,18 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     (* moved to genannot *)
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
-  if not toplevel then Builtin_attributes.warning_enter_scope ();
-  let (items, sg, final_env) = type_struct env sstr in
-  let str = { str_items = items; str_type = sg; str_final_env = final_env } in
-  if not toplevel then Builtin_attributes.warning_leave_scope ();
-  Cmt_format.set_saved_types
-    (Cmt_format.Partial_structure str :: previous_saved_types);
-  str, sg, final_env
+  let run () =
+    let (items, sg, final_env) = type_struct env sstr in
+    let str = { str_items = items; str_type = sg; str_final_env = final_env } in
+    Cmt_format.set_saved_types
+      (Cmt_format.Partial_structure str :: previous_saved_types);
+    str, sg, final_env
+  in
+  if toplevel then run ()
+  else Builtin_attributes.warning_scope [] run
 
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.structure iter s
-  end;
   let (str, sg, env) =
     type_structure ~toplevel:true false None env s Location.none in
   let (str, _coerce) = ImplementationHooks.apply_hooks
@@ -1605,11 +1617,6 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.structure iter ast
-  end;
-
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
@@ -1678,10 +1685,6 @@ let save_signature modname tsg outputprefix source_file initial_env cmi =
     (Cmt_format.Interface tsg) (Some source_file) initial_env (Some cmi)
 
 let type_interface sourcefile env ast =
-  begin
-    let iter = Builtin_attributes.emit_external_warnings in
-    iter.Ast_iterator.signature iter ast
-  end;
   InterfaceHooks.apply_hooks { Misc.sourcefile } (transl_signature env ast)
 
 (* "Packaging" of several compilation units into one unit

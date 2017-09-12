@@ -1593,12 +1593,14 @@ Some attributes are understood by the type-checker:
  the same effect as the "-w" command-line option, in the scope between
  the attribute and the end of the current
  signature/structure/object/object type.  The attribute can also be
- used on an expression,
- in which case its scope is limited to that expression.
+ attached to any kind of syntactic item which support attributes
+ (such as an expression, or a type expression)
+ in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggered by the ``ppwarning'' attribute (see below)
- are issued using the global warning configuration.
+ Some warnings are even completely outside the control of ``ocaml.warning''
+ (for instance, warnings 1, 2, 14, 29 and 50).
+
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.

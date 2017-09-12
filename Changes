@@ -191,10 +191,16 @@ Working version
 * GPR#1189: allow MSVC ports to use -l option in ocamlmklib
   (David Allsopp)
 
+- MPR#7361, GPR#1248: support "ocaml.warning" in all attribute contexts, and
+  arrange so that "ocaml.ppwarning" is correctly scoped by surrounding
+  "ocaml.warning" attributes
+  (Alain Frisch, review by Florian Angeletti and Thomas Refis)
+
 - MPR#7472: ensure .cmi files are created atomically,
   to avoid corruption of .cmi files produced simultaneously by a run
   of ocamlc and a run of ocamlopt.
   (Xavier Leroy, from a suggestion by Gerd Stolpmann)
+
 
 ### Other libraries:
 
@@ -245,9 +251,9 @@ Working version
 
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
-  
+
 - GPR#1202: Fix Typos in comments as well as basic grammar errors.
-  (JP Rodi, review and suggestions by David Allsopp, Max Mouratov, 
+  (JP Rodi, review and suggestions by David Allsopp, Max Mouratov,
   Florian Angeletti, Xavier Leroy, Mark Shinwell and Damien Doligez)
 
 - GPR#1220: Fix "-keep-docs" option in ocamlopt manpage

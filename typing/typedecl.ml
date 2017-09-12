@@ -227,10 +227,13 @@ let transl_labels env closed lbls =
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
-    let arg = Ast_helper.Typ.force_poly arg in
-    let cty = transl_simple_type env closed arg in
-    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+    Builtin_attributes.warning_scope attrs
+      (fun () ->
+         let arg = Ast_helper.Typ.force_poly arg in
+         let cty = transl_simple_type env closed arg in
+         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+          ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+      )
   in
   let lbls = List.map mk lbls in
   let lbls' =
@@ -479,6 +482,10 @@ let transl_declaration env sdecl id =
               cd_attributes = scstr.pcd_attributes }
           in
             tcstr, cstr
+        in
+        let make_cstr scstr =
+          Builtin_attributes.warning_scope scstr.pcd_attributes
+            (fun () -> make_cstr scstr)
         in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
@@ -1307,7 +1314,11 @@ let transl_type_decl env rec_flag sdecl_list =
         id, None
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration temp_env name_sdecl id in
+    current_slot := slot;
+    Builtin_attributes.warning_scope
+      name_sdecl.ptype_attributes
+      (fun () -> transl_declaration temp_env name_sdecl id)
+  in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
@@ -1507,6 +1518,12 @@ let transl_extension_constructor env type_path type_params
       Typedtree.ext_loc = sext.pext_loc;
       Typedtree.ext_attributes = sext.pext_attributes; }
 
+let transl_extension_constructor env type_path type_params
+    typext_params priv sext =
+  Builtin_attributes.warning_scope sext.pext_attributes
+    (fun () -> transl_extension_constructor env type_path type_params
+        typext_params priv sext)
+
 let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
@@ -1600,6 +1617,10 @@ let transl_type_extension extend env loc styext =
       tyext_attributes = styext.ptyext_attributes; }
   in
     (tyext, newenv)
+
+let transl_type_extension extend env loc styext =
+  Builtin_attributes.warning_scope styext.ptyext_attributes
+    (fun () -> transl_type_extension extend env loc styext)
 
 let transl_exception env sext =
   reset_type_variables();
@@ -1765,6 +1786,10 @@ let transl_value_decl env loc valdecl =
     }
   in
   desc, newenv
+
+let transl_value_decl env loc valdecl =
+  Builtin_attributes.warning_scope valdecl.pval_attributes
+    (fun () -> transl_value_decl env loc valdecl)
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
