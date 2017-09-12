@@ -12,6 +12,12 @@ Working version
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
+- GPR#1064: extended indexing operators, add a new class of
+  user-defined indexing operators, obtained by adding at least
+  one operator character after the dot symbol to the standard indexing
+  operators: e,g ".%()", ".?[]", ".@{}<-"
+  (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
+
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)
@@ -28,12 +34,6 @@ Working version
 
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
-
-- GPR#1064: extended indexing operators, add a new class of
-  user-defined indexing operators, obtained by adding at least
-  one operator character after the dot symbol to the standard indexing
-  operators: e,g ".%()", ".?[]", ".@{}<-"
-  (Florian Angeletti)
 
 ### Code generation and optimizations:
 
