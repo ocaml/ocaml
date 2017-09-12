@@ -55,7 +55,6 @@ and value_closure = {
 }
 
 and value_set_of_closures = {
-  is_classic_mode : bool;
   set_of_closures_id : Set_of_closures_id.t;
   bound_vars : approx Var_within_closure.Map.t;
   free_vars : Flambda.specialised_to Variable.Map.t;

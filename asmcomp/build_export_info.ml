@@ -328,7 +328,6 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
         Env.find_approx env spec_to.var)
       set.specialised_args
   in
-  let is_classic_mode = !Clflags.classic_inlining in
   let closures_approx =
     (* To build an approximation of the results, we need an
        approximation of the functions. The first one we can build is
@@ -342,7 +341,6 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     *)
     let initial_value_set_of_closures =
       { Export_info.
-        is_classic_mode;
         set_of_closures_id = set.function_decls.set_of_closures_id;
         bound_vars = Var_within_closure.wrap_map bound_vars_approx;
         free_vars = set.free_vars;
@@ -378,7 +376,6 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
     free_vars = set.free_vars;
     results = Closure_id.wrap_map results;
     aliased_symbol = None;
-    is_classic_mode;
   }
 
 let approx_of_constant_defining_value_block_field env
@@ -523,45 +520,45 @@ let build_transient ~(backend : (module Backend_intf.S))
       Env.Global.export_id_to_descr_map env
     in
     let invariant_params =
-      if !Clflags.classic_inlining then begin
-        Set_of_closures_id.Map.empty
-      end else begin
-        let invariant_params =
-          Set_of_closures_id.Map.map
-            (fun { Flambda. function_decls; _ } ->
+      let invariant_params =
+        Set_of_closures_id.Map.map
+          (fun { Flambda. function_decls; _ } ->
+             if function_decls.is_classic_mode then begin
+               Variable.Map.empty
+             end else begin
                Invariant_params.invariant_params_in_recursion
-                 ~backend function_decls)
-            (Flambda_utils.all_sets_of_closures_map program)
-        in
-        let export = Compilenv.approx_env () in
-        Export_id.Map.fold
-          (fun _eid (descr:Export_info.descr) (invariant_params) ->
-            match (descr : Export_info.descr) with
-            | Value_closure { set_of_closures }
-            | Value_set_of_closures set_of_closures ->
-              let { Export_info.set_of_closures_id } = set_of_closures in
-              begin match
-                Set_of_closures_id.Map.find set_of_closures_id
-                  export.invariant_params
-              with
-              | exception Not_found ->
-                invariant_params
-              | (set : Variable.Set.t Variable.Map.t) ->
-                Set_of_closures_id.Map.add
-                  set_of_closures_id set invariant_params
-              end
-            | Export_info.Value_boxed_int (_, _)
-            | Value_block _
-            | Value_mutable_block _
-            | Value_int _
-            | Value_char _
-            | Value_constptr _
-            | Value_float _
-            | Value_float_array _
-            | Value_string _ ->
-              invariant_params)
-          unnested_values invariant_params
-      end
+                 ~backend function_decls
+             end)
+          (Flambda_utils.all_sets_of_closures_map program)
+      in
+      let export = Compilenv.approx_env () in
+      Export_id.Map.fold
+        (fun _eid (descr:Export_info.descr) (invariant_params) ->
+          match (descr : Export_info.descr) with
+          | Value_closure { set_of_closures }
+          | Value_set_of_closures set_of_closures ->
+            let { Export_info.set_of_closures_id } = set_of_closures in
+            begin match
+              Set_of_closures_id.Map.find set_of_closures_id
+                export.invariant_params
+            with
+            | exception Not_found ->
+              invariant_params
+            | (set : Variable.Set.t Variable.Map.t) ->
+              Set_of_closures_id.Map.add
+                set_of_closures_id set invariant_params
+            end
+          | Export_info.Value_boxed_int (_, _)
+          | Value_block _
+          | Value_mutable_block _
+          | Value_int _
+          | Value_char _
+          | Value_constptr _
+          | Value_float _
+          | Value_float_array _
+          | Value_string _ ->
+            invariant_params)
+        unnested_values invariant_params
     in
     let values = Export_info.nest_eid_map unnested_values in
     let symbol_id = Env.Global.symbol_to_export_id_map env in
@@ -600,19 +597,18 @@ let build_transient ~(backend : (module Backend_intf.S))
     let sets_of_closures =
       Set_of_closures_id.Map.filter_map
         function_declarations_map
-        ~f:(fun key fun_decls ->
+        ~f:(fun key (fun_decls : Simple_value_approx.function_declarations) ->
           if Set_of_closures_id.Set.mem key relevant_set_of_closures then
             Some fun_decls
-          else if
+          else if begin
             Set_of_closures_id.Set.mem key
               relevant_set_of_closures_declaration_only
-          then begin
-            if !Clflags.classic_inlining then
+          end then begin
+            if fun_decls.is_classic_mode then
               Some (Simple_value_approx.clear_function_bodies fun_decls)
             else
               Some fun_decls
-          end
-          else begin
+          end else begin
             None
           end)
     in

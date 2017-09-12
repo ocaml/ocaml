@@ -72,29 +72,30 @@ let rec import_ex ex =
   ignore (Compilenv.approx_for_global (Export_id.get_compilation_unit ex));
   let ex_info = Compilenv.approx_env () in
   let import_value_set_of_closures
-        ~is_classic_mode ~set_of_closures_id ~bound_vars ~free_vars
+        ~set_of_closures_id ~bound_vars ~free_vars
         ~(ex_info : Export_info.t) ~what : A.value_set_of_closures option =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
-    let invariant_params =
-      match
-        Set_of_closures_id.Map.find set_of_closures_id ex_info.invariant_params
-      with
-      | exception Not_found ->
-        if is_classic_mode then
-          Variable.Map.empty
-        else
-          Misc.fatal_errorf "Set of closures ID %a not found in \
-              invariant_params (when importing [%a: %s])"
-            Set_of_closures_id.print set_of_closures_id
-            Export_id.print ex
-            what
-      | found -> found
-    in
     match import_set_of_closures set_of_closures_id with
     | None -> None
     | Some function_decls ->
+      let is_classic_mode = function_decls.is_classic_mode in
+      let invariant_params =
+        match
+          Set_of_closures_id.Map.find set_of_closures_id
+            ex_info.invariant_params
+        with
+        | exception Not_found ->
+          if is_classic_mode then
+            Variable.Map.empty
+          else
+            Misc.fatal_errorf "Set of closures ID %a not found in \
+                               invariant_params (when importing [%a: %s])"
+              Set_of_closures_id.print set_of_closures_id
+              Export_id.print ex
+              what
+        | found -> found
+      in
       Some (A.import_value_set_of_closures
-        ~is_classic_mode
         ~function_decls
         ~bound_vars
         ~free_vars
@@ -133,14 +134,13 @@ let rec import_ex ex =
     A.value_block tag (Array.map import_approx fields)
   | Value_closure { closure_id;
         set_of_closures =
-          { is_classic_mode;
-            set_of_closures_id;
+          { set_of_closures_id;
             bound_vars;
             free_vars;
             aliased_symbol } } ->
     let value_set_of_closures =
       import_value_set_of_closures
-        ~is_classic_mode ~set_of_closures_id ~bound_vars ~free_vars ~ex_info
+        ~set_of_closures_id ~bound_vars ~free_vars ~ex_info
         ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
     in
     begin match value_set_of_closures with
@@ -149,13 +149,12 @@ let rec import_ex ex =
       A.value_closure ?set_of_closures_symbol:aliased_symbol
         value_set_of_closures closure_id
     end
-  | Value_set_of_closures { is_classic_mode;
-                            set_of_closures_id;
+  | Value_set_of_closures { set_of_closures_id;
                             bound_vars;
                             free_vars;
                             aliased_symbol } ->
     let value_set_of_closures =
-      import_value_set_of_closures ~is_classic_mode ~set_of_closures_id
+      import_value_set_of_closures ~set_of_closures_id
         ~bound_vars ~free_vars ~ex_info ~what:"Value_set_of_closures"
     in
     match value_set_of_closures with

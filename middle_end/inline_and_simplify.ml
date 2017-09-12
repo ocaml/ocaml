@@ -818,6 +818,7 @@ and simplify_partial_application env r ~lhs_of_application
         (Closure_id.unwrap closure_id_being_applied)
     in
     Flambda_utils.make_closure_declaration ~id:closure_variable
+      ~is_classic_mode:false
       ~body
       ~params:remaining_args
       ~stub:true

@@ -318,7 +318,8 @@ let toplevel_substitution_named sb named =
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
 
-let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
+let make_closure_declaration
+      ~is_classic_mode ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -336,7 +337,8 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let subst id = Variable.Map.find id sb in
   let subst_param param = Parameter.map_var subst param in
   let function_declaration =
-    Flambda.create_function_declaration ~params:(List.map subst_param params)
+    Flambda.create_function_declaration
+      ~params:(List.map subst_param params)
       ~body ~stub ~dbg:Debuginfo.none ~inline:Default_inline
       ~specialise:Default_specialise ~is_a_functor:false
       ~closure_origin:(Closure_origin.create (Closure_id.wrap id))
@@ -364,6 +366,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let set_of_closures =
     let function_decls =
       Flambda.create_function_declarations
+        ~is_classic_mode
         ~funs:(Variable.Map.singleton id function_declaration)
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
