@@ -212,26 +212,14 @@ val print_value_set_of_closures
   -> value_set_of_closures
   -> unit
 
-val create_classic_function_declarations
-   : keep_body_check:(Variable.t -> Flambda.function_declaration -> bool)
+val create_function_declarations
+   : classic_keep_body_check:(
+    Variable.t -> Flambda.function_declaration -> bool)
   -> Flambda.function_declarations -> function_declarations
 
-val create_normal_function_declarations
-   : Flambda.function_declarations -> function_declarations
-
-val create_classic_value_set_of_closures
-   : keep_body_check:(Variable.t -> Flambda.function_declaration -> bool)
+val create_value_set_of_closures
+   : classic_keep_body_check:(Variable.t -> Flambda.function_declaration -> bool)
   -> function_decls:Flambda.function_declarations
-  -> bound_vars:t Var_within_closure.Map.t
-  -> free_vars: Flambda.specialised_to Variable.Map.t
-  -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
-  -> specialised_args:Flambda.specialised_to Variable.Map.t
-  -> freshening:Freshening.Project_var.t
-  -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
-  -> value_set_of_closures
-
-val create_normal_value_set_of_closures
-   : function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
   -> free_vars: Flambda.specialised_to Variable.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t

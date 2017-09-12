@@ -512,6 +512,38 @@ end
 module A = Simple_value_approx
 module E = Env
 
+let keep_body_in_classic_mode ~backend ~function_decls =
+  let can_inline_non_rec_function (fun_decl : Flambda.function_declaration) =
+    (* In classic-inlining mode, the inlining decision is taken at
+       definition site (here). If the function is small enough
+       (below the -inline threshold) it will always be inlined.
+
+       Closure gives a bonus of [8] to optional arguments. In classic
+       mode, however, we would inline functions with the "*opt*" argument
+       in all cases, as it is a stub. (This is ensured by
+       [middle_end/closure_conversion.ml]).
+    *)
+    let inlining_threshold = initial_inlining_threshold ~round:0 in
+    let bonus = Flambda_utils.function_arity fun_decl in
+    Inlining_cost.can_inline fun_decl.body inlining_threshold ~bonus
+  in
+  let recursive_variables =
+    Find_recursive_functions.in_function_declarations ~backend
+      function_decls
+  in
+  fun (var : Variable.t) (fun_decl : Flambda.function_declaration) ->
+    if fun_decl.stub then begin
+      true
+    end else if Variable.Set.mem var recursive_variables then begin
+      false
+    end else begin
+      match fun_decl.inline with
+      | Default_inline -> can_inline_non_rec_function fun_decl
+      | Unroll factor -> factor > 0
+      | Always_inline -> true
+      | Never_inline -> false
+    end
+
 let prepare_to_simplify_set_of_closures ~env
       ~(set_of_closures : Flambda.set_of_closures)
       ~function_decls ~freshen
@@ -619,7 +651,13 @@ let prepare_to_simplify_set_of_closures ~env
         free_vars Var_within_closure.Map.empty
     in
     let free_vars = Variable.Map.map fst free_vars in
-    A.create_normal_value_set_of_closures ~function_decls ~bound_vars
+    let backend = Env.backend env in
+    let classic_keep_body_check =
+      keep_body_in_classic_mode ~backend ~function_decls
+    in
+    A.create_value_set_of_closures
+      ~function_decls ~bound_vars
+      ~classic_keep_body_check
       ~invariant_params:(lazy Variable.Map.empty) ~specialised_args
       ~freshening ~direct_call_surrogates ~free_vars
   in
@@ -694,63 +732,22 @@ let prepare_to_simplify_closure ~(function_decl : Flambda.function_declaration)
   add_projections ~closure_env ~which_variables:free_vars
     ~map:(fun (spec_to, _approx) -> spec_to)
 
-let keep_body_in_classic_mode ~backend ~function_decls =
-  let can_inline_non_rec_function (fun_decl : Flambda.function_declaration) =
-    (* In classic-inlining mode, the inlining decision is taken at
-       definition site (here). If the function is small enough
-       (below the -inline threshold) it will always be inlined.
-
-       Closure gives a bonus of [8] to optional arguments. In classic
-       mode, however, we would inline functions with the "*opt*" argument
-       in all cases, as it is a stub. (This is ensured by
-       [middle_end/closure_conversion.ml]).
-    *)
-    let inlining_threshold = initial_inlining_threshold ~round:0 in
-    let bonus = Flambda_utils.function_arity fun_decl in
-    Inlining_cost.can_inline fun_decl.body inlining_threshold ~bonus
-  in
-  let recursive_variables =
-    Find_recursive_functions.in_function_declarations ~backend
-      function_decls
-  in
-  fun (var : Variable.t) (fun_decl : Flambda.function_declaration) ->
-    if fun_decl.stub then begin
-      true
-    end else if Variable.Set.mem var recursive_variables then begin
-      false
-    end else begin
-      match fun_decl.inline with
-      | Default_inline -> can_inline_non_rec_function fun_decl
-      | Unroll factor -> factor > 0
-      | Always_inline -> true
-      | Never_inline -> false
-    end
-
 let approximate_function_declarations ~backend
       (function_decls : Flambda.function_declarations) =
-  if !Clflags.classic_inlining then begin
-    let keep_body_check =
-      keep_body_in_classic_mode ~backend ~function_decls
-    in
-    A.create_classic_function_declarations ~keep_body_check function_decls
-  end else begin
-    A.create_normal_function_declarations function_decls
-  end
+  let classic_keep_body_check =
+    keep_body_in_classic_mode ~backend ~function_decls
+  in
+  A.create_function_declarations ~classic_keep_body_check function_decls
 
 let create_value_set_of_closures
       ~backend
       ~(function_decls : Flambda.function_declarations)
       ~bound_vars ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
-  let create =
-    if !Clflags.classic_inlining then begin
-      let keep_body_check =
-        keep_body_in_classic_mode ~backend ~function_decls
-      in
-      A.create_classic_value_set_of_closures ~keep_body_check
-    end else begin
-      A.create_normal_value_set_of_closures
-    end
+  let classic_keep_body_check =
+    keep_body_in_classic_mode ~backend ~function_decls
   in
-  create ~function_decls ~bound_vars ~free_vars ~invariant_params
+  A.create_value_set_of_closures ~classic_keep_body_check
+    ~function_decls ~bound_vars ~free_vars ~invariant_params
     ~specialised_args ~freshening ~direct_call_surrogates
+

@@ -369,7 +369,7 @@ let specialise env r ~lhs_of_application
        - is closed (it and all other members of the set of closures on which
          it depends); and
        - has useful approximations for some invariant parameters. *)
-    if !Clflags.classic_inlining then
+    if function_decls.is_classic_mode then
       Don't_try_it S.Not_specialised.Classic_mode
     else if self_call then
       Don't_try_it S.Not_specialised.Self_call
@@ -733,7 +733,7 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         match function_decl.function_body with
         | None ->
           Misc.fatal_error
-            "value_set_of_closures.is_classic_mode is [false], but \
+            "function_declarations.is_classic_mode is [true], but \
              function_decl does not contain a body."
         | Some _ ->
           let specialise_result =

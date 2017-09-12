@@ -299,7 +299,7 @@ let import_value_set_of_closures
     direct_call_surrogates;
   }
 
-let function_declarations_of_flambda ~keep_body_check flambda =
+let function_declarations_of_flambda ~classic_keep_body_check flambda =
   let { Flambda.
         is_classic_mode;
         set_of_closures_id;
@@ -310,7 +310,7 @@ let function_declarations_of_flambda ~keep_body_check flambda =
     Variable.Map.mapi
       (fun (key : Variable.t) (fun_decl : Flambda.function_declaration) ->
          let function_body =
-           if keep_body_check key fun_decl
+           if not is_classic_mode || classic_keep_body_check key fun_decl
            then begin
              Some
                { body = fun_decl.body;
@@ -335,21 +335,16 @@ let function_declarations_of_flambda ~keep_body_check flambda =
   in
   { is_classic_mode; set_of_closures_id ; set_of_closures_origin ; funs }
 
-let create_classic_function_declarations ~keep_body_check
+let create_function_declarations ~classic_keep_body_check
       (function_decls : Flambda.function_declarations) =
-  function_declarations_of_flambda ~keep_body_check function_decls
+  function_declarations_of_flambda ~classic_keep_body_check function_decls
 
-let create_normal_function_declarations
-      (function_decls : Flambda.function_declarations) =
-  function_declarations_of_flambda ~keep_body_check:(fun _ _ -> true)
-    function_decls
-
-let create_classic_value_set_of_closures ~keep_body_check
+let create_value_set_of_closures ~classic_keep_body_check
       ~(function_decls : Flambda.function_declarations) ~bound_vars
       ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let function_decls =
-    create_classic_function_declarations ~keep_body_check function_decls
+    create_function_declarations ~classic_keep_body_check function_decls
   in
   let size =
     lazy (
@@ -376,42 +371,6 @@ let create_classic_value_set_of_closures ~keep_body_check
               Inlining_cost.lambda_smaller' ~than:max_size
                 function_body.body
             )))
-  in
-  { function_decls;
-    bound_vars;
-    free_vars;
-    invariant_params;
-    size;
-    specialised_args;
-    freshening;
-    direct_call_surrogates;
-  }
-
-let create_normal_value_set_of_closures
-      ~(function_decls : Flambda.function_declarations) ~bound_vars
-      ~free_vars ~invariant_params ~specialised_args ~freshening
-      ~direct_call_surrogates =
-  let size =
-    lazy (
-      let functions = Variable.Map.keys function_decls.funs in
-      Variable.Map.map
-        (fun (function_decl : Flambda.function_declaration) ->
-           let params = Parameter.Set.vars function_decl.params in
-           let free_vars =
-             Variable.Set.diff
-               (Variable.Set.diff function_decl.free_variables params)
-               functions
-           in
-           let num_free_vars = Variable.Set.cardinal free_vars in
-           let max_size =
-             Inlining_cost.maximum_interesting_size_of_function_body
-               num_free_vars
-           in
-           Inlining_cost.lambda_smaller' function_decl.body ~than:max_size)
-        function_decls.funs)
-  in
-  let function_decls =
-    create_normal_function_declarations function_decls
   in
   { function_decls;
     bound_vars;
