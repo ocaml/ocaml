@@ -123,4 +123,15 @@ let () =
     (* length + left + right > max_int *)
     test_raises_invalid_argument
       (fun () -> extend abcde max_int max_int) ();
+
+    (* Testing Bytes.filter (also bound to String.filter) *)
+    Testing.test
+      (let s2b = of_string in
+       let digit c = c >= '0' && c <= '9' in
+       filter digit (s2b "") = (s2b "") &&
+       filter digit (s2b "abcd") = (s2b "") &&
+       filter digit (s2b "01234567") = (s2b "01234567") &&
+       filter digit (s2b "0123a4567") = (s2b "01234567")
+      );
+
   end

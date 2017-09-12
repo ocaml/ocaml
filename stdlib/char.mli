@@ -52,6 +52,11 @@ val uppercase_ascii : char -> char
    using the US-ASCII character set.
    @since 4.03.0 *)
 
+val bits : char -> int
+(** Return the number of bits set to 1 in the bnary representation of the
+    given character.
+    @since 4.06.0 *)
+
 type t = char
 (** An alias for the type of characters. *)
 

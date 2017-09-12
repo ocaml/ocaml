@@ -251,6 +251,9 @@ Working version
 - #8971: Add `Filename.null`, the conventional name of the "null" device.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Alain Frisch)
 
+- #1334: Add Char.bits, {Array,Bytes,String}.filter functions
+  (Michel Mauny, review by Alain Frisch)
+
 ### Other libraries:
 
 - #1939, #2023: Implement Unix.truncate and Unix.ftruncate on Windows.
