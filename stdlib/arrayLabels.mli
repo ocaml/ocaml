@@ -157,6 +157,11 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
    [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
    where [n] is the length of the array [a]. *)
 
+val filter : f:('a -> bool) -> 'a array -> 'a array
+(** [Array.filter p a] returns the array of elements of [a] that
+    satisfy the predicate [p]. The order of the elements in the input
+    array is preserved.
+    @since 4.06.0 *)
 
 (** {6 Iterators on two arrays} *)
 

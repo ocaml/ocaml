@@ -115,6 +115,12 @@ val mapi : f:(int -> char -> char) -> string -> string
     string that is returned.
     @since 4.02.0 *)
 
+val filter : f:(char -> bool) -> string -> string
+(** [String.filter p s] returns the string of characters from [s] that
+    satisfy the predicate [p]. The order of the elements in the input
+    string is preserved.
+    @since 4.06.0 *)
+
 val trim : string -> string
 (** Return a copy of the argument, without leading and trailing
    whitespace.  The characters regarded as whitespace are: [' '],

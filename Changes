@@ -121,6 +121,9 @@ Working version
 
 ### Standard library:
 
+- Add Char.bits, {Array,Bytes,String}.filter functions
+  (Michel Mauny, review by xxx)
+
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
   (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and

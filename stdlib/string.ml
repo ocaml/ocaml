@@ -86,6 +86,9 @@ let map f s =
 let mapi f s =
   B.mapi f (bos s) |> bts
 
+let filter p s =
+  B.filter p (bos s) |> bts
+
 (* Beware: we cannot use B.trim or B.escape because they always make a
    copy, but String.mli spells out some cases where we are not allowed
    to make a copy. *)

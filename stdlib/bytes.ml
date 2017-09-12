@@ -314,6 +314,70 @@ let rcontains_from s i c =
   else
     try ignore (rindex_rec s i c); true with Not_found -> false
 
+let filter p arg =
+  let size_arg = length arg in
+  if size_arg = 0 then arg else
+    (* create the bit vector *)
+    let bv =
+      create
+        (if size_arg land 7 == 0 then size_arg lsr 3
+         else (size_arg lsr 3) + 1) in
+    (* count elements e such that p(e) *)
+    let size_res = ref 0 in
+    (* fill bv, one byte at a time *)
+    for i = 0 to (size_arg lsr 3) - 1 do
+      let i8 = i lsl 3 in
+      (* p(arg.[8*i + k]) is (bv.[i] land (1 lsl k)) <> 0 *)
+      let c =
+        0 lor
+        (if p (unsafe_get arg i8)         then   1 else 0) lor
+        (if p (unsafe_get arg (i8 lor 1)) then   2 else 0) lor
+        (if p (unsafe_get arg (i8 lor 2)) then   4 else 0) lor
+        (if p (unsafe_get arg (i8 lor 3)) then   8 else 0) lor
+        (if p (unsafe_get arg (i8 lor 4)) then  16 else 0) lor
+        (if p (unsafe_get arg (i8 lor 5)) then  32 else 0) lor
+        (if p (unsafe_get arg (i8 lor 6)) then  64 else 0) lor
+        (if p (unsafe_get arg (i8 lor 7)) then 128 else 0) in
+      unsafe_set bv i (Char.unsafe_chr c);
+      size_res := !size_res + Char.bits (Char.unsafe_chr c);
+    done;
+    let size_arg8 = (size_arg lsr 3) lsl 3 in
+    (* may remain a partial last byte to set *)
+    if (size_arg land 7) > 0 then begin
+      let lastc = ref 0 in
+      for j = 0 to (size_arg land 7) - 1 do
+        if p (unsafe_get arg (size_arg8 lor j)) then
+          lastc := !lastc lor (1 lsl j) (* set bit j to 1 *)
+      done;
+      unsafe_set bv (size_arg lsr 3) (Char.unsafe_chr !lastc);
+      size_res := !size_res + Char.bits (Char.unsafe_chr !lastc);
+    end;
+    (* build the result, and transfer elements *)
+    if !size_res = 0 then create 0
+    else if !size_res = size_arg then copy arg
+    else
+      let result = make !size_res (unsafe_get arg 0) in
+      let i_res = ref 0 in
+      for i_bv = 0 to (size_arg lsr 3) - 1 do
+        let c = Char.code (unsafe_get bv i_bv) in
+        let base = i_bv lsl 3 in
+        for i = 0 to 7 do
+          if c land (1 lsl i) <> 0 then begin
+            unsafe_set result !i_res (unsafe_get arg (base lor i));
+            incr i_res
+          end
+        done;
+      done;
+      if size_arg land 7 > 0 then begin
+        let c = Char.code (unsafe_get bv (size_arg lsr 3)) in
+        for i = 0 to (size_arg land 7) - 1 do
+          if c land (1 lsl i) <> 0 then begin
+            unsafe_set result !i_res (unsafe_get arg (size_arg8 lor i));
+            incr i_res
+          end
+        done
+      end;
+      result
 
 type t = bytes
 

@@ -179,4 +179,41 @@ let () =
   assert (not (Array.memq 1.0 f));
 ;;
 
+let () =
+  (* Testing Array.filter *)
+  let p2 n = n mod 2 = 0
+  and p3 n = n mod 3 <> 0
+  and p_none n = false
+  and p_all n = true in
+  let rec interval n m =
+    if n > m then [] else n :: interval (n+1) m in
+  let open Array in
+  let check p n m =
+    let xs = interval n m in
+    filter p (of_list xs) = of_list (List.filter p xs) in
+
+  begin
+
+    (* empty array *)
+    assert (check p3 0 0);
+
+    (* input has 8 elements *)
+    assert (check p_none 0 7);
+    assert (check p_all 0 7);
+    assert (check p3 0 7);
+    assert (check p2 0 7);
+
+    (* input has 9 elements *)
+    assert (check p_none 0 8);
+    assert (check p3 0 8);
+    assert (check p_all 0 8);
+
+    (* output has 7 elements *)
+    assert (check p2 0 12);
+
+    (* output has 8 elements *)
+    assert (check p2 0 14);
+  end
+;;
+
 let () = print_endline "OK"
