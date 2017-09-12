@@ -20,7 +20,14 @@ module Env : sig
   type t
 
   val new_descr : t -> Export_info.descr -> Export_id.t
+
   val record_descr : t -> Export_id.t -> Export_info.descr -> unit
+  val new_value_closure_descr
+    : t
+    -> closure_id:Closure_id.t
+    -> set_of_closures: Export_info.value_set_of_closures
+    -> Export_id.t
+
   val get_descr : t -> Export_info.approx -> Export_info.descr option
 
   val add_approx : t -> Variable.t -> Export_info.approx -> t
@@ -56,11 +63,13 @@ end = struct
         (* Note that [ex_table]s themselves are shared (hence [ref] and not
            [mutable]). *)
         ex_table : Export_info.descr Export_id.Map.t ref;
+        closure_table : Export_id.t Closure_id.Map.t ref;
       }
 
     let create_empty () =
       { sym = Symbol.Map.empty;
         ex_table = ref Export_id.Map.empty;
+        closure_table = ref Closure_id.Map.empty;
       }
 
     let add_symbol t sym export_id =
@@ -85,12 +94,14 @@ end = struct
     { var : Export_info.approx Variable.Map.t;
       sym : Export_id.t Symbol.Map.t;
       ex_table : Export_info.descr Export_id.Map.t ref;
+      closure_table: Export_id.t Closure_id.Map.t ref;
     }
 
   let empty_of_global (env : Global.t) =
     { var = Variable.Map.empty;
       sym = env.sym;
       ex_table = env.ex_table;
+      closure_table = env.closure_table;
     }
 
   let extern_id_descr export_id =
@@ -139,6 +150,17 @@ end = struct
     let id = fresh_id () in
     record_descr t id descr;
     id
+
+  let new_value_closure_descr t ~closure_id ~set_of_closures =
+    match Closure_id.Map.find closure_id !(t.closure_table) with
+    | exception Not_found ->
+      let export_id =
+        new_descr t (Value_closure { closure_id; set_of_closures })
+      in
+      t.closure_table :=
+        Closure_id.Map.add closure_id export_id !(t.closure_table);
+      export_id
+    | export_id -> export_id
 
   let new_unit_descr t =
     new_descr t (Value_constptr 0)
@@ -278,10 +300,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
             [Project_closure]: closure ID %a not in set of closures"
           Closure_id.print closure_id
       end;
-      let descr : Export_info.descr =
-        Value_closure { closure_id = closure_id; set_of_closures; }
-      in
-      Value_id (Env.new_descr env descr)
+      Value_id (
+        Env.new_value_closure_descr env ~closure_id ~set_of_closures
+      )
     | _ ->
       (* It would be nice if this were [assert false], but owing to the fact
          that this pass may propagate less information than for example
@@ -292,10 +313,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     begin match Env.get_descr env (Env.find_approx env closure) with
     | Some (Value_closure { set_of_closures; closure_id; }) ->
       assert (Closure_id.equal closure_id start_from);
-      let descr : Export_info.descr =
-        Value_closure { closure_id = move_to; set_of_closures; }
-      in
-      Value_id (Env.new_descr env descr)
+      Value_id (
+        Env.new_value_closure_descr env ~closure_id:move_to ~set_of_closures
+      )
     | _ -> Value_unknown
     end
   | Project_var { closure; closure_id = closure_id'; var; } ->
@@ -352,13 +372,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
       }
     in
     Variable.Map.mapi (fun fun_var _function_decl ->
-        let descr : Export_info.descr =
-          Value_closure
-            { closure_id = Closure_id.wrap fun_var;
-              set_of_closures = initial_value_set_of_closures;
-            }
+        let export_id =
+          let closure_id = Closure_id.wrap fun_var in
+          let set_of_closures = initial_value_set_of_closures in
+          Env.new_value_closure_descr env ~closure_id ~set_of_closures
         in
-        Export_info.Value_id (Env.new_descr env descr))
+        Export_info.Value_id export_id)
       set.function_decls.funs
   in
   let closure_env =
