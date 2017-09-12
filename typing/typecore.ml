@@ -2123,6 +2123,8 @@ struct
         Use.(join
                 (inspect (modexp env f))
                 (inspect (modexp env p)))
+      | Tmod_constraint (m, _, _, Tcoerce_none) ->
+        modexp env m
       | Tmod_constraint (m, _, _, _) ->
         Use.inspect (modexp env m)
       | Tmod_unpack (e, _) ->
