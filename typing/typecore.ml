@@ -4057,11 +4057,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let current_slot = ref None in
   let rec_needed = ref false in
-  let warn_unused attrs =
-    Builtin_attributes.warning_scope ~ppwarning:false attrs
-      (fun () ->
-         Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
-         (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag)))
+  let warn_unused =
+    Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
+    (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
   in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
@@ -4082,41 +4080,42 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
      *)
     List.map2
       (fun attrs pat ->
-        if not (warn_unused attrs) then pat, None
-        else
-          let some_used = ref false in
-            (* has one of the identifier of this pattern been used? *)
-          let slot = ref [] in
-          List.iter
-            (fun id ->
-              let vd = Env.find_value (Path.Pident id) new_env in
-              (* note: Env.find_value does not trigger the value_used event *)
-              let name = Ident.name id in
-              let used = ref false in
-              if not (name = "" || name.[0] = '_' || name.[0] = '#') then
-                add_delayed_check
-                  (fun () ->
-                    if not !used then
-                      Location.prerr_warning vd.Types.val_loc
-                        ((if !some_used then check_strict else check) name)
-                  );
-              Env.set_value_used_callback
-                name vd
-                (fun () ->
-                  match !current_slot with
-                  | Some slot ->
-                      slot := (name, vd) :: !slot; rec_needed := true
-                  | None ->
-                      List.iter
-                        (fun (name, vd) -> Env.mark_value_used env name vd)
-                        (get_ref slot);
-                      used := true;
-                      some_used := true
-                )
-            )
-            (Typedtree.pat_bound_idents pat);
-          pat, Some slot
-      )
+         Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
+           if not warn_unused then pat, None
+           else
+             let some_used = ref false in
+             (* has one of the identifier of this pattern been used? *)
+             let slot = ref [] in
+             List.iter
+               (fun id ->
+                  let vd = Env.find_value (Path.Pident id) new_env in
+                  (* note: Env.find_value does not trigger the value_used event *)
+                  let name = Ident.name id in
+                  let used = ref false in
+                  if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                    add_delayed_check
+                      (fun () ->
+                         if not !used then
+                           Location.prerr_warning vd.Types.val_loc
+                             ((if !some_used then check_strict else check) name)
+                      );
+                  Env.set_value_used_callback
+                    name vd
+                    (fun () ->
+                       match !current_slot with
+                       | Some slot ->
+                         slot := (name, vd) :: !slot; rec_needed := true
+                       | None ->
+                         List.iter
+                           (fun (name, vd) -> Env.mark_value_used env name vd)
+                           (get_ref slot);
+                         used := true;
+                         some_used := true
+                    )
+               )
+               (Typedtree.pat_bound_idents pat);
+             pat, Some slot
+         ))
       attrs_list
       pat_list
   in
