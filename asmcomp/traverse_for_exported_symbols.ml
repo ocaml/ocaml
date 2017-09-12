@@ -92,7 +92,11 @@ let traverse
     Var_within_closure.Map.iter
       (fun _ value -> process_approx value) soc.bound_vars;
     Closure_id.Map.iter
-      (fun _ value -> process_approx value) soc.results
+      (fun _ value -> process_approx value) soc.results;
+    begin match soc.aliased_symbol with
+    | None -> ()
+    | Some symbol -> conditionally_add_symbol symbol
+    end
   in
   let process_function_body (function_body : A.function_body) =
     Flambda_iterators.iter_toplevel
