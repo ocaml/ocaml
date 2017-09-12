@@ -145,8 +145,6 @@ module rec M : sig val x: X.t end = struct let x = X.x end
 [%%expect{|
 Line _, characters 26-29:
 Warning 3: deprecated: X.t
-Line _, characters 26-29:
-Warning 3: deprecated: X.t
 Line _, characters 51-54:
 Warning 3: deprecated: X.x
 module rec M : sig val x : X.t end
