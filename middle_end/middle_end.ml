@@ -36,6 +36,22 @@ let middle_end ppf ~prefixname ~backend
     ~module_ident
     ~module_initializer =
   Profile.record_call "flambda" (fun () ->
+    let previous_warning_printer = !Location.warning_printer in
+    let module WarningSet =
+      Set.Make (struct
+        type t = Location.t * Warnings.t
+        let compare = Pervasives.compare
+      end)
+    in
+    let warning_set = ref WarningSet.empty in
+    let flambda_warning_printer loc _fmt w =
+      let elt = loc, w in
+      if not (WarningSet.mem elt !warning_set) then begin
+        warning_set := WarningSet.add elt !warning_set;
+        previous_warning_printer loc !Location.formatter_for_warnings w
+      end;
+    in
+    Location.warning_printer := flambda_warning_printer;
     let pass_number = ref 0 in
     let round_number = ref 0 in
     let check flam =
@@ -174,5 +190,6 @@ let middle_end ppf ~prefixname ~backend
       check flam;
       (* CR-someday mshinwell: add -d... option for this *)
       (* dump_function_sizes flam ~backend; *)
+      Location.warning_printer := previous_warning_printer;
       flam)
   )
