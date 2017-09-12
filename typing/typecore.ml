@@ -4018,6 +4018,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) =
     type_pattern_list env spatl scope nvs allow in
+  let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
   (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
@@ -4056,9 +4057,11 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let current_slot = ref None in
   let rec_needed = ref false in
-  let warn_unused =
-    Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
-    (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
+  let warn_unused attrs =
+    Builtin_attributes.warning_scope ~ppwarning:false attrs
+      (fun () ->
+         Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
+         (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag)))
   in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
@@ -4077,9 +4080,9 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
        are unused. If this is the case, for local declarations, the issued
        warning is 26, not 27.
      *)
-    List.map
-      (fun pat ->
-        if not warn_unused then pat, None
+    List.map2
+      (fun attrs pat ->
+        if not (warn_unused attrs) then pat, None
         else
           let some_used = ref false in
             (* has one of the identifier of this pattern been used? *)
@@ -4113,7 +4116,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
             )
             (Typedtree.pat_bound_idents pat);
           pat, Some slot
-        )
+      )
+      attrs_list
       pat_list
   in
   let exp_list =
