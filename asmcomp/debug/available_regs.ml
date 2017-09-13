@@ -12,12 +12,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* XCR pchambart: I'm still not convinced by the name of the pass.
-   unclobered_regs maybe ?
-   mshinwell: I think it's the usual name.  It matches what's used in
-   CompCert for something similar IIUC.
-*)
-
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 module M = Mach
@@ -25,33 +19,12 @@ module R = Reg
 module RAS = Reg_availability_set
 module RD = Reg_with_debug_info
 
-(* XCR pchambart is this only needed for debugging ?
-   mshinwell: yes, removed *)
-
-(* XCR pchambart I'm not certain that exits numbers cannot be nested:
-   every other pass uses a list for that I assume
-   mshinwell: we rely on the Hashtbl shadowing semantics now. *)
-
 (* This pass treats [avail_at_exit] like a "result" structure whereas the
    equivalent in [Liveness] is like an "environment".  (Which means we need
    to be careful not to throw away information about further-out catch
    handlers collected in [avail_at_exit].) *)
 let avail_at_exit = Hashtbl.create 42
-(* XCR pchambart: None here is in some way the same thing as all_regs
-   mshinwell: (now called Unreachable) *)
 let avail_at_raise = ref RAS.Unreachable
-
-(* XCR pchambart: not 'interessting' but contain source level relevant value.
-   This may be easier to just filter later (when printing ?).
-   Keeping those in gdb might help debug the code generation such
-   as corrupted values due to unregistered roots.
-   mshinwell: filtering on name now moved to [Available_filtering]
-   (although maybe that's still too early?).
-*)
-
-(* XCR-pchambart it does not really convey the fact that it's
-   unreachable. Having a sum type to represent that may be cleaner.
-   I don't think this allocation cost would really matter *)
 
 let augment_availability_at_raise avail =
   avail_at_raise := RAS.inter avail !avail_at_raise
@@ -82,8 +55,6 @@ let rec available_regs (instr : M.instruction)
        allocation code.
        Should we be using "available across" instead of "available before"?
        It's not clear that actually solves the problem. *)
-    (* XCR pchambart: This test should probably surround everything,
-       especialy in the case where it is changed to a sum type. *)
     match avail_before with
     | Unreachable -> Unreachable
     | Ok avail_before ->
@@ -91,8 +62,6 @@ let rec available_regs (instr : M.instruction)
          available before the instruction.  (We cannot assert that a register
          should not be an input to an instruction unless it is available due
          to the special case below.) *)
-      (* XCR pchambart: The difference between live and avail_before is
-         probably due to the 'interesting' filter. *)
       if not (R.Set.subset instr.live (RD.Set.forget_debug_info avail_before))
       then begin
         Misc.fatal_errorf "Live registers not a subset of available registers: \
@@ -115,11 +84,6 @@ let rec available_regs (instr : M.instruction)
       (* CR mshinwell: should have a hook for Ispecific cases *)
       | _ -> Ok avail_before
   in
-  (* XCR pchambart: Given how it's used I would rename it to
-     available_across rather than available_before.
-     mshinwell: I don't think I want to change this at the moment.  Everything
-     has been thought about with this field meaning the registers available
-     immediately prior to the instruction. *)
   instr.available_before <- avail_before;
   let avail_after : RAS.t =
     match avail_before with
@@ -255,21 +219,8 @@ let rec available_regs (instr : M.instruction)
       | Iswitch (_, cases) -> join (Array.to_list cases) ~avail_before
       | Iloop body ->
         let avail_after = ref (RAS.Ok avail_before) in
-        (* XCR pchambart: This should probably be instr.available_before to do a
-           single loop in case of nested Iloop.
-           mshinwell: I _think_ this is fixed, but not completely sure what
-           was being referred to.  Please check. *)
         begin try
           while true do
-            (* XCR pchambart: I don't see any situations where a second
-               round would remove more registers from the set. Hence
-               I'm not convinced that there are situations where a
-               fixpoint is required. But this is necessary for marking
-               each instruction in the loop with its real
-               available_before. An assertion should check that never
-               more than 2 rounds are required.
-               mshinwell: I suspect this isn't the case with multiple
-               handlers.  (This Iloop case should go away soon.) *)
             let avail_after' =
               RAS.inter !avail_after
                 (available_regs body ~avail_before:!avail_after)
@@ -377,8 +328,6 @@ and join branches ~avail_before =
   end
 
 let fundecl (f : M.fundecl) =
-  (* XCR pchambart: this should be cleaned by the Icatch instruction.
-     It should be replaced by an assertion *)
   assert (Hashtbl.length avail_at_exit = 0);
   avail_at_raise := RAS.Unreachable;
   let fun_args = R.set_of_array f.fun_args in
