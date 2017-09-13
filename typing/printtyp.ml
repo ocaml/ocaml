@@ -895,7 +895,7 @@ let rec tree_of_type_decl id decl =
         decl.type_private
     | Type_open ->
         tree_of_manifest Otyp_open,
-        Public
+        decl.type_private
   in
   let immediate =
     Builtin_attributes.immediate decl.type_attributes

@@ -2690,7 +2690,7 @@ and unify_row env row1 row2 =
     end;
     (* The following test is not principal... should rather use Tnil *)
     let rm = row_more row in
-    if !trace_gadt_instances && rm.desc = Tnil then () else
+    (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
       update_level !env rm.level (newgenty (Tvariant row));
     if row_fixed row then
@@ -2712,6 +2712,10 @@ and unify_row env row1 row2 =
           raise (Unify ((mkvariant [l,f1] true,
                          mkvariant [l,f2] true) :: trace)))
       pairs;
+    if static_row row1 then begin
+      let rm = row_more row1 in
+      if is_Tvar rm then link_type rm (newty2 rm.level Tnil)
+    end
   with exn ->
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end

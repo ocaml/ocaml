@@ -1593,12 +1593,14 @@ Some attributes are understood by the type-checker:
  the same effect as the "-w" command-line option, in the scope between
  the attribute and the end of the current
  signature/structure/object/object type.  The attribute can also be
- used on an expression,
- in which case its scope is limited to that expression.
+ attached to any kind of syntactic item which support attributes
+ (such as an expression, or a type expression)
+ in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggered by the ``ppwarning'' attribute (see below)
- are issued using the global warning configuration.
+ Some warnings are even completely outside the control of ``ocaml.warning''
+ (for instance, warnings 1, 2, 14, 29 and 50).
+
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.
@@ -1970,7 +1972,43 @@ Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
+\begin{verbatim}
+        module Bool : sig
+          type attr += private Bool of int
+          val bool : bool -> attr
+        end = struct
+          type attr += Bool of int
+          let bool p = if p then Bool 1 else Bool 0
+        end
+\end{verbatim}
 
+\subsection{Private extensible variant types}
+
+(Introduced in OCaml 4.06)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' '..'
+;
+\end{syntax}
+
+Extensible variant types can be declared "private". This prevents new
+constructors from being declared directly, but allows extension
+constructors to be referred to in interfaces.
+\begin{verbatim}
+        module Msg : sig
+          type t = private ..
+          module MkConstr (X : sig type t end) : sig
+            type t += C of X.t
+          end
+        end = struct
+          type t = ..
+          module MkConstr (X : sig type t end) = struct
+            type t += C of X.t
+          end
+        end
+\end{verbatim}
 
 \section{Generative functors}\label{s:generative-functors}
 
