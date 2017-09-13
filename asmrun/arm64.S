@@ -336,8 +336,8 @@ caml_start_program:
 
 .Ljump_to_caml:
     /* Set up stack frame and save callee-save registers */
-	CFI_OFFSET(29, -160)
-	CFI_OFFSET(30, -152)
+        CFI_OFFSET(29, -160)
+        CFI_OFFSET(30, -152)
         stp     x29, x30, [sp, -160]!
         CFI_ADJUST(160)
         add     x29, sp, #0
