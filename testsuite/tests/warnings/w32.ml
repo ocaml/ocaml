@@ -32,3 +32,16 @@ and[@warning "-39"] t x = x
 
 let[@warning "-39"] rec u x = x
 and v x = v x
+
+
+(* disabled then re-enabled warnings *)
+
+module M = struct
+  [@@@warning "-32"]
+  let f x = x
+  let[@warning "+32"] g x = x
+  let[@warning "+32"] h x = x
+  and i x = x
+  let j x = x
+  and[@warning "+32"] k x = x
+end
