@@ -82,8 +82,6 @@ and approx =
 type t = private {
   sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
   (** Code of exported functions indexed by set of closures IDs. *)
-  closures : A.function_declarations Closure_id.Map.t;
-  (** Code of exported functions indexed by closure IDs. *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   (** Structure of exported values. *)
   symbol_id : Export_id.t Symbol.Map.t;
@@ -92,7 +90,7 @@ type t = private {
   (** Positions of function pointers in their closures. *)
   offset_fv : int Var_within_closure.Map.t;
   (** Positions of value pointers in their closures. *)
-  constant_sets_of_closures : Set_of_closures_id.Set.t;
+  constant_closures : Closure_id.Set.t;
   (* CR-soon mshinwell for pchambart: Add comment *)
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
   (* Function parameters known to be invariant (see [Invariant_params])
@@ -101,7 +99,6 @@ type t = private {
 
 type transient = private {
   sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
-  closures : A.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
@@ -122,18 +119,16 @@ val opaque_transient
 (** Create a new export information structure. *)
 val create
    : sets_of_closures:(A.function_declarations Set_of_closures_id.Map.t)
-  -> closures:A.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
-  -> constant_sets_of_closures:Set_of_closures_id.Set.t
+  -> constant_closures:Closure_id.Set.t
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
   -> t
 
 val create_transient
    : sets_of_closures:(A.function_declarations Set_of_closures_id.Map.t)
-  -> closures:A.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
@@ -159,7 +154,7 @@ val t_of_transient
   -> local_offset_fv:int Var_within_closure.Map.t
   -> imported_offset_fun:int Closure_id.Map.t
   -> imported_offset_fv:int Var_within_closure.Map.t
-  -> constant_sets_of_closures:Set_of_closures_id.Set.t
+  -> constant_closures:Closure_id.Set.t
   -> t
 
 (** Union of export information.  Verifies that there are no identifier

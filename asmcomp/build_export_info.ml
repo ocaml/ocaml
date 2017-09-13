@@ -638,16 +638,6 @@ let build_transient ~(backend : (module Backend_intf.S))
             None
           end)
     in
-    let closures =
-      let aux_fun function_decls fun_var _ map =
-        let closure_id = Closure_id.wrap fun_var in
-        Closure_id.Map.add closure_id function_decls map
-      in
-      let aux _ (function_decls : Simple_value_approx.function_declarations) map =
-        Variable.Map.fold (aux_fun function_decls) function_decls.funs map
-      in
-      Set_of_closures_id.Map.fold aux sets_of_closures Closure_id.Map.empty
-    in
     let values =
       Compilation_unit.Map.map (fun map ->
           Export_id.Map.filter (fun key _ ->
@@ -662,7 +652,7 @@ let build_transient ~(backend : (module Backend_intf.S))
     in
     Export_info.create_transient ~values
       ~symbol_id
-      ~sets_of_closures ~closures
+      ~sets_of_closures
       ~invariant_params
       ~relevant_local_closure_ids
       ~relevant_imported_closure_ids

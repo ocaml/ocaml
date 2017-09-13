@@ -480,6 +480,19 @@ let make_closure_map program =
     ~f:add_set_of_closures;
   !map
 
+let all_lifted_constant_closures program =
+  List.fold_left (fun unchanged flambda ->
+      match flambda with
+      | (_, Flambda.Set_of_closures { function_decls = { funs } }) ->
+        Variable.Map.fold
+          (fun key (_ : Flambda.function_declaration) acc ->
+             Closure_id.Set.add (Closure_id.wrap key) acc)
+          funs
+          unchanged
+      | _ -> unchanged)
+    Closure_id.Set.empty
+    (all_lifted_constants program)
+
 let all_lifted_constant_sets_of_closures program =
   let set = ref Set_of_closures_id.Set.empty in
   List.iter (function

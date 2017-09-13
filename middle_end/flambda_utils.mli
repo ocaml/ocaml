@@ -135,6 +135,8 @@ val all_lifted_constant_sets_of_closures
    : Flambda.program
   -> Set_of_closures_id.Set.t
 
+val all_lifted_constant_closures : Flambda.program -> Closure_id.Set.t
+
 (** All sets of closures in the given program (whether or not bound to a
     symbol.) *)
 val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list

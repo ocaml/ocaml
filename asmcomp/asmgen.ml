@@ -202,7 +202,7 @@ let flambda_gen_implementation ?toplevel ~backend ppf
   let (clambda, preallocated, constants) =
     Profile.record_call "backend" (fun () ->
       (program, export)
-      ++ Flambda_to_clambda.convert ~backend
+      ++ Flambda_to_clambda.convert
       ++ flambda_raw_clambda_dump_if ppf
       ++ (fun { Flambda_to_clambda. expr; preallocated_blocks;
                 structured_constants; exported; } ->

@@ -212,15 +212,12 @@ let import_for_pack ~pack_units ~pack (exp : Export_info.t) =
          exp.sets_of_closures)
   in
   Export_info.create ~sets_of_closures
-    ~closures:(A.make_closure_map' sets_of_closures)
     ~offset_fun:exp.offset_fun
     ~offset_fv:exp.offset_fv
     ~values:(import_eidmap import_descr exp.values)
     ~symbol_id:(Symbol.Map.map_keys import_sym
       (Symbol.Map.map import_eid exp.symbol_id))
-    ~constant_sets_of_closures:
-      (Set_of_closures_id.Set.map import_set_of_closures_id
-         exp.constant_sets_of_closures)
+    ~constant_closures:exp.constant_closures
     ~invariant_params:
       (Set_of_closures_id.Map.map_keys import_set_of_closures_id
          exp.invariant_params)
