@@ -505,6 +505,14 @@ let transl_declaration env sdecl id =
       | Some sty ->
         let no_row = not (is_fixed_type sdecl) in
         let cty = transl_simple_type env no_row sty in
+        begin match Btype.repr cty.ctyp_type with
+          {desc = Tvariant row} as ty when Btype.static_row row ->
+            (* set the row name; cf. GPR#1204 *)
+            let row = {(Btype.row_repr row) with
+                       row_name = Some (Path.Pident id, params)} in
+            ty.desc <- Tvariant row
+        | _ -> ()
+        end;
         Some cty, Some cty.ctyp_type
     in
     let decl =
