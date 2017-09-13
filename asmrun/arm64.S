@@ -97,6 +97,8 @@ caml_call_gc:
 .Lcaml_call_gc:
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
+        CFI_OFFSET(29, -400)
+        CFI_OFFSET(30, -392)
         stp     x29, x30, [sp, -400]!
         CFI_ADJUST(400)
         add     x29, sp, #0
