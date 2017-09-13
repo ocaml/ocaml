@@ -1492,9 +1492,9 @@ fun k o acc fmt -> match fmt with
       let new_acc = Acc_data_string (acc, format_caml_char c) in
       make_printf k o new_acc rest
   | String (pad, rest) ->
-    make_string_padding k o acc rest pad (fun str -> str)
+    make_padding k o acc rest pad (fun str -> str)
   | Caml_string (pad, rest) ->
-    make_string_padding k o acc rest pad string_to_caml_string
+    make_padding k o acc rest pad string_to_caml_string
   | Int (iconv, pad, prec, rest) ->
     make_int_padding_precision k o acc rest pad prec convert_int iconv
   | Int32 (iconv, pad, prec, rest) ->
@@ -1506,7 +1506,7 @@ fun k o acc fmt -> match fmt with
   | Float (fconv, pad, prec, rest) ->
     make_float_padding_precision k o acc rest pad prec fconv
   | Bool (pad, rest) ->
-    make_string_padding k o acc rest pad string_of_bool
+    make_padding k o acc rest pad string_of_bool
   | Alpha rest ->
     fun f x -> make_printf k o (Acc_delay (acc, fun o -> f o x)) rest
   | Theta rest ->
@@ -1630,7 +1630,7 @@ fun k o acc fmt ->
   make_printf k o (Acc_invalid_arg (acc, "Printf: bad conversion %_")) fmt
 
 (* Fix padding, take it as an extra integer argument if needed. *)
-and make_string_padding : type x z a b c d e f .
+and make_padding : type x z a b c d e f .
     (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
     (a, b, c, d, e, f) fmt ->
     (x, z -> a) padding -> (z -> string) -> x =

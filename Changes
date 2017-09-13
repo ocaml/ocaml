@@ -146,7 +146,7 @@ Working version
   Damien Doligez and Hannes Mehnert)
 
 - GPR#1314: use the optional width information when formatting a boolean
-  (Xavier Clerc)
+  (Xavier Clerc, review by Gabriel Scherer)
 
 * In the MSVC and Mingw ports, "Sys.rename src dst" no longer fails if
   file "dst" exists, but replaces it with file "src", like in the other ports.
