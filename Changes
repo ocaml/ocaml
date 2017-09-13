@@ -495,6 +495,12 @@ Working version
   New macro Bytes_val for accessing bytes values.
   (Jeremy Yallop, reviews by Mark Shinwell and Xavier Leroy)
 
+- GPR#1326: Enable use of CFI directives in AArch64 runtime system
+  assembly code (asmrun/arm64.S).  Add CFI directives to enable
+  unwinding through [caml_c_call] with correct termination of
+  unwinding after [caml_start_program].
+  (Mark Shinwell, review by Xavier Leroy)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
