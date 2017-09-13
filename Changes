@@ -54,9 +54,6 @@ Working version
   when using Flambda.
   (Pierre Chambart, review by Mark Shinwell and Leo White)
 
-- MPR#7520, GPR#1328: Odd behaviour of refutation cases with polymorphic variant
-  (Jacques Garrigue, report by Leo White)
-
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
   (Mark Shinwell)
 

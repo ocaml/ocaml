@@ -1719,18 +1719,6 @@ module Conv = struct
     let constrs = Hashtbl.create 7 in
     let labels = Hashtbl.create 7 in
     let rec loop pat =
-      match pat.pat_extra with (* cf PR#7520 *)
-        (extra, _, _) :: extras ->
-          let pat = {pat with pat_extra = extras} in
-          begin match extra with
-            Tpat_constraint ctyp ->
-              let mapper = Untypeast.(default_mapper.typ default_mapper) in
-              mkpat (Ppat_constraint (loop pat, mapper ctyp))
-          | Tpat_open (_, lid, _) ->
-              mkpat (Ppat_open (lid, loop pat))
-          | _ -> loop pat
-          end
-      | [] ->
       match pat.pat_desc with
         Tpat_or (pa,pb,_) ->
           mkpat (Ppat_or (loop pa, loop pb))
