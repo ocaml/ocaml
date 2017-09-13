@@ -51,6 +51,7 @@ type descr =
   | Value_string of value_string
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
+  | Value_unknown_descr
 
 and value_closure = {
   closure_id : Closure_id.t;
@@ -113,7 +114,10 @@ type transient = private {
 (** Export information for a compilation unit that exports nothing. *)
 val empty : t
 
-val empty_transient : transient
+val opaque_transient
+  : compilation_unit:Compilation_unit.t
+  -> root_symbol:Symbol.t
+  -> transient
 
 (** Create a new export information structure. *)
 val create

@@ -113,13 +113,17 @@ end = struct
     if Compilenv.is_predefined_exception sym
     then None
     else
-      let export = Compilenv.approx_for_global (Symbol.compilation_unit sym) in
-      try
-        let id = Symbol.Map.find sym export.symbol_id in
-        let descr = Export_info.find_description export id in
-        Some descr
+      match
+        Compilenv.approx_for_global (Symbol.compilation_unit sym)
       with
-      | Not_found -> None
+      | None -> None
+      | Some export ->
+        try
+          let id = Symbol.Map.find sym export.symbol_id in
+          let descr = Export_info.find_description export id in
+          Some descr
+        with
+        | Not_found -> None
 
   let get_id_descr t export_id =
     try Some (Export_id.Map.find export_id !(t.ex_table))
@@ -514,7 +518,9 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
 let build_transient ~(backend : (module Backend_intf.S))
       (program : Flambda.program) : Export_info.transient =
   if !Clflags.opaque then
-    Export_info.empty_transient
+    let compilation_unit = Compilenv.current_unit () in
+    let root_symbol = Compilenv.current_unit_symbol () in
+    Export_info.opaque_transient ~root_symbol ~compilation_unit
   else
     (* CR-soon pchambart: Should probably use that instead of the ident of
        the module as global identifier.
@@ -575,7 +581,8 @@ let build_transient ~(backend : (module Backend_intf.S))
           | Value_constptr _
           | Value_float _
           | Value_float_array _
-          | Value_string _ ->
+          | Value_string _
+          | Value_unknown_descr ->
             invariant_params)
         unnested_values invariant_params
     in

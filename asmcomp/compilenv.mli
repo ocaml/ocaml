@@ -91,7 +91,7 @@ val set_export_info: Export_info.t -> unit
 val approx_env: unit -> Export_info.t
         (* Returns all the information loaded from external compilation units
            flambda-only *)
-val approx_for_global: Compilation_unit.t -> Export_info.t
+val approx_for_global: Compilation_unit.t -> Export_info.t option
         (* Loads the exported information declaring the compilation_unit
            flambda-only *)
 

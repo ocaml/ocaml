@@ -308,14 +308,16 @@ let approx_for_global comp_unit =
      || not (Ident.global id)
   then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
   let modname = Ident.name id in
-  try Hashtbl.find export_infos_table modname with
-  | Not_found ->
-    let exported = match get_global_info id with
-      | None -> Export_info.empty
-      | Some ui -> get_flambda_export_info ui in
-    Hashtbl.add export_infos_table modname exported;
-    merged_environment := Export_info.merge !merged_environment exported;
-    exported
+  match Hashtbl.find export_infos_table modname with
+  | otherwise -> Some otherwise
+  | exception Not_found ->
+    match get_global_info id with
+    | None -> None
+    | Some ui ->
+      let exported = get_flambda_export_info ui in
+      Hashtbl.add export_infos_table modname exported;
+      merged_environment := Export_info.merge !merged_environment exported;
+      Some exported
 
 let approx_env () = !merged_environment
 

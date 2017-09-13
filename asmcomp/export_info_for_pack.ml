@@ -114,6 +114,7 @@ let import_descr_for_pack units pack (descr : Export_info.descr)
     }
   | Value_set_of_closures set_of_closures ->
     Value_set_of_closures (import_set_of_closures units pack set_of_closures)
+  | Value_unknown_descr -> Value_unknown_descr
 
 let rec import_code_for_pack units pack expr =
   Flambda_iterators.map_named (function

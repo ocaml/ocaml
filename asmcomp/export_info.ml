@@ -48,6 +48,7 @@ type descr =
   | Value_string of value_string
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
+  | Value_unknown_descr
 
 and value_closure = {
   closure_id : Closure_id.t;
@@ -101,6 +102,8 @@ let equal_set_of_closures (s1:value_set_of_closures)
 
 let equal_descr (d1:descr) (d2:descr) : bool =
   match d1, d2 with
+  | Value_unknown_descr, Value_unknown_descr ->
+    true
   | Value_block (t1, f1), Value_block (t2, f2) ->
     Tag.equal t1 t2 && equal_array equal_approx f1 f2
   | Value_mutable_block (t1, s1), Value_mutable_block (t2, s2) ->
@@ -128,11 +131,13 @@ let equal_descr (d1:descr) (d2:descr) : bool =
   | ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
     | Value_char _ | Value_constptr _ | Value_float _ | Value_float_array _
     | Value_boxed_int _ | Value_string _ | Value_closure _
-    | Value_set_of_closures _ ),
+    | Value_set_of_closures _
+    | Value_unknown_descr ),
     ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
     | Value_char _ | Value_constptr _ | Value_float _ | Value_float_array _
     | Value_boxed_int _ | Value_string _ | Value_closure _
-    | Value_set_of_closures _ ) ->
+    | Value_set_of_closures _
+    | Value_unknown_descr ) ->
     false
 
 type t = {
@@ -169,17 +174,23 @@ let empty : t = {
   invariant_params = Set_of_closures_id.Map.empty;
 }
 
-let empty_transient : transient = {
-  sets_of_closures = Set_of_closures_id.Map.empty;
-  closures = Closure_id.Map.empty;
-  values = Compilation_unit.Map.empty;
-  symbol_id = Symbol.Map.empty;
-  invariant_params = Set_of_closures_id.Map.empty;
-  relevant_local_closure_ids = Closure_id.Set.empty;
-  relevant_imported_closure_ids = Closure_id.Set.empty;
-  relevant_local_vars_within_closure = Var_within_closure.Set.empty;
-  relevant_imported_vars_within_closure = Var_within_closure.Set.empty;
-}
+let opaque_transient ~compilation_unit ~root_symbol : transient =
+  let export_id = Export_id.create compilation_unit in
+  let values =
+    let map = Export_id.Map.of_list [(export_id, Value_unknown_descr)] in
+    Compilation_unit.Map.of_list [(compilation_unit, map)]
+  in
+  let symbol_id = Symbol.Map.of_list [(root_symbol, export_id)] in
+  { sets_of_closures = Set_of_closures_id.Map.empty;
+    closures = Closure_id.Map.empty;
+    values;
+    symbol_id;
+    invariant_params = Set_of_closures_id.Map.empty;
+    relevant_local_closure_ids = Closure_id.Set.empty;
+    relevant_imported_closure_ids = Closure_id.Set.empty;
+    relevant_local_vars_within_closure = Var_within_closure.Set.empty;
+    relevant_imported_vars_within_closure = Var_within_closure.Set.empty;
+  }
 
 let create ~sets_of_closures ~closures ~values ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
@@ -394,6 +405,7 @@ let print_raw_descr ppf descr =
   | Value_set_of_closures value_set_of_closures ->
     fprintf ppf "(Value_set_of_closures %a)"
     print_value_set_of_closures value_set_of_closures
+  | Value_unknown_descr -> fprintf ppf "(Value_unknown_descr)"
 
 let print_approx_components ppf ~symbol_id ~values
       (root_symbols : Symbol.t list) =
@@ -456,10 +468,12 @@ let print_approx_components ppf ~symbol_id ~values
           | Contents _ -> "_imm")
         float_array.size
     | Value_boxed_int (t, i) ->
-      match t with
+      begin match t with
       | A.Int32 -> Format.fprintf ppf "%li" i
       | A.Int64 -> Format.fprintf ppf "%Li" i
       | A.Nativeint -> Format.fprintf ppf "%ni" i
+      end
+    | Value_unknown_descr -> Format.fprintf ppf "?"
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_set_of_closures ppf
