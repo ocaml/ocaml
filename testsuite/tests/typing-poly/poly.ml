@@ -1448,7 +1448,7 @@ type ('c, 't) pvariant = [ `V of 'c * 't t ]
 class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
 val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
 val f1 :
-  < mthod : 't. 'a -> 't t -> [< ('a, 't) pvariant ]; .. > ->
+  < mthod : 't. 'a -> 't t -> [< `V of 'a * 't t ]; .. > ->
   'a -> 'b t -> 'b t = <fun>
 |}]
 

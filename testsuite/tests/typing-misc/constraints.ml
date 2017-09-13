@@ -25,9 +25,9 @@ Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a] as 'a;;
 [%%expect{|
-type 'a t = [ `A of 'a ] constraint 'a = 'a t
+type 'a t = 'a constraint 'a = [ `A of 'a ]
 |}, Principal{|
-type 'a t = [ `A of 'a t ] constraint 'a = [ `A of 'a ]
+type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 |}];;
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
