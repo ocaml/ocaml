@@ -175,7 +175,18 @@ val nest_eid_map
 
 (**/**)
 (* Debug printing functions. *)
+val print_approx_components
+  : Format.formatter
+  -> symbol_id: Export_id.t Symbol.Map.t
+  -> values: descr Export_id.Map.t Compilation_unit.Map.t
+  -> Symbol.t list
+  -> unit
 val print_approx : Format.formatter -> t * Symbol.t list -> unit
 val print_functions : Format.formatter -> t -> unit
 val print_offsets : Format.formatter -> t -> unit
 val print_all : Format.formatter -> t * Symbol.t list -> unit
+
+(** Prints approx and descr as it is, without recursively looking up
+    [Export_id.t] *)
+val print_raw_approx : Format.formatter -> approx -> unit
+val print_raw_descr  : Format.formatter -> descr -> unit

@@ -301,8 +301,102 @@ let nest_eid_map map =
   in
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
-let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
-  let values = t.values in
+let print_raw_approx ppf approx =
+  let fprintf = Format.fprintf in
+  match approx with
+  | Value_unknown -> fprintf ppf "(Unknown)"
+  | Value_id export_id -> fprintf ppf "(Id %a)" Export_id.print export_id
+  | Value_symbol symbol -> fprintf ppf "(Symbol %a)" Symbol.print symbol
+
+let print_value_set_of_closures ppf (t : value_set_of_closures) =
+  let print_bound_vars ppf bound_vars =
+    Format.fprintf ppf "(%a)"
+      (Var_within_closure.Map.print print_raw_approx)
+      bound_vars
+  in
+  let print_free_vars ppf free_vars =
+    Format.fprintf ppf "(%a)"
+      (Variable.Map.print Flambda.print_specialised_to)
+      free_vars
+  in
+  let print_results ppf results =
+    Format.fprintf ppf "(%a)" (Closure_id.Map.print print_raw_approx) results
+  in
+  let print_aliased_symbol ppf aliased_symbol =
+    match aliased_symbol with
+    | None -> Format.fprintf ppf "<None>"
+    | Some symbol -> Format.fprintf ppf "(%a)" Symbol.print symbol
+  in
+  Format.fprintf ppf
+    "((set_of_closures_id %a) \
+     (bound_vars %a) \
+     (free_vars %a) \
+     (results %a) \
+     (aliased_symbol %a))"
+    Set_of_closures_id.print t.set_of_closures_id
+    print_bound_vars t.bound_vars
+    print_free_vars t.free_vars
+    print_results t.results
+    print_aliased_symbol t.aliased_symbol
+
+let print_value_closure ppf (t : value_closure) =
+  Format.fprintf ppf "((closure_id %a) (set_of_closures %a))"
+    Closure_id.print t.closure_id
+    print_value_set_of_closures t.set_of_closures
+
+let print_value_float_array_contents
+      ppf (value : value_float_array_contents) =
+  match value with
+  | Unknown_or_mutable -> Format.fprintf ppf "(Unknown_or_mutable)"
+  | Contents _ -> Format.fprintf ppf "(Contents ...)"
+
+let print_value_float_array ppf (value : value_float_array) =
+  Format.fprintf ppf "((size %d) (contents %a))"
+    value.size
+    print_value_float_array_contents value.contents
+
+let print_value_string_contents ppf (value : value_string_contents) =
+  match value with
+  | Unknown_or_mutable -> Format.fprintf ppf "(Unknown_or_mutable)"
+  | Contents _ -> Format.fprintf ppf "(Contents ...)"
+
+let print_value_string ppf (value : value_string) =
+  Format.fprintf ppf "((size %d) (contents %a))"
+    value.size
+    print_value_string_contents value.contents
+
+let print_raw_descr ppf descr =
+  let fprintf = Format.fprintf in
+  let print_approx_array ppf arr =
+    Array.iter (fun approx -> fprintf ppf "%a " print_raw_approx approx) arr
+  in
+  match descr with
+  | Value_block (tag, approx_array) ->
+    fprintf ppf "(Value_block (%a %a))"
+      Tag.print tag
+      print_approx_array approx_array
+  | Value_mutable_block (tag, i) ->
+    fprintf ppf "(Value_mutable-block (%a %d))" Tag.print tag i
+  | Value_int i -> fprintf ppf "(Value_int %d)" i
+  | Value_char c -> fprintf ppf "(Value_char %c)" c
+  | Value_constptr p -> fprintf ppf "(Value_constptr  %d)" p
+  | Value_float f -> fprintf ppf "(Value_float %.3f)" f
+  | Value_float_array value_float_array ->
+    fprintf ppf "(Value_float_array %a)"
+      print_value_float_array value_float_array
+  | Value_boxed_int _ ->
+    fprintf ppf "(Value_Boxed_int)"
+  | Value_string value_string ->
+    fprintf ppf "(Value_string %a)" print_value_string value_string
+  | Value_closure value_closure ->
+    fprintf ppf "(Value_closure %a)"
+      print_value_closure value_closure
+  | Value_set_of_closures value_set_of_closures ->
+    fprintf ppf "(Value_set_of_closures %a)"
+    print_value_set_of_closures value_set_of_closures
+
+let print_approx_components ppf ~symbol_id ~values
+      (root_symbols : Symbol.t list) =
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
   let recorded_symbol = ref Symbol.Set.empty in
@@ -396,7 +490,7 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   let rec print_recorded_symbols () =
     if not (Queue.is_empty symbols_to_print) then begin
       let sym = Queue.pop symbols_to_print in
-      begin match Symbol.Map.find sym t.symbol_id with
+      begin match Symbol.Map.find sym symbol_id with
       | exception Not_found -> ()
       | id ->
         fprintf ppf "@[<hov 2>%a:@ %a@];@ "
@@ -411,6 +505,11 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   fprintf ppf "@]@ @[<hov 2>Symbols:@ ";
   print_recorded_symbols ();
   fprintf ppf "@]"
+
+let print_approx ppf ((t : t), symbols) =
+  let symbol_id = t.symbol_id in
+  let values = t.values in
+  print_approx_components ppf ~symbol_id ~values symbols
 
 let print_offsets ppf (t : t) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
