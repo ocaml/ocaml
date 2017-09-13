@@ -4057,7 +4057,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let current_slot = ref None in
   let rec_needed = ref false in
-  let warn_unused =
+  let warn_about_unused_bindings =
     List.exists
       (fun attrs ->
          Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
@@ -4085,7 +4085,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
     List.map2
       (fun attrs pat ->
          Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
-           if not warn_unused then pat, None
+           if not warn_about_unused_bindings then pat, None
            else
              let some_used = ref false in
              (* has one of the identifier of this pattern been used? *)
