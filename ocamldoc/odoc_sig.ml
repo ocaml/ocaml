@@ -357,6 +357,18 @@ module Analyser =
           }
         in
         Object_type (List.map f @@ fst @@ Ctype.flatten_fields fields)
+      | Tvariant row ->
+          let typ =
+            (* Special hack to hide variant name *)
+            let open Btype in
+            let row = row_repr row in
+            begin match row.row_name with
+              Some _ when static_row row ->
+                newgenty (Tvariant {row with row_name = None})
+            | _ -> type_expr
+            end
+          in
+          Other (Odoc_env.subst_type env typ)
       | _ -> Other (Odoc_env.subst_type env type_expr)
 
     let get_field env name_comment_list {Types.ld_id=field_name;ld_mutable=mutable_flag;ld_type=type_expr} =
