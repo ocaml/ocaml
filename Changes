@@ -202,7 +202,7 @@ Working version
   (Xavier Leroy, from a suggestion by Gerd Stolpmann)
 
 - MPR#7624: handle warning attributes placed on let bindings
-  (Xavier Clerc, report by dinosaure)
+  (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
 
 ### Other libraries:

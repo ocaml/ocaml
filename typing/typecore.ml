@@ -4058,8 +4058,12 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let current_slot = ref None in
   let rec_needed = ref false in
   let warn_unused =
-    Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
-    (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
+    List.exists
+      (fun attrs ->
+         Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
+           Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
+           (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))))
+      attrs_list
   in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
