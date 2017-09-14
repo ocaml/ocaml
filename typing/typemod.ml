@@ -162,21 +162,21 @@ let rec iter_path_apply p ~f =
      iter_path_apply p2 ~f;
      f p1 p2 (* after recursing, so we know both paths are well typed *)
 
-let path_is_prefix =
-  let rec list_is_prefix ~strict l ~prefix =
+let path_is_strict_prefix =
+  let rec list_is_strict_prefix l ~prefix =
     match l, prefix with
-    | [], [] -> not strict
+    | [], [] -> false
     | _ :: _, [] -> true
     | [], _ :: _ -> false
     | s1 :: t1, s2 :: t2 ->
-       String.equal s1 s2 && list_is_prefix ~strict t1 ~prefix:t2
+       String.equal s1 s2 && list_is_strict_prefix t1 ~prefix:t2
   in
-  fun ~strict path ~prefix ->
+  fun path ~prefix ->
     match Path.flatten path, Path.flatten prefix with
     | `Contains_apply, _ | _, `Contains_apply -> false
     | `Ok (ident1, l1), `Ok (ident2, l2) ->
        Ident.same ident1 ident2
-       && list_is_prefix ~strict l1 ~prefix:l2
+       && list_is_strict_prefix l1 ~prefix:l2
 
 let iterator_with_env env =
   let env = ref env in
@@ -206,7 +206,7 @@ let retype_applicative_functor_type ~loc env funct arg =
   let mty_param =
     match Env.scrape_alias env mty_functor with
     | Mty_functor (_, Some mty_param, _) -> mty_param
-    | _ -> assert false
+    | _ -> assert false (* could trigger due to MPR#7611 *)
   in
   let aliasable = not (Env.is_functor_arg arg env) in
   ignore(Includemod.modtypes ~loc env
@@ -226,7 +226,7 @@ let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, { md_type = Mty_alias (_, aliased_path); _ }, _)
-          when path_is_prefix ~strict:true path ~prefix:aliased_path ->
+          when path_is_strict_prefix path ~prefix:aliased_path ->
          let e = With_changes_module_alias (lid.txt, id, aliased_path) in
          raise(Error(loc, !env, e))
       | sig_item ->
@@ -234,7 +234,7 @@ let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
       );
       Btype.it_path = (fun referenced_path ->
         iter_path_apply referenced_path ~f:(fun funct arg ->
-          if path_is_prefix ~strict:true path ~prefix:arg
+          if path_is_strict_prefix path ~prefix:arg
           then
             let env = !env in
             try retype_applicative_functor_type ~loc env funct arg
