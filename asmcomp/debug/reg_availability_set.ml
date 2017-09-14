@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*   Copyright 2016--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -105,5 +105,6 @@ let print ~print_reg ppf = function
   | Unreachable -> Format.fprintf ppf "<unreachable>"
   | Ok availability ->
     Format.fprintf ppf "{%a}"
-      (Format.pp_print_list (Reg_with_debug_info.print ~print_reg))
+      (Format.pp_print_list ~pp_sep:(fun ppf () -> Format.fprintf ppf ",@ ")
+        (Reg_with_debug_info.print ~print_reg))
       (RD.Set.elements availability)

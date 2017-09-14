@@ -86,6 +86,7 @@ type instruction =
     dbg: Debuginfo.t;
     mutable live: Reg.Set.t;
     mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
   }
 
 and instruction_desc =

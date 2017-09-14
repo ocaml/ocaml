@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*                  Mark Shinwell, Jane Street Europe                     *)
 (*                                                                        *)
-(*   Copyright 2016 Jane Street Group LLC                                 *)
+(*   Copyright 2016--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -182,7 +182,8 @@ module Set = struct
   let filter_reg t (reg : Reg.t) =
     filter (fun t -> t.reg.stamp <> reg.stamp) t
 
-  (* CR mshinwell: Well, it looks like we should have used a map. *)
+  (* CR-someday mshinwell: Well, it looks like we should have used a map.
+     mshinwell: Also see @chambart's suggestion on GPR#856. *)
   let find_reg_exn t (reg : Reg.t) =
     match elements (filter (fun t -> t.reg.stamp = reg.stamp) t) with
     | [] -> raise Not_found

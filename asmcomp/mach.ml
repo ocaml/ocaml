@@ -70,6 +70,7 @@ type instruction =
     dbg: Debuginfo.t;
     mutable live: Reg.Set.t;
     mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
   }
 
 and instruction_desc =
@@ -108,6 +109,7 @@ let rec dummy_instr =
     dbg = Debuginfo.none;
     live = Reg.Set.empty;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
   }
 
 let end_instr () =
@@ -118,17 +120,20 @@ let end_instr () =
     dbg = Debuginfo.none;
     live = Reg.Set.empty;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
   }
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
   }
 
 let instr_cons_debug d a r dbg n =
   { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
     available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
   }
 
 let rec instr_iter f i =
