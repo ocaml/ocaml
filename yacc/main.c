@@ -94,10 +94,6 @@ char  *rassoc;
 short **derives;
 char *nullable;
 
-#if !defined(HAS_MKSTEMP)
-extern char *mktemp(char *);
-#endif
-
 
 void done(int k)
 {
