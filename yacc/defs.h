@@ -205,7 +205,6 @@ struct action
 
 /* global variables */
 
-extern char dflag;
 extern char lflag;
 extern char rflag;
 extern char tflag;
@@ -225,7 +224,6 @@ extern int outline;
 extern char *action_file_name;
 extern char *entry_file_name;
 extern char *code_file_name;
-extern char *defines_file_name;
 extern char *input_file_name;
 extern char *output_file_name;
 extern char *text_file_name;
@@ -235,7 +233,6 @@ extern char *interface_file_name;
 extern FILE *action_file;
 extern FILE *entry_file;
 extern FILE *code_file;
-extern FILE *defines_file;
 extern FILE *input_file;
 extern FILE *output_file;
 extern FILE *text_file;

@@ -24,7 +24,6 @@
 
 #include "version.h"
 
-char dflag;
 char lflag;
 char rflag;
 char tflag;
@@ -52,7 +51,6 @@ char *action_file_name;
 char *entry_file_name;
 char *code_file_name;
 char *interface_file_name;
-char *defines_file_name;
 char *input_file_name = "";
 char *output_file_name;
 char *text_file_name;
@@ -66,7 +64,6 @@ FILE *action_file;      /*  a temp file, used to save actions associated    */
                         /*  with rules until the parser is written          */
 FILE *entry_file;
 FILE *code_file;        /*  y.code.c (used when the -r option is specified) */
-FILE *defines_file;     /*  y.tab.h                                         */
 FILE *input_file;       /*  the input file                                  */
 FILE *output_file;      /*  y.tab.c                                         */
 FILE *text_file;        /*  a temp file, used to save text until all        */
@@ -397,13 +394,6 @@ void open_files(void)
         verbose_file = fopen(verbose_file_name, "w");
         if (verbose_file == 0)
             open_error(verbose_file_name);
-    }
-
-    if (dflag)
-    {
-        defines_file = fopen(defines_file_name, "w");
-        if (defines_file == 0)
-            open_error(defines_file_name);
     }
 
     output_file = fopen(output_file_name, "w");
