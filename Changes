@@ -516,6 +516,11 @@ Working version
   New macro Bytes_val for accessing bytes values.
   (Jeremy Yallop, reviews by Mark Shinwell and Xavier Leroy)
 
+* GPR#1309: open files with O_CLOEXEC (or equivalent) in caml_sys_open thus
+  unifying the semantics between Unix and Windows and also eliminating race
+  condition on Unix.
+  (David Allsopp, report by Andreas Hauptmann)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
