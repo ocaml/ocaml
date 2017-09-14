@@ -2004,25 +2004,35 @@ let check_unused pred casel =
 
 let irrefutable pat = le_pat pat omega
 
-(* An inactive pattern is a pattern whose matching needs only
-   trivial computations (tag/equality tests).
-   Patterns containing (lazy _) subpatterns are active. *)
-
-let rec inactive pat =
-  match pat.pat_desc with
-  | Tpat_lazy _ ->
-      false
-  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->
-      true
-  | Tpat_tuple ps | Tpat_construct (_, _, ps) | Tpat_array ps ->
-      List.for_all (fun p -> inactive p) ps
-  | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
-      inactive p
-  | Tpat_record (ldps,_) ->
-      List.exists (fun (_, _, p) -> inactive p) ldps
-  | Tpat_or (p,q,_) ->
-      inactive p && inactive q
-
+let inactive ~partial pat =
+  match partial with
+  | Partial -> false
+  | Total -> begin
+      let rec loop pat =
+        match pat.pat_desc with
+        | Tpat_lazy _ | Tpat_array _ ->
+          false
+        | Tpat_any | Tpat_var _ | Tpat_variant (_, None, _) ->
+            true
+        | Tpat_constant c -> begin
+            match c with
+            | Const_string _ -> Config.safe_string
+            | Const_int _ | Const_char _ | Const_float _
+            | Const_int32 _ | Const_int64 _ | Const_nativeint _ -> true
+          end
+        | Tpat_tuple ps | Tpat_construct (_, _, ps) ->
+            List.for_all (fun p -> loop p) ps
+        | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
+            loop p
+        | Tpat_record (ldps,_) ->
+            List.for_all
+              (fun (_, lbl, p) -> lbl.lbl_mut = Immutable && loop p)
+              ldps
+        | Tpat_or (p,q,_) ->
+            loop p && loop q
+      in
+      loop pat
+  end
 
 
 
