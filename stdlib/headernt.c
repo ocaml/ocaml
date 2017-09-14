@@ -23,7 +23,6 @@
 #include "caml/exec.h"
 
 #ifndef __MINGW32__
-#pragma comment(linker , "/entry:headerentry")
 #pragma comment(linker , "/subsystem:console")
 #pragma comment(lib , "kernel32")
 #ifdef _UCRT
@@ -146,11 +145,7 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
 #endif
 }
 
-#ifdef __MINGW32__
-int main()
-#else
-void __declspec(noreturn) __cdecl headerentry()
-#endif
+int wmain(void)
 {
   wchar_t truename[MAX_PATH];
   wchar_t * cmdline = GetCommandLine();
