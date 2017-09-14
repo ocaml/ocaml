@@ -31,19 +31,16 @@ CAMLextern void caml_main (charnat **);
 #ifdef _WIN32
 CAMLextern void caml_expand_command_line (int *, wchar_t ***);
 
-int main(void)
-{
-  int argc;
-  wchar_t **argv;
-
-  argv = CommandLineToArgvW(GetCommandLine(), &argc);
-
-  /* Expand wildcards and diversions in command line */
-  caml_expand_command_line(&argc, &argv);
+int wmain(int argc, wchar_t **argv)
 #else
 int main(int argc, char **argv)
-{
 #endif
+{
+#ifdef _WIN32
+  /* Expand wildcards and diversions in command line */
+  caml_expand_command_line(&argc, &argv);
+#endif
+
   caml_main(argv);
   caml_sys_exit(Val_int(0));
   return 0; /* not reached */
