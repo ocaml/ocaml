@@ -47,7 +47,7 @@ let check_invariants (instr : M.instruction) ~(avail_before : RAS.t) =
         Printmach.instr ({ instr with M. next = M.end_instr (); })
     end;
     (* Every register that is an input to an instruction should be
-       available.  Since we might have recorded *)
+       available. *)
     let args = R.set_of_array instr.arg in
     let avail_before_fdi = RD.Set.forget_debug_info avail_before in
     if not (R.Set.subset args avail_before_fdi) then begin
@@ -163,7 +163,7 @@ let rec available_regs (instr : M.instruction)
           Array.map2 (fun arg_reg result_reg ->
               match RD.Set.find_reg_exn avail_before arg_reg with
               | exception Not_found ->
-                RD.create_without_debug_info ~reg:result_reg
+                assert false  (* see second invariant in [check_invariants] *)
               | arg_reg ->
                 RD.create_copying_debug_info ~reg:result_reg
                   ~debug_info_from:arg_reg)
