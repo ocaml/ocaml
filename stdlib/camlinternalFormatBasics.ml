@@ -390,8 +390,8 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt
   | Bool :                                                   (* %[bB] *)
-      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-        (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+      ('x, bool -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
   | Flush :                                                  (* %! *)
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('a, 'b, 'c, 'd, 'e, 'f) fmt
@@ -499,7 +499,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_float :                                          (* %_f *)
       pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_bool :                                           (* %_B *)
-      ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_arg :                                     (* %_{...%} *)
       pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty ->
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
@@ -642,8 +642,8 @@ fun fmt1 fmt2 -> match fmt1 with
     Char (concat_fmt rest fmt2)
   | Caml_char rest ->
     Caml_char (concat_fmt rest fmt2)
-  | Bool rest ->
-    Bool (concat_fmt rest fmt2)
+  | Bool (pad, rest) ->
+    Bool (pad, concat_fmt rest fmt2)
   | Alpha rest ->
     Alpha (concat_fmt rest fmt2)
   | Theta rest ->

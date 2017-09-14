@@ -810,7 +810,7 @@ let do_zyva loc (low,high) arg cases actions =
   let s = {cases=cases ; actions=actions} in
 
 (*
-  Printf.eprintf "ZYVA: %b [low=%i,high=%i]\n" !ok_inter low high ;
+  Printf.eprintf "ZYVA: %B [low=%i,high=%i]\n" !ok_inter low high ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)
@@ -849,7 +849,7 @@ and test_sequence arg cases actions =
     {cases=cases ;
     actions=Array.map (fun act -> (fun _ -> act)) actions} in
 (*
-  Printf.eprintf "SEQUENCE: %b\n" !ok_inter ;
+  Printf.eprintf "SEQUENCE: %B\n" !ok_inter ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)

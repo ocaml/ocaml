@@ -189,7 +189,7 @@ and raw_type_desc ppf = function
         raw_type_list tl
   | Tvariant row ->
       fprintf ppf
-        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%b;@ %s%b;@ @[<1>%s%t@]}@]"
+        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%B;@ %s%B;@ @[<1>%s%t@]}@]"
         "row_fields="
         (raw_list (fun ppf (l, f) ->
           fprintf ppf "@[%s,@ %a@]" l raw_field f))
@@ -210,7 +210,7 @@ and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
   | Rpresent (Some t) -> fprintf ppf "@[<1>Rpresent(Some@,%a)@]" raw_type t
   | Reither (c,tl,m,e) ->
-      fprintf ppf "@[<hov1>Reither(%b,@,%a,@,%b,@,@[<1>ref%t@])@]" c
+      fprintf ppf "@[<hov1>Reither(%B,@,%a,@,%B,@,@[<1>ref%t@])@]" c
         raw_type_list tl m
         (fun ppf ->
           match !e with None -> fprintf ppf " None"
