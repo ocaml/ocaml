@@ -99,7 +99,7 @@ let traverse
     end
   in
   let process_function_body (function_body : A.function_body) =
-    Flambda_iterators.iter_toplevel
+    Flambda_iterators.iter
       (fun (term : Flambda.t) ->
          match term with
          | Flambda.Apply { kind ; _ } ->
