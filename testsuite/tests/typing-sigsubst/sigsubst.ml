@@ -23,6 +23,24 @@ Error: Multiple definition of the type name t.
        Names must be unique in a given structure or signature.
 |}]
 
+(* Valid substitutions in a recursive module may fail due to the ordering of
+   the modules. *)
+
+module type S0 = sig
+  module rec M : sig type t = M2.t end
+  and M2 : sig type t = int end
+end with type M.t = int
+[%%expect {|
+Line _, characters 17-115:
+Error: In this `with' constraint, the new definition of M.t
+       does not match its original definition in the constrained signature:
+       Type declarations do not match:
+         type t = int
+       is not included in
+         type t = M2.t
+|}]
+
+
 module type PrintableComparable = sig
   type t
   include Printable with type t := t
@@ -244,6 +262,22 @@ module type S2 =
     type t = F(M).t
   end
 |}]
+
+(* In the presence of recursive modules, the use of a module can come before its
+   definition (in the typed tree), making the typer accepts an invalid
+   substitution. *)
+
+module Id(X : sig type t end) = struct type t = X.t end
+module type S3 = sig
+  module rec M : sig type t = A of Id(M2).t end
+  and M2 : sig type t end
+end with type M2.t := int
+[%%expect {|
+module Id : functor (X : sig type t end) -> sig type t = X.t end
+module type S3 =
+  sig module rec M : sig type t = A of Id(M2).t end and M2 : sig  end end
+|}]
+
 
 (* Deep destructive module substitution: *)
 
