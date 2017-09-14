@@ -22,5 +22,7 @@ symlink_tests.precheck:
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 
+GENERATED_SOURCES=symlink_tests.precheck
+
 %.exe: %.c
 	@$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o$*.exe) $*.c
