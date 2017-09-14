@@ -181,17 +181,6 @@ RANLIBCMD=ranlib
 
 OTHERLIBRARIES=unix str num threads graph dynlink bigarray
 
-### Name of the target architecture for the "num" library
-# Known targets:
-#	generic (portable C, works everywhere)
-#	ia32	(Intel x86)
-#	amd64	(AMD Opteron, Athlon64)
-#	ppc	(Power PC)
-# If you don't know, leave BNG_ARCH=generic, which selects a portable
-# C implementation of these routines.
-BNG_ARCH=generic
-BNG_ASM_LEVEL=1
-
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
 # Needed for the "systhreads" package
 # Usually:

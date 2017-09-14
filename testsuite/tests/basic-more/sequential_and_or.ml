@@ -18,7 +18,7 @@ let test i f =
 let s = Bytes.of_string "\000"
 let () =
   (* ensure that the string is not constant *)
-  s.[0] <- '\001'
+  Bytes.set s 0 '\001'
 
 let unknown_true =
   Bytes.get s 0 = '\001'

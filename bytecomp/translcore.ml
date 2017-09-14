@@ -1222,7 +1222,7 @@ and transl_function loc untuplify_fn repr partial param cases =
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
         partial = partial'; }} as exp}]
-    when Parmatch.fluid pat ->
+    when Parmatch.inactive ~partial pat ->
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),

@@ -29,7 +29,7 @@ let bind_variables scope =
                                         Annot.Idef scope))
     | _ -> ()
     end;
-    super.pat sub p;
+    super.pat sub p
   in
   {super with pat}
 

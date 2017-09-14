@@ -29,10 +29,6 @@ MLIS=$(SRC)/stdlib/*.mli \
 	$(SRC)/otherlibs/dynlink/dynlink.mli \
 	$(SRC)/otherlibs/graph/graphics.mli \
 	$(SRC)/otherlibs/graph/graphicsX11.mli \
-	$(SRC)/otherlibs/num/num.mli \
-	$(SRC)/otherlibs/num/arith_status.mli \
-	$(SRC)/otherlibs/num/big_int.mli \
-	$(SRC)/otherlibs/num/ratio.mli \
 	$(SRC)/otherlibs/str/*.mli \
 	$(SRC)/otherlibs/systhreads/*.mli \
 	$(SRC)/otherlibs/unix/*.mli
@@ -71,7 +67,6 @@ html: files
 	-I $(SRC)/otherlibs/bigarray \
 	-I $(SRC)/otherlibs/dynlink \
 	-I $(SRC)/otherlibs/graph \
-	-I $(SRC)/otherlibs/num \
 	-I $(SRC)/otherlibs/str \
 	-I $(SRC)/otherlibs/systhreads \
 	-I $(SRC)/otherlibs/unix \

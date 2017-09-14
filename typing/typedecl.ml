@@ -39,7 +39,7 @@ type error =
   | Null_arity_external
   | Missing_native_external
   | Unbound_type_var of type_expr * type_declaration
-  | Not_open_type of Path.t
+  | Cannot_extend_private_type of Path.t
   | Not_extensible_type of Path.t
   | Extension_mismatch of Path.t * Includecore.type_mismatch list
   | Rebind_wrong_type of Longident.t * Env.t * (type_expr * type_expr) list
@@ -227,10 +227,13 @@ let transl_labels env closed lbls =
     lbls;
   let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
           pld_attributes=attrs} =
-    let arg = Ast_helper.Typ.force_poly arg in
-    let cty = transl_simple_type env closed arg in
-    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+    Builtin_attributes.warning_scope attrs
+      (fun () ->
+         let arg = Ast_helper.Typ.force_poly arg in
+         let cty = transl_simple_type env closed arg in
+         {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+          ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+      )
   in
   let lbls = List.map mk lbls in
   let lbls' =
@@ -479,6 +482,10 @@ let transl_declaration env sdecl id =
               cd_attributes = scstr.pcd_attributes }
           in
             tcstr, cstr
+        in
+        let make_cstr scstr =
+          Builtin_attributes.warning_scope scstr.pcd_attributes
+            (fun () -> make_cstr scstr)
         in
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
@@ -1307,7 +1314,11 @@ let transl_type_decl env rec_flag sdecl_list =
         id, None
   in
   let transl_declaration name_sdecl (id, slot) =
-    current_slot := slot; transl_declaration temp_env name_sdecl id in
+    current_slot := slot;
+    Builtin_attributes.warning_scope
+      name_sdecl.ptype_attributes
+      (fun () -> transl_declaration temp_env name_sdecl id)
+  in
   let tdecls =
     List.map2 transl_declaration sdecl_list (List.map id_slots id_list) in
   let decls =
@@ -1507,7 +1518,13 @@ let transl_extension_constructor env type_path type_params
       Typedtree.ext_loc = sext.pext_loc;
       Typedtree.ext_attributes = sext.pext_attributes; }
 
-let transl_type_extension check_open env loc styext =
+let transl_extension_constructor env type_path type_params
+    typext_params priv sext =
+  Builtin_attributes.warning_scope sext.pext_attributes
+    (fun () -> transl_extension_constructor env type_path type_params
+        typext_params priv sext)
+
+let transl_type_extension extend env loc styext =
   reset_type_variables();
   Ctype.begin_def();
   let (type_path, type_decl) =
@@ -1516,19 +1533,23 @@ let transl_type_extension check_open env loc styext =
   in
   begin
     match type_decl.type_kind with
-      Type_open -> ()
-    | Type_abstract ->
-        if check_open then begin
-          try
-            let {pext_loc} =
-              List.find (function {pext_kind = Pext_decl _} -> true
-                                | {pext_kind = Pext_rebind _} -> false)
-                        styext.ptyext_constructors
-            in
-              raise (Error(pext_loc, Not_open_type type_path))
-          with Not_found -> ()
-        end
-    | _ -> raise (Error(loc, Not_extensible_type type_path))
+    | Type_open -> begin
+        match type_decl.type_private with
+        | Private when extend -> begin
+            match
+              List.find
+                (function {pext_kind = Pext_decl _} -> true
+                        | {pext_kind = Pext_rebind _} -> false)
+                styext.ptyext_constructors
+            with
+            | {pext_loc} ->
+                raise (Error(pext_loc, Cannot_extend_private_type type_path))
+            | exception Not_found -> ()
+          end
+        | _ -> ()
+      end
+    | _ ->
+        raise (Error(loc, Not_extensible_type type_path))
   end;
   let type_variance =
     List.map (fun v ->
@@ -1596,6 +1617,10 @@ let transl_type_extension check_open env loc styext =
       tyext_attributes = styext.ptyext_attributes; }
   in
     (tyext, newenv)
+
+let transl_type_extension extend env loc styext =
+  Builtin_attributes.warning_scope styext.ptyext_attributes
+    (fun () -> transl_type_extension extend env loc styext)
 
 let transl_exception env sext =
   reset_type_variables();
@@ -1761,6 +1786,10 @@ let transl_value_decl env loc valdecl =
     }
   in
   desc, newenv
+
+let transl_value_decl env loc valdecl =
+  Builtin_attributes.warning_scope valdecl.pval_attributes
+    (fun () -> transl_value_decl env loc valdecl)
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
@@ -2014,13 +2043,13 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this extension constructor";
       let args = tys_of_constr_args ext.ext_args in
       explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
-  | Not_open_type path ->
+  | Cannot_extend_private_type path ->
       fprintf ppf "@[%s@ %a@]"
-        "Cannot extend type definition"
+        "Cannot extend private type definition"
         Printtyp.path path
   | Not_extensible_type path ->
       fprintf ppf "@[%s@ %a@ %s@]"
-        "Type"
+        "Type definition"
         Printtyp.path path
         "is not extensible"
   | Extension_mismatch (path, errs) ->

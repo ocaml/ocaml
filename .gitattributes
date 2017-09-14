@@ -131,19 +131,18 @@ manual/tools/htmltbl text eol=lf
 manual/tools/htmlthread text eol=lf
 manual/tools/texexpand text eol=lf
 
-# Checking out the parsetree test files with \r\n endings causes all the
-# locations to change, so use \n endings only, even on Windows
+# Tests which include references spanning multiple lines fail with \r\n
+# endings, so use \n endings only, even on Windows.
 testsuite/tests/parsing/*.ml text eol=lf
-
-# Similarly, the docstring tests fail for the same reason on Windows
 testsuite/tests/docstrings/empty.ml text eol=lf
-
-# And w04.ml
+testsuite/tests/functors/functors.ml text eol=lf
+testsuite/tests/translprim/module_coercion.ml text eol=lf
 testsuite/tests/warnings/w04.ml text eol=lf
 
 # These are forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
 testsuite/tests/formatting/margins.ml text eol=lf
+testsuite/tests/lexing/uchar_esc.ml text eol=lf
 testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
 testsuite/tests/typing-extension-constructor/test.ml text eol=lf
 testsuite/tests/typing-extensions/extensions.ml text eol=lf
@@ -165,9 +164,11 @@ testsuite/tests/typing-warnings/ambiguous_guarded_disjunction.ml text eol=lf
 testsuite/tests/typing-warnings/application.ml text eol=lf
 testsuite/tests/typing-warnings/coercions.ml text eol=lf
 testsuite/tests/typing-warnings/exhaustiveness.ml text eol=lf
+testsuite/tests/typing-warnings/pr6587.ml text eol=lf
 testsuite/tests/typing-warnings/pr6872.ml text eol=lf
 testsuite/tests/typing-warnings/pr7085.ml text eol=lf
 testsuite/tests/typing-warnings/pr7115.ml text eol=lf
+testsuite/tests/typing-warnings/pr7261.ml text eol=lf
 testsuite/tests/typing-warnings/pr7297.ml text eol=lf
 testsuite/tests/typing-warnings/records.ml text eol=lf
 testsuite/tests/typing-warnings/unused_types.ml text eol=lf

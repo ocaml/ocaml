@@ -1200,12 +1200,15 @@ val exit : int -> 'a
    terminates early because of an uncaught exception. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at program
-   termination time. The functions registered with [at_exit]
-   will be called when the program executes {!Pervasives.exit},
-   or terminates, either normally or because of an uncaught exception.
-   The functions are called in 'last in, first out' order:
-   the function most recently added with [at_exit] is called first. *)
+(** Register the given function to be called at program termination
+   time. The functions registered with [at_exit] will be called when
+   the program does any of the following:
+   - executes {!Pervasives.exit}
+   - terminates, either normally or because of an uncaught
+     exception
+   - executes the C function [caml_shutdown].
+   The functions are called in 'last in, first out' order: the
+   function most recently added with [at_exit] is called first. *)
 
 (**/**)
 

@@ -1795,7 +1795,9 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
           *)
     begin match casel with
     | [] -> ()
-    | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
+    | _  ->
+      if Warnings.is_active Warnings.All_clauses_guarded then
+        Location.prerr_warning loc Warnings.All_clauses_guarded
     end ;
     Partial
 | ps::_  ->
@@ -1818,32 +1820,34 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
         begin match v with
           None -> Total
         | Some v ->
-            let errmsg =
-              try
-                let buf = Buffer.create 16 in
-                let fmt = formatter_of_buffer buf in
-                top_pretty fmt v;
-                begin match check_partial_all v casel with
-                | None -> ()
-                | Some _ ->
-                    (* This is 'Some loc', where loc is the location of
-                       a possibly matching clause.
-                       Forget about loc, because printing two locations
-                       is a pain in the top-level *)
+            if Warnings.is_active (Warnings.Partial_match "") then begin
+              let errmsg =
+                try
+                  let buf = Buffer.create 16 in
+                  let fmt = formatter_of_buffer buf in
+                  top_pretty fmt v;
+                  begin match check_partial_all v casel with
+                  | None -> ()
+                  | Some _ ->
+                      (* This is 'Some loc', where loc is the location of
+                         a possibly matching clause.
+                         Forget about loc, because printing two locations
+                         is a pain in the top-level *)
+                      Buffer.add_string buf
+                        "\n(However, some guarded clause may match this value.)"
+                  end;
+                  if contains_extension v then
                     Buffer.add_string buf
-                      "\n(However, some guarded clause may match this value.)"
-                end;
-                if contains_extension v then
-                  Buffer.add_string buf
-                    "\nMatching over values of extensible variant types \
-                       (the *extension* above)\n\
-                    must include a wild card pattern in order to be exhaustive."
-                ;
-                Buffer.contents buf
-              with _ ->
-                ""
-            in
-            Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
+                      "\nMatching over values of extensible variant types \
+                         (the *extension* above)\n\
+                      must include a wild card pattern in order to be exhaustive."
+                  ;
+                  Buffer.contents buf
+                with _ ->
+                  ""
+              in
+                Location.prerr_warning loc (Warnings.Partial_match errmsg)
+            end;
             Partial
         end
     | _ ->
@@ -2000,28 +2004,35 @@ let check_unused pred casel =
 
 let irrefutable pat = le_pat pat omega
 
-(* An inactive pattern is a pattern whose matching needs only
-   trivial computations (tag/equality tests).
-   Patterns containing (lazy _) subpatterns are active. *)
-
-let rec inactive pat = match pat with
-| Tpat_lazy _ ->
-    false
-| Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->
-    true
-| Tpat_tuple ps | Tpat_construct (_, _, ps) | Tpat_array ps ->
-    List.for_all (fun p -> inactive p.pat_desc) ps
-| Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
-    inactive p.pat_desc
-| Tpat_record (ldps,_) ->
-    List.exists (fun (_, _, p) -> inactive p.pat_desc) ldps
-| Tpat_or (p,q,_) ->
-    inactive p.pat_desc && inactive q.pat_desc
-
-(* A `fluid' pattern is both irrefutable and inactive *)
-
-let fluid pat =  irrefutable pat && inactive pat.pat_desc
-
+let inactive ~partial pat =
+  match partial with
+  | Partial -> false
+  | Total -> begin
+      let rec loop pat =
+        match pat.pat_desc with
+        | Tpat_lazy _ | Tpat_array _ ->
+          false
+        | Tpat_any | Tpat_var _ | Tpat_variant (_, None, _) ->
+            true
+        | Tpat_constant c -> begin
+            match c with
+            | Const_string _ -> Config.safe_string
+            | Const_int _ | Const_char _ | Const_float _
+            | Const_int32 _ | Const_int64 _ | Const_nativeint _ -> true
+          end
+        | Tpat_tuple ps | Tpat_construct (_, _, ps) ->
+            List.for_all (fun p -> loop p) ps
+        | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
+            loop p
+        | Tpat_record (ldps,_) ->
+            List.for_all
+              (fun (_, lbl, p) -> lbl.lbl_mut = Immutable && loop p)
+              ldps
+        | Tpat_or (p,q,_) ->
+            loop p && loop q
+      in
+      loop pat
+  end
 
 
 
@@ -2039,18 +2050,15 @@ let fluid pat =  irrefutable pat && inactive pat.pat_desc
 *)
 
 let check_partial_param do_check_partial do_check_fragile loc casel =
-    if Warnings.is_active (Warnings.Partial_match "") then begin
-      let pss = initial_matrix casel in
-      let pss = get_mins le_pats pss in
-      let total = do_check_partial loc casel pss in
-      if
-        total = Total && Warnings.is_active (Warnings.Fragile_match "")
-      then begin
-        do_check_fragile loc casel pss
-      end ;
-      total
-    end else
-      Partial
+    let pss = initial_matrix casel in
+    let pss = get_mins le_pats pss in
+    let total = do_check_partial loc casel pss in
+    if
+      total = Total && Warnings.is_active (Warnings.Fragile_match "")
+    then begin
+      do_check_fragile loc casel pss
+    end ;
+    total
 
 (*let check_partial =
     check_partial_param

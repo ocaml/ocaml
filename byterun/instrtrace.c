@@ -181,7 +181,7 @@ void
 caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
 {
   int i;
-  fprintf (f, "%#lx", v);
+  fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", v);
   if (!v)
     return;
   if (prog && v % sizeof (int) == 0
@@ -239,7 +239,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#lx", Field (v, i));
+        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Field (v, i));
       };
       if (s > 0)
         putc (')', f);

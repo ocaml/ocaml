@@ -1501,11 +1501,12 @@ let define_let_rec_symbol_approx env defs =
       env
     else
       let env =
-        List.fold_left (fun env (symbol, constant_defining_value) ->
+        List.fold_left (fun newenv (symbol, constant_defining_value) ->
             let approx =
               constant_defining_value_approx env constant_defining_value
             in
-            E.redefine_symbol env symbol approx)
+            let approx = A.augment_with_symbol approx symbol in
+            E.redefine_symbol newenv symbol approx)
           env defs
       in
       loop (times-1) env
@@ -1572,13 +1573,13 @@ let rec simplify_program_body env r (program : Flambda.program_body)
   | Let_rec_symbol (defs, program) ->
     let env = define_let_rec_symbol_approx env defs in
     let env, r, defs =
-      List.fold_left (fun (env, r, defs) (symbol, def) ->
+      List.fold_left (fun (newenv, r, defs) (symbol, def) ->
           let r, def, approx =
             simplify_constant_defining_value env r symbol def
           in
           let approx = A.augment_with_symbol approx symbol in
-          let env = E.redefine_symbol env symbol approx in
-          (env, r, (symbol, def) :: defs))
+          let newenv = E.redefine_symbol newenv symbol approx in
+          (newenv, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
     let program, r = simplify_program_body env r program in

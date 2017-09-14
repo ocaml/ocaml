@@ -130,16 +130,22 @@ CAMLprim value caml_sys_exit(value retcode_v)
     intnat heap_chunks = caml_stat_heap_chunks;
     intnat top_heap_words = caml_stat_top_heap_wsz;
     intnat cpct = caml_stat_compactions;
-    caml_gc_message(0x400, "allocated_words: %ld\n", (long)allocated_words);
-    caml_gc_message(0x400, "minor_words: %ld\n", (long) minwords);
-    caml_gc_message(0x400, "promoted_words: %ld\n", (long) prowords);
-    caml_gc_message(0x400, "major_words: %ld\n", (long) majwords);
-    caml_gc_message(0x400, "minor_collections: %d\n", mincoll);
-    caml_gc_message(0x400, "major_collections: %d\n", majcoll);
-    caml_gc_message(0x400, "heap_words: %d\n", heap_words);
-    caml_gc_message(0x400, "heap_chunks: %d\n", heap_chunks);
-    caml_gc_message(0x400, "top_heap_words: %d\n", top_heap_words);
-    caml_gc_message(0x400, "compactions: %d\n", cpct);
+    caml_gc_message(0x400, "allocated_words: %.0f\n", allocated_words);
+    caml_gc_message(0x400, "minor_words: %.0f\n", minwords);
+    caml_gc_message(0x400, "promoted_words: %.0f\n", prowords);
+    caml_gc_message(0x400, "major_words: %.0f\n", majwords);
+    caml_gc_message(0x400, "minor_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    mincoll);
+    caml_gc_message(0x400, "major_collections: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    majcoll);
+    caml_gc_message(0x400, "heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    heap_words);
+    caml_gc_message(0x400, "heap_chunks: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    heap_chunks);
+    caml_gc_message(0x400, "top_heap_words: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    top_heap_words);
+    caml_gc_message(0x400, "compactions: %"ARCH_INTNAT_PRINTF_FORMAT"d\n",
+                    cpct);
   }
 
 #ifndef NATIVE_CODE
@@ -273,6 +279,13 @@ CAMLprim value caml_sys_remove(value name)
   CAMLreturn(Val_unit);
 }
 
+#ifdef _WIN32
+extern int caml_win32_rename(const char * oldpath, const char * newpath);
+/* This #define is a hack but ensures that CAML_SYS_RENAME
+   resolves to the correct function */
+#define rename caml_win32_rename
+#endif
+
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
   char * p_old;
@@ -291,6 +304,11 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
     caml_sys_error(NO_ARG);
   return Val_unit;
 }
+
+#ifdef _WIN32
+/* End of rename hack */
+#undef rename
+#endif
 
 CAMLprim value caml_sys_chdir(value dirname)
 {

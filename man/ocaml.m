@@ -279,10 +279,11 @@ directive to read phrases from a file.
 
 .SH ENVIRONMENT VARIABLES
 .TP
-.B LC_CTYPE
-If set to iso_8859_1, accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences.
+.B OCAMLTOP_UTF_8
+When printing string values, non-ascii bytes (>0x7E) are printed as
+decimal escape sequence if
+.B OCAMLTOP_UTF_8
+is set to false. Otherwise they are printed unescaped.
 .TP
 .B TERM
 When printing error messages, the toplevel system

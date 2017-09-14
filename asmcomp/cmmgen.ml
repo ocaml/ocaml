@@ -262,12 +262,48 @@ let untag_int i dbg =
   | Cop(Cor, [c; Cconst_int 1], _) -> Cop(Casr, [c; Cconst_int 1], dbg)
   | c -> Cop(Casr, [c; Cconst_int 1], dbg)
 
-let if_then_else (cond, ifso, ifnot) =
+(* Description of the "then" and "else" continuations in [transl_if]. If
+   the "then" continuation is true and the "else" continuation is false then
+   we can use the condition directly as the result. Similarly, if the "then"
+   continuation is false and the "else" continuation is true then we can use
+   the negation of the condition directly as the result. *)
+type then_else =
+  | Then_true_else_false
+  | Then_false_else_true
+  | Unknown
+
+let invert_then_else = function
+  | Then_true_else_false -> Then_false_else_true
+  | Then_false_else_true -> Then_true_else_false
+  | Unknown -> Unknown
+
+let mk_if_then_else cond ifso ifnot =
   match cond with
   | Cconst_int 0 -> ifnot
   | Cconst_int 1 -> ifso
   | _ ->
     Cifthenelse(cond, ifso, ifnot)
+
+let mk_not dbg cmm =
+  match cmm with
+  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') -> begin
+      match c with
+      | Cop(Ccmpi cmp, [c1; c2], dbg'') ->
+          tag_int (Cop(Ccmpi (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+      | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
+          tag_int (Cop(Ccmpa (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+      | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
+          tag_int (Cop(Ccmpf (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+      | _ ->
+        (* 0 -> 3, 1 -> 1 *)
+        Cop(Csubi, [Cconst_int 3; Cop(Clsl, [c; Cconst_int 1], dbg)], dbg)
+    end
+  | Cconst_int 3 -> Cconst_int 1
+  | Cconst_int 1 -> Cconst_int 3
+  | c ->
+      (* 1 -> 3, 3 -> 1 *)
+      Cop(Csubi, [Cconst_int 4; c], dbg)
+
 
 (* Turning integer divisions into multiply-high then shift.
    The [division_parameters] function is used in module Emit for
@@ -1828,43 +1864,10 @@ let rec transl env e =
       ccatch(nfail, ids, transl env body, transl env handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl env body, exn, transl env handler)
-  | Uifthenelse(Uprim(Pnot, [arg], _), ifso, ifnot) ->
-      transl env (Uifthenelse(arg, ifnot, ifso))
-  | Uifthenelse(cond, ifso, Ustaticfail (nfail, [])) ->
-      let dbg = Debuginfo.none in
-      exit_if_false dbg env cond (transl env ifso) nfail
-  | Uifthenelse(cond, Ustaticfail (nfail, []), ifnot) ->
-      let dbg = Debuginfo.none in
-      exit_if_true dbg env cond nfail (transl env ifnot)
-  | Uifthenelse(Uprim(Psequand, _, dbg) as cond, ifso, ifnot) ->
-      let raise_num = next_raise_count () in
-      make_catch
-        raise_num
-        (exit_if_false dbg env cond (transl env ifso) raise_num)
-        (transl env ifnot)
-  | Uifthenelse(Uprim(Psequor, _, dbg) as cond, ifso, ifnot) ->
-      let raise_num = next_raise_count () in
-      make_catch
-        raise_num
-        (exit_if_true dbg env cond raise_num (transl env ifnot))
-        (transl env ifso)
-  | Uifthenelse (Uifthenelse (cond, condso, condnot), ifso, ifnot) ->
-      let dbg = Debuginfo.none in
-      let num_true = next_raise_count () in
-      make_catch
-        num_true
-        (make_catch2
-           (fun shared_false ->
-             if_then_else
-               (test_bool dbg (transl env cond),
-                exit_if_true dbg env condso num_true shared_false,
-                exit_if_true dbg env condnot num_true shared_false))
-           (transl env ifnot))
-        (transl env ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
       let dbg = Debuginfo.none in
-      if_then_else(test_bool dbg (transl env cond), transl env ifso,
-        transl env ifnot)
+      transl_if env cond dbg Unknown
+        (transl env ifso) (transl env ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl env exp1), transl env exp2)
   | Uwhile(cond, body) ->
@@ -1873,8 +1876,9 @@ let rec transl env e =
       return_unit
         (ccatch
            (raise_num, [],
-            Cloop(exit_if_false dbg env cond
-                    (remove_unit(transl env body)) raise_num),
+            Cloop(transl_if env cond dbg Unknown
+                    (remove_unit(transl env body))
+                    (Cexit (raise_num,[]))),
             Ctuple []))
   | Ufor(id, low, high, dir, body) ->
       let dbg = Debuginfo.none in
@@ -2052,7 +2056,8 @@ and transl_prim_1 env p arg dbg =
       end
   (* Boolean operations *)
   | Pnot ->
-      Cop(Csubi, [Cconst_int 4; transl env arg], dbg) (* 1 -> 3, 3 -> 1 *)
+      transl_if env arg dbg Then_false_else_true
+        (Cconst_pointer 1) (Cconst_pointer 3)
   (* Test integer/block *)
   | Pisint ->
       tag_int(Cop(Cand, [transl env arg; Cconst_int 1], dbg)) dbg
@@ -2113,15 +2118,16 @@ and transl_prim_2 env p arg1 arg2 dbg =
 
   (* Boolean operations *)
   | Psequand ->
-      if_then_else(test_bool dbg (transl env arg1),
-        transl env arg2, Cconst_int 1)
+      let dbg' = Debuginfo.none in
+      transl_sequand env arg1 dbg arg2 dbg' Then_true_else_false
+        (Cconst_pointer 3) (Cconst_pointer 1)
       (* let id = Ident.create "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
-      if_then_else(test_bool dbg (transl env arg1),
-        Cconst_int 3, transl env arg2)
-
+      let dbg' = Debuginfo.none in
+      transl_sequor env arg1 dbg arg2 dbg' Then_true_else_false
+        (Cconst_pointer 3) (Cconst_pointer 1)
   (* Integer operations *)
   | Paddint ->
       decr_int(add_int (transl env arg1) (transl env arg2) dbg) dbg
@@ -2631,88 +2637,79 @@ and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
 | _ ->  ccatch (ncatch, [], body, handler)
 
-and make_catch2 mk_body handler = match handler with
-| Cexit (_,[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
-    mk_body handler
-| _ ->
+and is_shareable_cont exp =
+  match exp with
+  | Cexit (_,[]) -> true
+  | _ -> false
+
+and make_shareable_cont mk exp =
+  if is_shareable_cont exp then mk exp
+  else begin
     let nfail = next_raise_count () in
     make_catch
       nfail
-      (mk_body (Cexit (nfail,[])))
-      handler
+      (mk (Cexit (nfail,[])))
+      exp
+  end
 
-and exit_if_true dbg env cond nfail otherwise =
+and transl_if env cond dbg approx then_ else_ =
   match cond with
-  | Uconst (Uconst_ptr 0) -> otherwise
-  | Uconst (Uconst_ptr 1) -> Cexit (nfail,[])
-  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2)
-  | Uprim(Psequor, [arg1; arg2], _) ->
-      (* CR-someday pchambart: Since Uifthenelse does not have a debuginfo,
-         this pattern cannot be written to propagate the Psequor operation
-         location. Should it do that ?
-         This also applies to the following pattern for Psequand and the
-         instances in exit_if_false *)
-      exit_if_true dbg env arg1 nfail
-        (exit_if_true dbg env arg2 nfail otherwise)
-  | Uifthenelse (_, _, Uconst (Uconst_ptr 0))
-  | Uprim(Psequand, _, _) ->
-      begin match otherwise with
-      | Cexit (raise_num,[]) ->
-          exit_if_false dbg env cond (Cexit (nfail,[])) raise_num
-      | _ ->
-          let raise_num = next_raise_count () in
-          make_catch
-            raise_num
-            (exit_if_false dbg env cond (Cexit (nfail,[])) raise_num)
-            otherwise
-      end
+  | Uconst (Uconst_ptr 0) -> else_
+  | Uconst (Uconst_ptr 1) -> then_
+  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
+      let dbg' = Debuginfo.none in
+      transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
+  | Uprim(Psequand, [arg1; arg2], dbg') ->
+      transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
+  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
+      let dbg' = Debuginfo.none in
+      transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
+  | Uprim(Psequor, [arg1; arg2], dbg') ->
+      transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Pnot, [arg], _) ->
-      exit_if_false dbg env arg otherwise nfail
+      transl_if env arg dbg (invert_then_else approx) else_ then_
+  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
+      transl_if env ifso dbg approx then_ else_
+  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
+      transl_if env ifnot dbg approx then_ else_
   | Uifthenelse (cond, ifso, ifnot) ->
-      make_catch2
-        (fun shared ->
-          if_then_else
-            (test_bool dbg (transl env cond),
-             exit_if_true dbg env ifso nfail shared,
-             exit_if_true dbg env ifnot nfail shared))
-        otherwise
-  | _ ->
-      if_then_else(test_bool dbg (transl env cond),
-        Cexit (nfail, []), otherwise)
+      make_shareable_cont
+        (fun shareable_then ->
+           make_shareable_cont
+             (fun shareable_else ->
+                mk_if_then_else
+                  (test_bool dbg (transl env cond))
+                  (transl_if env ifso dbg approx
+                     shareable_then shareable_else)
+                  (transl_if env ifnot dbg approx
+                     shareable_then shareable_else))
+             else_)
+        then_
+  | _ -> begin
+      match approx with
+      | Then_true_else_false ->
+          transl env cond
+      | Then_false_else_true ->
+          mk_not dbg (transl env cond)
+      | Unknown ->
+          mk_if_then_else (test_bool dbg (transl env cond)) then_ else_
+    end
 
-and exit_if_false dbg env cond otherwise nfail =
-  match cond with
-  | Uconst (Uconst_ptr 0) -> Cexit (nfail,[])
-  | Uconst (Uconst_ptr 1) -> otherwise
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0))
-  | Uprim(Psequand, [arg1; arg2], _) ->
-      exit_if_false dbg env arg1
-        (exit_if_false dbg env arg2 otherwise nfail) nfail
-  | Uifthenelse (_, Uconst (Uconst_ptr 1), _)
-  | Uprim(Psequor, _, _) ->
-      begin match otherwise with
-      | Cexit (raise_num,[]) ->
-          exit_if_true dbg env cond raise_num (Cexit (nfail,[]))
-      | _ ->
-          let raise_num = next_raise_count () in
-          make_catch
-            raise_num
-            (exit_if_true dbg env cond raise_num (Cexit (nfail,[])))
-            otherwise
-      end
-  | Uprim(Pnot, [arg], _) ->
-      exit_if_true dbg env arg nfail otherwise
-  | Uifthenelse (cond, ifso, ifnot) ->
-      make_catch2
-        (fun shared ->
-          if_then_else
-            (test_bool dbg (transl env cond),
-             exit_if_false dbg env ifso shared nfail,
-             exit_if_false dbg env ifnot shared nfail))
-        otherwise
-  | _ ->
-      if_then_else (test_bool dbg (transl env cond), otherwise,
-        Cexit (nfail, []))
+and transl_sequand env arg1 dbg1 arg2 dbg2 approx then_ else_ =
+  make_shareable_cont
+    (fun shareable_else ->
+       transl_if env arg1 dbg1 Unknown
+         (transl_if env arg2 dbg2 approx then_ shareable_else)
+         shareable_else)
+    else_
+
+and transl_sequor env arg1 dbg1 arg2 dbg2 approx then_ else_ =
+  make_shareable_cont
+    (fun shareable_then ->
+       transl_if env arg1 dbg1 Unknown
+         shareable_then
+         (transl_if env arg2 dbg2 approx shareable_then else_))
+    then_
 
 and transl_switch loc env arg index cases = match Array.length cases with
 | 0 -> fatal_error "Cmmgen.transl_switch"

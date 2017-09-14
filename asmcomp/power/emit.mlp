@@ -1198,7 +1198,7 @@ let end_assembly() =
   `{emit_symbol lbl_end}:\n`;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
-  emit_string rodata_space;
+  emit_string data_space;  (* not rodata_space because it contains relocations *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;

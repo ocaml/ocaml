@@ -982,6 +982,14 @@ exception Need_backtrack
    explode > 0 => explode Ppat_any for gadts *)
 let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
     sp expected_ty k =
+  Builtin_attributes.warning_scope sp.ppat_attributes
+    (fun () ->
+       type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
+         sp expected_ty k
+    )
+
+and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
+    sp expected_ty k =
   let mode' = if mode = Splitting_or then Normal else mode in
   let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode')
       ?(explode=explode) ?(env=env) =
@@ -1461,7 +1469,13 @@ let type_pattern ~lev env spat scope expected_ty =
 let type_pattern_list env spatl scope expected_tys allow =
   reset_pattern scope allow;
   let new_env = ref env in
-  let patl = List.map2 (type_pat new_env) spatl expected_tys in
+  let type_pat (attrs, pat) ty =
+    Builtin_attributes.warning_scope ~ppwarning:false attrs
+      (fun () ->
+         type_pat new_env pat ty
+      )
+  in
+  let patl = List.map2 type_pat spatl expected_tys in
   let new_env, unpacks = add_pattern_variables !new_env in
   (patl, new_env, get_ref pattern_force, unpacks)
 
@@ -1948,10 +1962,12 @@ let rec type_exp ?recarg env sexp =
 
 and type_expect ?in_function ?recarg env sexp ty_expected =
   let previous_saved_types = Cmt_format.get_saved_types () in
-  Builtin_attributes.warning_enter_scope ();
-  Builtin_attributes.warning_attribute sexp.pexp_attributes;
-  let exp = type_expect_ ?in_function ?recarg env sexp ty_expected in
-  Builtin_attributes.warning_leave_scope ();
+  let exp =
+    Builtin_attributes.warning_scope sexp.pexp_attributes
+      (fun () ->
+         type_expect_ ?in_function ?recarg env sexp ty_expected
+      )
+  in
   Cmt_format.set_saved_types
     (Cmt_format.Partial_expression exp :: previous_saved_types);
   exp
@@ -2808,6 +2824,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
          i.e. if generative types rooted at id show up in the
          type body.exp_type.  Thus, this unification enforces the
          scoping condition on "let module". *)
+      (* Note that this code will only be reached if ty_expected
+         is a generic type variable, otherwise the error will occur
+         above in type_expect *)
       begin try
         Ctype.unify_var new_env ty body.exp_type
       with Unify _ ->
@@ -3240,8 +3259,8 @@ and type_format loc str env =
           mk_constr "Ignored_int64" [ mk_iconv iconv; mk_int_opt pad_opt ]
         | Ignored_float (pad_opt, prec_opt) ->
           mk_constr "Ignored_float" [ mk_int_opt pad_opt; mk_int_opt prec_opt ]
-        | Ignored_bool ->
-          mk_constr "Ignored_bool" []
+        | Ignored_bool pad_opt ->
+          mk_constr "Ignored_bool" [ mk_int_opt pad_opt ]
         | Ignored_format_arg (pad_opt, fmtty) ->
           mk_constr "Ignored_format_arg" [ mk_int_opt pad_opt; mk_fmtty fmtty ]
         | Ignored_format_subst (pad_opt, fmtty) ->
@@ -3294,8 +3313,8 @@ and type_format loc str env =
         | Float (fconv, pad, prec, rest) ->
           mk_constr "Float" [
             mk_fconv fconv; mk_padding pad; mk_precision prec; mk_fmt rest ]
-        | Bool rest ->
-          mk_constr "Bool" [ mk_fmt rest ]
+        | Bool (pad, rest) ->
+          mk_constr "Bool" [ mk_padding pad; mk_fmt rest ]
         | Flush rest ->
           mk_constr "Flush" [ mk_fmt rest ]
         | String_literal (s, rest) ->
@@ -3837,7 +3856,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
   if propagate then begin_def (); (* propagation of the argument *)
-  let ty_arg' = newvar () in
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
     Printtyp.raw_type_expr ty_arg; *)
@@ -3864,15 +3882,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           if !Clflags.principal then begin
             end_def ();
             iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
-            { pat with pat_type = instance env pat.pat_type }
+            { pat with pat_type = instance ext_env pat.pat_type }
           end else pat
         in
         (pat, (ext_env, unpacks)))
       caselist in
-  (* Unify cases (delayed to keep it order-free) *)
-  let patl = List.map fst pat_env_list in
-  List.iter (fun pat -> unify_pat env pat ty_arg') patl;
+  (* Unify all cases (delayed to keep it order-free) *)
+  let ty_arg' = newvar () in
+  let unify_pats ty =
+    List.iter (fun (pat, (ext_env, _)) -> unify_pat ext_env pat ty)
+      pat_env_list in
+  unify_pats ty_arg';
   (* Check for polymorphic variants to close *)
+  let patl = List.map fst pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
@@ -3880,15 +3902,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  let unify_pats ty = List.iter (fun pat -> unify_pat env pat ty) patl in
+  if propagate || erase_either then unify_pats (instance env ty_arg);
   if propagate then begin
     List.iter
       (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
-    unify_pats (instance env ty_arg);
     end_def ();
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
-  end
-  else if erase_either then unify_pats (instance env ty_arg);
+  end;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
@@ -3981,7 +4001,8 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let spatl =
     List.map
-      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=_} ->
+      (fun {pvb_pat=spat; pvb_expr=sexp; pvb_attributes=attrs} ->
+        attrs,
         match spat.ppat_desc, sexp.pexp_desc with
           (Ppat_any | Ppat_constraint _), _ -> spat
         | _, Pexp_coerce (_, _, sty)
@@ -3997,6 +4018,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) =
     type_pattern_list env spatl scope nvs allow in
+  let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
   (* If recursive, first unify with an approximation of the expression *)
   if is_recursive then
@@ -4035,9 +4057,13 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
 
   let current_slot = ref None in
   let rec_needed = ref false in
-  let warn_unused =
-    Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
-    (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))
+  let warn_about_unused_bindings =
+    List.exists
+      (fun attrs ->
+         Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
+           Warnings.is_active (check "") || Warnings.is_active (check_strict "") ||
+           (is_recursive && (Warnings.is_active Warnings.Unused_rec_flag))))
+      attrs_list
   in
   let pat_slot_list =
     (* Algorithm to detect unused declarations in recursive bindings:
@@ -4056,43 +4082,45 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
        are unused. If this is the case, for local declarations, the issued
        warning is 26, not 27.
      *)
-    List.map
-      (fun pat ->
-        if not warn_unused then pat, None
-        else
-          let some_used = ref false in
-            (* has one of the identifier of this pattern been used? *)
-          let slot = ref [] in
-          List.iter
-            (fun id ->
-              let vd = Env.find_value (Path.Pident id) new_env in
-              (* note: Env.find_value does not trigger the value_used event *)
-              let name = Ident.name id in
-              let used = ref false in
-              if not (name = "" || name.[0] = '_' || name.[0] = '#') then
-                add_delayed_check
-                  (fun () ->
-                    if not !used then
-                      Location.prerr_warning vd.Types.val_loc
-                        ((if !some_used then check_strict else check) name)
-                  );
-              Env.set_value_used_callback
-                name vd
-                (fun () ->
-                  match !current_slot with
-                  | Some slot ->
-                      slot := (name, vd) :: !slot; rec_needed := true
-                  | None ->
-                      List.iter
-                        (fun (name, vd) -> Env.mark_value_used env name vd)
-                        (get_ref slot);
-                      used := true;
-                      some_used := true
-                )
-            )
-            (Typedtree.pat_bound_idents pat);
-          pat, Some slot
-        )
+    List.map2
+      (fun attrs pat ->
+         Builtin_attributes.warning_scope ~ppwarning:false attrs (fun () ->
+           if not warn_about_unused_bindings then pat, None
+           else
+             let some_used = ref false in
+             (* has one of the identifier of this pattern been used? *)
+             let slot = ref [] in
+             List.iter
+               (fun id ->
+                  let vd = Env.find_value (Path.Pident id) new_env in
+                  (* note: Env.find_value does not trigger the value_used event *)
+                  let name = Ident.name id in
+                  let used = ref false in
+                  if not (name = "" || name.[0] = '_' || name.[0] = '#') then
+                    add_delayed_check
+                      (fun () ->
+                         if not !used then
+                           Location.prerr_warning vd.Types.val_loc
+                             ((if !some_used then check_strict else check) name)
+                      );
+                  Env.set_value_used_callback
+                    name vd
+                    (fun () ->
+                       match !current_slot with
+                       | Some slot ->
+                         slot := (name, vd) :: !slot; rec_needed := true
+                       | None ->
+                         List.iter
+                           (fun (name, vd) -> Env.mark_value_used env name vd)
+                           (get_ref slot);
+                         used := true;
+                         some_used := true
+                    )
+               )
+               (Typedtree.pat_bound_idents pat);
+             pat, Some slot
+         ))
+      attrs_list
       pat_list
   in
   let exp_list =
@@ -4111,14 +4139,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
               generalize_structure ty'
             end;
             let exp =
-              Builtin_attributes.with_warning_attribute pvb_attributes
+              Builtin_attributes.warning_scope pvb_attributes
                   (fun () -> type_expect exp_env sexp ty')
             in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance env exp.exp_type}
         | _ ->
-            Builtin_attributes.with_warning_attribute pvb_attributes (fun () ->
+            Builtin_attributes.warning_scope pvb_attributes (fun () ->
               type_expect exp_env sexp pat.pat_type))
       spat_sexp_list pat_slot_list in
   current_slot := None;
@@ -4126,15 +4154,21 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   && Warnings.is_active Warnings.Unused_rec_flag then begin
     let {pvb_pat; pvb_attributes} = List.hd spat_sexp_list in
     (* See PR#6677 *)
-    Builtin_attributes.with_warning_attribute pvb_attributes
+    Builtin_attributes.warning_scope ~ppwarning:false pvb_attributes
       (fun () ->
          Location.prerr_warning pvb_pat.ppat_loc Warnings.Unused_rec_flag
       )
   end;
   List.iter2
-    (fun pat exp ->
-      ignore(check_partial env pat.pat_type pat.pat_loc [case pat exp]))
-    pat_list exp_list;
+    (fun pat (attrs, exp) ->
+       Builtin_attributes.warning_scope ~ppwarning:false attrs
+         (fun () ->
+            ignore(check_partial env pat.pat_type pat.pat_loc
+                     [case pat exp])
+         )
+    )
+    pat_list
+    (List.map2 (fun (attrs, _) e -> attrs, e) spatl exp_list);
   end_def();
   List.iter2
     (fun pat exp ->

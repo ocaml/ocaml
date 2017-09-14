@@ -161,13 +161,13 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
     fullname = caml_stat_strconcat(3, dir, "\\", name);
-    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
+    caml_gc_message(0x100, "Searching %s\n", fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
+  caml_gc_message(0x100, "%s not found in search path\n", name);
   return caml_stat_strdup(name);
 }
 
@@ -188,8 +188,7 @@ CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%s not found in search path\n",
-                      (uintnat) name);
+      caml_gc_message(0x100, "%s not found in search path\n", name);
       caml_stat_free(fullname);
       return caml_stat_strdup(name);
     }
@@ -499,7 +498,7 @@ void caml_signal_thread(void * lpParam)
  * quickly.
  */
 
-static uintnat win32_alt_stack[0x80];
+static uintnat win32_alt_stack[0x100];
 
 static void caml_reset_stack (void *faulting_address)
 {
@@ -720,4 +719,44 @@ char *caml_secure_getenv (char const *var)
 {
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
   return CAML_SYS_GETENV (var);
+}
+
+/* The rename() implementation in MSVC's CRT is based on MoveFile()
+   and therefore fails if the new name exists.  This is inconsistent
+   with POSIX and a problem in practice.  Here we reimplement
+   rename() using MoveFileEx() to make it more POSIX-like.
+   There are no official guarantee that the rename operation is atomic,
+   but it is widely believed to be atomic on NTFS. */
+
+int caml_win32_rename(const char * oldpath, const char * newpath)
+{
+  /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
+     MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
+       paths are on different devices, so we do the same here for
+       compatibility with the old rename()-based implementation.
+     MOVEFILE_WRITE_THROUGH: not sure it's useful; affects only
+       the case where a copy is done. */
+  if (MoveFileEx(oldpath, newpath,
+                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                 MOVEFILE_COPY_ALLOWED)) {
+    return 0;
+  }
+  /* Modest attempt at mapping Win32 error codes to POSIX error codes.
+     The __dosmaperr() function from the CRT does a better job but is
+     generally not accessible. */
+  switch (GetLastError()) {
+  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
+    errno = ENOENT; break;
+  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
+    errno = EACCES; break;
+  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
+    errno = EBUSY; break;
+  case ERROR_NOT_SAME_DEVICE:
+    errno = EXDEV; break;
+  case ERROR_ALREADY_EXISTS:
+    errno = EEXIST; break;
+  default:
+    errno = EINVAL;
+  }
+  return -1;
 }
