@@ -183,6 +183,8 @@ let iterator_with_env env =
   let super = Btype.type_iterators in
   env, { super with
     Btype.it_signature = (fun self sg ->
+      (* add all items to the env before recursing down, to handle recursive
+         definitions *)
       let env_before = !env in
       List.iter (fun i -> env := Env.add_item i !env) sg;
       super.Btype.it_signature self sg;
@@ -220,13 +222,16 @@ let retype_applicative_functor_type ~loc env funct arg =
    - aliases: module A = M still makes sense but it doesn't mean the same thing
      anymore, so it's forbidden until it's clear what we should do with it.
    This function would be called with M.N.t and N.t to check for these uses. *)
-let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
+let check_usage_of_path_of_substituted_item paths env signature ~loc ~lid =
   let iterator =
     let env, super = iterator_with_env env in
     { super with
       Btype.it_signature_item = (fun self -> function
       | Sig_module (id, { md_type = Mty_alias (_, aliased_path); _ }, _)
-          when path_is_strict_prefix path ~prefix:aliased_path ->
+        when List.exists
+               (fun path -> path_is_strict_prefix path ~prefix:aliased_path)
+               paths
+        ->
          let e = With_changes_module_alias (lid.txt, id, aliased_path) in
          raise(Error(loc, !env, e))
       | sig_item ->
@@ -234,7 +239,9 @@ let check_usage_of_path_of_substituted_item path env signature ~loc ~lid =
       );
       Btype.it_path = (fun referenced_path ->
         iter_path_apply referenced_path ~f:(fun funct arg ->
-          if path_is_strict_prefix path ~prefix:arg
+          if List.exists
+               (fun path -> path_is_strict_prefix path ~prefix:arg)
+               paths
           then
             let env = !env in
             try retype_applicative_functor_type ~loc env funct arg
@@ -378,9 +385,6 @@ let merge_constraint initial_env loc sg constr =
         let path = path_concat id path in
         real_ids := path :: !real_ids;
         let item = Sig_module(id, {md with md_type=Mty_signature newsg}, rs) in
-        if destructive_substitution then
-          check_usage_of_path_of_substituted_item
-            path (Env.add_item item env) rem ~loc ~lid;
         (path, lid, tcstr),
         item :: rem
     | (item :: rem, _, _) ->
@@ -391,6 +395,19 @@ let merge_constraint initial_env loc sg constr =
   try
     let names = Longident.flatten lid.txt in
     let (tcstr, sg) = merge initial_env sg names None in
+    if destructive_substitution then (
+      match List.rev !real_ids with
+      | [] -> assert false
+      | last :: rest ->
+        (* The last item is the one that's removed. We don't need to check how
+           it's used since it's replaced by a more specific type/module. *)
+        assert (match last with Pident _ -> true | _ -> false);
+        match rest with
+        | [] -> ()
+        | _ :: _ ->
+          check_usage_of_path_of_substituted_item
+            rest initial_env sg ~loc ~lid;
+    );
     let sg =
     match tcstr with
     | (_, _, Twith_typesubst tdecl) ->

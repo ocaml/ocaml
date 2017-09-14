@@ -264,8 +264,7 @@ module type S2 =
 |}]
 
 (* In the presence of recursive modules, the use of a module can come before its
-   definition (in the typed tree), making the typer accepts an invalid
-   substitution. *)
+   definition (in the typed tree). *)
 
 module Id(X : sig type t end) = struct type t = X.t end
 module type S3 = sig
@@ -274,8 +273,11 @@ module type S3 = sig
 end with type M2.t := int
 [%%expect {|
 module Id : functor (X : sig type t end) -> sig type t = X.t end
-module type S3 =
-  sig module rec M : sig type t = A of Id(M2).t end and M2 : sig  end end
+Line _, characters 17-120:
+Error: This `with' constraint on M2.t makes the applicative functor
+       type Id(M2).t ill-typed in the constrained signature:
+       Modules do not match: sig  end is not included in sig type t end
+       The type `t' is required but not provided
 |}]
 
 
