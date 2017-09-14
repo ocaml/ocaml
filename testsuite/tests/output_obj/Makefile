@@ -20,16 +20,16 @@ compile:
 	@for file in *.ml; do \
 	  printf " ... testing native '$$file'"; \
 	  rm -f log; \
-	  ( $(OCAMLOPT) -w a -output-complete-obj -o $${file}.exe.o $${file} >> log 2>&1 && \
-	    $(CC) $(CFLAGS) $(CPPFLAGS) -I$(CTOPDIR)/byterun -o $${file}_stub $${file}.exe.o -lm -ldl $${file}_stub.c >> log 2>&1 && \
+	  ( $(OCAMLOPT) -w a -output-complete-obj -o $${file}.exe.$(O) $${file} >> log 2>&1 && \
+	    $(CC) $(CFLAGS) $(CPPFLAGS) -I$(CTOPDIR)/byterun -o $${file}_stub $${file}.exe.$(O) $(NATIVECCLIBS) $${file}_stub.c >> log 2>&1 && \
 	    ./$${file}_stub >> log 2>&1 && \
 	    echo " => passed") || (echo " => failed" && cat log) ; \
 	done
 	@for file in *.ml; do \
 	  printf " ... testing byte '$$file'"; \
           rm -f log; \
-	  ( $(OCAMLC) -ccopt "-I$(CTOPDIR)/byterun" -w a -output-complete-obj -o $${file}.bc.o $${file} >> log 2>&1 && \
-	    $(CC) $(CFLAGS) $(CPPFLAGS) -I$(CTOPDIR)/byterun -o $${file}_bc_stub $${file}.bc.o -lm -ldl -lcurses $${file}_stub.c >> log 2>&1 && \
+	  ( $(OCAMLC) -ccopt "-I$(CTOPDIR)/byterun" -w a -output-complete-obj -o $${file}.bc.$(O) $${file} >> log 2>&1 && \
+	    $(CC) $(CFLAGS) $(CPPFLAGS) -I$(CTOPDIR)/byterun -o $${file}_bc_stub $${file}.bc.$(O) $(BYTECCLIBS) $${file}_stub.c >> log 2>&1 && \
 	    ./$${file}_bc_stub >> log 2>&1 && \
 	    echo " => passed") || (echo " => failed" && cat log); \
 	done
