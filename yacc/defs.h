@@ -25,7 +25,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "caml/s.h"
+#include "caml/misc.h"
 
 /*  machine-dependent definitions                              */
 /*  the following definitions are for the Tahoe                */
@@ -295,13 +295,6 @@ extern short nunused;
 extern short final_state;
 
 /* global functions */
-
-#ifdef __GNUC__
-/* Works only in GCC 2.5 and later */
-#define Noreturn __attribute ((noreturn))
-#else
-#define Noreturn
-#endif
 
 extern char *allocate(unsigned int n);
 extern bucket *lookup(char *name);
