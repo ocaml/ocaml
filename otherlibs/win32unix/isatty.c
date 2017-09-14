@@ -18,5 +18,7 @@
 CAMLprim value unix_isatty(value fd)
 {
   DWORD lpMode;
-  return (Val_bool(GetConsoleMode(Handle_val(fd), &lpMode)));
+  HANDLE hFile = Handle_val(fd);
+  return (Val_bool((GetFileType(hFile) == FILE_TYPE_CHAR)
+                   && GetConsoleMode(hFile, &lpMode)));
 }
