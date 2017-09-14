@@ -109,7 +109,7 @@ OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 
 BYTECCDBGCOMPOPTS=-Zi
 
-LDFLAGS=
+LDFLAGS=/ENTRY:wmainCRTStartup
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
@@ -137,7 +137,7 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(FLEXLINK) -exe $(if $(LDFLAGS),-link "$(LDFLAGS)")
 MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
@@ -145,7 +145,7 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console $(LDFLAGS) \
            && ($(MERGEMANIFESTEXE))
 
 ### How to build a static library

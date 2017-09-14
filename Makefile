@@ -330,7 +330,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
 	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
-	    -e 's|%%MKEXE%%|$(subst \,\\,$(MKEXE))|' \
+	    -e 's|%%MKEXE%%|$(subst ",\\",$(subst \,\\,$(MKEXE)))|' \
+	    -e 's|%%FLEXLINK_LDFLAGS%%|$(subst ",\\",$(subst \,\\,$(if $(LDFLAGS), -link "$(LDFLAGS)")))|' \
 	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \

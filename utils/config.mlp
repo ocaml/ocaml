@@ -54,7 +54,7 @@ let mkdll, mkexe, mkmaindll =
           if c = '/' then '\\' else c in
         (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
       flexlink,
-      flexlink ^ " -exe",
+      flexlink ^ " -exe%%FLEXLINK_LDFLAGS%%",
       flexlink ^ " -maindll"
     with Not_found ->
       "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"

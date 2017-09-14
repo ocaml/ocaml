@@ -23,4 +23,4 @@ include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 
 %.exe: %.c
-	@$(CC) $(CFLAGS) $(CPPFLAGS) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o$*.exe) $*.c
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) $(if $(filter msvc,$(CCOMPTYPE)),/Fe$*.exe,-o$*.exe) $*.c
