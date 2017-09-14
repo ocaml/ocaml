@@ -16,6 +16,8 @@
 /* Asm part of the runtime system, ARM processor, 64-bit mode */
 /* Must be preprocessed by cpp */
 
+#include "caml/m.h"
+
 /* Special registers */
 
 #define TRAP_PTR x26
@@ -31,10 +33,14 @@
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_REGISTER(r1,r2) .cfi_register r1,r2
+#define CFI_OFFSET(r,n) .cfi_offset r,n
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
+#define CFI_REGISTER(r1,r2)
+#define CFI_OFFSET(r,n)
 #endif
 
 /* Support for profiling with gprof */
@@ -91,6 +97,8 @@ caml_call_gc:
 .Lcaml_call_gc:
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
+        CFI_OFFSET(29, -400)
+        CFI_OFFSET(30, -392)
         stp     x29, x30, [sp, -400]!
         CFI_ADJUST(400)
         add     x29, sp, #0
@@ -296,6 +304,7 @@ caml_c_call:
         PROFILE
     /* Preserve return address in callee-save register x19 */
         mov     x19, x30
+        CFI_REGISTER(30, 19)
     /* Record lowest stack address and return address */
         STOREGLOBAL(x30, caml_last_return_address)
         add     TMP, sp, #0
@@ -329,6 +338,8 @@ caml_start_program:
 
 .Ljump_to_caml:
     /* Set up stack frame and save callee-save registers */
+        CFI_OFFSET(29, -160)
+        CFI_OFFSET(30, -152)
         stp     x29, x30, [sp, -160]!
         CFI_ADJUST(160)
         add     x29, sp, #0
