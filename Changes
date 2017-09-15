@@ -38,6 +38,10 @@ Working version
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
 
+* GPR#1252: The default mode is now safe-string, can be overridden
+  at configure time or at compile time.
+  (Damien Doligez)
+
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
 
