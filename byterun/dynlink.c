@@ -77,7 +77,7 @@ static c_primitive lookup_primitive(char * name)
 
 static charnat * parse_ld_conf(void)
 {
-  charnat * stdlib, * ldconfname, * wconfig, * p, * q;
+  charnat * stdlib, * ldconfname, * wconfig, * p, * q, * tofree = NULL;
   char * config;
 #ifdef _WIN32
   struct _stati64 st;
@@ -88,8 +88,9 @@ static charnat * parse_ld_conf(void)
 
   stdlib = caml_secure_getenv(_T("OCAMLLIB"));
   if (stdlib == NULL) stdlib = caml_secure_getenv(_T("CAMLLIB"));
-  if (stdlib == NULL) stdlib = caml_stat_strdup_to_utf16(OCAML_STDLIB_DIR); /* FIXME: free after use */
+  if (stdlib == NULL) stdlib = tofree = caml_stat_strdup_to_utf16(OCAML_STDLIB_DIR);
   ldconfname = caml_stat_tcsconcat(3, stdlib, _T("/"), LD_CONF_NAME);
+  if (tofree != NULL) caml_stat_free(tofree);
   if (_tstat(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
