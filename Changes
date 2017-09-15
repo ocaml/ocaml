@@ -537,7 +537,8 @@ Working version
   systems' assembly code (asmrun/arm64.S).  Add CFI directives to enable
   unwinding through [caml_c_call] and [caml_call_gc] with correct termination
   of unwinding at [main].
-  (Mark Shinwell, review by Xavier Leroy and Gabriel Scherer)
+  (Mark Shinwell, review by Xavier Leroy and Gabriel Scherer, with thanks
+  to Daniel Bünzli and Fu Yong Quah for testing)
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
