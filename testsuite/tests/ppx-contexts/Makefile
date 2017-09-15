@@ -1,0 +1,41 @@
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                              Peter Zotov                               *
+#*                                                                        *
+#*   Copyright 2014 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
+
+BASEDIR=../..
+
+INCLUDES=\
+  -I $(OTOPDIR)/parsing \
+  -I $(OTOPDIR)/utils \
+  -I $(OTOPDIR)compilerlibs
+
+.PHONY: run
+run: program$(EXE) test.reference
+	@echo " ... testing -thread and -vmthread are propagated to PPX:"
+	$(OCAMLC) -c -thread -ppx '$(OCAMLRUN) ./program$(EXE)' test.ml 2> test.result
+	$(OCAMLC) -c -vmthread -ppx '$(OCAMLRUN) ./program$(EXE)' test.ml 2>> test.result
+	@$(DIFF) test.reference test.result >/dev/null \
+	&& echo " => passed" || echo " => failed"
+
+program$(EXE): program.ml Makefile
+	$(OCAMLC) -o $@ $(INCLUDES) -I ../../../compilerlibs ocamlcommon.cma ./program.ml 
+
+.PHONY: promote
+promote: defaultpromote
+
+.PHONY: clean
+clean: defaultclean
+	@rm -f program$(EXE) test.result *.cm*
+
+include $(BASEDIR)/makefiles/Makefile.common
