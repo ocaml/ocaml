@@ -195,3 +195,4 @@ CYGPATH=cygpath -m
 DIFF=/usr/bin/diff -q --strip-trailing-cr
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 MAX_TESTSUITE_DIR_RETRIES=1
+FLAT_FLOAT_ARRAY=true
