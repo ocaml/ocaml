@@ -12,6 +12,11 @@ Working version
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
+- GPR#792: fix limitations of destructive substitutions, by
+  allowing "S with type t := type-expr",
+  "S with type M.t := type-expr", "S with module M.N := path"
+  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
   (Stephen Dolan)

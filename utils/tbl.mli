@@ -16,19 +16,19 @@
 (* Association tables from any ordered type to any type.
    We use the generic ordering to compare keys. *)
 
-type ('a, 'b) t
+type ('k, 'v) t
 
-val empty: ('a, 'b) t
-val add: 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
-val find: 'a -> ('a, 'b) t -> 'b
-val find_str: string -> (string, 'b) t -> 'b
-val mem: 'a -> ('a, 'b) t -> bool
-val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
-val iter: ('a -> 'b -> unit) -> ('a, 'b) t -> unit
-val map: ('a -> 'b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
-val fold: ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
+val empty: ('k, 'v) t
+val add: 'k -> 'v -> ('k, 'v) t -> ('k, 'v) t
+val find: 'k -> ('k, 'v) t -> 'v
+val find_str: string -> (string, 'v) t -> 'v
+val mem: 'k -> ('k, 'v) t -> bool
+val remove: 'k -> ('k,  'v) t -> ('k, 'v) t
+val iter: ('k -> 'v -> unit) -> ('k, 'v) t -> unit
+val map: ('k -> 'v1 -> 'v2) -> ('k, 'v1) t -> ('k, 'v2) t
+val fold: ('k -> 'v -> 'acc -> 'acc) -> ('k, 'v) t -> 'acc -> 'acc
 
 open Format
 
-val print: (formatter -> 'a -> unit) -> (formatter -> 'b -> unit) ->
-           formatter -> ('a, 'b) t -> unit
+val print: (formatter -> 'k -> unit) -> (formatter -> 'v -> unit) ->
+           formatter -> ('k, 'v) t -> unit

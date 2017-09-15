@@ -952,14 +952,14 @@ and module_type ctxt f x =
                 ls longident_loc li (type_declaration ctxt) td
           | Pwith_module (li, li2) ->
               pp f "module %a =@ %a" longident_loc li longident_loc li2;
-          | Pwith_typesubst ({ptype_params=ls;_} as td) ->
+          | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
               let ls = List.map fst ls in
-              pp f "type@ %a %s :=@ %a"
+              pp f "type@ %a %a :=@ %a"
                 (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-                ls td.ptype_name.txt
+                ls longident_loc li
                 (type_declaration ctxt) td
-          | Pwith_modsubst (s, li2) ->
-              pp f "module %s :=@ %a" s.txt longident_loc li2 in
+          | Pwith_modsubst (li, li2) ->
+             pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
         (match l with
          | [] -> pp f "@[<hov2>%a@]" (module_type ctxt) mt
          | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"

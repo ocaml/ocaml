@@ -232,7 +232,8 @@ module MT = struct
         iter_loc sub lid; sub.type_declaration sub d
     | Pwith_module (lid, lid2) ->
         iter_loc sub lid; iter_loc sub lid2
-    | Pwith_typesubst d -> sub.type_declaration sub d
+    | Pwith_typesubst (lid, d) ->
+        iter_loc sub lid; sub.type_declaration sub d
     | Pwith_modsubst (s, lid) ->
         iter_loc sub s; iter_loc sub lid
 
