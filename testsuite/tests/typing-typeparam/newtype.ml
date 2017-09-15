@@ -10,10 +10,10 @@ let () =
   let i = int_inj 3 in
   let s = string_inj "abc" in
 
-  Printf.printf "%b\n%!" (int_proj i = None);
-  Printf.printf "%b\n%!" (int_proj s = None);
-  Printf.printf "%b\n%!" (string_proj i = None);
-  Printf.printf "%b\n%!" (string_proj s = None)
+  Printf.printf "%B\n%!" (int_proj i = None);
+  Printf.printf "%B\n%!" (int_proj s = None);
+  Printf.printf "%B\n%!" (string_proj i = None);
+  Printf.printf "%B\n%!" (string_proj s = None)
 ;;
 
 let sort_uniq (type s) cmp l =

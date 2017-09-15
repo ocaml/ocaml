@@ -1052,11 +1052,16 @@ asmcomp/liveness.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx utils/config.cmx \
     asmcomp/cmm.cmx asmcomp/liveness.cmi
 asmcomp/liveness.cmi : asmcomp/mach.cmi
-asmcomp/mach.cmo : asmcomp/reg.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
-    asmcomp/arch.cmo asmcomp/mach.cmi
-asmcomp/mach.cmx : asmcomp/reg.cmx middle_end/debuginfo.cmx asmcomp/cmm.cmx \
-    asmcomp/arch.cmx asmcomp/mach.cmi
-asmcomp/mach.cmi : asmcomp/reg.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
+asmcomp/mach.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi typing/ident.cmi \
+    middle_end/debuginfo.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+    asmcomp/mach.cmi
+asmcomp/mach.cmx : asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx typing/ident.cmx \
+    middle_end/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
+    asmcomp/mach.cmi
+asmcomp/mach.cmi : asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi \
+    typing/ident.cmi middle_end/debuginfo.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo
 asmcomp/printclambda.cmo : bytecomp/printlambda.cmi bytecomp/lambda.cmi \
     typing/ident.cmi asmcomp/clambda.cmi parsing/asttypes.cmi \
@@ -1081,12 +1086,12 @@ asmcomp/printlinear.cmx : asmcomp/printmach.cmx asmcomp/printcmm.cmx \
 asmcomp/printlinear.cmi : asmcomp/linearize.cmi
 asmcomp/printmach.cmo : asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/printcmm.cmi asmcomp/mach.cmi asmcomp/interval.cmi \
-    middle_end/debuginfo.cmi utils/config.cmi asmcomp/cmm.cmi \
-    asmcomp/arch.cmo asmcomp/printmach.cmi
+    typing/ident.cmi middle_end/debuginfo.cmi utils/config.cmi \
+    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/printmach.cmi
 asmcomp/printmach.cmx : asmcomp/reg.cmx asmcomp/proc.cmx \
     asmcomp/printcmm.cmx asmcomp/mach.cmx asmcomp/interval.cmx \
-    middle_end/debuginfo.cmx utils/config.cmx asmcomp/cmm.cmx \
-    asmcomp/arch.cmx asmcomp/printmach.cmi
+    typing/ident.cmx middle_end/debuginfo.cmx utils/config.cmx \
+    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/printmach.cmi
 asmcomp/printmach.cmi : asmcomp/reg.cmi asmcomp/mach.cmi
 asmcomp/proc.cmo : asmcomp/x86_proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/mach.cmi utils/config.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
@@ -1386,7 +1391,7 @@ middle_end/flambda_utils.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/static_exception.cmi \
     middle_end/base_types/set_of_closures_id.cmi middle_end/projection.cmi \
     middle_end/parameter.cmi middle_end/base_types/mutable_variable.cmi \
-    utils/misc.cmi middle_end/base_types/linkage_name.cmi \
+    utils/misc.cmi middle_end/base_types/linkage_name.cmi bytecomp/lambda.cmi \
     middle_end/flambda_iterators.cmi middle_end/flambda.cmi \
     middle_end/debuginfo.cmi middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/closure_id.cmi middle_end/backend_intf.cmi \
@@ -1397,7 +1402,7 @@ middle_end/flambda_utils.cmx : middle_end/base_types/variable.cmx \
     middle_end/base_types/static_exception.cmx \
     middle_end/base_types/set_of_closures_id.cmx middle_end/projection.cmx \
     middle_end/parameter.cmx middle_end/base_types/mutable_variable.cmx \
-    utils/misc.cmx middle_end/base_types/linkage_name.cmx \
+    utils/misc.cmx middle_end/base_types/linkage_name.cmx bytecomp/lambda.cmx \
     middle_end/flambda_iterators.cmx middle_end/flambda.cmx \
     middle_end/debuginfo.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/closure_id.cmx middle_end/backend_intf.cmi \
@@ -2001,6 +2006,28 @@ middle_end/base_types/variable.cmx : utils/misc.cmx utils/identifiable.cmx \
     middle_end/base_types/variable.cmi
 middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
+asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
+    asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
+    asmcomp/printmach.cmi utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi \
+    asmcomp/debug/available_regs.cmi
+asmcomp/debug/available_regs.cmx : asmcomp/debug/reg_with_debug_info.cmx \
+    asmcomp/debug/reg_availability_set.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
+    asmcomp/printmach.cmx utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx \
+    asmcomp/debug/available_regs.cmi
+asmcomp/debug/available_regs.cmi : asmcomp/mach.cmi
+asmcomp/debug/reg_availability_set.cmo : \
+    asmcomp/debug/reg_with_debug_info.cmi typing/ident.cmi \
+    asmcomp/debug/reg_availability_set.cmi
+asmcomp/debug/reg_availability_set.cmx : \
+    asmcomp/debug/reg_with_debug_info.cmx typing/ident.cmx \
+    asmcomp/debug/reg_availability_set.cmi
+asmcomp/debug/reg_availability_set.cmi : \
+    asmcomp/debug/reg_with_debug_info.cmi asmcomp/reg.cmi
+asmcomp/debug/reg_with_debug_info.cmo : asmcomp/reg.cmi typing/ident.cmi \
+    asmcomp/debug/reg_with_debug_info.cmi
+asmcomp/debug/reg_with_debug_info.cmx : asmcomp/reg.cmx typing/ident.cmx \
+    asmcomp/debug/reg_with_debug_info.cmi
+asmcomp/debug/reg_with_debug_info.cmi : asmcomp/reg.cmi typing/ident.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmo : utils/warnings.cmi utils/profile.cmi utils/misc.cmi \
     parsing/location.cmi utils/config.cmi utils/clflags.cmi utils/ccomp.cmi \

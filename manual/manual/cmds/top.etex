@@ -126,6 +126,10 @@ The following command-line options are recognized by the "ocaml" command.
 \begin{unix}
 The following environment variables are also consulted:
 \begin{options}
+\item["OCAMLTOP_UTF_8"] When printing string values, non-ascii bytes
+($ {} > "\0x7E" $) are printed as decimal escape sequence if "OCAMLTOP_UTF_8" is
+set to false. Otherwise, they are printed unescaped.
+
 \item["TERM"] When printing error messages, the toplevel system
 attempts to underline visually the location of the error. It
 consults the "TERM" variable to determines the type of output terminal

@@ -20,7 +20,7 @@
 # Files in this directory
 WIN_FILES = accept.c bind.c channels.c close.c \
   close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c envir.c \
-  getpeername.c getpid.c getsockname.c gettimeofday.c \
+  getpeername.c getpid.c getsockname.c gettimeofday.c isatty.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
   mkdir.c mmap.c open.c pipe.c read.c readlink.c rename.c \
   select.c sendrecv.c \
