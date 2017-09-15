@@ -219,6 +219,9 @@ Working version
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
+- GPR#1336: -thread and -vmthread option informations are propagated to
+  PPX rewriters.
+  (Jun Furuse)
 
 ### Other libraries:
 
