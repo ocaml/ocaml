@@ -79,8 +79,8 @@ let file_kind = function
   | Unix.S_CHR -> "S_CHR"
   | Unix.S_BLK -> "S_BLK"
   | Unix.S_LNK -> "S_LNK"
-  | Unix.S_FIFO	-> "S_FIFO"
-  | Unix.S_SOCK	-> "S_SOCK"
+  | Unix.S_FIFO -> "S_FIFO"
+  | Unix.S_SOCK -> "S_SOCK"
 
 let wrap s f quote_in x quote_out =
   Printf.printf "%s %s ... " s (quote_in x);
