@@ -102,7 +102,7 @@ new-without-report: lib tools
 	  echo Running tests from \'$$dir\' ... ; \
 	  while read testfile; do \
 	    TERM=dumb OCAMLRUNPARAM= \
-	      $(ocamltest) $$dir/$$testfile; \
+	      $(ocamltest) $$dir/$${testfile/$$'\r'}; \
 	  done < $$file; \
 	done 2>&1 | tee -a _log
 
