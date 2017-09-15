@@ -1,2 +1,1 @@
-stat /dev/tty >/dev/null 2>&1 || \
-  test "$TOOLCHAIN" = "msvc" || test "$TOOLCHAIN" = "mingw"
+test "$TOOLCHAIN" = "msvc" || test "$TOOLCHAIN" = "mingw"
