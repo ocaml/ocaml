@@ -14,7 +14,7 @@ run: program$(EXE) test.reference
 	&& echo " => passed" || echo " => failed"
 
 program$(EXE): program.ml Makefile
-	$(OCAMLC) -o $@ $(INCLUDES) -I ../../../compilerlibs ocamlcommon.cma ./program.ml 
+	$(OCAMLC) -o $@ $(INCLUDES) -I ../../../compilerlibs ocamlcommon.cma ./program.ml
 
 .PHONY: promote
 promote: defaultpromote
