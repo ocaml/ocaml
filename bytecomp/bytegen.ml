@@ -169,6 +169,10 @@ let rec size_of_lambda env = function
       RHS_block (List.length args)
   | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
+  | Lprim (Pmakearray (Pgenarray, _), _, _) ->
+     (* Pgenarray is excluded from recursive bindings by the
+        check in Translcore.check_recursive_lambda *)
+      RHS_nonrec
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), _, _) ->
       RHS_block size
   | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
