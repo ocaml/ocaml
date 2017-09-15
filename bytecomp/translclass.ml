@@ -843,16 +843,23 @@ let transl_class ids cl_id pub_meths cl vflag =
                              loc = Location.none;
                              params = [cla]; body = def_ids cla cl_init})
   in
+  let lupdate_cache =
+    if ids = [] then ldirect () else
+      if not concrete then lclass_virt () else
+        lclass (
+            mkappl (oo_prim "make_class_store",
+                    [transl_meth_list pub_meths;
+                     Lvar class_init; Lvar cached])) in
+  let lcheck_cache =
+    if !Clflags.native_code && !Clflags.afl_instrument then
+      (* When afl-fuzz instrumentation is enabled, ignore the cache
+         so that the program's behaviour does not change between runs *)
+      lupdate_cache
+    else
+      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
   llets (
   lcache (
-  Lsequence(
-  Lifthenelse(lfield cached 0, lambda_unit,
-              if ids = [] then ldirect () else
-              if not concrete then lclass_virt () else
-              lclass (
-              mkappl (oo_prim "make_class_store",
-                      [transl_meth_list pub_meths;
-                       Lvar class_init; Lvar cached]))),
+  Lsequence(lcheck_cache,
   make_envs (
   if ids = [] then mkappl (lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable, None),
