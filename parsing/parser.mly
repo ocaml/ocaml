@@ -1926,12 +1926,14 @@ type_kind:
       { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL DOTDOT
       { (Ptype_open, Public, None) }
+  | EQUAL PRIVATE DOTDOT
+      { (Ptype_open, Private, None) }
   | EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $4, $2, None) }
   | EQUAL core_type EQUAL private_flag constructor_declarations
       { (Ptype_variant(List.rev $5), $4, Some $2) }
-  | EQUAL core_type EQUAL DOTDOT
-      { (Ptype_open, Public, Some $2) }
+  | EQUAL core_type EQUAL private_flag DOTDOT
+      { (Ptype_open, $4, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $6, $4, Some $2) }
 ;

@@ -271,6 +271,31 @@ let string_of_file ic =
       (Buffer.add_subbytes b buff 0 n; copy())
   in copy()
 
+let output_to_file_via_temporary ?(mode = [Open_text]) filename fn =
+  let (temp_filename, oc) =
+    Filename.open_temp_file
+       ~mode ~perms:0o666 ~temp_dir:(Filename.dirname filename)
+       (Filename.basename filename) ".tmp" in
+    (* The 0o666 permissions will be modified by the umask.  It's just
+       like what [open_out] and [open_out_bin] do.
+       With temp_dir = dirname filename, we ensure that the returned
+       temp file is in the same directory as filename itself, making
+       it safe to rename temp_filename to filename later.
+       With prefix = basename filename, we are almost certain that
+       the first generated name will be unique.  A fixed prefix
+       would work too but might generate more collisions if many
+       files are being produced simultaneously in the same directory. *)
+  match fn temp_filename oc with
+  | res ->
+      close_out oc;
+      begin try
+        Sys.rename temp_filename filename; res
+      with exn ->
+        remove_file temp_filename; raise exn
+      end
+  | exception exn ->
+      close_out oc; remove_file temp_filename; raise exn
+
 (* Integer operations *)
 
 let rec log2 n =

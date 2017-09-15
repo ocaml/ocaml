@@ -212,12 +212,32 @@ let current =
       error = Array.make (last_warning_number + 1) false;
     }
 
+let disabled = ref false
+
+let without_warnings f =
+  Misc.protect_refs [Misc.R(disabled, true)] f
+
 let backup () = !current
 
 let restore x = current := x
 
-let is_active x = (!current).active.(number x);;
-let is_error x = (!current).error.(number x);;
+let is_active x = not !disabled && (!current).active.(number x);;
+let is_error x = not !disabled && (!current).error.(number x);;
+
+let mk_lazy f =
+  let state = backup () in
+  lazy
+    (
+      let prev = backup () in
+      restore state;
+      try
+        let r = f () in
+        restore prev;
+        r
+      with exn ->
+        restore prev;
+        raise exn
+    )
 
 let parse_opt error active flags s =
   let set i = flags.(i) <- true in
