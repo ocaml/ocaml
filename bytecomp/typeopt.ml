@@ -101,12 +101,14 @@ let array_type_kind env ty =
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
       begin match classify env elt_ty with
-      | Any -> Pgenarray
-      | Float -> Pfloatarray
+      | Any -> if Config.flat_float_array then Pgenarray else Paddrarray
+      | Float -> if Config.flat_float_array then Pfloatarray else Paddrarray
       | Addr | Lazy -> Paddrarray
       | Int -> Pintarray
       end
-
+  | Tconstr(p, [], _) | Tpoly({desc = Tconstr(p, [], _)}, _)
+    when Path.same p Predef.path_floatarray ->
+      Pfloatarray
   | _ ->
       (* This can happen with e.g. Obj.field *)
       Pgenarray
@@ -170,5 +172,6 @@ let value_kind env ty =
 
 let lazy_val_requires_forward env ty =
   match classify env ty with
-  | Any | Float | Lazy -> true
+  | Any | Lazy -> true
+  | Float -> Config.flat_float_array
   | Addr | Int -> false

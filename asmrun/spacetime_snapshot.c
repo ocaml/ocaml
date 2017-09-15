@@ -258,7 +258,7 @@ static value take_snapshot(double time_override, int use_time_override)
 
   CAMLassert(sizeof(double) == sizeof(value));
   v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
-  Double_field(v_time, 0) = time;
+  Store_double_val(v_time, time);
 
   v_snapshot = allocate_outside_heap(sizeof(snapshot));
   heap_snapshot = (snapshot*) v_snapshot;
@@ -394,7 +394,7 @@ value caml_spacetime_timestamp(double time_override, int use_time_override)
   }
 
   v_time = allocate_outside_heap_with_tag(sizeof(double), Double_tag);
-  Double_field(v_time, 0) = time;
+  Store_double_val(v_time, time);
 
   return v_time;
 }

@@ -574,11 +574,10 @@ let with_constraint sub (_path, lid, cstr) =
       Pwith_type (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_module (_path, lid2) ->
       Pwith_module (map_loc sub lid, map_loc sub lid2)
-  | Twith_typesubst decl -> Pwith_typesubst (sub.type_declaration sub decl)
+  | Twith_typesubst decl ->
+     Pwith_typesubst (map_loc sub lid, sub.type_declaration sub decl)
   | Twith_modsubst (_path, lid2) ->
-      Pwith_modsubst
-        ({loc = sub.location sub lid.loc; txt=Longident.last lid.txt},
-         map_loc sub lid2)
+      Pwith_modsubst (map_loc sub lid, map_loc sub lid2)
 
 let module_expr sub mexpr =
   let loc = sub.location sub mexpr.mod_loc in

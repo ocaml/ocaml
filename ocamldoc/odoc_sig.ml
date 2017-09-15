@@ -422,17 +422,57 @@ module Analyser =
           let comments = Record.(doc typedtree) pos_end l in
           Odoc_type.Cstr_record (List.map (record comments) l)
 
+    (* Given a constraint "with type M.N.t := foo", this function adds "M" ->
+       "with type N.t := foo" to acc, ie it build the constraint to put on the
+       first element of the path being modified.
+       When filter_out_erased_items_from_signature finds "M", it applies the
+       constraint on its module type. *)
+    let constraint_for_subitem =
+      let split_longident p =
+        match Longident.flatten p with
+        | [] -> assert false
+        | hd :: tl -> hd, Longident.unflatten tl
+      in
+      fun acc s rebuild_constraint ->
+        match split_longident s.txt with
+        | hd, None -> Name.Map.add hd `Removed acc
+        | hd, Some p ->
+           let constraint_ = rebuild_constraint { s with txt = p } in
+           match Name.Map.find hd acc with
+           | exception Not_found ->
+              Name.Map.add hd (`Constrained [constraint_]) acc
+           | `Constrained old ->
+              Name.Map.add hd (`Constrained (constraint_ :: old)) acc
+           | `Removed -> acc
+
     let erased_names_of_constraints constraints acc =
       List.fold_right (fun constraint_ acc ->
         match constraint_ with
         | Parsetree.Pwith_type _ | Parsetree.Pwith_module _ -> acc
-        | Parsetree.Pwith_typesubst {Parsetree.ptype_name=s}
-        | Parsetree.Pwith_modsubst (s, _) ->
-          Name.Set.add s.txt acc)
+        | Parsetree.Pwith_typesubst (s, typedecl) ->
+           constraint_for_subitem acc s (fun s -> Parsetree.Pwith_typesubst (s, typedecl))
+        | Parsetree.Pwith_modsubst (s, modpath) ->
+           constraint_for_subitem acc s (fun s -> Parsetree.Pwith_modsubst (s, modpath)))
         constraints acc
 
+    let is_erased ident map =
+      match Name.Map.find ident map with
+      | exception Not_found -> false
+      | `Removed -> true
+      | `Constrained _ -> false
+
+    let apply_constraint module_type constraints  =
+      match module_type.Parsetree.pmty_desc with
+      | Parsetree.Pmty_alias _ -> module_type
+      | _ ->
+         { Parsetree.
+           pmty_desc = Parsetree.Pmty_with (module_type, List.rev constraints);
+           pmty_loc = module_type.Parsetree.pmty_loc;
+           pmty_attributes = []
+         }
+
     let filter_out_erased_items_from_signature erased signature =
-      if Name.Set.is_empty erased then signature
+      if Name.Map.is_empty erased then signature
       else List.fold_right (fun sig_item acc ->
         let take_item psig_desc = { sig_item with Parsetree.psig_desc } :: acc in
         match sig_item.Parsetree.psig_desc with
@@ -446,14 +486,24 @@ module Analyser =
         | Parsetree.Psig_class _
         | Parsetree.Psig_class_type _ as tp -> take_item tp
         | Parsetree.Psig_type (rf, types) ->
-          (match List.filter (fun td -> not (Name.Set.mem td.Parsetree.ptype_name.txt erased)) types with
+          (match List.filter (fun td -> not (is_erased td.Parsetree.ptype_name.txt erased)) types with
           | [] -> acc
           | types -> take_item (Parsetree.Psig_type (rf, types)))
-        | Parsetree.Psig_module {Parsetree.pmd_name=name}
+        | Parsetree.Psig_module ({Parsetree.pmd_name=name;
+                                  pmd_type=module_type} as r) as m ->
+           begin match Name.Map.find name.txt erased with
+           | exception Not_found -> take_item m
+           | `Removed -> acc
+           | `Constrained constraints ->
+              take_item
+                (Parsetree.Psig_module
+                   { r with Parsetree.pmd_type =
+                       apply_constraint module_type constraints })
+           end
         | Parsetree.Psig_modtype {Parsetree.pmtd_name=name} as m ->
-          if Name.Set.mem name.txt erased then acc else take_item m
+          if is_erased name.txt erased then acc else take_item m
         | Parsetree.Psig_recmodule mods ->
-          (match List.filter (fun pmd -> not (Name.Set.mem pmd.Parsetree.pmd_name.txt erased)) mods with
+          (match List.filter (fun pmd -> not (is_erased pmd.Parsetree.pmd_name.txt erased)) mods with
           | [] -> acc
           | mods -> take_item (Parsetree.Psig_recmodule mods)))
         signature []
@@ -1336,7 +1386,7 @@ module Analyser =
 
     (** Return a module_type_kind from a Parsetree.module_type and a Types.module_type *)
     and analyse_module_type_kind
-      ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
+      ?(erased = Name.Map.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
         Parsetree.Pmty_ident longident ->
           let name =
@@ -1432,7 +1482,7 @@ module Analyser =
 
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind
-        ?(erased = Name.Set.empty) env current_module_name module_type sig_module_type =
+        ?(erased = Name.Map.empty) env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
       | Parsetree.Pmty_ident _longident ->
           let k = analyse_module_type_kind env current_module_name module_type sig_module_type in
@@ -1502,7 +1552,7 @@ module Analyser =
                raise (Failure "Parsetree.Pmty_functor _ but not Types.Mty_functor _")
           )
       | Parsetree.Pmty_with (module_type2, constraints) ->
-          (*of module_type * (Longident.t * with_constraint) list*)
+          (* of module_type * (Longident.t * with_constraint) list*)
           (
            let loc_start = Loc.end_ module_type2.Parsetree.pmty_loc in
            let loc_end = Loc.end_ module_type.Parsetree.pmty_loc in

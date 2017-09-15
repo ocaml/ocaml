@@ -1347,6 +1347,7 @@ let apply env params body args =
   with
     Unify _ -> raise Cannot_apply
 
+let () = Subst.ctype_apply_env_empty := apply Env.empty
 
                               (****************************)
                               (*  Abbreviation expansion  *)

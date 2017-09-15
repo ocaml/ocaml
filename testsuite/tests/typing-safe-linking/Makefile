@@ -13,8 +13,3 @@ clean:
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common
-
-# The second test (`A.y`) is unnecessary, indeed cannot be compiled, under -safe-string
-ifeq ($(SAFE_STRING),true)
-ADD_COMPFLAGS=-pp "sed -e '\$$d'"
-endif

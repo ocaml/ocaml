@@ -220,7 +220,10 @@ let rec transl_const = function
         fields;
       block
   | Const_float_array fields ->
-      Obj.repr(Array.of_list(List.map (fun f -> float_of_string f) fields))
+      let res = Array.Floatarray.create (List.length fields) in
+      List.iteri (fun i f -> Array.Floatarray.set res i (float_of_string f))
+        fields;
+      Obj.repr res
 
 (* Build the initial table of globals *)
 

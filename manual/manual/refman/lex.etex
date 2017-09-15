@@ -218,8 +218,9 @@ operator-char:
         '/' || ':' || '<' || '=' || '>' || '?' || '@' ||
         '^' || '|' || '~'
 \end{syntax}
-See also the following language extension:
-\hyperref[s:ext-ops]{extension operators}.
+See also the following language extensions:
+\hyperref[s:ext-ops]{extension operators} and
+\hyperref[s:index-operators]{extended indexing operators}.
 
 Sequences of ``operator characters'', such as "<=>" or "!!",
 are read as a single token from the @infix-symbol@ or @prefix-symbol@

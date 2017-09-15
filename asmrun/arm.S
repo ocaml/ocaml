@@ -17,8 +17,6 @@
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
 
-#include "caml/m.h"
-
         .syntax unified
         .text
 #if defined(SYS_linux_eabihf) && defined(MODEL_armv6)
@@ -89,14 +87,10 @@ alloc_limit     .req    r11
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
-#define CFI_REGISTER(r1,r2) .cfi_register r1,r2
-#define CFI_OFFSET(r,n) .cfi_offset r,n
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
-#define CFI_REGISTER(r1,r2)
-#define CFI_OFFSET(r,n)
 #endif
 
 /* Support for profiling with gprof */
@@ -271,7 +265,6 @@ caml_c_call:
         str     sp, [r6]
     /* Preserve return address in callee-save register r4 */
         mov     r4, lr
-        CFI_REGISTER(r4, lr)
     /* Make the exception handler alloc ptr available to the C code */
         ldr     r5, =caml_young_ptr
         ldr     r6, =caml_exception_pointer

@@ -4,6 +4,12 @@ Working version
 (Changes that can break existing programs are marked with a "*")
 
 ### Language features:
+
+- GPR#792: fix limitations of destructive substitutions, by
+  allowing "S with type t := type-expr",
+  "S with type M.t := type-expr", "S with module M.N := path"
+  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+
 - GPR#1118: Support inherited field in object type expression
   (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
    and Florian Angeletti)
@@ -11,6 +17,12 @@ Working version
 - MPR#6271, MPR#7529, GPR#1249: Support "let open M in ..."
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
+
+- GPR#1064: extended indexing operators, add a new class of
+  user-defined indexing operators, obtained by adding at least
+  one operator character after the dot symbol to the standard indexing
+  operators: e,g ".%()", ".?[]", ".@{}<-"
+  (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
 
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
@@ -25,6 +37,10 @@ Working version
 - GPR#1247: M.(::) construction for expressions
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
+
+* GPR#1252: The default mode is now safe-string, can be overridden
+  at configure time or at compile time.
+  (Damien Doligez)
 
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
@@ -41,6 +57,9 @@ Working version
 
 - GPR#850: Optimize away some physical equality
   (Pierre Chambart, review by Mark Shinwell and Leo White)
+
+- GPR#856: Register availability analysis
+  (Mark Shinwell, Thomas Refis, review by Pierre Chambart)
 
 - MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
   and shared libraries through -output-obj, generate dylibs instead of
@@ -98,6 +117,12 @@ Working version
   to GPR#1250.)
   (Mark Shinwell)
 
+- GPR#1294: Add a configure-time option to remove the dynamic float array
+  optimization and add a floatarray type to let the user choose when to
+  flatten float arrays. Note that float-only records are unchanged: they
+  are still optimized by unboxing their fields.
+  (Damien Doligez, review by Alain Frisch and Mark Shinwell)
+
 - GPR#1304: Mark registers clobbered by PLT stubs as destroyed across
   allocations.
   (Mark Shinwell, Xavier Clerc, report and initial debugging by
@@ -118,6 +143,9 @@ Working version
 - GPR#1330: when generating dynamically-linkable code on AArch64, always
   reference symbols (even locally-defined ones) through the GOT.
   (Mark Shinwell, review by Xavier Leroy)
+
+- MPR#7616, GPR#1339: don't warn on mutation of zero size blocks.
+  (Leo White)
 
 ### Standard library:
 
@@ -206,6 +234,9 @@ Working version
 * GPR#1189: allow MSVC ports to use -l option in ocamlmklib
   (David Allsopp)
 
+- GPR#1324: ensure that flambda warning are printed only once
+  (Xavier Clerc)
+
 - MPR#7361, GPR#1248: support "ocaml.warning" in all attribute contexts, and
   arrange so that "ocaml.ppwarning" is correctly scoped by surrounding
   "ocaml.warning" attributes
@@ -219,9 +250,12 @@ Working version
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
+- GPR#1333: turn off warning 40 by default
+  (Leo White)
+
 - GPR#1336: -thread and -vmthread option informations are propagated to
   PPX rewriters.
-  (Jun Furuse)
+  (Jun Furuse, review by Alain Frisch)
 
 ### Other libraries:
 
@@ -229,6 +263,10 @@ Working version
   It now lives as a separate project https://github.com/ocaml/num
   with an OPAM package called "num".
   (Xavier Leroy)
+
+- GPR#1321: Reimplement Unix.isatty on Windows. It no longer returns true for
+  the null device.
+  (David Allsopp)
 
 ### Manual and documentation:
 
@@ -523,13 +561,6 @@ Working version
   unifying the semantics between Unix and Windows and also eliminating race
   condition on Unix.
   (David Allsopp, report by Andreas Hauptmann)
-
-- GPR#1326: Enable use of CFI directives in AArch64 and ARM runtime
-  systems' assembly code (asmrun/arm64.S).  Add CFI directives to enable
-  unwinding through [caml_c_call] and [caml_call_gc] with correct termination
-  of unwinding at [main].
-  (Mark Shinwell, review by Xavier Leroy and Gabriel Scherer)
-
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------

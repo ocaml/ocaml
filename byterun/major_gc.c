@@ -258,7 +258,11 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
       if ((in_ephemeron && Is_long(f)) ||
           (Is_block (f)
            && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-               || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
+               || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+               || Tag_val (f) == Double_tag
+#endif
+               ))){
         /* Do not short-circuit the pointer. */
       }else{
         /* The variable child is not changed because it must be mark alive */
@@ -326,7 +330,11 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
           if (Is_long (f) ||
               (Is_block (f) &&
                (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-                || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
+                || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+                || Tag_val (f) == Double_tag
+#endif
+                ))){
             /* Do not short-circuit the pointer. */
           }else{
             Field (v, i) = key = f;
