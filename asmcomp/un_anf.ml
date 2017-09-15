@@ -40,7 +40,7 @@ let ignore_primitive (_ : Lambda.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
 let ignore_ident_list (_ : Ident.t list) = ()
-let ignore_params (_ : (Ident.t * Lambda.value_kind) list) = ()
+let ignore_params (_ : (Ident.t * Lambda.lfunarg) list) = ()
 let ignore_direction_flag (_ : Asttypes.direction_flag) = ()
 let ignore_meth_kind (_ : Lambda.meth_kind) = ()
 
@@ -88,8 +88,9 @@ let make_ident_info (clam : Clambda.ulambda) : ident_info =
       ignore_debuginfo dbg
     | Uclosure (functions, captured_variables) ->
       List.iter loop captured_variables;
-      List.iter (fun (
-        { Clambda. label; arity; params; body; dbg; env; } as clos) ->
+      List.iter
+        (fun ({ Clambda. label; unboxed = _; arity;
+                params; body; dbg; env; } as clos) ->
           (match closure_environment_ident clos with
            | None -> ()
            | Some env_var ->
@@ -258,7 +259,8 @@ let let_bound_vars_that_can_be_moved ident_info (clam : Clambda.ulambda) =
     | Uclosure (functions, captured_variables) ->
       ignore_ulambda_list captured_variables;
       (* Start a new let stack for speed. *)
-      List.iter (fun { Clambda. label; arity; params; body; dbg; env; } ->
+      List.iter
+        (fun { Clambda. label; unboxed = _; arity; params; body; dbg; env; } ->
           ignore_function_label label;
           ignore_int arity;
           ignore_params params;

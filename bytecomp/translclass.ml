@@ -29,14 +29,14 @@ exception Error of Location.t * error
 let lfunction params body =
   if params = [] then body
   else
-    let params = List.map (fun id -> id, Pgenval) params in
+    let params = List.map (fun id -> mk_arg id) params in
     match body with
     | Lfunction {kind = Curried; params = params'; body = body'; attr; loc} ->
         Lfunction {kind = Curried; params = params @ params'; body = body'; attr;
                    loc}
     |  _ ->
         Lfunction {kind = Curried; params;
-                   body = (body, Pgenval);
+                   body = mk_arg body;
                    attr = default_function_attribute;
                    loc = Location.none}
 
@@ -176,13 +176,13 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       (inh_init,
        let build params rem =
          let param = name_pattern "param" pat in
-         Lfunction {kind = Curried; params = (param, Pgenval)::params;
+         Lfunction {kind = Curried; params = mk_arg param :: params;
                     attr = default_function_attribute;
                     loc = pat.pat_loc;
                     body =
-                      Matching.for_function
-                        pat.pat_loc None (Lvar param) [pat, rem] partial,
-                      Pgenval
+                      mk_arg
+                        (Matching.for_function
+                           pat.pat_loc None (Lvar param) [pat, rem] partial)
                    }
        in
        begin match obj_init with
@@ -433,13 +433,17 @@ let rec transl_class_rebind obj_init cl vf =
       let path, obj_init = transl_class_rebind obj_init cl vf in
       let build params rem =
         let param = name_pattern "param" pat in
-        Lfunction {kind = Curried; params = (param, Pgenval)::params;
-                   attr = default_function_attribute;
-                   loc = pat.pat_loc;
-                   body =
-                     Matching.for_function
-                       pat.pat_loc None (Lvar param) [pat, rem] partial,
-                  Pgenval}
+        Lfunction
+          {
+            kind = Curried;
+            params = mk_arg param :: params;
+            attr = default_function_attribute;
+            loc = pat.pat_loc;
+            body =
+              mk_arg
+                (Matching.for_function
+                   pat.pat_loc None (Lvar param) [pat, rem] partial);
+          }
       in
       (path,
        match obj_init with
@@ -756,8 +760,8 @@ let transl_class ids cl_id pub_meths cl vflag =
     let cl_init = llets (Lfunction{kind = Curried;
                                    attr = default_function_attribute;
                                    loc = Location.none;
-                                   params = [cla, Pgenval];
-                                   body = (cl_init, Pgenval)}) in
+                                   params = [mk_arg cla];
+                                   body = mk_arg cl_init}) in
     Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
     if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
@@ -778,8 +782,8 @@ let transl_class ids cl_id pub_meths cl vflag =
           [lambda_unit; Lfunction{kind = Curried;
                                   attr = default_function_attribute;
                                   loc = Location.none;
-                                  params = [cla, Pgenval];
-                                  body = cl_init, Pgenval};
+                                  params = [mk_arg cla];
+                                  body = mk_arg cl_init};
            lambda_unit; lenvs],
          Location.none)
   in
@@ -831,10 +835,10 @@ let transl_class ids cl_id pub_meths cl vflag =
   in
   let lclass lam =
     Llet(Strict, Pgenval, class_init,
-         Lfunction{kind = Curried; params = [cla, Pgenval];
+         Lfunction{kind = Curried; params = [mk_arg cla];
                    attr = default_function_attribute;
                    loc = Location.none;
-                   body = def_ids cla cl_init, Pgenval}, lam)
+                   body = mk_arg (def_ids cla cl_init)}, lam)
   and lcache lam =
     if inh_keys = [] then Llet(Alias, Pgenval, cached, Lvar tables, lam) else
     Llet(Strict, Pgenval, cached,
@@ -854,8 +858,8 @@ let transl_class ids cl_id pub_meths cl vflag =
   and lclass_virt () =
     lset cached 0 (Lfunction{kind = Curried; attr = default_function_attribute;
                              loc = Location.none;
-                             params = [cla, Pgenval];
-                             body = def_ids cla cl_init, Pgenval})
+                             params = [mk_arg cla];
+                             body = mk_arg (def_ids cla cl_init)})
   in
   let lupdate_cache =
     if ids = [] then ldirect () else

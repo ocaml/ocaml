@@ -34,6 +34,10 @@ let is_specialised_attribute = function
   | {txt=("specialised"|"ocaml.specialised")}, _ when Config.flambda -> true
   | _ -> false
 
+let is_unbox_attribute = function
+  | {txt=("unbox"|"ocaml.unbox")}, _ -> true
+  | _ -> false
+
 let find_attribute p attributes =
   let inline_attribute, other_attributes =
     List.partition p attributes
@@ -175,6 +179,23 @@ let add_specialise_attribute expr loc attributes =
         (Warnings.Misplaced_attribute "specialise");
       expr
 
+let add_unbox_attribute expr loc attributes =
+  match expr, find_attribute is_unbox_attribute attributes with
+  | expr, (None, _) -> expr
+  | Lfunction funct, (Some _, _) ->
+      let f (x, a) = (x, {a with arg_unbox=true}) in
+      Lfunction
+        {funct with params = List.map f funct.params; body = f funct.body}
+  | expr, _ ->
+      Location.prerr_warning loc
+        (Warnings.Misplaced_attribute "specialise");
+      expr
+
+let add_function_attributes lam loc attr =
+  let lam = add_inline_attribute lam loc attr in
+  let lam = add_specialise_attribute lam loc attr in
+  add_unbox_attribute lam loc attr
+
 (* Get the [@inlined] attribute payload (or default if not present).
    It also returns the expression without this attribute. This is
    used to ensure that this attribute is not misplaced: If it
@@ -224,7 +245,8 @@ let get_tailcall_attribute e =
 let check_attribute e ({ txt; loc }, _) =
   match txt with
   | "inline" | "ocaml.inline"
-  | "specialise" | "ocaml.specialise" -> begin
+  | "specialise" | "ocaml.specialise"
+  | "unbox" | "ocaml.unbox" -> begin
       match e.exp_desc with
       | Texp_function _ -> ()
       | _ ->

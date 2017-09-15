@@ -244,10 +244,16 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: (Ident.t * value_kind) list;
-    body: (lambda * value_kind);
+    params: (Ident.t * lfunarg) list;
+    body: (lambda * lfunarg);
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc: Location.t; }
+
+and lfunarg =
+  {
+    arg_kind: value_kind;
+    arg_unbox: bool;
+  }
 
 and lambda_apply =
   { ap_func : lambda;
@@ -722,3 +728,6 @@ let merge_inline_attributes attr1 attr2 =
 
 let reset () =
   raise_count := 0
+
+let mk_arg ?(kind = Pgenval) ?(unbox = false) x =
+  x, {arg_kind = kind; arg_unbox = unbox}

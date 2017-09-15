@@ -304,8 +304,9 @@ let simplify_exits lam =
 *)
 
 let beta_reduce params body args =
-  List.fold_left2 (fun l (param, ty) arg -> Llet(Strict, ty, param, arg, l))
-                  body params args
+  List.fold_left2
+    (fun l (param, p) arg -> Llet(Strict, p.arg_kind, param, arg, l))
+    body params args
 
 (* Simplification of lets *)
 
@@ -672,11 +673,16 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
                Ident.add id (Lvar new_id) s)
             Ident.empty inner_params new_ids
         in
-        let body = Lambda.subst_lambda subst body, Pgenval in
+        let body = mk_arg (Lambda.subst_lambda subst body) in
         let inner_fun =
-          Lfunction { kind = Curried;
-                      params = List.map (fun id -> id, Pgenval) new_ids;
-                      body; attr; loc; }
+          Lfunction
+            {
+              kind = Curried;
+              params = List.map (fun id -> mk_arg id) new_ids;
+              body;
+              attr;
+              loc;
+            }
         in
         (wrapper_body, (inner_id, inner_fun))
   in

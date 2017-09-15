@@ -27,8 +27,8 @@ val simplify_lambda: string -> lambda -> lambda
 val split_default_wrapper
    : id:Ident.t
   -> kind:function_kind
-  -> params:(Ident.t * value_kind) list
-  -> body:(lambda * value_kind)
+  -> params:(Ident.t * lfunarg) list
+  -> body:(lambda * lfunarg)
   -> attr:function_attribute
   -> loc:Location.t
   -> (Ident.t * lambda) list

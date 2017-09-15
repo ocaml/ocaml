@@ -70,8 +70,9 @@ and ulambda =
 and ufunction = {
   label  : function_label;
   arity  : int;
-  params : (Ident.t * value_kind) list;
-  body   : (ulambda * value_kind);
+  unboxed: fun_unboxing;
+  params : (Ident.t * lfunarg) list;
+  body   : (ulambda * lfunarg);
   dbg    : Debuginfo.t;
   env    : Ident.t option;
 }

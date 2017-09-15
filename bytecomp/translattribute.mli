@@ -29,6 +29,12 @@ val add_inline_attribute
   -> Parsetree.attributes
   -> Lambda.lambda
 
+val add_function_attributes
+   : Lambda.lambda
+  -> Location.t
+  -> Parsetree.attributes
+  -> Lambda.lambda
+
 val get_inline_attribute
    : Parsetree.attributes
   -> Lambda.inline_attribute

@@ -96,24 +96,27 @@ and apply_coercion_result loc strict funct params args cc_res =
   | _ ->
       name_lambda strict funct
         (fun id ->
+           let body =
+             apply_coercion
+               loc Strict cc_res
+               (Lapply{ap_should_be_tailcall=false;
+                       ap_loc=loc;
+                       ap_func=Lvar id;
+                       ap_args=List.rev args;
+                       ap_inlined=Default_inline;
+                       ap_specialised=Default_specialise})
+           in
            Lfunction
-             {kind = Curried;
-                     params = List.rev_map (fun p -> p, Pgenval) params;
-              attr = { default_function_attribute with
-                       is_a_functor = true;
-                       stub = true; };
-              loc = loc;
-              body =
-                apply_coercion
-                  loc Strict cc_res
-                  (Lapply{ap_should_be_tailcall=false;
-                          ap_loc=loc;
-                          ap_func=Lvar id;
-                          ap_args=List.rev args;
-                          ap_inlined=Default_inline;
-                          ap_specialised=Default_specialise}),
-                Pgenval
-             })
+             {
+               kind = Curried;
+               params = List.rev_map (fun p -> mk_arg p) params;
+               attr = { default_function_attribute with
+                        is_a_functor = true;
+                        stub = true; };
+               loc;
+               body = mk_arg body;
+             }
+        )
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
@@ -405,24 +408,25 @@ let rec compile_functor mexp coercion root_path loc =
     List.fold_left (fun (params, body) (param, loc, arg_coercion) ->
         let param' = Ident.rename param in
         let arg = apply_coercion loc Alias arg_coercion (Lvar param') in
-        let params = (param', Pgenval) :: params in
+        let params = mk_arg param' :: params in
         let body = Llet (Alias, Pgenval, param, arg, body) in
         params, body)
       ([], transl_module res_coercion body_path body)
       functor_params_rev
   in
-  Lfunction {
-    kind = Curried;
-    params;
-    attr = {
-      inline = inline_attribute;
-      specialise = Default_specialise;
-      is_a_functor = true;
-      stub = false;
-    };
-    loc;
-    body = body, Pgenval;
-  }
+  Lfunction
+    {
+      kind = Curried;
+      params;
+      attr = {
+        inline = inline_attribute;
+        specialise = Default_specialise;
+        is_a_functor = true;
+        stub = false;
+      };
+      loc;
+      body = mk_arg body;
+    }
 
 (* Compile a module expression *)
 

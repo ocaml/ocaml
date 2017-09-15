@@ -60,6 +60,10 @@ let value_kind = function
   | Pfloatval -> "[float]"
   | Pboxedintval bi -> Printf.sprintf "[%s]" (boxed_integer_name bi)
 
+let funarg ppf {arg_kind; arg_unbox} =
+  fprintf ppf "%s%s" (value_kind arg_kind)
+    (if arg_unbox then "(unbox)" else "")
+
 let field_kind = function
   | Pgenval -> "*"
   | Pintval -> "int"
@@ -480,9 +484,9 @@ let rec lam ppf = function
         | Curried ->
             List.iter
               (fun (param, ty) ->
-                 fprintf ppf "@ %a%s"
+                 fprintf ppf "@ %a%a"
                    Ident.print param
-                   (value_kind ty)
+                   funarg ty
               ) params
         | Tupled ->
             fprintf ppf " (";
@@ -490,14 +494,14 @@ let rec lam ppf = function
             List.iter
               (fun (param, ty) ->
                  if !first then first := false else fprintf ppf ",@ ";
-                 fprintf ppf "%a%s"
+                 fprintf ppf "%a%a"
                    Ident.print param
-                   (value_kind ty)
+                   funarg ty
               )
               params;
             fprintf ppf ")" in
-      fprintf ppf "@[<2>(function%s%a@ %a%a)@]"
-        (value_kind ty)
+      fprintf ppf "@[<2>(function%a%a@ %a%a)@]"
+        funarg ty
         pr_params params
         function_attribute attr lam  body
   | Llet(str, k, id, arg, body) ->

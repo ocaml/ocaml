@@ -264,10 +264,16 @@ type lambda =
 
 and lfunction =
   { kind: function_kind;
-    params: (Ident.t * value_kind) list;
-    body: (lambda * value_kind);
+    params: (Ident.t * lfunarg) list;
+    body: (lambda * lfunarg);
     attr: function_attribute; (* specified with [@inline] attribute *)
     loc : Location.t; }
+
+and lfunarg =
+  {
+    arg_kind: value_kind;
+    arg_unbox: bool;
+  }
 
 and lambda_apply =
   { ap_func : lambda;
@@ -375,3 +381,5 @@ val merge_inline_attributes
   -> inline_attribute option
 
 val reset: unit -> unit
+
+val mk_arg: ?kind:value_kind -> ?unbox:bool -> 'a -> 'a * lfunarg

@@ -2834,7 +2834,7 @@ and transl_letrec env bindings cont =
 (* Translate a function definition *)
 
 let transl_function f cont =
-  let body, res_ty = f.body in
+  let body, _ = f.body in
   let body =
     if Config.flambda then
       Un_anf.apply body ~what:f.label
@@ -2843,46 +2843,50 @@ let transl_function f cont =
   in
   let env = create_env ~environment_param:f.env in
 
-  let unboxed_env =
-    List.fold_left
-      (fun env (id, ty) ->
-         match ty with
-         | Pfloatval ->
-             let unboxed_id = Ident.create (Ident.name id) in
-             add_unboxed_id id unboxed_id
-               (Boxed_float Debuginfo.none) env
-         | _ ->
-             env
-      )
-      env f.params
-  in
-  let map_arg env (id, _) =
-    match is_unboxed_id id env with
-    | None -> (id, typ_val)
-    | Some (unboxed_id, Boxed_float _dbg) -> (unboxed_id, typ_float)
-    | _ -> assert false
-  in
   let cont =
-    if unboxed_env == env && res_ty <> Pfloatval then cont
-    else
-      let cmm_body =
-        match res_ty with
-        | Pfloatval -> transl_unbox_float f.dbg unboxed_env body
-        | _ -> transl unboxed_env body
-      in
-      let cmm_body =
-        if !Clflags.afl_instrument then
-          Afl_instrument.instrument_function cmm_body
-        else
-          cmm_body
-      in
-      (f.dbg,
-       Cfunction {fun_name = f.label ^ "$unboxed";
-                  fun_args = List.map (map_arg unboxed_env) f.params;
-                  fun_body = cmm_body;
-                  fun_fast = !Clflags.optimize_for_speed;
-                  fun_dbg  = f.dbg}
-      ) :: cont
+    match f.unboxed with
+    | None -> cont
+    | Some (args, res) ->
+        let rec mk_env env args params =
+          match args, params with
+          | [], _ -> env
+          | Pfloatval :: args, (id, _) :: params ->
+             let unboxed_id = Ident.create (Ident.name id) in
+             let env =
+               add_unboxed_id id unboxed_id
+                 (Boxed_float Debuginfo.none) env
+             in
+             mk_env env args params
+          | _ :: args, _ :: params ->
+              mk_env env args params
+          | _ ->
+              assert false
+        in
+        let unboxed_env = mk_env env args f.params in
+        let map_arg (id, _) =
+          match is_unboxed_id id unboxed_env with
+          | None -> (id, typ_val)
+          | Some (unboxed_id, Boxed_float _dbg) -> (unboxed_id, typ_float)
+          | _ -> assert false
+        in
+        let cmm_body =
+          match res with
+          | Pfloatval -> transl_unbox_float f.dbg unboxed_env body
+          | _ -> transl unboxed_env body
+        in
+        let cmm_body =
+          if !Clflags.afl_instrument then
+            Afl_instrument.instrument_function cmm_body
+          else
+            cmm_body
+        in
+        (f.dbg,
+         Cfunction {fun_name = f.label ^ "$unboxed";
+                    fun_args = List.map map_arg f.params;
+                    fun_body = cmm_body;
+                    fun_fast = !Clflags.optimize_for_speed;
+                    fun_dbg  = f.dbg}
+        ) :: cont
   in
   let cmm_body = transl env body in
   let cmm_body =

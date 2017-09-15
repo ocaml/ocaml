@@ -876,14 +876,14 @@ let rec close fenv cenv = function
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
-               params = List.map (fun p -> p, Pgenval) final_args;
-               body = Lapply{ap_should_be_tailcall=false;
-                             ap_loc=loc;
-                             ap_func=(Lvar funct_var);
-                             ap_args=internal_args;
-                             ap_inlined=Default_inline;
-                             ap_specialised=Default_specialise},
-                      Pgenval;
+               params = List.map (fun p -> mk_arg p) final_args;
+               body = mk_arg
+                   (Lapply{ap_should_be_tailcall=false;
+                           ap_loc=loc;
+                           ap_func=(Lvar funct_var);
+                           ap_args=internal_args;
+                           ap_inlined=Default_inline;
+                           ap_specialised=Default_specialise});
                loc;
                attr = default_function_attribute})
         in
@@ -1145,13 +1145,15 @@ and close_functions fenv cenv fun_defs =
           (id, Lfunction{kind; params; body; loc}) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
-            let params_typs = List.map snd params in
-            let result_typ = snd body in
-            let fun_unboxed =
-              if List.mem Pfloatval params_typs || Pfloatval = result_typ
-              then Some (params_typs, result_typ)
-              else None
+            let unbox = ref false in
+            let unboxed_type = function
+              | (_, {arg_unbox = true; arg_kind = Pfloatval}) ->
+                  unbox := true;
+                  Pfloatval
+              | _ -> Pgenval
             in
+            let unboxed = (List.map unboxed_type params, unboxed_type body) in
+            let fun_unboxed = if !unbox then Some unboxed else None in
             let fundesc =
               {fun_label = label;
                fun_arity = (if kind = Tupled then -arity else arity);
@@ -1196,12 +1198,13 @@ and close_functions fenv cenv fun_defs =
     if !useless_env && occurs_var env_param ubody then raise NotClosed;
     let fun_params =
       if !useless_env then params
-      else params @ [env_param, Pgenval]
+      else params @ [mk_arg env_param]
     in
     let f =
       {
         label  = fundesc.fun_label;
         arity  = fundesc.fun_arity;
+        unboxed = fundesc.fun_unboxed;
         params = fun_params;
         body   = (ubody, snd body);
         dbg;

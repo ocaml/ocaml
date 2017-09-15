@@ -56,8 +56,8 @@ module Function_decls : sig
        : let_rec_ident:Ident.t option
       -> closure_bound_var:Variable.t
       -> kind:Lambda.function_kind
-      -> params:(Ident.t * Lambda.value_kind) list
-      -> body:(Lambda.lambda * Lambda.value_kind)
+      -> params:(Ident.t * Lambda.lfunarg) list
+      -> body:(Lambda.lambda * Lambda.lfunarg)
       -> attr:Lambda.function_attribute
       -> loc:Location.t
       -> t
