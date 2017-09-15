@@ -47,6 +47,9 @@ Working version
 - GPR#850: Optimize away some physical equality
   (Pierre Chambart, review by Mark Shinwell and Leo White)
 
+- GPR#856: Register availability analysis
+  (Mark Shinwell, Thomas Refis, review by Pierre Chambart)
+
 - MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
   and shared libraries through -output-obj, generate dylibs instead of
   bundles.

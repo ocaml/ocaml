@@ -675,6 +675,7 @@ let emit_instr i =
         | _ ->
             assert false
         end
+    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr ->
         let n = frame_size() in
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
