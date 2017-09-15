@@ -217,6 +217,9 @@ Working version
 * GPR#1189: allow MSVC ports to use -l option in ocamlmklib
   (David Allsopp)
 
+- GPR#1324: ensure that flambda warning are printed only once
+  (Xavier Clerc)
+
 - MPR#7361, GPR#1248: support "ocaml.warning" in all attribute contexts, and
   arrange so that "ocaml.ppwarning" is correctly scoped by surrounding
   "ocaml.warning" attributes
