@@ -135,7 +135,7 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe $(if $(LDFLAGS),-link "$(LDFLAGS)")
+MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
 MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
@@ -145,6 +145,9 @@ MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	            && rm -f $(1).manifest
 MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console $(LDFLAGS) \
 	   && ($(MERGEMANIFESTEXE))
+
+### Native command to build an ANSI executable
+MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=link -lib -nologo -out:$(1) $(2)
