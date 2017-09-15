@@ -253,7 +253,7 @@ Working version
 - GPR#1333: turn off warning 40 by default
   (Leo White)
 
-- GPR#1336: -thread and -vmthread option informations are propagated to
+- GPR#1336: -thread and -vmthread option information is propagated to
   PPX rewriters.
   (Jun Furuse, review by Alain Frisch)
 
