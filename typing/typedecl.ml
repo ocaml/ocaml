@@ -54,7 +54,7 @@ type error =
   | Multiple_native_repr_attributes
   | Cannot_unbox_or_untag_type of native_repr_kind
   | Deep_unbox_or_untag_attribute of native_repr_kind
-  | Bad_immediate_attribute
+  | Bad_repr_attribute of type_repr
   | Bad_unboxed_attribute of string
   | Wrong_unboxed_type_float
   | Boxed_and_unboxed
@@ -107,7 +107,7 @@ let enter_type rec_flag env sdecl id =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_repr = Repr_any;
       type_unboxed = unboxed_false_default_false;
     }
   in
@@ -517,7 +517,7 @@ let transl_declaration env sdecl id =
         type_newtype_level = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
-        type_immediate = false;
+        type_repr = Repr_any;
         type_unboxed = unboxed_status;
       } in
 
@@ -1109,33 +1109,36 @@ let is_hash id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
-let marked_as_immediate decl =
-  Builtin_attributes.immediate decl.type_attributes
+let type_repr_attr decl =
+  Builtin_attributes.type_repr decl.type_attributes
 
 let compute_immediacy env tdecl =
+  let from_pointer b = if b then Repr_any else Repr_immediate in
   match (tdecl.type_kind, tdecl.type_manifest) with
   | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
     | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
     | (Type_record ([{ld_type = arg; _}], _), _)
   when tdecl.type_unboxed.unboxed ->
     begin match get_unboxed_type_representation env arg with
-    | Some argrepr -> not (Ctype.maybe_pointer_type env argrepr)
-    | None -> false
+    | Some argrepr -> from_pointer (Ctype.maybe_pointer_type env argrepr)
+    | None -> Repr_any
     end
   | (Type_variant (_ :: _ as cstrs), _) ->
-    not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
-  | (Type_abstract, Some(typ)) ->
-    not (Ctype.maybe_pointer_type env typ)
-  | (Type_abstract, None) -> marked_as_immediate tdecl
-  | _ -> false
+    if List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs then
+      Repr_address
+    else
+      Repr_immediate
+  | (Type_abstract, Some(typ)) -> Ctype.get_type_repr env typ
+  | (Type_abstract, None) -> type_repr_attr tdecl
+  | _ -> Repr_any
 
 (* Computes the fixpoint for the variance and immediacy of type declarations *)
 
 let rec compute_properties_fixpoint env decls required variances immediacies =
   let new_decls =
     List.map2
-      (fun (id, decl) (variance, immediacy) ->
-         id, {decl with type_variance = variance; type_immediate = immediacy})
+      (fun (id, decl) (variance, repr) ->
+         id, {decl with type_variance = variance; type_repr = repr})
       decls (List.combine variances immediacies)
   in
   let new_env =
@@ -1166,8 +1169,9 @@ let rec compute_properties_fixpoint env decls required variances immediacies =
       prerr_endline "")
       new_decls; *)
     List.iter (fun (_, decl) ->
-      if (marked_as_immediate decl) && (not decl.type_immediate) then
-        raise (Error (decl.type_loc, Bad_immediate_attribute))
+      let repr = type_repr_attr decl in
+      if not (Ctype.subtype_repr repr decl.type_repr) then
+        raise (Error (decl.type_loc, Bad_repr_attribute repr))
       else ())
       new_decls;
     List.iter2
@@ -1201,7 +1205,7 @@ let compute_variance_decls env cldecls =
   let (decls, _) =
     compute_properties_fixpoint env decls required
       (List.map init_variance decls)
-      (List.map (fun _ -> false) decls)
+      (List.map (fun _ -> Repr_any) decls)
   in
   List.map2
     (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
@@ -1386,7 +1390,7 @@ let transl_type_decl env rec_flag sdecl_list =
   let final_decls, final_env =
     compute_properties_fixpoint env decls required
       (List.map init_variance decls)
-      (List.map (fun _ -> false) decls)
+      (List.map (fun _ -> Repr_any) decls)
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
@@ -1847,7 +1851,7 @@ let transl_with_constraint env id row_path orig_decl sdecl =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
-      type_immediate = false;
+      type_repr = Repr_any;
       type_unboxed;
     }
   in
@@ -1862,8 +1866,8 @@ let transl_with_constraint env id row_path orig_decl sdecl =
     compute_variance_decl env true decl
       (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)
   in
-  let type_immediate = compute_immediacy env decl in
-  let decl = {decl with type_variance; type_immediate} in
+  let type_repr = compute_immediacy env decl in
+  let decl = {decl with type_variance; type_repr} in
   Ctype.end_def();
   generalize_decl decl;
   {
@@ -1895,7 +1899,7 @@ let abstract_type_decl arity =
       type_newtype_level = None;
       type_loc = Location.none;
       type_attributes = [];
-      type_immediate = false;
+      type_repr = Repr_any;
       type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
@@ -2138,10 +2142,15 @@ let report_error ppf = function
         "The attribute '%s' should be attached to a direct argument or \
          result of the primitive, it should not occur deeply into its type"
         (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
-  | Bad_immediate_attribute ->
-      fprintf ppf "@[%s@ %s@]"
-        "Types marked with the immediate attribute must be"
-        "non-pointer types like int or bool"
+  | Bad_repr_attribute repr ->
+      let attr, example = match repr with
+      | Repr_immediate -> "immediate", "non-pointer types like int or bool"
+      | Repr_address -> "address", "any type wich is neither lazy nor float"
+      | Repr_any -> assert false (* Any is compatible with everything *)
+      in
+      fprintf ppf
+        "@[Types marked with the %s attribute must be@ %s@]"
+        attr example
   | Bad_unboxed_attribute msg ->
       fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
   | Wrong_unboxed_type_float ->

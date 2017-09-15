@@ -163,7 +163,7 @@ Error: Signature mismatch:
          type u = { f1 : t; f2 : t; }
        Their internal representations differ:
        the first declaration uses unboxed float representation.
-#     * *           module T : sig type t [@@immediate] end
+#     * *           module T : sig type t [@@repr(immediate)] end
 #   *   type 'a s = S : 'a -> 'a s [@@unboxed]
 # Characters 0-33:
   type t = T : _ s -> t [@@unboxed];;

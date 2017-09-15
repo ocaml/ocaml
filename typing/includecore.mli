@@ -34,7 +34,7 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool
   | Unboxed_representation of bool
-  | Immediate
+  | Repr of Asttypes.type_repr * Asttypes.type_repr
 
 val value_descriptions:
   loc:Location.t -> Env.t -> string ->

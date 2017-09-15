@@ -580,7 +580,10 @@ and print_out_type_decl kwd ppf td =
   | Asttypes.Public -> ()
   in
   let print_immediate ppf =
-    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+    match td.otype_repr with
+    | Asttypes.Repr_immediate -> fprintf ppf " [%@%@repr(immediate)]"
+    | Asttypes.Repr_address -> fprintf ppf " [%@%@repr(address)]"
+    | Asttypes.Repr_any -> ()
   in
   let print_unboxed ppf =
     if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()

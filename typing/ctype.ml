@@ -1120,7 +1120,7 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
     type_loc = Location.none;
     type_attributes = [];
-    type_immediate = false;
+    type_repr = Repr_any;
     type_unboxed = unboxed_false_default_false;
   }
 
@@ -4426,7 +4426,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_newtype_level = None;
       type_loc = decl.type_loc;
       type_attributes = decl.type_attributes;
-      type_immediate = decl.type_immediate;
+      type_repr = decl.type_repr;
       type_unboxed = decl.type_unboxed;
     }
   with Not_found ->
@@ -4559,24 +4559,56 @@ let same_constr env t1 t2 =
 let () =
   Env.same_constr := same_constr
 
-let maybe_pointer_type env typ =
+let rec get_type_repr env typ =
    match (repr typ).desc with
   | Tconstr(p, _args, _abbrev) ->
     begin try
       let type_decl = Env.find_type p env in
-      not type_decl.type_immediate
-    with Not_found -> true
+      type_decl.type_repr
+    with Not_found -> Repr_any
     (* This can happen due to e.g. missing -I options,
        causing some .cmi files to be unavailable.
        Maybe we should emit a warning. *)
     end
   | Tvariant row ->
       let row = Btype.row_repr row in
+      let is_direct (_, field) =
+        match field with
+          | Rpresent (Some _) | Reither (false, _, _, _) ->
+            false
+          | _ ->
+            true
+      in
+      if not row.row_closed then Repr_address
       (* if all labels are devoid of arguments, not a pointer *)
-      not row.row_closed
-      || List.exists
-          (function
-            | _, (Rpresent (Some _) | Reither (false, _, _, _)) -> true
-            | _ -> false)
-          row.row_fields
-  | _ -> true
+      else if List.for_all is_direct row.row_fields then Repr_immediate
+      else Repr_address
+  | Tarrow _ | Ttuple _ | Tobject _ | Tfield _
+  | Tnil | Tpackage _ ->
+    Repr_address
+  | Tlink typ | Tpoly (typ, _) ->
+    get_type_repr env typ
+  | Tvar _ | Tunivar _ ->
+    Repr_any
+  | Tsubst _ ->
+    assert false
+
+let maybe_pointer_type env typ =
+  match get_type_repr env typ with
+  | Repr_immediate ->
+    false
+  | Repr_address | Repr_any ->
+    true
+
+let subtype_repr r1 r2 =
+  match r1, r2 with
+  | Repr_any, (Repr_any | Repr_immediate | Repr_address) ->
+    true
+  | Repr_address, (Repr_immediate | Repr_address) ->
+    true
+  | Repr_address, Repr_any ->
+    false
+  | Repr_immediate, Repr_immediate ->
+    true
+  | Repr_immediate, (Repr_any | Repr_address) ->
+    false

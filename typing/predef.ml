@@ -124,11 +124,12 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
-   type_immediate = false;
+   type_repr = Asttypes.Repr_any;
    type_unboxed = unboxed_false_default_false;
   }
 
-let decl_abstr_imm = {decl_abstr with type_immediate = true}
+let decl_abstr_imm = {decl_abstr with type_repr = Asttypes.Repr_immediate}
+let decl_abstr_addr = {decl_abstr with type_repr = Asttypes.Repr_address}
 
 let cstr id args =
   {
@@ -150,23 +151,23 @@ let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
-     type_immediate = true}
+     type_repr = Asttypes.Repr_immediate}
   and decl_unit =
     {decl_abstr with
      type_kind = Type_variant([cstr ident_void []]);
-     type_immediate = true}
+     type_repr = Asttypes.Repr_immediate}
   and decl_exn =
-    {decl_abstr with
+    {decl_abstr_addr with
      type_kind = Type_open}
   and decl_array =
     let tvar = newgenvar() in
-    {decl_abstr with
+    {decl_abstr_addr with
      type_params = [tvar];
      type_arity = 1;
      type_variance = [Variance.full]}
   and decl_list =
     let tvar = newgenvar() in
-    {decl_abstr with
+    {decl_abstr_addr with
      type_params = [tvar];
      type_arity = 1;
      type_kind =
@@ -174,7 +175,7 @@ let common_initial_env add_type add_extension empty_env =
      type_variance = [Variance.covariant]}
   and decl_option =
     let tvar = newgenvar() in
-    {decl_abstr with
+    {decl_abstr_addr with
      type_params = [tvar];
      type_arity = 1;
      type_kind = Type_variant([cstr ident_none []; cstr ident_some [tvar]]);
@@ -214,9 +215,9 @@ let common_initial_env add_type add_extension empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_extension ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-  add_type ident_int64 decl_abstr (
-  add_type ident_int32 decl_abstr (
-  add_type ident_nativeint decl_abstr (
+  add_type ident_int64 decl_abstr_addr (
+  add_type ident_int32 decl_abstr_addr (
+  add_type ident_nativeint decl_abstr_addr (
   add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
   add_type ident_list decl_list (
@@ -225,7 +226,7 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_unit decl_unit (
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
-  add_type ident_string decl_abstr (
+  add_type ident_string decl_abstr_addr (
   add_type ident_char decl_abstr_imm (
   add_type ident_int decl_abstr_imm (
   add_type ident_extension_constructor decl_abstr (
@@ -233,8 +234,8 @@ let common_initial_env add_type add_extension empty_env =
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in
-  let safe_string = add_type ident_bytes decl_abstr common in
-  let decl_bytes_unsafe = {decl_abstr with type_manifest = Some type_string} in
+  let safe_string = add_type ident_bytes decl_abstr_addr common in
+  let decl_bytes_unsafe = {decl_abstr_addr with type_manifest = Some type_string} in
   let unsafe_string = add_type ident_bytes decl_bytes_unsafe common in
   (safe_string, unsafe_string)
 

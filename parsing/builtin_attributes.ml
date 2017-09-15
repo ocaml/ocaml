@@ -172,12 +172,50 @@ let explicit_arity =
       | _ -> false
     )
 
-let immediate =
-  List.exists
-    (function
-      | ({txt="ocaml.immediate"|"immediate"; _}, _) -> true
-      | _ -> false
-    )
+let type_repr attr =
+  let open Parsetree in
+  let get_repr ({txt;loc}, payload) =
+    let warning txt =
+      Warnings.Attribute_payload
+        (txt, "It must be either 'immediate' or 'address'")
+    in
+    match payload with
+    | PStr [{pstr_desc = Pstr_eval ({pexp_desc},[])}] -> begin
+        match pexp_desc with
+        | Pexp_ident { txt = Longident.Lident "immediate" } ->
+          Repr_immediate
+        | Pexp_ident { txt = Longident.Lident "address" } ->
+          Repr_address
+        | _ ->
+          Location.prerr_warning loc (warning txt);
+          Repr_any
+      end
+    | _ ->
+      Location.prerr_warning loc (warning txt);
+      Repr_any
+  in
+  let find ({txt; _}, _) =
+    match txt with
+    | "immediate" | "ocaml.immediate" | "repr" | "ocaml.repr" ->
+      true
+    | _ ->
+      false
+  in
+  let warn ({txt; loc; _}, _) =
+    let warning = Warnings.Duplicated_attribute txt in
+    Location.prerr_warning loc warning;
+  in
+  match List.find_all find attr with
+  | [] ->
+    Repr_any
+  | ({txt = ("repr" | "ocaml.repr")}, _ as attr) :: rem ->
+    List.iter warn rem;
+    get_repr attr
+  | ({txt = ("immediate" | "ocaml.immediate")}, _) :: rem ->
+    List.iter warn rem;
+    Repr_immediate
+  | _ ->
+    assert false
 
 (* The "ocaml.boxed (default)" and "ocaml.unboxed (default)"
    attributes cannot be input by the user, they are added by the

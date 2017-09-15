@@ -286,6 +286,12 @@ val reset_reified_var_counter: unit -> unit
 val maybe_pointer_type : Env.t -> type_expr -> bool
        (* True if type is possibly pointer, false if definitely not a pointer *)
 
+val get_type_repr : Env.t -> type_expr -> type_repr
+(** Gives the most precise representation for the given expression *)
+
+val subtype_repr : type_repr -> type_repr -> bool
+(** [subtype_repr r1 r2] checks that [r2] is more constrained than [r1] *)
+
 (* Stubs *)
 val package_subtype :
     (Env.t -> Path.t -> Longident.t list -> type_expr list ->

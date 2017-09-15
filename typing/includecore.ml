@@ -136,10 +136,15 @@ type type_mismatch =
   | Field_missing of bool * Ident.t
   | Record_representation of bool   (* true means second one is unboxed float *)
   | Unboxed_representation of bool  (* true means second one is unboxed *)
-  | Immediate
+  | Repr of type_repr * type_repr
 
 let report_type_mismatch0 first second decl ppf err =
   let pr fmt = Format.fprintf ppf fmt in
+  let pr_repr = function
+  | Repr_any -> "any"
+  | Repr_immediate -> "immediate"
+  | Repr_address -> "address"
+  in
   match err with
     Arity -> pr "They have different arities"
   | Privacy -> pr "A private type would be revealed"
@@ -167,7 +172,13 @@ let report_type_mismatch0 first second decl ppf err =
       pr "Their internal representations differ:@ %s %s %s"
          (if b then second else first) decl
          "uses unboxed representation"
-  | Immediate -> pr "%s is not an immediate type" first
+  (* Special-casing the 'any' type for readability *)
+  | Repr (r1, Repr_any) ->
+      pr "Their internal representations differ:@ the type representation \
+          cannot be \"%s\"" (pr_repr r1)
+  | Repr (r1, r2) ->
+      pr "Their internal representations differ:@ \"%s\" is not \
+          compatible with \"%s\"" (pr_repr r1) (pr_repr r2)
 
 let report_type_mismatch first second decl ppf =
   List.iter
@@ -315,10 +326,8 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   (* If attempt to assign a non-immediate type (e.g. string) to a type that
    * must be immediate, then we error *)
   let err =
-    if abstr &&
-       not decl1.type_immediate &&
-       decl2.type_immediate then
-      [Immediate]
+    if abstr && not (Ctype.subtype_repr decl2.type_repr decl1.type_repr) then
+      [Repr (decl2.type_repr, decl1.type_repr)]
     else []
   in
   if err <> [] then err else
