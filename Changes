@@ -239,6 +239,8 @@ Working version
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
+- GPR#1333: turn off warning 40 by default
+  (Leo White)
 
 ### Other libraries:
 
