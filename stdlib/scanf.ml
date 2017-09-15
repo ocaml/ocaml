@@ -1211,7 +1211,7 @@ fun k fmt -> match fmt with
   | Nativeint (_, _, _, rest)        -> take_format_readers k rest
   | Int64 (_, _, _, rest)            -> take_format_readers k rest
   | Float (_, _, _, rest)            -> take_format_readers k rest
-  | Bool rest                        -> take_format_readers k rest
+  | Bool (_, rest)                   -> take_format_readers k rest
   | Alpha rest                       -> take_format_readers k rest
   | Theta rest                       -> take_format_readers k rest
   | Flush rest                       -> take_format_readers k rest
@@ -1284,7 +1284,7 @@ fun k ign fmt -> match ign with
   | Ignored_nativeint (_, _)        -> take_format_readers k fmt
   | Ignored_int64 (_, _)            -> take_format_readers k fmt
   | Ignored_float (_, _)            -> take_format_readers k fmt
-  | Ignored_bool                    -> take_format_readers k fmt
+  | Ignored_bool _                  -> take_format_readers k fmt
   | Ignored_format_arg _            -> take_format_readers k fmt
   | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
   | Ignored_scan_char_set _         -> take_format_readers k fmt
@@ -1357,10 +1357,9 @@ fun ib fmt readers -> match fmt with
   | Float ((Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH),
            pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_hex_float token_float
-  | Bool rest ->
-    let _ = scan_bool ib in
-    let b = token_bool ib in
-    Cons (b, make_scanf ib rest readers)
+  | Bool (pad, rest) ->
+    let scan _ _ ib = scan_bool ib in
+    pad_prec_scanf ib rest readers pad No_precision scan token_bool
   | Alpha _ ->
     invalid_arg "scanf: bad conversion \"%a\""
   | Theta _ ->
@@ -1372,7 +1371,7 @@ fun ib fmt readers -> match fmt with
     | Cons (reader, readers_rest) ->
         let x = reader ib in
         Cons (x, make_scanf ib fmt_rest readers_rest)
-    | Nil -> 
+    | Nil ->
         invalid_arg "scanf: missing reader"
     end
   | Flush rest ->

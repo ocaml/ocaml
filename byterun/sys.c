@@ -49,7 +49,6 @@
 #include "caml/debugger.h"
 #include "caml/fail.h"
 #include "caml/gc_ctrl.h"
-#include "caml/instruct.h"
 #include "caml/io.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
@@ -183,15 +182,24 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   int fd, flags, perm;
   char * p;
 
+#if defined(O_CLOEXEC)
+  flags = O_CLOEXEC;
+#elif defined(_WIN32)
+  flags = _O_NOINHERIT;
+#else
+  flags = 0;
+#endif
+
   caml_sys_check_path(path);
   p = caml_stat_strdup(String_val(path));
-  flags = caml_convert_flag_list(vflags, sys_open_flags);
+  flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
   fd = CAML_SYS_OPEN(p, flags, perm);
   /* fcntl on a fd can block (PR#5069)*/
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
+#if defined(F_SETFD) && defined(FD_CLOEXEC) && !defined(_WIN32) \
+  && !defined(O_CLOEXEC)
   if (fd != -1)
     fcntl(fd, F_SETFD, FD_CLOEXEC);
 #endif

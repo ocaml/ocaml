@@ -113,6 +113,7 @@ and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
 let dump_cse = ref false                (* -dcse *)
 let dump_live = ref false               (* -dlive *)
+let dump_avail = ref false              (* -davail *)
 let dump_spill = ref false              (* -dspill *)
 let dump_split = ref false              (* -dsplit *)
 let dump_interf = ref false             (* -dinterf *)
@@ -125,6 +126,8 @@ let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
+
+let debug_runavail = ref false          (* -drunavail *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 

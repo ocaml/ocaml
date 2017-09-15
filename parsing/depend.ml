@@ -307,7 +307,7 @@ and add_modtype bv mty =
         (function
           | Pwith_type (_, td) -> add_type_declaration bv td
           | Pwith_module (_, lid) -> addmodule bv lid
-          | Pwith_typesubst td -> add_type_declaration bv td
+          | Pwith_typesubst (_, td) -> add_type_declaration bv td
           | Pwith_modsubst (_, lid) -> addmodule bv lid
         )
         cstrl

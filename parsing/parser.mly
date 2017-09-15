@@ -2135,15 +2135,16 @@ with_constraint:
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label COLONEQUAL core_type_no_attr
+  | TYPE type_parameters label_longident COLONEQUAL core_type_no_attr
       { Pwith_typesubst
-          (Type.mk (mkrhs $3 3)
+         (mkrhs $3 3,
+           (Type.mk (mkrhs (Longident.last $3) 3)
              ~params:$2
              ~manifest:$5
-             ~loc:(symbol_rloc())) }
+             ~loc:(symbol_rloc()))) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { Pwith_module (mkrhs $2 2, mkrhs $4 4) }
-  | MODULE UIDENT COLONEQUAL mod_ext_longident
+  | MODULE mod_longident COLONEQUAL mod_ext_longident
       { Pwith_modsubst (mkrhs $2 2, mkrhs $4 4) }
 ;
 with_type_binder:

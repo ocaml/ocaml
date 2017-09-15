@@ -182,6 +182,8 @@ module type Optcommon_options = sig
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
+  val _davail : unit -> unit
+  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit

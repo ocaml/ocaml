@@ -20,19 +20,34 @@ open Path
 open Types
 open Btype
 
+type type_replacement =
+  | Path of Path.t
+  | Type_function of { params : type_expr list; body : type_expr }
+
+module PathMap = Map.Make(Path)
+
 type t =
-  { types: (Ident.t, Path.t) Tbl.t;
-    modules: (Ident.t, Path.t) Tbl.t;
+  { types: type_replacement PathMap.t;
+    modules: Path.t PathMap.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool }
+    for_saving: bool;
+  }
 
 let identity =
-  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false }
+  { types = PathMap.empty;
+    modules = PathMap.empty;
+    modtypes = Tbl.empty;
+    for_saving = false;
+  }
 
-let add_type id p s = { s with types = Tbl.add id p s.types }
+let add_type_path id p s = { s with types = PathMap.add id (Path p) s.types }
+let add_type id p s = add_type_path (Pident id) p s
 
-let add_module id p s = { s with modules = Tbl.add id p s.modules }
+let add_type_function id ~params ~body s =
+  { s with types = PathMap.add id (Type_function { params; body }) s.types }
+
+let add_module_path id p s = { s with modules = PathMap.add id p s.modules }
+let add_module id p s = add_module_path (Pident id) p s
 
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
@@ -62,13 +77,15 @@ let attrs s x =
     then remove_loc.Ast_mapper.attributes remove_loc x
     else x
 
-let rec module_path s = function
-    Pident id as p ->
-      begin try Tbl.find id s.modules with Not_found -> p end
-  | Pdot(p, n, pos) ->
-      Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
-      Papply(module_path s p1, module_path s p2)
+let rec module_path s path =
+  try PathMap.find path s.modules
+  with Not_found ->
+    match path with
+    | Pident _ -> path
+    | Pdot(p, n, pos) ->
+       Pdot(module_path s p, n, pos)
+    | Papply(p1, p2) ->
+       Papply(module_path s p1, module_path s p2)
 
 let modtype_path s = function
     Pident id as p ->
@@ -82,13 +99,17 @@ let modtype_path s = function
   | Papply _ ->
       fatal_error "Subst.modtype_path"
 
-let type_path s = function
-    Pident id as p ->
-      begin try Tbl.find id s.types with Not_found -> p end
-  | Pdot(p, n, pos) ->
-      Pdot(module_path s p, n, pos)
-  | Papply _ ->
-      fatal_error "Subst.type_path"
+let type_path s path =
+  match PathMap.find path s.types with
+  | Path p -> p
+  | Type_function _ -> assert false
+  | exception Not_found ->
+     match path with
+     | Pident _ -> path
+     | Pdot(p, n, pos) ->
+        Pdot(module_path s p, n, pos)
+     | Papply _ ->
+        fatal_error "Subst.type_path"
 
 let type_path s p =
   match Path.constructor_typath p with
@@ -96,6 +117,12 @@ let type_path s p =
   | Cstr (ty_path, cstr) -> Pdot(type_path s ty_path, cstr, nopos)
   | LocalExt _ -> type_path s p
   | Ext (p, cstr) -> Pdot(module_path s p, cstr, nopos)
+
+let to_subst_by_type_function s p =
+  match PathMap.find p s.types with
+  | Path _ -> false
+  | Type_function _ -> true
+  | exception Not_found -> false
 
 (* Special type ids for saved signatures *)
 
@@ -113,6 +140,8 @@ let norm = function
   | Tvar None -> tvar_none
   | Tunivar None -> tunivar_none
   | d -> d
+
+let ctype_apply_env_empty = ref (fun _ -> assert false)
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
@@ -153,8 +182,14 @@ let rec typexp s ty =
             Tconstr(type_path s (Pdot(m,i',pos)), tl, ref Mnil)
         | _ -> assert false
       else match desc with
-      | Tconstr(p, tl, _abbrev) ->
-          Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tconstr (p, args, _abbrev) ->
+         let args = List.map (typexp s) args in
+         begin match PathMap.find p s.types with
+         | exception Not_found -> Tconstr(type_path s p, args, ref Mnil)
+         | Path _ -> Tconstr(type_path s p, args, ref Mnil)
+         | Type_function { params; body } ->
+            (!ctype_apply_env_empty params body args).desc
+         end
       | Tpackage(p, n, tl) ->
           Tpackage(modtype_path s p, n, List.map (typexp s) tl)
       | Tobject (t1, name) ->
@@ -162,7 +197,9 @@ let rec typexp s ty =
                  ref (match !name with
                         None -> None
                       | Some (p, tl) ->
-                          Some (type_path s p, List.map (typexp s) tl)))
+                         if to_subst_by_type_function s p
+                         then None
+                         else Some (type_path s p, List.map (typexp s) tl)))
       | Tvariant row ->
           let row = row_repr row in
           let more = repr row.row_more in
@@ -194,8 +231,11 @@ let rec typexp s ty =
               let row =
                 copy_row (typexp s) true row (not dup) more' in
               match row.row_name with
-                Some (p, tl) ->
-                  Tvariant {row with row_name = Some (type_path s p, tl)}
+              | Some (p, tl) ->
+                 Tvariant {row with row_name =
+                                      if to_subst_by_type_function s p
+                                      then None
+                                      else Some (type_path s p, tl)}
               | None ->
                   Tvariant row
           end
@@ -430,11 +470,22 @@ and modtype_declaration s decl  =
 let merge_tbls f m1 m2 =
   Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
 
+let merge_path_maps f m1 m2 =
+  PathMap.fold (fun k d accu -> PathMap.add k (f d) accu) m1 m2
+
+let type_replacement s = function
+  | Path p -> Path (type_path s p)
+  | Type_function { params; body } ->
+     let params = List.map (typexp s) params in
+     let body = typexp s body in
+     Type_function { params; body }
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = merge_tbls (type_path s2) s1.types s2.types;
-    modules = merge_tbls (module_path s2) s1.modules s2.modules;
+  { types = merge_path_maps (type_replacement s2) s1.types s2.types;
+    modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
-    for_saving = s1.for_saving || s2.for_saving }
+    for_saving = s1.for_saving || s2.for_saving;
+  }

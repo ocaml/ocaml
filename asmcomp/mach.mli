@@ -69,6 +69,14 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
+  | Iname_for_debugger of { ident : Ident.t; which_parameter : int option;
+      provenance : unit option; is_assignment : bool; }
+    (** [Iname_for_debugger] has the following semantics:
+        (a) The argument register(s) is/are deemed to contain the value of the
+            given identifier.
+        (b) If [is_assignment] is [true], any information about other [Reg.t]s
+            that have been previously deemed to hold the value of that
+            identifier is forgotten. *)
 
 type instruction =
   { desc: instruction_desc;
@@ -76,7 +84,10 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t }
+    mutable live: Reg.Set.t;
+    mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
+  }
 
 and instruction_desc =
     Iend
@@ -123,3 +134,5 @@ val instr_cons_debug:
 val instr_iter: (instruction -> unit) -> instruction -> unit
 
 val spacetime_node_hole_pointer_is_live_before : instruction -> bool
+
+val operation_can_raise : operation -> bool

@@ -1218,16 +1218,16 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
      : Lambda.lambda)
 
 and transl_function loc untuplify_fn repr partial param cases =
-  match cases, partial with
+  match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
-        partial = partial'; }} as exp}], Total
-    when Parmatch.inactive pat ->
+        partial = partial'; }} as exp}]
+    when Parmatch.inactive ~partial pat ->
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
-  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _, _ when untuplify_fn ->
+  | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
         let pats_expr_list =

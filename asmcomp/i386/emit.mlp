@@ -795,6 +795,7 @@ let emit_instr fallthrough i =
       if Array.length i.arg = 2 && is_tos i.arg.(1) then
         I.fxch st1;
       emit_floatspecial s
+  | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->

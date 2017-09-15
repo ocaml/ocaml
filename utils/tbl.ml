@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type ('a, 'b) t =
+type ('k, 'v) t =
     Empty
-  | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
+  | Node of ('k, 'v) t * 'k * 'v * ('k, 'v) t * int
 
 let empty = Empty
 

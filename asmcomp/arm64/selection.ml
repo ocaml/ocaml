@@ -82,8 +82,8 @@ let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
-let use_direct_addressing symb =
-  (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit symb
+let use_direct_addressing _symb =
+  not !Clflags.dlcode
 
 (* Instruction selection *)
 

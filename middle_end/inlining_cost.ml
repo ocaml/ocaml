@@ -482,7 +482,7 @@ module Whether_sufficient_benefit = struct
     let estimate = if t.estimate then "<" else "=" in
       Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,\
           indirect=%i,req=%i,\
-          lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,\
+          lifting=%B}, orig_size=%d,new_size=%d,eval_size=%d,\
           eval_benefit%s%d,\
           branch_depth=%d}=%s"
         estimate
