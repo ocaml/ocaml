@@ -7322,3 +7322,17 @@ module Exotic_list = struct
 
   let Inner.(::)(x,y, Inner.[]) = Inner.(::)(1,"one",Inner.[])
 end
+
+(** Extended index operators *)
+let ( .%[] ) = Hashtbl.find
+let ( .%[] <- ) = Hashtbl.add
+let ( .%() ) = Hashtbl.find
+let ( .%() <- ) = Hashtbl.add
+let ( .%{} ) = Hashtbl.find
+let ( .%{} <- ) = Hashtbl.add
+
+;;
+let h = Hashtbl.create 17 in
+h.%["one"] <- 1;
+h.%("two") <- 2;
+h.%{"three"} <- 3;

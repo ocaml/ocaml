@@ -31,6 +31,7 @@ open Ast_helper
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%'; '#' ]
+
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
@@ -44,6 +45,7 @@ let fixity_of_string  = function
   | s when List.mem s special_infix_strings -> `Infix s
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
+  | s when s.[0] = '.' -> `Mixfix s
   | _ -> `Normal
 
 let view_fixity_of_exp = function
@@ -52,10 +54,13 @@ let view_fixity_of_exp = function
   | _ -> `Normal
 
 let is_infix  = function  | `Infix _ -> true | _  -> false
+let is_mixfix = function `Mixfix _ -> true | _ -> false
 
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
-  is_infix (fixity_of_string txt)
+  let fix = fixity_of_string txt in
+  is_infix fix
+  || is_mixfix fix
   || List.mem txt.[0] prefix_symbols
 
 (* some infixes need spaces around parens to avoid clashes with comment
@@ -467,23 +472,24 @@ and sugar_expr ctxt f e =
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
     when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
-      match id, List.map snd args with
-      | Lident "!", [e] ->
-        pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
-      | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
-          let print left right print_index indexes rem_args =
-            match func, rem_args with
-            | "get", [] ->
+      let print a assign left right print_index indexes rem_args =
+            match assign, rem_args with
+            | true, [] ->
               pp f "@[%a.%s%a%s@]"
                 (simple_expr ctxt) a
                 left (list ~sep:"," print_index) indexes right; true
-            | "set", [v] ->
+            | false, [v] ->
               pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
                 (simple_expr ctxt) a
                 left (list ~sep:"," print_index) indexes right
                 (simple_expr ctxt) v; true
-            | _ -> false
-          in
+            | _ -> false in
+      match id, List.map snd args with
+      | Lident "!", [e] ->
+        pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
+      | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
+          let assign = func = "get" in
+          let print = print a assign in
           match path, other_args with
           | Lident "Array", i :: rest ->
             print "(" ")" (expression ctxt) [i] rest
@@ -500,6 +506,29 @@ and sugar_expr ctxt f e =
             print "{" "}" (simple_expr ctxt) indexes rest
           | _ -> false
         end
+      | Lident s, a :: other_args when s.[0] = '.' ->
+          begin match other_args with
+          | i :: rest ->
+              let n = String.length s in
+              (* extract operator:
+                 assignment operators end with [right_bracket ^ "<-"],
+                 access operators end with [right_bracket] directly
+              *)
+              let assign =
+                s.[n - 1] = '-'  in
+              let kind =
+                (* extract the right end bracket *)
+                if assign then s.[n - 3] else s.[n - 1] in
+              let left, right = match kind with
+                | ')' -> '(', ")"
+                | ']' -> '[', "]"
+                | '}' -> '{', "}"
+                | _ -> assert false in
+              let prefix = String.sub s 0 (1+String.index s left) in
+              print a assign prefix right
+                (simple_expr ctxt) [i] rest
+          | _ -> false
+          end
       | _ -> false
     end
   | _ -> false

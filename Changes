@@ -4,6 +4,12 @@ Working version
 (Changes that can break existing programs are marked with a "*")
 
 ### Language features:
+
+- GPR#792: fix limitations of destructive substitutions, by
+  allowing "S with type t := type-expr",
+  "S with type M.t := type-expr", "S with module M.N := path"
+  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+
 - GPR#1118: Support inherited field in object type expression
   (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
    and Florian Angeletti)
@@ -12,10 +18,11 @@ Working version
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
-- GPR#792: fix limitations of destructive substitutions, by
-  allowing "S with type t := type-expr",
-  "S with type M.t := type-expr", "S with module M.N := path"
-  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+- GPR#1064: extended indexing operators, add a new class of
+  user-defined indexing operators, obtained by adding at least
+  one operator character after the dot symbol to the standard indexing
+  operators: e,g ".%()", ".?[]", ".@{}<-"
+  (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
 
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
