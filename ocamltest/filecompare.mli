@@ -21,13 +21,12 @@ type result =
   | Unexpected_output
   | Error of string * int
 
-type tool = {
-  tool_name : string;
-  tool_flags : string;
-  result_of_exitcode : string -> int -> result
-}
+type tool
 
 val make_cmp_tool : int -> tool
+
+val make_comparison_tool :
+  ?result_of_exitcode:(string -> int -> result) -> string -> string -> tool
 
 val default_comparison_tool : tool
 
