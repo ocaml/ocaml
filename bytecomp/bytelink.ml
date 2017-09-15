@@ -451,7 +451,9 @@ let link_bytecode_as_c ppf tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus\
+#define CAML_INTERNALS\
+\n\
+\n#ifdef __cplusplus\
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
@@ -636,8 +638,7 @@ let link ppf objfiles output_name =
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        (* -DCAML_INTERNALS because the .c use startup.h *)
-        if Ccomp.compile_file ~output:obj_file ~opt:"-DCAML_INTERNALS" c_file <> 0 then
+        if Ccomp.compile_file ~output:obj_file c_file <> 0 then
           raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) ||
            !Clflags.output_complete_object then begin

@@ -318,6 +318,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%CC%%|$(CC)|' \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%OUTPUTOBJ%%|$(OUTPUTOBJ)|' \
 	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
 	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%EXT_EXE%%|$(EXE)|' \
