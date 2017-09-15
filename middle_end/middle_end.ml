@@ -81,10 +81,11 @@ let middle_end ppf ~prefixname ~backend
          in
          Profile.record_call ~accumulate:true "middle_end" (fun () ->
            let flam =
-             Profile.record_call ~accumulate:true "closure_conversion" (fun () ->
-               module_initializer
-               |> Closure_conversion.lambda_to_flambda ~backend ~module_ident
-                    ~size ~filename)
+             Profile.record_call ~accumulate:true "closure_conversion"
+               (fun () ->
+                  module_initializer
+                  |> Closure_conversion.lambda_to_flambda ~backend
+                       ~module_ident ~size ~filename)
            in
            if !Clflags.dump_rawflambda
            then
@@ -118,8 +119,8 @@ let middle_end ppf ~prefixname ~backend
              if !round_number > (Clflags.rounds ()) then flam
              else
                flam
-               (* Beware: [Lift_constants] must be run before any pass that might
-                  duplicate strings. *)
+               (* Beware: [Lift_constants] must be run before any pass that
+                  might duplicate strings. *)
                +-+ ("lift_lets 1", Lift_code.lift_lets)
                +-+ ("Lift_constants", Lift_constants.lift_constants ~backend)
                +-+ ("Share_constants", Share_constants.share_constants)
@@ -177,14 +178,16 @@ let middle_end ppf ~prefixname ~backend
                   attribute into the second part of an over application
                   (inline_and_simplify.ml line 710). *)
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
-                 (Warnings.Inlining_impossible "[@inlined] attribute was not \
-                                                used on this function application (the optimizer did not \
-                                                know what function was being applied)")
+                 (Warnings.Inlining_impossible
+                    "[@inlined] attribute was not used on this function \
+                     application (the optimizer did not know what function \
+                     was being applied)")
              | Unroll _ ->
                Location.prerr_warning (Debuginfo.to_location apply.dbg)
-                 (Warnings.Inlining_impossible "[@unroll] attribute was not \
-                                                used on this function application (the optimizer did not \
-                                                know what function was being applied)"));
+                 (Warnings.Inlining_impossible
+                    "[@unroll] attribute was not used on this function \
+                     application (the optimizer did not know what function \
+                     was being applied)"));
            if !Clflags.dump_flambda
            then
              Format.fprintf ppf "End of middle end:@ %a@."
