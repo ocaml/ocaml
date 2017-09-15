@@ -26,7 +26,7 @@ CAMLprim value unix_execvp(value path, value args)
   caml_unix_check_path(path, "execvp");
   argv = cstringvect(args, "execvp");
   wpath = caml_stat_strdup_to_utf16(String_val(path));
-  (void) _texecvp(wpath, EXECV_CAST argv);
+  (void) _texecvp((const charnat *)wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
   cstringvect_free(argv);
   uerror("execvp", path);
@@ -36,7 +36,7 @@ CAMLprim value unix_execvp(value path, value args)
 
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
-  const charnat * exefile, * wpath;
+  charnat * exefile, * wpath;
   charnat ** argv;
   charnat ** envp;
   caml_unix_check_path(path, "execvpe");
@@ -45,7 +45,7 @@ CAMLprim value unix_execvpe(value path, value args, value env)
   caml_stat_free(wpath);
   argv = cstringvect(args, "execvpe");
   envp = cstringvect(env, "execvpe");
-  (void) _texecve(exefile, EXECV_CAST argv, EXECV_CAST envp);
+  (void) _texecve((const charnat *)exefile, EXECV_CAST argv, EXECV_CAST envp);
   caml_stat_free(exefile);
   cstringvect_free(argv);
   cstringvect_free(envp);
