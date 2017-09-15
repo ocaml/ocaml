@@ -1023,7 +1023,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | (Parraysetu kind | Parraysets kind),
         [_block; _field; _value],
         [block_approx; _field_approx; value_approx] ->
-        if A.is_definitely_immutable block_approx then begin
+        if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_to_non_mutable_value
         end;
@@ -1050,7 +1050,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         in
         Prim (prim, args, dbg), ret r (A.value_unknown Other)
       | Psetfield _, _block::_, block_approx::_ ->
-        if A.is_definitely_immutable block_approx then begin
+        if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_to_non_mutable_value
         end;

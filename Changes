@@ -127,6 +127,9 @@ Working version
   reference symbols (even locally-defined ones) through the GOT.
   (Mark Shinwell, review by Xavier Leroy)
 
+- MPR#7616, GPR#1339: don't warn on mutation of zero size blocks.
+  (Leo White)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
