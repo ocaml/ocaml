@@ -217,6 +217,7 @@ let make_params env params =
     List.map make_param params
 
 let transl_labels env closed lbls =
+  assert (lbls <> []);
   let all_labels = ref StringSet.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
