@@ -31,6 +31,7 @@ let standard_library =
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
 let c_compiler = "%%CC%%"
+let c_output_obj = "%%OUTPUTOBJ%%"
 let ocamlc_cflags = "%%OCAMLC_CFLAGS%%"
 let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
 let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"

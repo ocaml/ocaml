@@ -28,6 +28,8 @@ val ccomp_type: string
                "msvc" (for Microsoft Visual C++ and MASM) *)
 val c_compiler: string
         (* The compiler to use for compiling C files *)
+val c_output_obj: string
+        (* Name of the option of the C compiler for specifying the output file *)
 val ocamlc_cflags : string
         (* The flags ocamlc should pass to the C compiler *)
 val ocamlc_cppflags : string

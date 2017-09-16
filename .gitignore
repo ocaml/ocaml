@@ -272,6 +272,10 @@
 
 /testsuite/tests/opaque/*/*.mli
 
+/testsuite/tests/output_obj/*.bc.c
+/testsuite/tests/output_obj/*_stub
+/testsuite/tests/output_obj/*_stub
+
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml

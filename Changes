@@ -219,6 +219,8 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- GPR##1332: fix ocamlc handling of "-output-complete-obj"
+
 - MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
   attribute is hidden by signature coercion
   (Alain Frisch, report by bmillwood, review by Leo White)
