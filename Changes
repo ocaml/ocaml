@@ -45,6 +45,10 @@ Working version
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
 
+- GPR#1348: accept anonymous type parameters in with constraints,
+  "S with type _ t = int".
+  (Valentin Gatien-Baron, report by Jeremy Yallop)
+
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
