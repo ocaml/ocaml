@@ -525,6 +525,9 @@ Working version
   with the toplevel.
   (Leo White, review by Alain Frisch)
 
+- GPR#1329: Prevent recursive polymorphic variant names
+  (Jacques Garrigue, fix suggested by Leo White)
+
 - Fix pprintast for #... infix operators
   (Alain Frisch, report by Omar Chebib)
 

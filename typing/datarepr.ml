@@ -235,3 +235,16 @@ let labels_of_type ty_path decl =
       label_descrs (newgenconstr ty_path decl.type_params)
         labels rep decl.type_private
   | Type_variant _ | Type_abstract | Type_open -> []
+
+(* Set row_name in Env, cf. GPR#1204/1329 *)
+let set_row_name decl path =
+  match decl.type_manifest with
+    None -> ()
+  | Some ty ->
+      let ty = repr ty in
+      match ty.desc with
+        Tvariant row when static_row row ->
+          let row = {(row_repr row) with
+                     row_name = Some (path, decl.type_params)} in
+          ty.desc <- Tvariant row
+      | _ -> ()
