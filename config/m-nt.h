@@ -61,3 +61,5 @@
 #else
 #define INT64_LITERAL(s) s ## LL
 #endif
+
+#define FLAT_FLOAT_ARRAY
