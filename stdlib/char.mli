@@ -52,9 +52,10 @@ val uppercase_ascii : char -> char
    using the US-ASCII character set.
    @since 4.03.0 *)
 
-val bits : char -> int
-(** Return the number of bits set to 1 in the bnary representation of the
-    given character.
+val popcount : char -> int
+(** Return the number of bits set to 1 in the binary representation of the
+    given character (also known as the population count, or the Hamming
+    weight).
     @since 4.06.0 *)
 
 type t = char

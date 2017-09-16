@@ -293,6 +293,10 @@ let stable_sort cmp a =
 
 let fast_sort = stable_sort
 
+(* Array.filter and Bytes.filter are almost the same code:
+   if one needs to be modified, the other will probably need
+   it too *)
+
 let filter p arg =
   let size_arg = length arg in
   if size_arg = 0 then [| |] else
@@ -318,7 +322,7 @@ let filter p arg =
         (if p (unsafe_get arg (i8 lor 6)) then  64 else 0) lor
         (if p (unsafe_get arg (i8 lor 7)) then 128 else 0) in
       Bytes.unsafe_set bv i (Char.unsafe_chr c);
-      size_res := !size_res + Char.bits (Char.unsafe_chr c);
+      size_res := !size_res + Char.popcount (Char.unsafe_chr c);
     done;
     let size_arg8 = (size_arg lsr 3) lsl 3 in
     (* may remain a partial last byte to set *)
@@ -329,7 +333,7 @@ let filter p arg =
           lastc := !lastc lor (1 lsl j) (* set bit j to 1 *)
       done;
       Bytes.unsafe_set bv (size_arg lsr 3) (Char.unsafe_chr !lastc);
-      size_res := !size_res + Char.bits (Char.unsafe_chr !lastc);
+      size_res := !size_res + Char.popcount (Char.unsafe_chr !lastc);
     end;
     (* build the result, and transfer elements *)
     if !size_res = 0 then [| |]

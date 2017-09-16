@@ -18,7 +18,7 @@ module C' :
     val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
-    val bits : char -> int
+    val popcount : char -> int
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
@@ -34,7 +34,7 @@ module C3 :
     val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
-    val bits : char -> int
+    val popcount : char -> int
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
@@ -64,7 +64,7 @@ module F :
       val uppercase : char -> char
       val lowercase_ascii : char -> char
       val uppercase_ascii : char -> char
-      val bits : char -> int
+      val popcount : char -> int
       type t = char
       val compare : t -> t -> int
       val equal : t -> t -> bool
@@ -79,7 +79,7 @@ module C4 :
     val uppercase : char -> char
     val lowercase_ascii : char -> char
     val uppercase_ascii : char -> char
-    val bits : char -> int
+    val popcount : char -> int
     type t = char
     val compare : t -> t -> int
     val equal : t -> t -> bool
