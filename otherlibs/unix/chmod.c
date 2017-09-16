@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <caml/mlvalues.h>

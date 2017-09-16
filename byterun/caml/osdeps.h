@@ -91,8 +91,6 @@ extern charnat * caml_executable_name(void);
 */
 extern charnat *caml_secure_getenv(charnat const *var);
 
-#endif /* CAML_INTERNALS */
-
 /* Windows Unicode support */
 
 #ifdef _WIN32
@@ -128,5 +126,7 @@ extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 extern value caml_copy_string_of_utf16(const wchar_t *s);
 
 #endif /* _WIN32 */
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

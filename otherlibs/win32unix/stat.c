@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <errno.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>

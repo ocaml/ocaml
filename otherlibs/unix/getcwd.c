@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>

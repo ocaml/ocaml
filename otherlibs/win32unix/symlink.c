@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /*
  * Windows Vista functions enabled
  */

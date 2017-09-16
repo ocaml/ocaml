@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/osdeps.h>
