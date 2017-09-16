@@ -241,8 +241,9 @@ let set_row_name decl path =
   match decl.type_manifest with
     None -> ()
   | Some ty ->
-      match repr ty with
-        {desc = Tvariant row} when static_row row ->
+      let ty = repr ty in
+      match ty.desc with
+        Tvariant row when static_row row ->
           let row = {(row_repr row) with
                      row_name = Some (path, decl.type_params)} in
           ty.desc <- Tvariant row
