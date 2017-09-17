@@ -472,63 +472,66 @@ and sugar_expr ctxt f e =
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
     when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
-      let print a assign left right print_index indexes rem_args =
-            match assign, rem_args with
-            | true, [] ->
-              pp f "@[%a.%s%a%s@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right; true
-            | false, [v] ->
-              pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right
+      let print_indexop a path_prefix assign left right print_index indices
+          rem_args =
+        let print_path ppf = function
+          | None -> ()
+          | Some m -> pp ppf ".%a" longident m in
+        match assign, rem_args with
+            | false, [] ->
+              pp f "@[%a%a%s%a%s@]"
+                (simple_expr ctxt) a print_path path_prefix
+                left (list ~sep:"," print_index) indices right; true
+            | true, [v] ->
+              pp f "@[%a%a%s%a%s@ <-@;<1 2>%a@]"
+                (simple_expr ctxt) a print_path path_prefix
+                left (list ~sep:"," print_index) indices right
                 (simple_expr ctxt) v; true
             | _ -> false in
       match id, List.map snd args with
       | Lident "!", [e] ->
         pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
       | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
-          let assign = func = "get" in
-          let print = print a assign in
+          let assign = func = "set" in
+          let print = print_indexop a None assign in
           match path, other_args with
           | Lident "Array", i :: rest ->
-            print "(" ")" (expression ctxt) [i] rest
+            print ".(" ")" (expression ctxt) [i] rest
           | Lident "String", i :: rest ->
-            print "[" "]" (expression ctxt) [i] rest
+            print ".[" "]" (expression ctxt) [i] rest
           | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1] rest
+            print ".{" "}" (simple_expr ctxt) [i1] rest
           | Ldot (Lident "Bigarray", "Array2"), i1 :: i2 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2] rest
+            print ".{" "}" (simple_expr ctxt) [i1; i2] rest
           | Ldot (Lident "Bigarray", "Array3"), i1 :: i2 :: i3 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2; i3] rest
+            print ".{" "}" (simple_expr ctxt) [i1; i2; i3] rest
           | Ldot (Lident "Bigarray", "Genarray"),
             {pexp_desc = Pexp_array indexes; pexp_attributes = []} :: rest ->
-            print "{" "}" (simple_expr ctxt) indexes rest
+              print ".{" "}" (simple_expr ctxt) indexes rest
           | _ -> false
         end
-      | Lident s, a :: other_args when s.[0] = '.' ->
-          begin match other_args with
-          | i :: rest ->
-              let n = String.length s in
-              (* extract operator:
-                 assignment operators end with [right_bracket ^ "<-"],
-                 access operators end with [right_bracket] directly
-              *)
-              let assign =
-                s.[n - 1] = '-'  in
-              let kind =
-                (* extract the right end bracket *)
-                if assign then s.[n - 3] else s.[n - 1] in
-              let left, right = match kind with
-                | ')' -> '(', ")"
-                | ']' -> '[', "]"
-                | '}' -> '{', "}"
-                | _ -> assert false in
-              let prefix = String.sub s 0 (1+String.index s left) in
-              print a assign prefix right
-                (simple_expr ctxt) [i] rest
-          | _ -> false
-          end
+      | (Lident s | Ldot(_,s)) , a :: i :: rest
+        when s.[0] = '.' ->
+          let n = String.length s in
+          (* extract operator:
+             assignment operators end with [right_bracket ^ "<-"],
+             access operators end with [right_bracket] directly
+          *)
+          let assign = s.[n - 1] = '-'  in
+          let kind =
+            (* extract the right end bracket *)
+            if assign then s.[n - 3] else s.[n - 1] in
+          let left, right = match kind with
+            | ')' -> '(', ")"
+            | ']' -> '[', "]"
+            | '}' -> '{', "}"
+            | _ -> assert false in
+          let path_prefix = match id with
+            | Ldot(m,_) -> Some m
+            | _ -> None in
+          let left = String.sub s 0 (1+String.index s left) in
+          print_indexop a path_prefix assign left right
+            (expression ctxt) [i] rest
       | _ -> false
     end
   | _ -> false

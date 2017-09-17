@@ -7324,15 +7324,19 @@ module Exotic_list = struct
 end
 
 (** Extended index operators *)
-let ( .%[] ) = Hashtbl.find
-let ( .%[] <- ) = Hashtbl.add
-let ( .%() ) = Hashtbl.find
-let ( .%() <- ) = Hashtbl.add
-let ( .%{} ) = Hashtbl.find
-let ( .%{} <- ) = Hashtbl.add
-
-;;
-let h = Hashtbl.create 17 in
-h.%["one"] <- 1;
-h.%("two") <- 2;
-h.%{"three"} <- 3;
+module Indexop = struct
+  module Def = struct
+    let ( .%[] ) = Hashtbl.find
+    let ( .%[] <- ) = Hashtbl.add
+    let ( .%() ) = Hashtbl.find
+    let ( .%() <- ) = Hashtbl.add
+    let ( .%{} ) = Hashtbl.find
+    let ( .%{} <- ) = Hashtbl.add
+  end
+  ;;
+  let h = Hashtbl.create 17 in
+  h.Def.%["one"] <- 1;
+  h.Def.%("two") <- 2;
+  h.Def.%{"three"} <- 3
+  let x,y,z = Def.(h.%["one"], h.%("two"), h.%{"three"})
+end
