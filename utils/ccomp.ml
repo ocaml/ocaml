@@ -87,7 +87,9 @@ let compile_file ?output ?(opt="") name =
                   then (Config.ocamlopt_cflags, Config.ocamlopt_cppflags)
                   else (Config.ocamlc_cflags, Config.ocamlc_cppflags) in
               (String.concat " " [Config.c_compiler; cflags; cppflags]))
-         (match output with | None -> "" | Some o -> Printf.sprintf "%s %s" Config.c_output_obj o)
+         (match output with
+          | None -> ""
+          | Some o -> Printf.sprintf "%s%s" Config.c_output_obj o)
          opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
