@@ -19,17 +19,16 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-#ifndef _WIN32
-extern char ** environ;
-#endif
-
 CAMLprim value unix_execvp(value path, value args)
 {
-  char ** argv;
+  charnat ** argv;
+  charnat * wpath;
   caml_unix_check_path(path, "execvp");
   argv = cstringvect(args, "execvp");
-  (void) execvp(String_val(path), argv);
-  caml_stat_free((char *) argv);
+  wpath = caml_stat_strdup_to_utf16(String_val(path));
+  (void) _texecvp((const charnat *)wpath, EXECV_CAST argv);
+  caml_stat_free(wpath);
+  cstringvect_free(argv);
   uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
@@ -37,17 +36,19 @@ CAMLprim value unix_execvp(value path, value args)
 
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
-  const char * exefile;
-  char ** argv;
-  char ** envp;
+  charnat * exefile, * wpath;
+  charnat ** argv;
+  charnat ** envp;
   caml_unix_check_path(path, "execvpe");
-  exefile = caml_search_exe_in_path(String_val(path));
+  wpath = caml_stat_strdup_to_utf16(String_val(path));
+  exefile = caml_search_exe_in_path(wpath);
+  caml_stat_free(wpath);
   argv = cstringvect(args, "execvpe");
   envp = cstringvect(env, "execvpe");
-  (void) execve(exefile, argv, envp);
-  caml_stat_free((char *)exefile);
-  caml_stat_free((char *) argv);
-  caml_stat_free((char *) envp);
+  (void) _texecve((const charnat *)exefile, EXECV_CAST argv, EXECV_CAST envp);
+  caml_stat_free(exefile);
+  cstringvect_free(argv);
+  cstringvect_free(envp);
   uerror("execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */

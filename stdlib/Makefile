@@ -158,7 +158,7 @@ else # Windows
 
 camlheader target_camlheader camlheader_ur: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
+	          -DRUNTIME_NAME='L"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
@@ -167,14 +167,14 @@ camlheader target_camlheader camlheader_ur: headernt.c
 
 camlheaderd target_camlheaderd: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
+	          -DRUNTIME_NAME='L"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
+	          -DRUNTIME_NAME='L"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	mv tmpheader.exe camlheaderi
 
