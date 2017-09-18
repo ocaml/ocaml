@@ -445,7 +445,7 @@ compensate for the fact that the current point in the code, if under some
 number of conditional branches, may be cold.  (Flambda does not currently
 compute hot and cold paths.)  The factor---the estimated probability that
 the inliner really is on a {\em hot} path---is calculated as
-$(\frac{1}{1 + f})^{d}$, where $f$ is set by
+$\frac{1}{(1 + f)^{d}}$, where $f$ is set by
 {\tt -inline-branch-factor} and $d$ is the nesting depth of branches
 at the current point.  As the inliner descends into more deeply-nested
 branches, the benefit of inlining thus lessens.
