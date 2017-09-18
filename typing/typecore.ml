@@ -1755,17 +1755,12 @@ struct
     (** The list of all used identifiers *)
   end =
   struct
-    (** A "t" maps each rec-bound variable to an access status *)
-    type t = access Ident.tbl
+    module M = Map.Make(Ident)
 
-    let map f tbl =
-      try
-      Ident.fold_all
-        (fun id v tbl -> Ident.add id (f v) tbl)
-        tbl
-        Ident.empty
-      with Not_found -> assert false
-    
+    (** A "t" maps each rec-bound variable to an access status *)
+    type t = access M.t
+
+    let map f tbl = M.map f tbl
     let guard t = map guard t
     let inspect t = map inspect t
     let delay t = map delay t
@@ -1780,19 +1775,19 @@ struct
       | _ -> Guarded
 
     let join x y =
-      Ident.fold_all
+      M.fold
         (fun id v tbl ->
-           let v' = try Ident.find_same id tbl with Not_found -> Guarded in
-           Ident.add id (prec v v') tbl)
+           let v' = try M.find id tbl with Not_found -> Guarded in
+           M.add id (prec v v') tbl)
         x y
 
-    let single id access = Ident.add id access Ident.empty
+    let single id access = M.add id access M.empty
   
-    let empty = Ident.empty
+    let empty = M.empty
 
     let list_matching p t =
       let r = ref [] in
-      Ident.iter (fun id v -> if p v then r := id :: !r) t;
+      M.iter (fun id v -> if p v then r := id :: !r) t;
       !r
     
     let unguarded =
