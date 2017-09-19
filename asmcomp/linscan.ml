@@ -97,18 +97,23 @@ let allocate_free_register i =
       | rn ->
           let ci = active.(cl) in
           let r0 = Proc.first_available_register.(cl) in
-          (* Create register mask for this class *)
+          (* Create register mask for this class
+             note: if frame pointers are enabled then some registers may have
+                   indexes that are off-bounds; we hence protect write accesses
+                   below (given that the assign function will not consider such
+                   registers) *)
           let regmask = Array.make rn true in
           (* Remove all assigned registers from the register mask *)
           List.iter
             (function
-              {reg = {loc = Reg r}} -> regmask.(r - r0) <- false
+              {reg = {loc = Reg r}} ->
+                if r - r0 < rn then regmask.(r - r0) <- false
             | _ -> ())
             ci.ci_active;
           (* Remove all overlapping registers from the register mask *)
           let remove_bound_overlapping = function
               {reg = {loc = Reg r}} as j ->
-                if regmask.(r - r0) && Interval.overlap j i then
+                if (r - r0 < rn) && regmask.(r - r0) && Interval.overlap j i then
                 regmask.(r - r0) <- false
             | _ -> () in
           List.iter remove_bound_overlapping ci.ci_inactive;
