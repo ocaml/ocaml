@@ -1806,6 +1806,8 @@ OCaml 4.04.0 (4 Nov 2016):
 
 - GPR#880: Fix [@@inline] with default parameters in flambda (Leo White)
 
+* GPR#1353: add labels to BytesLabels.sub_string (Jacques Garrigue)
+
 ### Internal/compiler-libs changes:
 
 - PR#7200, GPR#539: Improve, fix, and add test for parsing/pprintast.ml
