@@ -151,6 +151,9 @@ Working version
 - MPR#7616, GPR#1339: don't warn on mutation of zero size blocks.
   (Leo White)
 
+- MPR#7631, GPR#1355: "-linscan" option crashes ocamlopt
+  (Xavier Clerc, report by Paul Steckler)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
