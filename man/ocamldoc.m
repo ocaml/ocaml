@@ -244,6 +244,9 @@ Pipe sources through preprocessor
 Pipe abstract syntax tree through preprocessor
 .IR command .
 .TP
+.BR \-show\-missed\-crossref
+Show missed cross-reference opportunities.
+.TP
 .B \-sort
 Sort the list of top-level modules before generating the documentation.
 .TP
