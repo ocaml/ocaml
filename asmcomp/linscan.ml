@@ -97,7 +97,11 @@ let allocate_free_register i =
       | rn ->
           let ci = active.(cl) in
           let r0 = Proc.first_available_register.(cl) in
-          (* Create register mask for this class *)
+          (* Create register mask for this class
+             note: if frame pointers are enabled then some registers may have
+                   indexes that are off-bounds; we hence protect write accesses
+                   below (given that the assign function will not consider such
+                   registers) *)
           let regmask = Array.make rn true in
           (* Remove all assigned registers from the register mask *)
           List.iter
