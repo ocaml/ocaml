@@ -54,6 +54,7 @@
 #include "caml/signals.h"
 #include "caml/sys.h"
 #include "caml/io.h"
+#include "caml/alloc.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
@@ -400,7 +401,7 @@ char * caml_executable_name(void)
   if (_NSGetExecutablePath(name, &namelen) == 0) return name;
   caml_stat_free(name);
   return NULL;
-    
+
 #else
   return NULL;
 

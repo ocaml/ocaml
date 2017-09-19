@@ -32,9 +32,9 @@ PREFIX="C:/Program Files/OCaml"
 wmic cpu get name
 
 if [[ $1 = "msvc32-only" ]] ; then
-  cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
-  make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
-  cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
+#  cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
+#  make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
+#  cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
 
   cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
   cp config/m-nt.h byterun/caml/m.h
@@ -46,6 +46,8 @@ if [[ $1 = "msvc32-only" ]] ; then
   echo "Edit config/Makefile to set PREFIX=$PREFIX"
   sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
 
+  git submodule update --init flexdll
+  run "make flexdll" make flexdll
   run "make world" make world
   run "make runtimeopt" make runtimeopt
   run "make -C otherlibs/systhreads libthreadsnat.lib" make -C otherlibs/systhreads libthreadsnat.lib
@@ -63,11 +65,11 @@ git submodule update --init flexdll
 
 cd $APPVEYOR_BUILD_FOLDER
 
-tar -xzf flexdll.tar.gz
-cd flexdll-0.35
-make MSVC_DETECT=0 CHAINS=msvc64 support
-cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
-cd ..
+# tar -xzf flexdll.tar.gz
+# cd flexdll-0.35
+# make MSVC_DETECT=0 CHAINS=msvc64 support
+# cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
+# cd ..
 
 cp config/m-nt.h byterun/caml/m.h
 cp config/s-nt.h byterun/caml/s.h
@@ -76,6 +78,8 @@ echo "Edit config/Makefile to set PREFIX=$PREFIX"
 sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
 #run "Content of config/Makefile" cat config/Makefile
 
+git submodule update --init flexdll
+run "make flexdll" make flexdll
 run "make world" make world
 run "make bootstrap" make bootstrap
 run "make opt" make opt

@@ -36,6 +36,8 @@
    The GC will magically change things from (2) to (3) according to its
    fancy.
 
+   If OCaml was configured with the -flat-float-array option (which is
+   currently the default), the following is also true:
    We cannot use representation (3) for a [float Lazy.t] because
    [caml_make_array] assumes that only a [float] value can have tag
    [Double_tag].

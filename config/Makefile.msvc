@@ -96,6 +96,7 @@ LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
 SAFE_STRING=false
+WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
@@ -103,12 +104,12 @@ AFL_INSTRUMENT=false
 ### Which C compiler to use for the bytecode interpreter.
 CC = cl
 CFLAGS = -nologo -O2 -Gy- -MD
-CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE
+CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
 OCAMLC_CFLAGS = -nologo -O2 -Gy- -MD
 OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
 BYTECCDBGCOMPOPTS=-Zi
 
-LDFLAGS=
+LDFLAGS=/ENTRY:wmainCRTStartup
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib ws2_32.lib
@@ -134,7 +135,7 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
 MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
@@ -142,8 +143,11 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console $(LDFLAGS) \
 	   && ($(MERGEMANIFESTEXE))
+
+### Native command to build an ANSI executable
+MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=link -lib -nologo -out:$(1) $(2)
@@ -199,3 +203,4 @@ FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 MAX_TESTSUITE_DIR_RETRIES=1
+FLAT_FLOAT_ARRAY=true

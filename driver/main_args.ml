@@ -673,6 +673,16 @@ let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_davail f =
+  "-davail", Arg.Unit f, " Print register availability info when printing \
+    liveness"
+;;
+
+let mk_drunavail f =
+  "-drunavail", Arg.Unit f, " Run register availability pass (for testing \
+    only; needs -g)"
+;;
+
 let mk_dspill f =
   "-dspill", Arg.Unit f, " (undocumented)"
 ;;
@@ -929,6 +939,8 @@ module type Optcommon_options = sig
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
+  val _davail : unit -> unit
+  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -1258,6 +1270,8 @@ struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1356,6 +1370,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;

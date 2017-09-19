@@ -165,6 +165,75 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
+/* Windows Unicode support */
+
+#ifdef _WIN32
+
+typedef wchar_t charnat;
+
+#define _T(x) L ## x
+
+#define _topen _wopen
+#define _tstat _wstati64
+#define _tunlink _wunlink
+#define _trename caml_win32_rename
+#define _tchdir _wchdir
+#define _tgetcwd _wgetcwd
+#define _tgetenv _wgetenv
+#define _tsystem _wsystem
+#define _trmdir _wrmdir
+#define _tutime _wutime
+#define _tputenv _wputenv
+#define _tchmod _wchmod
+#define _texecv _wexecv
+#define _texecve _wexecve
+#define _texecvp _wexecvp
+#define _tcscmp wcscmp
+#define _tcslen wcslen
+#define _stscanf swscanf
+
+#define caml_stat_tcsdup caml_stat_wcsdup
+#define caml_stat_tcsconcat caml_stat_wcsconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup_to_utf16
+#define caml_stat_strdup_of_utf16 caml_stat_strdup_of_utf16
+#define caml_copy_string_of_utf16 caml_copy_string_of_utf16
+
+#else /* _WIN32 */
+
+typedef char charnat;
+
+#define _T(x) x
+
+#define _topen open
+#define _tstat stat
+#define _tunlink unlink
+#define _trename rename
+#define _tchdir chdir
+#define _tgetcwd getcwd
+#define _tgetenv getenv
+#define _tsystem system
+#define _trmdir rmdir
+#define _tutime utime
+#define _tputenv putenv
+#define _tchmod chmod
+#define _texecv execv
+#define _texecve execve
+#define _texecvp execvp
+#define _tcscmp strcmp
+#define _tcslen strlen
+#define _stscanf sscanf
+
+#define caml_stat_tcsdup caml_stat_strdup
+#define caml_stat_tcsconcat caml_stat_strconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup
+#define caml_stat_strdup_of_utf16 caml_stat_strdup
+#define caml_copy_string_of_utf16 caml_copy_string
+
+#endif /* _WIN32 */
+
+
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
   virtualize the program. */
@@ -173,14 +242,14 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #ifndef CAML_WITH_CPLUGINS
 
 #define CAML_SYS_EXIT(retcode) exit(retcode)
-#define CAML_SYS_OPEN(filename,flags,perm) open(filename,flags,perm)
+#define CAML_SYS_OPEN(filename,flags,perm) _topen(filename,flags,perm)
 #define CAML_SYS_CLOSE(fd) close(fd)
-#define CAML_SYS_STAT(filename,st) stat(filename,st)
-#define CAML_SYS_UNLINK(filename) unlink(filename)
-#define CAML_SYS_RENAME(old_name,new_name) rename(old_name, new_name)
-#define CAML_SYS_CHDIR(dirname) chdir(dirname)
-#define CAML_SYS_GETENV(varname) getenv(varname)
-#define CAML_SYS_SYSTEM(command) system(command)
+#define CAML_SYS_STAT(filename,st) _tstat(filename,st)
+#define CAML_SYS_UNLINK(filename) _tunlink(filename)
+#define CAML_SYS_RENAME(old_name,new_name) _trename(old_name, new_name)
+#define CAML_SYS_CHDIR(dirname) _tchdir(dirname)
+#define CAML_SYS_GETENV(varname) _tgetenv(varname)
+#define CAML_SYS_SYSTEM(command) _tsystem(command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
 #else
@@ -207,7 +276,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
-  (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+  (charnat*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_VOID_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
   (void)caml_cplugins_prim(code,(intnat) (arg1),0,0)
@@ -221,21 +290,21 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_EXIT(retcode) \
   CAML_SYS_VOID_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
 #define CAML_SYS_OPEN(filename,flags,perm)                      \
-  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
+  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,_topen,filename,flags,perm)
 #define CAML_SYS_CLOSE(fd)                      \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CLOSE,close,fd)
 #define CAML_SYS_STAT(filename,st)                      \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,stat,filename,st)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,_tstat,filename,st)
 #define CAML_SYS_UNLINK(filename)                       \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,unlink,filename)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,_tunlink,filename)
 #define CAML_SYS_RENAME(old_name,new_name)                              \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,rename,old_name,new_name)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,_trename,old_name,new_name)
 #define CAML_SYS_CHDIR(dirname)                         \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir,dirname)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,_tchdir,dirname)
 #define CAML_SYS_GETENV(varname)                        \
-  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
+  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,_tgetenv,varname)
 #define CAML_SYS_SYSTEM(command)                        \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system,command)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,_tsystem,command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
   CAML_SYS_PRIM_2(CAML_CPLUGINS_READ_DIRECTORY,caml_read_directory,     \
                   dirname,tbl)
@@ -245,14 +314,14 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 struct cplugin_context {
   int api_version;
   int prims_bitmap;
-  char *exe_name;
-  char** argv;
-  char *plugin; /* absolute filename of plugin, do a copy if you need it ! */
+  charnat *exe_name;
+  charnat** argv;
+  charnat *plugin; /* absolute filename of plugin, do a copy if you need it ! */
   char *ocaml_version;
 /* end of CAML_CPLUGIN_CONTEXT_API version 0 */
 };
 
-extern void caml_cplugins_init(char * exe_name, char **argv);
+extern void caml_cplugins_init(charnat * exe_name, charnat **argv);
 
 /* A plugin MUST define a symbol "caml_cplugin_init" with the prototype:
 
@@ -278,7 +347,7 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
-CAMLextern int caml_read_directory(char * dirname, struct ext_table * contents);
+CAMLextern int caml_read_directory(charnat * dirname, struct ext_table * contents);
 
 
 #ifdef CAML_INTERNALS

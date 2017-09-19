@@ -33,6 +33,7 @@ val type_int32: type_expr
 val type_int64: type_expr
 val type_lazy_t: type_expr -> type_expr
 val type_extension_constructor:type_expr
+val type_floatarray:type_expr
 
 val path_int: Path.t
 val path_char: Path.t
@@ -50,6 +51,7 @@ val path_int32: Path.t
 val path_int64: Path.t
 val path_lazy_t: Path.t
 val path_extension_constructor: Path.t
+val path_floatarray: Path.t
 
 val path_match_failure: Path.t
 val path_assert_failure : Path.t

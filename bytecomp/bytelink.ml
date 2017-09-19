@@ -451,7 +451,9 @@ let link_bytecode_as_c ppf tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus\
+#define CAML_INTERNALS\
+\n\
+\n#ifdef __cplusplus\
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
@@ -617,22 +619,26 @@ let link ppf objfiles output_name =
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
+    let temps = ref [] in
     let c_file =
-      if !Clflags.output_complete_object
+      if !Clflags.output_complete_object && not (Filename.check_suffix output_name ".c")
       then Filename.temp_file "camlobj" ".c"
-      else basename ^ ".c"
-    and obj_file =
+      else begin
+        let f = basename ^ ".c" in
+        if Sys.file_exists f then raise(Error(File_exists f));
+        f
+      end
+    in
+    let obj_file =
       if !Clflags.output_complete_object
-      then Filename.temp_file "camlobj" Config.ext_obj
+      then (Filename.chop_extension c_file) ^ Config.ext_obj
       else basename ^ Config.ext_obj
     in
-    if Sys.file_exists c_file then raise(Error(File_exists c_file));
-    let temps = ref [] in
     try
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        if Ccomp.compile_file c_file <> 0 then
+        if Ccomp.compile_file ~output:obj_file c_file <> 0 then
           raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) ||
            !Clflags.output_complete_object then begin

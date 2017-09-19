@@ -745,7 +745,7 @@ that are currently defined are ignored. The warnings are as follows.
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
+The default setting is "-w +a-4-6-7-9-27-29-32..42-44-45-48-50-60".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.

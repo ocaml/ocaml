@@ -282,10 +282,10 @@ val useful : t -> bool
 (** Whether all approximations in the given list do *not* satisfy [useful]. *)
 val all_not_useful : t list -> bool
 
-(** A value is certainly immutable if its approximation is known and not bottom.
+(** Whether to warn on attempts to mutate a value.
     It must have been resolved (it cannot be [Value_extern] or
     [Value_symbol]).  (See comment above for further explanation.) *)
-val is_definitely_immutable : t -> bool
+val warn_on_mutation : t -> bool
 
 type simplification_summary =
   | Nothing_done

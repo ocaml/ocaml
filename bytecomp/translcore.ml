@@ -162,6 +162,9 @@ let comparisons_table = create_hashtable 11 [
        false)
 ]
 
+let gen_array_kind =
+  if Config.flat_float_array then Pgenarray else Paddrarray
+
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%bytes_to_string", Pbytes_to_string;
@@ -239,14 +242,19 @@ let primitives_table = create_hashtable 57 [
   "%bytes_safe_set", Pbytessets;
   "%bytes_unsafe_get", Pbytesrefu;
   "%bytes_unsafe_set", Pbytessetu;
-  "%array_length", Parraylength Pgenarray;
-  "%array_safe_get", Parrayrefs Pgenarray;
-  "%array_safe_set", Parraysets Pgenarray;
-  "%array_unsafe_get", Parrayrefu Pgenarray;
-  "%array_unsafe_set", Parraysetu Pgenarray;
-  "%obj_size", Parraylength Pgenarray;
-  "%obj_field", Parrayrefu Pgenarray;
-  "%obj_set_field", Parraysetu Pgenarray;
+  "%array_length", Parraylength gen_array_kind;
+  "%array_safe_get", Parrayrefs gen_array_kind;
+  "%array_safe_set", Parraysets gen_array_kind;
+  "%array_unsafe_get", Parrayrefu gen_array_kind;
+  "%array_unsafe_set", Parraysetu gen_array_kind;
+  "%obj_size", Parraylength gen_array_kind;
+  "%obj_field", Parrayrefu gen_array_kind;
+  "%obj_set_field", Parraysetu gen_array_kind;
+  "%floatarray_length", Parraylength Pfloatarray;
+  "%floatarray_safe_get", Parrayrefs Pfloatarray;
+  "%floatarray_safe_set", Parraysets Pfloatarray;
+  "%floatarray_unsafe_get", Parrayrefu Pfloatarray;
+  "%floatarray_unsafe_set", Parraysetu Pfloatarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
@@ -377,6 +385,28 @@ let specialize_comparison table env ty =
   | () when is_base_type env ty Predef.path_int64     -> int64comp
   | () -> gencomp
 
+(* The following function computes the greatest lower bound in the
+   semilattice of array kinds:
+          gen
+         /   \
+      addr   float
+       |
+      int
+   Note that the GLB is not guaranteed to exist, in which case we return
+   our first argument instead of raising a fatal error because, although
+   it cannot happen in a well-typed program, (ab)use of Obj.magic can
+   probably trigger it.
+*)
+let glb_array_type t1 t2 =
+  match t1, t2 with
+  | Pfloatarray, (Paddrarray | Pintarray)
+  | (Paddrarray | Pintarray), Pfloatarray -> t1
+
+  | Pgenarray, x | x, Pgenarray -> x
+  | Paddrarray, x | x, Paddrarray -> x
+  | Pintarray, Pintarray -> Pintarray
+  | Pfloatarray, Pfloatarray -> Pfloatarray
+
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
 
@@ -403,11 +433,16 @@ let specialize_primitive p env ty ~has_constant_constructor =
     match (p, params) with
       (Psetfield(n, _, init), [_p1; p2]) ->
         Psetfield(n, maybe_pointer_type env p2, init)
-    | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
-    | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
-    | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
-    | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
-    | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
+    | (Parraylength t, [p])   ->
+        Parraylength(glb_array_type t (array_type_kind env p))
+    | (Parrayrefu t, p1 :: _) ->
+        Parrayrefu(glb_array_type t (array_type_kind env p1))
+    | (Parraysetu t, p1 :: _) ->
+        Parraysetu(glb_array_type t (array_type_kind env p1))
+    | (Parrayrefs t, p1 :: _) ->
+        Parrayrefs(glb_array_type t (array_type_kind env p1))
+    | (Parraysets t, p1 :: _) ->
+        Parraysets(glb_array_type t (array_type_kind env p1))
     | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in

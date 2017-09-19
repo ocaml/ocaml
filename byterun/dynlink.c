@@ -73,36 +73,44 @@ static c_primitive lookup_primitive(char * name)
 /* Parse the OCAML_STDLIB_DIR/ld.conf file and add the directories
    listed there to the search path */
 
-#define LD_CONF_NAME "ld.conf"
+#define LD_CONF_NAME _T("ld.conf")
 
-static char * parse_ld_conf(void)
+static charnat * parse_ld_conf(void)
 {
-  char * stdlib, * ldconfname, * config, * p, * q;
+  charnat * stdlib, * ldconfname, * wconfig, * p, * q, * tofree = NULL;
+  char * config;
+#ifdef _WIN32
+  struct _stati64 st;
+#else
   struct stat st;
+#endif
   int ldconf, nread;
 
-  stdlib = caml_secure_getenv("OCAMLLIB");
-  if (stdlib == NULL) stdlib = caml_secure_getenv("CAMLLIB");
-  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
-  ldconfname = caml_stat_strconcat(3, stdlib, "/", LD_CONF_NAME);
-  if (stat(ldconfname, &st) == -1) {
+  stdlib = caml_secure_getenv(_T("OCAMLLIB"));
+  if (stdlib == NULL) stdlib = caml_secure_getenv(_T("CAMLLIB"));
+  if (stdlib == NULL) stdlib = tofree = caml_stat_strdup_to_utf16(OCAML_STDLIB_DIR);
+  ldconfname = caml_stat_tcsconcat(3, stdlib, _T("/"), LD_CONF_NAME);
+  if (tofree != NULL) caml_stat_free(tofree);
+  if (_tstat(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
   }
-  ldconf = open(ldconfname, O_RDONLY, 0);
+  ldconf = _topen(ldconfname, O_RDONLY, 0);
   if (ldconf == -1)
     caml_fatal_error_arg("Fatal error: cannot read loader config file %s\n",
-                         ldconfname);
+                         caml_stat_strdup_of_utf16(ldconfname));
   config = caml_stat_alloc(st.st_size + 1);
   nread = read(ldconf, config, st.st_size);
   if (nread == -1)
     caml_fatal_error_arg
       ("Fatal error: error while reading loader config file %s\n",
-       ldconfname);
+       caml_stat_strdup_of_utf16(ldconfname));
   config[nread] = 0;
-  q = config;
-  for (p = config; *p != 0; p++) {
-    if (*p == '\n') {
+  wconfig = caml_stat_strdup_to_utf16(config);
+  caml_stat_free(config);
+  q = wconfig;
+  for (p = wconfig; *p != 0; p++) {
+    if (*p == _T('\n')) {
       *p = 0;
       caml_ext_table_add(&caml_shared_libs_path, q);
       q = p + 1;
@@ -111,24 +119,25 @@ static char * parse_ld_conf(void)
   if (q < p) caml_ext_table_add(&caml_shared_libs_path, q);
   close(ldconf);
   caml_stat_free(ldconfname);
-  return config;
+  return wconfig;
 }
 
 /* Open the given shared library and add it to shared_libs.
    Abort on error. */
-static void open_shared_lib(char * name)
+static void open_shared_lib(charnat * name)
 {
-  char * realname;
+  charnat * realname;
   void * handle;
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
-  caml_gc_message(0x100, "Loading shared library %s\n",
-                  realname);
+  caml_gc_message(0x100, "Loading shared library %"
+                  ARCH_CHARNATSTR_PRINTF_FORMAT "\n", realname);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
   if (handle == NULL)
-    caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
+    caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n",
+                          caml_stat_strdup_of_utf16(name),
                           "Reason: %s\n", caml_dlerror());
   caml_ext_table_add(&shared_libs, handle);
   caml_stat_free(realname);
@@ -137,12 +146,13 @@ static void open_shared_lib(char * name)
 /* Build the table of primitives, given a search path and a list
    of shared libraries (both 0-separated in a char array).
    Abort the runtime system on error. */
-void caml_build_primitive_table(char * lib_path,
-                                char * libs,
+void caml_build_primitive_table(charnat * lib_path,
+                                charnat * libs,
                                 char * req_prims)
 {
-  char * tofree1, * tofree2;
-  char * p;
+  charnat * tofree1, * tofree2;
+  charnat * p;
+  char * q;
 
   /* Initialize the search path for dynamic libraries:
      - directories specified on the command line with the -I option
@@ -150,28 +160,28 @@ void caml_build_primitive_table(char * lib_path,
      - directories specified in the executable
      - directories specified in the file <stdlib>/ld.conf */
   tofree1 = caml_decompose_path(&caml_shared_libs_path,
-                                caml_secure_getenv("CAML_LD_LIBRARY_PATH"));
+                                caml_secure_getenv(_T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
-    for (p = lib_path; *p != 0; p += strlen(p) + 1)
+    for (p = lib_path; *p != 0; p += _tcslen(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
   tofree2 = parse_ld_conf();
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
-    for (p = libs; *p != 0; p += strlen(p) + 1)
+    for (p = libs; *p != 0; p += _tcslen(p) + 1)
       open_shared_lib(p);
   /* Build the primitive table */
   caml_ext_table_init(&caml_prim_table, 0x180);
 #ifdef DEBUG
   caml_ext_table_init(&caml_prim_name_table, 0x180);
 #endif
-  for (p = req_prims; *p != 0; p += strlen(p) + 1) {
-    c_primitive prim = lookup_primitive(p);
+  for (q = req_prims; *q != 0; q += strlen(q) + 1) {
+    c_primitive prim = lookup_primitive(q);
     if (prim == NULL)
-          caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
+          caml_fatal_error_arg("Fatal error: unknown C primitive `%s'\n", q);
     caml_ext_table_add(&caml_prim_table, (void *) prim);
 #ifdef DEBUG
-    caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(p));
+    caml_ext_table_add(&caml_prim_name_table, caml_stat_strdup(q));
 #endif
   }
   /* Clean up */
@@ -215,11 +225,11 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
 {
   void * handle;
   value result;
-  char * p;
+  charnat * p;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   String_val(filename));
-  p = caml_stat_strdup(String_val(filename));
+  p = caml_stat_strdup_to_utf16(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, Int_val(mode), 1);
   caml_leave_blocking_section();

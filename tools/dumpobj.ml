@@ -122,11 +122,11 @@ let rec print_obj x =
     else if tag = Obj.double_tag then
         printf "%.12g" (Obj.magic x : float)
     else if tag = Obj.double_array_tag then begin
-        let a = (Obj.magic x : float array) in
+        let a = (Obj.magic x : floatarray) in
         printf "[|";
-        for i = 0 to Array.length a - 1 do
+        for i = 0 to Array.Floatarray.length a - 1 do
           if i > 0 then printf ", ";
-          printf "%.12g" a.(i)
+          printf "%.12g" (Array.Floatarray.get a i)
         done;
         printf "|]"
     end else if tag = Obj.custom_tag && same_custom x 0l then

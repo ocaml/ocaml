@@ -31,6 +31,7 @@
 *.out
 *.out.dSYM
 *.swp
+_ocamltest
 
 # local to root directory
 
@@ -172,6 +173,13 @@
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/ocamltest
+/ocamltest/ocamltest.opt
+/ocamltest/ocamltest_config.ml
+/ocamltest/tsl_lexer.ml
+/ocamltest/tsl_parser.ml
+/ocamltest/tsl_parser.mli
+
 /otherlibs/dynlink/extract_crc
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
@@ -272,6 +280,10 @@
 
 /testsuite/tests/opaque/*/*.mli
 
+/testsuite/tests/output_obj/*.bc.c
+/testsuite/tests/output_obj/*_stub
+/testsuite/tests/output_obj/*_stub
+
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml
@@ -309,6 +321,10 @@
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
+/testsuite/tests/typing-misc/false.flat-float
+/testsuite/tests/typing-misc/true.flat-float
+/testsuite/tests/typing-misc/pr6939.ml
+
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
@@ -318,6 +334,15 @@
 /testsuite/tests/typing-multifile/g.ml
 /testsuite/tests/typing-multifile/test
 
+/testsuite/tests/typing-unboxed-types/false.flat-float
+/testsuite/tests/typing-unboxed-types/true.flat-float
+/testsuite/tests/typing-unboxed-types/test.ml.reference
+
+/testsuite/tests/translprim/false.flat-float
+/testsuite/tests/translprim/true.flat-float
+/testsuite/tests/translprim/array_spec.ml.reference
+/testsuite/tests/translprim/module_coercion.ml.reference
+
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
@@ -325,6 +350,8 @@
 
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result
+
+/testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/expect_test
 

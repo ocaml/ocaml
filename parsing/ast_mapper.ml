@@ -246,7 +246,8 @@ module MT = struct
         Pwith_type (map_loc sub lid, sub.type_declaration sub d)
     | Pwith_module (lid, lid2) ->
         Pwith_module (map_loc sub lid, map_loc sub lid2)
-    | Pwith_typesubst d -> Pwith_typesubst (sub.type_declaration sub d)
+    | Pwith_typesubst (lid, d) ->
+        Pwith_typesubst (map_loc sub lid, sub.type_declaration sub d)
     | Pwith_modsubst (s, lid) ->
         Pwith_modsubst (map_loc sub s, map_loc sub lid)
 
@@ -724,6 +725,8 @@ module PpxContext = struct
         lid "open_modules", make_list make_string !Clflags.open_modules;
         lid "for_package",  make_option make_string !Clflags.for_package;
         lid "debug",        make_bool !Clflags.debug;
+        lid "use_threads",  make_bool !Clflags.use_threads;
+        lid "use_vmthreads", make_bool !Clflags.use_vmthreads;
         get_cookies ()
       ]
     in
@@ -790,6 +793,10 @@ module PpxContext = struct
           Clflags.for_package := get_option get_string payload
       | "debug" ->
           Clflags.debug := get_bool payload
+      | "use_threads" ->
+          Clflags.use_threads := get_bool payload
+      | "use_vmthreads" ->
+          Clflags.use_vmthreads := get_bool payload
       | "cookies" ->
           let l = get_list (get_pair get_string (fun x -> x)) payload in
           cookies :=

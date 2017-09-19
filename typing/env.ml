@@ -1692,6 +1692,7 @@ and components_of_module_maker (env, sub, path, mty) =
             end
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
+            Datarepr.set_row_name decl' (Subst.type_path sub (Path.Pident id));
             let constructors =
               List.map snd (Datarepr.constructors_of_type path decl') in
             let labels =

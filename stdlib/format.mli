@@ -440,6 +440,7 @@ val over_max_boxes : unit -> bool
   module {!Format}.
 *)
 
+val pp_open_tbox : formatter -> unit -> unit
 val open_tbox : unit -> unit
 (** [open_tbox ()] opens a new tabulation box.
 
@@ -454,12 +455,15 @@ val open_tbox : unit -> unit
   a tabulation break.
 *)
 
+val pp_close_tbox : formatter -> unit -> unit
 val close_tbox : unit -> unit
 (** Closes the most recently opened tabulation box. *)
 
+val pp_set_tab : formatter -> unit -> unit
 val set_tab : unit -> unit
 (** Sets a tabulation marker at current insertion point. *)
 
+val pp_print_tab : formatter -> unit -> unit
 val print_tab : unit -> unit
 (** [print_tab ()] emits a 'next' tabulation break hint: if not already set on
   a tabulation marker, the insertion point moves to the first tabulation
@@ -468,6 +472,7 @@ val print_tab : unit -> unit
 
   It is equivalent to [print_tbreak 0 0]. *)
 
+val pp_print_tbreak : formatter -> int -> int -> unit
 val print_tbreak : int -> int -> unit
 (** [print_tbreak nspaces offset] emits a 'full' tabulation break hint.
 

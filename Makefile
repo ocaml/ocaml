@@ -56,7 +56,8 @@ CAMLC=$(CAMLRUN) boot/ocamlc -g -nostdlib -I boot -use-prims byterun/primitives
 CAMLOPT=$(CAMLRUN) ./ocamlopt -g -nostdlib -I stdlib -I otherlibs/dynlink
 ARCHES=amd64 i386 arm arm64 power s390x
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I middle_end \
-        -I middle_end/base_types -I asmcomp -I driver -I toplevel
+        -I middle_end/base_types -I asmcomp -I asmcomp/debug \
+        -I driver -I toplevel
 
 COMPFLAGS=-strict-sequence -principal -absname -w +a-4-9-41-42-44-45-48 \
 	  -warn-error A \
@@ -67,12 +68,6 @@ ifeq "$(strip $(NATDYNLINKOPTS))" ""
 OCAML_NATDYNLINKOPTS=
 else
 OCAML_NATDYNLINKOPTS = -ccopt "$(NATDYNLINKOPTS)"
-endif
-
-ifeq "$(strip $(LDFLAGS))" ""
-OCAML_LDFLAGS=
-else
-OCAML_LDFLAGS = -ccopt "$(LDFLAGS)"
 endif
 
 YACCFLAGS=-v --strict
@@ -158,7 +153,9 @@ ASMCOMP=\
   $(ARCH_SPECIFIC_ASMCOMP) \
   asmcomp/arch.cmo \
   asmcomp/cmm.cmo asmcomp/printcmm.cmo \
-  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
+  asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
+  asmcomp/debug/reg_availability_set.cmo \
+  asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
   asmcomp/export_info.cmo \
   asmcomp/export_info_for_pack.cmo \
@@ -183,6 +180,7 @@ ASMCOMP=\
   asmcomp/reloadgen.cmo asmcomp/reload.cmo \
   asmcomp/deadcode.cmo \
   asmcomp/printlinear.cmo asmcomp/linearize.cmo \
+  asmcomp/debug/available_regs.cmo \
   asmcomp/schedgen.cmo asmcomp/scheduling.cmo \
   asmcomp/branch_relaxation_intf.cmo \
   asmcomp/branch_relaxation.cmo \
@@ -318,6 +316,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%CC%%|$(CC)|' \
 	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
 	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+	    -e 's|%%OUTPUTOBJ%%|$(OUTPUTOBJ)|' \
 	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
 	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
 	    -e 's|%%EXT_EXE%%|$(EXE)|' \
@@ -331,7 +330,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
 	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
 	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
-	    -e 's|%%MKEXE%%|$(subst \,\\,$(MKEXE))|' \
+	    -e 's|%%MKEXE%%|$(subst ",\\",$(subst \,\\,$(MKEXE)))|' \
+	    -e 's|%%FLEXLINK_LDFLAGS%%|$(subst ",\\",$(subst \,\\,$(if $(LDFLAGS), -link "$(LDFLAGS)")))|' \
 	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
 	    -e 's|%%MODEL%%|$(MODEL)|' \
 	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
@@ -344,6 +344,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
 	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
+	    -e 's|%%WINDOWS_UNICODE%%|$(WINDOWS_UNICODE)|' \
 	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
 	    -e 's|%%TARGET%%|$(TARGET)|' \
@@ -351,6 +352,7 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
 	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
 	    -e 's|%%WITH_SPACETIME_CALL_COUNTS%%|$(WITH_SPACETIME_CALL_COUNTS)|' \
+	    -e 's|%%FLAT_FLOAT_ARRAY%%|$(FLAT_FLOAT_ARRAY)|' \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -470,13 +472,15 @@ opt.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
-	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT)
+	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
+	  ocamltest.opt
 else
 opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT)
+         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
+         ocamltest.opt
 endif
 
 .PHONY: base.opt
@@ -487,7 +491,7 @@ base.opt:
 	$(MAKE) ocaml
 	$(MAKE) opt-core
 	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 	$(MAKE) ocamlopt.opt
 	$(MAKE) otherlibrariesopt
 
@@ -519,7 +523,7 @@ coreboot:
 all: runtime
 	$(MAKE) coreall
 	$(MAKE) ocaml
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC)
+	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
 # Bootstrap and rebuild the whole system.
 # The compilation of ocaml will fail if the runtime has changed.
@@ -689,8 +693,6 @@ installopt:
 	  cp -f flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
 	fi
 
-
-
 .PHONY: installoptopt
 installoptopt:
 	cp ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
@@ -729,7 +731,7 @@ install-compiler-sources:
 # Run all tests
 
 .PHONY: tests
-tests: opt.opt
+tests: opt.opt ocamltest
 	cd testsuite; $(MAKE) clean && $(MAKE) all
 
 # Make clean in the test suite
@@ -867,8 +869,7 @@ partialclean::
 
 ocamlc.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlbytecomp.cmxa \
             $(BYTESTART:.cmo=.cmx)
-	$(CAMLOPT) $(LINKFLAGS) $(OCAML_LDFLAGS) -o $@ \
-	  $^ -cclib "$(BYTECCLIBS)"
+	$(CAMLOPT) $(LINKFLAGS) -o $@ $^ -cclib "$(BYTECCLIBS)"
 
 partialclean::
 	rm -f ocamlc.opt
@@ -970,7 +971,7 @@ clean::
 
 otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
   str systhreads threads unix win32graph win32unix
-subdirs := asmrun byterun debugger lex ocamldoc stdlib tools \
+subdirs := asmrun byterun debugger lex ocamldoc ocamltest stdlib tools \
   $(addprefix otherlibs/, $(otherlibs_all))
 
 .PHONY: alldepend
@@ -1045,6 +1046,16 @@ ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 .PHONY: ocamldoc.opt
 ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 	$(MAKE) -C ocamldoc opt.opt
+
+# OCamltest
+ocamltest: ocamlc ocamlyacc ocamllex
+	$(MAKE) -C ocamltest
+
+ocamltest.opt: ocamlc.opt ocamlyacc ocamllex
+	$(MAKE) -C ocamltest ocamltest.opt$(EXE)
+
+partialclean::
+	$(MAKE) -C ocamltest clean
 
 # Documentation
 
@@ -1274,7 +1285,7 @@ beforedepend:: bytecomp/opcodes.ml
 
 partialclean::
 	for d in utils parsing typing bytecomp asmcomp middle_end \
-	         middle_end/base_types driver toplevel tools; do \
+	         middle_end/base_types asmcomp/debug driver toplevel tools; do \
 	  rm -f $$d/*.cm[ioxt] $$d/*.cmti $$d/*.annot $$d/*.$(S) \
 	    $$d/*.$(O) $$d/*.$(SO) $d/*~; \
 	done
@@ -1283,7 +1294,7 @@ partialclean::
 .PHONY: depend
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
-	 middle_end/base_types driver toplevel; \
+	 middle_end/base_types asmcomp/debug driver toplevel; \
 	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
 	 done) > .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \

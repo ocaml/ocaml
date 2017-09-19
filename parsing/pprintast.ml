@@ -31,6 +31,7 @@ open Ast_helper
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%'; '#' ]
+
 (* type fixity = Infix| Prefix  *)
 let special_infix_strings =
   ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
@@ -44,6 +45,7 @@ let fixity_of_string  = function
   | s when List.mem s special_infix_strings -> `Infix s
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
+  | s when s.[0] = '.' -> `Mixfix s
   | _ -> `Normal
 
 let view_fixity_of_exp = function
@@ -52,10 +54,13 @@ let view_fixity_of_exp = function
   | _ -> `Normal
 
 let is_infix  = function  | `Infix _ -> true | _  -> false
+let is_mixfix = function `Mixfix _ -> true | _ -> false
 
 (* which identifiers are in fact operators needing parentheses *)
 let needs_parens txt =
-  is_infix (fixity_of_string txt)
+  let fix = fixity_of_string txt in
+  is_infix fix
+  || is_mixfix fix
   || List.mem txt.[0] prefix_symbols
 
 (* some infixes need spaces around parens to avoid clashes with comment
@@ -467,39 +472,66 @@ and sugar_expr ctxt f e =
   | Pexp_apply ({ pexp_desc = Pexp_ident {txt = id; _};
                   pexp_attributes=[]; _}, args)
     when List.for_all (fun (lab, _) -> lab = Nolabel) args -> begin
+      let print_indexop a path_prefix assign left right print_index indices
+          rem_args =
+        let print_path ppf = function
+          | None -> ()
+          | Some m -> pp ppf ".%a" longident m in
+        match assign, rem_args with
+            | false, [] ->
+              pp f "@[%a%a%s%a%s@]"
+                (simple_expr ctxt) a print_path path_prefix
+                left (list ~sep:"," print_index) indices right; true
+            | true, [v] ->
+              pp f "@[%a%a%s%a%s@ <-@;<1 2>%a@]"
+                (simple_expr ctxt) a print_path path_prefix
+                left (list ~sep:"," print_index) indices right
+                (simple_expr ctxt) v; true
+            | _ -> false in
       match id, List.map snd args with
       | Lident "!", [e] ->
         pp f "@[<hov>!%a@]" (simple_expr ctxt) e; true
       | Ldot (path, ("get"|"set" as func)), a :: other_args -> begin
-          let print left right print_index indexes rem_args =
-            match func, rem_args with
-            | "get", [] ->
-              pp f "@[%a.%s%a%s@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right; true
-            | "set", [v] ->
-              pp f "@[%a.%s%a%s@ <-@;<1 2>%a@]"
-                (simple_expr ctxt) a
-                left (list ~sep:"," print_index) indexes right
-                (simple_expr ctxt) v; true
-            | _ -> false
-          in
+          let assign = func = "set" in
+          let print = print_indexop a None assign in
           match path, other_args with
           | Lident "Array", i :: rest ->
-            print "(" ")" (expression ctxt) [i] rest
+            print ".(" ")" (expression ctxt) [i] rest
           | Lident "String", i :: rest ->
-            print "[" "]" (expression ctxt) [i] rest
+            print ".[" "]" (expression ctxt) [i] rest
           | Ldot (Lident "Bigarray", "Array1"), i1 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1] rest
+            print ".{" "}" (simple_expr ctxt) [i1] rest
           | Ldot (Lident "Bigarray", "Array2"), i1 :: i2 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2] rest
+            print ".{" "}" (simple_expr ctxt) [i1; i2] rest
           | Ldot (Lident "Bigarray", "Array3"), i1 :: i2 :: i3 :: rest ->
-            print "{" "}" (simple_expr ctxt) [i1; i2; i3] rest
+            print ".{" "}" (simple_expr ctxt) [i1; i2; i3] rest
           | Ldot (Lident "Bigarray", "Genarray"),
             {pexp_desc = Pexp_array indexes; pexp_attributes = []} :: rest ->
-            print "{" "}" (simple_expr ctxt) indexes rest
+              print ".{" "}" (simple_expr ctxt) indexes rest
           | _ -> false
         end
+      | (Lident s | Ldot(_,s)) , a :: i :: rest
+        when s.[0] = '.' ->
+          let n = String.length s in
+          (* extract operator:
+             assignment operators end with [right_bracket ^ "<-"],
+             access operators end with [right_bracket] directly
+          *)
+          let assign = s.[n - 1] = '-'  in
+          let kind =
+            (* extract the right end bracket *)
+            if assign then s.[n - 3] else s.[n - 1] in
+          let left, right = match kind with
+            | ')' -> '(', ")"
+            | ']' -> '[', "]"
+            | '}' -> '{', "}"
+            | _ -> assert false in
+          let path_prefix = match id with
+            | Ldot(m,_) -> Some m
+            | _ -> None in
+          let left = String.sub s 0 (1+String.index s left) in
+          print_indexop a path_prefix assign left right
+            (expression ctxt) [i] rest
       | _ -> false
     end
   | _ -> false
@@ -952,14 +984,14 @@ and module_type ctxt f x =
                 ls longident_loc li (type_declaration ctxt) td
           | Pwith_module (li, li2) ->
               pp f "module %a =@ %a" longident_loc li longident_loc li2;
-          | Pwith_typesubst ({ptype_params=ls;_} as td) ->
+          | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
               let ls = List.map fst ls in
-              pp f "type@ %a %s :=@ %a"
+              pp f "type@ %a %a :=@ %a"
                 (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
-                ls td.ptype_name.txt
+                ls longident_loc li
                 (type_declaration ctxt) td
-          | Pwith_modsubst (s, li2) ->
-              pp f "module %s :=@ %a" s.txt longident_loc li2 in
+          | Pwith_modsubst (li, li2) ->
+             pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
         (match l with
          | [] -> pp f "@[<hov2>%a@]" (module_type ctxt) mt
          | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"

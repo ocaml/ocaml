@@ -1,10 +1,11 @@
+#!/bin/sh
 #**************************************************************************
 #*                                                                        *
-#*                                OCaml                                   *
+#*                                 OCaml                                  *
 #*                                                                        *
-#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*            Sebastien Hinderer, projet Gallium, INRIA Paris             *
 #*                                                                        *
-#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*   Copyright 2016 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,9 +14,13 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR=../..
-MODULES=multdef
-MAIN_MODULE=usemultdef
+# This script provides command-line options to use by default
+# when invoking ocamlopt
 
-include $(BASEDIR)/makefiles/Makefile.one
-include $(BASEDIR)/makefiles/Makefile.common
+# It is used to add that disable annoying linker warnings on some versions
+# of OpenBSD
+
+case "$1" in
+  i386-*-openbsd5.[5-9]*|i386-*-openbsd[6-9].*)
+    echo "-ccopt -nopie";;
+esac

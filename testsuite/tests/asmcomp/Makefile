@@ -15,6 +15,8 @@
 
 BASEDIR=../..
 
+include $(BASEDIR)/../config/Makefile
+
 INCLUDES=\
   -I $(OTOPDIR)/parsing \
   -I $(OTOPDIR)/utils \
@@ -55,8 +57,9 @@ MLCASES=optargs staticalloc bind_tuples is_static register_typing \
   register_typing_switch
 ARGS_optargs=-g
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
-MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2 \
-  static_float_array_flambda static_float_array_flambda_opaque
+MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2
+MLCASES_FLAMBDA_FLOAT=static_float_array_flambda \
+                      static_float_array_flambda_opaque
 ARGS_is_static_flambda=\
   -I $(OTOPDIR)/byterun is_in_static_data.c is_static_flambda_dep.ml
 ARGS_static_float_array_flambda=\
@@ -87,7 +90,8 @@ ARGS_even-odd-spill=-DINT_INT -DFUN=is_even main.c
 ARGS_pgcd=-DINT_INT -DFUN=pgcd_30030 main.c
 
 skips:
-	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \
+	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA) \
+                  $(MLCASES_FLAMBDA_FLOAT); do \
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
@@ -95,8 +99,8 @@ one_ml:
 	@$(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
-one_ml_flambda:
-	@if $(FLAMBDA); then \
+one_ml_cond:
+	@if $(COND); then \
 	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
@@ -142,7 +146,12 @@ tests: $(CASES:=.$(O))
         done
 	@for c in $(MLCASES_FLAMBDA); do \
 	  printf " ... testing '$$c':"; \
-          $(MAKE) one_ml_flambda NAME=$$c; \
+          $(MAKE) one_ml_cond NAME=$$c COND=$(FLAMBDA); \
+        done
+	@for c in $(MLCASES_FLAMBDA_FLOAT); do \
+	  printf " ... testing '$$c':"; \
+	  $(MAKE) one_ml_cond NAME=$$c \
+                  COND='$(FLAMBDA) && $(FLAT_FLOAT_ARRAY)'; \
         done
 
 promote:

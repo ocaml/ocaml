@@ -928,6 +928,20 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
   return result;
 }
 
+#ifdef _WIN32
+
+CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
+{
+  int slen = wcslen(s);
+  wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  memcpy(result, s, (slen + 1)*sizeof(wchar_t));
+  return result;
+}
+
+#endif
+
 CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
 {
   va_list args;
@@ -957,3 +971,37 @@ CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
   *p = 0;
   return result;
 }
+
+#ifdef _WIN32
+
+CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
+{
+  va_list args;
+  wchar_t *result, *p;
+  size_t len = 0;
+  int i;
+
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    len += wcslen(s);
+  }
+  va_end(args);
+
+  result = caml_stat_alloc((len + 1)*sizeof(wchar_t));
+
+  va_start(args, n);
+  p = result;
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    size_t l = wcslen(s);
+    memcpy(p, s, l*sizeof(wchar_t));
+    p += l;
+  }
+  va_end(args);
+
+  *p = 0;
+  return result;
+}
+
+#endif

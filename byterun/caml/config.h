@@ -37,6 +37,14 @@
 #define ARCH_SIZET_PRINTF_FORMAT "z"
 #endif
 
+/* Types for Windows wide strings */
+
+#ifdef _WIN32
+#define ARCH_CHARNATSTR_PRINTF_FORMAT "S"
+#else
+#define ARCH_CHARNATSTR_PRINTF_FORMAT "s"
+#endif
+
 /* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 
