@@ -102,13 +102,14 @@ let allocate_free_register i =
           (* Remove all assigned registers from the register mask *)
           List.iter
             (function
-              {reg = {loc = Reg r}} -> regmask.(r - r0) <- false
+              {reg = {loc = Reg r}} ->
+                if r - r0 < rn then regmask.(r - r0) <- false
             | _ -> ())
             ci.ci_active;
           (* Remove all overlapping registers from the register mask *)
           let remove_bound_overlapping = function
               {reg = {loc = Reg r}} as j ->
-                if regmask.(r - r0) && Interval.overlap j i then
+                if (r - r0 < rn) && regmask.(r - r0) && Interval.overlap j i then
                 regmask.(r - r0) <- false
             | _ -> () in
           List.iter remove_bound_overlapping ci.ci_inactive;
