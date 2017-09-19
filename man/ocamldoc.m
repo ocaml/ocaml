@@ -258,6 +258,9 @@ Use
 .I title
 as the title for the generated documentation.
 .TP
+.BI \-text \ file
+Consider \fIfile\fR as a .txt file.
+.TP
 .BI \-intro \ file
 Use content of
 .I file
