@@ -3,6 +3,36 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+(Bugfixes that are also to be included in the 4.06 branch should
+be mentioned in the 4.06 section below instead of here.)
+
+### Language features:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Compiler user-interface and warnings:
+
+### Runtime system:
+
+### Other libraries:
+
+### Manual and documentation:
+
+### Tools:
+
+### Compiler distribution build system
+
+### Internal/compiler-libs changes:
+
+### Bug fixes
+
+Release branch for 4.06:
+------------------------
+
+(Changes that can break existing programs are marked with a "*")
+
 ### Language features:
 
 - GPR#792: fix limitations of destructive substitutions, by
