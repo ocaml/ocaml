@@ -313,6 +313,10 @@ option:
 .B \-all\-params
 Display the complete list of parameters for functions and methods.
 .TP
+.BI \-charset \ s
+Add information about character encoding being \fIs\fR
+(default is \fBiso-8859-1\fR).
+.TP
 .BI \-css\-style \ filename
 Use
 .I filename
