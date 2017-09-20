@@ -341,12 +341,12 @@ compiling `world`, you must compile `flexdll`, i.e.:
 
 == Unicode support
 
-Priori to version 4.06, all filenames on the OCaml side were assumed
+Prior to version 4.06, all filenames on the OCaml side were assumed
 to be encoded using the current 8-bit code page of the system.  Some
 Unicode filenames could thus not be represented.  Since version 4.06,
 OCaml adds to this legacy mode a new "Unicode" mode, where filenames
 are interpreted as UTF-8 encoded strings.  In addition to filenames,
-this applies to environment variables and command-line arguments.
+this applies to environment variables and command-line arguments as well.
 
 The mode must be decided before building the system, by tweaking
 the `WINDOWS_UNICODE` variables in `config/Makefile`.  A value of 1
