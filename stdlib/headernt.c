@@ -93,7 +93,18 @@ static BOOL WINAPI ctrl_handler(DWORD event)
 #define CP CP_THREAD_ACP
 #endif
 
-#define msg_and_length(msg) msg , (sizeof(msg) - 1)
+static void write_console(HANDLE hOut, WCHAR *wstr)
+{
+  DWORD consoleMode, numwritten, len;
+  static char str[MAX_PATH];
+
+  if (GetConsoleMode(hOut, &consoleMode) != 0) { /* The output stream is a Console */
+    WriteConsole(hOut, wstr, wcslen(wstr), &numwritten, NULL);
+  } else { /* The output stream is redirected */
+    len = WideCharToMultiByte(CP, 0, wstr, wcslen(wstr), str, sizeof(str), NULL, NULL);
+    WriteFile(hOut, str, len, &numwritten, NULL);
+  }
+}
 
 static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
          wchar_t * const cmdline)
@@ -104,13 +115,10 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
   DWORD retcode;
   if (SearchPath(NULL, runtime, L".exe", sizeof(path)/sizeof(wchar_t), path, &runtime) == 0) {
     HANDLE errh;
-    char runtime_cp[MAX_PATH];
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WideCharToMultiByte(CP, 0, runtime, -1, runtime_cp, sizeof(runtime_cp), NULL, NULL);
-    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
-    WriteFile(errh, runtime_cp, strlen(runtime_cp), &numwritten, NULL);
-    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    write_console(errh, L"Cannot exec ");
+    write_console(errh, runtime);
+    write_console(errh, L"\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
@@ -130,13 +138,10 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
   if (!CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
                      &stinfo, &procinfo)) {
     HANDLE errh;
-    char runtime_cp[MAX_PATH];
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WideCharToMultiByte(CP, 0, runtime, -1, runtime_cp, sizeof(runtime_cp), NULL, NULL);
-    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
-    WriteFile(errh, runtime_cp, strlen(runtime_cp), &numwritten, NULL);
-    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    write_console(errh, L"Cannot exec ");
+    write_console(errh, runtime);
+    write_console(errh, L"\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
@@ -166,14 +171,9 @@ int wmain(void)
   if (h == INVALID_HANDLE_VALUE ||
       (runtime_path = read_runtime_path(h)) == NULL) {
     HANDLE errh;
-    char truename_cp[MAX_PATH];
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WideCharToMultiByte(CP, 0, truename, -1, truename_cp, sizeof(truename_cp), NULL, NULL);
-    WriteFile(errh, truename_cp, strlen(truename_cp), &numwritten, NULL);
-    WriteFile(errh, msg_and_length(" not found or is not a bytecode"
-                                   " executable file\r\n"),
-              &numwritten, NULL);
+    write_console(errh, truename);
+    write_console(errh, L" not found or is not a bytecode executable file\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
