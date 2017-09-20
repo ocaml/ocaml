@@ -349,7 +349,7 @@ are interpreted as UTF-8 encoded strings.  In addition to filenames,
 this applies to environment variables and command-line arguments as well.
 
 The mode must be decided before building the system, by tweaking
-the `WINDOWS_UNICODE` variables in `config/Makefile`.  A value of 1
+the `WINDOWS_UNICODE` variable in `config/Makefile`.  A value of 1
 enables the the new "Unicode" mode, while a value of 0 maintains
 the legacy mode.
 
