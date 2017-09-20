@@ -339,6 +339,50 @@ compiling `world`, you must compile `flexdll`, i.e.:
    installed FlexDLL, you must erase the contents of `flexdll/` before
    compiling.
 
+== Unicode support
+
+Priori to version 4.06, all filenames on the OCaml side were assumed
+to be encoded using the current 8-bit code page of the system.  Some
+Unicode filenames could thus not be represented.  Since version 4.06,
+OCaml adds to this legacy mode a new "Unicode" mode, where filenames
+are interpreted as UTF-8 encoded strings.  In addition to filenames,
+this applies to environment variables and command-line arguments.
+
+The mode must be decided before building the system, by tweaking
+the `WINDOWS_UNICODE` variables in `config/Makefile`.  A value of 1
+enables the the new "Unicode" mode, while a value of 0 maintains
+the legacy mode.
+
+Technically, both modes use the Windows "wide" API, where filenames
+and other strings are made of 16-bit entities, usually interpreted as
+UTF-16 encoded strings.
+
+Some more details about the two modes:
+
+ * Unicode mode: OCaml strings are interpreted as being UTF-8 encoded
+   and translated to UTF-16 when calling Windows; strings returned by
+   Windows are interpreted as UTF-16 and translated to UTF-8 on their
+   way back to OCaml.  Additionally, an OCaml string which is not
+   valid UTF-8 will be interpreted as being in the current 8-bit code
+   page.  This fallback works well in practice, since the chances of
+   non-ASCII string encoded in the a 8-bit code page to be a valid
+   UTF-8 string are tiny.  This means that filenames extracted
+   obtained e.g. from a 8-bit UI or database layer would continue to
+   work fine.  Application written for the legacy mode or older
+   versions of OCaml might still be broken if strings returned by
+   Windows (e.g. for `Sys.readdir`) are sent to components expecting
+   strings encoded in the current code page.
+
+ * Legacy mode: this mode emulates closely the behavior of OCaml <
+   4.06 and is thus the safest choice in terms of backward
+   compatibility.  In this mode, OCaml programs can only work with
+   filenames that can be encoded in the current code page, and the
+   same applies to ocaml tools themselves (ocamlc, ocamlopt, etc).
+
+The legacy mode will be deprecated and then removed in future versions
+of OCaml.  Users are thus strongly encouraged to use the Unicode mode
+and adapt their existing code bases accordingly.
+
 == Trademarks
 
 Microsoft, Visual C++, Visual Studio and Windows are registered trademarks of
