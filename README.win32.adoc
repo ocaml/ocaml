@@ -345,8 +345,8 @@ Prior to version 4.06, all filenames on the OCaml side were assumed
 to be encoded using the current 8-bit code page of the system.  Some
 Unicode filenames could thus not be represented.  Since version 4.06,
 OCaml adds to this legacy mode a new "Unicode" mode, where filenames
-are interpreted as UTF-8 encoded strings.  In addition to filenames,
-this applies to environment variables and command-line arguments as well.
+are UTF-8 encoded strings.  In addition to filenames,
+this applies to environment variables and command-line arguments.
 
 The mode must be decided before building the system, by tweaking
 the `WINDOWS_UNICODE` variable in `config/Makefile`.  A value of 1
@@ -367,9 +367,9 @@ Some more details about the two modes:
    page.  This fallback works well in practice, since the chances of
    non-ASCII string encoded in the a 8-bit code page to be a valid
    UTF-8 string are tiny.  This means that filenames extracted
-   obtained e.g. from a 8-bit UI or database layer would continue to
+   obtained from e.g. a 8-bit UI or database layer would continue to
    work fine.  Application written for the legacy mode or older
-   versions of OCaml might still be broken if strings returned by
+   versions of OCaml might still break if strings returned by
    Windows (e.g. for `Sys.readdir`) are sent to components expecting
    strings encoded in the current code page.
 
