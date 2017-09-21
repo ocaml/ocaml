@@ -131,6 +131,7 @@ static void open_connection(void)
 #endif
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
+  dbg_out->refcount++; /* prevent deallocation at finalization, MPR#7609 */
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
 #ifdef _WIN32
   caml_putword(dbg_out, _getpid());
