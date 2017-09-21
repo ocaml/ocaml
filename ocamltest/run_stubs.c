@@ -36,11 +36,6 @@ array cstringvect(value arg)
   mlsize_t size, i;
 
   size = Wosize_val(arg);
-  /*
-  for (i = 0; i < size; i++)
-    if (! caml_string_is_c_safe(Field(arg, i)))
-      unix_error(EINVAL, cmdname, Field(arg, i));
-  */
   res = (array) caml_stat_alloc((size + 1) * sizeof(char *));
   for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
   res[size] = NULL;
