@@ -37,11 +37,11 @@
 
 CAMLprim value unix_getcwd(value unit)
 {
-  charnat buff[PATH_MAX];
-  charnat * ret;
-  ret = _tgetcwd(buff, sizeof(buff)/sizeof(*buff));
+  char_os buff[PATH_MAX];
+  char_os * ret;
+  ret = getcwd_os(buff, sizeof(buff)/sizeof(*buff));
   if (ret == 0) uerror("getcwd", Nothing);
-  return caml_copy_string_of_utf16(buff);
+  return caml_copy_string_of_os(buff);
 }
 
 #else

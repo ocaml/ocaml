@@ -26,7 +26,7 @@
 #include <windows.h>
 #endif
 
-CAMLextern void caml_main (charnat **);
+CAMLextern void caml_main (char_os **);
 
 #ifdef _WIN32
 CAMLextern void caml_expand_command_line (int *, wchar_t ***);

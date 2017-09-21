@@ -190,7 +190,7 @@ CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
     if (retcode == 0) {
       caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
       caml_stat_free(fullname);
-      return caml_stat_tcsdup(name);
+      return caml_stat_strdup_os(name);
     }
     if (retcode < fullnamelen)
       return fullname;

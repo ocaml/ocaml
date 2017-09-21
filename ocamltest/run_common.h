@@ -20,7 +20,7 @@
 
 /* is_defined(str) returns 1 iff str points to a non-empty string */
 /* Otherwise returns 0 */
-static int is_defined(const charnat *str)
+static int is_defined(const char_os *str)
 {
   return (str != NULL) && (*str != 0);
 }

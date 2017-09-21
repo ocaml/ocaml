@@ -103,9 +103,9 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_common(charnat **argv, int pooling)
+value caml_startup_common(char_os **argv, int pooling)
 {
-  charnat * exe_name, * proc_self_exe;
+  char_os * exe_name, * proc_self_exe;
   char tos;
 
   /* Determine options */
@@ -156,29 +156,29 @@ value caml_startup_common(charnat **argv, int pooling)
   return caml_start_program();
 }
 
-value caml_startup_exn(charnat **argv)
+value caml_startup_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 0);
 }
 
-void caml_startup(charnat **argv)
+void caml_startup(char_os **argv)
 {
   value res = caml_startup_exn(argv);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_main(charnat **argv)
+void caml_main(char_os **argv)
 {
   caml_startup(argv);
 }
 
-value caml_startup_pooled_exn(charnat **argv)
+value caml_startup_pooled_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 1);
 }
 
-void caml_startup_pooled(charnat **argv)
+void caml_startup_pooled(char_os **argv)
 {
   value res = caml_startup_pooled_exn(argv);
   if (Is_exception_result(res))

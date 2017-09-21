@@ -22,14 +22,14 @@
 
 CAMLprim value unix_execve(value path, value args, value env)
 {
-  charnat ** argv;
-  charnat ** envp;
-  charnat * wpath;
+  char_os ** argv;
+  char_os ** envp;
+  char_os * wpath;
   caml_unix_check_path(path, "execve");
   argv = cstringvect(args, "execve");
   envp = cstringvect(env, "execve");
-  wpath = caml_stat_strdup_to_utf16(String_val(path));
-  (void) _texecve(wpath, EXECV_CAST argv, EXECV_CAST envp);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execve_os(wpath, EXECV_CAST argv, EXECV_CAST envp);
   caml_stat_free(wpath);
   cstringvect_free(argv);
   cstringvect_free(envp);
