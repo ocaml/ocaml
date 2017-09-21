@@ -147,6 +147,13 @@ let arg_label i ppf = function
   | Labelled s -> line i ppf "Labelled \"%s\"\n" s
 ;;
 
+let record_representation i ppf = let open Types in function
+  | Record_regular -> line i ppf "Record_regular\n"
+  | Record_float -> line i ppf "Record_float\n"
+  | Record_unboxed b -> line i ppf "Record_unboxed %b\n" b
+  | Record_inlined i -> line i ppf "Record_inlined %d\n" i
+  | Record_extension -> line i ppf "Record_extension\n"
+
 let attributes i ppf l =
   let i = i + 1 in
   List.iter
@@ -325,10 +332,15 @@ and expression i ppf x =
   | Texp_variant (l, eo) ->
       line i ppf "Texp_variant \"%s\"\n" l;
       option i expression ppf eo;
-  | Texp_record { fields; extended_expression; _ } ->
+  | Texp_record { fields; representation; extended_expression } ->
       line i ppf "Texp_record\n";
-      array i record_field ppf fields;
-      option i expression ppf extended_expression;
+      let i = i+1 in
+      line i ppf "fields =\n";
+      array (i+1) record_field ppf fields;
+      line i ppf "representation =\n";
+      record_representation (i+1) ppf representation;
+      line i ppf "extended_expression =\n";
+      option (i+1) expression ppf extended_expression;
   | Texp_field (e, li, _) ->
       line i ppf "Texp_field\n";
       expression i ppf e;
@@ -379,7 +391,7 @@ and expression i ppf x =
       module_expr i ppf me;
       expression i ppf e;
   | Texp_letexception (cd, e) ->
-      line i ppf "Pexp_letexception\n";
+      line i ppf "Texp_letexception\n";
       extension_constructor i ppf cd;
       expression i ppf e;
   | Texp_assert (e) ->

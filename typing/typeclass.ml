@@ -1183,6 +1183,9 @@ and class_expr_aux cl_num val_env met_env scl =
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in
+      let () = if rec_flag = Recursive then
+        check_recursive_bindings val_env defs
+      in
       rc {cl_desc = Tcl_let (rec_flag, defs, vals, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
@@ -1723,7 +1726,17 @@ let class_description env sexpr =
   (expr, expr.cltyp_type)
 
 let class_declarations env cls =
-  type_classes true approx_declaration class_declaration env cls
+  let info, env =
+    type_classes true approx_declaration class_declaration env cls
+  in
+  let ids, exprs =
+    List.split
+      (List.map
+         (fun ci -> ci.cls_id, ci.cls_info.ci_expr)
+         info)
+  in
+  check_recursive_class_bindings env ids exprs;
+  info, env
 
 let class_descriptions env cls =
   type_classes true approx_description class_description env cls
