@@ -144,6 +144,7 @@ static void open_connection(void)
 static void close_connection(void)
 {
   caml_close_channel(dbg_in);
+  dbg_out->refcount--;
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */
 }
