@@ -31,7 +31,7 @@
 #endif
 #endif
 
-wchar_t * default_runtime_name = RUNTIME_NAME;
+char * default_runtime_name = RUNTIME_NAME;
 
 static
 #if _MSC_VER >= 1200
@@ -46,10 +46,10 @@ unsigned long read_size(const char * const ptr)
          ((unsigned long) p[2] << 8) | p[3];
 }
 
-static __inline wchar_t * read_runtime_path(HANDLE h)
+static __inline char * read_runtime_path(HANDLE h)
 {
   char buffer[TRAILER_SIZE];
-  static wchar_t runtime_path[MAX_PATH];
+  static char runtime_path[MAX_PATH];
   DWORD nread;
   int num_sections, path_size, i;
   long ofs;
@@ -87,6 +87,12 @@ static BOOL WINAPI ctrl_handler(DWORD event)
     return FALSE;
 }
 
+#if WINDOWS_UNICODE
+#define CP CP_UTF8
+#else
+#define CP CP_THREAD_ACP
+#endif
+
 #define msg_and_length(msg) msg , (sizeof(msg) - 1)
 
 static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
@@ -101,9 +107,9 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
     char runtime_cp[MAX_PATH];
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WideCharToMultiByte(CP_UTF8, 0, runtime, -1, runtime_cp, sizeof(runtime_cp), NULL, NULL);
+    WideCharToMultiByte(CP, 0, runtime, -1, runtime_cp, sizeof(runtime_cp), NULL, NULL);
     WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
-    WriteFile(errh, msg_and_length(runtime_cp), &numwritten, NULL);
+    WriteFile(errh, runtime_cp, strlen(runtime_cp), &numwritten, NULL);
     WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
     ExitProcess(2);
 #if _MSC_VER >= 1200
@@ -127,6 +133,7 @@ static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
     char runtime_cp[MAX_PATH];
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
+    WideCharToMultiByte(CP, 0, runtime, -1, runtime_cp, sizeof(runtime_cp), NULL, NULL);
     WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
     WriteFile(errh, runtime_cp, strlen(runtime_cp), &numwritten, NULL);
     WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
@@ -149,7 +156,8 @@ int wmain(void)
 {
   wchar_t truename[MAX_PATH];
   wchar_t * cmdline = GetCommandLine();
-  wchar_t * runtime_path;
+  char * runtime_path;
+  wchar_t wruntime_path[MAX_PATH];
   HANDLE h;
 
   GetModuleFileName(NULL, truename, sizeof(truename)/sizeof(wchar_t));
@@ -161,8 +169,8 @@ int wmain(void)
     char truename_cp[MAX_PATH];
     DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WideCharToMultiByte(CP_UTF8, 0, truename, -1, truename_cp, sizeof(truename_cp), NULL, NULL);
-    WriteFile(errh, msg_and_length(truename_cp), &numwritten, NULL);
+    WideCharToMultiByte(CP, 0, truename, -1, truename_cp, sizeof(truename_cp), NULL, NULL);
+    WriteFile(errh, truename_cp, strlen(truename_cp), &numwritten, NULL);
     WriteFile(errh, msg_and_length(" not found or is not a bytecode"
                                    " executable file\r\n"),
               &numwritten, NULL);
@@ -172,7 +180,8 @@ int wmain(void)
 #endif
   }
   CloseHandle(h);
-  run_runtime(runtime_path , cmdline);
+  MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path, sizeof(wruntime_path)/sizeof(wchar_t));
+  run_runtime(wruntime_path , cmdline);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
 #endif
