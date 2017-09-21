@@ -54,13 +54,13 @@ endif
 
 CFLAGS += $(IFLEXDIR)
 
+ifneq "$(CCOMPTYPE)" "msvc"
+CFLAGS += -g
+endif
+
 DFLAGS=$(CFLAGS) -DDEBUG
 IFLAGS=$(CFLAGS) -DCAML_INSTR
 PICFLAGS=$(CFLAGS) $(SHAREDCCCOMPOPTS)
-
-ifneq "$(CCOMPTYPE)" "msvc"
-DFLAGS += -g
-endif
 
 DBGO=d.$(O)
 

@@ -612,6 +612,9 @@ Release branch for 4.06:
   condition on Unix.
   (David Allsopp, report by Andreas Hauptmann)
 
+- GPR#1338: Add "-g" for bytecode runtime system compilation
+  (Mark Shinwell)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
