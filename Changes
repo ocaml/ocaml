@@ -527,7 +527,7 @@ Release branch for 4.06:
 
 - MPR#7609: use-after-free memory corruption if a program debugged
   under ocamldebug calls Pervasives.flush_all
-  (Xavier Leroy, report by Paul Steckler)
+  (Xavier Leroy, report by Paul Steckler, review by Gabriel Scherer)
 
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
