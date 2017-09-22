@@ -15,6 +15,9 @@
 
 (* Interface for ocamltest's configuration module *)
 
+val arch : string
+(** Architecture for the native compiler, "none" if it is disabled *)
+
 val c_preprocessor : string
 (** Command to use to invoke the C preprocessor *)
 
