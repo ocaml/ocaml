@@ -30,16 +30,25 @@
 #include "caml/io.h"
 
 /* cstringvect: inspired by similar function in otherlibs/unix/cstringv.c */
-array cstringvect(value arg)
+static array cstringvect(value arg)
 {
   array res;
   mlsize_t size, i;
 
   size = Wosize_val(arg);
   res = (array) caml_stat_alloc((size + 1) * sizeof(char *));
-  for (i = 0; i < size; i++) res[i] = String_val(Field(arg, i));
+  for (i = 0; i < size; i++)
+    res[i] = caml_stat_strdup(String_val(Field(arg, i)));
   res[size] = NULL;
   return res;
+}
+
+static void free_cstringvect(array v)
+{
+  char **p;
+  for (p = v; *p != NULL; p++)
+    caml_stat_free(*p);
+  caml_stat_free(v);
 }
 
 static void logToChannel(void *voidchannel, const char *fmt, va_list ap)
@@ -80,5 +89,6 @@ CAMLprim value caml_run_command(value caml_settings)
   settings.logger = logToChannel;
   settings.loggerData = Channel(Field(caml_settings, 7));
   res = run_command(&settings);
+  free_cstringvect(settings.argv);
   CAMLreturn(Val_int(res));
 }
