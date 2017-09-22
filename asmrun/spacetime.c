@@ -234,15 +234,6 @@ void caml_spacetime_initialize(void)
         if (getcwd(cwd, PATH_MAX) == NULL) {
           dir_ok = 0;
         }
-#elif defined(HAS_GETWD)
-        cwd = (char*) malloc(PATH_MAX);
-        if (cwd == NULL) {
-          fprintf(stderr, "Out of memory for [getwd]\n");
-          abort();
-        }
-        if (getwd(cwd) == NULL) {
-          dir_ok = 0;
-        }
 #else
         dir_ok = 0;
 #endif
