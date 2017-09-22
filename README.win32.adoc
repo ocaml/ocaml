@@ -366,7 +366,7 @@ Some more details about the two modes:
    valid UTF-8 will be interpreted as being in the current 8-bit code
    page.  This fallback works well in practice, since the chances of
    non-ASCII string encoded in the a 8-bit code page to be a valid
-   UTF-8 string are tiny.  This means that filenames extracted
+   UTF-8 string are tiny.  This means that filenames
    obtained from e.g. a 8-bit UI or database layer would continue to
    work fine.  Application written for the legacy mode or older
    versions of OCaml might still break if strings returned by
