@@ -394,6 +394,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
 CAMLexport void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
+  if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
   if (--chan->refcount > 0) return;
   if (caml_channel_mutex_free != NULL) (*caml_channel_mutex_free)(chan);
 
@@ -461,12 +462,16 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
 
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
+  struct channel * chan = caml_open_descriptor_in(Int_val(fd));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  return caml_alloc_channel(chan);
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+  struct channel * chan = caml_open_descriptor_out(Int_val(fd));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  return caml_alloc_channel(chan);
 }
 
 CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
