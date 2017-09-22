@@ -152,6 +152,7 @@ ocamltest.opt$(EXE): $(native_modules)
 
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
+	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
