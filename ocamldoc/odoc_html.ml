@@ -36,6 +36,12 @@ let charset = ref "iso-8859-1"
 (** The functions used for naming files and html marks.*)
 module Naming =
   struct
+    (** The prefix for modules marks. *)
+    let mark_module = "MODULE"
+
+    (** The prefix for module type marks. *)
+    let mark_module_type = "MODULETYPE"
+
     (** The prefix for types marks. *)
     let mark_type = "TYPE"
 
@@ -93,6 +99,12 @@ module Naming =
       in
       let (html_file, _) = html_files module_name in
       html_file^"#"^(target pref simple_name)
+
+    (**return the link target for the given module. *)
+    let module_target m = target mark_module (Name.simple m.m_name)
+
+    (**return the link target for the given module type. *)
+    let module_type_target mt = target mark_module_type (Name.simple mt.mt_name)
 
     (** Return the link target for the given type. *)
     let type_target t = target mark_type (Name.simple t.ty_name)
@@ -2011,6 +2023,7 @@ class html =
       let (html_file, _) = Naming.html_files m.m_name in
       let father = Name.father m.m_name in
       bs b "\n<pre>";
+      bp b "<span id=\"%s\">" (Naming.module_target m);
       bs b ((self#keyword "module")^" ");
       (
        if with_link then
@@ -2018,6 +2031,7 @@ class html =
        else
          bs b (Name.simple m.m_name)
       );
+      bs b "</span>" ;
       (
        match m.m_kind with
          Module_functor _ when !html_short_functors  ->
@@ -2041,13 +2055,15 @@ class html =
       let (html_file, _) = Naming.html_files mt.mt_name in
       let father = Name.father mt.mt_name in
       bs b "\n<pre>";
-      bs b ((self#keyword "module type")^" ");
+      bp b "<span id=\"%s\">" (Naming.module_type_target mt);
+      bs b (self#keyword "module type" ^ " ");
       (
        if with_link then
          bp b "<a href=\"%s\">%s</a>" html_file (Name.simple mt.mt_name)
          else
          bs b (Name.simple mt.mt_name)
       );
+      bs b "</span>";
       (match mt.mt_kind with
         None -> ()
       | Some k ->
@@ -2181,11 +2197,12 @@ class html =
       bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
-      bp b "<span name=\"%s\">"
+      bp b "<span id=\"%s\">"
         (Naming.type_target
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_private = Asttypes.Public; ty_manifest = None ;
+             ty_kind = Type_abstract ; ty_private = Asttypes.Public;
+             ty_manifest = None ;
              ty_loc = Odoc_info.dummy_loc ;
              ty_code = None ;
            }

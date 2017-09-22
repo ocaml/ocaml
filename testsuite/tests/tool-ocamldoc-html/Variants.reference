@@ -15,7 +15,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Variants.html">Variants</a></h1>
 
-<pre><span class="keyword">module</span> Variants: <code class="code"><span class="keyword">sig</span></code> <a href="Variants.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<pre><span id="MODULEVariants"><span class="keyword">module</span> Variants</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Variants.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>This test is here to check the latex code generated for variants</p>
 </div>

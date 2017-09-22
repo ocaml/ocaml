@@ -22,6 +22,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Tools:
 
+- MPR#7635: ocamldoc, add an identifier to module and module type elements
+  (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
+
 ### Compiler distribution build system
 
 ### Internal/compiler-libs changes:
