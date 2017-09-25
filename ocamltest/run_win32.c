@@ -290,7 +290,7 @@ cleanup:
   if (stderr_redirected && !combined) CloseHandle(startup_info.hStdError);
   if (wait_again)
   {
-    /* Wait agian but this time just 1sec to avoid being blocked */
+    /* Wait again but this time just 1sec to avoid being blocked */
     WaitForSingleObject(process_info.hProcess, 1000);
   }
   if (process_created) CloseHandle(process_info.hProcess);
