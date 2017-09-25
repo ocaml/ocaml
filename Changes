@@ -627,13 +627,6 @@ Release branch for 4.06:
 - GPR#1338: Add "-g" for bytecode runtime system compilation
   (Mark Shinwell)
 
-### Type system
-
-* GPR#556, PR#7215, PR#7231, PR#6738: Add a new check that 'let rec' bindings
-  are well formed.
-  (Jeremy Yallop, reviews by Stephen Dolan, Gabriel Scherer, Leo
-   White, and Damien Doligez)
-
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
