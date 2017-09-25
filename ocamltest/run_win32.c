@@ -26,6 +26,8 @@
 #include <stdarg.h>
 #include <sys/types.h>
 
+#include "caml/osdeps.h"
+
 #include "run.h"
 #include "run_common.h"
 
@@ -36,14 +38,17 @@ static void report_error(
 {
   WCHAR error_message[1024];
   DWORD error = GetLastError();
+  char *error_message_c;
   FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0,
                 error_message, sizeof(error_message)/sizeof(WCHAR), NULL);
+  error_message_c = caml_stat_strdup_of_utf16(error_message);
   if ( is_defined(argument) )
     error_with_location(file, line,
-      settings, "%s %s: %S", message, argument, error_message);
+      settings, "%s %s: %s", message, argument, error_message_c);
   else
     error_with_location(file, line,
-      settings, "%s: %S", message, error_message);
+      settings, "%s: %s", message, error_message_c);
+  caml_stat_free(error_message_c);
 }
 
 static WCHAR *find_program(const WCHAR *program_name)
