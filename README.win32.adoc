@@ -386,7 +386,7 @@ and adapt their existing code bases accordingly.
 
 Note: in order for ocaml tools to support Unicode pathnames, it is
 necessary to use a version of FlexDLL which has itself been compiled
-with OCaml >= 3.06 in Unicode mode.  This is the case for binary distributions
+with OCaml >= 4.06 in Unicode mode.  This is the case for binary distributions
 of FlexDLL starting from version 0.36 and above.
 
 == Trademarks
