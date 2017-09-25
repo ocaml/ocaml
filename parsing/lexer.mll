@@ -292,6 +292,8 @@ let identchar_latin1 =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let dotsymbolchar =
+  ['!' '$' '%' '&' '*' '+' '-' '/' ':' '=' '>' '?' '@' '^' '|' '~']
 let decimal_literal =
   ['0'-'9'] ['0'-'9' '_']*
 let hex_digit =
@@ -467,6 +469,7 @@ rule token = parse
   | "->" { MINUSGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }
+  | "." (dotsymbolchar symbolchar* as s) { DOTOP s }
   | ":"  { COLON }
   | "::" { COLONCOLON }
   | ":=" { COLONEQUAL }

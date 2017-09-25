@@ -2351,3 +2351,44 @@ will be converted directly to
 type t =  T of string
 [@@ocaml.doc " Attaches to t "]
 \end{verbatim}
+
+\section{Extended indexing operators \label{s:index-operators} }
+(Introduced in 4.06)
+
+\begin{syntax}
+
+dot-ext:
+   | ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'='||'>'||'?'||'@'||'^'||'|'||'~') { operator-char }
+;
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext ( '(' expr ')' || '[' expr ']' || '{' expr '}' ) [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('()' || '[]' || '{}') ['<-']
+;
+\end{syntax}
+
+
+This extension provides syntactic sugar for getting and setting elements
+for user-defined indexed types. For instance, we can define python-like
+dictionaries with
+\begin{caml_example*}{verbatim}
+module Dict = struct
+include Hashtbl
+let ( .%{} ) tabl index = find tabl index
+let ( .%{}<- ) tabl index value = add tabl index value
+end
+let dict =
+  let dict = Dict.create 10 in
+  let () =
+    dict.Dict.%{"one"} <- 1;
+    let open Dict in
+    dict.%{"two"} <- 2 in
+  dict
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+dict.Dict.%{"one"};;
+let open Dict in dict.%{"two"};;
+\end{caml_example}

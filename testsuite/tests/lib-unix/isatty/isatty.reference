@@ -1,4 +1,0 @@
-Unix.isatty Unix.stdin = false
-Unix.isatty Unix.stdout = false
-Unix.isatty Unix.stderr = false
-/dev/tty = true

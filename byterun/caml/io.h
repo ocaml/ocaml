@@ -55,8 +55,9 @@ struct channel {
 enum {
   CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  CHANNEL_FLAG_BLOCKING_WRITE = 2,
+  CHANNEL_FLAG_BLOCKING_WRITE = 2, /* Don't release master lock when writing */
 #endif
+  CHANNEL_FLAG_MANAGED_BY_GC = 4,  /* Free and close using GC finalization */
 };
 
 /* For an output channel:

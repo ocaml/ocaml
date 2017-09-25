@@ -219,7 +219,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     case Double_array_tag:
       fprintf (f, "=floatarray[s%d]", s);
       for (i = 0; i < ((s>0xf)?0xf:s); i++)
-        fprintf (f, " %g", Double_field (v, i));
+        fprintf (f, " %g", Double_flat_field (v, i));
       goto displayfields;
     case Abstract_tag:
       fprintf (f, "=abstract[s%d]", s);

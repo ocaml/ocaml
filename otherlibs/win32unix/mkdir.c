@@ -13,13 +13,22 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
+#include <caml/osdeps.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_mkdir(path, perm)
      value path, perm;
 {
+  int err;
+  wchar_t * wpath;
   caml_unix_check_path(path, "mkdir");
-  if (_mkdir(String_val(path)) == -1) uerror("mkdir", path);
+  wpath = caml_stat_strdup_to_utf16(String_val(path));
+  err = _wmkdir(wpath);
+  caml_stat_free(wpath);
+  if (err == -1) uerror("mkdir", path);
   return Val_unit;
 }

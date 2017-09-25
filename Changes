@@ -3,7 +3,43 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
+(Bugfixes that are also to be included in the 4.06 branch should
+be mentioned in the 4.06 section below instead of here.)
+
 ### Language features:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Compiler user-interface and warnings:
+
+### Runtime system:
+
+### Other libraries:
+
+### Manual and documentation:
+
+### Tools:
+
+### Compiler distribution build system
+
+### Internal/compiler-libs changes:
+
+### Bug fixes
+
+Release branch for 4.06:
+------------------------
+
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+- GPR#792: fix limitations of destructive substitutions, by
+  allowing "S with type t := type-expr",
+  "S with type M.t := type-expr", "S with module M.N := path"
+  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+
 - GPR#1118: Support inherited field in object type expression
   (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
    and Florian Angeletti)
@@ -12,10 +48,11 @@ Working version
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
-- GPR#792: fix limitations of destructive substitutions, by
-  allowing "S with type t := type-expr",
-  "S with type M.t := type-expr", "S with module M.N := path"
-  (Valentin Gatien-Baron, review by Jacques Garrigue and Leo White)
+- GPR#1064: extended indexing operators, add a new class of
+  user-defined indexing operators, obtained by adding at least
+  one operator character after the dot symbol to the standard indexing
+  operators: e,g ".%()", ".?[]", ".@{}<-"
+  (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
 
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
   can be used as a placeholder for a polymorphic function.
@@ -31,8 +68,16 @@ Working version
   and patterns (plus fix printing of (::) in the toplevel)
   (Florian Angeletti, review by Alain Frisch, Gabriel Scherer)
 
+* GPR#1252: The default mode is now safe-string, can be overridden
+  at configure time or at compile time.
+  (Damien Doligez)
+
 - GPR#1253: Private extensible variants
   (Leo White, review by Alain Frisch)
+
+- GPR#1348: accept anonymous type parameters in with constraints,
+  "S with type _ t = int".
+  (Valentin Gatien-Baron, report by Jeremy Yallop)
 
 ### Code generation and optimizations:
 
@@ -106,6 +151,12 @@ Working version
   to GPR#1250.)
   (Mark Shinwell)
 
+- GPR#1294: Add a configure-time option to remove the dynamic float array
+  optimization and add a floatarray type to let the user choose when to
+  flatten float arrays. Note that float-only records are unchanged: they
+  are still optimized by unboxing their fields.
+  (Damien Doligez, review by Alain Frisch and Mark Shinwell)
+
 - GPR#1304: Mark registers clobbered by PLT stubs as destroyed across
   allocations.
   (Mark Shinwell, Xavier Clerc, report and initial debugging by
@@ -126,6 +177,12 @@ Working version
 - GPR#1330: when generating dynamically-linkable code on AArch64, always
   reference symbols (even locally-defined ones) through the GOT.
   (Mark Shinwell, review by Xavier Leroy)
+
+- MPR#7616, GPR#1339: don't warn on mutation of zero size blocks.
+  (Leo White)
+
+- MPR#7631, GPR#1355: "-linscan" option crashes ocamlopt
+  (Xavier Clerc, report by Paul Steckler)
 
 ### Standard library:
 
@@ -199,6 +256,8 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- GPR##1332: fix ocamlc handling of "-output-complete-obj"
+
 - MPR#7444, GPR#1138: trigger deprecation warning when a "deprecated"
   attribute is hidden by signature coercion
   (Alain Frisch, report by bmillwood, review by Leo White)
@@ -214,6 +273,9 @@ Working version
 * GPR#1189: allow MSVC ports to use -l option in ocamlmklib
   (David Allsopp)
 
+- GPR#1324: ensure that flambda warning are printed only once
+  (Xavier Clerc)
+
 - MPR#7361, GPR#1248: support "ocaml.warning" in all attribute contexts, and
   arrange so that "ocaml.ppwarning" is correctly scoped by surrounding
   "ocaml.warning" attributes
@@ -227,6 +289,12 @@ Working version
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
+- GPR#1333: turn off warning 40 by default
+  (Leo White)
+
+- GPR#1336: -thread and -vmthread option information is propagated to
+  PPX rewriters.
+  (Jun Furuse, review by Alain Frisch)
 
 ### Other libraries:
 
@@ -319,6 +387,10 @@ Working version
 
 - MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
+
+- GPR#681: Introduce ocamltest, a new test driver for the
+  OCaml compiler testsuite
+  (Sébastien Hinderer, review by Damien Doligez)
 
 - GPR#1045: ocamldep, add a "-shared" option to generate dependencies
   for native plugin files (i.e. .cmxs files)
@@ -483,6 +555,10 @@ Working version
 - MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
   (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
 
+- MPR#7609: use-after-free memory corruption if a program debugged
+  under ocamldebug calls Pervasives.flush_all
+  (Xavier Leroy, report by Paul Steckler, review by Gabriel Scherer)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
@@ -494,6 +570,9 @@ Working version
   with the toplevel.
   (Leo White, review by Alain Frisch)
 
+- GPR#1329: Prevent recursive polymorphic variant names
+  (Jacques Garrigue, fix suggested by Leo White)
+
 - Fix pprintast for #... infix operators
   (Alain Frisch, report by Omar Chebib)
 
@@ -501,6 +580,10 @@ Working version
   (Leo White, review by Alain Frisch and Gabriel Scherer)
 
 ### Runtime system:
+
+* MPR#3771, GPR#153, GPR#1200: Unicode support for the Windows runtime.
+  (ygrek, Clement Franchini, Nicolas Ojeda Bar, review by Alain Frisch, David
+  Allsopp)
 
 - GPR#1070, GPR#1295: enable gcc typechecking for caml_alloc_sprintf,
   caml_gc_message. Make caml_gc_message a variadic function. Fix many
@@ -539,6 +622,16 @@ Working version
   of unwinding at [main].
   (Mark Shinwell, review by Xavier Leroy and Gabriel Scherer, with thanks
   to Daniel Bünzli and Fu Yong Quah for testing)
+
+- GPR#1338: Add "-g" for bytecode runtime system compilation
+  (Mark Shinwell)
+
+### Type system
+
+* GPR#556, PR#7215, PR#7231, PR#6738: Add a new check that 'let rec' bindings
+  are well formed.
+  (Jeremy Yallop, reviews by Stephen Dolan, Gabriel Scherer, Leo
+   White, and Damien Doligez)
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------

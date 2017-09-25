@@ -66,7 +66,7 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
-	$(CPP) -MM $(CPPFLAGS) -I../unix $(ALL_FILES) \
+	$(CC) -MM $(CPPFLAGS) -I../unix $(ALL_FILES) \
 	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
 	  unix.ml >> .depend

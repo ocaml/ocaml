@@ -12,11 +12,14 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <errno.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 #include "cst2constr.h"
 #define _INTEGRAL_MAX_BITS 64
@@ -137,11 +140,11 @@ static int convert_time(FILETIME* time, __time64_t* result, __time64_t def)
 }
 
 /* path allocated outside the OCaml heap */
-static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int safe_do_stat(int do_lstat, int use_64, wchar_t* path, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
   BY_HANDLE_FILE_INFORMATION info;
   int i;
-  char* ptr;
+  wchar_t* ptr;
   char c;
   HANDLE h;
   unsigned short mode;
@@ -279,10 +282,10 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
    * emulated using GetFinalPathNameByHandle, but the pre-Vista emulation is a
    * bit too much effort for a simulated value, so it's simply ignored!
    */
-  if (path && (ptr = strrchr(path, '.')) && (!_stricmp(ptr, ".exe") ||
-                                             !_stricmp(ptr, ".cmd") ||
-                                             !_stricmp(ptr, ".bat") ||
-                                             !_stricmp(ptr, ".com"))) {
+  if (path && (ptr = wcsrchr(path, '.')) && (!_wcsicmp(ptr, L".exe") ||
+                                             !_wcsicmp(ptr, L".cmd") ||
+                                             !_wcsicmp(ptr, L".bat") ||
+                                             !_wcsicmp(ptr, L".com"))) {
     mode |= _S_IEXEC;
   }
   mode |= (mode & 0700) >> 3;
@@ -294,13 +297,13 @@ static int safe_do_stat(int do_lstat, int use_64, char* path, mlsize_t l, HANDLE
   return 1;
 }
 
-static int do_stat(int do_lstat, int use_64, char* opath, mlsize_t l, HANDLE fstat, __int64* st_ino, struct _stat64* res)
+static int do_stat(int do_lstat, int use_64, char* opath, HANDLE fstat, __int64* st_ino, struct _stat64* res)
 {
-  char* path;
+  wchar_t* wpath;
   int ret;
-  path = caml_stat_strdup(opath);
-  ret = safe_do_stat(do_lstat, use_64, path, l, fstat, st_ino, res);
-  caml_stat_free(path);
+  wpath = caml_stat_strdup_to_utf16(opath);
+  ret = safe_do_stat(do_lstat, use_64, wpath, fstat, st_ino, res);
+  caml_stat_free(wpath);
   return ret;
 }
 
@@ -310,7 +313,7 @@ CAMLprim value unix_stat(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(0, 0, String_val(path), NULL, &st_ino, &buf)) {
     uerror("stat", path);
   }
   return stat_aux(0, st_ino, &buf);
@@ -322,7 +325,7 @@ CAMLprim value unix_stat_64(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "stat");
-  if (!do_stat(0, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(0, 1, String_val(path), NULL, &st_ino, &buf)) {
     uerror("stat", path);
   }
   return stat_aux(1, st_ino, &buf);
@@ -334,7 +337,7 @@ CAMLprim value unix_lstat(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "lstat");
-  if (!do_stat(1, 0, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(1, 0, String_val(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
   return stat_aux(0, st_ino, &buf);
@@ -346,7 +349,7 @@ CAMLprim value unix_lstat_64(value path)
   __int64 st_ino;
 
   caml_unix_check_path(path, "lstat");
-  if (!do_stat(1, 1, String_val(path), caml_string_length(path), NULL, &st_ino, &buf)) {
+  if (!do_stat(1, 1, String_val(path), NULL, &st_ino, &buf)) {
     uerror("lstat", path);
   }
   return stat_aux(1, st_ino, &buf);
@@ -368,7 +371,7 @@ static value do_fstat(value handle, int use_64)
   ft = GetFileType(h) & ~FILE_TYPE_REMOTE;
   switch(ft) {
   case FILE_TYPE_DISK:
-    if (!safe_do_stat(0, use_64, NULL, 0, Handle_val(handle), &st_ino, &buf)) {
+    if (!safe_do_stat(0, use_64, NULL, Handle_val(handle), &st_ino, &buf)) {
       uerror("fstat", Nothing);
     }
     break;

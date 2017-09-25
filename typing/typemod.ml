@@ -1424,6 +1424,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
+        let () = if rec_flag = Recursive then
+          Typecore.check_recursive_bindings env defs
+        in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),

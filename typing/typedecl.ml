@@ -448,7 +448,7 @@ let transl_declaration env sdecl id =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
-          if unbox then begin
+          if Config.flat_float_array && unbox then begin
             (* Cannot unbox a type when the argument can be both float and
                non-float because it interferes with the dynamic float array
                optimization. This can only happen when the type is a GADT

@@ -1419,12 +1419,6 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* prerr_endline
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
             let ty' = subst env level kind abbrev (Some ty) params args body in
-            (* Hack to name the variant type *)
-            begin match repr ty' with
-              {desc=Tvariant row} as ty when static_row row ->
-                ty.desc <- Tvariant { row with row_name = Some (path, args) }
-            | _ -> ()
-            end;
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
             if !trace_gadt_instances then begin

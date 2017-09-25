@@ -29,6 +29,7 @@ libraries_man_section=3
 host_type=unknown
 target_type=""
 ccoption=''
+cpp='cpp'
 asoption=''
 asppoption=''
 cclibs=''
@@ -67,6 +68,7 @@ afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=false
 with_fpic=false
+flat_float_array=true
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -214,6 +216,10 @@ while : ; do
         with_fpic=true;;
     -safe-string|--safe-string)
         safe_string=true;;
+    -flat-float-array|--flat-float-array)
+        flat_float_array=true;;
+    -no-flat-float-array|--no-flat-float-array)
+        flat_float_array=false;;
     -afl-instrument)
         afl_instrument=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
@@ -2009,11 +2015,16 @@ if $safe_string; then
   echo "#define CAML_SAFE_STRING" >> m.h
 fi
 
+if $flat_float_array; then
+  echo "#define FLAT_FLOAT_ARRAY" >> m.h
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
 
 config CC "$cc"
+config CPP "$cpp"
 config CFLAGS "$common_cflags $internal_cflags"
 config CPPFLAGS "$common_cppflags $internal_cppflags"
 config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
@@ -2095,8 +2106,10 @@ if [ "$ostype" = Cygwin ]; then
 fi
 config FLAMBDA "$flambda"
 config SAFE_STRING "$safe_string"
+config WINDOWS_UNICODE "0"
 config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
+config FLAT_FLOAT_ARRAY "$flat_float_array"
 
 
 rm -f tst hasgot.c
@@ -2217,6 +2230,11 @@ else
   inf "        safe strings ............. yes"
   else
   inf "        safe strings ............. no"
+  fi
+  if $flat_float_array; then
+  inf "        flat float arrays ........ yes"
+  else
+  inf "        flat float arrays ........ no"
   fi
   if test "$afl_instrument" = "true"; then
   inf "        afl-fuzz always enabled .. yes"

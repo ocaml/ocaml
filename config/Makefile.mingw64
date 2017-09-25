@@ -103,6 +103,7 @@ LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
 PROFINFO_WIDTH=26
 SAFE_STRING=false
+WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
@@ -112,19 +113,19 @@ CC = $(TOOLPREF)gcc
 CFLAGS = -O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
 # -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
 # and only works on GCC 4.2 and later.
-CPPFLAGS = -DCAML_NAME_SPACE
+CPPFLAGS = -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
 OCAMLC_CFLAGS = -O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
 
-LDFLAGS=
+LDFLAGS=-municode
 
 ### Libraries needed
 BYTECCLIBS=-lws2_32
 NATIVECCLIBS=-lws2_32
 
 ### How to invoke the C preprocessor
-CPP=$(CC) -E
+CPP=cpp
 
 ### Flexlink
 FLEXLINK_CMD=flexlink
@@ -143,12 +144,15 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
 MKEXEDEBUGFLAG=-g
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### Native command to build ocamlrun.exe without flexlink
-MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2)
+MKEXE_BOOT=$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUTEXE)$(1) $(2)
+
+### Native command to build an ANSI executable
+MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
@@ -195,3 +199,4 @@ CYGPATH=cygpath -m
 DIFF=/usr/bin/diff -q --strip-trailing-cr
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 MAX_TESTSUITE_DIR_RETRIES=1
+FLAT_FLOAT_ARRAY=true

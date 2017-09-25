@@ -23,6 +23,14 @@ Error: Multiple definition of the type name t.
        Names must be unique in a given structure or signature.
 |}]
 
+module type Sunderscore = sig
+  type (_, _) t
+end with type (_, 'a) t = int * 'a
+[%%expect {|
+module type Sunderscore = sig type (_, 'a) t = int * 'a end
+|}]
+
+
 (* Valid substitutions in a recursive module may fail due to the ordering of
    the modules. *)
 
@@ -89,6 +97,10 @@ module type S2 = S with type 'a t := (string * 'a) list
 [%%expect {|
 module type S2 =
   sig val map : ('a -> 'b) -> (string * 'a) list -> (string * 'b) list end
+|}]
+module type S3 = S with type _ t := int
+[%%expect {|
+module type S3 = sig val map : ('a -> 'b) -> int -> int end
 |}]
 
 
