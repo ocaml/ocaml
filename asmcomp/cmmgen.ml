@@ -1487,7 +1487,7 @@ module StoreExp =
           | Cexit (i,[]) -> Some i
           | _ -> None
         in
-        match index, cont with
+        match cont, index with
         | None, None -> None
         | _ -> Some (cont, index)
       let compare_key (cont, index) (cont', index') =
