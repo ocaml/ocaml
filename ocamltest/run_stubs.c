@@ -28,6 +28,7 @@
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
 #include "caml/io.h"
+#include "caml/osdeps.h"
 
 /* cstringvect: inspired by similar function in otherlibs/unix/cstringv.c */
 static array cstringvect(value arg)
@@ -36,16 +37,16 @@ static array cstringvect(value arg)
   mlsize_t size, i;
 
   size = Wosize_val(arg);
-  res = (array) caml_stat_alloc((size + 1) * sizeof(char *));
+  res = (array) caml_stat_alloc((size + 1) * sizeof(charnat *));
   for (i = 0; i < size; i++)
-    res[i] = caml_stat_strdup(String_val(Field(arg, i)));
+    res[i] = caml_stat_strdup_to_utf16(String_val(Field(arg, i)));
   res[size] = NULL;
   return res;
 }
 
 static void free_cstringvect(array v)
 {
-  char **p;
+  charnat **p;
   for (p = v; *p != NULL; p++)
     caml_stat_free(*p);
   caml_stat_free(v);
@@ -78,17 +79,21 @@ CAMLprim value caml_run_command(value caml_settings)
   command_settings settings;
 
   CAMLparam1(caml_settings);
-  settings.program = String_val(Field(caml_settings, 0));
+  settings.program = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 0)));
   settings.argv = cstringvect(Field(caml_settings, 1));
   /* settings.envp = cstringvect(Field(caml_settings, 2)); */
-  settings.stdin_filename = String_val(Field(caml_settings, 2));
-  settings.stdout_filename = String_val(Field(caml_settings, 4));
-  settings.stderr_filename = String_val(Field(caml_settings, 4));
+  settings.stdin_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 2)));
+  settings.stdout_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 4)));
+  settings.stderr_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 4)));
   settings.append = Bool_val(Field(caml_settings, 5));
   settings.timeout = Int_val(Field(caml_settings, 6));
   settings.logger = logToChannel;
   settings.loggerData = Channel(Field(caml_settings, 7));
   res = run_command(&settings);
+  caml_stat_free(settings.program);
   free_cstringvect(settings.argv);
+  caml_stat_free(settings.stdin_filename);
+  caml_stat_free(settings.stdout_filename);
+  caml_stat_free(settings.stderr_filename);
   CAMLreturn(Val_int(res));
 }

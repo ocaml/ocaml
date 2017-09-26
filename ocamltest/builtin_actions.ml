@@ -702,6 +702,11 @@ let compare_programs backend comparison_tool log env =
     Printf.fprintf log
       "flambda temporarily disables comparison of native programs";
     Pass env
+  end else if backend = Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+  then begin
+    Printf.fprintf log
+      "comparison of native programs temporarily disabled under Windows";
+    Pass env
   end else begin
     let comparison_tool =
       if backend=Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")

@@ -26,33 +26,38 @@
 #include <stdarg.h>
 #include <sys/types.h>
 
+#include "caml/osdeps.h"
+
 #include "run.h"
 #include "run_common.h"
 
 static void report_error(
   const char *file, int line,
   const command_settings *settings,
-  const char *message, const char *argument)
+  const char *message, const WCHAR *argument)
 {
-  char error_message[1024];
+  WCHAR error_message[1024];
   DWORD error = GetLastError();
+  char *error_message_c;
   FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, NULL, error, 0,
-    (LPTSTR) &error_message, sizeof(error_message), NULL);
+                error_message, sizeof(error_message)/sizeof(WCHAR), NULL);
+  error_message_c = caml_stat_strdup_of_utf16(error_message);
   if ( is_defined(argument) )
     error_with_location(file, line,
-      settings, "%s %s: %s", message, argument, error_message);
+      settings, "%s %s: %s", message, argument, error_message_c);
   else
     error_with_location(file, line,
-      settings, "%s: %s", message, error_message);
+      settings, "%s: %s", message, error_message_c);
+  caml_stat_free(error_message_c);
 }
 
-static char *find_program(const char *program_name)
+static WCHAR *find_program(const WCHAR *program_name)
 {
   int max_path_length = 512;
   DWORD result;
-  LPCTSTR searchpath = NULL, extension = ".exe";
-  char **filepart = NULL;
-  char *fullpath = malloc(max_path_length);
+  LPCWSTR searchpath = NULL, extension = L".exe";
+  WCHAR **filepart = NULL;
+  WCHAR *fullpath = malloc(max_path_length*sizeof(WCHAR));
   if (fullpath == NULL) return NULL;
 
   result = SearchPath
@@ -67,10 +72,10 @@ static char *find_program(const char *program_name)
   if (result == 0)
   {
     /* It may be an absolute path, return a copy of it */
-    int l = strlen(program_name) + 1;
+    int l = wcslen(program_name) + 1;
     free(fullpath);
-    fullpath = malloc(l);
-    if (fullpath != NULL) strcpy(fullpath, program_name);
+    fullpath = malloc(l*sizeof(WCHAR));
+    if (fullpath != NULL) wcscpy(fullpath, program_name);
     return fullpath;
   }
   if (result <= max_path_length) return fullpath;
@@ -80,7 +85,7 @@ static char *find_program(const char *program_name)
 
   result++; /* Take '\0' into account */
 
-  fullpath = malloc(result);
+  fullpath = malloc(result*sizeof(WCHAR));
   if (fullpath == NULL) return NULL;
   SearchPath
   (
@@ -94,9 +99,9 @@ static char *find_program(const char *program_name)
   return fullpath;
 }
 
-static char *commandline_of_arguments(char **arguments)
+static WCHAR *commandline_of_arguments(WCHAR **arguments)
 {
-  char *commandline = NULL, **arguments_p, *commandline_p;
+  WCHAR *commandline = NULL, **arguments_p, *commandline_p;
   int args = 0; /* Number of arguments */
   int commandline_length = 0;
 
@@ -107,23 +112,23 @@ static char *commandline_of_arguments(char **arguments)
   for (arguments_p = arguments; *arguments_p != NULL; arguments_p++)
   {
     args++;
-    commandline_length += strlen(*arguments_p);
+    commandline_length += wcslen(*arguments_p);
   }
   commandline_length += args; /* args-1 ' ' between arguments + final '\0' */
 
   /* Allocate memory and accumulate arguments separated by spaces */
-  commandline = malloc(commandline_length);
+  commandline = malloc(commandline_length*sizeof(WCHAR));
   if (commandline == NULL) return NULL;
   commandline_p = commandline;
   for (arguments_p = arguments; *arguments_p!=NULL; arguments_p++)
   {
-    int l = strlen(*arguments_p);
-    memcpy(commandline_p, *arguments_p, l);
+    int l = wcslen(*arguments_p);
+    memcpy(commandline_p, *arguments_p, l*sizeof(WCHAR));
     commandline_p += l;
-    *commandline_p = ' ';
+    *commandline_p = L' ';
     commandline_p++;
   }
-  commandline[commandline_length-1] = '\0';
+  commandline[commandline_length-1] = 0;
   return commandline;
 }
 
@@ -133,7 +138,7 @@ static SECURITY_ATTRIBUTES security_attributes = {
   TRUE /* bInheritHandle */
 };
 
-static HANDLE create_input_handle(const char *filename)
+static HANDLE create_input_handle(const WCHAR *filename)
 {
   return CreateFile
   (
@@ -147,7 +152,7 @@ static HANDLE create_input_handle(const char *filename)
   );
 }
 
-static HANDLE create_output_handle(const char *filename, int append)
+static HANDLE create_output_handle(const WCHAR *filename, int append)
 {
   DWORD desired_access = append ? FILE_APPEND_DATA : GENERIC_WRITE;
   DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
@@ -178,11 +183,11 @@ int run_command(const command_settings *settings)
   int stdin_redirected = 0, stdout_redirected = 0, stderr_redirected = 0;
   int combined = 0; /* 1 if stdout and stderr are redirected to the same file */
   int wait_again = 0;
-  char *program = NULL;
-  char *commandline = NULL;
+  WCHAR *program = NULL;
+  WCHAR *commandline = NULL;
 
   LPVOID environment = NULL;
-  LPCTSTR current_directory = NULL;
+  LPCWSTR current_directory = NULL;
   STARTUPINFO startup_info;
   PROCESS_INFORMATION process_info;
   DWORD wait_result, status;
@@ -225,7 +230,7 @@ int run_command(const command_settings *settings)
   {
     if (stdout_redirected)
     {
-      if (strcmp(settings->stdout_filename, settings->stderr_filename) == 0)
+      if (wcscmp(settings->stdout_filename, settings->stderr_filename) == 0)
       {
         startup_info.hStdError = startup_info.hStdOutput;
         stderr_redirected = 1;
@@ -252,7 +257,7 @@ int run_command(const command_settings *settings)
     NULL, /* SECURITY_ATTRIBUTES process_attributes */
     NULL, /* SECURITY_ATTRIBUTES thread_attributes */
     TRUE, /* BOOL inherit_handles */
-    0, /* DWORD creation_flags */
+    CREATE_UNICODE_ENVIRONMENT, /* DWORD creation_flags */
     NULL, /* LPVOID environment */
     NULL, /* LPCSTR current_directory */
     &startup_info,
@@ -290,7 +295,7 @@ cleanup:
   if (stderr_redirected && !combined) CloseHandle(startup_info.hStdError);
   if (wait_again)
   {
-    /* Wait agian but this time just 1sec to avoid being blocked */
+    /* Wait again but this time just 1sec to avoid being blocked */
     WaitForSingleObject(process_info.hProcess, 1000);
   }
   if (process_created) CloseHandle(process_info.hProcess);
