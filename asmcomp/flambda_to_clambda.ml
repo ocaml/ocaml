@@ -414,10 +414,11 @@ and to_clambda_switch t env cases num_keys default =
   let index = Array.make num_keys 0 in
   let store = Flambda_utils.Switch_storer.mk_store () in
   begin match default with
-  | Some def when List.length cases < num_keys -> ignore (store.act_store def)
+  | Some def when List.length cases < num_keys ->
+    ignore (store.act_store () def)
   | _ -> ()
   end;
-  List.iter (fun (key, lam) -> index.(key) <- store.act_store lam) cases;
+  List.iter (fun (key, lam) -> index.(key) <- store.act_store () lam) cases;
   let actions = Array.map (to_clambda t env) (store.act_get ()) in
   match actions with
   | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)

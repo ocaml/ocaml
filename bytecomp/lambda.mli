@@ -315,7 +315,7 @@ type program =
 *)
 
 (* Sharing key *)
-val make_key: lambda -> lambda option
+val make_key: unit -> lambda -> lambda option
 
 val const_unit: structured_constant
 val lambda_unit: lambda

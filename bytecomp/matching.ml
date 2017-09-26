@@ -467,6 +467,7 @@ module StoreExp =
     (struct
       type t = lambda
       type key = lambda
+      type context = unit
       let compare_key = Pervasives.compare
       let make_key = Lambda.make_key
     end)
@@ -503,10 +504,10 @@ let make_catch_delayed handler = match as_simple_exit handler with
 
 
 let raw_action l =
-  match make_key l with | Some l -> l | None -> l
+  match make_key () l with | Some l -> l | None -> l
 
 
-let tr_raw act = match make_key act with
+let tr_raw act = match make_key () act with
 | Some act -> act
 | None -> raise Exit
 
@@ -1830,10 +1831,10 @@ let share_actions_tree sw d =
   let d =
     match d with
     | None -> None
-    | Some d -> Some (store.Switch.act_store_shared d) in
+    | Some d -> Some (store.Switch.act_store_shared () d) in
 (* Store all other actions *)
   let sw =
-    List.map  (fun (cst,act) -> cst,store.Switch.act_store act) sw in
+    List.map  (fun (cst,act) -> cst,store.Switch.act_store () act) sw in
 
 (* Retrieve all actions, including potential default *)
   let acts = store.Switch.act_get_shared () in
@@ -1957,14 +1958,14 @@ let share_actions_sw sw =
   | None -> None
   | Some fail ->
       (* Fail is translated to exit, whatever happens *)
-      Some (store.Switch.act_store_shared fail) in
+      Some (store.Switch.act_store_shared () fail) in
   let consts =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_consts
   and blocks =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_blocks in
   let acts = store.Switch.act_get_shared () in
   let hs,handle_shared = handle_shared () in
@@ -2032,7 +2033,7 @@ let as_interval_canfail fail low high l =
 
   let do_store _tag act =
 
-    let i =  store.act_store act in
+    let i =  store.act_store () act in
 (*
     eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
@@ -2096,7 +2097,7 @@ let as_interval_nofail l =
     | [] ->
         [cur_low, cur_high, cur_act]
     | (i,act)::rem ->
-        let act_index = store.act_store act in
+        let act_index = store.act_store () act in
         if act_index = cur_act then
           i_rec cur_low i cur_act rem
         else
@@ -2110,9 +2111,9 @@ let as_interval_nofail l =
            cases (cf. switch.ml, make_switch).
            Hence, this action will be shared *)
         if some_hole rem then
-          store.act_store_shared act
+          store.act_store_shared () act
         else
-          store.act_store act in
+          store.act_store () act in
       assert (act_index = 0) ;
       i_rec i i act_index rem
   | _ -> assert false in
