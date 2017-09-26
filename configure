@@ -752,7 +752,7 @@ case "$target" in
              "64-bit integers. I'm going to assume this architecture has\n" \
              "alignment constraints. That's a safe bet: OCaml will work\n" \
              "even if this architecture has actually no alignment\n" \
-             "constraints." \
+             "constraints."
          echo "#define ARCH_ALIGN_INT64" >> m.h;;
     esac
 esac
