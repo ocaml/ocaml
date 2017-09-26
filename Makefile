@@ -172,7 +172,7 @@ ASMCOMP=\
   asmcomp/spacetime_profiling.cmo asmcomp/selection.cmo \
   asmcomp/comballoc.cmo \
   asmcomp/CSEgen.cmo asmcomp/CSE.cmo \
-  asmcomp/trap_analysis.cmo \
+  asmcomp/cmm_invariants.cmo asmcomp/trap_analysis.cmo \
   asmcomp/liveness.cmo \
   asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo \

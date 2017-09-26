@@ -27,6 +27,16 @@ type error = Assembler_error of string
 
 exception Error of error
 
+let cmm_invariants ppf fd_cmm =
+  let print_fundecl =
+    if !Clflags.dump_cmm then Printcmm.fundecl
+    else fun ppf fdecl -> Format.fprintf ppf "%s" fdecl.fun_name
+  in
+  if Cmm_invariants.run ppf fd_cmm then
+    Misc.fatal_errorf "Cmm invariants failed on following fundecl:@.%a@."
+      print_fundecl fd_cmm;
+  fd_cmm
+
 let liveness ppf phrase =
   Liveness.fundecl ppf phrase; phrase
 
@@ -105,6 +115,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   Proc.init ();
   Reg.reset();
   fd_cmm
+  ++ Profile.record ~accumulate:true "cmm_invariants" (cmm_invariants ppf)
   ++ Profile.record ~accumulate:true "selection" Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
