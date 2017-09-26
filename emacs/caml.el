@@ -285,9 +285,6 @@ have caml-electric-indent on, which see.")
 (defvar caml-shell-active nil
   "Non nil when a subshell is running.")
 
-(defvar running-xemacs  (string-match "XEmacs" emacs-version)
-  "Non-nil if we are running in the XEmacs environment.")
-
 (defvar caml-mode-map nil
   "Keymap used in Caml mode.")
 (if caml-mode-map
@@ -303,7 +300,7 @@ have caml-electric-indent on, which see.")
 ;that way we get out effect even when we do \C-x` in compilation buffer
 ;  (define-key caml-mode-map "\C-x`" 'caml-next-error)
 
-  (if running-xemacs
+  (if (featurep 'xemacs)
       (define-key caml-mode-map 'backspace 'backward-delete-char-untabify)
     (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
 
@@ -315,8 +312,8 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map [?\C-c down-mouse-1] 'caml-types-explore)
   ;; caml-help
   (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
-  (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
-  (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
+  (define-key caml-mode-map [?\C-c?\]] 'ocaml-close-module)
+  (define-key caml-mode-map [?\C-c?\[] 'ocaml-open-module)
   (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
   (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
   ;; others
@@ -331,8 +328,8 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\C-c\C-a" 'caml-find-alternate-file)
   (define-key caml-mode-map "\C-c\C-c" 'compile)
   (define-key caml-mode-map "\C-c\C-e" 'caml-eval-phrase)
-  (define-key caml-mode-map "\C-c\C-\[" 'caml-backward-to-less-indent)
-  (define-key caml-mode-map "\C-c\C-\]" 'caml-forward-to-less-indent)
+  (define-key caml-mode-map "\C-c\C-[" 'caml-backward-to-less-indent)
+  (define-key caml-mode-map "\C-c\C-]" 'caml-forward-to-less-indent)
   (define-key caml-mode-map "\C-c\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\C-c\C-r" 'caml-eval-region)
   (define-key caml-mode-map "\C-c\C-s" 'caml-show-subshell)
@@ -340,7 +337,7 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\M-\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
 
-  (if running-xemacs nil ; if not running xemacs
+  (if (featurep 'xemacs) nil
     (let ((map (make-sparse-keymap "Caml"))
           (forms (make-sparse-keymap "Forms")))
       (define-key caml-mode-map "\C-c\C-d" 'caml-show-imenu)
@@ -386,7 +383,7 @@ have caml-electric-indent on, which see.")
       (define-key forms [begin] '("begin .. end" . caml-insert-begin-form)))))
 
 (defvar caml-mode-xemacs-menu
-  (if running-xemacs
+  (if (featurep 'xemacs)
       '("Caml"
         [ "Indent phrase" caml-indent-phrase :keys "C-M-q" ]
         [ "Eval phrase" caml-eval-phrase
@@ -419,7 +416,7 @@ have caml-electric-indent on, which see.")
   "Syntax table in use in Caml mode buffers.")
 (if caml-mode-syntax-table
     ()
-  (let ((n (if (string-match "XEmacs" (emacs-version)) "" "n")))
+  (let ((n (if (featurep 'xemacs) "" "n")))
     (setq caml-mode-syntax-table (make-syntax-table))
     ; backslash is an escape sequence
     (modify-syntax-entry ?\\ "\\" caml-mode-syntax-table)
@@ -489,7 +486,7 @@ have caml-electric-indent on, which see.")
 
 ;;; The major mode
 (eval-when-compile
-  (if (and (boundp 'running-xemacs) running-xemacs) nil
+  (if (featurep 'xemacs) nil
     (require 'imenu)))
 
 ;;
@@ -539,7 +536,7 @@ have caml-electric-indent on, which see.")
   ;garrigue 27-11-96
   (setq case-fold-search nil)
   ;garrigue july 97
-  (if running-xemacs ; from Xemacs lisp mode
+  (if (featurep 'xemacs)
       (if (and (featurep 'menubar)
                current-menubar)
           (progn
@@ -1260,7 +1257,7 @@ Used to distinguish it from toplevel let construct.")
 (defun caml-at-sexp-close-p ()
   (or (char-equal ?\) (following-char))
       (char-equal ?\] (following-char))
-      (char-equal ?} (following-char))))
+      (char-equal ?\} (following-char))))
 
 (defun caml-find-kwop (kwop-regexp &optional min-pos)
   "Look back for a caml keyword or operator matching KWOP-REGEXP.
