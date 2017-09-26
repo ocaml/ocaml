@@ -1475,29 +1475,42 @@ end
 
 (* cmm store, as sharing as normally been detected in previous
    phases, we only share exits *)
+(* Some specific patterns can lead to switches where several cases
+   point to the same action, but this action is not an exit (see GPR#1370).
+   The addition of the index in the action array as context allows to
+   share them correctly without duplication. *)
 module StoreExp =
   Switch.Store
     (struct
       type t = expression
-      type key = int option * int option
-      type context = int option
+      type key = int option * int
+      type context = int
       let make_key index expr =
-        let cont =
+        let continuation =
           match expr with
           | Cexit (i,[]) -> Some i
           | _ -> None
         in
-        match cont, index with
-        | None, None -> None
-        | _ -> Some (cont, index)
+        Some (continuation, index)
       let compare_key (cont, index) (cont', index') =
         match cont, cont' with
         | Some i, Some i' when i = i' -> 0
-        | _, _ ->
-          begin match index, index' with
-          | Some i, Some i' when i = i' -> 0
-          | _ -> Pervasives.compare (cont, index) (cont', index')
-          end
+        | _, _ -> Pervasives.compare index index'
+    end)
+
+(* For string switches, there is no context to give, so we need a different
+   store type *)
+module StoreExpForStringSwitch =
+  Switch.Store
+    (struct
+      type t = expression
+      type key = int
+      type context = unit
+      let make_key () expr =
+        match expr with
+        | Cexit (i,[]) -> Some i
+        | _ -> None
+      let compare_key = Pervasives.compare
     end)
 
 module SwitcherBlocks = Switch.Make(SArgBlocks)
@@ -1505,14 +1518,16 @@ module SwitcherBlocks = Switch.Make(SArgBlocks)
 (* Int switcher, arg in [low..high],
    cases is list of individual cases, and is sorted by first component *)
 
+(* Note: this is used only as an argument to the functor used to compile
+   string switches *)
 let transl_int_switch loc arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
-    let store = StoreExp.mk_store () in
-    assert (store.Switch.act_store None default = 0) ;
+    let store = StoreExpForStringSwitch.mk_store () in
+    assert (store.Switch.act_store () default = 0) ;
     let cases =
       List.map
-        (fun (i,act) -> i,store.Switch.act_store None act)
+        (fun (i,act) -> i,store.Switch.act_store () act)
         cases in
     let rec inters plow phigh pact = function
       | [] ->
@@ -2737,7 +2752,7 @@ and transl_switch loc env arg index cases = match Array.length cases with
     let store = StoreExp.mk_store () in
     let index =
       Array.map
-        (fun j -> store.Switch.act_store (Some j) cases.(j))
+        (fun j -> store.Switch.act_store j cases.(j))
         index in
     let n_index = Array.length index in
     let inters = ref []
