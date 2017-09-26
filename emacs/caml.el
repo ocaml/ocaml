@@ -432,15 +432,10 @@ have caml-electric-indent on, which see.")
 (defvar caml-mode-abbrev-table nil
   "Abbrev table used for Caml mode buffers.")
 (if caml-mode-abbrev-table nil
-  (setq caml-mode-abbrev-table (make-abbrev-table))
-  (define-abbrev caml-mode-abbrev-table "and" "and" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "do" "do" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "done" "done" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "else" "else" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "end" "end" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "in" "in" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "then" "then" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "with" "with" 'caml-abbrev-hook))
+  (define-abbrev-table 'caml-mode-abbrev-table
+    (mapcar (lambda (keyword)
+              `(,keyword ,keyword caml-abbrev-hook nil t))
+            '("and" "do" "done" "else" "end" "in" "then" "with"))))
 
 ;; Other internal variables
 
