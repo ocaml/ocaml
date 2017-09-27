@@ -31,15 +31,15 @@
 CAMLprim value unix_putenv(value name, value val)
 {
   char * s;
-  charnat * p;
+  char_os * p;
   int ret;
 
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(val)))
     unix_error(EINVAL, "putenv", name);
   s = caml_stat_strconcat(3, name, "=", val);
-  p = caml_stat_strdup_to_utf16(s);
+  p = caml_stat_strdup_to_os(s);
   caml_stat_free(s);
-  ret = _tputenv(p);
+  ret = putenv_os(p);
   if (ret == -1) {
     caml_stat_free(p);
     uerror("putenv", name);

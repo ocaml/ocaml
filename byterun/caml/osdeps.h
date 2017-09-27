@@ -41,17 +41,17 @@ extern int caml_write_fd(int fd, int flags, void * buf, int n);
 
 /* Decompose the given path into a list of directories, and add them
    to the given table. */
-extern charnat * caml_decompose_path(struct ext_table * tbl, charnat * path);
+extern char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name]. */
-extern charnat * caml_search_in_path(struct ext_table * path, const charnat * name);
+extern char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
 
 /* Same, but search an executable name in the system path for executables. */
-CAMLextern charnat * caml_search_exe_in_path(const charnat * name);
+CAMLextern char_os * caml_search_exe_in_path(const char_os * name);
 
 /* Same, but search a shared library in the given path. */
-extern charnat * caml_search_dll_in_path(struct ext_table * path, const charnat * name);
+extern char_os * caml_search_dll_in_path(struct ext_table * path, const char_os * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and
@@ -62,7 +62,7 @@ extern charnat * caml_search_dll_in_path(struct ext_table * path, const charnat 
    If [global] is true, symbols from the shared library can be used
    to resolve for other libraries to be opened later on.
    Return [NULL] on error. */
-extern void * caml_dlopen(charnat * libname, int for_execution, int global);
+extern void * caml_dlopen(char_os * libname, int for_execution, int global);
 
 /* Close a shared library handle */
 extern void caml_dlclose(void * handle);
@@ -79,17 +79,17 @@ extern char * caml_dlerror(void);
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
-extern int caml_read_directory(charnat * dirname, struct ext_table * contents);
+extern int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
    GetModuleFileName under Windows).  Return NULL on error,
    string allocated with [caml_stat_alloc] on success. */
-extern charnat * caml_executable_name(void);
+extern char_os * caml_executable_name(void);
 
 /* Secure version of [getenv]: returns NULL if the process has special
    privileges (setuid bit, setgid bit, capabilities).
 */
-extern charnat *caml_secure_getenv(charnat const *var);
+extern char_os *caml_secure_getenv(char_os const *var);
 
 /* Windows Unicode support */
 

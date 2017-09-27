@@ -22,17 +22,17 @@
 #include <stdarg.h>
 #include <caml/misc.h>
 
-typedef charnat **array;
+typedef char_os **array;
 
 typedef void Logger(void *, const char *, va_list ap);
 
 typedef struct {
-  charnat *program;
+  char_os *program;
   array argv;
   /* array envp; */
-  charnat *stdin_filename;
-  charnat *stdout_filename;
-  charnat *stderr_filename;
+  char_os *stdin_filename;
+  char_os *stdout_filename;
+  char_os *stderr_filename;
   int append;
   int timeout;
   Logger *logger;
