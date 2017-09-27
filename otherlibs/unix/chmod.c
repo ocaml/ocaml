@@ -26,12 +26,12 @@
 CAMLprim value unix_chmod(value path, value perm)
 {
   CAMLparam2(path, perm);
-  charnat * p;
+  char_os * p;
   int ret;
   caml_unix_check_path(path, "chmod");
-  p = caml_stat_strdup_to_utf16(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = _tchmod(p, Int_val(perm));
+  ret = chmod_os(p, Int_val(perm));
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) uerror("chmod", path);

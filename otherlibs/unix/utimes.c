@@ -72,7 +72,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #else
   struct utimbuf times, * t;
 #endif
-  charnat * p;
+  char_os * p;
   int ret;
   double at, mt;
   caml_unix_check_path(path, "utimes");
@@ -85,9 +85,9 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     times.modtime = mt;
     t = &times;
   }
-  p = caml_stat_strdup_to_utf16(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = _tutime(p, t);
+  ret = utime_os(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) uerror("utimes", path);

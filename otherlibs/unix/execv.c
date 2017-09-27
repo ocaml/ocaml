@@ -22,12 +22,12 @@
 
 CAMLprim value unix_execv(value path, value args)
 {
-  charnat * wpath;
-  charnat ** argv;
+  char_os * wpath;
+  char_os ** argv;
   caml_unix_check_path(path, "execv");
   argv = cstringvect(args, "execv");
-  wpath = caml_stat_strdup_to_utf16(String_val(path));
-  (void) _texecv(wpath, EXECV_CAST argv);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execv_os(wpath, EXECV_CAST argv);
   caml_stat_free(wpath);
   cstringvect_free(argv);
   uerror("execv", path);

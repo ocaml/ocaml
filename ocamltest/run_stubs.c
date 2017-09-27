@@ -37,16 +37,16 @@ static array cstringvect(value arg)
   mlsize_t size, i;
 
   size = Wosize_val(arg);
-  res = (array) caml_stat_alloc((size + 1) * sizeof(charnat *));
+  res = (array) caml_stat_alloc((size + 1) * sizeof(char_os *));
   for (i = 0; i < size; i++)
-    res[i] = caml_stat_strdup_to_utf16(String_val(Field(arg, i)));
+    res[i] = caml_stat_strdup_to_os(String_val(Field(arg, i)));
   res[size] = NULL;
   return res;
 }
 
 static void free_cstringvect(array v)
 {
-  charnat **p;
+  char_os **p;
   for (p = v; *p != NULL; p++)
     caml_stat_free(*p);
   caml_stat_free(v);
@@ -79,12 +79,12 @@ CAMLprim value caml_run_command(value caml_settings)
   command_settings settings;
 
   CAMLparam1(caml_settings);
-  settings.program = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 0)));
+  settings.program = caml_stat_strdup_to_os(String_val(Field(caml_settings, 0)));
   settings.argv = cstringvect(Field(caml_settings, 1));
   /* settings.envp = cstringvect(Field(caml_settings, 2)); */
-  settings.stdin_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 2)));
-  settings.stdout_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 4)));
-  settings.stderr_filename = caml_stat_strdup_to_utf16(String_val(Field(caml_settings, 4)));
+  settings.stdin_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 2)));
+  settings.stdout_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 4)));
+  settings.stderr_filename = caml_stat_strdup_to_os(String_val(Field(caml_settings, 4)));
   settings.append = Bool_val(Field(caml_settings, 5));
   settings.timeout = Int_val(Field(caml_settings, 6));
   settings.logger = logToChannel;
