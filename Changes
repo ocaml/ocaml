@@ -453,6 +453,9 @@ Release branch for 4.06:
 - GPR#1278: discover presence of <sys/shm.h> during configure for afl runtime
   (Hannes Mehnert)
 
+- GPR#1372: add "ldflags" to "MKEXE" Makefile variable
+  (Mark Shinwell)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
