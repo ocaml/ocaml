@@ -352,7 +352,6 @@ _ocamltest
 /testsuite/tests/warnings/w58.opt.opt_result
 
 /testsuite/tests/win-unicode/symlink_tests.precheck
-/testsuite/tests/win-unicode/exec_tests.precheck
 
 /testsuite/tools/expect_test
 
