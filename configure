@@ -388,7 +388,7 @@ esac
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS)"
+mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS) \$(LDFLAGS)"
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
