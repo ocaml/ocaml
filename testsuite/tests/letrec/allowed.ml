@@ -62,7 +62,7 @@ and y = function
 let rec x = lazy (Lazy.force x + Lazy.force x)
   ;;
 
-let rec x = { x with contents = 3 };;
+let rec x = { x with contents = 3 }  [@ocaml.warning "-23"];;
 
 let rec x = let y = (x; ()) in y;;
 
@@ -75,4 +75,4 @@ let rec deep_cycle : [`Tuple of [`Shared of 'a] array] as 'a
 (* Constructing float arrays was disallowed altogether at one point
    by an overzealous check.  Constructing float arrays in recursive 
    bindings is fine when they don't partake in the recursion. *)
-let rec x = [| 1 |]; 1. in ();;
+let rec _x = let _ = [| 1.0 |] in 1. in ();;
