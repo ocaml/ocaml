@@ -217,7 +217,7 @@ void caml_spacetime_initialize(void)
     sscanf(ap_interval, "%u", &interval);
     if (interval != 0) {
       double time;
-      char* cwd;
+      char cwd[4096];
       char* user_specified_automatic_snapshot_dir;
       int dir_ok = 1;
 
@@ -226,12 +226,7 @@ void caml_spacetime_initialize(void)
 
       if (user_specified_automatic_snapshot_dir == NULL) {
 #if defined(HAS_GETCWD)
-        cwd = (char*) malloc(PATH_MAX);
-        if (cwd == NULL) {
-          fprintf(stderr, "Out of memory for [getcwd]\n");
-          abort();
-        }
-        if (getcwd(cwd, PATH_MAX) == NULL) {
+        if (getcwd(cwd, sizeof(cwd)) == NULL) {
           dir_ok = 0;
         }
 #else
