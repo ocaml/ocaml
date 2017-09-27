@@ -16,10 +16,6 @@
 platform:
   - x64
 
-branches:
-  only:
-    - trunk
-
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
 
