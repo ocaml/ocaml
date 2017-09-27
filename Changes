@@ -564,6 +564,11 @@ Release branch for 4.06:
   under ocamldebug calls Pervasives.flush_all
   (Xavier Leroy, report by Paul Steckler, review by Gabriel Scherer)
 
+- MPR#7638: in the Windows Mingw64 port, multithreaded programs compiled
+  to bytecode could crash when raising an exception from C code.
+  This looks like a Mingw64 issue, which we work around with GCC builtins.
+  (Xavier Leroy)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
