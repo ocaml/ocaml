@@ -606,9 +606,9 @@ Release branch for 4.06:
 - GPR#1269: Remove 50ms delay at exit for programs using threads
   (Valentin Gatien-Baron, review by Stephen Dolan)
 
-* MPR#7594, GPR#1274: String_val now returns 'const char*', not
-  'char*' when -safe-string is enabled at configure time.
-  New macro Bytes_val for accessing bytes values.
+* MPR#7594, GPR#1274, GPR#1368: String_val now returns 'const char*', not
+  'char*' when -safe-string is enabled at configure time.  New macro Bytes_val
+  for accessing bytes values.
   (Jeremy Yallop, reviews by Mark Shinwell and Xavier Leroy)
 
 * GPR#1309: open files with O_CLOEXEC (or equivalent) in caml_sys_open thus
