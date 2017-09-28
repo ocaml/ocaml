@@ -26,6 +26,20 @@
 <p>Check that all toplevel items are given a unique id.</p>
 </div>
 </div>
+
+<details class="info toc"><summary>Contents</summary>
+<ul>
+<li class="exception"><a href="#EXCEPTIONEx">exception Ex</a></li>
+<li class="type"><a href="#TYPEt">type t</a></li>
+<li class="val"><a href="#VALx">val x</a></li>
+<li class="type"><a href="#TYPEext">type ext</a></li>
+<li class="typeextension">type ext</li>
+<li class="class"><a href="#TYPEc">class c</a></li>
+<li class="classtype"><a href="#TYPEct">class type ct</a></li>
+<li class="module"><a href="#MODULEM">module M</a></li>
+<li class="moduletype"><a href="#MODULETYPEs">module type s</a></li>
+</ul>
+</details>
 <hr width="100%">
 
 <pre><span id="EXCEPTIONEx"><span class="keyword">exception</span> Ex</span></pre>

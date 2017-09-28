@@ -853,7 +853,10 @@ class html =
 
     (** The default style options. *)
     val mutable default_style_options =
-      [ ".keyword { font-weight : bold ; color : Red }" ;
+      [ ".toc { margin-top: 4px; }" ;
+        ".toc:hover { cursor: pointer; }" ;
+        ".toc ul { margin-top: 4px; }" ;
+        ".keyword { font-weight : bold ; color : Red }" ;
         ".keywordsign { color : #C04600 }" ;
         ".comment { color : Green }" ;
         ".constructor { color : Blue }" ;
@@ -1436,6 +1439,48 @@ class html =
       self#html_of_module_type_kind b father p.mp_kind;
       self#html_of_text b [ Code (") "^s_arrow)]
 
+    (** Print a summary of the given module element to the given buffer.
+        This summary is used in the module table of contents. *)
+    method html_summary_of_module_element b _ ele =
+      (* Write the first sentence of the item's description. *)
+      let write_info info_option =
+        self#html_of_info_first_sentence b info_option in
+
+      bs b {|<li class="|};
+
+      match ele with
+      | Element_module m ->
+        bp b {|module">%s|} (Name.simple m.m_name);
+        write_info m.m_info
+      | Element_module_type mt ->
+        bp b {|moduletype">%s|} (Name.simple mt.mt_name);
+        write_info mt.mt_info
+      | Element_included_module im ->
+        bp b {|includedmodule">%s|} (Name.simple im.im_name);
+        write_info im.im_info
+      | Element_class c ->
+        bp b {|class">%s|} (Name.simple c.cl_name);
+        write_info c.cl_info
+      | Element_class_type ct ->
+        bp b {|classtype">%s|} (Name.simple ct.clt_name);
+        write_info ct.clt_info
+      | Element_value v ->
+        bp b {|val">%s|} (Name.simple v.val_name);
+        write_info v.val_info
+      | Element_type_extension te ->
+        bp b {|typeextension">%s|} (Name.simple te.te_type_name);
+        write_info te.te_info
+      | Element_exception e ->
+        bp b {|exception">%s|} (Name.simple e.ex_name);
+        write_info e.ex_info
+      | Element_type t ->
+        bp b {|type">%s|} (Name.simple t.ty_name);
+        write_info t.ty_info
+      (* No need to print module comments *)
+      | Element_module_comment _ -> bs b {|text">|};
+
+      bs b {|</li>
+|}
     method html_of_module_element b m_name ele =
       match ele with
         Element_module m ->
@@ -2614,6 +2659,12 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
+        let module_elements = Module.module_elements modu in
+
+        (* a horizontal line *)
+        let hr () =
+          if not modu.m_text_only then bs b "<hr width=\"100%\">\n" in
+
         bs b doctype ;
         bs b "<html>\n";
         self#print_header b
@@ -2653,13 +2704,25 @@ class html =
           (Name.father modu.m_name)
           (Module.module_parameters modu);
 
-        (* a horizontal line *)
-        if not modu.m_text_only then bs b "<hr width=\"100%\">\n";
+        (* table of contents for this module *)
+
+        bs b {|
+<details class="info toc"><summary>Contents</summary>
+<ul>
+|};
+        List.iter
+          (self#html_summary_of_module_element b modu.m_name)
+          module_elements;
+
+        bs b {|</ul>
+</details>
+|};
+        hr ();
 
         (* module elements *)
         List.iter
           (self#html_of_module_element b modu.m_name)
-          (Module.module_elements modu);
+          module_elements;
 
         bs b "</body></html>";
         Buffer.output_buffer chanout b;

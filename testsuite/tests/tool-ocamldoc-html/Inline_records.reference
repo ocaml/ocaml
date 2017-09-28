@@ -23,6 +23,26 @@
   within the latex generator.</p>
 </div>
 </div>
+
+<details class="info toc"><summary>Contents</summary>
+<ul>
+<li class="exception"><a href="#EXCEPTIONSimple">exception Simple</a> - A nice exception
+</li>
+<li class="type"><a href="#TYPEext">type ext</a> - An open sum type
+</li>
+<li class="type"><a href="#TYPEr">type r</a> - A simple record type for reference
+</li>
+<li class="type"><a href="#TYPEt">type t</a> - A sum type with one inline record
+</li>
+<li class="type"><a href="#TYPEs">type s</a> - A sum type with two inline records
+</li>
+<li class="type"><a href="#TYPEany">type any</a> - A gadt constructor
+</li>
+<li class="exception"><a href="#EXCEPTIONError">exception Error</a></li>
+<li class="typeextension">type ext - Two new constructors for ext
+</li>
+</ul>
+</details>
 <hr width="100%">
 
 <pre><span id="EXCEPTIONSimple"><span class="keyword">exception</span> Simple</span></pre>
