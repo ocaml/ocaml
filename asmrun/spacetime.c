@@ -233,7 +233,7 @@ void caml_spacetime_initialize(void)
         dir_ok = 0;
 #endif
         if (dir_ok) {
-          automatic_snapshot_dir = cwd;
+          automatic_snapshot_dir = strdup(cwd);
         }
       }
       else {
