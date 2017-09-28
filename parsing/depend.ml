@@ -324,16 +324,16 @@ and add_module_alias bv l =
     | _ -> addmodule bv l; bound (* cannot delay *)
 
 and add_modtype_binding bv mty =
-  if not !Clflags.transparent_modules then add_modtype bv mty;
   match mty.pmty_desc with
     Pmty_alias l ->
+      if not !Clflags.transparent_modules then addmodule bv l;
       add_module_alias bv l
   | Pmty_signature s ->
       make_node (add_signature_binding bv s)
   | Pmty_typeof modl ->
       add_module_binding bv modl
   | _ ->
-      if !Clflags.transparent_modules then add_modtype bv mty; bound
+      add_modtype bv mty; bound
 
 and add_signature bv sg =
   ignore (add_signature_binding bv sg)
@@ -386,9 +386,9 @@ and add_sig_item (bv, m) item =
       (bv, m)
 
 and add_module_binding bv modl =
-  if not !Clflags.transparent_modules then add_module bv modl;
   match modl.pmod_desc with
     Pmod_ident l ->
+      if not !Clflags.transparent_modules then addmodule bv l;
       begin try
         add_parent bv l;
         lookup_map l.txt bv
@@ -398,9 +398,10 @@ and add_module_binding bv modl =
         | _ ->  addmodule bv l; bound
       end
   | Pmod_structure s ->
-      make_node (snd (add_structure_binding bv s))
-  | _ ->
-      if !Clflags.transparent_modules then add_module bv modl; bound
+      let n = make_node (snd @@ add_structure_binding bv s) in
+      if not !Clflags.transparent_modules then add_names (collect_free n);
+      n
+  | _ -> add_module bv modl; bound
 
 and add_module bv modl =
   match modl.pmod_desc with
