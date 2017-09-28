@@ -609,8 +609,10 @@ Release branch for 4.06:
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
-- GPR#1086: in Sys.getcwd, don't call getwd() if HAS_GETWD is not set
-  (report and first fix by Sebastian Markbåge, final fix by Xavier Leroy)
+- GPR#1086: in Sys.getcwd, just fail instead of calling getwd() 
+  if HAS_GETCWD is not set.
+  (Report and first fix by Sebastian Markbåge, final fix by Xavier Leroy,
+   review by MarK Shinwell)
 
 - GPR#1269: Remove 50ms delay at exit for programs using threads
   (Valentin Gatien-Baron, review by Stephen Dolan)
