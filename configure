@@ -1305,11 +1305,6 @@ if sh ./hasgot getcwd; then
   echo "#define HAS_GETCWD" >> s.h
 fi
 
-if sh ./hasgot getwd; then
-  inf "getwd() found."
-  echo "#define HAS_GETWD" >> s.h
-fi
-
 if sh ./hasgot getpriority setpriority; then
   inf "getpriority() found."
   echo "#define HAS_GETPRIORITY" >> s.h

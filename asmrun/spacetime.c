@@ -225,14 +225,12 @@ void caml_spacetime_initialize(void)
         caml_secure_getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
 
       if (user_specified_automatic_snapshot_dir == NULL) {
-#ifdef HAS_GETCWD
+#if defined(HAS_GETCWD)
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
           dir_ok = 0;
         }
 #else
-        if (getwd(cwd) == NULL) {
-          dir_ok = 0;
-        }
+        dir_ok = 0;
 #endif
         if (dir_ok) {
           automatic_snapshot_dir = strdup(cwd);
