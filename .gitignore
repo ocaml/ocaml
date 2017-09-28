@@ -277,6 +277,8 @@ _ocamltest
 /testsuite/tests/lib-threads/*.byt
 
 /testsuite/tests/lib-unix/win-stat/*-file
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
 
 /testsuite/tests/opaque/*/*.mli
 
