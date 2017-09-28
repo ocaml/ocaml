@@ -142,6 +142,7 @@ testsuite/tests/docstrings/empty.ml text eol=lf
 testsuite/tests/functors/functors.ml text eol=lf
 testsuite/tests/translprim/module_coercion.ml text eol=lf
 testsuite/tests/warnings/w04.ml text eol=lf
+testsuite/tests/warnings/w32.ml text eol=lf
 
 # These are forced to \n to allow the Cygwin testsuite to pass on a
 # Windows-checkout
