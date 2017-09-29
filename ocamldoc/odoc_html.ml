@@ -1455,10 +1455,10 @@ class html =
 
     (** Print a summary of the given module element to the given buffer.
         This summary is used in the module table of contents. *)
-    method html_summary_of_module_element b _ ele =
+    method html_summary_of_module_element b ele =
       (* Write the first sentence of the item's description. *)
       let write_info = function
-      | Some info -> bs b " "; self#html_of_info_summary b info
+      | Some info -> bs b " - "; self#html_of_info_summary b info
       | None -> () in
 
       bs b {|<li class="|};
@@ -1481,13 +1481,13 @@ class html =
 
         write_info mt.mt_info
       | Element_included_module im ->
-        bp b {|includedmodule">%s|} (Name.simple im.im_name);
+        bp b {|includedmodule">include %s|} (Name.simple im.im_name);
         write_info im.im_info
       | Element_class c ->
         let name = c.cl_name in
         bp
           b
-          {|class"><a href="#%s">%s</a>|}
+          {|class"><a href="#%s">class %s</a>|}
           (Naming.type_target (type_from_name name))
           (Name.simple name);
 
@@ -1496,7 +1496,7 @@ class html =
         let name = ct.clt_name in
         bp
           b
-          {|classtype"><a href="#%s">%s</a>|}
+          {|classtype"><a href="#%s">class type %s</a>|}
           (Naming.type_target (type_from_name name))
           (Name.simple name);
 
@@ -1504,18 +1504,18 @@ class html =
       | Element_value v ->
         bp
           b
-          {|val"><a href="#%s">%s</a>|}
+          {|val"><a href="#%s">val %s</a>|}
           (Naming.value_target v)
           (Name.simple v.val_name);
 
         write_info v.val_info
       | Element_type_extension te ->
-        bp b {|typeextension">%s|} (Name.simple te.te_type_name);
+        bp b {|typeextension">type %s|} (Name.simple te.te_type_name);
         write_info te.te_info
       | Element_exception e ->
         bp
           b
-          {|exception"><a href="#%s">%s</a>|}
+          {|exception"><a href="#%s">exception %s</a>|}
           (Naming.exception_target e)
           (Name.simple e.ex_name);
 
@@ -1523,7 +1523,7 @@ class html =
       | Element_type t ->
         bp
           b
-          {|type"><a href="#%s">%s</a>|}
+          {|type"><a href="#%s">type %s</a>|}
           (Naming.type_target t)
           (Name.simple t.ty_name);
 
@@ -1532,7 +1532,7 @@ class html =
       We'll never reach this case since we've filtered out module
       comments before calling this
       *)
-      | Element_module_comment _ -> bs b {|unknown">|}
+      | Element_module_comment _ -> ()
       end;
 
       bs b {|</li>
@@ -2755,7 +2755,7 @@ class html =
         module_elements
           (* We don't care about module comments in the TOC *)
           |> List.filter (function Element_module_comment _ -> false | _ -> true)
-          |> List.iter (self#html_summary_of_module_element b modu.m_name);
+          |> List.iter (self#html_summary_of_module_element b);
 
         bs b {|</ul>
 </details>

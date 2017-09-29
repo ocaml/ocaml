@@ -29,8 +29,8 @@
 </details>
 <hr width="100%">
 <ul class="toc">
-<li class="val"><a href="#VALheterological">heterological</a> <span class="deprecated"></span></li>
-<li class="val"><a href="#VALnoop">noop</a> </li>
+<li class="val"><a href="#VALheterological">val heterological</a> - <span class="deprecated"></span></li>
+<li class="val"><a href="#VALnoop">val noop</a> - </li>
 </ul>
 <hr width="100%">
 

@@ -45,20 +45,20 @@
 </details>
 <hr width="100%">
 <ul class="toc">
-<li class="exception"><a href="#EXCEPTIONSimple">Simple</a> A nice exception
+<li class="exception"><a href="#EXCEPTIONSimple">exception Simple</a> - A nice exception
 </li>
-<li class="type"><a href="#TYPEext">ext</a> An open sum type
+<li class="type"><a href="#TYPEext">type ext</a> - An open sum type
 </li>
-<li class="type"><a href="#TYPEr">r</a> A simple record type for reference
+<li class="type"><a href="#TYPEr">type r</a> - A simple record type for reference
 </li>
-<li class="type"><a href="#TYPEt">t</a> A sum type with one inline record
+<li class="type"><a href="#TYPEt">type t</a> - A sum type with one inline record
 </li>
-<li class="type"><a href="#TYPEs">s</a> A sum type with two inline records
+<li class="type"><a href="#TYPEs">type s</a> - A sum type with two inline records
 </li>
-<li class="type"><a href="#TYPEany">any</a> A gadt constructor
+<li class="type"><a href="#TYPEany">type any</a> - A gadt constructor
 </li>
-<li class="exception"><a href="#EXCEPTIONError">Error</a></li>
-<li class="typeextension">ext Two new constructors for ext
+<li class="exception"><a href="#EXCEPTIONError">exception Error</a></li>
+<li class="typeextension">type ext - Two new constructors for ext
 </li>
 </ul>
 <hr width="100%">
