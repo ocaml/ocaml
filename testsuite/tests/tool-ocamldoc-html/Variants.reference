@@ -39,6 +39,22 @@
 </ul>
 </details>
 <hr width="100%">
+<ul class="toc">
+<li class="type"><a href="#TYPEs">s</a></li>
+<li class="type"><a href="#TYPEt">t</a></li>
+<li class="type"><a href="#TYPEu">u</a> Some documentation for u
+</li>
+<li class="type"><a href="#TYPEw">w</a> With records
+</li>
+<li class="type"><a href="#TYPEz">z</a> With args
+</li>
+<li class="type"><a href="#TYPEa">a</a> Gadt notation
+</li>
+<li class="type"><a href="#TYPEb">b</a> Lonely constructor
+</li>
+<li class="type"><a href="#TYPEno_documentation">no_documentation</a></li>
+</ul>
+<hr width="100%">
 
 <pre><code><span id="TYPEs"><span class="keyword">type</span> <code class="type"></code>s</span> = </code></pre><table class="typetable">
 <tr>

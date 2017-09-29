@@ -59,6 +59,11 @@
 </ul>
 </details>
 <hr width="100%">
+<ul class="toc">
+<li class="type"><a href="#TYPEt">t</a> And cross-reference <a href="Paragraph.html#TYPEt"><code class="code"><span class="constructor">Paragraph</span>.t</code></a>.
+</li>
+</ul>
+<hr width="100%">
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 <div class="info ">

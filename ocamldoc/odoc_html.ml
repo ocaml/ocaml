@@ -782,29 +782,31 @@ class virtual info =
             end;
           if indent then bs b "</div>\n"
 
+    (** Print the first sentence of the item's documentation inline. *)
+    method html_of_info_summary ?(with_p=false) b info =
+      let module M = Odoc_info in
+      let dep = info.M.i_deprecated <> None in
+
+      if dep then bs b "<span class=\"deprecated\">";
+      begin match info.M.i_desc with
+      | None -> ()
+      | Some d when d = [M.Raw ""] -> ()
+      | Some d ->
+        self#html_of_text ~with_p b
+          (M.text_no_title_no_list (M.first_sentence_of_text d));
+        bs b "\n"
+      end;
+      if dep then bs b "</span>"
+
     (** Print html code for the first sentence of a description.
        The titles and lists in this first sentence has been removed.*)
     method html_of_info_first_sentence b info_opt =
       match info_opt with
         None -> ()
       | Some info ->
-          let module M = Odoc_info in
-          let dep = info.M.i_deprecated <> None in
           bs b "<div class=\"info\">\n";
-          if dep then bs b "<span class=\"deprecated\">";
-          (
-           match info.M.i_desc with
-             None -> ()
-           | Some d when d = [Odoc_info.Raw ""] -> ()
-           | Some d ->
-               self#html_of_text ~with_p:true b
-                 (Odoc_info.text_no_title_no_list
-                    (Odoc_info.first_sentence_of_text d));
-               bs b "\n"
-          );
-          if dep then bs b "</span>";
+          self#html_of_info_summary ~with_p:true b info;
           bs b "</div>\n"
-
   end
 
 
@@ -1455,12 +1457,13 @@ class html =
         This summary is used in the module table of contents. *)
     method html_summary_of_module_element b _ ele =
       (* Write the first sentence of the item's description. *)
-      let write_info info_option =
-        self#html_of_info_first_sentence b info_option in
+      let write_info = function
+      | Some info -> bs b " "; self#html_of_info_summary b info
+      | None -> () in
 
       bs b {|<li class="|};
 
-      match ele with
+      begin match ele with
       | Element_module m ->
         bp
           b
@@ -1529,7 +1532,8 @@ class html =
       We'll never reach this case since we've filtered out module
       comments before calling this
       *)
-      | Element_module_comment _ -> bs b {|unknown">|};
+      | Element_module_comment _ -> bs b {|unknown">|}
+      end;
 
       bs b {|</li>
 |}

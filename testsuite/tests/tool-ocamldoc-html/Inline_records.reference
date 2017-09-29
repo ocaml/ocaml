@@ -44,6 +44,24 @@
 </ul>
 </details>
 <hr width="100%">
+<ul class="toc">
+<li class="exception"><a href="#EXCEPTIONSimple">Simple</a> A nice exception
+</li>
+<li class="type"><a href="#TYPEext">ext</a> An open sum type
+</li>
+<li class="type"><a href="#TYPEr">r</a> A simple record type for reference
+</li>
+<li class="type"><a href="#TYPEt">t</a> A sum type with one inline record
+</li>
+<li class="type"><a href="#TYPEs">s</a> A sum type with two inline records
+</li>
+<li class="type"><a href="#TYPEany">any</a> A gadt constructor
+</li>
+<li class="exception"><a href="#EXCEPTIONError">Error</a></li>
+<li class="typeextension">ext Two new constructors for ext
+</li>
+</ul>
+<hr width="100%">
 
 <pre><span id="EXCEPTIONSimple"><span class="keyword">exception</span> Simple</span></pre>
 <div class="info ">
