@@ -836,6 +836,18 @@ module Generator =
   struct
 (** This class is used to create objects which can generate a simple html documentation. *)
 class html =
+  (* Create a dummy type given only a name. *)
+  let type_from_name name = {
+    ty_name = name;
+    ty_info = None;
+    ty_parameters = [];
+    ty_kind = Type_abstract;
+    ty_private = Asttypes.Public;
+    ty_manifest = None;
+    ty_loc = Odoc_info.dummy_loc;
+    ty_code = None
+  } in
+
   object (self)
     inherit text
     inherit info
@@ -1450,34 +1462,74 @@ class html =
 
       match ele with
       | Element_module m ->
-        bp b {|module">%s|} (Name.simple m.m_name);
+        bp
+          b
+          {|module"><a href="#%s">module %s</a>|}
+          (Naming.module_target m)
+          (Name.simple m.m_name);
+
         write_info m.m_info
       | Element_module_type mt ->
-        bp b {|moduletype">%s|} (Name.simple mt.mt_name);
+        bp
+          b
+          {|moduletype"><a href="#%s">module type %s</a>|}
+          (Naming.module_type_target mt)
+          (Name.simple mt.mt_name);
+
         write_info mt.mt_info
       | Element_included_module im ->
         bp b {|includedmodule">%s|} (Name.simple im.im_name);
         write_info im.im_info
       | Element_class c ->
-        bp b {|class">%s|} (Name.simple c.cl_name);
+        let name = c.cl_name in
+        bp
+          b
+          {|class"><a href="#%s">%s</a>|}
+          (Naming.type_target (type_from_name name))
+          (Name.simple name);
+
         write_info c.cl_info
       | Element_class_type ct ->
-        bp b {|classtype">%s|} (Name.simple ct.clt_name);
+        let name = ct.clt_name in
+        bp
+          b
+          {|classtype"><a href="#%s">%s</a>|}
+          (Naming.type_target (type_from_name name))
+          (Name.simple name);
+
         write_info ct.clt_info
       | Element_value v ->
-        bp b {|val">%s|} (Name.simple v.val_name);
+        bp
+          b
+          {|val"><a href="#%s">%s</a>|}
+          (Naming.value_target v)
+          (Name.simple v.val_name);
+
         write_info v.val_info
       | Element_type_extension te ->
         bp b {|typeextension">%s|} (Name.simple te.te_type_name);
         write_info te.te_info
       | Element_exception e ->
-        bp b {|exception">%s|} (Name.simple e.ex_name);
+        bp
+          b
+          {|exception"><a href="#%s">%s</a>|}
+          (Naming.exception_target e)
+          (Name.simple e.ex_name);
+
         write_info e.ex_info
       | Element_type t ->
-        bp b {|type">%s|} (Name.simple t.ty_name);
+        bp
+          b
+          {|type"><a href="#%s">%s</a>|}
+          (Naming.type_target t)
+          (Name.simple t.ty_name);
+
         write_info t.ty_info
-      (* No need to print module comments *)
-      | Element_module_comment _ -> bs b {|text">|};
+      (*
+      We'll never reach this case since we've filtered out module
+      comments before calling this
+      *)
+      | Element_module_comment _ -> bs b {|unknown">|};
 
       bs b {|</li>
 |}
@@ -2236,22 +2288,15 @@ class html =
 
     (** Print html code for a class. *)
     method html_of_class b ?(complete=true) ?(with_link=true) c =
-      let father = Name.father c.cl_name in
+      let name = c.cl_name in
+      let father = Name.father name in
       Odoc_info.reset_type_names ();
-      let (html_file, _) = Naming.html_files c.cl_name in
+      let (html_file, _) = Naming.html_files name in
       bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
-      bp b "<span id=\"%s\">"
-        (Naming.type_target
-           { ty_name = c.cl_name ;
-             ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_private = Asttypes.Public;
-             ty_manifest = None ;
-             ty_loc = Odoc_info.dummy_loc ;
-             ty_code = None ;
-           }
-        );
+      bp b "<span id=\"%s\">" (Naming.type_target (type_from_name name));
+
       bs b ((self#keyword "class")^" ");
       print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then bs b ((self#keyword "virtual")^" ");
@@ -2265,9 +2310,9 @@ class html =
       print_DEBUG "html#html_of_class : with link or not" ;
       (
        if with_link then
-         bp b "<a href=\"%s\">%s</a>" html_file (Name.simple c.cl_name)
+         bp b "<a href=\"%s\">%s</a>" html_file (Name.simple name)
        else
-         bs b (Name.simple c.cl_name)
+         bs b (Name.simple name)
       );
       bs b "</span>";
       bs b " : " ;
@@ -2284,21 +2329,14 @@ class html =
 
     (** Print html code for a class type. *)
     method html_of_class_type b ?(complete=true) ?(with_link=true) ct =
+      let name = ct.clt_name in
       Odoc_info.reset_type_names ();
-      let father = Name.father ct.clt_name in
-      let (html_file, _) = Naming.html_files ct.clt_name in
+      let father = Name.father name in
+      let (html_file, _) = Naming.html_files name in
       bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class type name is used as a type name *)
-      bp b "<span id=\"%s\">"
-        (Naming.type_target
-           { ty_name = ct.clt_name ;
-             ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_private = Asttypes.Public; ty_manifest = None ;
-             ty_loc = Odoc_info.dummy_loc ;
-             ty_code = None ;
-           }
-        );
+      bp b "<span id=\"%s\">" (Naming.type_target (type_from_name name));
       bs b ((self#keyword "class type")^" ");
       if ct.clt_virtual then bs b ((self#keyword "virtual")^" ");
       (
@@ -2310,9 +2348,9 @@ class html =
       );
 
       if with_link then
-        bp b "<a href=\"%s\">%s</a>" html_file (Name.simple ct.clt_name)
+        bp b "<a href=\"%s\">%s</a>" html_file (Name.simple name)
       else
-        bs b (Name.simple ct.clt_name);
+        bs b (Name.simple name);
 
       bs b "</span>";
       bs b " = ";
@@ -2710,9 +2748,10 @@ class html =
 <details class="info toc"><summary>Contents</summary>
 <ul>
 |};
-        List.iter
-          (self#html_summary_of_module_element b modu.m_name)
-          module_elements;
+        module_elements
+          (* We don't care about module comments in the TOC *)
+          |> List.filter (function Element_module_comment _ -> false | _ -> true)
+          |> List.iter (self#html_summary_of_module_element b modu.m_name);
 
         bs b {|</ul>
 </details>
