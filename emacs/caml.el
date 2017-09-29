@@ -1,26 +1,39 @@
-;**************************************************************************
-;*                                                                        *
-;*                                 OCaml                                  *
-;*                                                                        *
-;*                 Jacques Garrigue and Ian T Zimmerman                   *
-;*                                                                        *
-;*   Copyright 1997 Institut National de Recherche en Informatique et     *
-;*     en Automatique.                                                    *
-;*                                                                        *
-;*   All rights reserved.  This file is distributed under the terms of    *
-;*   the GNU General Public License.                                      *
-;*                                                                        *
-;**************************************************************************
-
 ;;; caml.el --- OCaml code editing commands for Emacs
 
-;; Xavier Leroy, july 1993.
+;; Copyright (C) 1997-2017 Institut National de Recherche en Informatique et en Automatique.
 
-;;indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
-;;copying: covered by the current FSF General Public License.
+;; Author: Xavier Leroy <xavier.leroy@inria.fr>
+;;         Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
+;;         Ian T Zimmerman <itz@rahul.net>
+;; Maintainer: Damien Doligez <damien.doligez@inria.fr>
+;; Created: July 1993
+;; Keywords: OCaml
+;; Homepage: https://github.com/ocaml/ocaml/
 
-;; indentation code adapted for OCaml by Jacques Garrigue,
-;; july 1997. <garrigue@kurims.kyoto-u.ac.jp>
+;; This file is not part of GNU Emacs.
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published
+;; by the Free Software Foundation; either version 2, or (at your
+;; option) any later version.  See <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; A major mode for editing OCaml code (see <http://ocaml.org/>) in Emacs.
+
+;; Some of its major features include:
+
+;; - syntax highlighting (font lock);
+;; - automatic indentation;
+;; - querying the type of expressions (using compiler generated annot files);
+;; - running an OCaml REPL within Emacs;
+;; - scans declarations and places them in a menu.
+
+
+;; The original indentation code was the work of Ian T Zimmerman and
+;; was adapted for OCaml by Jacques Garrigue in July 1997.
+
+;;; Code:
 
 ;;user customizable variables
 (defvar caml-quote-char "'"
@@ -1961,6 +1974,6 @@ with prefix arg, indent that many phrases starting with the current phrase."
 (autoload 'ocaml-add-path "caml-help"
   "Add search path for documentation." t)
 
-;;; caml.el ends here
-
 (provide 'caml)
+
+;;; caml.el ends here
