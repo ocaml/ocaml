@@ -2,8 +2,7 @@
 
 ;; Copyright (C) 1997-2017 Institut National de Recherche en Informatique et en Automatique.
 
-;; Author: Xavier Leroy <xavier.leroy@inria.fr>
-;;         Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
+;; Author: Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
 ;;         Ian T Zimmerman <itz@rahul.net>
 ;; Maintainer: Damien Doligez <damien.doligez@inria.fr>
 ;; Created: July 1993
