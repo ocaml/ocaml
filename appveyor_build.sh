@@ -27,73 +27,89 @@ function run {
     fi
 }
 
-PREFIX="C:/Program Files/OCaml"
+PREFIX=$(echo $OCAMLROOT| cygpath -f - -m)
+APPVEYOR_BUILD_FOLDER=$(echo $APPVEYOR_BUILD_FOLDER| cygpath -f -)
 
-wmic cpu get name
+case "$1" in
+  install)
+    mkdir -p "$PREFIX/bin/flexdll"
+    cd $APPVEYOR_BUILD_FOLDER/../flexdll
+    for f in flexdll.h flexlink.exe default_amd64.manifest ; do
+      cp $f "$PREFIX/bin/flexdll/$f"
+    done
+    echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile
+    ;;
+  msvc32-only)
+#    cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
+#    make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
+#    cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
 
-if [[ $1 = "msvc32-only" ]] ; then
-#  cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
-#  make MSVC_DETECT=0 CHAINS=msvc MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" support
-#  cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
+    cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
 
-  cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
-  cp config/m-nt.h byterun/caml/m.h
-  cp config/s-nt.h byterun/caml/s.h
+    PREFIX="C:/Program Files/OCaml-msvc32"
+    echo "Edit config/Makefile to set PREFIX=$PREFIX"
+    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
 
-  eval $(tools/msvs-promote-path)
+    # Temporarily initialise the submodule in the msvc32 build
+    git submodule update --init flexdll
+    run "make flexdll" make flexdll
+    run "make world" make world
+    run "make runtimeopt" make runtimeopt
+    run "make -C otherlibs/systhreads libthreadsnat.lib" make -C otherlibs/systhreads libthreadsnat.lib
 
-  PREFIX="C:/Program Files/OCaml-msmvc32"
-  echo "Edit config/Makefile to set PREFIX=$PREFIX"
-  sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
+    exit 0
+    ;;
+  test)
+    run "test msvc64" make -C $APPVEYOR_BUILD_FOLDER tests
+    run "test mingw32" make -C $APPVEYOR_BUILD_FOLDER/../build-mingw32 tests
+    run "install msvc64" make -C $APPVEYOR_BUILD_FOLDER install
+    run "install mingw32" make -C $APPVEYOR_BUILD_FOLDER/../build-mingw32 install
+    ;;
+  *)
+    cd $APPVEYOR_BUILD_FOLDER
 
-  git submodule update --init flexdll
-  run "make flexdll" make flexdll
-  run "make world" make world
-  run "make runtimeopt" make runtimeopt
-  run "make -C otherlibs/systhreads libthreadsnat.lib" make -C otherlibs/systhreads libthreadsnat.lib
+    git worktree add ../build-mingw32 -b appveyor-build-mingw32
+    git worktree add ../build-msvc32 -b appveyor-build-msvc32
 
-  exit 0
-fi
+    cd ../build-mingw32
+    git submodule update --init flexdll
 
-cd $APPVEYOR_BUILD_FOLDER
+    cd $APPVEYOR_BUILD_FOLDER
 
-git worktree add ../build-mingw32 -b appveyor-build-mingw32
-git worktree add ../build-msvc32 -b appveyor-build-msvc32
+    # tar -xzf flexdll.tar.gz
+    # cd flexdll-0.35
+    # make MSVC_DETECT=0 CHAINS=msvc64 support
+    # cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
+    # cd ..
 
-cd ../build-mingw32
-git submodule update --init flexdll
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
 
-cd $APPVEYOR_BUILD_FOLDER
+    echo "Edit config/Makefile to set PREFIX=$PREFIX"
+    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
+    #run "Content of config/Makefile" cat config/Makefile
 
-# tar -xzf flexdll.tar.gz
-# cd flexdll-0.35
-# make MSVC_DETECT=0 CHAINS=msvc64 support
-# cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
-# cd ..
+    # Temporarily initialise the submodule in the main (msvc64) build
+    git submodule update --init flexdll
+    run "make flexdll" make flexdll
+    run "make world" make world
+    run "make bootstrap" make bootstrap
+    run "make opt" make opt
+    run "make opt.opt" make opt.opt
 
-cp config/m-nt.h byterun/caml/m.h
-cp config/s-nt.h byterun/caml/s.h
+    cd ../build-mingw32
 
-echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
-#run "Content of config/Makefile" cat config/Makefile
+    cp config/m-nt.h byterun/caml/m.h
+    cp config/s-nt.h byterun/caml/s.h
 
-git submodule update --init flexdll
-run "make flexdll" make flexdll
-run "make world" make world
-run "make bootstrap" make bootstrap
-run "make opt" make opt
-run "make opt.opt" make opt.opt
+    PREFIX=$(echo $OCAMLROOT2| cygpath -f - -m)
+    echo "Edit config/Makefile to set PREFIX=$PREFIX"
+    sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
+    #run "Content of config/Makefile" cat config/Makefile
 
-cd ../build-mingw32
-
-cp config/m-nt.h byterun/caml/m.h
-cp config/s-nt.h byterun/caml/s.h
-
-PREFIX="C:/Program Files/OCaml-mingw32"
-echo "Edit config/Makefile to set PREFIX=$PREFIX"
-sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
-#run "Content of config/Makefile" cat config/Makefile
-
-run "make flexdll" make flexdll
-run "make world.opt" make world.opt
+    run "make flexdll" make flexdll
+    run "make world.opt" make world.opt
+    ;;
+esac
