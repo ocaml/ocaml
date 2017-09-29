@@ -871,7 +871,6 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
-  val _plugin : string -> unit
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array
@@ -1113,7 +1112,6 @@ struct
     mk_nostdlib F._nostdlib;
     mk_open F._open;
     mk_ppx F._ppx;
-    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1326,7 +1324,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
-    mk_plugin F._plugin;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
