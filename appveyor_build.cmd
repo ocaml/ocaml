@@ -37,6 +37,16 @@ set INCLUDE=%OCAML_PREV_INCLUDE%
 goto :EOF
 
 :install
+rem Temporarily initialise the submodule in the main (msvc64) build
+git submodule update --init flexdll
+git worktree add ..\build-mingw32 -b appveyor-build-mingw32
+cd ..\build-mingw32
+git submodule update --init flexdll
+git worktree add ..\build-msvc32 -b appveyor-build-msvc32
+rem Temporarily initialise the submodule in the msvc32 build
+cd ..\build-msvc32
+git submodule update --init flexdll
+
 rem appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-0.35.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
 appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.35.zip" -FileName "flexdll.zip" || exit /b 1
 rem flexdll.zip is processed here, rather than in appveyor_build.sh because the
