@@ -382,7 +382,6 @@ Release branch for 4.06:
 * MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
-
 * MPR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
   comments that occur after the first module element. This change may break
   existing documenation. In particular, module preambles must now come before
@@ -391,6 +390,10 @@ Release branch for 4.06:
 
 - MPR#7521, GPR#1159: ocamldoc, end generated latex file with a new line
   (Florian Angeletti)
+
+- MPR#7610, GPR#1346: caml.el (the Emacs editing mode) was cleaned up
+  and made compatible with Emacs 25.
+  (Stefan Monnier, Christophe Troestler)
 
 - GPR#681: Introduce ocamltest, a new test driver for the
   OCaml compiler testsuite

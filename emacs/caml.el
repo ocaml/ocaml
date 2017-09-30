@@ -1768,7 +1768,7 @@ by |, insert one."
 (defun caml-abbrev-hook ()
   "If inserting a leading keyword at beginning of line, reindent the line."
   ;itz unfortunately we need a special case
-  (if (and (not (caml-in-comment-p)) (not (= last-command-char ?_)))
+  (if (and (not (caml-in-comment-p)) (not (= last-command-event ?_)))
       (let* ((bol (save-excursion (beginning-of-line) (point)))
              (kw (save-excursion
                    (and (re-search-backward "^[ \t]*\\(\\sw+\\)\\=" bol t)
@@ -1778,7 +1778,7 @@ by |, insert one."
                             (goto-char (match-beginning 1))
                             (caml-indent-command)
                             (current-column)))
-                  (abbrev-correct (if (= last-command-char ?\ ) 1 0)))
+                  (abbrev-correct (if (= last-command-event ?\ ) 1 0)))
               (indent-to (- indent
                             (or
                              (symbol-value
