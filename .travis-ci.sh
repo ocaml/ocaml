@@ -73,7 +73,7 @@ EOF
   $MAKE world.opt
   $MAKE ocamlnat
   (cd testsuite && $MAKE all)
-  [ $XARCH =  "i386" ] ||  (cd testsuite && $MAKE USE_RUNTIME="d" all)
+  (cd testsuite && $MAKE USE_RUNTIME="d" all)
   $MAKE install
   $MAKE manual-pregen
   # check_all_arches checks tries to compile all backends in place,
