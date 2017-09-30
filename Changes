@@ -36,6 +36,10 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Runtime system:
 
+- GPR#1483: fix GC freelist accounting for chunks larger than the maximum block
+  size.
+  (David Allsopp and Damien Doligez)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
