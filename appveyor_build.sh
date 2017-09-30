@@ -52,8 +52,7 @@ case "$1" in
     echo "Edit config/Makefile to set PREFIX=$PREFIX"
     sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc > config/Makefile
 
-    # Temporarily initialise the submodule in the msvc32 build
-    git submodule update --init flexdll
+    # Temporarily bootstrap flexdll
     run "make flexdll" make flexdll
     run "make world" make world
     run "make runtimeopt" make runtimeopt
@@ -70,14 +69,6 @@ case "$1" in
   *)
     cd $APPVEYOR_BUILD_FOLDER
 
-    git worktree add ../build-mingw32 -b appveyor-build-mingw32
-    git worktree add ../build-msvc32 -b appveyor-build-msvc32
-
-    cd ../build-mingw32
-    git submodule update --init flexdll
-
-    cd $APPVEYOR_BUILD_FOLDER
-
     # tar -xzf flexdll.tar.gz
     # cd flexdll-0.35
     # make MSVC_DETECT=0 CHAINS=msvc64 support
@@ -91,8 +82,7 @@ case "$1" in
     sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
     #run "Content of config/Makefile" cat config/Makefile
 
-    # Temporarily initialise the submodule in the main (msvc64) build
-    git submodule update --init flexdll
+    # Temporarily bootstrap flexdll
     run "make flexdll" make flexdll
     run "make world" make world
     run "make bootstrap" make bootstrap
