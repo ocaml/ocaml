@@ -32,7 +32,10 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Manual and documentation:
 
-### Compiler distribution build system:
+- PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
+  (Yawar Amin, review by Gabriel Scherer)
+
+### Compiler distribution build system
 
 ### Internal/compiler-libs changes:
 
