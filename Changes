@@ -384,6 +384,9 @@ Release branch for 4.06:
 
 ### Toplevel:
 
+- MPR#7570: remove unusable -plugin option from the toplevel
+  (Florian Angeletti)
+
 - GPR#1041: -nostdlib no longer ignored by toplevel.
   (David Allsopp, review by Xavier Leroy)
 
