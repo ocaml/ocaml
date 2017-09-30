@@ -13,6 +13,8 @@
 #*                                                                        *
 #**************************************************************************
 
+BUILD_PID=0
+
 function run {
     NAME=$1
     shift
@@ -21,6 +23,10 @@ function run {
     CODE=$?
     if [ $CODE -ne 0 ]; then
         echo "-=-=- $NAME failed! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+        if [ $BUILD_PID -ne 0 ] ; then
+          kill -KILL $BUILD_PID 2>/dev/null
+          wait $BUILD_PID 2>/dev/null
+        fi
         exit $CODE
     else
         echo "-=-=- End of $NAME -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
@@ -82,13 +88,6 @@ case "$1" in
     sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -WX\0/" config/Makefile.msvc64 > config/Makefile
     #run "Content of config/Makefile" cat config/Makefile
 
-    # Temporarily bootstrap flexdll
-    run "make flexdll" make flexdll
-    run "make world" make world
-    run "make bootstrap" make bootstrap
-    run "make opt" make opt
-    run "make opt.opt" make opt.opt
-
     cd ../build-mingw32
 
     cp config/m-nt.h byterun/caml/m.h
@@ -99,7 +98,25 @@ case "$1" in
     sed -e "s|PREFIX=.*|PREFIX=$PREFIX|" -e "/^ *CFLAGS *=/s/\r\?$/ -Werror\0/" config/Makefile.mingw > config/Makefile
     #run "Content of config/Makefile" cat config/Makefile
 
+    cd $APPVEYOR_BUILD_FOLDER
+
+    export TERM=ansi
+    script --quiet --return --command "make -C ../build-mingw32 flexdll world.opt" ../build-mingw32/build.log >/dev/null 2>/dev/null &
+    BUILD_PID=$!
+
+    # Temporarily bootstrap flexdll
     run "make flexdll" make flexdll
-    run "make world.opt" make world.opt
+    run "make world" make world
+    run "make bootstrap" make bootstrap
+    run "make opt" make opt
+    run "make opt.opt" make opt.opt
+
+    # For an explanation of the sed command, see https://github.com/appveyor/ci/issues/1824
+    (tail --pid=$BUILD_PID -n +1 -f ../build-mingw32/build.log & echo $! >&3) 3>pid | sed -e 's/\d027\[K//g' -e 's/\d027\[m/\d027[0m/g' -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
+    TAIL_PID=$(<pid)
+    wait $BUILD_PID
+    STATUS=$?
+    wait $TAIL_PID 2>/dev/null
+    exit $STATUS
     ;;
 esac
