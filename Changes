@@ -29,6 +29,8 @@ be mentioned in the 4.06 section below instead of here.)
 - MPR#7635: ocamldoc, add an identifier to module and module type elements
   (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
 
+- MPR#7646: ocamldoc, add a table of contents to each module page (Yawar Amin)
+
 ### Compiler distribution build system
 
 ### Internal/compiler-libs changes:
