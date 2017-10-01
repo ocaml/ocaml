@@ -566,7 +566,8 @@ Release branch for 4.06:
   (Leo White, review by Alain Frisch and Gabriel Scherer)
 
 - MPR#7619, GPR#1387: position of the optional last semi-column not included
-  in the position of the expression (same behavior than for lists)
+  in the position of the expression (same behavior as for lists)
+  (Christophe Raffalli, review by Gabriel Scherer)
 
 ### Runtime system:
 
