@@ -28,11 +28,6 @@
 </ul>
 </details>
 <hr width="100%">
-<ul class="toc">
-<li class="val"><a href="#VALheterological">val heterological</a> - <span class="deprecated"></span></li>
-<li class="val"><a href="#VALnoop">val noop</a> - </li>
-</ul>
-<hr width="100%">
 
 <pre><span id="VALheterological"><span class="keyword">val</span> heterological</span> : <code class="type">unit</code></pre><div class="info ">
 <div class="info-deprecated">

@@ -64,19 +64,6 @@
 </ul>
 </details>
 <hr width="100%">
-<ul class="toc">
-<li class="type"><a href="#TYPEa">type a</a></li>
-<li class="type"><a href="#TYPEb">type b</a></li>
-<li class="type"><a href="#TYPEc">type c</a></li>
-<li class="type"><a href="#TYPEs">type s</a></li>
-<li class="typeextension">type s</li>
-<li class="val"><a href="#VALx">val x</a></li>
-<li class="module"><a href="#MODULES">module S</a></li>
-<li class="moduletype"><a href="#MODULETYPEs">module type s</a></li>
-<li class="classtype"><a href="#TYPEd">class type d</a></li>
-<li class="exception"><a href="#EXCEPTIONE">exception E</a></li>
-</ul>
-<hr width="100%">
 
 <pre><code><span id="TYPEa"><span class="keyword">type</span> <code class="type"></code>a</span> = </code></pre><table class="typetable">
 <tr>

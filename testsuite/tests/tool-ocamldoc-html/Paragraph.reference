@@ -59,17 +59,12 @@
 </ul>
 </details>
 <hr width="100%">
-<ul class="toc">
-<li class="type"><a href="#TYPEt">type t</a> - And cross-reference <a href="Paragraph.html#TYPEt"><code class="code"><span class="constructor">Paragraph</span>.t</code></a>.
-</li>
-</ul>
-<hr width="100%">
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 <div class="info ">
 <div class="info-desc">
 <p>And cross-reference <a href="Paragraph.html#TYPEt"><code class="code"><span class="constructor">Paragraph</span>.t</code></a>.
-
+   
 <table class="indextable module-list">
 <tr><td class="module"><a href="Paragraph.html">Paragraph</a></td><td><div class="info">
 <p>This file tests the generation of paragraph within module comments.</p>
