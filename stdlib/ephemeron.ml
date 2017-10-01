@@ -55,7 +55,9 @@ module GenHashTable = struct
 
     and 'a bucketlist =
     | Empty
-    | Cons of int (* hash of the key *) * 'a H.container * 'a bucketlist
+    | Cons of { hkey: int; (* hash of the key *)
+                data: 'a H.container;
+                mutable rest: 'a bucketlist}
 
     (** the hash of the key is kept in order to test the equality of the hash
       before the key. Same reason as for Weak.Make *)
@@ -99,11 +101,11 @@ module GenHashTable = struct
       let rec do_bucket = function
         | Empty ->
             Empty
-        | Cons(_, c, rest) when not (H.check_key c) ->
+        | Cons{data; rest} when not (H.check_key data) ->
             h.size <- h.size - 1;
             do_bucket rest
-        | Cons(hkey, c, rest) ->
-            Cons(hkey, c, do_bucket rest)
+        | Cons{hkey;data;rest} ->
+            Cons{hkey;data; rest=do_bucket rest}
       in
       let d = h.data in
       for i = 0 to Array.length d - 1 do
@@ -140,10 +142,10 @@ module GenHashTable = struct
         h.data <- ndata;       (* so that key_index sees the new bucket count *)
         let rec insert_bucket = function
             Empty -> ()
-          | Cons(hkey, data, rest) ->
+          | Cons{hkey; data; rest} ->
               insert_bucket rest; (* preserve original order of elements *)
               let nidx = key_index h hkey in
-              ndata.(nidx) <- Cons(hkey, data, ndata.(nidx)) in
+              ndata.(nidx) <- Cons{hkey; data; rest= ndata.(nidx)} in
         for i = 0 to osize - 1 do
           insert_bucket odata.(i)
         done
@@ -152,78 +154,82 @@ module GenHashTable = struct
     let add h key info =
       let hkey = H.hash h.seed key in
       let i = key_index h hkey in
-      let container = H.create key info in
-      let bucket = Cons(hkey, container, h.data.(i)) in
+      let data = H.create key info in
+      let bucket = Cons{hkey; data; rest=h.data.(i)} in
       h.data.(i) <- bucket;
       h.size <- h.size + 1;
       if h.size > Array.length h.data lsl 1 then resize h
 
     let remove h key =
-      let hkey = H.hash h.seed key in
-      let rec remove_bucket = function
-        | Empty -> Empty
-        | Cons(hk, c, next) when hkey = hk ->
-            begin match H.equal c key with
-            | ETrue -> h.size <- h.size - 1; next
-            | EFalse -> Cons(hk, c, remove_bucket next)
-            | EDead ->
+      let nhkey = H.hash h.seed key in
+      let i = key_index h nhkey in
+      let rec remove_bucket prec = function
+        | Empty -> ()
+        | Cons{hkey; data; rest} as cur when hkey = nhkey ->
+            begin match H.equal data key with
+            | EFalse -> remove_bucket cur rest
+            | EDead | ETrue ->
                 (* The dead key is automatically removed. It is acceptable
                     for this function since it already removes a binding *)
-                h.size <- h.size - 1;
-                remove_bucket next
+               h.size <- h.size - 1;
+               (* optimisation possible for consecutive remove. worth it ?*)
+               begin match prec with
+               | Empty -> h.data.(i) <- rest
+               | Cons slot -> slot.rest <- rest
+               end;
+               remove_bucket prec rest
             end
-        | Cons(hk,c,next) -> Cons(hk, c, remove_bucket next) in
-      let i = key_index h hkey in
-      h.data.(i) <- remove_bucket h.data.(i)
+        | Cons{rest} as cur -> remove_bucket cur rest in
+      remove_bucket Empty h.data.(i)
 
     (** {!find} don't remove dead keys because it would be surprising for
         the user that a read-only function mutates the state (eg. concurrent
         access). Same for {!iter}, {!fold}, {!mem}.
     *)
-    let rec find_rec key hkey = function
+    let rec find_rec key nhkey = function
       | Empty ->
           raise Not_found
-      | Cons(hk, c, rest) when hkey = hk  ->
-          begin match H.equal c key with
+      | Cons{hkey; data; rest} when hkey = nhkey  ->
+          begin match H.equal data key with
           | ETrue ->
-              begin match H.get_data c with
+              begin match H.get_data data with
               | None ->
                   (* This case is not impossible because the gc can run between
                       H.equal and H.get_data *)
-                  find_rec key hkey rest
+                  find_rec key nhkey rest
               | Some d -> d
               end
-          | EFalse -> find_rec key hkey rest
+          | EFalse -> find_rec key nhkey rest
           | EDead ->
-              find_rec key hkey rest
+              find_rec key nhkey rest
           end
-      | Cons(_, _, rest) ->
-          find_rec key hkey rest
+      | Cons{rest} ->
+          find_rec key nhkey rest
 
     let find h key =
       let hkey = H.hash h.seed key in
       (* TODO inline 3 iterations *)
       find_rec key hkey (h.data.(key_index h hkey))
 
-    let rec find_rec_opt key hkey = function
+    let rec find_rec_opt key nhkey = function
       | Empty ->
           None
-      | Cons(hk, c, rest) when hkey = hk  ->
-          begin match H.equal c key with
+      | Cons{hkey; data; rest} when hkey = nhkey  ->
+          begin match H.equal data key with
           | ETrue ->
-              begin match H.get_data c with
+              begin match H.get_data data with
               | None ->
                   (* This case is not impossible because the gc can run between
                       H.equal and H.get_data *)
-                  find_rec_opt key hkey rest
+                  find_rec_opt key nhkey rest
               | Some _ as d -> d
               end
-          | EFalse -> find_rec_opt key hkey rest
+          | EFalse -> find_rec_opt key nhkey rest
           | EDead ->
-              find_rec_opt key hkey rest
+              find_rec_opt key nhkey rest
           end
-      | Cons(_, _, rest) ->
-          find_rec_opt key hkey rest
+      | Cons{rest} ->
+          find_rec_opt key nhkey rest
 
     let find_opt h key =
       let hkey = H.hash h.seed key in
@@ -231,12 +237,12 @@ module GenHashTable = struct
       find_rec_opt key hkey (h.data.(key_index h hkey))
 
     let find_all h key =
-      let hkey = H.hash h.seed key in
+      let nhkey = H.hash h.seed key in
       let rec find_in_bucket = function
       | Empty -> []
-      | Cons(hk, c, rest) when hkey = hk  ->
-          begin match H.equal c key with
-          | ETrue -> begin match H.get_data c with
+      | Cons{hkey;data;rest} when hkey = nhkey  ->
+          begin match H.equal data key with
+          | ETrue -> begin match H.get_data data with
               | None ->
                   find_in_bucket rest
               | Some d -> d::find_in_bucket rest
@@ -245,51 +251,101 @@ module GenHashTable = struct
           | EDead ->
               find_in_bucket rest
           end
-      | Cons(_, _, rest) ->
+      | Cons{rest} ->
           find_in_bucket rest in
-      find_in_bucket h.data.(key_index h hkey)
+      find_in_bucket h.data.(key_index h nhkey)
 
+    let update h key f =
+      let nhkey = H.hash h.seed key in
+      let i = key_index h nhkey in
+      let add () =
+        match f None with
+        | None -> ()
+        | Some info ->
+           let data = H.create key info in
+           let bucket = Cons{hkey=nhkey;data;rest=h.data.(i)} in
+           h.data.(i) <- bucket;
+           h.size <- h.size + 1;
+           if h.size > Array.length h.data lsl 1 then resize h
+      in
+      let rec update_rec prec = function
+        | Empty ->
+           add ()
+        | Cons{hkey; data; rest} as cur when hkey = nhkey  ->
+           begin match H.equal data key with
+           | ETrue ->
+              begin match H.get_data data with
+              | None ->
+                 (* This case is not impossible because the gc can run between
+                    H.equal and H.get_data *)
+                 update_rec prec cur
+              | Some d ->
+                 begin match f (Some d) with
+                 | None ->
+                    h.size <- h.size - 1;
+                    begin match prec with
+                    | Empty -> h.data.(i) <- rest
+                    | Cons slot -> slot.rest <- rest
+                    end
+                 | Some info ->
+                    H.set_key_data data key info
+                 end
+              end
+           | EFalse -> update_rec cur rest
+           | EDead ->
+              h.size <- h.size - 1;
+              (* acceptable as we may remove some thing already *)
+              begin match prec with
+              | Empty -> h.data.(i) <- rest
+              | Cons slot -> slot.rest <- rest
+              end;
+              update_rec prec rest
+           end
+        | Cons{rest} as cur ->
+           update_rec cur rest
+      in
+      update_rec Empty (h.data.(i))
 
     let replace h key info =
-      let hkey = H.hash h.seed key in
+      let nhkey = H.hash h.seed key in
       let rec replace_bucket = function
         | Empty -> raise Not_found
-        | Cons(hk, c, next) when hkey = hk ->
-            begin match H.equal c key with
-            | ETrue -> H.set_key_data c key info
-            | EFalse | EDead -> replace_bucket next
+        | Cons{hkey;data;rest} when hkey = nhkey ->
+            begin match H.equal data key with
+            | ETrue -> H.set_key_data data key info
+            | EFalse | EDead -> replace_bucket rest
             end
-        | Cons(_,_,next) -> replace_bucket next
+        | Cons{rest} -> replace_bucket rest
       in
-      let i = key_index h hkey in
+      let i = key_index h nhkey in
       let l = h.data.(i) in
       try
         replace_bucket l
       with Not_found ->
-        let container = H.create key info in
-        h.data.(i) <- Cons(hkey, container, l);
+        let data = H.create key info in
+        h.data.(i) <- Cons{hkey=nhkey;data;rest=l};
         h.size <- h.size + 1;
         if h.size > Array.length h.data lsl 1 then resize h
 
     let mem h key =
-      let hkey = H.hash h.seed key in
+      let nhkey = H.hash h.seed key in
       let rec mem_in_bucket = function
       | Empty ->
           false
-      | Cons(hk, c, rest) when hk = hkey ->
-          begin match H.equal c key with
+      | Cons{hkey;data;rest} when hkey = nhkey ->
+          begin match H.equal data key with
           | ETrue -> true
           | EFalse | EDead -> mem_in_bucket rest
           end
-      | Cons(_hk, _c, rest) -> mem_in_bucket rest in
-      mem_in_bucket h.data.(key_index h hkey)
+      | Cons{rest} -> mem_in_bucket rest in
+      mem_in_bucket h.data.(key_index h nhkey)
 
     let iter f h =
       let rec do_bucket = function
         | Empty ->
             ()
-        | Cons(_, c, rest) ->
-            begin match H.get_key c, H.get_data c with
+        | Cons{data; rest} ->
+            begin match H.get_key data, H.get_data data with
             | None, _ | _, None -> ()
             | Some k, Some d -> f k d
             end; do_bucket rest in
@@ -303,8 +359,8 @@ module GenHashTable = struct
         match b with
           Empty ->
             accu
-        | Cons(_, c, rest) ->
-            let accu = begin match H.get_key c, H.get_data c with
+        | Cons{data;rest} ->
+            let accu = begin match H.get_key data, H.get_data data with
               | None, _ | _, None -> accu
               | Some k, Some d -> f k d accu
             end in
@@ -317,20 +373,22 @@ module GenHashTable = struct
       !accu
 
     let filter_map_inplace f h =
+      (* Not worth using mutability ? We don't know
+         if the filter returns rarely None where it would be useful *)
       let rec do_bucket = function
         | Empty ->
             Empty
-        | Cons(hk, c, rest) ->
-            match H.get_key c, H.get_data c with
+        | Cons{hkey; data; rest} ->
+            match H.get_key data, H.get_data data with
             | None, _ | _, None ->
-                do_bucket rest
+               do_bucket rest
             | Some k, Some d ->
                 match f k d with
                 | None ->
                     do_bucket rest
                 | Some new_d ->
-                    H.set_key_data c k new_d;
-                    Cons(hk, c, do_bucket rest)
+                    H.set_key_data data k new_d;
+                    Cons{hkey;data;rest=do_bucket rest}
       in
       let d = h.data in
       for i = 0 to Array.length d - 1 do
@@ -341,7 +399,7 @@ module GenHashTable = struct
 
     let rec bucket_length accu = function
       | Empty -> accu
-      | Cons(_, _, rest) -> bucket_length (accu + 1) rest
+      | Cons{rest} -> bucket_length (accu + 1) rest
 
     let stats h =
       let mbl =
@@ -359,9 +417,9 @@ module GenHashTable = struct
 
     let rec bucket_length_alive accu = function
       | Empty -> accu
-      | Cons(_, c, rest) when H.check_key c ->
+      | Cons{data; rest} when H.check_key data ->
           bucket_length_alive (accu + 1) rest
-      | Cons(_, _, rest) -> bucket_length_alive accu rest
+      | Cons{rest} -> bucket_length_alive accu rest
 
     let stats_alive h =
       let size = ref 0 in

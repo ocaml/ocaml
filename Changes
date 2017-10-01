@@ -224,6 +224,11 @@ Release branch for 4.06:
 - Resurrect tabulation boxes in module Format. Rewrite/extend documentation
   of tabulation boxes.
 
+- MPR#7644, GPR#XXXX: added an update function in Hashtbl and Ephemeron.
+  It has the same semantics as update in Map and allow shorter and faster
+  code in some cases.
+  (Christophe Raffalli)
+
 ### Compiler user-interface and warnings:
 
 - GPR##1332: fix ocamlc handling of "-output-complete-obj"

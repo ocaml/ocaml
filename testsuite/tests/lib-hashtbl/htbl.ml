@@ -51,7 +51,21 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
       let (k, _) = data.(i) in H.remove h k; m := M.remove k !m
     done;
     printf "Removal: %s\n"
+           (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
+    (* Update some of the data *)
+    let f i = function
+      | None ->
+         if i mod 2 = 0 then Some(snd data.((i*13) mod n)) else None
+      | Some d ->
+         if Hashtbl.hash d + i = 0 then Some d else None
+    in
+    for i = 0 to n/3 - 1 do
+      let (k, _) = data.(i) in
+      H.update h k (f i); m := M.update k (f i) !m
+    done;
+    printf "Update: %s\n"
            (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED")
+
 
 end
 
@@ -109,6 +123,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let find_opt = Hashtbl.find_opt
     let find_all = Hashtbl.find_all
     let replace = Hashtbl.replace
+    let update = Hashtbl.update
     let mem = Hashtbl.mem
     let iter = Hashtbl.iter
     let fold = Hashtbl.fold

@@ -250,6 +250,50 @@ let replace h key data =
     if h.size > Array.length h.data lsl 1 then resize key_index h
   end
 
+let update h key f =
+  let i = key_index h key in
+  let add () =
+    match f None with
+    | None -> ()
+    | Some info ->
+       let bucket = Cons{key; data=info; next=h.data.(i)} in
+       h.data.(i) <- bucket;
+       h.size <- h.size + 1;
+       if h.size > Array.length h.data lsl 1 then resize key_index h
+  in
+  let update info prec cur =
+    match f (Some info), cur, prec with
+    | Some info, Cons slot, _ ->
+       slot.data <- info
+    | None, Cons {next}, Cons slot ->
+       h.size <- h.size - 1;
+       slot.next <- next
+    | None, Cons {next}, Empty ->
+       h.size <- h.size - 1;
+       h.data.(i) <- next
+    | _ -> assert false
+  in
+  let rec update_rec prec = function
+    | Empty ->
+       add ()
+    | Cons{key=k; data; next} as cur ->
+       if compare key k = 0 then update data prec cur
+       else update_rec cur next
+  in
+  match h.data.(i) with
+  | Empty -> add()
+  | Cons{key=k1; data=d1; next=next1} as cur1->
+     if compare key k1 = 0 then update d1 Empty cur1
+     else match next1 with
+          | Empty -> add()
+          | Cons{key=k2; data=d2; next=next2} as cur2 ->
+             if compare key k2 = 0 then update d2 cur1 cur2
+             else match next2 with
+                  | Empty -> add()
+                  | Cons{key=k3; data=d3; next=next3} as cur3 ->
+                     if compare key k3 = 0 then update d3 cur2 cur3
+                     else update_rec cur3 next3
+
 let mem h key =
   let rec mem_in_bucket = function
   | Empty ->
@@ -384,6 +428,7 @@ module type S =
     val find_opt: 'a t -> key -> 'a option
     val find_all: 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
     val mem : 'a t -> key -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -406,6 +451,7 @@ module type SeededS =
     val find_opt: 'a t -> key -> 'a option
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
+    val update : 'a t -> key -> ('a option -> 'a option) -> unit
     val mem : 'a t -> key -> bool
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
@@ -517,6 +563,49 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
         h.size <- h.size + 1;
         if h.size > Array.length h.data lsl 1 then resize key_index h
       end
+
+    let update h key f =
+      let i = key_index h key in
+      let add () =
+        match f None with
+        | None -> ()
+        | Some info ->
+           let bucket = Cons{key; data=info; next=h.data.(i)} in
+           h.data.(i) <- bucket;
+           h.size <- h.size + 1;
+           if h.size > Array.length h.data lsl 1 then resize key_index h;
+      in
+      let update data prec cur =
+        match f (Some data), cur, prec with
+        | Some data, Cons slot, _ -> slot.data <- data
+        | None, Cons {next}, Cons slot ->
+           h.size <- h.size - 1;
+           slot.next <- next
+        | None, Cons {next}, Empty ->
+           h.size <- h.size - 1;
+           h.data.(i) <- next
+        | _ -> assert false
+      in
+      let rec update_rec prec = function
+        | Empty ->
+           add ()
+        | Cons{key=k; data; next} as cur ->
+           if H.equal key k then update data prec cur
+           else update_rec cur next
+      in
+      match h.data.(i) with
+      | Empty -> add()
+      | Cons{key=k1; data=d1; next=next1} as cur1->
+         if H.equal key k1 then update d1 Empty cur1
+         else match next1 with
+              | Empty -> add()
+              | Cons{key=k2; data=d2; next=next2} as cur2 ->
+                 if H.equal key k2 then update d2 cur1 cur2
+                 else match next2 with
+                      | Empty -> add()
+                      | Cons{key=k3; data=d3; next=next3} as cur3 ->
+                         if H.equal key k3 then update d3 cur2 cur3
+                         else update_rec cur3 next3
 
     let mem h key =
       let rec mem_in_bucket = function
