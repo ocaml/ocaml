@@ -565,6 +565,10 @@ Release branch for 4.06:
 - GPR#1308: Only treat pure patterns as inactive
   (Leo White, review by Alain Frisch and Gabriel Scherer)
 
+- MPR#7619, GPR#1387: position of the optional last semi-column not included
+  in the position of the expression (same behavior as for lists)
+  (Christophe Raffalli, review by Gabriel Scherer)
+
 ### Runtime system:
 
 * MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363: Unicode support for
@@ -590,7 +594,7 @@ Release branch for 4.06:
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
-- GPR#1086: in Sys.getcwd, just fail instead of calling getwd() 
+- GPR#1086: in Sys.getcwd, just fail instead of calling getwd()
   if HAS_GETCWD is not set.
   (Report and first fix by Sebastian Markbåge, final fix by Xavier Leroy,
    review by MarK Shinwell)
