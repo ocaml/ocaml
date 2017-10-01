@@ -1267,7 +1267,7 @@ and_class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | expr SEMI                     { reloc_exp $1 }
+  | expr SEMI                     { $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
   | expr SEMI PERCENT attr_id seq_expr
       { let seq = mkexp(Pexp_sequence ($1, $5)) in
