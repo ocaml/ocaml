@@ -63,8 +63,8 @@ let mkdll, mkexe, mkmaindll =
 
 let profiling = %%PROFILING%%
 let flambda = %%FLAMBDA%%
-let safe_string = %%SAFE_STRING%%
-let safe_string_default = %%SAFE_STRING_DEFAULT%%
+let safe_string = %%FORCE_SAFE_STRING%%
+let default_safe_string = %%DEFAULT_SAFE_STRING%%
 let windows_unicode = %%WINDOWS_UNICODE%% != 0
 
 let flat_float_array = %%FLAT_FLOAT_ARRAY%%
@@ -176,7 +176,7 @@ let print_config oc =
   p_bool "flambda" flambda;
   p_bool "spacetime" spacetime;
   p_bool "safe_string" safe_string;
-  p_bool "safe_string_default" safe_string_default;
+  p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;
   p_bool "windows_unicode" windows_unicode;
 

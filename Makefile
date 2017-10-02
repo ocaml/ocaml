@@ -343,8 +343,8 @@ utils/config.ml: utils/config.mlp config/Makefile
 	    -e 's|%%PROFILING%%|$(PROFILING)|' \
 	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
 	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-	    -e 's|%%SAFE_STRING%%|$(SAFE_STRING)|' \
-	    -e 's|%%SAFE_STRING_DEFAULT%%|$(SAFE_STRING_DEFAULT)|' \
+	    -e 's|%%FORCE_SAFE_STRING%%|$(FORCE_SAFE_STRING)|' \
+	    -e 's|%%DEFAULT_SAFE_STRING%%|$(DEFAULT_SAFE_STRING)|' \
 	    -e 's|%%WINDOWS_UNICODE%%|$(WINDOWS_UNICODE)|' \
 	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
 	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \

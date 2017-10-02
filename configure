@@ -63,8 +63,8 @@ native_compiler=true
 TOOLPREF=""
 with_cfi=true
 flambda=false
-safe_string=false
-safe_string_default=true
+force_safe_string=false
+default_safe_string=true
 afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=false
@@ -215,36 +215,36 @@ while : ; do
         ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
-    # There are two configure-time string safety option,
-    # (un)safe-string and (un)safe-string-default that interact
-    # with a compile-time (un)safe-string option.
+
+    # There are two configure-time string safety options,
+    # -(no-)force-safe-string and -default-(un)safe-string that
+    # interact with a compile-time (un)safe-string option.
     #
-    # If -safe-string is set at configure time, then the compiler will
-    # always enforce that string and bytes are distinct: the
+    # If -force-safe-string is set at configure time, then the compiler
+    # will always enforce that string and bytes are distinct: the
     # compile-time -unsafe-string option is disabled. This lets us
     # assume pervasive string immutability, for code optimizations and
     # in the C layer.
     #
-    # If -safe-string is not set at configure-time (if its
-    # negation -unsafe-string is used), the compiler will use the
-    # compile-time (un)safe-string setting to decide whether string
-    # and bytes are compatible on a per-module basis. The
-    # configure-time options (un)safe-string-default decide which
-    # setting will be chosen by default, if no compile-time option
-    # is explicitly passed.
+    # If -no-force-safe-string is set at configure-time, the compiler
+    # will use the compile-time (un)safe-string option to decide whether
+    # string and bytes are compatible on a per-file basis. The
+    # configure-time options default-(un)safe-string decide which
+    # setting will be chosen by default, if no compile-time option is
+    # explicitly passed.
     #
-    # The configure-time behavior of OCaml 4.05 and older was
-    # equivalent to -unsafe-string -unsafe-string-default.
-    # then). OCaml 4.06 uses -unsafe-string -safe-string-default. We
-    # expect -safe-string to become the default in the future.
-    -safe-string|--safe-string)
-        safe_string=true;;
-    -unsafe-string|--unsafe-string)
-        safe_string=false;;
-    -safe-string-default|--safe-string-default)
-        safe_string_default=true;;
-    -unsafe-string-default|--unsafe-string-default)
-        safe_string_default=false;;
+    # The configure-time behavior of OCaml 4.05 and older was equivalent
+    # to -no-force-safe-string -default-unsafe-string. OCaml 4.06
+    # uses -no-force-safe-string -default-safe-string. We
+    # expect -force-safe-string to become the default in the future.
+    -force-safe-string|--force-safe-string)
+        force_safe_string=true;;
+    -no-force-safe-string|--no-force-safe-string)
+        force_safe_string=false;;
+    -default-safe-string|--default-safe-string)
+        default_safe_string=true;;
+    -default-unsafe-string|--default-unsafe-string)
+        default_safe_string=false;;
     -flat-float-array|--flat-float-array)
         flat_float_array=true;;
     -no-flat-float-array|--no-flat-float-array)
@@ -2035,7 +2035,7 @@ if $with_fpic; then
   echo "#define CAML_WITH_FPIC" >> m.h
 fi
 
-if $safe_string; then
+if $force_safe_string; then
   echo "#define CAML_SAFE_STRING" >> m.h
 fi
 
@@ -2129,8 +2129,8 @@ if [ "$ostype" = Cygwin ]; then
   config DIFF "diff -q --strip-trailing-cr"
 fi
 config FLAMBDA "$flambda"
-config SAFE_STRING "$safe_string"
-config SAFE_STRING_DEFAULT "$safe_string_default"
+config FORCE_SAFE_STRING "$force_safe_string"
+config DEFAULT_SAFE_STRING "$default_safe_string"
 config WINDOWS_UNICODE "0"
 config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
@@ -2251,15 +2251,15 @@ else
   else
   inf "        using flambda middle-end . no"
   fi
-  if $safe_string; then
-  inf "        safe strings ............. yes"
+  if $force_safe_string; then
+  inf "        force safe strings ............. yes"
   else
-  inf "        safe strings ............. no"
-  if $safe_string_default; then
-  inf "        (-safe-string is the default per-module option)"
-  else
-  inf "        (-unsafe-string is the default per-module option)"
-  fi
+  inf "        force safe strings ............. no"
+    if $default_safe_string; then
+  inf "        (-safe-string is the default per-file option)"
+    else
+  inf "        (-unsafe-string is the default per-file option)"
+    fi
   fi
   if $flat_float_array; then
   inf "        flat float arrays ........ yes"
