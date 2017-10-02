@@ -15,7 +15,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_No_preamble.html">No_preamble</a></h1>
 
-<pre><span class="keyword">module</span> No_preamble: <code class="code"><span class="keyword">sig</span></code> <a href="No_preamble.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
+<pre><span id="MODULENo_preamble"><span class="keyword">module</span> No_preamble</span>: <code class="code"><span class="keyword">sig</span></code> <a href="No_preamble.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
 
 <pre><span id="VALx"><span class="keyword">val</span> x</span> : <code class="type">unit</code></pre><div class="info ">
 <div class="info-desc">

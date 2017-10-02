@@ -158,7 +158,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
-	  -e 's|@@SAFE_STRING@@|$(SAFE_STRING)|' \
+	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  $< > $@
 
 .PHONY: clean

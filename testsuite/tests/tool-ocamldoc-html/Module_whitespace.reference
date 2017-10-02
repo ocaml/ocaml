@@ -14,9 +14,9 @@
 &nbsp;</div>
 <h1>Module <a href="type_Module_whitespace.html">Module_whitespace</a></h1>
 
-<pre><span class="keyword">module</span> Module_whitespace: <code class="code"><span class="keyword">sig</span></code> <a href="Module_whitespace.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
+<pre><span id="MODULEModule_whitespace"><span class="keyword">module</span> Module_whitespace</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Module_whitespace.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
 
-<pre><span class="keyword">module</span> <a href="Module_whitespace.M.html">M</a>: <code class="type">Set.Make</code><code class="code">(</code><code class="code"><span class="keyword">sig</span></code></pre><div class="sig_block">
+<pre><span id="MODULEM"><span class="keyword">module</span> <a href="Module_whitespace.M.html">M</a></span>: <code class="type">Set.Make</code><code class="code">(</code><code class="code"><span class="keyword">sig</span></code></pre><div class="sig_block">
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type">int</code> </pre>
 
 

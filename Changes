@@ -3,6 +3,43 @@ Release branch for 4.06:
 
 (Changes that can break existing programs are marked with a "*")
 
+(Bugfixes that are also to be included in the 4.06 branch should
+be mentioned in the 4.06 section below instead of here.)
+
+### Language features:
+
+### Code generation and optimizations:
+
+### Standard library:
+
+### Compiler user-interface and warnings:
+
+- GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
+  first character (instead of comma) in the set ":|; ,"
+  (Fabrice Le Fessant)
+
+### Runtime system:
+
+### Other libraries:
+
+### Manual and documentation:
+
+### Tools:
+
+- MPR#7635: ocamldoc, add an identifier to module and module type elements
+  (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
+
+### Compiler distribution build system
+
+### Internal/compiler-libs changes:
+
+### Bug fixes
+
+Release branch for 4.06:
+------------------------
+
+(Changes that can break existing programs are marked with a "*")
+
 ### Language features:
 
 - GPR#792: fix limitations of destructive substitutions, by
@@ -439,6 +476,22 @@ Release branch for 4.06:
   configure script relating to such detection.
   (Mark Shinwell, report by John Whitington, review by Xavier Leroy)
 
+- GPR#1386: provide configure-time options to fine-tune the safe-string
+  options and default settings changed by GPR#1525.
+
+  The previous configure option -safe-string is now
+  renamed -force-safe-string.
+
+  At configure-time, -force-safe-string forces all module to use
+  immutable strings (this disables the per-file, compile-time
+  -unsafe-string option). The new default-(un)safe-string options
+  let you set the default choice for the per-file compile-time
+  option. (The new GPR#1252 behavior corresponds to having
+  -default-safe-string, while 4.05 and older had
+  -default-unsafe-string).
+
+  (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
@@ -599,7 +652,7 @@ Release branch for 4.06:
 - GPR#1073: Remove statically allocated compare stack.
   (Stephen Dolan)
 
-- GPR#1086: in Sys.getcwd, just fail instead of calling getwd()
+- GPR#1086: in Sys.getcwd, just fail instead of calling getwd() 
   if HAS_GETCWD is not set.
   (Report and first fix by Sebastian Markbåge, final fix by Xavier Leroy,
    review by MarK Shinwell)
