@@ -1,10 +1,13 @@
-run_unix.$(O): run_unix.c run.h run_common.h
-run_stubs.$(O): run_stubs.c run.h ../byterun/caml/mlvalues.h \
+run_unix.$(O): run_unix.c run.h ../byterun/caml/misc.h \
  ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
- ../byterun/caml/misc.h ../byterun/caml/memory.h ../byterun/caml/gc.h \
- ../byterun/caml/mlvalues.h ../byterun/caml/major_gc.h \
- ../byterun/caml/freelist.h ../byterun/caml/minor_gc.h \
- ../byterun/caml/address_class.h ../byterun/caml/io.h
+ run_common.h
+run_stubs.$(O): run_stubs.c run.h ../byterun/caml/misc.h \
+ ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/misc.h \
+ ../byterun/caml/memory.h ../byterun/caml/gc.h ../byterun/caml/mlvalues.h \
+ ../byterun/caml/major_gc.h ../byterun/caml/freelist.h \
+ ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
+ ../byterun/caml/io.h ../byterun/caml/osdeps.h ../byterun/caml/memory.h
 actions.cmo : environments.cmi actions.cmi
 actions.cmx : environments.cmx actions.cmi
 actions.cmi : environments.cmi
@@ -20,13 +23,15 @@ builtin_actions.cmx : variables.cmx testlib.cmx run_command.cmx \
     builtin_variables.cmx builtin_modifiers.cmx backends.cmx actions.cmx \
     builtin_actions.cmi
 builtin_actions.cmi : actions.cmi
-builtin_modifiers.cmo : environments.cmi builtin_variables.cmi \
-    builtin_modifiers.cmi
-builtin_modifiers.cmx : environments.cmx builtin_variables.cmx \
-    builtin_modifiers.cmi
+builtin_modifiers.cmo : ocamltest_config.cmi environments.cmi \
+    builtin_variables.cmi builtin_modifiers.cmi
+builtin_modifiers.cmx : ocamltest_config.cmx environments.cmx \
+    builtin_variables.cmx builtin_modifiers.cmi
 builtin_modifiers.cmi : environments.cmi
-builtin_tests.cmo : tests.cmi builtin_actions.cmi builtin_tests.cmi
-builtin_tests.cmx : tests.cmx builtin_actions.cmx builtin_tests.cmi
+builtin_tests.cmo : tests.cmi ocamltest_config.cmi builtin_actions.cmi \
+    builtin_tests.cmi
+builtin_tests.cmx : tests.cmx ocamltest_config.cmx builtin_actions.cmx \
+    builtin_tests.cmi
 builtin_tests.cmi : tests.cmi
 builtin_variables.cmo : variables.cmi builtin_variables.cmi
 builtin_variables.cmx : variables.cmx builtin_variables.cmi
