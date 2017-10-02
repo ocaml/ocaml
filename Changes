@@ -86,22 +86,6 @@ Release branch for 4.06:
   "S with type _ t = int".
   (Valentin Gatien-Baron, report by Jeremy Yallop)
 
-- GPR#1386: provide configure-time options to fine-tune the safe-string
-  options and default settings changed by GPR#1525.
-
-  The previous configure option -safe-string is now
-  renamed -force-safe-string.
-
-  At configure-time, -force-safe-string forces all module to use
-  immutable strings (this disables the per-file, compile-time
-  -unsafe-string option). The new default-(un)safe-string options
-  let you set the default choice for the per-file compile-time
-  option. (The new GPR#1252 behavior corresponds to having
-  -default-safe-string, while 4.05 and older had
-  -default-unsafe-string).
-
-  (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
-
 ### Code generation and optimizations:
 
 - MPR#5324, GPR#375: An alternative Linear Scan register allocator for
@@ -486,6 +470,22 @@ Release branch for 4.06:
   int64 alignment on Mac OS X 10.13 (High Sierra) and above; fix bug in
   configure script relating to such detection.
   (Mark Shinwell, report by John Whitington, review by Xavier Leroy)
+
+- GPR#1386: provide configure-time options to fine-tune the safe-string
+  options and default settings changed by GPR#1525.
+
+  The previous configure option -safe-string is now
+  renamed -force-safe-string.
+
+  At configure-time, -force-safe-string forces all module to use
+  immutable strings (this disables the per-file, compile-time
+  -unsafe-string option). The new default-(un)safe-string options
+  let you set the default choice for the per-file compile-time
+  option. (The new GPR#1252 behavior corresponds to having
+  -default-safe-string, while 4.05 and older had
+  -default-unsafe-string).
+
+  (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
 
 ### Internal/compiler-libs changes:
 
