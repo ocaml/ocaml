@@ -690,6 +690,8 @@ Release branch for 4.06:
   in the position of the expression (same behavior as for lists)
   (Christophe Raffalli, review by Gabriel Scherer)
 
+- GPR#1390: fix the [@@unboxed] type check to accept parametrized types
+  (Leo White, review by Damien Doligez)
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
