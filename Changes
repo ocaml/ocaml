@@ -89,13 +89,18 @@ Release branch for 4.06:
 - GPR#1386: provide configure-time options to fine-tune the safe-string
   options and default settings changed by GPR#1525.
 
-  At configure-time, -safe-string forces all module to use immutable
-  strings (this disables the per-module, compile-time -unsafe-string
-  option). The new (un)safe-string-default options let you set the
-  default choice for the per-module compile-time option. (The new
-  GPR#1252 behavior corresponds to having -safe-string-default, while
-  4.05 and older had -unsafe-string-default).
-  (Gabriel Scherer, review by Jacques-Pascal Deplaix)
+  The previous configure option -safe-string is now
+  renamed -force-safe-string.
+
+  At configure-time, -force-safe-string forces all module to use
+  immutable strings (this disables the per-file, compile-time
+  -unsafe-string option). The new default-(un)safe-string options
+  let you set the default choice for the per-file compile-time
+  option. (The new GPR#1252 behavior corresponds to having
+  -default-safe-string, while 4.05 and older had
+  -default-unsafe-string).
+
+  (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
 
 ### Code generation and optimizations:
 
