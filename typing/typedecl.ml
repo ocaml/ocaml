@@ -267,7 +267,7 @@ let make_constructor env type_path type_params sargs sret_type =
       let args, targs =
         transl_constructor_arguments env true sargs
       in
-        targs, None, args, None
+        targs, None, args, None, type_params
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
@@ -278,15 +278,16 @@ let make_constructor env type_path type_params sargs sret_type =
       in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
-      begin
+      let params =
         match (Ctype.repr ret_type).desc with
-          Tconstr (p', _, _) when Path.same type_path p' -> ()
+        | Tconstr (p', params, _) when Path.same type_path p' ->
+            params
         | _ ->
             raise (Error (sret_type.ptyp_loc, Constraint_failed
                             (ret_type, Ctype.newconstr type_path type_params)))
-      end;
+      in
       widen z;
-      targs, Some tret_type, args, Some ret_type
+      targs, Some tret_type, args, Some ret_type, params
 
 (* Check that the variable [id] is present in the [univ] list. *)
 let check_type_var loc univ id =
@@ -444,7 +445,7 @@ let transl_declaration env sdecl id =
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
-          let targs, tret_type, args, ret_type =
+          let targs, tret_type, args, ret_type, cstr_params =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
@@ -463,7 +464,7 @@ let transl_declaration env sdecl id =
             match Datarepr.constructor_existentials args ret_type with
             | _, [] -> ()
             | [argty], _ex ->
-                check_unboxed_gadt_arg sdecl.ptype_loc params env argty
+                check_unboxed_gadt_arg sdecl.ptype_loc cstr_params env argty
             | _ -> assert false
           end;
           let tcstr =
@@ -1408,7 +1409,7 @@ let transl_extension_constructor env type_path type_params
   let args, ret_type, kind =
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
-        let targs, tret_type, args, ret_type =
+        let targs, tret_type, args, ret_type, _ =
           make_constructor env type_path typext_params
             sargs sret_type
         in

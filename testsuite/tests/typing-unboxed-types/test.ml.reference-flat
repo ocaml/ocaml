@@ -200,4 +200,7 @@ Error: This type cannot be unboxed because
 Error: This type cannot be unboxed because
        it might contain both float and non-float values.
        You should annotate it with [@@ocaml.boxed].
+#             type 'a s
+type ('a, 'p) t = private 'a s
+type 'a packed = T : ('a, 'b) t -> 'a packed [@@unboxed]
 # 
