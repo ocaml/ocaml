@@ -6,7 +6,6 @@ let compile_file filename =
     let out_name = Filename.chop_extension filename ^ ".s" in
     Emitaux.output_channel := open_out out_name
   end; (* otherwise, stdout *)
-  Clflags.dlcode := false;
   Compilenv.reset "test";
   Emit.begin_assembly();
   let ic = open_in filename in
