@@ -28,8 +28,7 @@ call_gen_code:
         mov     r0, r1
         mov     r1, r2
         mov     r2, r3
-        mov     lr, pc
-        mov     pc, r4
+        blx     r4
         ldmea   fp, {r4, r5, r6, r7, r8, r9, fp, sp, pc}
 
         .global caml_c_call
@@ -37,4 +36,7 @@ call_gen_code:
         .align  0
 caml_c_call:
     @ function to call is in r10
-        mov     pc, r10
+        bx      r10
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

@@ -76,3 +76,8 @@ CAML_ABSF_MASK:
         .quad   0x7FFFFFFFFFFFFFFF, 0
 
         .comm   young_limit, 8
+
+#if defined(SYS_linux)
+    /* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits
+#endif

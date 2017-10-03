@@ -13,30 +13,47 @@
 /*                                                                        */
 /**************************************************************************/
 
-#if defined(SYS_solaris) || defined(SYS_linux)
-#define Call_gen_code call_gen_code
-#define Caml_c_call caml_c_call
+/* Linux with ELF binaries does not prefix identifiers with _.
+   Linux with a.out binaries, FreeBSD, and NextStep do. */
+
+#if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
+ || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
+#define G(x) x
+#define FUNCTION_ALIGN 16
 #else
-#define Call_gen_code _call_gen_code
-#define Caml_c_call _caml_c_call
+#define G(x) _##x
+#define FUNCTION_ALIGN 4
 #endif
 
-        .global Call_gen_code
-Call_gen_code:
-        save    %sp, -96, %sp
-        mov     %i0, %l0
-        mov     %i1, %i0
-        mov     %i2, %i1
-        mov     %i3, %i2
-        mov     %i4, %i3
-        mov     %i5, %i4
-        call    %l0
-        nop
-        mov     %o0, %i0
+        .globl  G(call_gen_code)
+        .align  FUNCTION_ALIGN
+G(call_gen_code):
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %ebx
+        pushl %esi
+        pushl %edi
+        movl 12(%ebp),%eax
+        movl 16(%ebp),%ebx
+        movl 20(%ebp),%ecx
+        movl 24(%ebp),%edx
+        call *8(%ebp)
+        popl %edi
+        popl %esi
+        popl %ebx
+        popl %ebp
         ret
-        restore
 
-        .global Caml_c_call
-Caml_c_call:
-        jmp     %g4
-        nop
+        .globl  G(caml_c_call)
+        .align  FUNCTION_ALIGN
+G(caml_c_call):
+        jmp     *%eax
+
+        .comm   G(caml_exception_pointer), 4
+        .comm   G(young_ptr), 4
+        .comm   G(young_start), 4
+
+#if defined(SYS_linux_elf)
+    /* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits
+#endif

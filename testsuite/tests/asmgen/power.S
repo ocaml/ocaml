@@ -195,3 +195,6 @@ FUNCTION(caml_c_call)
 #error "wrong MODEL"
 #endif
         bctr
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

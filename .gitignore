@@ -244,12 +244,12 @@ _ocamltest
 
 /testsuite/_retries
 
-/testsuite/tests/asmcomp/codegen
-/testsuite/tests/asmcomp/parsecmm.ml
-/testsuite/tests/asmcomp/parsecmm.mli
-/testsuite/tests/asmcomp/lexcmm.ml
-/testsuite/tests/asmcomp/*.s
-/testsuite/tests/asmcomp/*.out.manifest
+/testsuite/tests/asmgen/codegen
+/testsuite/tests/asmgen/parsecmm.ml
+/testsuite/tests/asmgen/parsecmm.mli
+/testsuite/tests/asmgen/lexcmm.ml
+/testsuite/tests/asmgen/*.s
+/testsuite/tests/asmgen/*.out.manifest
 
 /testsuite/tests/basic/*.safe-string
 /testsuite/tests/basic/pr6322.ml
