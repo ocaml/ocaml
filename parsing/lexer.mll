@@ -440,16 +440,10 @@ rule token = parse
         STAR
       }
   | "#"
-      { if lexbuf.lex_start_pos <> 0 then
-          HASH
-        else
-          try directive lexbuf
-          with Failure(_) -> HASH
-      }
-  | newline "#"
-      { update_loc lexbuf None 1 false 1;
-        try directive lexbuf
-        with Failure(_) -> HASH
+      { let at_beginning_of_line pos = (pos.pos_cnum = pos.pos_bol) in
+        if not (at_beginning_of_line lexbuf.lex_start_p)
+        then HASH
+        else try directive lexbuf with Failure _ -> HASH
       }
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
