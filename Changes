@@ -18,7 +18,7 @@ Release branch for 4.06:
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
-- GPR#1064: extended indexing operators, add a new class of
+- GPR#1064, GPR#1392: extended indexing operators, add a new class of
   user-defined indexing operators, obtained by adding at least
   one operator character after the dot symbol to the standard indexing
   operators: e,g ".%()", ".?[]", ".@{}<-"
