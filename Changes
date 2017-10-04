@@ -22,6 +22,8 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Other libraries:
 
+- Expose Unix.is_inet6_addr
+
 ### Manual and documentation:
 
 ### Tools:

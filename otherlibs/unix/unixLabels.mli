@@ -977,6 +977,10 @@ val getgrgid : int -> group_entry
 type inet_addr = Unix.inet_addr
 (** The abstract type of Internet addresses. *)
 
+val is_inet6_addr : inet_addr -> bool
+(** Return [true] if the given Internet address represents
+    a IPv6 address, [false] if it represents a IPv4 address. *)
+
 val inet_addr_of_string : string -> inet_addr
 (** Conversion from the printable representation of an Internet
     address to its internal representation.  The argument string
