@@ -127,11 +127,13 @@ static char_os * parse_ld_conf(void)
 static void open_shared_lib(char_os * name)
 {
   char_os * realname;
+  char * u8;
   void * handle;
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
-  caml_gc_message(0x100, "Loading shared library %"
-                  ARCH_CHARNATSTR_PRINTF_FORMAT "\n", realname);
+  u8 = caml_stat_strdup_of_os(realname);
+  caml_gc_message(0x100, "Loading shared library %s\n", u8);
+  caml_stat_free(u8);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
