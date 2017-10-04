@@ -349,6 +349,11 @@ Release branch for 4.06:
 * MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
+* MPR#7363, GPR#830: ocamldoc, start heading levels at {1 not {2 or {6.
+  This change modifies the mapping between ocamldoc heading level and
+  html heading level, breaking custom css style for ocamldoc.
+  (Florian Angeletti, request and review by Daniel Bünzli)
+
 * MPR#7478, GPR#1037: ocamldoc, do not use as a module preamble documentation
   comments that occur after the first module element. This change may break
   existing documenation. In particular, module preambles must now come before
