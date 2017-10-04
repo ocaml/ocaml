@@ -464,7 +464,7 @@ Release branch for 4.06:
 - GPR#1220: Fix "-keep-docs" option in ocamlopt manpage
   (Etienne Millon)
 
-### Compiler distribution build system
+### Compiler distribution build system:
 
 - MPR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
