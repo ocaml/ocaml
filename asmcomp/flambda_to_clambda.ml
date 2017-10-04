@@ -584,7 +584,7 @@ and to_clambda_closed_set_of_closures t env symbol
 
 let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
   let fields =
-    List.mapi (fun index expr -> index, to_clambda t env expr) fields
+    List.map (fun (index, expr) -> index, to_clambda t env expr) fields
   in
   let build_setfield (index, field) : Clambda.ulambda =
     (* Note that this will never cause a write barrier hit, owing to
@@ -617,7 +617,9 @@ let accumulate_structured_constants t env symbol
 
 let to_clambda_program t env constants (program : Flambda.program) =
   let rec loop env constants (program : Flambda.program_body)
-        : Clambda.ulambda * Clambda.ustructured_constant Symbol.Map.t =
+        : Clambda.ulambda *
+          Clambda.ustructured_constant Symbol.Map.t *
+          Clambda.preallocated_block list =
     match program with
     | Let_symbol (symbol, alloc, program) ->
       (* Useful only for unboxing. Since floats and boxed integers will
@@ -639,19 +641,52 @@ let to_clambda_program t env constants (program : Flambda.program) =
           constants defs
       in
       loop env constants program
-    | Initialize_symbol (symbol, _tag, fields, program) ->
-      (* The tag is ignored here: It is used separately to generate the
-         preallocated block. Only the initialisation code is generated
-         here. *)
-      let e1 = to_clambda_initialize_symbol t env symbol fields in
-      let e2, constants = loop env constants program in
-      Usequence (e1, e2), constants
+    | Initialize_symbol (symbol, tag, fields, program) ->
+      let fields =
+        List.mapi (fun i field ->
+            i, field,
+            Initialize_symbol_to_let_symbol.constant_field field)
+          fields
+      in
+      let init_fields =
+        Misc.Stdlib.List.filter_map (function
+            | (i, field, None) -> Some (i, field)
+            | (_, _, Some _) -> None)
+          fields
+      in
+      let constant_fields =
+        List.map (fun (_, _, constant_field) ->
+            match constant_field with
+            | None -> None
+            | Some (Flambda.Const const) ->
+                let n =
+                  match const with
+                  | Int i -> i
+                  | Char c -> Char.code c
+                  | Const_pointer i -> i
+                in
+                Some (Clambda.Uconst_field_int n)
+            | Some (Flambda.Symbol sym) ->
+                let lbl = Linkage_name.to_string (Symbol.label sym) in
+                Some (Clambda.Uconst_field_ref lbl))
+          fields
+      in
+      let e1 = to_clambda_initialize_symbol t env symbol init_fields in
+      let preallocated_block : Clambda.preallocated_block =
+        { symbol = Linkage_name.to_string (Symbol.label symbol);
+          exported = true;
+          tag = Tag.to_int tag;
+          fields = constant_fields;
+        }
+      in
+      let e2, constants, preallocated_blocks = loop env constants program in
+      Usequence (e1, e2), constants, preallocated_block :: preallocated_blocks
     | Effect (expr, program) ->
       let e1 = to_clambda t env expr in
-      let e2, constants = loop env constants program in
-      Usequence (e1, e2), constants
+      let e2, constants, preallocated_blocks = loop env constants program in
+      Usequence (e1, e2), constants, preallocated_blocks
     | End _ ->
-      Uconst (Uconst_ptr 0), constants
+      Uconst (Uconst_ptr 0), constants, []
   in
   loop env constants program.program_body
 
@@ -681,17 +716,7 @@ let convert (program, exported) : result =
     }
   in
   let t = { current_unit; imported_units; } in
-  let preallocated_blocks =
-    List.map (fun (symbol, tag, fields) ->
-        { Clambda.
-          symbol = Linkage_name.to_string (Symbol.label symbol);
-          exported = true;
-          tag = Tag.to_int tag;
-          size = List.length fields;
-        })
-      (Flambda_utils.initialize_symbols program)
-  in
-  let expr, structured_constants =
+  let expr, structured_constants, preallocated_blocks =
     to_clambda_program t Env.empty Symbol.Map.empty program
   in
   let offset_fun, offset_fv =

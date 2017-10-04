@@ -100,11 +100,15 @@ val compare_structured_constants:
 val compare_constants:
         uconstant -> uconstant -> int
 
+type uconstant_block_field =
+  | Uconst_field_ref of string
+  | Uconst_field_int of int
+
 type preallocated_block = {
   symbol : string;
   exported : bool;
   tag : int;
-  size : int;
+  fields : uconstant_block_field option list;
 }
 
 type preallocated_constant = {
