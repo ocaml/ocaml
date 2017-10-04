@@ -26,9 +26,6 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Tools:
 
-- MPR#7635: ocamldoc, add an identifier to module and module type elements
-  (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
-
 ### Manual and documentation:
 
 ### Compiler distribution build system:
@@ -368,6 +365,10 @@ Release branch for 4.06:
 - MPR#7610, GPR#1346: caml.el (the Emacs editing mode) was cleaned up
   and made compatible with Emacs 25.
   (Stefan Monnier, Christophe Troestler)
+
+- MPR#7635, GPR#1383: ocamldoc, add an identifier to module
+  and module type elements
+  (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
 
 - GPR#681: Introduce ocamltest, a new test driver for the
   OCaml compiler testsuite
