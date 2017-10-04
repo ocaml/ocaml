@@ -3043,18 +3043,24 @@ let emit_gc_roots_table ~symbols cont =
 (* Build preallocated blocks (used for Flambda [Initialize_symbol]
    constructs, and Clambda global module) *)
 
-let preallocate_block cont { Clambda.symbol; exported; tag; size } =
+let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
        the block header must be black, below (see [caml_darken]), since
        the overall record may be referenced. *)
-    Array.to_list
-      (Array.init size (fun _index ->
-        Cint (Nativeint.of_int 1 (* Val_unit *))))
+    List.map (fun field ->
+        match field with
+        | None ->
+            Cint (Nativeint.of_int 1 (* Val_unit *))
+        | Some (Uconst_field_int n) ->
+            cint_const n
+        | Some (Uconst_field_ref label) ->
+            Csymbol_address label)
+      fields
   in
   let data =
-    Cint(black_block_header tag size) ::
+    Cint(black_block_header tag (List.length fields)) ::
     if exported then
       Cglobal_symbol symbol ::
       Cdefine_symbol symbol :: space
