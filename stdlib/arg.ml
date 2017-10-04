@@ -369,23 +369,19 @@ let read_aux trim sep file =
   let buf = Buffer.create 200 in
   let words = ref [] in
   let stash () =
-    let word =  (Buffer.contents buf) in
+    let word = Buffer.contents buf in
     let word = if trim then trim_cr word else word in
     words := word :: !words;
     Buffer.clear buf
   in
-  let rec read () =
-    try
-      let c = input_char ic in
-      if c = sep then begin
-        stash (); read ()
-      end else begin
-        Buffer.add_char buf c; read ()
-      end
-    with End_of_file ->
-      if Buffer.length buf > 0 then
-        stash () in
-  read ();
+  begin
+    try while true do
+        let c = input_char ic in
+        if c = sep then stash () else Buffer.add_char buf c
+      done
+    with End_of_file -> ()
+  end;
+  if Buffer.length buf > 0 then stash ();
   close_in ic;
   Array.of_list (List.rev !words)
 
