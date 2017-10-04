@@ -8,9 +8,11 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Language features:
 
-### Code generation and optimizations:
+### Type system:
 
 ### Standard library:
+
+### Other libraries:
 
 ### Compiler user-interface and warnings:
 
@@ -18,18 +20,18 @@ be mentioned in the 4.06 section below instead of here.)
   first character (instead of comma) in the set ":|; ,"
   (Fabrice Le Fessant)
 
+### Code generation and optimizations:
+
 ### Runtime system:
-
-### Other libraries:
-
-### Manual and documentation:
 
 ### Tools:
 
 - MPR#7635: ocamldoc, add an identifier to module and module type elements
   (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
 
-### Compiler distribution build system
+### Manual and documentation:
+
+### Compiler distribution build system:
 
 ### Internal/compiler-libs changes:
 
@@ -502,7 +504,7 @@ Release branch for 4.06:
 - GPR#1220: Fix "-keep-docs" option in ocamlopt manpage
   (Etienne Millon)
 
-### Compiler distribution build system
+### Compiler distribution build system:
 
 - MPR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
