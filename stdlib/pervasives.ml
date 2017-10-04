@@ -322,6 +322,7 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
+external isatty : out_channel -> bool = "caml_ml_isatty"
 external flush : out_channel -> unit = "caml_ml_flush"
 
 external out_channels_list : unit -> out_channel list
@@ -472,9 +473,9 @@ let print_string s = output_string stdout s
 let print_bytes s = output_bytes stdout s
 let print_int i = output_string stdout (string_of_int i)
 let print_float f = output_string stdout (string_of_float f)
-let print_endline s =
-  output_string stdout s; output_char stdout '\n'; flush stdout
-let print_newline () = output_char stdout '\n'; flush stdout
+let print_newline () =
+  output_char stdout '\n'; if isatty stdout then flush stdout else ()
+let print_endline s = output_string stdout s; print_newline ()
 
 (* Output functions on standard error *)
 
@@ -483,9 +484,9 @@ let prerr_string s = output_string stderr s
 let prerr_bytes s = output_bytes stderr s
 let prerr_int i = output_string stderr (string_of_int i)
 let prerr_float f = output_string stderr (string_of_float f)
-let prerr_endline s =
-  output_string stderr s; output_char stderr '\n'; flush stderr
-let prerr_newline () = output_char stderr '\n'; flush stderr
+let prerr_newline () =
+  output_char stderr '\n'; if isatty stderr then flush stderr else ()
+let prerr_endline s = output_string stderr s; prerr_newline ()
 
 (* Input functions on standard input *)
 

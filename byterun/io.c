@@ -78,7 +78,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
-  channel->flags = 0;
+  channel->flags = isatty(fd) ? CHANNEL_FLAG_ISATTY : 0;
   channel->next = caml_all_opened_channels;
   channel->prev = NULL;
   channel->name = NULL;
@@ -585,6 +585,13 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
     caml_sys_error(NO_ARG);
 #endif
   return Val_unit;
+}
+
+CAMLprim value caml_ml_isatty(value vchannel)
+{
+  struct channel * channel = Channel(vchannel);
+  int res = (channel->flags & CHANNEL_FLAG_ISATTY) != 0;
+  return Val_bool(res);
 }
 
 /*
