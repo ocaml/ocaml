@@ -37,6 +37,16 @@ let ocamlc_cppflags = "%%OCAMLC_CPPFLAGS%%"
 let ocamlopt_cflags = "%%OCAMLOPT_CFLAGS%%"
 let ocamlopt_cppflags = "%%OCAMLOPT_CPPFLAGS%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
+(* bytecomp_c_compiler and native_c_compiler have been supported for a
+   long time and are retained for backwards compatibility.
+   For programs that don't need compatibility with older OCaml releases
+   the recommended approach is to use the constituent variables
+   c_compiler, ocamlc_cflags, ocamlc_cppflags etc., directly.
+*)
+let bytecomp_c_compiler =
+  c_compiler ^ " " ^ ocamlc_cflags ^ " " ^ ocamlc_cppflags
+let native_c_compiler =
+  c_compiler ^ " " ^ ocamlopt_cflags ^ " " ^ ocamlopt_cppflags
 let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
@@ -146,10 +156,12 @@ let print_config oc =
   p "standard_library" standard_library;
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
+  p "bytecomp_c_compiler" bytecomp_c_compiler;
   p "c_compiler" c_compiler;
   p "ocamlc_cflags" ocamlc_cflags;
   p "ocamlopt_cflags" ocamlopt_cflags;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
+  p "native_c_compiler" native_c_compiler;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
