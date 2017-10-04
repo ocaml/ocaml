@@ -2027,8 +2027,10 @@ bytecomp/printinstr.cmx : \
     bytecomp/printinstr.cmi
 bytecomp/printinstr.cmi : \
     bytecomp/instruct.cmi
+bytecomp/runtimedef.cmo :
+bytecomp/runtimedef.cmx :
 bytecomp/symtable.cmo : \
-    lambda/runtimedef.cmi \
+    bytecomp/runtimedef.cmo \
     typing/predef.cmi \
     utils/misc.cmi \
     bytecomp/meta.cmi \
@@ -2043,7 +2045,7 @@ bytecomp/symtable.cmo : \
     parsing/asttypes.cmi \
     bytecomp/symtable.cmi
 bytecomp/symtable.cmx : \
-    lambda/runtimedef.cmx \
+    bytecomp/runtimedef.cmx \
     typing/predef.cmx \
     utils/misc.cmx \
     bytecomp/meta.cmx \
@@ -2141,6 +2143,7 @@ asmcomp/asmgen.cmo : \
     asmcomp/comballoc.cmi \
     asmcomp/coloring.cmi \
     asmcomp/cmmgen.cmi \
+    asmcomp/cmm_invariants.cmi \
     asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
@@ -2183,6 +2186,7 @@ asmcomp/asmgen.cmx : \
     asmcomp/comballoc.cmx \
     asmcomp/coloring.cmx \
     asmcomp/cmmgen.cmx \
+    asmcomp/cmm_invariants.cmx \
     asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
@@ -2225,7 +2229,7 @@ asmcomp/asmlibrarian.cmx : \
     asmcomp/asmlibrarian.cmi
 asmcomp/asmlibrarian.cmi :
 asmcomp/asmlink.cmo : \
-    lambda/runtimedef.cmi \
+    bytecomp/runtimedef.cmo \
     utils/profile.cmi \
     utils/misc.cmi \
     parsing/location.cmi \
@@ -2243,7 +2247,7 @@ asmcomp/asmlink.cmo : \
     asmcomp/asmgen.cmi \
     asmcomp/asmlink.cmi
 asmcomp/asmlink.cmx : \
-    lambda/runtimedef.cmx \
+    bytecomp/runtimedef.cmx \
     utils/profile.cmx \
     utils/misc.cmx \
     parsing/location.cmx \
@@ -2420,6 +2424,16 @@ asmcomp/cmm_helpers.cmi : \
     middle_end/clambda_primitives.cmi \
     middle_end/clambda.cmi \
     parsing/asttypes.cmi
+asmcomp/cmm_invariants.cmo : \
+    utils/numbers.cmi \
+    asmcomp/cmm.cmi \
+    asmcomp/cmm_invariants.cmi
+asmcomp/cmm_invariants.cmx : \
+    utils/numbers.cmx \
+    asmcomp/cmm.cmx \
+    asmcomp/cmm_invariants.cmi
+asmcomp/cmm_invariants.cmi : \
+    asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
     typing/types.cmi \
     middle_end/printclambda_primitives.cmi \
@@ -5777,6 +5791,7 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     middle_end/backend_var.cmi
+driver/compdynlink.cmi :
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
@@ -6111,13 +6126,13 @@ driver/pparse.cmi : \
     parsing/parsetree.cmi
 toplevel/expunge.cmo : \
     bytecomp/symtable.cmi \
-    lambda/runtimedef.cmi \
+    bytecomp/runtimedef.cmo \
     utils/misc.cmi \
     typing/ident.cmi \
     bytecomp/bytesections.cmi
 toplevel/expunge.cmx : \
     bytecomp/symtable.cmx \
-    lambda/runtimedef.cmx \
+    bytecomp/runtimedef.cmx \
     utils/misc.cmx \
     typing/ident.cmx \
     bytecomp/bytesections.cmx
@@ -6327,6 +6342,8 @@ toplevel/trace.cmi : \
     typing/path.cmi \
     parsing/longident.cmi \
     typing/env.cmi
+toplevel/byte/topdirs.cmi : \
+    parsing/longident.cmi
 toplevel/byte/topeval.cmo : \
     utils/warnings.cmi \
     typing/types.cmi \
@@ -6400,11 +6417,20 @@ toplevel/byte/topeval.cmx : \
 toplevel/byte/topeval.cmi : \
     toplevel/topcommon.cmi \
     parsing/parsetree.cmi
+toplevel/byte/toploop.cmi : \
+    utils/warnings.cmi \
+    typing/types.cmi \
+    typing/path.cmi \
+    parsing/parsetree.cmi \
+    typing/outcometree.cmi \
+    parsing/longident.cmi \
+    parsing/location.cmi \
+    typing/env.cmi
 toplevel/byte/topmain.cmo : \
     toplevel/byte/trace.cmi \
-    toplevel/toploop.cmi \
+    toplevel/byte/toploop.cmi \
     toplevel/byte/topeval.cmi \
-    toplevel/topdirs.cmi \
+    toplevel/byte/topdirs.cmi \
     toplevel/topcommon.cmi \
     typing/printtyp.cmi \
     typing/path.cmi \
@@ -6419,9 +6445,9 @@ toplevel/byte/topmain.cmo : \
     toplevel/byte/topmain.cmi
 toplevel/byte/topmain.cmx : \
     toplevel/byte/trace.cmx \
-    toplevel/toploop.cmx \
+    toplevel/byte/toploop.cmi \
     toplevel/byte/topeval.cmx \
-    toplevel/topdirs.cmx \
+    toplevel/byte/topdirs.cmi \
     toplevel/topcommon.cmx \
     typing/printtyp.cmx \
     typing/path.cmx \
