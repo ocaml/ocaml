@@ -11,7 +11,8 @@ be mentioned in the 4.06 section below instead of here.)
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen
-  (Vincent Laviron, with help from Pierre Chambart)
+  (Vincent Laviron, with help from Pierre Chambart,
+   reviews by Gabriel Scherer and Luc Maranget)
 
 ### Standard library:
 
