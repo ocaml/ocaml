@@ -749,8 +749,6 @@ module Switch_storer = Switch.Store (struct
     | Prim of Lambda.primitive * Variable.t list
     | Expr of key
 
-  type context = unit
-
   exception Not_comparable
 
   let rec make_expr_key (expr : Flambda.t) : key =
@@ -768,7 +766,7 @@ module Switch_storer = Switch.Store (struct
     | Prim (prim, args, _dbg) -> Prim (prim, args)
     | _ -> raise Not_comparable
 
-  let make_key () expr =
+  let make_key expr =
     match make_expr_key expr with
     | exception Not_comparable -> None
     | key -> Some key

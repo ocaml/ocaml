@@ -16,15 +16,21 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-type ('a, 'ctx) t_store =
+type 'a t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
-     act_store : 'ctx -> 'a -> int ;
-     act_store_shared : 'ctx -> 'a -> int ; }
+     act_store : 'a -> int ;
+     act_store_shared : 'a -> int ; }
+
+type ('a, 'ctx) t_store_ctx =
+    {ctx_act_get : unit -> 'a array ;
+     ctx_act_get_shared : unit -> 'a shared array ;
+     ctx_act_store : 'ctx -> 'a -> int ;
+     ctx_act_store_shared : 'ctx -> 'a -> int ; }
 
 exception Not_simple
 
-module type Stored = sig
+module type CtxStored = sig
   type t
   type key
   type context
@@ -32,7 +38,14 @@ module type Stored = sig
   val make_key : context -> t -> key option
 end
 
-module Store(A:Stored) = struct
+module type Stored = sig
+  type t
+  type key
+  val compare_key : key -> key -> int
+  val make_key : t -> key option
+end
+
+module CtxStore(A:CtxStored) = struct
   module AMap =
     Map.Make(struct type t = A.key let compare = A.compare_key end)
 
@@ -83,8 +96,28 @@ module Store(A:Stored) = struct
           | Shared _ -> ())
         st.map ;
       acts in
-    {act_store = store false ; act_store_shared = store true ;
-     act_get = get; act_get_shared = get_shared; }
+    {ctx_act_store = store false ; ctx_act_store_shared = store true ;
+     ctx_act_get = get; ctx_act_get_shared = get_shared; }
+end
+
+module Store(A:Stored) = struct
+  module CtxA = struct
+    type t = A.t
+    type key = A.key
+    type context = unit
+
+    let compare_key = A.compare_key
+    let make_key () = A.make_key
+  end
+
+  module Ctx = CtxStore(CtxA)
+
+  let mk_store () =
+    let store_ctx = Ctx.mk_store () in
+    {act_store = store_ctx.ctx_act_store ();
+     act_store_shared = store_ctx.ctx_act_store_shared ();
+     act_get = store_ctx.ctx_act_get;
+     act_get_shared = store_ctx.ctx_act_get_shared; }
 end
 
 
@@ -833,11 +866,18 @@ let abstract_shared actions =
       actions in
   !handlers,actions
 
-let zyva loc lh arg cases actions =
+let zyva_gen loc lh arg cases actions =
   assert (Array.length cases > 0) ;
-  let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   hs (do_zyva loc lh arg cases actions)
+
+let zyva_ctx loc lh arg cases actions =
+  let actions = actions.ctx_act_get_shared () in
+  zyva_gen loc lh arg cases actions
+
+let zyva loc lh arg cases actions =
+  let actions = actions.act_get_shared () in
+  zyva_gen loc lh arg cases actions
 
 and test_sequence arg cases actions =
   assert (Array.length cases > 0) ;
