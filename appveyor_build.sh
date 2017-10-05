@@ -111,12 +111,14 @@ case "$1" in
     run "make opt" make opt
     run "make opt.opt" make opt.opt
 
+    set +e
+
     # For an explanation of the sed command, see https://github.com/appveyor/ci/issues/1824
-    (tail --pid=$BUILD_PID -n +1 -f ../build-mingw32/build.log & echo $! >&3) 3>pid | sed -e 's/\d027\[K//g' -e 's/\d027\[m/\d027[0m/g' -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
-    TAIL_PID=$(<pid)
+    tail --pid=$BUILD_PID -n +1 -f ../build-mingw32/build.log | sed -e 's/\d027\[K//g' -e 's/\d027\[m/\d027[0m/g' -e 's/\d027\[01\([m;]\)/\d027[1\1/g' &
+    TAIL_PID=$!
     wait $BUILD_PID
     STATUS=$?
-    wait $TAIL_PID 2>/dev/null
+    wait $TAIL_PID
     exit $STATUS
     ;;
 esac
