@@ -415,14 +415,14 @@ and to_clambda_switch t env cases num_keys default =
   let default_action =
     match default with
     | Some def when List.length cases < num_keys ->
-      store.act_store def
+      store.act_store () def
     | _ -> -1
   in
   let index = Array.make num_keys default_action in
   let smallest_key = ref num_keys in
   List.iter
     (fun (key, lam) ->
-      index.(key) <- store.act_store lam;
+      index.(key) <- store.act_store () lam;
       smallest_key := min key !smallest_key
     )
     cases;

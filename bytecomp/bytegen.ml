@@ -776,13 +776,13 @@ let rec comp_expr env exp sz cont =
       let act_consts = Array.make sw.sw_numconsts 0
       and act_blocks = Array.make sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
-      | Some fail -> ignore (store.act_store fail)
+      | Some fail -> ignore (store.act_store () fail)
       | None      -> ()
       end ;
       List.iter
-        (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
+        (fun (n, act) -> act_consts.(n) <- store.act_store () act) sw.sw_consts;
       List.iter
-        (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
+        (fun (n, act) -> act_blocks.(n) <- store.act_store () act) sw.sw_blocks;
 (* Compile and label actions *)
       let acts = store.act_get () in
 (*

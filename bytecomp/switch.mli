@@ -31,35 +31,13 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-type 'a t_store =
+type ('a, 'ctx) t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
-     act_store : 'a -> int ;
-     act_store_shared : 'a -> int ; }
-
-(* Context-aware store: same as above, except that ctx_act_store (and shared)
-   takes a context used to create the key *)
-
-type ('a, 'ctx) t_store_ctx =
-    {ctx_act_get : unit -> 'a array ;
-     ctx_act_get_shared : unit -> 'a shared array ;
-     ctx_act_store : 'ctx -> 'a -> int ;
-     ctx_act_store_shared : 'ctx -> 'a -> int ; }
+     act_store : 'ctx -> 'a -> int ;
+     act_store_shared : 'ctx -> 'a -> int ; }
 
 exception Not_simple
-
-module type CtxStored = sig
-  type t
-  type key
-  type context
-  val compare_key : key -> key -> int
-  val make_key : context -> t -> key option
-end
-
-module CtxStore(A:CtxStored) :
-    sig
-      val mk_store : unit -> (A.t, A.context) t_store_ctx
-    end
 
 module type Stored = sig
   type t
@@ -68,9 +46,20 @@ module type Stored = sig
   val make_key : t -> key option
 end
 
+module type CtxStored = sig
+  include Stored
+  type context
+  val make_key : context -> t -> key option
+end
+
+module CtxStore(A:CtxStored) :
+    sig
+      val mk_store : unit -> (A.t, A.context) t_store
+    end
+
 module Store(A:Stored) :
     sig
-      val mk_store : unit -> A.t t_store
+      val mk_store : unit -> (A.t, unit) t_store
     end
 
 (* Arguments to the Make functor *)
@@ -128,22 +117,13 @@ module Make :
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->
-           Arg.act t_store ->
-           Arg.act
-
-(* Same as above, but with context-aware store *)
-      val zyva_ctx :
-          Location.t ->
-          (int * int) ->
-           Arg.act ->
-           (int * int * int) array ->
-           (Arg.act, _) t_store_ctx ->
+           (Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
            Arg.act ->
            (int * int * int) array ->
-           Arg.act t_store ->
+           (Arg.act, _) t_store ->
            Arg.act
     end
