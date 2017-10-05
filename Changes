@@ -691,6 +691,9 @@ Release branch for 4.06:
 - GPR#1308: Only treat pure patterns as inactive
   (Leo White, review by Alain Frisch and Gabriel Scherer)
 
+- MPR#7612, GPR#1345: afl-instrumentation bugfix for classes.
+  (Stephen Dolan, review by Gabriel Scherer and David Allsopp)
+
 - MPR#7619, GPR#1387: position of the optional last semi-column not included
   in the position of the expression (same behavior as for lists)
   (Christophe Raffalli, review by Gabriel Scherer)
