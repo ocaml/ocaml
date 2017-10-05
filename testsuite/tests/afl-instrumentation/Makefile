@@ -12,4 +12,7 @@ default:
 	  fi \
 	fi
 
+.PHONY: clean
+clean:
+
 include $(BASEDIR)/makefiles/Makefile.common
