@@ -96,6 +96,11 @@ Working version
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
 
+- MPR#7630 GPR#1401: Faster compilation of large modules with Flambda.
+  (Pierre Chambart, report by Emilio Jesús Gallego Arias,
+  Pierre-Marie Pédrot and Paul Steckler, review by Gabriel Scherer
+  and Leo White)
+
 - GPR#1486: ARM 32-bit port: add support for ARMv8 in 32-bit mode,
   a.k.a. AArch32.
   For this platform, avoid ITE conditional instruction blocks and use
