@@ -327,12 +327,13 @@ done in one of three ways:
 OCaml is then compiled as normal for the port you require, except that before
 compiling `world`, you must compile `flexdll`, i.e.:
 
-  make flexdll world [bootstrap] opt opt.opt install
+  make flexdll world [bootstrap] opt opt.opt flexlink.opt install
 
+ * You should ignore the error messages that say ocamlopt was not found.
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
- * If you don't include `make opt.opt`, `flexlink.exe` will be a
+ * If you don't include `make flexlink.opt`, `flexlink.exe` will be a
    bytecode program.  `make install` always installs the "best"
    `flexlink.exe` (i.e. there is never a `flexlink.opt.exe` installed).
  * If you have populated `flexdll/`, you *must* run
