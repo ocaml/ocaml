@@ -17,6 +17,8 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/ocamldoc
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/str
 DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)\
+	-latextitle "1,subsection*" \
+	-latextitle "2,subsubsection*" \
 	-latextitle "6,subsection*" \
 	-latextitle "7,subsubsection*" \
 	-latex-type-prefix "TYP" \

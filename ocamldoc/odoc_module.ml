@@ -107,7 +107,7 @@ and t_module_type = {
   }
 
 
-(** {2 Functions} *)
+(** {1 Functions} *)
 
 (** Returns the list of values from a list of module_element. *)
 let values l =
@@ -543,7 +543,7 @@ let module_type_simple_values ?(trans=true) mt =
     (fun v -> not (Odoc_value.is_function v))
     (values (module_type_elements ~trans mt))
 
-(** {2 Functions for modules and module types} *)
+(** {1 Functions for modules and module types} *)
 
 (** The list of classes defined in this module and all its modules, functors, ....
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)

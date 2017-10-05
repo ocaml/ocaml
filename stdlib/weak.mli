@@ -16,7 +16,7 @@
 (** Arrays of weak pointers and hash sets of weak pointers. *)
 
 
-(** {6 Low-level functions} *)
+(** {1 Low-level functions} *)
 
 type 'a t
 (** The type of arrays of weak pointers (weak arrays).  A weak
@@ -92,7 +92,7 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
    do not designate a valid subarray of [ar2].*)
 
 
-(** {6 Weak hash sets} *)
+(** {1 Weak hash sets} *)
 
 (** A weak hash set is a hashed set of values.  Each value may
     magically disappear from the set when it is not used by the

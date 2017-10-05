@@ -144,16 +144,22 @@ let analyse_merge_options s =
 
 
 let f_latex_title s =
-  try
-    let pos = String.index s ',' in
-    let n = int_of_string (String.sub s 0 pos) in
-    let len = String.length s in
-    let command = String.sub s (pos + 1) (len - pos - 1) in
-    Odoc_latex.latex_titles := List.remove_assoc n !Odoc_latex.latex_titles ;
-    Odoc_latex.latex_titles := (n, command) :: !Odoc_latex.latex_titles
-  with
-    Not_found
-  | Invalid_argument _ ->
+  match String.split_on_char ',' s with
+  | [n;command] ->
+      let n = int_of_string n in
+      Odoc_latex.latex_titles := List.remove_assoc n !Odoc_latex.latex_titles ;
+      Odoc_latex.latex_titles := (n, command) :: !Odoc_latex.latex_titles
+  | _ ->
+      incr Odoc_global.errors ;
+      prerr_endline (M.wrong_format s)
+
+let f_texinfo_title s =
+  match String.split_on_char ',' s with
+  | [n;title;heading] ->
+      let n = int_of_string n in
+      Odoc_texi.titles_and_headings :=
+        (n, (title,heading) ) :: List.remove_assoc n !Odoc_texi.titles_and_headings;
+  | _ ->
       incr Odoc_global.errors ;
       prerr_endline (M.wrong_format s)
 
@@ -352,6 +358,9 @@ let default_options = Options.list @
 (* texi only options *)
   "-noindex", Arg.Clear Odoc_global.with_index, M.no_index ;
   "-esc8", Arg.Set Odoc_texi.esc_8bits, M.esc_8bits ;
+  "-texinfotitle", Arg.String f_texinfo_title,
+  M.texinfo_title Odoc_texi.titles_and_headings ;
+
   "-info-section", Arg.String ((:=) Odoc_texi.info_section), M.info_section ;
   "-info-entry", Arg.String (fun s -> Odoc_texi.info_entry := !Odoc_texi.info_entry @ [ s ]),
   M.info_entry ^

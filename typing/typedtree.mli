@@ -28,12 +28,12 @@ open Types
 
 type partial = Partial | Total
 
-(** {2 Extension points} *)
+(** {1 Extension points} *)
 
 type attribute = Parsetree.attribute
 type attributes = attribute list
 
-(** {2 Core language} *)
+(** {1 Core language} *)
 
 type pattern =
   { pat_desc: pattern_desc;
