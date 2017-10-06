@@ -104,23 +104,23 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 */
 
-#define PROFINFO_SHIFT (64 - PROFINFO_WIDTH)
-#define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
-
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
+
+#define Gen_profinfo_shift(width) (64 - (width))
+#define Gen_profinfo_mask(width) ((1ull << (width)) - 1ull)
+#define Gen_profinfo_hd(width, hd) \
+  (((mlsize_t) ((hd) >> (Gen_profinfo_shift(width)))) \
+   & (Gen_profinfo_mask(width)))
+
 #ifdef WITH_PROFINFO
+#define PROFINFO_SHIFT (Gen_profinfo_shift(PROFINFO_WIDTH))
+#define PROFINFO_MASK (Gen_profinfo_mask(PROFINFO_WIDTH))
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
+#define Profinfo_hd(hd) (Gen_profinfo_hd(PROFINFO_WIDTH, hd))
 #else
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
 #endif /* WITH_PROFINFO */
-#if defined(ARCH_SIXTYFOUR) && defined(WITH_PROFINFO)
-/* [Profinfo_hd] is used when the compiler is not configured for Spacetime
-   (e.g. when decoding profiles). */
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
-#else
-#define Profinfo_hd(hd) ((hd) & 0)
-#endif /* ARCH_SIXTYFOUR && WITH_PROFINFO */
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
