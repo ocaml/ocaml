@@ -154,26 +154,6 @@
  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
-/****************** PowerPC, NetBSD */
-
-#elif defined(TARGET_power) && defined (__NetBSD__)
-
- #include <ucontext.h>
- #define DECLARE_SIGNAL_HANDLER(name) \
- static void name(int sig, siginfo_t * info, ucontext_t * context)
-
- #define SET_SIGACT(sigact,name) \
- sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
-
- #define CONTEXT_PC (_UC_MACHINE_PC(context))
- #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
- #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
- #define CONTEXT_SP (_UC_MACHINE_SP(context))
- #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
-
-/* #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.CONTEXT_REG(r30)) */
-
 /****************** I386, Linux */
 
 #elif defined(TARGET_i386) && defined(SYS_linux_elf)
@@ -307,7 +287,7 @@
 
 /****************** PowerPC, ELF (Linux) */
 
-#elif defined(TARGET_power) && defined(SYS_elf) && !defined(__NetBSD__)
+#elif defined(TARGET_power) && defined(SYS_elf)
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, struct sigcontext * context)
@@ -322,6 +302,26 @@
   #define CONTEXT_YOUNG_LIMIT (context->regs->gpr[30])
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
+
+/****************** PowerPC, NetBSD */
+
+#elif defined(TARGET_power) && defined (__NetBSD__)
+
+ #include <ucontext.h>
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
+ #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
+ #define CONTEXT_SP (_UC_MACHINE_SP(context))
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/* #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.CONTEXT_REG(r30)) */
 
 /****************** s390x, ELF (Linux) */
 #elif defined(TARGET_s390x) && defined(SYS_elf)
