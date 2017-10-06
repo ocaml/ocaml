@@ -113,8 +113,8 @@ BYTECCDBGCOMPOPTS=-Zi
 LDFLAGS=/ENTRY:wmainCRTStartup
 
 ### Libraries needed
-BYTECCLIBS=advapi32.lib ws2_32.lib
-NATIVECCLIBS=advapi32.lib ws2_32.lib
+BYTECCLIBS=advapi32.lib ws2_32.lib version.lib
+NATIVECCLIBS=advapi32.lib ws2_32.lib version.lib
 
 ### How to invoke the C preprocessor
 CPP=cl -nologo -EP
