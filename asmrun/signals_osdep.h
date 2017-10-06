@@ -303,6 +303,26 @@
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
 
+/****************** PowerPC, NetBSD */
+
+#elif defined(TARGET_power) && defined (SYS_netbsd)
+
+ #include <ucontext.h>
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
+ #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
+ #define CONTEXT_SP (_UC_MACHINE_SP(context))
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/* #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.CONTEXT_REG(r30)) */
+
 /****************** s390x, ELF (Linux) */
 #elif defined(TARGET_s390x) && defined(SYS_elf)
 
@@ -320,10 +340,10 @@
   #define CONTEXT_YOUNG_PTR (context->sregs->regs.gprs[11])
   #define CONTEXT_SP (context->sregs->regs.gprs[15])
 
-/****************** PowerPC, BSD */
+/****************** PowerPC, other BSDs */
 
 #elif defined(TARGET_power) && \
-    (defined(SYS_bsd) || defined(SYS_bsd_elf) || defined(SYS_netbsd))
+    (defined(SYS_bsd) || defined(SYS_bsd_elf))
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, int code, struct sigcontext * context)
