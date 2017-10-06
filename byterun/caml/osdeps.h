@@ -103,6 +103,7 @@ extern char_os *caml_secure_getenv(char_os const *var);
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
 
 extern void caml_probe_win32_version(void);
+extern void caml_setup_win32_terminal(void);
 
 /* Windows Unicode support */
 
