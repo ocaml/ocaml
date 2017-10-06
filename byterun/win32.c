@@ -897,3 +897,9 @@ void caml_probe_win32_version(void)
   }
   free(versionInfo);
 }
+
+void caml_setup_win32_terminal(void)
+{
+  if (caml_win32_major >= 10)
+    SetConsoleOutputCP(CP_UTF8);
+}
