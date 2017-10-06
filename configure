@@ -1519,7 +1519,8 @@ fi
 
 nargs=none
 for i in 5 6; do
-  if sh ./trycompile -DSYS_${system} -DNUM_ARGS=${i} gethostbyname.c; then
+  if sh ./trycompile -Werror -DSYS_${system} -DNUM_ARGS=${i} gethostbyname.c
+  then
       nargs=$i;
       break;
   fi
