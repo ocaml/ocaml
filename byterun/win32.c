@@ -111,16 +111,14 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
+    if (!(flags & CHANNEL_FLAG_BLOCKING_WRITE))
 #endif
     caml_enter_blocking_section();
     retcode = write(fd, buf, n);
-    caml_leave_blocking_section();
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
+    if (!(flags & CHANNEL_FLAG_BLOCKING_WRITE))
 #endif
+    caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
     caml_enter_blocking_section();
