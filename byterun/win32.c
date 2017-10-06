@@ -933,13 +933,13 @@ CAMLexport int caml_win32_detect_msys_tty(int fd)
   if (! GetFileInformationByHandleEx(h, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
-  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = 0;
+  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
 
   /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
      or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
-  if ((!wcsstr(nameinfo->FileName, L"msys-") &&
-       !wcsstr(nameinfo->FileName, L"cygwin-")) || !wcsstr(nameinfo->FileName, L"-pty"))
-    return 0;
+  if ((wcsstr(nameinfo->FileName, L"msys-") ||
+       wcsstr(nameinfo->FileName, L"cygwin-")) && wcsstr(nameinfo->FileName, L"-pty"))
+    return 1;
 
-  return 1;
+  return 0;
 }
