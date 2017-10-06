@@ -368,6 +368,11 @@ CAMLprim value caml_sys_get_argv(value unit)
 
 void caml_sys_init(char_os * exe_name, char_os **argv)
 {
+#ifdef _WIN32
+  /* Initialises the caml_win32_* globals on Windows with the version of
+     Windows which is running */
+  caml_probe_win32_version();
+#endif
 #ifdef CAML_WITH_CPLUGINS
   caml_cplugins_init(exe_name, argv);
 #endif

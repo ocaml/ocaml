@@ -122,8 +122,8 @@ BYTECCDBGCOMPOPTS=-g
 LDFLAGS=-municode
 
 ### Libraries needed
-BYTECCLIBS=-lws2_32
-NATIVECCLIBS=-lws2_32
+BYTECCLIBS=-lws2_32 -lversion
+NATIVECCLIBS=-lws2_32 -lversion
 
 ### How to invoke the C preprocessor
 CPP=cpp
