@@ -165,7 +165,7 @@ val substitute_read_symbol_field_for_variables
 
 (** For the compilation of switch statements. *)
 module Switch_storer : sig
-  val mk_store : unit -> Flambda.t Switch.t_store
+  val mk_store : unit -> (Flambda.t, unit) Switch.t_store
 end
 
 (** Within a set of function declarations there is a set of function bodies,

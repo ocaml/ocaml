@@ -411,13 +411,28 @@ and to_clambda_switch t env cases num_keys default =
     if Numbers.Int.Set.cardinal num_keys = 0 then 0
     else Numbers.Int.Set.max_elt num_keys + 1
   in
-  let index = Array.make num_keys 0 in
   let store = Flambda_utils.Switch_storer.mk_store () in
-  begin match default with
-  | Some def when List.length cases < num_keys -> ignore (store.act_store def)
-  | _ -> ()
+  let default_action =
+    match default with
+    | Some def when List.length cases < num_keys ->
+      store.act_store () def
+    | _ -> -1
+  in
+  let index = Array.make num_keys default_action in
+  let smallest_key = ref num_keys in
+  List.iter
+    (fun (key, lam) ->
+      index.(key) <- store.act_store () lam;
+      smallest_key := min key !smallest_key
+    )
+    cases;
+  if !smallest_key < num_keys then begin
+    let action = ref index.(!smallest_key) in
+    Array.iteri
+      (fun i act ->
+         if act >= 0 then action := act else index.(i) <- !action)
+      index
   end;
-  List.iter (fun (key, lam) -> index.(key) <- store.act_store lam) cases;
   let actions = Array.map (to_clambda t env) (store.act_get ()) in
   match actions with
   | [| |] -> [| |], [| |]  (* May happen when [default] is [None]. *)
