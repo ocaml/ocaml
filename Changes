@@ -36,6 +36,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Runtime system:
 
+* MPR#6925, GPR#1408: fix UTF-8 related crashes in Windows Console.
+  (David Allsopp, review by Gabriel Scherer)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested

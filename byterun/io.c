@@ -349,6 +349,14 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
+  int min_buffer = 0;
+
+  /* For a Windows Console, caml_fd_read will fail for a request of fewer than
+     4 bytes. */
+#ifdef _WIN32
+  if (channel->flags & CHANNEL_FLAG_CONSOLE)
+    min_buffer = 3;
+#endif
 
   p = channel->curr;
   do {
@@ -363,7 +371,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
         channel->max -= n;
         p -= n;
       }
-      if (channel->max >= channel->end) {
+      if (channel->max >= channel->end - min_buffer) {
         /* Buffer is full, no room to read more characters from the input.
            Return the number of characters in the buffer, with negative
            sign to indicate that no newline was encountered. */

@@ -85,6 +85,16 @@ static void caml_win32_sys_error(int errnum)
 }
 
 #define STATIC_BUFFER_SIZE 1024
+int win32_utf8_read(int fd, void * buf, int n) {
+  HANDLE hConsole = (HANDLE)_get_osfhandle(fd);
+  WCHAR szBuffer[STATIC_BUFFER_SIZE];
+  int real_n = (n > STATIC_BUFFER_SIZE << 2 ? STATIC_BUFFER_SIZE : n >> 2);
+  DWORD nread;
+  if (!ReadConsole(hConsole, szBuffer, real_n, &nread, NULL))
+    return -1;
+  return WideCharToMultiByte(CP_UTF8, 0, szBuffer, nread, buf, n, NULL, NULL);
+}
+
 int win32_utf8_write(int fd, void * buf, int n) {
   HANDLE hConsole = (HANDLE)_get_osfhandle(fd);
   int length;
@@ -145,12 +155,28 @@ int caml_read_fd(int fd, int flags, void * buf, int n)
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
     caml_enter_blocking_section();
-    retcode = read(fd, buf, n);
+#if WINDOWS_UNICODE
+    if ((flags & CHANNEL_FLAG_CONSOLE) && console_supports_unicode()) {
+#else
+    if ((flags & CHANNEL_FLAG_CONSOLE) && GetConsoleCP() == CP_UTF8
+        && console_supports_unicode()) {
+#endif
+      /* Cannot perform a UTF-8 read unless the buffer is at least 4 bytes */
+      if (n < 4) {
+        retcode = -1;
+        errno = ENOMEM;
+      } else {
+        retcode = win32_utf8_read(fd, buf, n);
+      }
+    } else {
+      retcode = read(fd, buf, n);
+    }
+#if !WINDOWS_UNICODE
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
-    if (retcode == -1 && errno == ENOMEM && n > 16384) {
+    if (retcode == -1 && errno == ENOMEM && n > 16384)
       retcode = read(fd, buf, 16384);
-    }
+#endif
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
