@@ -619,7 +619,7 @@ CAMLprim value caml_sys_isatty(value chan)
 
   fd = (Channel(chan))->fd;
 #ifdef _WIN32
-  ret = Val_bool(_isatty(fd));
+  ret = Val_bool(_isatty(fd) || caml_win32_detect_msys_tty(fd));
         /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
 #else
   ret = Val_bool(isatty(fd));

@@ -914,3 +914,32 @@ void caml_restore_win32_terminal(void)
   if (startup_codepage != 0)
     SetConsoleOutputCP(startup_codepage);
 }
+
+/* Detect if a named pipe corresponds to MSYS/Cygwin tty: see
+
+   https://github.com/mirror/newlib-cygwin/blob/master/winsup/cygwin/dtable.cc#L932
+*/
+CAMLexport int caml_win32_detect_msys_tty(int fd)
+{
+  char buffer[1024];
+  FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
+
+  /* check if fd is a pipe */
+  HANDLE h = (HANDLE) _get_osfhandle(fd);
+  if (GetFileType(h) != FILE_TYPE_PIPE)
+    return 0;
+
+  /* get pipe name */
+  if (! GetFileInformationByHandleEx(h, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+    return 0;
+
+  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = 0;
+
+  /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
+     or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
+  if ((!wcsstr(nameinfo->FileName, L"msys-") &&
+       !wcsstr(nameinfo->FileName, L"cygwin-")) || !wcsstr(nameinfo->FileName, L"-pty"))
+    return 0;
+
+  return 1;
+}
