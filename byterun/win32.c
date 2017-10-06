@@ -57,6 +57,11 @@ typedef unsigned int uintptr_t;
 #define _UINTPTR_T_DEFINED
 #endif
 
+unsigned short caml_win32_major = 0;
+unsigned short caml_win32_minor = 0;
+unsigned short caml_win32_build = 0;
+unsigned short caml_win32_revision = 0;
+
 CAMLnoreturn_start
 static void caml_win32_sys_error (int errnum)
 CAMLnoreturn_end;
@@ -868,4 +873,27 @@ CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
   win_wide_char_to_multi_byte(s, -1, out, retcode);
 
   return out;
+}
+
+void caml_probe_win32_version(void)
+{
+  /* Determine the version of Windows we're running, and cache it */
+  WCHAR fileName[MAX_PATH];
+  DWORD size =
+    GetModuleFileName(GetModuleHandle(L"kernel32"), fileName, MAX_PATH);
+  DWORD dwHandle = 0;
+  BYTE* versionInfo;
+  fileName[size] = 0;
+  size = GetFileVersionInfoSize(fileName, &dwHandle);
+  versionInfo = (BYTE*)malloc(size * sizeof(BYTE));
+  if (GetFileVersionInfo(fileName, 0, size, versionInfo)) {
+    UINT len = 0;
+    VS_FIXEDFILEINFO* vsfi = NULL;
+    VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
+    caml_win32_major = HIWORD(vsfi->dwFileVersionMS);
+    caml_win32_minor = LOWORD(vsfi->dwFileVersionMS);
+    caml_win32_build = HIWORD(vsfi->dwFileVersionLS);
+    caml_win32_revision = LOWORD(vsfi->dwFileVersionLS);
+  }
+  free(versionInfo);
 }
