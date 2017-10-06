@@ -98,6 +98,8 @@ extern char_os * caml_executable_name(void);
 */
 extern char_os *caml_secure_getenv(char_os const *var);
 
+extern int caml_channel_flags(int fd);
+
 #ifdef _WIN32
 
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
