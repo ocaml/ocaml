@@ -309,7 +309,7 @@ Release branch for 4.06:
   backend
   (Florian Angeletti, request and review by Daniel Bünzli )
 
-* MPR#7352,PR#7353: ocamldoc, better paragraphs in html output
+* MPR#7352, MPR#7353: ocamldoc, better paragraphs in html output
   (Florian Angeletti, request by Daniel Bünzli)
 
 * MPR#7363, GPR#830: ocamldoc, start heading levels at {1 not {2 or {6.
@@ -365,6 +365,11 @@ Release branch for 4.06:
 
 - GPR#1041: -nostdlib no longer ignored by toplevel.
   (David Allsopp, review by Xavier Leroy)
+
+- GPR#1231: improved printing of unicode texts in the toplevel,
+  unless OCAMLTOP_UTF_8 is set to false.
+  (Florian Angeletti, review by Daniel Bünzli, Xavier Leroy and
+   Gabriel Scherer)
 
 ### Runtime system:
 
@@ -940,11 +945,6 @@ OCaml 4.05.0 (13 Jul 2017):
 
 - MPR#7060, GPR#1035: Print exceptions in installed custom printers
   (Tadeu Zagallo, review by David Allsopp)
-
-- GPR#1231: improved printing of unicode texts in the toplevel,
-  unless OCAMLTOP_UTF_8 is set to false.
-  (Florian Angeletti, review by Daniel Bünzli, Xavier Leroy and
-   Gabriel Scherer)
 
 ### Tools:
 
