@@ -16,11 +16,11 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-type 'a t_store =
+type ('a, 'ctx) t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
-     act_store : 'a -> int ;
-     act_store_shared : 'a -> int ; }
+     act_store : 'ctx -> 'a -> int ;
+     act_store_shared : 'ctx -> 'a -> int ; }
 
 exception Not_simple
 
@@ -31,7 +31,13 @@ module type Stored = sig
   val make_key : t -> key option
 end
 
-module Store(A:Stored) = struct
+module type CtxStored = sig
+  include Stored
+  type context
+  val make_key : context -> t -> key option
+end
+
+module CtxStore(A:CtxStored) = struct
   module AMap =
     Map.Make(struct type t = A.key let compare = A.compare_key end)
 
@@ -52,7 +58,7 @@ module Store(A:Stored) = struct
       st.next <- i+1 ;
       i in
 
-    let store mustshare act = match A.make_key act with
+    let store mustshare ctx act = match A.make_key ctx act with
     | Some key ->
         begin try
           let (shared,i) = AMap.find key st.map in
@@ -84,6 +90,18 @@ module Store(A:Stored) = struct
       acts in
     {act_store = store false ; act_store_shared = store true ;
      act_get = get; act_get_shared = get_shared; }
+end
+
+module Store(A:Stored) = struct
+  module Me =
+    CtxStore
+      (struct
+        include A
+        type context = unit
+        let make_key () = A.make_key
+      end)
+
+  let mk_store = Me.mk_store
 end
 
 
