@@ -1576,6 +1576,11 @@ if sh ./hasgot -i sys/shm.h; then
   echo "#define HAS_SYS_SHM_H" >> s.h
 fi
 
+if sh ./hasgot execvpe; then
+  inf "execvpe() found."
+  echo "#define HAS_EXECVPE" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
