@@ -336,6 +336,9 @@ Release branch for 4.06:
 - MPR#7631, GPR#1355: "-linscan" option crashes ocamlopt
   (Xavier Clerc, report by Paul Steckler)
 
+- MPR#7642: on ARMv4 and ARMv5, wrong register allocation for integer multiply
+  (Xavier Leroy, report by Stéphane Glondu and Mantis user "infinity0")
+
 ### Tools:
 
 - MPR#1956, GPR#973: tools/check-symbol-names checks for globally
