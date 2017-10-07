@@ -1106,11 +1106,15 @@ partialclean::
 ifeq "$(UNIX_OR_WIN32)" "unix"
 .PHONY: checkstack
 checkstack:
+ifeq "$(CROSS_COMPILER)" "false"
 	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
 	  then tools/checkstack$(EXE); \
 	  else :; \
 	fi
 	rm -f tools/checkstack$(EXE)
+else
+	# skipping checkstack for cross compilation
+endif
 endif
 
 # Lint @since and @deprecated annotations

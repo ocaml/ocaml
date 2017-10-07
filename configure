@@ -368,6 +368,7 @@ if [ x"$host" = x"$target" ]; then
 else
   cross_compiler=true
 fi
+config CROSS_COMPILER "$cross_compiler"
 
 # Do we have gcc?
 
@@ -579,7 +580,7 @@ esac
 
 # Configure compiler options to use in further tests.
 
-export cclibs ldflags
+export cclibs ldflags cross_compiler
 
 # Check C compiler.
 
@@ -667,7 +668,8 @@ if test "$?" -eq 0; then
 else
   # For cross-compilation, runtest always fails: add special handling.
   case "$target" in
-    i686-*-mingw*) inf "OK, this is a regular 32 bit architecture."
+    i686-*-mingw*|arm-linux-gnueabi*)
+                   inf "OK, this is a regular 32 bit architecture."
                    echo "#undef ARCH_SIXTYFOUR" >> m.h
                    set 4 4 4 2 8
                    arch64=false;;
@@ -977,7 +979,7 @@ case "$target" in
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   s390x*-*-linux*)              arch=s390x; model=z10; system=elf;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
-  arm*-*-linux-gnueabihf)       arch=arm; system=linux_eabihf;;
+  arm*-linux-gnueabihf)         arch=arm; system=linux_eabihf;;
   armv7*-*-linux-gnueabi)       arch=arm; model=armv7; system=linux_eabi;;
   armv6t2*-*-linux-gnueabi)     arch=arm; model=armv6t2; system=linux_eabi;;
   armv6*-*-linux-gnueabi)       arch=arm; model=armv6; system=linux_eabi;;
