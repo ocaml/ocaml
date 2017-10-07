@@ -521,6 +521,8 @@ Release branch for 4.06:
 
 ### Compiler distribution build system:
 
+- GPR#1410: Fix testing and handling of gethostbyname on non-GNU.
+
 - MPR#6373, GPR#1093: Suppress trigraph warnings from macOS assembler
   (Mark Shinwell)
 
