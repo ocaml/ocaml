@@ -621,6 +621,7 @@ if $cross_compiler; then
           "sources ($ocaml_source_version)."
     else
       config CAMLRUN "`./searchpath -p ocamlrun`"
+      config OCAMLRUN "`./searchpath -p ocamlrun`"
     fi
   fi
 
@@ -633,6 +634,7 @@ if $cross_compiler; then
           "successfully."
     else
       config CAMLYACC "`./searchpath -p ocamlyacc`"
+      config OCAMLYACC "`./searchpath -p ocamlyacc`"
     fi
   fi
 
