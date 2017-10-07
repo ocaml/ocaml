@@ -111,11 +111,11 @@ CAMLprim value unix_gethostbyaddr(value a)
   caml_leave_blocking_section();
   if (rc != 0) hp = NULL;
 #else
-#ifdef GETHOSTBYADDR_IS_REENTRANT
+#ifndef GETHOSTBYADDR_IS_REENTRANT
   caml_enter_blocking_section();
 #endif
   hp = gethostbyaddr((char *) &adr, 4, AF_INET);
-#ifdef GETHOSTBYADDR_IS_REENTRANT
+#ifndef GETHOSTBYADDR_IS_REENTRANT
   caml_leave_blocking_section();
 #endif
 #endif
@@ -152,11 +152,11 @@ CAMLprim value unix_gethostbyname(value name)
     if (rc != 0) hp = NULL;
   }
 #else
-#ifdef GETHOSTBYNAME_IS_REENTRANT
+#ifndef GETHOSTBYNAME_IS_REENTRANT
   caml_enter_blocking_section();
 #endif
   hp = gethostbyname(hostname);
-#ifdef GETHOSTBYNAME_IS_REENTRANT
+#ifndef GETHOSTBYNAME_IS_REENTRANT
   caml_leave_blocking_section();
 #endif
 #endif
