@@ -79,6 +79,8 @@ EOF
   # we would need to redo (small parts of) world.opt afterwards to
   # use the compiler again
   $MAKE check_all_arches
+  # check that the 'clean' target also works
+  $MAKE clean
 }
 
 CheckChangesModified () {
