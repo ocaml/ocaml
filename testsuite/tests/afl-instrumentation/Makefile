@@ -13,3 +13,5 @@ default:
 	fi
 
 include $(BASEDIR)/makefiles/Makefile.common
+
+clean: defaultclean
