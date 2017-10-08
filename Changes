@@ -373,10 +373,10 @@ Release branch for 4.06:
 
 ### Runtime system:
 
-* MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363: Unicode support for
-  the Windows runtime.
-  (ygrek, Clement Franchini, Nicolas Ojeda Bar, review by Alain Frisch, David
-  Allsopp, Damien Doligez)
+* MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1398: Unicode
+  support for the Windows runtime.
+  (ygrek, Nicolas Ojeda Bar, review by Alain Frisch, David Allsopp, Damien
+  Doligez)
 
 - GPR#1070, GPR#1295: enable gcc typechecking for caml_alloc_sprintf,
   caml_gc_message. Make caml_gc_message a variadic function. Fix many
