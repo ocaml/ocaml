@@ -94,11 +94,12 @@ int caml_attempt_open(char_os **name, struct exec_trailer *trail,
   char_os * truename;
   int fd;
   int err;
-  char buf [2];
+  char buf [2], * u8;
 
   truename = caml_search_exe_in_path(*name);
-  caml_gc_message(0x100, "Opening bytecode executable %"
-                  ARCH_CHARNATSTR_PRINTF_FORMAT "\n", truename);
+  u8 = caml_stat_strdup_of_os(truename);
+  caml_gc_message(0x100, "Opening bytecode executable %s\n", u8);
+  caml_stat_free(u8);
   fd = open_os(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
     caml_stat_free(truename);

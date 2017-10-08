@@ -634,6 +634,7 @@ static struct cplugin_context cplugin_context;
 void caml_load_plugin(char_os *plugin)
 {
   void* dll_handle = NULL;
+  char* u8;
 
   dll_handle = caml_dlopen(plugin, DLL_EXECUTABLE, DLL_NOT_GLOBAL);
   if( dll_handle != NULL ){
@@ -646,8 +647,10 @@ void caml_load_plugin(char_os *plugin)
      caml_dlclose(dll_handle);
    }
   } else {
+   u8 = caml_stat_strdup_of_os(plugin);
    fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
-           caml_stat_strdup_of_os(plugin), caml_dlerror());
+           u8, caml_dlerror());
+   caml_stat_free(u8);
   }
 }
 

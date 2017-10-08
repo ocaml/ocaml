@@ -149,6 +149,7 @@ wchar_t * caml_decompose_path(struct ext_table * tbl, wchar_t * path)
 wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
 {
   wchar_t * dir, * fullname;
+  char * u8;
   const wchar_t * p;
   int i;
   struct _stati64 st;
@@ -161,19 +162,24 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
     fullname = caml_stat_wcsconcat(3, dir, L"\\", name);
-    caml_gc_message(0x100, "Searching %" ARCH_CHARNATSTR_PRINTF_FORMAT "\n", fullname);
+    u8 = caml_stat_strdup_of_utf16(fullname);
+    caml_gc_message(0x100, "Searching %s\n", u8);
+    caml_stat_free(u8);
     if (_wstati64(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
+  u8 = caml_stat_strdup_of_utf16(name);
+  caml_gc_message(0x100, "%s not found in search path\n", u8);
+  caml_stat_free(u8);
   return caml_stat_wcsdup(name);
 }
 
 CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
 {
   wchar_t * fullname, * filepart;
+  char * u8;
   size_t fullnamelen;
   DWORD retcode;
 
@@ -188,7 +194,9 @@ CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
+      u8 = caml_stat_strdup_of_utf16(name);
+      caml_gc_message(0x100, "%s not found in search path\n", u8);
+      caml_stat_free(u8);
       caml_stat_free(fullname);
       return caml_stat_strdup_os(name);
     }
