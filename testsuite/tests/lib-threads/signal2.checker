@@ -13,4 +13,5 @@
 #*                                                                        *
 #**************************************************************************
 
-sed -e 1q signal2.result | grep -q '^[ab]*'
+sed -e 1q signal2.result | grep -q '^[ab]*Got signal INT, exiting...[ab]\{0,2\}$'
+

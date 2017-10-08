@@ -8,4 +8,6 @@ let _ =
   ignore (Thread.create (print_message 0.6666666666) 'a');
   ignore (Thread.create (print_message 1.0) 'b');
   let s = Thread.wait_signal [Sys.sigint; Sys.sigterm] in
-  Printf.printf "Got signal %d, exiting...\n" s
+  Printf.printf "Got signal %s, exiting...\n"
+      (if s = Sys.sigint then "INT" else
+       if s = Sys.sigterm then "TERM" else "unknown")
