@@ -919,7 +919,7 @@ void caml_restore_win32_terminal(void)
 
    https://github.com/mirror/newlib-cygwin/blob/master/winsup/cygwin/dtable.cc#L932
 */
-CAMLexport int caml_win32_detect_msys_tty(int fd)
+static int caml_win32_ismsystty(int fd)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
@@ -942,4 +942,9 @@ CAMLexport int caml_win32_detect_msys_tty(int fd)
     return 1;
 
   return 0;
+}
+
+CAMLexport int caml_win32_isatty(int fd)
+{
+  return _isatty(fd) || caml_win32_ismsystty(fd);
 }
