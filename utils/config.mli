@@ -153,7 +153,7 @@ val flambda : bool
 
 val spacetime : bool
         (* Whether the compiler was configured for Spacetime profiling *)
-val spacetime_call_counts : bool
+val enable_call_counts : bool
         (* Whether call counts are to be available when Spacetime profiling *)
 val profinfo : bool
         (* Whether the compiler was configured for profiling *)
