@@ -524,7 +524,7 @@ let compile_test_program program_variable compiler log env =
 (* Compile actions *)
 
 let compile_bytecode_with_bytecode_compiler = {
-  action_name = "compile-bytecode-with-bytecode-compiler";
+  action_name = "ocamlc.byte";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -532,7 +532,7 @@ let compile_bytecode_with_bytecode_compiler = {
 }
 
 let compile_bytecode_with_native_compiler = {
-  action_name = "compile-bytecode-with-native-compiler";
+  action_name = "ocamlc.opt";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -540,7 +540,7 @@ let compile_bytecode_with_native_compiler = {
 }
 
 let compile_native_with_bytecode_compiler = {
-  action_name = "compile-native-with-bytecode-compiler";
+  action_name = "ocamlopt.byte";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -548,7 +548,7 @@ let compile_native_with_bytecode_compiler = {
 }
 
 let compile_native_with_native_compiler = {
-  action_name = "compile-native-with-native-compiler";
+  action_name = "ocamlopt.opt";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -597,7 +597,7 @@ let execute_program =
     Builtin_variables.arguments
 
 let execute = {
-  action_name = "execute-program";
+  action_name = "run";
   action_environment = env_id;
   action_body = execute_program
 }
@@ -618,7 +618,7 @@ let run_script log env =
     log env
 
 let script = {
-  action_name = "run-script";
+  action_name = "script";
   action_environment = env_id;
   action_body = run_script
 }
@@ -628,7 +628,7 @@ let run_expect log env =
   run_script log newenv
 
 let expect = {
-  action_name = "run-expect";
+  action_name = "expect";
   action_environment = env_id;
   action_body = run_expect
 }
@@ -862,14 +862,14 @@ let run_test_program_in_toplevel toplevel log env =
 
 let run_in_ocaml =
 {
-  action_name = "run-in-bytecode-toplevel";
+  action_name = "ocaml";
   action_environment = env_id;
   action_body = run_test_program_in_toplevel ocaml;
 }
 
 let run_in_ocamlnat =
 {
-  action_name = "run-in-native-toplevel";
+  action_name = "ocamlnat";
   action_environment = env_id;
   action_body = run_test_program_in_toplevel ocamlnat;
 }
