@@ -248,7 +248,7 @@ let execvpe_ml name args env =
         (* Other errors, e.g. E2BIG, are fatal and abort the search. *)
         | _ ->
             raise exn in
-  if not (Filename.is_implicit name) then
+  if String.contains name '/' then
     (* If the command name contains "/" characters, don't search in path *)
     exec name
   else
