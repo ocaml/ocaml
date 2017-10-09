@@ -301,6 +301,9 @@ Release branch for 4.06:
   when no -title has been provided
   (Pierre Boutillier)
 
+- MPR#7048: ocamldoc, in -latex mode, don't escape Latin-1 accented letters
+  (Xavier Leroy, report by Hugo Herbelin)
+
 - MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
   provides better error messages by default.
   (Daniel Bünzli)
