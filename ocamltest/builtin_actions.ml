@@ -41,6 +41,32 @@ let fail = {
   action_body = fun _log _env -> Fail "The fail action always fails."
 }
 
+let unix = {
+  action_name = "unix";
+  action_environment = env_id;
+  action_body = fun log env ->
+    if Ocamltest_config.unix then
+    begin
+      Printf.fprintf log
+        "The unix action succeeds because we are on a Unix system.\n%!";
+      Pass env
+    end else
+      Skip "The unix action skips because we are on a Windows system."
+}
+
+let windows = {
+  action_name = "windows";
+  action_environment = env_id;
+  action_body = fun log env ->
+    if not Ocamltest_config.unix then
+    begin
+      Printf.fprintf log
+        "The windows action succeeds because we are on a Windows system.\n%!";
+      Pass env
+    end else
+      Skip "The windows action skips because we are on a Unix system."
+}
+
 let run_command
     ?(stdin_variable=Builtin_variables.stdin)
     ?(stdout_variable=Builtin_variables.stdout)
@@ -869,6 +895,8 @@ let _ =
     pass;
     skip;
     fail;
+    unix;
+    windows;
     compile_bytecode_with_bytecode_compiler;
     compile_bytecode_with_native_compiler;
     compile_native_with_bytecode_compiler;

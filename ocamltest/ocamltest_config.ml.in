@@ -17,6 +17,8 @@
 
 let arch = "@@ARCH@@"
 
+let unix = @@UNIX@@
+
 let c_preprocessor = "@@CPP@@"
 
 let ocamlsrcdir = "@@OCAMLSRCDIR@@"

@@ -19,6 +19,9 @@ val pass : Actions.t
 val skip : Actions.t
 val fail : Actions.t
 
+val unix : Actions.t
+val windows : Actions.t
+
 val compile_bytecode_with_bytecode_compiler : Actions.t
 val compile_bytecode_with_native_compiler : Actions.t
 val compile_native_with_bytecode_compiler : Actions.t

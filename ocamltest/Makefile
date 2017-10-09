@@ -18,8 +18,10 @@
 include ../config/Makefile
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
+  unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -m -f -)
 else
+  unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
 endif
 
@@ -153,6 +155,7 @@ ocamltest.opt$(EXE): $(native_modules)
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
+	  -e 's|@@UNIX@@|$(unix)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
