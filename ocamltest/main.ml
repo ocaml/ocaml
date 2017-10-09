@@ -17,6 +17,10 @@
 
 open Tsl_semantics
 
+type behavior =
+  | Skip_all_tests
+  | Run of Environments.t
+
 (*
 let first_token filename =
   let input_channel = open_in filename in
@@ -53,32 +57,25 @@ let tsl_block_of_file_safe test_filename =
 let print_usage () =
   Printf.printf "%s\n%!" Options.usage
 
-let rec run_test log common_prefix path ancestor_result = function
+let rec run_test log common_prefix path behavior = function
   Node (testenvspec, test, env_modifiers, subtrees) ->
   Printf.printf "%s %s (%s) => %!" common_prefix path test.Tests.test_name;
-  let print_test_result str = Printf.printf "%s\n%!" str in
-  let test_result = match ancestor_result with
-    | Actions.Pass env -> (* Ancestor succeded, really run the test *)
+  let (msg, b) = match behavior with
+    | Skip_all_tests -> "skipped", Skip_all_tests
+    | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      Tests.run log testenv test
-    | Actions.Skip _ -> (Actions.Skip "ancestor test skipped")
-    | Actions.Fail _ -> (Actions.Skip "ancestor test failed") in
-  let result_to_pass = match test_result with
-    | Actions.Pass _ ->
-      print_test_result "passed";
-      test_result
-    | Actions.Fail _ ->
-      print_test_result "failed";
-      ancestor_result
-    | Actions.Skip _ ->
-      print_test_result "skipped";
-      ancestor_result in
-  List.iteri (run_test_i log common_prefix path result_to_pass) subtrees
-and run_test_i log common_prefix path ancestor_result i test_tree =
+      let t = Tests.run log testenv test in
+      (match t with
+      | Actions.Pass env -> "passed", Run env
+      | Actions.Skip _ -> "skipped", Skip_all_tests
+      | Actions.Fail _ -> "failed", Skip_all_tests) in
+  Printf.printf "%s\n%!" msg;
+  List.iteri (run_test_i log common_prefix path b) subtrees
+and run_test_i log common_prefix path behavior i test_tree =
   let path_prefix = if path="" then "" else path ^ "." in
   let new_path = Printf.sprintf "%s%d" path_prefix (i+1) in
-  run_test log common_prefix new_path ancestor_result test_tree
+  run_test log common_prefix new_path behavior test_tree
 
 let get_test_source_directory test_dirname =
   if not (Filename.is_relative test_dirname) then test_dirname
@@ -139,7 +136,7 @@ let main () =
   let log = open_out log_filename in
   let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
   List.iteri
-    (run_test_i log common_prefix "" (Actions.Pass rootenv))
+    (run_test_i log common_prefix "" (Run rootenv))
     test_trees;
   close_out log
 
