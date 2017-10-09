@@ -17,6 +17,10 @@
 
 /* Win32-specific stuff */
 
+/* Enable Windows Vista functions */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
 #include <winbase.h>
@@ -919,18 +923,35 @@ void caml_restore_win32_terminal(void)
 
    https://github.com/mirror/newlib-cygwin/blob/master/winsup/cygwin/dtable.cc#L932
 */
+typedef
+BOOL (WINAPI *tGetFileInformationByHandleEx)(
+  HANDLE                    hFile,
+  FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
+  LPVOID                    lpFileInformation,
+  DWORD                     dwBufferSize
+);
+
 static int caml_win32_ismsystty(int fd)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
+  HMODULE hModKernel32;
+  tGetFileInformationByHandleEx pGetFileInformationByHandleEx;
 
   /* check if fd is a pipe */
   HANDLE h = (HANDLE) _get_osfhandle(fd);
   if (GetFileType(h) != FILE_TYPE_PIPE)
     return 0;
 
+  hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
+  pGetFileInformationByHandleEx =
+    (tGetFileInformationByHandleEx)GetProcAddress(hModKernel32, "GetFileInformationByHandleEx");
+
+  if (pGetFileInformationByHandleEx == NULL)
+    return 0;
+
   /* get pipe name */
-  if (! GetFileInformationByHandleEx(h, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+  if (! pGetFileInformationByHandleEx(h, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
   nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
