@@ -2023,13 +2023,14 @@ stub that ignores all the special annotations.
 \subsection{Passing unboxed values}
 
 We said earlier that all OCaml objects are represented by the C type
-"value", and one has to use macros such as "Int_val" to decode data
-from the "value" type. It is however possible to tell OCaml to do this
-for us and pass arguments unboxed to the C function. Similarly it is
-possible to tell OCaml to expect the result unboxed and box it for us.
+"value", and one has to use macros such as "Int_val" to decode data from
+the "value" type.  It is however possible to tell the OCaml native-code
+compiler to do this for us and pass arguments unboxed to the C function.
+Similarly it is possible to tell OCaml to expect the result unboxed and box
+it for us.
 
-The motivation is that, by letting the OCaml compiler deal with
-boxing, it can often decide to suppress it entirely.
+The motivation is that, by letting `ocamlopt` deal with boxing, it can
+often decide to suppress it entirely.
 
 For instance let's consider this example:
 
@@ -2052,7 +2053,7 @@ the result of "foo".  This results in the allocation of "3 * len"
 temporary float values.
 
 Now if we annotate the arguments and result with "[\@unboxed]", the
-compiler will be able to avoid all these allocations:
+native-code compiler will be able to avoid all these allocations:
 
 \begin{verbatim}
 external foo
@@ -2109,16 +2110,16 @@ The corresponding C type must be "intnat".
 
 \subsection{Direct C call}
 
-In order to be able to run the garbage collector in the middle of a C
-function, the OCaml compiler generates some bookkeeping code around C
-calls. Technically it wraps every C call with the C function
+In order to be able to run the garbage collector in the middle of
+a C function, the OCaml native-code compiler generates some bookkeeping
+code around C calls.  Technically it wraps every C call with the C function
 "caml_c_call" which is part of the OCaml runtime.
 
-For small functions that are called repeatedly, this indirection can
-have a big impact on performances. However this is not needed if we
-know that the C function doesn't allocate and doesn't raise
-exceptions. We can instruct the OCaml compiler of this fact by
-annotating the external declaration with the attribute "[\@\@noalloc]":
+For small functions that are called repeatedly, this indirection can have
+a big impact on performances.  However this is not needed if we know that
+the C function doesn't allocate and doesn't raise exceptions.  We can
+instruct the OCaml native-code compiler of this fact by annotating the
+external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
 external bar : int -> int -> int = "foo" [@@noalloc]
