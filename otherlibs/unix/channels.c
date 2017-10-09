@@ -53,14 +53,14 @@ static int unix_check_stream_semantics(int fd)
     case SOCK_STREAM:
       return 0;
     default:
-      return ENOTSUP;
+      return EINVAL;
     }
     }
 #endif
   default:
     /* All other file types are suspect: block devices, directories,
        symbolic links, whatnot. */
-    return ENOTSUP;
+    return EINVAL;
   }
 }
 
