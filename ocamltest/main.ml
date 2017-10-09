@@ -29,7 +29,7 @@ let first_token filename =
 let is_test filename =
   match first_token filename with
     | exception _ -> false
-    | Tsl_parser.TSL_BEGIN -> true
+    | Tsl_parser.TSL_BEGIN_C_STYLE | TSL_BEGIN_OCAML_STYLE -> true
     | _ -> false
 *)
 
