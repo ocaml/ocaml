@@ -334,9 +334,9 @@ let single_write_substring fd buf ofs len =
   single_write fd (Bytes.unsafe_of_string buf) ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
-                             = "caml_ml_open_descriptor_in"
+                             = "unix_inchannel_of_filedescr"
 external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_ml_open_descriptor_out"
+                              = "unix_outchannel_of_filedescr"
 external descr_of_in_channel : in_channel -> file_descr
                              = "caml_channel_descriptor"
 external descr_of_out_channel : out_channel -> file_descr
