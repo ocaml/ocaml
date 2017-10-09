@@ -21,6 +21,26 @@ open Actions
 
 let env_id env = env
 
+let pass = {
+  action_name = "pass";
+  action_environment = env_id;
+  action_body = fun log env ->
+    Printf.fprintf log "The pass action always succeeds.\n%!";
+    Pass env
+}
+
+let skip = {
+  action_name = "skip";
+  action_environment = env_id;
+  action_body = fun _log _env -> Skip "The skip action always skips."
+}
+
+let fail = {
+  action_name = "fail";
+  action_environment = env_id;
+  action_body = fun _log _env -> Fail "The fail action always fails."
+}
+
 let run_command
     ?(stdin_variable=Builtin_variables.stdin)
     ?(stdout_variable=Builtin_variables.stdout)
@@ -846,6 +866,9 @@ let if_not_safe_string = {
 let _ =
   List.iter register
   [
+    pass;
+    skip;
+    fail;
     compile_bytecode_with_bytecode_compiler;
     compile_bytecode_with_native_compiler;
     compile_native_with_bytecode_compiler;
