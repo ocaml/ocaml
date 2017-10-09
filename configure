@@ -55,7 +55,7 @@ with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
-with_spacetime_call_counts=false
+enable_call_counts=true
 with_profinfo=false
 profinfo_width=0
 no_naked_pointers=false
@@ -188,11 +188,8 @@ while : ; do
         no_naked_pointers=true;;
     -spacetime|--spacetime)
         with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
-    -spacetime-call-counts|--spacetime-call-counts)
-        with_spacetime=true
-        with_profinfo=true
-        profinfo_width=26
-        with_spacetime_call_counts=true;;
+    -disable-call-counts|--disable-call-counts)
+        enable_call_counts=false;;
     -reserved-header-bits|--reserved-header-bits)
         with_spacetime=false; with_profinfo=true; profinfo_width=$2;shift
         case $profinfo_width in
@@ -1939,8 +1936,8 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
-    if $with_spacetime_call_counts; then
-      echo "#define WITH_SPACETIME_CALL_COUNTS" >> m.h
+    if $enable_call_counts; then
+      echo "#define ENABLE_CALL_COUNTS" >> m.h
     fi
     if $disable_libunwind; then
       has_libunwind=no
@@ -2115,7 +2112,7 @@ config WITH_OCAMLDOC "${with_ocamldoc}"
 config ASM_CFI_SUPPORTED "$asm_cfi_supported"
 config WITH_FRAME_POINTERS "$with_frame_pointers"
 config WITH_SPACETIME "$with_spacetime"
-config WITH_SPACETIME_CALL_COUNTS "$with_spacetime_call_counts"
+config ENABLE_CALL_COUNTS "$enable_call_counts"
 config WITH_PROFINFO "$with_profinfo"
 config LIBUNWIND_AVAILABLE "$libunwind_available"
 config LIBUNWIND_INCLUDE_FLAGS "$libunwind_include"

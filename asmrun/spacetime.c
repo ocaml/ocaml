@@ -131,7 +131,7 @@ static void caml_spacetime_write_magic_number_internal(struct channel* chan)
   value magic_number;
   uint16_t features = 0;
 
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
   features |= FEATURE_CALL_COUNTS;
 #endif
 
@@ -608,7 +608,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   if (callee == last_indirect_node_hole_ptr_callee
       && node_hole == last_indirect_node_hole_ptr_node_hole) {
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
     last_indirect_node_hole_ptr_result->call_count =
       Val_long (Long_val (last_indirect_node_hole_ptr_result->call_count) + 1);
 #endif
@@ -629,7 +629,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
     CAMLassert(caml_spacetime_classify_c_node(c_node) == CALL);
 
     if (c_node->pc == encoded_callee) {
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
       c_node->data.call.call_count =
         Val_long (Long_val(c_node->data.call.call_count) + 1);
 #endif
@@ -657,7 +657,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   CAMLassert(((uintnat) *node_hole) % sizeof(value) == 0);
   CAMLassert(*node_hole != Val_unit);
 
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
   c_node->data.call.call_count =
     Val_long (Long_val(c_node->data.call.call_count) + 1);
 #endif
