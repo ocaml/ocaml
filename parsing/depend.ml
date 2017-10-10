@@ -316,7 +316,9 @@ and add_modtype bv mty =
 
 and add_module_alias bv l =
   try
-    add_parent bv l;
+    (* If we are in delayed dependencies mode, we delay the dependencies
+       induced by "Lident s" *)
+    (if !Clflags.transparent_modules then add_parent else addmodule) bv l;
     lookup_map l.txt bv
   with Not_found ->
     match l.txt with
@@ -326,7 +328,6 @@ and add_module_alias bv l =
 and add_modtype_binding bv mty =
   match mty.pmty_desc with
     Pmty_alias l ->
-      if not !Clflags.transparent_modules then addmodule bv l;
       add_module_alias bv l
   | Pmty_signature s ->
       make_node (add_signature_binding bv s)
@@ -387,20 +388,9 @@ and add_sig_item (bv, m) item =
 
 and add_module_binding bv modl =
   match modl.pmod_desc with
-    Pmod_ident l ->
-      if not !Clflags.transparent_modules then addmodule bv l;
-      begin try
-        add_parent bv l;
-        lookup_map l.txt bv
-      with Not_found ->
-        match l.txt with
-          Lident s -> make_leaf s
-        | _ ->  addmodule bv l; bound
-      end
+    Pmod_ident l -> add_module_alias bv l
   | Pmod_structure s ->
-      let n = make_node (snd @@ add_structure_binding bv s) in
-      if not !Clflags.transparent_modules then add_names (collect_free n);
-      n
+     make_node (snd @@ add_structure_binding bv s)
   | _ -> add_module bv modl; bound
 
 and add_module bv modl =
@@ -468,8 +458,13 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
-      let Node (s, m') = add_module_binding bv incl.pincl_mod in
-      add_names s;
+      let Node (s, m') as n = add_module_binding bv incl.pincl_mod in
+      if !Clflags.transparent_modules then
+        add_names s
+      else
+        (* If we are not in the delayed dependency mode, we need to
+           collect all delayed dependencies imported by the include statement *)
+        add_names (collect_free n);
       let add = StringMap.fold StringMap.add m' in
       (add bv, add m)
   | Pstr_attribute _ -> (bv, m)
@@ -481,9 +476,7 @@ and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_implementation bv l =
-  if !Clflags.transparent_modules then
     ignore (add_structure_binding bv l)
-  else ignore (add_structure bv l)
 
 and add_implementation_binding bv l =
   snd (add_structure_binding bv l)
