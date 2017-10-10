@@ -716,6 +716,9 @@ Release branch for 4.06:
 - GPR#1390: fix the [@@unboxed] type check to accept parametrized types
   (Leo White, review by Damien Doligez)
 
+- GPR#1407: Fix raw_spacetime_lib
+  (Leo White, review by Gabriel Scherer and Damien Doligez)
+
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
 
