@@ -321,12 +321,16 @@ Sys.file_exists "你好" ... false
 
 Unix.putenv "été" "верблюды" ... OK
 Sys.getenv "été" ... "верблюды"
+Unix.environment "été" ... "верблюды"
 Unix.putenv "simple" "骆驼" ... OK
 Sys.getenv "simple" ... "骆驼"
+Unix.environment "simple" ... "骆驼"
 Unix.putenv "sœur" "קעמל" ... OK
 Sys.getenv "sœur" ... "קעמל"
+Unix.environment "sœur" ... "קעמל"
 Unix.putenv "你好" "اونٹ" ... OK
 Sys.getenv "你好" ... "اونٹ"
+Unix.environment "你好" ... "اونٹ"
 
 #16. Testing test_open_process_in
 ============================
@@ -339,4 +343,4 @@ Unix.open_process_in ... ... "верблюды" "骆驼" "קעמל" "اونٹ" "
 Unix.open_process_full ... "OCAML_UTF8_VAR0=верблюды" "OCAML_UTF8_VAR1=骆驼" "OCAML_UTF8_VAR2=קעמל" "OCAML_UTF8_VAR3=اونٹ" ... "OCAML_UTF8_VAR0=верблюды" "OCAML_UTF8_VAR1=骆驼" "OCAML_UTF8_VAR2=קעמל" "OCAML_UTF8_VAR3=اونٹ"
 
 
-*** ALL TESTS DONE (203/203 OK) ***
+*** ALL TESTS DONE (207/207 OK) ***
