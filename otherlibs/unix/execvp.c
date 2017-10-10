@@ -13,11 +13,13 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define _GNU_SOURCE  /* helps to find execvpe() */
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #define CAML_INTERNALS
 #include <caml/osdeps.h>
 #include "unixsupport.h"
+#include "errno.h"
 
 CAMLprim value unix_execvp(value path, value args)
 {
@@ -34,22 +36,33 @@ CAMLprim value unix_execvp(value path, value args)
                                     /* from smart compilers */
 }
 
+#ifdef HAS_EXECVPE
+
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
-  char_os * exefile, * wpath;
   char_os ** argv;
   char_os ** envp;
+  char_os * wpath;
   caml_unix_check_path(path, "execvpe");
-  wpath = caml_stat_strdup_to_os(String_val(path));
-  exefile = caml_search_exe_in_path(wpath);
-  caml_stat_free(wpath);
   argv = cstringvect(args, "execvpe");
   envp = cstringvect(env, "execvpe");
-  (void) execve_os((const char_os *)exefile, EXECV_CAST argv, EXECV_CAST envp);
-  caml_stat_free(exefile);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execvpe_os((const char_os *)wpath, EXECV_CAST argv, EXECV_CAST envp);
+  caml_stat_free(wpath);
   cstringvect_free(argv);
   cstringvect_free(envp);
   uerror("execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
+
+#else
+
+CAMLprim value unix_execvpe(value path, value args, value env)
+{
+  unix_error(ENOSYS, "execvpe", path);
+  return Val_unit;
+}
+
+#endif
+

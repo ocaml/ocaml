@@ -188,6 +188,7 @@ typedef wchar_t char_os;
 #define execv_os _wexecv
 #define execve_os _wexecve
 #define execvp_os _wexecvp
+#define execvpe_os _wexecvpe
 #define strcmp_os wcscmp
 #define strlen_os wcslen
 #define sscanf_os swscanf
@@ -220,6 +221,7 @@ typedef char char_os;
 #define execv_os execv
 #define execve_os execve
 #define execvp_os execvp
+#define execvpe_os execvpe
 #define strcmp_os strcmp
 #define strlen_os strlen
 #define sscanf_os sscanf
