@@ -315,10 +315,10 @@ and add_modtype bv mty =
   | Pmty_extension e -> handle_extension e
 
 and add_module_alias bv l =
-  try
-    (* If we are in delayed dependencies mode, we delay the dependencies
+  (* If we are in delayed dependencies mode, we delay the dependencies
        induced by "Lident s" *)
-    (if !Clflags.transparent_modules then add_parent else addmodule) bv l;
+  (if !Clflags.transparent_modules then add_parent else addmodule) bv l;
+  try
     lookup_map l.txt bv
   with Not_found ->
     match l.txt with
