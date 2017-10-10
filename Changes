@@ -638,6 +638,13 @@ Release branch for 4.06:
   This looks like a Mingw64 issue, which we work around with GCC builtins.
   (Xavier Leroy)
 
+* MPR#7640, GPR#1414: reimplementation of Unix.execvpe to fix issues
+  with the 4.05 implementation.  The main issue is that the current
+  directory was always searched (last), even if the current directory
+  is not listed in the PATH.
+  (Xavier Leroy, report by Mantis users 'AltGr' and 'aalekseyev',
+   review by Ivan Gotovchits)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
