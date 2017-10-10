@@ -46,3 +46,5 @@ val to_packed_file:
              relocation information (reversed) *)
 
 val reset: unit -> unit
+
+val marshal_to_channel_with_possibly_32bit_compat : filename:string -> kind:string -> out_channel -> 'a -> unit
