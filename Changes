@@ -424,8 +424,8 @@ Release branch for 4.06:
 
 ### Runtime system:
 
-* MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1398: Unicode
-  support for the Windows runtime.
+* MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1369, GPR#1398:
+  Unicode support for the Windows runtime.
   (ygrek, Nicolas Ojeda Bar, review by Alain Frisch, David Allsopp, Damien
   Doligez)
 

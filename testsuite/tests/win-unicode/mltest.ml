@@ -105,6 +105,25 @@ let wrap2 s f quote_in1 quote_in2 x y quote_out =
 let getenv s =
   wrap "Sys.getenv" Sys.getenv quote s quote
 
+let getenvironmentenv s =
+  let get s =
+    let env = Unix.environment () in
+    let rec loop i =
+      if i >= Array.length env then
+        ""
+      else begin
+        let e = env.(i) in
+        let pos = String.index e '=' in
+        if String.sub e 0 pos = s then
+          String.sub e (pos+1) (String.length e - pos - 1)
+        else
+          loop (i+1)
+      end
+    in
+    loop 0
+  in
+  wrap "Unix.environment" get quote s quote
+
 let putenv s x =
   wrap2 "Unix.putenv" Unix.putenv quote quote s x ok
 
@@ -191,10 +210,6 @@ let open_in s =
 let open_out s =
   wrap "open_out" open_out quote s ok
 
-let environment filter =
-  let f () = List.filter filter (Array.to_list (Unix.environment ())) in
-  wrap "Unix.environment" f unit () (list quote)
-
 let open_process_in cmdline =
   let f cmdline =
     let ic as proc = Unix.open_process_in cmdline in
@@ -260,7 +275,8 @@ let test_open_in () =
 let test_getenv () =
   let doit key s =
     putenv key s;
-    expect_string (getenv key) s
+    expect_string (getenv key) s;
+    expect_string (getenvironmentenv key) s
   in
   List.iter2 doit foreign_names foreign_names2
 
