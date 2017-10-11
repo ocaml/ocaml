@@ -37,7 +37,8 @@ TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
-   pull_request) TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+   pull_request)
+     TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
 esac
 
 BuildAndTest () {
@@ -100,15 +101,16 @@ on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes > /dev/null \
-  && CheckNoChangesMessage || echo pass
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes
+    > /dev/null && CheckNoChangesMessage || echo pass
 }
 
 CheckNoChangesMessage () {
-  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
+  API_URL=https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 \
+    ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
   then echo pass
-  elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
-       | grep 'no-change-entry-needed')"
+  elif test -n "$(curl $API_URL | grep 'no-change-entry-needed')"
   then echo pass
   else exit 1
   fi
@@ -134,8 +136,8 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code testsuite > /dev/null \
-  && exit 1 || echo pass
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code \
+    testsuite > /dev/null && exit 1 || echo pass
 }
 
 case $CI_KIND in
