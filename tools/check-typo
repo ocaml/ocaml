@@ -162,10 +162,13 @@ IGNORE_DIRS="
     (cat "$f" | tr -d '\r'; echo) \
     | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
+        function is_err(name) {
+          return (("," rules svnrules ",") !~ ("[, ]" name "[, ]"));
+        }
+
         function err(name, msg) {
           ++ counts[name];
-          if (("," rules svnrules ",") !~ ("[, ]" name "[, ]") \
-              && counts[name] <= 10){
+          if (is_err(name) && counts[name] <= 10){
             printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
             printf (" [%s] %s\n", name, msg);
             got_errors = 1;
@@ -207,6 +210,10 @@ IGNORE_DIRS="
         match($0, /[\200-\377]/) \
         && state != "authors" && state != "copyright" {
           err("non-ascii", "non-ASCII character(s)");
+          if (header_utf8 && !is_err("non-ascii")) {
+            err("non-ascii-utf8", \
+                "non-ASCII character(s) AND UTF-8 encountered");
+          }
         }
 
         match($0, /[^\t\200-\377 -~]/) {
@@ -235,6 +242,16 @@ IGNORE_DIRS="
           RSTART = 133;
           RLENGTH = 0;
           err("very-long-line", "line is over 132 columns");
+        }
+
+        # Record that the header contained UTF-8 sequences
+        match($0, /[\300-\367][\200-\277]+/) \
+        && (state == "authors" || state == "copyright") {
+          header_utf8 = 1;
+          if (counts["non-ascii"] > 0 && is_err("non-ascii")) {
+            err("non-ascii-utf8", \
+                "non-ASCII character(s) AND UTF-8 encountered");
+          }
         }
 
         # Header-recognition automaton. Read this from bottom to top.
