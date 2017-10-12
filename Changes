@@ -564,6 +564,9 @@ Release branch for 4.06:
 - MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
+- MPR#6394, GPR#1425: fix fatal_error from Parmatch.get_type_path
+  (Virgile Prevosto, review by David Allsopp and Thomas Refis)
+
 - MPR#6587: only elide Pervasives from printed type paths in unambiguous context
   (Florian Angeletti and Jacques Garrigue)
 
