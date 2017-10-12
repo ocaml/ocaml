@@ -97,7 +97,8 @@ and apply_coercion_result loc strict funct params args cc_res =
     name_lambda strict funct (fun id ->
       Lfunction{kind = Curried; params = List.rev params;
                 attr = { default_function_attribute with
-                         is_a_functor = true; };
+                         is_a_functor = true;
+                         stub = true; };
                 loc = loc;
                 body = apply_coercion
                          loc Strict cc_res
@@ -366,30 +367,26 @@ let merge_inline_attributes attr1 attr2 loc =
 let merge_functors mexp coercion root_path =
   let rec merge mexp coercion path acc inline_attribute =
     let finished = acc, mexp, path, coercion, inline_attribute in
-    match mexp.mod_type with
-    | Mty_alias _ -> finished
-    | _ ->
-      match mexp.mod_desc with
-      | Tmod_functor (param, _, _, body) ->
-        let inline_attribute' =
-          Translattribute.get_inline_attribute mexp.mod_attributes
-        in
-        let arg_coercion, res_coercion =
-          match coercion with
-          | Tcoerce_none ->
-              Tcoerce_none, Tcoerce_none
-          | Tcoerce_functor (arg_coercion, res_coercion) ->
-              arg_coercion, res_coercion
-          | _ -> fatal_error "Translmod.merge_functors: bad coercion"
-        in
-        let loc = mexp.mod_loc in
-        let path = functor_path path param in
-        let inline_attribute =
-          merge_inline_attributes inline_attribute inline_attribute' loc
-        in
-        merge body res_coercion path ((param, loc, arg_coercion) :: acc)
-          inline_attribute
-      | _ -> finished
+    match mexp.mod_desc with
+    | Tmod_functor (param, _, _, body) ->
+      let inline_attribute' =
+        Translattribute.get_inline_attribute mexp.mod_attributes
+      in
+      let arg_coercion, res_coercion =
+        match coercion with
+        | Tcoerce_none -> Tcoerce_none, Tcoerce_none
+        | Tcoerce_functor (arg_coercion, res_coercion) ->
+          arg_coercion, res_coercion
+        | _ -> fatal_error "Translmod.merge_functors: bad coercion"
+      in
+      let loc = mexp.mod_loc in
+      let path = functor_path path param in
+      let inline_attribute =
+        merge_inline_attributes inline_attribute inline_attribute' loc
+      in
+      merge body res_coercion path ((param, loc, arg_coercion) :: acc)
+        inline_attribute
+    | _ -> finished
   in
   merge mexp coercion root_path [] Default_inline
 
@@ -428,7 +425,7 @@ and transl_module cc rootpath mexp =
     mexp.mod_attributes;
   let loc = mexp.mod_loc in
   match mexp.mod_type with
-    Mty_alias _ -> apply_coercion loc Alias cc lambda_unit
+    Mty_alias (Mta_absent, _) -> apply_coercion loc Alias cc lambda_unit
   | _ ->
       match mexp.mod_desc with
         Tmod_ident (path,_) ->

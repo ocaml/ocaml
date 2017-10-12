@@ -14,7 +14,7 @@
                 (apply (field 0 Y) (apply (field 0 X) x)))
             sheep = (function x (+ 1 (apply cow x))))
            (makeblock 0 cow sheep)))
-     F1/1022 =
+     F1/1224 =
        (function X Y is_a_functor always_inline
          (let
            (cow =
@@ -22,7 +22,7 @@
                 (apply (field 0 Y) (apply (field 0 X) x)))
             sheep = (function x (+ 1 (apply cow x))))
            (makeblock 0 sheep)))
-     F2/1029 =
+     F2/1231 =
        (function X Y is_a_functor always_inline
          (let
            (X =a (makeblock 0 (field 1 X))
@@ -49,4 +49,4 @@
                   (apply F (makeblock 0 (field 1 funarg))
                     (makeblock 0 (field 1 funarg))))
                (makeblock 0 (field 1 let)))))))
-    (makeblock 0 O F F1/1022 F2/1029 M)))
+    (makeblock 0 O F F1/1224 F2/1231 M)))
