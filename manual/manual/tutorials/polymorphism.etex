@@ -92,7 +92,7 @@ yields a compilation error
 Error: The type of this expression, '_weak1 option ref,
        contains type variables that cannot be generalized
 \end{verbatim}
-To solve this error, it suffices to add an explicit type annotation to
+To solve this error, it is enough to add an explicit type annotation to
 specify the type at declaration time:
 \begin{verbatim}
 let option_ref: int option ref = ref None
@@ -164,7 +164,7 @@ parameters is called the relaxed value restriction.
 \subsection{Variance and value restriction}
 Variance describes how type constructors behave with respect to subtyping.
 Consider for instance a pair of type "x" and "xy" with "x" a subtype of "xy",
-in other words "x :> xy":
+denoted "x :> xy":
 \begin{caml_example}{toplevel}
   type x = [ `X ];;
   type xy = [ `X | `Y ];;
@@ -181,7 +181,7 @@ of type "xy list", since we could convert each element one by one:
   let l:x list = [`X; `X];;
   let l' = ( l :> xy list);;
 \end{caml_example}
-In other word, "x :> xy" implies that "x list :> xy list", therefore
+In other words, "x :> xy" implies that "x list :> xy list", therefore
 the type constructor "'a list" is covariant (it preserves subtyping)
 in its parameter "'a".
 
@@ -340,7 +340,7 @@ let rec depth: 'a. 'a nested -> int = function
 depth ( Nested(List [ [7]; [8] ]) );;
 \end{caml_example}
 In the type of "depth",  "'a.'a nested -> int", the type variable "'a"
-is universally quantified, i.e "'a.'a nested -> int" reads as
+is universally quantified. In other words, "'a.'a nested -> int" reads as
 ``for all type "'a", "depth" maps "'a nested" values to integers''.
 Whereas the standard type "'a nested -> int" can be interpreted
 as ``let be a type variable "'a", then "depth" maps "'a nested" values
