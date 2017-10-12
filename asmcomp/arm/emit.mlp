@@ -609,6 +609,7 @@ let emit_instr i =
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
     | Lop(Iabsf | Inegf as op) when !fpu = Soft ->
+        assert (i.res.(0).loc = i.arg.(0).loc);
         let instr = (match op with
                        Iabsf -> "bic"
                      | Inegf -> "eor"
@@ -638,6 +639,7 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         1
     | Lop(Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf as op)) ->
+        assert (i.res.(0).loc = i.arg.(0).loc);
         let instr = (match op with
                        Imuladdf    -> "fmacd"
                      | Inegmuladdf -> "fnmacd"
