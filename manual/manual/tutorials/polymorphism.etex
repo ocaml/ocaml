@@ -107,7 +107,7 @@ uses are flagged as errors.
 Identifying the exact context in which polymorphic types should be
 replaced by weak types in a modular way is a difficult question. Indeed
 the type system must handle the possibility that functions may hide persistent
-mutable state. For instance, the following function uses an internal reference
+mutable states. For instance, the following function uses an internal reference
 to implement a delayed identity function
 \begin{caml_example}{toplevel}
 let make_fake_id () =
@@ -275,7 +275,7 @@ We then recover polymorphism:
 \section{Polymorphic recursion}\label{s:polymorphic-recursion}
 
 The second major class of non-genericity is directly related to the problem
-of type inference for polymorphic function. In some circumstances, the type
+of type inference for polymorphic functions. In some circumstances, the type
 inferred by OCaml might be not general enough to allow the definition of
 some recursive functions, in particular for recursive function acting on
 non-regular algebraic data type.
@@ -299,7 +299,7 @@ a classic recursive function
 \end{caml_example}
 
 Non-regular recursive algebraic data types correspond to polymorphic algebraic
-data types whose parameters types varies between the left and right side of
+data types whose parameter types vary between the left and right side of
 the type definition. For instance, it might be interesting to define a datatype
 that ensures that all lists are nested at the same depth:
 \begin{caml_example}{toplevel}
@@ -420,7 +420,7 @@ shape (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
 Explicit polymorphic annotations are however not sufficient to cover all
 the cases where the inferred type of a function is less general than
 expected. A similar problem arises when using polymorphic functions as arguments
-of a higher-order functions. For instance, we may want to compute the average
+of higher-order functions. For instance, we may want to compute the average
 depth or length of two nested lists:
 \begin{caml_example}{toplevel}
   let average_depth x y = (depth x + depth y) / 2;;
