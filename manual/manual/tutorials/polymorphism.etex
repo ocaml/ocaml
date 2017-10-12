@@ -33,7 +33,7 @@ different. Type variables whose name starts with a "_weak" prefix like
 weak type variables.
 A weak type variable is a placeholder for a single type that is currently
 unknown. Once the specific type "t" behind the placeholder type "'_weak1"
-known, all occurrences of "'_weak1" will be replaced by "t". For instance,
+is known, all occurrences of "'_weak1" will be replaced by "t". For instance,
 we can define another option reference and store an "int" inside:
 \begin{caml_example}{toplevel}
 let another_store = ref None ;;
@@ -58,7 +58,7 @@ let one_again = swap store 2
 let two = swap store 3;;
 \end{caml_example}
 After these three swaps the stored value is "3". Everything is fine up to
-now. We can then try to swap "2" with a more interesting value, for
+now. We can then try to swap "3" with a more interesting value, for
 instance a function:
 \begin{caml_example}{toplevel}[error]
 let error = swap store (fun x -> x);;
@@ -163,8 +163,8 @@ parameters is called the relaxed value restriction.
 %question: is here the best place for describing variance?
 \subsection{Variance and value restriction}
 Variance describes how type constructors behave with respect to subtyping.
-Consider for instance a pair of type "x" and "xy" with "xy" a subtype of "x",
-i.e "xy :> x":
+Consider for instance a pair of type "x" and "xy" with "x" a subtype of "xy",
+in other words "x :> xy":
 \begin{caml_example}{toplevel}
   type x = [ `X ];;
   type xy = [ `X | `Y ];;
@@ -220,7 +220,7 @@ More generally, as soon as a type variable appears in a position describing
 mutable state it becomes invariant. As a corollary, covariant variables will
 never denote mutable locations and can be safely generalized.
 For a better description, interested reader can consult the original
-article by Jacque Guarrigue on
+article by Jacques Garrigue on
 \url{http://www.math.nagoya-u.ac.jp/~garrigue/papers/morepoly-long.pdf}
 %question: what is the best url for this article?
 
