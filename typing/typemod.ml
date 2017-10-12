@@ -1782,6 +1782,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
+  if !Clflags.print_types then (* #7656 *)
+    Warnings.parse_options false "-32-34-37-38-60";
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in
