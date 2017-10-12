@@ -230,14 +230,15 @@ let code_for_call ~node ~callee ~is_tail ~label =
         let count_addr = Ident.create "call_count_addr" in
         let count = Ident.create "call_count" in
         Clet (count_addr,
-          Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr]),
+          Cop (Caddi, [Cvar place_within_node; Cconst_int Arch.size_addr], dbg),
           Clet (count,
-            Cop (Cload Word_int, [Cvar count_addr]),
+            Cop (Cload (Word_int, Asttypes.Mutable), [Cvar count_addr], dbg),
             Csequence (
               Cop (Cstore (Word_int, Lambda.Assignment),
                 (* Adding 2 really means adding 1; the count is encoded
                    as an OCaml integer. *)
-                [Cvar count_addr; Cop (Caddi, [Cvar count; Cconst_int 2])]),
+                [Cvar count_addr; Cop (Caddi, [Cvar count; Cconst_int 2], dbg)],
+                dbg),
               Cvar place_within_node)))
       end else begin
         Cvar place_within_node
