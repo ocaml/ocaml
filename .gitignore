@@ -278,7 +278,8 @@ _ocamltest
 
 /testsuite/tests/lib-unix/win-stat/*-file
 
-/testsuite/tests/opaque/*/*.mli
+/testsuite/tests/opaque/fst/*.mli
+/testsuite/tests/opaque/snd/*.mli
 
 /testsuite/tests/output_obj/*.bc.c
 /testsuite/tests/output_obj/*_stub
