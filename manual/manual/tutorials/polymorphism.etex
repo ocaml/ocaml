@@ -187,7 +187,7 @@ in its parameter "'a".
 
 Contrarily, if we have a function that can handle values of type "xy"
 \begin{caml_example}{toplevel}
-  let f = function
+  let f: xy -> unit = function
   | `X -> ()
   | `Y -> ();;
 \end{caml_example}
