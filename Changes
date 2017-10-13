@@ -16,6 +16,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Standard library:
 
+- GPR#1427: adds labels to BytesLabels.sub_string
+  (Valentin Gatien-Baron)
+
 ### Other libraries:
 
 ### Compiler user-interface and warnings:
