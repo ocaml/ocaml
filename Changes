@@ -658,10 +658,6 @@ Release branch for 4.06:
   for ocamldebug
   (Hugo Herbelin, review by Gabriel Scherer, Damien Doligez)
 
-- MPR#7531a: Default argument is not evaluated even after passing a
-  non-labeled argument
-  (Jacques Garrigue, report by Stephen Dolan)
-
 - MPR#7543: short-paths printtyp can fail on packed type error messages
   (Florian Angeletti)
 

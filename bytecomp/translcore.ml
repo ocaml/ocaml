@@ -538,15 +538,12 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string loc * module_expr
 
-let rec push_defaults loc bindings pushing cases partial =
+let rec push_defaults loc bindings cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
       c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
-        as exp}] when pushing || bindings = [] ->
-      (* Stop pushing when there is a non-labeled argument,
-         and there are default bindings to discharge *)
-      let cases = push_defaults
-          exp.exp_loc bindings (arg_label <> Nolabel) cases partial in
+        as exp}] ->
+      let cases = push_defaults exp.exp_loc bindings cases partial in
       [{c_lhs=pat; c_guard=None;
         c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
           partial; }}}]
@@ -554,14 +551,14 @@ let rec push_defaults loc bindings pushing cases partial =
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings) true
+      push_defaults loc (Bind_value binds :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#modulepat"},_];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, mexpr) :: bindings) true
+      push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [case] ->
@@ -590,7 +587,7 @@ let rec push_defaults loc bindings pushing cases partial =
                           })},
              cases, [], partial) }
       in
-      push_defaults loc bindings pushing
+      push_defaults loc bindings
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
           c_guard=None; c_rhs=exp}]
         Total
@@ -705,7 +702,7 @@ and transl_exp0 e =
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] true cases partial in
+            let pl = push_defaults e.exp_loc [] cases partial in
             transl_function e.exp_loc !Clflags.native_code repr partial
               param pl)
       in
