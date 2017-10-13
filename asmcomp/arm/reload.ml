@@ -37,7 +37,7 @@ method! reload_operation op arg res =
       if Array.length res' >= 2 then res'.(1) <- arg'.(0);
       argres'
   | Ispecific(Imuladdf | Inegmuladdf | Imulsubf | Inegmulsubf) ->
-      (* VFD float multiply-add instructions are "two-address" in the
+      (* VFP float multiply-add instructions are "two-address" in the
          sense that they must have [arg.(0) = res.(0)].
          Preserve this invariant. *)
       (arg', [|arg'.(0)|])

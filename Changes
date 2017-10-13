@@ -338,9 +338,9 @@ Release branch for 4.06:
 
 - MPR#7642, GPR#1411: ARM port: wrong register allocation for integer
   multiply on ARMv4 and ARMv5; possible wrong register allocation for
-  floating-point multiply and add on VFD and for floating-point
+  floating-point multiply and add on VFP and for floating-point
   negation and absolute value on soft FP emulation.
-  (Xavier Leroy, report by Stéphane Glondu and Mantis user "infinity0",
+  (Xavier Leroy, report by Stéphane Glondu and Ximin Luo,
    review and additional sightings by Mark Shinwell)
 
 ### Tools:
