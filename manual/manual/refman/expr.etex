@@ -114,7 +114,6 @@ parameter:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:object-notations]{object notations},
-\hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
