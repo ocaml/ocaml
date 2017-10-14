@@ -62,6 +62,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _clambda_checks = option "-clambda-checks"
   let _compact = option "-compact"
   let _config = option "-config"
+  let _config_var s = option_with_arg "-config-var" s
   let _for_pack s = option_with_arg "-for-pack" s
   let _g = option "-g"
   let _i = option "-i"

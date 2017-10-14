@@ -150,10 +150,16 @@ let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
-let print_config oc =
-  let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
-  let p_int name valu = Printf.fprintf oc "%s: %d\n" name valu in
-  let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
+type configuration_value =
+  | String of string
+  | Int of int
+  | Bool of bool
+
+let configuration_variables =
+  let p x v = (x, String v) in
+  let p_int x v = (x, Int v) in
+  let p_bool x v = (x, Bool v) in
+[
   p "version" version;
   p "standard_library_default" standard_library_default;
   p "standard_library" standard_library;
@@ -198,7 +204,6 @@ let print_config oc =
   p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
 
-  (* print the magic number *)
   p "exec_magic_number" exec_magic_number;
   p "cmi_magic_number" cmi_magic_number;
   p "cmo_magic_number" cmo_magic_number;
@@ -209,6 +214,30 @@ let print_config oc =
   p "ast_intf_magic_number" ast_intf_magic_number;
   p "cmxs_magic_number" cmxs_magic_number;
   p "cmt_magic_number" cmt_magic_number;
+]
 
+let print_config_value oc = function
+  | String s ->
+      Printf.fprintf oc "%s" s
+  | Int n ->
+      Printf.fprintf oc "%d" n
+  | Bool p ->
+      Printf.fprintf oc "%B" p
+
+let print_config oc =
+  let print (x, v) =
+    Printf.fprintf oc "%s: %a\n" x print_config_value v in
+  List.iter print configuration_variables;
   flush oc;
 ;;
+
+let config_var x =
+  match List.assoc_opt x configuration_variables with
+  | None -> None
+  | Some v ->
+      let s = match v with
+        | String s -> s
+        | Int n -> string_of_int n
+        | Bool b -> string_of_bool b
+      in
+      Some s

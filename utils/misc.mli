@@ -347,3 +347,8 @@ module type HookSig = sig
 end
 
 module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t
+
+
+(** configuration variables *)
+val show_config_and_exit : unit -> unit
+val show_config_variable_and_exit : string -> unit

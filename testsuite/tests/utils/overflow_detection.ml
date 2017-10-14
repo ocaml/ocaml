@@ -1,7 +1,7 @@
 (* TEST
 include config
 include testing
-binary_modules = "misc identifiable numbers"
+binary_modules = "config misc identifiable numbers"
 * bytecode
 *)
 

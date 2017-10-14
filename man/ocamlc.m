@@ -296,6 +296,13 @@ Print the version number of
 .BR ocamlc (1)
 and a detailed summary of its configuration, then exit.
 .TP
+.BI \-config-var
+Print the value of a specific configuration variable
+from the
+.B \-config
+output, then exit. If the variable does not exist,
+the exit code is non-zero.
+.TP
 .B \-custom
 Link in "custom runtime" mode. In the default linking mode, the
 linker produces bytecode that is intended to be executed with the
