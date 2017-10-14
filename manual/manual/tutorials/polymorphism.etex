@@ -219,10 +219,9 @@ which would break the type system.
 More generally, as soon as a type variable appears in a position describing
 mutable state it becomes invariant. As a corollary, covariant variables will
 never denote mutable locations and can be safely generalized.
-For a better description, interested reader can consult the original
+For a better description, interested readers can consult the original
 article by Jacques Garrigue on
 \url{http://www.math.nagoya-u.ac.jp/~garrigue/papers/morepoly-long.pdf}
-%question: what is the best url for this article?
 
 Together, the relaxed value restriction and type parameter covariance
 help to avoid eta-expansion in many situations.
@@ -344,7 +343,7 @@ is universally quantified. In other words, "'a.'a nested -> int" reads as
 ``for all type "'a", "depth" maps "'a nested" values to integers''.
 Whereas the standard type "'a nested -> int" can be interpreted
 as ``let be a type variable "'a", then "depth" maps "'a nested" values
-to integers''. There is two major differences with these two type
+to integers''. There are two major differences with these two type
 expressions. First, the explicit polymorphic annotation indicates to the
 type checker that it needs to introduce a new type variable every times
 the function "depth" is applied. This solves our problem with the definition
