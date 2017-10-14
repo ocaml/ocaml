@@ -193,6 +193,7 @@ let print_config oc =
   p_bool "safe_string" safe_string;
   p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;
+  p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
 
   (* print the magic number *)
