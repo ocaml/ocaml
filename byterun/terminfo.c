@@ -39,33 +39,3 @@ CAMLprim value caml_terminfo_rows(value vchan)
 #endif
 }
 
-/* Temporary - for bootstrapping */
-
-#include "caml/config.h"
-#include "caml/alloc.h"
-#include "caml/fail.h"
-
-#define Bad_term (Val_int(1))
-
-CAMLprim value caml_terminfo_setup (value vchan)
-{
-  return Bad_term;
-}
-
-CAMLprim value caml_terminfo_backup (value lines)
-{
-  caml_invalid_argument("Terminfo.backup");
-  return Val_unit;
-}
-
-CAMLprim value caml_terminfo_standout (value start)
-{
-  caml_invalid_argument("Terminfo.standout");
-  return Val_unit;
-}
-
-CAMLprim value caml_terminfo_resume (value lines)
-{
-  caml_invalid_argument("Terminfo.resume");
-  return Val_unit;
-}
