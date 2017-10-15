@@ -199,7 +199,7 @@ let highlight_dumb ppf lb loc =
 let rec highlight_locations ppf locs =
   match !status with
     Terminfo.Uninitialised ->
-      status := Terminfo.setup stdout; highlight_locations ppf locs
+      status := Terminfo.setup(); highlight_locations ppf locs
   | Terminfo.Bad_term ->
       begin match !input_lexbuf with
         None -> false
