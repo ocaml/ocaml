@@ -777,17 +777,17 @@ let find_pers_struct check name =
         acknowledge_pers_struct check name ps
 
 (* Emits a warning if there is no valid cmi for name *)
-let check_pers_struct name =
+let check_pers_struct ~loc name =
   try
     ignore (find_pers_struct false name)
   with
   | Not_found ->
       let warn = Warnings.No_cmi_file(name, None) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
   | Cmi_format.Error err ->
       let msg = Format.asprintf "%a" Cmi_format.report_error err in
       let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
   | Error err ->
       let msg =
         match err with
@@ -808,7 +808,7 @@ let check_pers_struct name =
         | Illegal_value_name _ -> assert false
       in
       let warn = Warnings.No_cmi_file(name, Some msg) in
-        Location.prerr_warning Location.none warn
+        Location.prerr_warning loc warn
 
 let read_pers_struct modname filename =
   read_pers_struct true modname filename
@@ -816,7 +816,7 @@ let read_pers_struct modname filename =
 let find_pers_struct name =
   find_pers_struct true name
 
-let check_pers_struct name =
+let check_pers_struct ~loc name =
   if not (Hashtbl.mem persistent_structures name) then begin
     (* PR#6843: record the weak dependency ([add_import]) regardless of
        whether the check succeeds, to help make builds more
@@ -824,7 +824,7 @@ let check_pers_struct name =
     add_import name;
     if (Warnings.is_active (Warnings.No_cmi_file("", None))) then
       !add_delayed_check_forward
-        (fun () -> check_pers_struct name)
+        (fun () -> check_pers_struct ~loc name)
   end
 
 let reset_cache () =
@@ -1175,7 +1175,10 @@ and lookup_module ~load ?loc lid env : Path.t =
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let p = Pident(Ident.create_persistent s) in
-        if !Clflags.transparent_modules && not load then check_pers_struct s
+        if !Clflags.transparent_modules && not load
+        then
+          let loc = match loc with Some l -> l | None -> Location.none in
+          check_pers_struct ~loc s
         else begin
           let ps = find_pers_struct s in
           report_deprecated ?loc p ps.ps_comps.deprecated

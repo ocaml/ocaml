@@ -24,6 +24,9 @@ be mentioned in the 4.06 section below instead of here.)
   first character (instead of comma) in the set ":|; ,"
   (Fabrice Le Fessant)
 
+- GPR#1428: give a non dummy location for warning 49 (no cmi found)
+  (Valentin Gatien-Baron)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
