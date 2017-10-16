@@ -477,6 +477,12 @@ Release branch for 4.06:
 - MPR#7604: Minor Ephemeron documentation fixes
   (Miod Vallat, review by Florian Angeletti)
 
+- GPR#594: New chapter on polymorphism troubles:
+  weakly polymorphic types, polymorphic recursion,and higher-ranked
+  polymorphism.
+  (Florian Angeletti, review by Damien Doligez, Gabriel Scherer,
+   and Gerd Stolpmann)
+
 - GPR#1187: Minimal documentation for compiler plugins
   (Florian Angeletti)
 

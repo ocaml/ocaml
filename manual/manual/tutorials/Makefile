@@ -1,4 +1,5 @@
-FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex advexamples.tex
+FILES= coreexamples.tex lablexamples.tex objectexamples.tex moduleexamples.tex\
+advexamples.tex polymorphism.tex
 
 TOPDIR=../../..
 include $(TOPDIR)/Makefile.tools

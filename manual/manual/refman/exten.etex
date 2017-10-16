@@ -427,41 +427,6 @@ For example, all following methods are equivalent:
           end
 \end{verbatim}
 
-\section{Explicit polymorphic type annotations} \label{s:explicit-polymorphic-type}
-\ikwd{let\@\texttt{let}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-let-binding:
-          ...
-        | value-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-Polymorphic type annotations in @"let"@-definitions behave in a way
-similar to polymorphic methods: they explicitly require the defined
-value to be polymorphic, and allow one to use this polymorphism in
-recursive occurrences (when using @"let" "rec"@). Note however that this
-is a normal  polymorphic type, unifiable with any instance of
-itself.
-
-There are two possible applications of this feature. One is polymorphic
-recursion:
-\begin{verbatim}
-        type 'a t = Leaf of 'a | Node of ('a * 'a) t
-        let rec depth : 'a. 'a t -> 'b = function
-            Leaf _ -> 1
-          | Node x -> 1 + depth x
-\end{verbatim}
-Note that "'b" is not explicitly polymorphic here, and it will
-actually be unified with "int".
-
-The other application is to ensure that some definition is sufficiently
-polymorphic:
-\begin{caml_example}{verbatim}[error]
-let id: 'a. 'a -> 'a = fun x -> x + 1
-\end{caml_example}
-
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
