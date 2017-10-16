@@ -18,6 +18,10 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Other libraries:
 
+- MPR#6567: add Unix.flush_mapped_file function to synchronize a
+  memory-mapped file with the corresponding in-memory bigarray.
+  (Christoph Bauer and Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as

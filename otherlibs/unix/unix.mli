@@ -543,6 +543,28 @@ val map_file :
   validation fails.
   @since 4.06.0 *)
 
+val flush_mapped_file :
+  ('a, 'b, 'c) CamlinternalBigarray.genarray -> bool -> unit
+(** Synchronize a memory-mapped file with its in-memory view.
+   Consider a bigarray [b] obtained by {!Unix.map_file} with the [shared]
+   flag set to true.  [flush_mapped_file b sync] causes changes made
+   to the bigarray [b] to be performed on the file as well.  If [sync] is
+   true, [flush_mapped_file] blocks until the file has been fully updated.
+   If [sync] is false, the file update is scheduled but [flush_mapped_file]
+   returns immediately.
+
+   Until [flush_mapped_file] is called, the data modified in [b] can
+   stay in memory and not update the file for arbitrary long amounts
+   of time.  In particular, [flush_mapped_file] must be called before
+   the underlying file descriptor initially passed to {!Unix.map_file}
+   is closed; otherwise, depending on the OS and file system, there is
+   a risk that the changes made to [b] are lost.
+
+   On Windows: the synchronous mode [sync = true] is not supported by the OS
+   and raises [Invalid_argument].  Always use [sync = false].
+   
+   @since 4.07.0 *)
+
 (** {1 Operations on file names} *)
 
 

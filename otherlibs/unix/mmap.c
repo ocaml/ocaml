@@ -225,3 +225,33 @@ void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
   munmap(addr, len);
 #endif
 }
+
+#ifndef IN_OCAML_BIGARRAY
+
+#if defined(HAS_MMAP) && defined(_POSIX_SYNCHRONIZED_IO)
+
+void caml_unix_flush_file(void * addr, uintnat len, int sync)
+{
+  int ret;
+  uintnat page = sysconf(_SC_PAGESIZE);
+  uintnat delta = (uintnat) addr % page;
+  if (len == 0) return;
+  addr = (void *)((uintnat)addr - delta);
+  len  = len + delta;
+  caml_enter_blocking_section();
+  ret =  msync(addr, len, sync ? MS_SYNC : MS_ASYNC);
+  caml_leave_blocking_section();
+  if (ret == -1) uerror("flush_mapped_file", Nothing);
+}
+
+#else
+
+CAMLexport void caml_unix_flush_file(void * addr, uintnat len, int sync)
+{
+  caml_invalid_argument("Unix.flush_mapped_file: not supported");
+  return Val_unit;
+}
+
+#endif
+
+#endif

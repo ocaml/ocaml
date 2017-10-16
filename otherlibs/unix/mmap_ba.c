@@ -89,3 +89,26 @@ ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim)
   for (i = 0; i < num_dims; i++) b->dim[i] = dimcopy[i];
   return res;
 }
+
+#ifndef IN_OCAML_BIGARRAY
+
+CAMLextern void caml_unix_flush_file(void * addr, uintnat len, int sync);
+
+CAMLprim value caml_unix_flush_mapped_file(value vb, value vsync)
+{
+  CAMLparam2(vb, vsync);
+  struct caml_ba_array * b = Caml_ba_array_val(vb);
+  int sync = Bool_val(vsync);
+    
+  if( b->flags & CAML_BA_MAPPED_FILE ) {
+    if( b->proxy == NULL )
+      caml_unix_flush_file(b->data, caml_ba_byte_size(b), sync);
+    else {
+      caml_unix_flush_file(b->proxy->data, b->proxy->size, sync);
+    }
+  }
+     
+  CAMLreturn( Val_unit );
+}
+
+#endif

@@ -308,6 +308,10 @@ external map_internal:
 let map_file fd ?(pos=0L) kind layout shared dims =
   map_internal fd kind layout shared dims pos
 
+external flush_mapped_file :
+  ('a, 'b, 'c) CamlinternalBigarray.genarray -> bool -> unit
+     = "caml_unix_flush_mapped_file"
+
 (* File permissions and ownership *)
 
 type access_permission =

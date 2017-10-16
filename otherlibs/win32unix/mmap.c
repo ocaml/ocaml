@@ -161,6 +161,32 @@ void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
   UnmapViewOfFile((void *)((uintnat)addr - delta));
 }
 
+#ifndef IN_OCAML_BIGARRAY
+
+void caml_unix_flush_file(void * addr, uintnat len, int sync)
+{
+  SYSTEM_INFO sysinfo;
+  uintnat delta;
+  int ret;
+
+  if (sync)
+    caml_invalid_argument("Unix.flush_mapped_file: sync is not supported under windows");
+  GetSystemInfo(&sysinfo);
+  delta = (uintnat) addr % sysinfo.dwAllocationGranularity;
+  addr = (void *)((uintnat)addr - delta);
+  caml_enter_blocking_section();
+  ret = FlushViewOfFile(addr, 0);
+       /* zero means: the file is flushed from the base 
+          address to the end of the mapping. */
+  caml_leave_blocking_section();
+  if (! ret)  {
+    win32_maperr(GetLastError());
+    uerror("flush_mapped_file", Nothing); 
+  }
+}
+
+#endif
+
 #ifdef IN_OCAML_BIGARRAY
 
 /* This function reports a Win32 error as a Sys_error exception.
