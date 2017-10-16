@@ -320,20 +320,15 @@ module LargeFile =
     external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
-type map_file_impl =
-  { map_file_impl
-    : 'a 'b 'c. file_descr
-      -> ('a, 'b) CamlinternalBigarray.kind
-      -> 'c CamlinternalBigarray.layout
-      -> bool
-      -> int array
-      -> int64
-      -> ('a, 'b, 'c) CamlinternalBigarray.genarray
-  }
-let map_file_impl =
-  ref { map_file_impl = fun _ _ _ _ _ _ -> failwith "Bigarray not initialized!" }
+external map_internal:
+   file_descr -> ('a, 'b) CamlinternalBigarray.kind
+              -> 'c CamlinternalBigarray.layout
+              -> bool -> int array -> int64
+              -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+     = "caml_unix_map_file_bytecode" "caml_unix_map_file"
+
 let map_file fd ?(pos=0L) kind layout shared dims =
-  !map_file_impl.map_file_impl fd kind layout shared dims pos
+  map_internal fd kind layout shared dims pos
 
 type access_permission =
     R_OK
