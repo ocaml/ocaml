@@ -18,9 +18,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Other libraries:
 
-- MPR#6567: add Unix.flush_mapped_file function to synchronize a
+- MPR#6567, GPR#1432: add Unix.flush_mapped_file function to synchronize a
   memory-mapped file with the corresponding in-memory bigarray.
-  (Christoph Bauer and Xavier Leroy)
+  (Christoph Bauer and Xavier Leroy, review by Anil Madhavapeddy)
 
 ### Compiler user-interface and warnings:
 

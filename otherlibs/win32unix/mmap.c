@@ -181,7 +181,7 @@ void caml_unix_flush_file(void * addr, uintnat len, int sync)
   caml_leave_blocking_section();
   if (! ret)  {
     win32_maperr(GetLastError());
-    uerror("flush_mapped_file", Nothing); 
+    uerror("flush_mapped_file", Nothing);
   }
 }
 

@@ -249,7 +249,6 @@ void caml_unix_flush_file(void * addr, uintnat len, int sync)
 CAMLexport void caml_unix_flush_file(void * addr, uintnat len, int sync)
 {
   caml_invalid_argument("Unix.flush_mapped_file: not supported");
-  return Val_unit;
 }
 
 #endif
