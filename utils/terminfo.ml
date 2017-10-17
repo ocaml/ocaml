@@ -21,17 +21,19 @@ external terminfo_rows: out_channel -> int = "caml_terminfo_rows"
 type status =
   | Uninitialised
   | Bad_term
-  | Good_term of int  (* number of lines of the terminal *)
+  | Good_term
 
 let setup () = 
   let term = try Sys.getenv "TERM" with Not_found -> "" in
   (* Same heuristics as in Misc.Color.should_enable_color *)
-  if term <> "" && term <> "dumb" && isatty stderr then begin
-    let rows = terminfo_rows stderr in
-    Good_term (if rows > 0 then rows else 24)
+  if term <> "" && term <> "dumb" && isatty stdout
+  then Good_term
+  else Bad_term
+
+let num_lines () =
+  let rows = terminfo_rows stdout in
+  if rows > 0 then rows else 24
     (* 24 is a reasonable default for an ANSI-style terminal *)
-  end else
-    Bad_term
 
 let backup n =
   if n >= 1 then begin

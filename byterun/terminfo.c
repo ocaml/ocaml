@@ -29,9 +29,9 @@ CAMLprim value caml_terminfo_rows(value vchan)
 {
 #ifdef TIOCGWINSZ
   struct winsize w;
-  w.ws_col = -1;
+  w.ws_row = -1;
   if (ioctl(Channel(vchan)->fd, TIOCGWINSZ, &w) == 0)
-    return Val_int(w.ws_col);
+    return Val_int(w.ws_row);
   else
     return Val_int(-1);
 #else

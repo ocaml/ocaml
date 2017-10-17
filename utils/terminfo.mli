@@ -18,9 +18,10 @@
 type status =
   | Uninitialised
   | Bad_term
-  | Good_term of int  (* number of lines of the terminal *)
+  | Good_term
 
 val setup : unit -> status
+val num_lines : unit -> int
 val backup : int -> unit
 val standout : bool -> unit
 val resume : int -> unit
