@@ -218,7 +218,6 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make $jobs coldstart
 $make $jobs core
 $make $jobs coreboot
 $make $jobs world
