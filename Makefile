@@ -16,13 +16,18 @@
 # The main Makefile
 
 # Hard bootstrap how-to:
-# (only necessary in some cases, for example if you remove some primitive)
+# (only necessary if you remove or rename some primitive)
 #
-# make coreboot     [old system -- you were in a stable state]
-# <change the source>
-# make clean runtime coreall
-# <debug your changes>
-# make clean runtime coreall
+# make core     [old system -- you were in a stable state]
+# make coreboot [optional -- check state stability]
+# <add new primitives and remove uses of old primitives>
+# make clean && make core
+# if the above fails:
+#     <debug your changes>
+#     make clean && make core
+# make coreboot [intermediate state with both old and new primitives]
+# <remove old primitives>
+# make clean && make runtime && make coreall
 # make coreboot [new system -- now in a stable state]
 
 include config/Makefile
