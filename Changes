@@ -657,6 +657,11 @@ Release branch for 4.06:
   (Xavier Leroy, report by Mantis users 'AltGr' and 'aalekseyev',
    review by Ivan Gotovchits)
 
+- MPR#7657, GPR#1424: ensures correct call-by-value semantics when
+  eta-expanding functions to eliminate optional arguments
+  (Alain Frisch, report by sliquister, review by Leo White and Jacques
+  Garrigue)
+
 - GPR#1155: Fix a race condition with WAIT_NOHANG on Windows
   (Jérémie Dimino and David Allsopp)
 
