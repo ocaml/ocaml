@@ -286,7 +286,7 @@ RUNTOP=./byterun/ocamlrun ./ocaml \
   -noinit $(TOPFLAGS) \
   -I otherlibs/$(UNIXLIB)
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
-ifeq "UNIX_OR_WIN32" "unix"
+ifeq "$(UNIX_OR_WIN32)" "unix"
 EXTRAPATH=
 else
 EXTRAPATH = PATH="otherlibs/win32unix:$(PATH)"
@@ -788,7 +788,9 @@ partialclean::
 
 .PHONY: runtop
 runtop:
-	$(MAKE) core
+	$(MAKE) coldstart
+	$(MAKE) ocamlc
+	$(MAKE) otherlibraries
 	$(MAKE) ocaml
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
 	  $(EXTRAPATH) $(RUNTOP)
@@ -1080,9 +1082,10 @@ checkstack:
 ifeq "$(UNIX_OR_WIN32)" "unix"
 	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
 	  then tools/checkstack$(EXE); \
-	  else :; \
 	fi
 	rm -f tools/checkstack$(EXE)
+else
+	@
 endif
 
 # Lint @since and @deprecated annotations
