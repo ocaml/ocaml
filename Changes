@@ -344,6 +344,10 @@ Release branch for 4.06:
   and module type elements
   (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
 
+- MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
+  structures and signatures (e.g. "include struct … include(struct … end) … end")
+  (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
+
 - GPR#681: Introduce ocamltest, a new test driver for the
   OCaml compiler testsuite
   (Sébastien Hinderer, review by Damien Doligez)
