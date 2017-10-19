@@ -628,6 +628,11 @@ Release branch for 4.06:
   (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
    Gabriel Radanne and Gabriel Scherer)
 
+- MPR#5250: on Cygwin, when ocamlrun searches the path for a bytecode
+  executable file, skip directories and other non-regular files, like
+  other Unix variants do
+  (Xavier Leroy)
+
 - MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
 
