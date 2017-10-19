@@ -33,6 +33,10 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Tools:
 
+- MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
+  structures and signatures (e.g. "include struct … include(struct … end) … end")
+  (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
+
 ### Manual and documentation:
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
@@ -394,10 +398,6 @@ Release branch for 4.06:
 - MPR#7635, GPR#1383: ocamldoc, add an identifier to module
   and module type elements
   (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
-
-- MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
-  structures and signatures (e.g. "include struct … include(struct … end) … end")
-  (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
 - GPR#681: Introduce ocamltest, a new test driver for the
   OCaml compiler testsuite
