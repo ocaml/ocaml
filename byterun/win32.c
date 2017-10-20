@@ -898,8 +898,19 @@ void caml_probe_win32_version(void)
   free(versionInfo);
 }
 
+static UINT startup_codepage = 0;
+
 void caml_setup_win32_terminal(void)
 {
-  if (caml_win32_major >= 10)
-    SetConsoleOutputCP(CP_UTF8);
+  if (caml_win32_major >= 10) {
+    startup_codepage = GetConsoleOutputCP();
+    if (startup_codepage != CP_UTF8)
+      SetConsoleOutputCP(CP_UTF8);
+  }
+}
+
+void caml_restore_win32_terminal(void)
+{
+  if (startup_codepage != 0)
+    SetConsoleOutputCP(startup_codepage);
 }
