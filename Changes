@@ -18,10 +18,14 @@ Release branch for 4.06:
   in class expressions and class type expressions.
   (Alain Frisch, reviews by Thomas Refis and Jacques Garrigue)
 
-- GPR#1064, GPR#1392: extended indexing operators, add a new class of
+* GPR#1064, GPR#1392: extended indexing operators, add a new class of
   user-defined indexing operators, obtained by adding at least
   one operator character after the dot symbol to the standard indexing
   operators: e,g ".%()", ".?[]", ".@{}<-"
+  After this change, functions or methods with an explicit polymorphic type
+  annotation and of which the first argument is optional now requires a space
+  between the dot and the question mark,
+  e.g. "<f:'a.?opt:int->unit>" must now be written "<f:'a. ?opt:int->unit>".
   (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
 
 - GPR#1142: Mark assertions nonexpansive, so that 'assert false'
@@ -42,7 +46,11 @@ Release branch for 4.06:
   at configure time or at compile time.
   (Damien Doligez)
 
-- GPR#1253: Private extensible variants
+* GPR#1253: Private extensible variants
+  This change breaks code relying on the undocumented ability to export
+  extension constructors for abstract type in signature. Briefly,
+  "module type S = sig type t type t+=A" must now be written
+  "module type S = sig type t = private .. type t+=A".
   (Leo White, review by Alain Frisch)
 
 - GPR#1348: accept anonymous type parameters in with constraints,
