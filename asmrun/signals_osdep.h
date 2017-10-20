@@ -307,21 +307,22 @@
 
 #elif defined(TARGET_power) && defined (SYS_netbsd)
 
- #include <ucontext.h>
- #define DECLARE_SIGNAL_HANDLER(name) \
- static void name(int sig, siginfo_t * info, ucontext_t * context)
+  #include <ucontext.h>
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, ucontext_t * context)
 
- #define SET_SIGACT(sigact,name) \
- sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
- sigact.sa_flags = SA_SIGINFO
+  #define SET_SIGACT(sigact,name) \
+  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+  sigact.sa_flags = SA_SIGINFO
 
- #define CONTEXT_PC (_UC_MACHINE_PC(context))
- #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
- #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
- #define CONTEXT_SP (_UC_MACHINE_SP(context))
- #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  typedef long context_reg;
+  #define CONTEXT_PC (_UC_MACHINE_PC(context))
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
+  #define CONTEXT_YOUNG_LIMIT (context->uc_mcontext.__gregs[_REG_R30])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
+  #define CONTEXT_SP (_UC_MACHINE_SP(context))
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
-/* #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.CONTEXT_REG(r30)) */
 
 /****************** PowerPC, other BSDs */
 
