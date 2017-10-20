@@ -605,6 +605,9 @@ Release branch for 4.06:
 
   (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
 
+- GPR#1409: Fix to enable NetBSD/powerpc to work.
+  (Håvard Eidnes)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
@@ -1058,9 +1061,6 @@ OCaml 4.05.0 (13 Jul 2017):
   (Gabriel Scherer)
 
 ### Compiler distribution build system:
-
-- GPR#1409: Fix to enable NetBSD/powerpc to work.
-  (Håvard Eidnes)
 
 - MPR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
