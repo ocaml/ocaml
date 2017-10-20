@@ -100,9 +100,9 @@ new-without-report: lib tools
 	@for file in `$(find) tests -name ocamltests`; do \
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
-	  while read testfile; do \
+	  IFS=$$(printf "\r\n"); while read testfile; do \
 	    TERM=dumb OCAMLRUNPARAM= \
-	      $(ocamltest) $$dir/$${testfile/$$'\r'}; \
+	      $(ocamltest) $$dir/$$testfile; \
 	  done < $$file; \
 	done 2>&1 | tee -a _log
 
