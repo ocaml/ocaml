@@ -23,7 +23,7 @@ LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
 
 .PHONY: default
 default:
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) ; then \
+	@if ! $(NATDYNLINK) || $(BYTECODE_ONLY) ; then \
 	  echo " ... testing 'main' => skipped"; \
 	else \
 	   $(SET_LD_PATH) $(MAKE) all; \

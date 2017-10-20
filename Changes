@@ -1059,6 +1059,9 @@ OCaml 4.05.0 (13 Jul 2017):
 
 ### Compiler distribution build system:
 
+- GPR#1409: Fix to enable NetBSD/powerpc to work.
+  (Håvard Eidnes)
+
 - MPR#7377: remove -std=gnu99 for newer gcc versions
   (Damien Doligez, report by ygrek)
 
