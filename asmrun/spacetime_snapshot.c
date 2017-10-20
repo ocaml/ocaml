@@ -356,7 +356,7 @@ copy_string_outside_heap(char const *s)
   Field (result, wosize - 1) = 0;
   offset_index = Bsize_wsize (wosize) - 1;
   Byte (result, offset_index) = offset_index - len;
-  memmove(String_val(result), s, len);
+  memmove(Bytes_val(result), s, len);
 
   return result;
 }

@@ -500,6 +500,10 @@ Release branch for 4.06:
 * GPR#1416: switch the Windows 10 Console to UTF-8 encoding.
   (David Allsopp, reviews by Nicolás Ojeda Bär and Xavier Leroy)
 
+- MPR#7658, GPR#1439: Fix Spacetime runtime system compilation with
+  -force-safe-string
+  (Mark Shinwell, report by Christoph Spiel, review by Gabriel Scherer)
+
 ### Manual and documentation:
 
 - MPR#6548: remove obsolete limitation in the description of private
