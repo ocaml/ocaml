@@ -271,9 +271,13 @@ PR.
 
 You do not need to be an INRIA employee to open an account on this
 jenkins service; anyone can create an account there to access build
-logs, enable email notifications, and manually restart builds. If you
-would like to do this but have trouble doing it, please contact
+logs and manually restart builds. If you
+would like to do this but have trouble doing it, please email
 ocaml-ci-admin@inria.fr
+
+To be notified by email of build failures, you can subscribe to the
+ocaml-ci-notifications@inria.fr mailing list by visiting
+https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page]
 
 ==== Running INRIA's CI on a publicly available git branch
 
@@ -297,7 +301,7 @@ OCaml's GitHub repository and then push "mybranch" to your fork.
 5. Visit https://ci.inria.fr/ocaml/job/precheck and log in. Click on
 "Build with parameters".
 
-6. Fill the REPO_URL and BRANCH fields as appropriate and run the build.
+6. Fill in the REPO_URL and BRANCH fields as appropriate and run the build.
 
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
