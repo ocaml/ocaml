@@ -56,10 +56,14 @@ if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
 goto :EOF
 
 :install
-git worktree add ..\build-mingw32 -b appveyor-build-mingw32
-cd ..\build-mingw32
+chcp 65001 > nul
+rem This must be kept in sync with appveyor_build.sh
+set BUILD_PREFIX=🐫реализация
+git worktree add "..\%BUILD_PREFIX%-msvc64" -b appveyor-build-msvc64
+git worktree add "..\%BUILD_PREFIX%-mingw32" -b appveyor-build-mingw32
+git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-msvc32
+cd "..\%BUILD_PREFIX%-mingw32"
 git submodule update --init flexdll
-git worktree add ..\build-msvc32 -b appveyor-build-msvc32
 
 cd "%APPVEYOR_BUILD_FOLDER%"
 appveyor DownloadFile "https://github.com/alainfrisch/flexdll/archive/0.37.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
