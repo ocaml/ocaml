@@ -970,7 +970,7 @@ case "$target" in
   powerpc*-*-linux*)            arch=power;
                                 if $arch64; then model=ppc64; else model=ppc; fi
                                 system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=netbsd;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   s390x*-*-linux*)              arch=s390x; model=z10; system=elf;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
@@ -1054,7 +1054,7 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd)
                   as="${TOOLPREF}as"
                   case "$ccfamily" in
                       clang-*)
@@ -1085,6 +1085,7 @@ case "$arch,$system" in
   arm,linux*) profiling='true';;
   power,elf) profiling='true';;
   power,bsd*) profiling='true';;
+  power,netbsd) profiling='true';;
   *) profiling='false';;
 esac
 

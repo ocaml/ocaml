@@ -550,6 +550,9 @@ Release branch for 4.06:
 
   (Gabriel Scherer, review by Jacques-Pascal Deplaix and Damien Doligez)
 
+- GPR#1409: Fix to enable NetBSD/powerpc to work.
+  (Håvard Eidnes)
+
 ### Internal/compiler-libs changes:
 
 - MPR#6826, GPR#828, GPR#834: improve compilation time for open
