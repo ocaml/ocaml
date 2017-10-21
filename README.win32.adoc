@@ -73,10 +73,10 @@ https://github.com/alainfrisch/flexdll. A binary distribution is available;
 instructions on how to build FlexDLL from sources, including how to bootstrap
 FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
-install FlexDLL is included in your `PATH` environment variable. Note: binary distributions
-of FlexDLL are compatible only with certain versions of Visual Studio; for instance
-version 0.36 of FlexDLL require Visual Studio 2015 or above, while earlier versions
-require older versions of Visual Studio.
+install FlexDLL is included in your `PATH` environment variable. Note: binary
+distributions of FlexDLL are compatible only with Visual Studio 2013 and
+earlier; for Visual Studio 2015 and later, you will need to compile the C
+objects from source, or build ocaml using the flexdll target.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -388,7 +388,7 @@ and adapt their existing code bases accordingly.
 Note: in order for ocaml tools to support Unicode pathnames, it is
 necessary to use a version of FlexDLL which has itself been compiled
 with OCaml >= 4.06 in Unicode mode.  This is the case for binary distributions
-of FlexDLL starting from version 0.36 and above.
+of FlexDLL starting from version 0.37 and above.
 
 == Trademarks
 
