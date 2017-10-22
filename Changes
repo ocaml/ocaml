@@ -242,6 +242,14 @@ Release branch for 4.06:
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
+- GPR#1114, GPR#1393, GPR#1429: refine the (ocamlc -config) information
+  on C compilers: the variables `{bytecode,native}_c_compiler` are deprecated
+  (the distinction is now mostly meaningless) in favor of a single
+  `c_compiler` variable combined with `ocaml{c,opt}_cflags`
+  and `ocaml{c,opt}_cppflags`.
+  (Sébastien Hinderer, Jeremy Yallop, Gabriel Scherer, review by
+   Adrien Nader and David Allsopp)
+
 - GPR#1333: turn off warning 40 by default
   (Leo White)
 

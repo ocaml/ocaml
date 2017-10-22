@@ -157,12 +157,14 @@ let print_config oc =
   p "standard_library" standard_library;
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
-  p "bytecomp_c_compiler" bytecomp_c_compiler;
   p "c_compiler" c_compiler;
   p "ocamlc_cflags" ocamlc_cflags;
+  p "ocamlc_cppflags" ocamlc_cppflags;
   p "ocamlopt_cflags" ocamlopt_cflags;
-  p "bytecomp_c_libraries" bytecomp_c_libraries;
+  p "ocamlopt_cppflags" ocamlopt_cppflags;
+  p "bytecomp_c_compiler" bytecomp_c_compiler;
   p "native_c_compiler" native_c_compiler;
+  p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
@@ -191,6 +193,7 @@ let print_config oc =
   p_bool "safe_string" safe_string;
   p_bool "default_safe_string" default_safe_string;
   p_bool "flat_float_array" flat_float_array;
+  p_bool "afl_instrument" afl_instrument;
   p_bool "windows_unicode" windows_unicode;
 
   (* print the magic number *)
