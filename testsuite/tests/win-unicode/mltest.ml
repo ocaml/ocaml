@@ -179,6 +179,10 @@ let large_lstat s =
   let f s = (Unix.LargeFile.lstat s).Unix.LargeFile.st_kind in
   wrap "Unix.LargeFile.lstat" f quote s file_kind
 
+let access s =
+  let f s = Unix.access s [Unix.F_OK] in
+  wrap "Unix.access" f quote s ok
+
 let unix_readdir f s =
   let f s =
     let h = Unix.opendir s in
@@ -312,6 +316,9 @@ let test_stat () =
   in
   List.iter doit to_create_and_delete_files
 
+let test_access () =
+  List.iter access to_create_and_delete_files
+
 let test_rename rename =
   let doit s =
     let s' = s ^ "-1" in
@@ -368,6 +375,7 @@ let tests =
     "test_open_out", test_open_out;
     "test_file_exists", (fun () -> test_file_exists true);
     "test_stat", test_stat;
+    "test_access", test_access;
     "test_rename unix_rename", (fun () -> test_rename unix_rename);
     "test_rename sys_rename", (fun () -> test_rename sys_rename);
     "test_remove remove", (fun () -> test_remove remove);
