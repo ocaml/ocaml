@@ -74,6 +74,7 @@ case "$1" in
     exit 0
     ;;
   test)
+    run "ocamlc.opt -version" $APPVEYOR_BUILD_FOLDER/ocamlc.opt -version
     run "test msvc64" make -C $APPVEYOR_BUILD_FOLDER tests
     run "test mingw32" make -C $APPVEYOR_BUILD_FOLDER/../build-mingw32 tests
     run "install msvc64" make -C $APPVEYOR_BUILD_FOLDER install
