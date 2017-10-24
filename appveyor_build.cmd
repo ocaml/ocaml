@@ -71,10 +71,6 @@ mkdir "%APPVEYOR_BUILD_FOLDER%\..\flexdll"
 move flexdll.zip "%APPVEYOR_BUILD_FOLDER%\..\flexdll"
 cd "%APPVEYOR_BUILD_FOLDER%\..\flexdll" && unzip -q flexdll.zip
 
-rem Make sure the Cygwin path comes before the Git one (otherwise cygpath
-rem gets confused as to which root it's in).
-set Path=C:\cygwin64\bin;%OCAMLROOT%\bin\flexdll;%Path%
-
 rem CYGWIN_PACKAGES is the list of required Cygwin packages (cygwin is included
 rem in the list just so that the Cygwin version is always displayed on the log).
 rem CYGWIN_COMMANDS is a corresponding command to run with --version to test

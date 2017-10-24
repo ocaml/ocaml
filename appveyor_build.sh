@@ -48,6 +48,8 @@ function set_configuration {
 PREFIX=$(echo $OCAMLROOT| cygpath -f - -m)
 APPVEYOR_BUILD_FOLDER=$(echo $APPVEYOR_BUILD_FOLDER| cygpath -f -)
 
+export PATH=$(echo $OCAMLROOT| cygpath -f -)/bin/flexdll:$PATH
+
 case "$1" in
   install)
     mkdir -p "$PREFIX/bin/flexdll"
