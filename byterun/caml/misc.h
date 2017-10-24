@@ -183,7 +183,6 @@ typedef wchar_t char_os;
 #define getenv_os _wgetenv
 #define system_os _wsystem
 #define rmdir_os _wrmdir
-#define utime_os _wutime
 #define putenv_os _wputenv
 #define chmod_os _wchmod
 #define execv_os _wexecv
@@ -217,7 +216,6 @@ typedef char char_os;
 #define getenv_os getenv
 #define system_os system
 #define rmdir_os rmdir
-#define utime_os utime
 #define putenv_os putenv
 #define chmod_os chmod
 #define execv_os execv

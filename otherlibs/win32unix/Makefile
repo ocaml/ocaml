@@ -26,7 +26,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
   symlink.c system.c times.c unixsupport.c windir.c winwait.c write.c \
-  winlist.c winworker.c windbug.c
+  winlist.c winworker.c windbug.c utimes.c
 
 # Files from the ../unix directory
 UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
@@ -34,7 +34,7 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
   exit.c getaddrinfo.c getcwd.c gethost.c gethostname.c \
   getnameinfo.c getproto.c \
   getserv.c gmtime.c mmap_ba.c putenv.c rmdir.c \
-  socketaddr.c strofaddr.c time.c unlink.c utimes.c
+  socketaddr.c strofaddr.c time.c unlink.c
 
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
