@@ -56,6 +56,10 @@ be mentioned in the 4.06 section below instead of here.)
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
+- PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
+  avoid unintended shifts of the argument timestamp depending on DST setting.
+  (Nicolas Ojeda Bar, review by David Allsopp, Xavier Leroy)
+
 Release branch for 4.06:
 ------------------------
 
