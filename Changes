@@ -314,6 +314,11 @@ Release branch for 4.06:
   (Xavier Leroy, report by Stéphane Glondu and Ximin Luo,
    review and additional sightings by Mark Shinwell)
 
+- MPR#6329, GPR#1437: Introduce padding word before "data_end" symbols
+  to ensure page table tests work correctly on an immediately preceding
+  block of zero size.
+  (Mark Shinwell, review by Xavier Leroy)
+
 ### Tools:
 
 - MPR#1956, GPR#973: tools/check-symbol-names checks for globally
