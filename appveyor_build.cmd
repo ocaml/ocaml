@@ -106,6 +106,5 @@ rem Reconfigure the environment for the msvc64 build
 call :RestoreVars
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
 "%APPVEYOR_BUILD_FOLDER%\ocamlc.opt" -version || exit /b 1
-set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh test" || exit /b 1
 goto :EOF
