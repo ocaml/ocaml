@@ -1660,6 +1660,7 @@ This use of "-output-complete-obj" is very similar to a normal linking
 step, but instead of producing a main program that automatically runs
 the OCaml code, it produces a shared library that can run the OCaml
 code on demand. The three possible behaviors of "-output-complete-obj"
+to produce a C source code ".c", a C object file ".o", a shared library ".so",
 are selected according to the extension of the resulting file (given
 with "-o").
 
@@ -1668,9 +1669,9 @@ and "-output-complete-obj" options, causing it to output a C object
 file or a shared library containing the native code for all OCaml
 modules on the command-line, as well as the OCaml startup code.
 Initialization is performed by calling "caml_startup" (or
-"caml_startup_exn") as in the case of the bytecode compiler. The C
-object file produced by "ocamlopt -output-complete-obj" also contains
-the runtime and autolink libraries.
+"caml_startup_exn") as in the case of the bytecode compiler. The file
+produced by "ocamlopt -output-complete-obj" also contains the runtime
+and autolink libraries.
 
 For the final linking phase, in addition to the object file produced
 by "-output-obj", you will have to provide the OCaml runtime
@@ -1696,21 +1697,21 @@ With "ocamlopt", you should do:
 % well as all the needed C libraries.
 
 For the final linking phase, in addition to the object file produced
-by "-output-complete-obj", you will have only to provide all C
-libraries that are required by the OCaml runtimes used.
+by "-output-complete-obj", you will have only to provide the C
+libraries required by the OCaml runtime.
 
 For instance, assume the OCaml part of your program uses the
 Unix library.  With "ocamlc", you should do:
 \begin{alltt}
         ocamlc -output-complete-obj -o camlcode.o unix.cma {\it{other}} .cmo {\it{and}} .cma {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o
+           camlcode.o {\it{C libraries required by the runtime, eg -lm  -ldl -lcurses -lpthread}}
 \end{alltt}
 With "ocamlopt", you should do:
 \begin{alltt}
         ocamlopt -output-complete-obj -o camlcode.o unix.cmxa {\it{other}} .cmx {\it{and}} .cmxa {\it{files}}
         cc -o myprog {\it{C objects and libraries}} \char92
-           camlcode.o
+           camlcode.o {\it{C libraries required by the runtime, eg -lm -ldl}}
 \end{alltt}
 
 \paragraph{Warning:} On some ports, special options are required on the final
