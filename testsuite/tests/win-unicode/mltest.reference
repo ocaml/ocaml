@@ -90,7 +90,21 @@ Unix.lstat "اٺ" ... S_REG
 Unix.LargeFile.stat "اٺ" ... S_REG
 Unix.LargeFile.lstat "اٺ" ... S_REG
 
-#07. Testing test_rename unix_rename
+#07. Testing test_access
+===================
+
+Unix.access "верблюды" ... OK
+Unix.access "骆驼" ... OK
+Unix.access "קעמל" ... OK
+Unix.access "اونٹ" ... OK
+Unix.access "Lạc đà" ... OK
+Unix.access "ఒంటె" ... OK
+Unix.access "ஒட்டகம்" ... OK
+Unix.access "وشتر" ... OK
+Unix.access "उष्ट्रः" ... OK
+Unix.access "اٺ" ... OK
+
+#08. Testing test_rename unix_rename
 ===============================
 
 Unix.rename "верблюды" "верблюды-1" ... OK
@@ -154,7 +168,7 @@ Unix.rename "اٺ-1" "اٺ" ... OK
 Sys.file_exists "اٺ" ... true
 Sys.file_exists "اٺ-1" ... false
 
-#08. Testing test_rename sys_rename
+#09. Testing test_rename sys_rename
 ==============================
 
 Sys.rename "верблюды" "верблюды-1" ... OK
@@ -218,7 +232,7 @@ Sys.rename "اٺ-1" "اٺ" ... OK
 Sys.file_exists "اٺ" ... true
 Sys.file_exists "اٺ-1" ... false
 
-#09. Testing test_remove remove
+#10. Testing test_remove remove
 ==========================
 
 Sys.remove "верблюды" ... OK
@@ -242,7 +256,7 @@ Sys.file_exists "उष्ट्रः" ... false
 Sys.remove "اٺ" ... OK
 Sys.file_exists "اٺ" ... false
 
-#10. Testing test_file_exists
+#11. Testing test_file_exists
 ========================
 
 Sys.file_exists "верблюды" ... false
@@ -256,7 +270,7 @@ Sys.file_exists "وشتر" ... false
 Sys.file_exists "उष्ट्रः" ... false
 Sys.file_exists "اٺ" ... false
 
-#11. Testing test_mkdir
+#12. Testing test_mkdir
 ==================
 
 Unix.mkdir "été" 493 ... OK
@@ -272,7 +286,7 @@ Unix.mkdir "你好" 493 ... OK
 Sys.file_exists "你好" ... true
 Sys.is_directory "你好" ... true
 
-#12. Testing test_chdir sys_chdir sys_getcwd
+#13. Testing test_chdir sys_chdir sys_getcwd
 =======================================
 
 Sys.chdir "été" ... OK
@@ -288,7 +302,7 @@ Sys.chdir "你好" ... OK
 Sys.getcwd () ... "你好"
 Sys.chdir ".." ... OK
 
-#13. Testing test_chdir unix_chdir unix_getcwd
+#14. Testing test_chdir unix_chdir unix_getcwd
 =========================================
 
 Unix.chdir "été" ... OK
@@ -304,7 +318,7 @@ Unix.chdir "你好" ... OK
 Unix.getcwd () ... "你好"
 Unix.chdir ".." ... OK
 
-#14. Testing test_rmdir
+#15. Testing test_rmdir
 ==================
 
 Unix.rmdir "été" ... OK
@@ -316,7 +330,7 @@ Sys.file_exists "sœur" ... false
 Unix.rmdir "你好" ... OK
 Sys.file_exists "你好" ... false
 
-#15. Testing test_getenv
+#16. Testing test_getenv
 ===================
 
 Unix.putenv "été" "верблюды" ... OK
@@ -332,12 +346,12 @@ Unix.putenv "你好" "اونٹ" ... OK
 Sys.getenv "你好" ... "اونٹ"
 Unix.environment "你好" ... "اونٹ"
 
-#16. Testing test_open_process_in
+#17. Testing test_open_process_in
 ============================
 
 Unix.open_process_in ... ... "верблюды" "骆驼" "קעמל" "اونٹ" "Lạc đà" "ఒంటె" "ஒட்டகம்" "وشتر" "उष्ट्रः" "اٺ"
 
-#17. Testing test_open_process_full
+#18. Testing test_open_process_full
 ==============================
 
 Unix.open_process_full ... "OCAML_UTF8_VAR0=верблюды" "OCAML_UTF8_VAR1=骆驼" "OCAML_UTF8_VAR2=קעמל" "OCAML_UTF8_VAR3=اونٹ" ... "OCAML_UTF8_VAR0=верблюды" "OCAML_UTF8_VAR1=骆驼" "OCAML_UTF8_VAR2=קעמל" "OCAML_UTF8_VAR3=اونٹ"
