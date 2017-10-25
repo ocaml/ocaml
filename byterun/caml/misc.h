@@ -173,6 +173,7 @@ typedef wchar_t char_os;
 
 #define _T(x) L ## x
 
+#define access_os _waccess
 #define open_os _wopen
 #define stat_os _wstati64
 #define unlink_os _wunlink
@@ -206,6 +207,7 @@ typedef char char_os;
 
 #define _T(x) x
 
+#define access_os access
 #define open_os open
 #define stat_os stat
 #define unlink_os unlink
