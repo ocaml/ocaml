@@ -18,6 +18,9 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Other libraries:
 
+- ???: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix errors
+  instead of [Not_found] in some cases.
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
