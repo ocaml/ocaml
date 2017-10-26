@@ -52,25 +52,18 @@ case "$1" in
   install)
     mkdir -p "$PREFIX/bin/flexdll"
     cd $APPVEYOR_BUILD_FOLDER/../flexdll
-    for f in flexdll.h flexlink.exe default_amd64.manifest ; do
+    # msvc64 objects need to be compiled with VS2015, so are copied later from
+    # a source build.
+    for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
       cp $f "$PREFIX/bin/flexdll/$f"
     done
     echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile
     ;;
   msvc32-only)
-#    cd $APPVEYOR_BUILD_FOLDER/flexdll-0.35
-#    make MSVC_DETECT=0 \
-#         CHAINS=msvc \
-#         MSVC_FLAGS="-nologo -MD -D_CRT_NO_DEPRECATE -GS- -WX" \
-#         support
-#    cp flexdll*_msvc.obj "$PREFIX/bin/flexdll"
-
     cd $APPVEYOR_BUILD_FOLDER/../build-msvc32
 
     set_configuration msvc "C:/Program Files/OCaml-msmvc32" -WX
 
-    # Temporarily bootstrap flexdll
-    run "make flexdll" make flexdll
     run "make world" make world
     run "make runtimeopt" make runtimeopt
     run "make -C otherlibs/systhreads libthreadsnat.lib" \
@@ -87,11 +80,11 @@ case "$1" in
   *)
     cd $APPVEYOR_BUILD_FOLDER
 
-    # tar -xzf flexdll.tar.gz
-    # cd flexdll-0.35
-    # make MSVC_DETECT=0 CHAINS=msvc64 support
-    # cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
-    # cd ..
+    tar -xzf $APPVEYOR_BUILD_FOLDER/flexdll.tar.gz
+    cd flexdll-$FLEXDLL_VERSION
+    make MSVC_DETECT=0 CHAINS=msvc64 support
+    cp flexdll*_msvc64.obj "$PREFIX/bin/flexdll"
+    cd ..
 
     set_configuration msvc64 "$PREFIX" -WX
 
@@ -105,8 +98,6 @@ case "$1" in
     script --quiet --return --command "make -C ../build-mingw32 flexdll world.opt" ../build-mingw32/build.log >/dev/null 2>/dev/null &
     BUILD_PID=$!
 
-    # Temporarily bootstrap flexdll
-    run "make flexdll" make flexdll
     run "make world" make world
     run "make bootstrap" make bootstrap
     run "make opt" make opt
