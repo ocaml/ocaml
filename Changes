@@ -365,7 +365,7 @@ Release branch for 4.06:
   and module type elements
   (Florian Angeletti, review by Yawar Amin and Gabriel Scherer)
 
-- GPR#681: Introduce ocamltest, a new test driver for the
+- GPR#681, GPR#1426: Introduce ocamltest, a new test driver for the
   OCaml compiler testsuite
   (Sébastien Hinderer, review by Damien Doligez)
 
