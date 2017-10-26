@@ -353,6 +353,10 @@ extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
 CAMLextern int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
+/* Deprecated aliases */
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef CAML_INTERNALS
 
@@ -368,11 +372,6 @@ void caml_gc_message (int, char *, ...)
 /* Runtime warnings */
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
-
-/* Deprecated aliases */
-#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
-#define caml_strdup caml_stat_strdup
-#define caml_strconcat caml_stat_strconcat
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
