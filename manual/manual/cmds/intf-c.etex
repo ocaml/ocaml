@@ -2381,10 +2381,8 @@ of the function to bind:
 
 \begin{verbatim}
 #ifdef _WIN32
-#include <windows.h>
 #define getenv_os _wgetenv
 #else
-#include <stdlib.h>
 #define getenv_os getenv
 #endif
 \end{verbatim}
@@ -2392,6 +2390,7 @@ of the function to bind:
 The rest of the binding is the same for both platforms:
 
 \begin{verbatim}
+/* The following define is necessary because the API is experimental */
 #define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
@@ -2399,6 +2398,7 @@ The rest of the binding is the same for both platforms:
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/osdeps.h>
+#include <stdlib.h>
 
 CAMLprim value stub_getenv(value var_name)
 {
