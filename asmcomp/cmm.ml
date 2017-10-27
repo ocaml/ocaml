@@ -178,6 +178,7 @@ type fundecl =
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
     fun_fast: bool;
+    fun_fast_compile: bool;
     fun_dbg : Debuginfo.t;
   }
 
