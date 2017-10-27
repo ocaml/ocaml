@@ -13,20 +13,32 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
+#include <caml/misc.h>
 #include "unixsupport.h"
 
 #if defined(HAS_SOCKETS) && defined(HAS_IPV6)
 
 #include "socketaddr.h"
-#ifndef _WIN32
+#ifdef _WIN32
+#include <Ws2tcpip.h>
+#else
 #include <sys/types.h>
 #include <netdb.h>
+#endif
+
+#ifdef _WIN32
+#define getnameinfo_os GetNameInfo
+#else
+#define getnameinfo_os getnameinfo
 #endif
 
 static int getnameinfo_flag_table[] = {
@@ -39,20 +51,20 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   CAMLlocal3(vhost, vserv, vres);
   union sock_addr_union addr;
   socklen_param_type addr_len;
-  char host[4096];
-  char serv[1024];
+  char_os host[4096];
+  char_os serv[1024];
   int opts, retcode;
 
   get_sockaddr(vaddr, &addr, &addr_len);
   opts = caml_convert_flag_list(vopts, getnameinfo_flag_table);
   caml_enter_blocking_section();
   retcode =
-    getnameinfo((const struct sockaddr *) &addr.s_gen, addr_len,
-                host, sizeof(host), serv, sizeof(serv), opts);
+    getnameinfo_os((const struct sockaddr *) &addr.s_gen, addr_len,
+                   host, sizeof(host)/sizeof(char_os), serv, sizeof(serv)/sizeof(char_os), opts);
   caml_leave_blocking_section();
   if (retcode != 0) caml_raise_not_found(); /* TODO: detailed error reporting? */
-  vhost = caml_copy_string(host);
-  vserv = caml_copy_string(serv);
+  vhost = caml_copy_string_of_os(host);
+  vserv = caml_copy_string_of_os(serv);
   vres = caml_alloc_small(2, 0);
   Field(vres, 0) = vhost;
   Field(vres, 1) = vserv;
