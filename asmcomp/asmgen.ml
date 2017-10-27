@@ -80,7 +80,7 @@ let rec regalloc ppf round fd =
     fatal_error(fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
   dump_if ppf dump_live "Liveness analysis" fd;
-  if !use_linscan then begin
+  if !use_linscan || fd.Mach.fun_fast_compile then begin
     (* Linear Scan *)
     Interval.build_intervals fd;
     if !dump_interval then Printmach.intervals ppf ();
@@ -99,6 +99,12 @@ let rec regalloc ppf round fd =
     Reg.reinit(); Liveness.fundecl ppf newfd; regalloc ppf (round + 1) newfd
   end else newfd
 
+let cse fd =
+  if fd.Mach.fun_fast_compile then
+    fd
+  else
+    CSE.fundecl fd
+
 let (++) x f = f x
 
 let compile_fundecl (ppf : formatter) fd_cmm =
@@ -109,7 +115,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ Profile.record ~accumulate:true "cse" CSE.fundecl
+  ++ Profile.record ~accumulate:true "cse" cse
   ++ pass_dump_if ppf dump_cse "After CSE"
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
