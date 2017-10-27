@@ -48,7 +48,7 @@ CAMLprim value unix_getgrnam(value name)
   errno = 0;
   entry = getgrnam(String_val(name));
   if (entry == NULL) {
-    if (errno) {
+    if (errno == EINTR) {
       uerror("getgrnam", Nothing);
     } else {
       caml_raise_not_found();
@@ -63,7 +63,7 @@ CAMLprim value unix_getgrgid(value gid)
   errno = 0;
   entry = getgrgid(Int_val(gid));
   if (entry == NULL) {
-    if (errno) {
+    if (errno == EINTR) {
       uerror("getgrgid", Nothing);
     } else {
       caml_raise_not_found();

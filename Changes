@@ -18,8 +18,8 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Other libraries:
 
-- GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix errors
-  instead of [Not_found] in some cases.
+- GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix error
+  instead of returning [Not_found] when interrupted by a signal.
   (Arseniy Alekseyev, review by Mark Shinwell)
 
 ### Compiler user-interface and warnings:
