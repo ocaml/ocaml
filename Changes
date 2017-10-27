@@ -194,7 +194,7 @@ Release branch for 4.06:
 
 ### Other libraries:
 
-- GPR#1178: remove the Num library for arbitrary-precision arithmetic.
+* GPR#1178: remove the Num library for arbitrary-precision arithmetic.
   It now lives as a separate project https://github.com/ocaml/num
   with an OPAM package called "num".
   (Xavier Leroy)
