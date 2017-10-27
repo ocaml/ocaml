@@ -297,7 +297,7 @@ ifeq "$(FLEXDLL_SUBMODULE_PRESENT)" ""
 else
   BOOT_FLEXLINK_CMD = FLEXLINK_CMD="../boot/ocamlrun ../flexdll/flexlink.exe"
   CAMLOPT := OCAML_FLEXLINK="boot/ocamlrun flexdll/flexlink.exe" $(CAMLOPT)
-  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),"+flexdll")
+  FLEXDLL_DIR=$(if $(wildcard flexdll/flexdll_*.$(O)),+flexdll)
 endif
 else
   FLEXDLL_DIR=
@@ -305,55 +305,64 @@ endif
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp config/Makefile
-	sed -e 's|%%AFL_INSTRUMENT%%|$(AFL_INSTRUMENT)|' \
-	    -e 's|%%ARCH%%|$(ARCH)|' \
-	    -e 's|%%ARCMD%%|$(ARCMD)|' \
-	    -e 's|%%ASM%%|$(ASM)|' \
-	    -e 's|%%ASM_CFI_SUPPORTED%%|$(ASM_CFI_SUPPORTED)|' \
-	    -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
-	    -e 's|%%BYTERUN%%|$(BYTERUN)|' \
-	    -e 's|%%CC%%|$(CC)|' \
-	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-	    -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
-	    -e 's|%%OUTPUTOBJ%%|$(OUTPUTOBJ)|' \
-	    -e 's|%%EXT_ASM%%|$(EXT_ASM)|' \
-	    -e 's|%%EXT_DLL%%|$(EXT_DLL)|' \
-	    -e 's|%%EXT_EXE%%|$(EXE)|' \
-	    -e 's|%%EXT_LIB%%|$(EXT_LIB)|' \
-	    -e 's|%%EXT_OBJ%%|$(EXT_OBJ)|' \
-	    -e 's|%%FLAMBDA%%|$(FLAMBDA)|' \
-	    -e 's|%%FLEXLINK_FLAGS%%|$(subst \,\\,$(FLEXLINK_FLAGS))|' \
-	    -e 's|%%FLEXDLL_DIR%%|$(FLEXDLL_DIR)|' \
-	    -e 's|%%HOST%%|$(HOST)|' \
-	    -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-	    -e 's|%%LIBUNWIND_AVAILABLE%%|$(LIBUNWIND_AVAILABLE)|' \
-	    -e 's|%%LIBUNWIND_LINK_FLAGS%%|$(LIBUNWIND_LINK_FLAGS)|' \
-	    -e 's|%%MKDLL%%|$(subst \,\\,$(MKDLL))|' \
-	    -e 's|%%MKEXE%%|$(subst ",\\",$(subst \,\\,$(MKEXE)))|' \
-	    -e 's|%%FLEXLINK_LDFLAGS%%|$(subst ",\\",$(subst \,\\,$(if $(LDFLAGS), -link "$(LDFLAGS)")))|' \
-	    -e 's|%%MKMAINDLL%%|$(subst \,\\,$(MKMAINDLL))|' \
-	    -e 's|%%MODEL%%|$(MODEL)|' \
-	    -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
-	    -e 's|%%OCAMLC_CFLAGS%%|$(OCAMLC_CFLAGS)|' \
-	    -e 's|%%OCAMLC_CPPFLAGS%%|$(OCAMLC_CPPFLAGS)|' \
-	    -e 's|%%OCAMLOPT_CFLAGS%%|$(OCAMLOPT_CFLAGS)|' \
-	    -e 's|%%OCAMLOPT_CPPFLAGS%%|$(OCAMLOPT_CPPFLAGS)|' \
-	    -e 's|%%PACKLD%%|$(PACKLD)|' \
-	    -e 's|%%PROFILING%%|$(PROFILING)|' \
-	    -e 's|%%PROFINFO_WIDTH%%|$(PROFINFO_WIDTH)|' \
-	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-	    -e 's|%%FORCE_SAFE_STRING%%|$(FORCE_SAFE_STRING)|' \
-	    -e 's|%%DEFAULT_SAFE_STRING%%|$(DEFAULT_SAFE_STRING)|' \
-	    -e 's|%%WINDOWS_UNICODE%%|$(WINDOWS_UNICODE)|' \
-	    -e 's|%%SYSTEM%%|$(SYSTEM)|' \
-	    -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
-	    -e 's|%%TARGET%%|$(TARGET)|' \
-	    -e 's|%%WITH_FRAME_POINTERS%%|$(WITH_FRAME_POINTERS)|' \
-	    -e 's|%%WITH_PROFINFO%%|$(WITH_PROFINFO)|' \
-	    -e 's|%%WITH_SPACETIME%%|$(WITH_SPACETIME)|' \
-	    -e 's|%%ENABLE_CALL_COUNTS%%|$(ENABLE_CALL_COUNTS)|' \
-	    -e 's|%%FLAT_FLOAT_ARRAY%%|$(FLAT_FLOAT_ARRAY)|' \
+# SUBST generates the sed substitution for the variable *named* in $1
+# SUBST_QUOTE does the same, adding double-quotes around non-empty strings
+#   (see FLEXDLL_DIR which must empty if FLEXDLL_DIR is empty but an OCaml
+#    string otherwise)
+SUBST_ESCAPE=$(subst ",\\",$(subst \,\\,$(if $2,$2,$($1))))
+SUBST=-e 's|%%$1%%|$(call SUBST_ESCAPE,$1,$2)|'
+SUBST_QUOTE2=-e 's|%%$1%%|$(if $2,"$2")|'
+SUBST_QUOTE=$(call SUBST_QUOTE2,$1,$(call SUBST_ESCAPE,$1,$2))
+FLEXLINK_LDFLAGS=$(if $(LDFLAGS), -link "$(LDFLAGS)")
+utils/config.ml: utils/config.mlp config/Makefile Makefile
+	sed $(call SUBST,AFL_INSTRUMENT) \
+	    $(call SUBST,ARCH) \
+	    $(call SUBST,ARCMD) \
+	    $(call SUBST,ASM) \
+	    $(call SUBST,ASM_CFI_SUPPORTED) \
+	    $(call SUBST,BYTECCLIBS) \
+	    $(call SUBST,BYTERUN) \
+	    $(call SUBST,CC) \
+	    $(call SUBST,CCOMPTYPE) \
+	    $(call SUBST,CC_PROFILE) \
+	    $(call SUBST,OUTPUTOBJ) \
+	    $(call SUBST,EXT_ASM) \
+	    $(call SUBST,EXT_DLL) \
+	    $(call SUBST,EXE) \
+	    $(call SUBST,EXT_LIB) \
+	    $(call SUBST,EXT_OBJ) \
+	    $(call SUBST,FLAMBDA) \
+	    $(call SUBST,FLEXLINK_FLAGS) \
+	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
+	    $(call SUBST,HOST) \
+	    $(call SUBST,LIBDIR) \
+	    $(call SUBST,LIBUNWIND_AVAILABLE) \
+	    $(call SUBST,LIBUNWIND_LINK_FLAGS) \
+	    $(call SUBST,MKDLL) \
+	    $(call SUBST,MKEXE) \
+	    $(call SUBST,FLEXLINK_LDFLAGS) \
+	    $(call SUBST,MKMAINDLL) \
+	    $(call SUBST,MODEL) \
+	    $(call SUBST,NATIVECCLIBS) \
+	    $(call SUBST,OCAMLC_CFLAGS) \
+	    $(call SUBST,OCAMLC_CPPFLAGS) \
+	    $(call SUBST,OCAMLOPT_CFLAGS) \
+	    $(call SUBST,OCAMLOPT_CPPFLAGS) \
+	    $(call SUBST,PACKLD) \
+	    $(call SUBST,PROFILING) \
+	    $(call SUBST,PROFINFO_WIDTH) \
+	    $(call SUBST,RANLIBCMD) \
+	    $(call SUBST,FORCE_SAFE_STRING) \
+	    $(call SUBST,DEFAULT_SAFE_STRING) \
+	    $(call SUBST,WINDOWS_UNICODE) \
+	    $(call SUBST,SYSTEM) \
+	    $(call SUBST,SYSTHREAD_SUPPORT) \
+	    $(call SUBST,TARGET) \
+	    $(call SUBST,WITH_FRAME_POINTERS) \
+	    $(call SUBST,WITH_PROFINFO) \
+	    $(call SUBST,WITH_SPACETIME) \
+	    $(call SUBST,ENABLE_CALL_COUNTS) \
+	    $(call SUBST,FLAT_FLOAT_ARRAY) \
 	    $< > $@
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
@@ -1115,12 +1124,13 @@ endif
 
 # Lint @since and @deprecated annotations
 
+VERSIONS=$(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
 .PHONY: lintapidiff
 lintapidiff:
 	$(MAKE) -C tools lintapidiff.opt
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
-	    tools/lintapidiff.opt $(shell git tag|grep '^[0-9]*.[0-9]*.[0-9]*$$'|grep -v '^[12].')
+	    tools/lintapidiff.opt $VERSIONS
 
 # Make clean in the test suite
 

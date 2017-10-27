@@ -687,8 +687,8 @@ type formatter_out_functions = {
    {!Pervasives.out_channel} device, or [Buffer.add_substring] and
    {!Pervasives.ignore} for a [Buffer.t] output device),
 - field [out_newline] is equivalent to [out_string "\n" 0 1];
-- field [out_spaces] is equivalent to [out_string (String.make n ' ') 0 n];
-- field [out_indent] is the same as field [out_spaces].
+- fields [out_spaces] and [out_indent] are equivalent to
+  [out_string (String.make n ' ') 0 n].
   @since 4.01.0
 *)
 

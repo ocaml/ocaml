@@ -303,6 +303,46 @@
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
 
+/****************** PowerPC, NetBSD */
+
+#elif defined(TARGET_power) && defined (SYS_netbsd)
+
+  #include <ucontext.h>
+  #define DECLARE_SIGNAL_HANDLER(name) \
+  static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+  #define SET_SIGACT(sigact,name) \
+  sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+  sigact.sa_flags = SA_SIGINFO
+
+  typedef long context_reg;
+  #define CONTEXT_PC (_UC_MACHINE_PC(context))
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.__gregs[_REG_R29])
+  #define CONTEXT_YOUNG_LIMIT (context->uc_mcontext.__gregs[_REG_R30])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.__gregs[_REG_R31])
+  #define CONTEXT_SP (_UC_MACHINE_SP(context))
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+
+/****************** PowerPC, other BSDs */
+
+#elif defined(TARGET_power) && \
+    (defined(SYS_bsd) || defined(SYS_bsd_elf))
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, int code, struct sigcontext * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_handler = (void (*)(int)) (name); \
+     sigact.sa_flags = 0
+
+  typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->sc_frame.srr0)
+  #define CONTEXT_EXCEPTION_POINTER (context->sc_frame.fixreg[29])
+  #define CONTEXT_YOUNG_LIMIT (context->sc_frame.fixreg[30])
+  #define CONTEXT_YOUNG_PTR (context->sc_frame.fixreg[31])
+  #define CONTEXT_SP (context->sc_frame.fixreg[1])
+
 /****************** s390x, ELF (Linux) */
 #elif defined(TARGET_s390x) && defined(SYS_elf)
 
@@ -319,25 +359,6 @@
   #define CONTEXT_YOUNG_LIMIT (context->sregs->regs.gprs[10])
   #define CONTEXT_YOUNG_PTR (context->sregs->regs.gprs[11])
   #define CONTEXT_SP (context->sregs->regs.gprs[15])
-
-/****************** PowerPC, BSD */
-
-#elif defined(TARGET_power) && \
-    (defined(SYS_bsd) || defined(SYS_bsd_elf) || defined(SYS_netbsd))
-
-  #define DECLARE_SIGNAL_HANDLER(name) \
-    static void name(int sig, int code, struct sigcontext * context)
-
-  #define SET_SIGACT(sigact,name) \
-     sigact.sa_handler = (void (*)(int)) (name); \
-     sigact.sa_flags = 0
-
-  typedef unsigned long context_reg;
-  #define CONTEXT_PC (context->sc_frame.srr0)
-  #define CONTEXT_EXCEPTION_POINTER (context->sc_frame.fixreg[29])
-  #define CONTEXT_YOUNG_LIMIT (context->sc_frame.fixreg[30])
-  #define CONTEXT_YOUNG_PTR (context->sc_frame.fixreg[31])
-  #define CONTEXT_SP (context->sc_frame.fixreg[1])
 
 /******************** Default */
 

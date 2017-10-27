@@ -279,6 +279,9 @@ _ocamltest
 /testsuite/tests/lib-unix/win-symlink/link*
 /testsuite/tests/lib-unix/win-symlink/test.txt
 
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
+
 /testsuite/tests/opaque/fst/*.mli
 /testsuite/tests/opaque/snd/*.mli
 

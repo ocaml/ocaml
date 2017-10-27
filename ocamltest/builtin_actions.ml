@@ -776,11 +776,7 @@ let make_bytecode_programs_comparison_tool ocamlsrcdir =
   let ocamlrun = ocamlrun ocamlsrcdir in
   let cmpbyt = cmpbyt ocamlsrcdir in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
-  {
-    Filecompare.tool_name = tool_name;
-    Filecompare.tool_flags = "";
-    Filecompare.result_of_exitcode = Filecompare.cmp_result_of_exitcode
-  }
+  Filecompare.make_comparison_tool tool_name ""
 
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 

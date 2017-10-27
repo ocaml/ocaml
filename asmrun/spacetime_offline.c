@@ -38,6 +38,10 @@
 
 #include "caml/s.h"
 
+#define SPACETIME_PROFINFO_WIDTH 26
+#define Spacetime_profinfo_hd(hd) \
+  (Gen_profinfo_hd(SPACETIME_PROFINFO_WIDTH, hd))
+
 #ifdef ARCH_SIXTYFOUR
 
 /* CR-someday lwhite: The following two definitions are copied from spacetime.c
@@ -127,7 +131,7 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
 {
   uintnat profinfo_shifted;
   profinfo_shifted = (uintnat) Alloc_point_profinfo(node, Long_val(offset));
-  return Val_long(Profinfo_hd(profinfo_shifted));
+  return Val_long(Spacetime_profinfo_hd(profinfo_shifted));
 }
 
 CAMLprim value caml_spacetime_ocaml_allocation_point_count
@@ -230,7 +234,7 @@ CAMLprim value caml_spacetime_c_node_profinfo(value node)
   c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
   CAMLassert(caml_spacetime_offline_classify_c_node(c_node) == ALLOCATION);
   CAMLassert(!Is_block(c_node->data.allocation.profinfo));
-  return Val_long(Profinfo_hd(c_node->data.allocation.profinfo));
+  return Val_long(Spacetime_profinfo_hd(c_node->data.allocation.profinfo));
 }
 
 CAMLprim value caml_spacetime_c_node_allocation_count(value node)
