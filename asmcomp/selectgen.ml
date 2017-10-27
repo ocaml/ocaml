@@ -1217,6 +1217,7 @@ method emit_fundecl f =
     fun_body = body;
     fun_fast = f.Cmm.fun_fast;
     fun_dbg  = f.Cmm.fun_dbg;
+    fun_fast_compile = f.Cmm.fun_fast_compile;
     fun_spacetime_shape;
   }
 

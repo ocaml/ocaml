@@ -473,5 +473,6 @@ let fundecl f =
     fun_body = new_body;
     fun_fast = f.fun_fast;
     fun_dbg  = f.fun_dbg;
+    fun_fast_compile = f.fun_fast_compile;
     fun_spacetime_shape = f.fun_spacetime_shape;
   }
