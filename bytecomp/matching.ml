@@ -171,12 +171,12 @@ let ctx_matcher p =
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
       begin match cstr.cstr_tag with
-      | Cstr_extension _ ->
-          let nargs = List.length omegas in
+      | Cstr_extension _ -> (* Rebinding => match arities *)
+          let n_omegas = cstr.cstr_arity in
           (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, _cstr',args)
-            when List.length args = nargs ->
-                p,args @ rem
+          | Tpat_construct (_, {cstr_tag=Cstr_extension _;cstr_arity=a;},args)
+              when n_omegas=a
+              -> p,args@rem
           | Tpat_any -> p,omegas @ rem
           | _ -> raise NoMatch)
       | _ ->
@@ -287,10 +287,7 @@ let ctx_lub p ctx =
 
 let ctx_match ctx pss =
   List.exists
-    (fun {right=qs} ->
-      List.exists
-        (fun ps -> compats qs ps)
-        pss)
+    (fun {right=qs} ->  List.exists (fun ps -> Parmatch.may_compats qs ps)  pss)
     ctx
 
 type jumps = (int * ctx list) list
@@ -420,7 +417,10 @@ let pretty_def def =
     def ;
   prerr_endline "+++++++++++++++++++++"
 
-let pretty_pm pm = pretty_cases pm.cases
+let pretty_pm pm =
+  pretty_cases pm.cases ;
+  if pm.default <> [] then
+    pretty_def pm.default
 
 
 let rec pretty_precompiled = function
@@ -538,37 +538,11 @@ let up_ok_action act1 act2 =
   with
   | Exit -> false
 
-(* Nothing is known about exception/extension patterns,
-   because of potential rebind *)
-let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
-  | Tpat_any|Tpat_constant _|Tpat_var _
-  | Tpat_construct (_,_,[])
-  | Tpat_variant (_,None,_)
-    -> false
-  | Tpat_construct (_,_,ps)
-  | Tpat_tuple ps
-  | Tpat_array ps
-      -> exc_insides ps
-  | Tpat_variant (_, Some q,_)
-  | Tpat_alias (q,_,_)
-  | Tpat_lazy q
-    -> exc_inside q
-  | Tpat_record (lps,_) ->
-      List.exists (fun (_,_,p) -> exc_inside p) lps
-  | Tpat_or (p1,p2,_) -> exc_inside p1 || exc_inside p2
-
-and exc_insides ps = List.exists exc_inside ps
-
 let up_ok (ps,act_p) l =
-  if exc_insides ps then match l with [] -> true | _::_ -> false
-  else
-    List.for_all
-      (fun (qs,act_q) ->
-        up_ok_action act_p act_q ||
-        not (Parmatch.compats ps qs))
-      l
-
+  List.for_all
+    (fun (qs,act_q) ->
+      up_ok_action act_p act_q || not (Parmatch.may_compats ps qs))
+    l
 
 (*
    The simplify function normalizes the first column of the match
@@ -663,16 +637,6 @@ let rec what_is_cases cases = match cases with
 (* A few operations on default environments *)
 let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-(* For extension matching, record no information in matrix *)
-let as_matrix_omega cases =
-  get_mins le_pats
-    (List.map
-       (fun (ps,_) ->
-         match ps with
-         | [] -> assert false
-         | _::ps -> omega::ps)
-       cases)
-
 let cons_default matrix raise_num default =
   match matrix with
   | [] -> default
@@ -684,7 +648,7 @@ let default_compat p def =
       let qss =
         List.fold_right
           (fun qs r -> match qs with
-            | q::rem when Parmatch.compat p q -> rem::r
+            | q::rem when Parmatch.may_compat p q -> rem::r
             | _ -> r)
           pss [] in
       match qss with
@@ -801,7 +765,7 @@ let is_or p = match p.pat_desc with
 | _ -> false
 
 (* Conditions for appending to the Or matrix *)
-let conda p q = not (compat p q)
+let conda p q = not (Parmatch.may_compat p q)
 and condb act ps qs =  not (is_guarded act) && Parmatch.le_pats qs ps
 
 let or_ok p ps l =
@@ -830,7 +794,7 @@ let insert_or_append p ps act ors no =
   let rec attempt seen = function
     | (q::qs,act_q) as cl::rem ->
         if is_or q then begin
-          if compat p q then
+          if Parmatch.may_compat p q then
             if
               IdentSet.is_empty (extract_vars IdentSet.empty p) &&
               IdentSet.is_empty (extract_vars IdentSet.empty q) &&
@@ -841,7 +805,7 @@ let insert_or_append p ps act ors no =
                 or_ok p ps not_e && (* check append condition for head of O *)
                 List.for_all        (* check insert condition for tail of O *)
                   (fun cl -> match cl with
-                  | (q::_,_) -> not (compat p q)
+                  | (q::_,_) -> not (Parmatch.may_compat p q)
                   | _        -> assert false)
                   seen
               then (* insert *)
@@ -948,7 +912,7 @@ and split_naive cls args def k =
     | [] ->
         let yes = List.rev yes in
         { me = Pm {cases=yes; args=args; default=def;} ;
-          matrix = as_matrix_omega yes ;
+          matrix = as_matrix yes ;
           top_default=def},
         k
     | (p::_,_ as cl)::rem ->
@@ -962,7 +926,7 @@ and split_naive cls args def k =
             let idef = next_raise_count () in
             let def = cons_default matrix idef def in
             { me = Pm {cases=yes; args=args; default=def} ;
-              matrix = as_matrix_omega yes ;
+              matrix = as_matrix yes ;
               top_default = def; },
             (idef,next)::nexts
         else
@@ -972,7 +936,7 @@ and split_naive cls args def k =
             let idef = next_raise_count () in
             let def = cons_default matrix idef def in
             { me = Pm {cases=yes; args=args; default=def} ;
-              matrix = as_matrix_omega yes ;
+              matrix = as_matrix yes ;
               top_default = def; },
             (idef,next)::nexts
     | _ -> assert false
@@ -1112,21 +1076,12 @@ and dont_precompile_var args cls def k =
     matrix=as_matrix cls ;
     top_default=def},k
 
-and is_exc p = match p.pat_desc with
-| Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
-| Tpat_alias (p,_,_) -> is_exc p
-| Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
-| _ -> false
-
 and precompile_or argo cls ors args def k = match ors with
 | [] -> split_constr cls args def k
 | _  ->
     let rec do_cases = function
       | ({pat_desc=Tpat_or _} as orp::patl, action)::rem ->
-          let do_opt = not (is_exc orp) in
-          let others,rem =
-            if do_opt then get_equiv orp rem
-            else [],rem in
+          let others,rem = get_equiv orp rem in
           let orpm =
             {cases =
               (patl, action)::
@@ -1136,7 +1091,7 @@ and precompile_or argo cls ors args def k = match ors with
                   | _ -> assert false)
                 others ;
               args = (match args with _::r -> r | _ -> assert false) ;
-              default = default_compat (if do_opt then orp else omega) def} in
+              default = default_compat orp def} in
           let vars =
             IdentSet.elements
               (IdentSet.inter
@@ -1149,19 +1104,18 @@ and precompile_or argo cls ors args def k = match ors with
             Lstaticraise
               (or_num, List.map (fun v -> Lvar v) vs) in
 
-          let do_optrec,body,handlers = do_cases rem in
-          do_opt && do_optrec,
+          let body,handlers = do_cases rem in
           explode_or_pat
             argo new_patl mk_new_action body vars [] orp,
-          let mat = if do_opt then [[orp]] else [[omega]] in
+          let mat = [[orp]] in
           ((mat, or_num, vars , orpm):: handlers)
       | cl::rem ->
-          let b,new_ord,new_to_catch = do_cases rem in
-          b,cl::new_ord,new_to_catch
-      | [] -> true,[],[] in
+          let new_ord,new_to_catch = do_cases rem in
+          cl::new_ord,new_to_catch
+      | [] -> [],[] in
 
-    let do_opt,end_body, handlers = do_cases ors in
-    let matrix = (if do_opt then as_matrix else as_matrix_omega) (cls@ors)
+    let end_body, handlers = do_cases ors in
+    let matrix = as_matrix (cls@ors)
     and body = {cases=cls@end_body ; args=args ; default=def} in
     {me = PmOr {body=body ; handlers=handlers ; or_matrix=matrix} ;
       matrix=matrix ;
@@ -1302,6 +1256,12 @@ let get_args_constr p rem = match p with
 | {pat_desc=Tpat_construct (_, _, args)} -> args @ rem
 | _ -> assert false
 
+(* NB: matcher_constr applies to default matrices.
+
+       In that context matching by constructors of extemsible
+       types degardes to arity checking, due to potential rebinding.
+*)
+
 let matcher_constr cstr = match cstr.cstr_arity with
 | 0 ->
     let rec matcher_rec q rem = match q.pat_desc with
@@ -1312,6 +1272,7 @@ let matcher_constr cstr = match cstr.cstr_arity with
           with
           | NoMatch -> matcher_rec p2 rem
         end
+    | Tpat_construct (_, {cstr_tag=Cstr_extension _},[]) -> rem
     | Tpat_construct (_, cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
         rem
     | Tpat_any -> rem
@@ -1333,6 +1294,8 @@ let matcher_constr cstr = match cstr.cstr_arity with
             rem
         | _, _ -> assert false
         end
+    | Tpat_construct (_, {cstr_tag=Cstr_extension _}, [arg])
+        -> arg::rem
     | Tpat_construct (_, cstr1, [arg])
       when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
     | Tpat_any -> omega::rem
@@ -1341,6 +1304,8 @@ let matcher_constr cstr = match cstr.cstr_arity with
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
+    | Tpat_construct (_,({cstr_tag=Cstr_extension _} as cstr1),args)
+      when cstr.cstr_arity = cstr1.cstr_arity -> args @ rem
     | Tpat_construct (_, cstr1, args)
       when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
@@ -2553,7 +2518,8 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
     | (mat,i,vars,pm)::rem ->
         begin try
           let ctx = select_columns mat ctx in
-          let handler_i, total_i = compile_fun ctx pm in
+          let handler_i, total_i =
+            compile_fun ctx pm in
           match raw_action r with
           | Lstaticraise (j,args) ->
               if i=j then
