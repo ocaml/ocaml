@@ -77,7 +77,7 @@ static c_primitive lookup_primitive(char * name)
 
 static char_os * parse_ld_conf(void)
 {
-  char_os * stdlib, * ldconfname, * wconfig, * p, * q, * tofree = NULL;
+  char_os * stdlib, * ldconfname, * wconfig, * p, * q;
   char * config;
 #ifdef _WIN32
   struct _stati64 st;
@@ -88,9 +88,8 @@ static char_os * parse_ld_conf(void)
 
   stdlib = caml_secure_getenv(_T("OCAMLLIB"));
   if (stdlib == NULL) stdlib = caml_secure_getenv(_T("CAMLLIB"));
-  if (stdlib == NULL) stdlib = tofree = caml_stat_strdup_to_os(OCAML_STDLIB_DIR);
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = caml_stat_strconcat_os(3, stdlib, _T("/"), LD_CONF_NAME);
-  if (tofree != NULL) caml_stat_free(tofree);
   if (stat_os(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
