@@ -81,6 +81,9 @@ Release branch for 4.06:
   pretty-printing items. New fields have been added to the
   formatter_out_functions record, thus this change will break any code building
   such record from scratch.
+  When building Format.formatter_out_functions values redefinining the out_spaces field,
+  "{ fmt_out_funs with out_spaces = f; }" should be replaced by
+  "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old behavior.
   (Richard Bonichon and Pierre Weis, review by Alain Frisch)
 
 * GPR#943: Fixed the divergence of the Pervasives module between the stdlib
