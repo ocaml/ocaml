@@ -20,6 +20,7 @@ be mentioned in the 4.06 section below instead of here.)
 
 - GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix errors
   instead of [Not_found] in some cases.
+  (Arseniy Alekseyev, review by Mark Shinwell)
 
 ### Compiler user-interface and warnings:
 
