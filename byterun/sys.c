@@ -154,6 +154,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
   CAML_INSTR_ATEXIT ();
   if (caml_cleanup_on_exit)
     caml_shutdown();
+#ifdef _WIN32
+  caml_restore_win32_terminal();
+#endif
   CAML_SYS_EXIT(retcode);
   return Val_unit;
 }

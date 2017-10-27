@@ -516,7 +516,7 @@ Release branch for 4.06:
 - GPR#1338: Add "-g" for bytecode runtime system compilation
   (Mark Shinwell)
 
-* GPR#1416: switch the Windows 10 Console to UTF-8 encoding.
+* GPR#1416, GPR#1444: switch the Windows 10 Console to UTF-8 encoding.
   (David Allsopp, reviews by Nicolás Ojeda Bär and Xavier Leroy)
 
 - MPR#7658, GPR#1439: Fix Spacetime runtime system compilation with
