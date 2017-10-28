@@ -450,6 +450,10 @@ Release branch for 4.06:
   calls over the lifetime of a program when using Spacetime profiling
   (Mark Shinwell)
 
+- GPR#1457, ocamldoc: restore label for exception in the latex backend
+  (omitted since 4.04.0)
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Toplevel:
 
 - MPR#7570: remove unusable -plugin option from the toplevel
