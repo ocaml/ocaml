@@ -122,6 +122,14 @@ Release branch for 4.06:
   (Jeremy Yallop, reviews by Stephen Dolan, Gabriel Scherer, Leo
    White, and Damien Doligez)
 
+- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
+  remains in some inferred signatures, which leads to strange errors
+  (Jacques Garrigue, report by Mandrikin)
+
+- MP#7617, #7618, GPR#1318: Ambiguous (mistakenly) type escaping the
+  scope of its equation
+  (Jacques Garrigue, report by Thomas Refis)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
@@ -242,6 +250,9 @@ Release branch for 4.06:
   also displays memory allocation and consumption
   (Valentin Gatien-Baron, report by Gabriel Scherer)
 
+- MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
+  (Jacques Garrigue, report by Jun Furuse)
+
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
@@ -293,17 +304,6 @@ Release branch for 4.06:
 
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
   (Mark Shinwell)
-
-- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
-  remains in some inferred signatures, which leads to strange errors
-  (Jacques Garrigue, report by Mandrikin)
-
-- MP#7617, #7618, GPR#1318: Ambiguous (mistakenly) type escaping the
-  scope of its equation
-  (Jacques Garrigue, report by Thomas Refis)
-
-- MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
-  (Jacques Garrigue, report by Jun Furuse)
 
 * GPR#659: Remove support for SPARC native code generation
   (Mark Shinwell)
