@@ -250,7 +250,8 @@ access.$(O): access.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
  ../../byterun/caml/alloc.h ../../byterun/caml/mlvalues.h \
- ../../byterun/caml/memory.h ../../byterun/caml/signals.h unixsupport.h
+ ../../byterun/caml/memory.h ../../byterun/caml/signals.h \
+ ../../byterun/caml/osdeps.h ../../byterun/caml/memory.h unixsupport.h
 addrofstr.$(O): addrofstr.c ../../byterun/caml/mlvalues.h \
  ../../byterun/caml/config.h ../../byterun/caml/m.h \
  ../../byterun/caml/s.h ../../byterun/caml/misc.h \
