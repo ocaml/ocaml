@@ -83,6 +83,7 @@ let implementation ~backend ppf sourcefile outputprefix =
         ++ print_if ppf Clflags.dump_source Pprintast.structure
         ++ Profile.(record typing)
             (Typemod.type_implementation sourcefile outputprefix modulename env)
+        ++ (fun (impl,_sign,coerce) -> (impl, coerce))
         ++ print_if ppf Clflags.dump_typedtree
             Printtyped.implementation_with_coercion
       in

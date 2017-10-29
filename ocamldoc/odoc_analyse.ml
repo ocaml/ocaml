@@ -158,6 +158,7 @@ let process_file sourcefile =
            None ->
              None
          | Some (parsetree, typedtree) ->
+             let typedtree = let (a,_,b) = typedtree in (a,b) in 
              let file_module = Ast_analyser.analyse_typed_tree file
                  input_file parsetree typedtree
              in
