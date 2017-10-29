@@ -256,6 +256,10 @@ Release branch for 4.06:
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
+- MPR#7656, GPR#1423: false 'unused type/constructor/value' alarms
+  in the 4.06 development version
+  (Alain Frisch, review by Jacques Garrigue, report by Jacques-Pascal Deplaix)
+
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
 
