@@ -246,8 +246,10 @@ Release branch for 4.06:
   of ocamlc and a run of ocamlopt.
   (Xavier Leroy, from a suggestion by Gerd Stolpmann)
 
-- MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
-  also displays memory allocation and consumption
+* MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
+  also displays memory allocation and consumption.
+  The corresponding addition of a new compiler-internal Profile
+  may affect some users of compilers-libs/ocamlcommon.
   (Valentin Gatien-Baron, report by Gabriel Scherer)
 
 - MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
