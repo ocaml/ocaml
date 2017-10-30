@@ -28,7 +28,9 @@ module type S = sig
   val sub : t -> t -> t
   val mul : t -> t -> t
   val div : t -> t -> t
+  val unsigned_div : t -> t -> t
   val rem : t -> t -> t
+  val unsigned_rem : t -> t -> t
   val succ : t -> t
   val pred : t -> t
   val abs : t -> t
@@ -53,6 +55,7 @@ module type S = sig
   val of_string : string -> t
   val to_string : t -> string
   val compare: t -> t -> int
+  val unsigned_compare : t -> t -> int
   val equal: t -> t -> bool
   val repr: t -> repr
   val print : Format.formatter -> t -> unit
