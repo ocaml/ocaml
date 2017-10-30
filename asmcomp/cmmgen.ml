@@ -3090,6 +3090,9 @@ let compunit (ulam, preallocated_blocks, constants) =
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
                        fun_body = init_code; fun_fast = false;
+                       (* This function is often large and run only once.
+                          Compilation time matter more than runtime.
+                          See MPR#7630 *)
                        fun_fast_compile = true;
                        fun_dbg  = Debuginfo.none }] in
   let c2 = emit_constants c1 constants in
