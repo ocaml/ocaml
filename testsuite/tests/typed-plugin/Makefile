@@ -12,7 +12,8 @@ main.cmo: pptx_example.cmo for_rewrite.cmo
 #main.cmx: lib.cmxa
 
 pptx_example.cmo: pptx_example.ml
-	$(OCAMLC) -g -o pptx_example.cmxs -I $(TOPDIR)/parsing -I $(TOPDIR)/typing -I $(TOPDIR)/utils -I $(TOPDIR)/compilerlibs \
+	$(OCAMLC) -g -o pptx_example.cmxs -I $(TOPDIR)/driver -I $(TOPDIR)/parsing \
+	-I $(TOPDIR)/typing -I $(TOPDIR)/utils -I $(TOPDIR)/compilerlibs \
 		ocamlcommon.cma $<
 
 for_rewrite.cmo: for_rewrite.ml
