@@ -389,6 +389,9 @@ method mark_instr = function
              #mark_c_tailcall to get a good stack backtrace *)
           self#mark_call
     end
+  | Icatch (_, true, _, _) ->
+    (* Exception handler *)
+    self#mark_call
   | _ -> ()
 
 (* Default instruction selection for operators *)
