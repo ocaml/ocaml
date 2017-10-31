@@ -23,4 +23,10 @@ if $verbose; then
 else
   $cmd 2> /dev/null || exit 100
 fi
+
+if $cross_compiler; then
+  # sh exits with 2 code when trying to run executable for foreign platform
+  # that is treated by configure script as "compiler is not ISO C99 compliant"
+  return 255
+fi
 exec ./tst

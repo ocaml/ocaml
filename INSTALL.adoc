@@ -121,6 +121,9 @@ The `configure` script accepts the following options:
 `-no-ocamldoc`::
         Do not build `ocamldoc`.
 
+`-no-ocamltest`::
+        Do not build `ocamltest`.
+
 `-no-ocamlbuild`::
         Deprecated since 4.03.0, as `ocamlbuild` is now distributed separately
         from the compiler distribution.
