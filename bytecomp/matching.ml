@@ -1258,8 +1258,8 @@ let get_args_constr p rem = match p with
 
 (* NB: matcher_constr applies to default matrices.
 
-       In that context matching by constructors of extemsible
-       types degardes to arity checking, due to potential rebinding.
+       In that context, matching by constructors of extensible
+       types degrades to arity checking, due to potential rebinding.
 *)
 
 let matcher_constr cstr = match cstr.cstr_arity with

@@ -37,7 +37,7 @@ val le_pat : pattern -> pattern -> bool
 val le_pats : pattern list -> pattern list -> bool
 
 (* Exported compatibility,
-   "may_compat p q" returns true when p and q never admit a common instance;
+   "may_compat p q" returns false when p and q never admit a common instance;
    returns true when they may have a common instance. *)
 val may_compat : pattern -> pattern -> bool
 val may_compats : pattern list -> pattern list -> bool

@@ -150,8 +150,7 @@ module Compat
   let rec compat p q = match p.pat_desc,q.pat_desc with
 (* Variables match any value *)
   | ((Tpat_any|Tpat_var _),_)
-  | (_,(Tpat_any|Tpat_var _)) -> true
-
+  | (_,(Tpat_any|Tpat_var _)) -> truez
 (* Structural induction *)
   | Tpat_alias (p,_,_),_      -> compat p q
   | _,Tpat_alias (q,_,_)      -> compat p q
@@ -159,8 +158,6 @@ module Compat
       (compat p1 q || compat p2 q)
   | _,Tpat_or (q1,q2,_) ->
       (compat p q1 || compat p q2)
-
-
 (* Constructors, with special case for extension *)
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
       Constr.equal c1 c2 && compats ps1 ps2
@@ -188,7 +185,8 @@ module Compat
   | [], [] -> true
   | p::ps, q::qs -> compat p q && compats ps qs
   | _,_    -> assert false (* By typing *)
-    end
+
+end
 
 module SyntacticCompat =
   Compat
