@@ -73,6 +73,11 @@ Working version
 4.06 maintenance branch
 -----------------------
 
+### Bug fixes
+
+- MPR#7661: fix faulty compilation of patterns of extension types
+  (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report by
+  Abdelraouf Ouadjaout and Thibault Suzanne)
 
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------
