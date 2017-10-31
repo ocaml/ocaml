@@ -200,12 +200,6 @@ and compats = SyntacticCompat.compats
 (* Due to (potential) rebinding, two extension constructors
    of the same arity type may equal *)
 
-module MayCompat = Compat (struct let equal = Types.may_equal_constr end)
-
-let may_compat = MayCompat.compat
-and may_compats = MayCompat.compats
-
-
 exception Empty (* Empty pattern *)
 
 (****************************************)

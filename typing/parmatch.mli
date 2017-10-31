@@ -36,11 +36,18 @@ val const_compare : constant -> constant -> int
 val le_pat : pattern -> pattern -> bool
 val le_pats : pattern list -> pattern list -> bool
 
-(* Exported compatibility,
-   "may_compat p q" returns false when p and q never admit a common instance;
-   returns true when they may have a common instance. *)
-val may_compat : pattern -> pattern -> bool
-val may_compats : pattern list -> pattern list -> bool
+(* Exported compatibility functor, abstracted over constructor equality *)
+module Compat :
+  functor
+    (Constr: sig
+      val equal :
+          Types.constructor_description ->
+            Types.constructor_description ->
+              bool
+     end) -> sig
+       val compat : pattern -> pattern -> bool
+       val compats : pattern list -> pattern list -> bool
+     end
 
 exception Empty
 val lub : pattern -> pattern -> pattern

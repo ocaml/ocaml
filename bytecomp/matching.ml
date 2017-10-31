@@ -33,6 +33,18 @@ let dbg = false
   Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
 *)
 
+(*
+   Compatibility predicate that considers potential rebindings of constructors
+   of an extension type.
+
+   "may_compat p q" returns false when p and q never admit a common instance;
+   returns true when they may have a common instance.
+*)
+
+module MayCompat =
+  Parmatch.Compat (struct let equal = Types.may_equal_constr end)
+let may_compat = MayCompat.compat
+and may_compats = MayCompat.compats
 
 (*
    Many functions on the various data structures of the algorithm :
@@ -42,6 +54,7 @@ let dbg = false
        left and right.
      - Jump summaries: mapping from exit numbers to contexts
 *)
+
 
 let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam ;
@@ -277,7 +290,7 @@ let ctx_lub p ctx =
 
 let ctx_match ctx pss =
   List.exists
-    (fun {right=qs} ->  List.exists (fun ps -> Parmatch.may_compats qs ps)  pss)
+    (fun {right=qs} ->  List.exists (fun ps -> may_compats qs ps)  pss)
     ctx
 
 type jumps = (int * ctx list) list
@@ -531,7 +544,7 @@ let up_ok_action act1 act2 =
 let up_ok (ps,act_p) l =
   List.for_all
     (fun (qs,act_q) ->
-      up_ok_action act_p act_q || not (Parmatch.may_compats ps qs))
+      up_ok_action act_p act_q || not (may_compats ps qs))
     l
 
 (*
@@ -638,7 +651,7 @@ let default_compat p def =
       let qss =
         List.fold_right
           (fun qs r -> match qs with
-            | q::rem when Parmatch.may_compat p q -> rem::r
+            | q::rem when may_compat p q -> rem::r
             | _ -> r)
           pss [] in
       match qss with
@@ -755,7 +768,7 @@ let is_or p = match p.pat_desc with
 | _ -> false
 
 (* Conditions for appending to the Or matrix *)
-let conda p q = not (Parmatch.may_compat p q)
+let conda p q = not (may_compat p q)
 and condb act ps qs =  not (is_guarded act) && Parmatch.le_pats qs ps
 
 let or_ok p ps l =
@@ -784,7 +797,7 @@ let insert_or_append p ps act ors no =
   let rec attempt seen = function
     | (q::qs,act_q) as cl::rem ->
         if is_or q then begin
-          if Parmatch.may_compat p q then
+          if may_compat p q then
             if
               IdentSet.is_empty (extract_vars IdentSet.empty p) &&
               IdentSet.is_empty (extract_vars IdentSet.empty q) &&
@@ -795,7 +808,7 @@ let insert_or_append p ps act ors no =
                 or_ok p ps not_e && (* check append condition for head of O *)
                 List.for_all        (* check insert condition for tail of O *)
                   (fun cl -> match cl with
-                  | (q::_,_) -> not (Parmatch.may_compat p q)
+                  | (q::_,_) -> not (may_compat p q)
                   | _        -> assert false)
                   seen
               then (* insert *)
