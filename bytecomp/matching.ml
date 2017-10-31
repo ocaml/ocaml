@@ -170,23 +170,13 @@ let ctx_matcher p =
   let p = normalize_pat p in
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
-      begin match cstr.cstr_tag with
-      | Cstr_extension _ -> (* Rebinding => match arities *)
-          let n_omegas = cstr.cstr_arity in
-          (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, {cstr_tag=Cstr_extension _;cstr_arity=a;},args)
-              when n_omegas=a
-              -> p,args@rem
-          | Tpat_any -> p,omegas @ rem
-          | _ -> raise NoMatch)
-      | _ ->
-          (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, cstr',args)
-            when cstr.cstr_tag=cstr'.cstr_tag ->
-              p,args @ rem
-          | Tpat_any -> p,omegas @ rem
-          | _ -> raise NoMatch)
-      end
+      (fun q rem -> match q.pat_desc with
+      | Tpat_construct (_, cstr',args)
+(* NB:  may_constr_equal considers (potential) constructor rebinding *)
+        when Types.may_equal_constr cstr cstr' ->
+          p,args@rem
+      | Tpat_any -> p,omegas @ rem
+      | _ -> raise NoMatch)
   | Tpat_constant cst ->
       (fun q rem -> match q.pat_desc with
       | Tpat_constant cst' when const_compare cst cst' = 0 ->
@@ -1260,6 +1250,7 @@ let get_args_constr p rem = match p with
 
        In that context, matching by constructors of extensible
        types degrades to arity checking, due to potential rebinding.
+       This comparison is performed by Types.may_equal_constr.
 *)
 
 let matcher_constr cstr = match cstr.cstr_arity with
@@ -1267,14 +1258,11 @@ let matcher_constr cstr = match cstr.cstr_arity with
     let rec matcher_rec q rem = match q.pat_desc with
     | Tpat_or (p1,p2,_) ->
         begin
-          try
-            matcher_rec p1 rem
-          with
-          | NoMatch -> matcher_rec p2 rem
+          try matcher_rec p1 rem
+          with NoMatch -> matcher_rec p2 rem
         end
-    | Tpat_construct (_, {cstr_tag=Cstr_extension _},[]) -> rem
-    | Tpat_construct (_, cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
-        rem
+    | Tpat_construct (_, cstr',[])
+      when Types.may_equal_constr cstr cstr' -> rem
     | Tpat_any -> rem
     | _ -> raise NoMatch in
     matcher_rec
@@ -1294,20 +1282,16 @@ let matcher_constr cstr = match cstr.cstr_arity with
             rem
         | _, _ -> assert false
         end
-    | Tpat_construct (_, {cstr_tag=Cstr_extension _}, [arg])
-        -> arg::rem
-    | Tpat_construct (_, cstr1, [arg])
-      when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
+    | Tpat_construct (_, cstr', [arg])
+      when Types.may_equal_constr cstr cstr' -> arg::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
     matcher_rec
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
-    | Tpat_construct (_,({cstr_tag=Cstr_extension _} as cstr1),args)
-      when cstr.cstr_arity = cstr1.cstr_arity -> args @ rem
-    | Tpat_construct (_, cstr1, args)
-      when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
+    | Tpat_construct (_,cstr',args)
+      when  Types.may_equal_constr cstr cstr' -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 

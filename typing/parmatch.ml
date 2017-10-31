@@ -200,15 +200,7 @@ and compats = SyntacticCompat.compats
 (* Due to (potential) rebinding, two extension constructors
    of the same arity type may equal *)
 
-module MayCompat =
-  Compat
-    (struct
-      let equal c1 c2 = match c1.cstr_tag,c2.cstr_tag with
-      | Cstr_extension _,Cstr_extension _ ->
-          c1.cstr_arity = c2.cstr_arity
-      | tag1,tag2 ->
-          Types.equal_tag tag1 tag2
-    end)
+module MayCompat = Compat (struct let equal = Types.may_equal_constr end)
 
 let may_compat = MayCompat.compat
 and may_compats = MayCompat.compats
