@@ -150,7 +150,7 @@ module Compat
   let rec compat p q = match p.pat_desc,q.pat_desc with
 (* Variables match any value *)
   | ((Tpat_any|Tpat_var _),_)
-  | (_,(Tpat_any|Tpat_var _)) -> truez
+  | (_,(Tpat_any|Tpat_var _)) -> true
 (* Structural induction *)
   | Tpat_alias (p,_,_),_      -> compat p q
   | _,Tpat_alias (q,_,_)      -> compat p q
