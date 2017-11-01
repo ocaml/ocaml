@@ -39,6 +39,8 @@ else # Windows
   endif
 endif
 
+failstamp := failure.stamp
+
 ocamltest_directory := ../ocamltest
 
 ocamltest_program := $(or \
@@ -97,14 +99,17 @@ new:
 
 .PHONY: new-without-report
 new-without-report: lib tools
-	@for file in `$(find) tests -name ocamltests`; do \
+	@rm -f $(failstamp)
+	@(for file in `$(find) tests -name ocamltests`; do \
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
-	  IFS=$$(printf "\r\n"); while read testfile; do \
+	  (IFS=$$(printf "\r\n"); while read testfile; do \
 	    TERM=dumb OCAMLRUNPARAM= \
-	      $(ocamltest) $$dir/$$testfile; \
-	  done < $$file; \
-	done 2>&1 | tee -a _log
+	      $(ocamltest) $$dir/$$testfile || \
+	      touch $(failstamp); \
+	  done < $$file) || touch $(failstamp); \
+	done || touch $(failstamp)) 2>&1 | tee -a _log
+	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: all-%
 all-%: lib tools
@@ -236,6 +241,7 @@ clean:
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
+	rm -f $(failstamp)
 
 .PHONY: report
 report:

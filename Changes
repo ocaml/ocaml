@@ -122,6 +122,14 @@ Release branch for 4.06:
   (Jeremy Yallop, reviews by Stephen Dolan, Gabriel Scherer, Leo
    White, and Damien Doligez)
 
+- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
+  remains in some inferred signatures, which leads to strange errors
+  (Jacques Garrigue, report by Mandrikin)
+
+- MP#7617, #7618, GPR#1318: Ambiguous (mistakenly) type escaping the
+  scope of its equation
+  (Jacques Garrigue, report by Thomas Refis)
+
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
@@ -139,6 +147,9 @@ Release branch for 4.06:
   pretty-printing items. New fields have been added to the
   formatter_out_functions record, thus this change will break any code building
   such record from scratch.
+  When building Format.formatter_out_functions values redefinining the out_spaces field,
+  "{ fmt_out_funs with out_spaces = f; }" should be replaced by
+  "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old behavior.
   (Richard Bonichon and Pierre Weis, review by Alain Frisch)
 
 * GPR#943: Fixed the divergence of the Pervasives module between the stdlib
@@ -235,12 +246,21 @@ Release branch for 4.06:
   of ocamlc and a run of ocamlopt.
   (Xavier Leroy, from a suggestion by Gerd Stolpmann)
 
-- MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
-  also displays memory allocation and consumption
+* MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
+  also displays memory allocation and consumption.
+  The corresponding addition of a new compiler-internal Profile
+  may affect some users of compilers-libs/ocamlcommon.
   (Valentin Gatien-Baron, report by Gabriel Scherer)
+
+- MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
+  (Jacques Garrigue, report by Jun Furuse)
 
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
+
+- MPR#7656, GPR#1423: false 'unused type/constructor/value' alarms
+  in the 4.06 development version
+  (Alain Frisch, review by Jacques Garrigue, report by Jacques-Pascal Deplaix)
 
 - GPR#1032: display the output of -dtimings as a hierarchy
   (Valentin Gatien-Baron, review by Gabriel Scherer)
@@ -290,17 +310,6 @@ Release branch for 4.06:
 
 - MPR#7531, GPR#1162: Erroneous code transformation at partial applications
   (Mark Shinwell)
-
-- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
-  remains in some inferred signatures, which leads to strange errors
-  (Jacques Garrigue, report by Mandrikin)
-
-- MP#7617, #7618, GPR#1318: Ambiguous (mistakenly) type escaping the
-  scope of its equation
-  (Jacques Garrigue, report by Thomas Refis)
-
-- MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
-  (Jacques Garrigue, report by Jun Furuse)
 
 * GPR#659: Remove support for SPARC native code generation
   (Mark Shinwell)
@@ -447,6 +456,10 @@ Release branch for 4.06:
   calls over the lifetime of a program when using Spacetime profiling
   (Mark Shinwell)
 
+- GPR#1457, ocamldoc: restore label for exception in the latex backend
+  (omitted since 4.04.0)
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Toplevel:
 
 - MPR#7570: remove unusable -plugin option from the toplevel
@@ -463,7 +476,7 @@ Release branch for 4.06:
 ### Runtime system:
 
 * MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1369, GPR#1398,
-  GPR#1446: Unicode support for the Windows runtime.
+  GPR#1446, GPR#1448: Unicode support for the Windows runtime.
   (ygrek, Nicolas Ojeda Bar, review by Alain Frisch, David Allsopp, Damien
   Doligez)
 
@@ -513,7 +526,7 @@ Release branch for 4.06:
 - GPR#1338: Add "-g" for bytecode runtime system compilation
   (Mark Shinwell)
 
-* GPR#1416: switch the Windows 10 Console to UTF-8 encoding.
+* GPR#1416, GPR#1444: switch the Windows 10 Console to UTF-8 encoding.
   (David Allsopp, reviews by Nicolás Ojeda Bär and Xavier Leroy)
 
 - MPR#7658, GPR#1439: Fix Spacetime runtime system compilation with

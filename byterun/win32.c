@@ -890,16 +890,27 @@ void caml_probe_win32_version(void)
     UINT len = 0;
     VS_FIXEDFILEINFO* vsfi = NULL;
     VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
-    caml_win32_major = HIWORD(vsfi->dwFileVersionMS);
-    caml_win32_minor = LOWORD(vsfi->dwFileVersionMS);
-    caml_win32_build = HIWORD(vsfi->dwFileVersionLS);
-    caml_win32_revision = LOWORD(vsfi->dwFileVersionLS);
+    caml_win32_major = HIWORD(vsfi->dwProductVersionMS);
+    caml_win32_minor = LOWORD(vsfi->dwProductVersionMS);
+    caml_win32_build = HIWORD(vsfi->dwProductVersionLS);
+    caml_win32_revision = LOWORD(vsfi->dwProductVersionLS);
   }
   free(versionInfo);
 }
 
+static UINT startup_codepage = 0;
+
 void caml_setup_win32_terminal(void)
 {
-  if (caml_win32_major >= 10)
-    SetConsoleOutputCP(CP_UTF8);
+  if (caml_win32_major >= 10) {
+    startup_codepage = GetConsoleOutputCP();
+    if (startup_codepage != CP_UTF8)
+      SetConsoleOutputCP(CP_UTF8);
+  }
+}
+
+void caml_restore_win32_terminal(void)
+{
+  if (startup_codepage != 0)
+    SetConsoleOutputCP(startup_codepage);
 }
