@@ -399,8 +399,10 @@ Release branch for 4.06:
 - MPR#7048: ocamldoc, in -latex mode, don't escape Latin-1 accented letters
   (Xavier Leroy, report by Hugo Herbelin)
 
-- MPR#7575, GPR#1219: Switch default from -no-keep-locs to -keep-locs. This
-  provides better error messages by default.
+- MPR#7575, GPR#1219: Switch compilers from -no-keep-locs
+  to -keep-locs by default: produced .cmi files will contain locations.
+  This provides better error messages. Note that, as a consequence,
+  .cmi digests now depend on the file path as given to the compiler.
   (Daniel Bünzli)
 
 * MPR#7351: ocamldoc, use semantic tags rather than <br> tags in the html
