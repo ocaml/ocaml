@@ -244,7 +244,7 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
     pid = wait(&status);
     if (pid == -1)
     {
-      switch errno
+      switch( errno)
       {
         case EINTR:
           if ((settings->timeout > 0) && (timeout_expired))
