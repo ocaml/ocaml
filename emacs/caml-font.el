@@ -62,7 +62,7 @@
                            "when" "while" "with")
                          'words))
     . font-lock-constant-face)
-   ("\\<raise\\|failwith\\|invalid_arg\\>"
+   ("\\<\\(raise\\|failwith\\|invalid_arg\\)\\>"
     . font-lock-comment-face)
 ;labels (and open)
    ("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]"
