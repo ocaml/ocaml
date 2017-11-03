@@ -13,32 +13,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of a few built-in environment modifiers *)
+(* Tests specific to the OCaml compiler *)
 
-open Environments
-open Builtin_variables
+val bytecode : Tests.t
 
-let expect =
-[
-  Replace (script, "bash ${OCAMLSRCDIR}/testsuite/tools/expect");
-]
+val native : Tests.t
 
-let principal =
-[
-  Append (flags, " -principal ");
-  Add (compiler_directory_suffix, ".principal");
-  Add (compiler_reference_suffix, ".principal");
-]
-
-let testinglib_directory = Ocamltest_config.ocamlsrcdir ^ "/testsuite/lib"
-
-let testing =
-[
-  Append (flags, (" -I " ^ testinglib_directory ^ " "));
-  Append (libraries, " testing ");
-]
-
-let _ =
-  register expect "expect";
-  register principal "principal";
-  register testing "testing"
+val toplevel : Tests.t

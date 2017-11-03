@@ -13,27 +13,40 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Backends of the OCaml compiler and their properties *)
+(* Helper functions when writing actions *)
 
-type t = Sys.backend_type
+val mkreason : string -> string -> int -> string
 
-let string_of_backend = function
-  | Sys.Bytecode -> "bytecode"
-  | Sys.Native -> "native"
-  | Sys.Other backend_name -> backend_name
+val testfile : Environments.t -> string
 
-(* Creates a function that returns its first argument for Bytecode,          *)
-(* its second argument for Native code and fails for other backends          *)
-let make_backend_function bytecode_value native_value = function
-  | Sys.Bytecode -> bytecode_value
-  | Sys.Native -> native_value
-  | Sys.Other backend_name ->
-    let error_message =
-      ("Other backend " ^ backend_name ^ " not supported") in
-    raise (Invalid_argument error_message)
+val test_build_directory : Environments.t -> string
 
-let module_extension = make_backend_function "cmo" "cmx"
+val test_source_directory : Environments.t -> string
 
-let library_extension = make_backend_function "cma" "cmxa"
+val words_of_variable : Environments.t -> Variables.t -> string list
 
-let executable_extension = make_backend_function "byte" "opt"
+val files : Environments.t -> string list
+
+val setup_symlinks : string -> string -> string list -> unit
+
+val setup_build_env : bool -> string list -> Actions.code
+
+val run_cmd :
+  ?environment : string array ->
+  ?stdin_variable : Variables.t ->
+  ?stdout_variable : Variables.t ->
+  ?stderr_variable : Variables.t ->
+  ?append : bool ->
+  ?timeout : int ->
+  out_channel -> Environments.t -> string list -> int
+
+val run : string -> bool -> bool -> Variables.t
+                 -> Variables.t option -> Actions.code
+
+val run_program : Actions.code
+
+val run_script : Actions.code
+
+val run_hook : string -> Actions.code
+
+val check_output : string -> Variables.t -> Variables.t -> Actions.code

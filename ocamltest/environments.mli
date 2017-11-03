@@ -15,14 +15,15 @@
 
 (* Definition of environments, used to pass parameters to tests and actions *)
 
-exception Variable_already_defined of Variables.t
-
 type t
 
 val empty : t
 
 val from_bindings : (Variables.t * string) list -> t
 val to_bindings : t -> (Variables.t * string) list
+val string_of_binding : Variables.t -> string -> string
+val to_system_env :
+  ?f : (Variables.t -> string -> string) -> t -> string array
 
 val lookup : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
@@ -33,13 +34,21 @@ val add_bindings : (Variables.t * string) list -> t -> t
 
 val dump : out_channel -> t -> unit
 
-(* Environment modifiers *)
+(* Initializers *)
+
+type env_initializer = out_channel -> t -> t
+
+val register_initializer : string -> env_initializer -> unit
+
+val initialize : env_initializer
+
+(* Modifiers *)
 
 type modifier =
   | Include of string
   | Add of Variables.t * string
-  | Replace of Variables.t * string
   | Append of Variables.t * string
+  | Remove of Variables.t
 
 type modifiers = modifier list
 
@@ -50,4 +59,8 @@ exception Empty_modifiers_name
 exception Modifiers_name_already_registered of string
 exception Modifiers_name_not_found of string
 
-val register : modifiers -> string -> unit
+val register_modifiers : string -> modifiers -> unit
+
+val modifier_of_string : string -> modifier
+
+val modifiers_of_file : string -> modifiers

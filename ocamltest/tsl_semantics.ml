@@ -17,16 +17,20 @@
 
 open Tsl_ast
 
-let variable_already_defined loc variable context =
-  let ctxt = match context with
-    | None -> ""
-    | Some envname -> " while including environment " ^ envname in
-  let locstr = Testlib.string_of_location loc in
-  Printf.eprintf "%s\nVariable %s already defined%s\n%!" locstr variable ctxt;
+let string_of_location loc =
+  let buf = Buffer.create 64 in
+  let fmt = Format.formatter_of_buffer buf in
+  Location.print_loc fmt loc;
+  Format.pp_print_flush fmt ();
+  Buffer.contents buf
+
+let no_such_variable loc name =
+  let locstr = string_of_location loc in
+  Printf.eprintf "%s\nNo such variable %s\n%!" locstr name;
   exit 2
 
 let no_such_modifiers loc name =
-  let locstr = Testlib.string_of_location loc in
+  let locstr = string_of_location loc in
   Printf.eprintf "%s\nNo such modifiers %s\n%!" locstr name;
   exit 2
 
@@ -36,21 +40,17 @@ let apply_modifiers env modifiers_name =
   try Environments.apply_modifier env modifier with
   | Environments.Modifiers_name_not_found name ->
     no_such_modifiers modifiers_name.loc name
-  | Environments.Variable_already_defined variable ->
-    variable_already_defined modifiers_name.loc
-      (Variables.name_of_variable variable) (Some name)
 
 let interprete_environment_statement env statement = match statement.node with
   | Assignment (var, value) ->
     begin
       let variable_name = var.node in
       let variable = match Variables.find_variable variable_name with
-        | None -> Variables.make (variable_name, "User variable")
+        | None -> raise (Variables.No_such_variable variable_name)
         | Some variable -> variable in
       try Environments.add variable value.node env with
-      Environments.Variable_already_defined variable ->
-        variable_already_defined statement.loc
-          (Variables.name_of_variable variable) None
+      | Variables.No_such_variable name ->
+        no_such_variable statement.loc name
     end
   | Include modifiers_name -> apply_modifiers env modifiers_name
 
@@ -70,12 +70,12 @@ let too_deep testname max_level real_level =
   exit 2
 
 let unexpected_environment_statement s =
-  let locstr = Testlib.string_of_location s.loc in
+  let locstr = string_of_location s.loc in
   Printf.eprintf "%s\nUnexpected environment statement\n%!" locstr;
   exit 2
 
 let no_such_test_or_action t =
-  let locstr = Testlib.string_of_location t.loc in
+  let locstr = string_of_location t.loc in
   Printf.eprintf "%s\nNo such test or action: %s\n%!" locstr t.node;
   exit 2
 

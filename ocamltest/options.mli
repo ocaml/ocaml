@@ -15,6 +15,8 @@
 
 (* Description of ocamltest's command-line options *)
 
-val testfile : string ref
+val log_to_stderr : bool ref
+
+val files_to_test : string list ref
 
 val usage : string
