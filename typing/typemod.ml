@@ -1111,7 +1111,7 @@ let enrich_type_decls anchor decls oldenv newenv =
           let id = info.typ_id in
           let info' =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
-              info.typ_type
+              id info.typ_type
           in
             Env.add_type ~check:true id info' e)
         oldenv decls

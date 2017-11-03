@@ -175,17 +175,36 @@ let nondep_supertype env mid mty =
   in
     nondep_mty env Co mty
 
-let enrich_typedecl env p decl =
+let enrich_typedecl env p id decl =
   match decl.type_manifest with
     Some _ -> decl
   | None ->
       try
         let orig_decl = Env.find_type p env in
-        if orig_decl.type_arity <> decl.type_arity
-        then decl
-        else {decl with type_manifest =
-                Some(Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil)))}
-      with Not_found ->
+        if decl.type_arity <> orig_decl.type_arity then
+          decl
+        else
+          let orig_ty =
+            Ctype.reify_univars env
+              (Btype.newgenty(Tconstr(p, orig_decl.type_params, ref Mnil)))
+          in
+          let new_ty =
+            Ctype.reify_univars env
+              (Btype.newgenty(Tconstr(Pident id, decl.type_params, ref Mnil)))
+          in
+          let env = Env.add_type ~check:false id decl env in
+          Ctype.mcomp env orig_ty new_ty;
+          let orig_ty =
+            Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil))
+          in
+          {decl with type_manifest = Some orig_ty}
+      with Not_found | Ctype.Unify _ ->
+        (* - Not_found: type which was not present in the signature, so we don't
+           have anything to do.
+           - Unify: the current declaration is not compatible with the one we
+           got from the signature. We should just fail now, but then, we could
+           also have failed if the arities of the two decls were different,
+           which we didn't. *)
         decl
 
 let rec enrich_modtype env p mty =
@@ -198,7 +217,7 @@ let rec enrich_modtype env p mty =
 and enrich_item env p = function
     Sig_type(id, decl, rs) ->
       Sig_type(id,
-                enrich_typedecl env (Pdot(p, Ident.name id, nopos)) decl, rs)
+                enrich_typedecl env (Pdot(p, Ident.name id, nopos)) id decl, rs)
   | Sig_module(id, md, rs) ->
       Sig_module(id,
                   {md with
