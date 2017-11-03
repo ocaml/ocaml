@@ -605,7 +605,7 @@ let rec tree_of_typexp sch ty =
                   tree_of_typexp sch ty
               | _ -> Otyp_stuff "<hidden>"
             else tree_of_typexp sch ty1 in
-          Otyp_arrow (lab, t1, tree_of_typexp sch ty2) in
+          Otyp_arrow ((lab, t1), tree_of_typexp sch ty2) in
         pr_arrow l ty1 ty2
     | Ttuple tyl ->
         Otyp_tuple (tree_of_typlist sch tyl)
@@ -690,15 +690,15 @@ let rec tree_of_typexp sch ty =
     Otyp_alias (pr_typ (), name_of_type new_name px) end
   else pr_typ ()
 
-and tree_of_row_field sch (l, f) =
+and tree_of_row_field sch (tag, f) =
   match row_field_repr f with
-  | Rpresent None | Reither(true, [], _, _) -> (l, false, [])
-  | Rpresent(Some ty) -> (l, false, [tree_of_typexp sch ty])
+  | Rpresent None | Reither(true, [], _, _) -> {tag; ampersand=false; conj=[]}
+  | Rpresent(Some ty) -> {tag; ampersand=false; conj= [tree_of_typexp sch ty]}
   | Reither(c, tyl, _, _) ->
       if c (* contradiction: constant constructor with an argument *)
-      then (l, true, tree_of_typlist sch tyl)
-      else (l, false, tree_of_typlist sch tyl)
-  | Rabsent -> (l, false, [] (* actually, an error *))
+      then {tag; ampersand=true; conj= tree_of_typlist sch tyl}
+      else {tag; ampersand=false; conj= tree_of_typlist sch tyl}
+  | Rabsent -> {tag; ampersand=false; conj=[]} (* actually, an error *)
 
 and tree_of_typlist sch tyl =
   List.map (tree_of_typexp sch) tyl
@@ -774,7 +774,7 @@ let tree_of_constraints params =
        let ty' = unalias ty in
        if proxy ty != proxy ty' then
          let tr = tree_of_typexp true ty in
-         (tr, tree_of_typexp true ty') :: list
+         {lhs=tr; rhs = tree_of_typexp true ty'} :: list
        else list)
     params []
 
@@ -869,7 +869,9 @@ let rec tree_of_type_decl id decl =
         decl.type_params decl.type_variance
     in
     (Ident.name id,
-     List.map2 (fun ty cocn -> type_param (tree_of_typexp false ty), cocn)
+     List.map2 (fun ty (co,cn) ->
+         {covariant = co; contravariant = cn;
+          name = type_param (tree_of_typexp false ty)})
        params vari)
   in
   let tree_of_manifest ty1 =
@@ -913,20 +915,24 @@ and tree_of_constructor_arguments = function
   | Cstr_record l -> [ Otyp_record (List.map tree_of_label l) ]
 
 and tree_of_constructor cd =
-  let name = Ident.name cd.cd_id in
+  let cname = Ident.name cd.cd_id in
   let arg () = tree_of_constructor_arguments cd.cd_args in
   match cd.cd_res with
-  | None -> (name, arg (), None)
+  | None -> {cname; args=arg (); ret=None}
   | Some res ->
       let nm = !names in
       names := [];
       let ret = tree_of_typexp false res in
       let args = arg () in
       names := nm;
-      (name, args, Some ret)
+      {cname; args; ret=Some ret}
 
 and tree_of_label l =
-  (Ident.name l.ld_id, l.ld_mutable = Mutable, tree_of_typexp false l.ld_type)
+  {
+    label=Ident.name l.ld_id;
+    mut=l.ld_mutable = Mutable;
+    typ= tree_of_typexp false l.ld_type
+  }
 
 let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
@@ -1075,7 +1081,7 @@ let rec tree_of_class_type sch params =
       let csil = [] in
       let csil =
         List.fold_left
-          (fun csil (ty1, ty2) -> Ocsg_constraint (ty1, ty2) :: csil)
+          (fun csil cs -> Ocsg_constraint cs :: csil)
           csil (tree_of_constraints params)
       in
       let all_vars =
@@ -1105,7 +1111,7 @@ let rec tree_of_class_type sch params =
          | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
        else ty in
       let tr = tree_of_typexp sch ty in
-      Octy_arrow (lab, tr, tree_of_class_type sch params cty)
+      Octy_arrow ((lab, tr), tree_of_class_type sch params cty)
 
 let class_type ppf cty =
   reset ();
@@ -1113,10 +1119,14 @@ let class_type ppf cty =
   !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
 
 let tree_of_class_param param variance =
+  let co, cn = if is_Tvar (repr param) then (true, true) else variance in
+{ name =
   (match tree_of_typexp true param with
     Otyp_var (_, s) -> s
-  | _ -> "?"),
-  if is_Tvar (repr param) then (true, true) else variance
+    | _ -> "?");
+  covariant = co;
+  contravariant = cn;
+}
 
 let class_variance =
   List.map Variance.(fun v -> mem May_pos v, mem May_neg v)
@@ -1231,8 +1241,8 @@ let rec tree_of_modtype ?(ellipsis=false) = function
             wrap_env (Env.add_module ~arg:true param mty)
                      (tree_of_modtype ~ellipsis) ty_res
       in
-      Omty_functor (Ident.name param,
-                    may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
+      Omty_functor ((Ident.name param,
+                    may_map (tree_of_modtype ~ellipsis:false) ty_arg), res)
   | Mty_alias(_, p) ->
       Omty_alias (tree_of_path p)
 
