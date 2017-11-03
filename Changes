@@ -56,6 +56,11 @@ be mentioned in the 4.06 section below instead of here.)
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
+- MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
+  for a bytecode executable file, skip directories and other
+  non-regular files, like other Unix variants do.
+  (Xavier Leroy)
+
 Release branch for 4.06:
 ------------------------
 
@@ -248,8 +253,9 @@ Release branch for 4.06:
 
 * MPR#7514, GPR#1152: add -dprofile option, similar to -dtimings but
   also displays memory allocation and consumption.
-  The corresponding addition of a new compiler-internal Profile
-  may affect some users of compilers-libs/ocamlcommon.
+  The corresponding addition of a new compiler-internal
+  Profile module may affect some users of
+  compilers-libs/ocamlcommon (by creating module conflicts).
   (Valentin Gatien-Baron, report by Gabriel Scherer)
 
 - MPR#7620, GPR#1317: Typecore.force_delayed_checks does not run with -i option
@@ -682,11 +688,6 @@ Release branch for 4.06:
 - MPR#248, GPR#1225: unique names for weak type variables
   (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
    Gabriel Radanne and Gabriel Scherer)
-
-- MPR#5250: on Cygwin, when ocamlrun searches the path for a bytecode
-  executable file, skip directories and other non-regular files, like
-  other Unix variants do
-  (Xavier Leroy)
 
 - MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
