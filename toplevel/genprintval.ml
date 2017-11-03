@@ -178,7 +178,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         | Succ fn ->
             let print_val fn_arg =
               let print_arg ppf o =
-                !Oprint.out_value ppf (fn_arg (depth+1) o) in
+                !Oprint.out_value ppf
+                  (Outcometree.Decorate.value @@ fn_arg (depth+1) o) in
               build (fn print_arg) depth in
             Succ print_val in
       printers := (function_path, Generic (ty_path, build fn)) :: !printers

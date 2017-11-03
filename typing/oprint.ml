@@ -15,24 +15,54 @@
 
 open Format
 open Outcometree
+open Decorated
+module H = Highlightable
 
 exception Ellipsis
 
+let ref_ellipsis = ref "..."
+let times = ref "*"
+let ellipsis ppf = fprintf ppf "%s" !ref_ellipsis
+
 let cautious f ppf arg =
   try f ppf arg with
-    Ellipsis -> fprintf ppf "..."
+    Ellipsis -> ellipsis ppf
 
 let print_lident ppf = function
   | "::" -> pp_print_string ppf "(::)"
   | s -> pp_print_string ppf s
 
+let emph pp ppf = function
+  | H.Ellipsis n ->
+      if n > 1 then
+        fprintf ppf "%t %s %d" ellipsis !times n
+      else ellipsis ppf
+  | H.Item(H.Off, s) -> pp ppf s
+  | H.Item(H.On, s) -> fprintf ppf "@{<difference>%a@}" pp s
+
+let maybe fmt ppf b = if b then fprintf ppf fmt
+let either fmt fmt' ppf b = if b then fprintf ppf fmt else fprintf ppf fmt'
+
+let fbool name ppf = function
+  | H.Ellipsis _ -> ()
+  | H.Item(H.Off, b) ->
+      maybe name ppf b
+  | H.Item(H.On, b) ->
+      maybe("@{<difference>" ^^ name ^^ "@}") ppf b
+
+
+let string = Format.pp_print_string
+let plain x = H.Item(H.Off,x)
+let may f = function Some x -> Some (f x) | None -> None
+
+
 let rec print_ident ppf =
   function
-    Oide_ident s -> print_lident ppf s
+    Oide_ident s -> emph print_lident ppf s
   | Oide_dot (id, s) ->
-      print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
+      emph print_ident ppf id; pp_print_char ppf '.'; emph print_lident ppf s
   | Oide_apply (id1, id2) ->
-      fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+      fprintf ppf "%a(%a)" (emph print_ident) id1 (emph print_ident) id2
 
 let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
@@ -135,6 +165,28 @@ let print_out_string ppf s =
   else
     fprintf ppf "%S" s
 
+let ext_to_constr emphase cname args ret =
+      H.Item(emphase, {cname; args; ret })
+
+let gather_extensions foc ext proj items =
+  (* Gather together the extension constructors *)
+  let rec gather_extensions acc items =
+    match items with
+    |  item :: items as all ->
+        begin match proj item with
+        | H.Item(foc, Osig_typext(ext, H.Item(_, Oext_next))) ->
+            gather_extensions
+              (ext_to_constr foc ext.oext_name ext.oext_args ext.oext_ret_type
+               :: acc) items
+        | _ -> (List.rev acc, all)
+        end
+    | _ -> (List.rev acc, items)
+  in
+  gather_extensions
+    [ext_to_constr foc ext.oext_name ext.oext_args ext.oext_ret_type]
+    items
+
+
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
@@ -175,7 +227,7 @@ let print_out_value ppf tree =
          end;
          (if len > maxlen then
             fprintf ppf
-              "... (* string length %d; truncated *)" len
+              "%t (* string length %d; truncated *)" ellipsis len
          )
           with
           Invalid_argument _ (* "String.create" *)-> fprintf ppf "<huge string>"
@@ -215,14 +267,9 @@ let print_out_value ppf tree =
   in
   cautious print_tree_1 ppf tree
 
-let out_value = ref print_out_value
+let out_value = ref (emph print_out_value)
 
 (* Types *)
-
-let rec print_list_init pr sep ppf =
-  function
-    [] -> ()
-  | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l
 
 let rec print_list pr sep ppf =
   function
@@ -231,52 +278,78 @@ let rec print_list pr sep ppf =
   | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l
 
 let pr_present =
-  print_list (fun ppf s -> fprintf ppf "`%s" s) (fun ppf -> fprintf ppf "@ ")
+  print_list
+    (fun ppf s -> fprintf ppf "`%a" (emph string) s)
+    (fun ppf -> fprintf ppf "@ ")
 
 let pr_vars =
-  print_list (fun ppf s -> fprintf ppf "'%s" s) (fun ppf -> fprintf ppf "@ ")
+  print_list (fun ppf s -> fprintf ppf "'%a" (emph string) s)
+    (fun ppf -> fprintf ppf "@ ")
+
+let pp_nongen = fbool "_"
+
+let pp_closed no_tags ppf closed =
+  let pp ppf closed =
+    fprintf ppf  "%s"
+      (if closed then if no_tags then " " else "< "
+       else if no_tags then "> " else "? ") in
+  emph pp ppf closed
+
+let print_private ppf = function
+    Asttypes.Private -> fprintf ppf " private"
+  | Asttypes.Public -> ()
+
 
 let rec print_out_type ppf =
   function
   | Otyp_alias (ty, s) ->
-      fprintf ppf "@[%a@ as '%s@]" print_out_type ty s
+      fprintf ppf "@[%a@ as '%a@]" (emph print_out_type) ty (emph string) s
   | Otyp_poly (sl, ty) ->
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
-        print_out_type ty
+        (emph print_out_type) ty
   | ty ->
       print_out_type_1 ppf ty
 
 and print_out_type_1 ppf =
   function
-    Otyp_arrow ((lab, ty1), ty2) ->
+    Otyp_arrow (arg, ty2) ->
       pp_open_box ppf 0;
-      if lab <> "" then (pp_print_string ppf lab; pp_print_char ppf ':');
-      print_out_type_2 ppf ty1;
+      emph print_fn_arg ppf arg;
       pp_print_string ppf " ->";
       pp_print_space ppf ();
-      print_out_type_1 ppf ty2;
+      emph print_out_type_1 ppf ty2;
       pp_close_box ppf ()
   | ty -> print_out_type_2 ppf ty
+and print_fn_arg ppf (lab,ty1) =
+        begin match lab with
+        | H.Item(_, "") -> ()
+        | _ ->
+          (emph string ppf lab; pp_print_char ppf ':') end;
+        emph print_out_type_2 ppf ty1
+
 and print_out_type_2 ppf =
   function
     Otyp_tuple tyl ->
-      fprintf ppf "@[<0>%a@]" (print_typlist print_simple_out_type " *") tyl
+      fprintf ppf "@[<0>%a@]"
+        (print_typlist (emph print_simple_out_type) " *") tyl
   | ty -> print_simple_out_type ppf ty
 and print_simple_out_type ppf =
   function
     Otyp_class (ng, id, tyl) ->
-      fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
-        print_ident id
+      fprintf ppf "@[%a%a#%a@]" print_typargs tyl
+        (fbool "_") ng
+        (emph print_ident) id
   | Otyp_constr (id, tyl) ->
       pp_open_box ppf 0;
       print_typargs ppf tyl;
-      print_ident ppf id;
+      emph print_ident ppf id;
       pp_close_box ppf ()
   | Otyp_object (fields, rest) ->
       fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
   | Otyp_stuff s -> pp_print_string ppf s
-  | Otyp_var (ng, s) -> fprintf ppf "'%s%s" (if ng then "_" else "") s
+  | Otyp_var (ng, s) ->
+      fprintf ppf "'%a%a" pp_nongen ng (emph string) s
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
       let print_present ppf =
         function
@@ -286,16 +359,15 @@ and print_simple_out_type ppf =
       let print_fields ppf =
         function
           Ovar_fields fields ->
-            print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
-              ppf fields
-        | Ovar_typ typ ->
-           print_simple_out_type ppf typ
+            print_list (emph print_row_field)
+              (fun ppf -> fprintf ppf "@;<1 -2>| ") ppf fields
+        | Ovar_typ typ -> emph print_simple_out_type ppf typ
       in
-      fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
-        (if closed then if tags = None then " " else "< "
-         else if tags = None then "> " else "? ")
-        print_fields row_fields
-        print_present tags
+      fprintf ppf "%a[%a@[<hv>@[<hv>%a@]%a ]@]"
+        pp_nongen non_gen
+        (pp_closed (match tags with H.Item(_,None) -> true | _ -> false)) closed
+        (emph print_fields) row_fields
+        (emph print_present) tags
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       pp_open_box ppf 1;
       pp_print_char ppf '(';
@@ -306,44 +378,49 @@ and print_simple_out_type ppf =
   | Otyp_sum _ | Otyp_manifest (_, _) -> ()
   | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
-      fprintf ppf "@[<1>(module %s" p;
+      fprintf ppf "@[<1>(module %a" (emph string) p;
       let first = ref true in
       List.iter2
         (fun s t ->
           let sep = if !first then (first := false; "with") else "and" in
-          fprintf ppf " %s type %s = %a" sep s print_out_type t
+          fprintf ppf " %s type %a = %a" sep (emph string) s
+            (emph print_out_type) t
         )
         n tyl;
       fprintf ppf ")@]"
   | Otyp_attribute (t, attr) ->
-      fprintf ppf "@[<1>(%a [@@%s])@]" print_out_type t attr.oattr_name
+      let pr_attr ppf attr = fprintf ppf " [@@%s]" attr.oattr_name in
+      fprintf ppf "@[<1>(%a%a)@]" (emph print_out_type) t (emph pr_attr) attr
 and print_record_decl ppf lbls =
-  fprintf ppf "{%a@;<1 -2>}"
-    (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+  fprintf ppf "{@ %a;@;<1 -2>}"
+    (print_list (emph print_out_label) (fun ppf -> fprintf ppf ";@ ")) lbls
+and print_field ppf (s,t) =
+  fprintf ppf "%a : %a" (emph string) s (emph print_out_type) t
 and print_fields rest ppf =
   function
     [] ->
+      let pp_rest ppf = function
+          Some non_gen -> fprintf ppf "%a.." (fbool "_") non_gen
+        | None -> ()
+      in
+      emph pp_rest ppf rest
+  | [a] -> emph print_field ppf a;
       begin match rest with
-        Some non_gen -> fprintf ppf "%s.." (if non_gen then "_" else "")
-      | None -> ()
-      end
-  | [s, t] ->
-      fprintf ppf "%s : %a" s print_out_type t;
-      begin match rest with
-        Some _ -> fprintf ppf ";@ "
-      | None -> ()
+        H.Item(_, Some _) -> fprintf ppf ";@ "
+      | H.Item(_,None) | H.Ellipsis _ -> ()
       end;
       print_fields rest ppf []
-  | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
-and print_row_field ppf {tag=l; ampersand= opt_amp; conj= tyl} =
-  let pr_of ppf =
-    if opt_amp then fprintf ppf " of@ &@ "
-    else if tyl <> [] then fprintf ppf " of@ "
-    else fprintf ppf ""
-  in
-  fprintf ppf "@[<hv 2>`%s%t%a@]" l pr_of (print_typlist print_out_type " &")
-    tyl
+  | a :: l ->
+      emph print_field ppf a;
+      fprintf ppf ";@ %a" (print_fields rest) l
+and print_row_field ppf f =
+      let pr_of ppf =
+        if f.conj <> [] then
+          fprintf ppf " of%a@ " (fbool "@ &") f.ampersand
+      in
+      fprintf ppf "@[<hv 2>`%a%t%a@]"
+        (emph string) f.tag pr_of
+        (print_typlist (emph print_out_type) " &") f.conj
 and print_typlist print_elem sep ppf =
   function
     [] -> ()
@@ -356,33 +433,44 @@ and print_typlist print_elem sep ppf =
 and print_typargs ppf =
   function
     [] -> ()
-  | [ty1] -> print_simple_out_type ppf ty1; pp_print_space ppf ()
+  | [ty1] -> emph print_simple_out_type ppf ty1; pp_print_space ppf ()
   | tyl ->
       pp_open_box ppf 1;
       pp_print_char ppf '(';
-      print_typlist print_out_type "," ppf tyl;
+      print_typlist (emph print_out_type) "," ppf tyl;
       pp_print_char ppf ')';
       pp_close_box ppf ();
       pp_print_space ppf ()
-and print_out_label ppf {label=name; mut; typ= arg} =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
-    print_out_type arg
+and print_out_label ppf {label;mut;typ} =
+      fprintf ppf "@[<2>%a%a :@ %a@]"
+        (fbool "mutable ") mut (emph string) label
+        (emph print_out_type) typ
 
-let out_type = ref print_out_type
+let out_type = ref (emph print_out_type)
 
 (* Class types *)
+let pr_typename_0 ppf name =
+  if name = "_" then fprintf ppf "_" else
+    fprintf ppf "'%s" name
 
-let type_parameter ppf {name=ty; covariant=co; contravariant=cn} =
-  fprintf ppf "%s%s"
-    (if not cn then "+" else if not co then "-" else "")
-    (if ty = "_" then ty else "'"^ty)
+let pr_typename = emph pr_typename_0
+
+let hmap f = function
+  | H.Item(flag, s) -> H.Item(flag, f s)
+  | H.Ellipsis _ as x -> x
+
+let type_parameter ppf {covariant;contravariant;name} =
+      fprintf ppf "%a%a%a"
+        (fbool "+") (hmap not contravariant)
+        (fbool "-") (hmap not covariant)
+        pr_typename name
 
 let print_out_class_params ppf =
   function
     [] -> ()
   | tyl ->
       fprintf ppf "@[<1>[%a]@]@ "
-        (print_list type_parameter (fun ppf -> fprintf ppf ", "))
+        (print_list (emph type_parameter) (fun ppf -> fprintf ppf ", "))
         tyl
 
 let rec print_out_class_type ppf =
@@ -394,301 +482,306 @@ let rec print_out_class_type ppf =
         | tyl ->
             fprintf ppf "@[<1>[%a]@]@ " (print_typlist !out_type ",") tyl
       in
-      fprintf ppf "@[%a%a@]" pr_tyl tyl print_ident id
-  | Octy_arrow ((lab, ty), cty) ->
-      fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
-        print_out_type_2 ty print_out_class_type cty
+      fprintf ppf "@[%a%a@]" pr_tyl tyl (emph print_ident) id
+  | Octy_arrow (arg, cty) ->
+      fprintf ppf "@[%a ->@ %a@]" (emph print_fn_arg) arg
+        (emph print_out_class_type) cty
   | Octy_signature (self_ty, csil) ->
       let pr_param ppf =
         function
           Some ty -> fprintf ppf "@ @[(%a)@]" !out_type ty
         | None -> ()
       in
-      fprintf ppf "@[<hv 2>@[<2>object%a@]@ %a@;<1 -2>end@]" pr_param self_ty
-        (print_list print_out_class_sig_item (fun ppf -> fprintf ppf "@ "))
+      fprintf ppf "@[<hv 2>@[<2>object%a@]@ %a@;<1 -2>end@]"
+        (emph pr_param) self_ty
+        (print_list (emph print_out_class_sig_item) (fun ppf -> fprintf ppf "@ "))
         csil
 and print_out_class_sig_item ppf =
   function
-    Ocsg_constraint {lhs=ty1; rhs=ty2} ->
-      fprintf ppf "@[<2>constraint %a =@ %a@]" !out_type ty1
-        !out_type ty2
+    Ocsg_constraint c ->
+      fprintf ppf "@[<2>constraint %a =@ %a@]" !out_type c.lhs
+        !out_type c.rhs
   | Ocsg_method (name, priv, virt, ty) ->
-      fprintf ppf "@[<2>method %s%s%s :@ %a@]"
-        (if priv then "private " else "") (if virt then "virtual " else "")
-        name !out_type ty
+      fprintf ppf "@[<2>method %a%a%a :@ %a@]"
+        (fbool "private ") priv (fbool "virtual ") virt
+        (emph string) name !out_type ty
   | Ocsg_value (name, mut, vr, ty) ->
-      fprintf ppf "@[<2>val %s%s%s :@ %a@]"
-        (if mut then "mutable " else "")
-        (if vr then "virtual " else "")
-        name !out_type ty
+      fprintf ppf "@[<2>val %a%a%a :@ %a@]"
+        (fbool "mutable ") mut
+        (fbool "virtual ") vr
+        (emph string) name !out_type ty
 
-let out_class_type = ref print_out_class_type
+let out_class_type = ref (emph print_out_class_type)
 
 (* Signature *)
 
-let out_module_type = ref (fun _ -> failwith "Oprint.out_module_type")
+let out_module_type: (Format.formatter -> _ H.t -> _) ref =
+  ref (fun _ _ -> failwith "Oprint.out_module_type")
 let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
-let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
+let out_type_extension: (Format.formatter -> _ H.t -> _) ref =
+  ref (fun _ -> failwith "Oprint.out_type_extension")
 
 let rec print_out_functor funct ppf =
   function
-    Omty_functor ( (_, None), mty_res) ->
-      if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
-      else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
-  | Omty_functor ( (name, Some mty_arg), mty_res) -> begin
-      match name, funct with
-      | "_", true ->
-          fprintf ppf "->@ %a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
-      | "_", false ->
-          fprintf ppf "%a ->@ %a"
-            print_out_module_type mty_arg (print_out_functor false) mty_res
-      | name, true ->
-          fprintf ppf "(%s : %a) %a" name
-            print_out_module_type mty_arg (print_out_functor true) mty_res
-      | name, false ->
-            fprintf ppf "functor@ (%s : %a) %a" name
-              print_out_module_type mty_arg (print_out_functor true) mty_res
-    end
-  | m ->
-      if funct then fprintf ppf "->@ %a" print_out_module_type m
-      else print_out_module_type ppf m
+    Omty_functor (arg , mty_res) ->
+      fprintf ppf "%a%a%a"
+        (emph @@ print_arg funct) arg
+        (either " ->@ " "@ ")
+        (not (as_funct arg && if_functor as_funct mty_res))
+        (emph @@ print_out_functor @@ as_funct arg) mty_res
+  | m -> fprintf ppf "%a" print_out_module_type m
+and if_functor f = function
+  | H.Item(_,Omty_functor(arg,_)) -> f arg
+  | _ -> false
+and as_funct = function
+  | H.Item(_, (_, H.Item(_, None))) -> true
+  | H.Ellipsis _ -> false
+  | H.Item(_, (H.Item(_, "_"), _)) -> false
+  | _ -> true
+and print_arg funct ppf (name,mty) =
+    match mty with
+    | H.Item(h, None) ->
+        let arg ppf = emph string ppf (H.Item(h,"()")) in
+        fprintf ppf "%a%t"
+          (maybe "functor@ ") (not funct) arg
+    | H.Ellipsis n ->
+        print_arg_name funct (H.Ellipsis n) ppf name
+    | H.Item(h,Some f) ->
+        let f = match f with
+          | H.Item(H.Off,f) -> H.Item(h,f)
+          | x -> x in
+        print_arg_name funct f ppf name
+and print_arg_name funct mty ppf = function
+    | H.Item(_, "_") ->
+          emph print_out_module_type ppf mty
+    | name ->
+        fprintf ppf "%a(%a : %a)" (maybe "functor@ ") (not funct)
+          (emph string) name
+          (emph print_out_module_type) mty
 
 and print_out_module_type ppf =
   function
     Omty_abstract -> ()
   | Omty_functor _ as t ->
       fprintf ppf "@[<2>%a@]" (print_out_functor false) t
-  | Omty_ident id -> fprintf ppf "%a" print_ident id
+  | Omty_ident id -> fprintf ppf "%a" (emph print_ident) id
   | Omty_signature sg ->
-      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg
-  | Omty_alias id -> fprintf ppf "(module %a)" print_ident id
+      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_out_signature sg
+  | Omty_alias id -> fprintf ppf "(module %a)" (emph print_ident) id
 and print_out_signature ppf =
   function
     [] -> ()
   | [item] -> !out_sig_item ppf item
-  | Osig_typext(ext, Oext_first) :: items ->
-      (* Gather together the extension constructors *)
-      let rec gather_extensions acc items =
-        match items with
-            Osig_typext(ext, Oext_next) :: items ->
-              gather_extensions
-                ({cname=ext.oext_name;args=ext.oext_args; ret= ext.oext_ret_type}
-                 :: acc)
-                items
-          | _ -> (List.rev acc, items)
-      in
-      let exts, items =
-        gather_extensions
-          [{cname=ext.oext_name; args=ext.oext_args; ret=ext.oext_ret_type}]
-          items
-      in
+  | H.Item(foc, Osig_typext(ext, H.Item( _, Oext_first)))
+    :: items ->
+      let exts, items = gather_extensions foc ext (fun x -> x) items in
       let te =
         { otyext_name = ext.oext_type_name;
           otyext_params = ext.oext_type_params;
           otyext_constructors = exts;
           otyext_private = ext.oext_private }
       in
-        fprintf ppf "%a@ %a" !out_type_extension te print_out_signature items
+      fprintf ppf "%a@ %a" !out_type_extension (plain te)
+        print_out_signature items
   | item :: items ->
       fprintf ppf "%a@ %a" !out_sig_item item print_out_signature items
 and print_out_sig_item ppf =
   function
     Osig_class (vir_flag, name, params, clt, rs) ->
-      fprintf ppf "@[<2>%s%s@ %a%s@ :@ %a@]"
-        (if rs = Orec_next then "and" else "class")
-        (if vir_flag then " virtual" else "") print_out_class_params params
-        name !out_class_type clt
+      let pp_recs ppf rs =
+       fprintf ppf (if rs = Orec_next then "and" else "class") in
+      fprintf ppf "@[<2>%a%a@ %a%a@ :@ %a@]" (emph pp_recs) rs
+        (fbool " virtual") vir_flag print_out_class_params params
+        (emph string) name !out_class_type clt
   | Osig_class_type (vir_flag, name, params, clt, rs) ->
-      fprintf ppf "@[<2>%s%s@ %a%s@ =@ %a@]"
-        (if rs = Orec_next then "and" else "class type")
-        (if vir_flag then " virtual" else "") print_out_class_params params
-        name !out_class_type clt
-  | Osig_typext (ext, Oext_exception) ->
+      let pp_recs ppf rs =
+        fprintf ppf (if rs = Orec_next then "and" else "class type") in
+      fprintf ppf "@[<2>%a%a@ %a%a@ =@ %a@]"
+        (emph pp_recs) rs
+        (fbool " virtual") vir_flag print_out_class_params params
+        (emph string) name !out_class_type clt
+  | Osig_typext (ext, H.Item(foc,Oext_exception)) ->
       fprintf ppf "@[<2>exception %a@]"
-        print_out_constr
-        {cname=ext.oext_name; args= ext.oext_args; ret=ext.oext_ret_type}
+        (emph print_out_constr)
+        (ext_to_constr foc ext.oext_name ext.oext_args ext.oext_ret_type)
   | Osig_typext (ext, _es) ->
-      print_out_extension_constructor ppf ext
-  | Osig_modtype (name, Omty_abstract) ->
-      fprintf ppf "@[<2>module type %s@]" name
+      print_out_extension_constructor ppf (H.Off,ext)
+  | Osig_modtype (name, H.Item(_, Omty_abstract)) ->
+      fprintf ppf "@[<2>module type %a@]" (emph string) name
   | Osig_modtype (name, mty) ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
-  | Osig_module (name, Omty_alias id, _) ->
-      fprintf ppf "@[<2>module %s =@ %a@]" name print_ident id
+      fprintf ppf "@[<2>module type %a =@ %a@]" (emph string) name
+        !out_module_type mty
+  | Osig_module (name, H.Item(_, Omty_alias id), _) ->
+      fprintf ppf "@[<2>module %a =@ %a@]" (emph string) name
+        (emph print_ident) id
   | Osig_module (name, mty, rs) ->
-      fprintf ppf "@[<2>%s %s :@ %a@]"
-        (match rs with Orec_not -> "module"
-                     | Orec_first -> "module rec"
-                     | Orec_next -> "and")
-        name !out_module_type mty
+      let print_rec ppf rs = fprintf ppf
+          (match rs with Orec_not -> "module"
+                       | Orec_first -> "module rec"
+                       | Orec_next -> "and") in
+      fprintf ppf "@[<2>%a %a :@ %a@]" (emph print_rec) rs
+        (emph string) name !out_module_type mty
   | Osig_type(td, rs) ->
-        print_out_type_decl
-          (match rs with
-           | Orec_not   -> "type nonrec"
-           | Orec_first -> "type"
-           | Orec_next  -> "and")
-          ppf td
+      let print_recs ppf rs = fprintf ppf (match rs with
+          | Orec_not   -> "type nonrec"
+          | Orec_first -> "type"
+          | Orec_next  -> "and") in
+        print_out_type_decl (fun ppf -> emph print_recs ppf rs) ppf td
   | Osig_value vd ->
       let kwd = if vd.oval_prims = [] then "val" else "external" in
       let pr_prims ppf =
         function
           [] -> ()
         | s :: sl ->
-            fprintf ppf "@ = \"%s\"" s;
-            List.iter (fun s -> fprintf ppf "@ \"%s\"" s) sl
+            fprintf ppf "@ = \"%a\"" (emph string) s;
+            List.iter (fun s -> fprintf ppf "@ \"%a\"" (emph string) s) sl
       in
-      fprintf ppf "@[<2>%s %a :@ %a%a%a@]" kwd value_ident vd.oval_name
+      let pr_attr ppf a = fprintf ppf "@ [@@@@%s]" a.oattr_name in
+      fprintf ppf "@[<2>%s %a :@ %a%a%a@]" kwd (emph value_ident)
+        vd.oval_name
         !out_type vd.oval_type pr_prims vd.oval_prims
-        (fun ppf -> List.iter (fun a -> fprintf ppf "@ [@@@@%s]" a.oattr_name))
+        (fun ppf -> List.iter (emph pr_attr ppf))
         vd.oval_attributes
-  | Osig_ellipsis ->
-      fprintf ppf "..."
+  | Osig_ellipsis -> ellipsis ppf
 
 and print_out_type_decl kwd ppf td =
+  let print_constraint ppf {lhs;rhs} =
+        fprintf ppf "@ @[<2>constraint %a =@ %a@]"
+          !out_type lhs !out_type rhs in
   let print_constraints ppf =
-    List.iter
-      (fun {lhs; rhs} ->
-         fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type lhs
-           !out_type rhs)
+    print_list (emph print_constraint) (fun ppf -> fprintf ppf "@ ") ppf
       td.otype_cstrs
   in
   let type_defined ppf =
     match td.otype_params with
-      [] -> pp_print_string ppf td.otype_name
-    | [param] -> fprintf ppf "@[%a@ %s@]" type_parameter param td.otype_name
+      [] -> (emph string) ppf td.otype_name
+    | [param] ->
+        fprintf ppf "@[%a@ %a@]" (emph type_parameter) param
+          (emph string) td.otype_name
     | _ ->
-        fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list type_parameter (fun ppf -> fprintf ppf ",@ "))
+        fprintf ppf "@[(@[%a)@]@ %a@]"
+          (print_list (emph type_parameter) (fun ppf -> fprintf ppf ",@ "))
           td.otype_params
-          td.otype_name
+          (emph string) td.otype_name
   in
   let print_manifest ppf =
     function
-      Otyp_manifest (ty, _) -> fprintf ppf " =@ %a" !out_type ty
+    | Otyp_manifest (ty, _) -> fprintf ppf " =@ %a" !out_type ty
     | _ -> ()
   in
   let print_name_params ppf =
-    fprintf ppf "%s %t%a" kwd type_defined print_manifest td.otype_type
+    fprintf ppf "%t %t%a" kwd type_defined (emph print_manifest) td.otype_type
   in
   let ty =
     match td.otype_type with
-      Otyp_manifest (_, ty) -> ty
+    | H.Item(_, Otyp_manifest (_, ty)) -> ty
     | _ -> td.otype_type
   in
-  let print_private ppf = function
-    Asttypes.Private -> fprintf ppf " private"
-  | Asttypes.Public -> ()
-  in
   let print_immediate ppf =
-    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+    fbool" [%@%@immediate]" ppf td.otype_immediate
   in
   let print_unboxed ppf =
-    if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
+    fbool " [%@%@unboxed]" ppf td.otype_unboxed
   in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
       fprintf ppf " =%a %a"
-        print_private td.otype_private
+        (emph print_private) td.otype_private
         print_record_decl lbls
   | Otyp_sum constrs ->
       fprintf ppf " =%a@;<1 2>%a"
-        print_private td.otype_private
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+        (emph print_private) td.otype_private
+        (print_list (emph print_out_constr) (fun ppf -> fprintf ppf "@ | "))
+        constrs
   | Otyp_open ->
       fprintf ppf " =%a .."
-        print_private td.otype_private
+        (emph print_private) td.otype_private
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
-        print_private td.otype_private
-        !out_type ty
+        (emph print_private) td.otype_private
+        !out_type (plain ty)
   in
   fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t%t@]"
     print_name_params
-    print_out_tkind ty
+    (emph print_out_tkind) ty
     print_constraints
     print_immediate
     print_unboxed
 
-and print_out_constr ppf {cname=name; args=tyl; ret=ret_type_opt} =
+and print_out_constr ppf {cname; args; ret} =
   let name =
-    match name with
+    hmap (function
     | "::" -> "(::)"   (* #7200 *)
-    | s -> s
+    | s -> s) cname
   in
-  match ret_type_opt with
-  | None ->
-      begin match tyl with
-      | [] ->
-          pp_print_string ppf name
-      | _ ->
-          fprintf ppf "@[<2>%s of@ %a@]" name
-            (print_typlist print_simple_out_type " *") tyl
-      end
-  | Some ret_type ->
-      begin match tyl with
-      | [] ->
-          fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
-      | _ ->
-          fprintf ppf "@[<2>%s :@ %a -> %a@]" name
-            (print_typlist print_simple_out_type " *")
-            tyl print_simple_out_type ret_type
-      end
+  let pp_ret ppf = function
+    | None ->
+        begin match args with
+        | [] ->
+            emph string ppf name
+        | _ ->
+            fprintf ppf "@[<2>%a of@ %a@]" (emph string) name
+              (print_typlist (emph print_simple_out_type) " *") args
+        end
+    | Some ret_type ->
+        begin match args with
+        | [] ->
+            fprintf ppf "@[<2>%a :@ %a@]" (emph string) name
+              (emph print_simple_out_type) ret_type
+        | _ ->
+            fprintf ppf "@[<2>%a :@ %a -> %a@]" (emph string) name
+              (print_typlist (emph print_simple_out_type) " *")
+              args (emph print_simple_out_type) ret_type
+        end in
+  emph pp_ret ppf ret
 
-and print_out_extension_constructor ppf ext =
+and print_out_extension_constructor ppf (foc,ext) =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
       match ext.oext_type_params with
-        [] -> fprintf ppf "%s" ext.oext_type_name
+        [] -> fprintf ppf "%a" (emph string) ext.oext_type_name
       | [ty_param] ->
-        fprintf ppf "@[%a@ %s@]"
-          print_type_parameter
-          ty_param
-          ext.oext_type_name
+        fprintf ppf "@[%a@ %a@]"
+          pr_typename ty_param
+          (emph string) ext.oext_type_name
       | _ ->
-        fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+        fprintf ppf "@[(@[%a)@]@ %a@]"
+          (print_list pr_typename (fun ppf -> fprintf ppf ",@ "))
           ext.oext_type_params
-          ext.oext_type_name
+          (emph string) ext.oext_type_name
   in
-  fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
+  fprintf ppf "@[<hv 2>type %t +=%a@;<1 2>%a@]"
     print_extended_type
-    (if ext.oext_private = Asttypes.Private then " private" else "")
-    print_out_constr {cname=ext.oext_name; args=ext.oext_args; ret=ext.oext_ret_type}
+    (emph print_private) ext.oext_private
+    (emph print_out_constr)
+    (ext_to_constr foc ext.oext_name ext.oext_args ext.oext_ret_type)
 
 and print_out_type_extension ppf te =
   let print_extended_type ppf =
-    let print_type_parameter ppf ty =
-      fprintf ppf "%s"
-        (if ty = "_" then ty else "'"^ty)
-    in
     match te.otyext_params with
-      [] -> fprintf ppf "%s" te.otyext_name
+      [] -> fprintf ppf "%a" (emph string) te.otyext_name
     | [param] ->
-      fprintf ppf "@[%a@ %s@]"
-        print_type_parameter param
-        te.otyext_name
+      fprintf ppf "@[%a@ %a@]"
+        pr_typename param
+        (emph string) te.otyext_name
     | _ ->
-        fprintf ppf "@[(@[%a)@]@ %s@]"
-          (print_list print_type_parameter (fun ppf -> fprintf ppf ",@ "))
+        fprintf ppf "@[(@[%a)@]@ %a@]"
+          (print_list pr_typename (fun ppf -> fprintf ppf ",@ "))
           te.otyext_params
-          te.otyext_name
+          (emph string) te.otyext_name
   in
-  fprintf ppf "@[<hv 2>type %t +=%s@;<1 2>%a@]"
+  fprintf ppf "@[<hv 2>type %t +=%a@;<1 2>%a@]"
     print_extended_type
-    (if te.otyext_private = Asttypes.Private then " private" else "")
-    (print_list print_out_constr (fun ppf -> fprintf ppf "@ | "))
+    (emph print_private) te.otyext_private
+    (print_list (emph print_out_constr) (fun ppf -> fprintf ppf "@ | "))
     te.otyext_constructors
 
-let _ = out_module_type := print_out_module_type
-let _ = out_signature := print_out_signature
-let _ = out_sig_item := print_out_sig_item
-let _ = out_type_extension := print_out_type_extension
+let _ = out_module_type := emph print_out_module_type
+let _ = out_signature :=
+    (fun ppf x -> print_out_signature ppf x)
+let _ = out_sig_item := emph print_out_sig_item
+let _ = out_type_extension := emph print_out_type_extension
 
 (* Phrases *)
 
@@ -703,29 +796,15 @@ let print_out_exception ppf exn outv =
 let rec print_items ppf =
   function
     [] -> ()
-  | (Osig_typext(ext, Oext_first), None) :: items ->
-      (* Gather together extension constructors *)
-      let rec gather_extensions acc items =
-        match items with
-            (Osig_typext(ext, Oext_next), None) :: items ->
-              gather_extensions
-                ({cname=ext.oext_name; args= ext.oext_args; ret = ext.oext_ret_type}
-                 :: acc)
-                items
-          | _ -> (List.rev acc, items)
-      in
-      let exts, items =
-        gather_extensions
-          [{cname=ext.oext_name; args=ext.oext_args; ret=ext.oext_ret_type}]
-          items
-      in
+  | (H.Item(foc, Osig_typext(ext, H.Item(_,Oext_first))), None) :: items ->
+      let exts, items = gather_extensions foc ext fst items in
       let te =
         { otyext_name = ext.oext_type_name;
           otyext_params = ext.oext_type_params;
           otyext_constructors = exts;
           otyext_private = ext.oext_private }
       in
-        fprintf ppf "@[%a@]" !out_type_extension te;
+        fprintf ppf "@[%a@]" !out_type_extension (plain te);
         if items <> [] then fprintf ppf "@ %a" print_items items
   | (tree, valopt) :: items ->
       begin match valopt with
@@ -739,9 +818,14 @@ let rec print_items ppf =
 let print_out_phrase ppf =
   function
     Ophr_eval (outv, ty) ->
-      fprintf ppf "@[- : %a@ =@ %a@]@." !out_type ty !out_value outv
+      fprintf ppf "@[- : %a@ =@ %a@]@."
+        !out_type (plain ty)
+        !out_value (plain outv)
   | Ophr_signature [] -> ()
-  | Ophr_signature items -> fprintf ppf "@[<v>%a@]@." print_items items
-  | Ophr_exception (exn, outv) -> print_out_exception ppf exn outv
+  | Ophr_signature items ->
+      fprintf ppf "@[<v>%a@]@." print_items
+        (List.map (fun (x,y) -> H.Item(H.Off,x), may plain y ) items )
+  | Ophr_exception (exn, outv) -> print_out_exception ppf exn (plain outv)
 
 let out_phrase = ref print_out_phrase
+let ellipsis = ref_ellipsis

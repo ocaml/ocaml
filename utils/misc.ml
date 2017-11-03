@@ -566,12 +566,14 @@ module Color = struct
     error: style list;
     warning: style list;
     loc: style list;
+    difference: style list;
   }
 
   let default_styles = {
     warning = [Bold; FG Magenta];
     error = [Bold; FG Red];
     loc = [Bold];
+    difference = [Bold; FG Red];
   }
 
   let cur_styles = ref default_styles
@@ -584,21 +586,28 @@ module Color = struct
     | "error" -> (!cur_styles).error
     | "warning" -> (!cur_styles).warning
     | "loc" -> (!cur_styles).loc
+    | "difference" -> (!cur_styles).difference
     | _ -> raise Not_found
 
   let color_enabled = ref true
+  let marker_enabled = ref false
+  let diff_markers = ref ("!(",")")
 
   (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in
-      if !color_enabled then ansi_of_style_l style else ""
+      (if !color_enabled then
+        ansi_of_style_l style
+       else "")
+      ^ if s = "difference" && !marker_enabled then fst !diff_markers else ""
     with Not_found -> or_else s
 
   let mark_close_tag ~or_else s =
     try
       let _ = style_of_tag s in
-      if !color_enabled then ansi_of_style_l [Reset] else ""
+      (if !marker_enabled && s = "difference" then snd !diff_markers else "")
+      ^ (if !color_enabled then ansi_of_style_l [Reset] else "")
     with Not_found -> or_else s
 
   (* add color handling to formatter [ppf] *)
@@ -631,7 +640,7 @@ module Color = struct
     let formatter_l =
       [Format.std_formatter; Format.err_formatter; Format.str_formatter]
     in
-    fun o ->
+    fun m o ->
       if !first then (
         first := false;
         Format.set_mark_tags true;
@@ -640,7 +649,8 @@ module Color = struct
             | Some Always -> true
             | Some Auto -> should_enable_color ()
             | Some Never -> false
-            | None -> should_enable_color ())
+            | None -> should_enable_color ());
+        marker_enabled := m;
       );
       ()
 end

@@ -85,13 +85,13 @@ let max_printer_steps = ref 300
 
 let print_exception ppf obj =
   let t = Printer.outval_of_untyped_exception obj in
-  !Oprint.out_value ppf t
+  !Oprint.out_value ppf (Outcometree.Decorate.value t)
 
 let print_value max_depth env obj (ppf : Format.formatter) ty =
   let t =
     Printer.outval_of_value !max_printer_steps max_depth
       check_depth env obj ty in
-  !Oprint.out_value ppf t
+  !Oprint.out_value ppf (Outcometree.Decorate.value t)
 
 let print_named_value max_depth exp env obj ppf ty =
   let print_value_name ppf = function

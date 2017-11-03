@@ -342,6 +342,7 @@ let set_printing_env env =
   end
 
 let wrap_printing_env env f =
+  Misc.Color.setup false !Clflags.color;
   set_printing_env env;
   try_finally f (fun () -> set_printing_env Env.empty)
 
@@ -750,7 +751,7 @@ and tree_of_typfields sch rest = function
       (field :: fields, rest)
 
 let typexp sch ppf ty =
-  !Oprint.out_type ppf (tree_of_typexp sch ty)
+  !Oprint.out_type ppf (Decorate.typ @@ tree_of_typexp sch ty)
 
 let type_expr ppf ty = typexp false ppf ty
 
@@ -938,11 +939,12 @@ let tree_of_type_declaration id decl rs =
   Osig_type (tree_of_type_decl id decl, tree_of_rec rs)
 
 let type_declaration id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_type_declaration id decl Trec_first)
+  !Oprint.out_sig_item ppf
+    (Decorate.sig_item @@ tree_of_type_declaration id decl Trec_first)
 
 let constructor_arguments ppf a =
   let tys = tree_of_constructor_arguments a in
-  !Oprint.out_type ppf (Otyp_tuple tys)
+  !Oprint.out_type ppf (Decorate.typ @@ Otyp_tuple tys)
 
 (* Print an extension declaration *)
 
@@ -992,7 +994,7 @@ let tree_of_extension_constructor id ext es =
     Osig_typext (ext, es)
 
 let extension_constructor id ppf ext =
-  !Oprint.out_sig_item ppf (tree_of_extension_constructor id ext Text_first)
+  !Oprint.out_sig_item ppf (Decorate.sig_item @@ tree_of_extension_constructor id ext Text_first)
 
 (* Print a value declaration *)
 
@@ -1014,7 +1016,7 @@ let tree_of_value_description id decl =
   Osig_value vd
 
 let value_description id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_value_description id decl)
+  !Oprint.out_sig_item ppf (Decorate.sig_item @@ tree_of_value_description id decl)
 
 (* Print a class type *)
 
@@ -1116,7 +1118,7 @@ let rec tree_of_class_type sch params =
 let class_type ppf cty =
   reset ();
   prepare_class_type [] cty;
-  !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
+  !Oprint.out_class_type ppf (Decorate.class_type @@ tree_of_class_type false [] cty)
 
 let tree_of_class_param param variance =
   let co, cn = if is_Tvar (repr param) then (true, true) else variance in
@@ -1151,7 +1153,8 @@ let tree_of_class_declaration id cl rs =
      tree_of_rec rs)
 
 let class_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_class_declaration id cl Trec_first)
+  !Oprint.out_sig_item ppf
+    (Decorate.sig_item @@ tree_of_class_declaration id cl Trec_first)
 
 let tree_of_cltype_declaration id cl rs =
   let params = List.map repr cl.clty_params in
@@ -1184,7 +1187,8 @@ let tree_of_cltype_declaration id cl rs =
      tree_of_rec rs)
 
 let cltype_declaration id ppf cl =
-  !Oprint.out_sig_item ppf (tree_of_cltype_declaration id cl Trec_first)
+  !Oprint.out_sig_item ppf
+    (Decorate.sig_item @@ tree_of_cltype_declaration id cl Trec_first)
 
 (* Print a module type *)
 
@@ -1298,9 +1302,11 @@ and tree_of_modtype_declaration id decl =
 and tree_of_module id ?ellipsis mty rs =
   Osig_module (Ident.name id, tree_of_modtype ?ellipsis mty, tree_of_rec rs)
 
-let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
+let modtype ppf mty =
+  !Oprint.out_module_type ppf (Decorate.module_type @@ tree_of_modtype mty)
 let modtype_declaration id ppf decl =
-  !Oprint.out_sig_item ppf (tree_of_modtype_declaration id decl)
+  !Oprint.out_sig_item ppf
+    (Decorate.sig_item @@ tree_of_modtype_declaration id decl)
 
 (* For the toplevel: merge with tree_of_signature? *)
 
@@ -1336,7 +1342,7 @@ let print_signature ppf tree =
   fprintf ppf "@[<v>%a@]" !Oprint.out_signature tree
 
 let signature ppf sg =
-  fprintf ppf "%a" print_signature (tree_of_signature sg)
+  fprintf ppf "%a" print_signature (Decorate.signature @@ tree_of_signature sg)
 
 (* Print an unification error *)
 

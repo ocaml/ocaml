@@ -87,14 +87,20 @@ module Printer = Genprintval.Make(Obj)(EvalPath)
 let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
-let print_out_value = Oprint.out_value
-let print_out_type = Oprint.out_type
-let print_out_class_type = Oprint.out_class_type
-let print_out_module_type = Oprint.out_module_type
-let print_out_type_extension = Oprint.out_type_extension
-let print_out_sig_item = Oprint.out_sig_item
-let print_out_signature = Oprint.out_signature
-let print_out_phrase = Oprint.out_phrase
+let print_out_value = ref (fun ppf x -> !Oprint.out_value ppf @@ Decorate.value x)
+let print_out_type = ref (fun ppf x -> !Oprint.out_type ppf @@ Decorate.typ x)
+let print_out_class_type =
+  ref (fun ppf x -> !Oprint.out_class_type ppf @@ Decorate.class_type x)
+let print_out_module_type =
+  ref (fun ppf x ->  !Oprint.out_module_type ppf @@ Decorate.module_type x)
+let print_out_type_extension =
+  ref (fun ppf x -> !Oprint.out_type_extension ppf @@ Decorate.type_extension x)
+let print_out_sig_item =
+  ref (fun ppf x -> !Oprint.out_sig_item ppf @@ Decorate.sig_item x)
+let print_out_signature =
+  ref (fun ppf x -> !Oprint.out_signature ppf @@ Decorate.signature x)
+let print_out_phrase =
+  ref (fun ppf x -> !Oprint.out_phrase ppf @@ Decorate.phrase x)
 
 let print_untyped_exception ppf obj =
   !print_out_value ppf (Printer.outval_of_untyped_exception obj)
