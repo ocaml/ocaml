@@ -91,7 +91,7 @@ Release branch for 4.06:
 - GPR#1118: Support inherited field in object type expression
     type t = < m : int >
     type u = < n : int; t; k : int >
-  (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
+  (Runhang Li, review by Jeremy Yallop, Leo White, Jacques Garrigue,
    and Florian Angeletti)
 
 * GPR#1232: Support Unicode character escape sequences in string
@@ -155,7 +155,7 @@ Release branch for 4.06:
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
     val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
-  (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
+  (Sébastien Briais, review by Daniel Bünzli, Alain Frisch and
   Gabriel Scherer)
 
 - MPR#7515, GPR#1147: Arg.align now optionally uses the tab character '\t' to
@@ -168,7 +168,7 @@ Release branch for 4.06:
   pretty-printing items. New fields have been added to the
   formatter_out_functions record, thus this change will break any code building
   such record from scratch.
-  When building Format.formatter_out_functions values redefinining the out_spaces field,
+  When building Format.formatter_out_functions values redefining the out_spaces field,
   "{ fmt_out_funs with out_spaces = f; }" should be replaced by
   "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old behavior.
   (Richard Bonichon and Pierre Weis, review by Alain Frisch, original request by
@@ -527,7 +527,7 @@ Release branch for 4.06:
 - GPR#1086: in Sys.getcwd, just fail instead of calling getwd()
   if HAS_GETCWD is not set.
   (Report and first fix by Sebastian Markbåge, final fix by Xavier Leroy,
-   review by MarK Shinwell)
+   review by Mark Shinwell)
 
 - GPR#1269: Remove 50ms delay at exit for programs using threads
   (Valentin Gatien-Baron, review by Stephen Dolan)
