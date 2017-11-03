@@ -156,7 +156,10 @@ Error: This type cannot be unboxed because
     type u = { f1 : t; f2 : t }
   end..
 Error: Signature mismatch:
-       ...
+       Modules do not match:
+         sig type t = A of float [@@unboxed] type u = { f1 : t; f2 : t; } end
+       is not included in
+         sig type t type u = { f1 : t; f2 : t; } end
        Type declarations do not match:
          type u = { f1 : t; f2 : t; }
        is not included in

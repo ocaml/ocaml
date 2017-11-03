@@ -78,8 +78,10 @@ val c' : < color : string; get_x : int; move : int -> unit > circle = <obj>
 #   Characters 28-29:
   let c'' = new color_circle p;;
                              ^
-Error: This expression has type point but an expression was expected of type
-         #color_point
+Error: This expression has type point = < get_x : int; move : int -> unit >
+       but an expression was expected of type
+         #color_point as 'a =
+           < color : string; get_x : int; move : int -> unit; .. >
        The first object type has no method color
 # val c'' : color_point color_circle = <obj>
 #   - : color_point circle = <obj>

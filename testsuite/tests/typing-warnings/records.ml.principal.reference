@@ -316,6 +316,7 @@ Characters 214-224:
       |`Key {loc} -> loc
        ^^^^^^^^^^
 Error: This pattern matches values of type [? `Key of v ]
-       but a pattern was expected which matches values of type u
+       but a pattern was expected which matches values of type
+         u = [ `Key of t ]
        Types for tag `Key are incompatible
 # 

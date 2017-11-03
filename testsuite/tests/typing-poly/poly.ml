@@ -1021,8 +1021,8 @@ Warning 15: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
 Line _, characters 11-56:
-Error: This object is expected to have type c but actually has type
-         < m : int; n : 'a >
+Error: This object is expected to have type c = < m : int >
+       but actually has type < m : int; n : 'a >
        The first object type has no method n
 |}];;
 

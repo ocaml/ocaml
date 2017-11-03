@@ -1363,22 +1363,57 @@ let same_path t t' =
   | _ ->
       false
 
-let type_expansion t ppf t' =
+let print_expansion ppf (t,t') =
+  let open Outcometree.Highlightable in
+  let p = !Oprint.out_type in
+  match t' with
+  | None ->
+    p ppf t
+  | Some t' ->
+      match t, t' with
+      | Item(_, Decorated.Otyp_variant _), Item(_,Decorated.Otyp_variant _ )
+      | Item(_,Decorated.Otyp_object _), Item(_,Decorated.Otyp_object _ ) ->
+          (* if t is already a structural type, no need to print both t and t' *)
+          p ppf t
+      | _ -> fprintf ppf "@[<2>%a@ =@ %a@]"  p t p t'
+
+let type_expansion t t' =
+  let mk = tree_of_typexp false in
   if same_path t t'
-  then begin add_delayed (proxy t); type_expr ppf t end
+  then begin add_delayed (proxy t); mk t, None end
   else
-  let t' = if proxy t == proxy t' then unalias t' else t' in
-  fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
+    let t' = if proxy t == proxy t' then unalias t' else t' in
+    let first = mk t in (* fix order due to side-effect *)
+    let second = mk t' in
+    first, Some second
+
+let type_diff (t,e) (t',e') =
+  let t1, e1 = type_expansion t e in
+  let t2, e2 = type_expansion t' e' in
+  match e1, e2 with
+  | Some e1, Some e2 ->
+      let e1, e2 = Difftree.typ (e1, e2) in
+        (Decorate.typ t1, Some e1), (Decorate.typ t2, Some e2)
+  | None, None ->
+      let t1, t2 = Difftree.typ (t1,t2) in
+      (t1, None), (t2,None)
+  | Some e1, None ->
+      let e1, t2 = Difftree.typ (e1,t2) in
+      (Decorate.typ t1, Some e1), (t2, None)
+  | None, Some e2 ->
+      let t1, e2  = Difftree.typ (t1,e2) in
+      (t1,None), (Decorate.typ t2,Some e2)
 
 let type_path_expansion tp ppf tp' =
   if Path.same tp tp' then path ppf tp else
   fprintf ppf "@[<2>%a@ =@ %a@]" path tp path tp'
 
 let rec trace fst txt ppf = function
-  | (t1, t1') :: (t2, t2') :: rem ->
+  | t1 :: t2 :: rem ->
+      let t1, t2 = type_diff t1 t2 in
       if not fst then fprintf ppf "@,";
       fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
-       (type_expansion t1) t1' txt (type_expansion t2) t2'
+        print_expansion t1 txt print_expansion t2
        (trace false txt) rem
   | _ -> ()
 
@@ -1417,11 +1452,6 @@ let prepare_expansion (t, t') =
   if not (same_path t t') then mark_loops t';
   (t, t')
 
-let may_prepare_expansion compact (t, t') =
-  match (repr t').desc with
-    Tvariant _ | Tobject _ when compact ->
-      mark_loops t; (t, t)
-  | _ -> prepare_expansion (t, t')
 
 let print_tags ppf fields =
   match fields with [] -> ()
@@ -1591,24 +1621,25 @@ let unification_error env unif tr txt1 ppf txt2 =
   | t1 :: t2 :: tr ->
     try
       let tr = filter_trace (mis = None) tr in
-      let t1, t1' = may_prepare_expansion (tr = []) t1
-      and t2, t2' = may_prepare_expansion (tr = []) t2 in
+      let t1 = prepare_expansion t1
+      and t2 = prepare_expansion t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
+      let t, t' = type_diff t1 t2 in
       fprintf ppf
         "@[<v>\
           @[%t@;<1 2>%a@ \
             %t@;<1 2>%a\
           @]%a%t\
          @]"
-        txt1 (type_expansion t1) t1'
-        txt2 (type_expansion t2) t2'
+        txt1 print_expansion t
+        txt2 print_expansion t'
         (trace false "is not compatible with type") tr
         (explain mis);
       if env <> Env.empty
       then begin
-        warn_on_missing_def env ppf t1;
-        warn_on_missing_def env ppf t2
+        warn_on_missing_def env ppf (fst t1);
+        warn_on_missing_def env ppf (fst t2)
       end;
       print_labels := true
     with exn ->

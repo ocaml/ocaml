@@ -49,7 +49,7 @@ OTHEROBJS=\
   ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
   ../typing/subst.cmo ../typing/predef.cmo \
   ../typing/datarepr.cmo ../typing/cmi_format.cmo ../typing/env.cmo \
-  ../typing/outcometree.cmo ../typing/oprint.cmo \
+  ../typing/outcometree.cmo ../typing/difftree.cmo ../typing/oprint.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../typing/envaux.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \

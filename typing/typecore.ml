@@ -5050,9 +5050,11 @@ let report_error env ppf = function
       report_unification_error ppf env trace
         (function ppf ->
            let ty, ty' = prepare_expansion (ty, ty') in
+           let decorate = Outcometree.Decorate.typ in
+           let ty, ty' = type_expansion ty ty' in
            fprintf ppf
              "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
-           (type_expansion ty) ty')
+           print_expansion (decorate ty, may_map decorate ty'))
         (function ppf ->
            fprintf ppf "but is here used with type");
       if b then

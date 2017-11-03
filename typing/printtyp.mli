@@ -56,6 +56,7 @@ val extension_constructor:
     Ident.t -> formatter -> extension_constructor -> unit
 val tree_of_module:
     Ident.t -> ?ellipsis:bool -> module_type -> rec_status -> out_sig_item
+val tree_of_modtype: ?ellipsis:bool -> module_type -> out_module_type
 val modtype: formatter -> module_type -> unit
 val signature: formatter -> signature -> unit
 val tree_of_modtype_declaration:
@@ -70,7 +71,15 @@ val class_declaration: Ident.t -> formatter -> class_declaration -> unit
 val tree_of_cltype_declaration:
     Ident.t -> class_type_declaration -> rec_status -> out_sig_item
 val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
-val type_expansion: type_expr -> Format.formatter -> type_expr -> unit
+val type_expansion:
+ type_expr -> type_expr -> (Outcometree.out_type as 'ty) * 'ty option
+val type_diff:
+  (type_expr * type_expr as 'pair) -> 'pair ->
+  ((Decorated.out_type Decorated.ext as 'ty) * 'ty option as 'diffpair)
+  * 'diffpair
+val print_expansion:
+  Format.formatter -> (Decorated.out_type Decorated.ext as 'ty) * 'ty option
+  -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
     bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit

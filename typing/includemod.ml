@@ -533,21 +533,29 @@ let show_locs ppf (loc1, loc2) =
   show_loc "Expected declaration" ppf loc2;
   show_loc "Actual declaration" ppf loc1
 
-let include_err ppf = function
+let include_err ppf =
+  let diff, pp = Difftree.sig_item, !Oprint.out_sig_item in
+  function
   | Missing_field (id, loc, kind) ->
       fprintf ppf "The %s `%a' is required but not provided" kind ident id;
       show_loc "Expected declaration" ppf loc
   | Value_descriptions(id, d1, d2) ->
+      let t1, t2 =
+        diff (tree_of_value_description id d1,
+              tree_of_value_description id d2) in
       fprintf ppf
         "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
-        (value_description id) d1 (value_description id) d2;
+        pp t1 pp t2;
       show_locs ppf (d1.val_loc, d2.val_loc);
   | Type_declarations(id, d1, d2, errs) ->
+      let t1, t2 =
+        diff (tree_of_type_declaration id d1 Trec_first,
+              tree_of_type_declaration id d2 Trec_first) in
       fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
-        (type_declaration id) d1
+        pp t1
         "is not included in"
-        (type_declaration id) d2
+        pp t2
         show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") errs
@@ -559,35 +567,43 @@ let include_err ppf = function
       (extension_constructor id) x2;
       show_locs ppf (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
+      let t1, t2 =
+        Difftree.modtype (tree_of_modtype mty1, tree_of_modtype mty2) in
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-      modtype mty1
-      modtype mty2
+      !Oprint.out_module_type t1
+      !Oprint.out_module_type t2
   | Modtype_infos(id, d1, d2) ->
+      let t1, t2 =
+        diff (tree_of_modtype_declaration id d1,
+              tree_of_modtype_declaration id d2) in
       fprintf ppf
        "@[<hv 2>Module type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]"
-      (modtype_declaration id) d1
-      (modtype_declaration id) d2
+      pp t1 pp t2
   | Modtype_permutation ->
       fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
       fprintf ppf "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
   | Class_type_declarations(id, d1, d2, reason) ->
+      let t1, t2 =
+        diff Printtyp.(tree_of_cltype_declaration id d1 Trec_first,
+                       tree_of_cltype_declaration id d2 Trec_first) in
       fprintf ppf
        "@[<hv 2>Class type declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.cltype_declaration id) d1
-      (Printtyp.cltype_declaration id) d2
+      pp t1 pp t2
       Includeclass.report_error reason
   | Class_declarations(id, d1, d2, reason) ->
+      let t1, t2 =
+        diff Printtyp.(tree_of_class_declaration id d1 Trec_first,
+                       tree_of_class_declaration id d2 Trec_first) in
       fprintf ppf
        "@[<hv 2>Class declarations do not match:@ \
         %a@;<1 -2>does not match@ %a@]@ %a"
-      (Printtyp.class_declaration id) d1
-      (Printtyp.class_declaration id) d2
+      pp t1 pp t2
       Includeclass.report_error reason
   | Unbound_modtype_path path ->
       fprintf ppf "Unbound module type %a" Printtyp.path path
@@ -642,23 +658,11 @@ let include_err ppf (cxt, env, err) =
   Printtyp.wrap_printing_env env (fun () ->
     fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
 
-let buffer = ref Bytes.empty
-let is_big obj =
-  let size = !Clflags.error_size in
-  size > 0 &&
-  begin
-    if Bytes.length !buffer < size then buffer := Bytes.create size;
-    try ignore (Marshal.to_buffer !buffer 0 size obj []); false
-    with _ -> true
-  end
-
 let report_error ppf errs =
   if errs = [] then () else
   let (errs , err) = split_last errs in
-  let pe = ref true in
-  let include_err' ppf (_,_,obj as err) =
-    if not (is_big obj) then fprintf ppf "%a@ " include_err err
-    else if !pe then (fprintf ppf "...@ "; pe := false)
+  let include_err' ppf err =
+    fprintf ppf "%a@ " include_err err
   in
   let print_errs ppf = List.iter (include_err' ppf) in
   fprintf ppf "@[<v>%a%a@]" print_errs errs include_err err
