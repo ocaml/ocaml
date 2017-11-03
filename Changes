@@ -80,7 +80,8 @@ Release branch for 4.06:
 * GPR#1064, GPR#1392: extended indexing operators, add a new class of
   user-defined indexing operators, obtained by adding at least
   one operator character after the dot symbol to the standard indexing
-  operators: e,g ".%()", ".?[]", ".@{}<-"
+  operators: e,g ".%()", ".?[]", ".@{}<-":
+    let ( .%() ) = List.nth in [0; 1; 2].%(1)
   After this change, functions or methods with an explicit polymorphic type
   annotation and of which the first argument is optional now requires a space
   between the dot and the question mark,
@@ -88,12 +89,10 @@ Release branch for 4.06:
   (Florian Angeletti, review by Damien Doligez and Gabriel Radanne)
 
 - GPR#1118: Support inherited field in object type expression
+    type t = < m : int >
+    type u = < n : int; t; k : int >
   (Runhang Li, reivew by Jeremy Yallop, Leo White, Jacques Garrigue,
    and Florian Angeletti)
-
-- GPR#1142: Mark assertions nonexpansive, so that 'assert false'
-  can be used as a placeholder for a polymorphic function.
-  (Stephen Dolan)
 
 * GPR#1232: Support Unicode character escape sequences in string
   literals via the \u{X+} syntax. These escapes are substituted by the
@@ -107,38 +106,55 @@ Release branch for 4.06:
 
 * GPR#1252: The default mode is now safe-string, can be overridden
   at configure time or at compile time.
+  (See GPR#1386 below for the configure-time options)
+  This breaks the code that uses the 'string' type as mutable
+  strings (instead of Bytes.t, introduced by 4.02 in 2014).
   (Damien Doligez)
 
 * GPR#1253: Private extensible variants
   This change breaks code relying on the undocumented ability to export
   extension constructors for abstract type in signature. Briefly,
-  "module type S = sig type t type t+=A" must now be written
-  "module type S = sig type t = private .. type t+=A".
+    module type S = sig
+      type t
+      type t += A
+    end
+   must now be written
+    module type S = sig
+      type t = private ..
+      type t += A
+   end
   (Leo White, review by Alain Frisch)
 
-- GPR#1348: accept anonymous type parameters in with constraints,
-  "S with type _ t = int".
+- GPR#1333: turn off warning 40 by default
+  (Constructor or label name used out of scope)
+  (Leo White)
+
+- GPR#1348: accept anonymous type parameters in `with` constraints:
+    S with type _ t = int
   (Valentin Gatien-Baron, report by Jeremy Yallop)
 
 ### Type system
+
+- MPR#248, GPR#1225: unique names for weak type variables
+    # ref [];;
+    - : '_weak1 list ref = {contents = []}
+  (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
+   Gabriel Radanne and Gabriel Scherer)
 
 * MPR#6738, MPR#7215, MPR#7231, GPR#556: Add a new check that 'let rec'
   bindings are well formed.
   (Jeremy Yallop, reviews by Stephen Dolan, Gabriel Scherer, Leo
    White, and Damien Doligez)
 
-- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
-  remains in some inferred signatures, which leads to strange errors
-  (Jacques Garrigue, report by Mandrikin)
-
-- MPR#7617, MPR#7618, GPR#1318: Ambiguous (mistakenly) type escaping the
-  scope of its equation
-  (Jacques Garrigue, report by Thomas Refis)
+- GPR#1142: Mark assertions nonexpansive, so that 'assert false'
+  can be used as a placeholder for a polymorphic function.
+  (Stephen Dolan)
 
 ### Standard library:
 
 - MPR#1771, MPR#7309, GPR#1026: Add update to maps. Allows to update a
   binding in a map or create a new binding if the key had no binding
+    val update: key -> ('a option -> 'a option) -> 'a t -> 'a t
   (Sébastien Briais, review by Daniel Buenzli, Alain Frisch and
   Gabriel Scherer)
 
@@ -155,7 +171,8 @@ Release branch for 4.06:
   When building Format.formatter_out_functions values redefinining the out_spaces field,
   "{ fmt_out_funs with out_spaces = f; }" should be replaced by
   "{ fmt_out_funs with out_spaces = f; out_indent = f; }" to maintain the old behavior.
-  (Richard Bonichon and Pierre Weis, review by Alain Frisch)
+  (Richard Bonichon and Pierre Weis, review by Alain Frisch, original request by
+  Spiros Eliopoulos in GPR#506)
 
 * GPR#943: Fixed the divergence of the Pervasives module between the stdlib
   and threads implementations.  In rare circumstances this can change the
@@ -170,7 +187,7 @@ Release branch for 4.06:
   (Markus Mottl, review by Hezekiah M. Carty, Jeremie Dimino, Damien Doligez,
   Alain Frisch, Xavier Leroy, Gabriel Scherer and Mark Shinwell)
 
-- GPR#1034: Add List.init
+- GPR#1034: List.init : int -> (int -> 'a) -> 'a list
   (Richard Degenne, review by David Allsopp, Thomas Braibant, Florian
   Angeletti, Gabriel Scherer, Nathan Moreau, Alain Frisch)
 
@@ -182,10 +199,7 @@ Release branch for 4.06:
   values.
   (Daniel Bünzli, review by Damien Doligez, Max Mouratov)
 
-- GRP#1119: Change Set (private) type to inline records.
-  (Albin Coquereau)
-
-- GPR#1175: bigarray, add a change_layout function to each Array[N]
+- GPR#1175: Bigarray, add a change_layout function to each Array[N]
   submodules.
   (Florian Angeletti)
 
@@ -193,7 +207,8 @@ Release branch for 4.06:
   file "dst" exists, but replaces it with file "src", like in the other ports.
   (Xavier Leroy)
 
-- GPR#1314: use the optional width information when formatting a boolean
+- GPR#1314: Format, use the optional width information
+  when formatting a boolean: "%8B", "%-8B" for example
   (Xavier Clerc, review by Gabriel Scherer)
 
 - c9cc0f25138ce58e4f4e68c4219afe33e2a9d034: Resurrect tabulation boxes
@@ -201,6 +216,17 @@ Release branch for 4.06:
   (Pierre Weis)
 
 ### Other libraries:
+
+- MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
+  created by Unix.symlink under Windows.
+  (Nicolas Ojeda Bar, review by David Allsopp)
+
+* MPR#7640, GPR#1414: reimplementation of Unix.execvpe to fix issues
+  with the 4.05 implementation.  The main issue is that the current
+  directory was always searched (last), even if the current directory
+  is not listed in the PATH.
+  (Xavier Leroy, report by Louis Gesbert and Arseniy Alekseyev,
+   review by Ivan Gotovchits)
 
 - GPR#997, GPR#1077: Deprecate Bigarray.*.map_file and add Unix.map_file as a
   first step towards moving Bigarray to the stdlib
@@ -249,10 +275,6 @@ Release branch for 4.06:
 - MPR#7624: handle warning attributes placed on let bindings
   (Xavier Clerc, report by dinosaure, review by Alain Frisch)
 
-- MPR#7656, GPR#1423: false 'unused type/constructor/value' alarms
-  in the 4.06 development version
-  (Alain Frisch, review by Jacques Garrigue, report by Jacques-Pascal Deplaix)
-
 - GPR#896: "-compat-32" is now taken into account when building .cmo/.cma
   (Hugo Heuzard)
 
@@ -275,14 +297,8 @@ Release branch for 4.06:
 * GPR#1189: allow MSVC ports to use -l option in ocamlmklib
   (David Allsopp)
 
-- GPR#1324: ensure that flambda warning are printed only once
-  (Xavier Clerc)
-
 - GPR#1332: fix ocamlc handling of "-output-complete-obj"
   (François Bobot)
-
-- GPR#1333: turn off warning 40 by default
-  (Leo White)
 
 - GPR#1336: -thread and -vmthread option information is propagated to
   PPX rewriters.
@@ -297,11 +313,6 @@ Release branch for 4.06:
   some cases graph coloring is necessarily quadratic).
   (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
   Bar, review by Nicolas Ojeda Bar and Alain Frisch)
-
-- MPR#6329, GPR#1437: Introduce padding word before "data_end" symbols
-  to ensure page table tests work correctly on an immediately preceding
-  block of zero size.
-  (Mark Shinwell, review by Xavier Leroy)
 
 - MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
   and shared libraries through -output-obj, generate dylibs instead of
@@ -521,7 +532,7 @@ Release branch for 4.06:
 - GPR#1269: Remove 50ms delay at exit for programs using threads
   (Valentin Gatien-Baron, review by Stephen Dolan)
 
-* GPR#1309: open files with O_CLOEXEC (or equivalent) in caml_sys_open thus
+* GPR#1309: open files with O_CLOEXEC (or equivalent) in caml_sys_open, thus
   unifying the semantics between Unix and Windows and also eliminating race
   condition on Unix.
   (David Allsopp, report by Andreas Hauptmann)
@@ -627,7 +638,7 @@ Release branch for 4.06:
 - GPR#1216: move Compplugin and friends from BYTECOMP to COMP
   (Leo White, review by Mark Shinwell)
 
-- GPR#1242: disable C plugins loading by default
+* GPR#1242: disable C plugins loading by default
   (Alexey Egorov)
 
 - GPR#1275: correct configure test for Spacetime availability
@@ -668,6 +679,9 @@ Release branch for 4.06:
   (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
    Pierre Chambart, Mark Shinwell)
 
+- GRP#1119: Change Set (private) type to inline records.
+  (Albin Coquereau)
+
 * GPR#1127: move config/{m,s}.h to byterun/caml and install them.
   User code should not have to include them directly since they are
   included by other header files.
@@ -683,12 +697,13 @@ Release branch for 4.06:
 
 ### Bug fixes
 
-- MPR#248, GPR#1225: unique names for weak type variables
-  (Florian Angeletti, review by Frédéric Bour, Jacques Garrigue,
-   Gabriel Radanne and Gabriel Scherer)
-
 - MPR#5927: Type equality broken for conjunctive polymorphic variant tags
   (Jacques Garrigue, report by Leo White)
+
+- MPR#6329, GPR#1437: Introduce padding word before "data_end" symbols
+  to ensure page table tests work correctly on an immediately preceding
+  block of zero size.
+  (Mark Shinwell, review by Xavier Leroy)
 
 - MPR#6587: only elide Pervasives from printed type paths in unambiguous context
   (Florian Angeletti and Jacques Garrigue)
@@ -744,12 +759,12 @@ Release branch for 4.06:
   (Gabriel Scherer, report by Manuel Fähndrich,
    review by Jacques Garrigue and Leo White)
 
-- MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
-  created by Unix.symlink under Windows.
-  (Nicolas Ojeda Bar, review by David Allsopp)
-
 - MPR#7591, GPR#1257: on x86-64, frame table is not 8-aligned
   (Xavier Leroy, report by Mantis user "voglerr", review by Gabriel Scherer)
+
+- MPR#7601, GPR#1320: It seems like a hidden non-generalized type variable
+  remains in some inferred signatures, which leads to strange errors
+  (Jacques Garrigue, report by Mandrikin)
 
 - MPR#7609: use-after-free memory corruption if a program debugged
   under ocamldebug calls Pervasives.flush_all
@@ -757,6 +772,10 @@ Release branch for 4.06:
 
 - MPR#7612, GPR#1345: afl-instrumentation bugfix for classes.
   (Stephen Dolan, review by Gabriel Scherer and David Allsopp)
+
+- MPR#7617, MPR#7618, GPR#1318: Ambiguous (mistakenly) type escaping the
+  scope of its equation
+  (Jacques Garrigue, report by Thomas Refis)
 
 - MPR#7619, GPR#1387: position of the optional last semi-column not included
   in the position of the expression (same behavior as for lists)
@@ -767,12 +786,9 @@ Release branch for 4.06:
   This looks like a Mingw64 issue, which we work around with GCC builtins.
   (Xavier Leroy)
 
-* MPR#7640, GPR#1414: reimplementation of Unix.execvpe to fix issues
-  with the 4.05 implementation.  The main issue is that the current
-  directory was always searched (last), even if the current directory
-  is not listed in the PATH.
-  (Xavier Leroy, report by Mantis users 'AltGr' and 'aalekseyev',
-   review by Ivan Gotovchits)
+- MPR#7656, GPR#1423: false 'unused type/constructor/value' alarms
+  in the 4.06 development version
+  (Alain Frisch, review by Jacques Garrigue, report by Jacques-Pascal Deplaix)
 
 - MPR#7657, GPR#1424: ensures correct call-by-value semantics when
   eta-expanding functions to eliminate optional arguments
@@ -796,6 +812,9 @@ Release branch for 4.06:
 
 - GPR#1243: Fix pprintast for #... infix operators
   (Alain Frisch, report by Omar Chebib)
+
+- GPR#1324: ensure that flambda warning are printed only once
+  (Xavier Clerc)
 
 - GPR#1329: Prevent recursive polymorphic variant names
   (Jacques Garrigue, fix suggested by Leo White)
