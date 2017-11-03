@@ -664,9 +664,14 @@ Release branch for 4.06:
   (Dwight Guth, review by Gabriel Radanne, Damien Doligez, Gabriel Scherer,
    Pierre Chambart, Mark Shinwell)
 
-- GPR#1127: move config/{m,s}.h to byterun/caml and install them.
+* GPR#1127: move config/{m,s}.h to byterun/caml and install them.
   User code should not have to include them directly since they are
-  included by other header files
+  included by other header files.
+  Previously {m,s}.h were not installed but they were substituted into
+  caml/config.h; they are now just #include-d by this file. This may
+  break some scripts relying on the (unspecified) presence of certain
+  #define in config.h instead of m.h and s.h -- they can be rewritten
+  to try to grep those files if they exist.
   (Sébastien Hinderer)
 
 - GPR#1281: avoid formatter flushes inside exported printers in Location
