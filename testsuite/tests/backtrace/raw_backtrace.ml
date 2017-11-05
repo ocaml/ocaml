@@ -27,6 +27,17 @@ let g msg =
          let bt = Printexc.get_raw_backtrace () in
          print_string "f"; print_newline ();
          Printexc.raise_with_backtrace (Localized exn) bt
+     | Error "g" as exn ->
+         let bt = Printexc.get_raw_backtrace () in
+         print_string "g"; print_newline ();
+         ignore (exception_raised_internally ());
+         let f = Printexc.raise_with_backtrace exn in
+         f bt
+     | Error "h" as exn ->
+         let bt = Printexc.get_raw_backtrace () in
+         print_string "h"; print_newline ();
+         let f = Printexc.raise_with_backtrace (Localized exn) in
+         f bt
 
 let backtrace args =
   try
@@ -56,4 +67,6 @@ let _ =
   run [| "d" |];
   run [| "e" |];
   run [| "f" |];
+  run [| "g" |];
+  run [| "h" |];
   run [| |]
