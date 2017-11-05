@@ -54,6 +54,7 @@ val set_args_erase_mutable : pattern -> pattern list -> pattern list
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
     pattern -> constructor_tag list -> constructor_description  list
+exception No_inhabitant
 val ppat_of_type :
     Env.t -> type_expr ->
     Parsetree.pattern *

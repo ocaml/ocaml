@@ -1365,8 +1365,11 @@ and type_declaration ctxt f x =
     in
     match x.ptype_kind with
     | Ptype_variant xs ->
-        pp f "%t%t@\n%a" intro priv
-          (list ~sep:"@\n" constructor_declaration) xs
+        if xs = [] then
+          pp f "%t%t@ |" intro priv
+        else
+          pp f "%t%t@\n%a" intro priv
+            (list ~sep:"@\n" constructor_declaration) xs
     | Ptype_abstract -> ()
     | Ptype_record l ->
         pp f "%t%t@;%a" intro priv (record_declaration ctxt) l

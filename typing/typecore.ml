@@ -1415,9 +1415,12 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with Error _ ->
+  with
+  | Error _ -> begin
     set_state state env;
     None
+  end
+  | Parmatch.No_inhabitant -> None
 
 let check_partial ?(lev=get_current_level ()) env expected_ty loc cases =
   let explode = match cases with [_] -> 5 | _ -> 0 in

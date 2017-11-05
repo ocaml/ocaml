@@ -532,9 +532,13 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         print_record_decl lbls
   | Otyp_sum constrs ->
-      fprintf ppf " =%a@;<1 2>%a"
-        print_private td.otype_private
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+      if constrs = [] then
+        fprintf ppf " =%a@;<1 2>|"
+          print_private td.otype_private
+      else
+        fprintf ppf " =%a@;<1 2>%a"
+          print_private td.otype_private
+          (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | Otyp_open ->
       fprintf ppf " = .."
   | ty ->
