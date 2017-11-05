@@ -1815,6 +1815,8 @@ simple_pattern_not_ident:
 ;
 
 simple_delimited_pattern:
+  | LBRACE RBRACE
+    { mkpat(Ppat_record([], Closed)) }
   | LBRACE lbl_pattern_list RBRACE
     { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
   | LBRACE lbl_pattern_list error
@@ -1845,8 +1847,7 @@ pattern_semi_list:
   | pattern_semi_list SEMI pattern              { $3 :: $1 }
 ;
 lbl_pattern_list:
-                                         { [], Closed}
-  | lbl_pattern                          { [$1], Closed }
+    lbl_pattern                          { [$1], Closed }
   | lbl_pattern SEMI                     { [$1], Closed }
   | lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
   | lbl_pattern SEMI lbl_pattern_list
