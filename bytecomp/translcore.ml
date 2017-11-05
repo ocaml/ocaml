@@ -1334,7 +1334,7 @@ and transl_record loc env fields repres opt_init_expr =
         | Record_inlined tag -> Lconst(Const_block(tag, cl))
         | Record_unboxed _ -> Lconst(
             match cl with
-            | [] -> Const_base (Const_int 0)
+            | [] -> Const_block(0, cl)
             | [v] -> v
             | _ -> assert false)
         | Record_float ->
