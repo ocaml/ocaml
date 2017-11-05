@@ -77,6 +77,11 @@ let mk_dllpath f =
   "<dir>  Add <dir> to the run-time search path for shared libraries"
 ;;
 
+let mk_errorsize i =
+  "-error-size", Arg.Int i,
+  "<size>  Increase the size of error message to <size> (in arbitrary units)"
+;;
+
 let mk_dtypes f =
   "-dtypes", Arg.Unit f, " (deprecated) same as -annot"
 ;;
@@ -589,6 +594,10 @@ let mk_color f =
   \    not empty or \"dumb\", and that isatty(stderr) holds."
 ;;
 
+let mk_diffmarkers f =
+  "-diff-markers", Arg.Unit f,
+  " Emphasize difference with a prefix marker in type errors."
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 ;;
@@ -787,6 +796,8 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _diff_markers: unit -> unit
+  val _error_size: int -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -1012,9 +1023,11 @@ struct
     mk_compat_32 F._compat_32;
     mk_config F._config;
     mk_custom F._custom;
+    mk_diffmarkers F._diff_markers;
     mk_dllib F._dllib;
     mk_dllpath F._dllpath;
     mk_dtypes F._annot;
+    mk_errorsize F._error_size;
     mk_for_pack_byt F._for_pack;
     mk_g_byt F._g;
     mk_i F._i;
@@ -1114,6 +1127,8 @@ struct
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_open F._open;
+    mk_diffmarkers F._diff_markers;
+    mk_errorsize F._error_size;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
@@ -1171,6 +1186,8 @@ struct
     mk_compact F._compact;
     mk_config F._config;
     mk_dtypes F._annot;
+    mk_diffmarkers F._diff_markers;
+    mk_errorsize F._error_size;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
     mk_i F._i;
@@ -1327,6 +1344,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
+    mk_diffmarkers F._diff_markers;
+    mk_errorsize F._error_size;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;

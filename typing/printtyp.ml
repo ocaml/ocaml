@@ -342,7 +342,7 @@ let set_printing_env env =
   end
 
 let wrap_printing_env env f =
-  Misc.Color.setup false !Clflags.color;
+  Misc.Color.setup !Clflags.diff_markers !Clflags.color;
   set_printing_env env;
   try_finally f (fun () -> set_printing_env Env.empty)
 

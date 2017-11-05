@@ -62,6 +62,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _clambda_checks = option "-clambda-checks"
   let _compact = option "-compact"
   let _config = option "-config"
+  let _error_size s = option_with_arg "-error-size" (string_of_int s)
   let _for_pack s = option_with_arg "-for-pack" s
   let _g = option "-g"
   let _i = option "-i"
@@ -142,6 +143,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _warn_error = option_with_arg "-warn-error"
   let _warn_help = option "-warn-help"
   let _color s = option_with_arg "-color" s
+  let _diff_markers = option "-diff-markers"
   let _where = option "-where"
 
   let _linscan = option "-linscan"

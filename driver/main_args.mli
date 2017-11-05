@@ -27,6 +27,8 @@ module type Common_options = sig
   val _noassert : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
+  val _diff_markers: unit -> unit
+  val _error_size: int -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit

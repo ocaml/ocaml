@@ -348,6 +348,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
+  let _diff_markers = set Clflags.diff_markers
+  let _error_size n = Clflags.error_size := n
   let _open s = open_modules := s :: !open_modules
   let _ppx _s = (* disabled *) ()
   let _principal = set principal
@@ -398,7 +400,7 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
 let () =
-  Clflags.error_size := 0;
+  Clflags.error_size := max_int;
   try
     Arg.parse args main usage;
     Printf.eprintf "expect_test: no input file\n";

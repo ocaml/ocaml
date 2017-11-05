@@ -58,6 +58,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
   let _config () = show_config ()
+  let _error_size n =  error_size := n
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true
@@ -192,6 +193,7 @@ module Options = Main_args.Make_optcomp_options (struct
           | None -> ()
           | Some setting -> color := Some setting
     end
+  let _diff_markers = set diff_markers
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives
