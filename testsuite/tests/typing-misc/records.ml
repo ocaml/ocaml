@@ -110,3 +110,30 @@ type ('a, 'b) t = { fst : 'a; snd : 'b; }
 val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 - : (int, string) t = {fst = 2; snd = ""}
 |}];;
+
+type m = { };;
+let x = { }
+type n = m
+let y:n = x
+module X = struct type g = { }  end
+let g = { }
+let n = let open X in { }
+let h = n
+type c = C of { } | D of m * e and e = {};;
+let f = function C {} -> 1 | D ({}, {}) -> 2
+let m, n = (f (C {})), (f (D ({}, {})));;
+[%%expect{|
+type m = { }
+val x : m = {}
+type n = m
+val y : n = {}
+module X : sig type g = { } end
+val g : m = {}
+val n : X.g = {}
+val h : X.g = {}
+type c = C of { } | D of m * e
+and e = { }
+val f : c -> int = <fun>
+val m : int = 1
+val n : int = 2
+|}];;

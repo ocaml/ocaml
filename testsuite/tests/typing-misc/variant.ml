@@ -18,3 +18,18 @@ Error: Signature mismatch:
        is not included in
          type t = int * bool
 |}];;
+
+type t = |;;
+type g = C of t * t | D of t * int;;
+let f (x:t) = match x with _ -> .;;
+let f (x:g) = match x with C _ | D _ -> .;;
+let f (x:g) = match x with _ -> . ;;
+[%%expect{|
+type t = |
+type g = C of t * t | D of t * int
+val f : t -> 'a = <fun>
+val f : g -> 'a = <fun>
+Line _, characters 27-28:
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: _
+|}]
