@@ -124,6 +124,7 @@ type error =
   | Not_an_extension_constructor
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Unbound_empty_record_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

@@ -77,6 +77,8 @@ type error =
   | Not_an_extension_constructor
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Unbound_empty_record_type
+
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -866,7 +868,6 @@ let map_fold_cont f xs k =
     xs (fun ys -> k (List.rev ys)) []
 
 let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
-  Format.eprintf "type label a list@.";
   let lbl_a_list =
     match lid_a_list, labels with
       ({txt=Longident.Lident s}, _)::_, Some labels when Hashtbl.mem labels s ->
@@ -896,7 +897,6 @@ let type_label_a_list ?labels loc closed env type_lbl_a opath lid_a_list k =
       (fun (_,lbl1,_) (_,lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
       lbl_a_list
   in
-  Format.eprintf "begin folding@.";
   map_fold_cont type_lbl_a lbl_a_list k
 ;;
 
@@ -2268,14 +2268,27 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             Some (p0, p, ty.level = generic_level || not !Clflags.principal)
           with Not_found -> None
         in
-        Format.eprintf "First expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
         match get_path ty_expected with
           None ->
             begin match opt_exp with
-              None -> Format.eprintf "here1@."; newvar (), None
+            | None ->
+                if lid_sexp_list = [] then begin
+                  match Env.find_empty_record env with
+                  | None -> raise (Error(loc, env, Unbound_empty_record_type))
+                  | Some (decl, p) -> begin
+                      begin_def ();
+                      let ty =
+                        newconstr p (instance_list env decl.type_params) in
+                      end_def ();
+                      generalize_structure ty;
+                      ty, None
+                    end
+                end
+                else
+                  newvar(), None
             | Some exp ->
                 match get_path exp.exp_type with
-                  None -> Format.eprintf "here2@."; newvar (), None
+                  None -> newvar (), None
                 | Some (_, p', _) as op ->
                     let decl = Env.find_type p' env in
                     begin_def ();
@@ -2285,7 +2298,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                     generalize_structure ty;
                     ty, op
             end
-        | op -> Format.eprintf "here3@."; ty_expected, op
+        | op -> ty_expected, op
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
@@ -2295,13 +2308,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
              opath lid_sexp_list)
           (fun x -> x)
       in
-      Format.eprintf "Start unification@.";
-      Format.eprintf "expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
-      Format.eprintf "record raw_type_expr: %a@." Printtyp.raw_type_expr ty_record;
       unify_exp_types loc env ty_record (instance env ty_expected);
-      Format.eprintf "After unification@.";
-      Format.eprintf "expect raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
-      Format.eprintf "record raw_type_expr: %a@." Printtyp.raw_type_expr ty_record;
 
       (* type_label_a_list returns a list of labels sorted by lbl_pos *)
       (* note: check_duplicates would better be implemented in
@@ -2383,7 +2390,6 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         Array.map2 (fun descr def -> descr, def)
           label_descriptions label_definitions
       in
-      Format.eprintf "expect 2 type_expr: %a@." Printtyp.type_expr ty_expected;
       re {
         exp_desc = Texp_record {
             fields; representation;
@@ -3355,7 +3361,6 @@ and type_format loc str env =
 
 and type_label_exp create env loc ty_expected
           (lid, label, sarg) =
-  Format.eprintf "type_label_exp@.";
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
   let separate = !Clflags.principal || Env.has_local_constraints env in
@@ -3367,15 +3372,11 @@ and type_label_exp create env loc ty_expected
     generalize_structure ty_arg;
     generalize_structure ty_res
   end;
-  Format.eprintf "type_label_exp generalize done@.";
   begin try
-    Format.eprintf "ty_expected< raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
-    Format.eprintf "tyres< raw_type_expr: %a@." Printtyp.raw_type_expr ty_res;
-    unify env (instance_def ty_res) (instance env ty_expected);
-    Format.eprintf "ty_expected> raw_type_expr: %a@." Printtyp.raw_type_expr ty_expected;
-    Format.eprintf "tyres> raw_type_expr: %a@." Printtyp.raw_type_expr ty_res;
+    unify env (instance_def ty_res) (instance env ty_expected)
   with Unify trace ->
-    raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
+    raise (Error(lid.loc, env,
+                 Label_mismatch(lid.txt, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance_def ty_arg in
@@ -4466,6 +4467,8 @@ let report_error env ppf = function
                    integers of type %s" ty
   | Unknown_literal (n, m) ->
       fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
+  | Unbound_empty_record_type ->
+      fprintf ppf "Unknown empty record type"
 
 
 let report_error env ppf err =
