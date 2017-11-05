@@ -1,11 +1,6 @@
-
-(* Print all fully qualified names in expressions *)
-
 open Asttypes
 open Longident
 open Typedtree
-
-
 open Tast_mapper
 
 let tast_mapper =
@@ -40,10 +35,4 @@ let () =
         let sign = print_if Format.std_formatter (ref true) Printtyp.signature sign in
         (ast, sign, coercion)
     );
-(*
-  Typemod.InterfaceHooks.add_hook "pptx_example"
-    (fun (hook_info : Misc.hook_info)
-      (ast : Typedtree.signature) ->
-
-        ast); *)
   ()
