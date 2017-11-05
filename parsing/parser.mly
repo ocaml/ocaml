@@ -1845,8 +1845,9 @@ pattern_semi_list:
   | pattern_semi_list SEMI pattern              { $3 :: $1 }
 ;
 lbl_pattern_list:
-    lbl_pattern { [$1], Closed }
-  | lbl_pattern SEMI { [$1], Closed }
+                                         { [], Closed}
+  | lbl_pattern                          { [$1], Closed }
+  | lbl_pattern SEMI                     { [$1], Closed }
   | lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
   | lbl_pattern SEMI lbl_pattern_list
       { let (fields, closed) = $3 in $1 :: fields, closed }
