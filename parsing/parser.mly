@@ -1410,24 +1410,24 @@ expr:
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
-  | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
+  | simple_expr DOT LBRACE seq_expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
-  | simple_expr DOTOP LBRACKET expr RBRACKET LESSMINUS expr
+  | simple_expr DOTOP LBRACKET seq_expr RBRACKET LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "[]<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
-  | simple_expr DOTOP LPAREN expr RPAREN LESSMINUS expr
+  | simple_expr DOTOP LPAREN seq_expr RPAREN LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
-  | simple_expr DOTOP LBRACE expr RBRACE LESSMINUS expr
+  | simple_expr DOTOP LBRACE seq_expr RBRACE LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr RBRACKET LESSMINUS expr
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr RBRACKET LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3,"." ^ $4 ^ "[]<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr RPAREN LESSMINUS expr
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr RPAREN LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "()<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE LESSMINUS expr
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr RBRACE LESSMINUS expr
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "{}<-")) in
         mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
   | label LESSMINUS expr
@@ -1486,37 +1486,37 @@ simple_expr:
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
-  | simple_expr DOTOP LBRACKET expr RBRACKET
+  | simple_expr DOTOP LBRACKET seq_expr RBRACKET
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "[]")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LBRACKET expr error
+  | simple_expr DOTOP LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
-  | simple_expr DOTOP LPAREN expr RPAREN
+  | simple_expr DOTOP LPAREN seq_expr RPAREN
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LPAREN expr error
+  | simple_expr DOTOP LPAREN seq_expr error
       { unclosed "(" 3 ")" 5 }
-  | simple_expr DOTOP LBRACE expr RBRACE
+  | simple_expr DOTOP LBRACE seq_expr RBRACE
       { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
-  | simple_expr DOTOP LBRACE expr error
+  | simple_expr DOTOP LBRACE seq_expr error
       { unclosed "{" 3 "}" 5 }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr RBRACKET
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr RBRACKET
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "[]")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LBRACKET expr error
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr error
       { unclosed "[" 5 "]" 7 }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr RPAREN
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr RPAREN
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "()")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LPAREN expr error
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr error
       { unclosed "(" 5 ")" 7 }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr RBRACE
       { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "{}")) in
         mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
-  | simple_expr DOT mod_longident DOTOP LBRACE expr error
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr error
       { unclosed "{" 5 "}" 7 }
-  | simple_expr DOT LBRACE expr RBRACE
+  | simple_expr DOT LBRACE seq_expr RBRACE
       { bigarray_get $1 $4 }
   | simple_expr DOT LBRACE expr_comma_list error
       { unclosed "{" 3 "}" 5 }
