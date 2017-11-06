@@ -198,7 +198,7 @@ and expression_desc =
         (** { l1=P1; ...; ln=Pn }           (extended_expression = None)
             { E0 with l1=P1; ...; ln=Pn }   (extended_expression = Some E0)
 
-            Invariant: n > 0 (*TODO(objmagic)*)
+            Invariant: n >= 0
 
             If the type is { l1: t1; l2: t2 }, the expression
             { E0 with t2=P2 } is represented as
