@@ -61,6 +61,9 @@ be mentioned in the 4.06 section below instead of here.)
   non-regular files, like other Unix variants do.
   (Xavier Leroy)
 
+- MPR#7668: -principal is broken with polymorphic variants
+  (Jacques Garrigue, report by Jun Furuse)
+
 Release branch for 4.06:
 ------------------------
 
