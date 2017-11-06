@@ -64,6 +64,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1502: more command line options for expect tests
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Bug fixes
 
 - MPR#6394, GPR#1425: fix fatal_error from Parmatch.get_type_path
