@@ -111,6 +111,12 @@ val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 - : (int, string) t = {fst = 2; snd = ""}
 |}];;
 
+let no = { };;
+[%%expect{|
+Line _, characters 9-12:
+Error: Unknown empty record type
+|}];;
+
 type m = { };;
 let x = { }
 type n = m
@@ -137,3 +143,5 @@ val f : c -> int = <fun>
 val m : int = 1
 val n : int = 2
 |}];;
+
+
