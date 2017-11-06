@@ -543,11 +543,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         Alloc_small(accu, 1 + nvars, Closure_tag);
         for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
       } else {
+        value block;
         /* PR#6385: must allocate in major heap */
         Setup_for_track_gc;
-        accu = caml_alloc_shr_effect(1 + nvars, Closure_tag,
-                                     CAML_ALLOC_EFFECT_GC);
+        block = caml_alloc_shr_effect(1 + nvars, Closure_tag,
+                                      CAML_ALLOC_EFFECT_GC);
         Restore_after_track_gc;
+        accu = block;
         for (i = 0; i < nvars; i++) caml_initialize(&Field(accu, i + 1), sp[i]);
       }
       /* The code pointer is not in the heap, so no need to go through
@@ -570,11 +572,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         p = &Field(accu, nfuncs * 2 - 1);
         for (i = 0; i < nvars; i++, p++) *p = sp[i];
       } else {
+        value block;
         /* PR#6385: must allocate in major heap */
         Setup_for_track_gc;
-        accu = caml_alloc_shr_effect(blksize, Closure_tag,
-                                     CAML_ALLOC_EFFECT_GC);
+        block = caml_alloc_shr_effect(blksize, Closure_tag,
+                                      CAML_ALLOC_EFFECT_GC);
         Restore_after_track_gc;
+        accu = block;
         p = &Field(accu, nfuncs * 2 - 1);
         for (i = 0; i < nvars; i++, p++) caml_initialize(p, sp[i]);
       }
