@@ -14,7 +14,13 @@
 #*                                                                        *
 #**************************************************************************
 
-default: byte native
+default:
+	@$(MAKE) byte
+	@if $(BYTECODE_ONLY) ; then \
+	  echo " ... testing native 'test.reference': => skipped"; \
+	else \
+	  $(MAKE) native; \
+	fi
 
 native:
 	@printf " ... testing native 'test.reference':"
@@ -52,7 +58,7 @@ promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result
-	@rm -f test.native
+	@rm -f test.native test.byte
 
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.common

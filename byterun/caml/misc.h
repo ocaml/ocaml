@@ -48,7 +48,7 @@ typedef char * addr;
    which supports both GCC/Clang and MSVC.
 
    Note: CAMLnoreturn is a different macro defined in memory.h,
-   to be used in function bodies rather than  aprototype attribute.
+   to be used in function bodies rather than as a prototype attribute.
 */
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
@@ -73,7 +73,7 @@ typedef char * addr;
 #define CAMLprim
 #define CAMLextern extern
 
-/* Weak function definitions that can be overriden by external libs */
+/* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
 #if defined(__GNUC__) && (defined (__ELF__) || defined(__APPLE__))
 #define CAMLweakdef __attribute__((weak))
@@ -119,10 +119,120 @@ CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
                                        char *fmt2, char *arg2)
 CAMLnoreturn_end;
 
-/* Safe string operations */
+/* Detection of available C built-in functions, the Clang way. */
 
-CAMLextern char * caml_strdup(const char * s);
-CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
+#ifdef __has_builtin
+#define Caml_has_builtin(x) __has_builtin(x)
+#else
+#define Caml_has_builtin(x) 0
+#endif
+
+/* Integer arithmetic with overflow detection.
+   The functions return 0 if no overflow, 1 if overflow.
+   The result of the operation is always stored at [*res].
+   If no overflow is reported, this is the exact result.
+   If overflow is reported, this is the exact result modulo 2 to the word size.
+*/
+
+static inline int caml_uadd_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_add_overflow)
+  return __builtin_add_overflow(a, b, res);
+#else
+  uintnat c = a + b;
+  *res = c;
+  return c < a;
+#endif
+}
+
+static inline int caml_usub_overflow(uintnat a, uintnat b, uintnat * res)
+{
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_sub_overflow)
+  return __builtin_sub_overflow(a, b, res);
+#else
+  uintnat c = a - b;
+  *res = c;
+  return a < b;
+#endif
+}
+
+#if __GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow)
+static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+{
+  return __builtin_mul_overflow(a, b, res);
+}
+#else
+extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+#endif
+
+/* Windows Unicode support */
+
+#ifdef _WIN32
+
+typedef wchar_t charnat;
+
+#define _T(x) L ## x
+
+#define _topen _wopen
+#define _tstat _wstati64
+#define _tunlink _wunlink
+#define _trename caml_win32_rename
+#define _tchdir _wchdir
+#define _tgetcwd _wgetcwd
+#define _tgetenv _wgetenv
+#define _tsystem _wsystem
+#define _trmdir _wrmdir
+#define _tutime _wutime
+#define _tputenv _wputenv
+#define _tchmod _wchmod
+#define _texecv _wexecv
+#define _texecve _wexecve
+#define _texecvp _wexecvp
+#define _tcscmp wcscmp
+#define _tcslen wcslen
+#define _stscanf swscanf
+
+#define caml_stat_tcsdup caml_stat_wcsdup
+#define caml_stat_tcsconcat caml_stat_wcsconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup_to_utf16
+#define caml_stat_strdup_of_utf16 caml_stat_strdup_of_utf16
+#define caml_copy_string_of_utf16 caml_copy_string_of_utf16
+
+#else /* _WIN32 */
+
+typedef char charnat;
+
+#define _T(x) x
+
+#define _topen open
+#define _tstat stat
+#define _tunlink unlink
+#define _trename rename
+#define _tchdir chdir
+#define _tgetcwd getcwd
+#define _tgetenv getenv
+#define _tsystem system
+#define _trmdir rmdir
+#define _tutime utime
+#define _tputenv putenv
+#define _tchmod chmod
+#define _texecv execv
+#define _texecve execve
+#define _texecvp execvp
+#define _tcscmp strcmp
+#define _tcslen strlen
+#define _stscanf sscanf
+
+#define caml_stat_tcsdup caml_stat_strdup
+#define caml_stat_tcsconcat caml_stat_strconcat
+
+#define caml_stat_strdup_to_utf16 caml_stat_strdup
+#define caml_stat_strdup_of_utf16 caml_stat_strdup
+#define caml_copy_string_of_utf16 caml_copy_string
+
+#endif /* _WIN32 */
+
 
 /* Use macros for some system calls being called from OCaml itself.
   These calls can be either traced for security reasons, or changed to
@@ -132,14 +242,14 @@ CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 #ifndef CAML_WITH_CPLUGINS
 
 #define CAML_SYS_EXIT(retcode) exit(retcode)
-#define CAML_SYS_OPEN(filename,flags,perm) open(filename,flags,perm)
+#define CAML_SYS_OPEN(filename,flags,perm) _topen(filename,flags,perm)
 #define CAML_SYS_CLOSE(fd) close(fd)
-#define CAML_SYS_STAT(filename,st) stat(filename,st)
-#define CAML_SYS_UNLINK(filename) unlink(filename)
-#define CAML_SYS_RENAME(old_name,new_name) rename(old_name, new_name)
-#define CAML_SYS_CHDIR(dirname) chdir(dirname)
-#define CAML_SYS_GETENV(varname) getenv(varname)
-#define CAML_SYS_SYSTEM(command) system(command)
+#define CAML_SYS_STAT(filename,st) _tstat(filename,st)
+#define CAML_SYS_UNLINK(filename) _tunlink(filename)
+#define CAML_SYS_RENAME(old_name,new_name) _trename(old_name, new_name)
+#define CAML_SYS_CHDIR(dirname) _tchdir(dirname)
+#define CAML_SYS_GETENV(varname) _tgetenv(varname)
+#define CAML_SYS_SYSTEM(command) _tsystem(command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
 #else
@@ -166,7 +276,10 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \
-  (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+  (charnat*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+#define CAML_SYS_VOID_PRIM_1(code,prim,arg1)               \
+  (caml_cplugins_prim == NULL) ? prim(arg1) :    \
+  (void)caml_cplugins_prim(code,(intnat) (arg1),0,0)
 #define CAML_SYS_PRIM_2(code,prim,arg1,arg2)                         \
   (caml_cplugins_prim == NULL) ? prim(arg1,arg2) :              \
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),0)
@@ -175,23 +288,23 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),(intnat) (arg3))
 
 #define CAML_SYS_EXIT(retcode) \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
+  CAML_SYS_VOID_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
 #define CAML_SYS_OPEN(filename,flags,perm)                      \
-  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
+  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,_topen,filename,flags,perm)
 #define CAML_SYS_CLOSE(fd)                      \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CLOSE,close,fd)
 #define CAML_SYS_STAT(filename,st)                      \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,stat,filename,st)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,_tstat,filename,st)
 #define CAML_SYS_UNLINK(filename)                       \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,unlink,filename)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,_tunlink,filename)
 #define CAML_SYS_RENAME(old_name,new_name)                              \
-  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,rename,old_name,new_name)
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,_trename,old_name,new_name)
 #define CAML_SYS_CHDIR(dirname)                         \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir,dirname)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,_tchdir,dirname)
 #define CAML_SYS_GETENV(varname)                        \
-  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
+  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,_tgetenv,varname)
 #define CAML_SYS_SYSTEM(command)                        \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system,command)
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,_tsystem,command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
   CAML_SYS_PRIM_2(CAML_CPLUGINS_READ_DIRECTORY,caml_read_directory,     \
                   dirname,tbl)
@@ -201,14 +314,14 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 struct cplugin_context {
   int api_version;
   int prims_bitmap;
-  char *exe_name;
-  char** argv;
-  char *plugin; /* absolute filename of plugin, do a copy if you need it ! */
+  charnat *exe_name;
+  charnat** argv;
+  charnat *plugin; /* absolute filename of plugin, do a copy if you need it ! */
   char *ocaml_version;
 /* end of CAML_CPLUGIN_CONTEXT_API version 0 */
 };
 
-extern void caml_cplugins_init(char * exe_name, char **argv);
+extern void caml_cplugins_init(charnat * exe_name, charnat **argv);
 
 /* A plugin MUST define a symbol "caml_cplugin_init" with the prototype:
 
@@ -234,7 +347,7 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
-CAMLextern int caml_read_directory(char * dirname, struct ext_table * contents);
+CAMLextern int caml_read_directory(charnat * dirname, struct ext_table * contents);
 
 
 #ifdef CAML_INTERNALS
@@ -242,15 +355,20 @@ CAMLextern int caml_read_directory(char * dirname, struct ext_table * contents);
 /* GC flags and messages */
 
 extern uintnat caml_verb_gc;
-void caml_gc_message (int, char *, uintnat);
+void caml_gc_message (int, char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 
 /* Runtime warnings */
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
-/* Memory routines */
-
-char *caml_aligned_malloc (asize_t bsize, int, void **);
+/* Deprecated aliases */
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -268,8 +386,9 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
   04 -> fields deallocated by [caml_obj_truncate]
   10 -> uninitialised fields of minor objects
   11 -> uninitialised fields of major objects
-  15 -> uninitialised words of [caml_aligned_malloc] blocks
-  85 -> filler bytes of [caml_aligned_malloc]
+  15 -> uninitialised words of [caml_stat_alloc_aligned] blocks
+  85 -> filler bytes of [caml_stat_alloc_aligned]
+  99 -> the magic prefix of a memory block allocated by [caml_stat_alloc]
 
   special case (byte by byte):
   D7 -> uninitialised words of [caml_stat_alloc] blocks
@@ -282,6 +401,7 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 #define Debug_uninit_major   Debug_tag (0x11)
 #define Debug_uninit_align   Debug_tag (0x15)
 #define Debug_filler_align   Debug_tag (0x85)
+#define Debug_pool_magic     Debug_tag (0x99)
 
 #define Debug_uninit_stat    0xD7
 
@@ -291,10 +411,6 @@ char *caml_aligned_malloc (asize_t bsize, int, void **);
 extern void caml_set_fields (intnat v, unsigned long, unsigned long);
 #endif /* DEBUG */
 
-
-#ifndef CAML_AVOID_CONFLICTS
-#define Assert CAMLassert
-#endif
 
 /* snprintf emulation for Win32 */
 
@@ -330,7 +446,7 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 #define CAML_INSTR_ALLOC(t) do{                                     \
     if (caml_stat_minor_collections >= CAML_INSTR_STARTTIME         \
         && caml_stat_minor_collections < CAML_INSTR_STOPTIME){      \
-      t = malloc (sizeof (struct CAML_INSTR_BLOCK));                \
+      t = caml_stat_alloc_noexc (sizeof (struct CAML_INSTR_BLOCK)); \
       t->index = 0;                                                 \
       t->tag[0] = "";                                               \
       t->next = CAML_INSTR_LOG;                                     \

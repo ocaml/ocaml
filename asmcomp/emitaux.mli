@@ -42,14 +42,13 @@ type frame_debuginfo =
   | Dbg_alloc of Mach.alloc_info list
   | Dbg_other of Debuginfo.t
 
-type frame_descr =
-  { fd_lbl: int;                        (* Return address *)
-    fd_frame_size: int;                 (* Size of stack frame *)
-    fd_live_offset: int list;           (* Offsets/regs of live addresses *)
-    fd_raise: bool;                     (* Is frame for a raise? *)
-    fd_debuginfo: frame_debuginfo }     (* Location, if any *)
-
-val frame_descriptors : frame_descr list ref
+val record_frame_descr :
+  label:int ->              (* Return address *)
+  frame_size:int ->         (* Size of stack frame *)
+  live_offset:int list ->   (* Offsets/regs of live addresses *)
+  raise_frame:bool ->       (* Is frame for a raise? *)
+  frame_debuginfo ->            (* Location, if any *)
+  unit
 
 type emit_frame_actions =
   { efa_code_label: int -> unit;

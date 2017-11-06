@@ -18,13 +18,13 @@ let test i f =
 let s = Bytes.of_string "\000"
 let () =
   (* ensure that the string is not constant *)
-  s.[0] <- '\001'
+  Bytes.set s 0 '\001'
 
 let unknown_true =
-  s.[0] = '\001'
+  Bytes.get s 0 = '\001'
 
 let unknown_false =
-  s.[0] <> '\001'
+  Bytes.get s 0 <> '\001'
 
 let () =
   test 1 (fun () -> true || true);

@@ -90,7 +90,7 @@ let print_concat fmt sep f =
 (** Generation of LaTeX code from text structures. *)
 class text =
   object (self)
-    (** Return latex code to make a sectionning according to the given level,
+    (** Return latex code to make a section according to the given level,
        and with the given latex code. *)
     method section_style level s =
       try
@@ -460,7 +460,7 @@ class virtual info =
     (** The method used to get LaTeX code from a [text]. *)
     method virtual latex_of_text : Format.formatter -> Odoc_info.text -> unit
 
-    (** The method used to get a [text] from an optionel info structure. *)
+    (** The method used to get a [text] from an optional info structure. *)
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
@@ -566,16 +566,18 @@ class latex =
 
     method latex_of_cstr_args ( (fmt,flush) as f) mod_name (args, ret) =
       match args, ret with
-      | Cstr_tuple [], None -> []
+      | Cstr_tuple [], None -> [CodePre(flush())]
       | Cstr_tuple _ as l, None ->
           p fmt " of@ %s"
             (self#normal_cstr_args ~par:false mod_name l);
           [CodePre (flush())]
-      | Cstr_tuple _ as l, Some r ->
-          p fmt " :@ %s@ %s@ %s"
-            (self#normal_cstr_args ~par:false mod_name l)
-            "->"
-            (self#normal_type mod_name r);
+      | Cstr_tuple t as l, Some r ->
+          let res = self#normal_type mod_name r in
+          if t = [] then
+            p fmt " :@ %s" res
+          else
+            p fmt " :@ %s -> %s" (self#normal_cstr_args ~par:false mod_name l) res
+          ;
           [CodePre (flush())]
       | Cstr_record l, None ->
           p fmt " of@ ";
@@ -700,17 +702,17 @@ class latex =
                    p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
                    let l = self#latex_of_cstr_args f father (x.xt_args, x.xt_ret) in
                    let c =
-                     begin match x.xt_alias with
-                     | None -> ()
+                     match x.xt_alias with
+                     | None -> []
                      | Some xa ->
                          p fmt2 " = %s"
                            (
                              match xa.xa_xt with
                              | None -> xa.xa_name
                              | Some x -> x.xt_name
-                           )
-                     end;
-                       [CodePre (flush2 ())] in
+                           );
+                         [CodePre (flush2 ())]
+                   in
                     Latex (self#make_label (self#extension_label x.xt_name)) :: l @ c
                     @ (match x.xt_text with
                       None -> []
@@ -744,16 +746,17 @@ class latex =
         p fmt2 "@[<hov 2>exception %s" s_name;
         let l = self#latex_of_cstr_args f father (e.ex_args, e.ex_ret) in
         let s =
-          (match e.ex_alias with
-             None -> ()
-           | Some ea ->
-               Format.fprintf fmt " = %s"
-                 (
-                   match ea.ea_ex with
-                     None -> ea.ea_name
-                   | Some e -> e.ex_name
-                 )
-          ); [CodePre (flush2 ())] in
+          match e.ex_alias with
+            None -> []
+          | Some ea ->
+              Format.fprintf fmt " = %s"
+                (
+                  match ea.ea_ex with
+                    None -> ea.ea_name
+                  | Some e -> e.ex_name
+                );
+              [CodePre (flush2 ())]
+        in
        merge_codepre (l @ s ) @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]
        @ (self#text_of_info e.ex_info) in
@@ -814,7 +817,7 @@ class latex =
           self#latex_of_module_kind fmt father k2;
           self#latex_of_text fmt [Code ")"]
       | Module_with (k, s) ->
-          (* TODO: modify when Module_with will be more detailled *)
+          (* TODO: modify when Module_with will be more detailed *)
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
@@ -1073,7 +1076,7 @@ class latex =
       in
       self#latex_of_text fmt t;
       self#latex_of_class_parameter_list fmt father c;
-      (* avoid a big gap if the kind is a consrt *)
+      (* avoid a big gap if the kind is a constr *)
       (
        match c.cl_kind with
          Class.Class_constr _ ->
@@ -1265,7 +1268,7 @@ class latex =
       )
 
 
-    (** Generate the LaTeX style file, if it does not exists. *)
+    (** Generate the LaTeX style file, if it does not exist. *)
     method generate_style_file =
       try
         let dir = Filename.dirname !Global.out_file in
@@ -1322,7 +1325,7 @@ class latex =
               self#generate_for_top_module fmt m
           )
           module_list ;
-        if !Global.with_trailer then ps fmt "\\end{document}";
+        if !Global.with_trailer then ps fmt "\\end{document}\n";
         Format.pp_print_flush fmt ();
         close_out chanout
       with

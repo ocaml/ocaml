@@ -31,13 +31,21 @@
 
 #include "caml/hooks.h"
 
-CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
+CAMLexport void (*caml_natdynlink_hook)(void* handle, const char* unit) = NULL;
 
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
-static void *getsym(void *handle, char *module, char *name){
-  char *fullname = caml_strconcat(3, "caml", module, name);
+#define Handle_val(v) (*((void **) Data_abstract_val(v)))
+static value Val_handle(void* handle) {
+  value res = caml_alloc_small(1, Abstract_tag);
+  Handle_val(res) = handle;
+  return res;
+}
+
+static void *getsym(void *handle, const char *module, const char *name){
+  char *fullname = caml_stat_strconcat(3, "caml", module, name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
@@ -47,7 +55,7 @@ static void *getsym(void *handle, char *module, char *name){
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
-  return (value)caml_globals_map;
+  return caml_input_value_from_block(caml_globals_map, INT_MAX);
 }
 
 CAMLprim value caml_natdynlink_globals_inited(value unit)
@@ -57,41 +65,45 @@ CAMLprim value caml_natdynlink_globals_inited(value unit)
 
 CAMLprim value caml_natdynlink_open(value filename, value global)
 {
-  CAMLparam1 (filename);
-  CAMLlocal1 (res);
+  CAMLparam2 (filename, global);
+  CAMLlocal3 (res, handle, header);
   void *sym;
-  void *handle;
-  char *p;
+  void *dlhandle;
+  charnat *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup_to_utf16(String_val(filename));
   caml_enter_blocking_section();
-  handle = caml_dlopen(p, 1, Int_val(global));
+  dlhandle = caml_dlopen(p, 1, Int_val(global));
   caml_leave_blocking_section();
   caml_stat_free(p);
 
-  if (NULL == handle)
-    CAMLreturn(caml_copy_string(caml_dlerror()));
+  if (NULL == dlhandle)
+    caml_failwith(caml_dlerror());
 
-  sym = caml_dlsym(handle, "caml_plugin_header");
+  sym = caml_dlsym(dlhandle, "caml_plugin_header");
   if (NULL == sym)
-    CAMLreturn(caml_copy_string("not an OCaml plugin"));
+    caml_failwith("not an OCaml plugin");
+
+  handle = Val_handle(dlhandle);
+  header = caml_input_value_from_block(sym, INT_MAX);
 
   res = caml_alloc_tuple(2);
-  Field(res, 0) = (value) handle;
-  Field(res, 1) = (value) (sym);
+  Field(res, 0) = handle;
+  Field(res, 1) = header;
   CAMLreturn(res);
 }
 
-CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
-  CAMLparam1 (symbol);
+CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
+  CAMLparam2 (handle_v, symbol);
   CAMLlocal1 (result);
   void *sym,*sym2;
+  void* handle = Handle_val(handle_v);
   struct code_fragment * cf;
 
 #define optsym(n) getsym(handle,unit,n)
-  char *unit;
+  const char *unit;
   void (*entrypoint)(void);
 
   unit = String_val(symbol);
@@ -124,7 +136,7 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   }
 
   if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
-  
+
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);
   else result = Val_unit;
@@ -137,13 +149,13 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
 CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 {
   CAMLparam2 (filename, symbol);
-  CAMLlocal2 (res, v);
+  CAMLlocal3 (res, v, handle_v);
   void *handle;
-  char *p;
+  charnat *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup_to_utf16(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, 1, 1);
   caml_leave_blocking_section();
@@ -154,8 +166,9 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
     v = caml_copy_string(caml_dlerror());
     Store_field(res, 0, v);
   } else {
+    handle_v = Val_handle(handle);
     res = caml_alloc(1,0);
-    v = caml_natdynlink_run(handle, symbol);
+    v = caml_natdynlink_run(handle_v, symbol);
     Store_field(res, 0, v);
   }
   CAMLreturn(res);

@@ -248,10 +248,16 @@ CAMLextern value caml_hash_variant(char const * tag);
    this tag cannot be mistaken for pointers (see caml_obj_truncate).
 */
 #define Abstract_tag 251
+#define Data_abstract_val(v) ((void*) Op_val(v))
 
 /* Strings. */
 #define String_tag 252
+#ifdef CAML_SAFE_STRING
+#define String_val(x) ((const char *) Bp_val(x))
+#else
 #define String_val(x) ((char *) Bp_val(x))
+#endif
+#define Bytes_val(x) ((unsigned char *) Bp_val(x))
 CAMLextern mlsize_t caml_string_length (value);   /* size in bytes */
 CAMLextern int caml_string_is_c_safe (value);
   /* true if string contains no '\0' null characters */
@@ -271,12 +277,48 @@ CAMLextern void caml_Store_double_val (value,double);
 
 /* Arrays of floating-point numbers. */
 #define Double_array_tag 254
-#define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
-#define Store_double_field(v,i,d) do{ \
+
+/* The [_flat_field] macros are for [floatarray] values and float-only records.
+*/
+#define Double_flat_field(v,i) Double_val((value)((double *)(v) + (i)))
+#define Store_double_flat_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
   Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
+
+/* The [_array_field] macros are for [float array]. */
+#ifdef FLAT_FLOAT_ARRAY
+  #define Double_array_field(v,i) Double_flat_field(v,i)
+  #define Store_double_array_field(v,i,d) Store_double_flat_field(v,i,d)
+#else
+  #define Double_array_field(v,i) Double_val (Field(v,i))
+  CAMLextern void caml_Store_double_array_field (value, mlsize_t, double);
+  #define Store_double_array_field(v,i,d) caml_Store_double_array_field (v,i,d)
+#endif
+
+/* The old [_field] macros are for backward compatibility only.
+   They work with [floatarray], float-only records, and [float array]. */
+#ifdef FLAT_FLOAT_ARRAY
+  #define Double_field(v,i) Double_flat_field(v,i)
+  #define Store_double_field(v,i,d) Store_double_flat_field(v,i,d)
+#else
+  static inline double Double_field (value v, mlsize_t i) {
+    if (Tag_val (v) == Double_array_tag){
+      return Double_flat_field (v, i);
+    }else{
+      return Double_array_field (v, i);
+    }
+  }
+  static inline void Store_double_field (value v, mlsize_t i, double d) {
+    if (Tag_val (v) == Double_array_tag){
+      Store_double_flat_field (v, i, d);
+    }else{
+      Store_double_array_field (v, i, d);
+    }
+  }
+#endif /* FLAT_FLOAT_ARRAY */
+
 CAMLextern mlsize_t caml_array_length (value);   /* size in items */
 CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
 

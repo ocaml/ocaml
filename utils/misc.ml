@@ -163,6 +163,17 @@ module Stdlib = struct
       | None -> default
       | Some a -> f a
   end
+
+  module Array = struct
+    let exists2 p a1 a2 =
+      let n = Array.length a1 in
+      if Array.length a2 <> n then invalid_arg "Misc.Stdlib.Array.exists2";
+      let rec loop i =
+        if i = n then false
+        else if p (Array.unsafe_get a1 i) (Array.unsafe_get a2 i) then true
+        else loop (succ i) in
+      loop 0
+  end
 end
 
 let may = Stdlib.Option.iter
@@ -259,6 +270,31 @@ let string_of_file ic =
     if n = 0 then Buffer.contents b else
       (Buffer.add_subbytes b buff 0 n; copy())
   in copy()
+
+let output_to_file_via_temporary ?(mode = [Open_text]) filename fn =
+  let (temp_filename, oc) =
+    Filename.open_temp_file
+       ~mode ~perms:0o666 ~temp_dir:(Filename.dirname filename)
+       (Filename.basename filename) ".tmp" in
+    (* The 0o666 permissions will be modified by the umask.  It's just
+       like what [open_out] and [open_out_bin] do.
+       With temp_dir = dirname filename, we ensure that the returned
+       temp file is in the same directory as filename itself, making
+       it safe to rename temp_filename to filename later.
+       With prefix = basename filename, we are almost certain that
+       the first generated name will be unique.  A fixed prefix
+       would work too but might generate more collisions if many
+       files are being produced simultaneously in the same directory. *)
+  match fn temp_filename oc with
+  | res ->
+      close_out oc;
+      begin try
+        Sys.rename temp_filename filename; res
+      with exn ->
+        remove_file temp_filename; raise exn
+      end
+  | exception exn ->
+      close_out oc; remove_file temp_filename; raise exn
 
 (* Integer operations *)
 
@@ -552,7 +588,7 @@ module Color = struct
 
   let color_enabled = ref true
 
-  (* either prints the tag of [s] or delegate to [or_else] *)
+  (* either prints the tag of [s] or delegates to [or_else] *)
   let mark_open_tag ~or_else s =
     try
       let style = style_of_tag s in
@@ -601,10 +637,10 @@ module Color = struct
         Format.set_mark_tags true;
         List.iter set_color_tag_handling formatter_l;
         color_enabled := (match o with
-          | Always -> true
-          | Auto -> should_enable_color ()
-          | Never -> false
-        )
+            | Some Always -> true
+            | Some Auto -> should_enable_color ()
+            | Some Never -> false
+            | None -> should_enable_color ())
       );
       ()
 end

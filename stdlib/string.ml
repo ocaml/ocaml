@@ -15,16 +15,22 @@
 
 (* String operations, based on byte sequence operations *)
 
+(* WARNING: Some functions in this file are duplicated in bytes.ml for
+   efficiency reasons. When you modify the one in this file you need to
+   modify its duplicate in bytes.ml.
+   These functions have a "duplicated" comment above their definition.
+*)
+
 external length : string -> int = "%string_length"
 external get : string -> int -> char = "%string_safe_get"
-external set : bytes -> int -> char -> unit = "%bytes_safe_set"
-external create : int -> bytes = "caml_create_bytes"
+external set : bytes -> int -> char -> unit = "%string_safe_set"
+external create : int -> bytes = "caml_create_string"
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
+external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit : string -> int ->  bytes -> int -> int -> unit
                      = "caml_blit_string" [@@noalloc]
 external unsafe_fill : bytes -> int -> int -> char -> unit
-                     = "caml_fill_bytes" [@@noalloc]
+                     = "caml_fill_string" [@@noalloc]
 
 module B = Bytes
 
@@ -44,7 +50,7 @@ let fill =
 let blit =
   B.blit_string
 
-let ensure_ge x y = if x >= y then x else invalid_arg "String.concat"
+let ensure_ge (x:int) y = if x >= y then x else invalid_arg "String.concat"
 
 let rec sum_lengths acc seplen = function
   | [] -> acc
@@ -63,14 +69,18 @@ let rec unsafe_blits dst pos sep seplen = function
 let concat sep = function
     [] -> ""
   | l -> let seplen = length sep in bts @@
-          unsafe_blits 
+          unsafe_blits
             (B.create (sum_lengths 0 seplen l))
             0 sep seplen l
 
+(* duplicated in bytes.ml *)
 let iter f s =
-  B.iter f (bos s)
+  for i = 0 to length s - 1 do f (unsafe_get s i) done
+
+(* duplicated in bytes.ml *)
 let iteri f s =
-  B.iteri f (bos s)
+  for i = 0 to length s - 1 do f i (unsafe_get s i) done
+
 let map f s =
   B.map f (bos s) |> bts
 let mapi f s =
@@ -103,20 +113,81 @@ let escaped s =
   else
     s
 
-let index s c =
-  B.index (bos s) c
-let rindex s c =
-  B.rindex (bos s) c
-let index_from s i c=
-  B.index_from (bos s) i c
+(* duplicated in bytes.ml *)
+let rec index_rec s lim i c =
+  if i >= lim then raise Not_found else
+  if unsafe_get s i = c then i else index_rec s lim (i + 1) c
+
+(* duplicated in bytes.ml *)
+let index s c = index_rec s (length s) 0 c
+
+(* duplicated in bytes.ml *)
+let rec index_rec_opt s lim i c =
+  if i >= lim then None else
+  if unsafe_get s i = c then Some i else index_rec_opt s lim (i + 1) c
+
+(* duplicated in bytes.ml *)
+let index_opt s c = index_rec_opt s (length s) 0 c
+
+(* duplicated in bytes.ml *)
+let index_from s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from / Bytes.index_from" else
+    index_rec s l i c
+
+(* duplicated in bytes.ml *)
+let index_from_opt s i c =
+  let l = length s in
+  if i < 0 || i > l then invalid_arg "String.index_from_opt / Bytes.index_from_opt" else
+  index_rec_opt s l i c
+
+(* duplicated in bytes.ml *)
+let rec rindex_rec s i c =
+  if i < 0 then raise Not_found else
+  if unsafe_get s i = c then i else rindex_rec s (i - 1) c
+
+(* duplicated in bytes.ml *)
+let rindex s c = rindex_rec s (length s - 1) c
+
+(* duplicated in bytes.ml *)
 let rindex_from s i c =
-  B.rindex_from (bos s) i c
-let contains s c =
-  B.contains (bos s) c
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from / Bytes.rindex_from"
+  else
+    rindex_rec s i c
+
+(* duplicated in bytes.ml *)
+let rec rindex_rec_opt s i c =
+  if i < 0 then None else
+  if unsafe_get s i = c then Some i else rindex_rec_opt s (i - 1) c
+
+(* duplicated in bytes.ml *)
+let rindex_opt s c = rindex_rec_opt s (length s - 1) c
+
+(* duplicated in bytes.ml *)
+let rindex_from_opt s i c =
+  if i < -1 || i >= length s then
+    invalid_arg "String.rindex_from_opt / Bytes.rindex_from_opt"
+  else
+    rindex_rec_opt s i c
+
+(* duplicated in bytes.ml *)
 let contains_from s i c =
-  B.contains_from (bos s) i c
+  let l = length s in
+  if i < 0 || i > l then
+    invalid_arg "String.contains_from / Bytes.contains_from"
+  else
+    try ignore (index_rec s l i c); true with Not_found -> false
+
+(* duplicated in bytes.ml *)
+let contains s c = contains_from s 0 c
+
+(* duplicated in bytes.ml *)
 let rcontains_from s i c =
-  B.rcontains_from (bos s) i c
+  if i < 0 || i >= length s then
+    invalid_arg "String.rcontains_from / Bytes.rcontains_from"
+  else
+    try ignore (rindex_rec s i c); true with Not_found -> false
 
 let uppercase_ascii s =
   B.uppercase_ascii (bos s) |> bts

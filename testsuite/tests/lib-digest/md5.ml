@@ -3,7 +3,7 @@
 open Printf
 
 type context =
-  { buf: string;
+  { buf: bytes;
     mutable pos: int;
     mutable a: int32;
     mutable b: int32;
@@ -120,10 +120,10 @@ let string_to_data s =
   for i = 0 to 15 do
     let j = i lsl 2 in
     data.(i) <-
-      Int32.logor (Int32.shift_left (Int32.of_int (Char.code s.[j+3])) 24)
-        (Int32.logor (Int32.shift_left (Int32.of_int (Char.code s.[j+2])) 16)
-          (Int32.logor (Int32.shift_left (Int32.of_int (Char.code s.[j+1])) 8)
-                       (Int32.of_int (Char.code s.[j]))))
+      Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+3) |> Char.code)) 24)
+        (Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+2) |> Char.code)) 16)
+          (Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+1) |> Char.code)) 8)
+                       (Int32.of_int (Bytes.get s j |> Char.code))))
   done;
   data
 
@@ -134,7 +134,7 @@ let int32_to_string n s i =
   s.[i] <- Char.chr (Int32.to_int n land 0xFF)
 
 let init () =
-  { buf = String.create 64;
+  { buf = Bytes.create 64;
     pos = 0;
     a = 0x67452301l;
     b = 0xefcdab89l;
@@ -147,12 +147,12 @@ let update ctx input ofs len =
     if len <= 0 then () else
     if ctx.pos + len < 64 then begin
       (* Just buffer the data *)
-      String.blit input ofs ctx.buf ctx.pos len;
+      Bytes.blit_string input ofs ctx.buf ctx.pos len;
       ctx.pos <- ctx.pos + len
     end else begin
       (* Fill the buffer *)
       let len' = 64 - ctx.pos in
-      if len' > 0 then String.blit input ofs ctx.buf ctx.pos len';
+      if len' > 0 then Bytes.blit_string input ofs ctx.buf ctx.pos len';
       (* Transform 64 bytes *)
       transform ctx (string_to_data ctx.buf);
       ctx.pos <- 0;
@@ -163,8 +163,7 @@ let update ctx input ofs len =
 
 
 let finish ctx =
-  let padding = String.make 64 '\000' in
-  padding.[0] <- '\x80';
+  let padding = String.init 64 (function 0 -> '\x80' | _ -> '\000') in
   let numbits = ctx.bits in
   if ctx.pos < 56 then begin
     update ctx padding 0 (56 - ctx.pos)
@@ -176,12 +175,12 @@ let finish ctx =
   data.(14) <- (Int64.to_int32 numbits);
   data.(15) <- (Int64.to_int32 (Int64.shift_right_logical numbits 32));
   transform ctx data;
-  let res = String.create 16 in
+  let res = Bytes.create 16 in
   int32_to_string ctx.a res 0;
   int32_to_string ctx.b res 4;
   int32_to_string ctx.c res 8;
   int32_to_string ctx.d res 12;
-  res
+  Bytes.unsafe_to_string res
 
 let test hex s =
   let ctx = init() in

@@ -36,11 +36,10 @@ type specific_operation =
     Ilea of addressing_mode             (* "lea" gives scaled adds *)
   | Istore_int of nativeint * addressing_mode * bool
                                         (* Store an integer constant *)
-  | Istore_symbol of string * addressing_mode * bool (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
   | Ifloatarithmem of float_operation * addressing_mode
                                        (* Float arith operation with memory *)
-  | Ibswap of int                      (* endiannes conversion *)
+  | Ibswap of int                      (* endianness conversion *)
   | Isqrtf                             (* Float square root *)
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
 and float_operation =
@@ -109,10 +108,6 @@ let print_specific_operation printreg op ppf arg =
       fprintf ppf "[%a] := %nd %s"
          (print_addressing printreg addr) arg n
          (if is_assign then "(assign)" else "(init)")
-  | Istore_symbol(lbl, addr, is_assign) ->
-      fprintf ppf "[%a] := \"%s\" %s"
-         (print_addressing printreg addr) arg lbl
-         (if is_assign then "(assign)" else "(init)")
   | Ioffset_loc(n, addr) ->
       fprintf ppf "[%a] +:= %i" (print_addressing printreg addr) arg n
   | Isqrtf ->
@@ -131,3 +126,8 @@ let print_specific_operation printreg op ppf arg =
                    (Array.sub arg 1 (Array.length arg - 1))
   | Ibswap i ->
       fprintf ppf "bswap_%i %a" i printreg arg.(0)
+
+let win64 =
+  match Config.system with
+  | "win64" | "mingw64" | "cygwin" -> true
+  | _                   -> false

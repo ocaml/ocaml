@@ -93,11 +93,14 @@ module Remote_value :
   sig
     type t
 
+    val repr : 'a -> t
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    val double_field : t -> int -> float
+    val double_array_tag : int
     val same : t -> t -> bool
 
     val of_int : int -> t

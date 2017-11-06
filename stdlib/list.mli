@@ -54,16 +54,31 @@ val hd : 'a list -> 'a
 
 val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
-   [Failure "tl"] if the list is empty. *)
+    [Failure "tl"] if the list is empty. *)
 
-val nth : 'a list -> int -> 'a
+val nth: 'a list -> int -> 'a
 (** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
+
 val rev : 'a list -> 'a list
 (** List reversal. *)
+
+val init : int -> (int -> 'a) -> 'a list
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+
+    @raise Invalid_argument if len < 0.
+    @since 4.06.0
+*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Concatenate two lists.  Same as the infix operator [@].
@@ -81,8 +96,7 @@ val concat : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list). *)
 
 val flatten : 'a list list -> 'a list
-(** Same as [concat].  Not tail-recursive
-   (length of the argument + length of the longest sub-list). *)
+(** An alias for [concat]. *)
 
 
 (** {6 Iterators} *)
@@ -200,6 +214,12 @@ val find : ('a -> bool) -> 'a list -> 'a
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
 
+val find_opt: ('a -> bool) -> 'a list -> 'a option
+(** [find_opt p l] returns the first element of the list [l] that
+    satisfies the predicate [p], or [None] if there is no value that
+    satisfies [p] in the list [l].
+    @since 4.05 *)
+
 val filter : ('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
@@ -227,9 +247,23 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
+val assoc_opt: 'a -> ('a * 'b) list -> 'b option
+(** [assoc_opt a l] returns the value associated with key [a] in the list of
+   pairs [l]. That is,
+   [assoc_opt a [ ...; (a,b); ...] = b]
+   if [(a,b)] is the leftmost binding of [a] in list [l].
+   Returns [None] if there is no value associated with [a] in the
+   list [l].
+   @since 4.05 *)
+
 val assq : 'a -> ('a * 'b) list -> 'b
 (** Same as {!List.assoc}, but uses physical equality instead of structural
    equality to compare keys. *)
+
+val assq_opt : 'a -> ('a * 'b) list -> 'b option
+(** Same as {!List.assoc_opt}, but uses physical equality instead of structural
+    equality to compare keys.
+    @since 4.05 *)
 
 val mem_assoc : 'a -> ('a * 'b) list -> bool
 (** Same as {!List.assoc}, but simply return true if a binding exists,
@@ -306,7 +340,7 @@ val merge : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
     comparison function [cmp], [merge cmp l1 l2] will return a
-    sorted list containting all the elements of [l1] and [l2].
+    sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).

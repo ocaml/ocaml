@@ -29,11 +29,14 @@
 static const mlsize_t mlsize_t_max = -1;
 
 /* returns number of elements (either fields or floats) */
+/* [ 'a array -> int ] */
 CAMLexport mlsize_t caml_array_length(value array)
 {
+#ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
     return Wosize_val(array) / Double_wosize;
   else
+#endif
     return Wosize_val(array);
 }
 
@@ -42,6 +45,12 @@ CAMLexport int caml_is_double_array(value array)
   return (Tag_val(array) == Double_array_tag);
 }
 
+/* Note: the OCaml types on the following primitives will work both with
+   and without the -no-flat-float-array configure-time option. If you
+   respect them, your C code should work in both configurations.
+*/
+
+/* [ 'a array -> int -> 'a ] where 'a != float */
 CAMLprim value caml_array_get_addr(value array, value index)
 {
   intnat idx = Long_val(index);
@@ -49,15 +58,58 @@ CAMLprim value caml_array_get_addr(value array, value index)
   return Field(array, idx);
 }
 
+/* [ float array -> int -> float ] */
 CAMLprim value caml_array_get_float(value array, value index)
 {
   intnat idx = Long_val(index);
+#ifdef FLAT_FLOAT_ARRAY
   double d;
   value res;
 
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
-  d = Double_field(array, idx);
+  d = Double_flat_field(array, idx);
+#define Setup_for_gc
+#define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
+  Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
+  Store_double_val(res, d);
+  return res;
+#else
+  CAMLassert (Tag_val (array) != Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  return Field(array, idx);
+#endif /* FLAT_FLOAT_ARRAY */
+}
+
+/* [ 'a array -> int -> 'a ] */
+CAMLprim value caml_array_get(value array, value index)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    return caml_array_get_float(array, index);
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  return caml_array_get_addr(array, index);
+}
+
+/* [ floatarray -> int -> float ] */
+CAMLprim value caml_floatarray_get(value array, value index)
+{
+  intnat idx = Long_val(index);
+  double d;
+  value res;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+  d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
 #define Setup_for_track_gc
@@ -71,14 +123,7 @@ CAMLprim value caml_array_get_float(value array, value index)
   return res;
 }
 
-CAMLprim value caml_array_get(value array, value index)
-{
-  if (Tag_val(array) == Double_array_tag)
-    return caml_array_get_float(array, index);
-  else
-    return caml_array_get_addr(array, index);
-}
-
+/* [ 'a array -> int -> 'a -> unit ] where 'a != float */
 CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
@@ -87,29 +132,94 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
   return Val_unit;
 }
 
+/* [ float array -> int -> float -> unit ] */
 CAMLprim value caml_array_set_float(value array, value index, value newval)
 {
   intnat idx = Long_val(index);
+#ifdef FLAT_FLOAT_ARRAY
+  double d = Double_val (newval);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
-  Store_double_field(array, idx, Double_val(newval));
+  Store_double_flat_field(array, idx, d);
+#else
+  CAMLassert (Tag_val (array) != Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
+  Modify(&Field(array, idx), newval);
+#endif
   return Val_unit;
 }
 
+/* [ 'a array -> int -> 'a -> unit ] */
 CAMLprim value caml_array_set(value array, value index, value newval)
 {
+#ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
     return caml_array_set_float(array, index, newval);
-  else
-    return caml_array_set_addr(array, index, newval);
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  return caml_array_set_addr(array, index, newval);
 }
 
+/* [ floatarray -> int -> float -> unit ] */
+CAMLprim value caml_floatarray_set(value array, value index, value newval)
+{
+  intnat idx = Long_val(index);
+  double d = Double_val (newval);
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
+    caml_array_bound_error();
+  Store_double_flat_field(array, idx, d);
+  return Val_unit;
+}
+
+/* [ float array -> int -> float ] */
 CAMLprim value caml_array_unsafe_get_float(value array, value index)
 {
+  intnat idx = Long_val (index);
+#ifdef FLAT_FLOAT_ARRAY
   double d;
   value res;
 
-  d = Double_field(array, Long_val(index));
+  d = Double_flat_field(array, idx);
+#define Setup_for_gc
+#define Restore_after_gc
+#define Setup_for_track_gc
+#define Restore_after_track_gc
+  Alloc_small(res, Double_wosize, Double_tag);
+#undef Setup_for_gc
+#undef Restore_after_gc
+#undef Setup_for_track_gc
+#undef Restore_after_track_gc
+  Store_double_val(res, d);
+  return res;
+#else /* FLAT_FLOAT_ARRAY */
+  CAMLassert (Tag_val(array) != Double_array_tag);
+  return Field(array, idx);
+#endif /* FLAT_FLOAT_ARRAY */
+}
+
+/* [ 'a array -> int -> 'a ] */
+CAMLprim value caml_array_unsafe_get(value array, value index)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  if (Tag_val(array) == Double_array_tag)
+    return caml_array_unsafe_get_float(array, index);
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  return Field(array, Long_val(index));
+}
+
+/* [ floatarray -> int -> float ] */
+CAMLprim value caml_floatarray_unsafe_get(value array, value index)
+{
+  intnat idx = Long_val(index);
+  double d;
+  value res;
+
+  CAMLassert (Tag_val(array) == Double_array_tag);
+  d = Double_flat_field(array, idx);
 #define Setup_for_gc
 #define Restore_after_gc
 #define Setup_for_track_gc
@@ -123,14 +233,7 @@ CAMLprim value caml_array_unsafe_get_float(value array, value index)
   return res;
 }
 
-CAMLprim value caml_array_unsafe_get(value array, value index)
-{
-  if (Tag_val(array) == Double_array_tag)
-    return caml_array_unsafe_get_float(array, index);
-  else
-    return Field(array, Long_val(index));
-}
-
+/* [ 'a array -> int -> 'a -> unit ] where 'a != float */
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
   intnat idx = Long_val(index);
@@ -138,44 +241,77 @@ CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
   return Val_unit;
 }
 
+/* [ float array -> int -> float -> unit ] */
 CAMLprim value caml_array_unsafe_set_float(value array,value index,value newval)
 {
-  Store_double_field(array, Long_val(index), Double_val(newval));
+  intnat idx = Long_val(index);
+#ifdef FLAT_FLOAT_ARRAY
+  double d = Double_val (newval);
+  Store_double_flat_field(array, idx, d);
+#else
+  Modify(&Field(array, idx), newval);
+#endif
   return Val_unit;
 }
 
+/* [ 'a array -> int -> 'a -> unit ] */
 CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
 {
+#ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(array) == Double_array_tag)
     return caml_array_unsafe_set_float(array, index, newval);
-  else
-    return caml_array_unsafe_set_addr(array, index, newval);
+#else
+  CAMLassert (Tag_val(array) != Double_array_tag);
+#endif
+  return caml_array_unsafe_set_addr(array, index, newval);
 }
 
-/* [len] is a [value] representing number of floats */
-CAMLprim value caml_make_float_vect(value len)
+/* [ floatarray -> int -> float -> unit ] */
+CAMLprim value caml_floatarray_unsafe_set(value array, value index,value newval)
+{
+  intnat idx = Long_val(index);
+  double d = Double_val (newval);
+  Store_double_flat_field(array, idx, d);
+  return Val_unit;
+}
+
+/* [len] is a [value] representing number of floats. */
+/* [ int -> floatarray ] */
+CAMLprim value caml_floatarray_create(value len)
 {
   mlsize_t wosize = Long_val(len) * Double_wosize;
   value result;
-  if (wosize == 0)
-    return Atom(0);
-  else if (wosize <= Max_young_wosize){
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0)
+      return Atom(0);
+    else
 #define Setup_for_gc
 #define Restore_after_gc
 #define Setup_for_track_gc
 #define Restore_after_track_gc
-    Alloc_small (result, wosize, Double_array_tag);
+      Alloc_small (result, wosize, Double_array_tag);
 #undef Setup_for_gc
 #undef Restore_after_gc
 #undef Setup_for_track_gc
 #undef Restore_after_track_gc
   }else if (wosize > Max_wosize)
-    caml_invalid_argument("Array.create_float");
+    caml_invalid_argument("Array.Floatarray.create");
   else {
     result = caml_alloc_shr_effect (wosize, Double_array_tag,
                                     CAML_ALLOC_EFFECT_GC);
   }
   return result;
+}
+
+/* [len] is a [value] representing number of floats */
+/* [ int -> float array ] */
+CAMLprim value caml_make_float_vect(value len)
+{
+#ifdef FLAT_FLOAT_ARRAY
+  return caml_floatarray_create (len);
+#else
+  return caml_alloc (Long_val (len), 0);
+#endif
 }
 
 /* [len] is a [value] representing number of words or floats */
@@ -184,31 +320,33 @@ CAMLprim value caml_make_vect(value len, value init)
 {
   CAMLparam2 (len, init);
   CAMLlocal1 (res);
-  mlsize_t size, wsize, i;
-  double d;
+  mlsize_t size, i;
 
   size = Long_val(len);
   if (size == 0) {
     res = Atom(0);
-  }
-  else if (Is_block(init)
+#ifdef FLAT_FLOAT_ARRAY
+  } else if (Is_block(init)
            && Is_in_value_area(init)
            && Tag_val(init) == Double_tag) {
+    mlsize_t wsize;
+    double d;
     d = Double_val(init);
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) caml_invalid_argument("Array.make");
     res = caml_alloc(wsize, Double_array_tag);
     for (i = 0; i < size; i++) {
-      Store_double_field(res, i, d);
+      Store_double_flat_field(res, i, d);
     }
+#endif
   } else {
-    if (size > Max_wosize) caml_invalid_argument("Array.make");
     if (size <= Max_young_wosize) {
       uintnat profinfo;
       Get_my_profinfo_with_cached_backtrace(profinfo, size);
       res = caml_alloc_small_with_my_or_given_profinfo(size, 0, profinfo);
       for (i = 0; i < size; i++) Field(res, i) = init;
     }
+    else if (size > Max_wosize) caml_invalid_argument("Array.make");
     else if (Is_block(init) && Is_young(init)) {
       /* We don't want to create so many major-to-minor references,
          so [init] is moved to the major heap by doing a minor GC. */
@@ -226,8 +364,15 @@ CAMLprim value caml_make_vect(value len, value init)
   CAMLreturn (res);
 }
 
+/* This primitive is used internally by the compiler to compile
+   explicit array expressions.
+   For float arrays when FLAT_FLOAT_ARRAY is true, it takes an array of
+   boxed floats and returns the corresponding flat-allocated [float array].
+   In all other cases, it just returns its argument unchanged.
+*/
 CAMLprim value caml_make_array(value init)
 {
+#ifdef FLAT_FLOAT_ARRAY
   CAMLparam1 (init);
   mlsize_t wsize, size, i;
   CAMLlocal2 (v, res);
@@ -250,11 +395,15 @@ CAMLprim value caml_make_array(value init)
                                     CAML_ALLOC_EFFECT_GC);
       }
       for (i = 0; i < size; i++) {
-        Store_double_field(res, i, Double_val(Field(init, i)));
+        double d = Double_val(Field(init, i));
+        Store_double_flat_field(res, i, d);
       }
       CAMLreturn (res);
     }
   }
+#else
+  return init;
+#endif
 }
 
 /* Blitting */
@@ -265,6 +414,7 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
   value * src, * dst;
   intnat count;
 
+#ifdef FLAT_FLOAT_ARRAY
   if (Tag_val(a2) == Double_array_tag) {
     /* Arrays of floats.  The values being copied are floats, not
        pointer, so we can do a direct copy.  memmove takes care of
@@ -274,6 +424,8 @@ CAMLprim value caml_array_blit(value a1, value ofs1, value a2, value ofs2,
             Long_val(n) * sizeof(double));
     return Val_unit;
   }
+#endif
+  CAMLassert (Tag_val(a2) != Double_array_tag);
   if (Is_young(a2)) {
     /* Arrays of values, destination is in young generation.
        Here too we can do a direct copy since this cannot create
@@ -318,22 +470,27 @@ static value caml_array_gather(intnat num_arrays,
 {
   CAMLparamN(arrays, num_arrays);
   value res;                    /* no need to register it as a root */
-  int isfloat;
-  mlsize_t i, size, wsize, count, pos;
+#ifdef FLAT_FLOAT_ARRAY
+  int isfloat = 0;
+  mlsize_t wsize;
+#endif
+  mlsize_t i, size, count, pos;
   value * src;
 
   /* Determine total size and whether result array is an array of floats */
   size = 0;
-  isfloat = 0;
   for (i = 0; i < num_arrays; i++) {
     if (mlsize_t_max - lengths[i] < size) caml_invalid_argument("Array.concat");
     size += lengths[i];
+#ifdef FLAT_FLOAT_ARRAY
     if (Tag_val(arrays[i]) == Double_array_tag) isfloat = 1;
+#endif
   }
   if (size == 0) {
     /* If total size = 0, just return empty array */
     res = Atom(0);
   }
+#ifdef FLAT_FLOAT_ARRAY
   else if (isfloat) {
     /* This is an array of floats.  We can use memcpy directly. */
     if (size > Max_wosize/Double_wosize) caml_invalid_argument("Array.concat");
@@ -345,12 +502,9 @@ static value caml_array_gather(intnat num_arrays,
              lengths[i] * sizeof(double));
       pos += lengths[i];
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
   }
-  else if (size > Max_wosize) {
-    /* Array of values, too big. */
-    caml_invalid_argument("Array.concat");
-  }
+#endif
   else if (size <= Max_young_wosize) {
     /* Array of values, small enough to fit in young generation.
        We can use memcpy directly. */
@@ -361,7 +515,11 @@ static value caml_array_gather(intnat num_arrays,
              lengths[i] * sizeof(value));
       pos += lengths[i];
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
+  }
+  else if (size > Max_wosize) {
+    /* Array of values, too big. */
+    caml_invalid_argument("Array.concat");
   } else {
     /* Array of values, must be allocated in old generation and filled
        using caml_initialize. */
@@ -373,7 +531,7 @@ static value caml_array_gather(intnat num_arrays,
         caml_initialize(&Field(res, pos), *src);
       }
     }
-    Assert(pos == size);
+    CAMLassert(pos == size);
 
     /* Many caml_initialize in a row can create a lot of old-to-young
        refs.  Give the minor GC a chance to run if it needs to. */
@@ -416,12 +574,12 @@ CAMLprim value caml_array_concat(value al)
     lengths = static_lengths;
   } else {
     arrays = caml_stat_alloc(n * sizeof(value));
-    offsets = malloc(n * sizeof(intnat));
+    offsets = caml_stat_alloc_noexc(n * sizeof(intnat));
     if (offsets == NULL) {
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = malloc(n * sizeof(value));
+    lengths = caml_stat_alloc_noexc(n * sizeof(value));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);

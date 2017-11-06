@@ -102,6 +102,12 @@ The following options are recognized by "ocamlprof":
 
 \begin{options}
 
+\item["-args" \var{filename}]
+ Read additional newline-terminated command line arguments from \var{filename}.
+
+\item["-args0" \var{filename}]
+ Read additional null character terminated command line arguments from \var{filename}.
+
 \item["-f" \var{dumpfile}]
 Specifies an alternate dump file of profiling information to be read.
 

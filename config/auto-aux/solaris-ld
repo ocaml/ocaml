@@ -19,5 +19,5 @@
 # Exit code is 0 for Solaris ld, 1 for GNU ld
 
 echo "int main() { return 0; }" > hasgot.c
-$cc -v -o tst hasgot.c 2>&1 | grep -s '^ld:' > /dev/null
+$cc $cflags -v -o tst hasgot.c $ldflags 2>&1 | grep -s '^ld:' > /dev/null
 exit $?

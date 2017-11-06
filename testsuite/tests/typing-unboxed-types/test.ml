@@ -119,3 +119,38 @@ module T : sig
 end = struct
   type t = A of int [@@ocaml.unboxed]
 end;;
+
+(* regression test for PR#7511 (wrong determination of unboxability for GADTs)
+*)
+type 'a s = S : 'a -> 'a s [@@unboxed];;
+type t = T : _ s -> t [@@unboxed];;
+
+(* regression test for GPR#1133 (follow-up to PR#7511) *)
+type 'a s = S : 'a -> 'a option s [@@unboxed];;
+type t = T : _ s -> t [@@unboxed];;
+
+(* Another test for GPR#1133: abstract types *)
+module M : sig
+  type 'a r constraint 'a = unit -> 'b
+  val inj : 'b -> (unit -> 'b) r
+end = struct
+  type 'a r = 'b constraint 'a = unit -> 'b
+  let inj x = x
+end;;
+
+(* reject *)
+type t = T : (unit -> _) M.r -> t [@@unboxed];;
+
+type 'a s = S : (unit -> 'a) M.r -> 'a option s [@@unboxed];;
+
+(* reject *)
+type t = T : _ s -> t [@@unboxed];;
+
+(* accept *)
+type 'a t = T : 'a s -> 'a t [@@unboxed];;
+
+
+(* Another corner case from GPR#1133 *)
+type _ s = S : 'a t -> _ s  [@@unboxed]
+ and _ t = T : 'a -> 'a s t
+;;

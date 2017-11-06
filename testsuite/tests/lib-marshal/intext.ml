@@ -314,8 +314,8 @@ let test_buffer () =
      with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true)
 
 let test_size() =
-  let s = Marshal.to_string (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
-  test 300 (Marshal.header_size + Marshal.data_size s 0 = String.length s)
+  let s = Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
+  test 300 (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s)
 
 external marshal_to_block
    : string -> int -> 'a -> Marshal.extern_flags list -> unit

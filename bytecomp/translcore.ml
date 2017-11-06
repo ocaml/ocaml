@@ -64,7 +64,7 @@ let transl_extension_constructor env path ext =
          Lprim (prim_fresh_oo_id, [Lconst (Const_base (Const_int 0))], loc)],
         loc)
   | Text_rebind(path, _lid) ->
-      transl_path ~loc env path
+      transl_extension_path ~loc env path
 
 (* Translation of primitives *)
 
@@ -162,6 +162,9 @@ let comparisons_table = create_hashtable 11 [
        false)
 ]
 
+let gen_array_kind =
+  if Config.flat_float_array then Pgenarray else Paddrarray
+
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%bytes_to_string", Pbytes_to_string;
@@ -231,20 +234,27 @@ let primitives_table = create_hashtable 57 [
   "%gefloat", Pfloatcomp Cge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
+  "%string_safe_set", Pbytessets;
   "%string_unsafe_get", Pstringrefu;
+  "%string_unsafe_set", Pbytessetu;
   "%bytes_length", Pbyteslength;
   "%bytes_safe_get", Pbytesrefs;
   "%bytes_safe_set", Pbytessets;
   "%bytes_unsafe_get", Pbytesrefu;
   "%bytes_unsafe_set", Pbytessetu;
-  "%array_length", Parraylength Pgenarray;
-  "%array_safe_get", Parrayrefs Pgenarray;
-  "%array_safe_set", Parraysets Pgenarray;
-  "%array_unsafe_get", Parrayrefu Pgenarray;
-  "%array_unsafe_set", Parraysetu Pgenarray;
-  "%obj_size", Parraylength Pgenarray;
-  "%obj_field", Parrayrefu Pgenarray;
-  "%obj_set_field", Parraysetu Pgenarray;
+  "%array_length", Parraylength gen_array_kind;
+  "%array_safe_get", Parrayrefs gen_array_kind;
+  "%array_safe_set", Parraysets gen_array_kind;
+  "%array_unsafe_get", Parrayrefu gen_array_kind;
+  "%array_unsafe_set", Parraysetu gen_array_kind;
+  "%obj_size", Parraylength gen_array_kind;
+  "%obj_field", Parrayrefu gen_array_kind;
+  "%obj_set_field", Parraysetu gen_array_kind;
+  "%floatarray_length", Parraylength Pfloatarray;
+  "%floatarray_safe_get", Parrayrefs Pfloatarray;
+  "%floatarray_safe_set", Parraysets Pfloatarray;
+  "%floatarray_unsafe_get", Parrayrefu Pfloatarray;
+  "%floatarray_unsafe_set", Parraysetu Pfloatarray;
   "%obj_is_int", Pisint;
   "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
@@ -357,6 +367,9 @@ let primitives_table = create_hashtable 57 [
 let find_primitive prim_name =
   Hashtbl.find primitives_table prim_name
 
+let prim_restore_raw_backtrace =
+  Primitive.simple ~name:"caml_restore_raw_backtrace" ~arity:2 ~alloc:false
+
 let specialize_comparison table env ty =
   let (gencomp, intcomp, floatcomp, stringcomp, bytescomp,
            nativeintcomp, int32comp, int64comp, _) = table in
@@ -371,6 +384,28 @@ let specialize_comparison table env ty =
   | () when is_base_type env ty Predef.path_int32     -> int32comp
   | () when is_base_type env ty Predef.path_int64     -> int64comp
   | () -> gencomp
+
+(* The following function computes the greatest lower bound in the
+   semilattice of array kinds:
+          gen
+         /   \
+      addr   float
+       |
+      int
+   Note that the GLB is not guaranteed to exist, in which case we return
+   our first argument instead of raising a fatal error because, although
+   it cannot happen in a well-typed program, (ab)use of Obj.magic can
+   probably trigger it.
+*)
+let glb_array_type t1 t2 =
+  match t1, t2 with
+  | Pfloatarray, (Paddrarray | Pintarray)
+  | (Paddrarray | Pintarray), Pfloatarray -> t1
+
+  | Pgenarray, x | x, Pgenarray -> x
+  | Paddrarray, x | x, Paddrarray -> x
+  | Pintarray, Pintarray -> Pintarray
+  | Pfloatarray, Pfloatarray -> Pfloatarray
 
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
@@ -398,11 +433,16 @@ let specialize_primitive p env ty ~has_constant_constructor =
     match (p, params) with
       (Psetfield(n, _, init), [_p1; p2]) ->
         Psetfield(n, maybe_pointer_type env p2, init)
-    | (Parraylength Pgenarray, [p])   -> Parraylength(array_type_kind env p)
-    | (Parrayrefu Pgenarray, p1 :: _) -> Parrayrefu(array_type_kind env p1)
-    | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
-    | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
-    | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
+    | (Parraylength t, [p])   ->
+        Parraylength(glb_array_type t (array_type_kind env p))
+    | (Parrayrefu t, p1 :: _) ->
+        Parrayrefu(glb_array_type t (array_type_kind env p1))
+    | (Parraysetu t, p1 :: _) ->
+        Parraysetu(glb_array_type t (array_type_kind env p1))
+    | (Parrayrefs t, p1 :: _) ->
+        Parrayrefs(glb_array_type t (array_type_kind env p1))
+    | (Parraysets t, p1 :: _) ->
+        Parraysets(glb_array_type t (array_type_kind env p1))
     | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in
@@ -441,7 +481,7 @@ let transl_primitive loc p env ty path =
       Lfunction{kind = Curried; params = [parm];
                 body = Matching.inline_lazy_force (Lvar parm) Location.none;
                 loc = loc;
-                attr = default_function_attribute }
+                attr = default_stub_attribute }
   | Ploc kind ->
     let lam = lam_of_loc kind loc in
     begin match p.prim_arity with
@@ -449,7 +489,7 @@ let transl_primitive loc p env ty path =
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
         Lfunction{kind = Curried; params = [param];
-                  attr = default_function_attribute;
+                  attr = default_stub_attribute;
                   loc = loc;
                   body = Lprim(Pmakeblock(0, Immutable, None),
                                [lam; Lvar param], loc)}
@@ -460,7 +500,7 @@ let transl_primitive loc p env ty path =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
       Lfunction{ kind = Curried; params;
-                 attr = default_function_attribute;
+                 attr = default_stub_attribute;
                  loc = loc;
                  body = Lprim(prim, List.map (fun id -> Lvar id) params, loc) }
 
@@ -564,16 +604,6 @@ let extract_float = function
     Const_base(Const_float f) -> f
   | _ -> fatal_error "Translcore.extract_float"
 
-(* To find reasonable names for let-bound and lambda-bound idents *)
-
-let rec name_pattern default = function
-    [] -> Ident.create default
-  | {c_lhs=p; _} :: rem ->
-      match p.pat_desc with
-        Tpat_var (id, _) -> id
-      | Tpat_alias(_, id, _) -> id
-      | _ -> name_pattern default rem
-
 (* Push the default values under the functional abstractions *)
 (* Also push bindings of module patterns, since this sound *)
 
@@ -581,25 +611,30 @@ type binding =
   | Bind_value of value_binding list
   | Bind_module of Ident.t * string loc * module_expr
 
-let rec push_defaults loc bindings cases partial =
+let rec push_defaults loc bindings pushing cases partial =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(l, pl,partial)} as exp}] ->
-      let pl = push_defaults exp.exp_loc bindings pl partial in
+      c_rhs={exp_desc = Texp_function { arg_label; param; cases; partial; } }
+        as exp}] when pushing || bindings = [] ->
+      (* Stop pushing when there is a non-labeled argument,
+         and there are default bindings to discharge *)
+      let cases = push_defaults
+          exp.exp_loc bindings (arg_label <> Nolabel) cases partial in
       [{c_lhs=pat; c_guard=None;
-        c_rhs={exp with exp_desc = Texp_function(l, pl, partial)}}]
+        c_rhs={exp with exp_desc = Texp_function { arg_label; param; cases;
+          partial; }}}]
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#default"},_];
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_value binds :: bindings)
+      push_defaults loc (Bind_value binds :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#modulepat"},_];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
-      push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
+      push_defaults loc (Bind_module (id, name, mexpr) :: bindings) true
                    [{c_lhs=pat;c_guard=None;c_rhs=e2}]
                    partial
   | [case] ->
@@ -615,7 +650,7 @@ let rec push_defaults loc bindings cases partial =
       in
       [{case with c_rhs=exp}]
   | {c_lhs=pat; c_rhs=exp; c_guard=_} :: _ when bindings <> [] ->
-      let param = name_pattern "param" cases in
+      let param = Typecore.name_pattern "param" cases in
       let name = Ident.name param in
       let exp =
         { exp with exp_loc = loc; exp_desc =
@@ -628,7 +663,7 @@ let rec push_defaults loc bindings cases partial =
                           })},
              cases, [], partial) }
       in
-      push_defaults loc bindings
+      push_defaults loc bindings pushing
         [{c_lhs={pat with pat_desc = Tpat_var (param, mknoloc name)};
           c_guard=None; c_rhs=exp}]
         Total
@@ -670,8 +705,8 @@ let event_function exp lam =
 let primitive_is_ccall = function
   (* Determine if a primitive is a Pccall or will be turned later into
      a C function call that may raise an exception *)
-  | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ | Parraysets _ |
-    Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
+  | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
+    Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
     Prevapply -> true
   | _ -> false
 
@@ -717,14 +752,14 @@ and transl_exp0 e =
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         Lfunction{kind = Curried; params = [obj; meth];
-                  attr = default_function_attribute;
+                  attr = default_stub_attribute;
                   loc = e.exp_loc;
                   body = Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc)}
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction{kind = Curried; params = [obj; meth; cache; pos];
-                  attr = default_function_attribute;
+                  attr = default_stub_attribute;
                   loc = e.exp_loc;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
@@ -733,18 +768,19 @@ and transl_exp0 e =
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->
-      transl_path ~loc:e.exp_loc e.exp_env path
+      transl_value_path ~loc:e.exp_loc e.exp_env path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
-  | Texp_function (_, pat_expr_list, partial) ->
+  | Texp_function { arg_label = _; param; cases; partial; } ->
       let ((kind, params), body) =
         event_function e
           (function repr ->
-            let pl = push_defaults e.exp_loc [] pat_expr_list partial in
-            transl_function e.exp_loc !Clflags.native_code repr partial pl)
+            let pl = push_defaults e.exp_loc [] true cases partial in
+            transl_function e.exp_loc !Clflags.native_code repr partial
+              param pl)
       in
       let attr = {
         default_function_attribute with
@@ -792,6 +828,26 @@ and transl_exp0 e =
         match argl with [obj; meth; cache; pos] ->
           wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
+      else if p.prim_name = "%raise_with_backtrace" then begin
+        let texn1 = List.hd args (* Should not fail by typing *) in
+        let texn2,bt = match argl with
+          | [a;b] -> a,b
+          | _ -> assert false (* idem *)
+        in
+        let vexn = Ident.create "exn" in
+        Llet(Strict, Pgenval, vexn, texn2,
+             event_before e begin
+               Lsequence(
+                 wrap  (Lprim (Pccall prim_restore_raw_backtrace,
+                               [Lvar vexn;bt],
+                               e.exp_loc)),
+                 wrap0 (Lprim(Praise Raise_reraise,
+                              [event_after texn1 (Lvar vexn)],
+                              e.exp_loc))
+               )
+             end
+            )
+      end
       else begin
         let prim = transl_primitive_application
             e.exp_loc p e.exp_env prim_type (Some path) args in
@@ -839,7 +895,7 @@ and transl_exp0 e =
   | Texp_match(arg, pat_expr_list, exn_pat_expr_list, partial) ->
     transl_match e arg pat_expr_list exn_pat_expr_list partial
   | Texp_try(body, pat_expr_list) ->
-      let id = name_pattern "exn" pat_expr_list in
+      let id = Typecore.name_pattern "exn" pat_expr_list in
       Ltrywith(transl_exp body, id,
                Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
@@ -867,13 +923,13 @@ and transl_exp0 e =
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
-            transl_path e.exp_env path
+            transl_extension_path e.exp_env path
           else
             Lprim(Pmakeblock(0, Immutable, Some (Pgenval :: shape)),
-                  transl_path e.exp_env path :: ll, e.exp_loc)
+                  transl_extension_path e.exp_env path :: ll, e.exp_loc)
       end
   | Texp_extension_constructor (_, path) ->
-      transl_path e.exp_env path
+      transl_extension_path e.exp_env path
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
@@ -987,12 +1043,12 @@ and transl_exp0 e =
   | Texp_new (cl, {Location.loc=loc}, _) ->
       Lapply{ap_should_be_tailcall=false;
              ap_loc=loc;
-             ap_func=Lprim(Pfield 0, [transl_path ~loc e.exp_env cl], loc);
+             ap_func=Lprim(Pfield 0, [transl_class_path ~loc e.exp_env cl], loc);
              ap_args=[lambda_unit];
              ap_inlined=Default_inline;
              ap_specialised=Default_specialise}
   | Texp_instvar(path_self, path, _) ->
-      Lprim(Parrayrefu Paddrarray,
+      Lprim(Pfield_computed,
             [transl_normal_path path_self; transl_normal_path path], e.exp_loc)
   | Texp_setinstvar(path_self, path, _, expr) ->
       transl_setinstvar e.exp_loc (transl_normal_path path_self) path expr
@@ -1011,10 +1067,16 @@ and transl_exp0 e =
                             (Lvar cpy) path expr, rem))
              modifs
              (Lvar cpy))
-  | Texp_letmodule(id, _, modl, body) ->
-      Llet(Strict, Pgenval, id,
-           !transl_module Tcoerce_none None modl,
-           transl_exp body)
+  | Texp_letmodule(id, loc, modl, body) ->
+      let defining_expr =
+        Levent (!transl_module Tcoerce_none None modl, {
+          lev_loc = loc.loc;
+          lev_kind = Lev_module_definition id;
+          lev_repr = None;
+          lev_env = Env.summary Env.empty;
+        })
+      in
+      Llet(Strict, Pgenval, id, defining_expr, transl_exp body)
   | Texp_letexception(cd, body) ->
       Llet(Strict, Pgenval,
            cd.ext_id, transl_extension_constructor e.exp_env None cd,
@@ -1036,7 +1098,7 @@ and transl_exp0 e =
       | Texp_constant
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
-      | Texp_function(_, _, _)
+      | Texp_function _
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
@@ -1175,7 +1237,7 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                         loc}
           | lam ->
               Lfunction{kind = Curried; params = [id_arg]; body = lam;
-                        attr = default_function_attribute; loc = loc}
+                        attr = default_stub_attribute; loc = loc}
         in
         List.fold_left
           (fun body (id, lam) -> Llet(Strict, Pgenval, id, lam, body))
@@ -1190,14 +1252,14 @@ and transl_apply ?(should_be_tailcall=false) ?(inlined = Default_inline)
                                 sargs)
      : Lambda.lambda)
 
-and transl_function loc untuplify_fn repr partial cases =
+and transl_function loc untuplify_fn repr partial param cases =
   match cases with
     [{c_lhs=pat; c_guard=None;
-      c_rhs={exp_desc = Texp_function(_, pl,partial')} as exp}]
-    when Parmatch.fluid pat ->
-      let param = name_pattern "param" cases in
+      c_rhs={exp_desc = Texp_function { arg_label = _; param = param'; cases;
+        partial = partial'; }} as exp}]
+    when Parmatch.inactive ~partial pat ->
       let ((_, params), body) =
-        transl_function exp.exp_loc false repr partial' pl in
+        transl_function exp.exp_loc false repr partial' param' cases in
       ((Curried, param :: params),
        Matching.for_function loc None (Lvar param) [pat, body] partial)
   | {c_lhs={pat_desc = Tpat_tuple pl}} :: _ when untuplify_fn ->
@@ -1213,13 +1275,11 @@ and transl_function loc untuplify_fn repr partial cases =
          Matching.for_tupled_function loc params
            (transl_tupled_cases pats_expr_list) partial)
       with Matching.Cannot_flatten ->
-        let param = name_pattern "param" cases in
         ((Curried, [param]),
          Matching.for_function loc repr (Lvar param)
            (transl_cases cases) partial)
       end
   | _ ->
-      let param = name_pattern "param" cases in
       ((Curried, [param]),
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
@@ -1264,12 +1324,8 @@ and transl_let rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 
 and transl_setinstvar loc self var expr =
-  let prim =
-    match maybe_pointer expr with
-    | Pointer -> Paddrarray
-    | Immediate -> Pintarray
-  in
-  Lprim(Parraysetu prim, [self; transl_normal_path var; transl_exp expr], loc)
+  Lprim(Psetfield_computed (maybe_pointer expr, Assignment),
+    [self; transl_normal_path var; transl_exp expr], loc)
 
 and transl_record loc env fields repres opt_init_expr =
   let size = Array.length fields in
@@ -1332,7 +1388,7 @@ and transl_record loc env fields repres opt_init_expr =
               | Tconstr(p, _, _) -> p
               | _ -> assert false
             in
-            let slot = transl_path env path in
+            let slot = transl_extension_path env path in
             Lprim(Pmakeblock(0, mut, Some (Pgenval :: shape)), slot :: ll, loc)
     in
     begin match opt_init_expr with
@@ -1372,7 +1428,7 @@ and transl_record loc env fields repres opt_init_expr =
   end
 
 and transl_match e arg pat_expr_list exn_pat_expr_list partial =
-  let id = name_pattern "exn" exn_pat_expr_list
+  let id = Typecore.name_pattern "exn" exn_pat_expr_list
   and cases = transl_cases pat_expr_list
   and exn_cases = transl_cases_try exn_pat_expr_list in
   let static_catch body val_ids handler =
@@ -1387,14 +1443,14 @@ and transl_match e arg pat_expr_list exn_pat_expr_list partial =
   | {exp_desc = Texp_tuple argl}, [] ->
     Matching.for_multiple_match e.exp_loc (transl_list argl) cases partial
   | {exp_desc = Texp_tuple argl}, _ :: _ ->
-    let val_ids = List.map (fun _ -> name_pattern "val" []) argl in
+    let val_ids = List.map (fun _ -> Typecore.name_pattern "val" []) argl in
     let lvars = List.map (fun id -> Lvar id) val_ids in
     static_catch (transl_list argl) val_ids
       (Matching.for_multiple_match e.exp_loc lvars cases partial)
   | arg, [] ->
     Matching.for_function e.exp_loc None (transl_exp arg) cases partial
   | arg, _ :: _ ->
-    let val_id = name_pattern "val" pat_expr_list in
+    let val_id = Typecore.name_pattern "val" pat_expr_list in
     static_catch [transl_exp arg] [val_id]
       (Matching.for_function e.exp_loc None (Lvar val_id) cases partial)
 

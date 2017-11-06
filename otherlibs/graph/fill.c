@@ -57,7 +57,7 @@ value caml_gr_fill_poly(value array)
          npoints, Complex, CoordModeOrigin);
     XFlush(caml_gr_display);
   }
-  stat_free((char *) points);
+  caml_stat_free((char *) points);
   return Val_unit;
 }
 

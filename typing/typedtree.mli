@@ -143,9 +143,13 @@ and expression_desc =
         (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
             let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
          *)
-  | Texp_function of arg_label * case list * partial
+  | Texp_function of { arg_label : arg_label; param : Ident.t;
+      cases : case list; partial : partial; }
         (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
             See {!Parsetree} for more details.
+
+            [param] is the identifier that is to be used to name the
+            parameter of the function.
 
             partial =
               [Partial] if the pattern match is partial
@@ -263,7 +267,8 @@ and class_expr_desc =
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
-    (* Visible instance variables, methods and concretes methods *)
+  (* Visible instance variables, methods and concrete methods *)
+  | Tcl_open of override_flag * Path.t * Longident.t loc * Env.t * class_expr
 
 and class_structure =
   {
@@ -308,7 +313,7 @@ and module_expr =
 (** Annotations for [Tmod_constraint]. *)
 and module_type_constraint =
   | Tmodtype_implicit
-  (** The module type constraint has been synthesized during typecheking. *)
+  (** The module type constraint has been synthesized during typechecking. *)
   | Tmodtype_explicit of module_type
   (** The module type was in the source file. *)
 
@@ -487,7 +492,7 @@ and core_type_desc =
   | Ttyp_arrow of arg_label * core_type * core_type
   | Ttyp_tuple of core_type list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
-  | Ttyp_object of (string * attributes * core_type) list * closed_flag
+  | Ttyp_object of object_field list * closed_flag
   | Ttyp_class of Path.t * Longident.t loc * core_type list
   | Ttyp_alias of core_type * string
   | Ttyp_variant of row_field list * closed_flag * label list option
@@ -502,8 +507,12 @@ and package_type = {
 }
 
 and row_field =
-    Ttag of label * attributes * bool * core_type list
+    Ttag of string loc * attributes * bool * core_type list
   | Tinherit of core_type
+
+and object_field =
+  | OTtag of string loc * attributes * core_type
+  | OTinherit of core_type
 
 and value_description =
   { val_id: Ident.t;
@@ -596,6 +605,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
+  | Tcty_open of override_flag * Path.t * Longident.t loc * Env.t * class_type
 
 and class_signature = {
     csig_self : core_type;

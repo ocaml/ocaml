@@ -1,15 +1,13 @@
 (* (c) Alain Frisch / Lexifi *)
 (* cf. PR#7200 *)
+
+let diff =
+  match Array.to_list Sys.argv with
+  | [_; diff] -> diff
+  | _ -> "diff -u"
+
 let report_err exn =
-  match exn with
-    | Sys_error msg ->
-        Format.printf "@[I/O error:@ %s@]@." msg
-    | x ->
-        match Location.error_of_exn x with
-        | Some err ->
-            Format.printf "@[%a@]@."
-              Location.report_error err
-        | None -> raise x
+  Location.report_exception Format.std_formatter exn
 
 let remove_locs =
   let open Ast_mapper in
@@ -69,7 +67,7 @@ let test parse_fun pprint print map filename =
             Printf.printf "%s:  FAIL, REPARSED AST IS DIFFERENT\n%!" filename;
             let f1 = to_tmp_file print ast in
             let f2 = to_tmp_file print ast2 in
-            let cmd = Printf.sprintf "diff -u %s %s"
+            let cmd = Printf.sprintf "%s %s %s" diff
                 (Filename.quote f1) (Filename.quote f2) in
             let _ret = Sys.command cmd in
             print_endline"====================================================="

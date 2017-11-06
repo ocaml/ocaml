@@ -328,7 +328,7 @@ void caml_memprof_postpone_track_alloc_shr(value block) {
   CAMLassert(Is_in_heap(block));
   if(occurences > 0) {
     struct postponed_block* pb =
-      (struct postponed_block*)malloc(sizeof(struct postponed_block));
+      (struct postponed_block*)caml_stat_alloc_noexc(sizeof(struct postponed_block));
     if(pb == NULL) return;
     pb->block = block;
     caml_register_generational_global_root(&pb->block);
@@ -370,7 +370,7 @@ void caml_memprof_handle_postponed() {
   { struct postponed_block* next = p->next;                \
     caml_remove_generational_global_root(&p->callstack);   \
     caml_remove_generational_global_root(&p->block);       \
-    free(p);                                               \
+    caml_stat_free(p);                                               \
     p = next; }
 
   suspend();
@@ -419,27 +419,28 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
     if(sz == 0) {
       sz = 32;
-      sampled = (value*)malloc(sizeof(value) * sz);
+      sampled = (value*)caml_stat_alloc_noexc(sizeof(value) * sz);
       if(sampled == NULL)
         CAMLreturn0;
-      occurences = (int32_t*)malloc(sizeof(int32_t) * sz);
+      occurences = (int32_t*)caml_stat_alloc_noexc(sizeof(int32_t) * sz);
       if(occurences == NULL) {
-        free(sampled);
+        caml_stat_free(sampled);
         CAMLreturn0;
       }
     } else if(j >= sz) {
       value* newsampled;
       int32_t* newoccurences;
       sz *= 2;
-      newsampled = (value*)realloc(sampled, sizeof(value) * sz);
+      newsampled = (value*)caml_stat_resize_noexc(sampled, sizeof(value) * sz);
       if(newsampled == NULL) {
-        free(sampled); free(occurences);
+        caml_stat_free(sampled); caml_stat_free(occurences);
         CAMLreturn0;
       }
       sampled = newsampled;
-      newoccurences = (int32_t*)realloc(occurences, sizeof(int32_t) * sz);
+      newoccurences =
+        (int32_t*)caml_stat_resize_noexc(occurences, sizeof(int32_t) * sz);
       if(newoccurences == NULL) {
-        free(sampled); free(occurences);
+        caml_stat_free(sampled); caml_stat_free(occurences);
         CAMLreturn0;
       }
       occurences = newoccurences;
@@ -469,8 +470,8 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
     ephe = do_callback(Tag_val(sampled[i]), Wosize_val(sampled[i]),
                        occurences[i], callstack, Serialized);
     if (Is_exception_result(ephe)) {
-      free(sampled);
-      free(occurences);
+      caml_stat_free(sampled);
+      caml_stat_free(occurences);
       unsuspend();
       caml_raise(Extract_exception(ephe));
     }
@@ -478,8 +479,8 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
       caml_ephe_set_key(Field(ephe, 0), Val_long(0), sampled[i]);
   }
 
-  free(sampled);
-  free(occurences);
+  caml_stat_free(sampled);
+  caml_stat_free(occurences);
   unsuspend();
   CAMLreturn0;
 }
@@ -559,7 +560,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
     uintnat sz = 2, n_samples = 0;
     value* ephes = NULL;
 
-    samples = (struct smp*)malloc(sz*sizeof(struct smp));
+    samples = (struct smp*)caml_stat_alloc_noexc(sz*sizeof(struct smp));
     if(samples == NULL)
       goto abort;
 
@@ -569,8 +570,8 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       if(next_sample < 0) {
         if(n_samples >= sz) {
           sz *= 2;
-          p = (struct smp*)realloc(samples, sz * sizeof(struct smp));
-          if(p == NULL) { free(samples); goto abort; }
+          p = (struct smp*)caml_stat_resize_noexc(samples, sz * sizeof(struct smp));
+          if(p == NULL) { caml_stat_free(samples); goto abort; }
           samples = p;
         }
 
@@ -588,8 +589,8 @@ void caml_memprof_call_gc_end(double exceeded_by) {
 
     CAMLassert(offs == tot_whsize);
 
-    ephes = (value*)malloc(n_samples * sizeof(value));
-    if(ephes == NULL) { free(samples); goto abort; }
+    ephes = (value*)caml_stat_alloc_noexc(n_samples * sizeof(value));
+    if(ephes == NULL) { caml_stat_free(samples); goto abort; }
     for(i = 0; i < n_samples; i++) ephes[i] = Val_unit;
     Begin_roots_block(ephes, n_samples);
 
@@ -613,7 +614,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
       ephes[i] = do_callback(samples[i].tag, samples[i].sz,
                              samples[i].occurences, callstack_cur, Minor);
       if(Is_exception_result(ephes[i])) {
-        free(samples);
+        caml_stat_free(samples);
         unsuspend();
         caml_raise(Extract_exception(ephes[i]));
       }
@@ -646,8 +647,8 @@ void caml_memprof_call_gc_end(double exceeded_by) {
 
     End_roots();
 
-    free(ephes);
-    free(samples);
+    caml_stat_free(ephes);
+    caml_stat_free(samples);
   } else if(caml_requested_major_slice || caml_requested_minor_gc ||
             caml_young_ptr - tot_whsize < caml_young_trigger)
     caml_gc_dispatch();

@@ -28,7 +28,7 @@ type error =
   | Custom_runtime
   | File_exists of string
   | Cannot_open_dll of string
-  | Not_compatible_32
+  | Required_module_unavailable of string
 
 exception Error of error
 
@@ -132,6 +132,7 @@ let scan_file obj_name tolink =
       let compunit = (input_value ic : compilation_unit) in
       close_in ic;
       add_required compunit;
+      List.iter remove_required compunit.cu_reloc;
       Link_object(file_name, compunit) :: tolink
     end
     else if buffer = cma_magic_number then begin
@@ -149,8 +150,8 @@ let scan_file obj_name tolink =
             || !Clflags.link_everything
             || List.exists is_required compunit.cu_reloc
             then begin
-              List.iter remove_required compunit.cu_reloc;
               add_required compunit;
+              List.iter remove_required compunit.cu_reloc;
               compunit :: reqd
             end else
               reqd)
@@ -363,13 +364,9 @@ let link_bytecode ppf tolink exec_name standalone =
     Symtable.output_primitive_names outchan;
     Bytesections.record outchan "PRIM";
     (* The table of global data *)
-    begin try
-      Marshal.to_channel outchan (Symtable.initial_global_table())
-          (if !Clflags.bytecode_compatible_32
-           then [Marshal.Compat_32] else [])
-    with Failure _ ->
-      raise (Error Not_compatible_32)
-    end;
+    Emitcode.marshal_to_channel_with_possibly_32bit_compat
+      ~filename:exec_name ~kind:"bytecode executable"
+      outchan (Symtable.initial_global_table());
     Bytesections.record outchan "DATA";
     (* The map of global identifiers *)
     Symtable.output_global_map outchan;
@@ -454,15 +451,13 @@ let link_bytecode_as_c ppf tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus\
+#define CAML_INTERNALS\
+\n\
+\n#ifdef __cplusplus\
 \nextern \"C\" {\
 \n#endif\
 \n#include <caml/mlvalues.h>\
-\nCAMLextern void caml_startup_code(\
-\n           code_t code, asize_t code_size,\
-\n           char *data, asize_t data_size,\
-\n           char *section_table, asize_t section_table_size,\
-\n           char **argv);\n";
+\n#include <caml/startup.h>\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     clear_crc_interfaces ();
@@ -497,7 +492,35 @@ let link_bytecode_as_c ppf tolink outfile =
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
 \n                    caml_sections, sizeof(caml_sections),\
+\n                    /* pooling */ 0,\
 \n                    argv);\
+\n}\
+\n\
+\nvalue caml_startup_exn(char ** argv)\
+\n{\
+\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
+\n                               caml_data, sizeof(caml_data),\
+\n                               caml_sections, sizeof(caml_sections),\
+\n                               /* pooling */ 0,\
+\n                               argv);\
+\n}\
+\n\
+\nvoid caml_startup_pooled(char ** argv)\
+\n{\
+\n  caml_startup_code(caml_code, sizeof(caml_code),\
+\n                    caml_data, sizeof(caml_data),\
+\n                    caml_sections, sizeof(caml_sections),\
+\n                    /* pooling */ 1,\
+\n                    argv);\
+\n}\
+\n\
+\nvalue caml_startup_pooled_exn(char ** argv)\
+\n{\
+\n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
+\n                               caml_data, sizeof(caml_data),\
+\n                               caml_sections, sizeof(caml_sections),\
+\n                               /* pooling */ 1,\
+\n                               argv);\
 \n}\
 \n#ifdef __cplusplus\
 \n}\
@@ -545,6 +568,14 @@ let link ppf objfiles output_name =
     else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
+  let missing_modules =
+    IdentSet.filter (fun id -> not (Ident.is_predef_exn id)) !missing_globals
+  in
+  begin
+    match IdentSet.elements missing_modules with
+    | [] -> ()
+    | id :: _ -> raise (Error (Required_module_unavailable (Ident.name id)))
+  end;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.all_ccopts := !lib_ccopts @ !Clflags.all_ccopts;
                                                    (* put user's opts first *)
@@ -588,22 +619,26 @@ let link ppf objfiles output_name =
       raise x
   end else begin
     let basename = Filename.chop_extension output_name in
+    let temps = ref [] in
     let c_file =
-      if !Clflags.output_complete_object
+      if !Clflags.output_complete_object && not (Filename.check_suffix output_name ".c")
       then Filename.temp_file "camlobj" ".c"
-      else basename ^ ".c"
-    and obj_file =
+      else begin
+        let f = basename ^ ".c" in
+        if Sys.file_exists f then raise(Error(File_exists f));
+        f
+      end
+    in
+    let obj_file =
       if !Clflags.output_complete_object
-      then Filename.temp_file "camlobj" Config.ext_obj
+      then (Filename.chop_extension c_file) ^ Config.ext_obj
       else basename ^ Config.ext_obj
     in
-    if Sys.file_exists c_file then raise(Error(File_exists c_file));
-    let temps = ref [] in
     try
       link_bytecode_as_c ppf tolink c_file;
       if not (Filename.check_suffix output_name ".c") then begin
         temps := c_file :: !temps;
-        if Ccomp.compile_file c_file <> 0 then
+        if Ccomp.compile_file ~output:obj_file c_file <> 0 then
           raise(Error Custom_runtime);
         if not (Filename.check_suffix output_name Config.ext_obj) ||
            !Clflags.output_complete_object then begin
@@ -658,9 +693,8 @@ let report_error ppf = function
   | Cannot_open_dll file ->
       fprintf ppf "Error on dynamically loaded library: %a"
         Location.print_filename file
-  | Not_compatible_32 ->
-      fprintf ppf "Generated bytecode executable cannot be run\
-                  \ on a 32-bit platform"
+  | Required_module_unavailable s ->
+      fprintf ppf "Required module `%s' is unavailable" s
 
 let () =
   Location.register_error_of_exn

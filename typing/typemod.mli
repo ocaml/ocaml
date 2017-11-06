@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Type-checking of the module language *)
+(** Type-checking of the module language and typed ast plugin hooks *)
 
 open Types
 open Format
@@ -36,7 +36,7 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
 val type_open_:
-        ?toplevel:bool -> Asttypes.override_flag ->
+        ?used_slot:bool ref -> ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
 val modtype_of_package:
         Env.t -> Location.t ->
@@ -60,6 +60,10 @@ type error =
   | Structure_expected of module_type
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.error list
+  | With_makes_applicative_functor_ill_typed of
+      Longident.t * Path.t * Includemod.error list
+  | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
@@ -67,7 +71,6 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
-  | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr

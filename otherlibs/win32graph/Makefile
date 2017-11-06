@@ -14,7 +14,7 @@
 #**************************************************************************
 
 LIBNAME=graphics
-COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
+COBJS=open.$(O) draw.$(O) events.$(O)
 CAMLOBJS=graphics.cmo
 WIN32LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,gdi32) $(call SYSLIB,user32)
 LINKOPTS=-cclib "\"$(WIN32LIBS)\""
@@ -27,6 +27,7 @@ graphics.ml: ../graph/graphics.ml
 graphics.mli: ../graph/graphics.mli
 	cp ../graph/graphics.mli graphics.mli
 
+.PHONY:
 depend:
 
 graphics.cmo: graphics.cmi

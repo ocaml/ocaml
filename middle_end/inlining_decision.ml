@@ -104,7 +104,7 @@ let inline env r ~lhs_of_application
         | T.Never_inline -> assert false
         | T.Can_inline_if_no_larger_than threshold -> threshold
       in
-      Don't_try_it (S.Not_inlined.Function_obviously_too_large threshold)
+      Don't_try_it (S.Not_inlined.Above_threshold threshold)
     else if not (toplevel && branch_depth = 0)
          && A.all_not_useful (E.find_list_exn env args) then
       (* When all of the arguments to the function being inlined are unknown,
@@ -173,7 +173,7 @@ let inline env r ~lhs_of_application
            should already have been simplified (inside its declaration), so
            we also expect no gain from the code below that permits inlining
            inside the body. *)
-        Don't_try_it S.Not_inlined.Unspecialised
+        Don't_try_it S.Not_inlined.No_useful_approximations
     else begin
       (* There are useful approximations, so we should simplify. *)
       Try_it
@@ -335,7 +335,7 @@ let specialise env r ~lhs_of_application
          (fun id approx ->
             not ((A.useful approx)
                  && Variable.Map.mem id (Lazy.force invariant_params)))
-         function_decl.params args_approxs)
+         (Parameter.List.vars function_decl.params) args_approxs)
   in
   let always_specialise, never_specialise =
     (* Merge call site annotation and function annotation.
@@ -374,7 +374,7 @@ let specialise env r ~lhs_of_application
         | T.Never_inline -> assert false
         | T.Can_inline_if_no_larger_than threshold -> threshold
       in
-      Don't_try_it (S.Not_specialised.Function_obviously_too_large threshold)
+      Don't_try_it (S.Not_specialised.Above_threshold threshold)
     else if not (Var_within_closure.Map.is_empty (Lazy.force bound_vars)) then
       Don't_try_it S.Not_specialised.Not_closed
     else if not (Lazy.force recursive) then

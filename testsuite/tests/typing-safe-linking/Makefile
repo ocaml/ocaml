@@ -5,7 +5,7 @@ OBJECTS = $(SOURCES:%.ml=%.cmo)
 
 all: a.cmo
 	@printf " ... testing 'b_bad.ml'"
-	@$(OCAMLC) -c -safe-string -warn-error +8 b_bad.ml 2> /dev/null \
+	@$(OCAMLC) $(ADD_COMPFLAGS) -c -safe-string -warn-error +8 b_bad.ml 2> /dev/null \
 	 && echo " => failed" || echo " => passed"
 
 clean:

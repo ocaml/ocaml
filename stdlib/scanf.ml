@@ -410,7 +410,7 @@ module Scanning : SCANNING = struct
      More precisely, given [ic], all successive calls [fscanf ic] must read
      from the same scanning buffer.
      This obliged this library to allocated scanning buffers that were
-     not properly garbbage collectable, hence leading to memory leaks.
+     not properly garbage collectable, hence leading to memory leaks.
      If you need to read from a [Pervasives.in_channel] input channel
      [ic], simply define a [Scanning.in_channel] formatted input channel as in
      [let ib = Scanning.from_channel ic], then use [Scanf.bscanf ib] as usual.
@@ -655,7 +655,7 @@ let scan_digit_star digitp width ib =
 
 let scan_digit_plus basis digitp width ib =
   (* Ensure we have got enough width left,
-     and read at list one digit. *)
+     and read at least one digit. *)
   if width = 0 then bad_token_length "digits" else
   let c = Scanning.checked_peek_char ib in
   if digitp c then
@@ -1188,7 +1188,7 @@ let stopper_of_formatting_lit fmting =
 
 
 (******************************************************************************)
-                           (* Readers managment *)
+                           (* Reader management *)
 
 (* A call to take_format_readers on a format is evaluated into functions
    taking readers as arguments and aggregate them into an heterogeneous list *)
@@ -1211,7 +1211,7 @@ fun k fmt -> match fmt with
   | Nativeint (_, _, _, rest)        -> take_format_readers k rest
   | Int64 (_, _, _, rest)            -> take_format_readers k rest
   | Float (_, _, _, rest)            -> take_format_readers k rest
-  | Bool rest                        -> take_format_readers k rest
+  | Bool (_, rest)                   -> take_format_readers k rest
   | Alpha rest                       -> take_format_readers k rest
   | Theta rest                       -> take_format_readers k rest
   | Flush rest                       -> take_format_readers k rest
@@ -1284,7 +1284,7 @@ fun k ign fmt -> match ign with
   | Ignored_nativeint (_, _)        -> take_format_readers k fmt
   | Ignored_int64 (_, _)            -> take_format_readers k fmt
   | Ignored_float (_, _)            -> take_format_readers k fmt
-  | Ignored_bool                    -> take_format_readers k fmt
+  | Ignored_bool _                  -> take_format_readers k fmt
   | Ignored_format_arg _            -> take_format_readers k fmt
   | Ignored_format_subst (_, fmtty) -> take_fmtty_format_readers k fmtty fmt
   | Ignored_scan_char_set _         -> take_format_readers k fmt
@@ -1296,12 +1296,12 @@ fun k ign fmt -> match ign with
 
 (* Make a generic scanning function. *)
 (* Scan a stream according to a format and readers obtained by
-   take_format_readers, and aggegate scanned values into an
+   take_format_readers, and aggregate scanned values into an
    heterogeneous list. *)
 (* Return the heterogeneous list of scanned values. *)
-let rec make_scanf : type a c d e f .
+let rec make_scanf : type a c d e f.
     Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
-      (d, _) heter_list -> (a, f) heter_list =
+      (d, e) heter_list -> (a, f) heter_list =
 fun ib fmt readers -> match fmt with
   | Char rest ->
     let _ = scan_char 0 ib in
@@ -1357,10 +1357,9 @@ fun ib fmt readers -> match fmt with
   | Float ((Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH),
            pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_hex_float token_float
-  | Bool rest ->
-    let _ = scan_bool ib in
-    let b = token_bool ib in
-    Cons (b, make_scanf ib rest readers)
+  | Bool (pad, rest) ->
+    let scan _ _ ib = scan_bool ib in
+    pad_prec_scanf ib rest readers pad No_precision scan token_bool
   | Alpha _ ->
     invalid_arg "scanf: bad conversion \"%a\""
   | Theta _ ->
@@ -1368,9 +1367,13 @@ fun ib fmt readers -> match fmt with
   | Custom _ ->
     invalid_arg "scanf: bad conversion \"%?\" (custom converter)"
   | Reader fmt_rest ->
-    let Cons (reader, readers_rest) = readers in
-    let x = reader ib in
-    Cons (x, make_scanf ib fmt_rest readers_rest)
+    begin match readers with
+    | Cons (reader, readers_rest) ->
+        let x = reader ib in
+        Cons (x, make_scanf ib fmt_rest readers_rest)
+    | Nil ->
+        invalid_arg "scanf: missing reader"
+    end
   | Flush rest ->
     if Scanning.end_of_input ib then make_scanf ib rest readers
     else bad_input "end of input not found"
@@ -1460,7 +1463,7 @@ fun ib fmt readers -> match fmt with
 (* Pass padding and precision to the generic scanner `scan'. *)
 and pad_prec_scanf : type a c d e f x y z t .
     Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
-      (d, _) heter_list -> (x, y) padding -> (y, z -> a) precision ->
+      (d, e) heter_list -> (x, y) padding -> (y, z -> a) precision ->
       (int -> int -> Scanning.in_channel -> t) ->
       (Scanning.in_channel -> z) ->
       (x, f) heter_list =

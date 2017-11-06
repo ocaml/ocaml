@@ -128,7 +128,8 @@ CAMLprim value caml_obj_dup(value arg)
    before the block is reallocated (since there must be a minor
    collection within each major cycle).
 
-   [newsize] is a value encoding a number of words.
+   [newsize] is a value encoding a number of fields (words, except
+   for float arrays on 32-bit architectures).
 */
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {

@@ -15,7 +15,7 @@ If you have a look at modules ending in "Labels" in the standard
 library, you will see that function types have annotations you did not
 have in the functions you defined yourself.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 ListLabels.map;;
 StringLabels.sub;;
 \end{caml_example}
@@ -26,7 +26,7 @@ flexibility to function application.
 You can give such names to arguments in your programs, by prefixing them
 with a tilde "~".
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f ~x ~y = x - y;;
 let x = 3 and y = 2 in f ~x ~y;;
 \end{caml_example}
@@ -35,7 +35,7 @@ When you want to use distinct names for the variable and the label
 appearing in the type, you can use a naming label of the form
 "~name:". This also applies when the argument is not a variable.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f ~x:x1 ~y:y1 = x1 - y1;;
 f ~x:3 ~y:2;;
 \end{caml_example}
@@ -54,7 +54,7 @@ This allows commuting arguments in applications. One can also
 partially apply a function on any argument, creating a new function of
 the remaining parameters.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f ~x ~y = x - y;;
 f ~y:2 ~x:3;;
 ListLabels.fold_left;;
@@ -66,7 +66,7 @@ If several arguments of a function bear the same label (or no label),
 they will not commute among themselves, and order matters. But they
 can still commute with other arguments.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
 hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example}
@@ -76,27 +76,27 @@ application is total (omitting all optional arguments), labels may be
 omitted.
 In practice, many applications are total, so that labels can often be
 omitted.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 f 3 2;;
 ListLabels.map succ [1;2;3];;
 \end{caml_example}
 But beware that functions like "ListLabels.fold_left" whose result
 type is a type variable will never be considered as totally applied.
-\begin{caml_example}[error]
+\begin{caml_example}{toplevel}[error]
 ListLabels.fold_left ( + ) 0 [1;2;3];;
 \end{caml_example}
 
 When a function is passed as an argument to a higher-order function,
 labels must match in both types. Neither adding nor removing labels
 are allowed.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let h g = g ~x:3 ~y:2;;
 h f;;
 h ( + ) [@@expect error];;
 \end{caml_example}
 Note that when you don't need an argument, you can still use a wildcard
 pattern, but you must prefix it with the label.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 h (fun ~x:_ ~y -> y+1);;
 \end{caml_example}
 
@@ -108,7 +108,7 @@ tilde "~" of non-optional ones, and the label is also prefixed by "?"
 in the function type.
 Default values may be given for such optional parameters.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let bump ?(step = 1) x = x + step;;
 bump 2;;
 bump ~step:3 2;;
@@ -122,7 +122,7 @@ Note that if that argument is labeled, you will only be able to
 eliminate optional arguments through the special case for total
 applications.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
 test ();;
 test ~x:2 () ~z:3 ();;
@@ -132,7 +132,7 @@ Optional parameters may also commute with non-optional or unlabeled
 ones, as long as they are applied simultaneously. By nature, optional
 arguments do not commute with unlabeled arguments applied
 independently.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 test ~y:2 ~x:3 () ();;
 test () () ~z:1 ~y:2 ~x:3;;
 (test () ()) ~z:1 [@@expect error];;
@@ -145,7 +145,7 @@ you do not give a default value, you have access to their internal
 representation, "type 'a option = None | Some of 'a". You can then
 provide different behaviors when an argument is present or not.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let bump ?step x =
   match step with
   | None -> x * 2
@@ -158,7 +158,7 @@ call to another. This can be done by prefixing the applied argument
 with "?". This question mark disables the wrapping of optional
 argument in an option type.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let test2 ?x ?y () = test ?x ?y () ();;
 test2 ?x:None;;
 \end{caml_example}
@@ -171,7 +171,7 @@ applications, labels and optional arguments have the pitfall that they
 cannot be inferred as completely as the rest of the language.
 
 You can see it in the following two examples.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let h' g = g ~y:2 ~x:3;;
 h' f [@@expect error];;
 let bump_it bump x =
@@ -203,7 +203,7 @@ order.
 
 The right way to solve this problem for optional parameters is to add
 a type annotation to the argument "bump".
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let bump_it (bump : ?step:int -> int -> int) x =
   bump ~step:2 x;;
 bump_it bump 1;;
@@ -220,7 +220,7 @@ parameters, the compiler will attempt to transform the argument to
 have it match the expected type, by passing "None" for all optional
 parameters.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let twice f (x : int) = f(f x);;
 twice bump 2;;
 \end{caml_example}
@@ -317,7 +317,7 @@ is only used when a more detailed specification is needed.
 Variants as presented in section~\ref{s:tut-recvariants} are a
 powerful tool to build data structures and algorithms. However they
 sometimes lack flexibility when used in modular programming. This is
-due to the fact that every constructor is assigned to an unique type
+due to the fact that every constructor is assigned to a unique type
 when defined and used. Even if the same name appears in the definition
 of multiple types, the constructor itself belongs to only one type.
 Therefore, one cannot decide that a given constructor belongs to
@@ -334,7 +334,7 @@ type will be inferred independently for each of its uses.
 
 In programs, polymorphic variants work like usual ones. You just have
 to prefix their names with a backquote character "`".
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 [`On; `Off];;
 `Number 1;;
 let f = function `On -> 1 | `Off -> 0 | `Number n -> n;;
@@ -357,7 +357,7 @@ variant types, that is types that cannot be refined. This is
 also the case for type abbreviations. Such types do not contain "<" or
 ">", but just an enumeration of the tags and their associated types,
 just like in a normal datatype definition.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
 let rec map f : 'a vlist -> 'b vlist = function
   | `Nil -> `Nil
@@ -370,7 +370,7 @@ let rec map f : 'a vlist -> 'b vlist = function
 Type-checking polymorphic variants is a subtle thing, and some
 expressions may result in more complex type information.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f = function `A -> `C | `B -> `D | x -> x;;
 f `E;;
 \end{caml_example}
@@ -381,7 +381,7 @@ returned as is, input and return types are identical. The notation "as
 'a" denotes such type sharing. If we apply "f" to yet another tag
 "`E", it gets added to the list.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f1 = function `A x -> x = 1 | `B -> true | `C -> false
 let f2 = function `A x -> x = "a" | `B -> true ;;
 let f x = f1 x && f2 x;;
@@ -398,7 +398,7 @@ Even if a value has a fixed variant type, one can still give it a
 larger type through coercions. Coercions are normally written with
 both the source type and the destination type, but in simple cases the
 source type may be omitted.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 type 'a wlist = [`Nil | `Cons of 'a * 'a wlist | `Snoc of 'a wlist * 'a];;
 let wlist_of_vlist  l = (l : 'a vlist :> 'a wlist);;
 let open_vlist l = (l : 'a vlist :> [> 'a vlist]);;
@@ -406,7 +406,7 @@ fun x -> (x :> [`A|`B|`C]);;
 \end{caml_example}
 
 You may also selectively coerce values through pattern matching.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let split_cases = function
   | `Nil | `Cons _ as x -> `A x
   | `Snoc _ as x -> `B x
@@ -417,7 +417,7 @@ alias-pattern, the alias is given a type containing only the tags
 enumerated in the or-pattern. This allows for many useful idioms, like
 incremental definition of functions.
 
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let num x = `Num x
 let eval1 eval (`Num x) = x
 let rec eval x = eval1 eval x ;;
@@ -437,13 +437,13 @@ type myvariant = [`Tag1 of int | `Tag2 of bool];;
 \end{caml_eval}
 
 Such abbreviations may be used alone,
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let f = function
   | #myvariant -> "myvariant"
   | `Tag3 -> "Tag3";;
 \end{caml_example}
 or combined with with aliases.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 let g1 = function `Tag1 _ -> "Tag1" | `Tag2 _ -> "Tag2";;
 let g = function
   | #myvariant as x -> g1 x
@@ -476,7 +476,7 @@ programs you are probably better off with core language variants.
 Beware also that some idioms make trivial errors very hard to find.
 For instance, the following code is probably wrong but the compiler
 has no way to see it.
-\begin{caml_example}
+\begin{caml_example}{toplevel}
 type abc = [`A | `B | `C] ;;
 let f = function
   | `As -> "A"
@@ -484,7 +484,7 @@ let f = function
 let f : abc -> string = f ;;
 \end{caml_example}
 You can avoid such risks by annotating the definition itself.
-\begin{caml_example}[error]
+\begin{caml_example}{toplevel}[error]
 let f : abc -> string = function
   | `As -> "A"
   | #abc -> "other" ;;

@@ -50,7 +50,7 @@ static struct custom_operations win_handle_ops = {
 
 value win_alloc_handle(HANDLE h)
 {
-  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  value res = caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -60,7 +60,7 @@ value win_alloc_handle(HANDLE h)
 
 value win_alloc_socket(SOCKET s)
 {
-  value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
+  value res = caml_alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
   CRT_fd_val(res) = NO_CRT_FD;
@@ -272,7 +272,7 @@ value unix_error_of_code (int errcode)
   errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
-    err = alloc_small(1, 0);
+    err = caml_alloc_small(1, 0);
     Field(err, 0) = Val_int(errcode);
   } else {
     err = errconstr;
@@ -280,37 +280,48 @@ value unix_error_of_code (int errcode)
   return err;
 }
 
-void unix_error(int errcode, char *cmdname, value cmdarg)
+void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
   int errconstr;
 
   Begin_roots3 (name, err, arg);
-    arg = cmdarg == Nothing ? copy_string("") : cmdarg;
-    name = copy_string(cmdname);
+    arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
+    name = caml_copy_string(cmdname);
     err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
       if (unix_error_exn == NULL)
-        invalid_argument("Exception Unix.Unix_error not initialized,"
+        caml_invalid_argument("Exception Unix.Unix_error not initialized,"
                          " please link unix.cma");
     }
-    res = alloc_small(4, 0);
+    res = caml_alloc_small(4, 0);
     Field(res, 0) = *unix_error_exn;
     Field(res, 1) = err;
     Field(res, 2) = name;
     Field(res, 3) = arg;
   End_roots();
-  mlraise(res);
+  caml_raise(res);
 }
 
-void uerror(char * cmdname, value cmdarg)
+void uerror(const char * cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
 
-void caml_unix_check_path(value path, char * cmdname)
+void caml_unix_check_path(value path, const char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+}
+
+int unix_cloexec_default = 0;
+
+int unix_cloexec_p(value cloexec)
+{
+  /* [cloexec] is a [bool option].  */
+  if (Is_block(cloexec))
+    return Bool_val(Field(cloexec, 0));
+  else
+    return unix_cloexec_default;
 }

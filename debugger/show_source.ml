@@ -23,18 +23,23 @@ open Source
 
 (* Print a line; return the beginning of the next line *)
 let print_line buffer line_number start point before =
-  let next = next_linefeed buffer start
+  let linefeed = next_linefeed buffer start
   and content = buffer_content buffer
   in
     printf "%i " line_number;
-    if point <= next && point >= start then
+    let line_end =
+      if linefeed > 0 && content.[linefeed - 1] = '\r' then
+        linefeed - 1
+      else
+        linefeed in
+    if point <= line_end && point >= start then
       (print_string (String.sub content start (point - start));
        print_string (if before then event_mark_before else event_mark_after);
-       print_string (String.sub content point (next - point)))
+       print_string (String.sub content point (line_end - point)))
     else
-      print_string (String.sub content start (next - start));
+      print_string (String.sub content start (line_end - start));
     print_newline ();
-    next
+    linefeed
 
 (* Tell Emacs we are nowhere in the source. *)
 let show_no_point () =

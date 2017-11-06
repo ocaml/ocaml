@@ -9,7 +9,17 @@ let rec f x =
       raise Stack_overflow
 
 let _ =
+ begin
   try
     ignore(f 0)
   with Stack_overflow ->
     print_string "Stack overflow caught"; print_newline()
+ end ;
+ (* GPR#1289 *)
+ Printexc.record_backtrace true;
+ begin
+  try
+    ignore(f 0)
+  with Stack_overflow ->
+    print_string "second Stack overflow caught"; print_newline()
+ end

@@ -101,7 +101,7 @@ struct
               List.iter
                 (fun (n, e) ->
                    Printf.bprintf b "<span style=\"color: %s\">" (col n);
-                   html#html_of_text b e;
+                   html#html_of_text ?with_p:(Some false) b e;
                    p b "</span><br/>\n";
                 )
                 l;
@@ -143,7 +143,7 @@ struct
         (Odoc_html.Naming.complete_method_target m)
         m.met_value.val_info
 
-   (** This method scan the elements of the given module. *)
+   (** This method scans the elements of the given module. *)
     method! scan_module_elements m =
       List.iter
         (fun ele ->

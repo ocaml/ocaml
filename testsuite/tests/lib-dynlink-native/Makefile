@@ -69,7 +69,7 @@ plugin2.cmx: api.cmx plugin.cmi plugin.cmx
 	@mv plugin.cmx.bak plugin.cmx
 
 sub/api.so: sub/api.cmi sub/api.ml
-	@cd sub; $(OCAMLOPT) -c $(SHARED) api.ml
+	@cd sub; $(OCAMLOPT) -c $(SUPPORTS_SHARED_LIBRARIES) api.ml
 
 sub/api.cmi: sub/api.mli
 	@cd sub; $(OCAMLOPT) -c -opaque api.mli

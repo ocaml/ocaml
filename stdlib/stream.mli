@@ -67,10 +67,10 @@ val iter : ('a -> unit) -> 'a t -> unit
 
 val next : 'a t -> 'a
 (** Return the first element of the stream and remove it from the
-   stream. Raise Stream.Failure if the stream is empty. *)
+   stream. Raise {!Stream.Failure} if the stream is empty. *)
 
 val empty : 'a t -> unit
-(** Return [()] if the stream is empty, else raise [Stream.Failure]. *)
+(** Return [()] if the stream is empty, else raise {!Stream.Failure}. *)
 
 
 (** {6 Useful functions} *)
