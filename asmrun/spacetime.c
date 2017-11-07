@@ -131,7 +131,7 @@ static void caml_spacetime_write_magic_number_internal(struct channel* chan)
   value magic_number;
   uint16_t features = 0;
 
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
   features |= FEATURE_CALL_COUNTS;
 #endif
 
@@ -225,14 +225,12 @@ void caml_spacetime_initialize(void)
         caml_secure_getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
 
       if (user_specified_automatic_snapshot_dir == NULL) {
-#ifdef HAS_GETCWD
+#if defined(HAS_GETCWD)
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
           dir_ok = 0;
         }
 #else
-        if (getwd(cwd) == NULL) {
-          dir_ok = 0;
-        }
+        dir_ok = 0;
 #endif
         if (dir_ok) {
           automatic_snapshot_dir = strdup(cwd);
@@ -610,7 +608,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   if (callee == last_indirect_node_hole_ptr_callee
       && node_hole == last_indirect_node_hole_ptr_node_hole) {
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
     last_indirect_node_hole_ptr_result->call_count =
       Val_long (Long_val (last_indirect_node_hole_ptr_result->call_count) + 1);
 #endif
@@ -631,7 +629,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
     CAMLassert(caml_spacetime_classify_c_node(c_node) == CALL);
 
     if (c_node->pc == encoded_callee) {
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
       c_node->data.call.call_count =
         Val_long (Long_val(c_node->data.call.call_count) + 1);
 #endif
@@ -659,7 +657,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   CAMLassert(((uintnat) *node_hole) % sizeof(value) == 0);
   CAMLassert(*node_hole != Val_unit);
 
-#ifdef WITH_SPACETIME_CALL_COUNTS
+#ifdef ENABLE_CALL_COUNTS
   c_node->data.call.call_count =
     Val_long (Long_val(c_node->data.call.call_count) + 1);
 #endif

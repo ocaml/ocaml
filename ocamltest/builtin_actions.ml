@@ -21,6 +21,52 @@ open Actions
 
 let env_id env = env
 
+let pass = {
+  action_name = "pass";
+  action_environment = env_id;
+  action_body = fun log env ->
+    Printf.fprintf log "The pass action always succeeds.\n%!";
+    Pass env
+}
+
+let skip = {
+  action_name = "skip";
+  action_environment = env_id;
+  action_body = fun _log _env -> Skip "The skip action always skips."
+}
+
+let fail = {
+  action_name = "fail";
+  action_environment = env_id;
+  action_body = fun _log _env -> Fail "The fail action always fails."
+}
+
+let unix = {
+  action_name = "unix";
+  action_environment = env_id;
+  action_body = fun log env ->
+    if Ocamltest_config.unix then
+    begin
+      Printf.fprintf log
+        "The unix action succeeds because we are on a Unix system.\n%!";
+      Pass env
+    end else
+      Skip "The unix action skips because we are on a Windows system."
+}
+
+let windows = {
+  action_name = "windows";
+  action_environment = env_id;
+  action_body = fun log env ->
+    if not Ocamltest_config.unix then
+    begin
+      Printf.fprintf log
+        "The windows action succeeds because we are on a Windows system.\n%!";
+      Pass env
+    end else
+      Skip "The windows action skips because we are on a Unix system."
+}
+
 let run_command
     ?(stdin_variable=Builtin_variables.stdin)
     ?(stdout_variable=Builtin_variables.stdout)
@@ -478,7 +524,7 @@ let compile_test_program program_variable compiler log env =
 (* Compile actions *)
 
 let compile_bytecode_with_bytecode_compiler = {
-  action_name = "compile-bytecode-with-bytecode-compiler";
+  action_name = "ocamlc.byte";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -486,7 +532,7 @@ let compile_bytecode_with_bytecode_compiler = {
 }
 
 let compile_bytecode_with_native_compiler = {
-  action_name = "compile-bytecode-with-native-compiler";
+  action_name = "ocamlc.opt";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -494,7 +540,7 @@ let compile_bytecode_with_native_compiler = {
 }
 
 let compile_native_with_bytecode_compiler = {
-  action_name = "compile-native-with-bytecode-compiler";
+  action_name = "ocamlopt.byte";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -502,7 +548,7 @@ let compile_native_with_bytecode_compiler = {
 }
 
 let compile_native_with_native_compiler = {
-  action_name = "compile-native-with-native-compiler";
+  action_name = "ocamlopt.opt";
   action_environment = env_id;
   action_body =
     compile_test_program
@@ -551,7 +597,7 @@ let execute_program =
     Builtin_variables.arguments
 
 let execute = {
-  action_name = "execute-program";
+  action_name = "run";
   action_environment = env_id;
   action_body = execute_program
 }
@@ -572,7 +618,7 @@ let run_script log env =
     log env
 
 let script = {
-  action_name = "run-script";
+  action_name = "script";
   action_environment = env_id;
   action_body = run_script
 }
@@ -582,7 +628,7 @@ let run_expect log env =
   run_script log newenv
 
 let expect = {
-  action_name = "run-expect";
+  action_name = "expect";
   action_environment = env_id;
   action_body = run_expect
 }
@@ -702,6 +748,11 @@ let compare_programs backend comparison_tool log env =
     Printf.fprintf log
       "flambda temporarily disables comparison of native programs";
     Pass env
+  end else if backend = Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+  then begin
+    Printf.fprintf log
+      "comparison of native programs temporarily disabled under Windows";
+    Pass env
   end else begin
     let comparison_tool =
       if backend=Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
@@ -725,11 +776,7 @@ let make_bytecode_programs_comparison_tool ocamlsrcdir =
   let ocamlrun = ocamlrun ocamlsrcdir in
   let cmpbyt = cmpbyt ocamlsrcdir in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
-  {
-    Filecompare.tool_name = tool_name;
-    Filecompare.tool_flags = "";
-    Filecompare.result_of_exitcode = Filecompare.cmp_result_of_exitcode
-  }
+  Filecompare.make_comparison_tool tool_name ""
 
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 
@@ -811,14 +858,14 @@ let run_test_program_in_toplevel toplevel log env =
 
 let run_in_ocaml =
 {
-  action_name = "run-in-bytecode-toplevel";
+  action_name = "ocaml";
   action_environment = env_id;
   action_body = run_test_program_in_toplevel ocaml;
 }
 
 let run_in_ocamlnat =
 {
-  action_name = "run-in-native-toplevel";
+  action_name = "ocamlnat";
   action_environment = env_id;
   action_body = run_test_program_in_toplevel ocamlnat;
 }
@@ -841,6 +888,11 @@ let if_not_safe_string = {
 let _ =
   List.iter register
   [
+    pass;
+    skip;
+    fail;
+    unix;
+    windows;
     compile_bytecode_with_bytecode_compiler;
     compile_bytecode_with_native_compiler;
     compile_native_with_bytecode_compiler;

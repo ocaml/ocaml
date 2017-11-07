@@ -105,6 +105,25 @@ let wrap2 s f quote_in1 quote_in2 x y quote_out =
 let getenv s =
   wrap "Sys.getenv" Sys.getenv quote s quote
 
+let getenvironmentenv s =
+  let get s =
+    let env = Unix.environment () in
+    let rec loop i =
+      if i >= Array.length env then
+        ""
+      else begin
+        let e = env.(i) in
+        let pos = String.index e '=' in
+        if String.sub e 0 pos = s then
+          String.sub e (pos+1) (String.length e - pos - 1)
+        else
+          loop (i+1)
+      end
+    in
+    loop 0
+  in
+  wrap "Unix.environment" get quote s quote
+
 let putenv s x =
   wrap2 "Unix.putenv" Unix.putenv quote quote s x ok
 
@@ -160,6 +179,10 @@ let large_lstat s =
   let f s = (Unix.LargeFile.lstat s).Unix.LargeFile.st_kind in
   wrap "Unix.LargeFile.lstat" f quote s file_kind
 
+let access s =
+  let f s = Unix.access s [Unix.F_OK] in
+  wrap "Unix.access" f quote s ok
+
 let unix_readdir f s =
   let f s =
     let h = Unix.opendir s in
@@ -190,10 +213,6 @@ let open_in s =
 
 let open_out s =
   wrap "open_out" open_out quote s ok
-
-let environment filter =
-  let f () = List.filter filter (Array.to_list (Unix.environment ())) in
-  wrap "Unix.environment" f unit () (list quote)
 
 let open_process_in cmdline =
   let f cmdline =
@@ -260,7 +279,8 @@ let test_open_in () =
 let test_getenv () =
   let doit key s =
     putenv key s;
-    expect_string (getenv key) s
+    expect_string (getenv key) s;
+    expect_string (getenvironmentenv key) s
   in
   List.iter2 doit foreign_names foreign_names2
 
@@ -295,6 +315,9 @@ let test_stat () =
     expect_file_kind (large_lstat s) Unix.S_REG
   in
   List.iter doit to_create_and_delete_files
+
+let test_access () =
+  List.iter access to_create_and_delete_files
 
 let test_rename rename =
   let doit s =
@@ -352,6 +375,7 @@ let tests =
     "test_open_out", test_open_out;
     "test_file_exists", (fun () -> test_file_exists true);
     "test_stat", test_stat;
+    "test_access", test_access;
     "test_rename unix_rename", (fun () -> test_rename unix_rename);
     "test_rename sys_rename", (fun () -> test_rename sys_rename);
     "test_remove remove", (fun () -> test_remove remove);

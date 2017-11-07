@@ -75,9 +75,9 @@ static c_primitive lookup_primitive(char * name)
 
 #define LD_CONF_NAME _T("ld.conf")
 
-static charnat * parse_ld_conf(void)
+static char_os * parse_ld_conf(void)
 {
-  charnat * stdlib, * ldconfname, * wconfig, * p, * q, * tofree = NULL;
+  char_os * stdlib, * ldconfname, * wconfig, * p, * q;
   char * config;
 #ifdef _WIN32
   struct _stati64 st;
@@ -88,25 +88,24 @@ static charnat * parse_ld_conf(void)
 
   stdlib = caml_secure_getenv(_T("OCAMLLIB"));
   if (stdlib == NULL) stdlib = caml_secure_getenv(_T("CAMLLIB"));
-  if (stdlib == NULL) stdlib = tofree = caml_stat_strdup_to_utf16(OCAML_STDLIB_DIR);
-  ldconfname = caml_stat_tcsconcat(3, stdlib, _T("/"), LD_CONF_NAME);
-  if (tofree != NULL) caml_stat_free(tofree);
-  if (_tstat(ldconfname, &st) == -1) {
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
+  ldconfname = caml_stat_strconcat_os(3, stdlib, _T("/"), LD_CONF_NAME);
+  if (stat_os(ldconfname, &st) == -1) {
     caml_stat_free(ldconfname);
     return NULL;
   }
-  ldconf = _topen(ldconfname, O_RDONLY, 0);
+  ldconf = open_os(ldconfname, O_RDONLY, 0);
   if (ldconf == -1)
     caml_fatal_error_arg("Fatal error: cannot read loader config file %s\n",
-                         caml_stat_strdup_of_utf16(ldconfname));
+                         caml_stat_strdup_of_os(ldconfname));
   config = caml_stat_alloc(st.st_size + 1);
   nread = read(ldconf, config, st.st_size);
   if (nread == -1)
     caml_fatal_error_arg
       ("Fatal error: error while reading loader config file %s\n",
-       caml_stat_strdup_of_utf16(ldconfname));
+       caml_stat_strdup_of_os(ldconfname));
   config[nread] = 0;
-  wconfig = caml_stat_strdup_to_utf16(config);
+  wconfig = caml_stat_strdup_to_os(config);
   caml_stat_free(config);
   q = wconfig;
   for (p = wconfig; *p != 0; p++) {
@@ -124,20 +123,22 @@ static charnat * parse_ld_conf(void)
 
 /* Open the given shared library and add it to shared_libs.
    Abort on error. */
-static void open_shared_lib(charnat * name)
+static void open_shared_lib(char_os * name)
 {
-  charnat * realname;
+  char_os * realname;
+  char * u8;
   void * handle;
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
-  caml_gc_message(0x100, "Loading shared library %"
-                  ARCH_CHARNATSTR_PRINTF_FORMAT "\n", realname);
+  u8 = caml_stat_strdup_of_os(realname);
+  caml_gc_message(0x100, "Loading shared library %s\n", u8);
+  caml_stat_free(u8);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
   if (handle == NULL)
     caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n",
-                          caml_stat_strdup_of_utf16(name),
+                          caml_stat_strdup_of_os(name),
                           "Reason: %s\n", caml_dlerror());
   caml_ext_table_add(&shared_libs, handle);
   caml_stat_free(realname);
@@ -146,12 +147,12 @@ static void open_shared_lib(charnat * name)
 /* Build the table of primitives, given a search path and a list
    of shared libraries (both 0-separated in a char array).
    Abort the runtime system on error. */
-void caml_build_primitive_table(charnat * lib_path,
-                                charnat * libs,
+void caml_build_primitive_table(char_os * lib_path,
+                                char_os * libs,
                                 char * req_prims)
 {
-  charnat * tofree1, * tofree2;
-  charnat * p;
+  char_os * tofree1, * tofree2;
+  char_os * p;
   char * q;
 
   /* Initialize the search path for dynamic libraries:
@@ -162,13 +163,13 @@ void caml_build_primitive_table(charnat * lib_path,
   tofree1 = caml_decompose_path(&caml_shared_libs_path,
                                 caml_secure_getenv(_T("CAML_LD_LIBRARY_PATH")));
   if (lib_path != NULL)
-    for (p = lib_path; *p != 0; p += _tcslen(p) + 1)
+    for (p = lib_path; *p != 0; p += strlen_os(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
   tofree2 = parse_ld_conf();
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
-    for (p = libs; *p != 0; p += _tcslen(p) + 1)
+    for (p = libs; *p != 0; p += strlen_os(p) + 1)
       open_shared_lib(p);
   /* Build the primitive table */
   caml_ext_table_init(&caml_prim_table, 0x180);
@@ -225,11 +226,11 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
 {
   void * handle;
   value result;
-  charnat * p;
+  char_os * p;
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   String_val(filename));
-  p = caml_stat_strdup_to_utf16(String_val(filename));
+  p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, Int_val(mode), 1);
   caml_leave_blocking_section();

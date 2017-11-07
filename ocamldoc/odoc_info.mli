@@ -135,7 +135,7 @@ module Name :
 (** Representation and manipulation of method / function / class / module parameters.*)
 module Parameter :
   sig
-    (** {3 Types} *)
+    (** {1 Types} *)
 
     (** Representation of a simple parameter name *)
     type simple_name = Odoc_parameter.simple_name =
@@ -154,7 +154,7 @@ module Parameter :
     (** A parameter is just a param_info.*)
     type parameter = param_info
 
-    (** {3 Functions} *)
+    (** {1 Functions} *)
 
     (** Access to the name as a string. For tuples, parentheses and commas are added. *)
     val complete_name : parameter -> string
@@ -343,7 +343,7 @@ module Value :
 (** Representation and manipulation of classes and class types.*)
 module Class :
   sig
-    (** {3 Types} *)
+    (** {1 Types} *)
 
     (** To keep the order of elements in a class. *)
     type class_element = Odoc_class.class_element =
@@ -429,7 +429,7 @@ module Class :
           mutable clt_loc : location ;
         }
 
-    (** {3 Functions} *)
+    (** {1 Functions} *)
 
     (** Access to the elements of a class. *)
     val class_elements : ?trans:bool -> t_class -> class_element list
@@ -465,7 +465,7 @@ module Class :
 (** Representation and manipulation of modules and module types. *)
 module Module :
   sig
-    (** {3 Types} *)
+    (** {1 Types} *)
 
     (** To keep the order of elements in a module. *)
     type module_element = Odoc_module.module_element =
@@ -570,7 +570,7 @@ module Module :
           mutable mt_loc : location ;
         }
 
-    (** {3 Functions for modules} *)
+    (** {1 Functions for modules} *)
 
     (** Access to the elements of a module. *)
     val module_elements : ?trans:bool -> t_module -> module_element list
@@ -620,7 +620,7 @@ module Module :
     (** The list of module comments. *)
     val module_comments : ?trans:bool-> t_module -> text list
 
-    (** {3 Functions for module types} *)
+    (** {1 Functions for module types} *)
 
     (** Access to the elements of a module type. *)
     val module_type_elements : ?trans:bool-> t_module_type -> module_element list
@@ -669,7 +669,7 @@ module Module :
   end
 
 
-(** {3 Getting strings from values} *)
+(** {2 Getting strings from values} *)
 
 (** This function is used to reset the names of type variables.
    It must be called when printing the whole type of a function,
@@ -749,7 +749,7 @@ val string_of_attribute : Value.t_attribute -> string
 (** @return a string to describe the given method. *)
 val string_of_method : Value.t_method -> string
 
-(** {3 Miscellaneous functions} *)
+(** {2 Miscellaneous functions} *)
 
 (** Return the first sentence (until the first dot followed by a blank
    or the first blank line) of a text.
@@ -1036,7 +1036,7 @@ module Dep :
     val deps_of_types : ?kernel: bool -> Type.t_type list -> (Type.t_type * (Name.t list)) list
   end
 
-(** {2 Some global variables} *)
+(** {1 Some global variables} *)
 
 module Global :
   sig

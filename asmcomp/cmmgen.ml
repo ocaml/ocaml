@@ -1475,6 +1475,30 @@ end
 
 (* cmm store, as sharing as normally been detected in previous
    phases, we only share exits *)
+(* Some specific patterns can lead to switches where several cases
+   point to the same action, but this action is not an exit (see GPR#1370).
+   The addition of the index in the action array as context allows to
+   share them correctly without duplication. *)
+module StoreExpForSwitch =
+  Switch.CtxStore
+    (struct
+      type t = expression
+      type key = int option * int
+      type context = int
+      let make_key index expr =
+        let continuation =
+          match expr with
+          | Cexit (i,[]) -> Some i
+          | _ -> None
+        in
+        Some (continuation, index)
+      let compare_key (cont, index) (cont', index') =
+        match cont, cont' with
+        | Some i, Some i' when i = i' -> 0
+        | _, _ -> Pervasives.compare index index'
+    end)
+
+(* For string switches, we can use a generic store *)
 module StoreExp =
   Switch.Store
     (struct
@@ -1495,10 +1519,10 @@ let transl_int_switch loc arg low high cases default = match cases with
 | [] -> assert false
 | _::_ ->
     let store = StoreExp.mk_store () in
-    assert (store.Switch.act_store default = 0) ;
+    assert (store.Switch.act_store () default = 0) ;
     let cases =
       List.map
-        (fun (i,act) -> i,store.Switch.act_store act)
+        (fun (i,act) -> i,store.Switch.act_store () act)
         cases in
     let rec inters plow phigh pact = function
       | [] ->
@@ -2720,10 +2744,10 @@ and transl_switch loc env arg index cases = match Array.length cases with
 | 1 -> transl env cases.(0)
 | _ ->
     let cases = Array.map (transl env) cases in
-    let store = StoreExp.mk_store () in
+    let store = StoreExpForSwitch.mk_store () in
     let index =
       Array.map
-        (fun j -> store.Switch.act_store cases.(j))
+        (fun j -> store.Switch.act_store j cases.(j))
         index in
     let n_index = Array.length index in
     let inters = ref []

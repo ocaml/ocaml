@@ -30,6 +30,7 @@ open Module
 let separate_files = ref false
 
 let latex_titles = ref [
+  0, "section" ;
   1, "section" ;
   2, "subsection" ;
   3, "subsubsection" ;
@@ -108,19 +109,6 @@ class text =
         "}", "\\\\}";
         "\\$", "\\\\$";
         "\\^", "{\\\\textasciicircum}";
-        "\xE0", "\\\\`a";
-        "\xE2", "\\\\^a";
-        "\xE9", "\\\\'e";
-        "\xE8", "\\\\`e";
-        "\xEA", "\\\\^e";
-        "\xEB", "\\\\\"e";
-        "\xE7", "\\\\c{c}";
-        "\xF4", "\\\\^o";
-        "\xF6", "\\\\\"o";
-        "\xEE", "\\\\^i";
-        "\xEF", "\\\\\"i";
-        "\xF9", "\\\\`u";
-        "\xFB", "\\\\^u";
         "%", "\\\\%";
         "_", "\\\\_";
         "~", "\\\\~{}";
@@ -757,6 +745,7 @@ class latex =
                 );
               [CodePre (flush2 ())]
         in
+        Latex ( self#make_label (self#exception_label e.ex_name) ) ::
        merge_codepre (l @ s ) @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]
        @ (self#text_of_info e.ex_info) in
@@ -1218,7 +1207,7 @@ class latex =
         let subtitle = match first_t with
           | [] -> []
           | t -> (Raw " : ") :: t in
-        [ Title (1, None, title @ subtitle ) ]
+        [ Title (0, None, title @ subtitle ) ]
       in
       self#latex_of_text fmt text;
       self#latex_for_module_label fmt m;

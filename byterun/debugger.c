@@ -164,7 +164,7 @@ static void winsock_cleanup(void)
 void caml_debugger_init(void)
 {
   char * address;
-  charnat * a;
+  char_os * a;
   char * port, * p;
   struct hostent * host;
   int n;
@@ -175,7 +175,7 @@ void caml_debugger_init(void)
   Store_field(marshal_flags, 1, Val_emptylist);
 
   a = caml_secure_getenv(_T("CAML_DEBUG_SOCKET"));
-  address = a ? caml_stat_strdup_of_utf16(a) : NULL;
+  address = a ? caml_stat_strdup_of_os(a) : NULL;
   if (address == NULL) return;
   if (dbg_addr != NULL) caml_stat_free(dbg_addr);
   dbg_addr = address;

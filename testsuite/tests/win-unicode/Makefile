@@ -19,10 +19,6 @@ test:
 symlink_tests.precheck:
 	@echo 'echo "let () = exit (if Unix.has_symlink () then 0 else 1)" | $(OCAML) $(ADD_COMPFLAGS) unix.cma -stdin' > $@
 
-.PHONY: exec_tests.precheck
-exec_tests.precheck:
-	@echo 'exit 1' > $@
-
 include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common
 

@@ -236,4 +236,7 @@ $make install
 
 rm -rf "$instdir"
 cd testsuite
-$make all
+if test -n "$jobs" && test -x /usr/bin/parallel
+then PARALLEL="$jobs $PARALLEL" $make parallel
+else $make all
+fi

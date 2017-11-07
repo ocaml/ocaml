@@ -55,7 +55,7 @@ with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
-with_spacetime_call_counts=false
+enable_call_counts=true
 with_statmemprof=false
 with_profinfo=false
 profinfo_width=0
@@ -64,7 +64,8 @@ native_compiler=true
 TOOLPREF=""
 with_cfi=true
 flambda=false
-safe_string=false
+force_safe_string=false
+default_safe_string=true
 afl_instrument=false
 max_testsuite_dir_retries=0
 with_cplugins=false
@@ -188,11 +189,8 @@ while : ; do
         no_naked_pointers=true;;
     -spacetime|--spacetime)
         with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
-    -spacetime-call-counts|--spacetime-call-counts)
-        with_spacetime=true
-        with_profinfo=true
-        profinfo_width=26
-        with_spacetime_call_counts=true;;
+    -disable-call-counts|--disable-call-counts)
+        enable_call_counts=false;;
     -statmemprof|--statmemprof)
         with_statmemprof=true;;
     -reserved-header-bits|--reserved-header-bits)
@@ -217,8 +215,36 @@ while : ; do
         ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
-    -safe-string|--safe-string)
-        safe_string=true;;
+
+    # There are two configure-time string safety options,
+    # -(no-)force-safe-string and -default-(un)safe-string that
+    # interact with a compile-time (un)safe-string option.
+    #
+    # If -force-safe-string is set at configure time, then the compiler
+    # will always enforce that string and bytes are distinct: the
+    # compile-time -unsafe-string option is disabled. This lets us
+    # assume pervasive string immutability, for code optimizations and
+    # in the C layer.
+    #
+    # If -no-force-safe-string is set at configure-time, the compiler
+    # will use the compile-time (un)safe-string option to decide whether
+    # string and bytes are compatible on a per-file basis. The
+    # configure-time options default-(un)safe-string decide which
+    # setting will be chosen by default, if no compile-time option is
+    # explicitly passed.
+    #
+    # The configure-time behavior of OCaml 4.05 and older was equivalent
+    # to -no-force-safe-string -default-unsafe-string. OCaml 4.06
+    # uses -no-force-safe-string -default-safe-string. We
+    # expect -force-safe-string to become the default in the future.
+    -force-safe-string|--force-safe-string)
+        force_safe_string=true;;
+    -no-force-safe-string|--no-force-safe-string)
+        force_safe_string=false;;
+    -default-safe-string|--default-safe-string)
+        default_safe_string=true;;
+    -default-unsafe-string|--default-unsafe-string)
+        default_safe_string=false;;
     -flat-float-array|--flat-float-array)
         flat_float_array=true;;
     -no-flat-float-array|--no-flat-float-array)
@@ -391,7 +417,7 @@ esac
 # in the OCaml distribution and third-party C source files compiled
 # with ocamlc.
 
-mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS)"
+mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS) \$(LDFLAGS)"
 mkexedebugflag="-g"
 common_cflags=""
 common_cppflags=""
@@ -755,7 +781,7 @@ case "$target" in
              "64-bit integers. I'm going to assume this architecture has\n" \
              "alignment constraints. That's a safe bet: OCaml will work\n" \
              "even if this architecture has actually no alignment\n" \
-             "constraints." \
+             "constraints."
          echo "#define ARCH_ALIGN_INT64" >> m.h;;
     esac
 esac
@@ -947,7 +973,7 @@ case "$target" in
   powerpc*-*-linux*)            arch=power;
                                 if $arch64; then model=ppc64; else model=ppc; fi
                                 system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=netbsd;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   s390x*-*-linux*)              arch=s390x; model=z10; system=elf;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
@@ -1031,7 +1057,7 @@ case "$arch,$system" in
                   aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd)
                   as="${TOOLPREF}as"
                   case "$ccfamily" in
                       clang-*)
@@ -1062,6 +1088,7 @@ case "$arch,$system" in
   arm,linux*) profiling='true';;
   power,elf) profiling='true';;
   power,bsd*) profiling='true';;
+  power,netbsd) profiling='true';;
   *) profiling='false';;
 esac
 
@@ -1308,11 +1335,6 @@ if sh ./hasgot getcwd; then
   echo "#define HAS_GETCWD" >> s.h
 fi
 
-if sh ./hasgot getwd; then
-  inf "getwd() found."
-  echo "#define HAS_GETWD" >> s.h
-fi
-
 if sh ./hasgot getpriority setpriority; then
   inf "getpriority() found."
   echo "#define HAS_GETPRIORITY" >> s.h
@@ -1553,6 +1575,11 @@ fi
 if sh ./hasgot -i sys/shm.h; then
   inf "sys/shm.h found."
   echo "#define HAS_SYS_SHM_H" >> s.h
+fi
+
+if sh ./hasgot execvpe; then
+  inf "execvpe() found."
+  echo "#define HAS_EXECVPE" >> s.h
 fi
 
 # Determine if the debugger is supported
@@ -1918,8 +1945,8 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
-    if $with_spacetime_call_counts; then
-      echo "#define WITH_SPACETIME_CALL_COUNTS" >> m.h
+    if $enable_call_counts; then
+      echo "#define ENABLE_CALL_COUNTS" >> m.h
     fi
     if $disable_libunwind; then
       has_libunwind=no
@@ -2025,7 +2052,7 @@ if $with_fpic; then
   echo "#define CAML_WITH_FPIC" >> m.h
 fi
 
-if $safe_string; then
+if $force_safe_string; then
   echo "#define CAML_SAFE_STRING" >> m.h
 fi
 
@@ -2105,7 +2132,7 @@ config WITH_OCAMLDOC "${with_ocamldoc}"
 config ASM_CFI_SUPPORTED "$asm_cfi_supported"
 config WITH_FRAME_POINTERS "$with_frame_pointers"
 config WITH_SPACETIME "$with_spacetime"
-config WITH_SPACETIME_CALL_COUNTS "$with_spacetime_call_counts"
+config ENABLE_CALL_COUNTS "$enable_call_counts"
 config WITH_STATMEMPROF "$with_statmemprof"
 config WITH_PROFINFO "$with_profinfo"
 config LIBUNWIND_AVAILABLE "$libunwind_available"
@@ -2120,7 +2147,8 @@ if [ "$ostype" = Cygwin ]; then
   config DIFF "diff -q --strip-trailing-cr"
 fi
 config FLAMBDA "$flambda"
-config SAFE_STRING "$safe_string"
+config FORCE_SAFE_STRING "$force_safe_string"
+config DEFAULT_SAFE_STRING "$default_safe_string"
 config WINDOWS_UNICODE "0"
 config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
@@ -2246,10 +2274,15 @@ else
   else
   inf "        using flambda middle-end . no"
   fi
-  if test "$safe_string" = "true"; then
-  inf "        safe strings ............. yes"
+  if $force_safe_string; then
+  inf "        force safe strings ............. yes"
   else
-  inf "        safe strings ............. no"
+  inf "        force safe strings ............. no"
+    if $default_safe_string; then
+  inf "        (-safe-string is the default per-file option)"
+    else
+  inf "        (-unsafe-string is the default per-file option)"
+    fi
   fi
   if $flat_float_array; then
   inf "        flat float arrays ........ yes"

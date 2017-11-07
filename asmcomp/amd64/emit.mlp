@@ -1060,6 +1060,7 @@ let end_assembly() =
   emit_imp_table();
 
   D.data ();
+  D.qword (const 0);  (* PR#6329 *)
   emit_global_label "data_end";
   D.qword (const 0);
 

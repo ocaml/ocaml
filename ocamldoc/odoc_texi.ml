@@ -29,7 +29,7 @@ let info_section = ref "OCaml"
 
 let info_entry = ref []
 
-(** {2 Some small helper functions} *)
+(** {1 Some small helper functions} *)
 
 let puts_nl chan s =
   output_string chan s ;
@@ -240,32 +240,29 @@ end
 
 
 
-(** {2 Generation of Texinfo code} *)
+(** {1 Generation of Texinfo code} *)
+
+(** {2 Associations between a title number and texinfo code.} *)
+let titles_and_headings = ref [
+    0, ("@chapter ", "@majorheading ")  ;
+    1, ("@chapter ", "@majorheading ")  ;
+    2, ("@section ", "@heading ")  ;
+    3, ("@subsection ", "@subheading ") ;
+    4, ("@subsubsection ", "@subsubheading ")  ;
+  ]
+
+let title = fst
+let heading = snd
+
+let fallback_title =
+  "@unnumberedsubsubsec "
+
+let fallback_heading =
+  "@subsubheading "
 
 (** This class generates Texinfo code from text structures *)
 class text =
   object(self)
-
-  (** Associations between a title number and texinfo code. *)
-    val titles = [
-      1, "@chapter " ;
-      2, "@section " ;
-      3, "@subsection " ;
-      4, "@subsubsection " ;
-    ]
-
-    val fallback_title =
-      "@unnumberedsubsubsec "
-
-    val headings = [
-      1, "@majorheading " ;
-      2, "@heading " ;
-      3, "@subheading " ;
-      4, "@subsubheading " ;
-    ]
-
-    val fallback_heading =
-      "@subsubheading "
 
     method escape =
       Texi.escape
@@ -281,7 +278,7 @@ class text =
         (List.map self#texi_of_text_element t)
 
 
-    (** {3 Conversion methods}
+    (** {2 Conversion methods}
        [texi_of_????] converts a [text_element] to a Texinfo string. *)
 
     (** Return the Texinfo code for the [text_element] in parameter. *)
@@ -350,7 +347,7 @@ class text =
         [ "@format" ; self#texi_of_text t ; "@end format" ; "" ]
     method texi_of_Title n t =
       let t_begin =
-        try List.assoc n titles
+        try title @@ List.assoc n !titles_and_headings
         with Not_found -> fallback_title in
       t_begin ^ (self#texi_of_text t) ^ "\n"
     method texi_of_Link s t =
@@ -377,7 +374,7 @@ class text =
 
     method heading n t =
       let f =
-        try List.assoc n headings
+        try heading @@ List.assoc n !titles_and_headings
         with Not_found -> fallback_heading
       in
       f ^ (self#texi_of_text t) ^ "\n"
@@ -399,7 +396,7 @@ class texi =
     inherit text
     inherit Odoc_to_text.to_text as to_text
 
-    (** {3 Small helper stuff.} *)
+    (** {2 Small helper stuff.} *)
 
     val maxdepth = 4
 
@@ -453,7 +450,7 @@ class texi =
             | Raw s -> Raw (Str.global_replace re rep s)
             | txt -> txt) t
 
-    (** {3 [text] values generation}
+    (** {2 [text] values generation}
        Generates [text] values out of description parts.
        Redefines some of methods of {! Odoc_to_text.to_text}. *)
 
@@ -565,7 +562,7 @@ class texi =
     method texi_of_info i =
       self#texi_of_text (self#text_of_info i)
 
-    (** {3 Conversion of [module_elements] into Texinfo strings}
+    (** {2 Conversion of [module_elements] into Texinfo strings}
        The following functions convert [module_elements] and their
        description to [text] values then to Texinfo strings using the
        functions above. *)
@@ -907,7 +904,7 @@ class texi =
           self#texi_of_text (Newline :: t @ [Newline])
       )
 
-    (** {3 Generating methods }
+    (** {2 Generating methods }
        These methods write Texinfo code to an [out_channel] *)
 
     (** Generate the Texinfo code for the given list of inherited classes.*)

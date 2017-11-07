@@ -57,6 +57,11 @@ typedef unsigned int uintptr_t;
 #define _UINTPTR_T_DEFINED
 #endif
 
+unsigned short caml_win32_major = 0;
+unsigned short caml_win32_minor = 0;
+unsigned short caml_win32_build = 0;
+unsigned short caml_win32_revision = 0;
+
 CAMLnoreturn_start
 static void caml_win32_sys_error (int errnum)
 CAMLnoreturn_end;
@@ -149,6 +154,7 @@ wchar_t * caml_decompose_path(struct ext_table * tbl, wchar_t * path)
 wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
 {
   wchar_t * dir, * fullname;
+  char * u8;
   const wchar_t * p;
   int i;
   struct _stati64 st;
@@ -161,19 +167,24 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
     fullname = caml_stat_wcsconcat(3, dir, L"\\", name);
-    caml_gc_message(0x100, "Searching %" ARCH_CHARNATSTR_PRINTF_FORMAT "\n", fullname);
+    u8 = caml_stat_strdup_of_utf16(fullname);
+    caml_gc_message(0x100, "Searching %s\n", u8);
+    caml_stat_free(u8);
     if (_wstati64(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
+  u8 = caml_stat_strdup_of_utf16(name);
+  caml_gc_message(0x100, "%s not found in search path\n", u8);
+  caml_stat_free(u8);
   return caml_stat_wcsdup(name);
 }
 
 CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
 {
   wchar_t * fullname, * filepart;
+  char * u8;
   size_t fullnamelen;
   DWORD retcode;
 
@@ -188,9 +199,11 @@ CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%" ARCH_CHARNATSTR_PRINTF_FORMAT " not found in search path\n", name);
+      u8 = caml_stat_strdup_of_utf16(name);
+      caml_gc_message(0x100, "%s not found in search path\n", u8);
+      caml_stat_free(u8);
       caml_stat_free(fullname);
-      return caml_stat_tcsdup(name);
+      return caml_stat_strdup_os(name);
     }
     if (retcode < fullnamelen)
       return fullname;
@@ -860,4 +873,44 @@ CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
   win_wide_char_to_multi_byte(s, -1, out, retcode);
 
   return out;
+}
+
+void caml_probe_win32_version(void)
+{
+  /* Determine the version of Windows we're running, and cache it */
+  WCHAR fileName[MAX_PATH];
+  DWORD size =
+    GetModuleFileName(GetModuleHandle(L"kernel32"), fileName, MAX_PATH);
+  DWORD dwHandle = 0;
+  BYTE* versionInfo;
+  fileName[size] = 0;
+  size = GetFileVersionInfoSize(fileName, &dwHandle);
+  versionInfo = (BYTE*)malloc(size * sizeof(BYTE));
+  if (GetFileVersionInfo(fileName, 0, size, versionInfo)) {
+    UINT len = 0;
+    VS_FIXEDFILEINFO* vsfi = NULL;
+    VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
+    caml_win32_major = HIWORD(vsfi->dwProductVersionMS);
+    caml_win32_minor = LOWORD(vsfi->dwProductVersionMS);
+    caml_win32_build = HIWORD(vsfi->dwProductVersionLS);
+    caml_win32_revision = LOWORD(vsfi->dwProductVersionLS);
+  }
+  free(versionInfo);
+}
+
+static UINT startup_codepage = 0;
+
+void caml_setup_win32_terminal(void)
+{
+  if (caml_win32_major >= 10) {
+    startup_codepage = GetConsoleOutputCP();
+    if (startup_codepage != CP_UTF8)
+      SetConsoleOutputCP(CP_UTF8);
+  }
+}
+
+void caml_restore_win32_terminal(void)
+{
+  if (startup_codepage != 0)
+    SetConsoleOutputCP(startup_codepage);
 }

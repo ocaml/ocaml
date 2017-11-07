@@ -1195,6 +1195,7 @@ let end_assembly() =
   emit_string data_space;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
+  `	{emit_string datag}	0\n`;  (* PR#6329 *)
   `{emit_symbol lbl_end}:\n`;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)

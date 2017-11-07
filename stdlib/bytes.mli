@@ -318,7 +318,7 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.03.0 *)
 
-(** {4 Unsafe conversions (for advanced users)}
+(** {3 Unsafe conversions (for advanced users)}
 
     This section describes unsafe, low-level conversion functions
     between [bytes] and [string]. They do not copy the internal data;

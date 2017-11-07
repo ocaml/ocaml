@@ -487,7 +487,7 @@ let link_bytecode_as_c ppf tolink outfile =
     Symtable.output_primitive_table outchan;
     (* The entry point *)
     output_string outchan "\
-\nvoid caml_startup(char ** argv)\
+\nvoid caml_startup(char_os ** argv)\
 \n{\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
@@ -496,7 +496,7 @@ let link_bytecode_as_c ppf tolink outfile =
 \n                    argv);\
 \n}\
 \n\
-\nvalue caml_startup_exn(char ** argv)\
+\nvalue caml_startup_exn(char_os ** argv)\
 \n{\
 \n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
 \n                               caml_data, sizeof(caml_data),\
@@ -505,7 +505,7 @@ let link_bytecode_as_c ppf tolink outfile =
 \n                               argv);\
 \n}\
 \n\
-\nvoid caml_startup_pooled(char ** argv)\
+\nvoid caml_startup_pooled(char_os ** argv)\
 \n{\
 \n  caml_startup_code(caml_code, sizeof(caml_code),\
 \n                    caml_data, sizeof(caml_data),\
@@ -514,7 +514,7 @@ let link_bytecode_as_c ppf tolink outfile =
 \n                    argv);\
 \n}\
 \n\
-\nvalue caml_startup_pooled_exn(char ** argv)\
+\nvalue caml_startup_pooled_exn(char_os ** argv)\
 \n{\
 \n  return caml_startup_code_exn(caml_code, sizeof(caml_code),\
 \n                               caml_data, sizeof(caml_data),\

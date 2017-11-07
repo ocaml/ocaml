@@ -203,7 +203,68 @@ type wait_flag =
 external execv : string -> string array -> 'a = "unix_execv"
 external execve : string -> string array -> string array -> 'a = "unix_execve"
 external execvp : string -> string array -> 'a = "unix_execvp"
-external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+external execvpe_c :
+            string -> string array -> string array -> 'a = "unix_execvpe"
+
+let execvpe_ml name args env =
+  (* Try to execute the given file *)
+  let exec file =
+    try
+      execve file args env
+    with Unix_error(ENOEXEC, _, _) ->
+      (* Assume this is a script and try to execute through the shell *)
+      let argc = Array.length args in
+      (* Drop the original args.(0) if it is there *)
+      let new_args = Array.append
+        [| "/bin/sh"; file |]
+        (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
+      execve new_args.(0) new_args env in
+  (* Try each path element in turn *)
+  let rec scan_dir eacces = function
+  | [] ->
+      (* No matching file was found (if [eacces = false]) or
+         a matching file was found but we got a "permission denied"
+         error while trying to execute it (if [eacces = true]).
+         Raise the error appropriate to each case. *)
+      raise (Unix_error((if eacces then EACCES else ENOENT),
+                        "execvpe", name))
+  | dir :: rem ->
+      let dir =  (* an empty path element means the current directory *)
+        if dir = "" then Filename.current_dir_name else dir in
+      try
+        exec (Filename.concat dir name)
+      with Unix_error(err, _, _) as exn ->
+        match err with
+        (* The following errors are treated as nonfatal, meaning that
+           we will ignore them and continue searching in the path.
+           Among those errors, EACCES is recorded specially so as
+           to produce the correct exception in the end.
+           To determine which errors are nonfatal, we looked at the
+           execvpe() sources in Glibc and in OpenBSD. *)
+        | EACCES ->
+            scan_dir true rem
+        | EISDIR|ELOOP|ENAMETOOLONG|ENODEV|ENOENT|ENOTDIR|ETIMEDOUT ->
+            scan_dir eacces rem
+        (* Other errors, e.g. E2BIG, are fatal and abort the search. *)
+        | _ ->
+            raise exn in
+  if String.contains name '/' then
+    (* If the command name contains "/" characters, don't search in path *)
+    exec name
+  else
+    (* Split path into elements and search in these elements *)
+    (try unsafe_getenv "PATH" with Not_found -> "/bin:/usr/bin")
+    |> String.split_on_char ':'
+    |> scan_dir false
+      (* [unsafe_getenv] and not [getenv] to be consistent with [execvp],
+         which looks up the PATH environment variable whether SUID or not. *)
+
+let execvpe name args env =
+  try  
+    execvpe_c name args env
+  with Unix_error(ENOSYS, _, _) ->
+    execvpe_ml name args env
+
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status

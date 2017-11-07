@@ -24,12 +24,12 @@
 CAMLprim value unix_unlink(value path)
 {
   CAMLparam1(path);
-  charnat * p;
+  char_os * p;
   int ret;
   caml_unix_check_path(path, "unlink");
-  p = caml_stat_strdup_to_utf16(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = _tunlink(p);
+  ret = unlink_os(p);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) uerror("unlink", path);

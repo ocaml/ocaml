@@ -88,18 +88,19 @@ static int read_trailer(int fd, struct exec_trailer *trail)
     return BAD_BYTECODE;
 }
 
-int caml_attempt_open(charnat **name, struct exec_trailer *trail,
+int caml_attempt_open(char_os **name, struct exec_trailer *trail,
                       int do_open_script)
 {
-  charnat * truename;
+  char_os * truename;
   int fd;
   int err;
-  char buf [2];
+  char buf [2], * u8;
 
   truename = caml_search_exe_in_path(*name);
-  caml_gc_message(0x100, "Opening bytecode executable %"
-                  ARCH_CHARNATSTR_PRINTF_FORMAT "\n", truename);
-  fd = _topen(truename, O_RDONLY | O_BINARY);
+  u8 = caml_stat_strdup_of_os(truename);
+  caml_gc_message(0x100, "Opening bytecode executable %s\n", u8);
+  caml_stat_free(u8);
+  fd = open_os(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
     caml_stat_free(truename);
     caml_gc_message(0x100, "Cannot open file\n");
@@ -192,7 +193,7 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
 
 #ifdef _WIN32
 
-static wchar_t * read_section_to_utf16(int fd, struct exec_trailer *trail, char *name)
+static char_os * read_section_to_os(int fd, struct exec_trailer *trail, char *name)
 {
   int32_t len, wlen;
   char * data;
@@ -214,7 +215,7 @@ static wchar_t * read_section_to_utf16(int fd, struct exec_trailer *trail, char 
 
 #else
 
-#define read_section_to_utf16 read_section
+#define read_section_to_os read_section
 
 #endif
 
@@ -245,7 +246,7 @@ Algorithm:
 
 /* Parse options on the command line */
 
-static int parse_command_line(charnat **argv)
+static int parse_command_line(char_os **argv)
 {
   int i, j;
 
@@ -255,10 +256,10 @@ static int parse_command_line(charnat **argv)
       ++ caml_trace_level; /* ignored unless DEBUG mode */
       break;
     case _T('v'):
-      if (!_tcscmp (argv[i], _T("-version"))){
+      if (!strcmp_os (argv[i], _T("-version"))){
         printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
         exit (0);
-      }else if (!_tcscmp (argv[i], _T("-vnum"))){
+      }else if (!strcmp_os (argv[i], _T("-vnum"))){
         printf (OCAML_VERSION_STRING "\n");
         exit (0);
       }else{
@@ -280,7 +281,7 @@ static int parse_command_line(charnat **argv)
       }
       break;
     default:
-      caml_fatal_error_arg("Unknown option %s.\n", caml_stat_strdup_of_utf16(argv[i]));
+      caml_fatal_error_arg("Unknown option %s.\n", caml_stat_strdup_of_os(argv[i]));
     }
   }
   return i;
@@ -303,15 +304,15 @@ extern int caml_ensure_spacetime_dot_o_is_included;
 
 /* Main entry point when loading code from a file */
 
-CAMLexport void caml_main(charnat **argv)
+CAMLexport void caml_main(char_os **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
   struct channel * chan;
   value res;
   char * req_prims;
-  charnat * shared_lib_path, * shared_libs;
-  charnat * exe_name, * proc_self_exe;
+  char_os * shared_lib_path, * shared_libs;
+  char_os * exe_name, * proc_self_exe;
 
   caml_ensure_spacetime_dot_o_is_included++;
 
@@ -362,12 +363,12 @@ CAMLexport void caml_main(charnat **argv)
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_fatal_error_arg("Fatal error: cannot find file '%s'\n", caml_stat_strdup_of_utf16(argv[pos]));
+      caml_fatal_error_arg("Fatal error: cannot find file '%s'\n", caml_stat_strdup_of_os(argv[pos]));
       break;
     case BAD_BYTECODE:
       caml_fatal_error_arg(
         "Fatal error: the file '%s' is not a bytecode executable file\n",
-        caml_stat_strdup_of_utf16(exe_name));
+        caml_stat_strdup_of_os(exe_name));
       break;
     }
   }
@@ -389,8 +390,8 @@ CAMLexport void caml_main(charnat **argv)
   caml_load_code(fd, caml_code_size);
   caml_init_debug_info();
   /* Build the table of primitives */
-  shared_lib_path = read_section_to_utf16(fd, &trail, "DLPT");
-  shared_libs = read_section_to_utf16(fd, &trail, "DLLS");
+  shared_lib_path = read_section_to_os(fd, &trail, "DLPT");
+  shared_libs = read_section_to_os(fd, &trail, "DLLS");
   req_prims = read_section(fd, &trail, "PRIM");
   if (req_prims == NULL) caml_fatal_error("Fatal error: no PRIM section\n");
   caml_build_primitive_table(shared_lib_path, shared_libs, req_prims);
@@ -434,10 +435,10 @@ CAMLexport value caml_startup_code_exn(
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
            int pooling,
-           charnat **argv)
+           char_os **argv)
 {
-  charnat * cds_file;
-  charnat * exe_name;
+  char_os * cds_file;
+  char_os * exe_name;
 
   /* Determine options */
 #ifdef DEBUG
@@ -459,7 +460,7 @@ CAMLexport value caml_startup_code_exn(
   caml_init_custom_operations();
   cds_file = caml_secure_getenv(_T("CAML_DEBUG_FILE"));
   if (cds_file != NULL) {
-    caml_cds_file = caml_stat_tcsdup(cds_file);
+    caml_cds_file = caml_stat_strdup_os(cds_file);
   }
   exe_name = caml_executable_name();
   if (exe_name == NULL) exe_name = caml_search_exe_in_path(argv[0]);
@@ -511,7 +512,7 @@ CAMLexport void caml_startup_code(
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
            int pooling,
-           charnat **argv)
+           char_os **argv)
 {
   value res;
 

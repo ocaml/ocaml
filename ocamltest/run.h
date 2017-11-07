@@ -20,18 +20,19 @@
 #define __RUN_H__
 
 #include <stdarg.h>
+#include <caml/misc.h>
 
-typedef char **array;
+typedef char_os **array;
 
 typedef void Logger(void *, const char *, va_list ap);
 
 typedef struct {
-  const char *program;
+  char_os *program;
   array argv;
   /* array envp; */
-  const char *stdin_filename;
-  const char *stdout_filename;
-  const char *stderr_filename;
+  char_os *stdin_filename;
+  char_os *stdout_filename;
+  char_os *stderr_filename;
   int append;
   int timeout;
   Logger *logger;

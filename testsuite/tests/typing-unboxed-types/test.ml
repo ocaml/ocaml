@@ -154,3 +154,10 @@ type 'a t = T : 'a s -> 'a t [@@unboxed];;
 type _ s = S : 'a t -> _ s  [@@unboxed]
  and _ t = T : 'a -> 'a s t
 ;;
+
+
+(* Another corner case *)
+type 'a s
+type ('a, 'p) t = private 'a s
+type 'a packed = T : ('a, _) t -> 'a packed [@@unboxed]
+;;

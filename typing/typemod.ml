@@ -1424,6 +1424,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         let (defs, newenv) =
           Typecore.type_binding env rec_flag sdefs scope in
+        let () = if rec_flag = Recursive then
+          Typecore.check_recursive_bindings env defs
+        in
         (* Note: Env.find_value does not trigger the value_used event. Values
            will be marked as being used during the signature inclusion test. *)
         Tstr_value(rec_flag, defs),
@@ -1779,6 +1782,8 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   try
   Typecore.reset_delayed_checks ();
   Env.reset_required_globals ();
+  if !Clflags.print_types then (* #7656 *)
+    Warnings.parse_options false "-32-34-37-38-60";
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
   let simple_sg = simplify_signature sg in

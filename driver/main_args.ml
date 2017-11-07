@@ -428,7 +428,8 @@ let mk_S f =
 
 let mk_safe_string f =
   "-safe-string", Arg.Unit f,
-  if Config.safe_string then " Make strings immutable (default)"
+  if Config.safe_string then " (was set when configuring the compiler)"
+  else if Config.default_safe_string then " Make strings immutable (default)"
   else " Make strings immutable"
 ;;
 
@@ -498,10 +499,12 @@ let mk_unsafe f =
 let mk_unsafe_string f =
   if Config.safe_string then
     let err () =
-      raise (Arg.Bad "OCaml has been configured with -safe-string: \
+      raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
                       -unsafe-string is not available")
     in
     "-unsafe-string", Arg.Unit err, " (option not available)"
+  else if Config.default_safe_string then
+    "-unsafe-string", Arg.Unit f, " Make strings mutable"
   else
     "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
@@ -871,7 +874,6 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
-  val _plugin : string -> unit
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array
@@ -1113,7 +1115,6 @@ struct
     mk_nostdlib F._nostdlib;
     mk_open F._open;
     mk_ppx F._ppx;
-    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1326,7 +1327,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
-    mk_plugin F._plugin;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;

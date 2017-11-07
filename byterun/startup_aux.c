@@ -64,12 +64,12 @@ uintnat caml_trace_level = 0;
 uintnat caml_cleanup_on_exit = 0;
 
 
-static void scanmult (charnat *opt, uintnat *var)
+static void scanmult (char_os *opt, uintnat *var)
 {
-  charnat mult = _T(' ');
+  char_os mult = _T(' ');
   unsigned int val = 1;
-  _stscanf (opt, _T("=%u%c"), &val, &mult);
-  _stscanf (opt, _T("=0x%x%c"), &val, &mult);
+  sscanf_os (opt, _T("=%u%c"), &val, &mult);
+  sscanf_os (opt, _T("=0x%x%c"), &val, &mult);
   switch (mult) {
   case _T('k'):   *var = (uintnat) val * 1024; break;
   case _T('M'):   *var = (uintnat) val * (1024 * 1024); break;
@@ -80,7 +80,7 @@ static void scanmult (charnat *opt, uintnat *var)
 
 void caml_parse_ocamlrunparam(void)
 {
-  charnat *opt = caml_secure_getenv (_T("OCAMLRUNPARAM"));
+  char_os *opt = caml_secure_getenv (_T("OCAMLRUNPARAM"));
   uintnat p;
 
   if (opt == NULL) opt = caml_secure_getenv (_T("CAMLRUNPARAM"));

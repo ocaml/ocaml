@@ -33,7 +33,7 @@ let next_index_within_node ~part_of_shape ~label =
   begin match part_of_shape with
   | Mach.Direct_call_point _ ->
     incr index_within_node;
-    if Config.spacetime_call_counts then begin
+    if Config.enable_call_counts then begin
       incr index_within_node
     end
   | Mach.Indirect_call_point ->
@@ -226,7 +226,7 @@ let code_for_call ~node ~callee ~is_tail ~label =
        (That move is inserted in [Selectgen].) *)
     match callee with
     | Direct _callee ->
-      if Config.spacetime_call_counts then begin
+      if Config.enable_call_counts then begin
         let count_addr = Ident.create "call_count_addr" in
         let count = Ident.create "call_count" in
         Clet (count_addr,

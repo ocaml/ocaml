@@ -8,8 +8,6 @@ Error: This kind of expression is not allowed as right-hand side of `let rec'
 
 let rec x = let u = [|y|] in 10. and y = 1.;;
 [%%expect{|
-Line _, characters 16-17:
-Warning 26: unused variable u.
 Line _, characters 12-32:
 Error: This kind of expression is not allowed as right-hand side of `let rec'
 |}];;

@@ -78,8 +78,8 @@ interfaces: $(MLIS)
 	-I $(CSLDIR)/otherlibs/unix \
 	$(MLIS) \
 	-sepfiles \
-	-latextitle "6,subsection*" \
-	-latextitle "7,subsubsection*" \
+	-latextitle "1,subsection*" \
+	-latextitle "2,subsubsection*" \
 	-latex-type-prefix "TYP" \
 	-latex-module-prefix "" \
 	-latex-module-type-prefix "" \

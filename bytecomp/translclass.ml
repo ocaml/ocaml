@@ -22,7 +22,7 @@ open Translcore
 
 (* XXX Rajouter des evenements... | Add more events... *)
 
-type error = Illegal_class_expr | Tags of label * label
+type error = Tags of label * label
 
 exception Error of Location.t * error
 
@@ -390,15 +390,12 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   | Tcl_open (_, _, _, _, cl) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
 
-let rec build_class_lets cl ids =
+let rec build_class_lets cl =
   match cl.cl_desc with
     Tcl_let (rec_flag, defs, _vals, cl') ->
-      let env, wrap = build_class_lets cl' [] in
+      let env, wrap = build_class_lets cl' in
       (env, fun x ->
-        let lam = Translcore.transl_let rec_flag defs (wrap x) in
-        (* Check recursion in toplevel let-definitions *)
-        if ids = [] || Translcore.check_recursive_lambda ids lam then lam
-        else raise(Error(cl.cl_loc, Illegal_class_expr)))
+          Translcore.transl_let rec_flag defs (wrap x))
   | _ ->
       (cl.cl_env, fun x -> x)
 
@@ -468,7 +465,7 @@ let rec transl_class_rebind_0 self obj_init cl vf =
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, lfunction [self] obj_init)
 
-let transl_class_rebind ids cl vf =
+let transl_class_rebind cl vf =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
@@ -481,8 +478,6 @@ let transl_class_rebind ids cl vf =
               ap_specialised=Default_specialise}
     in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
-    if not (Translcore.check_recursive_lambda ids obj_init') then
-      raise(Error(cl.cl_loc, Illegal_class_expr));
     let id = (obj_init' = lfunction [self] obj_init0) in
     if id then transl_normal_path path else
 
@@ -637,14 +632,14 @@ let prerr_ids msg ids =
 
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
-  let rebind = transl_class_rebind ids cl vflag in
+  let rebind = transl_class_rebind cl vflag in
   if rebind <> lambda_unit then rebind else
 
   (* Prepare for heavy environment handling *)
   let tables = Ident.create (Ident.name cl_id ^ "_tables") in
   let (top_env, req) = oo_add_class tables in
   let top = not req in
-  let cl_env, llets = build_class_lets cl ids in
+  let cl_env, llets = build_class_lets cl in
   let new_ids = if top then [] else Env.diff top_env cl_env in
   let env2 = Ident.create "env" in
   let meth_ids = get_class_meths cl in
@@ -848,16 +843,23 @@ let transl_class ids cl_id pub_meths cl vflag =
                              loc = Location.none;
                              params = [cla]; body = def_ids cla cl_init})
   in
+  let lupdate_cache =
+    if ids = [] then ldirect () else
+      if not concrete then lclass_virt () else
+        lclass (
+            mkappl (oo_prim "make_class_store",
+                    [transl_meth_list pub_meths;
+                     Lvar class_init; Lvar cached])) in
+  let lcheck_cache =
+    if !Clflags.native_code && !Clflags.afl_instrument then
+      (* When afl-fuzz instrumentation is enabled, ignore the cache
+         so that the program's behaviour does not change between runs *)
+      lupdate_cache
+    else
+      Lifthenelse(lfield cached 0, lambda_unit, lupdate_cache) in
   llets (
   lcache (
-  Lsequence(
-  Lifthenelse(lfield cached 0, lambda_unit,
-              if ids = [] then ldirect () else
-              if not concrete then lclass_virt () else
-              lclass (
-              mkappl (oo_prim "make_class_store",
-                      [transl_meth_list pub_meths;
-                       Lvar class_init; Lvar cached]))),
+  Lsequence(lcheck_cache,
   make_envs (
   if ids = [] then mkappl (lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable, None),
@@ -891,8 +893,6 @@ let () =
 open Format
 
 let report_error ppf = function
-  | Illegal_class_expr ->
-      fprintf ppf "This kind of recursive class expression is not allowed"
   | Tags (lab1, lab2) ->
       fprintf ppf "Method labels `%s' and `%s' are incompatible.@ %s"
         lab1 lab2 "Change one of them."

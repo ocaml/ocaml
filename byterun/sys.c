@@ -154,6 +154,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
   CAML_INSTR_ATEXIT ();
   if (caml_cleanup_on_exit)
     caml_shutdown();
+#ifdef _WIN32
+  caml_restore_win32_terminal();
+#endif
   CAML_SYS_EXIT(retcode);
   return Val_unit;
 }
@@ -181,7 +184,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 {
   CAMLparam3(path, vflags, vperm);
   int fd, flags, perm;
-  charnat * p;
+  char_os * p;
 
 #if defined(O_CLOEXEC)
   flags = O_CLOEXEC;
@@ -192,7 +195,7 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 #endif
 
   caml_sys_check_path(path);
-  p = caml_stat_strdup_to_utf16(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   flags |= caml_convert_flag_list(vflags, sys_open_flags);
   perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
@@ -226,11 +229,11 @@ CAMLprim value caml_sys_file_exists(value name)
 #else
   struct stat st;
 #endif
-  charnat * p;
+  char_os * p;
   int ret;
 
   if (! caml_string_is_c_safe(name)) return Val_false;
-  p = caml_stat_strdup_to_utf16(String_val(name));
+  p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
   ret = CAML_SYS_STAT(p, &st);
   caml_leave_blocking_section();
@@ -247,11 +250,11 @@ CAMLprim value caml_sys_is_directory(value name)
 #else
   struct stat st;
 #endif
-  charnat * p;
+  char_os * p;
   int ret;
 
   caml_sys_check_path(name);
-  p = caml_stat_strdup_to_utf16(String_val(name));
+  p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
   ret = CAML_SYS_STAT(p, &st);
   caml_leave_blocking_section();
@@ -268,10 +271,10 @@ CAMLprim value caml_sys_is_directory(value name)
 CAMLprim value caml_sys_remove(value name)
 {
   CAMLparam1(name);
-  charnat * p;
+  char_os * p;
   int ret;
   caml_sys_check_path(name);
-  p = caml_stat_strdup_to_utf16(String_val(name));
+  p = caml_stat_strdup_to_os(String_val(name));
   caml_enter_blocking_section();
   ret = CAML_SYS_UNLINK(p);
   caml_leave_blocking_section();
@@ -282,13 +285,13 @@ CAMLprim value caml_sys_remove(value name)
 
 CAMLprim value caml_sys_rename(value oldname, value newname)
 {
-  charnat * p_old;
-  charnat * p_new;
+  char_os * p_old;
+  char_os * p_new;
   int ret;
   caml_sys_check_path(oldname);
   caml_sys_check_path(newname);
-  p_old = caml_stat_strdup_to_utf16(String_val(oldname));
-  p_new = caml_stat_strdup_to_utf16(String_val(newname));
+  p_old = caml_stat_strdup_to_os(String_val(oldname));
+  p_new = caml_stat_strdup_to_os(String_val(newname));
   caml_enter_blocking_section();
   ret = CAML_SYS_RENAME(p_old, p_new);
   caml_leave_blocking_section();
@@ -302,10 +305,10 @@ CAMLprim value caml_sys_rename(value oldname, value newname)
 CAMLprim value caml_sys_chdir(value dirname)
 {
   CAMLparam1(dirname);
-  charnat * p;
+  char_os * p;
   int ret;
   caml_sys_check_path(dirname);
-  p = caml_stat_strdup_to_utf16(String_val(dirname));
+  p = caml_stat_strdup_to_os(String_val(dirname));
   caml_enter_blocking_section();
   ret = CAML_SYS_CHDIR(p);
   caml_leave_blocking_section();
@@ -316,58 +319,66 @@ CAMLprim value caml_sys_chdir(value dirname)
 
 CAMLprim value caml_sys_getcwd(value unit)
 {
-  charnat buff[4096];
-  charnat * ret;
+  char_os buff[4096];
+  char_os * ret;
 #ifdef HAS_GETCWD
-  ret = _tgetcwd(buff, sizeof(buff)/sizeof(*buff));
+  ret = getcwd_os(buff, sizeof(buff)/sizeof(*buff));
 #else
-  ret = getwd(buff);
+  caml_invalid_argument("Sys.getcwd not implemented");
 #endif /* HAS_GETCWD */
   if (ret == 0) caml_sys_error(NO_ARG);
-  return caml_copy_string_of_utf16(buff);
+  return caml_copy_string_of_os(buff);
 }
 
 CAMLprim value caml_sys_unsafe_getenv(value var)
 {
-  charnat * res, * p;
+  char_os * res, * p;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
-  p = caml_stat_strdup_to_utf16(String_val(var));
+  p = caml_stat_strdup_to_os(String_val(var));
   res = CAML_SYS_GETENV(p);
   caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string_of_utf16(res);
+  return caml_copy_string_of_os(res);
 }
 
 CAMLprim value caml_sys_getenv(value var)
 {
-  charnat * res, * p;
+  char_os * res, * p;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
-  p = caml_stat_strdup_to_utf16(String_val(var));
+  p = caml_stat_strdup_to_os(String_val(var));
   res = caml_secure_getenv(p);
   caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string_of_utf16(res);
+  return caml_copy_string_of_os(res);
 }
 
-charnat * caml_exe_name;
-charnat ** caml_main_argv;
+char_os * caml_exe_name;
+char_os ** caml_main_argv;
 
 CAMLprim value caml_sys_get_argv(value unit)
 {
   CAMLparam0 ();   /* unit is unused */
   CAMLlocal3 (exe_name, argv, res);
-  exe_name = caml_copy_string_of_utf16(caml_exe_name);
-  argv = caml_alloc_array((void *)caml_copy_string_of_utf16, (char const **) caml_main_argv);
+  exe_name = caml_copy_string_of_os(caml_exe_name);
+  argv = caml_alloc_array((void *)caml_copy_string_of_os, (char const **) caml_main_argv);
   res = caml_alloc_small(2, 0);
   Field(res, 0) = exe_name;
   Field(res, 1) = argv;
   CAMLreturn(res);
 }
 
-void caml_sys_init(charnat * exe_name, charnat **argv)
+void caml_sys_init(char_os * exe_name, char_os **argv)
 {
+#ifdef _WIN32
+  /* Initialises the caml_win32_* globals on Windows with the version of
+     Windows which is running */
+  caml_probe_win32_version();
+#if WINDOWS_UNICODE
+  caml_setup_win32_terminal();
+#endif
+#endif
 #ifdef CAML_WITH_CPLUGINS
   caml_cplugins_init(exe_name, argv);
 #endif
@@ -390,13 +401,13 @@ CAMLprim value caml_sys_system_command(value command)
 {
   CAMLparam1 (command);
   int status, retcode;
-  charnat *buf;
+  char_os *buf;
 
   if (! caml_string_is_c_safe (command)) {
     errno = EINVAL;
     caml_sys_error(command);
   }
-  buf = caml_stat_strdup_to_utf16(String_val(command));
+  buf = caml_stat_strdup_to_os(String_val(command));
   caml_enter_blocking_section ();
   status = CAML_SYS_SYSTEM(buf);
   caml_leave_blocking_section ();
@@ -579,12 +590,12 @@ CAMLprim value caml_sys_read_directory(value path)
   CAMLparam1(path);
   CAMLlocal1(result);
   struct ext_table tbl;
-  charnat * p;
+  char_os * p;
   int ret;
 
   caml_sys_check_path(path);
   caml_ext_table_init(&tbl, 50);
-  p = caml_stat_strdup_to_utf16(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
   ret = CAML_SYS_READ_DIRECTORY(p, &tbl);
   caml_leave_blocking_section();
@@ -631,9 +642,10 @@ value (*caml_cplugins_prim)(int,value,value,value) = NULL;
 
 static struct cplugin_context cplugin_context;
 
-void caml_load_plugin(charnat *plugin)
+void caml_load_plugin(char_os *plugin)
 {
   void* dll_handle = NULL;
+  char* u8;
 
   dll_handle = caml_dlopen(plugin, DLL_EXECUTABLE, DLL_NOT_GLOBAL);
   if( dll_handle != NULL ){
@@ -646,16 +658,18 @@ void caml_load_plugin(charnat *plugin)
      caml_dlclose(dll_handle);
    }
   } else {
+   u8 = caml_stat_strdup_of_os(plugin);
    fprintf(stderr, "Cannot load C plugin %s\nReason: %s\n",
-           caml_stat_strdup_of_utf16(plugin), caml_dlerror());
+           u8, caml_dlerror());
+   caml_stat_free(u8);
   }
 }
 
-void caml_cplugins_load(charnat *env_variable)
+void caml_cplugins_load(char_os *env_variable)
 {
-  charnat *plugins = caml_secure_getenv(env_variable);
+  char_os *plugins = caml_secure_getenv(env_variable);
   if(plugins != NULL){
-    charnat* curs = plugins;
+    char_os* curs = plugins;
     while(*curs != 0){
       if(*curs == _T(',')){
           if(curs > plugins){
@@ -670,7 +684,7 @@ void caml_cplugins_load(charnat *env_variable)
   }
 }
 
-void caml_cplugins_init(charnat * exe_name, charnat **argv)
+void caml_cplugins_init(char_os * exe_name, char_os **argv)
 {
   cplugin_context.api_version = CAML_CPLUGIN_CONTEXT_API;
   cplugin_context.prims_bitmap = CAML_CPLUGINS_PRIMS_BITMAP;

@@ -97,33 +97,34 @@ UNIXLIB=win32unix
 GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_SPACETIME=false
-WITH_SPACETIME_CALL_COUNTS=false
+ENABLE_CALL_COUNTS=false
 WITH_STATMEMPROF=false
 WITH_PROFINFO=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
-PROFINFO_WIDTH=26
-SAFE_STRING=false
+PROFINFO_WIDTH=0
+FORCE_SAFE_STRING=false
+DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-CC = $(TOOLPREF)gcc
-CFLAGS = -O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
+CC=$(TOOLPREF)gcc
+CFLAGS=-O -mms-bitfields -Wall -Wno-unused -fno-tree-vrp
 # -fno-tree-vrp is here to try to work around the Skylake/Kaby lake bug,
 # and only works on GCC 4.2 and later.
-CPPFLAGS = -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
-OCAMLC_CFLAGS = -O -mms-bitfields
+CPPFLAGS=-DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
+OCAMLC_CFLAGS=-O -mms-bitfields
 
 BYTECCDBGCOMPOPTS=-g
 
 LDFLAGS=-municode
 
 ### Libraries needed
-BYTECCLIBS=-lws2_32
-NATIVECCLIBS=-lws2_32
+BYTECCLIBS=-lws2_32 -lversion
+NATIVECCLIBS=-lws2_32 -lversion
 
 ### How to invoke the C preprocessor
 CPP=cpp

@@ -20,9 +20,9 @@
 
 /* is_defined(str) returns 1 iff str points to a non-empty string */
 /* Otherwise returns 0 */
-static int is_defined(const char *str)
+static int is_defined(const char_os *str)
 {
-  return (str != NULL) && (*str != '\0');
+  return (str != NULL) && (*str != 0);
 }
 
 static void defaultLogger(void *where, const char *format, va_list ap)

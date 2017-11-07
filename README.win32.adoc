@@ -73,9 +73,10 @@ https://github.com/alainfrisch/flexdll. A binary distribution is available;
 instructions on how to build FlexDLL from sources, including how to bootstrap
 FlexDLL and OCaml are given <<seflexdll,later in this document>>.  Unless you
 bootstrap FlexDLL, you will need to ensure that the directory to which you
-install FlexDLL is included in your `PATH` environment variable. Note: if you
-use Visual Studio 2015 or Visual Studio 2017, the binary distribution of
-FlexDLL will not work and you must build it from sources.
+install FlexDLL is included in your `PATH` environment variable. Note: binary
+distributions of FlexDLL are compatible only with Visual Studio 2013 and
+earlier; for Visual Studio 2015 and later, you will need to compile the C
+objects from source, or build ocaml using the flexdll target.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...) of all three
 ports runs without any additional tools.
@@ -326,18 +327,68 @@ done in one of three ways:
 OCaml is then compiled as normal for the port you require, except that before
 compiling `world`, you must compile `flexdll`, i.e.:
 
-  make flexdll world [bootstrap] opt opt.opt install
+  make flexdll world [bootstrap] opt opt.opt flexlink.opt install
 
+ * You should ignore the error messages that say ocamlopt was not found.
  * `make install` will install FlexDLL by placing `flexlink.exe`
    (and the default manifest file for the Microsoft port) in `bin/` and the
    FlexDLL object files in `lib/`.
- * If you don't include `make opt.opt`, `flexlink.exe` will be a
+ * If you don't include `make flexlink.opt`, `flexlink.exe` will be a
    bytecode program.  `make install` always installs the "best"
    `flexlink.exe` (i.e. there is never a `flexlink.opt.exe` installed).
  * If you have populated `flexdll/`, you *must* run
    `make flexdll`.  If you wish to revert to using an externally
    installed FlexDLL, you must erase the contents of `flexdll/` before
    compiling.
+
+== Unicode support
+
+Prior to version 4.06, all filenames on the OCaml side were assumed
+to be encoded using the current 8-bit code page of the system.  Some
+Unicode filenames could thus not be represented.  Since version 4.06,
+OCaml adds to this legacy mode a new "Unicode" mode, where filenames
+are UTF-8 encoded strings.  In addition to filenames,
+this applies to environment variables and command-line arguments.
+
+The mode must be decided before building the system, by tweaking
+the `WINDOWS_UNICODE` variable in `config/Makefile`.  A value of 1
+enables the the new "Unicode" mode, while a value of 0 maintains
+the legacy mode.
+
+Technically, both modes use the Windows "wide" API, where filenames
+and other strings are made of 16-bit entities, usually interpreted as
+UTF-16 encoded strings.
+
+Some more details about the two modes:
+
+ * Unicode mode: OCaml strings are interpreted as being UTF-8 encoded
+   and translated to UTF-16 when calling Windows; strings returned by
+   Windows are interpreted as UTF-16 and translated to UTF-8 on their
+   way back to OCaml.  Additionally, an OCaml string which is not
+   valid UTF-8 will be interpreted as being in the current 8-bit code
+   page.  This fallback works well in practice, since the chances of
+   non-ASCII string encoded in the a 8-bit code page to be a valid
+   UTF-8 string are tiny.  This means that filenames
+   obtained from e.g. a 8-bit UI or database layer would continue to
+   work fine.  Application written for the legacy mode or older
+   versions of OCaml might still break if strings returned by
+   Windows (e.g. for `Sys.readdir`) are sent to components expecting
+   strings encoded in the current code page.
+
+ * Legacy mode: this mode emulates closely the behavior of OCaml <
+   4.06 and is thus the safest choice in terms of backward
+   compatibility.  In this mode, OCaml programs can only work with
+   filenames that can be encoded in the current code page, and the
+   same applies to ocaml tools themselves (ocamlc, ocamlopt, etc).
+
+The legacy mode will be deprecated and then removed in future versions
+of OCaml.  Users are thus strongly encouraged to use the Unicode mode
+and adapt their existing code bases accordingly.
+
+Note: in order for ocaml tools to support Unicode pathnames, it is
+necessary to use a version of FlexDLL which has itself been compiled
+with OCaml >= 4.06 in Unicode mode.  This is the case for binary distributions
+of FlexDLL starting from version 0.37 and above.
 
 == Trademarks
 

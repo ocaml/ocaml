@@ -20,7 +20,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Linebreaks.html">Linebreaks</a></h1>
 
-<pre><span class="keyword">module</span> Linebreaks: <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<pre><span id="MODULELinebreaks"><span class="keyword">module</span> Linebreaks</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>This file tests the encoding of linebreak inside OCaml code by the
    ocamldoc html backend.</p>
@@ -98,8 +98,8 @@
 
 
 <pre><span id="VALx"><span class="keyword">val</span> x</span> : <code class="type"><a href="Linebreaks.html#TYPEa">a</a></code></pre>
-<pre><span class="keyword">module</span> <a href="Linebreaks.S.html">S</a>: <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.S.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
-<pre><span class="keyword">module type</span> <a href="Linebreaks.s-c.html">s</a> = <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.s-c.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="MODULES"><span class="keyword">module</span> <a href="Linebreaks.S.html">S</a></span>: <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.S.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
+<pre><span id="MODULETYPEs"><span class="keyword">module type</span> <a href="Linebreaks.s-c.html">s</a></span> = <code class="code"><span class="keyword">sig</span></code> <a href="Linebreaks.s-c.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
 <pre><span id="TYPEd"><span class="keyword">class type</span> <a href="Linebreaks.d-c.html">d</a></span> = <code class="code"><span class="keyword">object</span></code> <a href="Linebreaks.d-c.html">..</a> <code class="code"><span class="keyword">end</span></code></pre>
 <pre><span id="EXCEPTIONE"><span class="keyword">exception</span> E</span> <span class="keyword">of</span> <code>{</code><table class="typetable">
 <tr>

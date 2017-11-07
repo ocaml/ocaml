@@ -314,7 +314,7 @@ val delete_eol_spaces : string -> string
 
 
 
-(** {2 Hook machinery}
+(** {1 Hook machinery}
 
     Hooks machinery:
    [add_hook name f] will register a function that will be called on the
