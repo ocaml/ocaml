@@ -59,7 +59,11 @@ static void logToChannel(void *voidchannel, const char *fmt, va_list ap)
   char *text = malloc(512);
   if (text == NULL) return;
   length = vsnprintf(text, initialTextLength, fmt, ap);
-  if (length <= 0) return;
+  if (length <= 0)
+  {
+    free(text);
+    return;
+  }
   if (length > initialTextLength)
   {
     free(text);
