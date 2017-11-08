@@ -16,6 +16,10 @@ Working version
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
 
+- GPR#1469: Use the information from [@@immediate] annotations when
+  computing whether a type can be [@@unboxed]
+  (Damien Doligez, report by Stephan Muenzel, review by ...)
+
 - GPR#1516: Allow float array construction in recursive bindings
   when configured with -no-flat-float-array
   (Jeremy Yallop, report by Gabriel Scherer)

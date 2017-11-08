@@ -132,6 +132,7 @@ let rec get_unboxed_type_representation env ty fuel =
   | Tconstr (p, args, _) ->
     begin match Env.find_type p env with
     | exception Not_found -> Some ty
+    | {type_immediate = true; _} -> Some Predef.type_int
     | {type_unboxed = {unboxed = false}} -> Some ty
     | {type_params; type_kind =
          Type_record ([{ld_type = ty2; _}], _)
