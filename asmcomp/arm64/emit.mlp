@@ -498,7 +498,7 @@ module BR = Branch_relaxation.Make (struct
       | Cmm.Raise_notrace -> 4
       end
 
-  let relax_allocation ~num_words ~blocks ~label_after_call_gc =
+  let relax_allocation ~num_words ~label_after_call_gc =
     Lop (Ispecific (Ifar_alloc { words = num_words; label_after_call_gc; }))
 
   let relax_intop_checkbound ~label_after_error =

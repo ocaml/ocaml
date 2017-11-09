@@ -491,7 +491,7 @@ module BR = Branch_relaxation.Make (struct
     | Lpoptrap -> 2
     | Lraise _ -> 6
 
-  let relax_allocation ~num_words:words ~blocks ~label_after_call_gc =
+  let relax_allocation ~num_words:words ~label_after_call_gc =
     Lop (Ispecific (Ialloc_far { words; label_after_call_gc; }))
 
   (* [classify_addr], above, never identifies these instructions as needing
