@@ -1,3 +1,5 @@
+(* TEST *)
+
 let non_float_array : int array = [| |]
 
 let float_array : float array = [| |]

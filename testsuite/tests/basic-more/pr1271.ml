@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (* GPR#1271 *)
 
 module F (X : sig val x : int end) = struct
