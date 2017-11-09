@@ -292,8 +292,6 @@ let mk_not dbg cmm =
           tag_int (Cop(Ccmpi (negate_comparison cmp), [c1; c2], dbg'')) dbg'
       | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
           tag_int (Cop(Ccmpa (negate_comparison cmp), [c1; c2], dbg'')) dbg'
-      | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
-          tag_int (Cop(Ccmpf (negate_comparison cmp), [c1; c2], dbg'')) dbg'
       | _ ->
         (* 0 -> 3, 1 -> 1 *)
         Cop(Csubi, [Cconst_int 3; Cop(Clsl, [c; Cconst_int 1], dbg)], dbg)
