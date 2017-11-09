@@ -491,7 +491,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
    sampling for C-allocated blocks, because the compiler back-end
    merge allocations for better performance. Therefore, we need to
    revert this mechanism and recover the pointers to the different
-   blocks being alocated. */
+   blocks being allocated. */
 
 /* Allocation in compiled OCaml code proceeds by retrying until
    [caml_young_ptr] is under [caml_young_limit]. If there are several
