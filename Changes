@@ -27,6 +27,10 @@ be mentioned in the 4.06 section below instead of here.)
 - GPR#1428: give a non dummy location for warning 49 (no cmi found)
   (Valentin Gatien-Baron)
 
+- GPR#1472: Improve error reporting for missing 'rec' in let-bindings
+  (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
+  Frédéric Bour)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
