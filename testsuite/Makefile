@@ -18,7 +18,8 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
 	  && echo --no-print-directory`
 
 FIND=find
-include ../config/Makefile
+TOPDIR := ..
+include $(TOPDIR)/Makefile.tools
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(SYSTEM)" "cygwin"
@@ -104,7 +105,7 @@ new-without-report: lib tools
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
 	  (IFS=$$(printf "\r\n"); while read testfile; do \
-	    TERM=dumb OCAMLRUNPARAM= \
+	    TERM=dumb \
 	      $(ocamltest) $$dir/$$testfile || \
 	      touch $(failstamp); \
 	  done < $$file) || touch $(failstamp); \

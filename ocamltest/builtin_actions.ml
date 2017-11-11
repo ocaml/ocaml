@@ -157,8 +157,23 @@ let ocamlsrcdir () =
   try Sys.getenv "OCAMLSRCDIR"
   with Not_found -> Ocamltest_config.ocamlsrcdir
 
+type runtime_variant =
+  | Normal
+  | Debug
+  | Instrumented
+
+let runtime_variant() =
+  let use_runtime = try Sys.getenv "USE_RUNTIME" with Not_found -> "" in
+  if use_runtime="d" then Debug
+  else if use_runtime="i" then Instrumented
+  else Normal
+
 let ocamlrun ocamlsrcdir =
-  let ocamlrunfile = mkexe "ocamlrun" in
+  let runtime = match runtime_variant () with
+    | Normal -> "ocamlrun"
+    | Debug -> "ocamlrund"
+    | Instrumented -> "ocamlruni" in
+  let ocamlrunfile = mkexe runtime in
   make_path [ocamlsrcdir; "byterun"; ocamlrunfile]
 
 let ocamlc ocamlsrcdir =
@@ -216,6 +231,19 @@ let use_runtime backend ocamlsrcdir = match backend with
     let ocamlrun = ocamlrun ocamlsrcdir in
     "-use-runtime " ^ ocamlrun
   | _ -> ""
+
+let runtime_variant_flags backend ocamlsrcdir =
+  let variant = runtime_variant() in
+  if variant=Normal then ""
+  else begin
+    let variant_str = if variant=Debug then "d" else "i" in
+    let backend_lib = match backend with
+      | Sys.Bytecode -> "byterun"
+      | Sys.Native -> "asmrun"
+      | Sys.Other _ -> "stdlib" in
+    let backend_lib_dir = make_path [ocamlsrcdir; backend_lib] in
+    ("-runtime-variant " ^ variant_str ^" -I " ^ backend_lib_dir)
+  end
 
 (* Compiler descriptions *)
 
@@ -394,6 +422,7 @@ let link_modules
     customstr;
     c_headers_flags;
     use_runtime backend ocamlsrcdir;
+    runtime_variant_flags backend ocamlsrcdir;
     stdlib_flags ocamlsrcdir;
     "-linkall";
     flags env;
