@@ -1457,13 +1457,13 @@ let add_pattern_variables ?check ?check_as env =
          } env
      )
      pv env,
-   get_ref module_variables)
+   get_ref module_variables, pv)
 
 let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
-  let new_env, unpacks =
+  let new_env, unpacks, _ =
     add_pattern_variables !new_env
       ~check:(fun s -> Warnings.Unused_var_strict s)
       ~check_as:(fun s -> Warnings.Unused_var s) in
@@ -1479,8 +1479,8 @@ let type_pattern_list env spatl scope expected_tys allow =
       )
   in
   let patl = List.map2 type_pat spatl expected_tys in
-  let new_env, unpacks = add_pattern_variables !new_env in
-  (patl, new_env, get_ref pattern_force, unpacks)
+  let new_env, unpacks, pv = add_pattern_variables !new_env in
+  (patl, new_env, get_ref pattern_force, unpacks, pv)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern None false;
@@ -1508,7 +1508,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             env))
       !pattern_variables ([], met_env)
   in
-  let val_env, _ = add_pattern_variables val_env in
+  let val_env, _, _ = add_pattern_variables val_env in
   (pat, pv, val_env, met_env)
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
@@ -4663,7 +4663,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         | _ -> spat)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
-  let (pat_list, new_env, force, unpacks) =
+  let (pat_list, new_env, force, unpacks, _pv) =
     type_pattern_list env spatl scope nvs allow in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
