@@ -1529,7 +1529,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
     List.fold_right
       (fun (id, ty, _name, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
-                            val_kind = Val_unbound;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } val_env,
@@ -1541,7 +1542,9 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
             ~check:(fun s -> if as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
-          Env.add_value id {val_type = ty; val_kind = Val_unbound;
+          Env.add_value id {val_type = ty;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } par_env))
@@ -2666,7 +2669,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                   Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_ident(path, lid, desc)
-            | Val_unbound ->
+            | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
