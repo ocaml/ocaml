@@ -410,7 +410,7 @@ let emit_instr i =
         let lbl_redo = new_label() in
         let lbl_call_gc = new_label() in
         let lbl_frame =
-          record_frame_label i.live false (Dbg_alloc i.dbg) ?label:label_after_call_gc
+          record_frame_label i.live false (Dbg_alloc dbg) ?label:label_after_call_gc
         in
         call_gc_sites :=
           { gc_lbl = lbl_call_gc;
