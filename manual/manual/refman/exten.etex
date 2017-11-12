@@ -2354,3 +2354,21 @@ let dict =
 dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
+
+\section{Extended sequencing operators \label{s:sequencing-operators}}
+(Introduced in 4.07)
+
+\begin{syntax}
+semi-op-1: ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'<'||'='||'?'||'@'||'^'||'|'||'~') ;
+semi-op-2: ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'<'||'='||'>'||'?'||'@'||'^'||'|'||'~') ;
+semi-op: (semi-op-1 || semi-op-2 { semi-op-2 }) ';' ;
+expr: ... | expr semi-op expr ;
+\end{syntax}
+
+This extension provides a class of low-precedence infix operators operators
+suggested for representing sequences of statements. The operators are user
+definable, but best suited as an alternative to ";%ext" for PPX rewriters
+due to the expected need to control evaluation.
+
+These operators are right associative with a precedence just above "if", and
+thus above the bare semicolon.

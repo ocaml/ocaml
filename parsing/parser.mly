@@ -516,6 +516,7 @@ let package_type_of_module_type pmty =
 %token RPAREN
 %token SEMI
 %token SEMISEMI
+%token <string> SEMIOP
 %token HASH
 %token <string> HASHOP
 %token SIG
@@ -572,6 +573,7 @@ The precedences must be listed from low to high.
 %nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
 %nonassoc ELSE                          /* (if ... then ... else ...) */
+%right    SEMIOP                        /* expr (e OP e OP e) */
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
 %right    COLONEQUAL                    /* expr (e := e := e) */
 %nonassoc AS
@@ -1398,6 +1400,8 @@ expr:
       { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
       { mkinfix $1 ":=" $3 }
+  | expr SEMIOP expr
+      { mkinfix $1 $2 $3 }
   | subtractive expr %prec prec_unary_minus
       { mkuminus $1 $2 }
   | additive expr %prec prec_unary_plus
@@ -2415,6 +2419,7 @@ operator:
   | DOTOP LBRACE RBRACE                         { "."^ $1 ^"{}" }
   | DOTOP LBRACE RBRACE LESSMINUS               { "."^ $1 ^ "{}<-" }
   | HASHOP                                      { $1 }
+  | SEMIOP                                      { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }

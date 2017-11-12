@@ -13,6 +13,11 @@ be mentioned in the 4.06 section below instead of here.)
   (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
   Scherer)
 
+- GPR#1474: Add a new class of low precedence infix operators obtained by
+  prefixing the semicolon with one or more operator characters, subject to a
+  few constraints.  The operators are user definable, but best suited as
+  statement separators processed by PPX rewriters.
+
 ### Type system:
 
 - GPR#1370: Fix code duplication in Cmmgen
