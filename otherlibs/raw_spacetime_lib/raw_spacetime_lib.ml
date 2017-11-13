@@ -159,7 +159,7 @@ module Trace = struct
     ((Obj.magic node) : unit) == ()
 
   external node_num_header_words : unit -> int
-    = "caml_spacetime_node_num_header_words" "noalloc"
+    = "caml_spacetime_node_num_header_words" [@@noalloc]
 
   let num_header_words = lazy (node_num_header_words ())
 
@@ -182,13 +182,13 @@ module Trace = struct
 
       external annotation : ocaml_node -> int -> Annotation.t
         = "caml_spacetime_ocaml_allocation_point_annotation"
-          "noalloc"
+          [@@noalloc]
 
       let annotation t = annotation t.node t.offset
 
       external count : ocaml_node -> int -> int
         = "caml_spacetime_ocaml_allocation_point_count"
-          "noalloc"
+          [@@noalloc]
 
       let num_words_including_headers t = count t.node t.offset
     end
@@ -250,7 +250,7 @@ module Trace = struct
         (* This can return a node satisfying "is_null" in the case of an
            uninitialised tail call point.  See the comment in the C code. *)
         external callee_node : foreign_node -> node
-          = "caml_spacetime_c_node_callee_node" "noalloc"
+          = "caml_spacetime_c_node_callee_node" [@@noalloc]
 
         let callee_node t = callee_node t.node
 
@@ -262,7 +262,7 @@ module Trace = struct
           else None
 
         external next : foreign_node -> foreign_node
-          = "caml_spacetime_c_node_next" "noalloc"
+          = "caml_spacetime_c_node_next" [@@noalloc]
 
         let next t =
           let next = { t with node = next t.node; } in
@@ -272,7 +272,7 @@ module Trace = struct
 
       external callees : ocaml_node -> int -> foreign_node
         = "caml_spacetime_ocaml_indirect_call_point_callees"
-          "noalloc"
+          [@@noalloc]
 
       let callees t =
         let callees =
@@ -301,7 +301,7 @@ module Trace = struct
 
       external classify_direct_call_point : ocaml_node -> int -> int
         = "caml_spacetime_classify_direct_call_point"
-          "noalloc"
+          [@@noalloc]
 
       let classify t =
         match t.part_of_shape with
@@ -369,10 +369,10 @@ module Trace = struct
         = "caml_spacetime_ocaml_function_identifier"
 
       external next_in_tail_call_chain : t -> t
-        = "caml_spacetime_ocaml_tail_chain" "noalloc"
+        = "caml_spacetime_ocaml_tail_chain" [@@noalloc]
 
       external compare : t -> t -> int
-        = "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
 
       let fields t ~shape_table =
         let id = function_identifier t in
@@ -397,7 +397,7 @@ module Trace = struct
       type t = foreign_node
 
       external compare : t -> t -> int
-        = "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
 
       let fields t =
         if foreign_node_is_null t then None
@@ -412,10 +412,10 @@ module Trace = struct
         = "caml_spacetime_c_node_call_site"
 
       external annotation : t -> Annotation.t
-        = "caml_spacetime_c_node_profinfo" "noalloc"
+        = "caml_spacetime_c_node_profinfo" [@@noalloc]
 
       external num_words_including_headers : t -> int
-        = "caml_spacetime_c_node_allocation_count" "noalloc"
+        = "caml_spacetime_c_node_allocation_count" [@@noalloc]
     end
 
     module Call_point = struct
@@ -426,7 +426,7 @@ module Trace = struct
 
       (* May return a null node.  See comment above and the C code. *)
       external callee_node : t -> node
-        = "caml_spacetime_c_node_callee_node" "noalloc"
+        = "caml_spacetime_c_node_callee_node" [@@noalloc]
     end
 
     module Field = struct
@@ -437,14 +437,14 @@ module Trace = struct
         | Call of Call_point.t
 
       external is_call : t -> bool
-        = "caml_spacetime_c_node_is_call" "noalloc"
+        = "caml_spacetime_c_node_is_call" [@@noalloc]
 
       let classify t =
         if is_call t then Call t
         else Allocation t
 
       external next : t -> t
-        = "caml_spacetime_c_node_next" "noalloc"
+        = "caml_spacetime_c_node_next" [@@noalloc]
 
       let next t =
         let next = next t in
@@ -458,7 +458,7 @@ module Trace = struct
       type t = node
 
       external compare : t -> t -> int
-        = "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
     end
 
     include T
@@ -468,7 +468,7 @@ module Trace = struct
       | Foreign of Foreign.Node.t
 
     external is_ocaml_node : t -> bool
-      = "caml_spacetime_is_ocaml_node" "noalloc"
+      = "caml_spacetime_is_ocaml_node" [@@noalloc]
 
     let classify t =
       if is_ocaml_node t then OCaml ((Obj.magic t) : ocaml_node)
