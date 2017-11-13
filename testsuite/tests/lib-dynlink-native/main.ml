@@ -27,6 +27,6 @@ let ()  =
     let ic = open_in_bin "marshal.data" in
     let l = (Marshal.from_channel ic : (unit -> unit) list) in
     close_in ic;
-    List.iter (fun f -> f()) l
+    List.iter (fun f -> try f() with exn -> !Api.exn_handler exn) l
   with Failure s ->
     Printf.printf "Failure: %s\n" s

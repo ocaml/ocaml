@@ -25,6 +25,11 @@ Thread
 Thread
 Thread
 Thread
+Loading plugin_exn.so
+Registering module Plugin_exn
+Plugin_exn loaded
+Raising Plugin_exception
+Caught Plugin_exception
 Callback from plugin2
 Callback from plugin
 Callback from main
