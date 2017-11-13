@@ -156,9 +156,6 @@ module Trace = struct
     else
       Some ((Obj.magic trace) : node)
 
-  let node_is_null (node : node) =
-    ((Obj.magic node) : unit) == ()
-
   let foreign_node_is_null (node : foreign_node) =
     ((Obj.magic node) : unit) == ()
 
@@ -320,7 +317,7 @@ module Trace = struct
 
       let classify t =
         match t.part_of_shape with
-        | Shape_table.Direct_call callee ->
+        | Shape_table.Direct_call _callee ->
           let direct_call_point =
             match classify_direct_call_point t.node t.offset with
             | 0 ->
@@ -494,7 +491,6 @@ module Trace = struct
       | OCaml of OCaml.Node.t
       | Foreign of Foreign.Node.t
 
-    (* CR-soon lwhite: These functions should work in bytecode *)
     external is_ocaml_node : t -> bool
       = "caml_spacetime_only_works_for_native_code"
         "caml_spacetime_is_ocaml_node" "noalloc"
@@ -600,8 +596,6 @@ module Heap_snapshot = struct
       events : Event.t list;
       call_counts : bool;
     }
-
-    let pathname_suffix_trace = "trace"
 
     (* The order of these constructors must match the C code. *)
     type what_comes_next =
