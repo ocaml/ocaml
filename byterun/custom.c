@@ -39,6 +39,12 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
     if (ops->finalize != NULL || mem != 0) {
       /* Remember that the block needs processing after minor GC. */
       add_to_custom_table (&caml_custom_table, result, mem, max);
+      /* Keep track of extra resources held by custom block in
+         minor heap. */
+      caml_extra_heap_resources_minor += (double) mem / (double) max;
+      if (caml_extra_heap_resources_minor > 1.0) {
+        caml_minor_collection();
+      }
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);
