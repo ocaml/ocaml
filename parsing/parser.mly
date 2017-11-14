@@ -1337,7 +1337,11 @@ expr:
       { mkexp_attrs (mk_newtypes $5 $7).pexp_desc $2 }
   | MATCH ext_attributes seq_expr WITH opt_bar match_cases
       { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
+  | MATCH ext_attributes seq_expr AS opt_bar match_cases END
+      { mkexp_attrs (Pexp_match($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH opt_bar match_cases
+      { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
+  | TRY ext_attributes seq_expr AS opt_bar match_cases END
       { mkexp_attrs (Pexp_try($3, List.rev $6)) $2 }
   | TRY ext_attributes seq_expr WITH error
       { syntax_error() }

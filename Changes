@@ -13,6 +13,13 @@ be mentioned in the 4.06 section below instead of here.)
   (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
   Scherer)
 
+- GPR#1480: Add "match" and "try" blocks with mandatory "end" delimiters,
+  distinguished by substituting "as" for the "with" keyword, e.g.
+    match s_opt as
+    | None -> ""
+    | Some s -> s
+    end
+
 ### Type system:
 
 - GPR#1370: Fix code duplication in Cmmgen
