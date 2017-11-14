@@ -32,6 +32,6 @@ val value_kind : Env.t -> Types.type_expr -> Lambda.value_kind
 
 val classify_lazy_argument : Typedtree.expression ->
                              [ `Constant_or_function
-                             | `Float
+                             | `Flattenable_float
                              | `Identifier of [`Forward_value | `Other]
                              | `Other]

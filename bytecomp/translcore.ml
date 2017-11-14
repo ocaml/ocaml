@@ -467,15 +467,16 @@ and transl_exp0 e =
          optimize the translation just as Lazy.lazy_from_val would
          do *)
       begin match Typeopt.classify_lazy_argument e with
-      | `Float when Config.flat_float_array ->
-          (* We don't need to wrap with Popaque: this forward
-             block will never be shortcutted since it points to a float. *)
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
-                [transl_exp e], e.exp_loc)
-      | `Constant_or_function | `Float ->
+      | `Constant_or_function ->
         (* A constant expr (of type <> float if [Config.flat_float_array] is
            true) gets compiled as itself. *)
          transl_exp e
+      | `Flattenable_float ->
+          (* We don't need to wrap with Popaque: this forward
+             block will never be shortcutted since it points to a float
+             and Config.flat_float_array is true. *)
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),
+                [transl_exp e], e.exp_loc)
       | `Identifier `Forward_value ->
          (* CR-someday mshinwell: Consider adding a new primitive
             that expresses the construction of forward_tag blocks.
