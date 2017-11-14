@@ -544,11 +544,12 @@ place in the compiler currently does this.)
 This function might be written like so:
 \begin{verbatim}
 let rec iter f l =
-  match l with
+  match l as
   | [] -> ()
   | h :: t ->
     f h;
     iter f t
+  end
 \end{verbatim}
 and used like this:
 \begin{verbatim}
@@ -564,11 +565,12 @@ specialised:
 let run xs =
   let rec iter' f l =
     (* The compiler knows: f holds the same value as foo throughout iter'. *)
-    match l with
+    match l as
     | [] -> ()
     | h :: t ->
       f h;
       iter' f t
+    end
   in
   iter' print_int (List.rev xs)
 \end{verbatim}
@@ -579,11 +581,12 @@ means that the body of {\tt iter'} may be simplified:
 let run xs =
   let rec iter' f l =
     (* The compiler knows: f holds the same value as foo throughout iter'. *)
-    match l with
+    match l as
     | [] -> ()
     | h :: t ->
       print_int h;  (* this is now a direct call *)
       iter' f t
+    end
   in
   iter' print_int (List.rev xs)
 \end{verbatim}
@@ -592,11 +595,12 @@ The call to {\tt print\_int} can indeed be inlined:
 let run xs =
   let rec iter' f l =
     (* The compiler knows: f holds the same value as foo throughout iter'. *)
-    match l with
+    match l as
     | [] -> ()
     | h :: t ->
       print_endline (string_of_int h);
       iter' f t
+    end
   in
   iter' print_int (List.rev xs)
 \end{verbatim}
@@ -604,11 +608,12 @@ The unused specialised argument {\tt f} may now be removed, leaving:
 \begin{verbatim}
 let run xs =
   let rec iter' l =
-    match l with
+    match l as
     | [] -> ()
     | h :: t ->
       print_endline (string_of_int h);
       iter' t
+    end
   in
   iter' (List.rev xs)
 \end{verbatim}
@@ -617,13 +622,14 @@ let run xs =
 detect invariance in cases such as the following.
 \begin{verbatim}
 let rec iter_swap f g l =
-  match l with
+  match l as
   | [] -> ()
   | 0 :: t ->
     iter_swap g f l
   | h :: t ->
     f h;
     iter_swap f g t
+  end
 \end{verbatim}
 
 \subsection{Assessment of specialisation benefit}
@@ -959,13 +965,15 @@ being invariant and always the pair formed by adding {\tt 42} and {\tt 43}
 to the argument {\tt x} of the function {\tt f}.
 \begin{verbatim}
 let rec loop inv xs =
-  match xs with
+  match xs as
   | [] -> fst inv + snd inv
   | x::xs -> x + loop2 xs inv
+  end
 and loop2 ys inv =
-  match ys with
+  match ys as
   | [] -> 4
   | y::ys -> y - loop inv ys
+  end
 
 let f x =
   Printf.printf "%d\n" (loop (x + 42, x + 43) [1; 2; 3])
@@ -975,13 +983,15 @@ arguments will be added.  After some simplification one obtains:
 \begin{verbatim}
 let f x =
   let rec loop' xs inv_0 inv_1 =
-    match xs with
+    match xs as
     | [] -> inv_0 + inv_1
     | x::xs -> x + loop2' xs inv_0 inv_1
+    end
   and loop2' ys inv_0 inv_1 =
-    match ys with
+    match ys as
     | [] -> 4
     | y::ys -> y - loop' ys inv_0 inv_1
+    end
   in
   Printf.printf "%d\n" (loop' [1; 2; 3] (x + 42) (x + 43))
 \end{verbatim}
@@ -1085,7 +1095,7 @@ too large to inline.
 \begin{verbatim}
 let foo c =
   let rec bar zs fv =
-    match zs with
+    match zs as
     | [] -> []
     | z::zs ->
       let rec baz f = function
@@ -1093,6 +1103,7 @@ let foo c =
         | a::l -> let r = fv + ((f [@inlined never]) a) in r :: baz f l
       in
       (map2 (fun y -> z + y) [z; 2; 3; 4]) @ bar zs fv
+    end
   in
   Printf.printf "%d" (List.length (bar [1; 2; 3; 4] c))
 \end{verbatim}

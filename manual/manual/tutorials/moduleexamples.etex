@@ -23,12 +23,13 @@ module PrioQueue =
     type 'a queue = Empty | Node of priority * 'a * 'a queue * 'a queue
     let empty = Empty
     let rec insert queue prio elt =
-      match queue with
+      match queue as
         Empty -> Node(prio, elt, Empty, Empty)
       | Node(p, e, left, right) ->
           if prio <= p
           then Node(prio, elt, insert right p e, left)
           else Node(p, e, insert right prio elt, left)
+      end
     exception Queue_is_empty
     let rec remove_top = function
         Empty -> raise Queue_is_empty
@@ -113,10 +114,10 @@ an exception when the priority queue is empty.
     include PrioQueue
 
     let remove_top_opt x =
-      try Some(remove_top x) with Queue_is_empty -> None
+      try Some(remove_top x) as Queue_is_empty -> None end
 
     let extract_opt x =
-      try Some(extract x) with Queue_is_empty -> None
+      try Some(extract x) as Queue_is_empty -> None end
   end;;
 \end{caml_example}
 
@@ -205,21 +206,25 @@ module Set =
       type set = element list
       let empty = []
       let rec add x s =
-        match s with
+        match s as
           [] -> [x]
         | hd::tl ->
-           match Elt.compare x hd with
+           match Elt.compare x hd as
              Equal   -> s         (* x is already in s *)
            | Less    -> x :: s    (* x is smaller than all elements of s *)
            | Greater -> hd :: add x tl
+           end
+        end
       let rec member x s =
-        match s with
+        match s as
           [] -> false
         | hd::tl ->
-            match Elt.compare x hd with
+            match Elt.compare x hd as
               Equal   -> true     (* x belongs to s *)
             | Less    -> false    (* x is smaller than all elements of s *)
             | Greater -> member x tl
+            end
+        end
     end;;
 \end{caml_example}
 By applying the "Set" functor to a structure implementing an ordered

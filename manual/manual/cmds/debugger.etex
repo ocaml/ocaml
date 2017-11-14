@@ -171,7 +171,7 @@ the source code:
 fun x y z -> \event ...
 \end{alltt}
 \item On each case of a pattern-matching definition (function,
-"match"\ldots"with" construct, "try"\ldots"with" construct):
+"match"\ldots"as"\ldots"end" construct, "try"\ldots"as"\ldots"end" construct):
 \begin{alltt}
 function pat1 -> \event expr1
        | ...

@@ -387,7 +387,7 @@ class ['a] stack =
   object
     val mutable l = ([] : 'a list)
     method push x = l <- x::l
-    method pop = match l with [] -> raise Empty | a::l' -> l <- l'; a
+    method pop = match l as [] -> raise Empty | a::l' -> l <- l'; a end
     method clear = l <- []
     method length = List.length l
   end;;
@@ -509,15 +509,17 @@ module type SET =
 module Set : SET =
   struct
     let rec merge l1 l2 =
-      match l1 with
+      match l1 as
         [] -> l2
       | h1 :: t1 ->
-          match l2 with
+          match l2 as
             [] -> l1
           | h2 :: t2 ->
               if h1 < h2 then h1 :: merge t1 l2
               else if h1 > h2 then h2 :: merge l1 t2
               else merge t1 l2
+          end
+      end
     type 'a tag = 'a list
     class ['a] c =
       object (_ : 'b)

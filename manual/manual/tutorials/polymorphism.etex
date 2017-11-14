@@ -47,9 +47,11 @@ OCaml programs from unsoundness and runtime errors. To understand from where
 unsoundness might come, consider this simple function which swaps a value "x"
 with the value stored inside a "store" reference, if there is such value:
 \begin{caml_example}{toplevel}
-let swap store x = match !store with
+let swap store x =
+  match !store as
   | None -> store := Some x; x
-  | Some y -> store := Some x; y;;
+  | Some y -> store := Some x; y
+  end;;
 \end{caml_example}
 We can apply this function to our store
 \begin{caml_example}{toplevel}
@@ -385,9 +387,10 @@ lists:
     let map_and_sum f = List.fold_left (fun acc x -> acc + f x) 0 in
     let rec len: 'a. ('a list -> int ) -> 'a nested -> int =
     fun nested_len n ->
-      match n with
+      match n as
       | List l -> nested_len l
       | Nested n -> len (map_and_sum nested_len) n
+      end
     in
   len List.length nested;;
 len (Nested(Nested(List [ [ [1;2]; [3] ]; [ []; [4]; [5;6;7]]; [[]] ])));;
