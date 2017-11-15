@@ -255,6 +255,15 @@ and a detailed summary of its configuration, then exit.
 .BI \-depend\ ocamldep-args
 Compute dependencies, as ocamldep would do.
 .TP
+.B \-diff-markers
+Use textual markers to highlight differences in error messages
+and do not rely only on color.
+.TP
+.BI \-error-size \ size
+Set the optimal error size for type error messages in arbitrary units.
+Types larger than this error size will be elided in order to fit
+this limit.
+.TP
 .BI \-for\-pack \ module\-path
 Generate an object file (.cmx and .o files) that can later be included
 as a sub-module (with the given access path) of a compilation unit

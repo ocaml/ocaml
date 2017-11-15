@@ -331,6 +331,10 @@ to be loaded dynamically by the run-time system
 .BR ocamlrun (1)
 at program start-up time.
 .TP
+.B \-diff-markers
+Use textual markers to highlight differences in error messages
+and do not rely only on color.
+.TP
 .BI \-dllpath \ dir
 Adds the directory
 .I dir
@@ -347,6 +351,11 @@ in the produced
 executable file, where
 .BR ocamlrun (1)
 can find it and use it.
+.TP
+.BI \-error-size \ size
+Set the optimal error size for type error messages in arbitrary units.
+Types larger than this error size will be elided in order to fit
+this limit.
 .TP
 .BI \-for\-pack \ module\-path
 Generate an object file (.cmo file) that can later be included

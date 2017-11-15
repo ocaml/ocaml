@@ -183,6 +183,11 @@ Compute dependencies, as the "ocamldep" command would do. The remaining
 arguments are interpreted as if they were given to the "ocamldep" command.
 }%notop
 
+
+\item["-diff-marker" \var{size}]
+Use textual markers to highlight differences in error messages
+and do not rely only on color.
+
 \comp{
 \item["-dllib" "-l"\var{libname}]
 Arrange for the C shared library "dll"\var{libname}".so"
@@ -198,6 +203,10 @@ The "-dllpath" option simply stores \var{dir} in the produced
 executable file, where "ocamlrun" can find it and use it as
 described in section~\ref{s-ocamlrun-dllpath}.
 }%comp
+
+\item["-error-size" \var{size}]
+Set the optimal error size for type error messages in arbitrary units.
+Types larger than this error size will be elided in order to fit this limit.
 
 \notop{%
 \item["-for-pack" \var{module-path}]

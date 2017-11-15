@@ -70,6 +70,15 @@ The following command-line options are recognized by
 .B \-absname
 Show absolute filenames in error messages.
 .TP
+.B \-diff-markers
+Use textual markers to highlight differences in error messages
+and do not rely only on color.
+.TP
+.BI \-error-size \ size
+Set the optimal error size for type error messages in arbitrary units.
+Types larger than this error size will be elided in order to fit this
+limit.
+.TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 source and compiled files. By default, the current directory is
