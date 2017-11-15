@@ -12,10 +12,6 @@ Working version
 
 ### Type system:
 
-- GPR#1370: Fix code duplication in Cmmgen
-  (Vincent Laviron, with help from Pierre Chambart,
-   reviews by Gabriel Scherer and Luc Maranget)
-
 ### Standard library:
 
 ### Other libraries:
@@ -48,6 +44,13 @@ Working version
   Florian Angeletti and Gabriel Radanne)
 
 ### Code generation and optimizations:
+
+- GPR#1370: Fix code duplication in Cmmgen
+  (Vincent Laviron, with help from Pierre Chambart,
+   reviews by Gabriel Scherer and Luc Maranget)
+
+- GPR#1482: Adapt and optimize the code generation for try-with blocks
+  (Vincent Laviron, Mark Shinwell and Pierre Chambart)
 
 ### Runtime system:
 
