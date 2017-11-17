@@ -38,6 +38,10 @@ extern void caml_memprof_call_gc_end(double exceeded_by);
 extern double caml_memprof_call_gc_begin(void);
 #endif
 
+/* Exported only for saving and restoring in threads. */
+extern int caml_memprof_suspended;
+extern void caml_memprof_set_suspended(int new_suspended);
+
 #endif
 
 #endif

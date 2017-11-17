@@ -94,6 +94,9 @@ struct caml_thread_struct {
   value joining;                /* Thread we're trying to join */
   value waitpid;                /* PID of process we're waiting for */
   value retval;                 /* Value to return when thread resumes */
+#ifdef WITH_STATMEMPROF
+  value memprof_suspended;      /* Saved value of caml_memprof_suspended */
+#endif
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -186,6 +189,9 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->joining = NO_JOINING;
   curr_thread->waitpid = NO_WAITPID;
   curr_thread->retval = Val_unit;
+#ifdef WITH_STATMEMPROF
+  curr_thread->memprof_suspended = Val_int(0);
+#endif
   /* Initialize GC */
   prev_scan_roots_hook = caml_scan_roots_hook;
   caml_scan_roots_hook = thread_scan_roots;
@@ -259,6 +265,9 @@ value thread_new(value clos)          /* ML */
   th->joining = NO_JOINING;
   th->waitpid = NO_WAITPID;
   th->retval = Val_unit;
+#ifdef WITH_STATMEMPROF
+  th->memprof_suspended = Val_int(0);
+#endif
   /* Insert thread in doubly linked list of threads */
   th->prev = curr_thread->prev;
   th->next = curr_thread;
@@ -313,6 +322,9 @@ static value schedule_thread(void)
   curr_thread->trapsp = caml_trapsp;
   curr_thread->backtrace_pos = Val_int(caml_backtrace_pos);
   curr_thread->backtrace_buffer = caml_backtrace_buffer;
+#ifdef WITH_STATMEMPROF
+  curr_thread->memprof_suspended = Val_int(caml_memprof_suspended);
+#endif
   caml_modify (&curr_thread->backtrace_last_exn, caml_backtrace_last_exn);
 
 try_again:
@@ -507,6 +519,9 @@ try_again:
   caml_backtrace_pos = Int_val(curr_thread->backtrace_pos);
   caml_backtrace_buffer = curr_thread->backtrace_buffer;
   caml_backtrace_last_exn = curr_thread->backtrace_last_exn;
+#ifdef WITH_STATMEMPROF
+  caml_memprof_set_suspended(Int_val(curr_thread->memprof_suspended));
+#endif
   return curr_thread->retval;
 }
 

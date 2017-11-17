@@ -61,8 +61,11 @@ type 'a callback = sample_info -> (Obj.t, 'a) Ephemeron.K1.t option
    A callback returns an option over an ephemeron whose key is set
    to the allocated block for further tracking.
 
-   The sampling is temporarily disabled when calling the callback. So
-   it need not be reentrant.
+   The sampling is temporarily disabled when calling the callback for
+   the current thread. So it need not be reentrant if only one thread
+   is running. However, if threads are used, it is possible that a
+   context switch occurs during a callback, in which case reentrency
+   has to be taken into account.
 
    Note that when the callback kind is [Major_postponed], the callback
    needed to be postponed after the actual allocation. Therefore, the

@@ -36,7 +36,7 @@ static uint32_t mt_index;
 /* [lambda] is the mean number of samples for each allocated word (including
    block headers). */
 static double lambda = 0;
-static int suspended = 0;
+int caml_memprof_suspended = 0;
 static double lambda_rec = INFINITY;
 static intnat callstack_size = 0;
 static value memprof_callback = Val_unit;
@@ -88,7 +88,7 @@ static double mt_generate_uniform(void) {
 static double mt_generate_exponential() {
   CAMLassert(lambda >= 0 && !isinf(lambda));
 
-  if(suspended || lambda == 0)
+  if(caml_memprof_suspended || lambda == 0)
     return INFINITY;
 
   double res = -logf(mt_generate_uniform()) * lambda_rec;
@@ -101,7 +101,7 @@ static int32_t mt_generate_poisson(double len) {
   double cur_lambda = lambda * len;
   CAMLassert(cur_lambda >= 0 && !isinf(cur_lambda));
 
-  if(suspended || cur_lambda == 0)
+  if(caml_memprof_suspended || cur_lambda == 0)
     return 0;
 
   if(cur_lambda < 20) {
@@ -198,14 +198,11 @@ static value do_callback(tag_t tag, intnat wosize, int32_t occurences,
   CAMLreturn(caml_callback_exn(memprof_callback, sample_info));
 }
 
-void suspend() {
-  suspended = 1;
-  caml_memprof_renew_minor_sample();
-}
-
-void unsuspend() {
-  suspended = 0;
-  caml_memprof_renew_minor_sample();
+void caml_memprof_set_suspended(int new_suspended) {
+  if(caml_memprof_suspended != new_suspended) {
+    caml_memprof_suspended = new_suspended;
+    caml_memprof_renew_minor_sample();
+  }
 }
 
 /**** Sampling procedures ****/
@@ -254,7 +251,7 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize) {
     (caml_memprof_young_limit - caml_young_ptr) - next_sample_round;
   int32_t occurences;
 
-  CAMLassert(rest > 0 && lambda > 0 && !suspended);
+  CAMLassert(rest > 0 && lambda > 0 && !caml_memprof_suspended);
 
   occurences = mt_generate_poisson(rest) + 1;
 
@@ -263,10 +260,10 @@ void caml_memprof_track_young(tag_t tag, uintnat wosize) {
 
   caml_memprof_handle_postponed();
 
-  suspend();
+  caml_memprof_set_suspended(1);
   callstack = capture_callstack(0);
   ephe = do_callback(tag, wosize, occurences, callstack, Minor);
-  unsuspend();  // Calls [caml_memprof_renew_minor_sample]
+  caml_memprof_set_suspended(0);  // Calls [caml_memprof_renew_minor_sample]
   if (Is_exception_result(ephe)) caml_raise(Extract_exception(ephe));
 
   if(caml_young_ptr - whsize < caml_young_trigger)
@@ -297,10 +294,10 @@ value caml_memprof_track_alloc_shr(tag_t tag, value block) {
   caml_memprof_handle_postponed();
 
   if(occurences > 0) {
-    suspend();
+    caml_memprof_set_suspended(1);
     callstack = capture_callstack(0);
     ephe = do_callback(tag, Wosize_val(block), occurences, callstack, Major);
-    unsuspend();
+    caml_memprof_set_suspended(0);
     if (Is_exception_result(ephe)) caml_raise(Extract_exception(ephe));
 
     if(Is_block(ephe))
@@ -332,9 +329,9 @@ void caml_memprof_postpone_track_alloc_shr(value block) {
     if(pb == NULL) return;
     pb->block = block;
     caml_register_generational_global_root(&pb->block);
-    suspend();
+    caml_memprof_set_suspended(1);
     pb->callstack = capture_callstack(1);
-    unsuspend();
+    caml_memprof_set_suspended(0);
     caml_register_generational_global_root(&pb->callstack);
     pb->occurences = occurences;
     pb->next = postponed_head;
@@ -373,13 +370,13 @@ void caml_memprof_handle_postponed() {
     caml_stat_free(p);                                               \
     p = next; }
 
-  suspend();
+  caml_memprof_set_suspended(1);
   // We then do the actual iteration on postponed blocks
   while(p != NULL) {
     ephe = do_callback(Tag_val(p->block), Wosize_val(p->block),
                        p->occurences, p->callstack, Major_postponed);
     if (Is_exception_result(ephe)) {
-      unsuspend();
+      caml_memprof_set_suspended(0);
       // In the case of an exception, we just forget the entire list.
       while(p != NULL) NEXT_P;
       caml_raise(Extract_exception(ephe));
@@ -388,7 +385,7 @@ void caml_memprof_handle_postponed() {
       caml_ephe_set_key(Field(ephe, 0), Val_long(0), p->block);
     NEXT_P;
   }
-  unsuspend();
+  caml_memprof_set_suspended(0);
 }
 
 void caml_memprof_track_interned(header_t* block, header_t* blockend) {
@@ -464,7 +461,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
   caml_memprof_handle_postponed();
 
-  suspend();
+  caml_memprof_set_suspended(1);
   callstack = capture_callstack(0);
   for(i = 0; i < j; i++) {
     ephe = do_callback(Tag_val(sampled[i]), Wosize_val(sampled[i]),
@@ -472,7 +469,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
     if (Is_exception_result(ephe)) {
       caml_stat_free(sampled);
       caml_stat_free(occurences);
-      unsuspend();
+      caml_memprof_set_suspended(0);
       caml_raise(Extract_exception(ephe));
     }
     if(Is_block(ephe))
@@ -481,7 +478,7 @@ void caml_memprof_track_interned(header_t* block, header_t* blockend) {
 
   caml_stat_free(sampled);
   caml_stat_free(occurences);
-  unsuspend();
+  caml_memprof_set_suspended(0);
   CAMLreturn0;
 }
 
@@ -535,7 +532,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
   CAMLparam0();
   CAMLlocal3(callstack, callstack_cur, tmp);
 
-  if(suspended || lambda == 0)
+  if(caml_memprof_suspended || lambda == 0)
     CAMLreturn0;
 
   d = caml_next_frame_descriptor(&pc, &sp);
@@ -596,7 +593,7 @@ void caml_memprof_call_gc_end(double exceeded_by) {
 
     caml_memprof_handle_postponed();
 
-    suspend();
+    caml_memprof_set_suspended(1);
     callstack = capture_callstack(0);
     for(i = 0; i < n_samples; i++) {
       if(samples[i].alloc_frame_pos == 0)
@@ -615,11 +612,11 @@ void caml_memprof_call_gc_end(double exceeded_by) {
                              samples[i].occurences, callstack_cur, Minor);
       if(Is_exception_result(ephes[i])) {
         caml_stat_free(samples);
-        unsuspend();
+        caml_memprof_set_suspended(0);
         caml_raise(Extract_exception(ephes[i]));
       }
     }
-    unsuspend(); // Calls caml_memprof_renew_minor_sample
+    caml_memprof_set_suspended(0); // Calls caml_memprof_renew_minor_sample
 
     // Do everything we can to make sure that the allocation will take
     // place.
