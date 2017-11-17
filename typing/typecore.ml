@@ -80,6 +80,7 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
+  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -135,6 +136,21 @@ type recarg =
 
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
+
+let maybe_add_pattern_variables_ghost loc_let env pv =
+  List.fold_right
+    (fun (id, ty, _name, _loc, _as_var) env ->
+       let lid = Longident.Lident (Ident.name id) in
+       match Env.lookup_value ~mark:false lid env with
+       | _ -> env
+       | exception Not_found ->
+         Env.add_value id
+           { val_type = ty;
+             val_kind = Val_unbound Val_unbound_ghost_recursive;
+             val_loc = loc_let;
+             val_attributes = [];
+           } env
+    ) pv env
 
 (* Upper approximation of free identifiers on the parse tree *)
 
@@ -1457,13 +1473,13 @@ let add_pattern_variables ?check ?check_as env =
          } env
      )
      pv env,
-   get_ref module_variables)
+   get_ref module_variables, pv)
 
 let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
-  let new_env, unpacks =
+  let new_env, unpacks, _ =
     add_pattern_variables !new_env
       ~check:(fun s -> Warnings.Unused_var_strict s)
       ~check_as:(fun s -> Warnings.Unused_var s) in
@@ -1479,8 +1495,8 @@ let type_pattern_list env spatl scope expected_tys allow =
       )
   in
   let patl = List.map2 type_pat spatl expected_tys in
-  let new_env, unpacks = add_pattern_variables !new_env in
-  (patl, new_env, get_ref pattern_force, unpacks)
+  let new_env, unpacks, pv = add_pattern_variables !new_env in
+  (patl, new_env, get_ref pattern_force, unpacks, pv)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern None false;
@@ -1508,7 +1524,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             env))
       !pattern_variables ([], met_env)
   in
-  let val_env, _ = add_pattern_variables val_env in
+  let val_env, _, _ = add_pattern_variables val_env in
   (pat, pv, val_env, met_env)
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
@@ -1529,7 +1545,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
     List.fold_right
       (fun (id, ty, _name, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
-                            val_kind = Val_unbound;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } val_env,
@@ -1541,7 +1558,9 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
             ~check:(fun s -> if as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
-          Env.add_value id {val_type = ty; val_kind = Val_unbound;
+          Env.add_value id {val_type = ty;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } par_env))
@@ -2666,8 +2685,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                   Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_ident(path, lid, desc)
-            | Val_unbound ->
+            | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
+            | Val_unbound Val_unbound_ghost_recursive ->
+                raise(Error(loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
                 Env.add_required_global (Path.head p);
@@ -4660,7 +4681,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
         | _ -> spat)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
-  let (pat_list, new_env, force, unpacks) =
+  let (pat_list, new_env, force, unpacks, pv) =
     type_pattern_list env spatl scope nvs allow in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
@@ -4697,7 +4718,14 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
   let exp_env =
-    if is_recursive then new_env else env in
+    if is_recursive then new_env
+    else if not is_recursive then begin
+      (* add ghost bindings to help detecting missing "rec" keywords *)
+      match spat_sexp_list with
+      | {pvb_loc; _} :: _ -> maybe_add_pattern_variables_ghost pvb_loc env pv
+      | _ -> assert false
+    end
+    else env in
 
   let current_slot = ref None in
   let rec_needed = ref false in
@@ -5141,6 +5169,14 @@ let report_error env ppf = function
         "This kind of expression is not allowed as right-hand side of `let rec'"
   | Illegal_class_expr ->
       fprintf ppf "This kind of recursive class expression is not allowed"
+  | Unbound_value_missing_rec (lid, loc) ->
+      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
+      fprintf ppf
+        "@[%s %a.@ %s %i.@]"
+        "Unbound value"
+        longident lid
+        "Hint: You are probably missing the `rec' keyword on line"
+        line
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
