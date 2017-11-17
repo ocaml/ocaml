@@ -265,6 +265,9 @@ let destroyed_at_oper = function
       [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
   | Iop(Iintop Imulh) when !arch < ARMv6 ->
       [| phys_reg 8 |]              (* r12 destroyed *)
+  | Iop(Iintop (Icomp _) | Iintop_imm(Icomp _, _))
+    when !arch >= ARMv8 && !thumb ->
+      [| phys_reg 3 |]  (* r3 destroyed *)
   | Iop(Iintoffloat | Ifloatofint | Iload(Single, _) | Istore(Single, _, _)) ->
       [| phys_reg 107 |]            (* d7 (s14-s15) destroyed *)
   | _ -> [||]
