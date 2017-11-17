@@ -8,6 +8,11 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Language features:
 
+- GPR#1467: Allow expressions sequences inside extended indexing and bigarray
+  indexing operators, e.g.: e1.![e2; e3; ...], etc.
+  (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
+  Scherer)
+
 ### Type system:
 
 - GPR#1370: Fix code duplication in Cmmgen
