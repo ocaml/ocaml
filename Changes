@@ -3,9 +3,6 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
-(Bugfixes that are also to be included in the 4.06 branch should
-be mentioned in the 4.06 section below instead of here.)
-
 ### Language features:
 
 - GPR#1467: Allow expressions sequences inside extended indexing and bigarray
@@ -69,8 +66,8 @@ be mentioned in the 4.06 section below instead of here.)
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
 
-Release branch for 4.06:
-------------------------
+OCaml 4.06.0 (3 Nov 2017):
+--------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
