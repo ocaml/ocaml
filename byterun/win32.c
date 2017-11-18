@@ -903,3 +903,8 @@ void caml_setup_win32_terminal(void)
   if (caml_win32_major >= 10)
     SetConsoleOutputCP(CP_UTF8);
 }
+
+int caml_num_rows_fd(int fd)
+{
+  return -1;
+}

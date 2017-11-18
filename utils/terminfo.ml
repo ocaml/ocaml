@@ -23,27 +23,23 @@ type status =
   | Bad_term
   | Good_term
 
-let setup () = 
+let setup oc = 
   let term = try Sys.getenv "TERM" with Not_found -> "" in
   (* Same heuristics as in Misc.Color.should_enable_color *)
-  if term <> "" && term <> "dumb" && isatty stdout
+  if term <> "" && term <> "dumb" && isatty oc
   then Good_term
   else Bad_term
 
-let num_lines () =
-  let rows = terminfo_rows stdout in
+let num_lines oc =
+  let rows = terminfo_rows oc in
   if rows > 0 then rows else 24
     (* 24 is a reasonable default for an ANSI-style terminal *)
 
-let backup n =
-  if n >= 1 then begin
-    printf "\027[%dA" n; flush stdout
-  end
+let backup oc n =
+  if n >= 1 then fprintf oc "\027[%dA%!" n
 
-let resume n =
-  if n >= 1 then begin
-    printf "\027[%dB" n; flush stdout
-  end
+let resume oc n =
+  if n >= 1 then fprintf oc "\027[%dB%!" n
 
-let standout b =
-  output_string stdout (if b then "\027[4m" else "\027[0m"); flush stdout
+let standout oc b =
+  output_string oc (if b then "\027[4m" else "\027[0m"); flush oc

@@ -20,8 +20,8 @@ type status =
   | Bad_term
   | Good_term
 
-val setup : unit -> status
-val num_lines : unit -> int
-val backup : int -> unit
-val standout : bool -> unit
-val resume : int -> unit
+val setup : out_channel -> status
+val num_lines : out_channel -> int
+val backup : out_channel -> int -> unit
+val standout : out_channel -> bool -> unit
+val resume : out_channel -> int -> unit
