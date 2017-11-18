@@ -931,7 +931,7 @@ BOOL (WINAPI *tGetFileInformationByHandleEx)(
   DWORD                     dwBufferSize
 );
 
-static int caml_win32_ismsystty(int fd)
+static int caml_win32_ismsystty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
@@ -939,8 +939,7 @@ static int caml_win32_ismsystty(int fd)
   tGetFileInformationByHandleEx pGetFileInformationByHandleEx;
 
   /* check if fd is a pipe */
-  HANDLE h = (HANDLE) _get_osfhandle(fd);
-  if (GetFileType(h) != FILE_TYPE_PIPE)
+  if (GetFileType(hFile) != FILE_TYPE_PIPE)
     return 0;
 
   hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
@@ -951,7 +950,7 @@ static int caml_win32_ismsystty(int fd)
     return 0;
 
   /* get pipe name */
-  if (! pGetFileInformationByHandleEx(h, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+  if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
   nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
@@ -971,5 +970,5 @@ CAMLexport int caml_win32_isatty(int fd)
   HANDLE hFile = (HANDLE)_get_osfhandle(fd);
   return (hFile != INVALID_HANDLE_VALUE &&
           GetFileType(hFile) == FILE_TYPE_CHAR &&
-          GetConsoleMode(hFile, &lpMode)) || caml_win32_ismsystty(fd);
+          GetConsoleMode(hFile, &lpMode)) || caml_win32_ismsystty(hFile);
 }
