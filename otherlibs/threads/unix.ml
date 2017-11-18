@@ -573,7 +573,7 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external _socket : 
+external _socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
 external _socketpair :
@@ -1072,7 +1072,7 @@ let open_process cmd =
   with e ->
     close_in inchan;
     close in_write;
-    raise e    
+    raise e
 
 let open_process_full cmd env =
   let (in_read, in_write) = pipe ~cloexec:true () in
@@ -1101,7 +1101,7 @@ let open_process_full cmd env =
   with e ->
     close_in inchan;
     close in_write;
-    raise e    
+    raise e
 
 let find_proc_id fun_name proc =
   try

@@ -260,7 +260,7 @@ let execvpe_ml name args env =
          which looks up the PATH environment variable whether SUID or not. *)
 
 let execvpe name args env =
-  try  
+  try
     execvpe_c name args env
   with Unix_error(ENOSYS, _, _) ->
     execvpe_ml name args env
@@ -597,7 +597,7 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : 
+external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
 external socketpair :
@@ -1086,7 +1086,7 @@ let open_process_full cmd env =
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
-      close err_read; close err_write; 
+      close err_read; close err_write;
       raise e
   end;
   close out_read;

@@ -16,10 +16,10 @@ let () =
   begin
     (*
            abcde
-    ?????     
+    ?????
     *)
     Testing.test
-      (length (extend abcde 7 (-7)) = 5); 
+      (length (extend abcde 7 (-7)) = 5);
 
     (*
     abcde
