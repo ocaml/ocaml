@@ -968,7 +968,12 @@ CAMLexport int caml_win32_isatty(int fd)
 {
   DWORD lpMode;
   HANDLE hFile = (HANDLE)_get_osfhandle(fd);
-  return (hFile != INVALID_HANDLE_VALUE &&
-          GetFileType(hFile) == FILE_TYPE_CHAR &&
-          GetConsoleMode(hFile, &lpMode)) || caml_win32_ismsystty(hFile);
+
+  if (hFile == INVALID_HANDLE_VALUE)
+    return 0;
+
+  if (GetFileType(hFile) == FILE_TYPE_CHAR && GetConsoleMode(hFile, &lpMode))
+    return 1;
+
+  return caml_win32_ismsystty(hFile);
 }
