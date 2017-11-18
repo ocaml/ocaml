@@ -726,7 +726,7 @@ let rec update_level env level expand ty =
         with Cannot_expand ->
           set_level ty level;
           iter_type_expr (update_level env level expand) ty
-        end          
+        end
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);

@@ -646,7 +646,7 @@ val set_close_on_exec : file_descr -> unit
    to the private file and can do bad things with it.  Hence, it is
    highly recommended to set all file descriptors ``close-on-exec'',
    except in the very few cases where a file descriptor actually needs
-   to be transmitted to another program.  
+   to be transmitted to another program.
 
    The best way to set a file descriptor ``close-on-exec'' is to create
    it in this state.  To this end, the [openfile] function has

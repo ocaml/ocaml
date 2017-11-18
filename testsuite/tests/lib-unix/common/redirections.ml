@@ -82,7 +82,7 @@ let test_open_process_full () =
       (refl ^ " o 123 i2o e 456 i2e v XVAR")
       [|"XVAR=xvar"|] in
   output_string i "aa\nbbbb\n"; close_out i;
-  for _i = 1 to 3 do 
+  for _i = 1 to 3 do
     out Unix.stdout (input_line o ^ "\n")
   done;
   for _i = 1 to 2 do
@@ -94,7 +94,7 @@ let test_open_process_full () =
 
 let _ =
   (* The following 'close' makes things more difficult.
-     Under Unix it works fine, but under Win32 create_process 
+     Under Unix it works fine, but under Win32 create_process
      gives an error if one of the standard handles is closed. *)
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";

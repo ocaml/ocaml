@@ -1021,7 +1021,7 @@ and transl_exp0 e =
       | `Constant_or_function ->
         (* a constant expr of type <> float gets compiled as itself *)
          transl_exp e
-      | `Float -> 
+      | `Float ->
           (* We don't need to wrap with Popaque: this forward
              block will never be shortcutted since it points to a float. *)
           Lprim(Pmakeblock(Obj.forward_tag, Immutable, None),

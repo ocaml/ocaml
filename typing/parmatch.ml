@@ -792,7 +792,7 @@ let complete_constrs p all_tags =
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
