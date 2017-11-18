@@ -345,6 +345,10 @@ Release branch for 4.06:
 - MPR#7616, GPR#1339: don't warn on mutation of zero size blocks.
   (Leo White)
 
+- GPR#1343: Remove body from function approximations when compiling in
+  classic mode (flambda).
+  (Fu Yong Quah)
+
 - MPR#7631, GPR#1355: "-linscan" option crashes ocamlopt
   (Xavier Clerc, report by Paul Steckler)
 
