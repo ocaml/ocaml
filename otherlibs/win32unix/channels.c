@@ -21,6 +21,7 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 #include <fcntl.h>
+#include <io.h>
 
 #if defined(_MSC_VER) && !defined(_INTPTR_T_DEFINED)
 typedef int intptr_t;
@@ -49,6 +50,8 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   fflush(stdin);
 #endif
   chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+                 /* as in caml_ml_open_descriptor_in() */
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
@@ -63,6 +66,8 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   struct channel * chan;
 
   chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+                 /* as in caml_ml_open_descriptor_out() */
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);

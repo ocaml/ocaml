@@ -275,6 +275,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
   | Lev_pseudo
+  | Lev_module_definition of Ident.t
 
 type program =
   { module_ident : Ident.t;
@@ -531,10 +532,19 @@ let rec transl_normal_path = function
   | Papply _ ->
       fatal_error "Lambda.transl_path"
 
-(* Translation of value identifiers *)
+(* Translation of identifiers *)
 
-let transl_path ?(loc=Location.none) env path =
+let transl_module_path ?(loc=Location.none) env path =
   transl_normal_path (Env.normalize_path (Some loc) env path)
+
+let transl_value_path ?(loc=Location.none) env path =
+  transl_normal_path (Env.normalize_path_prefix (Some loc) env path)
+
+let transl_class_path = transl_value_path
+let transl_extension_path = transl_value_path
+
+(* compatibility alias, deprecated in the .mli *)
+let transl_path = transl_value_path
 
 (* Compile a sequence of expressions *)
 
@@ -701,6 +711,14 @@ let lam_of_loc kind loc =
         file lnum cnum enum in
     Lconst (Const_immstring loc)
   | Loc_LINE -> Lconst (Const_base (Const_int lnum))
+
+let merge_inline_attributes attr1 attr2 =
+  match attr1, attr2 with
+  | Default_inline, _ -> Some attr2
+  | _, Default_inline -> Some attr1
+  | _, _ ->
+    if attr1 = attr2 then Some attr1
+    else None
 
 let reset () =
   raise_count := 0

@@ -44,15 +44,15 @@ HANDLE hInst;
 
 HFONT CreationFont(char *name)
 {
-   LOGFONT CurrentFont;
-   memset(&CurrentFont, 0, sizeof(LOGFONT));
+   LOGFONTA CurrentFont;
+   memset(&CurrentFont, 0, sizeof(LOGFONTA));
    CurrentFont.lfCharSet = ANSI_CHARSET;
    CurrentFont.lfWeight = FW_NORMAL;
    CurrentFont.lfHeight = grwindow.CurrentFontSize;
    CurrentFont.lfPitchAndFamily = (BYTE) (FIXED_PITCH | FF_MODERN);
    strncpy(CurrentFont.lfFaceName, name, sizeof(CurrentFont.lfFaceName));
    CurrentFont.lfFaceName[sizeof(CurrentFont.lfFaceName) - 1] = 0;
-   return (CreateFontIndirect(&CurrentFont));
+   return (CreateFontIndirectA(&CurrentFont));
 }
 
 void SetCoordinates(HWND hwnd)
@@ -112,7 +112,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,
 
 int DoRegisterClass(void)
 {
-        WNDCLASS wc;
+        WNDCLASSA wc;
 
         memset(&wc,0,sizeof(WNDCLASS));
         wc.style = CS_HREDRAW|CS_VREDRAW|CS_OWNDC ;
@@ -123,7 +123,7 @@ int DoRegisterClass(void)
         wc.lpszMenuName = 0;
         wc.hCursor = LoadCursor(NULL,IDC_ARROW);
         wc.hIcon = 0;
-        return RegisterClass(&wc);
+        return RegisterClassA(&wc);
 }
 
 static value gr_reset(void)
@@ -212,12 +212,12 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
         return 1;
       }
     }
-    grwindow.hwnd = CreateWindow(szOcamlWindowClass,
-                                 WINDOW_NAME,
-                                 WS_OVERLAPPEDWINDOW,
-                                 x,y,
-                                 w,h,
-                                 NULL,0,hInst,NULL);
+    grwindow.hwnd = CreateWindowA(szOcamlWindowClass,
+                                  WINDOW_NAME,
+                                  WS_OVERLAPPEDWINDOW,
+                                  x,y,
+                                  w,h,
+                                  NULL,0,hInst,NULL);
     if (grwindow.hwnd == NULL) {
       open_graph_errmsg = "Cannot create window";
       SetEvent(open_graph_event);

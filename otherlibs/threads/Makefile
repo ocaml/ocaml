@@ -111,13 +111,13 @@ CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 
 install:
 	if test -f dllvmthreads.so; then \
-	  cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; \
+	  cp dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
 	fi
-	mkdir -p $(INSTALL_LIBDIR)/vmthreads
-	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
-	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
+	mkdir -p "$(INSTALL_LIBDIR)/vmthreads"
+	cp libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
+	cd "$(INSTALL_LIBDIR)/vmthreads"; $(RANLIB) libvmthreads.a
 	cp $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
-	   threads.cma stdlib.cma unix.cma $(INSTALL_LIBDIR)/vmthreads
+	   threads.cma stdlib.cma unix.cma "$(INSTALL_LIBDIR)/vmthreads"
 
 installopt:
 
@@ -134,7 +134,7 @@ depend:
 ifeq "$(TOOLCHAIN)" "msvc"
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
-	$(CPP) -MM $(CPPFLAGS) *.c > .depend
+	$(CC) -MM $(CPPFLAGS) *.c > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 endif
 

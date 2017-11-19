@@ -13,8 +13,12 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
+#include <caml/osdeps.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 #include <fcntl.h>
 
@@ -42,6 +46,7 @@ CAMLprim value unix_open(value path, value flags, value perm)
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;
   HANDLE h;
+  wchar_t * wpath;
 
   caml_unix_check_path(path, "open");
   fileaccess = caml_convert_flag_list(flags, open_access_flags);
@@ -73,9 +78,11 @@ CAMLprim value unix_open(value path, value flags, value perm)
                       : cloexec & KEEPEXEC ? TRUE
                                            : !unix_cloexec_default;
 
-  h = CreateFile(String_val(path), fileaccess,
+  wpath = caml_stat_strdup_to_utf16(String_val(path));
+  h = CreateFile(wpath, fileaccess,
                  sharemode, &attr,
                  filecreate, fileattrib, NULL);
+  caml_stat_free(wpath);
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr(GetLastError());
     uerror("open", path);

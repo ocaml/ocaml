@@ -54,10 +54,6 @@ val can_be_merged : Flambda.t -> Flambda.t -> bool
 
 val description_of_toplevel_node : Flambda.t -> string
 
-(** Sharing key, used for coalescing switch cases. *)
-type sharing_key
-val make_key : Flambda.t -> sharing_key option
-
 (* Given an expression, freshen all variables within it, and form a function
    whose body is the resulting expression.  The variables specified by
    [params] will become the parameters of the function; the closure will be
@@ -169,7 +165,7 @@ val substitute_read_symbol_field_for_variables
 
 (** For the compilation of switch statements. *)
 module Switch_storer : sig
-  val mk_store : unit -> Flambda.t Switch.t_store
+  val mk_store : unit -> (Flambda.t, unit) Switch.t_store
 end
 
 (** Within a set of function declarations there is a set of function bodies,

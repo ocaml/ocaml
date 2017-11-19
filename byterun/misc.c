@@ -17,9 +17,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/memory.h"
+#include "caml/osdeps.h"
 #include "caml/version.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
@@ -51,10 +53,13 @@ void caml_set_fields (value v, unsigned long start, unsigned long filler)
 
 uintnat caml_verb_gc = 0;
 
-void caml_gc_message (int level, char *msg, uintnat arg)
+void caml_gc_message (int level, char *msg, ...)
 {
   if ((caml_verb_gc & level) != 0){
-    fprintf (stderr, msg, arg);
+    va_list ap;
+    va_start(ap, msg);
+    vfprintf (stderr, msg, ap);
+    va_end(ap);
     fflush (stderr);
   }
 }
@@ -209,10 +214,10 @@ void CAML_INSTR_INIT (void)
   char *s;
 
   CAML_INSTR_STARTTIME = 0;
-  s = getenv ("OCAML_INSTR_START");
+  s = caml_secure_getenv ("OCAML_INSTR_START");
   if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
   CAML_INSTR_STOPTIME = LONG_MAX;
-  s = getenv ("OCAML_INSTR_STOP");
+  s = caml_secure_getenv ("OCAML_INSTR_STOP");
   if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
 }
 
@@ -223,7 +228,7 @@ void CAML_INSTR_ATEXIT (void)
   FILE *f = NULL;
   char *fname;
 
-  fname = getenv ("OCAML_INSTR_FILE");
+  fname = caml_secure_getenv ("OCAML_INSTR_FILE");
   if (fname != NULL){
     char *mode = "a";
     char buf [1000];
@@ -258,11 +263,11 @@ void CAML_INSTR_ATEXIT (void)
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, i), Get_time(p, i+1), p->tag[i+1]);
+                 (long) Get_time (p, i), (long) Get_time(p, i+1), p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, 0), Get_time(p, p->index), p->tag[0]);
+                 (long) Get_time (p, 0), (long) Get_time(p, p->index), p->tag[0]);
       }
     }
     fclose (f);

@@ -450,7 +450,7 @@ let pretty_precompiled_res first nexts =
 
 
 
-(* Identifing some semantically equivalent lambda-expressions,
+(* Identifying some semantically equivalent lambda-expressions,
    Our goal here is also to
    find alpha-equivalent (simple) terms *)
 
@@ -467,6 +467,7 @@ module StoreExp =
     (struct
       type t = lambda
       type key = lambda
+      let compare_key = Pervasives.compare
       let make_key = Lambda.make_key
     end)
 
@@ -570,7 +571,7 @@ let up_ok (ps,act_p) l =
 
 
 (*
-   Simplify fonction normalize the first column of the match
+   The simplify function normalizes the first column of the match
      - records are expanded so that they possess all fields
      - aliases are removed and replaced by bindings in actions.
    However or-patterns are simplified differently,
@@ -1786,7 +1787,7 @@ let rec do_make_string_test_tree loc arg sw delta d =
     bind_sw
       (Lprim
          (prim_string_compare,
-          [arg; Lconst (Const_immstring s)], loc;))
+          [arg; Lconst (Const_immstring s)], loc))
       (fun r ->
         tree_way_test loc r
           (do_make_string_test_tree loc arg lt delta d)
@@ -1829,12 +1830,12 @@ let share_actions_tree sw d =
   let d =
     match d with
     | None -> None
-    | Some d -> Some (store.Switch.act_store_shared d) in
+    | Some d -> Some (store.Switch.act_store_shared () d) in
 (* Store all other actions *)
   let sw =
-    List.map  (fun (cst,act) -> cst,store.Switch.act_store act) sw in
+    List.map  (fun (cst,act) -> cst,store.Switch.act_store () act) sw in
 
-(* Retrieve all actions, including potentiel default *)
+(* Retrieve all actions, including potential default *)
   let acts = store.Switch.act_get_shared () in
 
 (* Array of actual actions *)
@@ -1956,14 +1957,14 @@ let share_actions_sw sw =
   | None -> None
   | Some fail ->
       (* Fail is translated to exit, whatever happens *)
-      Some (store.Switch.act_store_shared fail) in
+      Some (store.Switch.act_store_shared () fail) in
   let consts =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_consts
   and blocks =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_blocks in
   let acts = store.Switch.act_get_shared () in
   let hs,handle_shared = handle_shared () in
@@ -2031,7 +2032,7 @@ let as_interval_canfail fail low high l =
 
   let do_store _tag act =
 
-    let i =  store.act_store act in
+    let i =  store.act_store () act in
 (*
     eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
@@ -2095,7 +2096,7 @@ let as_interval_nofail l =
     | [] ->
         [cur_low, cur_high, cur_act]
     | (i,act)::rem ->
-        let act_index = store.act_store act in
+        let act_index = store.act_store () act in
         if act_index = cur_act then
           i_rec cur_low i cur_act rem
         else
@@ -2105,13 +2106,13 @@ let as_interval_nofail l =
   | (i,act)::rem ->
       let act_index =
         (* In case there is some hole and that a switch is emitted,
-           action 0 will be used as the action of unreacheable
+           action 0 will be used as the action of unreachable
            cases (cf. switch.ml, make_switch).
            Hence, this action will be shared *)
         if some_hole rem then
-          store.act_store_shared act
+          store.act_store_shared () act
         else
-          store.act_store act in
+          store.act_store () act in
       assert (act_index = 0) ;
       i_rec i i act_index rem
   | _ -> assert false in
@@ -2335,9 +2336,8 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
             let tests =
               List.fold_right
                 (fun (path, act) rem ->
-                   Lifthenelse(Lprim(Pintcomp Ceq,
-                                     [Lvar tag;
-                                      transl_path ex_pat.pat_env path], loc),
+                   let ext = transl_extension_path ex_pat.pat_env path in
+                   Lifthenelse(Lprim(Pintcomp Ceq, [Lvar tag; ext], loc),
                                act, rem))
                 nonconsts
                 default
@@ -2346,8 +2346,8 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
       in
         List.fold_right
           (fun (path, act) rem ->
-             Lifthenelse(Lprim(Pintcomp Ceq,
-                               [arg; transl_path ex_pat.pat_env path], loc),
+             let ext = transl_extension_path ex_pat.pat_env path in
+             Lifthenelse(Lprim(Pintcomp Ceq, [arg; ext], loc),
                          act, rem))
           consts
           nonconst_lambda
@@ -2813,7 +2813,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    or lazy pattern execute arbitrary code that may perform side effects
    and change the subject values.
 LM:
-   Lazy pattern was PR #5992, initial patch by lwp25.
+   Lazy pattern was PR#5992, initial patch by lpw25.
    I have  generalized the patch, so as to also find mutable fields.
 *)
 
@@ -3100,7 +3100,7 @@ let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
 | Tpat_alias (p,_,_) -> (* Note: if this 'as' pat is here, then this is a
-                           useless binding, solves PR #3780 *)
+                           useless binding, solves PR#3780 *)
     flatten_pat_line size p k
 | _ -> fatal_error "Matching.flatten_pat_line"
 
@@ -3207,7 +3207,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   with Unused ->
     assert false (* ; partial_function loc () *)
 
-(* #PR4828: Believe it or not, the 'paraml' argument below
+(* PR#4828: Believe it or not, the 'paraml' argument below
    may not be side effect free. *)
 
 let param_to_var param = match param with

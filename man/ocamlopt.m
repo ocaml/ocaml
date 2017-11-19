@@ -252,6 +252,9 @@ Print the version number of
 .BR ocamlopt (1)
 and a detailed summary of its configuration, then exit.
 .TP
+.BI \-depend\ ocamldep-args
+Compute dependencies, as ocamldep would do.
+.TP
 .BI \-for\-pack \ module\-path
 Generate an object file (.cmx and .o files) that can later be included
 as a sub-module (with the given access path) of a compilation unit
@@ -330,7 +333,7 @@ Recognize file names ending with
 .I string
 as interface files (instead of the default .mli).
 .TP
-.B \-keep-locs
+.B \-keep-docs
 Keep documentation strings in generated .cmi files.
 .TP
 .B \-keep-locs
@@ -356,6 +359,12 @@ setting the
 .B \-linkall
 option ensures that this module will
 always be linked if it is put in a library and this library is linked.
+.TP
+.B \-linscan
+Use linear scan register allocation.  Compiling with this allocator is faster
+than with the usual graph coloring allocator, sometimes quite drastically so for
+long functions and modules. On the other hand, the generated code can be a bit
+slower.
 .TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
@@ -716,18 +725,6 @@ Generate position-independent machine code.  This is the default.
 .TP
 .B \-fno\-PIC
 Generate position-dependent machine code.
-
-.SH OPTIONS FOR THE SPARC ARCHITECTURE
-The Sparc code generator supports the following additional options:
-.TP
-.B \-march=v8
-Generate SPARC version 8 code.
-.TP
-.B \-march=v9
-Generate SPARC version 9 code.
-.P
-The default is to generate code for SPARC version 7, which runs on all
-SPARC processors.
 
 .SH OPTIONS FOR THE ARM ARCHITECTURE
 The ARM code generator supports the following additional options:

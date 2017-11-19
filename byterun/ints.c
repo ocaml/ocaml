@@ -25,10 +25,10 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 
-static char * parse_sign_and_base(char * p,
-                                  /*out*/ int * base,
-                                  /*out*/ int * signedness,
-                                  /*out*/ int * sign)
+static const char * parse_sign_and_base(const char * p,
+                                        /*out*/ int * base,
+                                        /*out*/ int * signedness,
+                                        /*out*/ int * sign)
 {
   *sign = 1;
   if (*p == '-') {
@@ -71,7 +71,7 @@ static int parse_digit(char c)
 
 static intnat parse_intnat(value s, int nbits, const char *errmsg)
 {
-  char * p;
+  const char * p;
   uintnat res, threshold;
   int sign, base, signedness, d;
 
@@ -501,13 +501,6 @@ value caml_int64_direct_bswap(value v)
 { return caml_swap64(v); }
 #endif
 
-/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
-#if defined(_MSC_VER) && _MSC_VER < 1400
-#define INT64_LITERAL(s) s ## i64
-#else
-#define INT64_LITERAL(s) s ## LL
-#endif
-
 CAMLprim value caml_int64_bswap(value v)
 {
   int64_t x = Int64_val(v);
@@ -572,7 +565,7 @@ CAMLprim value caml_int64_format(value fmt, value arg)
 
 CAMLprim value caml_int64_of_string(value s)
 {
-  char * p;
+  const char * p;
   uint64_t res, threshold;
   int sign, base, signedness, d;
 

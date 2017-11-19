@@ -29,6 +29,17 @@ let passed = output "passed"
 let failed = output "failed"
 ;;
 
+let buffer_truncate = "Buffer.truncate"
+
+let unexpected str =
+  Printf.sprintf "The Invalid_argument exception has been raised with an \
+    invalid value as argument \"%s\". Expecting \"%s\"."
+    str buffer_truncate
+
+let validate f str msg =
+  if str=buffer_truncate then f msg
+  else failed (unexpected str)
+
 (* Tests *)
 let () = print_string "Standard Library: Module Buffer\n"
 ;;
@@ -39,8 +50,7 @@ let truncate_neg : unit =
     Buffer.truncate buf (-1);
     failed msg
   with
-    Invalid_argument "Buffer.truncate" ->
-      passed msg
+    Invalid_argument str -> validate passed str msg
 ;;
 
 let truncate_large : unit =
@@ -49,8 +59,7 @@ let truncate_large : unit =
     Buffer.truncate buf (n+1);
     failed msg
   with
-    Invalid_argument "Buffer.truncate" ->
-      passed msg
+    Invalid_argument str -> validate passed str msg
 ;;
 
 let truncate_correct : unit =
@@ -63,8 +72,7 @@ let truncate_correct : unit =
     else
       failed msg
   with
-    Invalid_argument "Buffer.truncate" ->
-      failed msg
+    Invalid_argument str -> validate failed str msg
 ;;
 
 let reset_non_zero : unit =

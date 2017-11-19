@@ -38,12 +38,14 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
 
   CAMLassert (tag < 256);
   CAMLassert (tag != Infix_tag);
-  if (wosize == 0){
-    result = Atom (tag);
-  }else if (wosize <= Max_young_wosize){
-    Alloc_small (result, wosize, tag);
-    if (tag < No_scan_tag){
-      for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0){
+      result = Atom (tag);
+    }else{
+      Alloc_small (result, wosize, tag);
+      if (tag < No_scan_tag){
+        for (i = 0; i < wosize; i++) Field (result, i) = Val_unit;
+      }
     }
   }else{
     result = caml_alloc_shr (wosize, tag);
@@ -108,6 +110,14 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   return result;
 }
 
+/* [len] is a number of bytes (chars) */
+CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
+{
+  value result = caml_alloc_string (len);
+  memcpy((char *)String_val(result), p, len);
+  return result;
+}
+
 /* [len] is a number of words.
    [mem] and [max] are relative (without unit).
 */
@@ -124,8 +134,7 @@ CAMLexport value caml_copy_string(char const *s)
   value res;
 
   len = strlen(s);
-  res = caml_alloc_string(len);
-  memmove(String_val(res), s, len);
+  res = caml_alloc_initialized_string(len, s);
   return res;
 }
 
@@ -138,38 +147,39 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
 
   nbr = 0;
   while (arr[nbr] != 0) nbr++;
-  if (nbr == 0) {
-    CAMLreturn (Atom(0));
-  } else {
-    result = caml_alloc (nbr, 0);
-    for (n = 0; n < nbr; n++) {
-      /* The two statements below must be separate because of evaluation
-         order (don't take the address &Field(result, n) before
-         calling funct, which may cause a GC and move result). */
-      v = funct(arr[n]);
-      caml_modify(&Field(result, n), v);
-    }
-    CAMLreturn (result);
+  result = caml_alloc (nbr, 0);
+  for (n = 0; n < nbr; n++) {
+    /* The two statements below must be separate because of evaluation
+       order (don't take the address &Field(result, n) before
+       calling funct, which may cause a GC and move result). */
+    v = funct(arr[n]);
+    caml_modify(&Field(result, n), v);
   }
+  CAMLreturn (result);
 }
 
 /* [len] is a number of floats */
 CAMLprim value caml_alloc_float_array(mlsize_t len)
 {
+#ifdef FLAT_FLOAT_ARRAY
   mlsize_t wosize = len * Double_wosize;
   value result;
   /* For consistency with [caml_make_vect], which can't tell whether it should
      create a float array or not when the size is zero, the tag is set to
      zero when the size is zero. */
-  if (wosize == 0)
-    return Atom(0);
-  else if (wosize <= Max_young_wosize){
-    Alloc_small (result, wosize, Double_array_tag);
+  if (wosize <= Max_young_wosize){
+    if (wosize == 0)
+      return Atom(0);
+    else
+      Alloc_small (result, wosize, Double_array_tag);
   }else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
   }
   return result;
+#else
+  return caml_alloc (len, 0);
+#endif
 }
 
 
@@ -195,8 +205,6 @@ CAMLexport int caml_convert_flag_list(value list, int *flags)
 CAMLprim value caml_alloc_dummy(value size)
 {
   mlsize_t wosize = Long_val(size);
-
-  if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
 }
 
@@ -211,8 +219,6 @@ CAMLprim value caml_alloc_dummy_function(value size,value arity)
 CAMLprim value caml_alloc_dummy_float (value size)
 {
   mlsize_t wosize = Long_val(size) * Double_wosize;
-
-  if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
 }
 
@@ -230,7 +236,7 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   if (tag == Double_array_tag){
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++){
-      Store_double_field (dummy, i, Double_field (newval, i));
+      Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
   }else{
     for (i = 0; i < size; i++){

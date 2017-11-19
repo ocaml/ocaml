@@ -14,7 +14,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Loop.html">Loop</a></h1>
 
-<pre><span class="keyword">module</span> Loop: <code class="code"><span class="keyword">sig</span></code> <a href="Loop.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
+<pre><span id="MODULELoop"><span class="keyword">module</span> Loop</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Loop.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><hr width="100%">
 
-<pre><span class="keyword">module</span> <a href="Loop.A.html">A</a>: <code class="type"><a href="Loop.B.html">B</a></code></pre>
-<pre><span class="keyword">module</span> <a href="Loop.B.html">B</a>: <code class="type"><a href="Loop.A.html">A</a></code></pre></body></html>
+<pre><span id="MODULEA"><span class="keyword">module</span> <a href="Loop.A.html">A</a></span>: <code class="type"><a href="Loop.B.html">B</a></code></pre>
+<pre><span id="MODULEB"><span class="keyword">module</span> <a href="Loop.B.html">B</a></span>: <code class="type"><a href="Loop.A.html">A</a></code></pre></body></html>

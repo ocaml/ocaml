@@ -526,6 +526,7 @@ let emit_instr i =
         assert (i.arg.(2).loc = i.res.(0).loc);
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
+    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         let n = frame_size() in
         `	lg	%r14, {emit_int(n - size_addr)}(%r15)\n`
@@ -735,10 +736,11 @@ let end_assembly() =
   `	.align	8\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
+  `	.quad	0\n`;  (* PR#6329 *)
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
   (* Emit the frame descriptors *)
-  emit_string rodata_space;
+  emit_string data_space;  (* not rodata because relocations inside *)
   `	.align	8\n`;
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;

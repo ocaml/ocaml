@@ -36,7 +36,11 @@
 #include "caml/sys.h"
 #include "caml/spacetime.h"
 
-#include "../config/s.h"
+#include "caml/s.h"
+
+#define SPACETIME_PROFINFO_WIDTH 26
+#define Spacetime_profinfo_hd(hd) \
+  (Gen_profinfo_hd(SPACETIME_PROFINFO_WIDTH, hd))
 
 #ifdef ARCH_SIXTYFOUR
 
@@ -127,7 +131,7 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
 {
   uintnat profinfo_shifted;
   profinfo_shifted = (uintnat) Alloc_point_profinfo(node, Long_val(offset));
-  return Val_long(Profinfo_hd(profinfo_shifted));
+  return Val_long(Spacetime_profinfo_hd(profinfo_shifted));
 }
 
 CAMLprim value caml_spacetime_ocaml_allocation_point_count
@@ -142,6 +146,12 @@ CAMLprim value caml_spacetime_ocaml_direct_call_point_callee_node
       (value node, value offset)
 {
   return Direct_callee_node(node, Long_val(offset));
+}
+
+CAMLprim value caml_spacetime_ocaml_direct_call_point_call_count
+(value node, value offset)
+{
+  return Direct_call_count(node, Long_val(offset));
 }
 
 CAMLprim value caml_spacetime_ocaml_indirect_call_point_callees
@@ -197,10 +207,23 @@ CAMLprim value caml_spacetime_c_node_callee_node(value node)
   /* This might be an uninitialised tail call point: for example if an OCaml
      callee was indirectly called but the callee wasn't instrumented (e.g. a
      leaf function that doesn't allocate). */
-  if (Is_tail_caller_node_encoded(c_node->data.callee_node)) {
+  if (Is_tail_caller_node_encoded(c_node->data.call.callee_node)) {
     return Val_unit;
   }
-  return c_node->data.callee_node;
+  return c_node->data.call.callee_node;
+}
+
+CAMLprim value caml_spacetime_c_node_call_count(value node)
+{
+  c_node* c_node;
+  CAMLassert(node != (value) NULL);
+  CAMLassert(Is_c_node(node));
+  c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
+  CAMLassert(caml_spacetime_offline_classify_c_node(c_node) == CALL);
+  if (Is_tail_caller_node_encoded(c_node->data.call.callee_node)) {
+    return Val_long(0);
+  }
+  return c_node->data.call.call_count;
 }
 
 CAMLprim value caml_spacetime_c_node_profinfo(value node)
@@ -211,7 +234,7 @@ CAMLprim value caml_spacetime_c_node_profinfo(value node)
   c_node = caml_spacetime_offline_c_node_of_stored_pointer_not_null(node);
   CAMLassert(caml_spacetime_offline_classify_c_node(c_node) == ALLOCATION);
   CAMLassert(!Is_block(c_node->data.allocation.profinfo));
-  return Val_long(Profinfo_hd(c_node->data.allocation.profinfo));
+  return Val_long(Spacetime_profinfo_hd(c_node->data.allocation.profinfo));
 }
 
 CAMLprim value caml_spacetime_c_node_allocation_count(value node)

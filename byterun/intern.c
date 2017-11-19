@@ -266,7 +266,7 @@ static void intern_free_stack(void)
 /* Same, then raise Out_of_memory */
 static void intern_stack_overflow(void)
 {
-  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n", 0);
+  caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
   intern_free_stack();
   caml_raise_out_of_memory();
 }
@@ -400,7 +400,7 @@ static void intern_rec(value *dest)
       Field(v, size - 1) = 0;
       ofs_ind = Bsize_wsize(size) - 1;
       Byte(v, ofs_ind) = ofs_ind - len;
-      readblock(String_val(v), len);
+      readblock((char *)String_val(v), len);
     } else {
       switch(code) {
       case CODE_INT8:
@@ -570,7 +570,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     return;
   }
   wosize = Wosize_whsize(whsize);
-  if (wosize > Max_wosize || outside_heap) {
+  if (outside_heap || wosize > Max_wosize) {
     /* Round desired size up to next page */
     asize_t request =
       ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
@@ -585,10 +585,12 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects,
     CAMLassert (intern_block == 0);
   } else {
     /* this is a specialised version of caml_alloc from alloc.c */
-    if (wosize == 0){
-      intern_block = Atom (String_tag);
-    }else if (wosize <= Max_young_wosize){
-      intern_block = caml_alloc_small (wosize, String_tag);
+    if (wosize <= Max_young_wosize){
+      if (wosize == 0){
+        intern_block = Atom (String_tag);
+      } else {
+        intern_block = caml_alloc_small (wosize, String_tag);
+      }
     }else{
       intern_block = caml_alloc_shr_no_raise (wosize, String_tag);
       /* do not do the urgent_gc check here because it might darken

@@ -26,7 +26,7 @@ open Btype
    If one wants to manipulate a type after type inference (for
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
-   function [correct_levels]. Then, this type can be correctely
+   function [correct_levels]. Then, this type can be correctly
    manipulated by [apply], [expand_head] and [moregeneral].
 *)
 
@@ -699,7 +699,7 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s, n))
       | _ -> p
 
-let rec update_level env level ty =
+let rec update_level env level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
     begin match Env.gadt_instance_level env ty with
@@ -712,22 +712,30 @@ let rec update_level env level ty =
         begin try
           (* if is_newtype env p then raise Cannot_expand; *)
           link_type ty (!forward_try_expand_once env ty);
-          update_level env level ty
+          update_level env level expand ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
           (* Format.printf "update_level: %i < %i@." level (get_level env p); *)
           if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
-          iter_type_expr (update_level env level) ty
+          iter_type_expr (update_level env level expand) ty
         end
+    | Tconstr(_, _ :: _, _) when expand ->
+        begin try
+          link_type ty (!forward_try_expand_once env ty);
+          update_level env level expand ty
+        with Cannot_expand ->
+          set_level ty level;
+          iter_type_expr (update_level env level expand) ty
+        end          
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
-        update_level env level ty
+        update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
       when level < get_level env p ->
         set_name nm None;
-        update_level env level ty
+        update_level env level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
@@ -737,14 +745,27 @@ let rec update_level env level ty =
         | _ -> ()
         end;
         set_level ty level;
-        iter_type_expr (update_level env level) ty
+        iter_type_expr (update_level env level expand) ty
     | Tfield(lab, _, ty1, _)
       when lab = dummy_method && (repr ty1).level > level ->
         raise (Unify [(ty1, newvar2 level)])
     | _ ->
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
-        iter_type_expr (update_level env level) ty
+        iter_type_expr (update_level env level expand) ty
+  end
+
+(* First try without expanding, then expand everything,
+   to avoid combinatorial blow-up *)
+let update_level env level ty =
+  let ty = repr ty in
+  if ty.level > level then begin
+    let snap = snapshot () in
+    try
+      update_level env level false ty
+    with Unify _ ->
+      backtrack snap;
+      update_level env level true ty
   end
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
@@ -974,7 +995,7 @@ let rec copy ?env ?partial ?keep_names ty =
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
-              let keep = more.level <> generic_level in
+              let keep = more.level <> generic_level && partial = None in
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
@@ -1194,7 +1215,7 @@ let instance_class params cty =
   cleanup_types ();
   (params', cty')
 
-(**** Instanciation for types with free universal variables ****)
+(**** Instantiation for types with free universal variables ****)
 
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
@@ -1315,9 +1336,9 @@ let subst env level priv abbrev ty params args body =
     raise exn
 
 (*
-   Only the shape of the type matters, not whether is is generic or
+   Only the shape of the type matters, not whether it is generic or
    not. [generic_level] might be somewhat slower, but it ensures
-   invariants on types are enforced (decreasing levels.), and we don't
+   invariants on types are enforced (decreasing levels), and we don't
    care about efficiency here.
 *)
 let apply env params body args =
@@ -1326,16 +1347,17 @@ let apply env params body args =
   with
     Unify _ -> raise Cannot_apply
 
+let () = Subst.ctype_apply_env_empty := apply Env.empty
 
                               (****************************)
                               (*  Abbreviation expansion  *)
                               (****************************)
 
 (*
-   If the environnement has changed, memorized expansions might not
+   If the environment has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overridden in the environnement.
+   type or module definition is overridden in the environment.
 *)
 let previous_env = ref Env.empty
 (*let string_of_kind = function Public -> "public" | Private -> "private"*)
@@ -1397,12 +1419,6 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* prerr_endline
               ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
             let ty' = subst env level kind abbrev (Some ty) params args body in
-            (* Hack to name the variant type *)
-            begin match repr ty' with
-              {desc=Tvariant row} as ty when static_row row ->
-                ty.desc <- Tvariant { row with row_name = Some (path, args) }
-            | _ -> ()
-            end;
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
             if !trace_gadt_instances then begin
@@ -1700,8 +1716,8 @@ let rec unify_univar t1 t2 = function
       end
   | [] -> raise (Unify [])
 
-(* Test the occurence of free univars in a type *)
-(* that's way too expansive. Must do some kind of cacheing *)
+(* Test the occurrence of free univars in a type *)
+(* that's way too expensive. Must do some kind of caching *)
 let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
@@ -1866,7 +1882,7 @@ let deep_occur t0 ty =
       types are kept distincts, but they are made to (temporally)
       expand to the same type.
    2. Abbreviations with at least one parameter are systematically
-      expanded. The overhead does not seem to high, and that way
+      expanded. The overhead does not seem too high, and that way
       abbreviations where some parameters does not appear in the
       expansion, such as ['a t = int], are correctly handled. In
       particular, for this example, unifying ['a t] with ['b t] keeps
@@ -2275,7 +2291,7 @@ let unify_package env unify_list lv1 p1 n1 tl1 lv2 p2 n2 tl2 =
   && !package_subtype env p2 n2 tl2 p1 n1 tl1 then () else raise Not_found
 
 
-(* force unification in Reither when one side has as non-conjunctive type *)
+(* force unification in Reither when one side has a non-conjunctive type *)
 let rigid_variants = ref false
 
 (* drop not force unification in Reither, even in fixed case
@@ -2669,7 +2685,7 @@ and unify_row env row1 row2 =
     end;
     (* The following test is not principal... should rather use Tnil *)
     let rm = row_more row in
-    if !trace_gadt_instances && rm.desc = Tnil then () else
+    (*if !trace_gadt_instances && rm.desc = Tnil then () else*)
     if !trace_gadt_instances then
       update_level !env rm.level (newgenty (Tvariant row));
     if row_fixed row then
@@ -2691,6 +2707,10 @@ and unify_row env row1 row2 =
           raise (Unify ((mkvariant [l,f1] true,
                          mkvariant [l,f2] true) :: trace)))
       pairs;
+    if static_row row1 then begin
+      let rm = row_more row1 in
+      if is_Tvar rm then link_type rm (newty2 rm.level Tnil)
+    end
   with exn ->
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
@@ -3104,10 +3124,10 @@ let moregen inst_nongen type_pairs env patt subj =
   moregen inst_nongen type_pairs env patt subj
 
 (*
-   Non-generic variable can be instanciated only if [inst_nongen] is
+   Non-generic variable can be instantiated only if [inst_nongen] is
    true. So, [inst_nongen] should be set to false if the subject might
    contain non-generic variables (and we do not want them to be
-   instanciated).
+   instantiated).
    Usually, the subject is given by the user, and the pattern
    is unimportant.  So, no need to propagate abbreviations.
 *)
@@ -3769,8 +3789,8 @@ let rec build_subtype env visited loops posi level t =
                 ty1, tl1
             | _ -> raise Not_found
           in
-          (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
-             as this occurence might break the occur check.
+          (* Fix PR#4505: do not set ty to Tvar when it appears in tl1,
+             as this occurrence might break the occur check.
              XXX not clear whether this correct anyway... *)
           if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar None;
@@ -4038,7 +4058,7 @@ and subtype_fields env trace ty1 ty2 cstrs =
   in
   List.fold_left
     (fun cstrs (_, _k1, t1, _k2, t2) ->
-      (* Theses fields are always present *)
+      (* These fields are always present *)
       subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
     cstrs pairs
 
@@ -4205,7 +4225,15 @@ let rec normalize_type_rec env visited ty =
   let ty = repr ty in
   if not (TypeSet.mem ty !visited) then begin
     visited := TypeSet.add ty !visited;
-    begin match ty.desc with
+    let tm = row_of_type ty in
+    begin if not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm then
+      match tm.desc with (* PR#7348 *)
+        Tconstr (Path.Pdot(m,i,pos), tl, _abbrev) ->
+          let i' = String.sub i 0 (String.length i - 4) in
+          log_type ty;
+          ty.desc <- Tconstr(Path.Pdot(m,i',pos), tl, ref Mnil)
+      | _ -> assert false
+    else match ty.desc with
     | Tvariant row ->
       let row = row_repr row in
       let fields = List.map
@@ -4491,7 +4519,7 @@ let nondep_cltype_declaration env id decl =
   clear_hash ();
   decl
 
-(* collapse conjonctive types in class parameters *)
+(* collapse conjunctive types in class parameters *)
 let rec collapse_conj env visited ty =
   let ty = repr ty in
   if List.memq ty visited then () else

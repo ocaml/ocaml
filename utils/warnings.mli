@@ -13,10 +13,16 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+  | Deprecated of string * loc * loc        (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -38,7 +44,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -80,6 +86,8 @@ type t =
 
 val parse_options : bool -> string -> unit;;
 
+val without_warnings : (unit -> 'a) -> 'a
+
 val is_active : t -> bool;;
 val is_error : t -> bool;;
 
@@ -90,6 +98,7 @@ type reporting_information =
   { number : int
   ; message : string
   ; is_error : bool
+  ; sub_locs : (loc * string) list;
   }
 
 val report : t -> [ `Active of reporting_information | `Inactive ]
@@ -104,3 +113,6 @@ val help_warnings: unit -> unit
 type state
 val backup: unit -> state
 val restore: state -> unit
+val mk_lazy: (unit -> 'a) -> 'a Lazy.t
+    (** Like [Lazy.of_fun], but the function is applied with
+        the warning settings at the time [mk_lazy] is called. *)

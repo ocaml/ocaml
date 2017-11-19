@@ -372,7 +372,9 @@ try
 
   printf "\nB\n%!";
   test (sprintf "%B" true = "true");
+  test (sprintf "%8B" true = "    true");
   test (sprintf "%B" false = "false");
+  test (sprintf "%-8B" false = "false   ");
 
   printf "\nld/li positive\n%!";
   test (sprintf "%ld/%li" 42l 43l = "42/43");

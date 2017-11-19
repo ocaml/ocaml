@@ -15,14 +15,12 @@
 
 (** Ephemerons and weak hash table *)
 
-(** Ephemerons and weak hash table
-
-    Ephemerons and weak hash table are useful when one wants to cache
+(** Ephemerons and weak hash table are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
     useful anymore because one argument or the function is freed. An
-    implementation using {Hashtbl.t} is not suitable because all
+    implementation using {!Hashtbl.t} is not suitable because all
     associations would keep in memory the arguments and the result.
 
     Ephemerons can also be used for "adding" a field to an arbitrary
@@ -164,7 +162,7 @@ module K1 : sig
   *)
 
   val unset_data: ('k,'d) t -> unit
-  (** [Ephemeron.K1.unset_key eph el] sets the key of [eph] to be an
+  (** [Ephemeron.K1.unset_data eph el] sets the key of [eph] to be an
       empty key. The ephemeron starts behaving like a weak pointer.
   *)
 
@@ -219,7 +217,7 @@ module K2 : sig
   (** Same as {!Ephemeron.K1.get_key_copy} *)
 
   val set_key2: ('k1,'k2,'d) t -> 'k2 -> unit
-  (** Same as {!Ephemeron.K1.get_key} *)
+  (** Same as {!Ephemeron.K1.set_key} *)
 
   val unset_key2: ('k1,'k2,'d) t -> unit
   (** Same as {!Ephemeron.K1.unset_key} *)
@@ -358,10 +356,10 @@ module GenHashTable: sig
     (** [get_key cont] returns the keys if they are all alive *)
 
     val get_data: 'a container -> 'a option
-    (** [get_data cont] return the data if it is alive *)
+    (** [get_data cont] returns the data if it is alive *)
 
     val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modify the key and data *)
+    (** [set_key_data cont] modifies the key and data *)
 
     val check_key: 'a container -> bool
     (** [check_key cont] checks if all the keys contained in the data

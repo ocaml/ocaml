@@ -23,7 +23,6 @@
 #include "caml/exec.h"
 
 #ifndef __MINGW32__
-#pragma comment(linker , "/entry:headerentry")
 #pragma comment(linker , "/subsystem:console")
 #pragma comment(lib , "kernel32")
 #ifdef _UCRT
@@ -88,22 +87,38 @@ static BOOL WINAPI ctrl_handler(DWORD event)
     return FALSE;
 }
 
-#define msg_and_length(msg) msg , (sizeof(msg) - 1)
+#if WINDOWS_UNICODE
+#define CP CP_UTF8
+#else
+#define CP CP_THREAD_ACP
+#endif
 
-static __inline void __declspec(noreturn) run_runtime(char * runtime,
-         char * const cmdline)
+static void write_console(HANDLE hOut, WCHAR *wstr)
 {
-  char path[MAX_PATH];
+  DWORD consoleMode, numwritten, len;
+  static char str[MAX_PATH];
+
+  if (GetConsoleMode(hOut, &consoleMode) != 0) { /* The output stream is a Console */
+    WriteConsole(hOut, wstr, wcslen(wstr), &numwritten, NULL);
+  } else { /* The output stream is redirected */
+    len = WideCharToMultiByte(CP, 0, wstr, wcslen(wstr), str, sizeof(str), NULL, NULL);
+    WriteFile(hOut, str, len, &numwritten, NULL);
+  }
+}
+
+static __inline void __declspec(noreturn) run_runtime(wchar_t * runtime,
+         wchar_t * const cmdline)
+{
+  wchar_t path[MAX_PATH];
   STARTUPINFO stinfo;
   PROCESS_INFORMATION procinfo;
   DWORD retcode;
-  if (SearchPath(NULL, runtime, ".exe", MAX_PATH, path, &runtime) == 0) {
+  if (SearchPath(NULL, runtime, L".exe", sizeof(path)/sizeof(wchar_t), path, &runtime) == 0) {
     HANDLE errh;
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
-    WriteFile(errh, runtime, strlen(runtime), &numwritten, NULL);
-    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    write_console(errh, L"Cannot exec ");
+    write_console(errh, runtime);
+    write_console(errh, L"\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
@@ -123,11 +138,10 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
   if (!CreateProcess(path, cmdline, NULL, NULL, TRUE, 0, NULL, NULL,
                      &stinfo, &procinfo)) {
     HANDLE errh;
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WriteFile(errh, msg_and_length("Cannot exec "), &numwritten, NULL);
-    WriteFile(errh, runtime, strlen(runtime), &numwritten, NULL);
-    WriteFile(errh, msg_and_length("\r\n"), &numwritten, NULL);
+    write_console(errh, L"Cannot exec ");
+    write_console(errh, runtime);
+    write_console(errh, L"\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
@@ -143,36 +157,31 @@ static __inline void __declspec(noreturn) run_runtime(char * runtime,
 #endif
 }
 
-#ifdef __MINGW32__
-int main()
-#else
-void __declspec(noreturn) __cdecl headerentry()
-#endif
+int wmain(void)
 {
-  char truename[MAX_PATH];
-  char * cmdline = GetCommandLine();
+  wchar_t truename[MAX_PATH];
+  wchar_t * cmdline = GetCommandLine();
   char * runtime_path;
+  wchar_t wruntime_path[MAX_PATH];
   HANDLE h;
 
-  GetModuleFileName(NULL, truename, sizeof(truename));
+  GetModuleFileName(NULL, truename, sizeof(truename)/sizeof(wchar_t));
   h = CreateFile(truename, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
                  NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE ||
       (runtime_path = read_runtime_path(h)) == NULL) {
     HANDLE errh;
-    DWORD numwritten;
     errh = GetStdHandle(STD_ERROR_HANDLE);
-    WriteFile(errh, truename, strlen(truename), &numwritten, NULL);
-    WriteFile(errh, msg_and_length(" not found or is not a bytecode"
-                                   " executable file\r\n"),
-              &numwritten, NULL);
+    write_console(errh, truename);
+    write_console(errh, L" not found or is not a bytecode executable file\r\n");
     ExitProcess(2);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
 #endif
   }
   CloseHandle(h);
-  run_runtime(runtime_path , cmdline);
+  MultiByteToWideChar(CP, 0, runtime_path, -1, wruntime_path, sizeof(wruntime_path)/sizeof(wchar_t));
+  run_runtime(wruntime_path , cmdline);
 #if _MSC_VER >= 1200
     __assume(0); /* Not reached */
 #endif

@@ -83,10 +83,12 @@ Read additional newline-terminated command line arguments from \var{filename}.
 \notop{\item["-bin-annot"]
 Dump detailed information about the compilation (types, bindings,
 tail-calls, etc) in binary format. The information for file \var{src}".ml"
-is put into file \var{src}".cmt".  In case of a type error, dump
+(resp. \var{src}".mli") is put into file \var{src}".cmt"
+(resp. \var{src}".cmti").  In case of a type error, dump
 all the information inferred by the type-checker before the error.
-The "*.cmt" files produced by "-bin-annot" contain more information
-and are much more compact than the files produced by "-annot".
+The "*.cmt" and "*.cmti" files produced by "-bin-annot" contain
+more information and are much more compact than the files produced by
+"-annot".
 }%notop
 
 \notop{\item["-c"]
@@ -169,7 +171,17 @@ chapter~\ref{c:intf-c}.
 Never use the "strip" command on executables produced by "ocamlc -custom",
 this would remove the bytecode part of the executable.
 \end{unix}
+\begin{unix}
+Security warning: never set the ``setuid'' or ``setgid'' bits on executables
+produced by "ocamlc -custom", this would make them vulnerable to attacks.
+\end{unix}
 }%comp
+
+\notop{%
+\item["-depend" \var{ocamldep-args}]
+Compute dependencies, as the "ocamldep" command would do. The remaining
+arguments are interpreted as if they were given to the "ocamldep" command.
+}%notop
 
 \comp{
 \item["-dllib" "-l"\var{libname}]
@@ -235,8 +247,8 @@ current directory, in the order in which they were given on the command line,
 but before the standard library directory. See also option "-nostdlib".
 
 If the given directory starts with "+", it is taken relative to the
-standard library directory.  For instance, "-I +labltk" adds the
-subdirectory "labltk" of the standard library to the search path.
+standard library directory.  For instance, "-I +unix" adds the
+subdirectory "unix" of the standard library to the search path.
 
 \top{%
 Directories can also be added to the list once
@@ -295,6 +307,14 @@ modules contained in the library.  When compiling a module (option
 "-c"), setting the "-linkall" option ensures that this module will
 always be linked if it is put in a library and this library is linked.
 }%notop
+
+\nat{%
+\item["-linscan"]
+Use linear scan register allocation.  Compiling with this allocator is faster
+than with the usual graph coloring allocator, sometimes quite drastically so for
+long functions and modules. On the other hand, the generated code can be a bit
+slower.
+}%nat
 
 \comp{%
 \item["-make-runtime"]
@@ -535,8 +555,10 @@ errors, the intermediate file is deleted afterwards.
 \item["-ppx" \var{command}]
 After parsing, pipe the abstract syntax tree through the preprocessor
 \var{command}. The module "Ast_mapper", described in
-chapter~\ref{Ast-underscoremapper}, implements the external interface
-of a preprocessor.
+\ifouthtml
+chapter~\ref{c:parsinglib}: \ahref{libref/Ast\_mapper.html}{ \texttt{Ast_mapper} }
+\else section~\ref{Ast-underscoremapper}\fi,
+implements the external interface of a preprocessor.
 
 \item["-principal"]
 Check information path during type-checking, to make sure that all
@@ -731,7 +753,7 @@ that are currently defined are ignored. The warnings are as follows.
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
+The default setting is "-w +a-4-6-7-9-27-29-32..42-44-45-48-50-60".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.

@@ -187,7 +187,7 @@ Match any single character not belonging to the given character set.
 \item[@regexp_1 '#' regexp_2@]
 (difference of character sets)
 Regular expressions @regexp_1@ and @regexp_2@ must be character sets
-defined with @'['\ldots ']'@ (or a a single character expression or
+defined with @'['\ldots ']'@ (or a single character expression or
 underscore "_").
 Match the difference of the two specified character sets.
 

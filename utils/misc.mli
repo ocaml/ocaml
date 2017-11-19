@@ -90,6 +90,13 @@ module Stdlib : sig
     val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val value_default : ('a -> 'b) -> default:'b -> 'a t -> 'b
   end
+
+  module Array : sig
+    val exists2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
+    (* Same as [Array.exists], but for a two-argument predicate. Raise
+       Invalid_argument if the two arrays are determined to have
+       different lengths. *)
+  end
 end
 
 val find_in_path: string list -> string -> string
@@ -120,6 +127,15 @@ val copy_file_chunk: in_channel -> out_channel -> int -> unit
 val string_of_file: in_channel -> string
         (* [string_of_file ic] reads the contents of file [ic] and copies
            them to a string. It stops when encountering EOF on [ic]. *)
+val output_to_file_via_temporary:
+      ?mode:open_flag list -> string -> (string -> out_channel -> 'a) -> 'a
+        (* Produce output in temporary file, then rename it
+           (as atomically as possible) to the desired output file name.
+           [output_to_file_via_temporary filename fn] opens a temporary file
+           which is passed to [fn] (name + output channel).  When [fn] returns,
+           the channel is closed and the temporary file is renamed to
+           [filename]. *)
+
 val log2: int -> int
         (* [log2 n] returns [s] such that [n = 1 lsl s]
            if [n] is a power of 2*)
@@ -298,9 +314,9 @@ val delete_eol_spaces : string -> string
 
 
 
-(** {2 Hook machinery} *)
+(** {1 Hook machinery}
 
-(* Hooks machinery:
+    Hooks machinery:
    [add_hook name f] will register a function that will be called on the
     argument of a later call to [apply_hooks]. Hooks are applied in the
     lexicographical order of their names.

@@ -33,14 +33,10 @@ val transl_primitive: Location.t -> Primitive.description -> Env.t
 val transl_extension_constructor: Env.t -> Path.t option ->
   extension_constructor -> lambda
 
-val check_recursive_lambda: Ident.t list -> lambda -> bool
-
 val used_primitives: (Path.t, Location.t) Hashtbl.t
 
 type error =
-    Illegal_letrec_pat
-  | Illegal_letrec_expr
-  | Free_super_var
+    Free_super_var
   | Unknown_builtin_primitive of string
   | Unreachable_reached
 

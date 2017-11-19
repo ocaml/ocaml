@@ -142,11 +142,6 @@ Opens the given module before starting the toplevel. If several
 options are given, they are processed in order, just as if
 the statements open! module1;; ... open! moduleN;; were input.
 .TP
-.BI \-plugin \ plugin
-Dynamically load the code of the given
-.I plugin
-(a .cmo or .cma file) in the toplevel.
-.TP
 .BI \-ppx \ command
 After parsing, pipe the abstract syntax tree through the preprocessor
 .IR command .
@@ -279,10 +274,11 @@ directive to read phrases from a file.
 
 .SH ENVIRONMENT VARIABLES
 .TP
-.B LC_CTYPE
-If set to iso_8859_1, accented characters (from the
-ISO Latin-1 character set) in string and character literals are
-printed as is; otherwise, they are printed as decimal escape sequences.
+.B OCAMLTOP_UTF_8
+When printing string values, non-ascii bytes (>0x7E) are printed as
+decimal escape sequence if
+.B OCAMLTOP_UTF_8
+is set to false. Otherwise they are printed unescaped.
 .TP
 .B TERM
 When printing error messages, the toplevel system

@@ -115,7 +115,6 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
   let _open s = open_modules := s :: !open_modules
-  let _plugin p = Compplugin.load p
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
   let _no_principal = clear principal
@@ -144,7 +143,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dflambda = set dump_flambda
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
   let _dinstr = set dump_instr
 
   let _args = wrap_expand Arg.read_arg
@@ -167,4 +167,5 @@ let main () =
   end;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
+  Compmisc.init_path false;
   Toploop.loop Format.std_formatter

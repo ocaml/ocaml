@@ -122,8 +122,13 @@ development work, not in released packages.
 
 \begin{options}
 \item["OCAMLPARAM" \rm(environment variable)]
-Arguments that will be inserted before or after the arguments from the
-command line.
+A set of arguments that will be inserted before or after the arguments from
+the command line. Arguments are specified in a comma-separated list
+of "name=value" pairs. A "_" is used to specify the position of
+the command line arguments, i.e. "a=x,_,b=y" means that "a=x" should be
+executed before parsing the arguments, and "b=y" after. Finally,
+an alternative separator can be specified as the
+first character of the string, within the set ":|; ,".
 \item["ocaml_compiler_internal_params" \rm(file in the stdlib directory)]
 A mapping of file names to lists of arguments that
 will be added to the command line (and "OCAMLPARAM") arguments.
@@ -458,7 +463,7 @@ match int_of_string count_str with
 \end{verbatim}
 
 The only case where that transformation is not possible is if a given
-function call may raises distinct exceptions with the same constructor
+function call may raise distinct exceptions with the same constructor
 but different string values. In this case, you will have to check for
 specific string values. This is dangerous API design and it should be
 discouraged: it's better to define more precise exception constructors

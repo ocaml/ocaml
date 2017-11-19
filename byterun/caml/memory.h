@@ -74,7 +74,7 @@ CAMLextern int caml_huge_fallback_count;
 */
 typedef void* caml_stat_block;
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* The pool must be initialized with a call to [caml_stat_create_pool]
    before it is possible to use any of the [caml_stat_*] functions below.
@@ -94,7 +94,7 @@ CAMLextern void caml_stat_create_pool(void);
 */
 CAMLextern void caml_stat_destroy_pool(void);
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 /* [caml_stat_alloc(size)] allocates a memory block of the requested [size]
    (in bytes) and returns a pointer to it. It throws an OCaml exception in case
@@ -156,6 +156,9 @@ typedef char* caml_stat_string;
    the request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
+#ifdef _WIN32
+CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
+#endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
@@ -168,6 +171,9 @@ CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
    request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strconcat(int n, ...);
+#ifdef _WIN32
+CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
+#endif
 
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
@@ -199,23 +205,23 @@ int caml_page_table_initialize(mlsize_t bytesize);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do {       \
-                                                CAMLassert ((wosize) >= 1); \
-                                          CAMLassert ((tag_t) (tag) < 256); \
-                                 CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_young_ptr -= Whsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_trigger){                                 \
-    caml_young_ptr += Whsize_wosize (wosize);                               \
-    CAML_INSTR_INT ("force_minor/alloc_small@", 1);                         \
-    Setup_for_gc;                                                           \
-    caml_gc_dispatch ();                                                    \
-    Restore_after_gc;                                                       \
-    caml_young_ptr -= Whsize_wosize (wosize);                               \
-  }                                                                         \
-  Hd_hp (caml_young_ptr) =                                                  \
-    Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo);      \
-  (result) = Val_hp (caml_young_ptr);                                       \
-  DEBUG_clear ((result), (wosize));                                         \
+#define Alloc_small_with_profinfo(result, wosize, tag, profinfo) do { \
+  CAMLassert ((wosize) >= 1); \
+  CAMLassert ((tag_t) (tag) < 256); \
+  CAMLassert ((wosize) <= Max_young_wosize); \
+  caml_young_ptr -= Whsize_wosize (wosize); \
+  if (caml_young_ptr < caml_young_trigger){ \
+    caml_young_ptr += Whsize_wosize (wosize); \
+    CAML_INSTR_INT ("force_minor/alloc_small@", 1); \
+    Setup_for_gc; \
+    caml_gc_dispatch (); \
+    Restore_after_gc; \
+    caml_young_ptr -= Whsize_wosize (wosize); \
+  } \
+  Hd_hp (caml_young_ptr) = \
+    Make_header_with_profinfo ((wosize), (tag), Caml_black, profinfo); \
+  (result) = Val_hp (caml_young_ptr); \
+  DEBUG_clear ((result), (wosize)); \
 }while(0)
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)

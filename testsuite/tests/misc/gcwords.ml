@@ -1,6 +1,8 @@
 type t = Leaf of int | Branch of t * t
 
-let a = [| 0.0 |]
+type floatref = { mutable f : float }
+
+let a = { f = 0.0 }
 
 let rec allocate_lots m = function
   | 0 -> Leaf m
@@ -13,7 +15,7 @@ let measure f =
   c -. a
 
 let () =
-  let n = measure (fun () -> a.(0) <- Gc.minor_words ()) in
+  let n = measure (fun () -> a.f <- Gc.minor_words ()) in
   (* Gc.minor_words should not allocate, although bytecode
      generally boxes the floats *)
   assert (n < 10.);

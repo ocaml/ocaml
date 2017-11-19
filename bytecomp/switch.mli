@@ -31,23 +31,35 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-type 'a t_store =
+type ('a, 'ctx) t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
-     act_store : 'a -> int ;
-     act_store_shared : 'a -> int ; }
+     act_store : 'ctx -> 'a -> int ;
+     act_store_shared : 'ctx -> 'a -> int ; }
 
 exception Not_simple
 
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
+module type CtxStored = sig
+  include Stored
+  type context
+  val make_key : context -> t -> key option
+end
+
+module CtxStore(A:CtxStored) :
+    sig
+      val mk_store : unit -> (A.t, A.context) t_store
+    end
+
 module Store(A:Stored) :
     sig
-      val mk_store : unit -> A.t t_store
+      val mk_store : unit -> (A.t, unit) t_store
     end
 
 (* Arguments to the Make functor *)
@@ -94,7 +106,7 @@ module type S =
     - actions is an array of actions.
 
   All these arguments specify a switch construct and zyva
-  returns an action that performs the switch,
+  returns an action that performs the switch.
 *)
 module Make :
   functor (Arg : S) ->
@@ -105,13 +117,13 @@ module Make :
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->
-           Arg.act t_store ->
+           (Arg.act, _) t_store ->
            Arg.act
 
 (* Output test sequence, sharing tracked *)
      val test_sequence :
            Arg.act ->
            (int * int * int) array ->
-           Arg.act t_store ->
+           (Arg.act, _) t_store ->
            Arg.act
     end

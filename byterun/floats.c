@@ -79,6 +79,18 @@ CAMLexport value caml_copy_double(double d)
   return res;
 }
 
+#ifndef FLAT_FLOAT_ARRAY
+CAMLexport void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
+{
+  CAMLparam1 (val);
+  value d = caml_copy_double (dbl);
+
+  CAMLassert (Tag_val (val) != Double_array_tag);
+  caml_modify (&Field(val, i), d);
+  CAMLreturn0;
+}
+#endif /* ! FLAT_FLOAT_ARRAY */
+
 CAMLprim value caml_format_float(value fmt, value arg)
 {
   value res;
@@ -261,7 +273,8 @@ static int caml_float_of_hex(const char * s, double * res)
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
-  char * buf, * src, * dst, * end;
+  char * buf, * dst, * end;
+  const char *src;
   mlsize_t len;
   int sign;
   double d;

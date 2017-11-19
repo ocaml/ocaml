@@ -135,11 +135,7 @@ CAMLprim value unix_gethostbyname(value name)
 
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
 
-#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   hostname = caml_stat_strdup(String_val(name));
-#else
-  hostname = String_val(name);
-#endif
 
 #if HAS_GETHOSTBYNAME_R == 5
   {
@@ -165,9 +161,7 @@ CAMLprim value unix_gethostbyname(value name)
 #endif
 #endif
 
-#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   caml_stat_free(hostname);
-#endif
 
   if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);

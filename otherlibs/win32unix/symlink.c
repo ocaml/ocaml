@@ -12,6 +12,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 /*
  * Windows Vista functions enabled
  */
@@ -23,9 +25,10 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
-typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPTSTR, LPTSTR, DWORD);
+typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
 
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
@@ -35,8 +38,8 @@ CAMLprim value unix_symlink(value to_dir, value osource, value odest)
   CAMLparam3(to_dir, osource, odest);
   DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
   BOOLEAN result;
-  LPTSTR source;
-  LPTSTR dest;
+  LPWSTR source;
+  LPWSTR dest;
   caml_unix_check_path(osource, "symlink");
   caml_unix_check_path(odest, "symlink");
 
@@ -46,14 +49,14 @@ again:
   }
 
   if (!pCreateSymbolicLink) {
-    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle("kernel32"), "CreateSymbolicLinkA");
+    pCreateSymbolicLink = (LPFN_CREATESYMBOLICLINK)GetProcAddress(GetModuleHandle(L"kernel32"), "CreateSymbolicLinkW");
     no_symlink = !pCreateSymbolicLink;
     goto again;
   }
 
   /* Copy source and dest outside the OCaml heap */
-  source = caml_stat_strdup(String_val(osource));
-  dest = caml_stat_strdup(String_val(odest));
+  source = caml_stat_strdup_to_utf16(String_val(osource));
+  dest = caml_stat_strdup_to_utf16(String_val(odest));
 
   caml_enter_blocking_section();
   result = pCreateSymbolicLink(dest, source, flags);

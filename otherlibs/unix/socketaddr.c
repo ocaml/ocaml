@@ -35,8 +35,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
   /* Use a string rather than an abstract block so that it can be
      marshaled safely.  Remember that a is in network byte order,
      hence is marshaled in an endian-independent manner. */
-  res = caml_alloc_string(4);
-  memcpy(String_val(res), a, 4);
+  res = caml_alloc_initialized_string(4, (char *)a);
   return res;
 }
 
@@ -45,8 +44,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
 CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
-  res = caml_alloc_string(16);
-  memcpy(String_val(res), a, 16);
+  res = caml_alloc_initialized_string(16, (char *)a);
   return res;
 }
 
@@ -117,8 +115,7 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
       mlsize_t path_length =
         strnlen(adr->s_unix.sun_path,
                 adr_len - offsetof(struct sockaddr_un, sun_path));
-      n = caml_alloc_string(path_length);
-      memmove(String_val(n), adr->s_unix.sun_path, path_length);
+      n = caml_alloc_initialized_string(path_length, (char *)adr->s_unix.sun_path);
       Begin_root (n);
         res = caml_alloc_small(1, 0);
         Field(res,0) = n;

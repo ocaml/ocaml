@@ -46,7 +46,7 @@ let merge_before_tags l =
 
 let version_separators = Str.regexp "[\\.\\+]";;
 
-(** Merge two Odoctypes.info struture, completing the information of
+(** Merge two Odoctypes.info structures, completing the information of
    the first one with the information in the second one.
    The merge treatment depends on a given merge_option list.
    @return the new info structure.*)
@@ -355,7 +355,7 @@ let rec merge_param_info pi_mli pi_ml =
         Tuple (new_l, t_mli)
 
 (** Merge of the parameters of two functions/methods/classes, one for a .mli, another for a .ml.
-   The prameters in the .mli are completed by the name in the .ml.*)
+   The parameters in the .mli are completed by the name in the .ml.*)
 let rec merge_parameters param_mli param_ml =
   match (param_mli, param_ml) with
     ([], []) -> []
@@ -370,8 +370,8 @@ let merge_classes merge_options mli ml =
   mli.cl_loc <- { mli.cl_loc with loc_impl = ml.cl_loc.loc_impl } ;
   mli.cl_parameters <- merge_parameters mli.cl_parameters ml.cl_parameters;
 
-  (* we must reassociate comments in @param to the the corresponding
-     parameters because the associated comment of a parameter may have been changed y the merge.*)
+  (* we must reassociate comments in @param to the corresponding
+     parameters because the associated comment of a parameter may have been changed by the merge.*)
   Odoc_class.class_update_parameters_text mli;
 
   (* merge values *)
@@ -499,8 +499,8 @@ let merge_class_types merge_options mli ml =
                      m.met_value.val_parameters <- (merge_parameters
                                                       m.met_value.val_parameters
                                                       m2.met_value.val_parameters) ;
-                     (* we must reassociate comments in @param to the the corresponding
-                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                     (* we must reassociate comments in @param to the corresponding
+                        parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
 
                      if !Odoc_global.keep_code then
@@ -690,8 +690,8 @@ let rec merge_module_types merge_options mli ml =
                      v.val_parameters <- (merge_parameters
                                             v.val_parameters
                                             v2.val_parameters) ;
-                     (* we must reassociate comments in @param to the the corresponding
-                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                     (* we must reassociate comments in @param to the corresponding
+                        parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text v;
 
                      if !Odoc_global.keep_code then
@@ -963,8 +963,8 @@ and merge_modules merge_options mli ml =
                  v.val_parameters <- (merge_parameters
                                         v.val_parameters
                                         v2.val_parameters) ;
-                 (* we must reassociate comments in @param to the the corresponding
-                    parameters because the associated comment of a parameter may have been changed y the merge.*)
+                 (* we must reassociate comments in @param to the corresponding
+                    parameters because the associated comment of a parameter may have been changed by the merge.*)
                  Odoc_value.update_value_parameters_text v;
 
                  if !Odoc_global.keep_code then

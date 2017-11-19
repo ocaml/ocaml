@@ -104,7 +104,11 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound                         (* Unbound variable *)
+  | Val_unbound of value_unbound_reason (* Unbound variable *)
+
+and value_unbound_reason =
+  | Val_unbound_instance_variable
+  | Val_unbound_ghost_recursive
 
 (* Variance *)
 
@@ -279,7 +283,7 @@ and module_declaration =
 
 and modtype_declaration =
   {
-    mtd_type: module_type option;  (* Nonte: abstract *)
+    mtd_type: module_type option;  (* Note: abstract *)
     mtd_attributes: Parsetree.attributes;
     mtd_loc: Location.t;
   }
@@ -321,6 +325,15 @@ and constructor_tag =
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
+
+let equal_tag t1 t2 = 
+  match (t1, t2) with
+  | Cstr_constant i1, Cstr_constant i2 -> i2 = i1
+  | Cstr_block i1, Cstr_block i2 -> i2 = i1
+  | Cstr_unboxed, Cstr_unboxed -> true
+  | Cstr_extension (path1, b1), Cstr_extension (path2, b2) -> 
+      Path.same path1 path2 && b1 = b2
+  | (Cstr_constant _|Cstr_block _|Cstr_unboxed|Cstr_extension _), _ -> false
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

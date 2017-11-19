@@ -217,7 +217,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
         break;
       case Double_array_tag:
         for (i = 0, len = Wosize_val(v) / Double_wosize; i < len; i++) {
-          h = caml_hash_mix_double(h, Double_field(v, i));
+          h = caml_hash_mix_double(h, Double_flat_field(v, i));
           num--;
           if (num <= 0) break;
         }

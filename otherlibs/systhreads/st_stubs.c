@@ -505,7 +505,9 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   return Val_unit;
 }
 
-/* Cleanup the thread machinery on program exit or DLL unload. */
+/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
+   thread take 25ms on average / 50ms in the worst case, so we don't do it on
+   program exit. */
 
 CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 {

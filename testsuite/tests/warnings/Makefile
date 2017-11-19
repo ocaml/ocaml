@@ -19,6 +19,7 @@ FLAGS=-w A
 run-all:
 	@$(OCAMLC) $(FLAGS) -c deprecated_module.mli
 	@$(OCAMLC) $(FLAGS) -c module_without_cmx.mli
+	@$(OCAMLC) $(FLAGS) -c w32.mli
 	@$(OCAMLC) $(FLAGS) -c w60.mli
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \

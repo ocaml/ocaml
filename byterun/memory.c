@@ -128,12 +128,13 @@ static int caml_page_table_resize(void)
   uintnat * new_entries;
   uintnat i, h;
 
-  caml_gc_message (0x08, "Growing page table to %lu entries\n",
+  caml_gc_message (0x08, "Growing page table to %"
+                   ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                    caml_page_table.size);
 
   new_entries = caml_stat_calloc_noexc(2 * old.size, sizeof(uintnat));
   if (new_entries == NULL) {
-    caml_gc_message (0x08, "No room for growing page table\n", 0);
+    caml_gc_message (0x08, "No room for growing page table\n");
     return -1;
   }
 
@@ -331,7 +332,8 @@ int caml_add_to_heap (char *m)
   /* Should check the contents of the block. */
 #endif /* DEBUG */
 
-  caml_gc_message (0x04, "Growing heap to %luk bytes\n",
+  caml_gc_message (0x04, "Growing heap to %"
+                   ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
                    (Bsize_wsize (caml_stat_heap_wsz) + Chunk_size (m)) / 1024);
 
   /* Register block in page table */
@@ -381,7 +383,7 @@ static value *expand_heap (mlsize_t request)
   malloc_request = caml_clip_heap_chunk_wsz (over_request);
   mem = (value *) caml_alloc_for_heap (Bsize_wsize (malloc_request));
   if (mem == NULL){
-    caml_gc_message (0x04, "No room for growing heap\n", 0);
+    caml_gc_message (0x04, "No room for growing heap\n");
     return NULL;
   }
   remain = Wsize_bsize (Chunk_size (mem));
@@ -435,8 +437,9 @@ void caml_shrink_heap (char *chunk)
   if (chunk == caml_heap_start) return;
 
   caml_stat_heap_wsz -= Wsize_bsize (Chunk_size (chunk));
-  caml_gc_message (0x04, "Shrinking heap to %luk words\n",
-                   (unsigned long) caml_stat_heap_wsz / 1024);
+  caml_gc_message (0x04, "Shrinking heap to %"
+                   ARCH_INTNAT_PRINTF_FORMAT "uk words\n",
+                   caml_stat_heap_wsz / 1024);
 
 #ifdef DEBUG
   {
@@ -925,6 +928,20 @@ CAMLexport caml_stat_string caml_stat_strdup(const char *s)
   return result;
 }
 
+#ifdef _WIN32
+
+CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
+{
+  int slen = wcslen(s);
+  wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  memcpy(result, s, (slen + 1)*sizeof(wchar_t));
+  return result;
+}
+
+#endif
+
 CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
 {
   va_list args;
@@ -954,3 +971,37 @@ CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
   *p = 0;
   return result;
 }
+
+#ifdef _WIN32
+
+CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
+{
+  va_list args;
+  wchar_t *result, *p;
+  size_t len = 0;
+  int i;
+
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    len += wcslen(s);
+  }
+  va_end(args);
+
+  result = caml_stat_alloc((len + 1)*sizeof(wchar_t));
+
+  va_start(args, n);
+  p = result;
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    size_t l = wcslen(s);
+    memcpy(p, s, l*sizeof(wchar_t));
+    p += l;
+  }
+  va_end(args);
+
+  *p = 0;
+  return result;
+}
+
+#endif

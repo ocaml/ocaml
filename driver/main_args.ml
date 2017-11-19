@@ -233,11 +233,11 @@ let mk_no_keep_docs f =
 ;;
 
 let mk_keep_locs f =
-  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files"
+  "-keep-locs", Arg.Unit f, " Keep locations in .cmi files (default)"
 ;;
 
 let mk_no_keep_locs f =
-  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files (default)"
+  "-no-keep-locs", Arg.Unit f, " Do not keep locations in .cmi files"
 ;;
 
 let mk_labels f =
@@ -428,7 +428,8 @@ let mk_S f =
 
 let mk_safe_string f =
   "-safe-string", Arg.Unit f,
-  if Config.safe_string then " Make strings immutable (default)"
+  if Config.safe_string then " (was set when configuring the compiler)"
+  else if Config.default_safe_string then " Make strings immutable (default)"
   else " Make strings immutable"
 ;;
 
@@ -460,7 +461,11 @@ let mk_thread f =
 ;;
 
 let mk_dtimings f =
-  "-dtimings", Arg.Unit f, " Print timings"
+  "-dtimings", Arg.Unit f, " Print timings information for each pass";
+;;
+
+let mk_dprofile f =
+  "-dprofile", Arg.Unit f, Profile.options_doc
 ;;
 
 let mk_unbox_closures f =
@@ -494,10 +499,12 @@ let mk_unsafe f =
 let mk_unsafe_string f =
   if Config.safe_string then
     let err () =
-      raise (Arg.Bad "OCaml has been configured with -safe-string: \
+      raise (Arg.Bad "OCaml has been configured with -force-safe-string: \
                       -unsafe-string is not available")
     in
     "-unsafe-string", Arg.Unit err, " (option not available)"
+  else if Config.default_safe_string then
+    "-unsafe-string", Arg.Unit f, " Make strings mutable"
   else
     "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
@@ -667,6 +674,16 @@ let mk_dcse f =
 
 let mk_dlive f =
   "-dlive", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_davail f =
+  "-davail", Arg.Unit f, " Print register availability info when printing \
+    liveness"
+;;
+
+let mk_drunavail f =
+  "-drunavail", Arg.Unit f, " Run register availability pass (for testing \
+    only; needs -g)"
 ;;
 
 let mk_dspill f =
@@ -843,6 +860,7 @@ module type Compiler_options = sig
 
   val _nopervasives : unit -> unit
   val _dtimings : unit -> unit
+  val _dprofile : unit -> unit
 
   val _args: string -> string array
   val _args0: string -> string array
@@ -856,7 +874,6 @@ module type Toplevel_options = sig
   val _no_version : unit -> unit
   val _noprompt : unit -> unit
   val _nopromptcont : unit -> unit
-  val _plugin : string -> unit
   val _stdin : unit -> unit
   val _args : string -> string array
   val _args0 : string -> string array
@@ -924,6 +941,8 @@ module type Optcommon_options = sig
   val _dcombine : unit -> unit
   val _dcse : unit -> unit
   val _dlive : unit -> unit
+  val _davail : unit -> unit
+  val _drunavail : unit -> unit
   val _dspill : unit -> unit
   val _dsplit : unit -> unit
   val _dinterf : unit -> unit
@@ -1070,6 +1089,7 @@ struct
     mk_dlambda F._dlambda;
     mk_dinstr F._dinstr;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
 
     mk_args F._args;
     mk_args0 F._args0;
@@ -1095,7 +1115,6 @@ struct
     mk_nostdlib F._nostdlib;
     mk_open F._open;
     mk_ppx F._ppx;
-    mk_plugin F._plugin;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
     mk_rectypes F._rectypes;
@@ -1252,6 +1271,8 @@ struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;
@@ -1263,6 +1284,7 @@ struct
     mk_dinterval F._dinterval;
     mk_dstartup F._dstartup;
     mk_dtimings F._dtimings;
+    mk_dprofile F._dprofile;
     mk_dump_pass F._dump_pass;
 
     mk_args F._args;
@@ -1305,7 +1327,6 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_o2 F._o2;
     mk_o3 F._o3;
     mk_open F._open;
-    mk_plugin F._plugin;
     mk_ppx F._ppx;
     mk_principal F._principal;
     mk_no_principal F._no_principal;
@@ -1349,6 +1370,8 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_dcombine F._dcombine;
     mk_dcse F._dcse;
     mk_dlive F._dlive;
+    mk_davail F._davail;
+    mk_drunavail F._drunavail;
     mk_dspill F._dspill;
     mk_dsplit F._dsplit;
     mk_dinterf F._dinterf;

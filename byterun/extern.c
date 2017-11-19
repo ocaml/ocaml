@@ -300,7 +300,7 @@ static void extern_failwith(char *msg)
 
 static void extern_stack_overflow(void)
 {
-  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n");
   extern_replay_trail();
   free_extern_output();
   caml_raise_out_of_memory();
@@ -332,17 +332,17 @@ static inline void write(int c)
   *extern_ptr++ = c;
 }
 
-static void writeblock(char * data, intnat len)
+static void writeblock(const char * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memcpy(extern_ptr, data, len);
   extern_ptr += len;
 }
 
-static inline void writeblock_float8(double * data, intnat ndoubles)
+static inline void writeblock_float8(const double * data, intnat ndoubles)
 {
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
-  writeblock((char *) data, ndoubles * 8);
+  writeblock((const char *) data, ndoubles * 8);
 #else
   caml_serialize_block_float_8(data, ndoubles);
 #endif
@@ -421,7 +421,11 @@ static void extern_rec(value v)
       value f = Forward_val (v);
       if (Is_block (f)
           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
+              || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+              || Tag_val (f) == Double_tag
+#endif
+              )){
         /* Do not short-circuit the pointer. */
       }else{
         v = f;
@@ -588,7 +592,7 @@ static void extern_rec(value v)
     if ((extern_flags & CLOSURES) == 0)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - cf->code_start);
-    writeblock((char *) cf->digest, 16);
+    writeblock((const char *)cf->digest, 16);
   } else {
     extern_invalid_argument("output_value: abstract value (outside heap)");
   }

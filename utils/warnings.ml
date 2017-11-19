@@ -20,10 +20,16 @@
    - manual/manual/cmds/native.etex
 *)
 
+type loc = {
+  loc_start: Lexing.position;
+  loc_end: Lexing.position;
+  loc_ghost: bool;
+}
+
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string                    (*  3 *)
+  | Deprecated of string * loc * loc        (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -206,12 +212,32 @@ let current =
       error = Array.make (last_warning_number + 1) false;
     }
 
+let disabled = ref false
+
+let without_warnings f =
+  Misc.protect_refs [Misc.R(disabled, true)] f
+
 let backup () = !current
 
 let restore x = current := x
 
-let is_active x = (!current).active.(number x);;
-let is_error x = (!current).error.(number x);;
+let is_active x = not !disabled && (!current).active.(number x);;
+let is_error x = not !disabled && (!current).error.(number x);;
+
+let mk_lazy f =
+  let state = backup () in
+  lazy
+    (
+      let prev = backup () in
+      restore state;
+      try
+        let r = f () in
+        restore prev;
+        r
+      with exn ->
+        restore prev;
+        raise exn
+    )
 
 let parse_opt error active flags s =
   let set i = flags.(i) <- true in
@@ -271,7 +297,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -280,7 +306,7 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s ->
+  | Deprecated (s, _, _) ->
       (* Reduce \r\n to \n:
            - Prevents any \r characters being printed on Unix when processing
              Windows sources
@@ -489,12 +515,21 @@ let message = function
       "Type constraints do not apply to GADT cases of variant types."
 ;;
 
+let sub_locs = function
+  | Deprecated (_, def, use) ->
+      [
+        def, "Definition";
+        use, "Expected signature";
+      ]
+  | _ -> []
+
 let nerrors = ref 0;;
 
 type reporting_information =
   { number : int
   ; message : string
   ; is_error : bool
+  ; sub_locs : (loc * string) list;
   }
 
 let report w =
@@ -502,7 +537,9 @@ let report w =
   | false -> `Inactive
   | true ->
      if is_error w then incr nerrors;
-    `Active { number = number w; message = message w; is_error = is_error w }
+     `Active { number = number w; message = message w; is_error = is_error w;
+               sub_locs = sub_locs w;
+             }
 ;;
 
 exception Errors;;
@@ -549,9 +586,7 @@ let descriptions =
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
-      be\n\
-   \    checked.";  (* Now part of warning 8 *) *)
+   25, "Deprecated: now part of warning 8.";
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";

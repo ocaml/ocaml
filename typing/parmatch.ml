@@ -92,7 +92,7 @@ let rec compat p q =
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
   | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      c1.cstr_tag = c2.cstr_tag && compats ps1 ps2
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
   | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
   | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
@@ -124,11 +124,24 @@ let clean_copy ty =
   if ty.level = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
 
-let get_type_path ty tenv =
+(* As reported in PR#6394 it is possible for recursive modules to add incoherent
+   equations into the environment.
+   So assuming we're working on the same example as in PR#6394, when looking at
+   constructor [A] we end up calling [expand_head] on [t] (the type of [A]) and
+   get [int * bool].
+   This will result in a proper error later on during type checking, meanwhile
+   we need to "survive" and be somewhat aware that we're working on bogus input
+*)
+
+type constructor_type_path =
+  | Ok of Path.t
+  | Inconsistent_environment
+
+let get_constructor_type_path ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
   match ty.desc with
-  | Tconstr (path,_,_) -> path
-  | _ -> fatal_error "Parmatch.get_type_path"
+  | Tconstr (path,_,_) -> Ok path
+  | _ -> Inconsistent_environment
 
 (*************************************)
 (* Values as patterns pretty printer *)
@@ -284,7 +297,7 @@ let pretty_matrix (pss : matrix) =
 let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(_, c1, _), Tpat_construct(_, c2, _) ->
-      c1.cstr_tag = c2.cstr_tag
+      Types.equal_tag c1.cstr_tag c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
@@ -484,7 +497,7 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
-(* filter pss acording to pattern q *)
+(* filter pss according to pattern q *)
 let filter_one q pss =
   let rec filter_rec = function
       ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
@@ -501,7 +514,7 @@ let filter_one q pss =
 (*
   Filter pss in the ``extra case''. This applies :
   - According to an extra constructor (datatype case, non-complete signature).
-  - Acordinng to anything (all-variables case).
+  - According to anything (all-variables case).
 *)
 let filter_extra pss =
   let rec filter_rec = function
@@ -660,7 +673,7 @@ let full_match closing env =  match env with
   ->
     assert false
 
-(* Written as a non-fragile matching, PR7451 originated from a fragile matching below. *)
+(* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
 | None -> false
 | Some ext -> begin match env with
@@ -669,8 +682,13 @@ let should_extend ext env = match ext with
       begin match p.pat_desc with
       | Tpat_construct
           (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
-            let path = get_type_path p.pat_type p.pat_env in
-            Path.same path ext
+            (match get_constructor_type_path p.pat_type p.pat_env with
+             | Ok path -> Path.same path ext
+             | Inconsistent_environment ->
+               (* returning [true] here could result in more computations being
+                  done to check exhaustivity. Which is clearly not necessary
+                  since the code doesn't typecheck anyway. *)
+               false)
       | Tpat_construct
           (_, {cstr_tag=(Cstr_extension _)},_) -> false
       | Tpat_constant _|Tpat_tuple _|Tpat_variant _
@@ -680,6 +698,14 @@ let should_extend ext env = match ext with
         -> assert false
       end
 end
+
+module ConstructorTagHashtbl = Hashtbl.Make(
+  struct
+    type t = Types.constructor_tag
+    let hash = Hashtbl.hash
+    let equal = Types.equal_tag
+  end
+)
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
@@ -691,16 +717,16 @@ let complete_tags nconsts nconstrs tags =
       | Cstr_block i -> seen_constr.(i) <- true
       | _  -> assert false)
     tags ;
-  let r = ref [] in
+  let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
   for i = 0 to nconsts-1 do
     if not seen_const.(i) then
-      r := Cstr_constant i :: !r
+      ConstructorTagHashtbl.add r (Cstr_constant i) ()
   done ;
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
-      r := Cstr_block i :: !r
+      ConstructorTagHashtbl.add r (Cstr_block i) ()
   done ;
-  !r
+  r
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
@@ -765,7 +791,9 @@ let complete_constrs p all_tags =
   let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
-    List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
+    List.filter
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
   const @ nonconst
@@ -802,8 +830,10 @@ let build_other ext env = match env with
                             {lid with txt="*extension*"})) Ctype.none Env.empty
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
-    | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
-        extra_pat
+    | Some ext ->
+        (match get_constructor_type_path p.pat_type p.pat_env with
+         | Ok path when Path.same ext path -> extra_pat
+         | _ -> build_other_constrs env p)
     | _ ->
         build_other_constrs env p
     end
@@ -1245,7 +1275,7 @@ let rec pressure_variants tdefs = function
       end
 
 
-(* Yet another satisfiable fonction *)
+(* Yet another satisfiable function *)
 
 (*
    This time every_satisfiable pss qs checks the
@@ -1501,7 +1531,7 @@ let rec le_pat p q =
   | _, Tpat_alias(q,_,_) -> le_pat p q
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
   | Tpat_construct(_,c1,ps), Tpat_construct(_,c2,qs) ->
-      c1.cstr_tag = c2.cstr_tag && le_pats ps qs
+      Types.equal_tag c1.cstr_tag c2.cstr_tag && le_pats ps qs
   | Tpat_variant(l1,Some p1,_), Tpat_variant(l2,Some p2,_) ->
       (l1 = l2 && le_pat p1 p2)
   | Tpat_variant(l1,None,_r1), Tpat_variant(l2,None,_) ->
@@ -1551,7 +1581,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     let r = lub p q in
     make_pat (Tpat_lazy r) p.pat_type p.pat_env
 | Tpat_construct (lid, c1,ps1), Tpat_construct (_,c2,ps2)
-      when  c1.cstr_tag = c2.cstr_tag  ->
+      when  Types.equal_tag c1.cstr_tag c2.cstr_tag  ->
         let rs = lubs ps1 ps2 in
         make_pat (Tpat_construct (lid, c1,rs))
           p.pat_type p.pat_env
@@ -1785,7 +1815,9 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
           *)
     begin match casel with
     | [] -> ()
-    | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
+    | _  ->
+      if Warnings.is_active Warnings.All_clauses_guarded then
+        Location.prerr_warning loc Warnings.All_clauses_guarded
     end ;
     Partial
 | ps::_  ->
@@ -1808,32 +1840,34 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
         begin match v with
           None -> Total
         | Some v ->
-            let errmsg =
-              try
-                let buf = Buffer.create 16 in
-                let fmt = formatter_of_buffer buf in
-                top_pretty fmt v;
-                begin match check_partial_all v casel with
-                | None -> ()
-                | Some _ ->
-                    (* This is 'Some loc', where loc is the location of
-                       a possibly matching clause.
-                       Forget about loc, because printing two locations
-                       is a pain in the top-level *)
+            if Warnings.is_active (Warnings.Partial_match "") then begin
+              let errmsg =
+                try
+                  let buf = Buffer.create 16 in
+                  let fmt = formatter_of_buffer buf in
+                  top_pretty fmt v;
+                  begin match check_partial_all v casel with
+                  | None -> ()
+                  | Some _ ->
+                      (* This is 'Some loc', where loc is the location of
+                         a possibly matching clause.
+                         Forget about loc, because printing two locations
+                         is a pain in the top-level *)
+                      Buffer.add_string buf
+                        "\n(However, some guarded clause may match this value.)"
+                  end;
+                  if contains_extension v then
                     Buffer.add_string buf
-                      "\n(However, some guarded clause may match this value.)"
-                end;
-                if contains_extension v then
-                  Buffer.add_string buf
-                    "\nMatching over values of extensible variant types \
-                       (the *extension* above)\n\
-                    must include a wild card pattern in order to be exhaustive."
-                ;
-                Buffer.contents buf
-              with _ ->
-                ""
-            in
-            Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
+                      "\nMatching over values of extensible variant types \
+                         (the *extension* above)\n\
+                      must include a wild card pattern in order to be exhaustive."
+                  ;
+                  Buffer.contents buf
+                with _ ->
+                  ""
+              in
+                Location.prerr_warning loc (Warnings.Partial_match errmsg)
+            end;
             Partial
         end
     | _ ->
@@ -1872,11 +1906,17 @@ let extendable_path path =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
-    let path =  get_type_path p.pat_type p.pat_env in
-    List.fold_left
-      collect_paths_from_pat
-      (if extendable_path path then add_path path r else r)
-      ps
+    (match get_constructor_type_path p.pat_type p.pat_env with
+     | Ok path ->
+         List.fold_left
+           collect_paths_from_pat
+           (if extendable_path path then add_path path r else r)
+           ps
+     | Inconsistent_environment ->
+       (* no need to recurse on the constructor arguments: since we know the
+          code won't typecheck anyway, whatever we might compute would be
+          useless anyway. *)
+       r)
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
@@ -1896,7 +1936,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 (*
   Actual fragile check
    1. Collect data types in the patterns of the match.
-   2. One exhautivity check per datatype, considering that
+   2. One exhaustivity check per datatype, considering that
       the type is extended.
 *)
 
@@ -1990,38 +2030,45 @@ let check_unused pred casel =
 
 let irrefutable pat = le_pat pat omega
 
-(* An inactive pattern is a pattern whose matching needs only
-   trivial computations (tag/equality tests).
-   Patterns containing (lazy _) subpatterns are active. *)
+let inactive ~partial pat =
+  match partial with
+  | Partial -> false
+  | Total -> begin
+      let rec loop pat =
+        match pat.pat_desc with
+        | Tpat_lazy _ | Tpat_array _ ->
+          false
+        | Tpat_any | Tpat_var _ | Tpat_variant (_, None, _) ->
+            true
+        | Tpat_constant c -> begin
+            match c with
+            | Const_string _ -> Config.safe_string
+            | Const_int _ | Const_char _ | Const_float _
+            | Const_int32 _ | Const_int64 _ | Const_nativeint _ -> true
+          end
+        | Tpat_tuple ps | Tpat_construct (_, _, ps) ->
+            List.for_all (fun p -> loop p) ps
+        | Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
+            loop p
+        | Tpat_record (ldps,_) ->
+            List.for_all
+              (fun (_, lbl, p) -> lbl.lbl_mut = Immutable && loop p)
+              ldps
+        | Tpat_or (p,q,_) ->
+            loop p && loop q
+      in
+      loop pat
+  end
 
-let rec inactive pat = match pat with
-| Tpat_lazy _ ->
-    false
-| Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_, None, _) ->
-    true
-| Tpat_tuple ps | Tpat_construct (_, _, ps) | Tpat_array ps ->
-    List.for_all (fun p -> inactive p.pat_desc) ps
-| Tpat_alias (p,_,_) | Tpat_variant (_, Some p, _) ->
-    inactive p.pat_desc
-| Tpat_record (ldps,_) ->
-    List.exists (fun (_, _, p) -> inactive p.pat_desc) ldps
-| Tpat_or (p,q,_) ->
-    inactive p.pat_desc && inactive q.pat_desc
-
-(* A `fluid' pattern is both irrefutable and inactive *)
-
-let fluid pat =  irrefutable pat && inactive pat.pat_desc
 
 
 
 
 
 
-
-
-(********************************)
-(* Exported exhustiveness check *)
-(********************************)
+(*********************************)
+(* Exported exhaustiveness check *)
+(*********************************)
 
 (*
    Fragile check is performed when required and
@@ -2029,18 +2076,15 @@ let fluid pat =  irrefutable pat && inactive pat.pat_desc
 *)
 
 let check_partial_param do_check_partial do_check_fragile loc casel =
-    if Warnings.is_active (Warnings.Partial_match "") then begin
-      let pss = initial_matrix casel in
-      let pss = get_mins le_pats pss in
-      let total = do_check_partial loc casel pss in
-      if
-        total = Total && Warnings.is_active (Warnings.Fragile_match "")
-      then begin
-        do_check_fragile loc casel pss
-      end ;
-      total
-    end else
-      Partial
+    let pss = initial_matrix casel in
+    let pss = get_mins le_pats pss in
+    let total = do_check_partial loc casel pss in
+    if
+      total = Total && Warnings.is_active (Warnings.Fragile_match "")
+    then begin
+      do_check_fragile loc casel pss
+    end ;
+    total
 
 (*let check_partial =
     check_partial_param
@@ -2268,7 +2312,7 @@ let all_rhs_idents exp =
       | _ -> ()
 
 (* Very hackish, detect unpack pattern  compilation
-   and perfom "indirect check for them" *)
+   and perform "indirect check for them" *)
     let is_unpack exp =
       List.exists
         (fun (attr, _) -> attr.txt = "#modulepat") exp.exp_attributes

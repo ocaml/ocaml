@@ -29,7 +29,9 @@ let init_path ?(dir="") native =
     else
       !Clflags.include_dirs
   in
-  let dirs = !last_include_dirs @ dirs @ !first_include_dirs in
+  let dirs =
+    !last_include_dirs @ dirs @ Config.flexdll_dirs @ !first_include_dirs
+  in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
   Config.load_path := dir ::
@@ -51,7 +53,8 @@ let open_implicit_module m env =
 let initial_env () =
   Ident.reinit();
   let initial =
-    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    if Config.safe_string then Env.initial_safe_string
+    else if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
   let env =

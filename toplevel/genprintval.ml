@@ -25,11 +25,14 @@ open Outcometree
 module type OBJ =
   sig
     type t
+    val repr : 'a -> t
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int
     val size : t -> int
     val field : t -> int -> t
+    val double_array_tag : int
+    val double_field : t -> int -> float
   end
 
 module type EVALPATH =
@@ -95,7 +98,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                (* Note: this could be a char or a constant constructor... *)
           else if O.tag arg = Obj.string_tag then
             list :=
-              Oval_string (String.escaped (O.obj arg : string)) :: !list
+              Oval_string ((O.obj arg : string), max_int, Ostr_string) :: !list
           else if O.tag arg = Obj.double_tag then
             list := Oval_float (O.obj arg : float) :: !list
           else
@@ -137,9 +140,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       ( Pident(Ident.create "print_char"),
         Simple (Predef.type_char,
                 (fun x -> Oval_char (O.obj x : char))) );
-      ( Pident(Ident.create "print_string"),
-        Simple (Predef.type_string,
-                (fun x -> Oval_string (O.obj x : string))) );
       ( Pident(Ident.create "print_int32"),
         Simple (Predef.type_int32,
                 (fun x -> Oval_int32 (O.obj x : int32))) );
@@ -301,6 +301,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     Oval_array (List.rev (tree_of_items [] 0))
               else
                 Oval_array []
+
+          | Tconstr(path, [], _)
+              when Path.same path Predef.path_string ->
+            Oval_string ((O.obj obj : string), !printer_steps, Ostr_string)
+
+          | Tconstr (path, [], _)
+              when Path.same path Predef.path_bytes ->
+            let s = Bytes.to_string (O.obj obj : bytes) in
+            Oval_string (s, !printer_steps, Ostr_bytes)
+
           | Tconstr (path, [ty_arg], _)
             when Path.same path Predef.path_lazy_t ->
              let obj_tag = O.tag obj in
@@ -486,9 +496,17 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                 if pos = 0 then tree_of_label env path name
                 else Oide_ident name
               and v =
-                if unboxed
-                then tree_of_val (depth - 1) obj ty_arg
-                else nest tree_of_val (depth - 1) (O.field obj pos) ty_arg
+                if unboxed then
+                  tree_of_val (depth - 1) obj ty_arg
+                else begin
+                  let fld =
+                    if O.tag obj = O.double_array_tag then
+                      O.repr (O.double_field obj pos)
+                    else
+                      O.field obj pos
+                  in
+                  nest tree_of_val (depth - 1) fld ty_arg
+                end
               in
               (lid, v) :: tree_of_fields (pos + 1) remainder
         in

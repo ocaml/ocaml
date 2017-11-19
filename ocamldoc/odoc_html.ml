@@ -36,6 +36,12 @@ let charset = ref "iso-8859-1"
 (** The functions used for naming files and html marks.*)
 module Naming =
   struct
+    (** The prefix for modules marks. *)
+    let mark_module = "MODULE"
+
+    (** The prefix for module type marks. *)
+    let mark_module_type = "MODULETYPE"
+
     (** The prefix for types marks. *)
     let mark_type = "TYPE"
 
@@ -60,10 +66,10 @@ module Naming =
     (** The prefix for methods marks. *)
     let mark_method = "METHOD"
 
-    (** The prefix for code files.. *)
+    (** The prefix for code files. *)
     let code_prefix = "code_"
 
-    (** The prefix for type files.. *)
+    (** The prefix for type files. *)
     let type_prefix = "type_"
 
     (** Return the two html files names for the given module or class name.*)
@@ -93,6 +99,12 @@ module Naming =
       in
       let (html_file, _) = html_files module_name in
       html_file^"#"^(target pref simple_name)
+
+    (**return the link target for the given module. *)
+    let module_target m = target mark_module (Name.simple m.m_name)
+
+    (**return the link target for the given module type. *)
+    let module_type_target mt = target mark_module_type (Name.simple mt.mt_name)
 
     (** Return the link target for the given type. *)
     let type_target t = target mark_type (Name.simple t.ty_name)
@@ -285,7 +297,7 @@ class virtual text =
       *)
       let b' = Buffer.create 17 (* paragraph buffer *) in
       let flush b' =
-        (* trim the inner string to avoid outputing empty <p></p> *)
+        (* trim the inner string to avoid outputting empty <p></p> *)
         let s = String.trim @@ Buffer.contents b' in
         if s <> "" then
           begin
@@ -460,9 +472,9 @@ class virtual text =
       let label1 = self#create_title_label (n, label_opt, t) in
       let (tag_o, tag_c) =
         if n > 6 then
-          (Printf.sprintf "div class=\"h%d\"" n, "div")
+          (Printf.sprintf "div class=\"h%d\"" (n+1), "div")
         else
-          let t = Printf.sprintf "h%d" n in (t, t)
+          let t = Printf.sprintf "h%d" (n+1) in (t, t)
       in
       bs b "<";
       bp b "%s id=\"%s\"" tag_o (Naming.label_target label1);
@@ -862,42 +874,44 @@ class html =
 
         "h1 { font-size : 20pt ; text-align: center; }" ;
 
-        "h2 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h2 { font-size : 20pt ; text-align: center; }" ;
+
+        "h3 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90BDFF ;"^
         "padding: 2px; }" ;
 
-        "h3 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h4 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90DDFF ;"^
         "padding: 2px; }" ;
 
-        "h4 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h5 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90EDFF ;"^
         "padding: 2px; }" ;
 
-        "h5 { font-size : 20pt ; border: 1px solid #000000; "^
+        "h6 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90FDFF ;"^
         "padding: 2px; }" ;
 
-        "h6 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #90BDFF ; "^
         "padding: 2px; }" ;
 
-        "div.h7 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h8 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #E0FFFF ; "^
         "padding: 2px; }" ;
 
-        "div.h8 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h9 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #F0FFFF ; "^
         "padding: 2px; }" ;
 
-        "div.h9 { font-size : 20pt ; border: 1px solid #000000; "^
+        "div.h10 { font-size : 20pt ; border: 1px solid #000000; "^
         "margin-top: 5px; margin-bottom: 2px;"^
         "text-align: center; background-color: #FFFFFF ; "^
         "padding: 2px; }" ;
@@ -1343,9 +1357,13 @@ class html =
           (
            match modu with
              None ->
+               (* first we close the current <pre> tag, since the following
+                  list of module elements is not preformatted *)
+               bs b "</pre>";
                bs b "<div class=\"sig_block\">";
                List.iter (self#html_of_module_element b father) eles;
-               bs b "</div>"
+               bs b "</div>";
+               bs b "\n<pre>"
            | Some m ->
                let (html_file, _) = Naming.html_files m.m_name in
                bp b " <a href=\"%s\">..</a> " html_file
@@ -1454,9 +1472,13 @@ class html =
                (
                 match modu with
                   None ->
+                    (*close the current <pre> tag, to avoid anarchic line breaks
+                      in the list of module elements *)
+                    bs b "</pre>";
                     bs b "<div class=\"sig_block\">";
                     List.iter (self#html_of_module_element b father) eles;
-                    bs b "</div>"
+                    bs b "</div>";
+                    bs b "<pre>";
                 | Some m ->
                     let (html_file, _) = Naming.html_files m.m_name in
                     bp b " <a href=\"%s\">..</a> " html_file
@@ -2003,6 +2025,7 @@ class html =
       let (html_file, _) = Naming.html_files m.m_name in
       let father = Name.father m.m_name in
       bs b "\n<pre>";
+      bp b "<span id=\"%s\">" (Naming.module_target m);
       bs b ((self#keyword "module")^" ");
       (
        if with_link then
@@ -2010,6 +2033,7 @@ class html =
        else
          bs b (Name.simple m.m_name)
       );
+      bs b "</span>" ;
       (
        match m.m_kind with
          Module_functor _ when !html_short_functors  ->
@@ -2033,13 +2057,15 @@ class html =
       let (html_file, _) = Naming.html_files mt.mt_name in
       let father = Name.father mt.mt_name in
       bs b "\n<pre>";
-      bs b ((self#keyword "module type")^" ");
+      bp b "<span id=\"%s\">" (Naming.module_type_target mt);
+      bs b (self#keyword "module type" ^ " ");
       (
        if with_link then
          bp b "<a href=\"%s\">%s</a>" html_file (Name.simple mt.mt_name)
          else
          bs b (Name.simple mt.mt_name)
       );
+      bs b "</span>";
       (match mt.mt_kind with
         None -> ()
       | Some k ->
@@ -2173,11 +2199,12 @@ class html =
       bs b "\n<pre>";
       (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
-      bp b "<span name=\"%s\">"
+      bp b "<span id=\"%s\">"
         (Naming.type_target
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_private = Asttypes.Public; ty_manifest = None ;
+             ty_kind = Type_abstract ; ty_private = Asttypes.Public;
+             ty_manifest = None ;
              ty_loc = Odoc_info.dummy_loc ;
              ty_code = None ;
            }
@@ -2287,7 +2314,7 @@ class html =
       let text2 =
         match text with
         | (Odoc_info.Raw s) :: q ->
-            (Odoc_info.Title (2, None, [Odoc_info.Raw s])) :: q
+            (Odoc_info.Title (1, None, [Odoc_info.Raw s])) :: q
         | _ -> text
       in
       self#html_of_text ~with_p:true b text2

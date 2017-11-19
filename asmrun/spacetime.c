@@ -38,6 +38,7 @@
 #include "caml/minor_gc.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+#include "caml/osdeps.h"
 #include "caml/roots.h"
 #include "caml/signals.h"
 #include "caml/stack.h"
@@ -118,14 +119,26 @@ static void reinitialise_free_node_block(void)
 extern value val_process_id;
 #endif
 
-static uint32_t version_number = 0;
+enum {
+  FEATURE_CALL_COUNTS = 1,
+} features;
+
+static uint16_t version_number = 0;
 static uint32_t magic_number_base = 0xace00ace;
 
 static void caml_spacetime_write_magic_number_internal(struct channel* chan)
 {
-  value magic_number =
+  value magic_number;
+  uint16_t features = 0;
+
+#ifdef ENABLE_CALL_COUNTS
+  features |= FEATURE_CALL_COUNTS;
+#endif
+
+  magic_number =
     Val_long(((uint64_t) magic_number_base)
-             | (((uint64_t) version_number) << 32));
+             | (((uint64_t) version_number) << 32)
+             | (((uint64_t) features) << 48));
 
   Lock(chan);
   caml_output_val(chan, magic_number, Val_long(0));
@@ -198,7 +211,7 @@ void caml_spacetime_initialize(void)
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
-  ap_interval = getenv ("OCAML_SPACETIME_INTERVAL");
+  ap_interval = caml_secure_getenv ("OCAML_SPACETIME_INTERVAL");
   if (ap_interval != NULL) {
     unsigned int interval = 0;
     sscanf(ap_interval, "%u", &interval);
@@ -209,17 +222,15 @@ void caml_spacetime_initialize(void)
       int dir_ok = 1;
 
       user_specified_automatic_snapshot_dir =
-        getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
+        caml_secure_getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
 
       if (user_specified_automatic_snapshot_dir == NULL) {
-#ifdef HAS_GETCWD
+#if defined(HAS_GETCWD)
         if (getcwd(cwd, sizeof(cwd)) == NULL) {
           dir_ok = 0;
         }
 #else
-        if (getwd(cwd) == NULL) {
-          dir_ok = 0;
-        }
+        dir_ok = 0;
 #endif
         if (dir_ok) {
           automatic_snapshot_dir = strdup(cwd);
@@ -568,7 +579,8 @@ static c_node* allocate_c_node(void)
 
   node->gc_header =
     Make_header(sizeof(c_node)/sizeof(uintnat) - 1, C_node_tag, Caml_black);
-  node->data.callee_node = Val_unit;
+  node->data.call.callee_node = Val_unit;
+  node->data.call.call_count = Val_long(0);
   node->next = Val_unit;
 
   return node;
@@ -582,7 +594,7 @@ static c_node* allocate_c_node(void)
    call (e.g. [List.map] when not inlined). */
 static void* last_indirect_node_hole_ptr_callee;
 static value* last_indirect_node_hole_ptr_node_hole;
-static value* last_indirect_node_hole_ptr_result;
+static call_point* last_indirect_node_hole_ptr_result;
 
 CAMLprim value* caml_spacetime_indirect_node_hole_ptr
       (void* callee, value* node_hole, value caller_node)
@@ -596,7 +608,11 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
 
   if (callee == last_indirect_node_hole_ptr_callee
       && node_hole == last_indirect_node_hole_ptr_node_hole) {
-    return last_indirect_node_hole_ptr_result;
+#ifdef ENABLE_CALL_COUNTS
+    last_indirect_node_hole_ptr_result->call_count =
+      Val_long (Long_val (last_indirect_node_hole_ptr_result->call_count) + 1);
+#endif
+    return &(last_indirect_node_hole_ptr_result->callee_node);
   }
 
   last_indirect_node_hole_ptr_callee = callee;
@@ -613,8 +629,12 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
     CAMLassert(caml_spacetime_classify_c_node(c_node) == CALL);
 
     if (c_node->pc == encoded_callee) {
-      last_indirect_node_hole_ptr_result = &(c_node->data.callee_node);
-      return last_indirect_node_hole_ptr_result;
+#ifdef ENABLE_CALL_COUNTS
+      c_node->data.call.call_count =
+        Val_long (Long_val(c_node->data.call.call_count) + 1);
+#endif
+      last_indirect_node_hole_ptr_result = &(c_node->data.call);
+      return &(last_indirect_node_hole_ptr_result->callee_node);
     }
     else {
       node_hole = &c_node->next;
@@ -629,7 +649,7 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
        Perform the initialization equivalent to that emitted by
        [Spacetime.code_for_function_prologue] for direct tail call
        sites. */
-    c_node->data.callee_node = Encode_tail_caller_node(caller_node);
+    c_node->data.call.callee_node = Encode_tail_caller_node(caller_node);
   }
 
   *node_hole = caml_spacetime_stored_pointer_of_c_node(c_node);
@@ -637,9 +657,13 @@ CAMLprim value* caml_spacetime_indirect_node_hole_ptr
   CAMLassert(((uintnat) *node_hole) % sizeof(value) == 0);
   CAMLassert(*node_hole != Val_unit);
 
-  last_indirect_node_hole_ptr_result = &(c_node->data.callee_node);
+#ifdef ENABLE_CALL_COUNTS
+  c_node->data.call.call_count =
+    Val_long (Long_val(c_node->data.call.call_count) + 1);
+#endif
+  last_indirect_node_hole_ptr_result = &(c_node->data.call);
 
-  return last_indirect_node_hole_ptr_result;
+  return &(last_indirect_node_hole_ptr_result->callee_node);
 }
 
 /* Some notes on why caml_call_gc doesn't need a distinguished node.
@@ -846,7 +870,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
 
     CAMLassert(caml_spacetime_classify_c_node(node) == expected_type);
     CAMLassert(pc_inside_c_node_matches(node, pc));
-    node_hole = &node->data.callee_node;
+    node_hole = &node->data.call.callee_node;
   }
 
   if (must_initialise_node_for_allocation) {

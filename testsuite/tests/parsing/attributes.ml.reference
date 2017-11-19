@@ -125,7 +125,7 @@
                     []
                   Pmod_ident "M" (attributes.ml[26,254+27]..[26,254+28])
               [
-                Pwith_typesubst
+                Pwith_typesubst "t" (attributes.ml[26,254+53]..[26,254+54])
                   type_declaration "t" (attributes.ml[26,254+53]..[26,254+54]) (attributes.ml[26,254+48]..[26,254+61])
                     ptype_params =
                       []

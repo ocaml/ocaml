@@ -56,7 +56,7 @@ and text_element =
   | Superscript of text (** Superscripts. *)
   | Subscript of text (** Subscripts. *)
   | Module_list of string list
-       (** The table of the given modules with their abstract; *)
+       (** The table of the given modules with their abstracts. *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
   | Custom of string * text (** to extend \{foo syntax *)
   | Target of string * string (** (target, code) : to specify code for a specific target format *)
@@ -87,7 +87,7 @@ type info = {
     i_sees : see list; (** The list of \@see tags. *)
     i_since : string option; (** The string in the \@since tag. *)
     i_before : (string * text) list; (** the version number and text in \@before tag *)
-    i_deprecated : text option; (** The of the \@deprecated tag. *)
+    i_deprecated : text option; (** The textual description of the \@deprecated tag. *)
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option ; (** The description text of the return value. *)

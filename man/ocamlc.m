@@ -315,6 +315,14 @@ Never use the
 command on executables produced by
 .BR ocamlc\ \-custom ,
 this would remove the bytecode part of the executable.
+
+Security warning: never set the "setuid" or "setgid" bits on
+executables produced by
+.BR ocamlc\ \-custom ,
+this would make them vulnerable to attacks.
+.TP
+.BI \-depend\ ocamldep-args
+Compute dependencies, as ocamldep would do.
 .TP
 .BI \-dllib\ \-l libname
 Arrange for the C shared library
@@ -832,7 +840,7 @@ clause.
 \ \ Bad module name: the source file name is not a valid OCaml module name.
 
 25
-\ \ Pattern-matching with all clauses guarded.
+\ \ Deprecated: now part of warning 8.
 
 26
 \ \ Suspicious unused variable: unused variable that is bound with
@@ -978,7 +986,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..39\-41\-42\-44\-45\-48\-50\-60 .
+.BR \-w\ +a\-4\-6\-7\-9\-27\-29\-32..42\-44\-45\-48\-50\-60 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

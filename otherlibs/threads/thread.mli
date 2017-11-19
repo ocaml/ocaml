@@ -19,7 +19,7 @@ type t
 (** The type of thread handles. *)
 
 
-(** {6 Thread creation and termination} *)
+(** {1 Thread creation and termination} *)
 
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
@@ -49,7 +49,7 @@ val kill : t -> unit
 (** Terminate prematurely the thread whose handle is given.
    This functionality is available only with bytecode-level threads. *)
 
-(** {6 Suspending threads} *)
+(** {1 Suspending threads} *)
 
 val delay : float -> unit
 (** [delay d] suspends the execution of the calling thread for
@@ -82,7 +82,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list -> Unix.file_descr list ->
     float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-(** Suspend the execution of the calling thead until input/output
+(** Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
    The arguments and results have the same meaning as for
    {!Unix.select}. *)
@@ -112,7 +112,7 @@ val yield : unit -> unit
 
 (**/**)
 
-(** {6 Synchronization primitives}
+(** {1 Synchronization primitives}
 
    The following primitives provide the basis for implementing
    synchronization functions between threads. Their direct use is
@@ -125,7 +125,7 @@ val critical_section : bool ref
    (the timer interrupt that transfers control from thread to thread),
    causing the current thread to run uninterrupted until
    [critical_section] is reset to [false] or the current thread
-   explicitely relinquishes control using [sleep], [delay],
+   explicitly relinquishes control using [sleep], [delay],
    [wait_inchan] or [wait_descr]. *)
 
 val sleep : unit -> unit

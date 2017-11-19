@@ -28,6 +28,7 @@ module Storer =
       type t = lambda
       type key = lambda
       let make_key =  Lambda.make_key
+      let compare_key = Pervasives.compare
     end)
 
 (* Auxiliaries for compiling functions *)
@@ -825,7 +826,7 @@ let rec close fenv cenv = function
   | Lfunction _ as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
 
-    (* We convert [f a] to [let a' = a in fun b c -> f a' b c]
+    (* We convert [f a] to [let a' = a in let f' = f in fun b c -> f' a' b c]
        when fun_arity > nargs *)
   | Lapply{ap_func = funct; ap_args = args; ap_loc = loc;
         ap_inlined = attribute} ->
@@ -843,7 +844,7 @@ let rec close fenv cenv = function
             direct_apply ~loc ~attribute fundesc funct ufunct uargs in
           (app, strengthen_approx app approx_res)
 
-      | ((_ufunct, Value_closure(fundesc, _approx_res)), uargs)
+      | ((ufunct, (Value_closure(fundesc, _) as fapprox)), uargs)
           when nargs < fundesc.fun_arity ->
         let first_args = List.map (fun arg ->
           (Ident.create "arg", arg) ) uargs in
@@ -861,20 +862,25 @@ let rec close fenv cenv = function
           (List.map (fun (arg1, _arg2) -> Lvar arg1) first_args)
           @ (List.map (fun arg -> Lvar arg ) final_args)
         in
+        let funct_var = Ident.create "funct" in
+        let fenv = Tbl.add funct_var fapprox fenv in
         let (new_fun, approx) = close fenv cenv
           (Lfunction{
                kind = Curried;
                params = final_args;
                body = Lapply{ap_should_be_tailcall=false;
                              ap_loc=loc;
-                             ap_func=funct;
+                             ap_func=(Lvar funct_var);
                              ap_args=internal_args;
                              ap_inlined=Default_inline;
                              ap_specialised=Default_specialise};
                loc;
                attr = default_function_attribute})
         in
-        let new_fun = iter first_args new_fun in
+        let new_fun =
+          iter first_args
+            (Ulet (Immutable, Pgenval, funct_var, ufunct, new_fun))
+        in
         warning_if_forced_inline ~loc ~attribute "Partial application";
         (new_fun, approx)
 
@@ -1252,13 +1258,13 @@ and close_switch fenv cenv cases num_keys default =
   (* First default case *)
   begin match default with
   | Some def when ncases < num_keys ->
-      assert (store.act_store def = 0)
+      assert (store.act_store () def = 0)
   | _ -> ()
   end ;
   (* Then all other cases *)
   List.iter
     (fun (key,lam) ->
-     index.(key) <- store.act_store lam)
+     index.(key) <- store.act_store () lam)
     cases ;
 
   (*  Explicit sharing with catch/exit, as switcher compilation may

@@ -121,7 +121,10 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+(* On Win32 environment access is always considered safe. *)
+let unsafe_environment = environment
 external getenv: string -> string = "caml_sys_getenv"
+external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
@@ -256,8 +259,7 @@ type stats =
 external stat : string -> stats = "unix_stat"
 external lstat : string -> stats = "unix_lstat"
 external fstat : file_descr -> stats = "unix_fstat"
-let isatty fd =
-  match (fstat fd).st_kind with S_CHR -> true | _ -> false
+external isatty : file_descr -> bool = "unix_isatty"
 
 (* Operations on file names *)
 
@@ -393,6 +395,17 @@ let mkfifo _name _perm = invalid_arg "Unix.mkfifo not implemented"
 external readlink : string -> string = "unix_readlink"
 external symlink_stub : bool -> string -> string -> unit = "unix_symlink"
 
+(* See https://caml.inria.fr/mantis/view.php?id=7564.
+   The Windows API used to create symbolic links does not normalize the target
+   of a symbolic link, so we do it here.  Note that we cannot use the native
+   Windows call GetFullPathName to do this because we need relative paths to
+   stay relative. *)
+let normalize_slashes path =
+  if String.length path >= 4 && path.[0] = '\\' && path.[1] = '\\' && path.[2] = '?' && path.[3] = '\\' then
+    path
+  else
+    String.init (String.length path) (fun i -> match path.[i] with '/' -> '\\' | c -> c)
+
 let symlink ?to_dir source dest =
   let to_dir =
     match to_dir with
@@ -404,7 +417,8 @@ let symlink ?to_dir source dest =
         with _ ->
           false
   in
-    symlink_stub to_dir source dest
+  let source = normalize_slashes source in
+  symlink_stub to_dir source dest
 
 external has_symlink : unit -> bool = "unix_has_symlink"
 
@@ -562,7 +576,7 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : 
+external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
 let socketpair ?cloexec:_ _dom _ty _proto = invalid_arg "Unix.socketpair not implemented"
@@ -951,7 +965,7 @@ let open_process_full cmd env =
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
-      close err_read; close err_write; 
+      close err_read; close err_write;
       raise e
   end;
   close out_read;

@@ -75,7 +75,11 @@ val check_unused:
 
 (* Irrefutability tests *)
 val irrefutable : pattern -> bool
-val fluid : pattern -> bool
+
+(** An inactive pattern is a pattern, matching against which can be duplicated, erased or
+    delayed without change in observable behavior of the program.  Patterns containing
+    (lazy _) subpatterns or reads of mutable fields are active. *)
+val inactive : partial:partial -> pattern -> bool
 
 (* Ambiguous bindings *)
 val check_ambiguous_bindings : case list -> unit

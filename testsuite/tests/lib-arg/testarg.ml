@@ -7,7 +7,7 @@ let record fmt (* args *) =
 ;;
 
 let f_unit () = record "unit()";;
-let f_bool b = record "bool(%b)" b;;
+let f_bool b = record "bool(%B)" b;;
 let r_set = ref false;;
 let r_clear = ref true;;
 let f_string s = record "string(%s)" s;;
@@ -187,3 +187,18 @@ let test_expand spec argv reference =
 
 test_expand (expand1@spec) args1 expected1;;
 test_expand (expand2@spec) args2 expected2;;
+
+let test_align () =
+  let spec =
+    [
+      "-foo", Arg.String ignore, "FOO Do foo with FOO";
+      "-bar", Arg.Tuple [Arg.String ignore; Arg.String ignore], "FOO BAR\tDo bar with FOO and BAR";
+      "-cha", Arg.Unit ignore, " Another option";
+      "-sym", Arg.Symbol (["a"; "b"], ignore), "\ty\tfoo";
+      "-sym2", Arg.Symbol (["a"; "b"], ignore), "x bar";
+    ]
+  in
+  print_endline (Arg.usage_string (Arg.align spec) "")
+;;
+
+test_align ();;

@@ -46,7 +46,7 @@
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;
 
-CAMLexport char * caml_cds_file = NULL;
+CAMLexport char_os * caml_cds_file = NULL;
 
 /* Location of fields in the Instruct.debug_event record */
 enum {
@@ -329,7 +329,7 @@ static void read_main_debug_info(struct debug_info *di)
 {
   CAMLparam0();
   CAMLlocal3(events, evl, l);
-  char *exec_name;
+  char_os *exec_name;
   int fd, num_events, orig, i;
   struct channel *chan;
   struct exec_trailer trail;

@@ -23,7 +23,7 @@ external length : bytes -> int = "%bytes_length"
 external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
-    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
 
 external set : bytes -> int -> char -> unit = "%bytes_safe_set"
@@ -73,7 +73,7 @@ val sub : bytes -> pos:int -> len:int -> bytes
     Raise [Invalid_argument] if [start] and [len] do not designate a
     valid range of [s]. *)
 
-val sub_string : bytes -> int -> int -> string
+val sub_string : bytes -> pos:int -> len:int -> string
 (** Same as [sub] but return a string instead of a byte sequence. *)
 
 val extend : bytes -> left:int -> right:int -> bytes

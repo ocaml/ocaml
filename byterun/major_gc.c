@@ -132,7 +132,7 @@ static void realloc_gray_vals (void)
                                             2 * gray_vals_size *
                                             sizeof (value));
     if (new == NULL){
-      caml_gc_message (0x08, "No room for growing gray_vals\n", 0);
+      caml_gc_message (0x08, "No room for growing gray_vals\n");
       gray_vals_cur = gray_vals;
       heap_is_pure = 0;
     }else{
@@ -188,7 +188,7 @@ static void start_cycle (void)
 {
   CAMLassert (caml_gc_phase == Phase_idle);
   CAMLassert (gray_vals_cur == gray_vals);
-  caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
+  caml_gc_message (0x01, "Starting new major GC cycle\n");
   caml_darken_all_roots_start ();
   caml_gc_phase = Phase_mark;
   caml_gc_subphase = Subphase_mark_roots;
@@ -258,7 +258,11 @@ static inline value* mark_slice_darken(value *gray_vals_ptr, value v, int i,
       if ((in_ephemeron && Is_long(f)) ||
           (Is_block (f)
            && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-               || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
+               || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+               || Tag_val (f) == Double_tag
+#endif
+               ))){
         /* Do not short-circuit the pointer. */
       }else{
         /* The variable child is not changed because it must be mark alive */
@@ -326,7 +330,11 @@ static value* mark_ephe_aux (value *gray_vals_ptr, intnat *work,
           if (Is_long (f) ||
               (Is_block (f) &&
                (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-                || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag))){
+                || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+                || Tag_val (f) == Double_tag
+#endif
+                ))){
             /* Do not short-circuit the pointer. */
           }else{
             Field (v, i) = key = f;
@@ -383,8 +391,8 @@ static void mark_slice (intnat work)
 #endif
   int slice_pointers = 0; /** gcc removes it when not in CAML_INSTR */
 
-  caml_gc_message (0x40, "Marking %ld words\n", work);
-  caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
+  caml_gc_message (0x40, "Marking %"ARCH_INTNAT_PRINTF_FORMAT"d words\n", work);
+  caml_gc_message (0x40, "Subphase = %d\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
   v = current_value;
   start = current_index;
@@ -514,7 +522,8 @@ static void clean_slice (intnat work)
 {
   value v;
 
-  caml_gc_message (0x40, "Cleaning %ld words\n", work);
+  caml_gc_message (0x40, "Cleaning %"
+                   ARCH_INTNAT_PRINTF_FORMAT "d words\n", work);
   while (work > 0){
     v = *ephes_to_check;
     if (v != (value) NULL){
@@ -541,7 +550,8 @@ static void sweep_slice (intnat work)
   char *hp;
   header_t hd;
 
-  caml_gc_message (0x40, "Sweeping %ld words\n", work);
+  caml_gc_message (0x40, "Sweeping %"
+                   ARCH_INTNAT_PRINTF_FORMAT "d words\n", work);
   while (work > 0){
     if (caml_gc_sweep_hp < limit){
       hp = caml_gc_sweep_hp;
@@ -687,7 +697,8 @@ void caml_major_collection_slice (intnat howmuch)
   CAML_INSTR_INT ("major/work/extra#",
                   (uintnat) (caml_extra_heap_resources * 1000000));
 
-  caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
+  caml_gc_message (0x40, "ordered work = %"
+                   ARCH_INTNAT_PRINTF_FORMAT "d words\n", howmuch);
   caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    caml_allocated_words);
@@ -765,21 +776,22 @@ void caml_major_collection_slice (intnat howmuch)
   }else{
     computed_work = (intnat) (p * caml_stat_heap_wsz * 5 / 3);
   }
-  caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
+  caml_gc_message (0x40, "computed work = %"
+                   ARCH_INTNAT_PRINTF_FORMAT "d words\n", computed_work);
   if (caml_gc_phase == Phase_mark){
     CAML_INSTR_INT ("major/work/mark#", computed_work);
     mark_slice (computed_work);
     CAML_INSTR_TIME (tmr, mark_slice_name[caml_gc_subphase]);
-    caml_gc_message (0x02, "!", 0);
+    caml_gc_message (0x02, "!");
   }else if (caml_gc_phase == Phase_clean){
     clean_slice (computed_work);
-    caml_gc_message (0x02, "%%", 0);
+    caml_gc_message (0x02, "%%");
   }else{
     CAMLassert (caml_gc_phase == Phase_sweep);
     CAML_INSTR_INT ("major/work/sweep#", computed_work);
     sweep_slice (computed_work);
     CAML_INSTR_TIME (tmr, "major/sweep");
-    caml_gc_message (0x02, "$", 0);
+    caml_gc_message (0x02, "$");
   }
 
   if (caml_gc_phase == Phase_idle){

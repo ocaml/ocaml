@@ -16,23 +16,30 @@
 
 type 'a shared = Shared of 'a | Single of 'a
 
-type 'a t_store =
+type ('a, 'ctx) t_store =
     {act_get : unit -> 'a array ;
      act_get_shared : unit -> 'a shared array ;
-     act_store : 'a -> int ;
-     act_store_shared : 'a -> int ; }
+     act_store : 'ctx -> 'a -> int ;
+     act_store_shared : 'ctx -> 'a -> int ; }
 
 exception Not_simple
 
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
-module Store(A:Stored) = struct
+module type CtxStored = sig
+  include Stored
+  type context
+  val make_key : context -> t -> key option
+end
+
+module CtxStore(A:CtxStored) = struct
   module AMap =
-    Map.Make(struct type t = A.key let compare = Pervasives.compare end)
+    Map.Make(struct type t = A.key let compare = A.compare_key end)
 
   type intern =
       { mutable map : (bool * int)  AMap.t ;
@@ -51,7 +58,7 @@ module Store(A:Stored) = struct
       st.next <- i+1 ;
       i in
 
-    let store mustshare act = match A.make_key act with
+    let store mustshare ctx act = match A.make_key ctx act with
     | Some key ->
         begin try
           let (shared,i) = AMap.find key st.map in
@@ -83,6 +90,18 @@ module Store(A:Stored) = struct
       acts in
     {act_store = store false ; act_store_shared = store true ;
      act_get = get; act_get_shared = get_shared; }
+end
+
+module Store(A:Stored) = struct
+  module Me =
+    CtxStore
+      (struct
+        include A
+        type context = unit
+        let make_key () = A.make_key
+      end)
+
+  let mk_store = Me.mk_store
 end
 
 
@@ -358,7 +377,7 @@ let make_key  cases =
 
 
 (*
-  Intervall test x in [l,h] works by checking x-l in [0,h-l]
+  Interval test x in [l,h] works by checking x-l in [0,h-l]
    * This may be false for arithmetic modulo 2^31
    * Subtracting l may change the relative ordering of values
      and invalid the invariant that matched values are given in
@@ -658,7 +677,7 @@ and enum top cases =
 (* Minimal density of switches *)
 let theta = ref 0.33333
 
-(* Minmal number of tests to make a switch *)
+(* Minimal number of tests to make a switch *)
 let switch_min = ref 3
 
 (* Particular case 0, 1, 2 *)
@@ -698,7 +717,7 @@ let dense {cases} i j =
    Adaptation of the correction to Bernstein
    ``Correction to `Producing Good Code for the Case Statement' ''
    S.K. Kannan and T.A. Proebsting
-   Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
+   Software Practice and Experience Vol. 24(2) 233 (Feb 1994)
 *)
 
 let comp_clusters s =
@@ -809,7 +828,7 @@ let do_zyva loc (low,high) arg cases actions =
   let s = {cases=cases ; actions=actions} in
 
 (*
-  Printf.eprintf "ZYVA: %b [low=%i,high=%i]\n" !ok_inter low high ;
+  Printf.eprintf "ZYVA: %B [low=%i,high=%i]\n" !ok_inter low high ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)
@@ -848,7 +867,7 @@ and test_sequence arg cases actions =
     {cases=cases ;
     actions=Array.map (fun act -> (fun _ -> act)) actions} in
 (*
-  Printf.eprintf "SEQUENCE: %b\n" !ok_inter ;
+  Printf.eprintf "SEQUENCE: %B\n" !ok_inter ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)

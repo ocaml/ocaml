@@ -1,6 +1,6 @@
 scheduler.o: scheduler.c ../../byterun/caml/alloc.h \
  ../../byterun/caml/misc.h ../../byterun/caml/config.h \
- ../../byterun/caml/../../config/m.h ../../byterun/caml/../../config/s.h \
+ ../../byterun/caml/m.h ../../byterun/caml/s.h \
  ../../byterun/caml/mlvalues.h ../../byterun/caml/backtrace.h \
  ../../byterun/caml/exec.h ../../byterun/caml/callback.h \
  ../../byterun/caml/config.h ../../byterun/caml/fail.h \

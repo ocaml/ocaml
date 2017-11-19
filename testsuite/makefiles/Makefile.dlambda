@@ -17,6 +17,7 @@
 # changes, we strip -dlambda-produced identifiers of their unique
 # identifier: "x/1234" becomes simply "x".
 
+.PHONY: default
 default:
 	@for file in *.ml; do \
 	  $(OCAMLC) -dlambda -c $$file 2>&1 | \
@@ -29,7 +30,9 @@ default:
           && echo " => passed" || echo " => failed"; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result

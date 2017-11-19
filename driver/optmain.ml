@@ -214,6 +214,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dcombine = set dump_combine
   let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
+  let _davail () = dump_avail := true
+  let _drunavail () = debug_runavail := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split
   let _dinterf = set dump_interf
@@ -224,7 +226,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dlinear = set dump_linear
   let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
   let _opaque = set opaque
 
   let _args = Arg.read_arg
@@ -239,6 +242,9 @@ let main () =
   try
     readenv ppf Before_args;
     Clflags.add_arguments __LOC__ (Arch.command_line_options @ Options.list);
+    Clflags.add_arguments __LOC__
+      ["-depend", Arg.Unit Makedepend.main_from_option,
+       "<options> Compute dependencies (use 'ocamlopt -depend -help' for details)"];
     Clflags.parse_arguments anonymous usage;
     Compmisc.read_color_env ppf;
     if !gprofile && not Config.profiling then
@@ -309,5 +315,5 @@ let main () =
 
 let () =
   main ();
-  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

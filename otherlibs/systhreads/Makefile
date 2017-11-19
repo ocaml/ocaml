@@ -96,12 +96,6 @@ $(LIBNAME).cmxa: $(THREADS_NCOBJS)
 # st_stubs_n.$(O) from the same source file st_stubs.c (it is compiled
 # twice, each time with different options).
 
-ifeq "$(TOOLCHAIN)" "msvc"
-  CCOUTPUT=/Fo
-else
-  CCOUTPUT=-o 
-endif
-
 st_stubs_b.$(O): st_stubs.c $(HEADER)
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I$(ROOTDIR)/byterun  \
 	  $(SHAREDCCCOMPOPTS) $(OUTPUTOBJ)$@ $<
@@ -155,10 +149,10 @@ depend:
 	$(error Dependencies cannot be regenerated using the MSVC ports)
 else
 depend:
-	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
+	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/byterun st_stubs.c \
 	  | sed -e 's/st_stubs\.o/st_stubs_b.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' > .depend
-	$(CPP) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
+	$(CC) -MM $(CPPFLAGS) -I$(ROOTDIR)/asmrun -I$(ROOTDIR)/byterun \
 	  -DNATIVE_CODE -DTARGET_$(ARCH) -DMODEL_$(MODEL) -DSYS_$(SYSTEM) \
 	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
