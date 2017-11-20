@@ -48,3 +48,14 @@ Error: Signature mismatch:
          type deos = !(B)
        Fields number 1 have different names, X and B.
 |}]
+
+module Absurd: sig val x:'a end = struct let x = 0 end;;
+[%%expect {|
+Line _, characters 34-54:
+Error: Signature mismatch:
+       Modules do not match:
+         sig val x : !(int) end
+       is not included in
+         sig val x : !('a) end
+       Values do not match: val x : !(int) is not included in val x : !('a)
+|}]

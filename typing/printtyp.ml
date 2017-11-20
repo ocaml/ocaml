@@ -1387,34 +1387,34 @@ let type_expansion t t' =
     let second = mk t' in
     first, Some second
 
-let type_diff (t,e) (t',e') =
+let type_diff mode (t,e) (t',e') =
   let t1, e1 = type_expansion t e in
   let t2, e2 = type_expansion t' e' in
   match e1, e2 with
   | Some e1, Some e2 ->
-      let e1, e2 = Difftree.typ (e1, e2) in
+      let e1, e2 = Difftree.typ mode (e1, e2) in
         (Decorate.typ t1, Some e1), (Decorate.typ t2, Some e2)
   | None, None ->
-      let t1, t2 = Difftree.typ (t1,t2) in
+      let t1, t2 = Difftree.typ mode (t1,t2) in
       (t1, None), (t2,None)
   | Some e1, None ->
-      let e1, t2 = Difftree.typ (e1,t2) in
+      let e1, t2 = Difftree.typ mode (e1,t2) in
       (Decorate.typ t1, Some e1), (t2, None)
   | None, Some e2 ->
-      let t1, e2  = Difftree.typ (t1,e2) in
+      let t1, e2  = Difftree.typ mode (t1,e2) in
       (t1,None), (Decorate.typ t2,Some e2)
 
 let type_path_expansion tp ppf tp' =
   if Path.same tp tp' then path ppf tp else
   fprintf ppf "@[<2>%a@ =@ %a@]" path tp path tp'
 
-let rec trace fst txt ppf = function
+let rec trace mode fst txt ppf = function
   | t1 :: t2 :: rem ->
-      let t1, t2 = type_diff t1 t2 in
+      let t1, t2 = type_diff mode t1 t2 in
       if not fst then fprintf ppf "@,";
       fprintf ppf "@[Type@;<1 2>%a@ %s@;<1 2>%a@] %a"
         print_expansion t1 txt print_expansion t2
-       (trace false txt) rem
+       (trace mode false txt) rem
   | _ -> ()
 
 let rec filter_trace keep_last = function
@@ -1625,7 +1625,7 @@ let unification_error env unif tr txt1 ppf txt2 =
       and t2 = prepare_expansion t2 in
       print_labels := not !Clflags.classic;
       let tr = List.map prepare_expansion tr in
-      let t, t' = type_diff t1 t2 in
+      let t, t' = type_diff Difftree.Unification t1 t2 in
       fprintf ppf
         "@[<v>\
           @[%t@;<1 2>%a@ \
@@ -1634,7 +1634,7 @@ let unification_error env unif tr txt1 ppf txt2 =
          @]"
         txt1 print_expansion t
         txt2 print_expansion t'
-        (trace false "is not compatible with type") tr
+        (trace Difftree.Unification false "is not compatible with type") tr
         (explain mis);
       if env <> Env.empty
       then begin
@@ -1651,13 +1651,13 @@ let report_unification_error ppf env ?(unif=true)
   wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2)
 ;;
 
-let trace fst keep_last txt ppf tr =
+let trace mode fst keep_last txt ppf tr =
   print_labels := not !Clflags.classic;
   trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
-      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace keep_last tr')
-      else trace fst txt ppf (filter_trace keep_last tr);
+      if fst then trace mode fst txt ppf (t1 :: t2 :: filter_trace keep_last tr')
+      else trace mode fst txt ppf (filter_trace keep_last tr);
       print_labels := true
   | _ -> ()
   with exn ->
@@ -1669,11 +1669,12 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     reset ();
     let tr1 = List.map prepare_expansion tr1
     and tr2 = List.map prepare_expansion tr2 in
-    fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
+    fprintf ppf "@[<v>%a" (trace Difftree.Unification true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
     let mis = mismatch env true tr2 in
     fprintf ppf "%a%t@]"
-      (trace false (mis = None) "is not compatible with type") tr2
+      (trace Difftree.Unification false (mis = None) "is not compatible with type")
+      tr2
       (explain mis))
 
 let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =

@@ -534,7 +534,7 @@ let show_locs ppf (loc1, loc2) =
   show_loc "Actual declaration" ppf loc1
 
 let include_err ppf =
-  let diff, pp = Difftree.sig_item, !Oprint.out_sig_item in
+  let diff, pp = Difftree.(sig_item Inclusion), !Oprint.out_sig_item in
   function
   | Missing_field (id, loc, kind) ->
       fprintf ppf "The %s `%a' is required but not provided" kind ident id;
@@ -568,7 +568,7 @@ let include_err ppf =
       show_locs ppf (x1.ext_loc, x2.ext_loc)
   | Module_types(mty1, mty2)->
       let t1, t2 =
-        Difftree.modtype (tree_of_modtype mty1, tree_of_modtype mty2) in
+        Difftree.(modtype Inclusion) (tree_of_modtype mty1, tree_of_modtype mty2) in
       fprintf ppf
        "@[<hv 2>Modules do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"

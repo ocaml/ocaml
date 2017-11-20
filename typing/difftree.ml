@@ -4,6 +4,7 @@ open Outcometree
 
 module H = Highlightable
 type emphase = H.emphase = On | Off
+type mode = Inclusion | Unification
 
 module D = Decorated
 
@@ -504,52 +505,53 @@ module Type = struct
   let std x = pure (plain x)
   let slist x y = list (bind2 string) x y
 
-  let rec type' t1 t2 =
+  let rec type' mode t1 t2 =
     match t1, t2 with
     | Otyp_abstract, Otyp_abstract
     | Otyp_open, Otyp_open -> pure (Decorate.typ t1)
 
     | Otyp_alias (ty,as'), Otyp_alias(ty2,as2) ->
-        alias <*> [typ ty ty2; string as' as2]
+        alias <*> [typ mode ty ty2; string as' as2]
     | Otyp_alias (ty,as'), y when is_free as' ->
-        let d = typ ty y in
+        let d = typ mode ty y in
         stitch (alias <*> [d; std as']) d
     | x, Otyp_alias (ty,as') when is_free as' ->
-        let d = typ x ty in
+        let d = typ mode x ty in
         stitch d (alias <*> [ d; std as' ])
 
     | Otyp_arrow _ , Otyp_arrow _ ->
         let fn =  fn_to_list t1 and fn' = fn_to_list t2 in
-        arrow <*> [ fn_args fn fn' ]
+        arrow <*> [ fn_args mode fn fn' ]
     | Otyp_class (b, id, args), Otyp_class (b',id',args') ->
-        class' <*> [ bool b b'; id_diff id id'; tylist args args' ]
+        class' <*> [ bool b b'; id_diff id id'; tylist mode args args' ]
     | Otyp_constr(t1, ([_] as args)), Otyp_constr(t2, ([_] as args2))->
-        constr <*> [ id_diff t1 t2; tylist args args2 ]
+        constr <*> [ id_diff t1 t2; tylist mode args args2 ]
     | Otyp_constr(t1, [arg]), t2 ->
         fork (Size.primary 1)
           (fun x -> constr (Decorate.ident ~highlight:H.On t1) [x])
           (fun x -> x)
-          (type' arg t2)
+          (type' mode arg t2)
     | t1, Otyp_constr(t2, [arg]) ->
         fork (Size.primary 1)
           (fun x -> x)
           (fun x -> constr (Decorate.ident ~highlight:H.On t2) [x])
-          (type' t1 arg)
+          (type' mode t1 arg)
     | Otyp_constr (t1, args), Otyp_constr(t2,args2) ->
-        constr <*> [ id_diff t1 t2; tylist args args2 ]
+        constr <*> [ id_diff t1 t2; tylist mode args args2 ]
     | Otyp_manifest(x,y), Otyp_manifest(x',y') ->
-        manifest <*> [ typ x x'; typ y y' ]
+        manifest <*> [ typ mode x x'; typ mode y y' ]
     | Otyp_object (l,closed), Otyp_object (l2,closed2)  ->
         let st = function Some _ -> Off | None -> On in
-        object' <*> [ olist (st closed2, st closed) l l2;
+        object' <*> [ olist mode (st closed2, st closed) l l2;
                       opt_ext bool closed closed2 ]
     | Otyp_record r, Otyp_record r' ->
-        record <*> [ rlist r r' ]
+        record <*> [ rlist mode r r' ]
     | Otyp_sum s, Otyp_sum s' ->
-        sum <*> [ list (bind2 dconstr) s s' ]
-    | Otyp_tuple l, Otyp_tuple l' -> tuple <*> [ tylist l l' ]
+        sum <*> [ list (bind2 @@ dconstr mode) s s' ]
+    | Otyp_tuple l, Otyp_tuple l' -> tuple <*> [ tylist mode l l' ]
 
-    | Otyp_var (b,name), Otyp_var(b',name') when is_free name || is_free name'->
+    | Otyp_var (b,name), Otyp_var(b',name')
+      when is_free name || (is_free name' && mode = Unification) ->
         if name = name' then
           var <*> [bool b b'; string name name']
         else
@@ -558,67 +560,68 @@ module Type = struct
         var <*> [bool b b'; string name name']
     | Otyp_var(_, name), _ when is_free name ->
         similar (Decorate.typ t1) (Decorate.typ t2)
-    | _, Otyp_var(_,name) when is_free name ->
+    | _, Otyp_var(_,name) when is_free name && mode = Unification ->
         similar (Decorate.typ t1) (Decorate.typ t2)
     | Otyp_variant (b,fields,b2,tags), Otyp_variant(b',fields',b2',tags') ->
         variant <*> [
           bool b b';
-          dvariant fields fields';
+          dvariant mode fields fields';
           bool b2 b2';
           opt_ext slist tags tags'
         ]
 
     | Otyp_poly (forall,ty), Otyp_poly (forall',ty') ->
-        poly <*> [ slist forall forall'; typ ty ty' ]
+        poly <*> [ slist forall forall'; typ mode ty ty' ]
     | Otyp_module (name, args, tyl), Otyp_module (name',args',tyl') ->
-        module' <*> [ string name name'; slist args args'; tylist tyl tyl' ]
+        module' <*> [ string name name'; slist args args'; tylist mode tyl tyl' ]
     | Otyp_attribute (t,attr), Otyp_attribute (t',attr') ->
-        attribute <*> [ typ t t'; attr_diff attr attr' ]
+        attribute <*> [ typ mode t t'; attr_diff attr attr' ]
     | Otyp_stuff _, Otyp_stuff _ ->
         split Size.one (Decorate.typ t1) (Decorate.typ t2)
 
     | (Otyp_var _ | Otyp_constr _ ), (Otyp_var _ | Otyp_constr _ ) ->
-        self_diff_then_stitch typ t1 t2
+        self_diff_then_stitch (typ mode) t1 t2
 
-    | _ -> self_diff_then_stitch type' t1 t2
-  and typ x = type' x
-  and tylist x y = list (bind2 typ) x y
-  and fn_args (x,ret) (y,ret') =
-    pair <*> [ dfn_args x y; typ ret ret' ]
-  and dofield (n,ty) (n',ty') =
-        pair <*> [ string n n'; typ ty ty']
-  and olist side x = keyed_list ocmp (fmap2 ~side dofield) x
+    | _ -> self_diff_then_stitch (type' mode) t1 t2
+  and typ mode x = type' mode x
+  and tylist mode x y = list (bind2 @@ typ mode) x y
+  and fn_args mode (x,ret) (y,ret') =
+    pair <*> [ dfn_args mode x y; typ mode ret ret' ]
+  and dofield mode (n,ty) (n',ty') =
+        pair <*> [ string n n'; typ mode ty ty']
+  and olist mode side x = keyed_list ocmp (fmap2 ~side @@ dofield mode) x
 
-  and dconstr c c' =
+  and dconstr mode c c' =
     (fun cname args ret -> plain {D.cname;args;ret} )
           <*> [ string c.cname c'.cname;
-                tylist c.args c'.args;
-                opt_ext typ c.ret c'.ret
+                tylist mode c.args c'.args;
+                opt_ext (typ mode) c.ret c'.ret
               ]
 
-  and dfield f f' =
+  and dfield mode f f' =
     (fun label mut typ -> plain {D.label; mut; typ} )
     <*> [ string f.label f'.label
         ; bool f.mut f'.mut
-        ; typ f.typ f'.typ ]
-  and rlist x = list (bind2 dfield) x
+        ; typ mode f.typ f'.typ ]
+  and rlist mode x = list (bind2 @@ dfield mode) x
 
   and variant_cmp x y = compare x.tag y.tag
-  and dvariant x y = match x, y with
-    | Ovar_typ t, Ovar_typ t' -> (fun x -> plain @@ D.Ovar_typ x) <*> [typ t t']
+  and dvariant mode x y = match x, y with
+    | Ovar_typ t, Ovar_typ t' ->
+        (fun x -> plain @@ D.Ovar_typ x) <*> [typ mode t t']
     | Ovar_fields f, Ovar_fields f' ->
         (fun x -> plain @@ D.Ovar_fields x)
-        <*> [keyed_list variant_cmp (fmap2 dvfield) f f']
-    | _ ->  self_diff_then_stitch dvariant x y
+        <*> [keyed_list variant_cmp (fmap2 @@ dvfield mode) f f']
+    | _ ->  self_diff_then_stitch (dvariant mode) x y
 
-  and dvfield f f' =
+  and dvfield mode f f' =
           (fun tag ampersand conj -> {D.tag;ampersand;conj} )
           <*> [ string f.tag f'.tag;
                 bool   f.ampersand f'.ampersand;
-                tylist f.conj f'.conj]
+                tylist mode f.conj f'.conj]
 
-  and dfn_args x = list (fmap2 (fun (label,ty) (label',ty') ->
-      pair <*> [ string label label'; typ ty ty' ] )) x
+  and dfn_args mode x = list (fmap2 (fun (label,ty) (label',ty') ->
+      pair <*> [ string label label'; typ mode ty ty' ] )) x
 end open Type
 
 module Ct = struct
@@ -639,30 +642,30 @@ module Ct = struct
   let method' x y z w = plain @@ D.Ocsg_method(x,y,z,w)
   let value x y z w = plain @@ D.Ocsg_value(x,y,z,w)
 
-  let rec ct x y = match x, y with
+  let rec ct mode x y = match x, y with
     | Octy_constr (id,tyl), Octy_constr(id',tyl') ->
-        constr <*> [id_diff id id'; tylist tyl tyl']
+        constr <*> [id_diff id id'; tylist mode tyl tyl']
     | Octy_arrow _ , Octy_arrow _ ->
-        arrow <*> [ ct_args x y ]
+        arrow <*> [ ct_args mode x y ]
     | Octy_signature (x,items), Octy_signature(y,items') ->
-        signature <*> [ opt_ext typ x y; item_list items items' ]
-    | _ -> self_diff_then_stitch ct x y
-  and item_list x = list (bind2 items) x
-  and ct_args c c' =
+        signature <*> [ opt_ext (typ mode) x y; item_list mode items items' ]
+    | _ -> self_diff_then_stitch (ct mode) x y
+  and item_list mode x = list (bind2 @@ items mode ) x
+  and ct_args mode c c' =
     let (x,ctx), (y,cty) = to_list c, to_list c' in
-    pair <*> [ dfn_args x y; ct ctx cty]
-  and items x y = match x,y with
+    pair <*> [ dfn_args mode x y; (ct mode) ctx cty]
+  and items mode x y = match x,y with
     | Ocsg_constraint c, Ocsg_constraint c' ->
-        constraint' <*> [typ c.lhs c'.lhs; typ c.rhs c'.rhs]
+        constraint' <*> [typ mode c.lhs c'.lhs; typ mode c.rhs c'.rhs]
     | Ocsg_method(name,priv,virt,ty), Ocsg_method(name',priv',virt',ty') ->
         method' <*> [ string name name';
                       bool priv priv'; bool virt virt';
-                      typ ty ty' ]
+                      typ mode ty ty' ]
     | Ocsg_value(name,priv,virt,ty), Ocsg_value(name',priv',virt',ty') ->
         value <*> [ string name name';
                     bool priv priv'; bool virt virt';
-                    typ ty ty' ]
-    | _ -> self_diff_then_stitch items x y
+                    typ mode ty ty' ]
+    | _ -> self_diff_then_stitch (items mode) x y
 
 end
 
@@ -720,7 +723,8 @@ let dparam p p' =
         string  p.name p'.name ]
 
 let dct c c' =
-  (fun lhs rhs -> {D.lhs;rhs}) <*> [typ c.lhs c'.lhs; typ c.rhs c'.rhs]
+  (fun lhs rhs -> {D.lhs;rhs}) <*>
+  [typ Inclusion c.lhs c'.lhs; typ Inclusion c.rhs c'.rhs]
 
 let clist = list (fmap2 dct)
 let plist = list (fmap2 dparam)
@@ -739,76 +743,77 @@ let sig_item_key = function
 
 let sigcmp x y = compare (sig_item_key x) (sig_item_key y)
 
-let rec sig_item s1 s2 =
+let rec sig_item mode s1 s2 =
   Type.reset_free ();
   let open Sig in
   match s1, s2 with
 
   | Osig_class (b,name,params,typ,recs), Osig_class (b',name',params',typ',recs') ->
       class' <*> [ bool b b'; string name name'; plist params params';
-                   Ct.ct typ typ'; positive_rec recs recs' ]
+                   Ct.ct mode typ typ'; positive_rec recs recs' ]
   | Osig_class_type (b,name,params,typ,recs),
     Osig_class_type (b',name',params',typ',recs') ->
       class_type <*> [ bool b b'; string name name'; plist params params';
-                      Ct.ct typ typ'; positive_rec recs recs' ]
+                      Ct.ct mode typ typ'; positive_rec recs recs' ]
   | Osig_typext (te,st), Osig_typext (te',st') ->
+      let opty = opt_ext (typ mode) in
       typext <*>
      [ extension_constructor
         <*> [ string      te.oext_name        te'.oext_name;
               string      te.oext_type_name   te'.oext_type_name;
               slist       te.oext_type_params te'.oext_type_params;
-              tylist      te.oext_args        te'.oext_args;
-              opt_ext typ te.oext_ret_type    te'.oext_ret_type;
+              tylist mode te.oext_args        te'.oext_args;
+              opty        te.oext_ret_type    te'.oext_ret_type;
               priv        te.oext_private     te'.oext_private ]
         ;
         ext st st'
       ]
   | Osig_modtype (name,typ), Osig_modtype (name',typ') ->
-      modtype <*> [string name name'; module_type typ typ']
+      modtype <*> [string name name'; module_type mode typ typ']
 
   | Osig_module (name,typ,recs), Osig_module (name',typ',recs') ->
-      module' <*> [ string       name name';
-                    module_type typ  typ';
-                    positive_rec recs recs'
+      module' <*> [ string           name name';
+                    module_type mode typ  typ';
+                    positive_rec     recs recs'
                   ]
   | Osig_type (decl, recs),  Osig_type (decl', recs') ->
       type' <*>
       [ type_decl <*> [
-            string decl.otype_name      decl'.otype_name;
-            plist  decl.otype_params    decl'.otype_params;
-            typ    decl.otype_type      decl'.otype_type;
-            priv   decl.otype_private   decl'.otype_private;
-            bool   decl.otype_immediate decl'.otype_immediate;
-            bool   decl.otype_unboxed   decl'.otype_unboxed;
-            clist  decl.otype_cstrs     decl'.otype_cstrs;
+            string   decl.otype_name      decl'.otype_name;
+            plist    decl.otype_params    decl'.otype_params;
+            typ mode decl.otype_type      decl'.otype_type;
+            priv     decl.otype_private   decl'.otype_private;
+            bool     decl.otype_immediate decl'.otype_immediate;
+            bool     decl.otype_unboxed   decl'.otype_unboxed;
+            clist    decl.otype_cstrs     decl'.otype_cstrs;
           ];
         negative_rec recs recs']
   | Osig_value v, Osig_value v' ->
       value <*>
       [ val_decl
-        <*> [ string v.oval_name        v'.oval_name;
-              typ    v.oval_type        v'.oval_type;
-              slist  v.oval_prims       v'.oval_prims;
-              alist  v.oval_attributes  v'.oval_attributes
+        <*> [ string   v.oval_name        v'.oval_name;
+              typ mode v.oval_type        v'.oval_type;
+              slist    v.oval_prims       v'.oval_prims;
+              alist    v.oval_attributes  v'.oval_attributes
             ]
       ]
-  | _ -> self_diff_then_stitch sig_item s1 s2
+  | _ -> self_diff_then_stitch (sig_item mode) s1 s2
 
-and module_type x y =
+and module_type mode x y =
   let open Mty in
   match x, y with
   | Omty_abstract, Omty_abstract -> pure @@ Decorate.module_type x
 
   | Omty_functor _ , Omty_functor _ ->
-      functor' <*> functor_diff x y
+      functor' <*> functor_diff mode x y
   | Omty_ident id, Omty_ident id' -> ident <*> [id_diff id id']
   | Omty_signature s, Omty_signature s' ->
-      signature <*> [ module_like sigcmp (bind2 sig_item) s s' ]
+      signature <*> [ module_like sigcmp (bind2 @@ sig_item mode) s s' ]
   | Omty_alias x, Omty_alias y -> alias <*> [id_diff x y]
 
-  | _ -> self_diff_then_stitch module_type x y
+  | _ -> self_diff_then_stitch (module_type mode) x y
 
-and functor_diff t t'=
+and functor_diff mode t t'=
   let (f,res), (f',res') = Mty.(list_of_functor t, list_of_functor t') in
   let name_diff name name' =
     if name ="_" || name' ="_" then
@@ -816,18 +821,18 @@ and functor_diff t t'=
     else
       string name name' in
   let arg (name,mty) (name',mty') =
-    pair <*> [ name_diff name name'; opt_ext module_type mty mty'] in
-  [list (fmap2 arg) f f'; module_type res res']
+    pair <*> [ name_diff name name'; opt_ext (module_type mode) mty mty'] in
+  [list (fmap2 arg) f f'; module_type mode res res']
 
 (** {2 Exported functions} *)
 
 module Gen = struct
 
-  type ('a,'b) t = 'a * 'a -> int -> 'b H.t * 'b H.t
+  type ('a,'b) t = mode -> 'a * 'a -> int -> 'b H.t * 'b H.t
 
-  let simplify f (x,y)=
+  let simplify f mode (x,y)=
   Type.reset_free ();
-  match f x y with
+  match f mode x y with
   | Eq x -> fun fuel -> dup ( x.gen fuel )
   | D r -> fun fuel -> r.gen fuel
 
@@ -838,8 +843,8 @@ module Gen = struct
 
 end
 
-type ('a, 'b) t = 'a * 'a -> 'b H.t * 'b H.t
-let simplify f x = f x @@ get_fuel ()
+type ('a, 'b) t = mode -> 'a * 'a -> 'b H.t * 'b H.t
+let simplify f mode x = f mode x @@ get_fuel ()
 
 let typ = simplify Gen.typ
 let sig_item = simplify Gen.sig_item

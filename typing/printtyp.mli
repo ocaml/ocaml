@@ -74,6 +74,7 @@ val cltype_declaration: Ident.t -> formatter -> class_type_declaration -> unit
 val type_expansion:
  type_expr -> type_expr -> (Outcometree.out_type as 'ty) * 'ty option
 val type_diff:
+  Difftree.mode ->
   (type_expr * type_expr as 'pair) -> 'pair ->
   ((Decorated.out_type Decorated.ext as 'ty) * 'ty option as 'diffpair)
   * 'diffpair
@@ -82,7 +83,8 @@ val print_expansion:
   -> unit
 val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
-    bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
+  Difftree.mode ->
+  bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
 val report_unification_error:
     formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
     (formatter -> unit) -> (formatter -> unit) ->
