@@ -739,6 +739,14 @@ wchar_t *caml_secure_getenv (wchar_t const *var)
   return _wgetenv(var);
 }
 
+/* caml_win32_getenv is used to implement Sys.getenv and Unix.getenv in such a
+   way that they get direct access to the Win32 environment rather than to the
+   copy that is cached by the C runtime system. The result of caml_win32_getenv
+   is dynamically allocated and must be explicitly deallocated.
+
+   In contrast, the OCaml runtime system still calls _wgetenv from the C runtime
+   system, via caml_secure_getenv. The result is statically allocated and needs
+   no deallocation. */
 CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
 {
   wchar_t * lpBuffer;
