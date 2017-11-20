@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 
 value caml_check_value_is_closure(value v, value v_descr)

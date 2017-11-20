@@ -17,6 +17,8 @@
 
 #if !defined(HAS_SYS_SHM_H)
 
+#define CAML_INTERNALS
+
 #include "caml/mlvalues.h"
 
 CAMLprim value caml_setup_afl (value unit)

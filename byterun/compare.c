@@ -174,7 +174,7 @@ static intnat do_compare_val(struct compare_stack* stk,
        shift lsb off to avoid overflow in subtraction. */
     if (! Is_in_value_area(v1) || ! Is_in_value_area(v2)) {
       if (v1 == v2) goto next_item;
-      return (v1 >> 1) - (v2 >> 1);
+      return ((intnat)v1 >> 1) - ((intnat)v2 >> 1);
       /* Subtraction above cannot result in UNORDERED */
     }
     t1 = Tag_val(v1);

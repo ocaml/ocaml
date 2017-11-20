@@ -26,6 +26,10 @@
 extern "C" {
 #endif
 
+#ifdef CAML_INTERNALS
+#define CAML_UNSIGNED_VALUE
+#endif
+
 /* Definitions
 
   word: Four bytes on 32 and 16 bit architectures,
@@ -57,7 +61,11 @@ extern "C" {
          This is for use only by the GC.
 */
 
+#ifdef CAML_UNSIGNED_VALUE
+typedef uintnat value;
+#else
 typedef intnat value;
+#endif
 typedef uintnat header_t;
 typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
@@ -70,13 +78,22 @@ typedef uintnat mark_t;
 
 /* Conversion macro names are always of the form  "to_from". */
 /* Example: Val_long as in "Val from long" or "Val of long". */
+#ifdef CAML_UNSIGNED_VALUE
+#define Val_long(x)     ((((uintnat)(x) << 1)) + 1)
+#define Long_val(x)     ((intnat) (x) >> 1)
+#else
 #define Val_long(x)     ((intnat) (((uintnat)(x) << 1)) + 1)
 #define Long_val(x)     ((x) >> 1)
+#endif
 #define Max_long (((intnat)1 << (8 * sizeof(value) - 2)) - 1)
 #define Min_long (-((intnat)1 << (8 * sizeof(value) - 2)))
 #define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
+#ifdef CAML_UNSIGNED_VALUE
+#define Unsigned_long_val(x) ((x) >> 1)
+#else
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
+#endif
 #define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
 /* Structure of the header:

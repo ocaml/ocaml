@@ -1090,7 +1090,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
         int li = 3, hi = Field(meths,0), mi;
         while (li < hi) {
           mi = ((li+hi) >> 1) | 1;
-          if (accu < Field(meths,mi)) hi = mi-2;
+          if ((intnat)accu < (intnat)Field(meths,mi)) hi = mi-2;
           else li = mi;
         }
         *pc = (li-3)*sizeof(value);
@@ -1112,7 +1112,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int li = 3, hi = Field(meths,0), mi;
       while (li < hi) {
         mi = ((li+hi) >> 1) | 1;
-        if (accu < Field(meths,mi)) hi = mi-2;
+        if ((intnat)accu < (intnat)Field(meths,mi)) hi = mi-2;
         else li = mi;
       }
       accu = Field (meths, li-1);

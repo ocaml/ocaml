@@ -207,7 +207,7 @@ CAMLprim value caml_get_public_method (value obj, value tag)
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if ((intnat)tag < (intnat)Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
   /* return 0 if tag is not there */
@@ -227,7 +227,7 @@ value caml_cache_public_method (value meths, value tag, value *cache)
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
-    if (tag < Field(meths,mi)) hi = mi-2;
+    if ((intnat)tag < (intnat)Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
   *cache = (li-3)*sizeof(value) + MARK;
@@ -243,7 +243,7 @@ value caml_cache_public_method2 (value *meths, value tag, value *cache)
     int li = 3, hi = meths[0], mi;
     while (li < hi) {
       mi = ((li+hi) >> 1) | 1;
-      if (tag < meths[mi]) hi = mi-2;
+      if ((intnat)tag < (intnat)meths[mi]) hi = mi-2;
       else li = mi;
     }
     *cache = (li-3)*sizeof(value) + MARK;

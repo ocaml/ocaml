@@ -37,6 +37,14 @@ Working version
 
 ### Runtime system:
 
+- GPR#1311: define value as uintnat, though still expose it to user code as
+  intnat.
+  (David Allsopp, review by Xavier Leroy)
+
+- GPR#1483: fix GC freelist accounting for chunks larger than the maximum block
+  size.
+  (David Allsopp and Damien Doligez)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
