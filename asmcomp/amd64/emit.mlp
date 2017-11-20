@@ -385,7 +385,7 @@ let output_test_zero arg =
 
 (* Output a floating-point compare and branch *)
 
-let emit_float_test cmp neg i lbl =
+let emit_float_test cmp i lbl =
   (* Effect of comisd on flags and conditional branches:
                      ZF PF CF  cond. branches taken
         unordered     1  1  1  je, jb, jbe, jp
@@ -395,33 +395,41 @@ let emit_float_test cmp neg i lbl =
      If FP traps are on (they are off by default),
      comisd traps on QNaN and SNaN but ucomisd traps on SNaN only.
   *)
-  match (cmp, neg) with
-  | (Ceq, false) | (Cne, true) ->
+  match cmp with
+  | CFeq ->
       let next = new_label() in
       I.ucomisd (arg i 1) (arg i 0);
       I.jp (label next);          (* skip if unordered *)
       I.je lbl;                   (* branch taken if x=y *)
       def_label next
-  | (Cne, false) | (Ceq, true) ->
+  | CFneq ->
       I.ucomisd (arg i 1) (arg i 0);
       I.jp lbl;                   (* branch taken if unordered *)
       I.jne lbl                   (* branch taken if x<y or x>y *)
-  | (Clt, _) ->
+  | CFlt ->
       I.comisd (arg i 0) (arg i 1);
-      if not neg then I.ja lbl    (* branch taken if y>x i.e. x<y *)
-      else            I.jbe lbl   (* taken if unordered or y<=x i.e. !(x<y) *)
-  | (Cle, _) ->
+      I.ja lbl                    (* branch taken if y>x i.e. x<y *)
+  | CFnlt ->
+      I.comisd (arg i 0) (arg i 1);
+      I.jbe lbl                   (* taken if unordered or y<=x i.e. !(x<y) *)
+  | CFle ->
       I.comisd (arg i 0) (arg i 1);(* swap compare *)
-      if not neg then I.jae lbl   (* branch taken if y>=x i.e. x<=y *)
-      else            I.jb lbl    (* taken if unordered or y<x i.e. !(x<=y) *)
-  | (Cgt, _) ->
+      I.jae lbl                    (* branch taken if y>=x i.e. x<=y *)
+  | CFnle ->
+      I.comisd (arg i 0) (arg i 1);(* swap compare *)
+      I.jb lbl                     (* taken if unordered or y<x i.e. !(x<=y) *)
+  | CFgt ->
       I.comisd (arg i 1) (arg i 0);
-      if not neg then I.ja lbl    (* branch taken if x>y *)
-      else            I.jbe lbl   (* taken if unordered or x<=y i.e. !(x>y) *)
-  | (Cge, _) ->
+      I.ja lbl                     (* branch taken if x>y *)
+  | CFngt ->
+      I.comisd (arg i 1) (arg i 0);
+      I.jbe lbl                    (* taken if unordered or x<=y i.e. !(x>y) *)
+  | CFge ->
       I.comisd (arg i 1) (arg i 0);(* swap compare *)
-      if not neg then I.jae lbl   (* branch taken if x>=y *)
-      else            I.jb lbl    (* taken if unordered or x<y i.e. !(x>=y) *)
+      I.jae lbl                    (* branch taken if x>=y *)
+  | CFnge ->
+      I.comisd (arg i 1) (arg i 0);(* swap compare *)
+      I.jb lbl                     (* taken if unordered or x<y i.e. !(x>=y) *)
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -770,8 +778,8 @@ let emit_instr fallthrough i =
       | Iinttest_imm(cmp, n) ->
           I.cmp (int n) (arg i 0);
           I.j (cond cmp) lbl
-      | Ifloattest(cmp, neg) ->
-          emit_float_test cmp neg i lbl
+      | Ifloattest cmp ->
+          emit_float_test cmp i lbl
       | Ioddtest ->
           I.test (int 1) (arg8 i 0);
           I.jne lbl

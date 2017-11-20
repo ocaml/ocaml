@@ -226,15 +226,31 @@ let make_const_ref c =
 let make_const_int n = make_const (Uconst_int n)
 let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
-let make_comparison cmp x y =
+
+let make_integer_comparison cmp x y =
   make_const_bool
     (match cmp with
        Ceq -> x = y
-     | Cneq -> x <> y
+     | Cne -> x <> y
      | Clt -> x < y
      | Cgt -> x > y
      | Cle -> x <= y
      | Cge -> x >= y)
+
+let make_float_comparison cmp x y =
+  make_const_bool
+    (match cmp with
+     | CFeq -> x = y
+     | CFneq -> not (x = y)
+     | CFlt -> x < y
+     | CFnlt -> not (x < y)
+     | CFgt -> x > y
+     | CFngt -> not (x > y)
+     | CFle -> x <= y
+     | CFnle -> not (x <= y)
+     | CFge -> x >= y
+     | CFnge -> not (x >= y))
+
 let make_const_float n = make_const_ref (Uconst_float n)
 let make_const_natint n = make_const_ref (Uconst_nativeint n)
 let make_const_int32 n = make_const_ref (Uconst_int32 n)
@@ -280,7 +296,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
           make_const_int (n1 lsr n2)
       | Pasrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
           make_const_int (n1 asr n2)
-      | Pintcomp c -> make_comparison c n1 n2
+      | Pintcomp c -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* float *)
@@ -299,7 +315,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Psubfloat -> make_const_float (n1 -. n2)
       | Pmulfloat -> make_const_float (n1 *. n2)
       | Pdivfloat -> make_const_float (n1 /. n2)
-      | Pfloatcomp c  -> make_comparison c n1 n2
+      | Pfloatcomp c  -> make_float_comparison c n1 n2
       | _ -> default
       end
   (* nativeint *)
@@ -325,7 +341,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
       | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
       | Pxorbint Pnativeint -> make_const_natint (Nativeint.logxor n1 n2)
-      | Pbintcomp(Pnativeint, c)  -> make_comparison c n1 n2
+      | Pbintcomp(Pnativeint, c)  -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* nativeint, int *)
@@ -363,7 +379,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
       | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
       | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
-      | Pbintcomp(Pint32, c) -> make_comparison c n1 n2
+      | Pbintcomp(Pint32, c) -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* int32, int *)
@@ -401,7 +417,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
       | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
       | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
-      | Pbintcomp(Pint64, c) -> make_comparison c n1 n2
+      | Pbintcomp(Pint64, c) -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* int64, int *)

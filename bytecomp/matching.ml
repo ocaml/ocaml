@@ -1901,7 +1901,7 @@ module SArg = struct
   type primitive = Lambda.primitive
 
   let eqint = Pintcomp Ceq
-  let neint = Pintcomp Cneq
+  let neint = Pintcomp Cne
   let leint = Pintcomp Cle
   let ltint = Pintcomp Clt
   let geint = Pintcomp Cge
@@ -2254,22 +2254,22 @@ let combine_constant loc arg cst partial ctx def
     | Const_float _ ->
         make_test_sequence loc
           fail
-          (Pfloatcomp Cneq) (Pfloatcomp Clt)
+          (Pfloatcomp CFneq) (Pfloatcomp CFlt)
           arg const_lambda_list
     | Const_int32 _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pint32, Cneq)) (Pbintcomp(Pint32, Clt))
+          (Pbintcomp(Pint32, Cne)) (Pbintcomp(Pint32, Clt))
           arg const_lambda_list
     | Const_int64 _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pint64, Cneq)) (Pbintcomp(Pint64, Clt))
+          (Pbintcomp(Pint64, Cne)) (Pbintcomp(Pint64, Clt))
           arg const_lambda_list
     | Const_nativeint _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pnativeint, Cneq)) (Pbintcomp(Pnativeint, Clt))
+          (Pbintcomp(Pnativeint, Cne)) (Pbintcomp(Pnativeint, Clt))
           arg const_lambda_list
   in lambda1,jumps_union local_jumps total
 

@@ -240,16 +240,19 @@ method private select_operation_softfp op args dbg =
   | (Cfloatofint, args) -> (self#iextcall("__aeabi_i2d", false), args)
   | (Cintoffloat, args) -> (self#iextcall("__aeabi_d2iz", false), args)
   | (Ccmpf comp, args) ->
-      let func = (match comp with
-                    Cne    (* there's no __aeabi_dcmpne *)
-                  | Ceq -> "__aeabi_dcmpeq"
-                  | Clt -> "__aeabi_dcmplt"
-                  | Cle -> "__aeabi_dcmple"
-                  | Cgt -> "__aeabi_dcmpgt"
-                  | Cge -> "__aeabi_dcmpge") in
-      let comp = (match comp with
-                    Cne -> Ceq (* eq 0 => false *)
-                  | _   -> Cne (* ne 0 => true *)) in
+      let comp, func =
+        match comp with
+        | CFeq -> Cne, "__aeabi_dcmpeq"
+        | CFneq -> Ceq, "__aeabi_dcmpeq"
+        | CFlt -> Cne, "__aeabi_dcmplt"
+        | CFnlt -> Ceq, "__aeabi_dcmplt"
+        | CFle -> Cne, "__aeabi_dcmple"
+        | CFnle -> Ceq, "__aeabi_dcmple"
+        | CFgt -> Cne, "__aeabi_dcmpgt"
+        | CFngt -> Ceq, "__aeabi_dcmpgt"
+        | CFge -> Cne, "__aeabi_dcmpge"
+        | CFnge -> Ceq, "__aeabi_dcmpge"
+      in
       (Iintop_imm(Icomp(Iunsigned comp), 0),
        [Cop(Cextcall(func, typ_int, false, None), args, dbg)])
   (* Add coercions around loads and stores of 32-bit floats *)

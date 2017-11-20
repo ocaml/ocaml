@@ -87,7 +87,7 @@ let instruction ppf = function
   | Klsrint -> fprintf ppf "\tlsrint"
   | Kasrint -> fprintf ppf "\tasrint"
   | Kintcomp Ceq -> fprintf ppf "\teqint"
-  | Kintcomp Cneq -> fprintf ppf "\tneqint"
+  | Kintcomp Cne -> fprintf ppf "\tneqint"
   | Kintcomp Clt -> fprintf ppf "\tltint"
   | Kintcomp Cgt -> fprintf ppf "\tgtint"
   | Kintcomp Cle -> fprintf ppf "\tleint"
