@@ -147,9 +147,10 @@ provide different behaviors when an argument is present or not.
 
 \begin{caml_example}{toplevel}
 let bump ?step x =
-  match step with
+  match step as
   | None -> x * 2
   | Some y -> x + y
+  end
 ;;
 \end{caml_example}
 

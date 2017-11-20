@@ -389,7 +389,7 @@ let dy { y; _ } = y (* explicit field elision: do not trigger warning 9 *)
   but this means that any code of the form
 \begin{verbatim}
   try ...
-  with Invalid_argument "arrays must have the same length" -> ...
+  as Invalid_argument "arrays must have the same length" -> ... end
 \end{verbatim}
   is now broken and may suffer from uncaught exceptions.
 
@@ -445,21 +445,23 @@ let warning = function
 
   For example,
 \begin{verbatim}
-try (int_of_string count_str, bool_of_string choice_str) with
+try (int_of_string count_str, bool_of_string choice_str) as
   | Failure "int_of_string" -> (0, true)
   | Failure "bool_of_string" -> (-1, false)
+end
 \end{verbatim}
   should be rewritten into more atomic tests. For example,
   using the "exception" patterns documented in Section~\ref{s:exception-match},
   one can write:
 \begin{verbatim}
-match int_of_string count_str with
+match int_of_string count_str as
   | exception (Failure _) -> (0, true)
   | count ->
-    begin match bool_of_string choice_str with
+    match bool_of_string choice_str as
     | exception (Failure _) -> (-1, false)
     | choice -> (count, choice)
     end
+end
 \end{verbatim}
 
 The only case where that transformation is not possible is if a given

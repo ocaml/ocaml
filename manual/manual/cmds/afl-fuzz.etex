@@ -52,9 +52,10 @@ As an example, we fuzz-test the following program, {\tt readline.ml}:
 \begin{verbatim}
 let _ =
   let s = read_line () in
-  match Array.to_list (Array.init (String.length s) (String.get s)) with
+  match Array.to_list (Array.init (String.length s) (String.get s)) as
     ['s'; 'e'; 'c'; 'r'; 'e'; 't'; ' '; 'c'; 'o'; 'd'; 'e'] -> failwith "uh oh"
   | _ -> ()
+  end
 \end{verbatim}
 
 There is a single input (the string ``secret code'') which causes this

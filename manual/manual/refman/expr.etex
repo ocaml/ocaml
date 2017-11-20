@@ -58,9 +58,11 @@ expr:
   | 'while' expr 'do' expr 'done'
   | 'for' value-name '=' expr ( 'to' || 'downto' ) expr 'do' expr 'done'
   | expr ';' expr
+  | 'match' expr 'as' pattern-matching 'end'
   | 'match' expr 'with' pattern-matching
   | 'function' pattern-matching
   | 'fun' {{ parameter }} [ ':' typexpr ] '->' expr
+  | 'try' expr 'as' pattern-matching 'end'
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding { 'and' let-binding } 'in' expr
   | 'new' class-path
@@ -308,7 +310,7 @@ expr@ is equivalent to
 \begin{center}
 @"fun" "?" lab ":" ident '->'
   "let" pattern '='
-    "match" ident "with" "Some" ident "->" ident '|' "None" '->' expr_0
+    "match" ident "as" "Some" ident "->" ident '|' "None" '->' expr_0 "end"
   "in" expr@
 \end{center}
 where @ident@
@@ -453,9 +455,10 @@ The @"else" expr_3@ part can be omitted, in which case it defaults to
 The expression
 $$\begin{array}{rlll}
 \token{match} & \textsl{expr} \\
-\token{with} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
-\token{|}     & \ldots \\
-\token{|}     & \textsl{pattern}_n & \token{->} & \textsl{expr}_n
+\token{as} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
+\token{|}  & \ldots \\
+\token{|}  & \textsl{pattern}_n & \token{->} & \textsl{expr}_n \\
+\token{end}
 \end{array}$$
 matches the value of @expr@ against the patterns @pattern_1@ to
 @pattern_n@. If the matching against @pattern_i@ succeeds, the
@@ -530,9 +533,10 @@ value @'()'@.
 The expression
 $$\begin{array}{rlll}
 \token{try~} & \textsl{expr} \\
-\token{with} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
+\token{as} & \textsl{pattern}_1 & \token{->} & \textsl{expr}_1 \\
 \token{|}   & \ldots \\
-\token{|}   & \textsl{pattern}_n & \token{->} & \textsl{expr}_n
+\token{|}   & \textsl{pattern}_n & \token{->} & \textsl{expr}_n \\
+\token{end}
 \end{array}$$
 evaluates the expression @expr@ and returns its value if the
 evaluation of @expr@ does not raise any exception. If the evaluation

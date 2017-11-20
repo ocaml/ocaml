@@ -1075,7 +1075,7 @@ class backup =
   object (self : 'mytype)
     val mutable copy = None
     method save = copy <- Some {< copy = None >}
-    method restore = match copy with Some x -> x | None -> self
+    method restore = match copy as Some x -> x | None -> self end
   end;;
 \end{caml_example}
 The above definition will only backup one level.
@@ -1094,7 +1094,7 @@ class backup =
   object (self : 'mytype)
     val mutable copy = None
     method save = copy <- Some {< >}
-    method restore = match copy with Some x -> x | None -> self
+    method restore = match copy as Some x -> x | None -> self end
     method clear = copy <- None
   end;;
 \end{caml_example}

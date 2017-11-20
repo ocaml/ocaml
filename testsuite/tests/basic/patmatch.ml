@@ -117,7 +117,7 @@ let set_true = lazy (s := Some 1)
 let set_false = lazy (s := None)
 
 let () =
-  let _r = try f (set_true, set_false, s) with Match_failure _ -> 2 in
+  let _r = try f (set_true, set_false, s) as Match_failure _ -> 2 end in
   printf "PR#5992=Ok\n"
 
 (* PR #5788, was giving wrong result 3 *)
@@ -125,21 +125,23 @@ exception Foo
 exception Bar = Foo
 
 let test e b =
-  match e, b with
+  match e, b as
   | Foo, true -> 1
   | Bar, false -> 2
   | _, _ -> 3
+  end
 
 let () =
   let r = test Bar false in
   if r = 2 then printf "PR#5788=Ok\n"
 
 let test e b =
-  match e, b with
+  match e, b as
   | Bar, false -> 0
   | (Foo|Bar), true -> 1
   | Foo, false -> 2
   | _, _ -> 3
+  end
 
 
 let () =
@@ -439,7 +441,7 @@ type token =
   | RPAREN
   | EMPTY
 
-let test_match tok = match tok with
+let test_match tok = match tok as
   | ITEM2(Array, ITEM (Rename, TLIST [ID id; STRING str]), INT idx) ->
       1
   | ITEM2(Cellref, TLIST [ID id], TLIST lst) ->
@@ -1406,6 +1408,7 @@ let test_match tok = match tok with
   | ITEM ((ITEM _|ITEM2 _), _) -> failwith " ITEM ((ITEM _|ITEM2 _), _) "
   | ITEM2 ((ITEM _|ITEM2 _), _, _) ->
       failwith " ITEM2 ((ITEM _|ITEM2 _), _, _) "
+  end
 
 let () =  printf "PR#6646=Ok\n%!"
 
@@ -1608,17 +1611,19 @@ module GPR234HList = struct
 
   let fold_hlist : 'b foldf -> 'b -> hlist -> 'b = fun f init l ->
     let rec loop : hlist -> 'b -> 'b = fun l acc ->
-      match l with
+      match l as
       | [] -> acc
-      | hd :: tl -> loop tl (f.f hd acc) in
+      | hd :: tl -> loop tl (f.f hd acc)
+      end in
     loop l init
 
   let to_int_fold : type a. a cell -> int -> int = fun cell acc ->
-    match cell with
+    match cell as
     | Int x -> x + acc
     | Pair (x, y) -> x + y + acc
     | StrInt str -> int_of_string str + acc
     | List l -> acc + List.fold_left (+) 0 l
+    end
 
   let sum l = fold_hlist {f=to_int_fold} 0 l
 

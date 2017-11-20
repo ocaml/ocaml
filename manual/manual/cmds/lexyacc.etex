@@ -667,8 +667,9 @@ Here is the main program, that combines the parser with the lexer:
               let result = Parser.main Lexer.token lexbuf in
                 print_int result; print_newline(); flush stdout
             done
-          with Lexer.Eof ->
+          as Lexer.Eof ->
             exit 0
+          end
 \end{verbatim}
 To compile everything, execute:
 \begin{verbatim}
@@ -716,8 +717,9 @@ rule token = parse
   ['A'-'Z' 'a'-'z'] ['A'-'Z' 'a'-'z' '0'-'9' '_'] * as id
                { try
                    Hashtbl.find keyword_table id
-                 with Not_found ->
-                   IDENT id }
+                 as Not_found ->
+                   IDENT id
+                 end }
 \end{verbatim}
 
 \item[ocamllex: Position memory overflow, too many bindings]

@@ -166,11 +166,12 @@ definition is:
                  = struct
                      type t = Leaf of string | Node of ASet.t
                      let compare t1 t2 =
-                       match (t1, t2) with
+                       match (t1, t2) as
                          (Leaf s1, Leaf s2) -> Pervasives.compare s1 s2
                        | (Leaf _, Node _) -> 1
                        | (Node _, Leaf _) -> -1
                        | (Node n1, Node n2) -> ASet.compare n1 n2
+                       end
                    end
         and ASet : Set.S with type elt = A.t
                  = Set.Make(A)
@@ -623,7 +624,7 @@ arguments, for instance:
 \begin{verbatim}
         module Device =
           (val (try Hashtbl.find devices (parse_cmdline())
-                with Not_found -> eprintf "Unknown device %s\n"; exit 2)
+                as Not_found -> eprintf "Unknown device %s\n"; exit 2 end)
            : DEVICE)
 \end{verbatim}
 Alternatively, the selection can be performed within a function:
@@ -733,13 +734,14 @@ then pretty-prints the value into a string:
         open Typ
         let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
           fun (type s) t x ->
-            match t with
+            match t as
             | Int eq -> string_of_int (TypEq.apply eq x)
             | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
             | Pair p ->
                 let module P = (val p : PAIR with type t = s) in
                 let (x1, x2) = TypEq.apply P.eq x in
                 Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
+            end
 \end{verbatim}
 
 Note that this function uses an explicit polymorphic annotation to obtain
@@ -1121,10 +1123,11 @@ For instance, the following program types correctly.
 \begin{verbatim}
         let rec sum : type a. a term -> _ = fun x ->
           let y =
-            match x with
+            match x as
             | Int n -> n
             | Add   -> 0
             | App(f,x) -> sum f + sum x
+            end
           in y + 1
         val sum : 'a term -> int = <fun>
 \end{verbatim}
@@ -1206,12 +1209,13 @@ then pretty-prints the value as a string:
 
         let rec to_string: type t. t typ -> t -> string =
           fun t x ->
-          match t with
+          match t as
           | Int -> string_of_int x
           | String -> Printf.sprintf "%S" x
           | Pair(t1,t2) ->
               let (x1, x2) = x in
               Printf.sprintf "(%s,%s)" (to_string t1 x1) (to_string t2 x2)
+          end
 \end{verbatim}
 
 Another frequent application of GADTs is equality witnesses.
@@ -1230,23 +1234,25 @@ to implement dynamic types.
 \begin{verbatim}
         let rec eq_type : type a b. a typ -> b typ -> (a,b) eq option =
           fun a b ->
-          match a, b with
+          match a, b as
           | Int, Int -> Some Eq
           | String, String -> Some Eq
           | Pair(a1,a2), Pair(b1,b2) ->
-              begin match eq_type a1 b1, eq_type a2 b2 with
+              match eq_type a1 b1, eq_type a2 b2 as
               | Some Eq, Some Eq -> Some Eq
               | _ -> None
               end
           | _ -> None
+          end
 
         type dyn = Dyn : 'a typ * 'a -> dyn
 
         let get_dyn : type a. a typ -> dyn -> a option =
           fun a (Dyn(b,x)) ->
-          match eq_type a b with
+          match eq_type a b as
           | None -> None
           | Some Eq -> Some x
+          end
 \end{verbatim}
 
 \paragraph{Existential type names in error messages}%
@@ -1278,9 +1284,10 @@ type ('arg,'result,'aux) fn =
   | Fun: ('a ->'b) -> ('a,'b,unit) fn
   | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
  let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
-  match f with
+  match f as
   | Fun f -> f x
   | Mem1 (f,y,fy) -> if x = y then fy else f x
+  end
 \end{caml_example}
 \item "$n" (n a number) is an internally generated existential %$
 which could not be named using one of the previous schemes.
@@ -1844,7 +1851,7 @@ change the delimiter to avoid escaping issues.
 (Introduced in OCaml 4.02)
 
 A new form of exception patterns is allowed, only as a toplevel
-pattern under a "match"..."with" pattern-matching (other occurrences
+pattern under a "match"..."as" pattern-matching (other occurrences
 are rejected by the type-checker).
 
 \begin{syntax}
@@ -1858,9 +1865,9 @@ as opposed to regular ``value cases''.  Exception cases are applied
 when the evaluation of the matched expression raises an exception.
 The exception value is then matched against all the exception cases
 and re-raised if none of them accept the exception (as for a
-"try"..."with" block).  Since the bodies of all exception and value
+"try"\ldots"as"\ldots"end" block).  Since the bodies of all exception and value
 cases is outside the scope of the exception handler, they are all
-considered to be in tail-position: if the "match"..."with" block
+considered to be in tail-position: if the "match"\ldots"as"\ldots"end" block
 itself is in tail position in the current function, any function call
 in tail position in one of the case bodies results in an actual tail
 call.

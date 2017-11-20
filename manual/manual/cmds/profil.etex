@@ -45,7 +45,7 @@ both {\bf then} branch and {\bf else} branch
 the loop body
 \item["m"] {\bf match} branches: a count point is set at the beginning of the
 body of each branch
-\item["t"] {\bf try \ldots with \ldots} branches: a count point is set at the
+\item["t"] {\bf try \ldots as \ldots end} branches: a count point is set at the
 beginning of the body of each branch
 \end{options}
 

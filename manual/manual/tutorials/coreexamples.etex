@@ -84,13 +84,15 @@ shape as list expressions, with identifier representing unspecified
 parts of the list. As an example, here is insertion sort on a list:
 \begin{caml_example}{toplevel}
 let rec sort lst =
-  match lst with
+  match lst as
     [] -> []
   | head :: tail -> insert head (sort tail)
+  end
 and insert elt lst =
-  match lst with
+  match lst as
     [] -> [elt]
   | head :: tail -> if elt <= head then elt :: lst else head :: insert elt tail
+  end
 ;;
 sort l;;
 \end{caml_example}
@@ -148,9 +150,10 @@ functionals, is predefined because it is often useful, but there is
 nothing magic with it: it can easily be defined as follows.
 \begin{caml_example}{toplevel}
 let rec map f l =
-  match l with
+  match l as
     [] -> []
-  | hd :: tl -> f hd :: map f tl;;
+  | hd :: tl -> f hd :: map f tl
+  end;;
 \end{caml_example}
 
 \section{Records and variants}
@@ -170,8 +173,9 @@ add_ratio {num=1; denom=3} {num=2; denom=5};;
 Record fields can also be accessed through pattern-matching:
 \begin{caml_example}{toplevel}
 let integer_part r =
-  match r with
-    {num=num; denom=denom} -> num / denom;;
+  match r as
+    {num=num; denom=denom} -> num / denom
+  end;;
 \end{caml_example}
 Since there is only one case in this pattern matching, it
 is safe to expand directly the argument "r" in a record pattern:
@@ -229,7 +233,7 @@ To define arithmetic operations for the "number" type, we use
 pattern-matching on the two numbers involved:
 \begin{caml_example}{toplevel}
 let add_num n1 n2 =
-  match (n1, n2) with
+  match (n1, n2) as
     (Int i1, Int i2) ->
       (* Check for overflow of integer addition *)
       if sign_int i1 = sign_int i2 && sign_int (i1 + i2) <> sign_int i1
@@ -239,7 +243,8 @@ let add_num n1 n2 =
   | (Float f1, Int i2) -> Float(f1 +. float i2)
   | (Float f1, Float f2) -> Float(f1 +. f2)
   | (Error, _) -> Error
-  | (_, Error) -> Error;;
+  | (_, Error) -> Error
+  end;;
 add_num (Int 123) (Float 3.14159);;
 \end{caml_example}
 
@@ -271,17 +276,19 @@ instance, here are functions performing lookup and insertion in
 ordered binary trees (elements increase from left to right):
 \begin{caml_example}{toplevel}
 let rec member x btree =
-  match btree with
+  match btree as
     Empty -> false
   | Node(y, left, right) ->
       if x = y then true else
-      if x < y then member x left else member x right;;
+      if x < y then member x left else member x right
+  end;;
 let rec insert x btree =
-  match btree with
+  match btree as
     Empty -> Node(x, Empty, Empty)
   | Node(y, left, right) ->
       if x <= y then Node(y, insert x left, right)
-                else Node(y, left, insert x right);;
+                else Node(y, left, insert x right)
+  end;;
 \end{caml_example}
 
 \section{Imperative features}
@@ -381,9 +388,10 @@ signal the case where an empty list is given.
 \begin{caml_example}{toplevel}
 exception Empty_list;;
 let head l =
-  match l with
+  match l as
     [] -> raise Empty_list
-  | hd :: tl -> hd;;
+  | hd :: tl -> hd
+  end;;
 head [1;2];;
 head [];;
 \end{caml_example}
@@ -398,20 +406,21 @@ List.assoc 1 [(0, "zero"); (1, "one")];;
 List.assoc 2 [(0, "zero"); (1, "one")];;
 \end{caml_example}
 
-Exceptions can be trapped with the "try"\ldots"with" construct:
+Exceptions can be trapped with the "try"\ldots"as"\ldots"end" construct:
 \begin{caml_example}{toplevel}
 let name_of_binary_digit digit =
   try
     List.assoc digit [0, "zero"; 1, "one"]
-  with Not_found ->
-    "not a binary digit";;
+  as Not_found ->
+    "not a binary digit"
+  end;;
 name_of_binary_digit 0;;
 name_of_binary_digit (-1);;
 \end{caml_example}
 
 The "with" part is actually a regular pattern-matching on the
 exception value. Thus, several exceptions can be caught by one
-"try"\ldots"with" construct. Also, finalization can be performed by
+"try"\ldots"as"\ldots"end" construct. Also, finalization can be performed by
 trapping all exceptions, performing the finalization, then raising
 again the exception:
 \begin{caml_example}{toplevel}
@@ -422,9 +431,10 @@ let temporarily_set_reference ref newval funct =
     let res = funct () in
     ref := oldval;
     res
-  with x ->
+  as x ->
     ref := oldval;
-    raise x;;
+    raise x
+  end;;
 \end{caml_example}
 
 \section{Symbolic processing of expressions}
@@ -451,14 +461,15 @@ the environment is represented as an association list.
 \begin{caml_example}{toplevel}
 exception Unbound_variable of string;;
 let rec eval env exp =
-  match exp with
+  match exp as
     Const c -> c
   | Var v ->
-      (try List.assoc v env with Not_found -> raise (Unbound_variable v))
+      try List.assoc v env as Not_found -> raise (Unbound_variable v) end
   | Sum(f, g) -> eval env f +. eval env g
   | Diff(f, g) -> eval env f -. eval env g
   | Prod(f, g) -> eval env f *. eval env g
-  | Quot(f, g) -> eval env f /. eval env g;;
+  | Quot(f, g) -> eval env f /. eval env g
+  end;;
 eval [("x", 1.0); ("y", 3.14)] (Prod(Sum(Var "x", Const 2.0), Var "y"));;
 \end{caml_example}
 
@@ -466,7 +477,7 @@ Now for a real symbolic processing, we define the derivative of an
 expression with respect to a variable "dv":
 \begin{caml_example}{toplevel}
 let rec deriv exp dv =
-  match exp with
+  match exp as
     Const c -> Const 0.0
   | Var v -> if v = dv then Const 1.0 else Const 0.0
   | Sum(f, g) -> Sum(deriv f dv, deriv g dv)
@@ -474,6 +485,7 @@ let rec deriv exp dv =
   | Prod(f, g) -> Sum(Prod(f, deriv g dv), Prod(deriv f dv, g))
   | Quot(f, g) -> Quot(Diff(Prod(deriv f dv, g), Prod(f, deriv g dv)),
                        Prod(g, g))
+  end
 ;;
 deriv (Quot(Const 1.0, Var "x")) "x";;
 \end{caml_example}
@@ -501,7 +513,7 @@ let print_expr exp =
   let close_paren prec op_prec =
     if prec > op_prec then print_string ")" in
   let rec print prec exp =     (* prec is the current precedence *)
-    match exp with
+    match exp as
       Const c -> print_float c
     | Var v -> print_string v
     | Sum(f, g) ->
@@ -520,6 +532,7 @@ let print_expr exp =
         open_paren prec 2;
         print 2 f; print_string " / "; print 3 g;
         close_paren prec 2
+    end
   in print 0 exp;;
 let e = Sum(Prod(Const 2.0, Var "x"), Const 1.0);;
 print_expr e; print_newline ();;
