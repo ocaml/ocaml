@@ -59,3 +59,21 @@ Error: Signature mismatch:
          sig val x : !('a) end
        Values do not match: val x : !(int) is not included in val x : !('a)
 |}]
+
+module Abstract: sig type t type error = unit end = struct
+  type t =
+    [`A | `Very | `Long | `Type | `Which | `Should | `Not | `Be | `Displayed ]
+  type error = int
+end;;
+[%%expect {|
+Line _, characters 52-171:
+Error: Signature mismatch:
+       Modules do not match:
+         sig ... type error = !(int) end
+       is not included in
+         sig ... type error = !(unit) end
+       Type declarations do not match:
+         type error = !(int)
+       is not included in
+         type error = !(unit)
+|}]

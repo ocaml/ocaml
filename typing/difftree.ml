@@ -510,6 +510,9 @@ module Type = struct
     | Otyp_abstract, Otyp_abstract
     | Otyp_open, Otyp_open -> pure (Decorate.typ t1)
 
+    | ty, Otyp_abstract when mode = Inclusion ->
+        stitch (type' mode ty ty) (pure @@ Decorate.typ Otyp_abstract)
+
     | Otyp_alias (ty,as'), Otyp_alias(ty2,as2) ->
         alias <*> [typ mode ty ty2; string as' as2]
     | Otyp_alias (ty,as'), y when is_free as' ->
