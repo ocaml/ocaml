@@ -20,6 +20,10 @@ Working version
 
 ### Other libraries:
 
+- GPR#???: Unix.getnameinfo and Unix.getaddrinfo are now Unicode-aware on
+  Windows.
+  (Nicolas Ojeda Bar, review by ????)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
