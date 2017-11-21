@@ -63,7 +63,7 @@ end
 
 let () =
   inc(); inc(); dec ();
-  assert (current () = 1)
+  assert (current () = 2)
 [%%expect{|
 |}];;
 
@@ -72,6 +72,39 @@ include struct open struct type t = T end let x = T end
 Line _, characters 15-41:
 Error: The module identifier M#7 cannot be eliminated from val x : M#7.t
 |}];;
+
+module A = struct
+  open struct
+    open struct
+      type t = T
+      let x = T
+    end
+    let y = x
+  end
+end
+[%%expect{|
+module A : sig  end
+|}];;
+
+module type S = sig open struct type t = T end val x : t end
+[%%expect{|
+Line _, characters 20-46:
+Error: The module identifier M#10 cannot be eliminated from val x : M#10.t
+|}];;
+
+module type S = sig
+  open struct
+    type t = int
+    open struct
+      type s = T | A of t
+    end
+    val x : char
+  end
+  val y : t
+end
+[%%expect{|
+module type S = sig val y : int end
+|}]
 
 module type S = sig open struct assert false end end;;
 [%%expect{|
