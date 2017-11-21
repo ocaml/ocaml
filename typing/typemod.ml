@@ -93,20 +93,13 @@ let type_module_fwd : (Env.t -> Parsetree.module_expr ->
 
 let mod_ident_counter = ref 0
 let generated_module_ident = ref []
-let generated_module_ident_in_sig = ref []
 
-let push_current_mid (mi, md, env) in_sig =
-  if in_sig then
-    generated_module_ident_in_sig := (mi, md, env) :: !generated_module_ident
-  else
-    generated_module_ident := (mi, md, env) :: !generated_module_ident
+let push_current_mid (mi, md, env) =
+  generated_module_ident := (mi, md, env) :: !generated_module_ident
 
-let pop_current_mid in_sig =
-  let slots =
-    if in_sig then generated_module_ident_in_sig
-    else generated_module_ident in
-  let slot = List.hd !slots in
-  slots := List.tl !slots;
+let pop_current_mid () =
+  let slot = List.hd !generated_module_ident in
+  generated_module_ident := List.tl !generated_module_ident;
   slot
 
 let gen_mod_ident () =
@@ -124,10 +117,11 @@ let pop_mod_type () =
   mt
 
 let open_struct_level = ref 0
+let in_nested_struct () = !open_struct_level <> 0
 let enter_struct () = incr open_struct_level
 let leave_struct () = decr open_struct_level
 
-let type_open_ ?used_slot ?toplevel in_sig ovf env loc me =
+let type_open_ ?used_slot ?toplevel ovf env loc me =
   match me.pmod_desc with
   | Pmod_functor _ | Pmod_unpack _ | Pmod_extension _ ->
       raise(Error(me.pmod_loc, env, Invalid_open me))
@@ -166,20 +160,18 @@ let type_open_ ?used_slot ?toplevel in_sig ovf env loc me =
         md_attributes = me.pmod_attributes;
       } in
       let newenv = Env.enter_module_declaration ident md env in
-      push_current_mid (ident, md, newenv) in_sig;
+      push_current_mid (ident, md, newenv);
       let root = Pident ident in
       match Env.open_signature ~loc ?used_slot ?toplevel ovf root newenv with
       | None -> assert false
       | Some opened_env -> tme, opened_env
     end
 
-let extract_open od in_sig =
+let extract_open od =
   match od.open_expr.mod_desc with
   | Tmod_ident (_, _) -> None
   | Tmod_structure _ | Tmod_apply _ | Tmod_constraint _ ->
-      let id, md, env =
-        if in_sig then List.hd !generated_module_ident_in_sig
-        else (pop_current_mid false) in
+      let id, md, env = pop_current_mid () in
       let tm =
         Tstr_module {mb_id=id;
                      mb_name={txt=Ident.name id; loc=Location.none};
@@ -190,14 +182,14 @@ let extract_open od in_sig =
   | _ -> assert false
 
 let extract_open_struct = function
-  | Tstr_open od -> extract_open od false
+  | Tstr_open od -> extract_open od
   | _ -> None
 
-let type_open ?toplevel env sod in_sig =
+let type_open ?toplevel env sod =
   let (tme, newenv) =
     Builtin_attributes.warning_scope sod.popen_attributes
       (fun () ->
-         type_open_ ?toplevel in_sig sod.popen_override env sod.popen_loc
+         type_open_ ?toplevel sod.popen_override env sod.popen_loc
            sod.popen_expr
       )
   in
@@ -661,7 +653,7 @@ and approx_sig env ssg =
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open sod ->
-          let (mty, _od) = type_open env sod true in
+          let (mty, _od) = type_open env sod in
           approx_sig mty srem
       | Psig_include sincl ->
           let smty = sincl.pincl_mod in
@@ -943,13 +935,13 @@ and transl_signature env sg =
             sg :: rem,
             final_env
         | Psig_open sod -> begin
-            let (newenv, od) = type_open env sod true in
+            let (newenv, od) = type_open env sod in
             let (trem, rem, final_env) = transl_sig newenv srem in
             let remr = ref rem in
             begin
-            if !open_struct_level = 0 then
+            if not (in_nested_struct ()) then
               begin
-              match extract_open od true with
+              match extract_open od with
               | None -> ()
               | Some (_, _, id, _) -> begin
                   let s_rem = Mty_signature rem in begin
@@ -1683,7 +1675,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         in
         Tstr_modtype mtd, [sg], newenv
     | Pstr_open sod ->
-        let (newenv, od) = type_open ~toplevel env sod false in
+        let (newenv, od) = type_open ~toplevel env sod in
         Tstr_open od, [], newenv
     | Pstr_class cl ->
         List.iter
@@ -1781,7 +1773,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             let md_sig =
               Sig_module (id, {md_type=md.Types.md_type; md_loc=loc;
                                md_attributes = []}, Trec_not) in
-            if !open_struct_level = 0 then begin
+            if not (in_nested_struct ()) then begin
               let s_rem = Mty_signature sig_rem in begin
               match Mtype.nondep_supertype new_env id s_rem with
               | Mty_signature sg ->
@@ -1806,7 +1798,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
     let (items, sg, full_sg, final_env) = type_struct env sstr in
-    if !open_struct_level <> 0 then begin
+    if in_nested_struct () then begin
       push_mod_type (Mty_signature full_sg)
     end;
     let str = { str_items = items; str_type = sg; str_final_env = final_env } in
@@ -1914,7 +1906,7 @@ let type_package env m p nl =
 (* Fill in the forward declarations *)
 
 let type_open ?used_slot ovf env loc me =
-  type_open_ ?used_slot ?toplevel:None false ovf env loc me
+  type_open_ ?used_slot ?toplevel:None ovf env loc me
 
 let () =
   Typecore.type_module := type_module_alias;
