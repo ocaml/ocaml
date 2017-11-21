@@ -161,6 +161,7 @@ ASMCOMP=\
   asmcomp/export_info_for_pack.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/closure.cmo \
+	asmcomp/traverse_for_exported_symbols.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \
   asmcomp/flambda_to_clambda.cmo \
@@ -193,6 +194,7 @@ MIDDLE_END=\
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \
+  middle_end/base_types/variable_name.cmo \
   middle_end/base_types/variable.cmo \
   middle_end/base_types/mutable_variable.cmo \
   middle_end/base_types/id_types.cmo \
@@ -200,6 +202,7 @@ MIDDLE_END=\
   middle_end/base_types/set_of_closures_origin.cmo \
   middle_end/base_types/closure_element.cmo \
   middle_end/base_types/closure_id.cmo \
+  middle_end/base_types/closure_origin.cmo \
   middle_end/base_types/var_within_closure.cmo \
   middle_end/base_types/static_exception.cmo \
   middle_end/base_types/export_id.cmo \

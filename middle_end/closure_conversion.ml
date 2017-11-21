@@ -70,7 +70,7 @@ let add_default_argument_wrappers lam =
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
     calls another function with arguments extracted in the obvious
     manner from the tuple. *)
-let tupled_function_call_stub original_params unboxed_version
+let tupled_function_call_stub original_params unboxed_version ~closure_bound_var
       : Flambda.function_declaration =
   let tuple_param_var =
     Variable.rename ~append:"tupled_stub_param" unboxed_version
@@ -100,9 +100,10 @@ let tupled_function_call_stub original_params unboxed_version
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
+    ~closure_origin:(Closure_origin.create (Closure_id.wrap closure_bound_var))
 
 let register_const t (constant:Flambda.constant_defining_value) name
-      : Flambda.constant_defining_value_block_field * string =
+      : Flambda.constant_defining_value_block_field * Variable_name.base =
   let current_compilation_unit = Compilation_unit.get_current_exn () in
   (* Create a variable to ensure uniqueness of the symbol *)
   let var = Variable.create ~current_compilation_unit name in
@@ -114,43 +115,51 @@ let register_const t (constant:Flambda.constant_defining_value) name
   Symbol symbol, name
 
 let rec declare_const t (const : Lambda.structured_constant)
-      : Flambda.constant_defining_value_block_field * string =
+      : Flambda.constant_defining_value_block_field * Variable_name.base =
   match const with
-  | Const_base (Const_int c) -> Const (Int c), "int"
-  | Const_base (Const_char c) -> Const (Char c), "char"
+  | Const_base (Const_int c) -> (Const (Int c), Variable_name.Const_int)
+  | Const_base (Const_char c) -> (Const (Char c), Variable_name.Const_char)
   | Const_base (Const_string (s, _)) ->
     let const, name =
       if Config.safe_string then
-        Flambda.Allocated_const (Immutable_string s), "immstring"
-      else Flambda.Allocated_const (String s), "string"
+        (Flambda.Allocated_const (Immutable_string s),
+         Variable_name.Const_immstring)
+      else
+        (Flambda.Allocated_const (String s),
+         Variable_name.Const_string)
     in
     register_const t const name
   | Const_base (Const_float c) ->
     register_const t
       (Allocated_const (Float (float_of_string c)))
-      "float"
+      Variable_name.Const_float
   | Const_base (Const_int32 c) ->
-    register_const t (Allocated_const (Int32 c)) "int32"
+    register_const t (Allocated_const (Int32 c))
+      Variable_name.Const_int32
   | Const_base (Const_int64 c) ->
-    register_const t (Allocated_const (Int64 c)) "int64"
+    register_const t (Allocated_const (Int64 c))
+      Variable_name.Const_int64
   | Const_base (Const_nativeint c) ->
-    register_const t (Allocated_const (Nativeint c)) "nativeint"
-  | Const_pointer c -> Const (Const_pointer c), "pointer"
+    register_const t (Allocated_const (Nativeint c))
+      Variable_name.Const_nativeint
+  | Const_pointer c ->
+    (Const (Const_pointer c), Variable_name.Const_ptr)
   | Const_immstring c ->
-    register_const t (Allocated_const (Immutable_string c)) "immstring"
+    register_const t (Allocated_const (Immutable_string c))
+      Variable_name.Const_immstring
   | Const_float_array c ->
     register_const t
       (Allocated_const (Immutable_float_array (List.map float_of_string c)))
-      "float_array"
+      Variable_name.Const_float_array
   | Const_block (tag, consts) ->
     let const : Flambda.constant_defining_value =
       Block (Tag.create_exn tag,
              List.map (fun c -> fst (declare_const t c)) consts)
     in
-    register_const t const "const_block"
+    register_const t const Variable_name.Const_block
 
 let close_const t (const : Lambda.structured_constant)
-      : Flambda.named * string =
+      : Flambda.named * Variable_name.base =
   match declare_const t const with
   | Const c, name ->
     Const c, name
@@ -164,14 +173,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     | var -> Var var
     | exception Not_found ->
       match Env.find_mutable_var_exn env id with
-      | mut_var -> name_expr (Read_mutable mut_var) ~name:"read_mutable"
+      | mut_var ->
+        name_expr (Read_mutable mut_var) ~name:Variable_name.Read_mutable
       | exception Not_found ->
         Misc.fatal_errorf "Closure_conversion.close: unbound identifier %a"
           Ident.print id
     end
   | Lconst cst ->
     let cst, name = close_const t cst in
-    name_expr cst ~name:("const_" ^ name)
+    name_expr cst ~name
   | Llet ((Strict | Alias | StrictOpt), _value_kind, id, defining_expr, body) ->
     (* TODO: keep value_kind in flambda *)
     let var = Variable.create_with_same_name_as_ident id in
@@ -194,15 +204,21 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
            body;
            contents_kind = block_kind })
   | Lfunction { kind; params; body; attr; loc; } ->
-    let name =
+    let anon_fn_location =
       (* Name anonymous functions by their source location, if known. *)
-      if loc = Location.none then "anon-fn"
-      else Format.asprintf "anon-fn[%a]" Location.print_compact loc
+      if loc = Location.none
+      then None
+      else Some (Format.asprintf "%a" Location.print_compact loc)
     in
-    let closure_bound_var = Variable.create name in
+    let closure_bound_var =
+      Variable.create (Variable_name.Anon_fn anon_fn_location)
+    in
     (* CR-soon mshinwell: some of this is now very similar to the let rec case
        below *)
-    let set_of_closures_var = Variable.create ("set_of_closures_" ^ name) in
+    let set_of_closures_var =
+      Variable.create (
+        Variable_name.Set_of_closures_anon_fn anon_fn_location)
+    in
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
@@ -217,15 +233,15 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure))
-        ~name:("project_closure_" ^ name))
+        ~name:(Variable_name.Project_closure_anon_fn anon_fn_location))
   | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall = _;
         ap_inlined; ap_specialised; } ->
     Lift_code.lifting_helper (close_list t env ap_args)
       ~evaluation_order:`Right_to_left
-      ~name:"apply_arg"
+      ~name:Variable_name.Apply_arg
       ~create_body:(fun args ->
         let func = close t env ap_func in
-        let func_var = Variable.create "apply_funct" in
+        let func_var = Variable.create Variable_name.Apply_funct in
         Flambda.create_let func_var (Expr func)
           (Apply ({
               func = func_var;
@@ -282,7 +298,9 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             (List.map (fun (id, _) -> Ident.unique_name id) defs)
         end
       in
-      let set_of_closures_var = Variable.create name in
+      let set_of_closures_var =
+        Variable.create (Variable_name.Arbitary name)
+      in
       let set_of_closures =
         close_functions t env (Function_decls.create function_declarations)
       in
@@ -316,14 +334,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       Let_rec (defs, close t env body)
     end
   | Lsend (kind, meth, obj, args, loc) ->
-    let meth_var = Variable.create "meth" in
-    let obj_var = Variable.create "obj" in
+    let meth_var = Variable.create Variable_name.Meth in
+    let obj_var = Variable.create Variable_name.Obj in
     let dbg = Debuginfo.from_location loc in
     Flambda.create_let meth_var (Expr (close t env meth))
       (Flambda.create_let obj_var (Expr (close t env obj))
         (Lift_code.lifting_helper (close_list t env args)
           ~evaluation_order:`Right_to_left
-          ~name:"send_arg"
+          ~name:Variable_name.Send_arg
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
   | Lprim ((Pdivint Safe | Pmodint Safe
@@ -332,11 +350,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
     let arg1 = close t env arg1 in
-    let numerator = Variable.create "numerator" in
-    let denominator = Variable.create "denominator" in
-    let zero = Variable.create "zero" in
-    let is_zero = Variable.create "is_zero" in
-    let exn = Variable.create "division_by_zero" in
+    let numerator = Variable.create Variable_name.Numerator in
+    let denominator = Variable.create Variable_name.Denominator in
+    let zero = Variable.create Variable_name.Zero in
+    let is_zero = Variable.create Variable_name.Is_zero in
+    let exn = Variable.create Variable_name.Division_by_zero in
     let exn_symbol =
       t.symbol_for_global' Predef.ident_division_by_zero
     in
@@ -376,7 +394,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
               (Prim (comparison, [zero; denominator], dbg))
                 (If_then_else (is_zero,
                   name_expr (Prim (Praise Raise_regular, [exn], dbg))
-                    ~name:"dummy",
+                    ~name:Variable_name.Dummy,
                   (* CR-someday pchambart: find the right event.
                      mshinwell: I briefly looked at this, and couldn't
                      figure it out.
@@ -384,7 +402,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
                      are suitable. I had to add a new one for a similar
                      case in the array data types work.
                      mshinwell: deferred CR *)
-                  name_expr ~name:"result"
+                  name_expr ~name:Variable_name.Result
                     (Prim (prim, [numerator; denominator], dbg))))))))
   | Lprim ((Pdivint Safe | Pmodint Safe
            | Pdivbint { is_safe = Safe } | Pmodbint { is_safe = Safe }), _, _)
@@ -393,16 +411,16 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Psequor, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_true = Variable.create "const_true" in
-    let cond = Variable.create "cond_sequor" in
+    let const_true = Variable.create Variable_name.Const_true in
+    let cond = Variable.create Variable_name.Cond_sequor in
     Flambda.create_let const_true (Const (Const_pointer 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
     let arg1 = close t env arg1 in
     let arg2 = close t env arg2 in
-    let const_false = Variable.create "const_false" in
-    let cond = Variable.create "cond_sequand" in
+    let const_false = Variable.create Variable_name.Const_false in
+    let cond = Variable.create Variable_name.Const_sequand in
     Flambda.create_let const_false (Const (Const_pointer 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
@@ -425,12 +443,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     in
     close t env (Lambda.Lapply apply)
   | Lprim (Praise kind, [arg], loc) ->
-    let arg_var = Variable.create "raise_arg" in
+    let arg_var = Variable.create Variable_name.Raise_arg in
     let dbg = Debuginfo.from_location loc in
     Flambda.create_let arg_var (Expr (close t env arg))
       (name_expr
         (Prim (Praise kind, [arg_var], dbg))
-        ~name:"raise")
+        ~name:Variable_name.Raise)
   | Lprim (Pfield _, [Lprim (Pgetglobal id, [],_)], _)
       when Ident.same id t.current_unit_id ->
     Misc.fatal_errorf "[Pfield (Pgetglobal ...)] for the current compilation \
@@ -441,12 +459,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim (Pgetglobal id, [], _) when Ident.is_predef_exn id ->
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
-    name_expr (Symbol symbol) ~name:"predef_exn"
+    name_expr (Symbol symbol) ~name:Variable_name.Predef_exn
   | Lprim (Pgetglobal id, [], _) ->
     assert (not (Ident.same id t.current_unit_id));
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
-    name_expr (Symbol symbol) ~name:"Pgetglobal"
+    name_expr (Symbol symbol) ~name:Variable_name.Pgetglobal
   | Lprim (p, args, loc) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
@@ -458,12 +476,12 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let dbg = Debuginfo.from_location loc in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
-      ~name:(name ^ "_arg")
+      ~name:(Variable_name.Arbitary (name ^ "_arg"))
       ~create_body:(fun args ->
         name_expr (Prim (p, args, dbg))
-          ~name)
+          ~name:(Variable_name.Arbitary name))
   | Lswitch (arg, sw, _loc) ->
-    let scrutinee = Variable.create "switch" in
+    let scrutinee = Variable.create Variable_name.Switch in
     let aux (i, lam) = i, close t env lam in
     let nums sw_num cases default =
       let module I = Numbers.Int in
@@ -482,7 +500,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           failaction = Misc.may_map (close t env) sw.sw_failaction;
         }))
   | Lstringswitch (arg, sw, def, _) ->
-    let scrutinee = Variable.create "string_switch" in
+    let scrutinee = Variable.create Variable_name.String_switch in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (String_switch (scrutinee,
         List.map (fun (s, e) -> s, close t env e) sw,
@@ -490,7 +508,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lstaticraise (i, args) ->
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
-      ~name:"staticraise_arg"
+      ~name:Variable_name.Staircase_arg
       ~create_body:(fun args ->
         let static_exn = Env.find_static_exception env i in
         Static_raise (static_exn, args))
@@ -505,19 +523,19 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     Try_with (close t env body, var, close t (Env.add_var env id var) handler)
   | Lifthenelse (cond, ifso, ifnot) ->
     let cond = close t env cond in
-    let cond_var = Variable.create "cond" in
+    let cond_var = Variable.create Variable_name.Cond in
     Flambda.create_let cond_var (Expr cond)
       (If_then_else (cond_var, close t env ifso, close t env ifnot))
   | Lsequence (lam1, lam2) ->
-    let var = Variable.create "sequence" in
+    let var = Variable.create Variable_name.Sequence in
     let lam1 = Flambda.Expr (close t env lam1) in
     let lam2 = close t env lam2 in
     Flambda.create_let var lam1 lam2
   | Lwhile (cond, body) -> While (close t env cond, close t env body)
   | Lfor (id, lo, hi, direction, body) ->
     let bound_var = Variable.create_with_same_name_as_ident id in
-    let from_value = Variable.create "for_from" in
-    let to_value = Variable.create "for_to" in
+    let from_value = Variable.create Variable_name.For_from in
+    let to_value = Variable.create Variable_name.For_to in
     let body = close t (Env.add_var env id bound_var) body in
     Flambda.create_let from_value (Expr (close t env lo))
       (Flambda.create_let to_value (Expr (close t env hi))
@@ -531,7 +549,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             variable %s in assignment"
           (Ident.unique_name id)
     in
-    let new_value_var = Variable.create "new_value" in
+    let new_value_var = Variable.create Variable_name.New_value in
     Flambda.create_let new_value_var (Expr (close t env new_value))
       (Assign { being_assigned; new_value = new_value_var; })
   | Levent (lam, _) -> close t env lam
@@ -574,28 +592,35 @@ and close_functions t external_env function_declarations : Flambda.named =
     let param_vars = List.map (Env.find_var closure_env) params in
     let params = List.map Parameter.wrap param_vars in
     let closure_bound_var = Function_decl.closure_bound_var decl in
+    let unboxed_version = Variable.rename closure_bound_var in
     let body = close t closure_env body in
+    let closure_origin =
+      Closure_origin.create (Closure_id.wrap unboxed_version)
+    in
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
         ~specialise:(Function_decl.specialise decl)
         ~is_a_functor:(Function_decl.is_a_functor decl)
+        ~closure_origin
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
       let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub param_vars unboxed_version
+        tupled_function_call_stub param_vars unboxed_version ~closure_bound_var
       in
       Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let function_decls =
-    Flambda.create_function_declarations
-      ~funs:
-        (List.fold_left close_one_function Variable.Map.empty
-          (Function_decls.to_list function_declarations))
+    let is_classic_mode = !Clflags.classic_inlining in
+    let funs =
+      List.fold_left close_one_function Variable.Map.empty
+        (Function_decls.to_list function_declarations)
+    in
+    Flambda.create_function_declarations ~is_classic_mode ~funs
   in
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
@@ -646,7 +671,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     in
     Expr (Flambda.create_let set_of_closures_var set_of_closures
       (name_expr (Project_closure (project_closure))
-        ~name:(Variable.unique_name let_bound_var)))
+        ~name:(Variable_name.Arbitary (Variable.unique_name let_bound_var))))
   | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
@@ -673,10 +698,9 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
      compiled. *)
   let fields =
     Array.init size (fun pos ->
-      let pos_str = string_of_int pos in
-      let sym_v = Variable.create ("block_symbol_" ^ pos_str) in
-      let result_v = Variable.create ("block_symbol_get_" ^ pos_str) in
-      let value_v = Variable.create ("block_symbol_get_field_" ^ pos_str) in
+      let sym_v = Variable.create (Variable_name.Block_symbol pos) in
+      let result_v = Variable.create (Variable_name.Block_symbol_get pos) in
+      let value_v = Variable.create (Variable_name.Block_symbol_get_field pos) in
       Flambda.create_let
         sym_v (Symbol block_symbol)
          (Flambda.create_let result_v

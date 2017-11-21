@@ -143,11 +143,44 @@ and value_closure = {
   closure_id : Closure_id.t;
 }
 
+and function_declarations = private {
+  is_classic_mode: bool;
+  set_of_closures_id : Set_of_closures_id.t;
+  set_of_closures_origin : Set_of_closures_origin.t;
+  funs : function_declaration Variable.Map.t;
+}
+
+and function_body = private {
+  free_variables : Variable.Set.t;
+  free_symbols : Symbol.Set.t;
+  body : Flambda.t;
+}
+
+and function_declaration = private {
+  closure_origin: Closure_origin.t;
+  function_body : function_body option;
+  params : Parameter.t list;
+  stub : bool;
+  dbg : Debuginfo.t;
+  inline : Lambda.inline_attribute;
+  specialise : Lambda.specialise_attribute;
+  is_a_functor : bool;
+}
+
+
 (* CR-soon mshinwell: add support for the approximations of the results, so we
    can do all of the tricky higher-order cases. *)
+(* when [is_classic_mode] is [false], functions in [function_declarations]
+   are guranteed to have function bodies (ie:
+   [function_declaration.function_body] will be of the [Some] variant).
+
+   When it [is_classic_mode] is [true], however, no gurantees about the
+   function_bodies are given.
+*)
 and value_set_of_closures = private {
-  function_decls : Flambda.function_declarations;
+  function_decls : function_declarations;
   bound_vars : t Var_within_closure.Map.t;
+  free_vars : Flambda.specialised_to Variable.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
   (** For functions that are very likely to be inlined, the size of the
@@ -179,14 +212,31 @@ val print_value_set_of_closures
   -> value_set_of_closures
   -> unit
 
+val create_function_declarations
+   : classic_keep_body_check:(
+    Variable.t -> Flambda.function_declaration -> bool)
+  -> Flambda.function_declarations -> function_declarations
+
 val create_value_set_of_closures
-   : function_decls:Flambda.function_declarations
+   : classic_keep_body_check:(Variable.t -> Flambda.function_declaration -> bool)
+  -> function_decls:Flambda.function_declarations
   -> bound_vars:t Var_within_closure.Map.t
+  -> free_vars: Flambda.specialised_to Variable.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
   -> freshening:Freshening.Project_var.t
   -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
   -> value_set_of_closures
+
+val import_value_set_of_closures
+    : function_decls: function_declarations
+   -> bound_vars: t Var_within_closure.Map.t
+   -> free_vars: Flambda.specialised_to Variable.Map.t
+   -> invariant_params: Variable.Set.t Variable.Map.t lazy_t
+   -> specialised_args: Flambda.specialised_to Variable.Map.t
+   -> freshening: Freshening.Project_var.t
+   -> direct_call_surrogates: Closure_id.t Closure_id.Map.t
+   -> value_set_of_closures
 
 val update_freshening_of_value_set_of_closures
    : value_set_of_closures
@@ -426,3 +476,38 @@ type switch_branch_selection =
 (** Check that the branch is compatible with the approximation *)
 val potentially_taken_const_switch_branch : t -> int -> switch_branch_selection
 val potentially_taken_block_switch_branch : t -> int -> switch_branch_selection
+
+val function_arity : function_declaration -> int
+
+val get_function_body_exn : function_declaration -> function_body
+
+val print_function_declarations
+   : Format.formatter
+  -> function_declarations
+  -> unit
+
+val import_function_declarations_for_pack
+   : function_declarations
+  -> (Set_of_closures_id.t -> Set_of_closures_id.t)
+  -> (Set_of_closures_origin.t -> Set_of_closures_origin.t)
+  -> function_declarations
+
+(** Create a set of function declarations based on another set of function
+    declarations. *)
+val update_function_declarations
+   : function_declarations
+  -> funs:function_declaration Variable.Map.t
+  -> function_declarations
+
+val update_function_decl_body
+    : function_declaration
+   -> (Flambda.t -> Flambda.t)
+   -> function_declaration
+
+(** Like [make_closure_map], but takes a mapping from set of closures IDs to
+    function declarations, instead of a [program]. *)
+val make_closure_map'
+   : function_declarations Set_of_closures_id.Map.t
+   -> function_declarations Closure_id.Map.t
+
+val clear_function_bodies : function_declarations -> function_declarations

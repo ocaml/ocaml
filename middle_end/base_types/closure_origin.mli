@@ -5,8 +5,8 @@
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2013--2016 OCamlPro SAS                                    *)
-(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*   Copyright 2013--2017 OCamlPro SAS                                    *)
+(*   Copyright 2014--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -14,12 +14,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-[@@@ocaml.warning "+a-4-9-30-40-41-42"]
+include Identifiable.S
 
-(** Construct export information, for emission into .cmx files, from an
-    Flambda program. *)
+val create : Closure_id.t -> t
 
-val build_transient :
-  backend:(module Backend_intf.S) ->
-  Flambda.program ->
-  Export_info.transient
+val get_compilation_unit : t -> Compilation_unit.t
+val rename : (Closure_id.t -> Closure_id.t) -> t -> t

@@ -18,7 +18,7 @@
 
 type t = {
   compilation_unit : Compilation_unit.t;
-  name : string;
+  name : Variable_name.t;
   name_stamp : int;
   (** [name_stamp]s are unique within any given compilation unit. *)
 }
@@ -40,7 +40,7 @@ include Identifiable.Make (struct
         && Compilation_unit.equal t1.compilation_unit t2.compilation_unit
 
   let output chan t =
-    output_string chan t.name;
+    output_string chan (Variable_name.to_string t.name);
     output_string chan "_";
     output_string chan (string_of_int t.name_stamp)
 
@@ -51,22 +51,23 @@ include Identifiable.Make (struct
         (Compilation_unit.get_current_exn ())
     then begin
       Format.fprintf ppf "%s/%d"
-        t.name t.name_stamp
+        (Variable_name.to_string t.name) t.name_stamp
     end else begin
       Format.fprintf ppf "%a.%s/%d"
         Compilation_unit.print t.compilation_unit
-        t.name t.name_stamp
+        (Variable_name.to_string t.name) t.name_stamp
     end
 end)
 
 let previous_name_stamp = ref (-1)
 
-let create ?current_compilation_unit name =
+let create ?current_compilation_unit ?(suffix = "") base =
   let compilation_unit =
     match current_compilation_unit with
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
+  let name = (base, suffix) in
   let name_stamp =
     incr previous_name_stamp;
     !previous_name_stamp
@@ -76,10 +77,12 @@ let create ?current_compilation_unit name =
     name_stamp;
   }
 
-let create_with_same_name_as_ident ident = create (Ident.name ident)
+let create_with_same_name_as_ident ident =
+  create (Arbitary (Ident.name ident))
 
 let clambda_name t =
-  (Compilation_unit.string_for_printing t.compilation_unit) ^ "_" ^ t.name
+  (Compilation_unit.string_for_printing t.compilation_unit)
+  ^ "_" ^ Variable_name.to_string t.name
 
 let rename ?current_compilation_unit ?append t =
   let current_compilation_unit =
@@ -87,12 +90,12 @@ let rename ?current_compilation_unit ?append t =
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
-  let name =
+  let suffix =
     match append with
-    | None -> t.name
-    | Some s -> t.name ^ s
+    | None -> snd t.name
+    | Some append -> snd t.name ^ append
   in
-  create ~current_compilation_unit name
+  create ~current_compilation_unit ~suffix (fst t.name)
 
 let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit
@@ -100,7 +103,7 @@ let in_compilation_unit t cu =
 let get_compilation_unit t = t.compilation_unit
 
 let unique_name t =
-  t.name ^ "_" ^ (string_of_int t.name_stamp)
+  Variable_name.to_string t.name ^ "_" ^ (string_of_int t.name_stamp)
 
 let print_list ppf ts =
   List.iter (fun t -> Format.fprintf ppf "@ %a" print t) ts

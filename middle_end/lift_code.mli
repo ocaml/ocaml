@@ -39,5 +39,5 @@ val lifting_helper
    : Flambda.t list
   -> evaluation_order:[ `Left_to_right | `Right_to_left ]
   -> create_body:(Variable.t list -> Flambda.t)
-  -> name:string
+  -> name:Variable_name.base
   -> Flambda.t

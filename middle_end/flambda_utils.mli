@@ -63,7 +63,8 @@ val description_of_toplevel_node : Flambda.t -> string
    lwhite: the params restriction seems odd, perhaps give a reason
    in the comment. *)
 val make_closure_declaration
-   : id:Variable.t
+   : is_classic_mode:bool
+  -> id:Variable.t
   -> body:Flambda.t
   -> params:Parameter.t list
   -> stub:bool
@@ -87,7 +88,11 @@ val bind
   -> body:Flambda.t
   -> Flambda.t
 
-val name_expr : Flambda.named -> name:string -> Flambda.t
+val name_expr
+    : name:Variable_name.base
+   -> ?suffix: string
+   -> Flambda.named
+   -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
 
@@ -113,12 +118,6 @@ val make_closure_map
    : Flambda.program
   -> Flambda.function_declarations Closure_id.Map.t
 
-(** Like [make_closure_map], but takes a mapping from set of closures IDs to
-    function declarations, instead of a [program]. *)
-val make_closure_map'
-   : Flambda.function_declarations Set_of_closures_id.Map.t
-  -> Flambda.function_declarations Closure_id.Map.t
-
 (** The definitions of all constants that have been lifted out to [Let_symbol]
     or [Let_rec_symbol] constructions. *)
 val all_lifted_constants
@@ -136,6 +135,8 @@ val all_lifted_constant_sets_of_closures
    : Flambda.program
   -> Set_of_closures_id.Set.t
 
+val all_lifted_constant_closures : Flambda.program -> Closure_id.Set.t
+
 (** All sets of closures in the given program (whether or not bound to a
     symbol.) *)
 val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list
@@ -143,14 +144,6 @@ val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list
 val all_sets_of_closures_map
    : Flambda.program
   -> Flambda.set_of_closures Set_of_closures_id.Map.t
-
-val all_function_decls_indexed_by_set_of_closures_id
-   : Flambda.program
-  -> Flambda.function_declarations Set_of_closures_id.Map.t
-
-val all_function_decls_indexed_by_closure_id
-   : Flambda.program
-  -> Flambda.function_declarations Closure_id.Map.t
 
 val make_variable_symbol : Variable.t -> Symbol.t
 val make_variables_symbol : Variable.t list -> Symbol.t
