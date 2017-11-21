@@ -634,7 +634,7 @@ let class_expr sub cexpr =
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
         Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
 
-    | Tcl_open (ovf, _p, lid, _env, e) ->
+    | Tcl_open (ovf, lid, _env, e) ->
         Pcl_open (ovf, lid, sub.class_expr sub e)
 
     | Tcl_ident _ -> assert false
@@ -651,7 +651,7 @@ let class_type sub ct =
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
     | Tcty_arrow (label, ct, cl) ->
         Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
-    | Tcty_open (ovf, _p, lid, _env, e) ->
+    | Tcty_open (ovf, lid, _env, e) ->
         Pcty_open (ovf, lid, sub.class_type sub e)
   in
   Cty.mk ~loc ~attrs desc

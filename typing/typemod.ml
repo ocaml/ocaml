@@ -1805,7 +1805,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
-    let (items, sg, final_env) = type_struct env sstr in
+    let (items, sg, full_sg, final_env) = type_struct env sstr in
     if !open_struct_level <> 0 then begin
       push_mod_type (Mty_signature full_sg)
     end;
@@ -1912,11 +1912,15 @@ let type_package env m p nl =
   (wrap_constraint env modl mty Tmodtype_implicit, tl')
 
 (* Fill in the forward declarations *)
+
+let type_open ?used_slot ovf env loc me =
+  type_open_ ?used_slot ?toplevel:None false ovf env loc me
+
 let () =
   Typecore.type_module := type_module_alias;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open_ ?toplevel:None false;
+  Typecore.type_open := type_open;
   Typecore.type_package := type_package;
   type_module_fwd := type_module;
   type_module_type_of_fwd := type_module_type_of

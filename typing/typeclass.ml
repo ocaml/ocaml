@@ -554,9 +554,11 @@ and class_type_aux env scty =
       cltyp (Tcty_arrow (l, cty, clty)) typ
 
   | Pcty_open (ovf, lid, e) ->
-      let (path, newenv) = !Typecore.type_open ovf env scty.pcty_loc lid in
+      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc;
+                pmod_attributes=[]} in
+      let (_tme, newenv) = !Typecore.type_open ovf env scty.pcty_loc me in
       let clty = class_type newenv e in
-      cltyp (Tcty_open (ovf, path, lid, newenv, clty)) clty.cltyp_type
+      cltyp (Tcty_open (ovf, lid, newenv, clty)) clty.cltyp_type
 
   | Pcty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
@@ -1224,10 +1226,11 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_open (ovf, lid, e) ->
       let used_slot = ref false in
-      let (path, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
-      let (_path, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc; pmod_attributes=[]} in
+      let (_, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc me in
+      let (_, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
       let cl = class_expr cl_num new_val_env new_met_env e in
-      rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
+      rc {cl_desc = Tcl_open (ovf, lid, new_val_env, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
           cl_env = val_env;
@@ -1772,7 +1775,7 @@ let rec unify_parents env ty cl =
       | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
-  | Tcl_open (_, _, _, _, cl)
+  | Tcl_open (_, _, _, cl)
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_apply (cl, _)
   | Tcl_let (_, _, _, cl)

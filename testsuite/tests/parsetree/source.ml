@@ -7340,3 +7340,69 @@ module Indexop = struct
   h.Def.%{"three"} <- 3
   let x,y,z = Def.(h.%["one"], h.%("two"), h.%{"three"})
 end
+
+type t = A
+
+module M = struct
+    open struct type t' = t end
+    type t = B of t * t' | C
+end
+
+(* test *)
+include struct
+  open M
+  let test = B (B (C, A), A)
+end
+
+include struct
+  open struct let aux x y = x / y end
+  let f x = aux x 2
+  let g y = aux 3 y
+end
+
+include struct
+  open struct exception Interrupt end
+  let run () =
+    raise Interrupt
+  let () =
+    match run() with exception Interrupt -> () | _ -> assert false
+end
+
+module type S = sig
+  open struct
+    open struct
+      type t' = char
+    end
+    type t = t' -> int end
+  val x : t
+end
+
+module M : S = struct
+  let x = Char.code
+end
+
+open struct
+  open struct let counter = ref 0 end
+  let inc () = incr counter
+  let dec () = decr counter
+  let current () = !counter
+end
+
+let () =
+  inc(); inc(); dec ();
+  assert (current () = 1)
+
+include struct open struct type t = T end let x = T end
+
+module type S = sig open struct assert false end end;;
+
+module type S = sig open struct type t = int end val x : t end;;
+
+module type S = sig
+  open struct type t = int end
+  type s = t
+end
+
+module type T = sig type s = int end
+module F(X:S) : T = X
+module G(X:T) : S = X

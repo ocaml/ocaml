@@ -153,7 +153,7 @@ and class_expr_desc =
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
     (* Visible instance variables, methods and concrete methods *)
-  | Tcl_open of override_flag * Path.t * Longident.t loc * Env.t * class_expr
+  | Tcl_open of override_flag * Longident.t loc * Env.t * class_expr
 
 and class_structure =
   {
@@ -482,7 +482,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
-  | Tcty_open of override_flag * Path.t * Longident.t loc * Env.t * class_type
+  | Tcty_open of override_flag * Longident.t loc * Env.t * class_type
 
 and class_signature = {
     csig_self: core_type;

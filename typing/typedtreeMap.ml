@@ -567,8 +567,8 @@ module MakeMap(Map : MapArgument) = struct
 
         | Tcl_ident (id, name, tyl) ->
             Tcl_ident (id, name, List.map map_core_type tyl)
-        | Tcl_open (ovf, p, lid, env, e) ->
-            Tcl_open (ovf, p, lid, env, map_class_expr e)
+        | Tcl_open (ovf, lid, env, e) ->
+            Tcl_open (ovf, lid, env, map_class_expr e)
     in
     Map.leave_class_expr { cexpr with cl_desc = cl_desc }
 
@@ -581,8 +581,8 @@ module MakeMap(Map : MapArgument) = struct
           Tcty_constr (path, lid, List.map map_core_type list)
         | Tcty_arrow (label, ct, cl) ->
           Tcty_arrow (label, map_core_type ct, map_class_type cl)
-        | Tcty_open (ovf, p, lid, env, e) ->
-          Tcty_open (ovf, p, lid, env, map_class_type e)
+        | Tcty_open (ovf, lid, env, e) ->
+          Tcty_open (ovf, lid, env, map_class_type e)
     in
     Map.leave_class_type { ct with cltyp_desc = cltyp_desc }
 

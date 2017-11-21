@@ -95,7 +95,7 @@ let type_module =
 
 let type_open :
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
-   Longident.t loc -> Path.t * Env.t)
+   Parsetree.module_expr -> Typedtree.module_expr * Env.t)
     ref =
   ref (fun ?used_slot:_ _ -> assert false)
 
@@ -2221,7 +2221,7 @@ struct
           Use.(inspect (join ty (class_expr env ce)))
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
-      | Tcl_open (_, _, _, _, ce) ->
+      | Tcl_open (_, _, _, ce) ->
           class_expr env ce
   and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     fun env { Typedtree.c_lhs; c_guard; c_rhs } ~scrutinee:ty ->
@@ -2321,7 +2321,7 @@ struct
             Use.join ty (class_expr env ce)
         | Tcl_constraint (ce, _, _, _, _) ->
             class_expr env ce
-        | Tcl_open (_, _, _, _, ce) ->
+        | Tcl_open (_, _, _, ce) ->
             class_expr env ce
     in
     match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
