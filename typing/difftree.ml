@@ -97,9 +97,9 @@ let fmap f = function
 let set_emphase emphase = fmap (with_emph emphase)
 let raise_emphase emphase = fmap (at_least emphase)
 
-let stitch x y = match x, y with
+let stitch level x y = match x, y with
   | Eq x, Eq y ->
-      D { size =  Size.primary (max x.size y.size);
+      D { size =  level (max x.size y.size);
           gen =(fun fuel -> x.gen fuel,y.gen fuel)
         }
   | r, r' ->
@@ -114,7 +114,7 @@ let stitch x y = match x, y with
         }
 
 let self_diff_then_stitch diff x y =
-  stitch (raise_emphase On @@ diff x x) (raise_emphase On @@ diff y y)
+  stitch Size.primary (raise_emphase On @@ diff x x) (raise_emphase On @@ diff y y)
 
 let similar left right =
   D { gen = const (left, right); size = Size.secondary 1 }
@@ -263,17 +263,17 @@ let diff size left right =
 let fmap2 ?side:(left,right=On,On) f x y = match x, y with
   | H.Item(hl,x), H.Item(hr,y) -> set_emphase (hmax hl hr) (f x y)
   | H.Ellipsis _ as e, H.Item(_,x) ->
-      stitch (pure e) (set_emphase right @@ f x x)
+      stitch Size.primary (pure e) (set_emphase right @@ f x x)
   | H.Item(_,x), (H.Ellipsis _ as e) ->
-      stitch (set_emphase left @@ f x x) (pure e)
+      stitch Size.primary (set_emphase left @@ f x x) (pure e)
   | H.Ellipsis n, H.Ellipsis n' -> pure @@ H.Ellipsis(max n n')
 
 let bind2 ?side:(left,right=On,On) f x y = match x, y with
   | H.Item(hx,x), H.Item(hy,y) ->  raise_emphase (hmax hx hy) (f x y)
   | H.Ellipsis _ as e, H.Item(_,x) ->
-      stitch (pure e) (raise_emphase right @@ f x x)
+      stitch Size.primary (pure e) (raise_emphase right @@ f x x)
   | H.Item(_,x), (H.Ellipsis _ as e) ->
-      stitch (raise_emphase left @@ f x x) (pure e)
+      stitch Size.primary (raise_emphase left @@ f x x) (pure e)
   | H.Ellipsis n, H.Ellipsis n' -> pure @@ H.Ellipsis(max n n')
 
 
@@ -421,8 +421,8 @@ let opt_ext diff x y =
   match x, y with
   | None, None -> pure (plain None)
   | Some x, Some y -> ff Off (diff x y)
-  | Some x, None ->  stitch (ff On @@ diff x x) (pure (emph None))
-  | None, Some x ->  stitch (pure (emph None)) (ff On @@ diff x x)
+  | Some x, None ->  stitch Size.primary (ff On @@ diff x x) (pure (emph None))
+  | None, Some x ->  stitch Size.primary (pure (emph None)) (ff On @@ diff x x)
 
 let bool: bool -> _ = diff Size.empty
 
@@ -511,16 +511,18 @@ module Type = struct
     | Otyp_open, Otyp_open -> pure (Decorate.typ t1)
 
     | ty, Otyp_abstract when mode = Inclusion ->
-        stitch (type' mode ty ty) (pure @@ Decorate.typ Otyp_abstract)
+        stitch Size.secondary
+          (type' mode ty ty)
+          (pure @@ Decorate.typ Otyp_abstract)
 
     | Otyp_alias (ty,as'), Otyp_alias(ty2,as2) ->
         alias <*> [typ mode ty ty2; string as' as2]
     | Otyp_alias (ty,as'), y when is_free as' ->
         let d = typ mode ty y in
-        stitch (alias <*> [d; std as']) d
+        stitch Size.secondary (alias <*> [d; std as']) d
     | x, Otyp_alias (ty,as') when is_free as' ->
         let d = typ mode x ty in
-        stitch d (alias <*> [ d; std as' ])
+        stitch Size.secondary d (alias <*> [ d; std as' ])
 
     | Otyp_arrow _ , Otyp_arrow _ ->
         let fn =  fn_to_list t1 and fn' = fn_to_list t2 in
