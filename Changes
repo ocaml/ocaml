@@ -2,6 +2,9 @@
 -----------------------
 
 
+- GPR#1470: Don't commute negation with float comparison
+  (Leo White, review by Xavier Leroy)
+
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------
 
