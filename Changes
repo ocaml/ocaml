@@ -73,6 +73,12 @@ Working version
 4.06 maintenance branch
 -----------------------
 
+### Bug fixes
+
+- MPR#7661, GPR#1459: fix faulty compilation of patterns
+  using extensible variants constructors
+  (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
+  by Abdelraouf Ouadjaout and Thibault Suzanne)
 
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------
