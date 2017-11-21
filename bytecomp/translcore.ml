@@ -776,9 +776,9 @@ and transl_exp0 e =
         Llet(Strict, Pgenval, vexn, texn2,
              event_before e begin
                Lsequence(
-                 wrap  (Lprim (Pccall prim_restore_raw_backtrace,
-                               [Lvar vexn;bt],
-                               e.exp_loc)),
+                 Lprim (Pccall prim_restore_raw_backtrace,
+                        [Lvar vexn;bt],
+                        e.exp_loc),
                  wrap0 (Lprim(Praise Raise_reraise,
                               [event_after texn1 (Lvar vexn)],
                               e.exp_loc))
