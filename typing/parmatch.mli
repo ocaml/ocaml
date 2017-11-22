@@ -35,8 +35,20 @@ val const_compare : constant -> constant -> int
 
 val le_pat : pattern -> pattern -> bool
 val le_pats : pattern list -> pattern list -> bool
-val compat : pattern -> pattern -> bool
-val compats : pattern list -> pattern list -> bool
+
+(* Exported compatibility functor, abstracted over constructor equality *)
+module Compat :
+  functor
+    (Constr: sig
+      val equal :
+          Types.constructor_description ->
+            Types.constructor_description ->
+              bool
+     end) -> sig
+       val compat : pattern -> pattern -> bool
+       val compats : pattern list -> pattern list -> bool
+     end
+
 exception Empty
 val lub : pattern -> pattern -> pattern
 val lubs : pattern list -> pattern list -> pattern list

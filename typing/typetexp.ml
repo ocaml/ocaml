@@ -114,7 +114,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   end;
   raise (Error (loc, env, make_error lid))
 
-let find_component (lookup : ?loc:_ -> _) make_error env loc lid =
+let find_component (lookup : ?loc:_ -> ?mark:_ -> _) make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
@@ -161,7 +161,7 @@ let find_value env loc lid =
   r
 
 let lookup_module ?(load=false) env loc lid =
-  find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
+  find_component (fun ?loc ?mark lid env -> (Env.lookup_module ~load ?loc ?mark lid env))
     (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =

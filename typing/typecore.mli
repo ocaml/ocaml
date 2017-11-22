@@ -127,6 +127,7 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
+  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

@@ -1130,7 +1130,7 @@ lintapidiff:
 	$(MAKE) -C tools lintapidiff.opt
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
-	    tools/lintapidiff.opt $VERSIONS
+	    tools/lintapidiff.opt $(VERSIONS)
 
 # Make clean in the test suite
 

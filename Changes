@@ -3,10 +3,12 @@ Working version
 
 (Changes that can break existing programs are marked with a "*")
 
-(Bugfixes that are also to be included in the 4.06 branch should
-be mentioned in the 4.06 section below instead of here.)
-
 ### Language features:
+
+- GPR#1467: Allow expressions sequences inside extended indexing and bigarray
+  indexing operators, e.g.: e1.![e2; e3; ...], etc.
+  (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
+  Scherer)
 
 ### Type system:
 
@@ -26,6 +28,10 @@ be mentioned in the 4.06 section below instead of here.)
 
 - GPR#1428: give a non dummy location for warning 49 (no cmi found)
   (Valentin Gatien-Baron)
+
+- GPR#1472: Improve error reporting for missing 'rec' in let-bindings
+  (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
+  Frédéric Bour)
 
 ### Code generation and optimizations:
 
@@ -64,8 +70,21 @@ be mentioned in the 4.06 section below instead of here.)
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
 
-Release branch for 4.06:
-------------------------
+4.06 maintenance branch
+-----------------------
+
+### Bug fixes
+
+- MPR#7661, GPR#1459: fix faulty compilation of patterns
+  using extensible variants constructors
+  (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
+  by Abdelraouf Ouadjaout and Thibault Suzanne)
+
+- GPR#1470: Don't commute negation with float comparison
+  (Leo White, review by Xavier Leroy)
+
+OCaml 4.06.0 (3 Nov 2017):
+--------------------------
 
 (Changes that can break existing programs are marked with a "*")
 
