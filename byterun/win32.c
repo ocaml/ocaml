@@ -17,7 +17,8 @@
 
 /* Win32-specific stuff */
 
-/* Enable Windows Vista functions */
+/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
+   Vista onwards */
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
 
@@ -919,32 +920,24 @@ void caml_restore_win32_terminal(void)
     SetConsoleOutputCP(startup_codepage);
 }
 
-/* Detect if a named pipe corresponds to MSYS/Cygwin tty: see
+/* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
 
-   https://github.com/mirror/newlib-cygwin/blob/master/winsup/cygwin/dtable.cc#L932
+   https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
 */
 typedef
-BOOL (WINAPI *tGetFileInformationByHandleEx)(
-  HANDLE                    hFile,
-  FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
-  LPVOID                    lpFileInformation,
-  DWORD                     dwBufferSize
-);
+BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
+                                             LPVOID, DWORD);
 
-static int caml_win32_ismsystty(HANDLE hFile)
+static int caml_win32_is_cygwin_pty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
-  HMODULE hModKernel32;
-  tGetFileInformationByHandleEx pGetFileInformationByHandleEx;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = NULL;
 
-  /* check if fd is a pipe */
-  if (GetFileType(hFile) != FILE_TYPE_PIPE)
-    return 0;
-
-  hModKernel32 = GetModuleHandle(L"KERNEL32.DLL");
-  pGetFileInformationByHandleEx =
-    (tGetFileInformationByHandleEx)GetProcAddress(hModKernel32, "GetFileInformationByHandleEx");
+  if (pGetFileInformationByHandleEx == NULL)
+    pGetFileInformationByHandleEx =
+      (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
+                                                    "GetFileInformationByHandleEx");
 
   if (pGetFileInformationByHandleEx == NULL)
     return 0;
@@ -972,8 +965,18 @@ CAMLexport int caml_win32_isatty(int fd)
   if (hFile == INVALID_HANDLE_VALUE)
     return 0;
 
-  if (GetFileType(hFile) == FILE_TYPE_CHAR && GetConsoleMode(hFile, &lpMode))
-    return 1;
+  switch (GetFileType(hFile)) {
+    case FILE_TYPE_CHAR:
+      /* Both console handles and the NUL device are FILE_TYPE_CHAR.  The NUL
+         device returns FALSE for a GetConsoleMode call. _isatty incorrectly
+         only uses GetFileType (see GPR#1321). */
+      return GetConsoleMode(hFile, &lpMode);
+    case FILE_TYPE_PIPE:
+      /* Cygwin PTYs are implemented using named pipes */
+      return caml_win32_is_cygwin_pty(hFile);
+    default:
+      break;
+  }
 
-  return caml_win32_ismsystty(hFile);
+  return 0;
 }
