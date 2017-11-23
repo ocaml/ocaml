@@ -921,7 +921,6 @@ void caml_restore_win32_terminal(void)
 }
 
 /* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
-
    https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
 */
 typedef
