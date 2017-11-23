@@ -2949,35 +2949,45 @@ let check_total warn loc total lambda i handler_fun =
   end
 
 (* Warn for "extra" match failure *)
-let check_warn no_opt partial pat_act_list =
-  match partial,pat_act_list,no_opt  with
+let check_warn no_opt partial cls =
+  match partial,cls,no_opt  with
   | Total,_::_,true -> true
   | _,_,_ -> false
 
-let compile_matching loc repr handler_fun arg pat_act_list partial0 =
-  let partial,no_opt = check_partial pat_act_list partial0 in
+(* Standard entry point to the PM compiler, shared by compile_matching
+   and  for_tupled_function.
+*)
+
+let compile_matching_gen loc repr handler_fun args pats_act_list partial0 =
+  let partial,no_opt = check_partial_list pats_act_list partial0 in
+  let ctx = start_ctx (List.length args) in
   match partial with
   | Partial ->
       let raise_num = next_raise_count () in
+      let omegas = [List.map (fun _ -> omega) args] in
       let pm =
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [arg, (Strict,false)] ;
-          default = [[[omega]],raise_num]} in
+        { cases = pats_act_list;
+          args;
+          default = [omegas,raise_num]} in
       begin try
-        let (lambda, total) = compile_match no_opt repr partial (start_ctx 1) pm in
-        let warn = check_warn no_opt partial0 pat_act_list in
+        let (lambda, total) = compile_match no_opt repr partial ctx pm in
+        let warn = check_warn no_opt partial0 pats_act_list in
         check_total warn loc total lambda raise_num handler_fun
       with
       | Unused -> assert false (* ; handler_fun() *)
       end
   | Total ->
       let pm =
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [arg, (Strict,false)] ;
+        { cases = pats_act_list;
+          args;
           default = []} in
-      let (lambda, total) = compile_match no_opt repr partial (start_ctx 1) pm in
+      let (lambda, total) = compile_match no_opt repr partial ctx pm in
       assert (jumps_is_empty total) ;
       lambda
+
+let compile_matching loc repr handler_fun arg pat_act_list partial0 =
+  let cls = List.map (fun (pat,act) ->  [pat],act) pat_act_list in
+  compile_matching_gen loc repr handler_fun [arg,(Strict,false)] cls partial0
 
 
 let partial_function loc () =
@@ -3131,27 +3141,21 @@ let for_let loc param pat body =
       if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
       else simple_for_let loc param pat body
 
+(**********************************************)
 (* Handling of tupled functions and matchings *)
+(**********************************************)
 
 (* Easy case since variables are available *)
 let for_tupled_function loc paraml pats_act_list partial0 =
-  let partial,no_opt = check_partial_list pats_act_list partial0 in
-  let raise_num = next_raise_count () in
-  let omegas = [List.map (fun _ -> omega) paraml] in
-  let pm =
-    { cases = pats_act_list;
-      args = List.map (fun id -> (Lvar id, (Strict,false))) paraml ;
-      default = [omegas,raise_num]
-    } in
-  try
-    let (lambda, total) = compile_match no_opt None partial
-        (start_ctx (List.length paraml)) pm in
-    let warn = check_warn no_opt partial0 pats_act_list in
-    check_total warn loc total lambda raise_num (partial_function loc)
-  with
-  | Unused -> partial_function loc ()
+  let args =  List.map (fun id -> (Lvar id, (Strict,false))) paraml in
+  compile_matching_gen
+    loc None  (partial_function loc)  args pats_act_list partial0
 
 
+(* Complex case, attempt to avoid tuple construction in
+   "match e1,...,en with p1,...,pn | ..."
+   where all patterns are n-tuples or wild cards and where the
+   tuple is not pattern-bound by a variable or as pattern. *)
 
 let flatten_pattern size p = match p.pat_desc with
 | Tpat_tuple args -> args
