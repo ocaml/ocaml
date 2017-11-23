@@ -84,17 +84,99 @@ static void caml_win32_sys_error(int errnum)
   caml_raise_sys_error(msg);
 }
 
+#define STATIC_BUFFER_SIZE 1024
+int win32_utf8_read(int fd, void * buf, int n) {
+  HANDLE hConsole = (HANDLE)_get_osfhandle(fd);
+  WCHAR szBuffer[STATIC_BUFFER_SIZE];
+  int real_n = (n > STATIC_BUFFER_SIZE << 2 ? STATIC_BUFFER_SIZE : n >> 2);
+  DWORD nread;
+  if (!ReadConsole(hConsole, szBuffer, real_n, &nread, NULL))
+    return -1;
+  return WideCharToMultiByte(CP_UTF8, 0, szBuffer, nread, buf, n, NULL, NULL);
+}
+
+int win32_utf8_write(int fd, void * buf, int n) {
+  HANDLE hConsole = (HANDLE)_get_osfhandle(fd);
+  int length;
+  WCHAR szBuffer[STATIC_BUFFER_SIZE];
+  LPWSTR buffer;
+  DWORD dwOffset = 0;
+  DWORD dwWritten;
+
+  length = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, buf, n, NULL, 0);
+  if (length == 0 || length == n) {
+    /* Either invalid UTF-8 or ASCII */
+    return write(fd, buf, n);
+  } else {
+    if (length > STATIC_BUFFER_SIZE) {
+      /* Just resort to write if for some weird reason we run out of memory */
+      if (!(buffer = (LPWSTR)malloc(length * sizeof(WCHAR))))
+        return write(fd, buf, n);
+    } else {
+      buffer = szBuffer;
+    }
+    /* This call must succeed */
+    MultiByteToWideChar(CP_UTF8, 0, buf, n, buffer, length);
+    while (length > 0) {
+      if (WriteConsole(hConsole, buffer + dwOffset, length, &dwWritten, NULL)) {
+        length -= dwWritten;
+        dwOffset += dwWritten;
+      } else {
+        /* Discarding errors at this point */
+        length = 0;
+      }
+    }
+    if (buffer != szBuffer)
+      free(buffer);
+    return n;
+  }
+}
+#undef STATIC_BUFFER_SIZE
+
+int console_supports_unicode (void) {
+  HANDLE hConsole;
+  CONSOLE_FONT_INFOEX fontInfo;
+  int result = 0;
+  fontInfo.cbSize = sizeof(fontInfo);
+  hConsole =
+    CreateFile(L"CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
+               OPEN_EXISTING, 0, NULL);
+  if (hConsole != INVALID_HANDLE_VALUE) {
+    if (GetCurrentConsoleFontEx(hConsole, FALSE, &fontInfo))
+      result = ((fontInfo.FontFamily & TMPF_TRUETYPE) != 0);
+    CloseHandle(hConsole);
+  }
+
+  return result;
+}
+
 int caml_read_fd(int fd, int flags, void * buf, int n)
 {
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
     caml_enter_blocking_section();
-    retcode = read(fd, buf, n);
+#if WINDOWS_UNICODE
+    if ((flags & CHANNEL_FLAG_CONSOLE) && console_supports_unicode()) {
+#else
+    if ((flags & CHANNEL_FLAG_CONSOLE) && GetConsoleCP() == CP_UTF8
+        && console_supports_unicode()) {
+#endif
+      /* Cannot perform a UTF-8 read unless the buffer is at least 4 bytes */
+      if (n < 4) {
+        retcode = -1;
+        errno = ENOMEM;
+      } else {
+        retcode = win32_utf8_read(fd, buf, n);
+      }
+    } else {
+      retcode = read(fd, buf, n);
+    }
+#if !WINDOWS_UNICODE
     /* Large reads from console can fail with ENOMEM.  Reduce requested size
        and try again. */
-    if (retcode == -1 && errno == ENOMEM && n > 16384) {
+    if (retcode == -1 && errno == ENOMEM && n > 16384)
       retcode = read(fd, buf, 16384);
-    }
+#endif
     caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
@@ -111,16 +193,23 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   int retcode;
   if ((flags & CHANNEL_FLAG_FROM_SOCKET) == 0) {
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
-    retcode = write(fd, buf, n);
-  } else {
+    if (!(flags & CHANNEL_FLAG_BLOCKING_WRITE))
 #endif
     caml_enter_blocking_section();
-    retcode = write(fd, buf, n);
-    caml_leave_blocking_section();
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-  }
+#if WINDOWS_UNICODE
+    if ((flags & CHANNEL_FLAG_CONSOLE) && caml_win32_major < 10 && n > 0
+        && console_supports_unicode())
+#else
+    if ((flags & CHANNEL_FLAG_CONSOLE) && GetConsoleOutputCP() == CP_UTF8
+        && caml_win32_major < 10 && n > 0 && console_supports_unicode())
 #endif
+      retcode = win32_utf8_write(fd, buf, n);
+    else
+      retcode = write(fd, buf, n);
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+    if (!(flags & CHANNEL_FLAG_BLOCKING_WRITE))
+#endif
+    caml_leave_blocking_section();
     if (retcode == -1) caml_sys_io_error(NO_ARG);
   } else {
     caml_enter_blocking_section();
@@ -902,15 +991,25 @@ static UINT startup_codepage = 0;
 
 void caml_setup_win32_terminal(void)
 {
-  if (caml_win32_major >= 10) {
-    startup_codepage = GetConsoleOutputCP();
-    if (startup_codepage != CP_UTF8)
-      SetConsoleOutputCP(CP_UTF8);
-  }
+  startup_codepage = GetConsoleOutputCP();
+  if (startup_codepage != CP_UTF8)
+    SetConsoleOutputCP(CP_UTF8);
 }
 
 void caml_restore_win32_terminal(void)
 {
   if (startup_codepage != 0)
     SetConsoleOutputCP(startup_codepage);
+}
+
+int caml_channel_flags(int fd)
+{
+  HANDLE h;
+  DWORD mode;
+
+  h = (HANDLE) _get_osfhandle(fd);
+  if (GetFileType(h) == FILE_TYPE_CHAR && GetConsoleMode(h, &mode))
+    return CHANNEL_FLAG_CONSOLE;
+  else
+    return 0;
 }

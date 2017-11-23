@@ -428,3 +428,8 @@ char *caml_secure_getenv (char const *var)
     return NULL;
 #endif
 }
+
+int caml_channel_flags(int fd)
+{
+  return 0;
+}
