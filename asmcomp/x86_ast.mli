@@ -102,6 +102,7 @@ type instruction =
   | BSWAP of arg
   | CALL of arg
   | CDQ
+  | CDQE
   | CMOV of condition * arg * arg
   | CMP of arg * arg
   | COMISD of arg * arg
