@@ -942,7 +942,8 @@ static int caml_win32_is_cygwin_pty(HANDLE hFile)
   if (pGetFileInformationByHandleEx == NULL)
     return 0;
 
-  /* get pipe name */
+  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the string, so reduce
+     the buffer size to allow for adding one. */
   if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
     return 0;
 
