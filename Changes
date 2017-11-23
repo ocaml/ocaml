@@ -12,10 +12,6 @@ Working version
 
 ### Type system:
 
-- GPR#1370: Fix code duplication in Cmmgen
-  (Vincent Laviron, with help from Pierre Chambart,
-   reviews by Gabriel Scherer and Luc Maranget)
-
 - GPR#1469: Use the information from [@@immediate] annotations when
   computing whether a type can be [@@unboxed]
   (Damien Doligez, report by Stephan Muenzel, review by ...)
@@ -49,6 +45,10 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
   Frédéric Bour)
 
+- GPR#1491: Improve error reporting for ill-typed applicative functor
+  types, F(M).t.
+  (Valentin Gatien-Baron, review by Florian Angeletti and Gabriel Radanne)
+
 - GPR#1496: Refactor the code printing explanation for unification type errors,
   in order to avoid duplicating pattern matches
   (Armaël Guéneau, review by Florian Angeletti and Gabriel Scherer)
@@ -59,6 +59,10 @@ Working version
   Florian Angeletti and Gabriel Radanne)
 
 ### Code generation and optimizations:
+
+- GPR#1370: Fix code duplication in Cmmgen
+  (Vincent Laviron, with help from Pierre Chambart,
+   reviews by Gabriel Scherer and Luc Maranget)
 
 ### Runtime system:
 

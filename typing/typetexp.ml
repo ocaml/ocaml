@@ -52,7 +52,7 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
-  | Ill_typed_functor_application of Longident.t
+  | Ill_typed_functor_application of Longident.t * Includemod.error list option
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Apply_structure_as_functor of Longident.t
@@ -96,20 +96,32 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
-      begin match Env.scrape_alias env fmd.md_type with
-      | Mty_signature _ ->
-          raise (Error (loc, env, Apply_structure_as_functor flid))
-      | Mty_alias(_, p) ->
-          raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
-      | _ -> ()
-      end;
+      let mty_param_opt =
+        match Env.scrape_alias env fmd.md_type with
+        | Mty_signature _ ->
+           raise (Error (loc, env, Apply_structure_as_functor flid))
+        | Mty_alias(_, p) ->
+           raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
+        | Mty_functor (_, mty_param_opt, _) -> mty_param_opt
+        | _ -> None
+      in
       check_module mlid;
-      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
+      let mpath = Env.lookup_module ~load:true mlid env in
+      let mmd = Env.find_module mpath env in
       begin match Env.scrape_alias env mmd.md_type with
       | Mty_alias(_, p) ->
-          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
-      | _ ->
-          raise (Error (loc, env, Ill_typed_functor_application lid))
+         raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
+      | mty_arg ->
+         let details =
+           match mty_param_opt with
+           | None -> None
+           | Some mty_param ->
+              try Includemod.check_modtype_inclusion
+                    ~loc env mty_arg mpath mty_param;
+                  None
+              with Includemod.Error e -> Some e
+         in
+         raise (Error (loc, env, Ill_typed_functor_application (lid, details)))
       end
   end;
   raise (Error (loc, env, make_error lid))
@@ -953,8 +965,10 @@ let report_error env ppf = function
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
       spellcheck ppf fold_cltypes env lid;
-  | Ill_typed_functor_application lid ->
-      fprintf ppf "Ill-typed functor application %a" longident lid
+  | Ill_typed_functor_application (lid, details) ->
+     fprintf ppf "@[Ill-typed functor application %a%t@]"
+       longident lid
+       (fun ppf -> may (fprintf ppf "@\n%a" Includemod.report_error) details)
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
