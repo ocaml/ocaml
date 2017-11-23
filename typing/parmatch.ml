@@ -120,7 +120,14 @@ let const_compare x y =
       Pervasives.compare (float_of_string f1) (float_of_string f2)
   | Const_string (s1, _), Const_string (s2, _) ->
       String.compare s1 s2
-  | _, _ -> Pervasives.compare x y
+  | (Const_int _
+    |Const_char _
+    |Const_string (_, _)
+    |Const_float _
+    |Const_int32 _
+    |Const_int64 _
+    |Const_nativeint _
+    ), _ -> Pervasives.compare x y
 
 let records_args l1 l2 =
   (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
