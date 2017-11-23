@@ -931,9 +931,9 @@ static int caml_win32_is_cygwin_pty(HANDLE hFile)
 {
   char buffer[1024];
   FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
-  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = NULL;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = INVALID_HANDLE_VALUE;
 
-  if (pGetFileInformationByHandleEx == NULL)
+  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
     pGetFileInformationByHandleEx =
       (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
                                                     "GetFileInformationByHandleEx");
