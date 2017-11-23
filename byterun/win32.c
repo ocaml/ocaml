@@ -17,6 +17,11 @@
 
 /* Win32-specific stuff */
 
+/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
+   Vista onwards */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
 #include <winbase.h>
@@ -913,4 +918,65 @@ void caml_restore_win32_terminal(void)
 {
   if (startup_codepage != 0)
     SetConsoleOutputCP(startup_codepage);
+}
+
+/* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
+   https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
+*/
+typedef
+BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
+                                             LPVOID, DWORD);
+
+static int caml_win32_is_cygwin_pty(HANDLE hFile)
+{
+  char buffer[1024];
+  FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = INVALID_HANDLE_VALUE;
+
+  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
+    pGetFileInformationByHandleEx =
+      (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
+                                                    "GetFileInformationByHandleEx");
+
+  if (pGetFileInformationByHandleEx == NULL)
+    return 0;
+
+  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the string, so reduce
+     the buffer size to allow for adding one. */
+  if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+    return 0;
+
+  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
+
+  /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
+     or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
+  if ((wcsstr(nameinfo->FileName, L"msys-") ||
+       wcsstr(nameinfo->FileName, L"cygwin-")) && wcsstr(nameinfo->FileName, L"-pty"))
+    return 1;
+
+  return 0;
+}
+
+CAMLexport int caml_win32_isatty(int fd)
+{
+  DWORD lpMode;
+  HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+
+  if (hFile == INVALID_HANDLE_VALUE)
+    return 0;
+
+  switch (GetFileType(hFile)) {
+    case FILE_TYPE_CHAR:
+      /* Both console handles and the NUL device are FILE_TYPE_CHAR.  The NUL
+         device returns FALSE for a GetConsoleMode call. _isatty incorrectly
+         only uses GetFileType (see GPR#1321). */
+      return GetConsoleMode(hFile, &lpMode);
+    case FILE_TYPE_PIPE:
+      /* Cygwin PTYs are implemented using named pipes */
+      return caml_win32_is_cygwin_pty(hFile);
+    default:
+      break;
+  }
+
+  return 0;
 }

@@ -20,6 +20,11 @@ Working version
 
 ### Other libraries:
 
+* GPR#1406: Unix.isatty now returns true in the native Windows ports when
+  passed a file descriptor connected to a Cygwin PTY. In particular, compiler
+  colors for the native Windows ports now work under Cygwin/MSYS2.
+  (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as

@@ -136,6 +136,8 @@ extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
 */
 extern value caml_copy_string_of_utf16(const wchar_t *s);
 
+extern int caml_win32_isatty(int fd);
+
 #endif /* _WIN32 */
 
 #endif /* CAML_INTERNALS */
