@@ -2949,9 +2949,10 @@ let check_total warn loc total lambda i handler_fun =
   end
 
 (* Warn for "extra" match failure *)
-let check_warn partial pat_act_list = match partial,pat_act_list with
-| Total,_::_ -> true
-| _,_ -> false
+let check_warn no_opt partial pat_act_list =
+  match partial,pat_act_list,no_opt  with
+  | Total,_::_,true -> true
+  | _,_,_ -> false
 
 let compile_matching loc repr handler_fun arg pat_act_list partial0 =
   let partial,no_opt = check_partial pat_act_list partial0 in
@@ -2964,7 +2965,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial0 =
           default = [[[omega]],raise_num]} in
       begin try
         let (lambda, total) = compile_match no_opt repr partial (start_ctx 1) pm in
-        let warn = check_warn partial0 pat_act_list in
+        let warn = check_warn no_opt partial0 pat_act_list in
         check_total warn loc total lambda raise_num handler_fun
       with
       | Unused -> assert false (* ; handler_fun() *)
@@ -3145,7 +3146,7 @@ let for_tupled_function loc paraml pats_act_list partial0 =
   try
     let (lambda, total) = compile_match no_opt None partial
         (start_ctx (List.length paraml)) pm in
-    let warn = check_warn partial0 pats_act_list in
+    let warn = check_warn no_opt partial0 pats_act_list in
     check_total warn loc total lambda raise_num (partial_function loc)
   with
   | Unused -> partial_function loc ()
@@ -3253,7 +3254,7 @@ let do_for_multiple_match loc paraml pat_act_list partial0 =
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
-            let warn = check_warn  partial0 pat_act_list in
+            let warn = check_warn no_opt partial0 pat_act_list in
             check_total warn loc total lam raise_num (partial_function loc)
         | Total ->
             assert (jumps_is_empty total) ;
@@ -3262,7 +3263,7 @@ let do_for_multiple_match loc paraml pat_act_list partial0 =
       let (lambda, total) = compile_match no_opt None partial (start_ctx 1) pm1 in
       begin match partial with
       | Partial ->
-          let warn = check_warn partial0 pat_act_list in
+          let warn = check_warn no_opt partial0 pat_act_list in
           check_total warn loc total lambda raise_num (partial_function loc)
       | Total ->
           assert (jumps_is_empty total) ;
