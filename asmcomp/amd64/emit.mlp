@@ -730,6 +730,10 @@ let emit_instr fallthrough i =
     | _     -> I.and_ (int n) (res i 0)
     end
   | Lop(Iintop Ixor) when i.arg.(1).loc = i.res.(0).loc ->
+    begin match i.res.(0).loc with
+    | Reg _ -> I.xor (res32 i 0) (res32 i 0)
+    | _     -> I.xor (arg i 1) (res i 0)
+    end
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqo ();
       I.idiv (arg i 1)
