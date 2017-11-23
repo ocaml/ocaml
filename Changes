@@ -73,6 +73,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1488: Refreshing parmatch
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
+
 - GPR#1502: more command line options for expect tests
   (Florian Angeletti, review by Gabriel Scherer)
 
