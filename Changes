@@ -23,7 +23,7 @@ Working version
 * GPR#1406: Unix.isatty now returns true in the native Windows ports when the
   passed a file descriptor connected to a Cygwin PTY. In particular, compiler
   colors for the native Windows ports now work under Cygwin/MSYS2.
-  (Nicolas Ojeda Bar, review by Gabriel Scherer and Xavier Leroy)
+  (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
 
 ### Compiler user-interface and warnings:
 
