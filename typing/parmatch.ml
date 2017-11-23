@@ -1000,11 +1000,9 @@ let rec satisfiable pss qs = match pss with
     | {pat_desc = Tpat_alias(q,_,_)}::qs ->
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-        let simplified = simplify_first_col pss in
-        let q0 = discr_pat omega simplified in
-        begin match
-          build_specialized_submatrices ~extend_row:(@) q0 simplified
-        with
+        let pss = simplify_first_col pss in
+        let q0 = discr_pat omega pss in
+        begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
         | { default; constrs = [] } ->
           (* first column of pss is made of variables only *)
           satisfiable default qs
@@ -1020,9 +1018,9 @@ let rec satisfiable pss qs = match pss with
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
-        let simplified = simplify_first_col pss in
-        let q0 = discr_pat q simplified in
-        satisfiable (build_specialized_submatrix ~extend_row:(@) q0 simplified)
+        let pss = simplify_first_col pss in
+        let q0 = discr_pat q pss in
+        satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
           (simple_match_args q0 q @ qs)
 
 (* While [satisfiable] only checks whether the last row of [pss + qs] is
@@ -1044,15 +1042,13 @@ let rec list_satisfying_vectors pss qs =
       | {pat_desc = Tpat_alias(q,_,_)}::qs ->
           list_satisfying_vectors pss (q::qs)
       | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-          let simplified = simplify_first_col pss in
-          let q0 = discr_pat omega simplified in
+          let pss = simplify_first_col pss in
+          let q0 = discr_pat omega pss in
           let wild default_matrix p =
             List.map (fun qs -> p::qs)
               (list_satisfying_vectors default_matrix qs)
           in
-          begin match
-            build_specialized_submatrices ~extend_row:(@) q0 simplified
-          with
+          begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
           | { default; constrs = [] } ->
               (* first column of pss is made of variables only *)
               wild default omega
@@ -1081,11 +1077,11 @@ let rec list_satisfying_vectors pss qs =
           end
       | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
       | q::qs ->
-          let simplified = simplify_first_col pss in
-          let q0 = discr_pat q simplified in
+          let pss = simplify_first_col pss in
+          let q0 = discr_pat q pss in
           List.map (set_args q0)
             (list_satisfying_vectors
-               (build_specialized_submatrix ~extend_row:(@) q0 simplified)
+               (build_specialized_submatrix ~extend_row:(@) q0 pss)
                (simple_match_args q0 q @ qs))
 
 (******************************************)
@@ -1169,9 +1165,9 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
 | []    ->  Witnesses [omegas n]
 | []::_ ->  No_matching_value
 | pss   ->
-    let simplified = simplify_first_col pss in
-    let q0 = discr_pat omega simplified in
-    begin match build_specialized_submatrices ~extend_row:(@) q0 simplified with
+    let pss = simplify_first_col pss in
+    let q0 = discr_pat omega pss in
+    begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
     | { default; constrs = [] } ->
         (* first column of pss is made of variables only *)
         begin match exhaust ext default (n-1) with
@@ -1245,11 +1241,9 @@ let rec pressure_variants tdefs = function
   | []    -> false
   | []::_ -> true
   | pss   ->
-      let simplified = simplify_first_col pss in
-      let q0 = discr_pat omega simplified in
-      begin match
-        build_specialized_submatrices ~extend_row:(@) q0 simplified
-      with
+      let pss = simplify_first_col pss in
+      let q0 = discr_pat omega pss in
+      begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
       | { default; constrs = [] } -> pressure_variants tdefs default
       | { default; constrs } ->
           let rec try_non_omega = function
@@ -1274,7 +1268,7 @@ let rec pressure_variants tdefs = function
               else (
                 let { constrs = partial_constrs; _ } =
                   build_specialized_submatrices ~extend_row:(@) q0
-                    (mark_partial simplified)
+                    (mark_partial pss)
                 in
                 try_non_omega partial_constrs
               )
@@ -1488,10 +1482,10 @@ let rec every_satisfiables pss qs = match qs.active with
         Unused
     | _ ->
 (* standard case, filter matrix *)
-        let simplified = simplify_first_col pss in
-        let q0 = discr_pat q simplified in
+        let pss = simplify_first_col pss in
+        let q0 = discr_pat q pss in
         every_satisfiables
-          (build_specialized_submatrix q0 simplified
+          (build_specialized_submatrix q0 pss
              ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
           {qs with active=simple_match_args q0 q @ rem}
     end
