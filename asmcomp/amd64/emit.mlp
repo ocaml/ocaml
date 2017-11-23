@@ -489,11 +489,47 @@ let emit_instr fallthrough i =
   | Lop(Iconst_int n) ->
       if n = 0n then begin
         match i.res.(0).loc with
-        | Reg _ -> I.xor (res i 0) (res i 0)
-        | _     -> I.mov (int 0) (res i 0)
+        | Reg _ ->
+          (* Clearing the bottom half also clears the top half (except for
+             64-bit-only registers where the behaviour is as if the operands
+             were 64 bit). *)
+          I.xor (res32 i 0) (res32 i 0)
+        | _ ->
+          I.mov (int 0) (res i 0)
+      end else begin
+        let fits_in_32_bits =
+          Nativeint.(compare n (of_int32 Int32.min_int) >= 0
+                     && compare n (of_int32 Int32.max_int) <= 0)
+        in
+        let positive = Nativeint.(compare n zero) >= 0 in
+        if fits_in_32_bits then begin
+          match i.res.(0).loc with
+          | Reg _ when positive ->
+            (* Setting the bottom half also sets the top half to zero
+               (with the same caveat as above). *)
+            I.mov (nat n) (res32 i 0)
+          | Reg _ when (not positive) && (res32 i 0 = Reg32 RAX) ->
+            (* If the destination is rax, we can use the same trick as for
+               positive values, and then perform sign extension. *)
+            I.mov (nat n) (res32 i 0);
+            I.cdqe ()
+          | _ -> I.mov (nat n) (res i 0)
+        end else begin
+          let fits_in_top_32_bits =
+            Nativeint.(compare (shift_left n 32) zero) = 0
+          in
+          if fits_in_top_32_bits then begin
+            match i.res.(0).loc with
+            | Reg _ ->
+              let const32 = Nativeint.(logand (shift_right n 32) 0xffff_ffffn) in
+              I.mov (nat const32) (res32 i 0);
+              I.sal (nat 32n) (res i 0)
+            | _ -> I.mov (nat n) (res i 0)
+          end else begin
+            I.mov (nat n) (res i 0)
+          end
+        end
       end
-      else
-        I.mov (nat n) (res i 0)
   | Lop(Iconst_float f) ->
       begin match f with
       | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -688,6 +724,16 @@ let emit_instr fallthrough i =
       let lbl = bound_error_label ?label:label_after_error i.dbg ~spacetime in
       I.cmp (int n) (arg i 0);
       I.jbe (label lbl)
+  | Lop(Iintop_imm (Iand, n)) when n >= 0 && n < 0x01_0000_0000 ->
+    begin match i.res.(0).loc with
+    | Reg _ -> I.and_ (int n) (res32 i 0)
+    | _     -> I.and_ (int n) (res i 0)
+    end
+  | Lop(Iintop Ixor) when i.arg.(1).loc = i.res.(0).loc ->
+    begin match i.res.(0).loc with
+    | Reg _ -> I.xor (res32 i 0) (res32 i 0)
+    | _     -> I.xor (arg i 1) (res i 0)
+    end
   | Lop(Iintop(Idiv | Imod)) ->
       I.cqo ();
       I.idiv (arg i 1)
@@ -701,10 +747,12 @@ let emit_instr fallthrough i =
       instr_for_intop op (arg i 1) (res i 0)
   | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
       I.lea (mem64 NONE n (arg64 i 0)) (res i 0)
+(* Page 3-21 of the Intel optimisation manual says not to use these:
   | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
       I.inc (res i 0)
   | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
       I.dec (res i 0)
+*)
   | Lop(Iintop_imm(op, n)) ->
       (* We have i.arg.(0) = i.res.(0) *)
       instr_for_intop op (int n) (res i 0)
