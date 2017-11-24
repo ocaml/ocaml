@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (* Dummy substitute function. *)
 
 open Testing;;
