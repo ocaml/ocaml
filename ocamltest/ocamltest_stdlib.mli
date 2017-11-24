@@ -13,35 +13,48 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of actions, basic blocks for tests *)
+(* A few extensions to OCaml's standard library *)
 
-type result =
-  | Pass of Environments.t
-  | Fail of string
-  | Skip of string
+(* Pervasive *)
 
-val string_of_result : result -> string
+val input_line_opt : in_channel -> string option
 
-type code = out_channel -> Environments.t -> result
+module Char : sig
+  include module type of Char
+  val is_blank : char -> bool
+end
 
-type t
+module Filename  : sig
+  include module type of Filename
+  val path_sep : string
+  val maybe_quote : string -> string
+  val make_filename : string -> string -> string
+  val make_path : string list -> string
+  val mkexe : string -> string
+end
 
-val action_name : t -> string
+module List : sig
+  include module type of List
+  val concatmap : ('a -> 'b list) -> 'a list -> 'b list
+end
 
-val make : string -> code -> t
+module String : sig
+  include module type of String
+  val words : string -> string list
+end
 
-val compare : t -> t -> int
+module Sys : sig
+  include module type of Sys
+  val file_is_empty : string -> bool
+  val run_system_command : string -> unit
+  val make_directory : string -> unit
+  val string_of_file : string -> string
+  val copy_file : string -> string -> unit
+end
 
-val register : t -> unit
+module StringSet : sig
+  include Set.S with type elt = string
+  val string_of_stringset : t -> string
+end
 
-val get_registered_actions : unit -> t list
-
-val lookup : string -> t option
-
-val set_hook : string -> code -> unit
-val clear_hook : string -> unit
-val clear_all_hooks : unit -> unit
-
-val run : out_channel -> Environments.t -> t -> result
-
-module ActionSet : Set.S with type elt = t
+module StringMap : Map.S with type key = string

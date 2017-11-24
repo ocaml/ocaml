@@ -23,6 +23,8 @@ exception Empty_variable_name
 
 exception Variable_already_registered
 
+exception No_such_variable of string
+
 val make : string * string -> t
 
 val name_of_variable : t -> string

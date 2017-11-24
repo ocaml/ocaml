@@ -13,35 +13,18 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of actions, basic blocks for tests *)
+(* Backends of the OCaml compiler and their properties *)
 
-type result =
-  | Pass of Environments.t
-  | Fail of string
-  | Skip of string
+open Ocamltest_stdlib
 
-val string_of_result : result -> string
+type t = Sys.backend_type
 
-type code = out_channel -> Environments.t -> result
+val string_of_backend : t -> string
 
-type t
+val make_backend_function : 'a -> 'a -> t -> 'a
 
-val action_name : t -> string
+val module_extension : t -> string
 
-val make : string -> code -> t
+val library_extension : t -> string
 
-val compare : t -> t -> int
-
-val register : t -> unit
-
-val get_registered_actions : unit -> t list
-
-val lookup : string -> t option
-
-val set_hook : string -> code -> unit
-val clear_hook : string -> unit
-val clear_all_hooks : unit -> unit
-
-val run : out_channel -> Environments.t -> t -> result
-
-module ActionSet : Set.S with type elt = t
+val executable_extension : t -> string

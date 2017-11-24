@@ -15,6 +15,7 @@
 
 (* Main program of the ocamltest test driver *)
 
+open Ocamltest_stdlib
 open Tsl_semantics
 
 type behavior =
@@ -78,23 +79,18 @@ and run_test_i log common_prefix path behavior i test_tree =
   run_test log common_prefix new_path behavior test_tree
 
 let get_test_source_directory test_dirname =
-  if not (Filename.is_relative test_dirname) then test_dirname
-  else let pwd = Sys.getcwd() in
-  Filename.concat pwd test_dirname
+  if (Filename.is_relative test_dirname) then begin
+    Sys.chdir test_dirname; Sys.getcwd()
+  end else test_dirname
 
-let get_test_build_directory test_dirname =
+let get_test_build_directory_prefix test_dirname =
   let ocamltestdir_variable = "OCAMLTESTDIR" in
   let root = try Sys.getenv ocamltestdir_variable with
     | Not_found -> (Filename.concat (Sys.getcwd ()) "_ocamltest") in
   if test_dirname = "." then root
   else Filename.concat root test_dirname
 
-let main () =
-  if !Options.testfile = "" then begin
-    print_usage();
-    exit 1
-  end;
-  let test_filename = !Options.testfile in
+let test_file test_filename =
   (* Printf.printf "# reading test file %s\n%!" test_filename; *)
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
@@ -104,7 +100,11 @@ let main () =
       let make_tree test = Node ([], test, [], []) in
       List.map make_tree default_tests
     | _ -> test_trees in
-  let actions = actions_in_tests (tests_in_trees test_trees) in
+  let used_tests = tests_in_trees test_trees in
+  let used_actions = actions_in_tests used_tests in
+  let action_names =
+    let f act names = StringSet.add (Actions.action_name act) names in
+    Actions.ActionSet.fold f used_actions StringSet.empty in
   let test_dirname = Filename.dirname test_filename in
   let test_basename = Filename.basename test_filename in
   let test_prefix = Filename.chop_extension test_basename in
@@ -112,32 +112,48 @@ let main () =
     if test_dirname="." then test_prefix
     else Filename.concat test_dirname test_prefix in
   let test_source_directory = get_test_source_directory test_dirname in
-  let test_build_directory = get_test_build_directory test_directory in
+  let hookname_prefix = Filename.concat test_source_directory test_prefix in
+  let test_build_directory_prefix =
+    get_test_build_directory_prefix test_directory in
+  Sys.make_directory test_build_directory_prefix;
+  Sys.chdir test_build_directory_prefix;
+  let log =
+    if !Options.log_to_stderr then stderr else begin
+      let log_filename = test_prefix ^ ".log" in
+      open_out log_filename
+    end in
+  let install_hook name =
+    let hook_name = Filename.make_filename hookname_prefix name in
+    if Sys.file_exists hook_name then begin
+      let hook = Actions_helpers.run_hook hook_name in
+      Actions.set_hook name hook
+    end in
+  StringSet.iter install_hook action_names;
+
   let reference_filename = Filename.concat
     test_source_directory (test_prefix ^ ".reference") in
   let initial_environment = Environments.from_bindings
   [
-    Builtin_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
-    Builtin_variables.ocamlc_default_flags,
-      Ocamltest_config.ocamlc_default_flags;
-    Builtin_variables.ocamlopt_default_flags,
-      Ocamltest_config.ocamlopt_default_flags;
     Builtin_variables.test_file, test_basename;
     Builtin_variables.reference, reference_filename;
     Builtin_variables.test_source_directory, test_source_directory;
-    Builtin_variables.test_build_directory, test_build_directory;
+    Builtin_variables.test_build_directory_prefix, test_build_directory_prefix;
   ] in
   let root_environment =
     interprete_environment_statements initial_environment rootenv_statements in
-  let rootenv = Actions.update_environment root_environment actions in
-  Testlib.make_directory test_build_directory;
-  Sys.chdir test_build_directory;
-  let log_filename = test_prefix ^ ".log" in
-  let log = open_out log_filename in
+  let rootenv = Environments.initialize log root_environment in
   let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
   List.iteri
     (run_test_i log common_prefix "" (Run rootenv))
     test_trees;
-  close_out log
+  Actions.clear_all_hooks();
+  if not !Options.log_to_stderr then close_out log
+
+let main () =
+  if !Options.files_to_test = [] then begin
+    print_usage();
+    exit 1
+  end;
+  List.iter test_file !Options.files_to_test
 
 let _ = main()
