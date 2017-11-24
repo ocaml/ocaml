@@ -108,14 +108,6 @@ let gen_mod_ident () =
   let ident = Ident.create (Printf.sprintf "M#%d" n) in
   ident
 
-let saved_full_mod_types = ref []
-let push_mod_type mt =
-  saved_full_mod_types := mt :: !saved_full_mod_types
-let pop_mod_type () =
-  let mt = List.hd !saved_full_mod_types in
-  saved_full_mod_types := List.tl !saved_full_mod_types;
-  mt
-
 let open_struct_level = ref 0
 let in_nested_struct () = !open_struct_level <> 0
 let enter_struct () = incr open_struct_level
@@ -153,9 +145,8 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       | Mty_signature _ -> ()
       | _ -> raise(Error(me.pmod_loc, env, Invalid_open me));
       end;
-      let full_modtype = pop_mod_type () in
       let md = {
-        md_type = full_modtype;
+        md_type = tme.mod_type;
         md_loc = me.pmod_loc;
         md_attributes = me.pmod_attributes;
       } in
@@ -762,6 +753,25 @@ let simplify_signature sg =
   in
   let (sg, _) = aux sg in
   sg
+
+
+let remove_inserted_modtype mty =
+  let remove_inserted_modtype =
+    List.filter (
+      function
+      | Sig_module({Ident.name}, _, _) when String.contains name '#' -> false
+      | _ -> true) in
+  let rec aux = function
+    | Mty_signature sg -> Mty_signature (remove_inserted_modtype sg)
+    | Mty_functor (id, mty_arg, mty_res) ->
+        Mty_functor (id,
+        (match mty_arg with
+         | None -> None
+         | Some mty -> Some (aux mty)),
+        (aux mty_res))
+    | mty -> mty in
+  aux mty
+
 
 (* Check and translate a module type expression *)
 
@@ -1598,7 +1608,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                      mb_attributes=attrs;  mb_loc=pmb_loc;
                     },
         [Sig_module(id,
-                    {md_type = modl.mod_type;
+                    {md_type = remove_inserted_modtype modl.mod_type;
                      md_attributes = attrs;
                      md_loc = pmb_loc;
                     }, Trec_not)],
@@ -1774,14 +1784,14 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
               Sig_module (id, {md_type=md.Types.md_type; md_loc=loc;
                                md_attributes = []}, Trec_not) in
             if not (in_nested_struct ()) then begin
-              let s_rem = Mty_signature sig_rem in begin
-              match Mtype.nondep_supertype new_env id s_rem with
+              let fs_rem = Mty_signature fsig_rem in begin
+              match Mtype.nondep_supertype new_env id fs_rem with
               | Mty_signature sg ->
                   (tm_str :: open_str :: str_rem, sg,
-                   md_sig :: fsig_rem, final_env)
+                   md_sig :: sg, final_env)
               | exception Not_found ->
                   raise(Error(pstr.pstr_loc, env,
-                              Cannot_eliminate_anon_module(id, sig_rem)))
+                              Cannot_eliminate_anon_module(id, fsig_rem)))
               | _ -> assert false
               end
             end else
@@ -1798,13 +1808,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
   let previous_saved_types = Cmt_format.get_saved_types () in
   let run () =
     let (items, sg, full_sg, final_env) = type_struct env sstr in
-    if in_nested_struct () then begin
-      push_mod_type (Mty_signature full_sg)
-    end;
     let str = { str_items = items; str_type = sg; str_final_env = final_env } in
     Cmt_format.set_saved_types
       (Cmt_format.Partial_structure str :: previous_saved_types);
-    str, sg, final_env
+    str, full_sg, final_env
   in
   if toplevel then run ()
   else Builtin_attributes.warning_scope [] run
@@ -1920,6 +1927,23 @@ let () =
 
 (* Typecheck an implementation file *)
 
+let simplify_signature sg =
+  let rec aux = function
+    | [] -> [], StringSet.empty
+    | (Sig_value(id, _descr) as component) :: sg ->
+        let (sg, val_names) as k = aux sg in
+        let name = Ident.name id in
+        if StringSet.mem name val_names then k
+        else (component :: sg, StringSet.add name val_names)
+    | Sig_module({Ident.name}, _, _) :: sg
+        when String.contains name '#' -> aux sg
+    | component :: sg ->
+        let (sg, val_names) = aux sg in
+        (component :: sg, val_names)
+  in
+  let (sg, _) = aux sg in
+  sg
+
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   try
@@ -1929,7 +1953,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Warnings.parse_options false "-32-34-37-38-60";
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
-  let simple_sg = simplify_signature sg in
+  let simple_sg =  simplify_signature sg in
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
     Printtyp.wrap_printing_env initial_env
