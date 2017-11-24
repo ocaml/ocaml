@@ -46,7 +46,8 @@ module type S = sig
     open struct
       type t' = char
     end
-    type t = t' -> int end
+  type t = t' -> int
+  end
   val x : t
 end
 [%%expect{|
@@ -66,6 +67,8 @@ open struct
   let dec () = decr counter
   let current () = !counter
 end
+[%%expect{|
+|}]
 
 let () =
   inc(); inc(); dec ();
@@ -92,11 +95,27 @@ end
 module A : sig  end
 |}];;
 
+module A = struct
+  open struct
+    open struct
+      type t = T
+    end
+    let y = T
+  end
+  let g = y
+end
+[%%expect{|
+Line _, characters 2-74:
+Error: The module identifier M#10 cannot be eliminated from val g :
+                                                              M#10.M#11.t
+|}]
+
 module type S = sig open struct type t = T end val x : t end
 [%%expect{|
 Line _, characters 20-46:
-Error: The module identifier M#10 cannot be eliminated from val x : M#10.t
+Error: The module identifier M#12 cannot be eliminated from val x : M#12.t
 |}];;
+
 
 module type S = sig
   open struct
