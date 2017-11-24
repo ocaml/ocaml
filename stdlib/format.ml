@@ -788,6 +788,17 @@ let pp_set_margin state n =
 
 let pp_get_margin state () = state.pp_margin
 
+let pp_set_geometry state ~max_indent ~margin =
+  if max_indent < 1 then
+    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 1")
+  else if margin <= max_indent then
+      raise (Invalid_argument "Format.pp_set_geometry: margin <= max_indent")
+  else
+    pp_set_margin state margin; pp_set_max_indent state max_indent
+
+let pp_get_geometry state () =
+  pp_get_margin state (), pp_get_max_indent state ()
+
 (* Setting a formatter basic output functions. *)
 let pp_set_formatter_out_functions state {
       out_string = f;
@@ -1069,6 +1080,9 @@ and get_margin = pp_get_margin std_formatter
 
 and set_max_indent = pp_set_max_indent std_formatter
 and get_max_indent = pp_get_max_indent std_formatter
+
+and set_geometry = pp_set_geometry std_formatter
+and get_geometry = pp_get_geometry std_formatter
 
 and set_max_boxes = pp_set_max_boxes std_formatter
 and get_max_boxes = pp_get_max_boxes std_formatter
