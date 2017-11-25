@@ -424,5 +424,6 @@ depend:
 	$(OCAMLLEX) odoc_see_lexer.mll
 	$(OCAMLDEP) $(INCLUDES_DEP) *.mll *.mly *.ml *.mli > .depend
 	$(OCAMLDEP) $(INCLUDES_DEP) -shared generators/*.ml >> .depend
+	$(ROOTDIR)/tools/normalize_depend .depend
 
 include .depend

@@ -136,6 +136,7 @@ ifeq "$(TOOLCHAIN)" "msvc"
 else
 	$(CC) -MM $(CPPFLAGS) *.c > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
+	../../tools/normalize_depend .depend
 endif
 
 include .depend

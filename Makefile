@@ -1313,6 +1313,7 @@ depend: beforedepend
 		-impl driver/compdynlink.mlopt >> .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
+	tools/normalize_depend .depend
 
 .PHONY: distclean
 distclean: clean

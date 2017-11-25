@@ -190,6 +190,7 @@ depend: $(dependencies_generated_prereqs)
 	$(CC) -MM $(CPPFLAGS) $(c_files) \
 	  | sed -e 's/\.o/.$$(O)/' > .depend
 	$(ocamldep) $(mli_files) $(ml_files) >> .depend
+	../tools/normalize_depend .depend
 endif
 
 -include .depend

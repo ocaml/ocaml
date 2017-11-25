@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# This file rewrites in place every file provided on the command line,
+# which are assumed to be .depend file.
+# These files need to deterministic so there is no fighting across
+# committers.  We think we need to normalize such files because gcc
+# -MM has been observed to output the same include multiple times (if
+# it is included with different paths), which is likely not reliably
+# true across compilers.  We would also depend on the exact line
+# breaks. Sorting also reduces spurious changes due to minor code
+# changes, like reordering includes.
+
+for f in "$@"; do
+    while IFS=: read first rest; do
+	echo -n $first:
+	echo -n $rest | tr ' ' '\n' | LC_ALL=C sort | uniq | while read line; do
+	    printf ' \\\n  %s' "$line"
+	done
+	printf '\n'
+    done < "$f" > "$f.tmp"
+    mv "$f.tmp" "$f"
+done

@@ -223,6 +223,7 @@ depend: prims.c caml/opnames.h caml/jumptbl.h caml/version.h
 	$(CC) -MM $(DFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.d.$$(O)/'>>.$@
 	$(CC) -MM $(IFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.i.$$(O)/'>>.$@
 	$(CC) -MM $(PICFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.pic.$$(O)/'>>.$@
+	../tools/normalize_depend .$@
 endif
 
 include .depend

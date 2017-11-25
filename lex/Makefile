@@ -83,5 +83,6 @@ beforedepend:: lexer.ml
 
 depend: beforedepend
 	$(CAMLDEP) -slash *.mli *.ml > .depend
+	../tools/normalize_depend .depend
 
 include .depend

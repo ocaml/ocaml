@@ -190,6 +190,7 @@ depend: $(COBJS:.$(O)=.c) $(sources)
 	  >> .depend
 	$(CC) -MM $(IFLAGS) $(CPPFLAGS) $^ | sed -e 's/\.o/.i.$$(O)/' \
 	  >> .depend
+	../tools/normalize_depend .depend
 endif
 
 include .depend

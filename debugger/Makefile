@@ -114,6 +114,7 @@ clean::
 depend: beforedepend
 	$(CAMLDEP) -slash $(DEPFLAGS) *.mli *.ml \
 	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
+	../tools/normalize_depend .depend
 
 lexer.ml: lexer.mll
 	$(CAMLLEX) lexer.mll

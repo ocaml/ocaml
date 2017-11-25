@@ -390,6 +390,7 @@ clean::
 
 depend: beforedepend
 	$(CAMLRUN) ./ocamldep -slash $(INCLUDES) *.mli *.ml > .depend
+	../tools/normalize_depend .depend
 
 .PHONY: clean install beforedepend depend
 

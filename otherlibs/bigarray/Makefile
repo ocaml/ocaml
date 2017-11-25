@@ -34,6 +34,7 @@ ifeq "$(TOOLCHAIN)" "msvc"
 else
 	$(CC) -MM $(CFLAGS) $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
+	$(ROOTDIR)/tools/normalize_depend .depend
 endif
 
 include .depend
