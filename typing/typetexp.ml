@@ -55,9 +55,12 @@ type error =
   | Ill_typed_functor_application
       of Longident.t * Longident.t * Includemod.error list option
   | Illegal_reference_to_recursive_module
-  | Access_functor_as_structure of Longident.t
-  | Apply_structure_as_functor of Longident.t
-  | Use_generative_functor_as_applicative of Longident.t
+  | Wrong_use_of_module of Longident.t * [ `Structure_used_as_functor
+                                         | `Abstract_used_as_functor
+                                         | `Functor_used_as_structure
+                                         | `Abstract_used_as_structure
+                                         | `Generative_used_as_applicative
+                                         ]
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
@@ -90,21 +93,26 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       check_module mlid;
       let md = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
-      | Mty_functor _ -> error (Access_functor_as_structure mlid)
+      | Mty_functor _ ->
+         error (Wrong_use_of_module (mlid, `Functor_used_as_structure))
+      | Mty_ident _ ->
+         error (Wrong_use_of_module (mlid, `Abstract_used_as_structure))
       | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
-      | _ -> ()
+      | Mty_signature _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
-      let mty_param_opt =
+      let mty_param =
         match Env.scrape_alias env fmd.md_type with
-        | Mty_signature _ -> error (Apply_structure_as_functor flid)
+        | Mty_signature _ ->
+           error (Wrong_use_of_module (flid, `Structure_used_as_functor))
+        | Mty_ident _ ->
+           error (Wrong_use_of_module (flid, `Abstract_used_as_functor))
         | Mty_alias(_, p) -> error (Cannot_scrape_alias(flid, p))
         | Mty_functor (_, None, _) ->
-           error (Use_generative_functor_as_applicative flid)
-        | Mty_functor (_, mty_param_opt, _) -> mty_param_opt
-        | _ -> None
+           error (Wrong_use_of_module (flid, `Generative_used_as_applicative))
+        | Mty_functor (_, Some mty_param, _) -> mty_param
       in
       check_module mlid;
       let mpath = Env.lookup_module ~load:true mlid env in
@@ -113,13 +121,10 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
       | mty_arg ->
          let details =
-           match mty_param_opt with
-           | None -> None
-           | Some mty_param ->
-              try Includemod.check_modtype_inclusion
-                    ~loc env mty_arg mpath mty_param;
-                  None
-              with Includemod.Error e -> Some e
+           try Includemod.check_modtype_inclusion
+                 ~loc env mty_arg mpath mty_param;
+               None (* should be impossible *)
+           with Includemod.Error e -> Some e
          in
          error (Ill_typed_functor_application (flid, mlid, details))
       end
@@ -975,14 +980,23 @@ let report_error env ppf = function
           longident mlid longident flid Includemod.report_error inclusion_error)
   | Illegal_reference_to_recursive_module ->
      fprintf ppf "Illegal recursive module reference"
-  | Access_functor_as_structure lid ->
-      fprintf ppf "The module %a is a functor, not a structure" longident lid
-  | Apply_structure_as_functor lid ->
-     fprintf ppf "The module %a is a structure, not a functor" longident lid
-  | Use_generative_functor_as_applicative flid ->
-     fprintf ppf "@[%a is a generative functor,@ and@ so@ cannot@ be@ applied@ \
-                    in@ type@ expressions@]"
-       longident flid
+  | Wrong_use_of_module (lid, details) ->
+     (match details with
+     | `Structure_used_as_functor ->
+        fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
+          longident lid
+     | `Abstract_used_as_functor ->
+        fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
+          longident lid
+     | `Functor_used_as_structure ->
+        fprintf ppf "@[The module %a is a functor, \
+                       it cannot have any components@]" longident lid
+     | `Abstract_used_as_structure ->
+        fprintf ppf "@[The module %a is abstract, \
+                       it cannot have any components@]" longident lid
+     | `Generative_used_as_applicative ->
+        fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
+                       applied@ in@ type@ expressions@]" longident lid)
   | Cannot_scrape_alias(lid, p) ->
       fprintf ppf
         "The module %a is an alias for module %a, which is missing"

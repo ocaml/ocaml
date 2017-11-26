@@ -66,6 +66,18 @@ type t = Generative(M).t
 Line _, characters 9-24:
   type t = Generative(M).t
            ^^^^^^^^^^^^^^^
-Error: Generative is a generative functor, and so cannot be applied in type
+Error: The functor Generative is generative, it cannot be applied in type
        expressions
+|}]
+
+
+
+module F(X : sig module type S module F : S end) = struct
+  type t = X.F(Parsing).t
+end
+[%%expect{|
+Line _, characters 11-25:
+    type t = X.F(Parsing).t
+             ^^^^^^^^^^^^^^
+Error: The module X.F is abstract, it cannot be applied
 |}]

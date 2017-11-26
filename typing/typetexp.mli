@@ -67,9 +67,12 @@ type error =
   | Ill_typed_functor_application
       of Longident.t * Longident.t * Includemod.error list option
   | Illegal_reference_to_recursive_module
-  | Access_functor_as_structure of Longident.t
-  | Apply_structure_as_functor of Longident.t
-  | Use_generative_functor_as_applicative of Longident.t
+  | Wrong_use_of_module of Longident.t * [ `Structure_used_as_functor
+                                         | `Abstract_used_as_functor
+                                         | `Functor_used_as_structure
+                                         | `Abstract_used_as_structure
+                                         | `Generative_used_as_applicative
+                                         ]
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
