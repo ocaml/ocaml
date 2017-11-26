@@ -46,7 +46,6 @@ graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
 verbose=false
-with_curses=yes
 debugruntime=false
 with_instrumented_runtime=false
 with_sharedlibs=true
@@ -152,7 +151,7 @@ while : ; do
     -lib*)
         cclibs="$2 $cclibs"; shift;;
     -no-curses|--no-curses)
-        with_curses=no;;
+        ;;  # Ignored for backward compatibility
     -no-shared-libs|--no-shared-libs)
         with_sharedlibs=false;;
     -x11include*|--x11include*)
@@ -1191,19 +1190,6 @@ if sh ./hasgot -i unistd.h issetugid; then
   echo "#define HAS_ISSETUGID" >> s.h
 fi
 
-# For the terminfo module
-
-if test "$with_curses" = "yes"; then
-  for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap" "-lncurses"; do
-    if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
-      inf "termcap functions found (with libraries '$libs')"
-      echo "#define HAS_TERMCAP" >> s.h
-      curseslibs="${libs}"
-      break
-    fi
-  done
-fi
-
 # For instrumented runtime
 # (clock_gettime needs -lrt for glibc before 2.17)
 if $with_instrumented_runtime; then
@@ -2057,8 +2043,7 @@ config CPPFLAGS "$common_cppflags $internal_cppflags"
 config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
 config OCAMLC_CPPFLAGS "$common_cppflags"
 config LDFLAGS "$ldflags"
-config BYTECCLIBS "$cclibs $dllib $curseslibs $pthread_link \
-                 $instrumented_runtime_libs"
+config BYTECCLIBS "$cclibs $dllib $pthread_link $instrumented_runtime_libs"
 config RPATH "$rpath"
 config EXE "$exe"
 config EMPTY ""
@@ -2158,8 +2143,7 @@ inf "        manual pages.............. $mandir (with extension .$programs_man_s
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $cc"
 inf "        options for compiling..... $common_cflags"
-inf "        options for linking....... $ldflags $cclibs $dllib" \
-                                       "$curseslibs $pthread_link"
+inf "        options for linking....... $ldflags $cclibs $dllib $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
 inf "        options for compiling..... $sharedcccompopts $common_cflags"

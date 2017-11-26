@@ -980,3 +980,8 @@ CAMLexport int caml_win32_isatty(int fd)
 
   return 0;
 }
+
+int caml_num_rows_fd(int fd)
+{
+  return -1;
+}
