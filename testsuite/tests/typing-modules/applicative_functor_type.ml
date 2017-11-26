@@ -55,7 +55,7 @@ Error: The type of M does not match F's parameter
 |} ]
 
 
-(* We can use generative functors as applicative (bug MPR#7611). *)
+(* MPR#7611 *)
 module Generative() = struct type t end
 [%%expect{|
 module Generative : functor () -> sig type t end
@@ -63,5 +63,9 @@ module Generative : functor () -> sig type t end
 
 type t = Generative(M).t
 [%%expect{|
-type t = Generative(M).t
+Line _, characters 9-24:
+  type t = Generative(M).t
+           ^^^^^^^^^^^^^^^
+Error: Generative is a generative functor, and so cannot be applied in type
+       expressions
 |}]

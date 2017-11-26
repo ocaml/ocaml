@@ -12,6 +12,9 @@ Working version
 
 ### Type system:
 
+- MPR#7611, GPR#1491: reject the use of generative functors as applicative
+  (Valentin Gatien-Baron)
+
 - GPR#1469: Use the information from [@@immediate] annotations when
   computing whether a type can be [@@unboxed]
   (Damien Doligez, report by Stephan Muenzel, review by ...)

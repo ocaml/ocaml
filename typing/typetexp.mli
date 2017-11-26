@@ -69,6 +69,7 @@ type error =
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Apply_structure_as_functor of Longident.t
+  | Use_generative_functor_as_applicative of Longident.t
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
