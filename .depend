@@ -1971,11 +1971,11 @@ middle_end/base_types/linkage_name.cmo : utils/identifiable.cmi \
 middle_end/base_types/linkage_name.cmx : utils/identifiable.cmx \
     middle_end/base_types/linkage_name.cmi
 middle_end/base_types/linkage_name.cmi : utils/identifiable.cmi
-middle_end/base_types/mutable_variable.cmo : utils/identifiable.cmi \
-    typing/ident.cmi middle_end/base_types/compilation_unit.cmi \
+middle_end/base_types/mutable_variable.cmo : \
+    middle_end/base_types/variable.cmi \
     middle_end/base_types/mutable_variable.cmi
-middle_end/base_types/mutable_variable.cmx : utils/identifiable.cmx \
-    typing/ident.cmx middle_end/base_types/compilation_unit.cmx \
+middle_end/base_types/mutable_variable.cmx : \
+    middle_end/base_types/variable.cmx \
     middle_end/base_types/mutable_variable.cmi
 middle_end/base_types/mutable_variable.cmi : utils/identifiable.cmi \
     typing/ident.cmi middle_end/base_types/compilation_unit.cmi

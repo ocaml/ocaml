@@ -163,7 +163,7 @@ end = struct
     Mutable_variable.Map.find mut_var t.mutable_var
 
   let add_fresh_mutable_ident t mut_var =
-    let id = Mutable_variable.unique_ident mut_var in
+    let id = Ident.create (Mutable_variable.unique_name mut_var) in
     let mutable_var = Mutable_variable.Map.add mut_var id t.mutable_var in
     id, { t with mutable_var; }
 

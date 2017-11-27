@@ -17,8 +17,7 @@
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
 let rename_var var =
-  Mutable_variable.create
-    (Variable.unique_name var)
+  Mutable_variable.create (Variable.unique_name var)
   (* Variable.rename var *)
   (*   ~current_compilation_unit:(Compilation_unit.get_current_exn ()) *)
 
