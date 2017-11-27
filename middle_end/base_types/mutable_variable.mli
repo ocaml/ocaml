@@ -26,11 +26,12 @@ val create_with_same_name_as_ident : Ident.t -> t
 
 val rename
    : ?current_compilation_unit:Compilation_unit.t
-  -> ?append:string
   -> t
   -> t
 
 val in_compilation_unit : t -> Compilation_unit.t -> bool
+
+val name : t -> string
 
 val unique_name : t -> string
 

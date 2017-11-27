@@ -122,9 +122,10 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     in
     let extracted =
       let expr =
+        let name = Internal_variable_names.lifted_let_rec_block in
         Flambda_utils.toplevel_substitution def_substitution
           (Let_rec (renamed_defs,
-                    Flambda_utils.name_expr ~name:"lifted_let_rec_block"
+                    Flambda_utils.name_expr ~name
                       (Prim (Pmakeblock (0, Immutable, None),
                              List.map fst renamed_defs,
                              Debuginfo.none))))

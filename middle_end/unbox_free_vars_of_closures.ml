@@ -28,7 +28,7 @@ let add_lifted_projections_around_set_of_closures
       ~definitions_indexed_by_new_inner_vars =
   let body =
     Flambda_utils.name_expr (Set_of_closures set_of_closures)
-      ~name:pass_name
+      ~name:Internal_variable_names.unbox_free_vars_of_closures
   in
   Variable.Map.fold (fun new_inner_var (projection : Projection.t)
             (expr, benefit) ->

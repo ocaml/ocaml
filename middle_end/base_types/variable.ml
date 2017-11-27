@@ -76,28 +76,23 @@ let create ?current_compilation_unit name =
     name_stamp;
   }
 
-let create_with_same_name_as_ident ident = create (Ident.name ident)
+let create_with_same_name_as_ident ident =
+  create (Ident.name ident)
 
-let clambda_name t =
-  (Compilation_unit.string_for_printing t.compilation_unit) ^ "_" ^ t.name
-
-let rename ?current_compilation_unit ?append t =
+let rename ?current_compilation_unit t =
   let current_compilation_unit =
     match current_compilation_unit with
     | Some compilation_unit -> compilation_unit
     | None -> Compilation_unit.get_current_exn ()
   in
-  let name =
-    match append with
-    | None -> t.name
-    | Some s -> t.name ^ s
-  in
-  create ~current_compilation_unit name
+  create ~current_compilation_unit t.name
 
 let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit
 
 let get_compilation_unit t = t.compilation_unit
+
+let name t = t.name
 
 let unique_name t =
   t.name ^ "_" ^ (string_of_int t.name_stamp)

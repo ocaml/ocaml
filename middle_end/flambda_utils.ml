@@ -16,7 +16,7 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-let name_expr (named : Flambda.named) ~name : Flambda.t =
+let name_expr ~name (named : Flambda.named) : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
@@ -310,7 +310,8 @@ let toplevel_substitution sb tree =
 (* CR-someday mshinwell: Fix [Flambda_iterators] so this can be implemented
    properly. *)
 let toplevel_substitution_named sb named =
-  let expr = name_expr named ~name:"toplevel_substitution_named" in
+  let name = Internal_variable_names.toplevel_substitution_named in
+  let expr = name_expr named ~name in
   match toplevel_substitution sb expr with
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
@@ -354,7 +355,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_var =
-    Variable.create "set_of_closures"
+    Variable.create Internal_variable_names.set_of_closures
       ~current_compilation_unit:compilation_unit
   in
   let set_of_closures =
@@ -373,7 +374,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
       }
   in
   let project_closure_var =
-    Variable.create "project_closure"
+    Variable.create Internal_variable_names.project_closure
       ~current_compilation_unit:compilation_unit
   in
   Flambda.create_let set_of_closures_var (Set_of_closures set_of_closures)
@@ -546,8 +547,10 @@ let substitute_read_symbol_field_for_variables
       | [] -> Symbol symbol
       | [i] -> Read_symbol_field (symbol, i)
       | h :: t ->
-          let block = Variable.create "symbol_field_block" in
-          let field = Variable.create "get_symbol_field" in
+          let block_name = Internal_variable_names.symbol_field_block in
+          let block = Variable.create block_name in
+          let field_name = Internal_variable_names.get_symbol_field in
+          let field = Variable.create field_name in
           Expr (
             Flambda.create_let block (make_named t)
               (Flambda.create_let field

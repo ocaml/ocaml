@@ -616,7 +616,7 @@ module Make (T : S) = struct
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then
-          let surrogate = Variable.rename fun_var ~append:"_surrogate" in
+          let surrogate = Variable.rename fun_var in
           let funs =
             (* In this case, the original function declaration remains
                untouched up to alpha-equivalence.  Direct calls to it
@@ -652,7 +652,7 @@ module Make (T : S) = struct
         ~new_lifted_defns_indexed_by_new_outer_vars =
     let body =
       Flambda_utils.name_expr
-        ~name:"set_of_closures"
+        ~name:Internal_variable_names.set_of_closures
         (Set_of_closures set_of_closures)
     in
     Variable.Map.fold (fun new_outer_var (projection : Projection.t)

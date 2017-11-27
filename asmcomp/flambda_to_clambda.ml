@@ -156,14 +156,14 @@ end = struct
   let ident_for_var_exn t id = Variable.Map.find id t.var
 
   let add_fresh_ident t var =
-    let id = Ident.create (Variable.unique_name var) in
+    let id = Ident.create (Variable.name var) in
     id, { t with var = Variable.Map.add var id t.var }
 
   let ident_for_mutable_var_exn t mut_var =
     Mutable_variable.Map.find mut_var t.mutable_var
 
   let add_fresh_mutable_ident t mut_var =
-    let id = Ident.create (Mutable_variable.unique_name mut_var) in
+    let id = Ident.create (Mutable_variable.name mut_var) in
     let mutable_var = Mutable_variable.Map.add mut_var id t.mutable_var in
     id, { t with mutable_var; }
 
