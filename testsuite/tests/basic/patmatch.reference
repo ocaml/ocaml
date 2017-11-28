@@ -151,3 +151,5 @@ g A Y X -> '_'
 f A Z Y -> '_'
 g A Z Y -> '_'
 PR#7661-E=Ok
+Tst x0,x= 3,3 and y0,y=7,7
+PR#7661-Again=Ok

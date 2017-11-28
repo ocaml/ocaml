@@ -1872,3 +1872,86 @@ module MPR7761 = struct
     let () = printf "PR#7661-E=Ok\n%!"
   end
 end
+
+module MPR7661Again = struct
+
+(* Code from jbuilder, reduced *)
+
+  module Findlib = struct
+  module Package_not_available = struct
+    type t =
+        { package     : string
+         ; reason      : reason
+        }
+
+    and reason =
+      | Not_found
+      | Hidden
+          (** exist_if not satisfied *)
+      | Dependencies_unavailable of t list
+            (** At least one dependency is unavailable *)
+  end
+
+  exception Package_not_available of Package_not_available.t
+
+  let exn0 =
+    Package_not_available
+    {  package="coucou"; reason=Not_found;}
+
+  module External_dep_conflicts_with_local_lib = struct
+    type t =
+        { package             : string
+            ; required_locally_in : string list
+            ; defined_locally_in  : string list
+        }
+  end
+
+  exception External_dep_conflicts_with_local_lib of External_dep_conflicts_with_local_lib.t
+
+end
+
+exception Unix_error of int * string * string
+
+module Main = struct
+
+
+let report_error exn =
+  match exn with
+  | Findlib.Package_not_available { package;  reason } ->
+      3
+  | Findlib.External_dep_conflicts_with_local_lib
+      { package; required_locally_in; defined_locally_in } ->
+        4
+  | _ ->
+      7
+
+let report_again exn = match exn with
+  | Findlib.Package_not_available { package; reason=Dependencies_unavailable []; } ->
+      3
+  | Findlib.External_dep_conflicts_with_local_lib
+      { package; required_locally_in; defined_locally_in } ->
+        4
+  | _ ->
+      7
+
+  let tst exn x0 y0  =
+    let x = report_error exn in
+    let y = report_again exn in
+    Printf.printf "Tst x0,x= %i,%i and y0,y=%i,%i\n%!" x0 x y0 y ;
+    if x <> x0 || y <> y0 then failwith "Failed"
+
+  let () = tst Findlib.exn0 3 7 ; ()
+
+end
+
+(* shorter test *)
+
+  type t1 = {x:int;}
+  type t2 = {a:int; b:string;}
+
+  type t = ..
+  type t += C1 of t1 | C2 of t2
+  let f (x : t) = match x with C1 { x; } -> () | C2 { a;b; } -> () | _ -> ()
+
+  let () = printf "PR#7661-Again=Ok\n%!"
+end
