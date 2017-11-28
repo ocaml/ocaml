@@ -58,6 +58,10 @@ Working version
 
 ### Compiler distribution build system
 
+- MPR#7679: make sure .a files are erased before calling ar rc, otherwise
+  leftover .a files from an earlier compilation may contain unwanted modules
+  (Xavier Leroy)
+
 ### Internal/compiler-libs changes:
 
 ### Bug fixes
