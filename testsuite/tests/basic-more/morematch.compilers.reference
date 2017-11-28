@@ -1,0 +1,30 @@
+File "morematch.ml", line 1050, characters 8-65:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(A `D|B (`B, (`A|`C)))
+File "morematch.ml", line 67, characters 2-5:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 68, characters 2-3:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 219, characters 33-47:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 388, characters 2-15:
+Warning 11: this match case is unused.
+File "morematch.ml", line 401, characters 2-20:
+Warning 11: this match case is unused.
+File "morematch.ml", line 402, characters 2-16:
+Warning 11: this match case is unused.
+File "morematch.ml", line 403, characters 2-29:
+Warning 11: this match case is unused.
+File "morematch.ml", line 413, characters 5-12:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 432, characters 43-44:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 455, characters 7-8:
+Warning 12: this sub-pattern is unused.
+File "morematch.ml", line 456, characters 2-7:
+Warning 11: this match case is unused.
+File "morematch.ml", line 1084, characters 5-51:
+Warning 11: this match case is unused.
+File "morematch.ml", line 1086, characters 5-51:
+Warning 11: this match case is unused.
