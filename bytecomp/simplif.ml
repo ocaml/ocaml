@@ -282,7 +282,7 @@ let simplify_exits lam =
       if count = 0 then
         (* Discard staticcatch: not matching exit *)
         simplif l1
-      else if i >= 0 && count = 1 && max_depth <= !try_depth then begin
+      else if count = 1 && max_depth <= !try_depth then begin
         (* Inline handler if there is a single occurrence and it is not
            nested within an inner try..with *)
         assert(max_depth = !try_depth);
