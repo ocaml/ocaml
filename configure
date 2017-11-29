@@ -2059,8 +2059,8 @@ SYSLIB=-l\$(1)
 ### How to build a static library
 MKLIB=rm -f \$(1) && ${TOOLPREF}ar rc \$(1) \$(2) && ${TOOLPREF}ranlib \$(1)
 #ml let mklib out files opts =      (* "" *)
-#ml   Printf.sprintf "rm -f %s && ${TOOLPREF}ar rc %s %s %s && ${TOOLPREF}ranlib %s"
-#ml                  out out opts files out;;
+#ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s && ${TOOLPREF}ranlib %s"
+#ml                  out opts files out;;
 EOF
 config ARCH "$arch"
 config MODEL "$model"
