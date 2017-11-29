@@ -38,6 +38,10 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
   Frédéric Bour)
 
+- GPR#1496: Refactor the code printing explanation for unification type errors,
+  in order to avoid duplicating pattern matches
+  (Armaël Guéneau, review by Florian Angeletti and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
