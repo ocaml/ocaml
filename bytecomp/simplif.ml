@@ -494,7 +494,7 @@ let simplify_lets lam =
   | Llet(StrictOpt, kind, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | _ -> mklet Alias kind v (simplif l1) (simplif l2)
+      | _ -> mklet StrictOpt kind v (simplif l1) (simplif l2)
       end
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
   | Lletrec(bindings, body) ->
