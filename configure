@@ -2057,9 +2057,9 @@ SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
 ### How to build a static library
-MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
+MKLIB=rm -f \$(1) && ${TOOLPREF}ar rc \$(1) \$(2) && ${TOOLPREF}ranlib \$(1)
 #ml let mklib out files opts =      (* "" *)
-#ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s"
+#ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s && ${TOOLPREF}ranlib %s"
 #ml                  out opts files out;;
 EOF
 config ARCH "$arch"
