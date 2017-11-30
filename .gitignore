@@ -252,7 +252,6 @@ _ocamltest
 /testsuite/tests/asmgen/*.s
 /testsuite/tests/asmgen/*.out.manifest
 
-/testsuite/tests/basic/*.safe-string
 
 /testsuite/tests/embedded/caml
 
