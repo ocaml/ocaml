@@ -1948,7 +1948,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Warnings.parse_options false "-32-34-37-38-60";
   let (str, sg, finalenv) =
     type_structure initial_env ast (Location.in_file sourcefile) in
-  let simple_sg =  simplify_signature sg in
+  let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
     Printtyp.wrap_printing_env initial_env
