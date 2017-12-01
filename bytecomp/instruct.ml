@@ -18,7 +18,9 @@ open Lambda
 type compilation_env =
   { ce_stack: int Ident.tbl;
     ce_heap: int Ident.tbl;
-    ce_rec: int Ident.tbl }
+    ce_rec: int Ident.tbl;
+    ce_static_raises: (int * int) Numbers.Int.Map.t;
+  }
 
 type debug_event =
   { mutable ev_pos: int;                (* Position in bytecode *)

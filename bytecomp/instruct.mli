@@ -22,7 +22,10 @@ open Lambda
 type compilation_env =
   { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
     ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
-    ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
+    ce_rec: int Ident.tbl;   (* Functions bound by the same let rec *)
+    ce_static_raises: (int * int) Numbers.Int.Map.t;
+                             (* staticraise number to label and size *)
+  }
 
 (* The ce_stack component gives locations of variables residing
    in the stack. The locations are offsets w.r.t. the origin of the

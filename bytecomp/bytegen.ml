@@ -33,14 +33,17 @@ let new_label () =
 (**** Operations on compilation environments. ****)
 
 let empty_env =
-  { ce_stack = Ident.empty; ce_heap = Ident.empty; ce_rec = Ident.empty }
+  { ce_stack = Ident.empty; ce_heap = Ident.empty; ce_rec = Ident.empty;
+    ce_static_raises = Numbers.Int.Map.empty; }
 
 (* Add a stack-allocated variable *)
 
 let add_var id pos env =
   { ce_stack = Ident.add id pos env.ce_stack;
     ce_heap = env.ce_heap;
-    ce_rec = env.ce_rec }
+    ce_rec = env.ce_rec;
+    ce_static_raises = env.ce_static_raises;
+  }
 
 let rec add_vars idlist pos env =
   match idlist with
@@ -257,28 +260,23 @@ let add_event ev =
 
 (**** Compilation of a lambda expression ****)
 
-let try_blocks = ref []  (* list of stack size for each nested try block *)
+let push_static_raise env i lbl_handler sz =
+  { env with ce_static_raises =
+               Numbers.Int.Map.add i (lbl_handler, sz) env.ce_static_raises }
 
-(* association staticraise numbers -> (lbl,size of stack, try_blocks *)
-
-let sz_static_raises = ref []
-
-let push_static_raise i lbl_handler sz =
-  sz_static_raises := (i, (lbl_handler, sz, !try_blocks)) :: !sz_static_raises
-
-let find_raise_label i =
+let find_raise_label i env =
   try
-    List.assoc i !sz_static_raises
+    Numbers.Int.Map.find i env.ce_static_raises
   with
   | Not_found ->
       Misc.fatal_error
         ("exit("^string_of_int i^") outside appropriated catch")
 
 (* Will the translation of l lead to a jump to label ? *)
-let code_as_jump l sz = match l with
+let code_as_jump l sz env = match l with
 | Lstaticraise (i,[],No_action) ->
-    let label,size,tb = find_raise_label i in
-    if sz = size && tb == !try_blocks then
+    let label,size = find_raise_label i env in
+    if sz = size then
       Some label
     else
       None
@@ -699,7 +697,7 @@ let rec comp_expr env exp sz cont =
               (comp_expr
                 (add_vars vars (sz+1) env)
                 handler (sz+nvars) (add_pop nvars cont1)) in
-          push_static_raise i lbl_handler (sz+nvars);
+          let env = push_static_raise env i lbl_handler (sz+nvars) in
           push_dummies nvars
             (comp_expr env body (sz+nvars)
             (add_pop nvars (branch1 :: cont2)))
@@ -710,28 +708,36 @@ let rec comp_expr env exp sz cont =
               (Kpush::comp_expr
                 (add_var var (sz+1) env)
                 handler (sz+1) (add_pop 1 cont1)) in
-          push_static_raise i lbl_handler sz;
+          let env = push_static_raise env i lbl_handler sz in
           comp_expr env body sz (branch1 :: cont2)
         end in
-      sz_static_raises := List.tl !sz_static_raises ;
       r
-  | Lstaticraise (i, args, _ta) ->
+  | Lstaticraise (i, args, ta) ->
       let cont = discard_dead_code cont in
-      let label,size,tb = find_raise_label i in
+      let label,size = find_raise_label i env in
       let cont = branch_to label cont in
-      let rec loop sz tbb =
-        if tb == tbb then add_pop (sz-size) cont
-        else match tbb with
-        | [] -> assert false
-        | try_sz :: tbb -> add_pop (sz-try_sz-4) (Kpoptrap :: loop try_sz tbb)
+      let cont =
+        match ta with
+        | No_action -> add_pop (sz-size) cont
+        | Pop cl ->
+            (* Optimization: Bypass all poptraps except the last *)
+            let rec loop cl =
+              match cl with
+              | [] -> add_pop (sz-size) cont
+              | [st_exn] ->
+                  let (_lbl, trap_sz) = find_raise_label st_exn env in
+                  add_pop (sz-trap_sz-4)
+                    (Kpoptrap :: (add_pop (trap_sz - size) cont))
+              | _ :: cl -> loop cl
+            in
+            loop cl
       in
-      let cont = loop sz !try_blocks in
       begin match args with
       | [arg] -> (* optim, argument passed in accumulator *)
           comp_expr env arg sz cont
       | _ -> comp_exit_args env args sz size cont
       end
-  | Ltrywith(body, _c, id, handler) ->
+  | Ltrywith(body, st_exn, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
       let body_cont =
@@ -739,9 +745,12 @@ let rec comp_expr env exp sz cont =
         Klabel lbl_handler :: Kpush ::
         comp_expr (add_var id (sz+1) env) handler (sz+1) (add_pop 1 cont1)
       in
-      try_blocks := sz :: !try_blocks;
-      let l = comp_expr env body (sz+4) body_cont in
-      try_blocks := List.tl !try_blocks;
+      let env_body =
+        { env with ce_static_raises =
+                     Numbers.Int.Map.add st_exn (lbl_handler, sz)
+                       env.ce_static_raises }
+      in
+      let l = comp_expr env_body body (sz+4) body_cont in
       Kpushtrap lbl_handler :: l
   | Lifthenelse(cond, ifso, ifnot) ->
       comp_binary_test env cond ifso ifnot sz cont
@@ -908,12 +917,12 @@ and comp_binary_test env cond ifso ifnot sz cont =
       let (lbl_end, cont1) = label_code cont in
       Kstrictbranchifnot lbl_end :: comp_expr env ifso sz cont1
     end else
-    match code_as_jump ifso sz with
+    match code_as_jump ifso sz env with
     | Some label ->
       let cont = comp_expr env ifnot sz cont in
       Kbranchif label :: cont
     | _ ->
-        match code_as_jump ifnot sz with
+        match code_as_jump ifnot sz env with
         | Some label ->
             let cont = comp_expr env ifso sz cont in
             Kbranchifnot label :: cont
@@ -948,7 +957,9 @@ let comp_function tc cont =
   let env =
     { ce_stack = positions arity (-1) tc.params;
       ce_heap = positions (2 * (tc.num_defs - tc.rec_pos) - 1) 1 tc.free_vars;
-      ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars } in
+      ce_rec = positions (-2 * tc.rec_pos) 2 tc.rec_vars;
+      ce_static_raises = Numbers.Int.Map.empty;
+    } in
   let cont =
     comp_block env tc.body arity (Kreturn arity :: cont) in
   if arity > 1 then
@@ -972,7 +983,6 @@ let comp_remainder cont =
 let compile_implementation modulename expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  sz_static_raises := [] ;
   compunit_name := modulename;
   let init_code = comp_block empty_env expr 0 [] in
   if Stack.length functions_to_compile > 0 then begin
@@ -984,14 +994,12 @@ let compile_implementation modulename expr =
 let compile_phrase expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  sz_static_raises := [] ;
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
 
 let reset () =
   label_counter := 0;
-  sz_static_raises := [];
   compunit_name := "";
   Stack.clear functions_to_compile;
   max_stack_used := 0
