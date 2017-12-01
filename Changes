@@ -86,7 +86,7 @@ Working version
   (Jacques Garrigue, report by Jun Furuse)
 
 - MPR#7682, GPR#1495: fix [@@unboxed] for records with 1 polymorphic field
-  (Alain Frisch, report by Stéphane Graham-Lengrand)
+  (Alain Frisch, report by Stéphane Graham-Lengrand, review by Gabriel Scherer)
 
 
 4.06 maintenance branch
