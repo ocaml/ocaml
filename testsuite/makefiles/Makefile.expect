@@ -16,8 +16,8 @@
 default:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
-	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) $$file && \
-	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) -principal \
+	  TERM=dumb $(EXPECT_TEST) $(EXPECT_FLAGS) -repo-root $(OTOPDIR) $$file && \
+	  TERM=dumb $(EXPECT_TEST) $(EXPECT_FLAGS) -repo-root $(OTOPDIR) -principal \
 	    $$file.corrected && \
 	  mv $$file.corrected.corrected $$file.corrected && \
 	  $(DIFF) $$file $$file.corrected && \
