@@ -42,6 +42,11 @@ Working version
   in order to avoid duplicating pattern matches
   (Armaël Guéneau, review by Florian Angeletti and Gabriel Scherer)
 
+- GPR#1505: Add specific error messages for unification errors involving
+  functions of type "unit -> _"
+  (Arthur Charguéraud and Armaël Guéneau, with help from Leo White, review by
+  Florian Angeletti and Gabriel Radanne)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
