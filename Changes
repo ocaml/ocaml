@@ -85,6 +85,10 @@ Working version
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
 
+- MPR#7680, GPR#1497: Incorrect interaction between Matching.for_let and
+  Simplif.simplify_exits
+  (Alain Frisch, report and review by Vincent Laviron)
+
 - MPR#7682, GPR#1495: fix [@@unboxed] for records with 1 polymorphic field
   (Alain Frisch, report by Stéphane Graham-Lengrand, review by Gabriel Scherer)
 
