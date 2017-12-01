@@ -756,13 +756,13 @@ let simplify_signature sg =
 
 
 let remove_inserted_modtype mty =
-  let remove_inserted_modtype =
+  let remove =
     List.filter (
       function
       | Sig_module({Ident.name}, _, _) when String.contains name '#' -> false
       | _ -> true) in
   let rec aux = function
-    | Mty_signature sg -> Mty_signature (remove_inserted_modtype sg)
+    | Mty_signature sg -> Mty_signature (remove sg)
     | Mty_functor (id, mty_arg, mty_res) ->
         Mty_functor (id,
         (match mty_arg with
@@ -948,23 +948,18 @@ and transl_signature env sg =
             let (newenv, od) = type_open env sod in
             let (trem, rem, final_env) = transl_sig newenv srem in
             let remr = ref rem in
-            begin
-            if not (in_nested_struct ()) then
-              begin
-              match extract_open od with
-              | None -> ()
-              | Some (_, _, id, _) -> begin
-                  let s_rem = Mty_signature rem in begin
-                  match Mtype.nondep_supertype newenv id s_rem with
-                  | Mty_signature rem' -> remr := rem'
-                  | exception Not_found ->
-                      raise(Error(sod.popen_loc, env,
-                                  Cannot_eliminate_anon_module(id, rem)))
-                  | _ -> assert false
-                  end
-                end
-              end else ()
-            end;
+            (match extract_open od with
+             | None -> ()
+             | Some (_, _, id, _) -> begin
+                 let s_rem = Mty_signature rem in begin
+                 match Mtype.nondep_supertype newenv id s_rem with
+                 | Mty_signature rem' -> remr := rem'
+                 | exception Not_found ->
+                     raise(Error(sod.popen_loc, env,
+                                 Cannot_eliminate_anon_module(id, rem)))
+                 | _ -> assert false
+                 end
+            end);
             mksig (Tsig_open od) env loc :: trem,
             !remr, final_env
           end

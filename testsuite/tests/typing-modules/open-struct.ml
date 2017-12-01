@@ -222,3 +222,36 @@ end
 [%%expect{|
 |}]
 
+module N = struct
+  open (functor
+    (N: sig open struct type t = int end val x : t end) ->
+    (struct let y = N.x end))(struct let x = 1 end)
+
+  let () =
+    assert(y = 1)
+end
+[%%expect{|
+module N : sig  end
+|}]
+
+module M = struct
+  open struct
+    open struct
+      module type S = sig open struct type t = int end val x : t end
+      module M : S = struct let x = 1 end
+    end
+  end
+end
+[%%expect{|
+module M : sig  end
+|}]
+
+module N = struct
+  open struct
+    module type S = sig open struct type t = T end val x : t end
+  end
+end
+[%%expect{|
+Line _, characters 24-50:
+Error: The module identifier M#31 cannot be eliminated from val x : M#31.t
+|}]
