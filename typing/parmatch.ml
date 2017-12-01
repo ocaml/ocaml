@@ -1198,11 +1198,6 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
         then
           before
         else
-          (* As the default matrix is included in [pss] one can avoid recursive
-             calls on specialized matrices.
-             Essentially:
-             - default matrix exhaustive => [pss] exhaustive
-             - default matrix non-exhaustive => we have a non-filtered value. *)
           let r =  exhaust ext default (n-1) in
           match r with
           | No_matching_value -> before
