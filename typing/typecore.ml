@@ -5056,9 +5056,10 @@ let report_error env ppf = function
         (function ppf ->
            fprintf ppf "but is here used with type");
       if b then
-        fprintf ppf ".@.@[<hov>%s@ %s@]"
+        fprintf ppf ".@.@[<hov>%s@ %s@ %s@]"
           "This simple coercion was not fully general."
-          "Consider using a double coercion."
+          "Hint: Consider using a fully explicit coercion"
+          "of the form: `(foo : ty1 :> ty2)'."
   | Too_many_arguments (in_function, ty) ->
       reset_and_mark_loops ty;
       if in_function then begin
