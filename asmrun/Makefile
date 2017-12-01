@@ -17,7 +17,7 @@ include ../config/Makefile
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
-  parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
+  parsing.c gc_ctrl.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c startup_aux.c \
   backtrace.c afl.c bigarray.c
@@ -72,7 +72,7 @@ COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
   major_gc.$(O) minor_gc.$(O) memory.$(O) alloc.$(O) compare.$(O)	\
   ints.$(O) floats.$(O) str.$(O) array.$(O) io.$(O) extern.$(O)		\
   intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O)		\
-  terminfo.$(O) md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
+  md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
   printexc.$(O) callback.$(O) weak.$(O) compact.$(O) finalise.$(O)	\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\

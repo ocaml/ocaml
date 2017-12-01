@@ -19,7 +19,8 @@ include ../config/Makefile
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
-  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -m -f -)
+  ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
+    | sed 's/\\/\\\\\\\\/g')
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
@@ -32,27 +33,37 @@ run := run_$(UNIX_OR_WIN32)
 # List of source files from which ocamltest is compiled
 # (all the different sorts of files are derived from this)
 
-sources := \
+# ocamltest has two components: its core and the OCaml "plugin"
+# which is actually built into the tool but clearly separated from its core
+
+core := \
   $(run).c \
   run_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
-  testlib.mli testlib.ml \
+  ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
   filetype.mli filetype.ml \
   filecompare.mli filecompare.ml \
-  backends.mli backends.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
-  builtin_variables.mli builtin_variables.ml \
-  builtin_modifiers.mli builtin_modifiers.ml \
   actions.mli actions.ml \
-  builtin_actions.mli builtin_actions.ml \
   tests.mli tests.ml \
-  builtin_tests.mli builtin_tests.ml \
   tsl_ast.mli tsl_ast.ml \
   tsl_parser.mly \
   tsl_lexer.mli tsl_lexer.mll \
   tsl_semantics.mli tsl_semantics.ml \
+  builtin_variables.mli builtin_variables.ml \
+  actions_helpers.mli actions_helpers.ml \
+  builtin_actions.mli builtin_actions.ml
+
+ocaml_plugin := \
+  ocaml_backends.mli ocaml_backends.ml \
+  ocaml_variables.mli ocaml_variables.ml \
+  ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_actions.mli ocaml_actions.ml \
+  ocaml_tests.mli ocaml_tests.ml
+
+sources := $(core) $(ocaml_plugin) \
   options.mli options.ml \
   main.mli main.ml
 

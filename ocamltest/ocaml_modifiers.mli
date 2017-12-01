@@ -13,16 +13,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Backends of the OCaml compiler and their properties *)
+(* Definition of a few OCaml-specific environment modifiers *)
 
-type t = Sys.backend_type
+val expect : Environments.modifiers
 
-val string_of_backend : t -> string
+val principal : Environments.modifiers
 
-val make_backend_function : 'a -> 'a -> t -> 'a
+val testing : Environments.modifiers
 
-val module_extension : t -> string
+val unix : Environments.modifiers
 
-val library_extension : t -> string
-
-val executable_extension : t -> string
+val str : Environments.modifiers

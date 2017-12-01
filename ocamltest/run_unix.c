@@ -122,6 +122,27 @@ static int paths_same_file(
   return same_file;
 }
 
+static void update_environment(array local_env)
+{
+  array envp;
+  for (envp = local_env; *envp != NULL; envp++) {
+    char *pos_eq = strchr(*envp, '=');
+    if (pos_eq != NULL) {
+      char *name, *value;
+      int name_length = pos_eq - *envp;
+      int l = strlen(*envp);
+      int value_length = l - (name_length +1);
+      name = malloc(name_length+1);
+      value = malloc(value_length+1);
+      memcpy(name, *envp, name_length);
+      name[name_length] = '\0';
+      memcpy(value, pos_eq + 1, value_length);
+      value[value_length] = '\0';
+      setenv(name, value, 1); /* 1 means overwrite */
+    }
+  }
+}
+
 static int run_command_child(const command_settings *settings)
 {
   int res;
@@ -168,7 +189,9 @@ static int run_command_child(const command_settings *settings)
       myperror("dup2 for stderr");
   }
 
-  res = execvp(settings->program, settings->argv); /* , settings->envp); */
+  update_environment(settings->envp);
+
+  res = execvp(settings->program, settings->argv);
 
   myperror("Cannot execute %s", settings->program);
   return res;

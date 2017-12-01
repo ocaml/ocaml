@@ -15,6 +15,8 @@
 
 (* File comparison tools *)
 
+open Ocamltest_stdlib
+
 type result =
   | Same
   | Different
@@ -149,7 +151,7 @@ let check_file ?(tool = default_comparison_tool) files =
   if Sys.file_exists files.reference_filename
   then compare_files ~tool:tool files
   else begin
-    if Testlib.file_is_empty files.output_filename
+    if Sys.file_is_empty files.output_filename
     then Same
     else Unexpected_output
   end
@@ -164,4 +166,4 @@ let diff files =
     "> " ^ temporary_file
   ] in
   if (Sys.command diff_commandline) = 2 then Pervasives.Error "diff"
-  else Ok (Testlib.string_of_file temporary_file)
+  else Ok (Sys.string_of_file temporary_file)

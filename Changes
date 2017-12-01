@@ -20,6 +20,11 @@ Working version
 
 ### Other libraries:
 
+* GPR#1406: Unix.isatty now returns true in the native Windows ports when
+  passed a file descriptor connected to a Cygwin PTY. In particular, compiler
+  colors for the native Windows ports now work under Cygwin/MSYS2.
+  (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
@@ -33,9 +38,16 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
   Frédéric Bour)
 
+- GPR#1496: Refactor the code printing explanation for unification type errors,
+  in order to avoid duplicating pattern matches
+  (Armaël Guéneau, review by Florian Angeletti and Gabriel Scherer)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
+
+- GPR#1431: remove ocamlrun dependencies on curses/terminfo/termcap C library
+  (Xavier Leroy, review by Daniel Bünzli)
 
 ### Tools:
 
@@ -50,7 +62,14 @@ Working version
 
 ### Compiler distribution build system
 
+- MPR#7679: make sure .a files are erased before calling ar rc, otherwise
+  leftover .a files from an earlier compilation may contain unwanted modules
+  (Xavier Leroy)
+
 ### Internal/compiler-libs changes:
+
+- GPR#1502: more command line options for expect tests
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Bug fixes
 
@@ -70,9 +89,26 @@ Working version
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
 
+- MPR#7680, GPR#1497: Incorrect interaction between Matching.for_let and
+  Simplif.simplify_exits
+  (Alain Frisch, report and review by Vincent Laviron)
+
+- MPR#7682, GPR#1495: fix [@@unboxed] for records with 1 polymorphic field
+  (Alain Frisch, report by Stéphane Graham-Lengrand, review by Gabriel Scherer)
+
+
 4.06 maintenance branch
 -----------------------
 
+### Bug fixes
+
+- MPR#7661, GPR#1459: fix faulty compilation of patterns
+  using extensible variants constructors
+  (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
+  by Abdelraouf Ouadjaout and Thibault Suzanne)
+
+- GPR#1470: Don't commute negation with float comparison
+  (Leo White, review by Xavier Leroy)
 
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------

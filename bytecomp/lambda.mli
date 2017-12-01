@@ -354,11 +354,6 @@ val default_stub_attribute : function_attribute
 
 (* Get a new static failure ident *)
 val next_raise_count : unit -> int
-val next_negative_raise_count : unit -> int
-  (* Negative raise counts are used to compile 'match ... with
-     exception x -> ...'.  This disabled some simplifications
-     performed by the Simplif module that assume that static raises
-     are in tail position in their handler. *)
 
 val staticfail : lambda (* Anticipated static failure *)
 
