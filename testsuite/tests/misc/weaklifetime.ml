@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 Random.init 12345;;
 
 let size = 1000;;

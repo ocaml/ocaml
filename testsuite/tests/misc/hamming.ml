@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* We cannot use bignums because we don't do custom runtimes, but
    int64 is a bit short, so we roll our own 37-digit numbers...
 *)
