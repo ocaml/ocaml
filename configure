@@ -1779,7 +1779,6 @@ if test "$x11_include" = "not found"; then
       if test $dir = /usr/lib; then
         x11_link="-lX11"
       else
-        x11_libs="-L$dir"
         case "$target" in
           *-*-freebsd*|*-*-dragonfly*) x11_link="-L$dir -lX11";;
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
