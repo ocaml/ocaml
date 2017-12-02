@@ -10,6 +10,9 @@ Working version
   (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
   Scherer)
 
+- GPR#1506: Extending `open` to accept arbitrary module expression
+  (Runhang Li, review by Jeremy Yallop)
+
 ### Type system:
 
 - GPR#1370: Fix code duplication in Cmmgen
