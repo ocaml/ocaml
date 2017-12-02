@@ -75,7 +75,9 @@ val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
     bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
 val report_unification_error:
-    formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> ?unif:bool ->
+    (type_expr * type_expr) list ->
+    ?type_expected_explanation:(formatter -> unit) ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:

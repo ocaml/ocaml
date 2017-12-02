@@ -737,8 +737,9 @@ and class_field_aux self_loc cl_num self_type meths vars
           (fun () ->
              (* Read the generalized type *)
              let (_, ty) = Meths.find lab.txt !meths in
-             let meth_type =
-               Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
+             let meth_type = mk_expected (
+               Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok))
+             ) in
              Ctype.raise_nongen_level ();
              vars := vars_local;
              let texp = type_expect met_env meth_expr meth_type in
@@ -762,10 +763,11 @@ and class_field_aux self_loc cl_num self_type meths vars
       let field =
         lazy begin
           Ctype.raise_nongen_level ();
-          let meth_type =
+          let meth_type = mk_expected (
             Ctype.newty
               (Tarrow (Nolabel, self_type,
-                       Ctype.instance_def Predef.type_unit, Cok)) in
+                       Ctype.instance_def Predef.type_unit, Cok))
+          ) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
