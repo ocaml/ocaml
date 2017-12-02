@@ -54,9 +54,20 @@ let unix = make_library_modifier
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
+let ocamlcommon =
+  [
+    Append (Ocaml_variables.directories, wrap (compiler_subdir ["utils"]));
+    Append (Ocaml_variables.directories, wrap (compiler_subdir ["parsing"]));
+    Append (Ocaml_variables.directories, wrap (compiler_subdir ["typing"]));
+    Append (Ocaml_variables.directories, wrap (compiler_subdir ["bytecomp"]));
+    Append (Ocaml_variables.directories, wrap (compiler_subdir ["compilerlibs"]));
+    Append (Ocaml_variables.libraries, wrap "ocamlcommon");
+  ]
+
 let _ =
   register_modifiers "expect" expect;
   register_modifiers "principal" principal;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
-  register_modifiers "str" str
+  register_modifiers "str" str;
+  register_modifiers "ocamlcommon" ocamlcommon
