@@ -274,11 +274,11 @@ You do not need to be an INRIA employee to open an account on this
 jenkins service; anyone can create an account there to access build
 logs and manually restart builds. If you
 would like to do this but have trouble doing it, please email
-ocaml-ci-admin@inria.fr
+ocaml-ci-admin@inria.fr.
 
 To be notified by email of build failures, you can subscribe to the
 ocaml-ci-notifications@inria.fr mailing list by visiting
-https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page]
+https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page.]
 
 ==== Running INRIA's CI on a publicly available git branch
 
@@ -306,5 +306,11 @@ OCaml's GitHub repository and then push "mybranch" to your fork.
 
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
+
+=== The `caml-commits` mailing list
+
+If you would like to receive email notifications of all commits made to the main
+git repository, you can subscribe to the caml-commits@inria.fr mailing list by
+visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
 
 Happy Hacking!
