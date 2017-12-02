@@ -51,6 +51,9 @@ let unixlibdir = if Sys.os_type="Win32" then "win32unix" else "unix"
 let unix = make_library_modifier
   "unix" (compiler_subdir ["otherlibs"; unixlibdir])
 
+let bigarray =
+  make_library_modifier "bigarray" (compiler_subdir ["otherlibs"; "bigarray"])
+
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
@@ -69,5 +72,6 @@ let _ =
   register_modifiers "principal" principal;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
+  register_modifiers "bigarray" bigarray;
   register_modifiers "str" str;
   register_modifiers "ocamlcommon" ocamlcommon
