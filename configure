@@ -543,7 +543,6 @@ case "$cc,$target" in
     exe=".exe"
     ostype="Cygwin";;
   *,*-*-mingw*)
-    dllccompopt="-DCAML_DLL"
     if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
