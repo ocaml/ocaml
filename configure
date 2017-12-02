@@ -2184,7 +2184,7 @@ else
   fi
   if $with_spacetime; then
     inf "        spacetime profiling....... yes"
-    if test "$with_spacetime_call_counts" = "true"; then
+    if test "$enable_call_counts" = "true"; then
       inf "          ... with call counts.... yes"
     else
       inf "          ... with call counts.... no"
