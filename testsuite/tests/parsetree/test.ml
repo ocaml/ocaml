@@ -1,3 +1,8 @@
+(* TEST
+   include ocamlcommon
+   files = "source.ml"
+*)
+
 (* (c) Alain Frisch / Lexifi *)
 (* cf. PR#7200 *)
 
