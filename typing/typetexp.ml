@@ -52,7 +52,8 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
-  | Ill_typed_functor_application of Longident.t * Includemod.error list option
+  | Ill_typed_functor_application
+      of Longident.t * Longident.t * Includemod.error list option
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
   | Apply_structure_as_functor of Longident.t
@@ -121,7 +122,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
                   None
               with Includemod.Error e -> Some e
          in
-         raise (Error (loc, env, Ill_typed_functor_application (lid, details)))
+         raise (Error (loc, env, Ill_typed_functor_application (flid, mlid, details)))
       end
   end;
   raise (Error (loc, env, make_error lid))
@@ -965,10 +966,14 @@ let report_error env ppf = function
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
       spellcheck ppf fold_cltypes env lid;
-  | Ill_typed_functor_application (lid, details) ->
-     fprintf ppf "@[Ill-typed functor application %a%t@]"
-       longident lid
-       (fun ppf -> may (fprintf ppf "@\n%a" Includemod.report_error) details)
+  | Ill_typed_functor_application (flid, mlid, details) ->
+     (match details with
+     | None ->
+        fprintf ppf "@[Ill-typed functor application %a(%a)@]"
+          longident flid longident mlid
+     | Some inclusion_error ->
+        fprintf ppf "@[The type of %a does not match %a's parameter@\n%a@]"
+          longident mlid longident flid Includemod.report_error inclusion_error)
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->

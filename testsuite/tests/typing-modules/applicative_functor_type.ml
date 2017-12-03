@@ -19,7 +19,7 @@ type t = Set.Make(M).t
 Line _, characters 9-22:
   type t = Set.Make(M).t
            ^^^^^^^^^^^^^
-Error: Ill-typed functor application Set.Make(M)
+Error: The type of M does not match Set.Make's parameter
        Modules do not match:
          sig type t = M.t val equal : 'a -> 'a -> bool end
        is not included in
@@ -43,7 +43,7 @@ type t = F(M).t
 Line _, characters 9-15:
   type t = F(M).t
            ^^^^^^
-Error: Ill-typed functor application F(M)
+Error: The type of M does not match F's parameter
        Modules do not match:
          sig type t = M.t val equal : 'a -> 'a -> bool end
        is not included in
