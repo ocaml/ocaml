@@ -14,5 +14,6 @@
 #########################################################################
 
 BASEDIR=../..
+EXPECT_FLAGS=-strict-sequence
 include $(BASEDIR)/makefiles/Makefile.expect
 include $(BASEDIR)/makefiles/Makefile.common
