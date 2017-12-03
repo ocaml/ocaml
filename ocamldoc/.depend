@@ -653,6 +653,7 @@ odoc_see_lexer.cmx : \
 odoc_sig.cmo : \
   ../parsing/asttypes.cmi \
   ../parsing/location.cmi \
+  ../parsing/longident.cmi \
   ../parsing/parsetree.cmi \
   ../typing/btype.cmi \
   ../typing/ctype.cmi \
@@ -677,6 +678,7 @@ odoc_sig.cmo : \
 odoc_sig.cmx : \
   ../parsing/asttypes.cmi \
   ../parsing/location.cmx \
+  ../parsing/longident.cmx \
   ../parsing/parsetree.cmi \
   ../typing/btype.cmx \
   ../typing/ctype.cmx \
@@ -699,6 +701,7 @@ odoc_sig.cmx : \
   odoc_types.cmx \
   odoc_value.cmx
 odoc_sig.cmi : \
+  ../parsing/location.cmi \
   ../parsing/parsetree.cmi \
   ../typing/typedtree.cmi \
   ../typing/types.cmi \

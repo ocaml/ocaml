@@ -859,6 +859,7 @@ typing/printtyped.cmo : \
   typing/path.cmi \
   typing/printtyped.cmi \
   typing/typedtree.cmi \
+  typing/types.cmi \
   utils/misc.cmi
 typing/printtyped.cmx : \
   parsing/asttypes.cmi \
@@ -869,6 +870,7 @@ typing/printtyped.cmx : \
   typing/path.cmx \
   typing/printtyped.cmi \
   typing/typedtree.cmx \
+  typing/types.cmx \
   utils/misc.cmx
 typing/printtyped.cmi : \
   typing/typedtree.cmi
@@ -1020,6 +1022,7 @@ typing/typecore.cmo : \
   typing/typecore.cmi \
   typing/typedecl.cmi \
   typing/typedtree.cmi \
+  typing/typeopt.cmi \
   typing/types.cmi \
   typing/typetexp.cmi \
   utils/clflags.cmi \
@@ -1049,6 +1052,7 @@ typing/typecore.cmx : \
   typing/typecore.cmi \
   typing/typedecl.cmx \
   typing/typedtree.cmx \
+  typing/typeopt.cmx \
   typing/types.cmx \
   typing/typetexp.cmx \
   utils/clflags.cmx \
@@ -1264,6 +1268,7 @@ typing/typemod.cmi : \
   utils/misc.cmi
 typing/typeopt.cmo : \
   bytecomp/lambda.cmi \
+  parsing/asttypes.cmi \
   typing/ctype.cmi \
   typing/env.cmi \
   typing/ident.cmi \
@@ -1276,6 +1281,7 @@ typing/typeopt.cmo : \
   utils/config.cmi
 typing/typeopt.cmx : \
   bytecomp/lambda.cmx \
+  parsing/asttypes.cmi \
   typing/ctype.cmx \
   typing/env.cmx \
   typing/ident.cmx \
@@ -5285,7 +5291,6 @@ toplevel/opttopmain.cmo : \
   asmcomp/printmach.cmi \
   driver/compenv.cmi \
   driver/compmisc.cmi \
-  driver/compplugin.cmi \
   driver/main_args.cmi \
   parsing/location.cmi \
   toplevel/opttopdirs.cmi \
@@ -5299,7 +5304,6 @@ toplevel/opttopmain.cmx : \
   asmcomp/printmach.cmx \
   driver/compenv.cmx \
   driver/compmisc.cmx \
-  driver/compplugin.cmx \
   driver/main_args.cmx \
   parsing/location.cmx \
   toplevel/opttopdirs.cmx \
@@ -5470,7 +5474,6 @@ toplevel/toploop.cmi : \
 toplevel/topmain.cmo : \
   driver/compenv.cmi \
   driver/compmisc.cmi \
-  driver/compplugin.cmi \
   driver/main_args.cmi \
   parsing/location.cmi \
   toplevel/topdirs.cmi \
@@ -5484,7 +5487,6 @@ toplevel/topmain.cmo : \
 toplevel/topmain.cmx : \
   driver/compenv.cmx \
   driver/compmisc.cmx \
-  driver/compplugin.cmx \
   driver/main_args.cmx \
   parsing/location.cmx \
   toplevel/topdirs.cmx \

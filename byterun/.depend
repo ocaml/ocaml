@@ -1,9 +1,16 @@
 afl.$(O): \
   afl.c \
+  caml/address_class.h \
   caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h
 alloc.$(O): \
   alloc.c \
@@ -481,10 +488,17 @@ lexing.$(O): \
   caml/stacks.h \
   lexing.c
 main.$(O): \
+  caml/address_class.h \
   caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h \
   caml/sys.h \
   main.c
@@ -815,7 +829,6 @@ sys.$(O): \
   caml/freelist.h \
   caml/gc.h \
   caml/gc_ctrl.h \
-  caml/instruct.h \
   caml/io.h \
   caml/m.h \
   caml/major_gc.h \
@@ -833,6 +846,7 @@ sys.$(O): \
   sys.c
 unix.$(O): \
   caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
   caml/fail.h \
   caml/freelist.h \
@@ -865,12 +879,38 @@ weak.$(O): \
   caml/s.h \
   caml/weak.h \
   weak.c
-afl.d.$(O): \
-  afl.c \
+win32.$(O): \
+  caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
+  caml/fail.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/io.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
+  caml/s.h \
+  caml/signals.h \
+  caml/sys.h \
+  win32.c
+afl.d.$(O): \
+  afl.c \
+  caml/address_class.h \
+  caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
+  caml/misc.h \
+  caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h
 alloc.d.$(O): \
   alloc.c \
@@ -1364,10 +1404,17 @@ lexing.d.$(O): \
   caml/stacks.h \
   lexing.c
 main.d.$(O): \
+  caml/address_class.h \
   caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h \
   caml/sys.h \
   main.c
@@ -1698,7 +1745,6 @@ sys.d.$(O): \
   caml/freelist.h \
   caml/gc.h \
   caml/gc_ctrl.h \
-  caml/instruct.h \
   caml/io.h \
   caml/m.h \
   caml/major_gc.h \
@@ -1716,6 +1762,7 @@ sys.d.$(O): \
   sys.c
 unix.d.$(O): \
   caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
   caml/fail.h \
   caml/freelist.h \
@@ -1748,12 +1795,38 @@ weak.d.$(O): \
   caml/s.h \
   caml/weak.h \
   weak.c
-afl.i.$(O): \
-  afl.c \
+win32.d.$(O): \
+  caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
+  caml/fail.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/io.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
+  caml/s.h \
+  caml/signals.h \
+  caml/sys.h \
+  win32.c
+afl.i.$(O): \
+  afl.c \
+  caml/address_class.h \
+  caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
+  caml/misc.h \
+  caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h
 alloc.i.$(O): \
   alloc.c \
@@ -2231,10 +2304,17 @@ lexing.i.$(O): \
   caml/stacks.h \
   lexing.c
 main.i.$(O): \
+  caml/address_class.h \
   caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h \
   caml/sys.h \
   main.c
@@ -2565,7 +2645,6 @@ sys.i.$(O): \
   caml/freelist.h \
   caml/gc.h \
   caml/gc_ctrl.h \
-  caml/instruct.h \
   caml/io.h \
   caml/m.h \
   caml/major_gc.h \
@@ -2583,6 +2662,7 @@ sys.i.$(O): \
   sys.c
 unix.i.$(O): \
   caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
   caml/fail.h \
   caml/freelist.h \
@@ -2615,12 +2695,38 @@ weak.i.$(O): \
   caml/s.h \
   caml/weak.h \
   weak.c
-afl.pic.$(O): \
-  afl.c \
+win32.i.$(O): \
+  caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
+  caml/fail.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/io.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
+  caml/s.h \
+  caml/signals.h \
+  caml/sys.h \
+  win32.c
+afl.pic.$(O): \
+  afl.c \
+  caml/address_class.h \
+  caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
+  caml/misc.h \
+  caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h
 alloc.pic.$(O): \
   alloc.c \
@@ -3098,10 +3204,17 @@ lexing.pic.$(O): \
   caml/stacks.h \
   lexing.c
 main.pic.$(O): \
+  caml/address_class.h \
   caml/config.h \
+  caml/freelist.h \
+  caml/gc.h \
   caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
   caml/misc.h \
   caml/mlvalues.h \
+  caml/osdeps.h \
   caml/s.h \
   caml/sys.h \
   main.c
@@ -3432,7 +3545,6 @@ sys.pic.$(O): \
   caml/freelist.h \
   caml/gc.h \
   caml/gc_ctrl.h \
-  caml/instruct.h \
   caml/io.h \
   caml/m.h \
   caml/major_gc.h \
@@ -3450,6 +3562,7 @@ sys.pic.$(O): \
   sys.c
 unix.pic.$(O): \
   caml/address_class.h \
+  caml/alloc.h \
   caml/config.h \
   caml/fail.h \
   caml/freelist.h \
@@ -3482,3 +3595,22 @@ weak.pic.$(O): \
   caml/s.h \
   caml/weak.h \
   weak.c
+win32.pic.$(O): \
+  caml/address_class.h \
+  caml/alloc.h \
+  caml/config.h \
+  caml/fail.h \
+  caml/freelist.h \
+  caml/gc.h \
+  caml/io.h \
+  caml/m.h \
+  caml/major_gc.h \
+  caml/memory.h \
+  caml/minor_gc.h \
+  caml/misc.h \
+  caml/mlvalues.h \
+  caml/osdeps.h \
+  caml/s.h \
+  caml/signals.h \
+  caml/sys.h \
+  win32.c

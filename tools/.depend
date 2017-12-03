@@ -141,33 +141,9 @@ ocamlcp.cmo : \
 ocamlcp.cmx : \
   ../driver/main_args.cmx
 ocamldep.cmo : \
-  ../driver/compenv.cmi \
-  ../driver/compplugin.cmi \
-  ../driver/pparse.cmi \
-  ../parsing/depend.cmi \
-  ../parsing/lexer.cmi \
-  ../parsing/location.cmi \
-  ../parsing/longident.cmi \
-  ../parsing/parse.cmi \
-  ../parsing/parser.cmi \
-  ../parsing/parsetree.cmi \
-  ../utils/clflags.cmi \
-  ../utils/config.cmi \
-  ../utils/misc.cmi
+  ../driver/makedepend.cmi
 ocamldep.cmx : \
-  ../driver/compenv.cmx \
-  ../driver/compplugin.cmx \
-  ../driver/pparse.cmx \
-  ../parsing/depend.cmx \
-  ../parsing/lexer.cmx \
-  ../parsing/location.cmx \
-  ../parsing/longident.cmx \
-  ../parsing/parse.cmx \
-  ../parsing/parser.cmx \
-  ../parsing/parsetree.cmi \
-  ../utils/clflags.cmx \
-  ../utils/config.cmx \
-  ../utils/misc.cmx
+  ../driver/makedepend.cmx
 ocamlmklib.cmo : \
   ../utils/config.cmi \
   ../utils/misc.cmi \
@@ -210,10 +186,14 @@ profiling.cmx : \
   profiling.cmi
 profiling.cmi :
 read_cmt.cmo : \
+  ../driver/compmisc.cmi \
+  ../parsing/location.cmi \
   ../typing/cmt_format.cmi \
   ../utils/clflags.cmi \
   cmt2annot.cmo
 read_cmt.cmx : \
+  ../driver/compmisc.cmx \
+  ../parsing/location.cmx \
   ../typing/cmt_format.cmx \
   ../utils/clflags.cmx \
   cmt2annot.cmx
