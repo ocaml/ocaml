@@ -107,6 +107,8 @@ module B = struct
 end;;
 [%%expect{|
 Line _, characters 2-31:
+    type t = string [@@immediate]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be
        non-pointer types like int or bool
 |}];;
@@ -118,6 +120,8 @@ module C = struct
 end;;
 [%%expect{|
 Line _, characters 2-26:
+    type s = t [@@immediate]
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be
        non-pointer types like int or bool
 |}];;
@@ -128,6 +132,9 @@ module D : sig type t [@@immediate] end = struct
 end;;
 [%%expect{|
 Line _, characters 42-70:
+  ..........................................struct
+    type t = string
+  end..
 Error: Signature mismatch:
        Modules do not match:
          sig type t = string end
@@ -145,6 +152,8 @@ module M_invalid : S = struct type t = string end;;
 module FM_invalid = F (struct type t = string end);;
 [%%expect{|
 Line _, characters 23-49:
+  module M_invalid : S = struct type t = string end;;
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match: sig type t = string end is not included in S
        Type declarations do not match:
@@ -161,6 +170,8 @@ module E = struct
 end;;
 [%%expect{|
 Line _, characters 2-26:
+    type t = s [@@immediate]
+    ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Types marked with the immediate attribute must be
        non-pointer types like int or bool
 |}];;

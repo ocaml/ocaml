@@ -13,6 +13,8 @@ let fbool (type t) (x : t) (tag : t ty) =
 [%%expect{|
 type 'a ty = Int : int ty | Bool : bool ty
 Line _, characters 2-30:
+  ..match tag with
+    | Bool -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Int
@@ -27,6 +29,8 @@ let fint (type t) (x : t) (tag : t ty) =
 ;;
 [%%expect{|
 Line _, characters 2-33:
+  ..match tag with
+    | Int -> x > 0
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 Bool
@@ -46,6 +50,8 @@ let f (type t) (x : t) (tag : t ty) =
 val f : 'a -> 'a ty -> bool = <fun>
 |}, Principal{|
 Line _, characters 12-13:
+    | Bool -> x
+              ^
 Error: This expression has type t but an expression was expected of type bool
 |}];;
 (* val f : 'a -> 'a ty -> bool = <fun> *)
@@ -58,10 +64,14 @@ let g (type t) (x : t) (tag : t ty) =
 ;;
 [%%expect{|
 Line _, characters 11-16:
+    | Int -> x > 0
+             ^^^^^
 Error: This expression has type bool but an expression was expected of type
          t = int
 |}, Principal{|
 Line _, characters 11-16:
+    | Int -> x > 0
+             ^^^^^
 Error: This expression has type bool but an expression was expected of type t
 |}];;
 (* Error: This expression has type bool but an expression was expected of type

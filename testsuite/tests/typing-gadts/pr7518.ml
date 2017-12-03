@@ -20,10 +20,14 @@ let ok (type a b) (x : (a, b) eq) =
 [%%expect{|
 type ('a, 'b) eq = Refl : ('a, 'a) eq
 Line _, characters 2-54:
+  ..match x, [] with
+    | Refl, [(_ : a) | (_ : b)] -> []
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Refl, _::_::_)
 Line _, characters 22-23:
+    | Refl, [(_ : a) | (_ : b)] -> []
+                        ^
 Warning 12: this sub-pattern is unused.
 val ok : ('a, 'b) eq -> 'c list = <fun>
 |}]
@@ -34,12 +38,19 @@ let fails (type a b) (x : (a, b) eq) =
 ;;
 [%%expect{|
 Line _, characters 2-90:
+  ..match x, [] with
+    | Refl, [(_ : a) | (_ : b)] -> []
+    | Refl, [(_ : b) | (_ : a)] -> []
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Refl, _::_::_)
 Line _, characters 22-23:
+    | Refl, [(_ : a) | (_ : b)] -> []
+                        ^
 Warning 12: this sub-pattern is unused.
 Line _, characters 4-29:
+    | Refl, [(_ : b) | (_ : a)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 11: this match case is unused.
 val fails : ('a, 'b) eq -> 'c list = <fun>
 |}]
@@ -48,6 +59,8 @@ val fails : ('a, 'b) eq -> 'c list = <fun>
 let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
 [%%expect{|
 Line _, characters 35-40:
+  let x = match [] with ["1"] -> 1 | [1.0] -> 2 | [1] -> 3 | _ -> 4;;
+                                     ^^^^^
 Error: This pattern matches values of type float list
        but a pattern was expected which matches values of type string list
        Type float is not compatible with type string

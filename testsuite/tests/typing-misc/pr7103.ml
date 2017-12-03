@@ -21,6 +21,8 @@ val h : [> `b ] t -> unit = <fun>
 let _ = fun (x : a t) -> f x;;
 [%%expect{|
 Line _, characters 27-28:
+  let _ = fun (x : a t) -> f x;;
+                             ^
 Error: This expression has type a t but an expression was expected of type
          (< .. > as 'a) t
        Type a is not compatible with type < .. > as 'a
@@ -29,6 +31,8 @@ Error: This expression has type a t but an expression was expected of type
 let _ = fun (x : a t) -> g x;;
 [%%expect{|
 Line _, characters 27-28:
+  let _ = fun (x : a t) -> g x;;
+                             ^
 Error: This expression has type a t but an expression was expected of type
          ([< `b ] as 'a) t
        Type a is not compatible with type [< `b ] as 'a
@@ -37,6 +41,8 @@ Error: This expression has type a t but an expression was expected of type
 let _ = fun (x : a t) -> h x;;
 [%%expect{|
 Line _, characters 27-28:
+  let _ = fun (x : a t) -> h x;;
+                             ^
 Error: This expression has type a t but an expression was expected of type
          ([> `b ] as 'a) t
        Type a is not compatible with type [> `b ] as 'a

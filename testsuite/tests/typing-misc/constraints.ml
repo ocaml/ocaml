@@ -5,26 +5,36 @@
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 [%%expect{|
 Line _, characters 0-32:
+  type 'a t = [`A of 'a t t] as 'a;; (* fails *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
        'a t t as 'a
 |}, Principal{|
 Line _, characters 0-32:
+  type 'a t = [`A of 'a t t] as 'a;; (* fails *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of t contains a cycle:
        [ `A of 'a t t ] as 'a
 |}];;
 type 'a t = [`A of 'a t t];; (* fails *)
 [%%expect{|
 Line _, characters 0-26:
+  type 'a t = [`A of 'a t t];; (* fails *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'a t t should be 'a t
 |}];;
 type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
 Line _, characters 0-47:
+  type 'a t = [`A of 'a t t] constraint 'a = 'a t;; (* fails since 4.04 *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
 [%%expect{|
 Line _, characters 0-45:
+  type 'a t = [`A of 'a t] constraint 'a = 'a t;; (* fails since 4.04 *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation t is cyclic
 |}];;
 type 'a t = [`A of 'a] as 'a;;
@@ -36,6 +46,8 @@ type 'a t = [ `A of 'b ] as 'b constraint 'a = [ `A of 'a ]
 type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
 [%%expect{|
 Line _, characters 0-41:
+  type 'a v = [`A of u v] constraint 'a = t and t = u and u = t;; (* fails *)
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of v contains a cycle:
        t
 |}];;
@@ -62,6 +74,8 @@ end
 ;; (* fails *)
 [%%expect{|
 Line _, characters 2-44:
+    and 'o abs constraint 'o = 'o is_an_object
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of abs contains a cycle:
        'a is_an_object as 'a
 |}];;
@@ -80,6 +94,8 @@ module PR6505a :
     val y : (<  > is_an_object, <  > is_an_object) abs
   end
 Line _, characters 8-17:
+  let _ = PR6505a.y#bang;; (* fails *)
+          ^^^^^^^^^
 Error: This expression has type
          (<  > PR6505a.is_an_object, <  > PR6505a.is_an_object) PR6505a.abs
        It has no method bang
@@ -91,6 +107,8 @@ module PR6505a :
     val y : (<  >, <  >) abs
   end
 Line _, characters 8-17:
+  let _ = PR6505a.y#bang;; (* fails *)
+          ^^^^^^^^^
 Error: This expression has type (<  >, <  >) PR6505a.abs
        It has no method bang
 |}]
@@ -109,6 +127,8 @@ module PR6505b :
     val x : (([> `Foo of int ] as 'a) is_an_object, 'a is_an_object) abs
   end
 Line _, characters 23-57:
+  let () = print_endline (match PR6505b.x with `Bar s -> s);; (* fails *)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `Foo _

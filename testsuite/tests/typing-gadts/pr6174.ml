@@ -8,6 +8,8 @@ let f : type a o. ((a -> o) -> o) t -> (a -> o) -> o =
 [%%expect{|
 type _ t = C : ((('a -> 'o) -> 'o) -> ('b -> 'o) -> 'o) t
 Line _, characters 24-25:
+   fun C k -> k (fun x -> x);;
+                          ^
 Error: This expression has type $0 but an expression was expected of type
          $1 = ($2 -> $1) -> $1
 |}];;

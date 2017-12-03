@@ -28,6 +28,11 @@ type (_, _, _) binop =
   | Leq : ('a, 'a, bool) binop
   | Add : (int, int, int) binop
 Line _, characters 2-195:
+  ..match bop, x, y with
+    | Eq, Bool x, Bool y -> Bool (if x then y else not y)
+    | Leq, Int x, Int y -> Bool (x <= y)
+    | Leq, Bool x, Bool y -> Bool (x <= y)
+    | Add, Int x, Int y -> Int (x + y)
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (Eq, Int _, _)

@@ -233,6 +233,8 @@ class ['a] ostream1 :
   end
 |}, Principal{|
 Line _, characters 4-16:
+      self#tl#fold ~f ~init:(f self#hd init)
+      ^^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 class ['a] ostream1 :
   hd:'a ->
@@ -390,6 +392,8 @@ val c : circle = <obj>
 val d : float = 11.
 val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
 Line _, characters 41-42:
+  let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
+                                           ^
 Error: This expression has type < m : 'b. 'b -> 'b list >
        but an expression was expected of type < m : 'b. 'b -> 'c >
        The universal variable 'b would escape its scope
@@ -440,6 +444,8 @@ end
 ;;
 [%%expect {|
 Line _, characters 12-17:
+    method id x = x
+              ^^^^^
 Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
 |}];;
 
@@ -450,6 +456,8 @@ end
 ;;
 [%%expect {|
 Line _, characters 12-17:
+    method id x = x
+              ^^^^^
 Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
 |}];;
 
@@ -461,6 +469,8 @@ end
 ;;
 [%%expect {|
 Line _, characters 12-17:
+    method id _ = x
+              ^^^^^
 Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 |}];;
 
@@ -475,6 +485,10 @@ end
 ;;
 [%%expect {|
 Line _, characters 12-79:
+  ............x =
+      match r with
+        None -> r <- Some x; x
+      | Some y -> y
 Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 |}];;
 
@@ -500,6 +514,8 @@ let f4 f = ignore(f : id); f#id 1, f#id true
 val f1 : id -> int * bool = <fun>
 val f2 : id -> int * bool = <fun>
 Line _, characters 24-28:
+  let f3 f = f#id 1, f#id true
+                          ^^^^
 Error: This expression has type bool but an expression was expected of type
          int
 |}];;
@@ -528,6 +544,8 @@ type 'a foo = 'a foo list
 class id2 : object method id : 'a -> 'a method mono : int -> int end
 val app : int * bool = (1, true)
 Line _, characters 0-25:
+  type 'a foo = 'a foo list
+  ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The type abbreviation foo is cyclic
 |}];;
 
@@ -736,6 +754,8 @@ bad2.bad2 <- Some (ref None);;
 [%%expect {|
 type bad = { bad : 'a. 'a option ref; }
 Line _, characters 17-25:
+  let bad = {bad = ref None};;
+                   ^^^^^^^^
 Error: This field value has type 'b option ref which is less general than
          'a. 'a option ref
 |}];;
@@ -789,6 +809,8 @@ and virtual int_list =
 object method virtual visit : 'a.('a visitor -> 'a) end;;
 [%%expect {|
 Line _, characters 30-51:
+  object method virtual visit : 'a.('a visitor -> 'a) end;;
+                                ^^^^^^^^^^^^^^^^^^^^^
 Error: The universal type variable 'a cannot be generalized:
        it escapes its scope.
 |}];;
@@ -814,6 +836,8 @@ type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 type t = u and u = t;;
 [%%expect {|
 Line _, characters 0-10:
+  type t = u and u = t;;
+  ^^^^^^^^^^
 Error: The definition of t contains a cycle:
        u
 |}];;
@@ -830,6 +854,8 @@ type t = [ `A of t a ]
 type ('a,'b) t constraint 'a = 'b and ('a,'b) u = ('a,'b) t;;
 [%%expect {|
 Line _, characters 50-59:
+  type ('a,'b) t constraint 'a = 'b and ('a,'b) u = ('a,'b) t;;
+                                                    ^^^^^^^^^
 Error: Constraints are not satisfied in this type.
        Type ('a, 'b) t should be an instance of ('c, 'c) t
 |}];;
@@ -848,6 +874,8 @@ type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
 [%%expect {|
 type 'a t constraint 'a = int
 Line _, characters 26-32:
+  type 'a u = 'a and 'a v = 'a u t;;
+                            ^^^^^^
 Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of int t
 |}];;
@@ -861,6 +889,8 @@ type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
 type g = int
 type 'a t = unit constraint 'a = g
 Line _, characters 26-32:
+  type 'a u = 'a and 'a v = 'a u t;;
+                            ^^^^^^
 Error: Constraints are not satisfied in this type.
        Type 'a u t should be an instance of g t
 |}];;
@@ -869,6 +899,8 @@ Error: Constraints are not satisfied in this type.
 type 'a u = < m : 'a v > and 'a v = 'a list u;;
 [%%expect {|
 Line _, characters 0-24:
+  type 'a u = < m : 'a v > and 'a v = 'a list u;;
+  ^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of v, type 'a list u should be 'a u
 |}];;
 
@@ -916,22 +948,32 @@ type t = A | B
 - : t * [< `A | `B ] -> int = <fun>
 - : [< `A | `B ] * t -> int = <fun>
 Line _, characters 0-41:
+  function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line _, characters 0-29:
+  function `B,1 -> 1 | _,1 -> 2;;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (_, 0)
 Line _, characters 21-24:
+  function `B,1 -> 1 | _,1 -> 2;;
+                       ^^^
 Warning 11: this match case is unused.
 - : [< `B ] * int -> int = <fun>
 Line _, characters 0-29:
+  function 1,`B -> 1 | 1,_ -> 2;;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 (0, _)
 Line _, characters 21-24:
+  function 1,`B -> 1 | 1,_ -> 2;;
+                       ^^^
 Warning 11: this match case is unused.
 - : int * [< `B ] -> int = <fun>
 |}];;
@@ -941,6 +983,8 @@ type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 [%%expect {|
 Line _, characters 0-71:
+  type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The definition of a contains a cycle:
        [> `B of ('a, 'b) b as 'b ] as 'a
 |}];;
@@ -1017,10 +1061,14 @@ class c : object method m : int end
 val f : unit -> c = <fun>
 val f : unit -> c = <fun>
 Line _, characters 11-60:
+  let f () = object method private n = 1 method m = {<>}#n end;;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 15: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
 Line _, characters 11-56:
+  let f () = object (self:c) method n = 1 method m = 2 end;;
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This object is expected to have type c but actually has type
          < m : int; n : 'a >
        The first object type has no method n
@@ -1037,6 +1085,8 @@ type bar' =   <m: 'a. 'a * 'a bar >
 let f (x : foo') = (x : bar');;
 [%%expect {|
 Line _, characters 3-4:
+    (x : <m : 'a. 'a * (<m:'b. 'a * <m:'c. 'c * 'bar> > as 'bar) >);;
+     ^
 Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
          < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
@@ -1054,6 +1104,8 @@ let f x =
        :> <m : 'a. 'a -> ('a * 'foo)> as 'foo);;
 [%%expect {|
 Line _, characters 3-4:
+    (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
+     ^
 Error: This expression has type
          < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
@@ -1069,6 +1121,8 @@ module M
 = struct type t = <m : 'a. 'a * ('a * 'foo)> as 'foo end;;
 [%%expect {|
 Line _, characters 2-64:
+  = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit end
@@ -1127,6 +1181,8 @@ type v = private [> t ]
 type u = private [< t ]
 - : u -> v = <fun>
 Line _, characters 9-21:
+  fun x -> (x : v :> u);;
+           ^^^^^^^^^^^^
 Error: Type v = [> `A | `B ] is not a subtype of u = [< `A | `B ]
 |}];;
 
@@ -1146,6 +1202,8 @@ let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 [%%expect {|
 Line _, characters 2-88:
+  ..(x : <m:'a. (<p:int;..> as 'a) -> int>
+      :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int >
        Type < p : int; q : int; .. > as 'c is not a subtype of
@@ -1169,14 +1227,20 @@ val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 |}, Principal{|
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 Line _, characters 9-16:
+  fun x -> (f x)#m;; (* Warning 18 *)
+           ^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
 Line _, characters 9-20:
+  fun x -> (f (x,x))#m;; (* Warning 18 *)
+           ^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
 Line _, characters 9-20:
+  fun x -> (f x).(0)#m;; (* Warning 18 *)
+           ^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 |}];;
@@ -1204,9 +1268,13 @@ class c : object method id : 'a -> 'a end
 type u = c option
 val just : 'a option -> 'a = <fun>
 Line _, characters 42-62:
+  let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
+                                            ^^^^^^^^^^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 val f : c -> 'a -> 'a = <fun>
 Line _, characters 36-47:
+    let x = List.hd [Some x; none] in (just x)#id;;
+                                      ^^^^^^^^^^^
 Warning 18: this use of a polymorphic method is not principal.
 val g : c -> 'a -> 'a = <fun>
 val h : < id : 'a; .. > -> 'a = <fun>
@@ -1248,6 +1316,8 @@ val g : 'a -> int = <fun>
 type 'a t = Leaf of 'a | Node of ('a * 'a) t
 val depth : 'a t -> int = <fun>
 Line _, characters 2-42:
+    function Leaf _ -> 1 | Node x -> 1 + d x
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This definition has type 'a t -> int which is less general than
          'a0. 'a0 t -> int
 |}];;
@@ -1262,6 +1332,8 @@ type t = { f : 'a. [> `B of 'a | `Int of int ] as 'a; }
 val zero : t = {f = `Int 0}
 type t = { f : 'a. [< `Int of int ] as 'a; }
 Line _, characters 16-22:
+  let zero = {f = `Int 0} ;; (* fails *)
+                  ^^^^^^
 Error: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
        Types for tag `Int are incompatible
@@ -1312,6 +1384,8 @@ let f ?x y = y in {f};; (* fail *)
 type t = { f : 'a. 'a -> unit; }
 - : t = {f = <fun>}
 Line _, characters 19-20:
+  let f ?x y = y in {f};; (* fail *)
+                     ^
 Error: This field value has type unit -> unit which is less general than
          'a. 'a -> unit
 |}];;
@@ -1349,6 +1423,8 @@ Exception: Pervasives.Exit.
 type 'x t = < f : 'y. 'y t >;;
 [%%expect {|
 Line _, characters 0-28:
+  type 'x t = < f : 'y. 'y t >;;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In the definition of t, type 'y t should be 'x t
 |}];;
 
@@ -1391,6 +1467,8 @@ let (n : < m : 'a. [< `Foo of int] -> 'a >) =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
 Line _, characters 2-72:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
@@ -1401,6 +1479,8 @@ let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
 Line _, characters 2-72:
+    object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
@@ -1413,6 +1493,8 @@ let f b (x: 'x) =
   if b then x else M.A;;
 [%%expect {|
 Line _, characters 19-22:
+    if b then x else M.A;;
+                     ^^^
 Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
@@ -1505,6 +1587,8 @@ type t = <g>
 and g = <a:t>
 [%%expect{|
 Line _, characters 10-11:
+  type t = <g>
+            ^
 Error: The type constructor g
 is not yet completely defined
 |}]
@@ -1514,6 +1598,8 @@ type g = <t>
 [%%expect{|
 type t = int
 Line _, characters 10-11:
+  type g = <t>
+            ^
 Error: The type int is not an object type
 |}]
 
@@ -1553,6 +1639,8 @@ type r2 = < a : int >
 type gg = <a:int->float; a:int>
 [%%expect{|
 Line _, characters 27-30:
+  type gg = <a:int->float; a:int>
+                             ^^^
 Error: Method 'a' has type int, which should be int -> float
 |}]
 
@@ -1561,6 +1649,8 @@ type g = <b:float; t;>
 [%%expect{|
 type t = < a : int; b : string >
 Line _, characters 19-20:
+  type g = <b:float; t;>
+                     ^
 Error: Method 'b' has type string, which should be float
 |}]
 
@@ -1576,6 +1666,8 @@ type t = < f : int >
 type t = < int #A.t1 >
 [%%expect{|
 Line _, characters 11-20:
+  type t = < int #A.t1 >
+             ^^^^^^^^^
 Error: Illegal open object type
 |}]
 
