@@ -74,6 +74,11 @@ Working version
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
   Scherer)
 
+- GPR#1510: Add specific explanation for unification errors caused by type
+  constraints propagated by keywords (such as if, while, for...)
+  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
+  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
+
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen
