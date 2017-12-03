@@ -557,12 +557,7 @@ let run_test_program_in_toplevel toplevel log env =
       expected_exit_status in
   Printf.fprintf log "%s\n%!" what;
   let source_directory = Actions_helpers.test_source_directory env in
-  let compiler_directory_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
-  let compiler_directory_name =
-    toplevel.compiler_directory ^ compiler_directory_suffix in
-  let build_directory = Filename.make_path
-    [Actions_helpers.test_build_directory env; compiler_directory_name] in
+  let build_directory = Actions_helpers.test_build_directory env in
   let compilerreference_prefix =
     Filename.make_path [source_directory; testfile_basename] in
   let compilerreference_filename =
