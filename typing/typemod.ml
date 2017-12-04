@@ -94,6 +94,37 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
+let type_initially_opened_module env =
+  let loc = Location.in_file "compiler internals" in
+  let lid = { Asttypes.loc; txt = Longident.Lident "Pervasives" } in
+  let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
+  match Env.open_signature_of_initially_opened_module path env with
+  | Some env -> path, env
+  | None ->
+      let md = Env.find_module path env in
+      ignore (extract_sig_open env lid.loc md.md_type);
+      assert false
+
+let initial_env ~loc ~safe_string ~open_pervasives ~open_implicit_modules =
+  let env =
+    if safe_string then
+      Env.initial_safe_string
+    else
+      Env.initial_unsafe_string
+  in
+  let env =
+    if open_pervasives then
+      snd (type_initially_opened_module env)
+    else
+      env
+  in
+  let open_implicit_module env m =
+    let open Asttypes in
+    let lid = {loc; txt = Longident.parse m } in
+    snd (type_open_ Override env lid.loc lid)
+  in
+  List.fold_left open_implicit_module env open_implicit_modules
+
 let type_open ?toplevel env sod =
   let (path, newenv) =
     Builtin_attributes.warning_scope sod.popen_attributes

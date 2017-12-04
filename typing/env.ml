@@ -161,7 +161,7 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Path.t
+  | Env_open of summary * StringSet.t * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
   | Env_copy_types of summary * string list
@@ -650,9 +650,6 @@ let persistent_structures =
 (* Consistency between persistent structures *)
 
 let crc_units = Consistbl.create()
-
-module StringSet =
-  Set.Make(struct type t = string let compare = String.compare end)
 
 let imported_units = ref StringSet.empty
 
@@ -2035,12 +2032,36 @@ let rec add_signature sg env =
 
 (* Open a signature path *)
 
-let add_components slot root env0 comps =
+let add_components ?filter_modules slot root env0 comps =
   let add_l w comps env0 =
     TycompTbl.add_open slot w comps env0
   in
 
   let add w comps env0 = IdTbl.add_open slot w root comps env0 in
+
+  let skipped_modules = ref StringSet.empty in
+  let filter tbl env0_tbl =
+    match filter_modules with
+    | None -> tbl
+    | Some f ->
+      Tbl.fold (fun m x acc ->
+        if f m then
+          Tbl.add m x acc
+        else begin
+          assert
+            (match IdTbl.find_name m env0_tbl~mark:false with
+             | (_ : _ * _) -> false
+             | exception _ -> true);
+          skipped_modules := StringSet.add m !skipped_modules;
+          acc
+        end)
+        tbl Tbl.empty
+  in
+
+  let filter_and_add w comps env0 =
+    let comps = filter comps env0 in
+    add w comps env0
+  in
 
   let constrs =
     add_l (fun x -> `Constructor x) comps.comp_constrs env0.constrs
@@ -2065,15 +2086,15 @@ let add_components slot root env0 comps =
     add (fun x -> `Class_type x) comps.comp_cltypes env0.cltypes
   in
   let components =
-    add (fun x -> `Component x) comps.comp_components env0.components
+    filter_and_add (fun x -> `Component x) comps.comp_components env0.components
   in
 
   let modules =
-    add (fun x -> `Module x) comps.comp_modules env0.modules
+    filter_and_add (fun x -> `Module x) comps.comp_modules env0.modules
   in
 
   { env0 with
-    summary = Env_open(env0.summary, root);
+    summary = Env_open(env0.summary, !skipped_modules, root);
     constrs;
     labels;
     values;
@@ -2085,10 +2106,11 @@ let add_components slot root env0 comps =
     modules;
   }
 
-let open_signature slot root env0 =
+let open_signature ?filter_modules slot root env0 =
   match get_components (find_module_descr root env0) with
   | Functor_comps _ -> None
-  | Structure_comps comps -> Some (add_components slot root env0 comps)
+  | Structure_comps comps ->
+    Some (add_components ?filter_modules slot root env0 comps)
 
 
 (* Open a signature from a file *)
@@ -2098,9 +2120,28 @@ let open_pers_signature name env =
   | Some env -> env
   | None -> assert false (* a compilation unit cannot refer to a functor *)
 
+let open_signature_of_initially_opened_module root env =
+  let load_path = !Config.load_path in
+  let filter_modules m =
+    match Misc.find_in_path_uncap load_path (m ^ ".cmi") with
+    | (_ : string) -> false
+    | exception Not_found -> true
+  in
+  open_signature None root env ~filter_modules
+
+let open_signature_from_env_summary root env ~hidden_submodules =
+  let filter_modules =
+    if StringSet.is_empty hidden_submodules then
+      None
+    else
+      Some (fun m -> not (StringSet.mem m hidden_submodules))
+  in
+  open_signature None root env ?filter_modules
+
 let open_signature
     ?(used_slot = ref false)
-    ?(loc = Location.none) ?(toplevel = false) ovf root env =
+    ?(loc = Location.none) ?(toplevel = false)
+    ovf root env =
   if not toplevel && ovf = Asttypes.Fresh && not loc.Location.loc_ghost
      && (Warnings.is_active (Warnings.Unused_open "")
          || Warnings.is_active (Warnings.Open_shadow_identifier ("", ""))
