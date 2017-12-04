@@ -92,30 +92,47 @@ let rec eliminate_ref id = function
 
 (* Simplification of exits *)
 
-type exit = {
-  mutable count: int;
-  mutable max_depth: int;
-}
+type exit_status =
+  | Not_occurring
+  | Occurs_once_without_traps
+  | Not_simplifiable
 
 let simplify_exits lam =
 
   (* Count occurrences of (exit n ...) statements *)
   let exits = Hashtbl.create 17 in
 
-  let try_depth = ref 0 in
+  let count_exit i =
+    try !(Hashtbl.find exits i)
+    with Not_found -> Not_occurring
+  in
 
-  let get_exit i =
-    try Hashtbl.find exits i
-    with Not_found -> {count = 0; max_depth = 0}
-
-  and incr_exit i nb d =
+  let incr_exit i =
     match Hashtbl.find_opt exits i with
     | Some r ->
-        r.count <- r.count + nb;
-        r.max_depth <- max r.max_depth d
+        (* Single case since Not_occurring is never added to the table *)
+        r := Not_simplifiable
     | None ->
-        let r = {count = nb; max_depth = d} in
-        Hashtbl.add exits i r
+        Hashtbl.add exits i (ref Occurs_once_without_traps)
+  in
+
+  let copy_exit i j =
+    match Hashtbl.find_opt exits i with
+    | Some ri ->
+        begin match Hashtbl.find_opt exits j with
+        | Some rj -> rj := Not_simplifiable
+        | None -> Hashtbl.add exits j (ref !ri)
+        end
+    | None -> ()
+  in
+
+  (* Disable simplification for exit i *)
+  let disable_exit i =
+    match Hashtbl.find_opt exits i with
+    | Some r ->
+        r := Not_simplifiable
+    | None ->
+        Hashtbl.add exits i (ref Not_simplifiable)
   in
 
   let rec count = function
@@ -142,21 +159,24 @@ let simplify_exits lam =
         | []|[_] -> count d
         | _ -> count d; count d (* default will get replicated *)
       end
-  | Lstaticraise (i,ls,_ta) ->
-      incr_exit i 1 !try_depth; List.iter count ls
+  | Lstaticraise (i,ls,No_action) ->
+      incr_exit i; List.iter count ls
+  | Lstaticraise (i,ls,Pop _) ->
+      disable_exit i; List.iter count ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[],No_action)) ->
-      (* i will be replaced by j in l1, so each occurrence of i in l1
-         increases j's ref count *)
+      (* i will be replaced by j in l1, so occurrences of i in l1
+         count as occurrences of j *)
       count l1 ;
-      let ic = get_exit i in
-      incr_exit j ic.count (max !try_depth ic.max_depth)
+      copy_exit i j
   | Lstaticcatch(l1, (i,_), l2) ->
       count l1;
       (* If l1 does not contain (exit i),
          l2 will be removed, so don't count its exits *)
-      if (get_exit i).count > 0 then
-        count l2
-  | Ltrywith(l1, _cont, _v, l2) -> incr try_depth; count l1; decr try_depth; count l2
+      begin match count_exit i with
+      | Not_occurring -> ()
+      | _ -> count l2
+      end
+  | Ltrywith(l1, _cont, _v, l2) -> count l1; count l2
   | Lifthenelse(l1, l2, l3) -> count l1; count l2; count l3
   | Lsequence(l1, l2) -> count l1; count l2
   | Lwhile(l1, l2) -> count l1; count l2
@@ -181,7 +201,6 @@ let simplify_exits lam =
       end
   in
   count lam;
-  assert(!try_depth = 0);
 
   (*
      Second pass simplify  ``catch body with (i ...) handler''
@@ -281,23 +300,16 @@ let simplify_exits lam =
       Hashtbl.add subst i ([],simplif l2) ;
       simplif l1
   | Lstaticcatch (l1,(i,xs),l2) ->
-      let {count; max_depth} = get_exit i in
-      if count = 0 then
-        (* Discard staticcatch: not matching exit *)
-        simplif l1
-      else if count = 1 && max_depth <= !try_depth then begin
-        (* Inline handler if there is a single occurrence and it is not
-           nested within an inner try..with *)
-        assert(max_depth = !try_depth);
-        Hashtbl.add subst i (xs,simplif l2);
-        simplif l1
-      end else
-        Lstaticcatch (simplif l1, (i,xs), simplif l2)
-  | Ltrywith(l1, cont, v, l2) ->
-      incr try_depth;
-      let l1 = simplif l1 in
-      decr try_depth;
-      Ltrywith(l1, cont, v, simplif l2)
+      begin match count_exit i with
+      | Not_occurring ->
+          simplif l1
+      | Occurs_once_without_traps ->
+          Hashtbl.add subst i (xs,simplif l2);
+          simplif l1
+      | Not_simplifiable ->
+          Lstaticcatch (simplif l1, (i,xs), simplif l2)
+      end
+  | Ltrywith(l1, cont, v, l2) -> Ltrywith(simplif l1, cont, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
   | Lsequence(l1, l2) -> Lsequence(simplif l1, simplif l2)
   | Lwhile(l1, l2) -> Lwhile(simplif l1, simplif l2)
