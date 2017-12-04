@@ -88,6 +88,7 @@ UTILS=utils/config.cmo utils/misc.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
+  utils/build_path_prefix_map.cmo \
   utils/targetint.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
