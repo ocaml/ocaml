@@ -56,7 +56,7 @@ static inline void populate_pollfd(struct pollfd *fds, value fdlist) {
   value fd, event;
   int pos;
 
-  Begin_roots2(fd, event);
+  Begin_roots2(fdlist, event);
     pos = 0;
     for (fd = fdlist; fd != Val_int(0); fd = Field(fd, 1)) {
       fds[pos].fd = Int_val(Field(Field(fd,0),0));
@@ -71,7 +71,7 @@ static inline void populate_pollfd(struct pollfd *fds, value fdlist) {
 static inline value list_prepend(value l, value v) {
   value newres;
 
-  Begin_roots3(newres, l, v);
+  Begin_roots2(l, v);
     newres = caml_alloc_small(2, 0);
     Field(newres, 0) = v;
     Field(newres, 1) = l;
