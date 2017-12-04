@@ -33,7 +33,6 @@ cpp='cpp'
 asoption=''
 asppoption=''
 cclibs=''
-curseslibs=''
 mathlib='-lm'
 dllib=''
 x11_include_dir=''
@@ -543,7 +542,6 @@ case "$cc,$target" in
     exe=".exe"
     ostype="Cygwin";;
   *,*-*-mingw*)
-    dllccompopt="-DCAML_DLL"
     if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
@@ -1779,7 +1777,6 @@ if test "$x11_include" = "not found"; then
       if test $dir = /usr/lib; then
         x11_link="-lX11"
       else
-        x11_libs="-L$dir"
         case "$target" in
           *-*-freebsd*|*-*-dragonfly*) x11_link="-L$dir -lX11";;
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
@@ -2187,7 +2184,7 @@ else
   fi
   if $with_spacetime; then
     inf "        spacetime profiling....... yes"
-    if test "$with_spacetime_call_counts" = "true"; then
+    if test "$enable_call_counts" = "true"; then
       inf "          ... with call counts.... yes"
     else
       inf "          ... with call counts.... no"
