@@ -102,6 +102,10 @@ Working version
   (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
   review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
 
+- GPR#1515: honor the BUILD_PATH_PREFIX_MAP environment variable
+  to enable reproducible builds
+  (Gabriel Scherer, with help from Ximin Luo, review by Damien Doligez)
+
 - GPR#1534: Extend the warning printed when (*) is used, adding a hint to
   suggest using ( * ) instead
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
