@@ -76,6 +76,13 @@ EOF
   [ $XARCH =  "i386" ] ||  (cd testsuite && $MAKE USE_RUNTIME="d" all)
   $MAKE install
   $MAKE manual-pregen
+  $MAKE alldepend
+  stale_depends_files="$(git status --short ':(glob)**/.depend')"
+  if [ "$stale_depends_files" ]; then
+      echo >&2 ".depend files are stale, you need to run make alldepend."
+      git diff | head -n 1000
+      exit 1
+  fi
   # check_all_arches checks tries to compile all backends in place,
   # we would need to redo (small parts of) world.opt afterwards to
   # use the compiler again

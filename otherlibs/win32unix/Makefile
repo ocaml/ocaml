@@ -70,6 +70,7 @@ depend: $(ALL_FILES) $(UNIX_CAML_FILES) unix.ml
 	  | sed -e 's/\.o/.$$(O)/g' > .depend
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash $(UNIX_CAML_FILES) \
 	  unix.ml >> .depend
+	$(ROOTDIR)/tools/normalize_depend .depend
 endif
 
 include .depend

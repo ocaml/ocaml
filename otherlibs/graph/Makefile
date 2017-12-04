@@ -30,5 +30,6 @@ include ../Makefile
 depend:
 	$(CC) -MM $(CPPFLAGS) *.c | sed -e 's, /[^ ]*\.h,,g' > .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
+	../..//tools/normalize_depend .depend
 
 include .depend

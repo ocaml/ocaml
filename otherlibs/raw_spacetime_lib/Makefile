@@ -77,5 +77,6 @@ clean:: partialclean
 
 depend:
 	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep *.mli *.ml > .depend
+	$(ROOTDIR)/tools/normalize_depend .depend
 
 include .depend

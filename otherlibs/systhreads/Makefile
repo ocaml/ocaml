@@ -157,6 +157,7 @@ depend:
 	  st_stubs.c | sed -e 's/st_stubs\.o/st_stubs_n.$$(O)/' \
 	  -e 's/ st_\(posix\|win32\)\.h//g' >> .depend
 	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
+	../../tools/normalize_depend .depend
 endif
 
 include .depend

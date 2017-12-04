@@ -923,6 +923,9 @@ beforedepend:: bytecomp/runtimedef.ml
 
 # Choose the right machine-dependent files
 
+ARCH_FILES_GREP_PATTERN=^asmcomp/\(arch\|proc\|selection\|CSE\|reload\|scheduling\)\.ml$
+ARCH_FILES=arch proc selection CSE reload scheduling
+
 asmcomp/arch.ml: asmcomp/$(ARCH)/arch.ml
 	cd asmcomp; $(LN) $(ARCH)/arch.ml .
 
@@ -1307,12 +1310,17 @@ partialclean::
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp middle_end \
 	 middle_end/base_types asmcomp/debug driver toplevel; \
-	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$d/*.ml || exit; \
+	 do $(CAMLDEP) -slash $(DEPFLAGS) $$d/*.mli $$(echo $$d/*.ml | tr ' ' '\n' | grep -v "$(ARCH_FILES_GREP_PATTERN)") || exit; \
 	 done) > .depend
+	(for arch in $(ARCHES); do \
+	    $(CAMLDEP) -slash $(DEPFLAGS) asmcomp/$$arch/*.mli asmcomp/$$arch/*.ml \
+	       | sed -e s%asmcomp/$$arch/%asmcomp/% || exit; \
+          done) >> .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -native \
 		-impl driver/compdynlink.mlopt >> .depend
 	$(CAMLDEP) -slash $(DEPFLAGS) -bytecode \
 		-impl driver/compdynlink.mlbyte >> .depend
+	tools/normalize_depend .depend
 
 .PHONY: distclean
 distclean: clean

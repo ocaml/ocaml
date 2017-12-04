@@ -248,3 +248,4 @@ include .depend
 depend:
 	$(CAMLDEP) -slash *.mli *.ml > .depend
 	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend
+	../tools/normalize_depend .depend
