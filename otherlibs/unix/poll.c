@@ -141,7 +141,7 @@ CAMLprim value unix_poll(value fdlist, value timeout)
     populate_pollfd(fds,fdlist);
 
     tm = Double_val(timeout)*1000;
-    if (tm < 0.0) tm = -1;
+    if (tm < 0) tm = -1;
 
     caml_enter_blocking_section();
     retcode = poll(fds, nfds, tm);
