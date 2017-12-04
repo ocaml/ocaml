@@ -383,6 +383,21 @@ let select readfds writefds exceptfds delay =
     Resumed_select(r, w, e) -> (r, w, e)
   | _ -> ([], [], [])
 
+type polling_event =
+    POLLIN
+  | POLLRDNORM
+  | POLLRDBAND
+  | POLLPRI
+  | POLLOUT
+  | POLLWRNORM
+  | POLLWRBAND
+  | POLLERR
+  | POLLHUP
+  | POLLNVAL
+
+type polling_entry = file_descr*(polling_event list)
+external poll : polling_entry list -> float -> polling_entry list = "unix_poll"
+
 type lock_command =
     F_ULOCK
   | F_LOCK

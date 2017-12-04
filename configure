@@ -1361,6 +1361,18 @@ if sh ./hasgot select && \
   has_select=yes
 fi
 
+poll_include=''
+if sh ./hasgot -i poll.h; then
+  inf "poll.h found."
+  echo "#define HAS_POLL_H" >> s.h
+  poll_include='-i poll.h'
+fi
+
+if sh ./hasgot poll ; then
+  inf "poll() found."
+  echo "#define HAS_POLL" >> s.h
+fi
+
 if sh ./hasgot nanosleep ; then
   inf "nanosleep() found."
   echo "#define HAS_NANOSLEEP" >> s.h

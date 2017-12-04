@@ -879,6 +879,21 @@ val select :
    and over which an exceptional condition is pending (third
    component). *)
 
+type polling_event =
+    POLLIN
+  | POLLRDNORM
+  | POLLRDBAND
+  | POLLPRI
+  | POLLOUT
+  | POLLWRNORM
+  | POLLWRBAND
+  | POLLERR
+  | POLLHUP
+  | POLLNVAL
+
+type polling_entry = file_descr*(polling_event list)
+
+val poll : polling_entry list -> float -> polling_entry list
 
 (** {1 Locking} *)
 
