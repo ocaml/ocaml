@@ -2012,14 +2012,6 @@ bytecomp/translobj.cmi : \
   bytecomp/lambda.cmi \
   typing/env.cmi \
   typing/ident.cmi
-asmcomp/CSE.cmo : \
-  asmcomp/CSEgen.cmi \
-  asmcomp/arch.cmo \
-  asmcomp/mach.cmi
-asmcomp/CSE.cmx : \
-  asmcomp/CSEgen.cmx \
-  asmcomp/arch.cmx \
-  asmcomp/mach.cmx
 asmcomp/CSEgen.cmo : \
   asmcomp/CSEgen.cmi \
   asmcomp/cmm.cmi \
@@ -2052,12 +2044,6 @@ asmcomp/afl_instrument.cmx : \
   utils/clflags.cmx
 asmcomp/afl_instrument.cmi : \
   asmcomp/cmm.cmi
-asmcomp/arch.cmo : \
-  utils/clflags.cmi \
-  utils/config.cmi
-asmcomp/arch.cmx : \
-  utils/clflags.cmx \
-  utils/config.cmx
 asmcomp/asmgen.cmo : \
   asmcomp/CSE.cmo \
   asmcomp/asmgen.cmi \
@@ -2962,24 +2948,6 @@ asmcomp/printmach.cmx : \
 asmcomp/printmach.cmi : \
   asmcomp/mach.cmi \
   asmcomp/reg.cmi
-asmcomp/proc.cmo : \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmi \
-  asmcomp/mach.cmi \
-  asmcomp/proc.cmi \
-  asmcomp/reg.cmi \
-  asmcomp/x86_proc.cmi \
-  utils/config.cmi \
-  utils/misc.cmi
-asmcomp/proc.cmx : \
-  asmcomp/arch.cmx \
-  asmcomp/cmm.cmx \
-  asmcomp/mach.cmx \
-  asmcomp/proc.cmi \
-  asmcomp/reg.cmx \
-  asmcomp/x86_proc.cmx \
-  utils/config.cmx \
-  utils/misc.cmx
 asmcomp/proc.cmi : \
   asmcomp/mach.cmi \
   asmcomp/reg.cmi
@@ -2994,22 +2962,6 @@ asmcomp/reg.cmx : \
 asmcomp/reg.cmi : \
   asmcomp/cmm.cmi \
   typing/ident.cmi
-asmcomp/reload.cmo : \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmi \
-  asmcomp/mach.cmi \
-  asmcomp/reg.cmi \
-  asmcomp/reload.cmi \
-  asmcomp/reloadgen.cmi \
-  utils/clflags.cmi
-asmcomp/reload.cmx : \
-  asmcomp/arch.cmx \
-  asmcomp/cmm.cmx \
-  asmcomp/mach.cmx \
-  asmcomp/reg.cmx \
-  asmcomp/reload.cmi \
-  asmcomp/reloadgen.cmx \
-  utils/clflags.cmx
 asmcomp/reload.cmi : \
   asmcomp/mach.cmi
 asmcomp/reloadgen.cmo : \
@@ -3044,12 +2996,6 @@ asmcomp/schedgen.cmx : \
 asmcomp/schedgen.cmi : \
   asmcomp/linearize.cmi \
   asmcomp/mach.cmi
-asmcomp/scheduling.cmo : \
-  asmcomp/schedgen.cmi \
-  asmcomp/scheduling.cmi
-asmcomp/scheduling.cmx : \
-  asmcomp/schedgen.cmx \
-  asmcomp/scheduling.cmi
 asmcomp/scheduling.cmi : \
   asmcomp/linearize.cmi
 asmcomp/selectgen.cmo : \
@@ -3089,26 +3035,6 @@ asmcomp/selectgen.cmi : \
   asmcomp/reg.cmi \
   middle_end/debuginfo.cmi \
   typing/ident.cmi
-asmcomp/selection.cmo : \
-  asmcomp/arch.cmo \
-  asmcomp/cmm.cmi \
-  asmcomp/mach.cmi \
-  asmcomp/proc.cmi \
-  asmcomp/selectgen.cmi \
-  asmcomp/selection.cmi \
-  asmcomp/spacetime_profiling.cmi \
-  utils/clflags.cmi \
-  utils/config.cmi
-asmcomp/selection.cmx : \
-  asmcomp/arch.cmx \
-  asmcomp/cmm.cmx \
-  asmcomp/mach.cmx \
-  asmcomp/proc.cmx \
-  asmcomp/selectgen.cmx \
-  asmcomp/selection.cmi \
-  asmcomp/spacetime_profiling.cmx \
-  utils/clflags.cmx \
-  utils/config.cmx
 asmcomp/selection.cmi : \
   asmcomp/cmm.cmi \
   asmcomp/mach.cmi
@@ -5531,6 +5457,344 @@ toplevel/trace.cmi : \
   typing/env.cmi \
   typing/path.cmi \
   typing/types.cmi
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo : \
+  utils/clflags.cmi \
+  utils/config.cmi
+asmcomp/arch.cmx : \
+  utils/clflags.cmx \
+  utils/config.cmx
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  asmcomp/x86_proc.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  asmcomp/x86_proc.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  asmcomp/reloadgen.cmi \
+  utils/clflags.cmi
+asmcomp/reload.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  asmcomp/reloadgen.cmx \
+  utils/clflags.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/proc.cmi \
+  asmcomp/selectgen.cmi \
+  asmcomp/spacetime_profiling.cmi \
+  utils/clflags.cmi \
+  utils/config.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/proc.cmx \
+  asmcomp/selectgen.cmx \
+  asmcomp/spacetime_profiling.cmx \
+  utils/clflags.cmx \
+  utils/config.cmx
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo : \
+  utils/config.cmi
+asmcomp/arch.cmx : \
+  utils/config.cmx
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  asmcomp/x86_proc.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  asmcomp/x86_proc.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  asmcomp/reloadgen.cmi
+asmcomp/reload.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  asmcomp/reloadgen.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/proc.cmi \
+  asmcomp/selectgen.cmi \
+  utils/misc.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/proc.cmx \
+  asmcomp/selectgen.cmx \
+  utils/misc.cmx
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo : \
+  utils/clflags.cmi \
+  utils/config.cmi
+asmcomp/arch.cmx : \
+  utils/clflags.cmx \
+  utils/config.cmx
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  utils/ccomp.cmi \
+  utils/clflags.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  utils/ccomp.cmx \
+  utils/clflags.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi \
+  asmcomp/reloadgen.cmi
+asmcomp/reload.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reloadgen.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/proc.cmi \
+  asmcomp/reg.cmi \
+  asmcomp/selectgen.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/proc.cmx \
+  asmcomp/reg.cmx \
+  asmcomp/selectgen.cmx
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo :
+asmcomp/arch.cmx :
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  utils/ccomp.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  utils/ccomp.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/reloadgen.cmi
+asmcomp/reload.cmx : \
+  asmcomp/reloadgen.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/selectgen.cmi \
+  utils/clflags.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/selectgen.cmx \
+  utils/clflags.cmx
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo : \
+  utils/config.cmi
+asmcomp/arch.cmx : \
+  utils/config.cmx
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  utils/ccomp.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  utils/ccomp.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/reloadgen.cmi
+asmcomp/reload.cmx : \
+  asmcomp/reloadgen.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/selectgen.cmi \
+  middle_end/debuginfo.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/selectgen.cmx \
+  middle_end/debuginfo.cmx
+asmcomp/CSE.cmo : \
+  asmcomp/CSEgen.cmi \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi
+asmcomp/CSE.cmx : \
+  asmcomp/CSEgen.cmx \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx
+asmcomp/arch.cmo :
+asmcomp/arch.cmx :
+asmcomp/proc.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/reg.cmi \
+  utils/ccomp.cmi \
+  utils/config.cmi \
+  utils/misc.cmi
+asmcomp/proc.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reg.cmx \
+  utils/ccomp.cmx \
+  utils/config.cmx \
+  utils/misc.cmx
+asmcomp/reload.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi \
+  asmcomp/reloadgen.cmi
+asmcomp/reload.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/reloadgen.cmx
+asmcomp/scheduling.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/mach.cmi \
+  asmcomp/schedgen.cmi
+asmcomp/scheduling.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/schedgen.cmx
+asmcomp/selection.cmo : \
+  asmcomp/arch.cmo \
+  asmcomp/cmm.cmi \
+  asmcomp/mach.cmi \
+  asmcomp/selectgen.cmi
+asmcomp/selection.cmx : \
+  asmcomp/arch.cmx \
+  asmcomp/cmm.cmx \
+  asmcomp/mach.cmx \
+  asmcomp/selectgen.cmx
 driver/compdynlink.cmx : \
   asmcomp/cmx_format.cmi \
   driver/compdynlink.cmi
