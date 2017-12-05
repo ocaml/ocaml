@@ -154,6 +154,8 @@ CAMLprim value unix_poll(value fdlist, value timeout)
 
     res = extract_ready_fds(fds,nfds);
 
+    free(fds);
+
   End_roots();
   return res;
 }
