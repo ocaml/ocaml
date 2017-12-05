@@ -92,6 +92,8 @@ let get_test_build_directory_prefix test_dirname =
 
 let test_file test_filename =
   (* Printf.printf "# reading test file %s\n%!" test_filename; *)
+  (* Save current working directory *)
+  let cwd = Sys.getcwd() in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
   let test_trees = match test_trees with
@@ -147,7 +149,9 @@ let test_file test_filename =
     (run_test_i log common_prefix "" (Run rootenv))
     test_trees;
   Actions.clear_all_hooks();
-  if not !Options.log_to_stderr then close_out log
+  if not !Options.log_to_stderr then close_out log;
+  (* Restore current working directory  *)
+  Sys.chdir cwd
 
 let main () =
   if !Options.files_to_test = [] then begin

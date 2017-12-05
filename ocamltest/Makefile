@@ -26,6 +26,10 @@ else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
 endif
 
+ifeq "$(TOOLCHAIN)" "msvc"
+CPP := $(CPP) 2> nul
+endif
+
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)

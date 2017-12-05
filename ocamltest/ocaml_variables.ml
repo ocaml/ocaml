@@ -102,6 +102,7 @@ let source_modules = make ("source_modules",
 let _ = List.iter register_variable
   [
     c_preprocessor;
+    compare_programs;
     compiler_directory_suffix;
     compiler_reference;
     compiler_reference2;
