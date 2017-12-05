@@ -147,6 +147,12 @@ static void update_environment(array local_env)
   }
 }
 
+/*
+  This function should retunr an exitcode that can itslef be returned
+  to its father through the exit system call.
+  So it returns 0 to report success and 1 to report an error
+
+ */
 static int run_command_child(const command_settings *settings)
 {
   int stdin_fd = -1, stdout_fd = -1, stderr_fd = -1; /* -1 = no redir */
@@ -155,7 +161,10 @@ static int run_command_child(const command_settings *settings)
     O_CREAT | O_WRONLY | (settings->append ? O_APPEND : O_TRUNC);
   int inputMode = 0400, outputMode = 0666;
 
-  if (setpgid(0, 0) == -1) child_error("setpgid");
+  if (setpgid(0, 0) == -1)
+  {
+    child_error("setpgid");
+  }
 
   if (is_defined(settings->stdin_filename))
   {
@@ -165,7 +174,10 @@ static int run_command_child(const command_settings *settings)
       open_error(settings->stdin_filename);
       goto child_failed;
     }
-    if (dup2(stdin_fd, STDIN_FILENO) == -1) child_error("dup2 for stdin");
+    if (dup2(stdin_fd, STDIN_FILENO) == -1)
+    {
+      child_error("dup2 for stdin");
+    }
   }
 
   if (is_defined(settings->stdout_filename))
@@ -175,7 +187,10 @@ static int run_command_child(const command_settings *settings)
       open_error(settings->stdout_filename);
       goto child_failed;
     }
-    if (dup2(stdout_fd, STDOUT_FILENO) == -1) child_error("dup2 for stdout");
+    if (dup2(stdout_fd, STDOUT_FILENO) == -1)
+    {
+      child_error("dup2 for stdout");
+    }
   }
 
   if (is_defined(settings->stderr_filename))
@@ -195,7 +210,10 @@ static int run_command_child(const command_settings *settings)
         goto child_failed;
       }
     }
-    if (dup2(stderr_fd, STDERR_FILENO) == -1) child_error("dup2 for stderr");
+    if (dup2(stderr_fd, STDERR_FILENO) == -1)
+    {
+      child_error("dup2 for stderr");
+    }
   }
 
   update_environment(settings->envp);
@@ -205,7 +223,7 @@ static int run_command_child(const command_settings *settings)
   myperror("Cannot execute %s", settings->program);
 
 child_failed:
-  return (-1);
+  return 1;
 }
 
 /* Handles the termination of a process. Arguments:
@@ -314,7 +332,7 @@ int run_command(const command_settings *settings)
       myperror("fork");
       return -1;
     case 0: /* child process */
-      if (! run_command_child(settings)) exit(1);
+      exit( run_command_child(settings) );
     default:
       return run_command_parent(settings, child_pid);
   }
