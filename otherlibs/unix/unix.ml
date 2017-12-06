@@ -459,6 +459,8 @@ external select :
   file_descr list -> file_descr list -> file_descr list -> float ->
         file_descr list * file_descr list * file_descr list = "unix_select"
 
+external has_poll : unit -> bool = "unix_has_poll"
+
 type polling_event =
     POLLIN
   | POLLRDNORM
@@ -473,6 +475,28 @@ type polling_event =
 
 type polling_entry = file_descr*(polling_event list)
 external poll : polling_entry list -> float -> polling_entry list = "unix_poll"
+
+let poll_select r w e t =
+  let polled = Hashtbl.create 10 in
+  let event_map event = List.iter (fun fd ->
+    try
+      let events = Hashtbl.find polled fd in
+      Hashtbl.replace polled fd (event::events)
+    with Not_found -> Hashtbl.add polled fd [event])
+  in
+  event_map POLLIN r;
+  event_map POLLOUT w;
+  event_map POLLERR e;
+  let polled = Hashtbl.fold (fun fd events polled ->
+    (fd,events)::polled) polled []
+  in
+  List.fold_left (fun (r,w,e) (fd,events) ->
+    let r = if List.mem POLLIN events then fd::r else r in
+    let w = if List.mem POLLOUT events then fd::w else w in
+    let e = if List.mem POLLERR events then fd::e else e in
+    (r,w,e)) ([],[],[]) (poll polled t) 
+
+let select = if has_poll () then poll_select else select
 
 type lock_command =
     F_ULOCK

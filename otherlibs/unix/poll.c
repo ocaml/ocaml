@@ -25,6 +25,10 @@
 #include <poll.h>
 #endif
 
+CAMLprim value unix_has_poll(value unit) {
+  return Val_true;
+}
+
 static inline int int_of_event(value event) {
   switch Int_val(event) {
     case 0:
@@ -161,6 +165,10 @@ CAMLprim value unix_poll(value fdlist, value timeout)
 }
 
 #else
+
+CAMLprim value unix_has_poll(value unit) {
+  return Val_false;
+}
 
 CAMLprim value unix_poll(value fds, value timeout)
 { caml_invalid_argument("poll not implemented"); }

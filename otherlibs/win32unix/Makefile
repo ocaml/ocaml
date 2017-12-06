@@ -22,7 +22,7 @@ WIN_FILES = accept.c bind.c channels.c close.c \
   close_on.c connect.c createprocess.c dup.c dup2.c errmsg.c envir.c \
   getpeername.c getpid.c getsockname.c gettimeofday.c isatty.c \
   link.c listen.c lockf.c lseek.c nonblock.c \
-  mkdir.c mmap.c open.c pipe.c poll.c read.c readlink.c rename.c \
+  mkdir.c mmap.c open.c pipe.c read.c readlink.c rename.c \
   select.c sendrecv.c \
   shutdown.c sleep.c socket.c sockopt.c startup.c stat.c \
   symlink.c system.c times.c unixsupport.c windir.c winwait.c write.c \

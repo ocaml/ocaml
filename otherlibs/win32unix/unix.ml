@@ -1009,22 +1009,6 @@ external select :
   file_descr list -> file_descr list -> file_descr list -> float ->
         file_descr list * file_descr list * file_descr list = "unix_select"
 
-type polling_event =
-    POLLIN
-  | POLLRDNORM
-  | POLLRDBAND
-  | POLLPRI
-  | POLLOUT
-  | POLLWRNORM
-  | POLLWRBAND
-  | POLLERR
-  | POLLHUP
-  | POLLNVAL
-
-type polling_entry = file_descr*(polling_event list)
-
-external poll : polling_entry list -> float -> polling_entry list = "unix_poll"
-
 (* High-level network functions *)
 
 let open_connection sockaddr =
