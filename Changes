@@ -108,6 +108,9 @@ Working version
 - MPR#7682, GPR#1495: fix [@@unboxed] for records with 1 polymorphic field
   (Alain Frisch, report by Stéphane Graham-Lengrand, review by Gabriel Scherer)
 
+- GPR#1517: More robust handling of type variables in mcomp
+  (Leo White and Thomas Refis, review by Jacques Garrigue)
+
 
 4.06 maintenance branch
 -----------------------
