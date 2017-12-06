@@ -101,7 +101,7 @@ let rec regalloc ppf round fd =
 
 let cse fd =
   (* CSE can trigger bad register allocation behaviors, see MPR#7630 *)
-  if fd.Mach.fun_fast_compile && Config.flambda then
+  if List.mem Cmm.No_CSE fd.Mach.fun_codegen_options then
     fd
   else
     CSE.fundecl fd
