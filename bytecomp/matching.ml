@@ -1604,8 +1604,14 @@ let get_args_record num_fields p rem = match p with
 
 let matcher_record num_fields p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
-| Tpat_var _      -> get_args_record num_fields omega rem
-| _               -> get_args_record num_fields p rem
+| Tpat_any
+| Tpat_var _      ->
+  record_matching_line num_fields [] @ rem
+| Tpat_record ([], _) when num_fields = 0 -> rem
+| Tpat_record ((_, lbl, _) :: _ as lbl_pat_list, _)
+  when Array.length lbl.lbl_all = num_fields ->
+    record_matching_line num_fields lbl_pat_list @ rem
+| _ -> raise NoMatch
 
 let make_record_matching loc all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"
