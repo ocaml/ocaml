@@ -29,6 +29,9 @@ Working version
   colors for the native Windows ports now work under Cygwin/MSYS2.
   (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
 
+- GPR#1477: raw_spacetime_lib can now be used in bytecode.
+  (Nicolas Ojeda Bar, review by Mark Shinwell)
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as

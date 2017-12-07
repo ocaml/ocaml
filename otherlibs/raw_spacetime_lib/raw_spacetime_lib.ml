@@ -146,8 +146,7 @@ module Trace = struct
   (* This function unmarshals into malloc blocks, which mean that we
      obtain a straightforward means of writing [compare] on [node]s. *)
   external unmarshal : in_channel -> 'a
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_unmarshal_trie"
+    = "caml_spacetime_unmarshal_trie"
 
   let unmarshal in_channel =
     let trace = unmarshal in_channel in
@@ -156,15 +155,11 @@ module Trace = struct
     else
       Some ((Obj.magic trace) : node)
 
-  let node_is_null (node : node) =
-    ((Obj.magic node) : unit) == ()
-
   let foreign_node_is_null (node : foreign_node) =
     ((Obj.magic node) : unit) == ()
 
   external node_num_header_words : unit -> int
-    = "caml_spacetime_only_works_for_native_code"
-      "caml_spacetime_node_num_header_words" "noalloc"
+    = "caml_spacetime_node_num_header_words" [@@noalloc]
 
   let num_header_words = lazy (node_num_header_words ())
 
@@ -186,16 +181,14 @@ module Trace = struct
         | _ -> assert false
 
       external annotation : ocaml_node -> int -> Annotation.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_allocation_point_annotation"
-          "noalloc"
+        = "caml_spacetime_ocaml_allocation_point_annotation"
+          [@@noalloc]
 
       let annotation t = annotation t.node t.offset
 
       external count : ocaml_node -> int -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_allocation_point_count"
-          "noalloc"
+        = "caml_spacetime_ocaml_allocation_point_count"
+          [@@noalloc]
 
       let num_words_including_headers t = count t.node t.offset
     end
@@ -214,15 +207,13 @@ module Trace = struct
         | _ -> assert false
 
       external callee_node : ocaml_node -> int -> 'target
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_direct_call_point_callee_node"
+        = "caml_spacetime_ocaml_direct_call_point_callee_node"
 
       let callee_node (type target) (t : target t) : target =
         callee_node t.node t.offset
 
       external call_count : ocaml_node -> int -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_direct_call_point_call_count"
+        = "caml_spacetime_ocaml_direct_call_point_call_count"
 
       let call_count t =
         if Shape_table.call_counts t.shape_table then
@@ -252,30 +243,26 @@ module Trace = struct
         (* CR-soon mshinwell: maybe rename ...c_node_call_site -> c_node_pc,
            since it isn't a call site in this case. *)
         external callee : foreign_node -> Function_entry_point.t
-          = "caml_spacetime_only_works_for_native_code"
-            "caml_spacetime_c_node_call_site"
+          = "caml_spacetime_c_node_call_site"
 
         let callee t = callee t.node
 
         (* This can return a node satisfying "is_null" in the case of an
            uninitialised tail call point.  See the comment in the C code. *)
         external callee_node : foreign_node -> node
-          = "caml_spacetime_only_works_for_native_code"
-            "caml_spacetime_c_node_callee_node" "noalloc"
+          = "caml_spacetime_c_node_callee_node" [@@noalloc]
 
         let callee_node t = callee_node t.node
 
         external call_count : foreign_node -> int
-          = "caml_spacetime_only_works_for_native_code"
-            "caml_spacetime_c_node_call_count"
+          = "caml_spacetime_c_node_call_count"
 
         let call_count t =
           if t.call_counts then Some (call_count t.node)
           else None
 
         external next : foreign_node -> foreign_node
-          = "caml_spacetime_only_works_for_native_code"
-            "caml_spacetime_c_node_next" "noalloc"
+          = "caml_spacetime_c_node_next" [@@noalloc]
 
         let next t =
           let next = { t with node = next t.node; } in
@@ -284,9 +271,8 @@ module Trace = struct
       end
 
       external callees : ocaml_node -> int -> foreign_node
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_indirect_call_point_callees"
-          "noalloc"
+        = "caml_spacetime_ocaml_indirect_call_point_callees"
+          [@@noalloc]
 
       let callees t =
         let callees =
@@ -314,13 +300,12 @@ module Trace = struct
         | Indirect_call of Indirect_call_point.t
 
       external classify_direct_call_point : ocaml_node -> int -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_classify_direct_call_point"
-          "noalloc"
+        = "caml_spacetime_classify_direct_call_point"
+          [@@noalloc]
 
       let classify t =
         match t.part_of_shape with
-        | Shape_table.Direct_call callee ->
+        | Shape_table.Direct_call _callee ->
           let direct_call_point =
             match classify_direct_call_point t.node t.offset with
             | 0 ->
@@ -381,16 +366,13 @@ module Trace = struct
       type t = ocaml_node
 
       external function_identifier : t -> Function_identifier.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_function_identifier"
+        = "caml_spacetime_ocaml_function_identifier"
 
       external next_in_tail_call_chain : t -> t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_ocaml_tail_chain" "noalloc"
+        = "caml_spacetime_ocaml_tail_chain" [@@noalloc]
 
       external compare : t -> t -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
 
       let fields t ~shape_table =
         let id = function_identifier t in
@@ -415,8 +397,7 @@ module Trace = struct
       type t = foreign_node
 
       external compare : t -> t -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
 
       let fields t =
         if foreign_node_is_null t then None
@@ -428,29 +409,24 @@ module Trace = struct
 
       external program_counter : t -> Program_counter.Foreign.t
         (* This is not a mistake; the same C function works. *)
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_call_site"
+        = "caml_spacetime_c_node_call_site"
 
       external annotation : t -> Annotation.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_profinfo" "noalloc"
+        = "caml_spacetime_c_node_profinfo" [@@noalloc]
 
       external num_words_including_headers : t -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_allocation_count" "noalloc"
+        = "caml_spacetime_c_node_allocation_count" [@@noalloc]
     end
 
     module Call_point = struct
       type t = foreign_node
 
       external call_site : t -> Program_counter.Foreign.t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_call_site"
+        = "caml_spacetime_c_node_call_site"
 
       (* May return a null node.  See comment above and the C code. *)
       external callee_node : t -> node
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_callee_node" "noalloc"
+        = "caml_spacetime_c_node_callee_node" [@@noalloc]
     end
 
     module Field = struct
@@ -461,16 +437,14 @@ module Trace = struct
         | Call of Call_point.t
 
       external is_call : t -> bool
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_is_call" "noalloc"
+        = "caml_spacetime_c_node_is_call" [@@noalloc]
 
       let classify t =
         if is_call t then Call t
         else Allocation t
 
       external next : t -> t
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_c_node_next" "noalloc"
+        = "caml_spacetime_c_node_next" [@@noalloc]
 
       let next t =
         let next = next t in
@@ -484,8 +458,7 @@ module Trace = struct
       type t = node
 
       external compare : t -> t -> int
-        = "caml_spacetime_only_works_for_native_code"
-          "caml_spacetime_compare_node" "noalloc"
+        = "caml_spacetime_compare_node" [@@noalloc]
     end
 
     include T
@@ -494,10 +467,8 @@ module Trace = struct
       | OCaml of OCaml.Node.t
       | Foreign of Foreign.Node.t
 
-    (* CR-soon lwhite: These functions should work in bytecode *)
     external is_ocaml_node : t -> bool
-      = "caml_spacetime_only_works_for_native_code"
-        "caml_spacetime_is_ocaml_node" "noalloc"
+      = "caml_spacetime_is_ocaml_node" [@@noalloc]
 
     let classify t =
       if is_ocaml_node t then OCaml ((Obj.magic t) : ocaml_node)
@@ -600,8 +571,6 @@ module Heap_snapshot = struct
       events : Event.t list;
       call_counts : bool;
     }
-
-    let pathname_suffix_trace = "trace"
 
     (* The order of these constructors must match the C code. *)
     type what_comes_next =
