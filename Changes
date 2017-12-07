@@ -16,6 +16,10 @@ Working version
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
 
+- GPR#1516: Allow float array construction in recursive bindings
+  when configured with -no-flat-float-array
+  (Jeremy Yallop, report by Gabriel Scherer)
+
 ### Standard library:
 
 ### Other libraries:

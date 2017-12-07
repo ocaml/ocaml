@@ -1884,7 +1884,7 @@ struct
         if Path.same p Predef.path_int || Path.same p Predef.path_char then
           `Pintarray
         else if Path.same p Predef.path_float then
-          `Pfloatarray
+          if Config.flat_float_array then `Pfloatarray else `Paddrarray
         else if Path.same p Predef.path_string
              || Path.same p Predef.path_array
              || Path.same p Predef.path_nativeint
