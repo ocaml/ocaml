@@ -1,0 +1,100 @@
+File "robustmatch.ml", line 9, characters 4-73:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, 1)
+File "robustmatch.ml", line 19, characters 4-73:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (B|C))
+File "robustmatch.ml", line 24, characters 4-73:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (B|C))
+File "robustmatch.ml", line 29, characters 4-73:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, "")
+File "robustmatch.ml", line 40, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (B|C))
+File "robustmatch.ml", line 45, characters 4-87:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, (Y|Z))
+File "robustmatch.ml", line 51, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, (Y|Z))
+File "robustmatch.ml", line 62, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (B|C))
+File "robustmatch.ml", line 84, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, B)
+File "robustmatch.ml", line 106, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, B)
+File "robustmatch.ml", line 111, characters 4-87:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, Y)
+File "robustmatch.ml", line 117, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, Y)
+File "robustmatch.ml", line 122, characters 4-66:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, A)
+File "robustmatch.ml", line 131, characters 4-90:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, [| _ |])
+File "robustmatch.ml", line 137, characters 4-69:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, [| _ |])
+File "robustmatch.ml", line 142, characters 4-90:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, [| _ |])
+File "robustmatch.ml", line 152, characters 4-75:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, 'a')
+File "robustmatch.ml", line 161, characters 4-74:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, `B)
+File "robustmatch.ml", line 170, characters 4-89:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (3, "*"))
+File "robustmatch.ml", line 181, characters 4-113:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, {x=3; y="*"})
+File "robustmatch.ml", line 186, characters 4-113:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, {a=1; b="coucou"; c='b'})
+File "robustmatch.ml", line 195, characters 4-72:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, (3, "*"))
+File "robustmatch.ml", line 205, characters 4-82:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, {x=3; y="*"})
+File "robustmatch.ml", line 214, characters 4-71:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R1, R1, lazy 0)
+File "robustmatch.ml", line 223, characters 4-99:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(R2, R2, "")
