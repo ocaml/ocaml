@@ -1440,8 +1440,10 @@ let get_arg_lazy p rem = match p with
 
 let matcher_lazy p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
-| Tpat_var _          -> get_arg_lazy omega rem
-| _                   -> get_arg_lazy p rem
+| Tpat_any
+| Tpat_var _          -> omega :: rem
+| Tpat_lazy arg       -> arg :: rem
+| _                   -> raise NoMatch
 
 (* Inlining the tag tests before calling the primitive that works on
    lazy blocks. This is also used in translcore.ml.
