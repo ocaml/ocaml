@@ -1567,8 +1567,10 @@ let get_args_tuple arity p rem = match p with
 
 let matcher_tuple arity p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
-| Tpat_var _          -> get_args_tuple arity omega rem
-| _                   ->  get_args_tuple arity p rem
+| Tpat_any
+| Tpat_var _ -> omegas arity @ rem
+| Tpat_tuple args when List.length args = arity -> args @ rem
+| _ ->  raise NoMatch
 
 let make_tuple_matching loc arity def = function
     [] -> fatal_error "Matching.make_tuple_matching"
