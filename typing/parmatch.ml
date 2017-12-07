@@ -249,9 +249,9 @@ let simple_match p1 p2 =
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
-  | Tpat_tuple _, Tpat_tuple _ -> true
   | Tpat_lazy _, Tpat_lazy _ -> true
   | Tpat_record _ , Tpat_record _ -> true
+  | Tpat_tuple p1s, Tpat_tuple p2s
   | Tpat_array p1s, Tpat_array p2s -> List.length p1s = List.length p2s
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
