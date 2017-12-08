@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module C = Char;;
 C.chr 66;;
 

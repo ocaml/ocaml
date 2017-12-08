@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* Using generative functors *)
 
 (* Without type *)

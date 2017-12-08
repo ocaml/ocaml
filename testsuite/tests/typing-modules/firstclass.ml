@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module type S = sig type u type t end;;
 module type S' = sig type t = int type u = bool end;;
 
