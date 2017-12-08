@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module M = struct
   type 'a s = 'a
   type t = T : 'a s -> t

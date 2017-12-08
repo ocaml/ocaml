@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) t =
   | Nil : ('tl, 'tl) t
   | Cons : 'a * ('b, 'tl) t -> ('a * 'b, 'tl) t;;

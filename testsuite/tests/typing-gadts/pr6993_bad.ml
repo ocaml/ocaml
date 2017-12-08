@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) eqp = Y : ('a, 'a) eqp | N : string -> ('a, 'b) eqp
 let f : ('a list, 'a) eqp -> unit = function N s -> print_string s;;
 

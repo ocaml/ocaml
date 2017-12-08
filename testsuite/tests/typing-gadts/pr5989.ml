@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) t =
     Any : ('a, 'b) t
   | Eq : ('a, 'a) t

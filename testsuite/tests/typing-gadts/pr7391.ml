@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 class virtual child1 parent =
   object
     method private parent = parent

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type nonrec t = A : t;;
 [%%expect{|
 Line _, characters 16-21:

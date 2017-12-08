@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module Add (T : sig type two end) =
 struct
   type _ t =

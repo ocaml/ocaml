@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type ('env, 'a) var =
  | Zero : ('a * 'env, 'a) var
  | Succ : ('env, 'a) var -> ('b * 'env, 'a) var

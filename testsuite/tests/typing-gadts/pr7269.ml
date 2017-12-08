@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type s = [`A | `B] and sub = [`B];;
 type +'a t = T : [< `Conj of 'a & sub | `Other of string] -> 'a t;; (* ok *)
 

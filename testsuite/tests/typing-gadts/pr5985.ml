@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* Report from Jeremy Yallop *)
 module F (S : sig type 'a s end) = struct
   include S

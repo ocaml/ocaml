@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type empty = Empty and filled = Filled
 type ('a,'fout,'fin) opt =
   | N : ('a, 'f, 'f) opt

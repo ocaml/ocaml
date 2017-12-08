@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type ('a, 'b) eq = Refl : ('a, 'a) eq
 
 module type S = sig

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type +'a n = private int
 type nil = private Nil_type
 type (_,_) elt =
