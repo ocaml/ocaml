@@ -61,6 +61,10 @@ Working version
 - GPR#1431: remove ocamlrun dependencies on curses/terminfo/termcap C library
   (Xavier Leroy, review by Daniel Bünzli)
 
+- GPR#1478: The Spacetime profiler now works under Windows (but it is not yet
+  able to collect profiling information from C stubs).
+  (Nicolas Ojeda Bar, review by Xavier Leroy, Mark Shinwell)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested

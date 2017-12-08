@@ -53,6 +53,10 @@ ifeq "$(TOOLCHAIN)" "msvc"
 DFLAGS = $(CFLAGS) -DDEBUG
 PFLAGS=$(CFLAGS) -DPROFILING $(NATIVECCPROFOPTS)
 ASMOBJS=$(ARCH)nt.$(O)
+ASMFLAGS=
+ifeq ($(WITH_SPACETIME),true)
+ASMFLAGS=/DWITH_SPACETIME
+endif
 else
 DFLAGS = $(CFLAGS) -g -DDEBUG
 PFLAGS=$(CFLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS)
@@ -163,10 +167,10 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 	$(ASPP) $(ASPPFLAGS) $(SHAREDCCCOMPOPTS) -o $@ $<
 
 %.obj: %.asm
-	$(ASM)$@ $<
+	$(ASM)$@ $(ASMFLAGS) $<
 
 %.pic.obj: %.asm
-	$(ASM)$@ $<
+	$(ASM)$@ $(ASMFLAGS) $<
 
 .PHONY: clean
 clean:

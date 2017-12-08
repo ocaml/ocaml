@@ -596,7 +596,7 @@ module Heap_snapshot = struct
         (Array.of_list (List.rev snapshots)), List.rev events
 
     let read ~path =
-      let chn = open_in path in
+      let chn = open_in_bin path in
       let magic_number : int = Marshal.from_channel chn in
       let magic_number_base = magic_number land 0xffff_ffff in
       let version_number = (magic_number lsr 32) land 0xffff in
