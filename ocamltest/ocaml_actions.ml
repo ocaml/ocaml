@@ -79,6 +79,15 @@ let ocaml_dot_opt ocamlsrcdir =
 let cmpbyt ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "tools"; "cmpbyt"]
 
+let expect_program ocamlsrcdir =
+  Filename.make_path
+    [ocamlsrcdir; "testsuite"; "tools"; Filename.mkexe "expect_test"]
+
+let expect_command ocamlsrcdir =
+  let ocamlrun = ocamlrun ocamlsrcdir in
+  let expect_test = expect_program ocamlsrcdir in
+  ocamlrun ^ " " ^ expect_test
+
 let stdlib ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "stdlib"]
 
@@ -450,11 +459,51 @@ let ocamlopt_opt = Actions.make
   "ocamlopt.opt"
   (compile_test_program Builtin_variables.program2 ocamlopt_opt_compiler)
 
-let run_expect log env =
-  let newenv = Environments.apply_modifiers env Ocaml_modifiers.expect in
-  Actions_helpers.run_script log newenv
+let run_expect_once ocamlsrcdir input_file principal log env =
+  let expect_flags = try Sys.getenv "EXPECT_FLAGS" with Not_found -> "" in
+  let repo_root = "-repo-root " ^ ocamlsrcdir in
+  let principal_flag = if principal then "-principal" else "" in
+  let commandline =
+  [
+    expect_command ocamlsrcdir;
+    expect_flags;
+    flags env;
+    repo_root;
+    principal_flag;
+    input_file
+  ] in
+  let exit_status = Actions_helpers.run_cmd log env commandline in
+  if exit_status=0 then Pass env
+  else Fail (Actions_helpers.mkreason
+    "expect" (String.concat " " commandline) exit_status)
 
-let expect = Actions.make "expect" run_expect
+let run_expect_twice ocamlsrcdir input_file log env =
+  let corrected filename = Filename.make_filename filename "corrected" in
+  let first_run = run_expect_once ocamlsrcdir input_file false log env in
+  match first_run with
+    | Pass env1 ->
+      let intermediate_file = corrected input_file in
+      let second_run =
+        run_expect_once ocamlsrcdir intermediate_file true log env1 in
+      (match second_run with
+      | Pass env2 ->
+        let output_file = corrected intermediate_file in
+        let output_env = Environments.add_bindings
+        [
+          Builtin_variables.reference, input_file;
+          Builtin_variables.output, output_file
+        ] env2 in
+        Pass output_env
+      | Skip _ | Fail _ -> second_run
+      )
+    | Skip _ | Fail _ -> first_run
+
+let run_expect log env =
+  let ocamlsrcdir = ocamlsrcdir () in
+  let input_file = Actions_helpers.testfile env in
+  run_expect_twice ocamlsrcdir input_file log env
+
+let run_expect = Actions.make "run-expect" run_expect
 
 let make_check_compiler_output name compiler = Actions.make
   name
@@ -640,7 +689,7 @@ let _ =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
-    expect;
+    run_expect;
     compare_bytecode_programs;
     compare_native_programs;
     setup_ocaml_build_env;

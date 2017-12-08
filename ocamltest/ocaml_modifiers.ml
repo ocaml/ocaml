@@ -18,12 +18,6 @@
 open Ocamltest_stdlib
 open Environments
 
-let expect =
-[
-  Add (Builtin_variables.script,
-    "bash ${OCAMLSRCDIR}/testsuite/tools/expect");
-]
-
 let principal =
 [
   Append (Ocaml_variables.flags, " -principal ");
@@ -57,18 +51,19 @@ let bigarray =
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
+let compilerlibs_subdirs =
+[
+  "utils"; "parsing"; "typing"; "bytecomp"; "compilerlibs";
+]
+
+let add_compiler_subdir subdir =
+  Append (Ocaml_variables.directories, (wrap (compiler_subdir [subdir])))
+
 let ocamlcommon =
-  [
-    Append (Ocaml_variables.directories, wrap (compiler_subdir ["utils"]));
-    Append (Ocaml_variables.directories, wrap (compiler_subdir ["parsing"]));
-    Append (Ocaml_variables.directories, wrap (compiler_subdir ["typing"]));
-    Append (Ocaml_variables.directories, wrap (compiler_subdir ["bytecomp"]));
-    Append (Ocaml_variables.directories, wrap (compiler_subdir ["compilerlibs"]));
-    Append (Ocaml_variables.libraries, wrap "ocamlcommon");
-  ]
+  (Append (Ocaml_variables.libraries, wrap "ocamlcommon")) ::
+  (List.map add_compiler_subdir compilerlibs_subdirs)
 
 let _ =
-  register_modifiers "expect" expect;
   register_modifiers "principal" principal;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
