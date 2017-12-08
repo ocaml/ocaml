@@ -1,3 +1,7 @@
+(* TEST
+  * expect
+*)
+
 type t = (unit, unit, unit, unit) bar
 ;;
 (* PR#7315: we expect the error location on "bar" instead of "(...) bar" *)
