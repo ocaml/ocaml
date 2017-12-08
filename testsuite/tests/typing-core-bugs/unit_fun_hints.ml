@@ -1,3 +1,8 @@
+(* TEST
+   flags = "-strict-sequence"
+   * expect
+*)
+
 let g f = f ()
 let _ = g 3;;       (* missing `fun () ->' *)
 
