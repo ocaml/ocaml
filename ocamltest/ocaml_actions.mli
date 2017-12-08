@@ -36,3 +36,6 @@ val check_ocaml_output : Actions.t
 val setup_ocamlnat_build_env : Actions.t
 val ocamlnat : Actions.t
 val check_ocamlnat_output : Actions.t
+
+val flat_float_array : Actions.t
+val no_flat_float_array : Actions.t

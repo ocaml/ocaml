@@ -672,6 +672,28 @@ let config_variables _log env = Environments.add_bindings
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
+let flat_float_array = Actions.make
+  "flat-float-array"
+  (fun log env ->
+    if Ocamltest_config.flat_float_array then
+    begin
+      Printf.fprintf log
+        "The flat-float-array action succeeds.\n%!";
+      Pass env
+    end else
+      Skip "Compiler configured with -no-flat-float-array.")
+
+let no_flat_float_array = make
+  "no-flat-float-array"
+  (fun log env ->
+    if not Ocamltest_config.flat_float_array then
+    begin
+      Printf.fprintf log
+        "The no-flat-float-array action succeeds.\n%!";
+      Pass env
+    end else
+      Skip "The compiler has been configured with -flat-float-array.")
+
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;
   Environments.register_initializer "config_variables" config_variables;
@@ -698,4 +720,6 @@ let _ =
     setup_ocamlnat_build_env;
     ocamlnat;
     check_ocamlnat_output;
+    flat_float_array;
+    no_flat_float_array;
   ]

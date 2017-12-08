@@ -24,7 +24,6 @@ val unix : bool
 val c_preprocessor : string
 (** Command to use to invoke the C preprocessor *)
 
-
 val ocamlc_default_flags : string
 (** Flags passed by default to ocamlc.byte and ocamlc.opt *)
 
@@ -39,3 +38,6 @@ val flambda : bool
 
 val safe_string : bool
 (** Whether the compiler was configured with -safe-string *)
+
+val flat_float_array : bool
+(* Whether the compiler was configured with -flat-float-array *)
