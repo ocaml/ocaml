@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 [@@@ocaml.warning "+3"];;
 
 module X: sig
