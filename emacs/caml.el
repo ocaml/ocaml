@@ -75,179 +75,179 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-apply-extra-indent)
 
 (defvar caml-begin-indent 2
-  "*How many spaces to indent from a begin keyword in caml mode.")
+  "*How many spaces to indent from a \"begin\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-begin-indent)
 
 (defvar caml-class-indent 2
-  "*How many spaces to indent from a class keyword in caml mode.")
+  "*How many spaces to indent from a \"class\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-class-indent)
 
 (defvar caml-exception-indent 2
-  "*How many spaces to indent from an exception keyword in caml mode.")
+  "*How many spaces to indent from an \"exception\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-exception-indent)
 
 (defvar caml-for-indent 2
-  "*How many spaces to indent from a for keyword in caml mode.")
+  "*How many spaces to indent from a \"for\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-for-indent)
 
 (defvar caml-fun-indent 2
-  "*How many spaces to indent from a fun keyword in caml mode.")
+  "*How many spaces to indent from a \"fun\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-fun-indent)
 
 (defvar caml-function-indent 4
-  "*How many spaces to indent from a function keyword in caml mode.")
+  "*How many spaces to indent from a \"function\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-function-indent)
 
 (defvar caml-if-indent  2
-  "*How many spaces to indent from an if keyword in caml mode.")
+  "*How many spaces to indent from an \"if\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-if-indent)
 
 (defvar caml-if-else-indent 0
-  "*How many spaces to indent from an if .. else line in caml mode.")
+  "*How many spaces to indent from an \"if .. else\" line in caml mode.")
 (make-variable-buffer-local 'caml-if-else-indent)
 
 (defvar caml-inherit-indent 2
-  "*How many spaces to indent from an inherit keyword in caml mode.")
+  "*How many spaces to indent from an \"inherit\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-inherit-indent)
 
 (defvar caml-initializer-indent 2
-  "*How many spaces to indent from an initializer keyword in caml mode.")
+  "*How many spaces to indent from an \"initializer\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-initializer-indent)
 
 (defvar caml-include-indent 2
-  "*How many spaces to indent from an include keyword in caml mode.")
+  "*How many spaces to indent from an \"include\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-include-indent)
 
 (defvar caml-let-indent 2
-  "*How many spaces to indent from a let keyword in caml mode.")
+  "*How many spaces to indent from a \"let\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-let-indent)
 
 (defvar caml-let-in-indent 0
-  "*How many spaces to indent from a let .. in keyword in caml mode.")
+  "*How many spaces to indent from a \"let .. in\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-let-in-indent)
 
 (defvar caml-match-indent 2
-  "*How many spaces to indent from a match keyword in caml mode.")
+  "*How many spaces to indent from a \"match\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-match-indent)
 
 (defvar caml-method-indent 2
-  "*How many spaces to indent from a method keyword in caml mode.")
+  "*How many spaces to indent from a \"method\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-method-indent)
 
 (defvar caml-module-indent 2
-  "*How many spaces to indent from a module keyword in caml mode.")
+  "*How many spaces to indent from a \"module\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-module-indent)
 
 (defvar caml-object-indent 2
-  "*How many spaces to indent from an object keyword in caml mode.")
+  "*How many spaces to indent from an \"object\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-object-indent)
 
 (defvar caml-of-indent 2
-  "*How many spaces to indent from an of keyword in caml mode.")
+  "*How many spaces to indent from an \"of\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-of-indent)
 
 (defvar caml-parser-indent 4
-  "*How many spaces to indent from a parser keyword in caml mode.")
+  "*How many spaces to indent from a \"parser\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-parser-indent)
 
 (defvar caml-sig-indent 2
-  "*How many spaces to indent from a sig keyword in caml mode.")
+  "*How many spaces to indent from a \"sig\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-sig-indent)
 
 (defvar caml-struct-indent 2
-  "*How many spaces to indent from a struct keyword in caml mode.")
+  "*How many spaces to indent from a \"struct\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-struct-indent)
 
 (defvar caml-try-indent 2
-  "*How many spaces to indent from a try keyword in caml mode.")
+  "*How many spaces to indent from a \"try\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-try-indent)
 
 (defvar caml-type-indent 4
-  "*How many spaces to indent from a type keyword in caml mode.")
+  "*How many spaces to indent from a \"type\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-type-indent)
 
 (defvar caml-val-indent 2
-  "*How many spaces to indent from a val keyword in caml mode.")
+  "*How many spaces to indent from a \"val\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-val-indent)
 
 (defvar caml-while-indent 2
-  "*How many spaces to indent from a while keyword in caml mode.")
+  "*How many spaces to indent from a \"while\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-while-indent)
 
 (defvar caml-::-indent  2
-  "*How many spaces to indent from a :: operator in caml mode.")
+  "*How many spaces to indent from a \"::\" operator in caml mode.")
 (make-variable-buffer-local 'caml-::-indent)
 
 (defvar caml-@-indent   2
-  "*How many spaces to indent from a @ operator in caml mode.")
+  "*How many spaces to indent from a \"@\" operator in caml mode.")
 (make-variable-buffer-local 'caml-@-indent)
 
 (defvar caml-:=-indent  2
-  "*How many spaces to indent from a := operator in caml mode.")
+  "*How many spaces to indent from a \":=\" operator in caml mode.")
 (make-variable-buffer-local 'caml-:=-indent)
 
 (defvar caml-<--indent  2
-  "*How many spaces to indent from a <- operator in caml mode.")
+  "*How many spaces to indent from a \"<-\" operator in caml mode.")
 (make-variable-buffer-local 'caml-<--indent)
 
 (defvar caml-->-indent  2
-  "*How many spaces to indent from a -> operator in caml mode.")
+  "*How many spaces to indent from a \"->\" operator in caml mode.")
 (make-variable-buffer-local 'caml-->-indent)
 
 (defvar caml-lb-indent 2
-  "*How many spaces to indent from a \[ operator in caml mode.")
+  "*How many spaces to indent from a \"\[\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lb-indent)
 
 (defvar caml-lc-indent 2
-  "*How many spaces to indent from a \{ operator in caml mode.")
+  "*How many spaces to indent from a \"\{\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lc-indent)
 
 (defvar caml-lp-indent  1
-  "*How many spaces to indent from a \( operator in caml mode.")
+  "*How many spaces to indent from a \"\(\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lp-indent)
 
 (defvar caml-and-extra-indent nil
-  "*Extra indent for caml lines starting with the and keyword.
+  "*Extra indent for caml lines starting with the \"and\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-and-extra-indent)
 
 (defvar caml-do-extra-indent nil
-  "*Extra indent for caml lines starting with the do keyword.
+  "*Extra indent for caml lines starting with the \"do\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-do-extra-indent)
 
 (defvar caml-done-extra-indent nil
-  "*Extra indent for caml lines starting with the done keyword.
+  "*Extra indent for caml lines starting with the \"done\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-done-extra-indent)
 
 (defvar caml-else-extra-indent nil
-  "*Extra indent for caml lines starting with the else keyword.
+  "*Extra indent for caml lines starting with the \"else\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-else-extra-indent)
 
 (defvar caml-end-extra-indent nil
-  "*Extra indent for caml lines starting with the end keyword.
+  "*Extra indent for caml lines starting with the \"end\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-end-extra-indent)
 
 (defvar caml-in-extra-indent nil
-  "*Extra indent for caml lines starting with the in keyword.
+  "*Extra indent for caml lines starting with the \"in\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-in-extra-indent)
 
 (defvar caml-then-extra-indent nil
-  "*Extra indent for caml lines starting with the then keyword.
+  "*Extra indent for caml lines starting with the \"then\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-then-extra-indent)
 
 (defvar caml-to-extra-indent -1
-  "*Extra indent for caml lines starting with the to keyword.
+  "*Extra indent for caml lines starting with the \"to\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-to-extra-indent)
 
 (defvar caml-with-extra-indent nil
-  "*Extra indent for caml lines starting with the with keyword.
+  "*Extra indent for caml lines starting with the \"with\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-with-extra-indent)
 
