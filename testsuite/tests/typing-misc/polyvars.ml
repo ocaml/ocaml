@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type ab = [ `A | `B ];;
 let f (x : [`A]) = match x with #ab -> 1;;
 [%%expect{|

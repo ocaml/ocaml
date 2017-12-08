@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#7012 *)
 
 type t = [ 'A_name | `Hi ];;

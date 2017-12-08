@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#5907 *)
 
 type 'a t = 'a;;
