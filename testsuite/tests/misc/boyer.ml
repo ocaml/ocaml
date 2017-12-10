@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Manipulations over terms *)
 
 type term =

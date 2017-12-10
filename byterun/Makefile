@@ -49,7 +49,17 @@ endif
 # On Windows, OCAML_STDLIB_DIR needs to be defined dynamically
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
-CFLAGS += -DOCAML_STDLIB_DIR='"$(LIBDIR)"'
+# OCAML_STDLIB_DIR needs to arrive in dynlink.c as a string which both gcc and
+# msvc are willing parse without warning. This means we can't pass UTF-8
+# directly since, as far as I can tell, cl can cope, but the pre-processor
+# can't. So the string needs to be directly translated to L"" form. To do this,
+# we take advantage of the fact that Cygwin uses GNU libiconv which includes a
+# Java pseudo-encoding which translates any UTF-8 sequences to \uXXXX (and,
+# unlike the C99 pseudo-encoding, emits two surrogate values when needed, rather
+# than \UXXXXXXXX). The \u is then translated to \x in order to accommodate
+# pre-Visual Studio 2013 compilers where \x is a non-standard alias for \u.
+OCAML_STDLIB_DIR = $(shell echo $(LIBDIR)| iconv -t JAVA | sed -e 's/\\u/\\x/g')
+CFLAGS += -DOCAML_STDLIB_DIR='L"$(OCAML_STDLIB_DIR)"'
 endif
 
 CFLAGS += $(IFLEXDIR)
@@ -79,7 +89,7 @@ endif
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
+  signals.c str.c sys.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
 OBJS=$(addsuffix .$(O), \
@@ -87,7 +97,7 @@ OBJS=$(addsuffix .$(O), \
   freelist major_gc minor_gc memory alloc roots globroots \
   fail signals signals_byt printexc backtrace_prim backtrace \
   compare ints floats str array io extern intern \
-  hash sys meta parsing gc_ctrl terminfo md5 obj \
+  hash sys meta parsing gc_ctrl md5 obj \
   lexing callback debugger weak compact finalise custom \
   dynlink spacetime afl $(UNIX_OR_WIN32) bigarray main)
 

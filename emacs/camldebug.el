@@ -99,7 +99,7 @@ The following commands are available:
 the last line referred to in the camldebug buffer.
 
 \\[camldebug-step], \\[camldebug-back] and \\[camldebug-next], in the camldebug
-window,call camldebug to step, backstep or next and then update the other window
+window, call camldebug to step, backstep or next and then update the other window
 with the current file and position.
 
 If you are in a source file, you may select a point to break

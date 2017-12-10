@@ -101,7 +101,7 @@ on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes \
     > /dev/null && CheckNoChangesMessage || echo pass
 }
 

@@ -48,7 +48,65 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 (* Compatibility check *)
 (***********************)
 
-(* p and q compatible means, there exists V that matches both *)
+(* Patterns p and q compatible means:
+   there exists value V that matches both, However....
+
+  The case of extension types is dubious, as constructor rebind permits
+  that different constructors are the same (and are thus compatible).
+
+  Compilation must take this into account, consider:
+
+  type t = ..
+  type t += A|B
+  type t += C=A
+
+  let f x y = match x,y with
+  | true,A  -> '1'
+  | _,C     -> '2'
+  | false,A -> '3'
+  | _,_     -> '_'
+
+  As C is bound to A the value of f false A is '2' (and not '3' as it would
+  be in the absence of rebinding).
+
+  Not considering rebinding, patterns "false,A" and "_,C" are incompatible
+  and the compiler can swap the second and third clause, resulting in the
+  (more efficiently compiled) matching
+
+  match x,y with
+  | true,A  -> '1'
+  | false,A -> '3'
+  | _,C     -> '2'
+  | _,_     -> '_'
+
+  This is not correct: when C is bound to A, "f false A" returns '2' (not '3')
+
+
+  However, diagnostics do not take constructor rebinding into account.
+  Notice, that due to module abstraction constructor rebinding is hidden.
+
+  module X : sig type t = .. type t += A|B end = struct
+    type t = ..
+    type t += A
+    type t += B=A
+  end
+
+  open X
+
+  let f x = match x with
+  | A -> '1'
+  | B -> '2'
+  | _ -> '_'
+
+  The second clause above will NOT (and cannot) be flagged as useless.
+
+  Finally, there are two compatibility fonction
+   compat p q      ---> 'syntactic compatibility, used for diagnostics.
+   may_compat p q --->   a safe approximation of possible compat,
+                         for compilation
+
+*)
+
 
 let is_absent tag row = Btype.row_field tag !row = Rabsent
 
@@ -62,7 +120,14 @@ let const_compare x y =
       Pervasives.compare (float_of_string f1) (float_of_string f2)
   | Const_string (s1, _), Const_string (s2, _) ->
       String.compare s1 s2
-  | _, _ -> Pervasives.compare x y
+  | (Const_int _
+    |Const_char _
+    |Const_string (_, _)
+    |Const_float _
+    |Const_int32 _
+    |Const_int64 _
+    |Const_nativeint _
+    ), _ -> Pervasives.compare x y
 
 let records_args l1 l2 =
   (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
@@ -80,38 +145,67 @@ let records_args l1 l2 =
   combine [] [] l1 l2
 
 
-let rec compat p q =
-  match p.pat_desc,q.pat_desc with
+
+module Compat
+    (Constr:sig
+      val equal :
+          Types.constructor_description ->
+            Types.constructor_description ->
+              bool
+    end) = struct
+
+  let rec compat p q = match p.pat_desc,q.pat_desc with
+(* Variables match any value *)
+  | ((Tpat_any|Tpat_var _),_)
+  | (_,(Tpat_any|Tpat_var _)) -> true
+(* Structural induction *)
   | Tpat_alias (p,_,_),_      -> compat p q
   | _,Tpat_alias (q,_,_)      -> compat p q
-  | (Tpat_any|Tpat_var _),_ -> true
-  | _,(Tpat_any|Tpat_var _) -> true
-  | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
-  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2
-  | Tpat_constant c1, Tpat_constant c2 -> const_compare c1 c2 = 0
+  | Tpat_or (p1,p2,_),_ ->
+      (compat p1 q || compat p2 q)
+  | _,Tpat_or (q1,q2,_) ->
+      (compat p q1 || compat p q2)
+(* Constructors, with special case for extension *)
+  | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
+      Constr.equal c1 c2 && compats ps1 ps2
+(* More standard stuff *)
+  | Tpat_variant(l1,op1, _), Tpat_variant(l2,op2,_) ->
+      l1=l2 && ocompat op1 op2
+  | Tpat_constant c1, Tpat_constant c2 ->
+      const_compare c1 c2 = 0
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
-  | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
-  | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
-      l1=l2 && compat p1 p2
-  | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
-      l1 = l2
-  | Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
-  | Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
   | Tpat_record (l1,_),Tpat_record (l2,_) ->
       let ps,qs = records_args l1 l2 in
       compats ps qs
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
-  | _,_  ->
-      assert false
+  | _,_  -> assert false (* By typing *)
 
-and compats ps qs = match ps,qs with
-| [], [] -> true
-| p::ps, q::qs -> compat p q && compats ps qs
-| _,_    -> assert false
+  and ocompat op oq = match op,oq with
+  | None,None -> true
+  | Some p,Some q -> compat p q
+  | (None,Some _)|(Some _,None) -> false
+
+  and compats ps qs = match ps,qs with
+  | [], [] -> true
+  | p::ps, q::qs -> compat p q && compats ps qs
+  | _,_    -> assert false (* By typing *)
+
+end
+
+module SyntacticCompat =
+  Compat
+    (struct
+      let equal c1 c2 =  Types.equal_tag c1.cstr_tag c2.cstr_tag
+    end)
+
+let compat =  SyntacticCompat.compat
+and compats = SyntacticCompat.compats
+
+(* Due to (potential) rebinding, two extension constructors
+   of the same arity type may equal *)
 
 exception Empty (* Empty pattern *)
 
@@ -142,152 +236,6 @@ let get_constructor_type_path ty tenv =
   match ty.desc with
   | Tconstr (path,_,_) -> Ok path
   | _ -> Inconsistent_environment
-
-(*************************************)
-(* Values as patterns pretty printer *)
-(*************************************)
-
-open Format
-;;
-
-let is_cons = function
-| {cstr_name = "::"} -> true
-| _ -> false
-
-let pretty_const c = match c with
-| Const_int i -> Printf.sprintf "%d" i
-| Const_char c -> Printf.sprintf "%C" c
-| Const_string (s, _) -> Printf.sprintf "%S" s
-| Const_float f -> Printf.sprintf "%s" f
-| Const_int32 i -> Printf.sprintf "%ldl" i
-| Const_int64 i -> Printf.sprintf "%LdL" i
-| Const_nativeint i -> Printf.sprintf "%ndn" i
-
-let rec pretty_val ppf v =
-  match v.pat_extra with
-      (cstr, _loc, _attrs) :: rem ->
-        begin match cstr with
-          | Tpat_unpack ->
-            fprintf ppf "@[(module %a)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_constraint _ ->
-            fprintf ppf "@[(%a : _)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_type _ ->
-            fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
-          | Tpat_open _ ->
-              fprintf ppf "@[(# %a)@]" pretty_val { v with pat_extra = rem }
-        end
-    | [] ->
-  match v.pat_desc with
-  | Tpat_any -> fprintf ppf "_"
-  | Tpat_var (x,_) -> fprintf ppf "%s" (Ident.name x)
-  | Tpat_constant c -> fprintf ppf "%s" (pretty_const c)
-  | Tpat_tuple vs ->
-      fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
-  | Tpat_construct (_, cstr, []) ->
-      fprintf ppf "%s" cstr.cstr_name
-  | Tpat_construct (_, cstr, [w]) ->
-      fprintf ppf "@[<2>%s@ %a@]" cstr.cstr_name pretty_arg w
-  | Tpat_construct (_, cstr, vs) ->
-      let name = cstr.cstr_name in
-      begin match (name, vs) with
-        ("::", [v1;v2]) ->
-          fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
-      |  _ ->
-          fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
-      end
-  | Tpat_variant (l, None, _) ->
-      fprintf ppf "`%s" l
-  | Tpat_variant (l, Some w, _) ->
-      fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
-  | Tpat_record (lvs,_) ->
-      let filtered_lvs = List.filter
-          (function
-            | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
-            | _ -> true) lvs in
-      begin match filtered_lvs with
-      | [] -> fprintf ppf "_"
-      | (_, lbl, _) :: q ->
-          let elision_mark ppf =
-            (* we assume that there is no label repetitions here *)
-             if Array.length lbl.lbl_all > 1 + List.length q then
-               fprintf ppf ";@ _@ "
-             else () in
-          fprintf ppf "@[{%a%t}@]"
-            pretty_lvals filtered_lvs elision_mark
-      end
-  | Tpat_array vs ->
-      fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
-  | Tpat_lazy v ->
-      fprintf ppf "@[<2>lazy@ %a@]" pretty_arg v
-  | Tpat_alias (v, x,_) ->
-      fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
-  | Tpat_or (v,w,_)    ->
-      fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
-
-and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [_ ; _])
-    when is_cons cstr ->
-      fprintf ppf "(%a)" pretty_val v
-| _ -> pretty_val ppf v
-
-and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct (_,cstr, [v1 ; v2])
-    when is_cons cstr ->
-      fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
-| _ -> pretty_val ppf v
-
-and pretty_arg ppf v = match v.pat_desc with
-| Tpat_construct (_,_,_::_)
-| Tpat_variant (_, Some _, _) -> fprintf ppf "(%a)" pretty_val v
-|  _ -> pretty_val ppf v
-
-and pretty_or ppf v = match v.pat_desc with
-| Tpat_or (v,w,_) ->
-    fprintf ppf "%a|@,%a" pretty_or v pretty_or w
-| _ -> pretty_val ppf v
-
-and pretty_vals sep ppf = function
-  | [] -> ()
-  | [v] -> pretty_val ppf v
-  | v::vs ->
-      fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
-
-and pretty_lvals ppf = function
-  | [] -> ()
-  | [_,lbl,v] ->
-      fprintf ppf "%s=%a" lbl.lbl_name pretty_val v
-  | (_, lbl,v)::rest ->
-      fprintf ppf "%s=%a;@ %a"
-        lbl.lbl_name pretty_val v pretty_lvals rest
-
-let top_pretty ppf v =
-  fprintf ppf "@[%a@]@?" pretty_val v
-
-
-let pretty_pat p =
-  top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
-
-type matrix = pattern list list
-
-let pretty_line ps =
-  List.iter
-    (fun p ->
-      top_pretty Format.str_formatter p ;
-      prerr_string " <" ;
-      prerr_string (Format.flush_str_formatter ()) ;
-      prerr_string ">")
-    ps
-
-let pretty_matrix (pss : matrix) =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun ps ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
-
 
 (****************************)
 (* Utilities for matching   *)
@@ -330,19 +278,6 @@ let extract_fields omegas arg =
         get_field lbl.lbl_pos arg
       with Not_found -> omega)
     omegas
-
-let all_record_args lbls = match lbls with
-| (_,{lbl_all=lbl_all},_)::_ ->
-    let t =
-      Array.map
-        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
-        lbl_all in
-    List.iter
-      (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
-      lbls ;
-    Array.to_list t
-|  _ -> fatal_error "Parmatch.all_record_args"
-
 
 (* Build argument list when p2 >= p1, where p1 is a simple pattern *)
 let rec simple_match_args p1 p2 = match p2.pat_desc with
@@ -394,41 +329,71 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_lazy omega) q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
 
-(*
-  Build normalized (cf. supra) discriminating pattern,
-  in the non-data type case
+(* Consider a pattern matrix whose first column has been simplified
+   to contain only _ or a head constructor
+     | p1, r1...
+     | p2, r2...
+     | p3, r3...
+     | ...
+
+   We build a normalized /discriminating/ pattern from a pattern [q] by folding
+   over the first column of the matrix, "refining" [q] as we go:
+
+   - when we encounter a row starting with [Tpat_tuple] or [Tpat_lazy] then we
+   can stop and return that pattern, as we cannot refine any further. Indeed,
+   these constructors are alone in their signature, so they will subsume
+   whatever other pattern we might find, as well as the pattern we're threading
+   along.
+
+   - when we find a [Tpat_record] then it is a bit more involved: it is also
+   alone in its signature, however it might only be matching a subset of the
+   record fields. We use these fields to refine our accumulator and keep going
+   as another row might match on different fields.
+
+   - rows starting with a wildcard do not bring any information, so we ignore
+   them and keep going
+
+   - if we encounter anything else (i.e. any other constructor), then we just
+   stop and return our accumulator.
 *)
-
 let discr_pat q pss =
-
-  let rec acc_pat acc pss = match pss with
-    ({pat_desc = Tpat_alias (p,_,_)}::ps)::pss ->
-        acc_pat acc ((p::ps)::pss)
-  | ({pat_desc = Tpat_or (p1,p2,_)}::ps)::pss ->
-        acc_pat acc ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var _)}::_)::pss ->
-        acc_pat acc pss
-  | (({pat_desc = Tpat_tuple _} as p)::_)::_ -> normalize_pat p
-  | (({pat_desc = Tpat_lazy _} as p)::_)::_ -> normalize_pat p
-  | (({pat_desc = Tpat_record (largs,closed)} as p)::_)::pss ->
-      let new_omegas =
-        List.fold_right
-          (fun (lid, lbl,_) r ->
-            try
-              let _ = get_field lbl.lbl_pos r in
-              r
-            with Not_found ->
-              (lid, lbl,omega)::r)
-          largs (record_arg acc)
-      in
-      acc_pat
-        (make_pat (Tpat_record (new_omegas, closed)) p.pat_type p.pat_env)
-        pss
-  | _ -> acc in
-
-  match normalize_pat q with
-  | {pat_desc= (Tpat_any | Tpat_record _)} as q -> acc_pat q pss
-  | q -> q
+  let rec refine_pat acc = function
+    | [] -> acc
+    | (head, _) :: rows ->
+      match head.pat_desc with
+      | Tpat_or _ | Tpat_var _ | Tpat_alias _ -> assert false
+      | Tpat_any -> refine_pat acc rows
+      | Tpat_tuple _ | Tpat_lazy _ -> normalize_pat head
+      | Tpat_record (largs, closed) ->
+        (* N.B. we could make this case "simpler" by refining the record case
+           using [all_record_args].
+           In which case we wouldn't need to fold over the first column for
+           records.
+           However it makes the witness we generate for the exhaustivity warning
+           less pretty. *)
+        let new_omegas =
+          List.fold_right
+            (fun (lid, lbl,_) r ->
+               try
+                 let _ = get_field lbl.lbl_pos r in
+                 r
+               with Not_found ->
+                 (lid, lbl,omega)::r)
+            largs (record_arg acc)
+        in
+        let new_acc =
+          make_pat (Tpat_record (new_omegas, closed)) head.pat_type head.pat_env
+        in
+        refine_pat new_acc rows
+      | _ -> acc
+  in
+  let q = normalize_pat q in
+  (* short-circuiting: clearly if we have anything other than [Tpat_record] or
+     [Tpat_any] to start with, we're not going to be able refine at all. So
+     there's no point going over the matrix. *)
+  match q.pat_desc with
+  | Tpat_any | Tpat_record _ -> refine_pat q pss
+  | _ -> q
 
 (*
    In case a matching value is found, set actual arguments
@@ -497,111 +462,173 @@ let do_set_args erase_mutable q r = match q with
 let set_args q r = do_set_args false q r
 and set_args_erase_mutable q r = do_set_args true q r
 
-(* filter pss according to pattern q *)
-let filter_one q pss =
+(* Given a matrix of non-empty rows
+   p1 :: r1...
+   p2 :: r2...
+   p3 :: r3...
+
+   Simplify the first column [p1 p2 p3] by splitting all or-patterns.
+   The result is a list of couples
+     (simple pattern, rest of row)
+   where a "simple pattern" starts with either the catch-all pattern omega (_)
+   or a head constructor.
+
+   For example,
+     x :: r1
+     (Some _) as y :: r2
+     (None as x) as y :: r3
+     (Some x | (None as x)) :: r4
+   becomes
+     (_, r1)
+     (Some _, r2)
+     (None, r3)
+     (Some x, r4)
+     (None, r4)
+ *)
+let rec simplify_first_col = function
+  | [] -> []
+  | [] :: _ -> assert false (* the rows are non-empty! *)
+  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+
+and simplify_head_pat p ps k =
+  match p.pat_desc with
+  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+  | Tpat_var (_,_) -> (omega, ps) :: k
+  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+  | _ -> (p, ps) :: k
+
+
+(* Builds the specialized matrix of [pss] according to pattern [q].
+   See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
+
+   NOTES:
+   - expects [pss] to be a "simplified matrix", cf. [simplify_first_col]
+   - [q] was produced by [discr_pat]
+   - we are polymorphic on the type of matrices we work on, in particular a row
+   might not simply be a [pattern list]. That's why we have the [extend_row]
+   parameter.
+*)
+let build_specialized_submatrix ~extend_row q pss =
   let rec filter_rec = function
-      ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-        filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-        filter_rec ((p1::ps)::(p2::ps)::pss)
-    | (p::ps)::pss ->
+    | ({pat_desc = (Tpat_alias _ | Tpat_or _ | Tpat_var _) }, _) :: _ ->
+        assert false
+    | (p, ps) :: pss ->
         if simple_match q p
-        then (simple_match_args q p @ ps) :: filter_rec pss
+        then extend_row (simple_match_args q p) ps :: filter_rec pss
         else filter_rec pss
     | _ -> [] in
   filter_rec pss
 
-(*
-  Filter pss in the ``extra case''. This applies :
-  - According to an extra constructor (datatype case, non-complete signature).
-  - According to anything (all-variables case).
+(* The "default" and "specialized" matrices of a given matrix.
+   See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf .
 *)
-let filter_extra pss =
-  let rec filter_rec = function
-      ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-        filter_rec ((p::ps)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-        filter_rec ((p1::ps)::(p2::ps)::pss)
-    | ({pat_desc = (Tpat_any | Tpat_var(_))} :: qs) :: pss ->
-        qs :: filter_rec pss
-    | _::pss  -> filter_rec pss
-    | [] -> [] in
-  filter_rec pss
+type 'matrix specialized_matrices = {
+  default : 'matrix;
+  constrs : (pattern * 'matrix) list;
+}
 
-(*
-  Pattern p0 is the discriminating pattern,
-  returns [(q0,pss0) ; ... ; (qn,pssn)]
-  where the qi's are simple patterns and the pssi's are
-  matched matrices.
+(* Consider a pattern matrix whose first column has been simplified
+   to contain only _ or a head constructor
+     | p1, r1...
+     | p2, r2...
+     | p3, r3...
+     | ...
 
-  NOTES
-   * (qi,[]) is impossible.
-   * In the case when matching is useless (all-variable case),
-     returns []
+   We split this matrix into a list of /specialized/ sub-matrices, one for
+   each head constructor appearing in the first column. For each row whose
+   first column starts with a head constructor, remove this head
+   column, prepend one column for each argument of the constructor,
+   and add the resulting row in the sub-matrix corresponding to this
+   head constructor.
+
+   Rows whose left column is omega (the Any pattern _) may match any
+   head constructor, so they are added to all sub-matrices.
+
+   In the case where all the rows in the matrix have an omega on their first
+   column, then there is only one /specialized/ sub-matrix, formed of all these
+   omega rows.
+   This matrix is also called the /default/ matrix.
+
+   See the documentation of [build_specialized_submatrix] for an explanation of
+   the [extend_row] parameter.
 *)
+let build_specialized_submatrices ~extend_row q rows =
+  let extend_group discr p r rs =
+    let r = extend_row (simple_match_args discr p) r in
+    (discr, r :: rs)
+  in
 
-let filter_all pat0 pss =
+  (* insert a row of head [p] and rest [r] into the right group *)
+  let rec insert_constr p r = function
+    | [] ->
+      (* if no group matched this row, it has a head constructor that
+         was never seen before; add a new sub-matrix for this head *)
+      [extend_group (normalize_pat p) p r []]
+    | (q0,rs) as bd::env ->
+      if simple_match q0 p
+      then extend_group q0 p r rs :: env
+      else bd :: insert_constr p r env
+  in
 
-  let rec insert q qs env =
-    match env with
-      [] ->
-        let q0 = normalize_pat q in
-        [q0, [simple_match_args q0 q @ qs]]
-    | ((q0,pss) as c)::env ->
-        if simple_match q0 q
-        then (q0, ((simple_match_args q0 q @ qs) :: pss)) :: env
-        else c :: insert q qs env in
+  (* insert a row of head omega into all groups *)
+  let insert_omega r env =
+    List.map (fun (q0,rs) -> extend_group q0 omega r rs) env
+  in
 
-  let rec filter_rec env = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      filter_rec env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      filter_rec env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))}::_)::pss ->
-      filter_rec env pss
-  | (p::ps)::pss ->
-      filter_rec (insert p ps env) pss
-  | _ -> env
+  let rec form_groups constr_groups omega_tails = function
+    | [] -> (constr_groups, omega_tails)
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
+    | ({pat_desc=Tpat_any}, tail) :: rest ->
+       (* note that calling insert_omega here would be wrong
+          as some groups may not have been formed yet, if the
+          first row with this head pattern comes after in the list *)
+       form_groups constr_groups (tail :: omega_tails) rest
+    | (p,r) :: rest ->
+      form_groups (insert_constr p r constr_groups) omega_tails rest
+  in
 
-  and filter_omega env = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      filter_omega env ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      filter_omega env ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))}::ps)::pss ->
-      filter_omega
-        (List.map (fun (q,qss) -> (q,(simple_match_args q omega @ ps) :: qss))
-           env)
-        pss
-  | _::pss -> filter_omega env pss
-  | [] -> env in
-
-  filter_omega
-    (filter_rec
-      (match pat0.pat_desc with
-        (Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_)) -> [pat0,[]]
-      | _ -> [])
-      pss)
-    pss
+  let constr_groups, omega_tails =
+    let initial_constr_group =
+      match q.pat_desc with
+      | Tpat_record(_) | Tpat_tuple(_) | Tpat_lazy(_) ->
+        (* [q] comes from [discr_pat], and in this case subsumes any of the
+           patterns we could find on the first column of [rows]. So it is better
+           to use it for our initial environment than any of the normalized
+           pattern we might obtain from the first column. *)
+        [q,[]]
+      | _ -> []
+    in
+    form_groups initial_constr_group [] rows
+  in
+  {
+    default = omega_tails;
+    constrs =
+      (* insert omega rows in all groups *)
+      List.fold_right insert_omega omega_tails constr_groups;
+  }
 
 (* Variant related functions *)
 
-let rec set_last a = function
-    [] -> []
-  | [_] -> [a]
-  | x::l -> x :: set_last a l
+let set_last a =
+  let rec loop = function
+    | [] -> assert false
+    | [_] -> [a]
+    | x::l -> x :: loop l
+  in
+  function
+  | (_, []) -> (a, [])
+  | (first, row) -> (first, loop row)
 
-(* mark constructor lines for failure when they are incomplete *)
-let rec mark_partial = function
-    ({pat_desc = Tpat_alias(p,_,_)}::ps)::pss ->
-      mark_partial ((p::ps)::pss)
-  | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
-      mark_partial ((p1::ps)::(p2::ps)::pss)
-  | ({pat_desc = (Tpat_any | Tpat_var(_))} :: _ as ps) :: pss ->
-      ps :: mark_partial pss
-  | ps::pss  ->
-      (set_last zero ps) :: mark_partial pss
-  | [] -> []
+(* mark constructor lines for failure when they are incomplete
+
+   Precondition: the input matrix has been simplified so that its
+   first column only contains _ or head constructors. *)
+let mark_partial =
+  List.map (function
+    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_) -> assert false
+    | ({pat_desc = Tpat_any }, _) as ps -> ps
+    | ps -> set_last zero ps
+  )
 
 let close_variant env row =
   let row = Btype.row_repr row in
@@ -728,7 +755,7 @@ let complete_tags nconsts nconstrs tags =
   done ;
   r
 
-(* build a pattern from a constructor list *)
+(* build a pattern from a constructor description *)
 let pat_of_constr ex_pat cstr =
   {ex_pat with pat_desc =
    Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
@@ -741,6 +768,7 @@ let rec orify_many = function
 | [x] -> x
 | x :: xs -> orify x (orify_many xs)
 
+(* build an or-pattern from a constructor list *)
 let pat_of_constrs ex_pat cstrs =
   if cstrs = [] then raise Empty else
   orify_many (List.map (pat_of_constr ex_pat) cstrs)
@@ -792,7 +820,7 @@ let complete_constrs p all_tags =
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
@@ -820,7 +848,7 @@ let build_other_constant proj make first next p env =
 
 (*
   Builds a pattern that is incompatible with all patterns in
-  in the first column of env
+  the first column of env
 *)
 
 let build_other ext env = match env with
@@ -945,15 +973,6 @@ let build_other ext env = match env with
 | [] -> omega
 | _ -> omega
 
-(*
-  Core function :
-  Is the last row of pattern matrix pss + qs satisfiable ?
-  That is :
-    Does there exists at least one value vector, es such that :
-     1- for all ps in pss ps # es (ps and es are not compatible)
-     2- qs <= es                  (es matches qs)
-*)
-
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
@@ -970,6 +989,14 @@ and has_instances = function
   | [] -> true
   | q::rem -> has_instance q && has_instances rem
 
+(*
+  Core function :
+  Is the last row of pattern matrix pss + qs satisfiable ?
+  That is :
+    Does there exists at least one value vector, es such that :
+     1- for all ps in pss ps # es (ps and es are not compatible)
+     2- qs <= es                  (es matches qs)
+*)
 let rec satisfiable pss qs = match pss with
 | [] -> has_instances qs
 | _  ->
@@ -980,11 +1007,13 @@ let rec satisfiable pss qs = match pss with
     | {pat_desc = Tpat_alias(q,_,_)}::qs ->
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
+        let pss = simplify_first_col pss in
         let q0 = discr_pat omega pss in
-        begin match filter_all q0 pss with
+        begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
+        | { default; constrs = [] } ->
           (* first column of pss is made of variables only *)
-        | [] -> satisfiable (filter_extra pss) qs
-        | constrs  ->
+          satisfiable default qs
+        | { default; constrs }  ->
             if full_match false constrs then
               List.exists
                 (fun (p,pss) ->
@@ -992,148 +1021,124 @@ let rec satisfiable pss qs = match pss with
                   satisfiable pss (simple_match_args p omega @ qs))
                 constrs
             else
-              satisfiable (filter_extra pss) qs
+              satisfiable default qs
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
+        let pss = simplify_first_col pss in
         let q0 = discr_pat q pss in
-        satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
+        satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
+          (simple_match_args q0 q @ qs)
 
-(* Also return the remaining cases, to enable GADT handling *)
-let rec satisfiables pss qs = match pss with
-| [] -> if has_instances qs then [qs] else []
-| _  ->
-    match qs with
-    | [] -> []
-    | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
-        satisfiables pss (q1::qs) @ satisfiables pss (q2::qs)
-    | {pat_desc = Tpat_alias(q,_,_)}::qs ->
-        satisfiables pss (q::qs)
-    | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
-        let q0 = discr_pat omega pss in
-        let wild p =
-          List.map (fun qs -> p::qs) (satisfiables (filter_extra pss) qs) in
-        begin match filter_all q0 pss with
-          (* first column of pss is made of variables only *)
-        | [] ->
-            wild omega
-        | (p,_)::_ as constrs  ->
-            let for_constrs () =
-              List.flatten (
-              List.map
-                (fun (p,pss) ->
-                  if is_absent_pat p then [] else
-                  List.map (set_args p)
-                    (satisfiables pss (simple_match_args p omega @ qs)))
-                constrs )
-            in
-            if full_match false constrs then for_constrs () else
-            match p.pat_desc with
-              Tpat_construct _ ->
-                (* activate this code for checking non-gadt constructors *)
-                wild (build_other_constrs constrs p) @ for_constrs ()
-            | _ ->
-                wild omega
-        end
-    | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
-    | q::qs ->
-        let q0 = discr_pat q pss in
-        List.map (set_args q0)
-          (satisfiables (filter_one q0 pss) (simple_match_args q0 q @ qs))
+(* While [satisfiable] only checks whether the last row of [pss + qs] is
+   satisfiable, this function returns the (possibly empty) list of vectors [es]
+   which verify:
+     1- for all ps in pss, ps # es (ps and es are not compatible)
+     2- qs <= es                   (es matches qs)
+
+   This is done to enable GADT handling *)
+let rec list_satisfying_vectors pss qs =
+  match pss with
+  | [] -> if has_instances qs then [qs] else []
+  | _  ->
+      match qs with
+      | [] -> []
+      | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
+          list_satisfying_vectors pss (q1::qs) @
+          list_satisfying_vectors pss (q2::qs)
+      | {pat_desc = Tpat_alias(q,_,_)}::qs ->
+          list_satisfying_vectors pss (q::qs)
+      | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
+          let pss = simplify_first_col pss in
+          let q0 = discr_pat omega pss in
+          let wild default_matrix p =
+            List.map (fun qs -> p::qs)
+              (list_satisfying_vectors default_matrix qs)
+          in
+          begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
+          | { default; constrs = [] } ->
+              (* first column of pss is made of variables only *)
+              wild default omega
+          | { default; constrs = ((p,_)::_ as constrs) } ->
+              let for_constrs () =
+                List.flatten (
+                  List.map (fun (p,pss) ->
+                    if is_absent_pat p then
+                      []
+                    else
+                      let witnesses =
+                        list_satisfying_vectors pss
+                          (simple_match_args p omega @ qs)
+                      in
+                      List.map (set_args p) witnesses
+                  ) constrs
+                )
+              in
+              if full_match false constrs then for_constrs () else
+              match p.pat_desc with
+              | Tpat_construct _ ->
+                  (* activate this code for checking non-gadt constructors *)
+                  wild default (build_other_constrs constrs p) @ for_constrs ()
+              | _ ->
+                  wild default omega
+          end
+      | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
+      | q::qs ->
+          let pss = simplify_first_col pss in
+          let q0 = discr_pat q pss in
+          List.map (set_args q0)
+            (list_satisfying_vectors
+               (build_specialized_submatrix ~extend_row:(@) q0 pss)
+               (simple_match_args q0 q @ qs))
+
+(******************************************)
+(* Look for a row that matches some value *)
+(******************************************)
 
 (*
-  Now another satisfiable function that additionally
-  supplies an example of a matching value.
-
-  This function should be called for exhaustiveness check only.
+  Useful for seeing if the example of
+  non-matched value can indeed be matched
+  (by a guarded clause)
 *)
 
-type 'a result =
-  | Rnone           (* No matching value *)
-  | Rsome of 'a     (* This matching value *)
+let rec do_match pss qs = match qs with
+| [] ->
+    begin match pss  with
+    | []::_ -> true
+    | _ -> false
+    end
+| q::qs -> match q with
+  | {pat_desc = Tpat_or (q1,q2,_)} ->
+      do_match pss (q1::qs) || do_match pss (q2::qs)
+  | {pat_desc = Tpat_any} ->
+      let rec remove_first_column = function
+        | (_::ps)::rem -> ps::remove_first_column rem
+        | _ -> []
+      in
+      do_match (remove_first_column pss) qs
+  | _ ->
+      let q0 = normalize_pat q in
+      do_match
+        (build_specialized_submatrix ~extend_row:(@) q0
+           (simplify_first_col pss))
+        (simple_match_args q0 q @ qs)
 
-(*
-let rec try_many  f = function
-  | [] -> Rnone
-  | (p,pss)::rest ->
-      match f (p,pss) with
-      | Rnone -> try_many  f rest
-      | r -> r
-*)
+
+type 'a exhaust_result =
+  | No_matching_value
+  | Witnesses of 'a list
 
 let rappend r1 r2 =
   match r1, r2 with
-  | Rnone, _ -> r2
-  | _, Rnone -> r1
-  | Rsome l1, Rsome l2 -> Rsome (l1 @ l2)
+  | No_matching_value, _ -> r2
+  | _, No_matching_value -> r1
+  | Witnesses l1, Witnesses l2 -> Witnesses (l1 @ l2)
 
-let rec try_many_gadt  f = function
-  | [] -> Rnone
+let rec try_many  f = function
+  | [] -> No_matching_value
   | (p,pss)::rest ->
-      rappend (f (p, pss)) (try_many_gadt f rest)
+      rappend (f (p, pss)) (try_many f rest)
 
-(*
-let rec exhaust ext pss n = match pss with
-| []    ->  Rsome (omegas n)
-| []::_ ->  Rnone
-| pss   ->
-    let q0 = discr_pat omega pss in
-    begin match filter_all q0 pss with
-          (* first column of pss is made of variables only *)
-    | [] ->
-        begin match exhaust ext (filter_extra pss) (n-1) with
-        | Rsome r -> Rsome (q0::r)
-        | r -> r
-      end
-    | constrs ->
-        let try_non_omega (p,pss) =
-          if is_absent_pat p then
-            Rnone
-          else
-            match
-              exhaust
-                ext pss (List.length (simple_match_args p omega) + n - 1)
-            with
-            | Rsome r -> Rsome (set_args p r)
-            | r       -> r in
-        if
-          full_match true false constrs && not (should_extend ext constrs)
-        then
-          try_many try_non_omega constrs
-        else
-          (*
-             D = filter_extra pss is the default matrix
-             as it is included in pss, one can avoid
-             recursive calls on specialized matrices,
-             Essentially :
-             * D exhaustive => pss exhaustive
-             * D non-exhaustive => we have a non-filtered value
-          *)
-          let r =  exhaust ext (filter_extra pss) (n-1) in
-          match r with
-          | Rnone -> Rnone
-          | Rsome r ->
-              try
-                Rsome (build_other ext constrs::r)
-              with
-      (* cannot occur, since constructors don't make a full signature *)
-              | Empty -> fatal_error "Parmatch.exhaust"
-    end
-
-let combinations f lst lst' =
-  let rec iter2 x =
-    function
-        [] -> []
-      | y :: ys ->
-          f x y :: iter2 x ys
-  in
-  let rec iter =
-    function
-        [] -> []
-      | x :: xs -> iter2 x lst' @ iter xs
-  in
-  iter lst
-*)
 (*
 let print_pat pat =
   let rec string_of_pat pat =
@@ -1157,67 +1162,62 @@ let print_pat pat =
   Printf.fprintf stderr "PAT[%s]\n%!" (string_of_pat pat)
 *)
 
-(* strictly more powerful than exhaust; however, exhaust
-   was kept for backwards compatibility *)
-let rec exhaust_gadt (ext:Path.t option) pss n = match pss with
-| []    ->  Rsome [omegas n]
-| []::_ ->  Rnone
+(*
+  Now another satisfiable function that additionally
+  supplies an example of a matching value.
+
+  This function should be called for exhaustiveness check only.
+*)
+let rec exhaust (ext:Path.t option) pss n = match pss with
+| []    ->  Witnesses [omegas n]
+| []::_ ->  No_matching_value
 | pss   ->
+    let pss = simplify_first_col pss in
     let q0 = discr_pat omega pss in
-    begin match filter_all q0 pss with
-          (* first column of pss is made of variables only *)
-    | [] ->
-        begin match exhaust_gadt ext (filter_extra pss) (n-1) with
-        | Rsome r -> Rsome (List.map (fun row -> q0::row) r)
+    begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
+    | { default; constrs = [] } ->
+        (* first column of pss is made of variables only *)
+        begin match exhaust ext default (n-1) with
+        | Witnesses r -> Witnesses (List.map (fun row -> q0::row) r)
         | r -> r
       end
-    | constrs ->
+    | { default; constrs } ->
         let try_non_omega (p,pss) =
           if is_absent_pat p then
-            Rnone
+            No_matching_value
           else
             match
-              exhaust_gadt
+              exhaust
                 ext pss (List.length (simple_match_args p omega) + n - 1)
             with
-            | Rsome r -> Rsome (List.map (fun row ->  (set_args p row)) r)
+            | Witnesses r -> Witnesses (List.map (fun row ->  (set_args p row)) r)
             | r       -> r in
-        let before = try_many_gadt try_non_omega constrs in
+        let before = try_many try_non_omega constrs in
         if
           full_match false constrs && not (should_extend ext constrs)
         then
           before
         else
-          (*
-            D = filter_extra pss is the default matrix
-            as it is included in pss, one can avoid
-            recursive calls on specialized matrices,
-            Essentially :
-           * D exhaustive => pss exhaustive
-           * D non-exhaustive => we have a non-filtered value
-           *)
-          let r =  exhaust_gadt ext (filter_extra pss) (n-1) in
+          let r =  exhaust ext default (n-1) in
           match r with
-          | Rnone -> before
-          | Rsome r ->
+          | No_matching_value -> before
+          | Witnesses r ->
               try
                 let p = build_other ext constrs in
                 let dug = List.map (fun tail -> p :: tail) r in
                 match before with
-                | Rnone -> Rsome dug
-                | Rsome x -> Rsome (x @ dug)
+                | No_matching_value -> Witnesses dug
+                | Witnesses x -> Witnesses (x @ dug)
               with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
     end
 
-let exhaust_gadt ext pss n =
-  let ret = exhaust_gadt ext pss n in
+let exhaust ext pss n =
+  let ret = exhaust ext pss n in
   match ret with
-    Rnone -> Rnone
-  | Rsome lst ->
-      (* The following line is needed to compile stdlib/printf.ml *)
-      if lst = [] then Rsome (omegas n) else
+    No_matching_value -> No_matching_value
+  | Witnesses lst ->
       let singletons =
         List.map
           (function
@@ -1225,7 +1225,7 @@ let exhaust_gadt ext pss n =
             | _ -> assert false)
           lst
       in
-      Rsome [orify_many singletons]
+      Witnesses [orify_many singletons]
 
 (*
    Another exhaustiveness check, enforcing variant typing.
@@ -1243,31 +1243,43 @@ let rec pressure_variants tdefs = function
   | []    -> false
   | []::_ -> true
   | pss   ->
+      let pss = simplify_first_col pss in
       let q0 = discr_pat omega pss in
-      begin match filter_all q0 pss with
-        [] -> pressure_variants tdefs (filter_extra pss)
-      | constrs ->
+      begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
+      | { default; constrs = [] } -> pressure_variants tdefs default
+      | { default; constrs } ->
           let rec try_non_omega = function
-              (_p,pss) :: rem ->
+            | (_p,pss) :: rem ->
                 let ok = pressure_variants tdefs pss in
+                (* The order below matters : we want [pressure_variants] to be
+                   called on all the specialized submatrices because we might
+                   close some variant in any of them regardless of whether [ok]
+                   is true for [pss] or not *)
                 try_non_omega rem && ok
             | [] -> true
           in
           if full_match (tdefs=None) constrs then
             try_non_omega constrs
           else if tdefs = None then
-            pressure_variants None (filter_extra pss)
+            pressure_variants None default
           else
             let full = full_match true constrs in
             let ok =
-              if full then try_non_omega constrs
-              else try_non_omega (filter_all q0 (mark_partial pss))
+              if full then
+                try_non_omega constrs
+              else (
+                let { constrs = partial_constrs; _ } =
+                  build_specialized_submatrices ~extend_row:(@) q0
+                    (mark_partial pss)
+                in
+                try_non_omega partial_constrs
+              )
             in
             begin match constrs, tdefs with
               ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
                 let row = row_of_pat p in
                 if Btype.row_fixed row
-                || pressure_variants None (filter_extra pss) then ()
+                || pressure_variants None default then ()
                 else close_variant env row
             | _ -> ()
             end;
@@ -1294,7 +1306,7 @@ type answer =
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
 *)
-type 'a row = {no_ors : 'a list ; ors : 'a list ; active : 'a list}
+type row = {no_ors : pattern list ; ors : pattern list ; active : pattern list}
 
 
 (*
@@ -1364,29 +1376,20 @@ and push_no_or_column rs = List.map push_no_or rs
 (* Those are adaptations of the previous homonymous functions that
    work on the current column, instead of the first column
 *)
-
-let discr_pat q rs =
-  discr_pat q (List.map (fun r -> r.active) rs)
-
-let filter_one q rs =
-  let rec filter_rec rs = match rs with
+let rec simplify_first_col = function
   | [] -> []
-  | r::rem ->
-      match r.active with
-      | [] -> assert false
-      | {pat_desc = Tpat_alias(p,_,_)}::ps ->
-          filter_rec ({r with active = p::ps}::rem)
-      | {pat_desc = Tpat_or(p1,p2,_)}::ps ->
-          filter_rec
-            ({r with active = p1::ps}::
-             {r with active = p2::ps}::
-             rem)
-      | p::ps ->
-          if simple_match q p then
-            {r with active=simple_match_args q p @ ps} :: filter_rec rem
-          else
-            filter_rec rem in
-  filter_rec rs
+  | row :: rows ->
+    match row.active with
+    | [] -> assert false (* the rows are non-empty! *)
+    | p :: ps ->
+      simplify_head_pat p { row with active = ps } (simplify_first_col rows)
+
+and simplify_head_pat p ps k =
+  match p.pat_desc with
+  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+  | Tpat_var (_,_) -> (omega, ps) :: k
+  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+  | _ -> (p, ps) :: k
 
 
 (* Back to normal matrices *)
@@ -1481,9 +1484,11 @@ let rec every_satisfiables pss qs = match qs.active with
         Unused
     | _ ->
 (* standard case, filter matrix *)
+        let pss = simplify_first_col pss in
         let q0 = discr_pat q pss in
         every_satisfiables
-          (filter_one q0 pss)
+          (build_specialized_submatrix q0 pss
+             ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
           {qs with active=simple_match_args q0 q @ rem}
     end
 
@@ -1653,72 +1658,17 @@ let rec initial_matrix = function
   | {c_guard=Some _} :: rem -> initial_matrix rem
   | {c_guard=None; c_lhs=p} :: rem -> [p] :: initial_matrix rem
 
-(******************************************)
-(* Look for a row that matches some value *)
-(******************************************)
-
 (*
-  Useful for seeing if the example of
-  non-matched value can indeed be matched
-  (by a guarded clause)
+   Build up a working pattern matrix by keeping
+   only the patterns which are guarded
 *)
+let rec initial_only_guarded = function
+  | [] -> []
+  | { c_guard = None; _} :: rem ->
+      initial_only_guarded rem
+  | { c_lhs = pat; _ } :: rem ->
+      [pat] :: initial_only_guarded rem
 
-
-
-exception NoGuard
-
-let rec initial_all no_guard = function
-  | [] ->
-      if no_guard then
-        raise NoGuard
-      else
-        []
-  | {c_lhs=pat; c_guard; _} :: rem ->
-      ([pat], pat.pat_loc) :: initial_all (no_guard && c_guard = None) rem
-
-
-let rec do_filter_var = function
-  | (_::ps,loc)::rem -> (ps,loc)::do_filter_var rem
-  | _ -> []
-
-let do_filter_one q pss =
-  let rec filter_rec = function
-    | ({pat_desc = Tpat_alias(p,_,_)}::ps,loc)::pss ->
-        filter_rec ((p::ps,loc)::pss)
-    | ({pat_desc = Tpat_or(p1,p2,_)}::ps,loc)::pss ->
-        filter_rec ((p1::ps,loc)::(p2::ps,loc)::pss)
-    | (p::ps,loc)::pss ->
-        if simple_match q p
-        then (simple_match_args q p @ ps, loc) :: filter_rec pss
-        else filter_rec pss
-    | _ -> [] in
-  filter_rec pss
-
-let rec do_match pss qs = match qs with
-| [] ->
-    begin match pss  with
-    | ([],loc)::_ -> Some loc
-    | _ -> None
-    end
-| q::qs -> match q with
-  | {pat_desc = Tpat_or (q1,q2,_)} ->
-      begin match do_match pss (q1::qs) with
-      | None -> do_match pss (q2::qs)
-      | r -> r
-      end
-  | {pat_desc = Tpat_any} ->
-      do_match (do_filter_var pss) qs
-  | _ ->
-      let q0 = normalize_pat q in
-      do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
-
-
-let check_partial_all v casel =
-  try
-    let pss = initial_all true casel in
-    do_match pss [v]
-  with
-  | NoGuard -> None
 
 (************************)
 (* Exhaustiveness check *)
@@ -1803,7 +1753,7 @@ let ppat_of_type env ty =
   | pats ->
       Conv.conv (orify_many pats)
 
-let do_check_partial ?pred exhaust loc casel pss = match pss with
+let do_check_partial ~pred loc casel pss = match pss with
 | [] ->
         (*
           This can occur
@@ -1822,20 +1772,17 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
     Partial
 | ps::_  ->
     begin match exhaust None pss (List.length ps) with
-    | Rnone -> Total
-    | Rsome [u] ->
+    | No_matching_value -> Total
+    | Witnesses [u] ->
         let v =
-          match pred with
-          | Some pred ->
-              let (pattern,constrs,labels) = Conv.conv u in
-              let u' = pred constrs labels pattern in
-              (* pretty_pat u;
-              begin match u' with
-                None -> prerr_endline ": impossible"
-              | Some _ -> prerr_endline ": possible"
-              end; *)
-              u'
-          | None -> Some u
+          let (pattern,constrs,labels) = Conv.conv u in
+          let u' = pred constrs labels pattern in
+          (* pretty_pat u;
+          begin match u' with
+            None -> prerr_endline ": impossible"
+          | Some _ -> prerr_endline ": possible"
+          end; *)
+          u'
         in
         begin match v with
           None -> Total
@@ -1844,18 +1791,11 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
               let errmsg =
                 try
                   let buf = Buffer.create 16 in
-                  let fmt = formatter_of_buffer buf in
-                  top_pretty fmt v;
-                  begin match check_partial_all v casel with
-                  | None -> ()
-                  | Some _ ->
-                      (* This is 'Some loc', where loc is the location of
-                         a possibly matching clause.
-                         Forget about loc, because printing two locations
-                         is a pain in the top-level *)
-                      Buffer.add_string buf
-                        "\n(However, some guarded clause may match this value.)"
-                  end;
+                  let fmt = Format.formatter_of_buffer buf in
+                  Printpat.top_pretty fmt v;
+                  if do_match (initial_only_guarded casel) [v] then
+                    Buffer.add_string buf
+                      "\n(However, some guarded clause may match this value.)";
                   if contains_extension v then
                     Buffer.add_string buf
                       "\nMatching over values of extensible variant types \
@@ -1873,16 +1813,6 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
     | _ ->
         fatal_error "Parmatch.check_partial"
     end
-
-(*
-let do_check_partial_normal loc casel pss =
-  do_check_partial exhaust loc casel pss
- *)
-
-let do_check_partial_gadt pred loc casel pss =
-  do_check_partial ~pred exhaust_gadt loc casel pss
-
-
 
 (*****************)
 (* Fragile check *)
@@ -1940,7 +1870,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       the type is extended.
 *)
 
-let do_check_fragile_param exhaust loc casel pss =
+let do_check_fragile loc casel pss =
   let exts =
     List.fold_left
       (fun r c -> collect_paths_from_pat r c.c_lhs)
@@ -1953,15 +1883,12 @@ let do_check_fragile_param exhaust loc casel pss =
         List.iter
           (fun ext ->
             match exhaust (Some ext) pss (List.length ps) with
-            | Rnone ->
+            | No_matching_value ->
                 Location.prerr_warning
                   loc
                   (Warnings.Fragile_match (Path.name ext))
-            | Rsome _ -> ())
+            | Witnesses _ -> ())
           exts
-
-(*let do_check_fragile_normal = do_check_fragile_param exhaust*)
-let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 
 (********************************)
 (* Exported unused clause check *)
@@ -1983,13 +1910,22 @@ let check_unused pred casel =
               (* Do not warn for unused [pat -> .] *)
               if r = Unused && refute then () else
               let r =
-                (* Do not refine if there are no other lines *)
+                (* Do not refine if either:
+                   - we already know the clause is unused
+                   - the clause under consideration is not a refutation clause
+                     and either:
+                     + there are no other lines
+                     + we do not care whether the types prevent this clause to be
+                       reached.
+                     If the clause under consideration *is* a refutation clause
+                     then we do need to check more carefully whether it can be
+                     refuted or not.  *)
                 let skip =
                   r = Unused || (not refute && pref = []) ||
                   not(refute || Warnings.is_active Warnings.Unreachable_case) in
                 if skip then r else
                 (* Then look for empty patterns *)
-                let sfs = satisfiables pss qs in
+                let sfs = list_satisfying_vectors pss qs in
                 if sfs = [] then Unused else
                 let sfs =
                   List.map (function [u] -> u | _ -> assert false) sfs in
@@ -2014,7 +1950,7 @@ let check_unused pred casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with Empty | Not_found | NoGuard -> assert false
+            with Empty | Not_found -> assert false
             end ;
 
           if c_guard <> None then
@@ -2075,26 +2011,16 @@ let inactive ~partial pat =
    on exhaustive matches only.
 *)
 
-let check_partial_param do_check_partial do_check_fragile loc casel =
-    let pss = initial_matrix casel in
-    let pss = get_mins le_pats pss in
-    let total = do_check_partial loc casel pss in
-    if
-      total = Total && Warnings.is_active (Warnings.Fragile_match "")
-    then begin
-      do_check_fragile loc casel pss
-    end ;
-    total
-
-(*let check_partial =
-    check_partial_param
-      do_check_partial_normal
-      do_check_fragile_normal*)
-
-let check_partial_gadt pred loc casel =
-  check_partial_param (do_check_partial_gadt pred)
-    do_check_fragile_gadt loc casel
-
+let check_partial pred loc casel =
+  let pss = initial_matrix casel in
+  let pss = get_mins le_pats pss in
+  let total = do_check_partial ~pred loc casel pss in
+  if
+    total = Total && Warnings.is_active (Warnings.Fragile_match "")
+  then begin
+    do_check_fragile loc casel pss
+  end ;
+  total
 
 (*************************************)
 (* Ambiguous variable in or-patterns *)
@@ -2147,140 +2073,107 @@ module IdSet = Set.Make(Ident)
 let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
 (* Row for ambiguous variable search,
-   unseen is the traditional pattern row,
-   seen   is a list of position bindings *)
+   row is the traditional pattern row,
+   varsets contain a list of head variable sets (varsets)
 
-type amb_row = { unseen : pattern list ; seen : IdSet.t list; }
+   A given varset contains all the variables that appeared at the head
+   of a pattern in the row at some point during traversal: they would
+   all be bound to the same value at matching time. On the contrary,
+   two variables of different varsets appeared at different places in
+   the pattern and may be bound to distinct sub-parts of the matched
+   value.
 
-
-(* Push binding variables now *)
-
-let rec do_push r p ps seen k = match p.pat_desc with
-| Tpat_alias (p,x,_) -> do_push (IdSet.add x r) p ps seen k
-| Tpat_var (x,_) ->
-    (omega,{ unseen = ps; seen=IdSet.add x r::seen; })::k
-| Tpat_or (p1,p2,_) ->
-    do_push r p1 ps seen (do_push r p2 ps seen k)
-| _ ->
-    (p,{ unseen = ps; seen = r::seen; })::k
-
-let rec push_vars = function
-  | [] -> []
-  | { unseen = [] }::_ -> assert false
-  | { unseen = p::ps; seen; }::rem ->
-      do_push IdSet.empty p ps seen (push_vars rem)
-
-let collect_stable = function
-  | [] -> assert false
-  | { seen=xss; _}::rem ->
-      let rec c_rec xss = function
-        | [] -> xss
-        | {seen=yss; _}::rem ->
-            let xss = List.map2 IdSet.inter xss yss in
-            c_rec xss rem in
-      let inters = c_rec xss rem in
-      List.fold_left IdSet.union IdSet.empty inters
-
-
-(*********************************************)
-(* Filtering utilities for our specific rows *)
-(*********************************************)
-
-(* Take a pattern matrix as a list (rows) of lists (columns) of patterns
-     | p1, p2, .., pn
-     | q1, q2, .., qn
-     | r1, r2, .., rn
-     | ...
-
-   We split this matrix into a list of sub-matrices, one for each head
-   constructor appearing in the leftmost column. For each row whose
-   left column starts with a head constructor, remove this head
-   column, prepend one column for each argument of the constructor,
-   and add the resulting row in the sub-matrix corresponding to this
-   head constructor.
-
-   Rows whose left column is omega (the Any pattern _) may match any
-   head constructor, so they are added to all groups.
-
-   The list of sub-matrices is represented as a list of pair
-     (head constructor, submatrix)
+   All rows of a (sub)matrix have rows of the same length,
+   but also varsets of the same length.
 *)
 
-let filter_all =
-  (* the head constructor (as a pattern with omega arguments) of
-     a pattern *)
-  let discr_head pat =
-    match pat.pat_desc with
-    | Tpat_record (lbls, closed) ->
-        (* a partial record pattern { f1 = p1; f2 = p2; _ }
-           needs to be expanded, otherwise matching against this head
-           would drop the pattern arguments for non-mentioned fields *)
-        let lbls = all_record_args lbls in
-        normalize_pat { pat with pat_desc = Tpat_record (lbls, closed) }
-    | _ -> normalize_pat pat
-  in
+type amb_row = { row : pattern list ; varsets : IdSet.t list; }
 
-  (* insert a row of head [p] and rest [r] into the right group *)
-  let rec insert p r env = match env with
-  | [] ->
-      (* if no group matched this row, it has a head constructor that
-         was never seen before; add a new sub-matrix for this head *)
-      let p0 = discr_head p in
-      [p0,[{ r with unseen = simple_match_args p0 p @ r.unseen }]]
-  | (q0,rs) as bd::env ->
-      if simple_match q0 p then begin
-        let r = { r with unseen = simple_match_args q0 p@r.unseen; } in
-        (q0,r::rs)::env
-      end
-      else bd::insert p r env in
+(* Given a matrix of non-empty rows
+   p1 :: r1...
+   p2 :: r2...
+   p3 :: r3...
 
-  (* insert a row of head omega into all groups *)
-  let insert_omega r env =
-    List.map
-      (fun (q0,rs) ->
-         let r =
-           { r with unseen = simple_match_args q0 omega @ r.unseen; } in
-         (q0,r::rs))
-      env
-  in
+   Simplify the first column [p1 p2 p3] by splitting all or-patterns and
+   collecting the head-bound variables (the varset). The result is a list of
+   couples
+     (simple head pattern, rest of row)
+   where a "simple head pattern" starts with either the catch-all pattern omega
+   (_) or a head constructor, and the "rest of the row" has the head-bound
+   variables pushed as a new varset.
 
-  let rec filter_rec env = function
-    | [] -> env
-    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any}, _)::rs -> filter_rec env rs
-    | (p,r)::rs -> filter_rec (insert p r env) rs in
+   For example,
+     { row = x :: r1; varsets = s1 }
+     { row = (Some _) as y :: r2; varsets  = s2 }
+     { row = (None as x) as y :: r3; varsets = s3 }
+     { row = (Some x | (None as x)) :: r4 with varsets = s4 }
+   becomes
+     (_, { row = r1; varsets = {x} :: s1 })
+     (Some _, { row = r2; varsets = {y} :: s2 })
+     (None, { row = r3; varsets = s3 ++ {x, y} })
+     (Some x, { row = r4; varsets = {} :: s4 })
+     (None, { row = r4; varsets = {x} :: s4 })
+ *)
+let rec simplify_first_col = function
+  | [] -> []
+  | { row = [] } :: _ -> assert false
+  | { row = p::ps; varsets; }::rem ->
+      simplify_head_pat IdSet.empty p ps varsets (simplify_first_col rem)
 
-  let rec filter_omega env = function
-    | [] -> env
-    | ({pat_desc=(Tpat_var _|Tpat_alias _|Tpat_or _)},_)::_ -> assert false
-    | ({pat_desc=Tpat_any},r)::rs -> filter_omega (insert_omega r env) rs
-    | _::rs -> filter_omega env rs in
+and simplify_head_pat head_bound_variables p ps varsets k =
+  match p.pat_desc with
+  | Tpat_alias (p,x,_) ->
+    simplify_head_pat (IdSet.add x head_bound_variables) p ps varsets k
+  | Tpat_var (x,_) ->
+    let rest_of_the_row =
+      { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
+    in
+    (omega, rest_of_the_row) :: k
+  | Tpat_or (p1,p2,_) ->
+    simplify_head_pat head_bound_variables p1 ps varsets
+      (simplify_head_pat head_bound_variables p2 ps varsets k)
+  | _ ->
+    (p, { row = ps; varsets = head_bound_variables :: varsets; }) :: k
 
-  fun rs ->
-    (* first insert the rows with head constructors,
-       to get the definitive list of groups *)
-    let env = filter_rec [] rs in
-    (* then add the omega rows to all groups *)
-    filter_omega env rs
+
+let split_rows rows =
+  let extend_row columns r =
+    { r with row = columns @ r.row } in
+  let q0 = discr_pat omega rows in
+  match build_specialized_submatrices ~extend_row q0 rows with
+  | { default; constrs = [] } -> [default]
+  | { default = _; constrs } -> List.map snd constrs
 
 (* Compute stable bindings *)
 
-let rec do_stable rs = match rs with
+let reduce f = function
+| [] -> invalid_arg "reduce"
+| x::xs -> List.fold_left f x xs
+
+let rec matrix_stable_vars rs = match rs with
 | [] -> assert false (* No empty matrix *)
-| { unseen=[]; _ }::_ ->
-    collect_stable rs
-| _ ->
-    let rs = push_vars rs in
-    match filter_all rs with
-    | [] ->
-        do_stable (List.map snd rs)
-    | (_,rs)::env ->
-        List.fold_left
-          (fun xs (_,rs) -> IdSet.inter xs (do_stable rs))
-          (do_stable rs) env
+| { row = []; _ } :: _ ->
+    (* All rows have the same number of columns;
+       if the first row is empty, they all are. *)
+    List.iter (fun {row; _} -> assert (row = [])) rs;
 
-let stable p = do_stable [{unseen=[p]; seen=[];}]
+    (* A variable is stable in a given varset if, in each row, it
+       appears in this varset -- rather than in another position in
+       the list of binding sets. We can thus compute the stable
+       variables of each varset by pairwise intersection. *)
+    let rows_varsets = List.map (fun { varsets; _ } -> varsets) rs in
+    let stables_in_varsets = reduce (List.map2 IdSet.inter) rows_varsets in
 
+    (* The stable variables are those stable at any position *)
+    List.fold_left IdSet.union IdSet.empty stables_in_varsets
+| rs ->
+   let submatrices = split_rows (simplify_first_col rs) in
+   let submat_stable = List.map matrix_stable_vars submatrices in
+   (* a stable variable must be stable in each submatrix;
+      if the matrix has at least one row, there is at least one submatrix *)
+   reduce IdSet.inter submat_stable
+
+let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
 
 (* All identifier paths that appear in an expression that occurs
    as a clause right hand side or guard.
@@ -2346,9 +2239,9 @@ let check_ambiguous_bindings =
             let all =
               IdSet.inter (pattern_vars p) (all_rhs_idents g) in
             if not (IdSet.is_empty all) then begin
-              let st = stable p in
-              let ambiguous = IdSet.diff all st in
-              if not (IdSet.is_empty  ambiguous) then begin
+              let stable = pattern_stable_vars p in
+              let ambiguous = IdSet.diff all stable in
+              if not (IdSet.is_empty ambiguous) then begin
                 let pps = IdSet.elements ambiguous |> List.map Ident.name in
                 let warn = Ambiguous_pattern pps in
                 Location.prerr_warning p.pat_loc warn

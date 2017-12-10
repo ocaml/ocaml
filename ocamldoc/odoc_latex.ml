@@ -745,6 +745,7 @@ class latex =
                 );
               [CodePre (flush2 ())]
         in
+        Latex ( self#make_label (self#exception_label e.ex_name) ) ::
        merge_codepre (l @ s ) @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]
        @ (self#text_of_info e.ex_info) in

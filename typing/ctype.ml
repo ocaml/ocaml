@@ -995,7 +995,7 @@ let rec copy ?env ?partial ?keep_names ty =
               Tlink ty2
           | _ ->
               (* If the row variable is not generic, we must keep it *)
-              let keep = more.level <> generic_level in
+              let keep = more.level <> generic_level && partial = None in
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
@@ -2025,7 +2025,9 @@ let rec mcomp type_pairs env t1 t2 =
       with Not_found ->
         TypePairs.add type_pairs (t1', t2') ();
         match (t1'.desc, t2'.desc) with
-          (Tvar _, Tvar _) -> assert false
+        | (Tvar _, _)
+        | (_, Tvar _)  ->
+            ()
         | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
           when l1 = l2 || not (is_optional l1 || is_optional l2) ->
             mcomp type_pairs env t1 t2;

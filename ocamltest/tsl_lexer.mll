@@ -28,7 +28,7 @@ let lexer_error message =
 
 let newline = ('\013'* '\010')
 let blank = [' ' '\009' '\012']
-let identchar = ['A'-'Z' 'a'-'z' '_' '\'' '0'-'9']
+let identchar = ['A'-'Z' 'a'-'z' '_' '.' '-' '\'' '0'-'9']
 
 rule token = parse
   | blank * { token lexbuf }
@@ -39,6 +39,7 @@ rule token = parse
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
+  | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
   | identchar *
     { let s = Lexing.lexeme lexbuf in

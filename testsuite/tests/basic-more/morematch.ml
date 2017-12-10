@@ -1,19 +1,12 @@
+(* TEST
+   include testing
+*)
+
 (**************************************************************)
 (*  This suite tests the pattern-matching compiler            *)
 (*  it should just compile and run.                           *)
 (*  While compiling the following messages are normal:        *)
 (**************************************************************)
-
-(*
-File "morematch.ml", line 38, characters 10-93:
-Warning: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
-0
-File "morematch.ml", line 376, characters 2-15:
-Warning: this match case is unused.
-File "morematch.ml", line 443, characters 2-7:
-Warning: this match case is unused.
-*)
 
 let test msg f arg r =
   if f arg <> r then begin
@@ -74,17 +67,12 @@ let g x= match  x with
 | 4|5|7 -> 100
 | 7 | 8 -> 6
 | 9 -> 7
-| _ -> 8 [@@ocaml.warning "-12"];;
+| _ -> 8
+;;
+
 test "quatre" g 4 4 ;
 test "quatre" g 7 100 ; ()
 ;;
-
-(*
-File "morematch.ml", line 73, characters 2-5:
-Warning U: this sub-pattern is unused.
-File "morematch.ml", line 74, characters 2-3:
-Warning U: this sub-pattern is unused.
-*)
 
 let h x =
  match x with
@@ -229,7 +217,6 @@ test "foo1" f (1,2) (-1)
 
 
 let f = function (([]|[_]) as x)|(_::([] as x))|(_::_::x)  -> x
-  [@@ocaml.warning "-12"]
 ;;
 
 test "zob" f [] [] ;
@@ -398,7 +385,7 @@ let yaya = function
 | A,_,_ -> 1
 | _,A,_ -> 2
 | B,B,_ -> 3
-| A,_,(100|103) -> 5 [@@ocaml.warning "-11"]
+| A,_,(100|103) -> 5
 ;;
 
 test "yaya" yaya (A,A,0) 1 ;
@@ -406,7 +393,7 @@ test "yaya" yaya (B,A,0) 2 ;
 test "yaya" yaya (B,B,100) 3 ; ()
 ;;
 
-(*
+
 let yoyo =  function
 | [],_,_ -> 1
 | _,[],_ -> 2
@@ -432,7 +419,7 @@ test "youyou" youyou 100 1 ;
 test "youyou" youyou 101 2 ;
 test "youyou" youyou 1000 3
 ;;
-*)
+
 type autre =
   |  C | D | E of autre | F of autre * autre | H of autre | I | J | K of string
 
@@ -445,12 +432,10 @@ let rec autre = function
 | (J,J,((C|D) as x |E x|F (_,x))) | (J,_,((C|J) as x)) -> autre (x,x,x)
 | (J, J, (I|H _|K _)) -> 9
 | I,_,_ -> 6
-| E _,_,_ -> 7 [@@ocaml.warning "-12"]
+| E _,_,_ -> 7
 ;;
-(*
-File "morematch.ml", line 437, characters 43-44:
-Warning U: this sub-pattern is unused.
-*)
+
+
 test "autre" autre (J,J,F (D,D)) 3 ;
 test "autre" autre (J,J,D) 3 ;
 test "autre" autre (J,J,I) 9 ;
@@ -468,14 +453,9 @@ let xyz = function
 | YB,YB,_ -> 3
 | ((YB|YC), (YB|YC), (X|Y|Z|V _|T _)) -> 6
 | _,_,(X|U _) -> 8
-| _,_,Y -> 5 [@@ocaml.warning "-11-12"]
+| _,_,Y -> 5
 ;;
-(*
-File "morematch.ml", line 459, characters 7-8:
-Warning U: this sub-pattern is unused.
-File "morematch.ml", line 460, characters 2-7:
-Warning U: this match case is unused.
-*)
+
 test "xyz" xyz (YC,YC,X) 6 ;
 test "xyz" xyz (YC,YB,U X) 8 ;
 test "xyz" xyz (YB,YC,X) 6 ; ()
@@ -1065,18 +1045,12 @@ test "seb" seb ((0,Uout),Uin) 2 ;
        false (in Switch)
 *)
 
-(*
-File "morematch.ml", line 1060, characters 8-65:
-Warning: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
-A `D
-*)
 type ('a, 'b) t_j = A of 'a | B of 'b * 'a | C
 
 let f = function
   | A (`A|`C) -> 0
   | B (`B,`D) -> 1
-  | C -> 2 [@@ocaml.warning "-8"]
+  | C -> 2
 
 let g x = try f x with Match_failure _ -> 3
 
@@ -1110,13 +1084,8 @@ let f = function
   |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"
   |  B, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "12"
   |  _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "13"
-[@@ocaml.warning "-11"]
-(*
-File "morematch.ml", line 1094, characters 5-51:
-Warning: this match case is unused.
-File "morematch.ml", line 1096, characters 5-51:
-Warning: this match case is unused.
-*)
+
+
 let _  =
   test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, B, A, A, A, A) "10" ;
   test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A) "12" ;

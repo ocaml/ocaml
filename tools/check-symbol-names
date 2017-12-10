@@ -16,7 +16,7 @@
 
 set -o pipefail
 
-[ -z "$@" ] && { echo "Usage: $0 libfoo.a" 1>&2; exit 2; }
+[ -z "$*" ] && { echo "Usage: $0 libfoo.a" 1>&2; exit 2; }
 
 nm -A -P "$@" | awk '
 # ignore caml_foo, camlFoo_bar, _caml_foo, _camlFoo_bar

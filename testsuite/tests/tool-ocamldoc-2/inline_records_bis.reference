@@ -18,7 +18,7 @@
 
 
 
-\begin{ocamldoccode}
+\label{exception:Inline-underscorerecords-underscorebis.Simple}\begin{ocamldoccode}
 exception Simple
 \end{ocamldoccode}
 \index{Simple@\verb`Simple`}
@@ -31,7 +31,7 @@ A nice exception
 
 
 
-\begin{ocamldoccode}
+\label{exception:Inline-underscorerecords-underscorebis.Less}\begin{ocamldoccode}
 exception Less of int
 \end{ocamldoccode}
 \index{Less@\verb`Less`}
@@ -210,7 +210,7 @@ A gadt constructor
 
 
 
-\begin{ocamldoccode}
+\label{exception:Inline-underscorerecords-underscorebis.Error}\begin{ocamldoccode}
 exception Error of {\char123}  name : string ;
 \end{ocamldoccode}
 \begin{ocamldoccomment}

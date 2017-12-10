@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (** Test that matching multiple values doesn't allocate a block. *)
 
 let f x y =

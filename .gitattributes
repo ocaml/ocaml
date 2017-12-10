@@ -16,6 +16,9 @@
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
+# Don't believe there's a way to wrap lines in .gitattributes
+.gitattributes ocaml-typo=long-line
+
 # Binary files
 /boot/ocamlc binary
 /boot/ocamllex binary
@@ -46,7 +49,8 @@ README*                  ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 # appveyor_build.cmd only has missing-header because dra27 too lazy to update
 # check-typo to interpret Cmd-style comments!
-/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header
+/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/appveyor_build.sh       ocaml-typo=non-ascii
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop

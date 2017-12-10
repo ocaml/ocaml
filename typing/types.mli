@@ -259,7 +259,11 @@ and value_kind =
                                         (* Self *)
   | Val_anc of (string * Ident.t) list * string
                                         (* Ancestor *)
-  | Val_unbound                         (* Unbound variable *)
+  | Val_unbound of value_unbound_reason (* Unbound variable *)
+
+and value_unbound_reason =
+  | Val_unbound_instance_variable
+  | Val_unbound_ghost_recursive
 
 (* Variance *)
 
@@ -473,7 +477,12 @@ and constructor_tag =
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
 
+(* Constructors are the same *)
 val equal_tag :  constructor_tag -> constructor_tag -> bool
+
+(* Constructors may be the same, given potential rebinding *)
+val may_equal_constr :
+    constructor_description ->  constructor_description -> bool
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

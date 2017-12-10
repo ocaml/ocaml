@@ -27,7 +27,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <io.h> /* for isatty */
 #include <direct.h> /* for _wchdir and _wgetcwd */
 #else
 #include <sys/wait.h>
@@ -154,6 +153,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
   CAML_INSTR_ATEXIT ();
   if (caml_cleanup_on_exit)
     caml_shutdown();
+#ifdef _WIN32
+  caml_restore_win32_terminal();
+#endif
   CAML_SYS_EXIT(retcode);
   return Val_unit;
 }
@@ -616,8 +618,7 @@ CAMLprim value caml_sys_isatty(value chan)
 
   fd = (Channel(chan))->fd;
 #ifdef _WIN32
-  ret = Val_bool(_isatty(fd));
-        /* https://msdn.microsoft.com/en-us/library/f4s0ddew.aspx */
+  ret = Val_bool(caml_win32_isatty(fd));
 #else
   ret = Val_bool(isatty(fd));
 #endif

@@ -29,23 +29,27 @@ let string_of_result = function
   | Fail reason -> string_of_reason "Fail" reason
   | Skip reason -> string_of_reason "Skip" reason
 
-type body = out_channel -> Environments.t -> result
+type code = out_channel -> Environments.t -> result
 
 type t = {
-  action_name : string;
-  action_environment : Environments.t -> Environments.t;
-  action_body : body
+  name : string;
+  body : code;
+  mutable hook : code option
 }
 
-let compare a1 a2 = String.compare a1.action_name a2.action_name
+let action_name a = a.name
+
+let make n c = { name = n; body = c; hook = None }
+
+let compare a1 a2 = String.compare a1.name a2.name
 
 let (actions : (string, t) Hashtbl.t) = Hashtbl.create 10
 
 let register action =
-  Hashtbl.add actions action.action_name action
+  Hashtbl.add actions action.name action
 
 let get_registered_actions () =
-  let f _action_name action acc = action::acc in
+  let f _name action acc = action::acc in
   let unsorted_actions = Hashtbl.fold f actions [] in
   List.sort compare unsorted_actions
 
@@ -53,15 +57,26 @@ let lookup name =
   try Some (Hashtbl.find actions name)
   with Not_found -> None
 
+let set_hook name hook =
+  let action = (Hashtbl.find actions name) in
+  action.hook <- Some hook
+
+let clear_hook name =
+  let action = (Hashtbl.find actions name) in
+  action.hook <- None
+
+let clear_all_hooks () =
+  let f _name action = action.hook <- None in
+  Hashtbl.iter f actions
+
 let run log env action =
-  action.action_body log env
+  let code = match action.hook with
+    | None -> action.body
+    | Some code -> code in
+  code log env
 
 module ActionSet = Set.Make
 (struct
   type nonrec t = t
   let compare = compare
 end)
-
-let update_environment initial_env actions =
-  let f act env = act.action_environment env in
-  ActionSet.fold f actions initial_env

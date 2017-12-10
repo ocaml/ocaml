@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* testing backreferences; some compilation scheme may handle
    differently recursive references to a mutually-recursive RHS
    depending on whether it is before or after in the bindings list *)

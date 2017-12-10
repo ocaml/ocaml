@@ -98,12 +98,18 @@ extern char_os * caml_executable_name(void);
 */
 extern char_os *caml_secure_getenv(char_os const *var);
 
+/* If [fd] refers to a terminal or console, return the number of rows
+   (lines) that it displays.  Otherwise, or if the number of rows
+   cannot be determined, return -1. */
+extern int caml_num_rows_fd(int fd);
+
 #ifdef _WIN32
 
 extern int caml_win32_rename(const wchar_t *, const wchar_t *);
 
 extern void caml_probe_win32_version(void);
 extern void caml_setup_win32_terminal(void);
+extern void caml_restore_win32_terminal(void);
 
 /* Windows Unicode support */
 
@@ -134,6 +140,8 @@ extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
    or in the current code page otherwise.
 */
 extern value caml_copy_string_of_utf16(const wchar_t *s);
+
+extern int caml_win32_isatty(int fd);
 
 #endif /* _WIN32 */
 
