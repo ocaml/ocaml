@@ -519,9 +519,6 @@ This syntax can be very useful when defining recursive functions involving
 GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
 The same feature is provided for method definitions.
-The @'method!'@ form combines this extension with the
-``explicit overriding'' extension described in
-section~\ref{s:explicit-overriding}.
 
 \section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}

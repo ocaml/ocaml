@@ -28,8 +28,6 @@ environment:
     CYG_CACHE: C:/cygwin64/var/cache/setup
     FLEXDLL_VERSION: 0.37
     OCAMLRUNPARAM: v=0,b
-    OCAMLROOT: "%PROGRAMFILES%/OCaml"
-    OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
 cache:
   - C:\cygwin64\var\cache\setup

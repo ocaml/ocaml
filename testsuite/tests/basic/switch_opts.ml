@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* Test for optimisation of jump tables to arrays of constants *)
 
 let p = Printf.printf

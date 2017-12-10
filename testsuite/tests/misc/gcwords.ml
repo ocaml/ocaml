@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 type t = Leaf of int | Branch of t * t
 
 type floatref = { mutable f : float }

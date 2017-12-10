@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* A variant of evaluation_order_1.ml where the side-effects
    are inside the blocks.
    Effect are not named to allow different evaluation orders (flambda

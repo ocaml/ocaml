@@ -333,7 +333,7 @@ module IdTbl =
         | None -> raise exn
         end
 
-    let rec find_name mark name tbl =
+    let rec find_name ~mark name tbl =
       try
         let (id, desc) = Ident.find_name name tbl.current in
         Pident id, desc
@@ -346,19 +346,17 @@ module IdTbl =
               if mark then begin match using with
               | None -> ()
               | Some f ->
-                  begin try f name (Some (snd (find_name false name next), snd res))
+                  begin try f name (Some (snd (find_name ~mark:false name next), snd res))
                   with Not_found -> f name None
                   end
               end;
               res
             with Not_found ->
-              find_name mark name next
+              find_name ~mark name next
             end
         | None ->
             raise exn
         end
-
-    let find_name name tbl = find_name true name tbl
 
     let rec update name f tbl =
       try
@@ -1112,18 +1110,18 @@ let mark_module_used env name loc =
     try Hashtbl.find module_declarations (name, loc) ()
     with Not_found -> ()
 
-let rec lookup_module_descr_aux ?loc lid env =
+let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
     Lident s ->
       begin try
-        IdTbl.find_name s env.components
+        IdTbl.find_name ~mark s env.components
       with Not_found ->
         if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
         (Pident(Ident.create_persistent s), ps.ps_comps)
       end
   | Ldot(l, s) ->
-      let (p, descr) = lookup_module_descr ?loc l env in
+      let (p, descr) = lookup_module_descr ?loc ~mark l env in
       begin match get_components descr with
         Structure_comps c ->
           let (descr, pos) = Tbl.find_str s c.comp_components in
@@ -1132,8 +1130,8 @@ let rec lookup_module_descr_aux ?loc lid env =
           raise Not_found
       end
   | Lapply(l1, l2) ->
-      let (p1, desc1) = lookup_module_descr ?loc l1 env in
-      let p2 = lookup_module ~load:true ?loc l2 env in
+      let (p1, desc1) = lookup_module_descr ?loc ~mark l1 env in
+      let p2 = lookup_module ~load:true ~mark ?loc l2 env in
       let {md_type=mty2} = find_module p2 env in
       begin match get_components desc1 with
         Functor_comps f ->
@@ -1144,9 +1142,9 @@ let rec lookup_module_descr_aux ?loc lid env =
           raise Not_found
       end
 
-and lookup_module_descr ?loc lid env =
-  let (p, comps) as res = lookup_module_descr_aux ?loc lid env in
-  mark_module_used env (Path.last p) comps.loc;
+and lookup_module_descr ?loc ~mark lid env =
+  let (p, comps) as res = lookup_module_descr_aux ?loc ~mark lid env in
+  if mark then mark_module_used env (Path.last p) comps.loc;
 (*
   Format.printf "USE module %s at %a@." (Path.last p)
     Location.print comps.loc;
@@ -1154,15 +1152,15 @@ and lookup_module_descr ?loc lid env =
   report_deprecated ?loc p comps.deprecated;
   res
 
-and lookup_module ~load ?loc lid env : Path.t =
+and lookup_module ~load ?loc ~mark lid env : Path.t =
   match lid with
     Lident s ->
       begin try
-        let (p, data) = IdTbl.find_name s env.modules in
+        let (p, data) = IdTbl.find_name ~mark s env.modules in
         let {md_loc; md_attributes; md_type} =
           EnvLazy.force subst_modtype_maker data
         in
-        mark_module_used env s md_loc;
+        if mark then mark_module_used env s md_loc;
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
@@ -1186,12 +1184,12 @@ and lookup_module ~load ?loc lid env : Path.t =
         p
       end
   | Ldot(l, s) ->
-      let (p, descr) = lookup_module_descr ?loc l env in
+      let (p, descr) = lookup_module_descr ?loc ~mark l env in
       begin match get_components descr with
         Structure_comps c ->
           let (_data, pos) = Tbl.find_str s c.comp_modules in
           let (comps, _) = Tbl.find_str s c.comp_components in
-          mark_module_used env s comps.loc;
+          if mark then mark_module_used env s comps.loc;
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
           p
@@ -1199,8 +1197,8 @@ and lookup_module ~load ?loc lid env : Path.t =
           raise Not_found
       end
   | Lapply(l1, l2) ->
-      let (p1, desc1) = lookup_module_descr ?loc l1 env in
-      let p2 = lookup_module ~load:true ?loc l2 env in
+      let (p1, desc1) = lookup_module_descr ?loc ~mark l1 env in
+      let p2 = lookup_module ~load:true ?loc ~mark l2 env in
       let {md_type=mty2} = find_module p2 env in
       let p = Papply(p1, p2) in
       begin match get_components desc1 with
@@ -1212,12 +1210,12 @@ and lookup_module ~load ?loc lid env : Path.t =
           raise Not_found
       end
 
-let lookup proj1 proj2 ?loc lid env =
+let lookup proj1 proj2 ?loc ~mark lid env =
   match lid with
     Lident s ->
-      IdTbl.find_name s (proj1 env)
+      IdTbl.find_name ~mark s (proj1 env)
   | Ldot(l, s) ->
-      let (p, desc) = lookup_module_descr ?loc l env in
+      let (p, desc) = lookup_module_descr ?loc ~mark l env in
       begin match get_components desc with
         Structure_comps c ->
           let (data, pos) = Tbl.find_str s (proj2 c) in
@@ -1228,7 +1226,7 @@ let lookup proj1 proj2 ?loc lid env =
   | Lapply _ ->
       raise Not_found
 
-let lookup_all_simple proj1 proj2 shadow ?loc lid env =
+let lookup_all_simple proj1 proj2 shadow ?loc ~mark lid env =
   match lid with
     Lident s ->
       let xl = TycompTbl.find_all s (proj1 env) in
@@ -1241,7 +1239,7 @@ let lookup_all_simple proj1 proj2 shadow ?loc lid env =
       in
         do_shadow xl
   | Ldot(l, s) ->
-      let (_p, desc) = lookup_module_descr ?loc l env in
+      let (_p, desc) = lookup_module_descr ?loc ~mark l env in
       begin match get_components desc with
         Structure_comps c ->
           let comps =
@@ -1330,14 +1328,14 @@ let set_type_used_callback name td callback =
   in
   Hashtbl.replace type_declarations key (fun () -> callback old)
 
-let lookup_value ?loc lid env =
-  let (_, desc) as r = lookup_value ?loc lid env in
-  mark_value_used env (Longident.last lid) desc;
+let lookup_value ?loc ?(mark = true) lid env =
+  let (_, desc) as r = lookup_value ?loc ~mark lid env in
+  if mark then mark_value_used env (Longident.last lid) desc;
   r
 
-let lookup_type ?loc lid env =
-  let (path, (decl, _)) = lookup_type ?loc lid env in
-  mark_type_used env (Longident.last lid) decl;
+let lookup_type ?loc ?(mark = true) lid env =
+  let (path, (decl, _)) = lookup_type ?loc ~mark lid env in
+  if mark then mark_type_used env (Longident.last lid) decl;
   path
 
 let mark_type_path env path =
@@ -1351,24 +1349,28 @@ let ty_path t =
   | {desc=Tconstr(path, _, _)} -> path
   | _ -> assert false
 
-let lookup_constructor ?loc lid env =
-  match lookup_all_constructors ?loc lid env with
+let lookup_constructor ?loc ?(mark = true) lid env =
+  match lookup_all_constructors ?loc ~mark lid env with
     [] -> raise Not_found
   | (desc, use) :: _ ->
-      mark_type_path env (ty_path desc.cstr_res);
-      use ();
+      if mark then begin
+        mark_type_path env (ty_path desc.cstr_res);
+        use ()
+      end;
       desc
 
 let is_lident = function
     Lident _ -> true
   | _ -> false
 
-let lookup_all_constructors ?loc lid env =
+let lookup_all_constructors ?loc ?(mark = true) lid env =
   try
-    let cstrs = lookup_all_constructors ?loc lid env in
+    let cstrs = lookup_all_constructors ?loc ~mark lid env in
     let wrap_use desc use () =
-      mark_type_path env (ty_path desc.cstr_res);
-      use ()
+      if mark then begin
+        mark_type_path env (ty_path desc.cstr_res);
+        use ()
+      end
     in
     List.map (fun (cstr, use) -> (cstr, wrap_use cstr use)) cstrs
   with
@@ -1390,34 +1392,44 @@ let mark_constructor usage env name desc =
       let ty_name = Path.last ty_path in
       mark_constructor_used usage env ty_name ty_decl name
 
-let lookup_label ?loc lid env =
-  match lookup_all_labels ?loc lid env with
+let lookup_label ?loc ?(mark = true) lid env =
+  match lookup_all_labels ?loc ~mark lid env with
     [] -> raise Not_found
   | (desc, use) :: _ ->
-      mark_type_path env (ty_path desc.lbl_res);
-      use ();
+      if mark then begin
+        mark_type_path env (ty_path desc.lbl_res);
+        use ()
+      end;
       desc
 
-let lookup_all_labels ?loc lid env =
+let lookup_all_labels ?loc ?(mark = true) lid env =
   try
-    let lbls = lookup_all_labels ?loc lid env in
+    let lbls = lookup_all_labels ?loc ~mark lid env in
     let wrap_use desc use () =
-      mark_type_path env (ty_path desc.lbl_res);
-      use ()
+      if mark then begin
+        mark_type_path env (ty_path desc.lbl_res);
+        use ()
+      end
     in
     List.map (fun (lbl, use) -> (lbl, wrap_use lbl use)) lbls
   with
     Not_found when is_lident lid -> []
 
-let lookup_class ?loc lid env =
-  let (_, desc) as r = lookup_class ?loc lid env in
+let lookup_module ~load ?loc ?(mark = true) lid env =
+  lookup_module ~load ?loc ~mark lid env
+
+let lookup_modtype ?loc ?(mark = true) lid env =
+  lookup_modtype ?loc ~mark lid env
+
+let lookup_class ?loc ?(mark = true) lid env =
+  let (_, desc) as r = lookup_class ?loc ~mark lid env in
   (* special support for Typeclass.unbound_class *)
-  if Path.name desc.cty_path = "" then ignore (lookup_type ?loc lid env)
-  else mark_type_path env desc.cty_path;
+  if Path.name desc.cty_path = "" then ignore (lookup_type ?loc ~mark lid env)
+  else if mark then mark_type_path env desc.cty_path;
   r
 
-let lookup_cltype ?loc lid env =
-  let (_, desc) as r = lookup_cltype ?loc lid env in
+let lookup_cltype ?loc ?(mark = true) lid env =
+  let (_, desc) as r = lookup_cltype ?loc ~mark lid env in
   if Path.name desc.clty_path = "" then ignore (lookup_type ?loc lid env)
   else mark_type_path env desc.clty_path;
   mark_type_path env desc.clty_path;
@@ -2206,7 +2218,7 @@ let find_all proj1 proj2 f lid env acc =
         (fun name (p, data) acc -> f name p data acc)
         (proj1 env) acc
     | Some l ->
-      let p, desc = lookup_module_descr l env in
+      let p, desc = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
@@ -2223,7 +2235,7 @@ let find_all_simple_list proj1 proj2 f lid env acc =
         (fun data acc -> f data acc)
         (proj1 env) acc
     | Some l ->
-      let (_p, desc) = lookup_module_descr l env in
+      let (_p, desc) = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
             Tbl.fold
@@ -2259,7 +2271,7 @@ let fold_modules f lid env acc =
         persistent_structures
         acc
     | Some l ->
-      let p, desc = lookup_module_descr l env in
+      let p, desc = lookup_module_descr ~mark:true l env in
       begin match get_components desc with
           Structure_comps c ->
             Tbl.fold

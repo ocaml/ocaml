@@ -64,6 +64,10 @@ myperror_with_location(__FILE__, __LINE__, settings, msg, ## __VA_ARGS__)
 
 /* Same remark as for the error macro. */
 
+#define child_error(msg, ...) \
+  myperror(msg, ## __VA_ARGS__); \
+  goto child_failed;
+
 static void open_error_with_location(
   const char *file, int line,
   const command_settings *settings,
@@ -122,33 +126,71 @@ static int paths_same_file(
   return same_file;
 }
 
+static void update_environment(array local_env)
+{
+  array envp;
+  for (envp = local_env; *envp != NULL; envp++) {
+    char *pos_eq = strchr(*envp, '=');
+    if (pos_eq != NULL) {
+      char *name, *value;
+      int name_length = pos_eq - *envp;
+      int l = strlen(*envp);
+      int value_length = l - (name_length +1);
+      name = malloc(name_length+1);
+      value = malloc(value_length+1);
+      memcpy(name, *envp, name_length);
+      name[name_length] = '\0';
+      memcpy(value, pos_eq + 1, value_length);
+      value[value_length] = '\0';
+      setenv(name, value, 1); /* 1 means overwrite */
+    }
+  }
+}
+
+/*
+  This function should retunr an exitcode that can itslef be returned
+  to its father through the exit system call.
+  So it returns 0 to report success and 1 to report an error
+
+ */
 static int run_command_child(const command_settings *settings)
 {
-  int res;
   int stdin_fd = -1, stdout_fd = -1, stderr_fd = -1; /* -1 = no redir */
   int inputFlags = O_RDONLY;
   int outputFlags =
     O_CREAT | O_WRONLY | (settings->append ? O_APPEND : O_TRUNC);
   int inputMode = 0400, outputMode = 0666;
 
-  if (setpgid(0, 0) == -1) myperror("setpgid");
+  if (setpgid(0, 0) == -1)
+  {
+    child_error("setpgid");
+  }
 
   if (is_defined(settings->stdin_filename))
   {
     stdin_fd = open(settings->stdin_filename, inputFlags, inputMode);
     if (stdin_fd < 0)
+    {
       open_error(settings->stdin_filename);
-    if ( dup2(stdin_fd, STDIN_FILENO) == -1 )
-      myperror("dup2 for stdin");
+      goto child_failed;
+    }
+    if (dup2(stdin_fd, STDIN_FILENO) == -1)
+    {
+      child_error("dup2 for stdin");
+    }
   }
 
   if (is_defined(settings->stdout_filename))
   {
     stdout_fd = open(settings->stdout_filename, outputFlags, outputMode);
-    if (stdout_fd < 0)
+    if (stdout_fd < 0) {
       open_error(settings->stdout_filename);
-    if ( dup2(stdout_fd, STDOUT_FILENO) == -1 )
-      myperror("dup2 for stdout");
+      goto child_failed;
+    }
+    if (dup2(stdout_fd, STDOUT_FILENO) == -1)
+    {
+      child_error("dup2 for stdout");
+    }
   }
 
   if (is_defined(settings->stderr_filename))
@@ -162,16 +204,26 @@ static int run_command_child(const command_settings *settings)
     if (stderr_fd == -1)
     {
       stderr_fd = open(settings->stderr_filename, outputFlags, outputMode);
-      if (stderr_fd == -1) open_error(settings->stderr_filename);
+      if (stderr_fd == -1)
+      {
+        open_error(settings->stderr_filename);
+        goto child_failed;
+      }
     }
-    if ( dup2(stderr_fd, STDERR_FILENO) == -1 )
-      myperror("dup2 for stderr");
+    if (dup2(stderr_fd, STDERR_FILENO) == -1)
+    {
+      child_error("dup2 for stderr");
+    }
   }
 
-  res = execvp(settings->program, settings->argv); /* , settings->envp); */
+  update_environment(settings->envp);
+
+  execvp(settings->program, settings->argv);
 
   myperror("Cannot execute %s", settings->program);
-  return res;
+
+child_failed:
+  return 1;
 }
 
 /* Handles the termination of a process. Arguments:
@@ -244,7 +296,7 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
     pid = wait(&status);
     if (pid == -1)
     {
-      switch errno
+      switch (errno)
       {
         case EINTR:
           if ((settings->timeout > 0) && (timeout_expired))
@@ -273,7 +325,15 @@ static int run_command_parent(const command_settings *settings, pid_t child_pid)
 int run_command(const command_settings *settings)
 {
   pid_t child_pid = fork();
-  if (child_pid == -1) myperror("fork");
-  if (child_pid == 0) return run_command_child(settings);
-  else return run_command_parent(settings, child_pid);
+
+  switch (child_pid)
+  {
+    case -1:
+      myperror("fork");
+      return -1;
+    case 0: /* child process */
+      exit( run_command_child(settings) );
+    default:
+      return run_command_parent(settings, child_pid);
+  }
 }

@@ -33,7 +33,6 @@ cpp='cpp'
 asoption=''
 asppoption=''
 cclibs=''
-curseslibs=''
 mathlib='-lm'
 dllib=''
 x11_include_dir=''
@@ -46,7 +45,6 @@ graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
 verbose=false
-with_curses=yes
 debugruntime=false
 with_instrumented_runtime=false
 with_sharedlibs=true
@@ -152,7 +150,7 @@ while : ; do
     -lib*)
         cclibs="$2 $cclibs"; shift;;
     -no-curses|--no-curses)
-        with_curses=no;;
+        ;;  # Ignored for backward compatibility
     -no-shared-libs|--no-shared-libs)
         with_sharedlibs=false;;
     -x11include*|--x11include*)
@@ -544,7 +542,6 @@ case "$cc,$target" in
     exe=".exe"
     ostype="Cygwin";;
   *,*-*-mingw*)
-    dllccompopt="-DCAML_DLL"
     if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
@@ -1191,19 +1188,6 @@ if sh ./hasgot -i unistd.h issetugid; then
   echo "#define HAS_ISSETUGID" >> s.h
 fi
 
-# For the terminfo module
-
-if test "$with_curses" = "yes"; then
-  for libs in "" "-lcurses" "-ltermcap" "-lcurses -ltermcap" "-lncurses"; do
-    if sh ./hasgot $libs tgetent tgetstr tgetnum tputs; then
-      inf "termcap functions found (with libraries '$libs')"
-      echo "#define HAS_TERMCAP" >> s.h
-      curseslibs="${libs}"
-      break
-    fi
-  done
-fi
-
 # For instrumented runtime
 # (clock_gettime needs -lrt for glibc before 2.17)
 if $with_instrumented_runtime; then
@@ -1793,7 +1777,6 @@ if test "$x11_include" = "not found"; then
       if test $dir = /usr/lib; then
         x11_link="-lX11"
       else
-        x11_libs="-L$dir"
         case "$target" in
           *-*-freebsd*|*-*-dragonfly*) x11_link="-L$dir -lX11";;
           *-kfreebsd*-gnu) x11_link="-L$dir -lX11";;
@@ -2057,8 +2040,7 @@ config CPPFLAGS "$common_cppflags $internal_cppflags"
 config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
 config OCAMLC_CPPFLAGS "$common_cppflags"
 config LDFLAGS "$ldflags"
-config BYTECCLIBS "$cclibs $dllib $curseslibs $pthread_link \
-                 $instrumented_runtime_libs"
+config BYTECCLIBS "$cclibs $dllib $pthread_link $instrumented_runtime_libs"
 config RPATH "$rpath"
 config EXE "$exe"
 config EMPTY ""
@@ -2072,9 +2054,9 @@ SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
 ### How to build a static library
-MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
+MKLIB=rm -f \$(1) && ${TOOLPREF}ar rc \$(1) \$(2) && ${TOOLPREF}ranlib \$(1)
 #ml let mklib out files opts =      (* "" *)
-#ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s"
+#ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s && ${TOOLPREF}ranlib %s"
 #ml                  out opts files out;;
 EOF
 config ARCH "$arch"
@@ -2158,8 +2140,7 @@ inf "        manual pages.............. $mandir (with extension .$programs_man_s
 inf "Configuration for the bytecode compiler:"
 inf "        C compiler used........... $cc"
 inf "        options for compiling..... $common_cflags"
-inf "        options for linking....... $ldflags $cclibs $dllib" \
-                                       "$curseslibs $pthread_link"
+inf "        options for linking....... $ldflags $cclibs $dllib $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
 inf "        options for compiling..... $sharedcccompopts $common_cflags"
@@ -2203,7 +2184,7 @@ else
   fi
   if $with_spacetime; then
     inf "        spacetime profiling....... yes"
-    if test "$with_spacetime_call_counts" = "true"; then
+    if test "$enable_call_counts" = "true"; then
       inf "          ... with call counts.... yes"
     else
       inf "          ... with call counts.... no"

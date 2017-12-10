@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 #include <fcntl.h>
 #include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
@@ -428,3 +429,19 @@ char *caml_secure_getenv (char const *var)
     return NULL;
 #endif
 }
+
+int caml_num_rows_fd(int fd)
+{
+#ifdef TIOCGWINSZ
+  struct winsize w;
+  w.ws_row = -1;
+  if (ioctl(fd, TIOCGWINSZ, &w) == 0)
+    return w.ws_row;
+  else
+    return -1;
+#else
+  return -1;
+#endif
+}
+
+

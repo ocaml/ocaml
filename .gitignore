@@ -241,6 +241,7 @@ _ocamltest
 /testsuite/**/*.native
 /testsuite/**/program
 /testsuite/**/_log
+/testsuite/failure.stamp
 
 /testsuite/_retries
 
@@ -251,7 +252,6 @@ _ocamltest
 /testsuite/tests/asmgen/*.s
 /testsuite/tests/asmgen/*.out.manifest
 
-/testsuite/tests/basic/*.safe-string
 
 /testsuite/tests/embedded/caml
 

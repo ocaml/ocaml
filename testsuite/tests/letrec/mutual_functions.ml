@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* a simple test with mutually recursive functions *)
 let test =
   let rec even = function

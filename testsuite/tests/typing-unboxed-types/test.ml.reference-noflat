@@ -169,4 +169,9 @@ and _ t = T : 'a -> 'a s t
 #             type 'a s
 type ('a, 'p) t = private 'a s
 type 'a packed = T : ('a, 'b) t -> 'a packed [@@unboxed]
+#         type f = { field : 'a. 'a list; } [@@unboxed]
+# val g : f array =
+  [|{field = []}; {field = []}; {field = []}; {field = []}; {field = []};
+    {field = []}; {field = []}; {field = []}; {field = []}; {field = []}|]
+# val h : f = {field = []}
 # 

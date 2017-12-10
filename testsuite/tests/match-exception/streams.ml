@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (**
    Test the stream example .
 *)

@@ -104,10 +104,9 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typedtreeIter.cmo typing/typedtreeMap.cmo \
   typing/tast_mapper.cmo \
   typing/cmt_format.cmo typing/untypeast.cmo \
-  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
-  typing/stypes.cmo typing/typedecl.cmo typing/typeopt.cmo typing/typecore.cmo \
-  typing/typeclass.cmo \
-  typing/typemod.cmo
+  typing/includemod.cmo typing/typetexp.cmo typing/printpat.cmo \
+  typing/parmatch.cmo typing/stypes.cmo typing/typedecl.cmo typing/typeopt.cmo \
+  typing/typecore.cmo typing/typeclass.cmo typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
@@ -1130,7 +1129,7 @@ lintapidiff:
 	$(MAKE) -C tools lintapidiff.opt
 	git ls-files -- 'otherlibs/*/*.mli' 'stdlib/*.mli' |\
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
-	    tools/lintapidiff.opt $VERSIONS
+	    tools/lintapidiff.opt $(VERSIONS)
 
 # Make clean in the test suite
 
