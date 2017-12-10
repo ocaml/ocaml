@@ -92,18 +92,22 @@ Working version
 
 ### Bug fixes
 
-- MPR#6394, GPR#1425: fix fatal_error from Parmatch.get_type_path
-  (Virgile Prevosto, review by David Allsopp, Thomas Refis and Jacques Garrigue)
-
-* PR#6604, GPR#931: Only allow directives with filename and at the beginning of
-  the line
-  (Tadeu Zagallo, report by Roberto Di Cosmo,
-   review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
-
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
   for a bytecode executable file, skip directories and other
   non-regular files, like other Unix variants do.
   (Xavier Leroy)
+
+- MPR#6394, GPR#1425: fix fatal_error from Parmatch.get_type_path
+  (Virgile Prevosto, review by David Allsopp, Thomas Refis and Jacques Garrigue)
+
+* MPR#6604, GPR#931: Only allow directives with filename and at the beginning of
+  the line
+  (Tadeu Zagallo, report by Roberto Di Cosmo,
+   review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
+
+- PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
+  avoid unintended shifts of the argument timestamp depending on DST setting.
+  (Nicolas Ojeda Bar, review by David Allsopp, Xavier Leroy)
 
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
