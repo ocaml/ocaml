@@ -16,13 +16,18 @@
 # The main Makefile
 
 # Hard bootstrap how-to:
-# (only necessary in some cases, for example if you remove some primitive)
+# (only necessary if you remove or rename some primitive)
 #
-# make coreboot     [old system -- you were in a stable state]
-# <change the source>
-# make clean runtime coreall
-# <debug your changes>
-# make clean runtime coreall
+# make core     [old system -- you were in a stable state]
+# make coreboot [optional -- check state stability]
+# <add new primitives and remove uses of old primitives>
+# make clean && make core
+# if the above fails:
+#     <debug your changes>
+#     make clean && make core
+# make coreboot [intermediate state with both old and new primitives]
+# <remove old primitives>
+# make clean && make runtime && make coreall
 # make coreboot [new system -- now in a stable state]
 
 include config/Makefile
@@ -280,7 +285,7 @@ RUNTOP=./byterun/ocamlrun ./ocaml \
   -noinit $(TOPFLAGS) \
   -I otherlibs/$(UNIXLIB)
 NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
-ifeq "UNIX_OR_WIN32" "unix"
+ifeq "$(UNIX_OR_WIN32)" "unix"
 EXTRAPATH=
 else
 EXTRAPATH = PATH="otherlibs/win32unix:$(PATH)"
@@ -398,11 +403,7 @@ coreall:
 # Build the core system: the minimum needed to make depend and bootstrap
 .PHONY: core
 core:
-ifeq "$(UNIX_OR_WIN32)" "unix"
 	$(MAKE) coldstart
-else # Windows, to be fixed!
-	$(MAKE) runtime
-endif
 	$(MAKE) coreall
 
 # Save the current bootstrap compiler
@@ -461,19 +462,13 @@ opt-core: runtimeopt
 
 .PHONY: opt
 opt:
-ifeq "$(UNIX_OR_WIN32)" "unix"
 	$(MAKE) runtimeopt
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt ocamltoolsopt
-else
-	$(MAKE) opt-core
-	$(MAKE) otherlibrariesopt ocamltoolsopt
-endif
 
 # Native-code versions of the tools
 .PHONY: opt.opt
-ifeq "$(UNIX_OR_WIN32)" "unix"
 opt.opt:
 	$(MAKE) checkstack
 	$(MAKE) runtime
@@ -486,23 +481,6 @@ opt.opt:
 	$(MAKE) otherlibrariesopt
 	$(MAKE) ocamllex.opt ocamltoolsopt ocamltoolsopt.opt $(OCAMLDOC_OPT) \
 	  ocamltest.opt
-else
-opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
-         ocamltoolsopt ocamltoolsopt.opt otherlibrariesopt $(OCAMLDOC_OPT) \
-         ocamltest.opt
-endif
-
-.PHONY: base.opt
-base.opt:
-	$(MAKE) checkstack
-	$(MAKE) runtime
-	$(MAKE) core
-	$(MAKE) ocaml
-	$(MAKE) opt-core
-	$(MAKE) ocamlc.opt
-	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
-	$(MAKE) ocamlopt.opt
-	$(MAKE) otherlibrariesopt
 
 # Core bootstrapping cycle
 .PHONY: coreboot
@@ -679,12 +657,12 @@ installopt:
 	$(MAKE) -C stdlib installopt
 	cp middle_end/*.cmi middle_end/*.cmt middle_end/*.cmti \
 	    middle_end/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
+	    "$(INSTALL_COMPLIBDIR)"
 	cp middle_end/base_types/*.cmi middle_end/base_types/*.cmt \
 	    middle_end/base_types/*.cmti middle_end/base_types/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
+	    "$(INSTALL_COMPLIBDIR)"
 	cp asmcomp/*.cmi asmcomp/*.cmt asmcomp/*.cmti asmcomp/*.mli \
-		"$(INSTALL_COMPLIBDIR)"
+	    "$(INSTALL_COMPLIBDIR)"
 	cp compilerlibs/ocamloptcomp.cma $(OPTSTART) "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  $(MAKE) -C ocamldoc installopt; \
@@ -818,21 +796,17 @@ partialclean::
 
 .PHONY: runtop
 runtop:
-ifeq "$(UNIX_OR_WIN32)" "unix"
-	$(MAKE) runtime
-	$(MAKE) coreall
+	$(MAKE) coldstart
+	$(MAKE) ocamlc
+	$(MAKE) otherlibraries
 	$(MAKE) ocaml
-else
-	$(MAKE) core
-	$(MAKE) ocaml
-endif
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(RUNTOP) ||\
 	  $(EXTRAPATH) $(RUNTOP)
 
 .PHONY: natruntop
 natruntop:
-	$(MAKE) runtime
-	$(MAKE) coreall
+	$(MAKE) core
+	$(MAKE) opt
 	$(MAKE) opt.opt
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) ||\
@@ -1110,15 +1084,16 @@ ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
 partialclean::
 	$(MAKE) -C debugger clean
 
-# Check that the stack limit is reasonable.
-ifeq "$(UNIX_OR_WIN32)" "unix"
+# Check that the stack limit is reasonable (Unix-only)
 .PHONY: checkstack
 checkstack:
+ifeq "$(UNIX_OR_WIN32)" "unix"
 	if $(MKEXE) $(OUTPUTEXE)tools/checkstack$(EXE) tools/checkstack.c; \
 	  then tools/checkstack$(EXE); \
-	  else :; \
 	fi
 	rm -f tools/checkstack$(EXE)
+else
+	@
 endif
 
 # Lint @since and @deprecated annotations
@@ -1135,19 +1110,6 @@ lintapidiff:
 
 clean::
 	cd testsuite; $(MAKE) clean
-
-# Make MacOS X package
-ifeq "$(UNIX_OR_WIN32)" "unix"
-.PHONY: package-macosx
-package-macosx:
-	sudo rm -rf package-macosx/root
-	$(MAKE) PREFIX="`pwd`"/package-macosx/root install
-	tools/make-package-macosx
-	sudo rm -rf package-macosx/root
-
-clean::
-	rm -rf package-macosx/*.pkg package-macosx/*.dmg
-endif
 
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code

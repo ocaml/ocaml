@@ -218,14 +218,11 @@ case $configure in
   *) error "internal error";;
 esac
 
-$make $jobs coldstart
-$make $jobs core
-$make $jobs coreboot
-$make $jobs world
 if $make_native; then
-  $make $jobs opt
-  $make $jobs opt.opt
+  $make $jobs world.opt
   if $check_make_alldepend; then $make alldepend; fi
+else
+  $make $jobs world
 fi
 if $dorebase; then
     # temporary solution to the cygwin fork problem
