@@ -45,8 +45,8 @@ graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
 verbose=false
-debugruntime=false
-with_instrumented_runtime=false
+debugruntime=true
+with_instrumented_runtime=true
 with_sharedlibs=true
 partialld="ld -r"
 with_debugger=ocamldebugger
@@ -171,9 +171,13 @@ while : ; do
     -verbose|--verbose)
         verbose=true;;
     -with-debug-runtime|--with-debug-runtime)
-        debugruntime=true;;
+        debugruntime=true;; # default
+    -no-debug-runtime|--no-debug-runtime)
+        debugruntime=false;;
     -with-instrumented-runtime|--with-instrumented-runtime)
-        with_instrumented_runtime=true;;
+        with_instrumented_runtime=true;; # default
+    -no-instrumented-runtime|--no-instrumented-runtime)
+        with_instrumented_runtime=false;;
     -no-debugger|--no-debugger)
         with_debugger="";;
     -no-ocamldoc|--no-ocamldoc)
