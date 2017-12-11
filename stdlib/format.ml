@@ -789,7 +789,8 @@ let pp_set_min_space_left state n =
    pp_max_indent = pp_margin - pp_min_space_left, and
    pp_space_left = pp_margin. *)
 let pp_set_max_indent state n =
-  pp_set_min_space_left state (state.pp_margin - n)
+  if n > 1 then
+    pp_set_min_space_left state (state.pp_margin - n)
 
 
 let pp_get_max_indent state () = state.pp_max_indent
