@@ -160,7 +160,7 @@ static void do_compaction (void)
 {
   char *ch, *chend;
   CAMLassert (caml_gc_phase == Phase_idle);
-  caml_gc_message (0x10, "Compacting heap...\n", 0);
+  caml_gc_message (0x10, "Compacting heap...\n");
 
 #ifdef DEBUG
   caml_heap_check ();
@@ -417,7 +417,7 @@ static void do_compaction (void)
     }
   }
   ++ caml_stat_compactions;
-  caml_gc_message (0x10, "done.\n", 0);
+  caml_gc_message (0x10, "done.\n");
 }
 
 uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
@@ -474,7 +474,8 @@ void caml_compact_heap (void)
     /* Recompact. */
     char *chunk;
 
-    caml_gc_message (0x10, "Recompacting heap (target=%luk words)\n",
+    caml_gc_message (0x10, "Recompacting heap (target=%"
+                     ARCH_INTNAT_PRINTF_FORMAT "uk words)\n",
                      target_wsz / 1024);
 
     chunk = caml_alloc_for_heap (Bsize_wsize (target_wsz));
@@ -543,7 +544,7 @@ void caml_compact_heap_maybe (void)
                           ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
                    (uintnat) fp);
   if (fp >= caml_percent_max){
-    caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
+    caml_gc_message (0x200, "Automatic compaction triggered.\n");
     caml_empty_minor_heap ();  /* minor heap must be empty for compaction */
     caml_finish_major_cycle ();
 
@@ -555,7 +556,7 @@ void caml_compact_heap_maybe (void)
     if (fp >= caml_percent_max)
          caml_compact_heap ();
     else
-         caml_gc_message (0x200, "Automatic compaction aborted.\n", 0);
+         caml_gc_message (0x200, "Automatic compaction aborted.\n");
 
   }
 }

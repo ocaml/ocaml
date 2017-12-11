@@ -101,7 +101,7 @@ val flatten : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list). *)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 
 val iter : f:('a -> unit) -> 'a list -> unit
@@ -142,7 +142,7 @@ val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 
-(** {6 Iterators on two lists} *)
+(** {1 Iterators on two lists} *)
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
@@ -177,7 +177,7 @@ val fold_right2 :
    to have different lengths.  Not tail-recursive. *)
 
 
-(** {6 List scanning} *)
+(** {1 List scanning} *)
 
 
 val for_all : f:('a -> bool) -> 'a list -> bool
@@ -209,7 +209,7 @@ val memq : 'a -> set:'a list -> bool
    equality to compare list elements. *)
 
 
-(** {6 List searching} *)
+(** {1 List searching} *)
 
 
 val find : f:('a -> bool) -> 'a list -> 'a
@@ -241,7 +241,7 @@ val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
    The order of the elements in the input list is preserved. *)
 
 
-(** {6 Association lists} *)
+(** {1 Association lists} *)
 
 
 val assoc : 'a -> ('a * 'b) list -> 'b
@@ -289,7 +289,7 @@ val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
    of structural equality to compare keys.  Not tail-recursive. *)
 
 
-(** {6 Lists of pairs} *)
+(** {1 Lists of pairs} *)
 
 
 val split : ('a * 'b) list -> 'a list * 'b list
@@ -306,7 +306,7 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    have different lengths.  Not tail-recursive. *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list

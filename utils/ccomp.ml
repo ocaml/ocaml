@@ -64,7 +64,7 @@ let display_msvc_output file name =
     close_in c;
     Sys.remove file
 
-let compile_file name =
+let compile_file ?output ?(opt="") name =
   let (pipe, file) =
     if Config.ccomp_type = "msvc" && not !Clflags.verbose then
       try
@@ -78,7 +78,7 @@ let compile_file name =
   let exit =
     command
       (Printf.sprintf
-         "%s -c %s %s %s %s %s%s"
+         "%s %s %s -c %s %s %s %s %s%s"
          (match !Clflags.c_compiler with
           | Some cc -> cc
           | None ->
@@ -87,6 +87,10 @@ let compile_file name =
                   then (Config.ocamlopt_cflags, Config.ocamlopt_cppflags)
                   else (Config.ocamlc_cflags, Config.ocamlc_cppflags) in
               (String.concat " " [Config.c_compiler; cflags; cppflags]))
+         (match output with
+          | None -> ""
+          | Some o -> Printf.sprintf "%s%s" Config.c_output_obj o)
+         opt
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
          (String.concat " " (List.rev !Clflags.all_ccopts))
          (quote_prefixed "-I" (List.rev !Clflags.include_dirs))

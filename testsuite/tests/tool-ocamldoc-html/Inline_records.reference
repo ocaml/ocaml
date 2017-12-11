@@ -17,7 +17,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Inline_records.html">Inline_records</a></h1>
 
-<pre><span class="keyword">module</span> Inline_records: <code class="code"><span class="keyword">sig</span></code> <a href="Inline_records.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<pre><span id="MODULEInline_records"><span class="keyword">module</span> Inline_records</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Inline_records.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>This test focuses on the printing of documentation for inline record
   within the latex generator.</p>

@@ -69,11 +69,11 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLlocal3 (res, handle, header);
   void *sym;
   void *dlhandle;
-  char *p;
+  char_os *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_stat_strdup(String_val(filename));
+  p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
   dlhandle = caml_dlopen(p, 1, Int_val(global));
   caml_leave_blocking_section();
@@ -151,11 +151,11 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLparam2 (filename, symbol);
   CAMLlocal3 (res, v, handle_v);
   void *handle;
-  char *p;
+  char_os *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_stat_strdup(String_val(filename));
+  p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, 1, 1);
   caml_leave_blocking_section();

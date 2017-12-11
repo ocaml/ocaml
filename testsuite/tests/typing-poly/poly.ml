@@ -1376,15 +1376,11 @@ end;;
 [%%expect {|
 val n : < m : 'x 'a. ([< `Foo of 'x ] as 'a) -> 'x > = <obj>
 |}];;
-(* ok, but not with -principal *)
+(* ok *)
 let n =
   object method m : 'x. [< `Foo of 'x] -> 'x = fun x -> assert false end;;
 [%%expect {|
 val n : < m : 'x. [< `Foo of 'x ] -> 'x > = <obj>
-|}, Principal{|
-Line _, characters 47-68:
-Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
-       which is less general than 'x. 'a -> 'x
 |}];;
 (* fail *)
 let (n : < m : 'a. [< `Foo of int] -> 'a >) =
@@ -1395,10 +1391,6 @@ Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
        The universal variable 'x would escape its scope
-|}, Principal{|
-Line _, characters 47-68:
-Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
-       which is less general than 'x. 'a -> 'x
 |}];;
 (* fail *)
 let (n : 'b -> < m : 'a . ([< `Foo of int] as 'b) -> 'a >) = fun x ->
@@ -1409,10 +1401,6 @@ Error: This expression has type < m : 'x. [< `Foo of 'x ] -> 'x >
        but an expression was expected of type
          < m : 'a. [< `Foo of int ] -> 'a >
        The universal variable 'x would escape its scope
-|}, Principal{|
-Line _, characters 47-68:
-Error: This method has type ([< `Foo of 'b ] as 'a) -> 'b
-       which is less general than 'x. 'a -> 'x
 |}];;
 
 (* PR#6171 *)
@@ -1448,7 +1436,7 @@ type ('c, 't) pvariant = [ `V of 'c * 't t ]
 class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
 val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
 val f1 :
-  < mthod : 't. 'a -> 't t -> [< ('a, 't) pvariant ]; .. > ->
+  < mthod : 't. 'a -> 't t -> [< `V of 'a * 't t ]; .. > ->
   'a -> 'b t -> 'b t = <fun>
 |}]
 

@@ -465,6 +465,7 @@ let package_type_of_module_type pmty =
 %token <string> INFIXOP2
 %token <string> INFIXOP3
 %token <string> INFIXOP4
+%token <string> DOTOP
 %token INHERIT
 %token INITIALIZER
 %token <string * char option> INT
@@ -597,7 +598,7 @@ The precedences must be listed from low to high.
 %nonassoc HASH                         /* simple_expr/toplevel_directive */
 %left     HASHOP
 %nonassoc below_DOT
-%nonassoc DOT
+%nonassoc DOT DOTOP
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
@@ -1266,7 +1267,7 @@ and_class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | expr SEMI                     { reloc_exp $1 }
+  | expr SEMI                     { $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
   | expr SEMI PERCENT attr_id seq_expr
       { let seq = mkexp(Pexp_sequence ($1, $5)) in
@@ -1357,8 +1358,6 @@ expr:
       { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
-      { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$5;$7])) (symbol_rloc()) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -1411,8 +1410,26 @@ expr:
   | simple_expr DOT LBRACKET seq_expr RBRACKET LESSMINUS expr
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "String" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
-  | simple_expr DOT LBRACE expr RBRACE LESSMINUS expr
+  | simple_expr DOT LBRACE seq_expr RBRACE LESSMINUS expr
       { bigarray_set $1 $4 $7 }
+  | simple_expr DOTOP LBRACKET seq_expr RBRACKET LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "[]<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
+  | simple_expr DOTOP LPAREN seq_expr RPAREN LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
+  | simple_expr DOTOP LBRACE seq_expr RBRACE LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $4; Nolabel, $7]) }
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr RBRACKET LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3,"." ^ $4 ^ "[]<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr RPAREN LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "()<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr RBRACE LESSMINUS expr
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "{}<-")) in
+        mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
   | label LESSMINUS expr
       { mkexp(Pexp_setinstvar(mkrhs $1 1, $3)) }
   | ASSERT ext_attributes simple_expr %prec below_HASH
@@ -1469,7 +1486,37 @@ simple_expr:
                          [Nolabel,$1; Nolabel,$4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
-  | simple_expr DOT LBRACE expr RBRACE
+  | simple_expr DOTOP LBRACKET seq_expr RBRACKET
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "[]")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LBRACKET seq_expr error
+      { unclosed "[" 3 "]" 5 }
+  | simple_expr DOTOP LPAREN seq_expr RPAREN
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "()")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LPAREN seq_expr error
+      { unclosed "(" 3 ")" 5 }
+  | simple_expr DOTOP LBRACE seq_expr RBRACE
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Lident ("." ^ $2 ^ "{}")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $4]) }
+  | simple_expr DOTOP LBRACE seq_expr error
+      { unclosed "{" 3 "}" 5 }
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr RBRACKET
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "[]")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
+  | simple_expr DOT mod_longident DOTOP LBRACKET seq_expr error
+      { unclosed "[" 5 "]" 7 }
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr RPAREN
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "()")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
+  | simple_expr DOT mod_longident DOTOP LPAREN seq_expr error
+      { unclosed "(" 5 ")" 7 }
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr RBRACE
+      { let id = mkexp @@ Pexp_ident( ghloc @@ Ldot($3, "." ^ $4 ^ "{}")) in
+        mkexp @@ Pexp_apply(id, [Nolabel, $1; Nolabel, $6]) }
+  | simple_expr DOT mod_longident DOTOP LBRACE seq_expr error
+      { unclosed "{" 5 "}" 7 }
+  | simple_expr DOT LBRACE seq_expr RBRACE
       { bigarray_get $1 $4 }
   | simple_expr DOT LBRACE expr_comma_list error
       { unclosed "{" 3 "}" 5 }
@@ -1749,10 +1796,6 @@ pattern_gen:
       { mkpat(Ppat_construct(mkrhs $1 1, Some $2)) }
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
-      { mkpat_cons (rhs_loc 2) (ghpat(Ppat_tuple[$5;$7])) (symbol_rloc()) }
-  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern error
-      { unclosed "(" 4 ")" 8 }
   | LAZY ext_attributes simple_pattern
       { mkpat_attrs (Ppat_lazy $3) $2}
 ;
@@ -1932,12 +1975,14 @@ type_kind:
       { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL DOTDOT
       { (Ptype_open, Public, None) }
+  | EQUAL PRIVATE DOTDOT
+      { (Ptype_open, Private, None) }
   | EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $4, $2, None) }
   | EQUAL core_type EQUAL private_flag constructor_declarations
       { (Ptype_variant(List.rev $5), $4, Some $2) }
-  | EQUAL core_type EQUAL DOTDOT
-      { (Ptype_open, Public, Some $2) }
+  | EQUAL core_type EQUAL private_flag DOTDOT
+      { (Ptype_open, $4, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations RBRACE
       { (Ptype_record $6, $4, Some $2) }
 ;
@@ -1959,11 +2004,6 @@ optional_type_variable:
 ;
 
 
-type_parameters:
-    /*empty*/                                   { [] }
-  | type_parameter                              { [$1] }
-  | LPAREN type_parameter_list RPAREN           { List.rev $2 }
-;
 type_parameter:
     type_variance type_variable                   { $2, $1 }
 ;
@@ -2128,8 +2168,8 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type_no_attr
-    constraints
+    TYPE optional_type_parameters label_longident with_type_binder
+    core_type_no_attr constraints
       { Pwith_type
           (mkrhs $3 3,
            (Type.mk (mkrhs (Longident.last $3) 3)
@@ -2140,15 +2180,16 @@ with_constraint:
               ~loc:(symbol_rloc()))) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
-  | TYPE type_parameters label COLONEQUAL core_type_no_attr
+  | TYPE optional_type_parameters label_longident COLONEQUAL core_type_no_attr
       { Pwith_typesubst
-          (Type.mk (mkrhs $3 3)
+         (mkrhs $3 3,
+           (Type.mk (mkrhs (Longident.last $3) 3)
              ~params:$2
              ~manifest:$5
-             ~loc:(symbol_rloc())) }
+             ~loc:(symbol_rloc()))) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { Pwith_module (mkrhs $2 2, mkrhs $4 4) }
-  | MODULE UIDENT COLONEQUAL mod_ext_longident
+  | MODULE mod_longident COLONEQUAL mod_ext_longident
       { Pwith_modsubst (mkrhs $2 2, mkrhs $4 4) }
 ;
 with_type_binder:
@@ -2368,7 +2409,13 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
-  | HASHOP                                     { $1 }
+  | DOTOP LPAREN RPAREN                         { "."^ $1 ^"()" }
+  | DOTOP LPAREN RPAREN LESSMINUS               { "."^ $1 ^ "()<-" }
+  | DOTOP LBRACKET RBRACKET                     { "."^ $1 ^"[]" }
+  | DOTOP LBRACKET RBRACKET LESSMINUS           { "."^ $1 ^ "[]<-" }
+  | DOTOP LBRACE RBRACE                         { "."^ $1 ^"{}" }
+  | DOTOP LBRACE RBRACE LESSMINUS               { "."^ $1 ^ "{}<-" }
+  | HASHOP                                      { $1 }
   | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
@@ -2390,7 +2437,6 @@ constr_ident:
     UIDENT                                      { $1 }
   | LBRACKET RBRACKET                           { "[]" }
   | LPAREN RPAREN                               { "()" }
-  /* | COLONCOLON                               { "::" } */
   | LPAREN COLONCOLON RPAREN                    { "::" }
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
@@ -2402,8 +2448,10 @@ val_longident:
 ;
 constr_longident:
     mod_longident       %prec below_DOT         { $1 }
+  | mod_longident DOT LPAREN COLONCOLON RPAREN  { Ldot($1,"::") }
   | LBRACKET RBRACKET                           { Lident "[]" }
   | LPAREN RPAREN                               { Lident "()" }
+  | LPAREN COLONCOLON RPAREN                    { Lident "::" }
   | FALSE                                       { Lident "false" }
   | TRUE                                        { Lident "true" }
 ;

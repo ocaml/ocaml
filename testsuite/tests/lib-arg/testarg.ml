@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 let current = ref 0;;
 
 let accum = ref [];;
@@ -7,7 +10,7 @@ let record fmt (* args *) =
 ;;
 
 let f_unit () = record "unit()";;
-let f_bool b = record "bool(%b)" b;;
+let f_bool b = record "bool(%B)" b;;
 let r_set = ref false;;
 let r_clear = ref true;;
 let f_string s = record "string(%s)" s;;

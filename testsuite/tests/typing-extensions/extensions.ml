@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Ignore OCAMLRUNPARAM=b to be reproducible *)
 Printexc.record_backtrace false;;
 
@@ -23,6 +27,14 @@ type foo
 type foo += A of int (* Error type is not open *)
 ;;
 
+(* The type must be public to create extension *)
+
+type foo = private ..
+;;
+
+type foo += A of int (* Error type is private *)
+;;
+
 (* The type parameters must match *)
 
 type 'a foo = ..
@@ -31,11 +43,11 @@ type 'a foo = ..
 type ('a, 'b) foo += A of int (* Error: type parameter mismatch *)
 ;;
 
-(* In a signature the type does not have to be open *)
+(* In a signature the type can be private *)
 
 module type S =
 sig
-  type foo
+  type foo = private ..
   type foo += A of float
 end
 ;;
@@ -44,8 +56,8 @@ end
 
 module type S =
 sig
-  type foo = A of int
-  type foo += B of float (* Error foo does not have an extensible type *)
+  type foo
+  type foo += B of float (* Error: foo does not have an extensible type *)
 end
 ;;
 
@@ -164,9 +176,9 @@ type foo += B3 = M.B1  (* Error: rebind private extension *)
 type foo += C = Unknown  (* Error: unbound extension *)
 ;;
 
-(* Extensions can be rebound even if type is closed *)
+(* Extensions can be rebound even if type is private *)
 
-module M : sig type foo type foo += A1 of int end
+module M : sig type foo = private .. type foo += A1 of int end
   = struct type foo = .. type foo += A1 of int end
 
 type M.foo += A2 = M.A1

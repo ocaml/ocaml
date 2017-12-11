@@ -16,7 +16,7 @@
 open Asttypes
 open Typedtree
 
-(** {2 A generic Typedtree mapper} *)
+(** {1 A generic Typedtree mapper} *)
 
 type mapper =
   {

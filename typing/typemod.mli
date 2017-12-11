@@ -60,6 +60,10 @@ type error =
   | Structure_expected of module_type
   | With_no_component of Longident.t
   | With_mismatch of Longident.t * Includemod.error list
+  | With_makes_applicative_functor_ill_typed of
+      Longident.t * Path.t * Includemod.error list
+  | With_changes_module_alias of Longident.t * Ident.t * Path.t
+  | With_cannot_remove_constrained_type
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_declaration
@@ -67,7 +71,6 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
-  | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
   | Scoping_pack of Longident.t * type_expr

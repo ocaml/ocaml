@@ -156,6 +156,9 @@ typedef char* caml_stat_string;
    the request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strdup(const char *s);
+#ifdef _WIN32
+CAMLextern wchar_t* caml_stat_wcsdup(const wchar_t *s);
+#endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
@@ -168,6 +171,9 @@ CAMLextern caml_stat_string caml_stat_strdup_noexc(const char *s);
    request fails, and so requires the runtime lock to be held.
 */
 CAMLextern caml_stat_string caml_stat_strconcat(int n, ...);
+#ifdef _WIN32
+CAMLextern wchar_t* caml_stat_wcsconcat(int n, ...);
+#endif
 
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */

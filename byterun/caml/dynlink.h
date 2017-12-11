@@ -27,8 +27,8 @@
    (all three 0-separated in char arrays).
    Abort the runtime system on error.
    Calling this frees caml_shared_libs_path (not touching its contents). */
-extern void caml_build_primitive_table(char * lib_path,
-                                       char * libs,
+extern void caml_build_primitive_table(char_os * lib_path,
+                                       char_os * libs,
                                        char * req_prims);
 
 /* The search path for shared libraries */

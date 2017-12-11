@@ -212,12 +212,32 @@ let current =
       error = Array.make (last_warning_number + 1) false;
     }
 
+let disabled = ref false
+
+let without_warnings f =
+  Misc.protect_refs [Misc.R(disabled, true)] f
+
 let backup () = !current
 
 let restore x = current := x
 
-let is_active x = (!current).active.(number x);;
-let is_error x = (!current).error.(number x);;
+let is_active x = not !disabled && (!current).active.(number x);;
+let is_error x = not !disabled && (!current).error.(number x);;
+
+let mk_lazy f =
+  let state = backup () in
+  lazy
+    (
+      let prev = backup () in
+      restore state;
+      try
+        let r = f () in
+        restore prev;
+        r
+      with exn ->
+        restore prev;
+        raise exn
+    )
 
 let parse_opt error active flags s =
   let set i = flags.(i) <- true in
@@ -277,7 +297,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;

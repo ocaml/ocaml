@@ -103,9 +103,9 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-value caml_startup_common(char **argv, int pooling)
+value caml_startup_common(char_os **argv, int pooling)
 {
-  char * exe_name, * proc_self_exe;
+  char_os * exe_name, * proc_self_exe;
   char tos;
 
   /* Determine options */
@@ -114,7 +114,7 @@ value caml_startup_common(char **argv, int pooling)
 #endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
-  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n", 0);
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
 #endif
   if (caml_cleanup_on_exit)
     pooling = 1;
@@ -142,7 +142,7 @@ value caml_startup_common(char **argv, int pooling)
   caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
-  if (exe_name == NULL) exe_name = "";
+  if (exe_name == NULL) exe_name = _T("");
   proc_self_exe = caml_executable_name();
   if (proc_self_exe != NULL)
     exe_name = proc_self_exe;
@@ -156,29 +156,29 @@ value caml_startup_common(char **argv, int pooling)
   return caml_start_program();
 }
 
-value caml_startup_exn(char **argv)
+value caml_startup_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 0);
 }
 
-void caml_startup(char **argv)
+void caml_startup(char_os **argv)
 {
   value res = caml_startup_exn(argv);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_main(char **argv)
+void caml_main(char_os **argv)
 {
   caml_startup(argv);
 }
 
-value caml_startup_pooled_exn(char **argv)
+value caml_startup_pooled_exn(char_os **argv)
 {
   return caml_startup_common(argv, /* pooling */ 1);
 }
 
-void caml_startup_pooled(char **argv)
+void caml_startup_pooled(char_os **argv)
 {
   value res = caml_startup_pooled_exn(argv);
   if (Is_exception_result(res))

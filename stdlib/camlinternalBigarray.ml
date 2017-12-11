@@ -14,7 +14,7 @@
 (**************************************************************************)
 
 (* Bigarray types. These must be kept in sync with the tables in
-   ../bytecomp/typeopt.ml *)
+   ../typing/typeopt.ml *)
 
 type float32_elt = Float32_elt
 type float64_elt = Float64_elt

@@ -136,6 +136,8 @@ val dump_cmm : bool ref
 val dump_selection : bool ref
 val dump_cse : bool ref
 val dump_live : bool ref
+val dump_avail : bool ref
+val debug_runavail : bool ref
 val dump_spill : bool ref
 val dump_split : bool ref
 val dump_interf : bool ref

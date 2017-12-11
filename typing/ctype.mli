@@ -228,7 +228,7 @@ val enlarge_type: Env.t -> type_expr -> type_expr * bool
 val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
-           enforce and returns a function that inforce this
+           enforce and returns a function that enforces this
            constraints. *)
 
 val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr

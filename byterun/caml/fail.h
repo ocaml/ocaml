@@ -44,6 +44,13 @@
 struct longjmp_buffer {
   sigjmp_buf buf;
 };
+#elif defined(__MINGW64__) && defined(__GNUC__) && __GNUC__ >= 4
+/* MPR#7638: issues with setjmp/longjmp in Mingw64, use GCC builtins instead */
+struct longjmp_buffer {
+  intptr_t buf[5];
+};
+#define sigsetjmp(buf,save) __builtin_setjmp(buf)
+#define siglongjmp(buf,val) __builtin_longjmp(buf,val)
 #else
 struct longjmp_buffer {
   jmp_buf buf;

@@ -17,6 +17,11 @@
 
 /* Win32-specific stuff */
 
+/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
+   Vista onwards */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
 #include <winbase.h>
@@ -57,22 +62,27 @@ typedef unsigned int uintptr_t;
 #define _UINTPTR_T_DEFINED
 #endif
 
+unsigned short caml_win32_major = 0;
+unsigned short caml_win32_minor = 0;
+unsigned short caml_win32_build = 0;
+unsigned short caml_win32_revision = 0;
+
 CAMLnoreturn_start
 static void caml_win32_sys_error (int errnum)
 CAMLnoreturn_end;
 
 static void caml_win32_sys_error(int errnum)
 {
-  char buffer[512];
+  wchar_t buffer[512];
   value msg;
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                     NULL,
                     errnum,
                     0,
                     buffer,
-                    sizeof(buffer),
+                    sizeof(buffer)/sizeof(wchar_t),
                     NULL)) {
-    msg = caml_copy_string(buffer);
+    msg = caml_copy_string_of_utf16(buffer);
   } else {
     msg = caml_alloc_sprintf("unknown error #%d", errnum);
   }
@@ -127,16 +137,16 @@ int caml_write_fd(int fd, int flags, void * buf, int n)
   return retcode;
 }
 
-caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
+wchar_t * caml_decompose_path(struct ext_table * tbl, wchar_t * path)
 {
-  char * p, * q;
+  wchar_t * p, * q;
   int n;
 
   if (path == NULL) return NULL;
-  p = caml_stat_strdup(path);
+  p = caml_stat_wcsdup(path);
   q = p;
   while (1) {
-    for (n = 0; q[n] != 0 && q[n] != ';'; n++) /*nothing*/;
+    for (n = 0; q[n] != 0 && q[n] != L';'; n++) /*nothing*/;
     caml_ext_table_add(tbl, q);
     q = q + n;
     if (*q == 0) break;
@@ -146,12 +156,13 @@ caml_stat_string caml_decompose_path(struct ext_table * tbl, char * path)
   return p;
 }
 
-caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
+wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
 {
-  char * dir, * fullname;
-  const char * p;
+  wchar_t * dir, * fullname;
+  char * u8;
+  const wchar_t * p;
   int i;
-  struct stat st;
+  struct _stati64 st;
 
   for (p = name; *p != 0; p++) {
     if (*p == '/' || *p == '\\') goto not_found;
@@ -160,38 +171,44 @@ caml_stat_string caml_search_in_path(struct ext_table * path, const char * name)
     dir = path->contents[i];
     if (dir[0] == 0) continue;
          /* not sure what empty path components mean under Windows */
-    fullname = caml_stat_strconcat(3, dir, "\\", name);
-    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
-    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode))
+    fullname = caml_stat_wcsconcat(3, dir, L"\\", name);
+    u8 = caml_stat_strdup_of_utf16(fullname);
+    caml_gc_message(0x100, "Searching %s\n", u8);
+    caml_stat_free(u8);
+    if (_wstati64(fullname, &st) == 0 && S_ISREG(st.st_mode))
       return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
-  return caml_stat_strdup(name);
+  u8 = caml_stat_strdup_of_utf16(name);
+  caml_gc_message(0x100, "%s not found in search path\n", u8);
+  caml_stat_free(u8);
+  return caml_stat_wcsdup(name);
 }
 
-CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
+CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
 {
-  char * fullname, * filepart;
+  wchar_t * fullname, * filepart;
+  char * u8;
   size_t fullnamelen;
   DWORD retcode;
 
-  fullnamelen = strlen(name) + 1;
+  fullnamelen = wcslen(name) + 1;
   if (fullnamelen < 256) fullnamelen = 256;
   while (1) {
-    fullname = caml_stat_alloc(fullnamelen);
+    fullname = caml_stat_alloc(fullnamelen*sizeof(wchar_t));
     retcode = SearchPath(NULL,              /* use system search path */
                          name,
-                         ".exe",            /* add .exe extension if needed */
+                         L".exe",            /* add .exe extension if needed */
                          fullnamelen,
                          fullname,
                          &filepart);
     if (retcode == 0) {
-      caml_gc_message(0x100, "%s not found in search path\n",
-                      (uintnat) name);
+      u8 = caml_stat_strdup_of_utf16(name);
+      caml_gc_message(0x100, "%s not found in search path\n", u8);
+      caml_stat_free(u8);
       caml_stat_free(fullname);
-      return caml_stat_strdup(name);
+      return caml_stat_strdup_os(name);
     }
     if (retcode < fullnamelen)
       return fullname;
@@ -200,12 +217,12 @@ CAMLexport caml_stat_string caml_search_exe_in_path(const char * name)
   }
 }
 
-caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * name)
+wchar_t * caml_search_dll_in_path(struct ext_table * path, const wchar_t * name)
 {
-  caml_stat_string dllname;
-  caml_stat_string res;
+  wchar_t * dllname;
+  wchar_t * res;
 
-  dllname = caml_stat_strconcat(2, name, ".dll");
+  dllname = caml_stat_wcsconcat(2, name, L".dll");
   res = caml_search_in_path(path, dllname);
   caml_stat_free(dllname);
   return res;
@@ -213,12 +230,12 @@ caml_stat_string caml_search_dll_in_path(struct ext_table * path, const char * n
 
 #ifdef SUPPORT_DYNAMIC_LINKING
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
   void *handle;
   int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
-  handle = flexdll_dlopen(libname, flags);
+  handle = flexdll_wdlopen(libname, flags);
   if ((handle != NULL) && ((caml_verb_gc & 0x100) != 0)) {
     flexdll_dump_exports(handle);
     fflush(stdout);
@@ -248,7 +265,7 @@ char * caml_dlerror(void)
 
 #else
 
-void * caml_dlopen(char * libname, int for_execution, int global)
+void * caml_dlopen(wchar_t * libname, int for_execution, int global)
 {
   return NULL;
 }
@@ -316,12 +333,12 @@ sighandler caml_win32_signal(int sig, sighandler action)
 /* Expansion of @responsefile and *? file patterns in the command line */
 
 static int argc;
-static char ** argv;
+static wchar_t ** argv;
 static int argvsize;
 
-static void store_argument(char * arg);
-static void expand_argument(char * arg);
-static void expand_pattern(char * arg);
+static void store_argument(wchar_t * arg);
+static void expand_argument(wchar_t * arg);
+static void expand_pattern(wchar_t * arg);
 
 static void out_of_memory(void)
 {
@@ -329,22 +346,22 @@ static void out_of_memory(void)
   exit(2);
 }
 
-static void store_argument(char * arg)
+static void store_argument(wchar_t * arg)
 {
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
-    argv = (char **) caml_stat_resize_noexc(argv, argvsize * sizeof(char *));
+    argv = (wchar_t **) caml_stat_resize_noexc(argv, argvsize * sizeof(wchar_t *));
     if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
 }
 
-static void expand_argument(char * arg)
+static void expand_argument(wchar_t * arg)
 {
-  char * p;
+  wchar_t * p;
 
   for (p = arg; *p != 0; p++) {
-    if (*p == '*' || *p == '?') {
+    if (*p == L'*' || *p == L'?') {
       expand_pattern(arg);
       return;
     }
@@ -352,43 +369,43 @@ static void expand_argument(char * arg)
   store_argument(arg);
 }
 
-static void expand_pattern(char * pat)
+static void expand_pattern(wchar_t * pat)
 {
-  char * prefix, * p, * name;
+  wchar_t * prefix, * p, * name;
   int handle;
-  struct _finddata_t ffblk;
+  struct _wfinddata_t ffblk;
   size_t i;
 
-  handle = _findfirst(pat, &ffblk);
+  handle = _wfindfirst(pat, &ffblk);
   if (handle == -1) {
     store_argument(pat); /* a la Bourne shell */
     return;
   }
-  prefix = caml_stat_strdup(pat);
+  prefix = caml_stat_wcsdup(pat);
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
-  for (i = strlen(prefix); i > 0; i--) {
+  for (i = wcslen(prefix); i > 0; i--) {
     char c = prefix[i - 1];
-    if (c == '\\' || c == '/' || c == ':') { prefix[i] = 0; break; }
+    if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
   /* No separator was found, it's a filename pattern without a leading directory. */
   if (i == 0)
     prefix[0] = 0;
   do {
-    name = caml_stat_strconcat(2, prefix, ffblk.name);
+    name = caml_stat_wcsconcat(2, prefix, ffblk.name);
     store_argument(name);
-  } while (_findnext(handle, &ffblk) != -1);
+  } while (_wfindnext(handle, &ffblk) != -1);
   _findclose(handle);
   caml_stat_free(prefix);
 }
 
 
-CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
+CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 {
   int i;
   argc = 0;
   argvsize = 16;
-  argv = (char **) caml_stat_alloc_noexc(argvsize * sizeof(char *));
+  argv = (wchar_t **) caml_stat_alloc_noexc(argvsize * sizeof(wchar_t *));
   if (argv == NULL) out_of_memory();
   for (i = 0; i < *argcp; i++) expand_argument((*argvp)[i]);
   argv[argc] = NULL;
@@ -400,35 +417,35 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
-int caml_read_directory(char * dirname, struct ext_table * contents)
+int caml_read_directory(wchar_t * dirname, struct ext_table * contents)
 {
   size_t dirnamelen;
-  char * template;
+  wchar_t * template;
 #if _MSC_VER <= 1200
   int h;
 #else
   intptr_t h;
 #endif
-  struct _finddata_t fileinfo;
+  struct _wfinddata_t fileinfo;
 
-  dirnamelen = strlen(dirname);
+  dirnamelen = wcslen(dirname);
   if (dirnamelen > 0 &&
-      (dirname[dirnamelen - 1] == '/'
-       || dirname[dirnamelen - 1] == '\\'
-       || dirname[dirnamelen - 1] == ':'))
-    template = caml_stat_strconcat(2, dirname, "*.*");
+      (dirname[dirnamelen - 1] == L'/'
+       || dirname[dirnamelen - 1] == L'\\'
+       || dirname[dirnamelen - 1] == L':'))
+    template = caml_stat_wcsconcat(2, dirname, L"*.*");
   else
-    template = caml_stat_strconcat(2, dirname, "\\*.*");
-  h = _findfirst(template, &fileinfo);
+    template = caml_stat_wcsconcat(2, dirname, L"\\*.*");
+  h = _wfindfirst(template, &fileinfo);
   if (h == -1) {
     caml_stat_free(template);
     return errno == ENOENT ? 0 : -1;
   }
   do {
-    if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
-      caml_ext_table_add(contents, caml_stat_strdup(fileinfo.name));
+    if (wcscmp(fileinfo.name, L".") != 0 && wcscmp(fileinfo.name, L"..") != 0) {
+      caml_ext_table_add(contents, caml_stat_strdup_of_utf16(fileinfo.name));
     }
-  } while (_findnext(h, &fileinfo) == 0);
+  } while (_wfindnext(h, &fileinfo) == 0);
   _findclose(h);
   caml_stat_free(template);
   return 0;
@@ -440,11 +457,11 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
 
 void caml_signal_thread(void * lpParam)
 {
-  char *endptr;
+  wchar_t *endptr;
   HANDLE h;
   /* Get an hexa-code raw handle through the environment */
   h = (HANDLE) (uintptr_t)
-    strtol(caml_secure_getenv("CAMLSIGPIPE"), &endptr, 16);
+    wcstol(caml_secure_getenv(_T("CAMLSIGPIPE")), &endptr, 16);
   while (1) {
     DWORD numread;
     BOOL ret;
@@ -499,7 +516,7 @@ void caml_signal_thread(void * lpParam)
  * quickly.
  */
 
-static uintnat win32_alt_stack[0x80];
+static uintnat win32_alt_stack[0x100];
 
 static void caml_reset_stack (void *faulting_address)
 {
@@ -649,14 +666,14 @@ void caml_install_invalid_parameter_handler()
 
 /* Recover executable name  */
 
-char * caml_executable_name(void)
+wchar_t * caml_executable_name(void)
 {
-  char * name;
+  wchar_t * name;
   DWORD namelen, ret;
 
   namelen = 256;
   while (1) {
-    name = caml_stat_alloc(namelen);
+    name = caml_stat_alloc(namelen*sizeof(wchar_t));
     ret = GetModuleFileName(NULL, name, namelen);
     if (ret == 0) { caml_stat_free(name); return NULL; }
     if (ret < namelen) break;
@@ -716,8 +733,255 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
 }
 #endif
 
-char *caml_secure_getenv (char const *var)
+wchar_t *caml_secure_getenv (wchar_t const *var)
 {
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
   return CAML_SYS_GETENV (var);
+}
+
+/* The rename() implementation in MSVC's CRT is based on MoveFile()
+   and therefore fails if the new name exists.  This is inconsistent
+   with POSIX and a problem in practice.  Here we reimplement
+   rename() using MoveFileEx() to make it more POSIX-like.
+   There are no official guarantee that the rename operation is atomic,
+   but it is widely believed to be atomic on NTFS. */
+
+int caml_win32_rename(const wchar_t * oldpath, const wchar_t * newpath)
+{
+  /* MOVEFILE_REPLACE_EXISTING: to be closer to POSIX
+     MOVEFILE_COPY_ALLOWED: MoveFile performs a copy if old and new
+       paths are on different devices, so we do the same here for
+       compatibility with the old rename()-based implementation.
+     MOVEFILE_WRITE_THROUGH: not sure it's useful; affects only
+       the case where a copy is done. */
+  if (MoveFileEx(oldpath, newpath,
+                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                 MOVEFILE_COPY_ALLOWED)) {
+    return 0;
+  }
+  /* Modest attempt at mapping Win32 error codes to POSIX error codes.
+     The __dosmaperr() function from the CRT does a better job but is
+     generally not accessible. */
+  switch (GetLastError()) {
+  case ERROR_FILE_NOT_FOUND: case ERROR_PATH_NOT_FOUND:
+    errno = ENOENT; break;
+  case ERROR_ACCESS_DENIED: case ERROR_WRITE_PROTECT: case ERROR_CANNOT_MAKE:
+    errno = EACCES; break;
+  case ERROR_CURRENT_DIRECTORY: case ERROR_BUSY:
+    errno = EBUSY; break;
+  case ERROR_NOT_SAME_DEVICE:
+    errno = EXDEV; break;
+  case ERROR_ALREADY_EXISTS:
+    errno = EEXIST; break;
+  default:
+    errno = EINVAL;
+  }
+  return -1;
+}
+
+/* Windows Unicode support */
+static uintnat windows_unicode_enabled = WINDOWS_UNICODE;
+
+/* If [windows_unicode_strict] is non-zero, then illegal UTF-8 characters (on
+   the OCaml side) or illegal UTF-16 characters (on the Windows side) cause an
+   error to be signaled.  What happens then depends on the variable
+   [windows_unicode_fallback].
+
+   If [windows_unicode_strict] is zero, then illegal characters are silently
+   dropped. */
+static uintnat windows_unicode_strict = 1;
+
+/* If [windows_unicode_fallback] is non-zero, then if an error is signaled when
+   translating to UTF-16, the translation is re-done under the assumption that
+   the argument string is encoded in the local codepage. */
+static uintnat windows_unicode_fallback = 1;
+
+CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out, int outlen)
+{
+  int retcode;
+
+  CAMLassert (s != NULL);
+
+  if (slen == 0)
+    return 0;
+
+  if (windows_unicode_enabled != 0) {
+    retcode = MultiByteToWideChar(CP_UTF8, windows_unicode_strict ? MB_ERR_INVALID_CHARS : 0, s, slen, out, outlen);
+    if (retcode == 0 && windows_unicode_fallback != 0)
+      retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+  } else {
+    retcode = MultiByteToWideChar(CP_THREAD_ACP, 0, s, slen, out, outlen);
+  }
+
+  if (retcode == 0)
+    caml_win32_sys_error(GetLastError());
+
+  return retcode;
+}
+
+#ifndef WC_ERR_INVALID_CHARS /* For old versions of Windows we simply ignore the flag */
+#define WC_ERR_INVALID_CHARS 0
+#endif
+
+CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out, int outlen)
+{
+  int retcode;
+
+  CAMLassert(s != NULL);
+
+  if (slen == 0)
+    return 0;
+
+  if (windows_unicode_enabled != 0)
+    retcode = WideCharToMultiByte(CP_UTF8, windows_unicode_strict ? WC_ERR_INVALID_CHARS : 0, s, slen, out, outlen, NULL, NULL);
+  else
+    retcode = WideCharToMultiByte(CP_THREAD_ACP, 0, s, slen, out, outlen, NULL, NULL);
+
+  if (retcode == 0)
+    caml_win32_sys_error(GetLastError());
+
+  return retcode;
+}
+
+CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
+{
+  int retcode, slen;
+  value v;
+
+  slen = wcslen(s);
+  retcode = win_wide_char_to_multi_byte(s, slen, NULL, 0); /* Do not include final NULL */
+  v = caml_alloc_string(retcode);
+  win_wide_char_to_multi_byte(s, slen, String_val(v), retcode);
+
+  return v;
+}
+
+CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+{
+  wchar_t * ws;
+  int retcode;
+
+  retcode = win_multi_byte_to_wide_char(s, -1, NULL, 0);
+  ws = malloc(retcode * sizeof(*ws));
+  win_multi_byte_to_wide_char(s, -1, ws, retcode);
+
+  return ws;
+}
+
+CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
+{
+  caml_stat_string out;
+  int retcode;
+
+  retcode = win_wide_char_to_multi_byte(s, -1, NULL, 0);
+  out = caml_stat_alloc(retcode);
+  win_wide_char_to_multi_byte(s, -1, out, retcode);
+
+  return out;
+}
+
+void caml_probe_win32_version(void)
+{
+  /* Determine the version of Windows we're running, and cache it */
+  WCHAR fileName[MAX_PATH];
+  DWORD size =
+    GetModuleFileName(GetModuleHandle(L"kernel32"), fileName, MAX_PATH);
+  DWORD dwHandle = 0;
+  BYTE* versionInfo;
+  fileName[size] = 0;
+  size = GetFileVersionInfoSize(fileName, &dwHandle);
+  versionInfo = (BYTE*)malloc(size * sizeof(BYTE));
+  if (GetFileVersionInfo(fileName, 0, size, versionInfo)) {
+    UINT len = 0;
+    VS_FIXEDFILEINFO* vsfi = NULL;
+    VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
+    caml_win32_major = HIWORD(vsfi->dwProductVersionMS);
+    caml_win32_minor = LOWORD(vsfi->dwProductVersionMS);
+    caml_win32_build = HIWORD(vsfi->dwProductVersionLS);
+    caml_win32_revision = LOWORD(vsfi->dwProductVersionLS);
+  }
+  free(versionInfo);
+}
+
+static UINT startup_codepage = 0;
+
+void caml_setup_win32_terminal(void)
+{
+  if (caml_win32_major >= 10) {
+    startup_codepage = GetConsoleOutputCP();
+    if (startup_codepage != CP_UTF8)
+      SetConsoleOutputCP(CP_UTF8);
+  }
+}
+
+void caml_restore_win32_terminal(void)
+{
+  if (startup_codepage != 0)
+    SetConsoleOutputCP(startup_codepage);
+}
+
+/* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
+   https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
+*/
+typedef
+BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
+                                             LPVOID, DWORD);
+
+static int caml_win32_is_cygwin_pty(HANDLE hFile)
+{
+  char buffer[1024];
+  FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = INVALID_HANDLE_VALUE;
+
+  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
+    pGetFileInformationByHandleEx =
+      (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
+                                                    "GetFileInformationByHandleEx");
+
+  if (pGetFileInformationByHandleEx == NULL)
+    return 0;
+
+  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the string, so reduce
+     the buffer size to allow for adding one. */
+  if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+    return 0;
+
+  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
+
+  /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
+     or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
+  if ((wcsstr(nameinfo->FileName, L"msys-") ||
+       wcsstr(nameinfo->FileName, L"cygwin-")) && wcsstr(nameinfo->FileName, L"-pty"))
+    return 1;
+
+  return 0;
+}
+
+CAMLexport int caml_win32_isatty(int fd)
+{
+  DWORD lpMode;
+  HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+
+  if (hFile == INVALID_HANDLE_VALUE)
+    return 0;
+
+  switch (GetFileType(hFile)) {
+    case FILE_TYPE_CHAR:
+      /* Both console handles and the NUL device are FILE_TYPE_CHAR.  The NUL
+         device returns FALSE for a GetConsoleMode call. _isatty incorrectly
+         only uses GetFileType (see GPR#1321). */
+      return GetConsoleMode(hFile, &lpMode);
+    case FILE_TYPE_PIPE:
+      /* Cygwin PTYs are implemented using named pipes */
+      return caml_win32_is_cygwin_pty(hFile);
+    default:
+      break;
+  }
+
+  return 0;
+}
+
+int caml_num_rows_fd(int fd)
+{
+  return -1;
 }

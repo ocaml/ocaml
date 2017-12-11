@@ -1,3 +1,6 @@
+(* TEST
+   include testing
+*)
 
 type t1 =
   | A | B | C of t1 | D of float

@@ -121,6 +121,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_split "After live range splitting"
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ Profile.record ~accumulate:true "regalloc" (regalloc ppf 1)
+  ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
   ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
   ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl

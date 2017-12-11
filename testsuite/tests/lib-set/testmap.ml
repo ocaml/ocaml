@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 module M = Map.Make(struct type t = int let compare (x:t) y = compare x y end)
 
 let img x m = try Some(M.find x m) with Not_found -> None
@@ -117,15 +120,18 @@ let test x v s1 s2 =
 
   checkbool "find_first_opt"
     (let (l, p, r) = M.split x s1 in
+    let find_first_opt_result = M.find_first_opt (fun k -> k >= x) s1 in
     if p = None && M.is_empty r then
-      match M.find_first_opt (fun k -> k >= x) s1 with
+      match find_first_opt_result with
         None -> true
       | _ -> false
     else
-      let Some (k, v) = M.find_first_opt (fun k -> k >= x) s1 in
-      match p with
-        None -> (k, v) = M.min_binding r
-      | Some v1 -> (k, v) = (x, v1));
+      match find_first_opt_result with
+        | None -> false
+        | Some (k, v) ->
+          (match p with
+          | None -> (k, v) = M.min_binding r
+          | Some v1 -> (k, v) = (x, v1)));
 
   checkbool "find_last"
     (let (l, p, r) = M.split x s1 in
@@ -143,15 +149,18 @@ let test x v s1 s2 =
 
   checkbool "find_last_opt"
     (let (l, p, r) = M.split x s1 in
+    let find_last_opt_result = M.find_last_opt (fun k -> k <= x) s1 in
     if p = None && M.is_empty l then
-      match M.find_last_opt (fun k -> k <= x) s1 with
+      match find_last_opt_result with
         None -> true
       | _ -> false
     else
-      let Some (k, v) = M.find_last_opt (fun k -> k <= x) s1 in
-      match p with
-        None -> (k, v) = M.max_binding l
-      | Some v1 -> (k, v) = (x, v1));
+      (match find_last_opt_result with
+      | None -> false
+      | Some (k, v) ->
+        (match p with
+        | None -> (k, v) = M.max_binding l
+        | Some v1 -> (k, v) = (x, v1))));
 
   check "split"
     (let (l, p, r) = M.split x s1 in

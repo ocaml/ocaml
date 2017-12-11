@@ -18,7 +18,7 @@
 type t
 (** The type of thread handles. *)
 
-(** {6 Thread creation and termination} *)
+(** {1 Thread creation and termination} *)
 
 val create : ('a -> 'b) -> 'a -> t
 (** [Thread.create funct arg] creates a new thread of control,
@@ -47,7 +47,7 @@ val exit : unit -> unit
 val kill : t -> unit
 (** Terminate prematurely the thread whose handle is given. *)
 
-(** {6 Suspending threads} *)
+(** {1 Suspending threads} *)
 
 val delay: float -> unit
 (** [delay d] suspends the execution of the calling thread for
@@ -102,7 +102,7 @@ val yield : unit -> unit
    telling the scheduler that now is a good time to
    switch to other threads. *)
 
-(** {6 Management of signals} *)
+(** {1 Management of signals} *)
 
 (** Signal handling follows the POSIX thread model: signals generated
   by a thread are delivered to that thread; signals generated externally

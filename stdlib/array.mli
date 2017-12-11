@@ -134,7 +134,7 @@ val of_list : 'a list -> 'a array
    of [l]. *)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 
 val iter : ('a -> unit) -> 'a array -> unit
@@ -168,7 +168,7 @@ val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-(** {6 Iterators on two arrays} *)
+(** {1 Iterators on two arrays} *)
 
 
 val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
@@ -185,7 +185,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
    @since 4.03.0 *)
 
 
-(** {6 Array scanning} *)
+(** {1 Array scanning} *)
 
 
 val for_all : ('a -> bool) -> 'a array -> bool
@@ -211,7 +211,7 @@ val memq : 'a -> 'a array -> bool
    @since 4.03.0 *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : ('a -> 'a -> int) -> 'a array -> unit
@@ -257,9 +257,19 @@ val fast_sort : ('a -> 'a -> int) -> 'a array -> unit
 
 
 (**/**)
-(** {6 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+
+module Floatarray : sig
+  external create : int -> floatarray = "caml_floatarray_create"
+  external length : floatarray -> int = "%floatarray_length"
+  external get : floatarray -> int -> float = "%floatarray_safe_get"
+  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : floatarray -> int -> float -> unit
+      = "%floatarray_unsafe_set"
+end

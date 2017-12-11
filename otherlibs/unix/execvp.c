@@ -13,42 +13,56 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define _GNU_SOURCE  /* helps to find execvpe() */
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #define CAML_INTERNALS
 #include <caml/osdeps.h>
 #include "unixsupport.h"
-
-#ifndef _WIN32
-extern char ** environ;
-#endif
+#include "errno.h"
 
 CAMLprim value unix_execvp(value path, value args)
 {
-  char ** argv;
+  char_os ** argv;
+  char_os * wpath;
   caml_unix_check_path(path, "execvp");
   argv = cstringvect(args, "execvp");
-  (void) execvp(String_val(path), argv);
-  caml_stat_free((char *) argv);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execvp_os((const char_os *)wpath, EXECV_CAST argv);
+  caml_stat_free(wpath);
+  cstringvect_free(argv);
   uerror("execvp", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
 
+#ifdef HAS_EXECVPE
+
 CAMLprim value unix_execvpe(value path, value args, value env)
 {
-  const char * exefile;
-  char ** argv;
-  char ** envp;
+  char_os ** argv;
+  char_os ** envp;
+  char_os * wpath;
   caml_unix_check_path(path, "execvpe");
-  exefile = caml_search_exe_in_path(String_val(path));
   argv = cstringvect(args, "execvpe");
   envp = cstringvect(env, "execvpe");
-  (void) execve(exefile, argv, envp);
-  caml_stat_free((char *)exefile);
-  caml_stat_free((char *) argv);
-  caml_stat_free((char *) envp);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execvpe_os((const char_os *)wpath, EXECV_CAST argv, EXECV_CAST envp);
+  caml_stat_free(wpath);
+  cstringvect_free(argv);
+  cstringvect_free(envp);
   uerror("execvpe", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
+
+#else
+
+CAMLprim value unix_execvpe(value path, value args, value env)
+{
+  unix_error(ENOSYS, "execvpe", path);
+  return Val_unit;
+}
+
+#endif
+

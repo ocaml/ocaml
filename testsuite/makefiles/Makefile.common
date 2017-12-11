@@ -16,11 +16,13 @@
 TOPDIR=$(BASEDIR)/..
 include $(TOPDIR)/Makefile.tools
 
+.PHONY: defaultpromote
 defaultpromote:
 	@for file in *.reference; do \
 	  cp `basename $$file reference`result $$file; \
 	done
 
+.PHONY: defaultclean
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
 	@rm -f *.exe.manifest

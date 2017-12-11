@@ -1,3 +1,5 @@
+(* TEST *)
+
 let () =
   assert(Sys.getenv_opt "FOOBAR_UNLIKELY_TO_EXIST_42" = None);
 

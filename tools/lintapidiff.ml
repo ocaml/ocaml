@@ -2,6 +2,8 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
+(*                              Edwin Török                               *)
+(*                                                                        *)
 (*   Copyright 2016--2017 Edwin Török                                     *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)

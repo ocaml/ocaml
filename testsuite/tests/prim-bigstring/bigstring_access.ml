@@ -1,3 +1,6 @@
+(* TEST
+   include bigarray
+*)
 
 open Bigarray
 type bigstring = (char, int8_unsigned_elt, c_layout) Array1.t
@@ -31,14 +34,14 @@ let assert_bound_check2 f v1 v2 =
     ignore(f v1 v2);
     assert false
   with
-     | Invalid_argument("index out of bounds") -> ()
+     | Invalid_argument _ -> ()
 
 let assert_bound_check3 f v1 v2 v3 =
   try
     ignore(f v1 v2 v3);
     assert false
   with
-     | Invalid_argument("index out of bounds") -> ()
+     | Invalid_argument _ -> ()
 
 let () =
   assert_bound_check2 caml_bigstring_get_16 s (-1);

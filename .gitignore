@@ -31,6 +31,7 @@
 *.out
 *.out.dSYM
 *.swp
+_ocamltest
 
 # local to root directory
 
@@ -172,6 +173,13 @@
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/ocamltest
+/ocamltest/ocamltest.opt
+/ocamltest/ocamltest_config.ml
+/ocamltest/tsl_lexer.ml
+/ocamltest/tsl_parser.ml
+/ocamltest/tsl_parser.mli
+
 /otherlibs/dynlink/extract_crc
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
@@ -205,7 +213,6 @@
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
-/otherlibs/win32unix/utimes.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -233,18 +240,17 @@
 /testsuite/**/*.native
 /testsuite/**/program
 /testsuite/**/_log
+/testsuite/failure.stamp
 
 /testsuite/_retries
 
-/testsuite/tests/asmcomp/codegen
-/testsuite/tests/asmcomp/parsecmm.ml
-/testsuite/tests/asmcomp/parsecmm.mli
-/testsuite/tests/asmcomp/lexcmm.ml
-/testsuite/tests/asmcomp/*.s
-/testsuite/tests/asmcomp/*.out.manifest
+/testsuite/tests/asmgen/codegen
+/testsuite/tests/asmgen/parsecmm.ml
+/testsuite/tests/asmgen/parsecmm.mli
+/testsuite/tests/asmgen/lexcmm.ml
+/testsuite/tests/asmgen/*.s
+/testsuite/tests/asmgen/*.out.manifest
 
-/testsuite/tests/basic/*.safe-string
-/testsuite/tests/basic/pr6322.ml
 
 /testsuite/tests/embedded/caml
 
@@ -269,8 +275,18 @@
 /testsuite/tests/lib-threads/*.byt
 
 /testsuite/tests/lib-unix/win-stat/*-file
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
 
-/testsuite/tests/opaque/*/*.mli
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
+
+/testsuite/tests/opaque/fst/*.mli
+/testsuite/tests/opaque/snd/*.mli
+
+/testsuite/tests/output_obj/*.bc.c
+/testsuite/tests/output_obj/*_stub
+/testsuite/tests/output_obj/*_stub
 
 /testsuite/tests/runtime-errors/*.bytecode
 
@@ -309,6 +325,10 @@
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
+/testsuite/tests/typing-misc/false.flat-float
+/testsuite/tests/typing-misc/true.flat-float
+/testsuite/tests/typing-misc/pr6939.ml
+
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
@@ -318,6 +338,15 @@
 /testsuite/tests/typing-multifile/g.ml
 /testsuite/tests/typing-multifile/test
 
+/testsuite/tests/typing-unboxed-types/false.flat-float
+/testsuite/tests/typing-unboxed-types/true.flat-float
+/testsuite/tests/typing-unboxed-types/test.ml.reference
+
+/testsuite/tests/translprim/false.flat-float
+/testsuite/tests/translprim/true.flat-float
+/testsuite/tests/translprim/array_spec.ml.reference
+/testsuite/tests/translprim/module_coercion.ml.reference
+
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
@@ -325,6 +354,8 @@
 
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result
+
+/testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/expect_test
 

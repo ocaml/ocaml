@@ -13,24 +13,30 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <errno.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 CAMLprim value win_findfirst(value name)
 {
   HANDLE h;
   value v;
-  WIN32_FIND_DATA fileinfo;
+  WIN32_FIND_DATAW fileinfo;
   value valname = Val_unit;
   value valh = Val_unit;
+  wchar_t * wname;
 
   caml_unix_check_path(name, "opendir");
   Begin_roots2 (valname,valh);
-    h = FindFirstFile(String_val(name),&fileinfo);
+    wname = caml_stat_strdup_to_utf16(String_val(name));
+    h = FindFirstFile(wname,&fileinfo);
+    caml_stat_free(wname);
     if (h == INVALID_HANDLE_VALUE) {
       DWORD err = GetLastError();
       if (err == ERROR_NO_MORE_FILES)
@@ -40,7 +46,7 @@ CAMLprim value win_findfirst(value name)
         uerror("opendir", Nothing);
       }
     }
-    valname = caml_copy_string(fileinfo.cFileName);
+    valname = caml_copy_string_of_utf16(fileinfo.cFileName);
     valh = win_alloc_handle(h);
     v = caml_alloc_small(2, 0);
     Field(v,0) = valname;
@@ -51,7 +57,7 @@ CAMLprim value win_findfirst(value name)
 
 CAMLprim value win_findnext(value valh)
 {
-  WIN32_FIND_DATA fileinfo;
+  WIN32_FIND_DATAW fileinfo;
   BOOL retcode;
 
   retcode = FindNextFile(Handle_val(valh), &fileinfo);
@@ -64,7 +70,7 @@ CAMLprim value win_findnext(value valh)
       uerror("readdir", Nothing);
     }
   }
-  return caml_copy_string(fileinfo.cFileName);
+  return caml_copy_string_of_utf16(fileinfo.cFileName);
 }
 
 CAMLprim value win_findclose(value valh)

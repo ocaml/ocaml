@@ -237,7 +237,11 @@ void caml_oldify_one (value v, value *p)
             }
           }
         }
-        if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+        if (!vv || ft == Forward_tag || ft == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+            || ft == Double_tag
+#endif
+            ){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           CAMLassert (Wosize_hd (hd) == 1);
           result = caml_alloc_shr_preserving_profinfo (1, Forward_tag, hd);
@@ -342,7 +346,7 @@ void caml_empty_minor_heap (void)
     CAML_INSTR_SETUP (tmr, "minor");
     prev_alloc_words = caml_allocated_words;
     caml_in_minor_collection = 1;
-    caml_gc_message (0x02, "<", 0);
+    caml_gc_message (0x02, "<");
     caml_oldify_local_roots();
     CAML_INSTR_TIME (tmr, "minor/local_roots");
     for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
@@ -390,7 +394,7 @@ void caml_empty_minor_heap (void)
     clear_table ((struct generic_table *) &caml_ref_table);
     clear_table ((struct generic_table *) &caml_ephe_ref_table);
     clear_table ((struct generic_table *) &caml_custom_table);
-    caml_gc_message (0x02, ">", 0);
+    caml_gc_message (0x02, ">");
     caml_in_minor_collection = 0;
     caml_final_empty_young ();
     CAML_INSTR_TIME (tmr, "minor/finalized");

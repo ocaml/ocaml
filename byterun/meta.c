@@ -123,7 +123,8 @@ CAMLprim value caml_realloc_global(value size)
   actual_size = Wosize_val(caml_global_data);
   if (requested_size >= actual_size) {
     requested_size = (requested_size + 0x100) & 0xFFFFFF00;
-    caml_gc_message (0x08, "Growing global data to %lu entries\n",
+    caml_gc_message (0x08, "Growing global data to %"
+                     ARCH_INTNAT_PRINTF_FORMAT "u entries\n",
                      requested_size);
     new_global_data = caml_alloc_shr(requested_size, 0);
     for (i = 0; i < actual_size; i++)

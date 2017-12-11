@@ -191,9 +191,6 @@ gc_ctrl.$(O): gc_ctrl.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
   ../byterun/caml/gc_ctrl.h ../byterun/caml/signals.h \
   ../byterun/caml/stack.h ../byterun/caml/startup_aux.h
-terminfo.$(O): terminfo.c ../byterun/caml/config.h ../byterun/caml/m.h \
-  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/fail.h ../byterun/caml/io.h
 md5.$(O): md5.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/fail.h \
@@ -560,9 +557,6 @@ gc_ctrl.p.$(O): gc_ctrl.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
   ../byterun/caml/gc_ctrl.h ../byterun/caml/signals.h \
   ../byterun/caml/stack.h ../byterun/caml/startup_aux.h
-terminfo.p.$(O): terminfo.c ../byterun/caml/config.h ../byterun/caml/m.h \
-  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/fail.h ../byterun/caml/io.h
 md5.p.$(O): md5.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/fail.h \
@@ -929,9 +923,6 @@ gc_ctrl.d.$(O): gc_ctrl.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
   ../byterun/caml/gc_ctrl.h ../byterun/caml/signals.h \
   ../byterun/caml/stack.h ../byterun/caml/startup_aux.h
-terminfo.d.$(O): terminfo.c ../byterun/caml/config.h ../byterun/caml/m.h \
-  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/fail.h ../byterun/caml/io.h
 md5.d.$(O): md5.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/fail.h \
@@ -1298,9 +1289,6 @@ gc_ctrl.i.$(O): gc_ctrl.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
   ../byterun/caml/gc_ctrl.h ../byterun/caml/signals.h \
   ../byterun/caml/stack.h ../byterun/caml/startup_aux.h
-terminfo.i.$(O): terminfo.c ../byterun/caml/config.h ../byterun/caml/m.h \
-  ../byterun/caml/s.h ../byterun/caml/alloc.h ../byterun/caml/misc.h \
-  ../byterun/caml/mlvalues.h ../byterun/caml/fail.h ../byterun/caml/io.h
 md5.i.$(O): md5.c ../byterun/caml/alloc.h ../byterun/caml/misc.h \
   ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
   ../byterun/caml/mlvalues.h ../byterun/caml/fail.h \

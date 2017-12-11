@@ -15,7 +15,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Paragraph.html">Paragraph</a></h1>
 
-<pre><span class="keyword">module</span> Paragraph: <code class="code"><span class="keyword">sig</span></code> <a href="Paragraph.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<pre><span id="MODULEParagraph"><span class="keyword">module</span> Paragraph</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Paragraph.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>This file tests the generation of paragraph within module comments.</p>
 
@@ -30,7 +30,7 @@
 <p>See also <a href=" http://caml.inria.fr/mantis/view.php?id=7352"> MPR:7352</a>,
     <a href=" http://caml.inria.fr/mantis/view.php?id=7353"> MPR:7353</a></p>
 
-<h2 id="here">Testing non-text elements </h2>
+<h3 id="here">Testing non-text elements </h3>
 <p><code class="code">code&nbsp;x&nbsp;</code> <i>should </i> be inside a p.</p>
 
 <p><em>But</em> <b>not</b></p>

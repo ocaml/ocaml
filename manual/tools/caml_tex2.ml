@@ -87,13 +87,13 @@ module Output = struct
     | Ok -> Printf.fprintf ppf "an ok"
     | Warning n -> Printf.fprintf ppf "a warning %d" n
 
-  (** {2 Related latex environment } *)
+  (** {1 Related latex environment } *)
   let env = function
     | Error -> error
     | Warning _ -> warning
     | Ok -> ok_output
 
-  (** {2 Exceptions } *)
+  (** {1 Exceptions } *)
   exception Parsing_error of kind * string
 
   type source = { file:string; lines:int * int; phrase:string; output:string }
@@ -141,7 +141,7 @@ module Output = struct
            and [@@expect warning n] (with n a warning number).\n" s
 
 
-  (** {2 Output analysis} *)
+  (** {1 Output analysis} *)
   let catch_error s =
     if string_match ~!{|Error:|} s 0 then Some Error else None
 
@@ -156,7 +156,7 @@ module Output = struct
     | None, Some e -> e
     | None, None -> Ok
 
-  (** {2 Parsing caml_example options } *)
+  (** {1 Parsing caml_example options } *)
 
   (** Parse [warning=n] options for caml_example options *)
   let parse_warning s =

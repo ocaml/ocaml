@@ -115,7 +115,6 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_std_include
   let _open s = open_modules := s :: !open_modules
-  let _plugin p = Compplugin.load p
   let _ppx s = first_ppx := s :: !first_ppx
   let _principal = set principal
   let _no_principal = clear principal
@@ -168,4 +167,5 @@ let main () =
   end;
   Compenv.readenv ppf Before_link;
   if not (prepare ppf) then exit 2;
+  Compmisc.init_path false;
   Toploop.loop Format.std_formatter

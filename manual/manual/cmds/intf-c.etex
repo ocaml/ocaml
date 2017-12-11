@@ -704,8 +704,8 @@ $\hbox{"string_length"}(v)-1$.
 or byte sequence \var{v}, with type "unsigned char". Bytes are
 numbered from 0 to $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
-\var{v}, with type "char *" or, when OCaml is configured with "-safe-string",
-with type "const char *".
+\var{v}, with type "char *" or, when OCaml is configured with
+"-force-safe-string", with type "const char *".
 This pointer is a valid C string: there is a null byte after the last
 byte in the string. However, OCaml strings can contain embedded null bytes,
 which will confuse the usual C functions over strings.
@@ -2023,13 +2023,14 @@ stub that ignores all the special annotations.
 \subsection{Passing unboxed values}
 
 We said earlier that all OCaml objects are represented by the C type
-"value", and one has to use macros such as "Int_val" to decode data
-from the "value" type. It is however possible to tell OCaml to do this
-for us and pass arguments unboxed to the C function. Similarly it is
-possible to tell OCaml to expect the result unboxed and box it for us.
+"value", and one has to use macros such as "Int_val" to decode data from
+the "value" type.  It is however possible to tell the OCaml native-code
+compiler to do this for us and pass arguments unboxed to the C function.
+Similarly it is possible to tell OCaml to expect the result unboxed and box
+it for us.
 
-The motivation is that, by letting the OCaml compiler deal with
-boxing, it can often decide to suppress it entirely.
+The motivation is that, by letting `ocamlopt` deal with boxing, it can
+often decide to suppress it entirely.
 
 For instance let's consider this example:
 
@@ -2052,7 +2053,7 @@ the result of "foo".  This results in the allocation of "3 * len"
 temporary float values.
 
 Now if we annotate the arguments and result with "[\@unboxed]", the
-compiler will be able to avoid all these allocations:
+native-code compiler will be able to avoid all these allocations:
 
 \begin{verbatim}
 external foo
@@ -2109,16 +2110,16 @@ The corresponding C type must be "intnat".
 
 \subsection{Direct C call}
 
-In order to be able to run the garbage collector in the middle of a C
-function, the OCaml compiler generates some bookkeeping code around C
-calls. Technically it wraps every C call with the C function
+In order to be able to run the garbage collector in the middle of
+a C function, the OCaml native-code compiler generates some bookkeeping
+code around C calls.  Technically it wraps every C call with the C function
 "caml_c_call" which is part of the OCaml runtime.
 
-For small functions that are called repeatedly, this indirection can
-have a big impact on performances. However this is not needed if we
-know that the C function doesn't allocate and doesn't raise
-exceptions. We can instruct the OCaml compiler of this fact by
-annotating the external declaration with the attribute "[\@\@noalloc]":
+For small functions that are called repeatedly, this indirection can have
+a big impact on performances.  However this is not needed if we know that
+the C function doesn't allocate and doesn't raise exceptions.  We can
+instruct the OCaml native-code compiler of this fact by annotating the
+external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
 external bar : int -> int -> int = "foo" [@@noalloc]
@@ -2276,6 +2277,147 @@ names, declared in "<caml/signals.h>":
 \end{itemize}
 Intuition: a ``blocking section'' is a piece of C code that does not
 use the OCaml run-time system, typically a blocking input/output operation.
+
+\section{Advanced topic: interfacing with Windows Unicode APIs}
+\label{s:interfacing-windows-unicode-apis}
+
+This section contains some general guidelines for writing C stubs that use
+Windows Unicode APIs.
+
+{\bf Note:} This is an experimental feature of OCaml: the set of APIs below, as
+well as their exact semantics are not final and subject to change in future
+releases.
+
+The OCaml system under Windows can be configured at build time in one of two
+modes:
+
+\begin{itemize}
+
+\item {\bf legacy mode:} All path names, environment variables, command line
+arguments, etc. on the OCaml side are assumed to be encoded using the current
+8-bit code page of the system.
+
+\item {\bf Unicode mode:} All path names, environment variables, command line
+arguments, etc. on the OCaml side are assumed to be encoded using UTF-8.
+
+\end{itemize}
+
+In what follows, we say that a string has the \emph{OCaml encoding} if it is
+encoded in UTF-8 when in Unicode mode, in the current code page in legacy mode,
+or is an arbitrary string under Unix. A string has the \emph{platform encoding}
+if it is encoded in UTF-16 under Windows or is an arbitrary string under Unix.
+
+From the point of view of the writer of C stubs, the challenges of interacting
+with Windows Unicode APIs are twofold:
+
+\begin{itemize}
+
+\item The Windows API uses the UTF-16 encoding to support Unicode. The runtime
+system performs the necessary conversions so that the OCaml programmer only
+needs to deal with the OCaml encoding. C stubs that call Windows Unicode APIs
+need to use specific runtime functions to perform the necessary conversions in a
+compatible way.
+
+\item When writing stubs that need to be compiled under both Windows and Unix,
+the stubs need to be written in a way that allow the necessary conversions under
+Windows but that also work under Unix, where typically nothing particular needs
+to be done to support Unicode.
+
+\end{itemize}
+
+The native C character type under Windows is "WCHAR", two bytes wide, while
+under Unix it is "char", one byte wide. A type "char_os" is defined in
+"<caml/misc.h>" that stands for the concrete C character type of each
+platform. Strings in the platform encoding are of type "char_os *".
+
+The following functions are exposed to help write compatible C stubs. To use
+them, you need to include both "<caml/misc.h>" and "<caml/osdeps.h>".
+
+\begin{itemize}
+
+\item "char_os* caml_stat_strdup_to_os(const char *)" copies the argument while
+translating from OCaml encoding to the platform encoding. This function is
+typically used to convert the "char *" underlying an OCaml string before passing
+it to an operating system API that takes an Unicode argument. Under Unix, it is
+equivalent to "caml_stat_strdup".
+
+{\bf Note:} For maximum backwards compatibility in Unicode mode, if the argument
+is not a valid UTF-8 string, this function will fall back to assuming that it is
+encoded in the current code page.
+
+\item "char* caml_stat_strdup_of_os(const char_os *)" copies the argument while
+translating from the platform encoding to the OCaml encoding. It is the inverse
+of "caml_stat_strdup_to_os". This function is typically used to convert a string
+obtained from the operating system before passing it on to OCaml code. Under
+Unix, it is equivalent to "caml_stat_strdup".
+
+\item "value caml_copy_string_of_os(char_os *)" allocates an OCaml string with
+contents equal to the argument string converted to the OCaml encoding.  This
+function is essentially equivalent to "caml_stat_strdup_of_os" followed by
+"caml_copy_string", except that it avoids the allocation of the intermediate
+string returned by "caml_stat_strdup_of_os". Under Unix, it is equivalent to
+"caml_copy_string".
+
+\end{itemize}
+
+{\bf Note:} The strings returned by "caml_stat_strdup_to_os" and
+"caml_stat_strdup_of_os" are allocated using "caml_stat_alloc", so they need to
+be deallocated using "caml_stat_free" when they are no longer needed.
+
+\paragraph{Example} We want to bind the function "getenv" in a way that works
+both under Unix and Windows.  Under Unix this function has the prototype:
+
+\begin{verbatim}
+    char *getenv(const char *);
+\end{verbatim}
+While the Unicode version under Windows has the prototype:
+\begin{verbatim}
+    WCHAR *_wgetenv(const WCHAR *);
+\end{verbatim}
+
+In terms of "char_os", both functions take an argument of type "char_os *" and
+return a result of the same type. We begin by choosing the right implementation
+of the function to bind:
+
+\begin{verbatim}
+#ifdef _WIN32
+#define getenv_os _wgetenv
+#else
+#define getenv_os getenv
+#endif
+\end{verbatim}
+
+The rest of the binding is the same for both platforms:
+
+\begin{verbatim}
+/* The following define is necessary because the API is experimental */
+#define CAML_INTERNALS
+
+#include <caml/mlvalues.h>
+#include <caml/misc.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/osdeps.h>
+#include <stdlib.h>
+
+CAMLprim value stub_getenv(value var_name)
+{
+  CAMLparam1(var_name);
+  CAMLlocal1(var_value);
+  char_os *var_name_os, *var_value_os;
+
+  var_name_os = caml_stat_strdup_to_os(String_val(var_name));
+  var_value_os = getenv_os(var_name_os);
+  caml_stat_free(var_name_os);
+
+  if (var_value_os == NULL)
+    caml_raise_not_found();
+
+  var_value = caml_copy_string_of_os(var_value_os);
+
+  CAMLreturn(var_value);
+}
+\end{verbatim}
 
 \section{Building mixed C/OCaml libraries: \texttt{ocamlmklib}}
 \label{s-ocamlmklib}

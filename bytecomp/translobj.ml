@@ -114,7 +114,7 @@ let transl_label_init_flambda f =
   assert(Config.flambda);
   let method_cache_id = Ident.create "method_cache" in
   method_cache := Lvar method_cache_id;
-  (* Calling f (usualy Translmod.transl_struct) requires the
+  (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate
      method accesses. *)
   let expr, size = f () in

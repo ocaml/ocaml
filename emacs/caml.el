@@ -1,26 +1,46 @@
-;**************************************************************************
-;*                                                                        *
-;*                                 OCaml                                  *
-;*                                                                        *
-;*                 Jacques Garrigue and Ian T Zimmerman                   *
-;*                                                                        *
-;*   Copyright 1997 Institut National de Recherche en Informatique et     *
-;*     en Automatique.                                                    *
-;*                                                                        *
-;*   All rights reserved.  This file is distributed under the terms of    *
-;*   the GNU General Public License.                                      *
-;*                                                                        *
-;**************************************************************************
-
 ;;; caml.el --- OCaml code editing commands for Emacs
 
-;; Xavier Leroy, july 1993.
+;; Copyright (C) 1997-2017 Institut National de Recherche en Informatique et en Automatique.
 
-;;indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
-;;copying: covered by the current FSF General Public License.
+;; Author: Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
+;;         Ian T Zimmerman <itz@rahul.net>
+;; Maintainer: Damien Doligez <damien.doligez@inria.fr>
+;; Created: July 1993
+;; Keywords: OCaml
+;; Homepage: https://github.com/ocaml/ocaml/
 
-;; indentation code adapted for OCaml by Jacques Garrigue,
-;; july 1997. <garrigue@kurims.kyoto-u.ac.jp>
+;; This file is not part of GNU Emacs.
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+
+;; This file is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; A major mode for editing OCaml code (see <http://ocaml.org/>) in Emacs.
+
+;; Some of its major features include:
+
+;; - syntax highlighting (font lock);
+;; - automatic indentation;
+;; - querying the type of expressions (using compiler generated annot files);
+;; - running an OCaml REPL within Emacs;
+;; - scans declarations and places them in a menu.
+
+
+;; The original indentation code was the work of Ian T Zimmerman and
+;; was adapted for OCaml by Jacques Garrigue in July 1997.
+
+;;; Code:
 
 ;;user customizable variables
 (defvar caml-quote-char "'"
@@ -55,179 +75,179 @@ Priorities are assigned to `interesting' caml operators as follows:
 (make-variable-buffer-local 'caml-apply-extra-indent)
 
 (defvar caml-begin-indent 2
-  "*How many spaces to indent from a begin keyword in caml mode.")
+  "*How many spaces to indent from a \"begin\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-begin-indent)
 
 (defvar caml-class-indent 2
-  "*How many spaces to indent from a class keyword in caml mode.")
+  "*How many spaces to indent from a \"class\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-class-indent)
 
 (defvar caml-exception-indent 2
-  "*How many spaces to indent from a exception keyword in caml mode.")
+  "*How many spaces to indent from an \"exception\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-exception-indent)
 
 (defvar caml-for-indent 2
-  "*How many spaces to indent from a for keyword in caml mode.")
+  "*How many spaces to indent from a \"for\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-for-indent)
 
 (defvar caml-fun-indent 2
-  "*How many spaces to indent from a fun keyword in caml mode.")
+  "*How many spaces to indent from a \"fun\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-fun-indent)
 
 (defvar caml-function-indent 4
-  "*How many spaces to indent from a function keyword in caml mode.")
+  "*How many spaces to indent from a \"function\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-function-indent)
 
 (defvar caml-if-indent  2
-  "*How many spaces to indent from a if keyword in caml mode.")
+  "*How many spaces to indent from an \"if\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-if-indent)
 
 (defvar caml-if-else-indent 0
-  "*How many spaces to indent from an if .. else line in caml mode.")
+  "*How many spaces to indent from an \"if .. else\" line in caml mode.")
 (make-variable-buffer-local 'caml-if-else-indent)
 
 (defvar caml-inherit-indent 2
-  "*How many spaces to indent from a inherit keyword in caml mode.")
+  "*How many spaces to indent from an \"inherit\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-inherit-indent)
 
 (defvar caml-initializer-indent 2
-  "*How many spaces to indent from a initializer keyword in caml mode.")
+  "*How many spaces to indent from an \"initializer\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-initializer-indent)
 
 (defvar caml-include-indent 2
-  "*How many spaces to indent from a include keyword in caml mode.")
+  "*How many spaces to indent from an \"include\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-include-indent)
 
 (defvar caml-let-indent 2
-  "*How many spaces to indent from a let keyword in caml mode.")
+  "*How many spaces to indent from a \"let\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-let-indent)
 
 (defvar caml-let-in-indent 0
-  "*How many spaces to indent from a let .. in keyword in caml mode.")
+  "*How many spaces to indent from a \"let .. in\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-let-in-indent)
 
 (defvar caml-match-indent 2
-  "*How many spaces to indent from a match keyword in caml mode.")
+  "*How many spaces to indent from a \"match\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-match-indent)
 
 (defvar caml-method-indent 2
-  "*How many spaces to indent from a method keyword in caml mode.")
+  "*How many spaces to indent from a \"method\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-method-indent)
 
 (defvar caml-module-indent 2
-  "*How many spaces to indent from a module keyword in caml mode.")
+  "*How many spaces to indent from a \"module\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-module-indent)
 
 (defvar caml-object-indent 2
-  "*How many spaces to indent from a object keyword in caml mode.")
+  "*How many spaces to indent from an \"object\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-object-indent)
 
 (defvar caml-of-indent 2
-  "*How many spaces to indent from a of keyword in caml mode.")
+  "*How many spaces to indent from an \"of\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-of-indent)
 
 (defvar caml-parser-indent 4
-  "*How many spaces to indent from a parser keyword in caml mode.")
+  "*How many spaces to indent from a \"parser\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-parser-indent)
 
 (defvar caml-sig-indent 2
-  "*How many spaces to indent from a sig keyword in caml mode.")
+  "*How many spaces to indent from a \"sig\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-sig-indent)
 
 (defvar caml-struct-indent 2
-  "*How many spaces to indent from a struct keyword in caml mode.")
+  "*How many spaces to indent from a \"struct\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-struct-indent)
 
 (defvar caml-try-indent 2
-  "*How many spaces to indent from a try keyword in caml mode.")
+  "*How many spaces to indent from a \"try\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-try-indent)
 
 (defvar caml-type-indent 4
-  "*How many spaces to indent from a type keyword in caml mode.")
+  "*How many spaces to indent from a \"type\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-type-indent)
 
 (defvar caml-val-indent 2
-  "*How many spaces to indent from a val keyword in caml mode.")
+  "*How many spaces to indent from a \"val\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-val-indent)
 
 (defvar caml-while-indent 2
-  "*How many spaces to indent from a while keyword in caml mode.")
+  "*How many spaces to indent from a \"while\" keyword in caml mode.")
 (make-variable-buffer-local 'caml-while-indent)
 
 (defvar caml-::-indent  2
-  "*How many spaces to indent from a :: operator in caml mode.")
+  "*How many spaces to indent from a \"::\" operator in caml mode.")
 (make-variable-buffer-local 'caml-::-indent)
 
 (defvar caml-@-indent   2
-  "*How many spaces to indent from a @ operator in caml mode.")
+  "*How many spaces to indent from a \"@\" operator in caml mode.")
 (make-variable-buffer-local 'caml-@-indent)
 
 (defvar caml-:=-indent  2
-  "*How many spaces to indent from a := operator in caml mode.")
+  "*How many spaces to indent from a \":=\" operator in caml mode.")
 (make-variable-buffer-local 'caml-:=-indent)
 
 (defvar caml-<--indent  2
-  "*How many spaces to indent from a <- operator in caml mode.")
+  "*How many spaces to indent from a \"<-\" operator in caml mode.")
 (make-variable-buffer-local 'caml-<--indent)
 
 (defvar caml-->-indent  2
-  "*How many spaces to indent from a -> operator in caml mode.")
+  "*How many spaces to indent from a \"->\" operator in caml mode.")
 (make-variable-buffer-local 'caml-->-indent)
 
 (defvar caml-lb-indent 2
-  "*How many spaces to indent from a \[ operator in caml mode.")
+  "*How many spaces to indent from a \"\[\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lb-indent)
 
 (defvar caml-lc-indent 2
-  "*How many spaces to indent from a \{ operator in caml mode.")
+  "*How many spaces to indent from a \"\{\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lc-indent)
 
 (defvar caml-lp-indent  1
-  "*How many spaces to indent from a \( operator in caml mode.")
+  "*How many spaces to indent from a \"\(\" operator in caml mode.")
 (make-variable-buffer-local 'caml-lp-indent)
 
 (defvar caml-and-extra-indent nil
-  "*Extra indent for caml lines starting with the and keyword.
+  "*Extra indent for caml lines starting with the \"and\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-and-extra-indent)
 
 (defvar caml-do-extra-indent nil
-  "*Extra indent for caml lines starting with the do keyword.
+  "*Extra indent for caml lines starting with the \"do\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-do-extra-indent)
 
 (defvar caml-done-extra-indent nil
-  "*Extra indent for caml lines starting with the done keyword.
+  "*Extra indent for caml lines starting with the \"done\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-done-extra-indent)
 
 (defvar caml-else-extra-indent nil
-  "*Extra indent for caml lines starting with the else keyword.
+  "*Extra indent for caml lines starting with the \"else\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-else-extra-indent)
 
 (defvar caml-end-extra-indent nil
-  "*Extra indent for caml lines starting with the end keyword.
+  "*Extra indent for caml lines starting with the \"end\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-end-extra-indent)
 
 (defvar caml-in-extra-indent nil
-  "*Extra indent for caml lines starting with the in keyword.
+  "*Extra indent for caml lines starting with the \"in\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-in-extra-indent)
 
 (defvar caml-then-extra-indent nil
-  "*Extra indent for caml lines starting with the then keyword.
+  "*Extra indent for caml lines starting with the \"then\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-then-extra-indent)
 
 (defvar caml-to-extra-indent -1
-  "*Extra indent for caml lines starting with the to keyword.
+  "*Extra indent for caml lines starting with the \"to\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-to-extra-indent)
 
 (defvar caml-with-extra-indent nil
-  "*Extra indent for caml lines starting with the with keyword.
+  "*Extra indent for caml lines starting with the \"with\" keyword.
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-with-extra-indent)
 
@@ -241,7 +261,7 @@ Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-|-extra-indent)
 
 (defvar caml-rb-extra-indent -2
-  "*Extra indent for caml lines statring with ].
+  "*Extra indent for caml lines starting with ].
 Usually negative. nil is align on master.")
 
 (defvar caml-rc-extra-indent -2
@@ -255,13 +275,13 @@ Usually negative. nil is align on master.")
 (defvar caml-electric-indent t
   "*Non-nil means electrically indent lines starting with |, ] or }.
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one.")
 
 (defvar caml-electric-close-vector t
   "*Non-nil means electrically insert a | before a vector-closing ].
 
-Many people find eletric keys irritating, so you can disable them if
+Many people find electric keys irritating, so you can disable them if
 you are one. You should probably have this on, though, if you also
 have caml-electric-indent on, which see.")
 
@@ -272,9 +292,6 @@ have caml-electric-indent on, which see.")
 
 (defvar caml-shell-active nil
   "Non nil when a subshell is running.")
-
-(defvar running-xemacs  (string-match "XEmacs" emacs-version)
-  "Non-nil if we are running in the XEmacs environment.")
 
 (defvar caml-mode-map nil
   "Keymap used in Caml mode.")
@@ -291,7 +308,7 @@ have caml-electric-indent on, which see.")
 ;that way we get out effect even when we do \C-x` in compilation buffer
 ;  (define-key caml-mode-map "\C-x`" 'caml-next-error)
 
-  (if running-xemacs
+  (if (featurep 'xemacs)
       (define-key caml-mode-map 'backspace 'backward-delete-char-untabify)
     (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
 
@@ -303,8 +320,8 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map [?\C-c down-mouse-1] 'caml-types-explore)
   ;; caml-help
   (define-key caml-mode-map [?\C-c?i] 'ocaml-add-path)
-  (define-key caml-mode-map [?\C-c?]] 'ocaml-close-module)
-  (define-key caml-mode-map [?\C-c?[] 'ocaml-open-module)
+  (define-key caml-mode-map [?\C-c?\]] 'ocaml-close-module)
+  (define-key caml-mode-map [?\C-c?\[] 'ocaml-open-module)
   (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
   (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
   ;; others
@@ -319,8 +336,8 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\C-c\C-a" 'caml-find-alternate-file)
   (define-key caml-mode-map "\C-c\C-c" 'compile)
   (define-key caml-mode-map "\C-c\C-e" 'caml-eval-phrase)
-  (define-key caml-mode-map "\C-c\C-\[" 'caml-backward-to-less-indent)
-  (define-key caml-mode-map "\C-c\C-\]" 'caml-forward-to-less-indent)
+  (define-key caml-mode-map "\C-c\C-[" 'caml-backward-to-less-indent)
+  (define-key caml-mode-map "\C-c\C-]" 'caml-forward-to-less-indent)
   (define-key caml-mode-map "\C-c\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\C-c\C-r" 'caml-eval-region)
   (define-key caml-mode-map "\C-c\C-s" 'caml-show-subshell)
@@ -328,7 +345,7 @@ have caml-electric-indent on, which see.")
   (define-key caml-mode-map "\M-\C-q" 'caml-indent-phrase)
   (define-key caml-mode-map "\M-\C-x" 'caml-eval-phrase)
 
-  (if running-xemacs nil ; if not running xemacs
+  (if (featurep 'xemacs) nil
     (let ((map (make-sparse-keymap "Caml"))
           (forms (make-sparse-keymap "Forms")))
       (define-key caml-mode-map "\C-c\C-d" 'caml-show-imenu)
@@ -374,7 +391,7 @@ have caml-electric-indent on, which see.")
       (define-key forms [begin] '("begin .. end" . caml-insert-begin-form)))))
 
 (defvar caml-mode-xemacs-menu
-  (if running-xemacs
+  (if (featurep 'xemacs)
       '("Caml"
         [ "Indent phrase" caml-indent-phrase :keys "C-M-q" ]
         [ "Eval phrase" caml-eval-phrase
@@ -407,7 +424,7 @@ have caml-electric-indent on, which see.")
   "Syntax table in use in Caml mode buffers.")
 (if caml-mode-syntax-table
     ()
-  (let ((n (if (string-match "XEmacs" (emacs-version)) "" "n")))
+  (let ((n (if (featurep 'xemacs) "" "n")))
     (setq caml-mode-syntax-table (make-syntax-table))
     ; backslash is an escape sequence
     (modify-syntax-entry ?\\ "\\" caml-mode-syntax-table)
@@ -432,15 +449,10 @@ have caml-electric-indent on, which see.")
 (defvar caml-mode-abbrev-table nil
   "Abbrev table used for Caml mode buffers.")
 (if caml-mode-abbrev-table nil
-  (setq caml-mode-abbrev-table (make-abbrev-table))
-  (define-abbrev caml-mode-abbrev-table "and" "and" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "do" "do" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "done" "done" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "else" "else" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "end" "end" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "in" "in" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "then" "then" 'caml-abbrev-hook)
-  (define-abbrev caml-mode-abbrev-table "with" "with" 'caml-abbrev-hook))
+  (define-abbrev-table 'caml-mode-abbrev-table
+    (mapcar (lambda (keyword)
+              `(,keyword ,keyword caml-abbrev-hook nil t))
+            '("and" "do" "done" "else" "end" "in" "then" "with"))))
 
 ;; Other internal variables
 
@@ -477,7 +489,7 @@ have caml-electric-indent on, which see.")
 
 ;;; The major mode
 (eval-when-compile
-  (if (and (boundp 'running-xemacs) running-xemacs) nil
+  (if (featurep 'xemacs) nil
     (require 'imenu)))
 
 ;;
@@ -527,7 +539,7 @@ have caml-electric-indent on, which see.")
   ;garrigue 27-11-96
   (setq case-fold-search nil)
   ;garrigue july 97
-  (if running-xemacs ; from Xemacs lisp mode
+  (if (featurep 'xemacs)
       (if (and (featurep 'menubar)
                current-menubar)
           (progn
@@ -611,8 +623,8 @@ have caml-electric-indent on, which see.")
 (defun caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
 With prefix-arg send as many phrases as its numeric value,
-If an error occurs during evalutaion, stop at this phrase and
-repport the error.
+If an error occurs during evaluation, stop at this phrase and
+report the error.
 
 Return nil if noerror and position of error if any.
 
@@ -866,24 +878,24 @@ possible."
  (if (eq major-mode 'caml-mode)
      (let (skip bol beg end)
        (save-excursion
-         (set-buffer
-          (if (boundp 'compilation-last-buffer)
-              compilation-last-buffer   ;Emacs 19
-            "*compilation*"))           ;Emacs 18
-         (save-excursion
-           (goto-char (window-point (get-buffer-window (current-buffer))))
-           (if (looking-at caml-error-chars-regexp)
-               (setq beg
-                     (caml-string-to-int
-                      (buffer-substring (match-beginning 1) (match-end 1)))
-                     end
-                     (caml-string-to-int
-                      (buffer-substring (match-beginning 2) (match-end 2)))))
-           (next-line)
-           (beginning-of-line)
-           (if (and (looking-at "Warning")
-                    caml-next-error-skip-warnings-flag)
-               (setq skip 't))))
+         (with-current-buffer
+             (if (boundp 'compilation-last-buffer)
+                 compilation-last-buffer   ;Emacs 19
+               "*compilation*")           ;Emacs 18
+           (save-excursion
+             (goto-char (window-point (get-buffer-window (current-buffer))))
+             (if (looking-at caml-error-chars-regexp)
+                 (setq beg
+                       (caml-string-to-int
+                        (buffer-substring (match-beginning 1) (match-end 1)))
+                       end
+                       (caml-string-to-int
+                        (buffer-substring (match-beginning 2) (match-end 2)))))
+             (forward-line 1)
+             (beginning-of-line)
+             (if (and (looking-at "Warning")
+                      caml-next-error-skip-warnings-flag)
+                 (setq skip 't)))))
        (cond
         (skip (next-error))
         (beg
@@ -1124,7 +1136,7 @@ to the end.
 
 (defun caml-in-comment-p ()
   "Returns non-nil if point is inside a caml comment.
-Returns nil for the parenthesis openning a comment."
+Returns nil for the parenthesis opening a comment."
   ;;we look for comments differently than literals. there are two
   ;;reasons for this. first, caml has nested comments and it is not so
   ;;clear that parse-partial-sexp supports them; second, if proper
@@ -1248,13 +1260,13 @@ Used to distinguish it from toplevel let construct.")
 (defun caml-at-sexp-close-p ()
   (or (char-equal ?\) (following-char))
       (char-equal ?\] (following-char))
-      (char-equal ?} (following-char))))
+      (char-equal ?\} (following-char))))
 
 (defun caml-find-kwop (kwop-regexp &optional min-pos)
   "Look back for a caml keyword or operator matching KWOP-REGEXP.
 Second optional argument MIN-POS bounds the search.
 
-Ignore occurences inside literals. If found, return a list of two
+Ignore occurrences inside literals. If found, return a list of two
 values: the actual text of the keyword or operator, and a boolean
 indicating whether the keyword was one we looked for explicitly
 {non-nil}, or on the other hand one of the block-terminating
@@ -1764,7 +1776,7 @@ by |, insert one."
 (defun caml-abbrev-hook ()
   "If inserting a leading keyword at beginning of line, reindent the line."
   ;itz unfortunately we need a special case
-  (if (and (not (caml-in-comment-p)) (not (= last-command-char ?_)))
+  (if (and (not (caml-in-comment-p)) (not (= last-command-event ?_)))
       (let* ((bol (save-excursion (beginning-of-line) (point)))
              (kw (save-excursion
                    (and (re-search-backward "^[ \t]*\\(\\sw+\\)\\=" bol t)
@@ -1774,7 +1786,7 @@ by |, insert one."
                             (goto-char (match-beginning 1))
                             (caml-indent-command)
                             (current-column)))
-                  (abbrev-correct (if (= last-command-char ?\ ) 1 0)))
+                  (abbrev-correct (if (= last-command-event ?\ ) 1 0)))
               (indent-to (- indent
                             (or
                              (symbol-value
@@ -1959,7 +1971,7 @@ with prefix arg, indent that many phrases starting with the current phrase."
   "Explore type annotations by mouse dragging." t)
 
 (autoload 'caml-help "caml-help"
-  "Show documentation for qualilifed OCaml identifier." t)
+  "Show documentation for qualified OCaml identifier." t)
 (autoload 'caml-complete "caml-help"
   "Does completion for documented qualified OCaml identifier." t)
 (autoload 'ocaml-open-module "caml-help"
@@ -1969,6 +1981,6 @@ with prefix arg, indent that many phrases starting with the current phrase."
 (autoload 'ocaml-add-path "caml-help"
   "Add search path for documentation." t)
 
-;;; caml.el ends here
-
 (provide 'caml)
+
+;;; caml.el ends here

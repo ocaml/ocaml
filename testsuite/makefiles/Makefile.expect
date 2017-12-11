@@ -12,21 +12,30 @@
 #*                                                                        *
 #**************************************************************************
 
+.PHONY: default
 default:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
-	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) $$file && \
-	  TERM=dumb $(EXPECT_TEST) -repo-root $(OTOPDIR) -principal \
+	  TERM=dumb $(EXPECT_TEST) $(EXPECT_FLAGS) -repo-root $(OTOPDIR) $$file && \
+	  TERM=dumb $(EXPECT_TEST) $(EXPECT_FLAGS) -repo-root $(OTOPDIR) -principal \
 	    $$file.corrected && \
 	  mv $$file.corrected.corrected $$file.corrected && \
 	  $(DIFF) $$file $$file.corrected && \
 	  echo " => passed" || echo " => failed"; \
 	done
 
+# Builds everything needed to run an expect test
+.PHONY: deps
+deps:
+	@$(MAKE) -C $(OTOPDIR) coldstart ocaml ocamlc
+	@$(MAKE) -C $(OTOPDIR)/testsuite/tools expect_test$(EXE)
+
+.PHONY: promote
 promote:
 	@for file in *.corrected; do \
 	  cp $$file `basename $$file .corrected`; \
 	done
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.corrected

@@ -18,11 +18,6 @@ platform:
 
 image: Visual Studio 2015
 
-branches:
-  only:
-    - trunk
-    - 4.05
-
 # Do a shallow clone of the repo to speed up the build
 clone_depth: 1
 
@@ -31,51 +26,19 @@ environment:
     CYG_ROOT: C:/cygwin64
     CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
     CYG_CACHE: C:/cygwin64/var/cache/setup
+    FLEXDLL_VERSION: 0.37
     OCAMLRUNPARAM: v=0,b
-    OCAMLROOT: "%PROGRAMFILES%/OCaml"
-    OCAMLROOT2: "%PROGRAMFILES%/OCaml-mingw32"
 
 cache:
   - C:\cygwin64\var\cache\setup
 
 install:
-  - mkdir "%OCAMLROOT%/bin/flexdll"
-  - appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.35.zip" -FileName "flexdll.zip"
-  - appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-0.35.tar.gz" -FileName "flexdll.tar.gz"
-  - cinst 7zip.commandline
-  - mkdir flexdll-tmp
-  - cd flexdll-tmp
-  - 7za x -y ..\flexdll.zip
-  - for %%F in (flexdll.h flexlink.exe default_amd64.manifest) do copy %%F "%OCAMLROOT%\bin\flexdll"
-  - cd ..
-  # Make sure the Cygwin path comes before the Git one (otherwise
-  # cygpath behaves crazily), but after the MSVC one.
-  - set Path=C:\cygwin64\bin;%OCAMLROOT%\bin\flexdll;%Path%
-  - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - '"%CYG_ROOT%\setup-x86_64.exe" -qgnNdO -R "%CYG_ROOT%" -s "%CYG_MIRROR%" -l "%CYG_CACHE%" -P diffutils -P make -P mingw64-i686-gcc-core >NUL'
-  - '%CYG_ROOT%\bin\bash -lc "cygcheck -dc cygwin"'
-  - set OCAML_PREV_PATH=%PATH%
-  - set OCAML_PREV_LIB=%LIB%
-  - set OCAML_PREV_INCLUDE=%INCLUDE%
-  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
+# This is a hangover from monitoring effects of MPR#7452
+  - wmic cpu get name
+  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" install
 
 build_script:
-  - "%CYG_ROOT%/bin/bash -lc \"echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' >> ~/.bash_profile\""
-  - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh"'
-  - set PATH=%OCAML_PREV_PATH%
-  - set LIB=%OCAML_PREV_LIB%
-  - set INCLUDE=%OCAML_PREV_INCLUDE%
-  - call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x86
-  - '%CYG_ROOT%/bin/bash -lc "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh msvc32-only"'
+  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" build
 
 test_script:
-  - set PATH=%OCAML_PREV_PATH%
-  - set LIB=%OCAML_PREV_LIB%
-  - set INCLUDE=%OCAML_PREV_INCLUDE%
-  - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-  - '%APPVEYOR_BUILD_FOLDER%\ocamlc.opt -version'
-  - set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make tests"'
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make tests"'
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER && make install"'
-  - '%CYG_ROOT%/bin/bash -lc "cd $APPVEYOR_BUILD_FOLDER/../build-mingw32 && make install"'
+  - call "%APPVEYOR_BUILD_FOLDER%\appveyor_build.cmd" test

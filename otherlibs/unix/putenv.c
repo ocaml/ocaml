@@ -13,6 +13,8 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -20,6 +22,7 @@
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
+#include <caml/osdeps.h>
 
 #include "unixsupport.h"
 
@@ -27,19 +30,18 @@
 
 CAMLprim value unix_putenv(value name, value val)
 {
-  mlsize_t namelen = caml_string_length(name);
-  mlsize_t vallen = caml_string_length(val);
   char * s;
+  char_os * p;
+  int ret;
 
   if (! (caml_string_is_c_safe(name) && caml_string_is_c_safe(val)))
     unix_error(EINVAL, "putenv", name);
-  s = (char *) caml_stat_alloc(namelen + 1 + vallen + 1);
-  memmove (s, String_val(name), namelen);
-  s[namelen] = '=';
-  memmove (s + namelen + 1, String_val(val), vallen);
-  s[namelen + 1 + vallen] = 0;
-  if (putenv(s) == -1) {
-    caml_stat_free(s);
+  s = caml_stat_strconcat(3, name, "=", val);
+  p = caml_stat_strdup_to_os(s);
+  caml_stat_free(s);
+  ret = putenv_os(p);
+  if (ret == -1) {
+    caml_stat_free(p);
     uerror("putenv", name);
   }
   return Val_unit;

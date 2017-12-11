@@ -86,6 +86,8 @@ type t =
 
 val parse_options : bool -> string -> unit;;
 
+val without_warnings : (unit -> 'a) -> 'a
+
 val is_active : t -> bool;;
 val is_error : t -> bool;;
 
@@ -111,3 +113,6 @@ val help_warnings: unit -> unit
 type state
 val backup: unit -> state
 val restore: state -> unit
+val mk_lazy: (unit -> 'a) -> 'a Lazy.t
+    (** Like [Lazy.of_fun], but the function is applied with
+        the warning settings at the time [mk_lazy] is called. *)

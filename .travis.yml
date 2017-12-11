@@ -21,7 +21,17 @@ script: bash -ex .travis-ci.sh
 matrix:
   include:
   - env: CI_KIND=build XARCH=i386
-  - env: CI_KIND=build XARCH=i386 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
+    addons:
+      apt:
+        packages:
+        - gcc:i386
+        - cpp:i386
+        - binutils:i386
+        - binutils-dev:i386
+        - libx11-dev:i386
+        - libc6-dev:i386
+  - env: CI_KIND=build XARCH=x64
+  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
   - env: CI_KIND=changes
   - env: CI_KIND=tests
   allow_failures:
@@ -30,3 +40,7 @@ addons:
   apt:
     packages:
     - binutils-dev
+
+notifications:
+  email:
+    - ocaml-ci-notifications@inria.fr

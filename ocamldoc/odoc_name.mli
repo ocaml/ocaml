@@ -41,7 +41,7 @@ val head : t -> t
 val depth : t -> int
 
 (** Returns true if the first name is a prefix of the second name.
-   If the two names are equals, then if is false (strict prefix).*)
+   If the two names are equal, then it is false (strict prefix).*)
 val prefix : t -> t -> bool
 
 (** Take two names n1 and n2 = n3.n4 and return n4 if n3=n1 or else n2. *)
@@ -70,5 +70,4 @@ val to_path : t -> Path.t
 (** Get a name from a [Longident.t].*)
 val from_longident : Longident.t -> t
 
-(** Set of Name.t *)
-module Set : Set.S with type elt = t
+module Map : Map.S with type key = t

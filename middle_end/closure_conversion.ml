@@ -395,7 +395,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
     let cond = Variable.create "cond_sequor" in
-    Flambda.create_let const_true (Const (Int 1))
+    Flambda.create_let const_true (Const (Const_pointer 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
@@ -403,7 +403,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_false" in
     let cond = Variable.create "cond_sequand" in
-    Flambda.create_let const_false (Const (Int 0))
+    Flambda.create_let const_false (Const (Const_pointer 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
@@ -465,12 +465,19 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
-    let zero_to_n = Numbers.Int.zero_to_n in
+    let nums sw_num cases default =
+      let module I = Numbers.Int in
+      match default with
+      | Some _ ->
+          I.zero_to_n (sw_num - 1)
+      | None ->
+          List.fold_left (fun set (i, _) -> I.Set.add i set) I.Set.empty cases
+    in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (Switch (scrutinee,
-        { numconsts = zero_to_n (sw.sw_numconsts - 1);
+        { numconsts = nums sw.sw_numconsts sw.sw_consts sw.sw_failaction;
           consts = List.map aux sw.sw_consts;
-          numblocks = zero_to_n (sw.sw_numblocks - 1);
+          numblocks = nums sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
           blocks = List.map aux sw.sw_blocks;
           failaction = Misc.may_map (close t env) sw.sw_failaction;
         }))

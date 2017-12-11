@@ -236,7 +236,8 @@ let rc node =
 (* Enter a value in the method environment only *)
 let enter_met_env ?check loc lab kind ty val_env met_env par_env =
   let (id, val_env) =
-    Env.enter_value lab {val_type = ty; val_kind = Val_unbound;
+    Env.enter_value lab {val_type = ty;
+                         val_kind = Val_unbound Val_unbound_instance_variable;
                          val_attributes = [];
                          Types.val_loc = loc} val_env
   in
@@ -244,7 +245,8 @@ let enter_met_env ?check loc lab kind ty val_env met_env par_env =
    Env.add_value ?check id {val_type = ty; val_kind = kind;
                             val_attributes = [];
                             Types.val_loc = loc} met_env,
-   Env.add_value id {val_type = ty; val_kind = Val_unbound;
+   Env.add_value id {val_type = ty;
+                     val_kind = Val_unbound Val_unbound_instance_variable;
                      val_attributes = [];
                      Types.val_loc = loc} par_env)
 
@@ -356,13 +358,13 @@ let declare_method val_env meths self_type lab priv sty loc =
 so that we can get an immediate value. Is that correct ? Ask Jacques. *)
       let returned_cty = ctyp Ttyp_any (Ctype.newty Tnil) val_env loc in
       delayed_meth_specs :=
-      lazy (
-        let cty = transl_simple_type_univars val_env sty' in
-        let ty = cty.ctyp_type in
-        unif ty;
-        returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
-        returned_cty.ctyp_type <- ty;
-        ) ::
+      Warnings.mk_lazy (fun () ->
+            let cty = transl_simple_type_univars val_env sty' in
+            let ty = cty.ctyp_type in
+            unif ty;
+            returned_cty.ctyp_desc <- Ttyp_poly ([], cty);
+            returned_cty.ctyp_type <- ty;
+          ) ::
       !delayed_meth_specs;
       returned_cty
   | _ ->
@@ -400,8 +402,13 @@ let add_val lab (mut, virt, ty) val_sig =
   in
   Vars.add lab (mut, virt, ty) val_sig
 
-let rec class_type_field env self_type meths
+let rec class_type_field env self_type meths arg ctf =
+  Builtin_attributes.warning_scope ctf.pctf_attributes
+    (fun () -> class_type_field_aux env self_type meths arg ctf)
+
+and class_type_field_aux env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
+
   let loc = ctf.pctf_loc in
   let mkctf desc =
     { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
@@ -446,7 +453,7 @@ let rec class_type_field env self_type meths
         val_sig, concr_meths, inher)
 
   | Pctf_attribute x ->
-      Builtin_attributes.warning_attribute [x];
+      Builtin_attributes.warning_attribute x;
       (mkctf (Tctf_attribute x) :: fields,
         val_sig, concr_meths, inher)
 
@@ -472,13 +479,14 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
-  Builtin_attributes.warning_enter_scope ();
   let (rev_fields, val_sig, concr_meths, inher) =
-    List.fold_left (class_type_field env self_type meths)
-      ([], Vars.empty, Concr.empty, [])
-      sign
+    Builtin_attributes.warning_scope []
+      (fun () ->
+         List.fold_left (class_type_field env self_type meths)
+           ([], Vars.empty, Concr.empty, [])
+           sign
+      )
   in
-  Builtin_attributes.warning_leave_scope ();
   let cty =   {csig_self = self_type;
    csig_vars = val_sig;
    csig_concr = concr_meths;
@@ -490,6 +498,10 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   }
 
 and class_type env scty =
+  Builtin_attributes.warning_scope scty.pcty_attributes
+    (fun () -> class_type_aux env scty)
+
+and class_type_aux env scty =
   let cltyp desc typ =
     {
      cltyp_desc = desc;
@@ -558,10 +570,13 @@ let class_type env scty =
 
 (*******************************)
 
-let rec class_field self_loc cl_num self_type meths vars
+let rec class_field self_loc cl_num self_type meths vars arg cf =
+  Builtin_attributes.warning_scope cf.pcf_attributes
+    (fun () -> class_field_aux self_loc cl_num self_type meths vars arg cf)
+
+and class_field_aux self_loc cl_num self_type meths vars
     (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher,
-     local_meths, local_vals)
-  cf =
+     local_meths, local_vals) cf =
   let loc = cf.pcf_loc in
   let mkcf desc =
     { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes }
@@ -718,17 +733,19 @@ let rec class_field self_loc cl_num self_type meths vars
       let vars_local = !vars in
 
       let field =
-        lazy begin
-          (* Read the generalized type *)
-          let (_, ty) = Meths.find lab.txt !meths in
-          let meth_type =
-            Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
-          Ctype.raise_nongen_level ();
-          vars := vars_local;
-          let texp = type_expect met_env meth_expr meth_type in
-          Ctype.end_def ();
-          mkcf (Tcf_method (lab, priv, Tcfk_concrete (ovf, texp)))
-        end in
+        Warnings.mk_lazy
+          (fun () ->
+             (* Read the generalized type *)
+             let (_, ty) = Meths.find lab.txt !meths in
+             let meth_type =
+               Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
+             Ctype.raise_nongen_level ();
+             vars := vars_local;
+             let texp = type_expect met_env meth_expr meth_type in
+             Ctype.end_def ();
+             mkcf (Tcf_method (lab, priv, Tcfk_concrete (ovf, texp)))
+          )
+      in
       (val_env, met_env, par_env, field::fields,
        Concr.add lab.txt concr_meths, warn_vals, inher,
        Concr.add lab.txt local_meths, local_vals)
@@ -757,7 +774,7 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
        inher, local_meths, local_vals)
   | Pcf_attribute x ->
-      Builtin_attributes.warning_attribute [x];
+      Builtin_attributes.warning_attribute x;
       (val_env, met_env, par_env,
         lazy (mkcf (Tcf_attribute x)) :: fields,
         concr_meths, warn_vals, inher, local_meths, local_vals)
@@ -811,14 +828,15 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
-  Builtin_attributes.warning_enter_scope ();
   let (_, _, _, fields, concr_meths, _, inher, _local_meths, _local_vals) =
-    List.fold_left (class_field self_loc cl_num self_type meths vars)
-      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
-       Concr.empty, Concr.empty)
-      str
+    Builtin_attributes.warning_scope []
+      (fun () ->
+         List.fold_left (class_field self_loc cl_num self_type meths vars)
+           (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
+            Concr.empty, Concr.empty)
+           str
+      )
   in
-  Builtin_attributes.warning_leave_scope ();
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {csig_self = public_self;
@@ -890,6 +908,10 @@ and class_structure cl_num final val_env met_env loc
     cstr_meths = meths}, sign (* redondant, since already in cstr_type *)
 
 and class_expr cl_num val_env met_env scl =
+  Builtin_attributes.warning_scope scl.pcl_attributes
+    (fun () -> class_expr_aux cl_num val_env met_env scl)
+
+and class_expr_aux cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
       let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid.txt in
@@ -1163,6 +1185,9 @@ and class_expr cl_num val_env met_env scl =
           ([], met_env)
       in
       let cl = class_expr cl_num val_env met_env scl' in
+      let () = if rec_flag = Recursive then
+        check_recursive_bindings val_env defs
+      in
       rc {cl_desc = Tcl_let (rec_flag, defs, vals, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
@@ -1586,6 +1611,22 @@ let final_decl env define_class
  })
 (*   (cl.pci_variance, cl.pci_loc)) *)
 
+let class_infos define_class kind
+    (cl, id, ty_id,
+     obj_id, obj_params, obj_ty,
+     cl_id, cl_params, cl_ty,
+     constr_type, dummy_class)
+    (res, env) =
+  Builtin_attributes.warning_scope cl.pci_attributes
+    (fun () ->
+       class_infos define_class kind
+         (cl, id, ty_id,
+          obj_id, obj_params, obj_ty,
+          cl_id, cl_params, cl_ty,
+          constr_type, dummy_class)
+         (res, env)
+    )
+
 let extract_type_decls
     (_id, _id_loc, clty, _ty_id, cltydef, obj_id, obj_abbr, _cl_id, cl_abbr,
      _arity, _pub_meths, _coe, _expr, required) decls =
@@ -1687,7 +1728,17 @@ let class_description env sexpr =
   (expr, expr.cltyp_type)
 
 let class_declarations env cls =
-  type_classes true approx_declaration class_declaration env cls
+  let info, env =
+    type_classes true approx_declaration class_declaration env cls
+  in
+  let ids, exprs =
+    List.split
+      (List.map
+         (fun ci -> ci.cls_id, ci.cls_info.ci_expr)
+         info)
+  in
+  check_recursive_class_bindings env ids exprs;
+  info, env
 
 let class_descriptions env cls =
   type_classes true approx_description class_description env cls

@@ -44,6 +44,7 @@ extern void caml_unix_check_path(value path, const char * cmdname);
 #define DIR_Val(v) *((DIR **) &Field(v, 0))
 
 extern char ** cstringvect(value arg, char * cmdname);
+extern void cstringvect_free(char **);
 
 extern int unix_cloexec_default;
 extern int unix_cloexec_p(value cloexec);
@@ -53,5 +54,7 @@ extern void unix_clear_cloexec(int fd, char * cmdname, value arg);
 #ifdef __cplusplus
 }
 #endif
+
+#define EXECV_CAST
 
 #endif /* CAML_UNIXSUPPORT_H */

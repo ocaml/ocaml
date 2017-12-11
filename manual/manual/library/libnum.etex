@@ -3,37 +3,12 @@
 %HEVEA\cutname{libnum.html}
 
 The "num" library implements integer arithmetic and rational
-arithmetic in arbitrary precision.
+arithmetic in arbitrary precision. It was split off the core
+OCaml distribution starting with the 4.06.0 release, and can now be found
+at \url{https://github.com/ocaml/num}.
 
-More documentation on the functions provided in this library can be found
-in {\em The CAML Numbers Reference Manual\/} by
-Valérie Ménissier-Morain, technical report 141, INRIA, july 1992
-(available electronically,
-\url{http://hal.inria.fr/docs/00/07/00/27/PDF/RT-0141.pdf}).
-
-Programs that use the "num" library must be linked as follows:
-\begin{alltt}
-        ocamlc \var{other options} nums.cma \var{other files}
-        ocamlopt \var{other options} nums.cmxa \var{other files}
-\end{alltt}
-For interactive use of the "nums" library, do:
-\begin{alltt}
-        ocamlmktop -o mytop nums.cma
-        ./mytop
-\end{alltt}
-or (if dynamic linking of C libraries is supported on your platform),
-start "ocaml" and type "#load \"nums.cma\";;".
-
-\ifouthtml
-\begin{links}
-\item \ahref{libref/Num.html}{Module \texttt{Num}: operation on arbitrary-precision numbers}
-\item \ahref{libref/Big\_int.html}{Module \texttt{Big\_int}: operations on arbitrary-precision integers}
-\item \ahref{libref/Arith\_status.html}{Module \texttt{Arith\_status}: flags that control rational arithmetic}
-\end{links}
-\else
-\input{Num.tex}
-\input{Bigint.tex}
-\input{Arithstatus.tex}
-\fi
-
-
+New applications that need arbitrary-precision arithmetic should use the
+"Zarith" library (\url{https://github.com/ocaml/Zarith}) instead of the "Num"
+library, and older applications that already use "Num" are encouraged to
+switch to "Zarith". "Zarith" delivers much better performance than "Num"
+and has a nicer API.

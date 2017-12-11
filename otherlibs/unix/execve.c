@@ -13,20 +13,26 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 CAMLprim value unix_execve(value path, value args, value env)
 {
-  char ** argv;
-  char ** envp;
+  char_os ** argv;
+  char_os ** envp;
+  char_os * wpath;
   caml_unix_check_path(path, "execve");
   argv = cstringvect(args, "execve");
   envp = cstringvect(env, "execve");
-  (void) execve(String_val(path), argv, envp);
-  caml_stat_free((char *) argv);
-  caml_stat_free((char *) envp);
+  wpath = caml_stat_strdup_to_os(String_val(path));
+  (void) execve_os(wpath, EXECV_CAST argv, EXECV_CAST envp);
+  caml_stat_free(wpath);
+  cstringvect_free(argv);
+  cstringvect_free(envp);
   uerror("execve", path);
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */

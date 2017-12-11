@@ -23,6 +23,7 @@
 #include "caml/mlvalues.h"
 #include "caml/signals.h"
 #include "caml/sys.h"
+#include "caml/osdeps.h"
 #include "unixsupport.h"
 
 /* Temporary compatibility stuff so that this file can also be compiled
@@ -168,7 +169,7 @@ void UNMAP_FILE_FUNCTION(void * addr, uintnat len)
 
 static void caml_ba_sys_error(void)
 {
-  char buffer[512];
+  wchar_t buffer[512];
   DWORD errnum;
 
   errnum = GetLastError();
@@ -177,10 +178,10 @@ static void caml_ba_sys_error(void)
                      errnum,
                      0,
                      buffer,
-                     sizeof(buffer),
+                     sizeof(buffer)/sizeof(wchar_t),
                      NULL))
-    sprintf(buffer, "Unknown error %ld\n", errnum);
-  caml_raise_sys_error(caml_copy_string(buffer));
+    swprintf(buffer, sizeof(buffer)/sizeof(wchar_t), L"Unknown error %ld\n", errnum);
+  caml_raise_sys_error(caml_copy_string_of_utf16(buffer));
 }
 
 #endif
