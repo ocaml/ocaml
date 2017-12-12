@@ -354,6 +354,8 @@ can find it and use it.
 .TP
 .BI \-error-size \ size
 Set the optimal error size for type error messages in arbitrary units.
+The default size is 12, a typical range for this size would be between
+3 and 30.
 Types larger than this error size will be elided in order to fit
 this limit.
 .TP

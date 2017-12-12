@@ -79,7 +79,8 @@ let mk_dllpath f =
 
 let mk_errorsize i =
   "-error-size", Arg.Int i,
-  "<size>  Increase the size of error message to <size> (in arbitrary units)"
+  "<size>  Increase the size of error messages to <size> (in arbitrary units),\
+  \     the default size is 12."
 ;;
 
 let mk_dtypes f =
