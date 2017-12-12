@@ -573,7 +573,7 @@ module Color = struct
     warning = [Bold; FG Magenta];
     error = [Bold; FG Red];
     loc = [Bold];
-    difference = [Bold; FG Red];
+    difference = [Bold; FG Magenta];
   }
 
   let cur_styles = ref default_styles
