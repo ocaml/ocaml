@@ -46,7 +46,6 @@ pthread_wanted=yes
 dl_defs=''
 verbose=false
 debugruntime=true
-with_instrumented_runtime=true
 with_sharedlibs=true
 partialld="ld -r"
 with_debugger=ocamldebugger
@@ -68,6 +67,9 @@ max_testsuite_dir_retries=0
 with_cplugins=false
 with_fpic=false
 flat_float_array=true
+
+# we distinguish '' (not set) from 'true' (explicitly set by the user)
+with_instrumented_runtime=''
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -175,7 +177,7 @@ while : ; do
     -no-debug-runtime|--no-debug-runtime)
         debugruntime=false;;
     -with-instrumented-runtime|--with-instrumented-runtime)
-        with_instrumented_runtime=true;; # default
+        with_instrumented_runtime=true;;
     -no-instrumented-runtime|--no-instrumented-runtime)
         with_instrumented_runtime=false;;
     -no-debugger|--no-debugger)
@@ -1194,20 +1196,28 @@ fi
 
 # For instrumented runtime
 # (clock_gettime needs -lrt for glibc before 2.17)
-if $with_instrumented_runtime; then
-  with_instrumented_runtime=false #enabled it only if found
+if test "$with_instrumented_runtime" != "false"; then
+  instrumented_runtime_support="nonsupported"
   for libs in "" "-lrt"; do
     if sh ./hasgot $libs clock_gettime; then
       inf "clock_gettime functions found (with libraries '$libs')"
       instrumented_runtime_libs="${libs}"
-      with_instrumented_runtime=true;
+      instrumented_runtime_support="supported";
       break
     fi
   done
-  if ! $with_instrumented_runtime; then
-      err "clock_gettime functions not found. " \
-          "Instrumented runtime can't be built."
-  fi
+  case "$with_instrumented_runtime,$instrumented_runtime_support" in
+    *,supported)
+        with_instrumented_runtime=true;;
+    true,nonsupported)
+        with_instrumented_runtime=false;
+        err "clock_gettime functions not found. " \
+            "Instrumented runtime can't be built.";;
+    ,nonsupported)
+        with_instrumented_runtime=false;
+        inf "clock_gettime functions not found. " \
+            "Instrumented runtime can't be built.";;
+  esac
 fi
 
 # Configuration for the libraries
