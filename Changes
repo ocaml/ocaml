@@ -94,6 +94,9 @@ Working version
 - GPR#1502: more command line options for expect tests
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1519: migrate expect tests to ocamltest
+  (Sébastien Hinderer, review by Gabriel Scherer)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
