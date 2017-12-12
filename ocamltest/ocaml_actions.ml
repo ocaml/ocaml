@@ -481,11 +481,13 @@ let run_expect_twice ocamlsrcdir input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
   let first_run = run_expect_once ocamlsrcdir input_file false log env in
   match first_run with
+    | Skip _ | Fail _ -> first_run
     | Pass env1 ->
       let intermediate_file = corrected input_file in
       let second_run =
         run_expect_once ocamlsrcdir intermediate_file true log env1 in
       (match second_run with
+      | Skip _ | Fail _ -> second_run
       | Pass env2 ->
         let output_file = corrected intermediate_file in
         let output_env = Environments.add_bindings
@@ -494,9 +496,7 @@ let run_expect_twice ocamlsrcdir input_file log env =
           Builtin_variables.output, output_file
         ] env2 in
         Pass output_env
-      | Skip _ | Fail _ -> second_run
       )
-    | Skip _ | Fail _ -> first_run
 
 let run_expect log env =
   let ocamlsrcdir = ocamlsrcdir () in
