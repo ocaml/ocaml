@@ -1,3 +1,8 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
+
 type t = [`A]
 let f x = match x with
 |` B -> 0;;

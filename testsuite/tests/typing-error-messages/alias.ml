@@ -1,5 +1,11 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
+
+
 module M: sig
-        val f: ([`A|`B|`C] as 'a) -> 'a -> 'a 
+        val f: ([`A|`B|`C] as 'a) -> 'a -> 'a
 end = struct let f x y = x + y end;;
 
 [%%expect{|

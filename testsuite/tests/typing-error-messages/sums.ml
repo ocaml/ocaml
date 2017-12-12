@@ -1,3 +1,7 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
 
 module N: sig
         type c = A | B | C | D | E | F | G

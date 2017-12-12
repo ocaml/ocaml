@@ -1,3 +1,7 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
 
 module F: sig
         val f:int -> int -> int -> int -> int -> int -> int

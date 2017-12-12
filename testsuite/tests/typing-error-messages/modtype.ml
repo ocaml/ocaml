@@ -1,3 +1,8 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
+
 module type s = sig
         type arma
         type virumque

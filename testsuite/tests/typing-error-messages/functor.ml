@@ -1,3 +1,8 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
+
 module type S = sig type t end
 module F(Op:S -> S -> S)(X:S)(Y:S) = Op(X)(Y);;
 

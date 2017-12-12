@@ -1,3 +1,8 @@
+(* TEST
+   flags = "-error-size 2 -diff-markers"
+   * expect
+*)
+
 let o = object method f=0; method g =1; method h = 2 end
 let f o = o#f + o#g + o#h + o#i
 ;; f o;;
