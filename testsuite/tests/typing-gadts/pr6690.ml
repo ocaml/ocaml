@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a visit_action
 
 type insert

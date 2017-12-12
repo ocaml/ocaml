@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type t = A of {mutable x: int};;
 fun (A r) -> r.x <- 42;;
 [%%expect{|

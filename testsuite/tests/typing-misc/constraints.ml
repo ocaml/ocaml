@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a t = [`A of 'a t t] as 'a;; (* fails *)
 [%%expect{|
 Line _, characters 0-32:

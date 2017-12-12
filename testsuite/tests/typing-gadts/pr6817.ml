@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module A = struct
     type nil = Cstr
   end

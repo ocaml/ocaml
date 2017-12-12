@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module type S = sig type t [@@immediate] end;;
 module F (M : S) : S = M;;
 [%%expect{|

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* with module *)
 
 module type S = sig type t and s = t end;;

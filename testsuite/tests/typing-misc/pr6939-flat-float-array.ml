@@ -1,3 +1,8 @@
+(* TEST
+   * flat-float-array
+   ** expect
+*)
+
 let rec x = [| x |]; 1.;;
 [%%expect{|
 Line _, characters 12-19:

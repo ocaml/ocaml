@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a t = [< `Foo | `Bar] as 'a;;
 type 'a s = [< `Foo | `Bar | `Baz > `Bar] as 'a;;
 

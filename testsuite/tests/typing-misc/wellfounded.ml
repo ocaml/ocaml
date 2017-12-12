@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#6768 *)
 
 type _ prod = Prod : ('a * 'y) prod;;

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type inkind = [ `Link | `Nonlink ]
 
 type _ inline_t =

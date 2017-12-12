@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a t = T of 'a
 type 'a s = S of 'a
 

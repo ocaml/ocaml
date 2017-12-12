@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type bar = < bar: unit >
 
 type _ ty = Int : int ty

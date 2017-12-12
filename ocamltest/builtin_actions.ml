@@ -63,6 +63,10 @@ let setup_build_env = make
   "setup-build-env"
   (Actions_helpers.setup_build_env true [])
 
+let setup_simple_build_env = make
+  "setup-simple-build-env"
+  (Actions_helpers.setup_simple_build_env true [])
+
 let run = make
   "run"
   Actions_helpers.run_program

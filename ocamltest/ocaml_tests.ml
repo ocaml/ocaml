@@ -73,10 +73,23 @@ let toplevel = {
   ]
 }
 
+let expect =
+{
+  test_name = "expect";
+  test_run_by_default = false;
+  test_actions =
+  [
+    setup_simple_build_env;
+    run_expect;
+    check_program_output
+  ]
+}
+
 let _ =
   List.iter register
   [
     bytecode;
     toplevel;
+    expect;
   ];
   if (Ocamltest_config.arch <> "none") then register native

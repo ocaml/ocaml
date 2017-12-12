@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module F(S : sig type 'a t end) = struct
   type _ ab =
       A : int S.t ab

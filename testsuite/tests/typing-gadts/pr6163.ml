@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type _ nat =
     Zero : [`Zero] nat
   | Succ : 'a nat -> [`Succ of 'a] nat;;

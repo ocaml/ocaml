@@ -24,6 +24,10 @@ val dumpenv : Actions.t
 val unix : Actions.t
 val windows : Actions.t
 
+val setup_build_env : Actions.t
+
+val setup_simple_build_env : Actions.t
+
 val run : Actions.t
 val script : Actions.t
 

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#6394 *)
 
 module rec X : sig

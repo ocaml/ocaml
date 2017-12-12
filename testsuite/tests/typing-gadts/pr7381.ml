@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_,_) eql = Refl : ('a, 'a) eql;;
 [%%expect{|
 type (_, _) eql = Refl : ('a, 'a) eql

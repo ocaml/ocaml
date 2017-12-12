@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* Encoding generics using GADTs *)
 (* (c) Alain Frisch / Lexifi *)
 (* cf. http://www.lexifi.com/blog/dynamic-types *)

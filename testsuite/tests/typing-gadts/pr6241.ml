@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) t =
  A : ('a, 'a) t
 | B : string -> ('a, 'b) t

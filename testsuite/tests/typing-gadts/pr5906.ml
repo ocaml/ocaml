@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type _ constant =
   | Int: int -> int constant
   | Bool: bool -> bool constant

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 #labels false;;
 type (_,_) eql = Refl : ('a, 'a) eql
 type s = x:int -> y:float -> unit

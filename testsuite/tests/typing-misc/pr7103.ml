@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a t
 type a
 

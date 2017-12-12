@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#7324 *)
 
 module rec T : sig type t = T.t end = T;;

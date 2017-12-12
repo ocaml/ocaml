@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type tag = [`TagA | `TagB | `TagC];;
 
 type 'a poly =

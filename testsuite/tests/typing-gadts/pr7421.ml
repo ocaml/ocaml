@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) eq = Refl : ('a, 'a) eq;;
 type empty = (int, unit) eq;;
 [%%expect{|

@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 let x = 3 in
 let f x = f x in
 ();;

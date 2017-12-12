@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module X = struct
   type t =
     | A : 'a * 'b * ('a -> unit) -> t

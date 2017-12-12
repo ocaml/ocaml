@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* Tests for nested equations (bind abstract types from other modules) *)
 
 type _ t = Int : int t;;

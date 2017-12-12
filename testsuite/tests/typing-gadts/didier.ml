@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type 'a ty =
   | Int : int ty
   | Bool : bool ty

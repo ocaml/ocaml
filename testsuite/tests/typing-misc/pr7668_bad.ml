@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 let partition_map f xs =
  let rec part left right = function
    | [] -> List.rev left, List.rev right

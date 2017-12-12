@@ -325,10 +325,6 @@ _ocamltest
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
-/testsuite/tests/typing-misc/false.flat-float
-/testsuite/tests/typing-misc/true.flat-float
-/testsuite/tests/typing-misc/pr6939.ml
-
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml

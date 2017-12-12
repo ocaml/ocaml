@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 module Exp =
   struct
 

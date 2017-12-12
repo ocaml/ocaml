@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type (_, _) comp =
   | Eq : ('a, 'a) comp
   | Diff : ('a, 'b) comp

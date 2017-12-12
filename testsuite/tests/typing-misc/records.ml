@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* undefined labels *)
 type t = {x:int;y:int};;
 {x=3;z=2};;
