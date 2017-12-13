@@ -32,6 +32,7 @@ matrix:
         - libc6-dev:i386
   - env: CI_KIND=build XARCH=x64
   - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
+  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-no-flat-float-array
   - env: CI_KIND=changes
   - env: CI_KIND=tests
   allow_failures:
