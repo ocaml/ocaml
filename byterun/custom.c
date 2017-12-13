@@ -45,7 +45,8 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
         if (max == 0) max = 1;
         caml_extra_heap_resources_minor += (double) mem / (double) max;
         if (caml_extra_heap_resources_minor > 1.0) {
-          caml_minor_collection();
+          caml_request_minor_gc ();
+          caml_gc_dispatch ();
         }
       }
     }

@@ -72,7 +72,6 @@ extern void caml_alloc_custom_table (struct caml_custom_table *,
                                      asize_t, asize_t);
 extern void caml_oldify_one (value, value *);
 extern void caml_oldify_mopup (void);
-extern void caml_minor_collection (void);
 
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \
