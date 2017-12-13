@@ -602,6 +602,8 @@ let ty_list : type a e. (a,e) ty -> (a vlist,e) ty = fun t ->
 ;;
 [%%expect{|
 Line _, characters 41-58:
+      | "Cons", Some (Tdyn (Pair (_, Var), (p : a * a vlist))) -> `Cons p)))
+                                           ^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type a * a vlist
        but a pattern was expected which matches values of type
          $Tdyn_'a = $0 * $1

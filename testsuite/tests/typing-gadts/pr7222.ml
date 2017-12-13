@@ -21,6 +21,8 @@ type (_, _) elt =
   | Elt : 'nat n -> ('l, 'nat -> 'l) elt
 type _ t = Nil : nil t | Cons : ('x, 'fx) elt * 'x t -> 'fx t
 Line _, characters 11-18:
+    let Cons(Elt dim, _) = sh in ()
+             ^^^^^^^
 Error: This pattern matches values of type ($Cons_'x, 'a -> $Cons_'x) elt
        but a pattern was expected which matches values of type
          ($Cons_'x, 'a -> $'b -> nil) elt
@@ -33,6 +35,8 @@ type (_, _) elt =
   | Elt : 'nat n -> ('l, 'nat -> 'l) elt
 type _ t = Nil : nil t | Cons : ('x, 'fx) elt * 'x t -> 'fx t
 Line _, characters 6-22:
+    let Cons(Elt dim, _) = sh in ()
+        ^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type ('a -> $0 -> nil) t
        but a pattern was expected which matches values of type
          ('a -> 'b -> nil) t

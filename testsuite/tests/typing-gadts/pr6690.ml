@@ -27,6 +27,8 @@ type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
 Line _, characters 4-9:
+    | Local -> fun _ -> raise Exit
+      ^^^^^
 Error: This pattern matches values of type
          ($0, $0 * insert, $0 local_visit_action) context
        but a pattern was expected which matches values of type
@@ -40,6 +42,8 @@ type ('a, 'result, 'visit_action) context =
     Local : ('a, 'a * insert, 'a local_visit_action) context
   | Global : ('a, 'a, 'a visit_action) context
 Line _, characters 4-10:
+    | Global -> fun _ -> raise Exit
+      ^^^^^^
 Error: This pattern matches values of type ($1, $1, visit_action) context
        but a pattern was expected which matches values of type
          ($0, $0 * insert, visit_action) context
@@ -54,6 +58,8 @@ let vexpr (type visit_action)
 ;;
 [%%expect{|
 Line _, characters 4-9:
+    | Local -> fun _ -> raise Exit
+      ^^^^^
 Error: This pattern matches values of type
          ($'a, $'a * insert, $'a local_visit_action) context
        but a pattern was expected which matches values of type
@@ -61,6 +67,8 @@ Error: This pattern matches values of type
        The type constructor $'a would escape its scope
 |}, Principal{|
 Line _, characters 4-10:
+    | Global -> fun _ -> raise Exit
+      ^^^^^^
 Error: This pattern matches values of type ($1, $1, visit_action) context
        but a pattern was expected which matches values of type
          ($0, $0 * insert, visit_action) context

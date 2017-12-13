@@ -94,6 +94,11 @@ Working version
 - GPR#1502: more command line options for expect tests
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1511: show code at error location in expect-style tests,
+  using new Location.show_code_at_location function
+  (Gabriel Scherer and Armaël Guéneau,
+   review by Valentin Gatien-Baron and Damien Doligez)
+
 - GPR#1519: migrate expect tests to ocamltest
   (Sébastien Hinderer, review by Gabriel Scherer)
 

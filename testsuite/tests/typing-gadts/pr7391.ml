@@ -74,6 +74,8 @@ let _ =
   end;;
 [%%expect{|
 Line _, characters 16-22:
+          inherit child2
+                  ^^^^^^
 Error: The method parent has type < child : 'a; previous : 'b option >
        but is expected to have type < previous : < .. > option; .. >
        Self type cannot escape its class

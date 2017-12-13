@@ -69,6 +69,8 @@ module M : sig type -'a t = private int end =
 ;;
 [%%expect{|
 Line _, characters 2-37:
+    struct type +'a t = private int end
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
          sig type +'a t = private int end
@@ -90,6 +92,8 @@ module type B = A with type t = u;; (* fail *)
 module type A = sig type t = X of int end
 type u = X of bool
 Line _, characters 23-33:
+  module type B = A with type t = u;; (* fail *)
+                         ^^^^^^^^^^
 Error: This variant or record definition does not match that of type u
        The types for field X are not equal.
 |}];;
@@ -100,6 +104,8 @@ Error: This variant or record definition does not match that of type u
 module type S = sig exception Foo of int  exception Foo of bool end;;
 [%%expect{|
 Line _, characters 52-55:
+  module type S = sig exception Foo of int  exception Foo of bool end;;
+                                                      ^^^
 Error: Multiple definition of the extension constructor name Foo.
        Names must be unique in a given structure or signature.
 |}];;
@@ -111,5 +117,7 @@ F.x;; (* fail *)
 [%%expect{|
 module F : functor (X : sig  end) -> sig val x : int end
 Line _, characters 0-3:
+  F.x;; (* fail *)
+  ^^^
 Error: The module F is a functor, not a structure
 |}];;

@@ -132,11 +132,18 @@ let split_chunks phrases =
 module Compiler_messages = struct
   let print_loc ppf (loc : Location.t) =
     let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
     Format.fprintf ppf "Line _";
     if startchar >= 0 then
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
-    Format.fprintf ppf ":@,"
+    Format.fprintf ppf ":@.";
+    if startchar >= 0 then
+      begin match !Location.input_lexbuf with
+      | None -> ()
+      | Some lexbuf ->
+         Location.show_code_at_location ppf lexbuf loc
+      end;
+    ()
 
   let capture ppf ~f =
     Misc.protect_refs
@@ -182,6 +189,7 @@ let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
   Location.init lexbuf fname;
   Location.input_name := fname;
+  Location.input_lexbuf := Some lexbuf;
   Parse.use_file lexbuf
 
 let eval_expectation expectation ~output =

@@ -25,6 +25,8 @@ type aux =
       [ `Succ of [< [< [< [ `Zero ] pre_nat ] pre_nat ] pre_nat ] ] nat ->
       aux
 Line _, characters 4-5:
+    | _ -> .  (* error *)
+      ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it:
        Succ (Succ (Succ (Succ (Succ Zero))))

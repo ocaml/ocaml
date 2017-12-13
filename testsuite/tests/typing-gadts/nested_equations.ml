@@ -17,6 +17,8 @@ let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
 [%%expect{|
 val w_bool : bool t = Int
 Line _, characters 34-37:
+  let f_bool (x : bool) : int = let Int = w_bool in x;; (* fail *)
+                                    ^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type bool t
        Type int is not compatible with type bool
@@ -34,6 +36,8 @@ let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
 [%%expect{|
 val w_spec : Arg.spec t = Int
 Line _, characters 38-41:
+  let f_spec (x : Arg.spec) : int = let Int = w_spec in x;; (* fail *)
+                                        ^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type Arg.spec t
        Type int is not compatible with type Arg.spec

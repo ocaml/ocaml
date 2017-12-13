@@ -22,6 +22,8 @@ end = struct
 end;; (* should fail *)
 [%%expect{|
 Line _, characters 16-20:
+      fun Refl -> Refl
+                  ^^^^
 Error: This expression has type (a, a) eq
        but an expression was expected of type (a, t) eq
        Type a is not compatible with type t = [ `Rec of 'a ] X.t as 'a
@@ -46,6 +48,8 @@ module F (X : sig type 'a t end) = struct
 end;; (* should fail *)
 [%%expect{|
 Line _, characters 21-25:
+      fun Refl Refl -> Refl;;
+                       ^^^^
 Error: This expression has type (a, a) eq
        but an expression was expected of type (a, a X.t X.t) eq
        Type a = b X.t is not compatible with type a X.t X.t
