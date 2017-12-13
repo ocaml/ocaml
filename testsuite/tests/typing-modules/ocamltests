@@ -1,4 +1,5 @@
 aliases.ml
+applicative_functor_type.ml
 firstclass.ml
 generative.ml
 pr5911.ml

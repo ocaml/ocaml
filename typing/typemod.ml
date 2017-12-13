@@ -214,9 +214,7 @@ let retype_applicative_functor_type ~loc env funct arg =
     | Mty_functor (_, Some mty_param, _) -> mty_param
     | _ -> assert false (* could trigger due to MPR#7611 *)
   in
-  let aliasable = not (Env.is_functor_arg arg env) in
-  ignore(Includemod.modtypes ~loc env
-           (Mtype.strengthen ~aliasable env mty_arg arg) mty_param)
+  Includemod.check_modtype_inclusion ~loc env mty_arg arg mty_param
 
 (* When doing a deep destructive substitution with type M.N.t := .., we change M
    and M.N and so we have to check that uses of the modules other than just

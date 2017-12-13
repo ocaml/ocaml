@@ -119,5 +119,5 @@ module F : functor (X : sig  end) -> sig val x : int end
 Line _, characters 0-3:
   F.x;; (* fail *)
   ^^^
-Error: The module F is a functor, not a structure
+Error: The module F is a functor, it cannot have any components
 |}];;

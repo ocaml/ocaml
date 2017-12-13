@@ -475,18 +475,20 @@ typing/types.cmi : typing/primitive.cmi typing/path.cmi \
 typing/typetexp.cmo : typing/types.cmi typing/typedtree.cmi utils/tbl.cmi \
     typing/printtyp.cmi typing/predef.cmi typing/path.cmi \
     parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \
-    parsing/location.cmi typing/env.cmi typing/ctype.cmi utils/clflags.cmi \
-    parsing/builtin_attributes.cmi typing/btype.cmi parsing/asttypes.cmi \
-    parsing/ast_helper.cmi typing/typetexp.cmi
+    parsing/location.cmi typing/includemod.cmi typing/env.cmi \
+    typing/ctype.cmi utils/clflags.cmi parsing/builtin_attributes.cmi \
+    typing/btype.cmi parsing/asttypes.cmi parsing/ast_helper.cmi \
+    typing/typetexp.cmi
 typing/typetexp.cmx : typing/types.cmx typing/typedtree.cmx utils/tbl.cmx \
     typing/printtyp.cmx typing/predef.cmx typing/path.cmx \
     parsing/parsetree.cmi utils/misc.cmx parsing/longident.cmx \
-    parsing/location.cmx typing/env.cmx typing/ctype.cmx utils/clflags.cmx \
-    parsing/builtin_attributes.cmx typing/btype.cmx parsing/asttypes.cmi \
-    parsing/ast_helper.cmx typing/typetexp.cmi
+    parsing/location.cmx typing/includemod.cmx typing/env.cmx \
+    typing/ctype.cmx utils/clflags.cmx parsing/builtin_attributes.cmx \
+    typing/btype.cmx parsing/asttypes.cmi parsing/ast_helper.cmx \
+    typing/typetexp.cmi
 typing/typetexp.cmi : typing/types.cmi typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
-    typing/env.cmi parsing/asttypes.cmi
+    typing/includemod.cmi typing/env.cmi parsing/asttypes.cmi
 typing/untypeast.cmo : typing/typedtree.cmi typing/path.cmi \
     parsing/parsetree.cmi utils/misc.cmi parsing/longident.cmi \
     parsing/location.cmi typing/ident.cmi typing/env.cmi parsing/asttypes.cmi \
