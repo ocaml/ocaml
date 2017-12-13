@@ -317,8 +317,13 @@ and lambda_switch =
   { sw_numconsts: int;
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
-    sw_blocks: (int * lambda) list;
+    sw_blocks: (lambda_switch_block_key * lambda) list;
     sw_failaction : lambda option}
+
+and lambda_switch_block_key =
+  { sw_tag : int;
+    sw_size : int;
+  }
 
 and lambda_event =
   { lev_loc: scoped_location;
@@ -742,7 +747,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
     | Lswitch(arg, sw, loc) ->
         Lswitch(subst s l arg,
                 {sw with sw_consts = List.map (subst_case s l) sw.sw_consts;
-                        sw_blocks = List.map (subst_case s l) sw.sw_blocks;
+                        sw_blocks = List.map (subst_block_case s l) sw.sw_blocks;
                         sw_failaction = subst_opt s l sw.sw_failaction; },
                 loc)
     | Lstringswitch (arg,cases,default,loc) ->
@@ -805,6 +810,7 @@ let subst update_env ?(freshen_bound_variables = false) s input_lam =
   and subst_decl s l (id, exp) = (id, subst s l exp)
   and subst_case s l (key, case) = (key, subst s l case)
   and subst_strcase s l (key, case) = (key, subst s l case)
+  and subst_block_case s l (key, case) = (key, subst s l case)
   and subst_opt s l = function
     | None -> None
     | Some e -> Some (subst s l e)

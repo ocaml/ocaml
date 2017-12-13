@@ -484,12 +484,16 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       | None ->
           List.fold_left (fun set (i, _) -> I.Set.add i set) I.Set.empty cases
     in
+    let sw_blocks =
+      List.map (fun ({ Lambda. sw_tag; sw_size = _; }, arm) -> sw_tag, arm)
+        sw.sw_blocks
+    in
     Flambda.create_let scrutinee (Expr (close t env arg))
       (Switch (scrutinee,
         { numconsts = nums sw.sw_numconsts sw.sw_consts sw.sw_failaction;
           consts = List.map aux sw.sw_consts;
-          numblocks = nums sw.sw_numblocks sw.sw_blocks sw.sw_failaction;
-          blocks = List.map aux sw.sw_blocks;
+          numblocks = nums sw.sw_numblocks sw_blocks sw.sw_failaction;
+          blocks = List.map aux sw_blocks;
           failaction = Option.map (close t env) sw.sw_failaction;
         }))
   | Lstringswitch (arg, sw, def, _) ->

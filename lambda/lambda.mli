@@ -307,8 +307,14 @@ and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
-    sw_blocks: (int * lambda) list;     (* Tag block cases *)
+    sw_blocks: (lambda_switch_block_key * lambda) list;  (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
+
+and lambda_switch_block_key =
+  { sw_tag : int;
+    sw_size : int;
+  }
+
 and lambda_event =
   { lev_loc: scoped_location;
     lev_kind: lambda_event_kind;
