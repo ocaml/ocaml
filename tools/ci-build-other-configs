@@ -16,6 +16,9 @@
 
 # Commands to run for the 'other-configs' job on Inria's CI
 
+# Stop on error
+set -e
+
 ./tools/ci-build -conf -no-native-compiler -no-native
 ./tools/ci-build -conf -no-naked-pointers
 ./tools/ci-build -conf -flambda -conf -no-naked-pointers
