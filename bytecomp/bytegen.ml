@@ -819,7 +819,8 @@ let rec comp_expr env exp sz cont =
       List.iter
         (fun (n, act) -> act_consts.(n) <- store.act_store () act) sw.sw_consts;
       List.iter
-        (fun (n, act) -> act_blocks.(n) <- store.act_store () act) sw.sw_blocks;
+        (fun ({ sw_tag = tag; sw_size = _; }, act) ->
+          act_blocks.(tag) <- store.act_store () act) sw.sw_blocks;
 (* Compile and label actions *)
       let acts = store.act_get () in
 (*

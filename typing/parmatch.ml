@@ -942,13 +942,17 @@ let should_extend ext env = match ext with
       | Constant _ | Tuple _ | Variant _ | Record _ | Array _ | Lazy -> false
       | Any -> assert false
       end
-end
+              end
+
+type simple_constructor_tag =
+  | Constant of int
+  | Block of int
 
 module ConstructorTagHashtbl = Hashtbl.Make(
   struct
-    type t = Types.constructor_tag
+    type t = simple_constructor_tag
     let hash = Hashtbl.hash
-    let equal = Types.equal_tag
+    let equal = ( = )
   end
 )
 
@@ -959,17 +963,17 @@ let complete_tags nconsts nconstrs tags =
   List.iter
     (function
       | Cstr_constant i -> seen_const.(i) <- true
-      | Cstr_block i -> seen_constr.(i) <- true
+      | Cstr_block { tag; size = _; } -> seen_constr.(tag) <- true
       | _  -> assert false)
     tags ;
   let r = ConstructorTagHashtbl.create (nconsts+nconstrs) in
   for i = 0 to nconsts-1 do
     if not seen_const.(i) then
-      ConstructorTagHashtbl.add r (Cstr_constant i) ()
+      ConstructorTagHashtbl.add r (Constant i) ()
   done ;
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
-      ConstructorTagHashtbl.add r (Cstr_block i) ()
+      ConstructorTagHashtbl.add r (Block i) ()
   done ;
   r
 
@@ -1038,7 +1042,14 @@ let complete_constrs p all_tags =
   let constrs = get_variant_constructors (Pattern_head.env p) c.cstr_res in
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
+      (fun cnstr ->
+        match cnstr.cstr_tag with
+        | Cstr_constant i ->
+          ConstructorTagHashtbl.mem not_tags (Constant i)
+        | Cstr_block { tag; size = _; } ->
+          ConstructorTagHashtbl.mem not_tags (Block tag)
+        | Cstr_unboxed
+        | Cstr_extension _ -> false)
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in

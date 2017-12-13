@@ -31,8 +31,13 @@ val constructors_of_type:
 
 exception Constr_not_found
 
+type constructor_tag_to_find =
+  | Constant of int
+  | Block of int
+  | Unboxed
+
 val find_constr_by_tag:
-  constructor_tag -> constructor_declaration list ->
+  constructor_tag_to_find -> constructor_declaration list ->
     constructor_declaration
 
 val constructor_existentials :

@@ -114,14 +114,24 @@ let constructor_descrs ty_path decl cstrs =
           | None -> ty_res
         in
         let (tag, descr_rem) =
+          let cstr_block ~size =
+            let tag =
+              Cstr_block {
+                tag = idx_nonconst;
+                size;
+              }
+            in
+            tag, describe_constructors idx_const (idx_nonconst+1) rem
+          in
           match cd_args with
           | _ when decl.type_unboxed.unboxed ->
             assert (rem = []);
             (Cstr_unboxed, [])
           | Cstr_tuple [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
-          | _  -> (Cstr_block idx_nonconst,
-                   describe_constructors idx_const (idx_nonconst+1) rem) in
+          | Cstr_tuple args -> cstr_block ~size:(List.length args)
+          | Cstr_record args -> cstr_block ~size:(List.length args)
+        in
         let cstr_name = Ident.name cd_id in
         let existentials, cstr_args, cstr_inlined =
           let representation =
@@ -210,17 +220,24 @@ let label_descrs ty_res lbls repres priv =
 
 exception Constr_not_found
 
+type constructor_tag_to_find =
+  | Constant of int
+  | Block of int
+  | Unboxed
+
 let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
   | {cd_args = Cstr_tuple []; _} as c  :: rem ->
-      if tag = Cstr_constant num_const
+      if tag = Constant num_const
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
   | c :: rem ->
-      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
-      then c
-      else find_constr tag num_const (num_nonconst + 1) rem
+      match tag with
+      | Block tag when tag = num_nonconst -> c
+      | Unboxed -> c
+      | Block _
+      | Constant _ -> find_constr tag num_const (num_nonconst + 1) rem
 
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist

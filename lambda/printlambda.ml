@@ -549,9 +549,9 @@ let rec lam ppf = function
            fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
          sw.sw_consts;
         List.iter
-          (fun (n, l) ->
+          (fun ({ sw_tag = tag; sw_size = _; }, l) ->
             if !spc then fprintf ppf "@ " else spc := true;
-            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
+            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" tag lam l)
           sw.sw_blocks ;
         begin match sw.sw_failaction with
         | None  -> ()
