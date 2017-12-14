@@ -510,10 +510,6 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   /* Reset old stack */
   Stack_sp(old_stack) = 0;
   Stack_dirty_domain(old_stack) = FIBER_CLEAN;
-  Stack_handle_value(old_stack) = Val_long(0);
-  Stack_handle_exception(old_stack) = Val_long(0);
-  Stack_handle_effect(old_stack) = Val_long(0);
-  Stack_parent(old_stack) = Val_unit;
 
   CAMLreturn0;
 }
@@ -548,8 +544,7 @@ void caml_init_main_stack ()
 CAMLprim value caml_clone_continuation (value cont)
 {
   CAMLparam1(cont);
-  CAMLlocal3(new_cont, prev_target, source);
-  value target;
+  CAMLlocal4(new_cont, prev_target, source, target);
   intnat bvar_stat;
   int stack_used;
 
@@ -570,6 +565,7 @@ CAMLprim value caml_clone_continuation (value cont)
     memcpy((void*)target, (void*)source, sizeof(value) * Stack_ctx_words);
     memcpy(Stack_high(target) - stack_used, Stack_high(source) - stack_used,
            stack_used * sizeof(value));
+    Stack_dirty_domain(target) = FIBER_CLEAN;
 
     if (prev_target == Val_unit) {
       new_cont = caml_bvar_create (target);
