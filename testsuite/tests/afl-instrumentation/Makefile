@@ -4,6 +4,8 @@ default:
 	@printf " ... testing 'afl_instrumentation':"
 	@if ! which afl-showmap > /dev/null; then \
 	  echo " => skipped (afl-showmap unavailable)"; \
+	elif $(BYTECODE_ONLY); then \
+	  echo " => skipped (bytecode only)"; \
 	else \
 	  if OCAMLOPT='$(OCAMLOPT)' ./test.sh > /dev/null; then \
 	    echo " => passed"; \
