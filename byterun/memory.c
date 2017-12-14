@@ -360,7 +360,7 @@ CAMLprim value caml_bvar_take(value bv)
   CAMLassert(stat == Caml_state->id);
 
   value v = Op_val(bv)[0];
-  Op_val(bv)[0] = Val_unit;
+  caml_modify_field(bv, 0, Val_unit);
   Op_val(bv)[1] = Val_long(Caml_state->id | BVAR_EMPTY);
 
   CAMLreturn (v);

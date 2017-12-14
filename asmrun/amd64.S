@@ -1083,10 +1083,6 @@ CFI_STARTPROC
         movq    $0, Stack_sp(%rsi)                  /* zero SP */
         movq    Stack_handle_exception(%rsi), %r12  /* exception handler */
         movq    Stack_parent(%rsi), %rdi            /* parent stack. Never NULL here. */
-    /* Reset stack */
-        movq    $1, Stack_handle_value(%rsi)
-        movq    $1, Stack_handle_exception(%rsi)
-        movq    $1, Stack_handle_effect(%rsi)
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke exception handler */
@@ -1108,9 +1104,6 @@ LBL(111):
     /* Reset stack. First pop off fiber exn handler. */
         popq    %r10; CFI_ADJUST(-8)
         popq    %r10; CFI_ADJUST(-8)
-        movq    $1, Stack_handle_value(%rsi)
-        movq    $1, Stack_handle_exception(%rsi)
-        movq    $1, Stack_handle_effect(%rsi)
     /* Switch stacks */
         SWITCH_OCAML_STACKS
     /* Invoke value handler */
