@@ -330,9 +330,9 @@ module Make(Ord: OrderedType) =
           if c = 0 then
             subset l1 l2 && subset r1 r2
           else if c < 0 then
-            subset (Node {l=l1; v=v1; r=Empty; h=0}) l2 && subset r1 t2
+            subset (Node {l=l1; v=v1; r=Empty; h=1}) l2 && subset r1 t2
           else
-            subset (Node {l=Empty; v=v1; r=r1; h=0}) r2 && subset l1 t2
+            subset (Node {l=Empty; v=v1; r=r1; h=1}) r2 && subset l1 t2
 
     let rec iter f = function
         Empty -> ()
