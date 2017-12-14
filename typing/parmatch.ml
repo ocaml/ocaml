@@ -181,7 +181,7 @@ module Compat
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
-  | _,_  -> assert false (* By typing *)
+  | _,_  -> false
 
   and ocompat op oq = match op,oq with
   | None,None -> true
@@ -191,7 +191,7 @@ module Compat
   and compats ps qs = match ps,qs with
   | [], [] -> true
   | p::ps, q::qs -> compat p q && compats ps qs
-  | _,_    -> assert false (* By typing *)
+  | _,_    -> false
 
 end
 
@@ -249,9 +249,9 @@ let simple_match p1 p2 =
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
-  | Tpat_tuple _, Tpat_tuple _ -> true
   | Tpat_lazy _, Tpat_lazy _ -> true
   | Tpat_record _ , Tpat_record _ -> true
+  | Tpat_tuple p1s, Tpat_tuple p2s
   | Tpat_array p1s, Tpat_array p2s -> List.length p1s = List.length p2s
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
@@ -655,50 +655,90 @@ let row_of_pat pat =
     {desc = Tvariant row} -> Btype.row_repr row
   | _ -> assert false
 
+let first_column_is_coherent = function
+  | [] -> true
+  | (col1, _) :: matrices ->
+    let same_kind (other_col1, _mat) =
+      match col1.pat_desc, other_col1.pat_desc with
+      | (Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_or _), _
+      | _, (Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_or _) ->
+        (* Only ever called on specialized submatrices, which implies:
+           - the first column has been simplified
+           - _ is not present *)
+        assert false
+      | Tpat_construct (_, c, _), Tpat_construct (_, c', _) ->
+        c.cstr_consts = c'.cstr_consts
+        && c.cstr_nonconsts = c'.cstr_nonconsts
+      | Tpat_constant c1, Tpat_constant c2 -> begin
+          match c1, c2 with
+          | Const_char _, Const_char _
+          | Const_int _, Const_int _
+          | Const_int32 _, Const_int32 _
+          | Const_int64 _, Const_int64 _
+          | Const_nativeint _, Const_nativeint _
+          | Const_float _, Const_float _
+          | Const_string _, Const_string _ -> true
+          | _, _ -> false
+        end
+      | Tpat_tuple l1, Tpat_tuple l2 -> List.length l1 = List.length l2
+      | Tpat_variant _, Tpat_variant _
+      | Tpat_record _, Tpat_record _
+      | Tpat_array _, Tpat_array _
+      | Tpat_lazy _, Tpat_lazy _ -> true
+      | _, _ -> false
+    in
+    List.for_all same_kind matrices
+
 (*
   Check whether the first column of env makes up a complete signature or
   not.
+
+   Special case: if the first column is not coherent (i.e. it contains patterns
+   of obviously different types), then we can say the match is full: we're not
+   going to be able to build a value which is an element of both types.
 *)
 
-let full_match closing env =  match env with
-| ({pat_desc = Tpat_construct(_,c,_)},_) :: _ ->
-    if c.cstr_consts < 0 then false (* extensions *)
-    else List.length env = c.cstr_consts + c.cstr_nonconsts
-| ({pat_desc = Tpat_variant _} as p,_) :: _ ->
-    let fields =
-      List.map
-        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
-          | _ -> assert false)
-        env
-    in
-    let row = row_of_pat p in
-    if closing && not (Btype.row_fixed row) then
-      (* closing=true, we are considering the variant as closed *)
-      List.for_all
-        (fun (tag,f) ->
-          match Btype.row_field_repr f with
-            Rabsent | Reither(_, _, false, _) -> true
-          | Reither (_, _, true, _)
-              (* m=true, do not discard matched tags, rather warn *)
-          | Rpresent _ -> List.mem tag fields)
-        row.row_fields
-    else
-      row.row_closed &&
-      List.for_all
-        (fun (tag,f) ->
-          Btype.row_field_repr f = Rabsent || List.mem tag fields)
-        row.row_fields
-| ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
-    List.length env = 256
-| ({pat_desc = Tpat_constant(_)},_) :: _ -> false
-| ({pat_desc = Tpat_tuple(_)},_) :: _ -> true
-| ({pat_desc = Tpat_record(_)},_) :: _ -> true
-| ({pat_desc = Tpat_array(_)},_) :: _ -> false
-| ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
-| []
-  ->
-    assert false
+let full_match closing env =
+  not (first_column_is_coherent env) ||
+  match env with
+  | ({pat_desc = Tpat_construct(_,c,_)},_) :: _ ->
+      if c.cstr_consts < 0 then false (* extensions *)
+      else List.length env = c.cstr_consts + c.cstr_nonconsts
+  | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
+      let fields =
+        List.map
+          (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
+            | _ -> assert false)
+          env
+      in
+      let row = row_of_pat p in
+      if closing && not (Btype.row_fixed row) then
+        (* closing=true, we are considering the variant as closed *)
+        List.for_all
+          (fun (tag,f) ->
+            match Btype.row_field_repr f with
+              Rabsent | Reither(_, _, false, _) -> true
+            | Reither (_, _, true, _)
+                (* m=true, do not discard matched tags, rather warn *)
+            | Rpresent _ -> List.mem tag fields)
+          row.row_fields
+      else
+        row.row_closed &&
+        List.for_all
+          (fun (tag,f) ->
+            Btype.row_field_repr f = Rabsent || List.mem tag fields)
+          row.row_fields
+  | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
+      List.length env = 256
+  | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
+  | ({pat_desc = Tpat_tuple(_)},_) :: _ -> true
+  | ({pat_desc = Tpat_record(_)},_) :: _ -> true
+  | ({pat_desc = Tpat_array(_)},_) :: _ -> false
+  | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
+  | ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
+  | []
+    ->
+      assert false
 
 (* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with

@@ -141,6 +141,9 @@ Working version
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
+- GPR#1518: More robust matches
+  (Thomas Refis, review by ...)
+
 
 4.06 maintenance branch
 -----------------------
