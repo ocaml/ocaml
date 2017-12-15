@@ -200,6 +200,12 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
+	elif [ -f $(DIR)/ocamltests ]; then \
+	  echo Running tests from \'$(DIR)\' ... ; \
+	  IFS=$$(printf "\r\n"); while read testfile; do \
+	    TERM=dumb \
+	      $(ocamltest) $(DIR)/$$testfile; \
+	  done < $(DIR)/ocamltests 2>&1 | tee -a _log; \
 	fi
 
 .PHONY: clean-one
