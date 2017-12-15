@@ -76,6 +76,10 @@ Working version
   able to collect profiling information from C stubs).
   (Nicolas Ojeda Bar, review by Xavier Leroy, Mark Shinwell)
 
+- GPR#1526: install the debug and instrumented runtimes
+  (lib{caml,asm}run{d,i}.a)
+  (Gabriel Scherer, reminded by Julia Lawall)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
