@@ -32,6 +32,10 @@ Working version
   colors for the native Windows ports now work under Cygwin/MSYS2.
   (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
 
+- GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix error
+  instead of returning [Not_found] when interrupted by a signal.
+  (Arseniy Alekseyev, review by Mark Shinwell and Xavier Leroy)
+
 - GPR#1477: raw_spacetime_lib can now be used in bytecode.
   (Nicolas Ojeda Bar, review by Mark Shinwell)
 

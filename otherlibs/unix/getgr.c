@@ -18,6 +18,7 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <stdio.h>
 #include <grp.h>
 
@@ -44,15 +45,29 @@ CAMLprim value unix_getgrnam(value name)
 {
   struct group * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
+  errno = 0;
   entry = getgrnam(String_val(name));
-  if (entry == NULL) caml_raise_not_found();
+  if (entry == NULL) {
+    if (errno == EINTR) {
+      uerror("getgrnam", Nothing);
+    } else {
+      caml_raise_not_found();
+    }
+  }
   return alloc_group_entry(entry);
 }
 
 CAMLprim value unix_getgrgid(value gid)
 {
   struct group * entry;
+  errno = 0;
   entry = getgrgid(Int_val(gid));
-  if (entry == NULL) caml_raise_not_found();
+  if (entry == NULL) {
+    if (errno == EINTR) {
+      uerror("getgrgid", Nothing);
+    } else {
+      caml_raise_not_found();
+    }
+  }
   return alloc_group_entry(entry);
 }
