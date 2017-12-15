@@ -65,6 +65,11 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Leo White, review by
   Florian Angeletti and Gabriel Radanne)
 
+- GPR#1534: Extend the warning printed when (*) is used, adding a hint to
+  suggest using ( * ) instead
+  (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
+  Scherer)
+
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen

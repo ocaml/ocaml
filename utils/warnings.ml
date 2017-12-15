@@ -304,7 +304,9 @@ let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
 let message = function
-  | Comment_start -> "this is the start of a comment."
+  | Comment_start ->
+      "this `(*' is the start of a comment.\n\
+       Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
   | Deprecated (s, _, _) ->
       (* Reduce \r\n to \n:
