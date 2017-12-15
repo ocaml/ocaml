@@ -1,6 +1,7 @@
 disallowed.ml
 extension_constructor.ml
-float_block.ml
+float_block_allowed.ml
+float_block_disallowed.ml
 generic_arrays.ml
 lazy_.ml
 module_constraints.ml
