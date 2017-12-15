@@ -736,7 +736,51 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
 wchar_t *caml_secure_getenv (wchar_t const *var)
 {
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
-  return CAML_SYS_GETENV (var);
+  return _wgetenv(var);
+}
+
+/* caml_win32_getenv is used to implement Sys.getenv and Unix.getenv in such a
+   way that they get direct access to the Win32 environment rather than to the
+   copy that is cached by the C runtime system. The result of caml_win32_getenv
+   is dynamically allocated and must be explicitly deallocated.
+
+   In contrast, the OCaml runtime system still calls _wgetenv from the C runtime
+   system, via caml_secure_getenv. The result is statically allocated and needs
+   no deallocation. */
+CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
+{
+  wchar_t * lpBuffer;
+  DWORD nSize = 256, res;
+
+  lpBuffer = caml_stat_alloc_noexc(nSize * sizeof(wchar_t));
+
+  if (lpBuffer == NULL)
+    return NULL;
+
+  res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
+
+  if (res == 0) {
+    caml_stat_free(lpBuffer);
+    return NULL;
+  }
+
+  if (res < nSize)
+    return lpBuffer;
+
+  nSize = res;
+  lpBuffer = caml_stat_resize_noexc(lpBuffer, nSize * sizeof(wchar_t));
+
+  if (lpBuffer == NULL)
+    return NULL;
+
+  res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
+
+  if (res == 0 || res >= nSize) {
+    caml_stat_free(lpBuffer);
+    return NULL;
+  }
+
+  return lpBuffer;
 }
 
 /* The rename() implementation in MSVC's CRT is based on MoveFile()

@@ -145,6 +145,10 @@ Working version
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
+- PR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
+  Unix.getenv and Unix.environment under Windows.
+  (Nicolas Ojeda Bar, report by Alain Frisch, review by David Allsopp, Xavier
+  Leroy)
 
 4.06 maintenance branch
 -----------------------
