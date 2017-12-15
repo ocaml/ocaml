@@ -260,6 +260,8 @@ let backend_flags env =
     Ocaml_variables.ocamlc_flags
     Ocaml_variables.ocamlopt_flags
 
+let dumb_term = [|"TERM=dumb"|]
+
 let link_modules
     ocamlsrcdir compiler compilername compileroutput program_variable
     custom c_headers_flags log env modules
@@ -295,6 +297,7 @@ let link_modules
   ] in
   let exit_status =
     Actions_helpers.run_cmd
+      ~environment:dumb_term
       ~stdout_variable:compileroutput
       ~stderr_variable:compileroutput
       ~append:true
@@ -472,7 +475,8 @@ let run_expect_once ocamlsrcdir input_file principal log env =
     principal_flag;
     input_file
   ] in
-  let exit_status = Actions_helpers.run_cmd log env commandline in
+  let exit_status =
+    Actions_helpers.run_cmd ~environment:dumb_term log env commandline in
   if exit_status=0 then Pass env
   else Fail (Actions_helpers.mkreason
     "expect" (String.concat " " commandline) exit_status)
@@ -638,6 +642,7 @@ let run_test_program_in_toplevel toplevel log env =
   ] in
   let exit_status =
     Actions_helpers.run_cmd
+      ~environment:dumb_term
       ~stdin_variable:Builtin_variables.test_file
       ~stdout_variable:compiler_output_variable
       ~stderr_variable:compiler_output_variable
