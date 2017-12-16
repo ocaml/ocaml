@@ -133,7 +133,7 @@ FLEXLINK_CMD=flexlink
 FLEXDLL_CHAIN=mingw
 # FLEXLINK_FLAGS must be safe to insert in an OCaml string
 #   (see ocamlmklibconfig.ml in tools/Makefile)
-FLEXLINK_FLAGS=-chain $(FLEXDLL_CHAIN) -stack 16777216 -link -static-libgcc
+FLEXLINK_FLAGS=-chain $(FLEXDLL_CHAIN) -stack 16777216
 FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
 FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
 ifeq ($(FLEXDIR),)
