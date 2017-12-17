@@ -1,3 +1,5 @@
+(* TEST
+*)
 
 external caml_string_get_16 : string -> int -> int = "%caml_string_get16"
 external caml_string_get_32 : string -> int -> int32 = "%caml_string_get32"
@@ -18,14 +20,14 @@ let assert_bound_check2 f v1 v2 =
     ignore(f v1 v2);
     assert false
   with
-     | Invalid_argument("index out of bounds") -> ()
+     | Invalid_argument _ -> ()
 
 let assert_bound_check3 f v1 v2 v3 =
   try
     ignore(f v1 v2 v3);
     assert false
   with
-     | Invalid_argument("index out of bounds") -> ()
+     | Invalid_argument _ -> ()
 
 let () =
   assert_bound_check2 caml_string_get_16 s (-1);

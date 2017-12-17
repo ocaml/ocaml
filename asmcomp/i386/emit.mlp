@@ -795,6 +795,7 @@ let emit_instr fallthrough i =
       if Array.length i.arg = 2 && is_tos i.arg.(1) then
         I.fxch st1;
       emit_floatspecial s
+  | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -1046,6 +1047,7 @@ let end_assembly() =
   emit_global_label "code_end";
 
   D.data ();
+  D.long (const 0);  (* PR#6329 *)
   emit_global_label "data_end";
   D.long (const 0);
 

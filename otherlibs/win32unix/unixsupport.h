@@ -70,7 +70,8 @@ CAMLnoreturn_end;
 
 extern void caml_unix_check_path(value path, const char * cmdname);
 extern value unix_freeze_buffer (value);
-extern char ** cstringvect(value arg, char * cmdname);
+extern wchar_t ** cstringvect(value arg, char * cmdname);
+extern void cstringvect_free(wchar_t **);
 
 extern int unix_cloexec_default;
 extern int unix_cloexec_p(value cloexec);
@@ -126,5 +127,7 @@ typedef struct _REPARSE_DATA_BUFFER
   };
 } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
+
+#define EXECV_CAST (const char_os * const *)
 
 #endif /* CAML_UNIXSUPPORT_H */

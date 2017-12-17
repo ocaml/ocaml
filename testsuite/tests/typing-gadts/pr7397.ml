@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type +'a t
 
 class type a = object

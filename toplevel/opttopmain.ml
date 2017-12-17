@@ -222,6 +222,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _dcombine = set dump_combine
   let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
+  let _davail () = dump_avail := true
+  let _drunavail () = debug_runavail := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split
   let _dinterf = set dump_interf
@@ -235,7 +237,6 @@ module Options = Main_args.Make_opttop_options (struct
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
-  let _plugin p = Compplugin.load p
 
   let _args = wrap_expand Arg.read_arg
   let _args0 = wrap_expand Arg.read_arg0
@@ -254,4 +255,5 @@ let main () =
     | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
   end;
   if not (prepare Format.err_formatter) then exit 2;
+  Compmisc.init_path true;
   Opttoploop.loop Format.std_formatter

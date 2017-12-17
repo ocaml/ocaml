@@ -21,19 +21,26 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/sys.h"
-
-CAMLextern void caml_main (char **);
-
+#include "caml/osdeps.h"
 #ifdef _WIN32
-CAMLextern void caml_expand_command_line (int *, char ***);
+#include <windows.h>
 #endif
 
+CAMLextern void caml_main (char_os **);
+
+#ifdef _WIN32
+CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+
+int wmain(int argc, wchar_t **argv)
+#else
 int main(int argc, char **argv)
+#endif
 {
 #ifdef _WIN32
   /* Expand wildcards and diversions in command line */
   caml_expand_command_line(&argc, &argv);
 #endif
+
   caml_main(argv);
   caml_sys_exit(Val_int(0));
   return 0; /* not reached */

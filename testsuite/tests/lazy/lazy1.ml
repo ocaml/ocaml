@@ -1,3 +1,7 @@
+(* TEST
+   ocamlopt_flags += " -O3 "
+*)
+
 (* Mantis 7301, due to A. Frisch *)
 
 let foo () =

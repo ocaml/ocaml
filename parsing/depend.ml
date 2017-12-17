@@ -87,7 +87,7 @@ let add_parent bv lid =
 
 let add = add_parent
 
-let addmodule bv lid = add_path bv lid.txt
+let add_module_path bv lid = add_path bv lid.txt
 
 let handle_extension ext =
   match (fst ext).txt with
@@ -266,7 +266,7 @@ let rec add_expr bv exp =
   | Pexp_object { pcstr_self = pat; pcstr_fields = fieldl } ->
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
-  | Pexp_pack m -> add_module bv m
+  | Pexp_pack m -> add_module_expr bv m
   | Pexp_open (_ovf, m, e) ->
       let bv = open_module bv m.txt in add_expr bv e
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
@@ -296,7 +296,7 @@ and add_bindings recf bv pel =
 and add_modtype bv mty =
   match mty.pmty_desc with
     Pmty_ident l -> add bv l
-  | Pmty_alias l -> addmodule bv l
+  | Pmty_alias l -> add_module_path bv l
   | Pmty_signature s -> add_signature bv s
   | Pmty_functor(id, mty1, mty2) ->
       Misc.may (add_modtype bv) mty1;
@@ -306,25 +306,26 @@ and add_modtype bv mty =
       List.iter
         (function
           | Pwith_type (_, td) -> add_type_declaration bv td
-          | Pwith_module (_, lid) -> addmodule bv lid
-          | Pwith_typesubst td -> add_type_declaration bv td
-          | Pwith_modsubst (_, lid) -> addmodule bv lid
+          | Pwith_module (_, lid) -> add_module_path bv lid
+          | Pwith_typesubst (_, td) -> add_type_declaration bv td
+          | Pwith_modsubst (_, lid) -> add_module_path bv lid
         )
         cstrl
-  | Pmty_typeof m -> add_module bv m
+  | Pmty_typeof m -> add_module_expr bv m
   | Pmty_extension e -> handle_extension e
 
 and add_module_alias bv l =
+  (* If we are in delayed dependencies mode, we delay the dependencies
+       induced by "Lident s" *)
+  (if !Clflags.transparent_modules then add_parent else add_module_path) bv l;
   try
-    add_parent bv l;
     lookup_map l.txt bv
   with Not_found ->
     match l.txt with
       Lident s -> make_leaf s
-    | _ -> addmodule bv l; bound (* cannot delay *)
+    | _ -> add_module_path bv l; bound (* cannot delay *)
 
 and add_modtype_binding bv mty =
-  if not !Clflags.transparent_modules then add_modtype bv mty;
   match mty.pmty_desc with
     Pmty_alias l ->
       add_module_alias bv l
@@ -333,7 +334,7 @@ and add_modtype_binding bv mty =
   | Pmty_typeof modl ->
       add_module_binding bv modl
   | _ ->
-      if !Clflags.transparent_modules then add_modtype bv mty; bound
+      add_modtype bv mty; bound
 
 and add_signature bv sg =
   ignore (add_signature_binding bv sg)
@@ -386,33 +387,23 @@ and add_sig_item (bv, m) item =
       (bv, m)
 
 and add_module_binding bv modl =
-  if not !Clflags.transparent_modules then add_module bv modl;
   match modl.pmod_desc with
-    Pmod_ident l ->
-      begin try
-        add_parent bv l;
-        lookup_map l.txt bv
-      with Not_found ->
-        match l.txt with
-          Lident s -> make_leaf s
-        | _ ->  addmodule bv l; bound
-      end
+    Pmod_ident l -> add_module_alias bv l
   | Pmod_structure s ->
-      make_node (snd (add_structure_binding bv s))
-  | _ ->
-      if !Clflags.transparent_modules then add_module bv modl; bound
+     make_node (snd @@ add_structure_binding bv s)
+  | _ -> add_module_expr bv modl; bound
 
-and add_module bv modl =
+and add_module_expr bv modl =
   match modl.pmod_desc with
-    Pmod_ident l -> addmodule bv l
+    Pmod_ident l -> add_module_path bv l
   | Pmod_structure s -> ignore (add_structure bv s)
   | Pmod_functor(id, mty, modl) ->
       Misc.may (add_modtype bv) mty;
-      add_module (StringMap.add id.txt bound bv) modl
+      add_module_expr (StringMap.add id.txt bound bv) modl
   | Pmod_apply(mod1, mod2) ->
-      add_module bv mod1; add_module bv mod2
+      add_module_expr bv mod1; add_module_expr bv mod2
   | Pmod_constraint(modl, mty) ->
-      add_module bv modl; add_modtype bv mty
+      add_module_expr bv modl; add_modtype bv mty
   | Pmod_unpack(e) ->
       add_expr bv e
   | Pmod_extension e ->
@@ -451,7 +442,7 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
       in
       let bv' = add bv and m = add m in
       List.iter
-        (fun x -> add_module bv' x.pmb_expr)
+        (fun x -> add_module_expr bv' x.pmb_expr)
         bindings;
       (bv', m)
   | Pstr_modtype x ->
@@ -467,8 +458,13 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   | Pstr_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; (bv, m)
   | Pstr_include incl ->
-      let Node (s, m') = add_module_binding bv incl.pincl_mod in
-      add_names s;
+      let Node (s, m') as n = add_module_binding bv incl.pincl_mod in
+      if !Clflags.transparent_modules then
+        add_names s
+      else
+        (* If we are not in the delayed dependency mode, we need to
+           collect all delayed dependencies imported by the include statement *)
+        add_names (collect_free n);
       let add = StringMap.fold StringMap.add m' in
       (add bv, add m)
   | Pstr_attribute _ -> (bv, m)
@@ -480,9 +476,7 @@ and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)
 
 and add_implementation bv l =
-  if !Clflags.transparent_modules then
     ignore (add_structure_binding bv l)
-  else ignore (add_structure bv l)
 
 and add_implementation_binding bv l =
   snd (add_structure_binding bv l)

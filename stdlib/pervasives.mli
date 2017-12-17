@@ -25,7 +25,7 @@
 *)
 
 
-(** {6 Exceptions} *)
+(** {1 Exceptions} *)
 
 external raise : exn -> 'a = "%raise"
 (** Raise the given exception value *)
@@ -46,7 +46,7 @@ exception Exit
     provided for use in your programs. *)
 
 
-(** {6 Comparisons} *)
+(** {1 Comparisons} *)
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
 (** [e1 = e2] tests for structural equality of [e1] and [e2].
@@ -129,7 +129,7 @@ external ( != ) : 'a -> 'a -> bool = "%noteq"
     Left-associative operator at precedence level 4/11. *)
 
 
-(** {6 Boolean operations} *)
+(** {1 Boolean operations} *)
 
 external not : bool -> bool = "%boolnot"
 (** The boolean negation. *)
@@ -157,7 +157,7 @@ external ( or ) : bool -> bool -> bool = "%sequor"
 (** @deprecated {!Pervasives.( || )} should be used instead.
     Right-associative operator at precedence level 2/11. *)
 
-(** {6 Debugging} *)
+(** {1 Debugging} *)
 
 external __LOC__ : string = "%loc_LOC"
 (** [__LOC__] returns the location at which this expression appears in
@@ -218,7 +218,7 @@ external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
     @since 4.02.0
  *)
 
-(** {6 Composition operators} *)
+(** {1 Composition operators} *)
 
 external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
 (** Reverse-application operator: [x |> f |> g] is exactly equivalent
@@ -234,7 +234,7 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
    @since 4.01
 *)
 
-(** {6 Integer arithmetic} *)
+(** {1 Integer arithmetic} *)
 
 (** Integers are 31 bits wide (or 63 bits on 64-bit processors).
    All operations are taken modulo 2{^31} (or 2{^63}).
@@ -300,7 +300,7 @@ val min_int : int
 (** The smallest representable integer. *)
 
 
-(** {7 Bitwise operations} *)
+(** {2 Bitwise operations} *)
 
 external ( land ) : int -> int -> int = "%andint"
 (** Bitwise logical and.
@@ -338,7 +338,7 @@ external ( asr ) : int -> int -> int = "%asrint"
    Right-associative operator at precedence level 8/11. *)
 
 
-(** {6 Floating-point arithmetic}
+(** {1 Floating-point arithmetic}
 
    OCaml's floating-point numbers follow the
    IEEE 754 standard, using double precision (64 bits) numbers.
@@ -564,7 +564,7 @@ external classify_float : (float [@unboxed]) -> fpclass =
    normal, subnormal, zero, infinite, or not a number. *)
 
 
-(** {6 String operations}
+(** {1 String operations}
 
    More string operations are provided in module {!String}.
 *)
@@ -574,7 +574,7 @@ val ( ^ ) : string -> string -> string
     Right-associative operator at precedence level 5/11. *)
 
 
-(** {6 Character operations}
+(** {1 Character operations}
 
    More character operations are provided in module {!Char}.
 *)
@@ -588,7 +588,7 @@ val char_of_int : int -> char
    outside the range 0--255. *)
 
 
-(** {6 Unit operations} *)
+(** {1 Unit operations} *)
 
 external ignore : 'a -> unit = "%ignore"
 (** Discard the value of its argument and return [()].
@@ -599,7 +599,7 @@ external ignore : 'a -> unit = "%ignore"
    avoids the warning. *)
 
 
-(** {6 String conversion functions} *)
+(** {1 String conversion functions} *)
 
 val string_of_bool : bool -> string
 (** Return the string representation of a boolean. As the returned values
@@ -670,7 +670,7 @@ val float_of_string_opt: string -> float option
     @since 4.05
 *)
 
-(** {6 Pair operations} *)
+(** {1 Pair operations} *)
 
 external fst : 'a * 'b -> 'a = "%field0"
 (** Return the first component of a pair. *)
@@ -679,7 +679,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 (** Return the second component of a pair. *)
 
 
-(** {6 List operations}
+(** {1 List operations}
 
    More list operations are provided in module {!List}.
 *)
@@ -689,7 +689,7 @@ val ( @ ) : 'a list -> 'a list -> 'a list
     Right-associative operator at precedence level 5/11. *)
 
 
-(** {6 Input/output}
+(** {1 Input/output}
     Note: all input/output functions can raise [Sys_error] when the system
     calls they invoke fail. *)
 
@@ -709,7 +709,7 @@ val stderr : out_channel
 (** The standard error output for the process. *)
 
 
-(** {7 Output functions on standard output} *)
+(** {2 Output functions on standard output} *)
 
 val print_char : char -> unit
 (** Print a character on standard output. *)
@@ -737,7 +737,7 @@ val print_newline : unit -> unit
    buffering of standard output. *)
 
 
-(** {7 Output functions on standard error} *)
+(** {2 Output functions on standard error} *)
 
 val prerr_char : char -> unit
 (** Print a character on standard error. *)
@@ -764,7 +764,7 @@ val prerr_newline : unit -> unit
    standard error. *)
 
 
-(** {7 Input functions on standard input} *)
+(** {2 Input functions on standard input} *)
 
 val read_line : unit -> string
 (** Flush standard output, then read characters from standard input
@@ -795,7 +795,7 @@ val read_float_opt: unit -> float option
     @since 4.05.0 *)
 
 
-(** {7 General output functions} *)
+(** {2 General output functions} *)
 
 type open_flag =
     Open_rdonly      (** open for reading. *)
@@ -919,7 +919,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
    do not distinguish between text mode and binary mode. *)
 
 
-(** {7 General input functions} *)
+(** {2 General input functions} *)
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
@@ -1035,7 +1035,7 @@ val set_binary_mode_in : in_channel -> bool -> unit
    do not distinguish between text mode and binary mode. *)
 
 
-(** {7 Operations on large files} *)
+(** {2 Operations on large files} *)
 
 module LargeFile :
   sig
@@ -1054,7 +1054,7 @@ module LargeFile :
   operating on files whose sizes are greater than [max_int]. *)
 
 
-(** {6 References} *)
+(** {1 References} *)
 
 type 'a ref = { mutable contents : 'a }
 (** The type of references (mutable indirection cells) containing
@@ -1081,12 +1081,12 @@ external decr : int ref -> unit = "%decr"
 (** Decrement the integer contained in the given reference.
    Equivalent to [fun r -> r := pred !r]. *)
 
-(** {6 Result type} *)
+(** {1 Result type} *)
 
 (** @since 4.03.0 *)
 type ('a,'b) result = Ok of 'a | Error of 'b
 
-(** {6 Operations on format strings} *)
+(** {1 Operations on format strings} *)
 
 (** Format strings are character strings with special lexical conventions
   that defines the functionality of formatted input/output functions. Format
@@ -1188,7 +1188,7 @@ val ( ^^ ) :
   Right-associative operator at precedence level 5/11. *)
 
 
-(** {6 Program termination} *)
+(** {1 Program termination} *)
 
 val exit : int -> 'a
 (** Terminate the process, returning the given status code
@@ -1200,12 +1200,15 @@ val exit : int -> 'a
    terminates early because of an uncaught exception. *)
 
 val at_exit : (unit -> unit) -> unit
-(** Register the given function to be called at program
-   termination time. The functions registered with [at_exit]
-   will be called when the program executes {!Pervasives.exit},
-   or terminates, either normally or because of an uncaught exception.
-   The functions are called in 'last in, first out' order:
-   the function most recently added with [at_exit] is called first. *)
+(** Register the given function to be called at program termination
+   time. The functions registered with [at_exit] will be called when
+   the program does any of the following:
+   - executes {!Pervasives.exit}
+   - terminates, either normally or because of an uncaught
+     exception
+   - executes the C function [caml_shutdown].
+   The functions are called in 'last in, first out' order: the
+   function most recently added with [at_exit] is called first. *)
 
 (**/**)
 

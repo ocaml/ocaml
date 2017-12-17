@@ -1,3 +1,7 @@
+(* TEST
+   include str
+*)
+
 open Printf
 
 let build_result ngroups input =
@@ -1065,8 +1069,8 @@ let manual_test regexp text =
         with Not_found ->
           ()
       done
-    with Invalid_argument "Str.matched_group" -> (*yuck*)
-      ()
+    with Invalid_argument str as exn ->
+      if str="Str.matched_group" then () else raise exn
     end;
     print_newline()
   with Not_found ->

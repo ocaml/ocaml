@@ -105,7 +105,8 @@ of `unified-options.etex` contains the relevant information.
     - The standard library: `stdlib.etex`
     - The compiler front-end: `compilerlibs.etex`
     - The unix library: Unix system calls: `libunix.etex`
-    - The num library: arbitrary-precision rational arithmetic: `libnum.etex`
+    - The legacy num library: this library has been removed from the core
+      distribution, see `libnum.etex`
     - The str library: regular expressions and string processing: `libstr.etex`
     - The threads library: `libthreads.etex`
     - The graphics library: `libgraph.etex`

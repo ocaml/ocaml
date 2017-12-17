@@ -100,6 +100,7 @@ pattern-matching:
 let-binding:
     pattern '=' expr
   | value-name { parameter } [':' typexpr] [':>' typexpr] '=' expr
+  | value-name ':' poly-typexpr '=' expr %since 3.12
 ;
 parameter:
     pattern
@@ -113,13 +114,13 @@ parameter:
 \end{syntax}
 See also the following language extensions:
 \hyperref[s:object-notations]{object notations},
-\hyperref[s:explicit-polymorphic-type]{explicit polymorphic type annotations},
 \hyperref[s-first-class-modules]{first-class modules},
 \hyperref[s:explicit-overriding-open]{overriding in open statements},
 \hyperref[s:bigarray-access]{syntax for Bigarray access},
 \hyperref[s:attributes]{attributes},
-\hyperref[s:extension-nodes]{extension nodes} and
-\hyperref[s:local-exceptions]{local exceptions}.
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:local-exceptions]{local exceptions}
+\hyperref[s:index-operators]{extended indexing operators}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
@@ -414,6 +415,20 @@ The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
+\subsubsection{Explicit polymorphic type annotations}
+(Introduced in OCaml 3.12)
+
+Polymorphic type annotations in @"let"@-definitions behave in a way
+similar to polymorphic methods:
+
+\begin{center}
+@"let" pattern_1 ":" typ_1 \ldots typ_n "." typeexpr "=" expr  @
+\end{center}
+
+These annotations explicitly require the defined value to be polymorphic,
+and allow one to use this polymorphism in recursive occurrences
+(when using @"let" "rec"@). Note however that this is a normal polymorphic
+type, unifiable with any instance of itself.
 
 \subsection{Control structures}
 

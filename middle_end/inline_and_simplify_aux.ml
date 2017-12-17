@@ -293,7 +293,7 @@ module Env = struct
       try
         Set_of_closures_origin.Map.find origin t.actively_unrolling
       with Not_found ->
-        Misc.fatal_error "Unexpected actively unrolled function";
+        Misc.fatal_error "Unexpected actively unrolled function"
     in
     let actively_unrolling =
       Set_of_closures_origin.Map.add origin (unrolling - 1) t.actively_unrolling

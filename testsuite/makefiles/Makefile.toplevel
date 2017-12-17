@@ -13,6 +13,7 @@
 #*                                                                        *
 #**************************************************************************
 
+.PHONY: default
 default:
 	@for file in *.ml; do \
 	  TERM=dumb $(OCAML) $(TOPFLAGS) <$$file 2>&1 \
@@ -28,7 +29,9 @@ default:
           && echo " => passed" || echo " => failed"; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result

@@ -33,6 +33,10 @@
 #include <stdint.h>
 #endif
 
+#ifndef ARCH_SIZET_PRINTF_FORMAT
+#define ARCH_SIZET_PRINTF_FORMAT "z"
+#endif
+
 /* Types for 32-bit integers, 64-bit integers, and
    native integers (as wide as a pointer type) */
 
@@ -55,14 +59,14 @@
 #endif
 
 #ifndef ARCH_INT64_TYPE
-#if SIZEOF_LONGLONG == 8
-#define ARCH_INT64_TYPE long long
-#define ARCH_UINT64_TYPE unsigned long long
-#define ARCH_INT64_PRINTF_FORMAT "ll"
-#elif SIZEOF_LONG == 8
+#if SIZEOF_LONG == 8
 #define ARCH_INT64_TYPE long
 #define ARCH_UINT64_TYPE unsigned long
 #define ARCH_INT64_PRINTF_FORMAT "l"
+#elif SIZEOF_LONGLONG == 8
+#define ARCH_INT64_TYPE long long
+#define ARCH_UINT64_TYPE unsigned long long
+#define ARCH_INT64_PRINTF_FORMAT "ll"
 #else
 #error "No 64-bit integer type available"
 #endif

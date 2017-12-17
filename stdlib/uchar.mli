@@ -34,12 +34,16 @@ val max : t
 val bom : t
 (** [bom] is U+FEFF, the
     {{:http://unicode.org/glossary/#byte_order_mark}byte order mark} (BOM)
-    character. *)
+    character.
+
+    @since 4.06.0 *)
 
 val rep : t
 (** [rep] is U+FFFD, the
     {{:http://unicode.org/glossary/#replacement_character}replacement}
-    character. *)
+    character.
+
+    @since 4.06.0 *)
 
 val succ : t -> t
 (** [succ u] is the scalar value after [u] in the set of Unicode scalar

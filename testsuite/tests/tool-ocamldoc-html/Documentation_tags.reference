@@ -15,7 +15,7 @@
 &nbsp;</div>
 <h1>Module <a href="type_Documentation_tags.html">Documentation_tags</a></h1>
 
-<pre><span class="keyword">module</span> Documentation_tags: <code class="code"><span class="keyword">sig</span></code> <a href="Documentation_tags.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
+<pre><span id="MODULEDocumentation_tags"><span class="keyword">module</span> Documentation_tags</span>: <code class="code"><span class="keyword">sig</span></code> <a href="Documentation_tags.html">..</a> <code class="code"><span class="keyword">end</span></code></pre><div class="info module top">
 <div class="info-desc">
 <p>Test the html rendering of ocamldoc documentation tags</p>
 </div>

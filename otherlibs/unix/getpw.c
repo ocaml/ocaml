@@ -18,6 +18,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include "unixsupport.h"
+#include <errno.h>
 #include <pwd.h>
 
 static value alloc_passwd_entry(struct passwd *entry)
@@ -52,15 +53,29 @@ CAMLprim value unix_getpwnam(value name)
 {
   struct passwd * entry;
   if (! caml_string_is_c_safe(name)) caml_raise_not_found();
+  errno = 0;
   entry = getpwnam(String_val(name));
-  if (entry == (struct passwd *) NULL) caml_raise_not_found();
+  if (entry == (struct passwd *) NULL) {
+    if (errno == EINTR) {
+      uerror("getpwnam", Nothing);
+    } else {
+      caml_raise_not_found();
+    }
+  }
   return alloc_passwd_entry(entry);
 }
 
 CAMLprim value unix_getpwuid(value uid)
 {
   struct passwd * entry;
+  errno = 0;
   entry = getpwuid(Int_val(uid));
-  if (entry == (struct passwd *) NULL) caml_raise_not_found();
+  if (entry == (struct passwd *) NULL) {
+    if (errno == EINTR) {
+      uerror("getpwuid", Nothing);
+    } else {
+      caml_raise_not_found();
+    }
+  }
   return alloc_passwd_entry(entry);
 }

@@ -22,6 +22,7 @@ open Typedtree
 open Lambda
 open Parmatch
 open Printf
+open Printpat
 
 
 let dbg = false
@@ -33,6 +34,18 @@ let dbg = false
   Now, see Lefessant-Maranget ``Optimizing Pattern-Matching'' ICFP'2001
 *)
 
+(*
+   Compatibility predicate that considers potential rebindings of constructors
+   of an extension type.
+
+   "may_compat p q" returns false when p and q never admit a common instance;
+   returns true when they may have a common instance.
+*)
+
+module MayCompat =
+  Parmatch.Compat (struct let equal = Types.may_equal_constr end)
+let may_compat = MayCompat.compat
+and may_compats = MayCompat.compats
 
 (*
    Many functions on the various data structures of the algorithm :
@@ -43,9 +56,22 @@ let dbg = false
      - Jump summaries: mapping from exit numbers to contexts
 *)
 
+
 let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam ;
   Format.flush_str_formatter ()
+
+let all_record_args lbls = match lbls with
+| (_,{lbl_all=lbl_all},_)::_ ->
+    let t =
+      Array.map
+        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
+        lbl_all in
+    List.iter
+      (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
+      lbls ;
+    Array.to_list t
+|  _ -> fatal_error "Parmatch.all_record_args"
 
 type matrix = pattern list list
 
@@ -57,9 +83,9 @@ let pretty_ctx ctx =
   List.iter
     (fun {left=left ; right=right} ->
       prerr_string "LEFT:" ;
-      pretty_line left ;
+      pretty_line Format.err_formatter left ;
       prerr_string " RIGHT:" ;
-      pretty_line right ;
+      pretty_line Format.err_formatter right ;
       prerr_endline "")
     ctx
 
@@ -150,7 +176,7 @@ let filter_matrix matcher pss =
         end
     | [] -> []
     | _ ->
-        pretty_matrix pss ;
+        pretty_matrix Format.err_formatter pss ;
         fatal_error "Matching.filter_matrix" in
   filter_rec pss
 
@@ -170,23 +196,13 @@ let ctx_matcher p =
   let p = normalize_pat p in
   match p.pat_desc with
   | Tpat_construct (_, cstr,omegas) ->
-      begin match cstr.cstr_tag with
-      | Cstr_extension _ ->
-          let nargs = List.length omegas in
-          (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, _cstr',args)
-            when List.length args = nargs ->
-                p,args @ rem
-          | Tpat_any -> p,omegas @ rem
-          | _ -> raise NoMatch)
-      | _ ->
-          (fun q rem -> match q.pat_desc with
-          | Tpat_construct (_, cstr',args)
-            when cstr.cstr_tag=cstr'.cstr_tag ->
-              p,args @ rem
-          | Tpat_any -> p,omegas @ rem
-          | _ -> raise NoMatch)
-      end
+      (fun q rem -> match q.pat_desc with
+      | Tpat_construct (_, cstr',args)
+(* NB:  may_constr_equal considers (potential) constructor rebinding *)
+        when Types.may_equal_constr cstr cstr' ->
+          p,args@rem
+      | Tpat_any -> p,omegas @ rem
+      | _ -> raise NoMatch)
   | Tpat_constant cst ->
       (fun q rem -> match q.pat_desc with
       | Tpat_constant cst' when const_compare cst cst' = 0 ->
@@ -287,10 +303,7 @@ let ctx_lub p ctx =
 
 let ctx_match ctx pss =
   List.exists
-    (fun {right=qs} ->
-      List.exists
-        (fun ps -> compats qs ps)
-        pss)
+    (fun {right=qs} ->  List.exists (fun ps -> may_compats qs ps)  pss)
     ctx
 
 type jumps = (int * ctx list) list
@@ -399,7 +412,7 @@ let pretty_cases cases =
     (fun (ps,_l) ->
       List.iter
         (fun p ->
-          Parmatch.top_pretty Format.str_formatter p ;
+          top_pretty Format.str_formatter p ;
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
@@ -416,11 +429,14 @@ let pretty_def def =
   List.iter
     (fun (pss,i) ->
       Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix pss)
+      pretty_matrix Format.err_formatter pss)
     def ;
   prerr_endline "+++++++++++++++++++++"
 
-let pretty_pm pm = pretty_cases pm.cases
+let pretty_pm pm =
+  pretty_cases pm.cases ;
+  if pm.default <> [] then
+    pretty_def pm.default
 
 
 let rec pretty_precompiled = function
@@ -433,7 +449,7 @@ let rec pretty_precompiled = function
   | PmOr x ->
       prerr_endline "++++ OR ++++" ;
       pretty_pm x.body ;
-      pretty_matrix x.or_matrix ;
+      pretty_matrix Format.err_formatter x.or_matrix ;
       List.iter
         (fun (_,i,_,pm) ->
           eprintf "++ Handler %d ++\n" i ;
@@ -450,7 +466,7 @@ let pretty_precompiled_res first nexts =
 
 
 
-(* Identifing some semantically equivalent lambda-expressions,
+(* Identifying some semantically equivalent lambda-expressions,
    Our goal here is also to
    find alpha-equivalent (simple) terms *)
 
@@ -538,40 +554,14 @@ let up_ok_action act1 act2 =
   with
   | Exit -> false
 
-(* Nothing is known about exception/extension patterns,
-   because of potential rebind *)
-let rec exc_inside p = match p.pat_desc with
-  | Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
-  | Tpat_any|Tpat_constant _|Tpat_var _
-  | Tpat_construct (_,_,[])
-  | Tpat_variant (_,None,_)
-    -> false
-  | Tpat_construct (_,_,ps)
-  | Tpat_tuple ps
-  | Tpat_array ps
-      -> exc_insides ps
-  | Tpat_variant (_, Some q,_)
-  | Tpat_alias (q,_,_)
-  | Tpat_lazy q
-    -> exc_inside q
-  | Tpat_record (lps,_) ->
-      List.exists (fun (_,_,p) -> exc_inside p) lps
-  | Tpat_or (p1,p2,_) -> exc_inside p1 || exc_inside p2
-
-and exc_insides ps = List.exists exc_inside ps
-
 let up_ok (ps,act_p) l =
-  if exc_insides ps then match l with [] -> true | _::_ -> false
-  else
-    List.for_all
-      (fun (qs,act_q) ->
-        up_ok_action act_p act_q ||
-        not (Parmatch.compats ps qs))
-      l
-
+  List.for_all
+    (fun (qs,act_q) ->
+      up_ok_action act_p act_q || not (may_compats ps qs))
+    l
 
 (*
-   Simplify fonction normalize the first column of the match
+   The simplify function normalizes the first column of the match
      - records are expanded so that they possess all fields
      - aliases are removed and replaced by bindings in actions.
    However or-patterns are simplified differently,
@@ -663,16 +653,6 @@ let rec what_is_cases cases = match cases with
 (* A few operations on default environments *)
 let as_matrix cases = get_mins le_pats (List.map (fun (ps,_) -> ps) cases)
 
-(* For extension matching, record no information in matrix *)
-let as_matrix_omega cases =
-  get_mins le_pats
-    (List.map
-       (fun (ps,_) ->
-         match ps with
-         | [] -> assert false
-         | _::ps -> omega::ps)
-       cases)
-
 let cons_default matrix raise_num default =
   match matrix with
   | [] -> default
@@ -684,7 +664,7 @@ let default_compat p def =
       let qss =
         List.fold_right
           (fun qs r -> match qs with
-            | q::rem when Parmatch.compat p q -> rem::r
+            | q::rem when may_compat p q -> rem::r
             | _ -> r)
           pss [] in
       match qss with
@@ -801,7 +781,7 @@ let is_or p = match p.pat_desc with
 | _ -> false
 
 (* Conditions for appending to the Or matrix *)
-let conda p q = not (compat p q)
+let conda p q = not (may_compat p q)
 and condb act ps qs =  not (is_guarded act) && Parmatch.le_pats qs ps
 
 let or_ok p ps l =
@@ -830,7 +810,7 @@ let insert_or_append p ps act ors no =
   let rec attempt seen = function
     | (q::qs,act_q) as cl::rem ->
         if is_or q then begin
-          if compat p q then
+          if may_compat p q then
             if
               IdentSet.is_empty (extract_vars IdentSet.empty p) &&
               IdentSet.is_empty (extract_vars IdentSet.empty q) &&
@@ -841,7 +821,7 @@ let insert_or_append p ps act ors no =
                 or_ok p ps not_e && (* check append condition for head of O *)
                 List.for_all        (* check insert condition for tail of O *)
                   (fun cl -> match cl with
-                  | (q::_,_) -> not (compat p q)
+                  | (q::_,_) -> not (may_compat p q)
                   | _        -> assert false)
                   seen
               then (* insert *)
@@ -948,7 +928,7 @@ and split_naive cls args def k =
     | [] ->
         let yes = List.rev yes in
         { me = Pm {cases=yes; args=args; default=def;} ;
-          matrix = as_matrix_omega yes ;
+          matrix = as_matrix yes ;
           top_default=def},
         k
     | (p::_,_ as cl)::rem ->
@@ -962,7 +942,7 @@ and split_naive cls args def k =
             let idef = next_raise_count () in
             let def = cons_default matrix idef def in
             { me = Pm {cases=yes; args=args; default=def} ;
-              matrix = as_matrix_omega yes ;
+              matrix = as_matrix yes ;
               top_default = def; },
             (idef,next)::nexts
         else
@@ -972,7 +952,7 @@ and split_naive cls args def k =
             let idef = next_raise_count () in
             let def = cons_default matrix idef def in
             { me = Pm {cases=yes; args=args; default=def} ;
-              matrix = as_matrix_omega yes ;
+              matrix = as_matrix yes ;
               top_default = def; },
             (idef,next)::nexts
     | _ -> assert false
@@ -1112,21 +1092,12 @@ and dont_precompile_var args cls def k =
     matrix=as_matrix cls ;
     top_default=def},k
 
-and is_exc p = match p.pat_desc with
-| Tpat_or (p1,p2,_) -> is_exc p1 || is_exc p2
-| Tpat_alias (p,_,_) -> is_exc p
-| Tpat_construct (_,{cstr_tag=Cstr_extension _},_) -> true
-| _ -> false
-
 and precompile_or argo cls ors args def k = match ors with
 | [] -> split_constr cls args def k
 | _  ->
     let rec do_cases = function
       | ({pat_desc=Tpat_or _} as orp::patl, action)::rem ->
-          let do_opt = not (is_exc orp) in
-          let others,rem =
-            if do_opt then get_equiv orp rem
-            else [],rem in
+          let others,rem = get_equiv orp rem in
           let orpm =
             {cases =
               (patl, action)::
@@ -1136,7 +1107,7 @@ and precompile_or argo cls ors args def k = match ors with
                   | _ -> assert false)
                 others ;
               args = (match args with _::r -> r | _ -> assert false) ;
-              default = default_compat (if do_opt then orp else omega) def} in
+              default = default_compat orp def} in
           let vars =
             IdentSet.elements
               (IdentSet.inter
@@ -1149,19 +1120,18 @@ and precompile_or argo cls ors args def k = match ors with
             Lstaticraise
               (or_num, List.map (fun v -> Lvar v) vs) in
 
-          let do_optrec,body,handlers = do_cases rem in
-          do_opt && do_optrec,
+          let body,handlers = do_cases rem in
           explode_or_pat
             argo new_patl mk_new_action body vars [] orp,
-          let mat = if do_opt then [[orp]] else [[omega]] in
+          let mat = [[orp]] in
           ((mat, or_num, vars , orpm):: handlers)
       | cl::rem ->
-          let b,new_ord,new_to_catch = do_cases rem in
-          b,cl::new_ord,new_to_catch
-      | [] -> true,[],[] in
+          let new_ord,new_to_catch = do_cases rem in
+          cl::new_ord,new_to_catch
+      | [] -> [],[] in
 
-    let do_opt,end_body, handlers = do_cases ors in
-    let matrix = (if do_opt then as_matrix else as_matrix_omega) (cls@ors)
+    let end_body, handlers = do_cases ors in
+    let matrix = as_matrix (cls@ors)
     and body = {cases=cls@end_body ; args=args ; default=def} in
     {me = PmOr {body=body ; handlers=handlers ; or_matrix=matrix} ;
       matrix=matrix ;
@@ -1302,18 +1272,23 @@ let get_args_constr p rem = match p with
 | {pat_desc=Tpat_construct (_, _, args)} -> args @ rem
 | _ -> assert false
 
+(* NB: matcher_constr applies to default matrices.
+
+       In that context, matching by constructors of extensible
+       types degrades to arity checking, due to potential rebinding.
+       This comparison is performed by Types.may_equal_constr.
+*)
+
 let matcher_constr cstr = match cstr.cstr_arity with
 | 0 ->
     let rec matcher_rec q rem = match q.pat_desc with
     | Tpat_or (p1,p2,_) ->
         begin
-          try
-            matcher_rec p1 rem
-          with
-          | NoMatch -> matcher_rec p2 rem
+          try matcher_rec p1 rem
+          with NoMatch -> matcher_rec p2 rem
         end
-    | Tpat_construct (_, cstr1, []) when cstr.cstr_tag = cstr1.cstr_tag ->
-        rem
+    | Tpat_construct (_, cstr',[])
+      when Types.may_equal_constr cstr cstr' -> rem
     | Tpat_any -> rem
     | _ -> raise NoMatch in
     matcher_rec
@@ -1333,16 +1308,16 @@ let matcher_constr cstr = match cstr.cstr_arity with
             rem
         | _, _ -> assert false
         end
-    | Tpat_construct (_, cstr1, [arg])
-      when cstr.cstr_tag = cstr1.cstr_tag -> arg::rem
+    | Tpat_construct (_, cstr', [arg])
+      when Types.may_equal_constr cstr cstr' -> arg::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
     matcher_rec
 | _ ->
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
-    | Tpat_construct (_, cstr1, args)
-      when cstr.cstr_tag = cstr1.cstr_tag -> args @ rem
+    | Tpat_construct (_,cstr',args)
+      when  Types.may_equal_constr cstr cstr' -> args @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
@@ -1787,7 +1762,7 @@ let rec do_make_string_test_tree loc arg sw delta d =
     bind_sw
       (Lprim
          (prim_string_compare,
-          [arg; Lconst (Const_immstring s)], loc;))
+          [arg; Lconst (Const_immstring s)], loc))
       (fun r ->
         tree_way_test loc r
           (do_make_string_test_tree loc arg lt delta d)
@@ -1830,12 +1805,12 @@ let share_actions_tree sw d =
   let d =
     match d with
     | None -> None
-    | Some d -> Some (store.Switch.act_store_shared d) in
+    | Some d -> Some (store.Switch.act_store_shared () d) in
 (* Store all other actions *)
   let sw =
-    List.map  (fun (cst,act) -> cst,store.Switch.act_store act) sw in
+    List.map  (fun (cst,act) -> cst,store.Switch.act_store () act) sw in
 
-(* Retrieve all actions, including potentiel default *)
+(* Retrieve all actions, including potential default *)
   let acts = store.Switch.act_get_shared () in
 
 (* Array of actual actions *)
@@ -1957,14 +1932,14 @@ let share_actions_sw sw =
   | None -> None
   | Some fail ->
       (* Fail is translated to exit, whatever happens *)
-      Some (store.Switch.act_store_shared fail) in
+      Some (store.Switch.act_store_shared () fail) in
   let consts =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_consts
   and blocks =
     List.map
-      (fun (i,e) -> i,store.Switch.act_store e)
+      (fun (i,e) -> i,store.Switch.act_store () e)
       sw.sw_blocks in
   let acts = store.Switch.act_get_shared () in
   let hs,handle_shared = handle_shared () in
@@ -2032,7 +2007,7 @@ let as_interval_canfail fail low high l =
 
   let do_store _tag act =
 
-    let i =  store.act_store act in
+    let i =  store.act_store () act in
 (*
     eprintf "STORE [%s] %i %s\n" tag i (string_of_lam act) ;
 *)
@@ -2096,7 +2071,7 @@ let as_interval_nofail l =
     | [] ->
         [cur_low, cur_high, cur_act]
     | (i,act)::rem ->
-        let act_index = store.act_store act in
+        let act_index = store.act_store () act in
         if act_index = cur_act then
           i_rec cur_low i cur_act rem
         else
@@ -2106,13 +2081,13 @@ let as_interval_nofail l =
   | (i,act)::rem ->
       let act_index =
         (* In case there is some hole and that a switch is emitted,
-           action 0 will be used as the action of unreacheable
+           action 0 will be used as the action of unreachable
            cases (cf. switch.ml, make_switch).
            Hence, this action will be shared *)
         if some_hole rem then
-          store.act_store_shared act
+          store.act_store_shared () act
         else
-          store.act_store act in
+          store.act_store () act in
       assert (act_index = 0) ;
       i_rec i i act_index rem
   | _ -> assert false in
@@ -2553,7 +2528,8 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
     | (mat,i,vars,pm)::rem ->
         begin try
           let ctx = select_columns mat ctx in
-          let handler_i, total_i = compile_fun ctx pm in
+          let handler_i, total_i =
+            compile_fun ctx pm in
           match raw_action r with
           | Lstaticraise (j,args) ->
               if i=j then
@@ -2813,7 +2789,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    or lazy pattern execute arbitrary code that may perform side effects
    and change the subject values.
 LM:
-   Lazy pattern was PR #5992, initial patch by lwp25.
+   Lazy pattern was PR#5992, initial patch by lpw25.
    I have  generalized the patch, so as to also find mutable fields.
 *)
 
@@ -3100,7 +3076,7 @@ let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
 | Tpat_alias (p,_,_) -> (* Note: if this 'as' pat is here, then this is a
-                           useless binding, solves PR #3780 *)
+                           useless binding, solves PR#3780 *)
     flatten_pat_line size p k
 | _ -> fatal_error "Matching.flatten_pat_line"
 
@@ -3207,7 +3183,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
   with Unused ->
     assert false (* ; partial_function loc () *)
 
-(* #PR4828: Believe it or not, the 'paraml' argument below
+(* PR#4828: Believe it or not, the 'paraml' argument below
    may not be side effect free. *)
 
 let param_to_var param = match param with

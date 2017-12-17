@@ -18,7 +18,7 @@ CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
 CMA_FILES=$(LIBRARIES:=.cma)
 CMXA_FILES=$(LIBRARIES:=.cmxa)
-O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
+O_FILES=$(F_FILES:=.$(O)) $(C_FILES:=.$(O))
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
@@ -60,26 +60,28 @@ run-all:
 	      continue; \
 	    fi; \
 	  fi; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
-	          RUNTIME='$(MYRUNTIME)' \
-	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
-	                     $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
-	                     $(CMO_FILES)' \
-	          FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
+	  if $(NATIVECODE_ONLY); then : ; else \
+	    $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
+	            RUNTIME='$(MYRUNTIME)' \
+	            COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
+	                       $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
+	                       $(CMO_FILES)' \
+	            FILE=$$file PROGRAM_ARGS='$(PROGRAM_ARGS)'; \
+	  fi \
 	  && \
 	  if $(BYTECODE_ONLY); then : ; else \
 	    $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' \
 	            RUNTIME= \
-	            COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
+	            COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
 		               $(O_FILES) $(CMXA_FILES) \
 			       -I $(OTOPDIR)/testsuite/lib $(CMX_FILES)' \
-	            FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
+	            FILE=$$file PROGRAM_ARGS='$(PROGRAM_ARGS)'; \
 	  fi \
 	  && \
 	  if [ -n "$(UNSAFE)" ]; then \
 	    $(MAKE) run-file DESC=ocamlc-unsafe COMP='$(OCAMLC)' \
 	            RUNTIME='$(MYRUNTIME)' \
-	            COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
+	            COMPFLAGS='-unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
 	                       $(O_FILES) $(CMA_FILES) \
 	                       -I $(OTOPDIR)/testsuite/lib $(CMO_FILES)' \
 	            FILE=$$file \
@@ -87,7 +89,7 @@ run-all:
 	    if $(BYTECODE_ONLY); then : ; else \
 	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' \
 	              RUNTIME= \
-	              COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS)\
+	              COMPFLAGS='-unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS)\
 		                 $(O_FILES) $(CMXA_FILES) \
 	                         -I $(OTOPDIR)/testsuite/lib $(CMX_FILES)' \
 	              FILE=$$file; \

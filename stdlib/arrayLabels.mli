@@ -211,7 +211,7 @@ val make_float: int -> float array
     {!Array.create_float}. *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
@@ -258,9 +258,19 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 
 (**/**)
 
-(** {6 Undocumented functions} *)
+(** {1 Undocumented functions} *)
 
 (* The following is for system use only. Do not call directly. *)
 
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+
+module Floatarray : sig
+  external create : int -> floatarray = "caml_floatarray_create"
+  external length : floatarray -> int = "%floatarray_length"
+  external get : floatarray -> int -> float = "%floatarray_safe_get"
+  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : floatarray -> int -> float -> unit
+      = "%floatarray_unsafe_set"
+end

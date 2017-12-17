@@ -51,7 +51,7 @@ type error =
 exception Error of error
 
 (* Copied from config.ml to avoid dependencies *)
-let cmxs_magic_number = "Caml2007D002"
+let cmxs_magic_number = "Caml1999D022"
 
 let dll_filename fname =
   if Filename.is_implicit fname then Filename.concat (Sys.getcwd ()) fname

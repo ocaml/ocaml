@@ -93,7 +93,7 @@ static int dbg_socket = -1;     /* The socket connected to the debugger */
 static struct channel * dbg_in; /* Input channel on the socket */
 static struct channel * dbg_out;/* Output channel on the socket */
 
-static char *dbg_addr = "(none)";
+static char *dbg_addr = NULL;
 
 static void open_connection(void)
 {
@@ -121,7 +121,7 @@ static void open_connection(void)
 #endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error_arg2 ("cannot connect to debugger at %s\n", dbg_addr,
+    caml_fatal_error_arg2 ("cannot connect to debugger at %s\n", (dbg_addr ? dbg_addr : "(none)"),
                            "error: %s\n", strerror (errno));
   }
 #ifdef _WIN32
@@ -164,6 +164,7 @@ static void winsock_cleanup(void)
 void caml_debugger_init(void)
 {
   char * address;
+  char_os * a;
   char * port, * p;
   struct hostent * host;
   int n;
@@ -173,8 +174,10 @@ void caml_debugger_init(void)
   Store_field(marshal_flags, 0, Val_int(1)); /* Marshal.Closures */
   Store_field(marshal_flags, 1, Val_emptylist);
 
-  address = caml_secure_getenv("CAML_DEBUG_SOCKET");
+  a = caml_secure_getenv(_T("CAML_DEBUG_SOCKET"));
+  address = a ? caml_stat_strdup_of_os(a) : NULL;
   if (address == NULL) return;
+  if (dbg_addr != NULL) caml_stat_free(dbg_addr);
   dbg_addr = address;
 
 #ifdef _WIN32
@@ -411,7 +414,7 @@ void caml_debugger(enum event_kind event)
         caml_putch(dbg_out, 0);
         putval(dbg_out, Field(val, i));
       } else {
-        double d = Double_field(val, i);
+        double d = Double_flat_field(val, i);
         caml_putch(dbg_out, 1);
         caml_really_putblock(dbg_out, (char *) &d, 8);
       }

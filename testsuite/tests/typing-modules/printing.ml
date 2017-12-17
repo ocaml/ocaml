@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (* PR#6650 *)
 
 module type S = sig

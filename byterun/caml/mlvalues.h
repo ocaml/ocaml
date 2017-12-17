@@ -104,23 +104,23 @@ bits  63        (64-P) (63-P)        10 9     8 7   0
 
 */
 
-#define PROFINFO_SHIFT (64 - PROFINFO_WIDTH)
-#define PROFINFO_MASK ((1ull << PROFINFO_WIDTH) - 1ull)
-
 #define Tag_hd(hd) ((tag_t) ((hd) & 0xFF))
+
+#define Gen_profinfo_shift(width) (64 - (width))
+#define Gen_profinfo_mask(width) ((1ull << (width)) - 1ull)
+#define Gen_profinfo_hd(width, hd) \
+  (((mlsize_t) ((hd) >> (Gen_profinfo_shift(width)))) \
+   & (Gen_profinfo_mask(width)))
+
 #ifdef WITH_PROFINFO
+#define PROFINFO_SHIFT (Gen_profinfo_shift(PROFINFO_WIDTH))
+#define PROFINFO_MASK (Gen_profinfo_mask(PROFINFO_WIDTH))
 #define Hd_no_profinfo(hd) ((hd) & ~(PROFINFO_MASK << PROFINFO_SHIFT))
 #define Wosize_hd(hd) ((mlsize_t) ((Hd_no_profinfo(hd)) >> 10))
+#define Profinfo_hd(hd) (Gen_profinfo_hd(PROFINFO_WIDTH, hd))
 #else
 #define Wosize_hd(hd) ((mlsize_t) ((hd) >> 10))
 #endif /* WITH_PROFINFO */
-#if defined(ARCH_SIXTYFOUR) && defined(WITH_PROFINFO)
-/* [Profinfo_hd] is used when the compiler is not configured for Spacetime
-   (e.g. when decoding profiles). */
-#define Profinfo_hd(hd) (((mlsize_t) ((hd) >> PROFINFO_SHIFT)) & PROFINFO_MASK)
-#else
-#define Profinfo_hd(hd) ((hd) & 0)
-#endif /* ARCH_SIXTYFOUR && WITH_PROFINFO */
 
 #define Hd_val(val) (((header_t *) (val)) [-1])        /* Also an l-value. */
 #define Hd_op(op) (Hd_val (op))                        /* Also an l-value. */
@@ -277,12 +277,48 @@ CAMLextern void caml_Store_double_val (value,double);
 
 /* Arrays of floating-point numbers. */
 #define Double_array_tag 254
-#define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
-#define Store_double_field(v,i,d) do{ \
+
+/* The [_flat_field] macros are for [floatarray] values and float-only records.
+*/
+#define Double_flat_field(v,i) Double_val((value)((double *)(v) + (i)))
+#define Store_double_flat_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
   Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
+
+/* The [_array_field] macros are for [float array]. */
+#ifdef FLAT_FLOAT_ARRAY
+  #define Double_array_field(v,i) Double_flat_field(v,i)
+  #define Store_double_array_field(v,i,d) Store_double_flat_field(v,i,d)
+#else
+  #define Double_array_field(v,i) Double_val (Field(v,i))
+  CAMLextern void caml_Store_double_array_field (value, mlsize_t, double);
+  #define Store_double_array_field(v,i,d) caml_Store_double_array_field (v,i,d)
+#endif
+
+/* The old [_field] macros are for backward compatibility only.
+   They work with [floatarray], float-only records, and [float array]. */
+#ifdef FLAT_FLOAT_ARRAY
+  #define Double_field(v,i) Double_flat_field(v,i)
+  #define Store_double_field(v,i,d) Store_double_flat_field(v,i,d)
+#else
+  static inline double Double_field (value v, mlsize_t i) {
+    if (Tag_val (v) == Double_array_tag){
+      return Double_flat_field (v, i);
+    }else{
+      return Double_array_field (v, i);
+    }
+  }
+  static inline void Store_double_field (value v, mlsize_t i, double d) {
+    if (Tag_val (v) == Double_array_tag){
+      Store_double_flat_field (v, i, d);
+    }else{
+      Store_double_array_field (v, i, d);
+    }
+  }
+#endif /* FLAT_FLOAT_ARRAY */
+
 CAMLextern mlsize_t caml_array_length (value);   /* size in items */
 CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
 

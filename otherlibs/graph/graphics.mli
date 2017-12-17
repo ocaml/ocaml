@@ -19,7 +19,7 @@ exception Graphic_failure of string
 (** Raised by the functions below when they encounter an error. *)
 
 
-(** {6 Initializations} *)
+(** {1 Initializations} *)
 
 val open_graph : string -> unit
 (** Show the graphics window or switch the screen to graphic mode.
@@ -53,7 +53,7 @@ external size_y : unit -> int = "caml_gr_size_y"
    16-bit integers, hence wrong clipping may occur with coordinates
    below [-32768] or above [32676]. *)
 
-(** {6 Colors} *)
+(** {1 Colors} *)
 
 type color = int
 (** A color is specified by its R, G, B components. Each component
@@ -93,7 +93,7 @@ val cyan : color
 val magenta : color
 
 
-(** {6 Point and line drawing} *)
+(** {1 Point and line drawing} *)
 
 external plot : int -> int -> unit = "caml_gr_plot"
 (** Plot the given point with the current drawing color. *)
@@ -184,7 +184,7 @@ val set_line_width : int -> unit
    used when [set_line_width 1] is specified.
    Raise [Invalid_argument] if the argument is negative. *)
 
-(** {6 Text drawing} *)
+(** {1 Text drawing} *)
 
 external draw_char : char -> unit = "caml_gr_draw_char"
 (** See {!Graphics.draw_string}.*)
@@ -209,7 +209,7 @@ external text_size : string -> int * int = "caml_gr_text_size"
    the current font and size. *)
 
 
-(** {6 Filling} *)
+(** {1 Filling} *)
 
 val fill_rect : int -> int -> int -> int -> unit
 (** [fill_rect x y w h] fills the rectangle with lower left corner
@@ -233,7 +233,7 @@ val fill_circle : int -> int -> int -> unit
    parameters are the same as for {!Graphics.draw_circle}. *)
 
 
-(** {6 Images} *)
+(** {1 Images} *)
 
 type image
 (** The abstract type for images, in internal representation.
@@ -277,7 +277,7 @@ external blit_image : image -> int -> int -> unit = "caml_gr_blit_image"
    [img] are left unchanged. *)
 
 
-(** {6 Mouse and keyboard events} *)
+(** {1 Mouse and keyboard events} *)
 
 type status =
   { mouse_x : int;              (** X coordinate of the mouse *)
@@ -316,7 +316,7 @@ val loop_at_exit : event list -> (status -> unit) -> unit
     @since 4.01
 *)
 
-(** {6 Mouse and keyboard polling} *)
+(** {1 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> int * int
 (** Return the position of the mouse cursor, relative to the
@@ -336,13 +336,13 @@ val key_pressed : unit -> bool
    would not block. *)
 
 
-(** {6 Sound} *)
+(** {1 Sound} *)
 
 external sound : int -> int -> unit = "caml_gr_sound"
 (** [sound freq dur] plays a sound at frequency [freq] (in hertz)
    for a duration [dur] (in milliseconds). *)
 
-(** {6 Double buffering} *)
+(** {1 Double buffering} *)
 
 val auto_synchronize : bool -> unit
 (** By default, drawing takes place both on the window displayed

@@ -54,8 +54,9 @@ approved PR, they need to be able to apply small changes to the
 contributed branches themselves.  Such changes include fixing
 conflicts, adjusting a Changelog entry, or applying some code changes
 required by the reviewers.  Contributors are thus strongly advised to
-check the [**Allow edits from maintainer**](https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/)
-flag on their PRs in the GitHub interface.  Failing to do so might
+check the [**Allow edits from maintainer**](
+https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/
+) flag on their PRs in the GitHub interface.  Failing to do so might
 significantly delay the inclusion of an otherwise perfectly ok
 contribution.
 

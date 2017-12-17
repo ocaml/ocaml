@@ -187,8 +187,6 @@ sys.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
   caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
   caml/signals.h caml/stacks.h caml/sys.h caml/version.h caml/callback.h \
   caml/startup_aux.h
-terminfo.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
-  caml/misc.h caml/mlvalues.h caml/fail.h caml/io.h
 unix.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
   caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
   caml/freelist.h caml/minor_gc.h caml/address_class.h caml/osdeps.h \
@@ -389,8 +387,6 @@ sys.d.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
   caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
   caml/signals.h caml/stacks.h caml/sys.h caml/version.h caml/callback.h \
   caml/startup_aux.h
-terminfo.d.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
-  caml/misc.h caml/mlvalues.h caml/fail.h caml/io.h
 unix.d.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
   caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
   caml/freelist.h caml/minor_gc.h caml/address_class.h caml/osdeps.h \
@@ -588,8 +584,6 @@ sys.i.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
   caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
   caml/signals.h caml/stacks.h caml/sys.h caml/version.h caml/callback.h \
   caml/startup_aux.h
-terminfo.i.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
-  caml/misc.h caml/mlvalues.h caml/fail.h caml/io.h
 unix.i.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
   caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
   caml/freelist.h caml/minor_gc.h caml/address_class.h caml/osdeps.h \
@@ -787,8 +781,6 @@ sys.pic.$(O): sys.c caml/config.h caml/m.h caml/s.h caml/alloc.h caml/misc.h \
   caml/major_gc.h caml/freelist.h caml/minor_gc.h caml/address_class.h \
   caml/signals.h caml/stacks.h caml/sys.h caml/version.h caml/callback.h \
   caml/startup_aux.h
-terminfo.pic.$(O): terminfo.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
-  caml/misc.h caml/mlvalues.h caml/fail.h caml/io.h
 unix.pic.$(O): unix.c caml/config.h caml/m.h caml/s.h caml/fail.h caml/misc.h \
   caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \
   caml/freelist.h caml/minor_gc.h caml/address_class.h caml/osdeps.h \

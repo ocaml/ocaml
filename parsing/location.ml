@@ -93,7 +93,7 @@ let print_updating_num_loc_lines ppf f arg =
 
 (* Highlight the locations using standout mode. *)
 
-let highlight_terminfo ppf num_lines lb locs =
+let highlight_terminfo ppf lb locs =
   Format.pp_print_flush ppf ();  (* avoid mixing Format and normal output *)
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
@@ -105,31 +105,31 @@ let highlight_terminfo ppf num_lines lb locs =
     if Bytes.get lb.lex_buffer i = '\n' then incr lines
   done;
   (* If too many lines, give up *)
-  if !lines >= num_lines - 2 then raise Exit;
+  if !lines >= Terminfo.num_lines stdout - 2 then raise Exit;
   (* Move cursor up that number of lines *)
-  flush stdout; Terminfo.backup !lines;
+  flush stdout; Terminfo.backup stdout !lines;
   (* Print the input, switching to standout for the location *)
   let bol = ref false in
   print_string "# ";
   for pos = 0 to lb.lex_buffer_len - pos0 - 1 do
     if !bol then (print_string "  "; bol := false);
     if List.exists (fun loc -> pos = loc.loc_start.pos_cnum) locs then
-      Terminfo.standout true;
+      Terminfo.standout stdout true;
     if List.exists (fun loc -> pos = loc.loc_end.pos_cnum) locs then
-      Terminfo.standout false;
+      Terminfo.standout stdout false;
     let c = Bytes.get lb.lex_buffer (pos + pos0) in
     print_char c;
     bol := (c = '\n')
   done;
   (* Make sure standout mode is over *)
-  Terminfo.standout false;
+  Terminfo.standout stdout false;
   (* Position cursor back to original location *)
-  Terminfo.resume !num_loc_lines;
+  Terminfo.resume stdout !num_loc_lines;
   flush stdout
 
 (* Highlight the location by printing it again. *)
 
-let highlight_dumb ppf lb loc =
+let highlight_dumb ~print_chars ppf lb loc =
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
   (* Do nothing if the buffer does not contain the whole phrase. *)
@@ -143,9 +143,12 @@ let highlight_dumb ppf lb loc =
       if loc.loc_end.pos_cnum   > pos then incr line_end;
     end
   done;
+  Format.fprintf ppf "@[<v>";
   (* Print character location (useful for Emacs) *)
-  Format.fprintf ppf "Characters %i-%i:@."
-                 loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
+  if print_chars then begin
+    Format.fprintf ppf "Characters %i-%i:@,"
+                   loc.loc_start.pos_cnum loc.loc_end.pos_cnum
+  end;
   (* Print the input, underlining the location *)
   Format.pp_print_string ppf "  ";
   let line = ref 0 in
@@ -155,7 +158,7 @@ let highlight_dumb ppf lb loc =
     | '\n' ->
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)
-        Format.fprintf ppf "@.  ";
+        Format.fprintf ppf "@,  ";
         for _i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
           Format.pp_print_char ppf ' '
         done;
@@ -164,7 +167,7 @@ let highlight_dumb ppf lb loc =
         done
       end;
       if !line >= !line_start && !line <= !line_end then begin
-        Format.fprintf ppf "@.";
+        Format.fprintf ppf "@,";
         if pos < loc.loc_end.pos_cnum then Format.pp_print_string ppf "  "
       end;
       incr line;
@@ -191,7 +194,11 @@ let highlight_dumb ppf lb loc =
       else if !line > !line_start && !line < !line_end then
         (* intermediate line of multiline loc: print whole line *)
         Format.pp_print_char ppf c
-  done
+  done;
+  Format.fprintf ppf "@]"
+
+let show_code_at_location ppf lb loc =
+  highlight_dumb ~print_chars:false ppf lb loc
 
 (* Highlight the location using one of the supported modes. *)
 
@@ -207,14 +214,14 @@ let rec highlight_locations ppf locs =
             try Sys.getenv "TERM" = "norepeat" with Not_found -> false in
           if norepeat then false else
             let loc1 = List.hd locs in
-            try highlight_dumb ppf lb loc1; true
+            try highlight_dumb ~print_chars:true ppf lb loc1; true
             with Exit -> false
       end
-  | Terminfo.Good_term num_lines ->
+  | Terminfo.Good_term ->
       begin match !input_lexbuf with
         None -> false
       | Some lb ->
-          try highlight_terminfo ppf num_lines lb locs; true
+          try highlight_terminfo ppf lb locs; true
           with Exit -> false
       end
 
@@ -276,7 +283,7 @@ let default_printer ppf loc =
   setup_colors ();
   if loc.loc_start.pos_fname = "//toplevel//"
   && highlight_locations ppf [loc] then ()
-  else fprintf ppf "@{<loc>%a@}%s@." print_loc loc msg_colon
+  else fprintf ppf "@{<loc>%a@}%s@," print_loc loc msg_colon
 ;;
 
 let printer = ref default_printer
@@ -312,17 +319,19 @@ let default_warning_printer loc ppf w =
   | `Inactive -> ()
   | `Active { Warnings. number; message; is_error; sub_locs } ->
     setup_colors ();
+    fprintf ppf "@[<v>";
     print ppf loc;
     if is_error
     then
-      fprintf ppf "%t (%s %d): %s@." print_error_prefix
+      fprintf ppf "%t (%s %d): %s@," print_error_prefix
            (String.uncapitalize_ascii warning_prefix) number message
-    else fprintf ppf "@{<warning>%s@} %d: %s@." warning_prefix number message;
+    else fprintf ppf "@{<warning>%s@} %d: %s@," warning_prefix number message;
     List.iter
       (fun (loc, msg) ->
-         if loc <> none then fprintf ppf "  %a  %s@." print loc msg
+         if loc <> none then fprintf ppf "  %a  %s@," print loc msg
       )
-      sub_locs
+      sub_locs;
+    fprintf ppf "@]"
 ;;
 
 let warning_printer = ref default_warning_printer ;;
@@ -417,8 +426,9 @@ let rec default_error_reporter ppf ({loc; msg; sub; if_highlight} as err) =
   if highlighted then
     Format.pp_print_string ppf if_highlight
   else begin
-    fprintf ppf "%a %s" print_error loc msg;
-    List.iter (Format.fprintf ppf "@\n@[<2>%a@]" default_error_reporter) sub
+    fprintf ppf "@[<v>%a %s" print_error loc msg;
+    List.iter (Format.fprintf ppf "@,@[<2>%a@]" default_error_reporter) sub;
+    fprintf ppf "@]"
   end
 
 let error_reporter = ref default_error_reporter

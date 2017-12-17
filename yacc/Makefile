@@ -23,8 +23,12 @@ OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
 
 all: ocamlyacc$(EXE)
 
+ifeq ($(TOOLCHAIN),cc)
+MKEXE_ANSI=$(MKEXE)
+endif
+
 ocamlyacc$(EXE): $(OBJS)
-	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
+	$(MKEXE_ANSI) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q $^ | tr -d '\r'`\"" > $@

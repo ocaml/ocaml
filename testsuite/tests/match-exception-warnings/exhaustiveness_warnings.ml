@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (** Test exhaustiveness.
 
     match clauses should continue to give warnings about inexhaustive

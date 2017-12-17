@@ -84,7 +84,7 @@ external logxor : int32 -> int32 -> int32 = "%int32_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : int32 -> int32
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : int32 -> int -> int32 = "%int32_lsl"
 (** [Int32.shift_left x y] shifts [x] to the left by [y] bits.
@@ -182,7 +182,7 @@ val equal: t -> t -> bool
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> int32 -> string = "caml_int32_format"
 (** Do not use this deprecated function.  Instead,

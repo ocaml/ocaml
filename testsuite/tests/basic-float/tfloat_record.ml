@@ -1,3 +1,5 @@
+(* TEST *)
+
 module Float_record : sig
   type t = private float;;
 
@@ -32,7 +34,7 @@ print_float (Float_record.from s.Float_record.f);;
 print_newline ();;
 
 
-let b = (Float_array.small_float_array [@inlined]) 12
+let b = Float_array.small_float_array 12
 let c = (Float_array.longer_float_array [@inlined]) 34
 
 let print_array a =

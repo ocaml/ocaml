@@ -189,7 +189,7 @@ to transpose between related format types.
 NOTE [1]: the typing of Format_subst_ty requires not one format type, but
 two, one to establish the link between the format argument and the
 first six parameters, and the other for the link between the format
-argumant and the last six parameters.
+argument and the last six parameters.
 
 | Format_subst_ty :                                         (* %(...%) *)
     ('g, 'h, 'i, 'j, 'k, 'l,
@@ -214,7 +214,7 @@ function that proves that the relation is transitive
   -> ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
       'a3, 'b3, 'c3, 'd3, 'e3, 'f3) fmtty_rel
 
-does assume that the two input have exactly the same term structure
+does assume that the two inputs have exactly the same term structure
 (and is only every used for argument witnesses of the
 Format_subst_ty constructor).
 *)
@@ -232,7 +232,7 @@ type block_type =
                  when it leads to a new indentation of the current line *)
   | Pp_fits   (* Internal usage: when a block fits on a single line *)
 
-(* Formatting element used by the Format pretty-printter. *)
+(* Formatting element used by the Format pretty-printer. *)
 type formatting_lit =
   | Close_box                                           (* @]   *)
   | Close_tag                                           (* @}   *)
@@ -245,7 +245,7 @@ type formatting_lit =
   | Escaped_percent                                     (* @%%  *)
   | Scan_indic of char                                  (* @X   *)
 
-(* Formatting element used by the Format pretty-printter. *)
+(* Formatting element used by the Format pretty-printer. *)
 type ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen =
   | Open_tag : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->      (* @{   *)
     ('a, 'b, 'c, 'd, 'e, 'f) formatting_gen
@@ -390,8 +390,8 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('x, 'b, 'c, 'd, 'e, 'f) fmt
   | Bool :                                                   (* %[bB] *)
-      ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
-        (bool -> 'a, 'b, 'c, 'd, 'e, 'f) fmt
+      ('x, bool -> 'a) padding * ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
+        ('x, 'b, 'c, 'd, 'e, 'f) fmt
   | Flush :                                                  (* %! *)
       ('a, 'b, 'c, 'd, 'e, 'f) fmt ->
         ('a, 'b, 'c, 'd, 'e, 'f) fmt
@@ -452,7 +452,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) fmt =
      We include a type Custom of "custom converters", where an
      arbitrary function can be used to convert one or more
      arguments. There is no syntax for custom converters, it is only
-     inteded for custom processors that wish to rely on the
+     intended for custom processors that wish to rely on the
      stdlib-defined format GADTs.
 
      For instance a pre-processor could choose to interpret strings
@@ -499,7 +499,7 @@ and ('a, 'b, 'c, 'd, 'e, 'f) ignored =
   | Ignored_float :                                          (* %_f *)
       pad_option * prec_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_bool :                                           (* %_B *)
-      ('a, 'b, 'c, 'd, 'd, 'a) ignored
+      pad_option -> ('a, 'b, 'c, 'd, 'd, 'a) ignored
   | Ignored_format_arg :                                     (* %_{...%} *)
       pad_option * ('g, 'h, 'i, 'j, 'k, 'l) fmtty ->
         ('a, 'b, 'c, 'd, 'd, 'a) ignored
@@ -642,8 +642,8 @@ fun fmt1 fmt2 -> match fmt1 with
     Char (concat_fmt rest fmt2)
   | Caml_char rest ->
     Caml_char (concat_fmt rest fmt2)
-  | Bool rest ->
-    Bool (concat_fmt rest fmt2)
+  | Bool (pad, rest) ->
+    Bool (pad, concat_fmt rest fmt2)
   | Alpha rest ->
     Alpha (concat_fmt rest fmt2)
   | Theta rest ->

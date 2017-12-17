@@ -116,10 +116,10 @@ CAMLprim value caml_gr_draw_text(value text,value x)
         SetTextAlign(grwindow.gcBitmap, TA_UPDATECP|TA_BOTTOM);
         SetTextAlign(grwindow.gc, TA_UPDATECP|TA_BOTTOM);
         if (grremember_mode) {
-                TextOut(grwindow.gcBitmap,0,0,(char *)text,x);
+                TextOutA(grwindow.gcBitmap,0,0,String_val(text),x);
         }
         if(grdisplay_mode) {
-                TextOut(grwindow.gc,0,0,(char *)text,x);
+                TextOutA(grwindow.gc,0,0,String_val(text),x);
         }
         GetCurrentPosition(grwindow.gc,&pt);
         grwindow.grx = pt.x;
@@ -185,7 +185,7 @@ CAMLprim value caml_gr_circle(value x,value y,value radius)
 
 CAMLprim value caml_gr_set_window_title(value text)
 {
-        SetWindowText(grwindow.hwnd,(char *)text);
+        SetWindowTextA(grwindow.hwnd,(char *)text);
         return Val_unit;
 }
 
@@ -370,7 +370,7 @@ CAMLprim value caml_gr_text_size(value str)
         mlsize_t len = caml_string_length(str);
         if (len > 32767) len = 32767;
 
-        GetTextExtentPoint(grwindow.gc,String_val(str), len,&extent);
+        GetTextExtentPointA(grwindow.gc,String_val(str), len,&extent);
 
         res = caml_alloc_tuple(2);
         Field(res, 0) = Val_long(extent.cx);

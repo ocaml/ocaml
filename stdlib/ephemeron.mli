@@ -15,14 +15,12 @@
 
 (** Ephemerons and weak hash table *)
 
-(** Ephemerons and weak hash table
-
-    Ephemerons and weak hash table are useful when one wants to cache
+(** Ephemerons and weak hash table are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
     useful anymore because one argument or the function is freed. An
-    implementation using {Hashtbl.t} is not suitable because all
+    implementation using {!Hashtbl.t} is not suitable because all
     associations would keep in memory the arguments and the result.
 
     Ephemerons can also be used for "adding" a field to an arbitrary

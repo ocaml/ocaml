@@ -25,9 +25,6 @@ B ./otherlibs/dynlink
 S ./otherlibs/graph
 B ./otherlibs/graph
 
-S ./otherlibs/num
-B ./otherlibs/num
-
 S ./otherlibs/str
 B ./otherlibs/str
 
@@ -54,3 +51,6 @@ B ./typing
 
 S ./utils
 B ./utils
+
+S ./ocamltest
+B ./ocamltest

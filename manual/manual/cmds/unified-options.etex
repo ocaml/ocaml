@@ -308,6 +308,14 @@ modules contained in the library.  When compiling a module (option
 always be linked if it is put in a library and this library is linked.
 }%notop
 
+\nat{%
+\item["-linscan"]
+Use linear scan register allocation.  Compiling with this allocator is faster
+than with the usual graph coloring allocator, sometimes quite drastically so for
+long functions and modules. On the other hand, the generated code can be a bit
+slower.
+}%nat
+
 \comp{%
 \item["-make-runtime"]
 Build a custom runtime system (in the file specified by option "-o")
@@ -745,7 +753,7 @@ that are currently defined are ignored. The warnings are as follows.
 \input{warnings-help.tex}
 \end{options}
 
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
+The default setting is "-w +a-4-6-7-9-27-29-32..42-44-45-48-50-60".
 It is displayed by {\machine\ocamlx\ -help}.
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.

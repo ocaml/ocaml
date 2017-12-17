@@ -300,7 +300,7 @@ static void extern_failwith(char *msg)
 
 static void extern_stack_overflow(void)
 {
-  caml_gc_message (0x04, "Stack overflow in marshaling value\n", 0);
+  caml_gc_message (0x04, "Stack overflow in marshaling value\n");
   extern_replay_trail();
   free_extern_output();
   caml_raise_out_of_memory();
@@ -421,7 +421,11 @@ static void extern_rec(value v)
       value f = Forward_val (v);
       if (Is_block (f)
           && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
-              || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
+              || Tag_val (f) == Lazy_tag
+#ifdef FLAT_FLOAT_ARRAY
+              || Tag_val (f) == Double_tag
+#endif
+              )){
         /* Do not short-circuit the pointer. */
       }else{
         v = f;

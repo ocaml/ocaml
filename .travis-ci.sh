@@ -28,7 +28,7 @@ MAKE=make SHELL=dash
 #      (trunk)         (pr branch)
 #  TRAVIS_CUR_HEAD   TRAVIS_PR_HEAD
 #        |            /
-#        …           …
+#       ...         ...
 #        |          /
 #  TRAVIS_MERGE_BASE
 #
@@ -37,12 +37,12 @@ TRAVIS_CUR_HEAD=${TRAVIS_COMMIT_RANGE%%...*}
 TRAVIS_PR_HEAD=${TRAVIS_COMMIT_RANGE##*...}
 case $TRAVIS_EVENT_TYPE in
    # If this is not a pull request then TRAVIS_COMMIT_RANGE may be empty.
-   pull_request) TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+   pull_request)
+     TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
 esac
 
 BuildAndTest () {
-  case $XARCH in
-  i386)
+  mkdir -p $PREFIX
   cat<<EOF
 ------------------------------------------------------------------------
 This test builds the OCaml compiler distribution with your pull request
@@ -53,26 +53,35 @@ critical errors that must be understood and fixed before your pull
 request can be merged.
 ------------------------------------------------------------------------
 EOF
-    mkdir -p $PREFIX
+  case $XARCH in
+  x64)
     ./configure --prefix $PREFIX -with-debug-runtime \
       -with-instrumented-runtime $CONFIG_ARG
-    export PATH=$PREFIX/bin:$PATH
-    $MAKE world.opt
-    $MAKE ocamlnat
-    (cd testsuite && $MAKE all)
-    (cd testsuite && $MAKE USE_RUNTIME="d" all)
-    $MAKE install
-    # check_all_arches checks tries to compile all backends in place,
-    # we need to redo (small parts of) world.opt afterwards
-    $MAKE check_all_arches
-    $MAKE world.opt
-    $MAKE manual-pregen
+    ;;
+  i386)
+    ./configure --prefix $PREFIX -with-debug-runtime \
+      -with-instrumented-runtime $CONFIG_ARG \
+      -host i686-pc-linux-gnu
     ;;
   *)
     echo unknown arch
     exit 1
     ;;
   esac
+
+  export PATH=$PREFIX/bin:$PATH
+  $MAKE world.opt
+  $MAKE ocamlnat
+  (cd testsuite && $MAKE all)
+  [ $XARCH =  "i386" ] ||  (cd testsuite && $MAKE USE_RUNTIME="d" all)
+  $MAKE install
+  $MAKE manual-pregen
+  # check_all_arches checks tries to compile all backends in place,
+  # we would need to redo (small parts of) world.opt afterwards to
+  # use the compiler again
+  $MAKE check_all_arches
+  # check that the 'clean' target also works
+  $MAKE clean
 }
 
 CheckChangesModified () {
@@ -92,15 +101,16 @@ on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes > /dev/null \
-  && CheckNoChangesMessage || echo pass
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes \
+    > /dev/null && CheckNoChangesMessage || echo pass
 }
 
 CheckNoChangesMessage () {
-  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
+  API_URL=https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels
+  if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 \
+    ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
   then echo pass
-  elif test -n "$(curl https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels \
-       | grep 'no-change-entry-needed')"
+  elif test -n "$(curl $API_URL | grep 'no-change-entry-needed')"
   then echo pass
   else exit 1
   fi
@@ -126,8 +136,8 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code testsuite > /dev/null \
-  && exit 1 || echo pass
+  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code \
+    testsuite > /dev/null && exit 1 || echo pass
 }
 
 case $CI_KIND in

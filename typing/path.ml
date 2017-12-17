@@ -63,6 +63,14 @@ let rec head = function
   | Pdot(p, _s, _pos) -> head p
   | Papply _ -> assert false
 
+let flatten =
+  let rec flatten acc = function
+    | Pident id -> `Ok (id, acc)
+    | Pdot (p, s, _) -> flatten (s :: acc) p
+    | Papply _ -> `Contains_apply
+  in
+  fun t -> flatten [] t
+
 let heads p =
   let rec heads p acc = match p with
     | Pident id -> id :: acc

@@ -1,4 +1,4 @@
-= Hacking the compiler 🐫
+= Hacking the compiler :camel:
 
 This document is a work-in-progress attempt to provide useful
 information for people willing to inspect or modify the compiler
@@ -58,8 +58,9 @@ newcomers. Here are various potential projects:
 * http://caml.inria.fr/mantis/view_all_bug_page.php[The OCaml
   bugtracker] contains reported bugs and feature requests. Some
   changes that should be accessible to newcomers are marked with the
-  tag
-  http://caml.inria.fr/mantis/search.php?project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job[junior_job].
+  tag link:++http://caml.inria.fr/mantis/search.php?
+project_id=1&sticky_issues=1&sortby=last_updated&dir=DESC&highlight_changed=24&hide_status_id=90&tag_string=junior_job++[
+  junior_job].
 
 * The
   https://github.com/ocamllabs/compiler-hacking/wiki/Things-to-work-on[OCaml
@@ -109,8 +110,8 @@ Parses source files and produces an Abstract Syntax Tree (AST)
 link:parsing/HACKING.adoc[].
 
 The logic for Camlp4 and Ppx preprocessing is not in link:parsing/[],
-but in link:driver/[], see link:driver/pparse.mli[],
-link:driver/pparse.mli[].
+but in link:driver/[], see link:driver/pparse.mli[] and
+link:driver/pparse.ml[].
 
 ==== Typing -- link:typing/[]
 
@@ -243,7 +244,7 @@ machine, you can use the configuration values and run command taken from
 link:.travis.yml[]:
 
 ----
-CI_KIND=build XARCH=i386 bash -ex .travis-ci.sh
+CI_KIND=build XARCH=x64 bash -ex .travis-ci.sh
 ----
 
 The scripts support two other kinds of tests (values of the
@@ -271,26 +272,45 @@ PR.
 
 You do not need to be an INRIA employee to open an account on this
 jenkins service; anyone can create an account there to access build
-logs, enable email notifications, and manually restart builds. If you
-would like to do this but have trouble doing it, please contact Damien
-Doligez or Gabriel Scherer.
+logs and manually restart builds. If you
+would like to do this but have trouble doing it, please email
+ocaml-ci-admin@inria.fr.
 
-==== Running INRIA's CI on a github Pull Request (PR)
+To be notified by email of build failures, you can subscribe to the
+ocaml-ci-notifications@inria.fr mailing list by visiting
+https://sympa.inria.fr/sympa/info/ocaml-ci-notifications[its web page.]
 
-If you have suspicions that a PR may fail on exotic architectures
-(it touches the build system or the backend code generator,
+==== Running INRIA's CI on a publicly available git branch
+
+If you have suspicions that your changes may fail on exotic architectures
+(they touch the build system or the backend code generator,
 for example) and would like to get wider testing than github's CI
 provides, it is possible to manually start INRIA's CI on arbitrary git
-branches by pushing to a `precheck` branch of the main repository.
+branches even before opening a pull request as follows:
 
-This is done by pushing to a specific github repository that the CI
-watches, namely
-link:https://github.com/ocaml/precheck[ocaml/precheck]. You thus need
-to have write/push/commit access to this repository to perform this operation.
+1. Make sure you have an account on Inria's CI as described before.
 
-Just checkout the commit/branch you want to test, then run
+2. Make sure you have been added to the ocaml project.
 
- git push --force git@github.com:ocaml/precheck.git HEAD:trunk
+3. Prepare a branch with the code you'd like to test, say "mybranch". It
+is probably a good idea to make sure your branch is based on the latest
+trunk.
 
-(This is the syntax to push the current `HEAD` state into the `trunk`
-reference on the specified remote.)
+4. Make your branch publicly available. For instance, you can fork
+OCaml's GitHub repository and then push "mybranch" to your fork.
+
+5. Visit https://ci.inria.fr/ocaml/job/precheck and log in. Click on
+"Build with parameters".
+
+6. Fill in the REPO_URL and BRANCH fields as appropriate and run the build.
+
+7. You should receive a bunch of e-mails with the build logs for each
+slave and each tested configuration (with and without flambda) attached.
+
+=== The `caml-commits` mailing list
+
+If you would like to receive email notifications of all commits made to the main
+git repository, you can subscribe to the caml-commits@inria.fr mailing list by
+visiting https://sympa.inria.fr/sympa/info/caml-commits[its web page.]
+
+Happy Hacking!

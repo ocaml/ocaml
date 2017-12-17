@@ -29,12 +29,12 @@ extern "C" {
 CAMLextern void caml_sys_error (value);
 CAMLextern void caml_sys_io_error (value);
 CAMLextern double caml_sys_time_unboxed(value);
-CAMLextern void caml_sys_init (char * exe_name, char ** argv);
+CAMLextern void caml_sys_init (char_os * exe_name, char_os ** argv);
 CAMLextern value caml_sys_exit (value);
 extern double caml_sys_time_unboxed(value);
 CAMLextern value caml_sys_get_argv(value unit);
 
-extern char * caml_exe_name;
+extern char_os * caml_exe_name;
 
 #ifdef __cplusplus
 }

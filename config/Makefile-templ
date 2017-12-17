@@ -172,25 +172,13 @@ RANLIBCMD=ranlib
 # Currently available:
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
-#       num             Arbitrary-precision rational arithmetic
 #       threads         Lightweight concurrent processes
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
 #       bigarray        Large, multidimensional numerical arrays
 
-OTHERLIBRARIES=unix str num threads graph dynlink bigarray
-
-### Name of the target architecture for the "num" library
-# Known targets:
-#	generic (portable C, works everywhere)
-#	ia32	(Intel x86)
-#	amd64	(AMD Opteron, Athlon64)
-#	ppc	(Power PC)
-# If you don't know, leave BNG_ARCH=generic, which selects a portable
-# C implementation of these routines.
-BNG_ARCH=generic
-BNG_ASM_LEVEL=1
+OTHERLIBRARIES=unix str threads graph dynlink bigarray
 
 ### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
 # Needed for the "systhreads" package

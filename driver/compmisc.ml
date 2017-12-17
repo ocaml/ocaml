@@ -52,7 +52,8 @@ let open_implicit_module m env =
 let initial_env () =
   Ident.reinit();
   let initial =
-    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    if Config.safe_string then Env.initial_safe_string
+    else if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
   let env =

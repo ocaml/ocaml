@@ -197,10 +197,24 @@ let not_ambiguous__module_variable x b =  match x with
 
 (* Mixed case *)
 
-type t = A of int * int | B of int * int
+type t2 = A of int * int | B of int * int
 ;;
 
 let ambiguous_xy_but_not_ambiguous_z g = function
   | A (x as z,(0 as y))|A (0 as y as z,x)|B (x,(y as z)) when g x (y+z) -> 1
   | _ -> 2
+;;
+
+(* Regression test against an erroneous simplification of the algorithm
+
+   One cannot compute the stable variable of the first row of a matrix
+   after its simplification and before splitting the
+   submatrices. Indeed, further splits on the submatrices may reveal
+   that some rows of this first column belong to disjoint submatrices,
+   and thus that the variables are more stable than is visible when
+   looking at the full column.
+*)
+let not_ambiguous__as_disjoint_on_second_column_split = function
+| ((Some a, (1 as b)) | (Some b, (2 as a))) when a = 0 -> ignore a; ignore b
+| _ -> ()
 ;;

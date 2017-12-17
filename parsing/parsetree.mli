@@ -37,7 +37,7 @@ type constant =
      Suffixes are rejected by the typechecker.
   *)
 
-(** {2 Extension points} *)
+(** {1 Extension points} *)
 
 type attribute = string loc * payload
        (* [@id ARG]
@@ -62,7 +62,7 @@ and payload =
   | PTyp of core_type  (* : T *)
   | PPat of pattern * expression option  (* ? P  or  ? P when E *)
 
-(** {2 Core language} *)
+(** {1 Core language} *)
 
 (* Type expressions *)
 
@@ -81,7 +81,7 @@ and core_type_desc =
   | Ptyp_arrow of arg_label * core_type * core_type
         (* T1 -> T2       Simple
            ~l:T1 -> T2    Labelled
-           ?l:T1 -> T2    Otional
+           ?l:T1 -> T2    Optional
          *)
   | Ptyp_tuple of core_type list
         (* T1 * ... * Tn
@@ -416,7 +416,7 @@ and label_declaration =
      pld_mutable: mutable_flag;
      pld_type: core_type;
      pld_loc: Location.t;
-     pld_attributes: attributes; (* l [@id1] [@id2] : T *)
+     pld_attributes: attributes; (* l : T [@id1] [@id2] *)
     }
 
 (*  { ...; l: T; ... }            (mutable=Immutable)
@@ -431,7 +431,7 @@ and constructor_declaration =
      pcd_args: constructor_arguments;
      pcd_res: core_type option;
      pcd_loc: Location.t;
-     pcd_attributes: attributes; (* C [@id1] [@id2] of ... *)
+     pcd_attributes: attributes; (* C of ... [@id1] [@id2] *)
     }
 
 and constructor_arguments =
@@ -464,7 +464,7 @@ and extension_constructor =
      pext_name: string loc;
      pext_kind : extension_constructor_kind;
      pext_loc : Location.t;
-     pext_attributes: attributes; (* C [@id1] [@id2] of ... *)
+     pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
     }
 
 and extension_constructor_kind =
@@ -479,7 +479,7 @@ and extension_constructor_kind =
          | C = D
        *)
 
-(** {2 Class language} *)
+(** {1 Class language} *)
 
 (* Type expressions for the class language *)
 
@@ -645,7 +645,7 @@ and class_field_kind =
 
 and class_declaration = class_expr class_infos
 
-(** {2 Module language} *)
+(** {1 Module language} *)
 
 (* Type expressions for the module language *)
 
@@ -765,10 +765,10 @@ and with_constraint =
            the name of the type_declaration. *)
   | Pwith_module of Longident.t loc * Longident.t loc
         (* with module X.Y = Z *)
-  | Pwith_typesubst of type_declaration
-        (* with type t := ... *)
-  | Pwith_modsubst of string loc * Longident.t loc
-        (* with module X := Z *)
+  | Pwith_typesubst of Longident.t loc * type_declaration
+        (* with type X.t := ..., same format as [Pwith_type] *)
+  | Pwith_modsubst of Longident.t loc * Longident.t loc
+        (* with module X.Y := Z *)
 
 (* Value expressions for the module language *)
 
@@ -856,7 +856,7 @@ and module_binding =
     }
 (* X = ME *)
 
-(** {2 Toplevel} *)
+(** {1 Toplevel} *)
 
 (* Toplevel phrases *)
 

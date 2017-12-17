@@ -169,7 +169,10 @@ let rec size_of_lambda env = function
       RHS_block (List.length args)
   | Lprim (Pmakearray (Pfloatarray, _), args, _) ->
       RHS_floatblock (List.length args)
-  | Lprim (Pmakearray (Pgenarray, _), _, _) -> assert false
+  | Lprim (Pmakearray (Pgenarray, _), _, _) ->
+     (* Pgenarray is excluded from recursive bindings by the
+        check in Translcore.check_recursive_lambda *)
+      RHS_nonrec
   | Lprim (Pduprecord ((Record_regular | Record_inlined _), size), _, _) ->
       RHS_block size
   | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
@@ -373,16 +376,16 @@ let comp_primitive p args =
   | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
   | Parraylength _ -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
-  | Parrayrefs Pfloatarray -> Kccall("caml_array_get_float", 2)
+  | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2)
   | Parrayrefs _ -> Kccall("caml_array_get_addr", 2)
   | Parraysets Pgenarray -> Kccall("caml_array_set", 3)
-  | Parraysets Pfloatarray -> Kccall("caml_array_set_float", 3)
+  | Parraysets Pfloatarray -> Kccall("caml_floatarray_set", 3)
   | Parraysets _ -> Kccall("caml_array_set_addr", 3)
   | Parrayrefu Pgenarray -> Kccall("caml_array_unsafe_get", 2)
-  | Parrayrefu Pfloatarray -> Kccall("caml_array_unsafe_get_float", 2)
+  | Parrayrefu Pfloatarray -> Kccall("caml_floatarray_unsafe_get", 2)
   | Parrayrefu _ -> Kgetvectitem
   | Parraysetu Pgenarray -> Kccall("caml_array_unsafe_set", 3)
-  | Parraysetu Pfloatarray -> Kccall("caml_array_unsafe_set_float", 3)
+  | Parraysetu Pfloatarray -> Kccall("caml_floatarray_unsafe_set", 3)
   | Parraysetu _ -> Ksetvectitem
   | Pctconst c ->
      let const_name = match c with
@@ -679,7 +682,7 @@ let rec comp_expr env exp sz cont =
       comp_expr env (Lprim (Pccall prim_obj_dup, [arg], loc)) sz cont
   | Lprim (Pduparray _, _, _) ->
       Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
-(* Integer first for enabling futher optimization (cf. emitcode.ml)  *)
+(* Integer first for enabling further optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
       let p = Pintcomp (commute_comparison c)
       and args = [k ; arg] in
@@ -773,13 +776,13 @@ let rec comp_expr env exp sz cont =
       let act_consts = Array.make sw.sw_numconsts 0
       and act_blocks = Array.make sw.sw_numblocks 0 in
       begin match sw.sw_failaction with (* default is index 0 *)
-      | Some fail -> ignore (store.act_store fail)
+      | Some fail -> ignore (store.act_store () fail)
       | None      -> ()
       end ;
       List.iter
-        (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
+        (fun (n, act) -> act_consts.(n) <- store.act_store () act) sw.sw_consts;
       List.iter
-        (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
+        (fun (n, act) -> act_blocks.(n) <- store.act_store () act) sw.sw_blocks;
 (* Compile and label actions *)
       let acts = store.act_get () in
 (*

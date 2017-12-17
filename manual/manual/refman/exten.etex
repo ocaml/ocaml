@@ -427,41 +427,6 @@ For example, all following methods are equivalent:
           end
 \end{verbatim}
 
-\section{Explicit polymorphic type annotations} \label{s:explicit-polymorphic-type}
-\ikwd{let\@\texttt{let}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-let-binding:
-          ...
-        | value-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-Polymorphic type annotations in @"let"@-definitions behave in a way
-similar to polymorphic methods: they explicitly require the defined
-value to be polymorphic, and allow one to use this polymorphism in
-recursive occurrences (when using @"let" "rec"@). Note however that this
-is a normal  polymorphic type, unifiable with any instance of
-itself.
-
-There are two possible applications of this feature. One is polymorphic
-recursion:
-\begin{verbatim}
-        type 'a t = Leaf of 'a | Node of ('a * 'a) t
-        let rec depth : 'a. 'a t -> 'b = function
-            Leaf _ -> 1
-          | Node x -> 1 + depth x
-\end{verbatim}
-Note that "'b" is not explicitly polymorphic here, and it will
-actually be unified with "int".
-
-The other application is to ensure that some definition is sufficiently
-polymorphic:
-\begin{caml_example}{verbatim}[error]
-let id: 'a. 'a -> 'a = fun x -> x + 1
-\end{caml_example}
-
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
@@ -554,9 +519,6 @@ This syntax can be very useful when defining recursive functions involving
 GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
 The same feature is provided for method definitions.
-The @'method!'@ form combines this extension with the
-``explicit overriding'' extension described in
-section~\ref{s:explicit-overriding}.
 
 \section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}
@@ -844,22 +806,23 @@ it to represent sets internally in a different way.
 \ikwd{type\@\texttt{type}}
 \label{s:signature-substitution}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, generalized in 4.06)
 
 \begin{syntax}
 mod-constraint:
           ...
         | 'type' [type-params] typeconstr-name ':=' typexpr
-        | 'module' module-name ':=' extended-module-path
+        | 'module' module-path ':=' extended-module-path
 \end{syntax}
 
-``Destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
+A ``destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
 normal signature constraints (@'with' ... '=' ...@), but it additionally removes
-the redefined type or module from the signature. There are a number of
-restrictions: one can only remove types and modules at the outermost
-level (not inside submodules), and in the case of @'with type'@ the
-definition must be another type constructor with the same type
-parameters.
+the redefined type or module from the signature.
+
+Prior to OCaml 4.06, there were a number of restrictions: one could only remove
+types and modules at the outermost level (not inside submodules), and in the
+case of @'with type'@ the definition had to be another type constructor with the
+same type parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
@@ -1593,12 +1556,14 @@ Some attributes are understood by the type-checker:
  the same effect as the "-w" command-line option, in the scope between
  the attribute and the end of the current
  signature/structure/object/object type.  The attribute can also be
- used on an expression,
- in which case its scope is limited to that expression.
+ attached to any kind of syntactic item which support attributes
+ (such as an expression, or a type expression)
+ in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggered by the ``ppwarning'' attribute (see below)
- are issued using the global warning configuration.
+ Some warnings are even completely outside the control of ``ocaml.warning''
+ (for instance, warnings 1, 2, 14, 29 and 50).
+
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.
@@ -1970,7 +1935,43 @@ Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
+\begin{verbatim}
+        module Bool : sig
+          type attr += private Bool of int
+          val bool : bool -> attr
+        end = struct
+          type attr += Bool of int
+          let bool p = if p then Bool 1 else Bool 0
+        end
+\end{verbatim}
 
+\subsection{Private extensible variant types}
+
+(Introduced in OCaml 4.06)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' '..'
+;
+\end{syntax}
+
+Extensible variant types can be declared "private". This prevents new
+constructors from being declared directly, but allows extension
+constructors to be referred to in interfaces.
+\begin{verbatim}
+        module Msg : sig
+          type t = private ..
+          module MkConstr (X : sig type t end) : sig
+            type t += C of X.t
+          end
+        end = struct
+          type t = ..
+          module MkConstr (X : sig type t end) = struct
+            type t += C of X.t
+          end
+        end
+\end{verbatim}
 
 \section{Generative functors}\label{s:generative-functors}
 
@@ -2312,3 +2313,44 @@ will be converted directly to
 type t =  T of string
 [@@ocaml.doc " Attaches to t "]
 \end{verbatim}
+
+\section{Extended indexing operators \label{s:index-operators} }
+(Introduced in 4.06)
+
+\begin{syntax}
+
+dot-ext:
+   | ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'='||'>'||'?'||'@'||'^'||'|'||'~') { operator-char }
+;
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext ( '(' expr ')' || '[' expr ']' || '{' expr '}' ) [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('()' || '[]' || '{}') ['<-']
+;
+\end{syntax}
+
+
+This extension provides syntactic sugar for getting and setting elements
+for user-defined indexed types. For instance, we can define python-like
+dictionaries with
+\begin{caml_example*}{verbatim}
+module Dict = struct
+include Hashtbl
+let ( .%{} ) tabl index = find tabl index
+let ( .%{}<- ) tabl index value = add tabl index value
+end
+let dict =
+  let dict = Dict.create 10 in
+  let () =
+    dict.Dict.%{"one"} <- 1;
+    let open Dict in
+    dict.%{"two"} <- 2 in
+  dict
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+dict.Dict.%{"one"};;
+let open Dict in dict.%{"two"};;
+\end{caml_example}

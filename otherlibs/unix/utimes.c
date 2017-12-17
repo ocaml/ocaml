@@ -13,10 +13,13 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 #if defined(HAS_UTIMES)
@@ -55,11 +58,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #elif defined(HAS_UTIME)
 
 #include <sys/types.h>
-#ifndef _WIN32
 #include <utime.h>
-#else
-#include <sys/utime.h>
-#endif
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
@@ -72,7 +71,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   at = Double_val(atime);
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
-    t = (struct utimbuf *) NULL;
+    t = NULL;
   } else {
     times.actime = at;
     times.modtime = mt;

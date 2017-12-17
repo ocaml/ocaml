@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (* Test bench for sorting algorithms. *)
 
 
@@ -128,9 +131,9 @@ type record = {
 
 let rand_string () =
   let len = Random.int 10 in
-  let s = String.create len in
+  let s = Bytes.create len in
   for i = 0 to len-1 do
-    s.[i] <- Char.chr (Random.int 256);
+    Bytes.set s i (Char.chr (Random.int 256));
   done;
   s
 ;;
@@ -4234,7 +4237,6 @@ let amerge_0 cmp a =    (* cutoff is not yet used *)
 (************************************************************************)
 
 let lold = [
-  "Sort.list", Sort.list, true;
   "lmerge_3", lmerge_3, false;
   "lmerge_4a", lmerge_4a, true;
 ];;
@@ -4370,7 +4372,7 @@ let main () =
   done;
   Printf.printf "\n";
 
-  ignore (String.create (1048576 * !mem));
+  ignore (Bytes.create (1048576 * !mem));
   Gc.full_major ();
 (*
   let a2l = Array.to_list in
@@ -4405,7 +4407,6 @@ let main () =
         let (_, f2, _) = List.nth lold i in
         testonly name stable f1 f2 ll ll;
       done;
-      testonly "Sort.array" false Sort.array Sort.array al al;
       for i = 0 to List.length lnew - 1 do
         let (name, f1, stable) = List.nth lnew i in
         let (_, f2, _) = List.nth lnew i in
@@ -4428,9 +4429,6 @@ let main () =
         let (name, f, stable) = List.nth lold i in bb name f ll;
         let (name, f, stable) = List.nth lold i in bc name f ll;
       done;
-      ba "Sort.array" Sort.array al;
-      bb "Sort.array" Sort.array al;
-      bc "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
         let (name, f, stable) = List.nth lnew i in ba name f lc;
         let (name, f, stable) = List.nth lnew i in bb name f lc;
@@ -4447,7 +4445,6 @@ let main () =
       for i = 0 to List.length lold - 1 do
         let (name, f, stable) = List.nth lold i in b name f ll;
       done;
-      b "Sort.array" Sort.array al;
       for i = 0 to List.length lnew - 1 do
         let (name, f, stable) = List.nth lnew i in b name f lc;
       done;

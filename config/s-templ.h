@@ -40,13 +40,6 @@
 
 /* Define HAS_SIGSETMASK if you have sigsetmask(), as in BSD. */
 
-#define HAS_TERMCAP
-
-/* Define HAS_TERMCAP if you have the termcap functions to read the
-   terminal database, e.g. tgetent(), tgetstr(), tgetnum(), tputs().
-   Also add the required libraries (e.g. -lcurses -ltermcap) to $(CCLIBS)
-   in ../Makefile.config */
-
 #define SUPPORT_DYNAMIC_LINKING
 
 /* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code
@@ -92,10 +85,8 @@
 /* Define HAS_MKFIFO if the library provides the mkfifo() function. */
 
 #define HAS_GETCWD
-#define HAS_GETWD
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
-/* Define HAS_GETWD if the library provides the getwd() function. */
 
 #define HAS_GETPRIORITY
 

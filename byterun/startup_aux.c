@@ -64,48 +64,48 @@ uintnat caml_trace_level = 0;
 uintnat caml_cleanup_on_exit = 0;
 
 
-static void scanmult (char *opt, uintnat *var)
+static void scanmult (char_os *opt, uintnat *var)
 {
-  char mult = ' ';
+  char_os mult = _T(' ');
   unsigned int val = 1;
-  sscanf (opt, "=%u%c", &val, &mult);
-  sscanf (opt, "=0x%x%c", &val, &mult);
+  sscanf_os (opt, _T("=%u%c"), &val, &mult);
+  sscanf_os (opt, _T("=0x%x%c"), &val, &mult);
   switch (mult) {
-  case 'k':   *var = (uintnat) val * 1024; break;
-  case 'M':   *var = (uintnat) val * (1024 * 1024); break;
-  case 'G':   *var = (uintnat) val * (1024 * 1024 * 1024); break;
+  case _T('k'):   *var = (uintnat) val * 1024; break;
+  case _T('M'):   *var = (uintnat) val * (1024 * 1024); break;
+  case _T('G'):   *var = (uintnat) val * (1024 * 1024 * 1024); break;
   default:    *var = (uintnat) val; break;
   }
 }
 
 void caml_parse_ocamlrunparam(void)
 {
-  char *opt = caml_secure_getenv ("OCAMLRUNPARAM");
+  char_os *opt = caml_secure_getenv (_T("OCAMLRUNPARAM"));
   uintnat p;
 
-  if (opt == NULL) opt = caml_secure_getenv ("CAMLRUNPARAM");
+  if (opt == NULL) opt = caml_secure_getenv (_T("CAMLRUNPARAM"));
 
   if (opt != NULL){
-    while (*opt != '\0'){
+    while (*opt != _T('\0')){
       switch (*opt++){
-      case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
-      case 'b': scanmult (opt, &p); caml_record_backtrace(Val_bool (p)); break;
-      case 'c': scanmult (opt, &p); caml_cleanup_on_exit = p; break;
-      case 'h': scanmult (opt, &caml_init_heap_wsz); break;
-      case 'H': scanmult (opt, &caml_use_huge_pages); break;
-      case 'i': scanmult (opt, &caml_init_heap_chunk_sz); break;
-      case 'l': scanmult (opt, &caml_init_max_stack_wsz); break;
-      case 'o': scanmult (opt, &caml_init_percent_free); break;
-      case 'O': scanmult (opt, &caml_init_max_percent_free); break;
-      case 'p': scanmult (opt, &p); caml_parser_trace = p; break;
-      case 'R': break; /*  see stdlib/hashtbl.mli */
-      case 's': scanmult (opt, &caml_init_minor_heap_wsz); break;
-      case 't': scanmult (opt, &caml_trace_level); break;
-      case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'w': scanmult (opt, &caml_init_major_window); break;
-      case 'W': scanmult (opt, &caml_runtime_warnings); break;
+      case _T('a'): scanmult (opt, &p); caml_set_allocation_policy (p); break;
+      case _T('b'): scanmult (opt, &p); caml_record_backtrace(Val_bool (p)); break;
+      case _T('c'): scanmult (opt, &p); caml_cleanup_on_exit = p; break;
+      case _T('h'): scanmult (opt, &caml_init_heap_wsz); break;
+      case _T('H'): scanmult (opt, &caml_use_huge_pages); break;
+      case _T('i'): scanmult (opt, &caml_init_heap_chunk_sz); break;
+      case _T('l'): scanmult (opt, &caml_init_max_stack_wsz); break;
+      case _T('o'): scanmult (opt, &caml_init_percent_free); break;
+      case _T('O'): scanmult (opt, &caml_init_max_percent_free); break;
+      case _T('p'): scanmult (opt, &p); caml_parser_trace = p; break;
+      case _T('R'): break; /*  see stdlib/hashtbl.mli */
+      case _T('s'): scanmult (opt, &caml_init_minor_heap_wsz); break;
+      case _T('t'): scanmult (opt, &caml_trace_level); break;
+      case _T('v'): scanmult (opt, &caml_verb_gc); break;
+      case _T('w'): scanmult (opt, &caml_init_major_window); break;
+      case _T('W'): scanmult (opt, &caml_runtime_warnings); break;
       }
-      while (*opt != '\0'){
+      while (*opt != _T('\0')){
         if (*opt++ == ',') break;
       }
     }
@@ -138,11 +138,11 @@ int caml_startup_aux(int pooling)
   return 1;
 }
 
-static void do_at_exit()
+static void call_registered_value(char* name)
 {
-  value *at_exit = caml_named_value("Pervasives.do_at_exit");
-  if (at_exit != NULL)
-    caml_callback_exn(*at_exit, Val_unit);
+  value *f = caml_named_value(name);
+  if (f != NULL)
+    caml_callback_exn(*f, Val_unit);
 }
 
 CAMLexport void caml_shutdown(void)
@@ -156,7 +156,8 @@ CAMLexport void caml_shutdown(void)
   if (startup_count > 0)
     return;
 
-  do_at_exit();
+  call_registered_value("Pervasives.do_at_exit");
+  call_registered_value("Thread.at_shutdown");
   caml_finalise_heap();
 #ifndef NATIVE_CODE
   caml_free_shared_libs();

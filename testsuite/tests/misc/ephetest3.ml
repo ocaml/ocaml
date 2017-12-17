@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 (** This test weak table by application to the memoization of collatz
     (also known as syracuse) algorithm suite computation *)
 
@@ -96,7 +99,7 @@ let print_stats () =
 
 let test_keep_last d d' =
   Printf.printf "## Keep last %i alive, check each %i ##\n%!" (n/d) (n/d');
-  let keep_alive = Array.create (n/d) Int64.zero in
+  let keep_alive = Array.make (n/d) Int64.zero in
   let next x =
     let x' = hashcons (Int64.of_int x) in
     Array.set keep_alive (x mod (n/d)) x';

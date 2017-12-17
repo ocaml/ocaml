@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 module S = struct
   include Stack
 
@@ -107,7 +110,7 @@ let () =
 ;;
 
 let () =
-  let s1 = S.create () and s2 = S.create () in
+  let s1 = S.create () in
   for i = 1 to 4 do S.push i s1 done;
   assert (S.length s1 = 4); assert (S.to_list s1 = [1; 2; 3; 4]);
   let s2 = S.copy s1 in

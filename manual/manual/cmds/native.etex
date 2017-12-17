@@ -135,8 +135,13 @@ development work, not in released packages.
 
 \begin{options}
 \item["OCAMLPARAM" \rm(environment variable)]
-Arguments that will be inserted before or after the arguments from the
-command line.
+A set of arguments that will be inserted before or after the arguments from
+the command line. Arguments are specified in a comma-separated list
+of "name=value" pairs. A "_" is used to specify the position of
+the command line arguments, i.e. "a=x,_,b=y" means that "a=x" should be
+executed before parsing the arguments, and "b=y" after. Finally,
+an alternative separator can be specified as the
+first character of the string, within the set ":|; ,".
 \item["ocaml_compiler_internal_params" \rm(file in the stdlib directory)]
 A mapping of file names to lists of arguments that
 will be added to the command line (and "OCAMLPARAM") arguments.
@@ -185,20 +190,42 @@ piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
 \item Stack overflow, typically caused by excessively deep recursion,
-is handled in one of the following ways, depending on the
-platform used:
-\begin{itemize}
-\item By raising a "Stack_overflow" exception, like the bytecode
-  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX, MS Windows).
-\item By aborting the program on a ``segmentation fault'' signal.
-(All other Unix systems.)
-\end{itemize}
+is not always turned into a "Stack_overflow" exception like the
+bytecode compiler does.  The runtime system makes a best effort to
+trap stack overflows and raise the "Stack_overflow" exception, but
+sometimes it fails and a ``segmentation fault'' or another system fault
+occurs instead.
+
+\item On ARM and PowerPC processors (32 and 64 bits), fused
+  multiply-add (FMA) instructions can be generated for a
+  floating-point multiplication followed by a floating-point addition
+  or subtraction, as in "x *. y +. z".  The FMA instruction avoids
+  rounding the intermediate result "x *. y", which is generally
+  beneficial, but produces floating-point results that differ slightly
+  from those produced by the bytecode interpreter.
 
 \item On IA32 processors only (Intel and AMD x86 processors in 32-bit
 mode), some intermediate results in floating-point computations are
 kept in extended precision rather than being rounded to double
 precision like the bytecode compiler always does.  Floating-point
 results can therefore differ slightly between bytecode and native code.
+
+\item The native-code compiler performs a number of optimizations that
+the bytecode compiler does not perform, especially when the Flambda
+optimizer is active.  In particular, the native-code compiler
+identifies and eliminates ``dead code'', i.e.\ computations that do
+not contribute to the results of the program.  For example,
+\begin{verbatim}
+        let _ = ignore M.f
+\end{verbatim}
+contains a reference to compilation unit "M" when compiled to
+bytecode.  This reference forces "M" to be linked and its
+initialization code to be executed.  The native-code compiler
+eliminates the reference to "M", hence the compilation unit "M" may
+not be linked and executed.  A workaround is to compile "M" with the
+"-linkall" flag so that it will always be linked and executed, even if
+not referenced.  See also the "Sys.opaque_identity" function from the
+"Sys" standard library module.
 
 \end{itemize}
 

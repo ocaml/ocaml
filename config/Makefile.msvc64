@@ -90,31 +90,33 @@ GRAPHLIB=win32graph
 FLAMBDA=false
 WITH_PROFINFO=false
 WITH_SPACETIME=false
-WITH_SPACETIME_CALL_COUNTS=false
+ENABLE_CALL_COUNTS=false
 LIBUNWIND_AVAILABLE=false
 LIBUNWIND_LINK_FLAGS=
-PROFINFO_WIDTH=26
-SAFE_STRING=false
+PROFINFO_WIDTH=0
+FORCE_SAFE_STRING=false
+DEFAULT_SAFE_STRING=true
+WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
 
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
-CC = cl
-CFLAGS = -nologo -O2 -Gy- -MD
-CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE
-OCAMLC_CFLAGS = -nologo -O2 -Gy- -MD
-OCAMLC_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
+CC=cl
+CFLAGS=-nologo -O2 -Gy- -MD
+CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE -DCAML_NAME_SPACE -DUNICODE -D_UNICODE -DWINDOWS_UNICODE=$(WINDOWS_UNICODE)
+OCAMLC_CFLAGS=-nologo -O2 -Gy- -MD
+OCAMLC_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
 
 BYTECCDBGCOMPOPTS=-Zi
 
-LDFLAGS=
+LDFLAGS=/ENTRY:wmainCRTStartup
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
 EXTRALIBS=
-BYTECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
-NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
+BYTECCLIBS=advapi32.lib ws2_32.lib version.lib
+NATIVECCLIBS=advapi32.lib ws2_32.lib version.lib
 
 ### How to invoke the C preprocessor
 CPP=$(CC) -nologo -EP
@@ -136,7 +138,7 @@ endif
 #   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
 # or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(MKEXE_ANSI) $(if $(LDFLAGS),-link "$(LDFLAGS)")
 MKEXEDEBUGFLAG=
 MKMAINDLL=$(FLEXLINK) -maindll
 
@@ -144,8 +146,11 @@ MKMAINDLL=$(FLEXLINK) -maindll
 MERGEMANIFESTEXE=test ! -f $(1).manifest \
 	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
 	            && rm -f $(1).manifest
-MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console \
+MKEXE_BOOT=$(CC) $(CFLAGS) $(OUTPUTEXE)$(1) $(2) /link /subsystem:console $(LDFLAGS) \
            && ($(MERGEMANIFESTEXE))
+
+### Native command to build an ANSI executable
+MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=link -lib -nologo -machine:AMD64 /out:$(1) $(2)
@@ -176,8 +181,8 @@ MODEL=default
 ### Name of operating system family for the native-code compiler.
 SYSTEM=win64
 
-OCAMLOPT_CFLAGS = -nologo -O2 -Gy- -MD
-OCAMLOPT_CPPFLAGS = -D_CRT_SECURE_NO_DEPRECATE
+OCAMLOPT_CFLAGS=-nologo -O2 -Gy- -MD
+OCAMLOPT_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
 
 ### Build partially-linked object file
 PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'
@@ -190,11 +195,7 @@ WITH_OCAMLDOC=ocamldoc
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
-
-### Name of the target architecture for the "num" library
-BNG_ARCH=generic
-BNG_ASM_LEVEL=0
+OTHERLIBRARIES=win32unix systhreads str win32graph dynlink bigarray
 
 ############# for the testsuite makefiles
 #ml let topdir = "" and wintopdir = "";;
@@ -206,3 +207,4 @@ FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
 MAX_TESTSUITE_DIR_RETRIES=1
+FLAT_FLOAT_ARRAY=true

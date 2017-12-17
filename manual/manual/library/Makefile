@@ -17,7 +17,6 @@ COMPILER_LIBS_INTF=Asthelper.tex Astmapper.tex Asttypes.tex \
 	$(COMPILER_LIBS_PLUGIN_HOOKS)
 
 OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
-  Num.tex Arithstatus.tex Bigint.tex \
   Graphics.tex GraphicsX11.tex \
   Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
   Dynlink.tex Bigarray.tex
@@ -35,9 +34,6 @@ MLIS=$(CSLDIR)/stdlib/*.mli \
 	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
 	$(CSLDIR)/otherlibs/graph/graphics.mli \
 	$(CSLDIR)/otherlibs/graph/graphicsX11.mli \
-	$(CSLDIR)/otherlibs/num/num.mli \
-	$(CSLDIR)/otherlibs/num/arith_status.mli \
-	$(CSLDIR)/otherlibs/num/big_int.mli \
 	$(CSLDIR)/otherlibs/str/*.mli \
 	$(CSLDIR)/otherlibs/systhreads/*.mli \
 	$(CSLDIR)/otherlibs/unix/*.mli
@@ -53,7 +49,7 @@ TEXQUOTE=../../tools/texquote2
 
 CSLDIR=$(RELEASEDIR)
 
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
 etex-files: $(BLURB)
 all: libs
@@ -77,20 +73,17 @@ interfaces: $(MLIS)
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dynlink \
 	-I $(CSLDIR)/otherlibs/graph \
-	-I $(CSLDIR)/otherlibs/num \
 	-I $(CSLDIR)/otherlibs/str \
 	-I $(CSLDIR)/otherlibs/systhreads \
 	-I $(CSLDIR)/otherlibs/unix \
 	$(MLIS) \
 	-sepfiles \
-	-latextitle "6,subsection*" \
-	-latextitle "7,subsubsection*" \
+	-latextitle "1,subsection*" \
+	-latextitle "2,subsubsection*" \
 	-latex-type-prefix "TYP" \
 	-latex-module-prefix "" \
 	-latex-module-type-prefix "" \
 	-latex-value-prefix ""
-	mv -f Arith_status.tex Arithstatus.tex
-	mv -f Big_int.tex Bigint.tex
 	mv -f Ast_helper.tex Asthelper.tex
 	mv -f Ast_mapper.tex Astmapper.tex
 

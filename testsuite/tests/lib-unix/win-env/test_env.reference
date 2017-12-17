@@ -1,0 +1,3 @@
+Sys.getenv FOO -> Some "BAR"
+Unix.environment FOO -> Some "BAR"
+Sys.getenv FOO2 -> Some "BAR2"

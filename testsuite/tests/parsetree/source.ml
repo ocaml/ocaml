@@ -6585,10 +6585,10 @@ let () =
   let i = int_inj 3 in
   let s = string_inj "abc" in
 
-  Printf.printf "%b\n%!" (int_proj i = None);
-  Printf.printf "%b\n%!" (int_proj s = None);
-  Printf.printf "%b\n%!" (string_proj i = None);
-  Printf.printf "%b\n%!" (string_proj s = None)
+  Printf.printf "%B\n%!" (int_proj i = None);
+  Printf.printf "%B\n%!" (int_proj s = None);
+  Printf.printf "%B\n%!" (string_proj i = None);
+  Printf.printf "%B\n%!" (string_proj s = None)
 ;;
 
 let sort_uniq (type s) cmp l =
@@ -7313,3 +7313,30 @@ class type ct =
     method f : t
   end
 ;;
+
+(* M.(::) notation *)
+module Exotic_list = struct
+  module Inner = struct
+    type ('a,'b) t = [] | (::) of 'a * 'b *  ('a,'b) t
+  end
+
+  let Inner.(::)(x,y, Inner.[]) = Inner.(::)(1,"one",Inner.[])
+end
+
+(** Extended index operators *)
+module Indexop = struct
+  module Def = struct
+    let ( .%[] ) = Hashtbl.find
+    let ( .%[] <- ) = Hashtbl.add
+    let ( .%() ) = Hashtbl.find
+    let ( .%() <- ) = Hashtbl.add
+    let ( .%{} ) = Hashtbl.find
+    let ( .%{} <- ) = Hashtbl.add
+  end
+  ;;
+  let h = Hashtbl.create 17 in
+  h.Def.%["one"] <- 1;
+  h.Def.%("two") <- 2;
+  h.Def.%{"three"} <- 3
+  let x,y,z = Def.(h.%["one"], h.%("two"), h.%{"three"})
+end

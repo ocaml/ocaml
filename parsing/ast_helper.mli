@@ -24,7 +24,7 @@ type str = string loc
 type loc = Location.t
 type attrs = attribute list
 
-(** {2 Default locations} *)
+(** {1 Default locations} *)
 
 val default_loc: loc ref
     (** Default value for all optional location arguments. *)
@@ -33,7 +33,7 @@ val with_default_loc: loc -> (unit -> 'a) -> 'a
     (** Set the [default_loc] within the scope of the execution
         of the provided function. *)
 
-(** {2 Constants} *)
+(** {1 Constants} *)
 
 module Const : sig
   val char : char -> constant
@@ -46,7 +46,7 @@ module Const : sig
   val float : ?suffix:char -> string -> constant
 end
 
-(** {2 Core language} *)
+(** {1 Core language} *)
 
 (** Type expressions *)
 module Typ :
@@ -216,7 +216,7 @@ module Te:
       str -> lid -> extension_constructor
   end
 
-(** {2 Module language} *)
+(** {1 Module language} *)
 
 (** Module type expressions *)
 module Mty:
@@ -339,7 +339,7 @@ module Vb:
   end
 
 
-(** {2 Class language} *)
+(** {1 Class language} *)
 
 (** Class type expressions *)
 module Cty:

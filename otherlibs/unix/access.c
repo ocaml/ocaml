@@ -17,6 +17,8 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#define CAML_INTERNALS
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UNISTD
@@ -49,14 +51,14 @@ static int access_permission_table[] = {
 CAMLprim value unix_access(value path, value perms)
 {
   CAMLparam2(path, perms);
-  char * p;
+  char_os * p;
   int ret, cv_flags;
 
   caml_unix_check_path(path, "access");
   cv_flags = caml_convert_flag_list(perms, access_permission_table);
-  p = caml_stat_strdup(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = access(p, cv_flags);
+  ret = access_os(p, cv_flags);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1)

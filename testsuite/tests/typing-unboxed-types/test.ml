@@ -154,3 +154,19 @@ type 'a t = T : 'a s -> 'a t [@@unboxed];;
 type _ s = S : 'a t -> _ s  [@@unboxed]
  and _ t = T : 'a -> 'a s t
 ;;
+
+
+(* Another corner case *)
+type 'a s
+type ('a, 'p) t = private 'a s
+type 'a packed = T : ('a, _) t -> 'a packed [@@unboxed]
+;;
+
+(* MPR#7682 *)
+type f = {field: 'a. 'a list} [@@unboxed];;
+let g = Array.make 10 { field=[] };;
+let h = g.(5);;
+
+(* Using [@@immediate] information (GPR#1469) *)
+type 'a t [@@immediate];;
+type u = U : 'a t -> u [@@unboxed];;

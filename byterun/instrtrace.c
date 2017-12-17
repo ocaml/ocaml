@@ -181,7 +181,7 @@ void
 caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
 {
   int i;
-  fprintf (f, "%#lx", v);
+  fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", v);
   if (!v)
     return;
   if (prog && v % sizeof (int) == 0
@@ -219,7 +219,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     case Double_array_tag:
       fprintf (f, "=floatarray[s%d]", s);
       for (i = 0; i < ((s>0xf)?0xf:s); i++)
-        fprintf (f, " %g", Double_field (v, i));
+        fprintf (f, " %g", Double_flat_field (v, i));
       goto displayfields;
     case Abstract_tag:
       fprintf (f, "=abstract[s%d]", s);
@@ -239,7 +239,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#lx", Field (v, i));
+        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Field (v, i));
       };
       if (s > 0)
         putc (')', f);
