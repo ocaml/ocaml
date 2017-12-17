@@ -5179,11 +5179,6 @@ let report_error env ppf = function
                    integers of type %s" ty
   | Unknown_literal (n, m) ->
       fprintf ppf "Unknown modifier '%c' for literal %s%c" m n m
-<<<<<<< HEAD
-  | Unbound_empty_record_type ->
-      fprintf ppf "Unknown empty record type"
-
-=======
   | Illegal_letrec_pat ->
       fprintf ppf
         "Only variables are allowed as left-hand side of `let rec'"
@@ -5200,7 +5195,8 @@ let report_error env ppf = function
         longident lid
         "Hint: You are probably missing the `rec' keyword on line"
         line
->>>>>>> trunk
+  | Unbound_empty_record_type ->
+      fprintf ppf "Unknown empty record type"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
