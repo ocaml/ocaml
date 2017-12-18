@@ -224,24 +224,29 @@ let ctx_matcher p =
   | Tpat_array omegas ->
       let len = List.length omegas in
       (fun q rem -> match q.pat_desc with
-      | Tpat_array args when List.length args=len ->
-          p,args @ rem
+      | Tpat_array args when List.length args = len -> p,args @ rem
       | Tpat_any -> p, omegas @ rem
       | _ -> raise NoMatch)
   | Tpat_tuple omegas ->
+      let len = List.length omegas  in
       (fun q rem -> match q.pat_desc with
-      | Tpat_tuple args -> p,args @ rem
-      | _          -> p, omegas @ rem)
-  | Tpat_record (l,_) -> (* Records are normalized *)
+      | Tpat_tuple args when List.length args = len -> p,args @ rem
+      | Tpat_any -> p, omegas @ rem
+      | _ -> raise NoMatch)
+  | Tpat_record (((_, lbl, _) :: _) as l,_) -> (* Records are normalized *)
+      let len = Array.length lbl.lbl_all in
       (fun q rem -> match q.pat_desc with
-      | Tpat_record (l',_) ->
+      | Tpat_record (((_, lbl', _) :: _) as l',_)
+        when Array.length lbl'.lbl_all = len ->
           let l' = all_record_args l' in
           p, List.fold_right (fun (_, _,p) r -> p::r) l' rem
-      | _ -> p,List.fold_right (fun (_, _,p) r -> p::r) l rem)
+      | Tpat_any -> p,List.fold_right (fun (_, _,p) r -> p::r) l rem
+      | _ -> raise NoMatch)
   | Tpat_lazy omega ->
       (fun q rem -> match q.pat_desc with
       | Tpat_lazy arg -> p, (arg::rem)
-      | _          -> p, (omega::rem))
+      | Tpat_any      -> p, (omega::rem)
+      | _             -> raise NoMatch)
  | _ -> fatal_error "Matching.ctx_matcher"
 
 
