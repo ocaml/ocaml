@@ -2323,6 +2323,7 @@ and simplify_head_pat head_bound_variables p ps varsets k =
   | _ ->
     (p, { row = ps; varsets = head_bound_variables :: varsets; }) :: k
 
+(* Compute stable bindings *)
 
 let split_rows rows =
   let extend_row columns r =
@@ -2332,14 +2333,20 @@ let split_rows rows =
   | { default; constrs = [] } -> [default]
   | { default = _; constrs } -> List.map snd constrs
 
-(* Compute stable bindings *)
+type stable_vars =
+  | All
+  | Vars of IdSet.t
+
+let stable_inter sv1 sv2 = match sv1, sv2 with
+  | All, sv | sv, All -> sv
+  | Vars s1, Vars s2 -> Vars (IdSet.inter s1 s2)
 
 let reduce f = function
 | [] -> invalid_arg "reduce"
 | x::xs -> List.fold_left f x xs
 
 let rec matrix_stable_vars rs = match rs with
-| [] -> assert false (* No empty matrix *)
+| [] -> All
 | { row = []; _ } :: _ ->
     (* All rows have the same number of columns;
        if the first row is empty, they all are. *)
@@ -2353,16 +2360,11 @@ let rec matrix_stable_vars rs = match rs with
     let stables_in_varsets = reduce (List.map2 IdSet.inter) rows_varsets in
 
     (* The stable variables are those stable at any position *)
-    List.fold_left IdSet.union IdSet.empty stables_in_varsets
+    Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
 | rs ->
     let rs = simplify_first_col rs in
-    if not (all_coherent (first_column rs)) then (
-      (* If the first column is incoherent, then all the variables of this
-         matrix are stable. *)
-      List.fold_left (fun acc (_, { varsets; _ }) ->
-        List.fold_left IdSet.union acc varsets
-      ) IdSet.empty rs
-    ) else (
+    if not (all_coherent (first_column rs)) then All
+    else begin
       (* If the column is ill-typed but deemed coherent, we might spuriously
          warn about some variables being unstable.
 
@@ -2371,10 +2373,9 @@ let rec matrix_stable_vars rs = match rs with
       *)
       let submatrices = split_rows rs in
       let submat_stable = List.map matrix_stable_vars submatrices in
-      (* a stable variable must be stable in each submatrix;
-        if the matrix has at least one row, there is at least one submatrix *)
-      reduce IdSet.inter submat_stable
-    )
+      (* a stable variable must be stable in each submatrix *)
+      List.fold_left stable_inter All submat_stable
+    end
 
 let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
 
@@ -2442,12 +2443,14 @@ let check_ambiguous_bindings =
             let all =
               IdSet.inter (pattern_vars p) (all_rhs_idents g) in
             if not (IdSet.is_empty all) then begin
-              let stable = pattern_stable_vars p in
-              let ambiguous = IdSet.diff all stable in
-              if not (IdSet.is_empty ambiguous) then begin
-                let pps = IdSet.elements ambiguous |> List.map Ident.name in
-                let warn = Ambiguous_pattern pps in
-                Location.prerr_warning p.pat_loc warn
-              end
+              match pattern_stable_vars p with
+              | All -> ()
+              | Vars stable ->
+                  let ambiguous = IdSet.diff all stable in
+                  if not (IdSet.is_empty ambiguous) then begin
+                    let pps = IdSet.elements ambiguous |> List.map Ident.name in
+                    let warn = Ambiguous_pattern pps in
+                    Location.prerr_warning p.pat_loc warn
+                  end
             end)
         cases
