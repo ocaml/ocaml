@@ -420,7 +420,7 @@ val set_geometry : max_indent:int -> margin:int -> unit
    [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
    and maximum indentation limit for [ppf].
 
-   When [0 < max_indent < margin],
+   When [1 < max_indent < margin],
    [pp_set_geometry ppf ~max_indent ~margin]
    is equivalent to
    [pp_set_margin ppf margin; pp_set_max_indent ppf max_indent];

@@ -789,8 +789,8 @@ let pp_set_margin state n =
 let pp_get_margin state () = state.pp_margin
 
 let pp_set_geometry state ~max_indent ~margin =
-  if max_indent < 1 then
-    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 1")
+  if max_indent < 2 then
+    raise (Invalid_argument "Format.pp_set_geometry: max_indent < 2")
   else if margin <= max_indent then
       raise (Invalid_argument "Format.pp_set_geometry: margin <= max_indent")
   else
