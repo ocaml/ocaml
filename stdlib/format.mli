@@ -424,8 +424,10 @@ type geometry = { max_indent:int; margin: int}
 val check_geometry: geometry -> bool
 (** Check if the formatter geometry is valid: [1 < max_indent < margin] *)
 
-val pp_set_geometry : formatter -> max_indent:int -> margin:int  -> unit
+val pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
+val pp_safe_set_geometry : formatter -> max_indent:int -> margin:int -> unit
+val safe_set_geometry : max_indent:int -> margin:int -> unit
 (**
    [pp_set_geometry ppf ~max_indent ~margin] sets both the margin
    and maximum indentation limit for [ppf].
@@ -438,7 +440,7 @@ val set_geometry : max_indent:int -> margin:int -> unit
    [pp_set_max_indent ppf max_indent; pp_set_margin ppf margin];
 
    Outside of this domain, [pp_set_geometry] raises an invalid argument
-   exception.
+   exception whereas [pp_safe_set_geometry] does nothing.
 
    @since 4.07.0
 *)
