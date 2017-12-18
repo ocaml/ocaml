@@ -140,6 +140,8 @@ val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 let no = { };;
 [%%expect{|
 Line _, characters 9-12:
+  let no = { };;
+           ^^^
 Error: Unknown empty record type
 |}];;
 
@@ -154,6 +156,7 @@ let h = n
 type c = C of { } | D of m * e and e = {};;
 let f = function C {} -> 1 | D ({}, {}) -> 2
 let m, n = (f (C {})), (f (D ({}, {})));;
+let g = function { } -> 2
 [%%expect{|
 type m = { }
 val x : m = {}
@@ -168,6 +171,5 @@ and e = { }
 val f : c -> int = <fun>
 val m : int = 1
 val n : int = 2
+val g : e -> int = <fun>
 |}];;
-
-

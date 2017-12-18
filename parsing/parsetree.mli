@@ -203,7 +203,7 @@ and pattern_desc =
         (* { l1=P1; ...; ln=Pn }     (flag = Closed)
            { l1=P1; ...; ln=Pn; _}   (flag = Open)
 
-           Invariant: n > 0
+           Invariant: n >= 0
          *)
   | Ppat_array of pattern list
         (* [| P1; ...; Pn |] *)

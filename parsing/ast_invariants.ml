@@ -18,7 +18,6 @@ open Ast_iterator
 
 let err = Syntaxerr.ill_formed_ast
 
-let empty_record loc = err loc "Records cannot be empty."
 let empty_variant loc = err loc "Variant types cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
 let no_args loc = err loc "Function application with no argument."
@@ -40,7 +39,6 @@ let iterator =
     super.type_declaration self td;
     let loc = td.ptype_loc in
     match td.ptype_kind with
-    | Ptype_record [] -> empty_record loc
     | Ptype_variant [] -> empty_variant loc
     | _ -> ()
   in
@@ -65,7 +63,6 @@ let iterator =
     let loc = pat.ppat_loc in
     match pat.ppat_desc with
     | Ppat_tuple ([] | [_]) -> invalid_tuple loc
-    | Ppat_record ([], _) -> empty_record loc
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
@@ -82,7 +79,6 @@ let iterator =
     let loc = exp.pexp_loc in
     match exp.pexp_desc with
     | Pexp_tuple ([] | [_]) -> invalid_tuple loc
-    | Pexp_record ([], _) -> empty_record loc
     | Pexp_apply (_, []) -> no_args loc
     | Pexp_let (_, [], _) -> empty_let loc
     | Pexp_ident id

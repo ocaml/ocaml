@@ -1249,7 +1249,20 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           Some (p0, p, true), expected_ty
-        with Not_found -> None, newvar ()
+        with Not_found -> begin
+            if lid_sp_list = [] then
+              match Env.find_empty_record !env with
+              | None -> raise (Error(loc, !env, Unbound_empty_record_type))
+              | Some (decl, p) -> begin
+                  begin_def ();
+                  let ty =
+                    newconstr p (instance_list !env decl.type_params) in
+                  end_def ();
+                  generalize_structure ty;
+                  None, ty
+                end
+            else None, newvar ()
+          end
       in
       let type_label_pat (label_lid, label, sarg) k =
         begin_def ();
@@ -1440,8 +1453,7 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     set_state state env;
     (* types are invalidated but we don't need them here *)
     Some typed_p
-  with
-  | Error _ ->
+  with Error _ ->
     set_state state env;
     None
 
@@ -3055,7 +3067,6 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let num_fields =
         match lbl_exp_list with [] -> 0
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
-      (* should we support let x = {} let y = {x with} *)
       let opt_exp =
         if opt_sexp <> None && List.length lid_sexp_list = num_fields then
           (Location.prerr_warning loc Warnings.Useless_record_with; None)
