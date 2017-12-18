@@ -760,7 +760,8 @@ OCaml 4.07.0 (10 July 2018)
 
 - MPR#7528: add a Format.pp_set_geometry function to avoid memory effects
   in set_margin and set_max_indent.
-  (Florian Angeletti)
+  (Florian Angeletti, review by Richard Bonichon, Gabriel Radanne,
+   Gabiel Scherer and Pierre Weis)
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
   with very large values of the exponent.
