@@ -364,6 +364,20 @@ let extract_label_names env ty =
   with Not_found ->
     assert false
 
+let find_empty_record_ty env loc lid_sp_list =
+  if lid_sp_list = [] then
+    match Env.find_empty_record env with
+    | None -> raise (Error(loc, env, Unbound_empty_record_type))
+    | Some (decl, p) -> begin
+        begin_def ();
+        let ty =
+          newconstr p (instance_list env decl.type_params) in
+        end_def ();
+        generalize_structure ty;
+        None, ty
+      end
+  else None, newvar ()
+
 (* Typing of patterns *)
 
 (* unification inside type_pat*)
@@ -1249,20 +1263,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           Some (p0, p, true), expected_ty
-        with Not_found -> begin
-            if lid_sp_list = [] then
-              match Env.find_empty_record !env with
-              | None -> raise (Error(loc, !env, Unbound_empty_record_type))
-              | Some (decl, p) -> begin
-                  begin_def ();
-                  let ty =
-                    newconstr p (instance_list !env decl.type_params) in
-                  end_def ();
-                  generalize_structure ty;
-                  None, ty
-                end
-            else None, newvar ()
-          end
+        with Not_found -> find_empty_record_ty !env loc lid_sp_list
       in
       let type_label_pat (label_lid, label, sarg) k =
         begin_def ();
@@ -2952,7 +2953,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
             end;
             Some exp
       in
-      let ty_record, opath =
+      let opath, ty_record =
         let get_path ty =
           try
             let (p0, p,_) = extract_concrete_record env ty in
@@ -2963,24 +2964,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
         match get_path ty_expected with
           None ->
             begin match opt_exp with
-            | None ->
-                if lid_sexp_list = [] then begin
-                  match Env.find_empty_record env with
-                  | None -> raise (Error(loc, env, Unbound_empty_record_type))
-                  | Some (decl, p) -> begin
-                      begin_def ();
-                      let ty =
-                        newconstr p (instance_list env decl.type_params) in
-                      end_def ();
-                      generalize_structure ty;
-                      ty, None
-                    end
-                end
-                else
-                  newvar(), None
+            | None -> find_empty_record_ty env loc lid_sexp_list
             | Some exp ->
                 match get_path exp.exp_type with
-                  None -> newvar (), None
+                  None -> None, newvar ()
                 | Some (_, p', _) as op ->
                     let decl = Env.find_type p' env in
                     begin_def ();
@@ -2988,9 +2975,9 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
                       newconstr p' (instance_list env decl.type_params) in
                     end_def ();
                     generalize_structure ty;
-                    ty, op
+                    op, ty
             end
-        | op -> ty_expected, op
+        | op -> op, ty_expected
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
