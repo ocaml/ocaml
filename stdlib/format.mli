@@ -412,7 +412,17 @@ val pp_get_max_indent : formatter -> unit -> int
 val get_max_indent : unit -> int
 (** Return the maximum indentation limit (in characters). *)
 
-(** {1 Geometry } *)
+(** {1 Geometry }
+
+Geometric functions can be used to manipulate simultaneously the
+coupled variables, margin and maxixum indentation limit.
+
+*)
+
+type geometry = { max_indent:int; margin: int}
+
+val check_geometry: geometry -> bool
+(** Check if the formatter geometry is valid: [1 < max_indent < margin] *)
 
 val pp_set_geometry : formatter -> max_indent:int -> margin:int  -> unit
 val set_geometry : max_indent:int -> margin:int -> unit
@@ -433,9 +443,9 @@ val set_geometry : max_indent:int -> margin:int -> unit
    @since 4.07.0
 *)
 
-val pp_get_geometry: formatter -> unit -> int * int
-val get_geometry: unit -> int * int
-(** Return both the maximum indentation limit and the margin
+val pp_get_geometry: formatter -> unit -> geometry
+val get_geometry: unit -> geometry
+(** Return the current geometry of the formatter
 
     @since 4.07.0
 *)
