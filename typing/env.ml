@@ -1581,10 +1581,9 @@ let scrape_alias env mty = scrape_alias env mty
 
 let rec prefix_idents root pos sub = function
     [] -> ([], sub)
-  | Sig_value(id, decl) :: rem ->
+  | Sig_value(id, _) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
-      let nextpos = match decl.val_kind with Val_prim _ -> pos | _ -> pos+1 in
-      let (pl, final_sub) = prefix_idents root nextpos sub rem in
+      let (pl, final_sub) = prefix_idents root (pos+1) sub rem in
       (p::pl, final_sub)
   | Sig_type(id, _, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
@@ -1672,9 +1671,7 @@ and components_of_module_maker (env, sub, path, mty) =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               NameMap.add (Ident.name id) (decl', !pos) c.comp_values;
-            begin match decl.val_kind with
-              Val_prim _ -> () | _ -> incr pos
-            end
+            incr pos
         | Sig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
             Datarepr.set_row_name decl' (Subst.type_path sub (Path.Pident id));

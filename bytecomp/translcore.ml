@@ -203,7 +203,7 @@ let rec transl_exp e =
 and transl_exp0 e =
   match e.exp_desc with
   | Texp_ident(path, _, {val_kind = Val_prim p}) ->
-      Translprim.transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
+      Translprim.transl_primitive_use e.exp_loc p e.exp_env e.exp_type path
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, _, {val_kind = Val_reg | Val_self _}) ->

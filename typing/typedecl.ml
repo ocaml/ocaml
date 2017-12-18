@@ -1759,14 +1759,10 @@ let check_unboxable env loc ty =
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
-  let v =
-  match valdecl.pval_prim with
-    [] when Env.is_in_signature env ->
-      { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes }
-  | [] ->
-      raise (Error(valdecl.pval_loc, Val_in_structure))
-  | _ ->
+  let prim =
+    match valdecl.pval_prim with
+    | [] -> None
+    | _ ->
       let global_repr =
         match
           get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
@@ -1790,8 +1786,18 @@ let transl_value_decl env loc valdecl =
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       check_unboxable env loc ty;
-      { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
-        val_attributes = valdecl.pval_attributes }
+      Some prim
+  in
+  let v =
+    match prim with
+    | None when Env.is_in_signature env ->
+        { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+          val_attributes = valdecl.pval_attributes }
+    | None ->
+        raise (Error(valdecl.pval_loc, Val_in_structure))
+    | Some prim ->
+        { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
+          val_attributes = valdecl.pval_attributes }
   in
   let (id, newenv) =
     Env.enter_value valdecl.pval_name.txt v env
@@ -1802,7 +1808,7 @@ let transl_value_decl env loc valdecl =
      val_id = id;
      val_name = valdecl.pval_name;
      val_desc = cty; val_val = v;
-     val_prim = valdecl.pval_prim;
+     val_prim = prim;
      val_loc = valdecl.pval_loc;
      val_attributes = valdecl.pval_attributes;
     }

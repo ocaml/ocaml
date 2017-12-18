@@ -21,7 +21,7 @@ include $(ROOTDIR)/Makefile.common
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
-STDLIBFLAGS = -nostdlib -I $(ROOTDIR)/stdlib
+STDLIBFLAGS = -g -nostdlib -I $(ROOTDIR)/stdlib
 OCAMLC    = $(OCAMLRUN) $(ROOTDIR)/ocamlc $(STDLIBFLAGS)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 OCAMLOPT  = $(OCAMLRUN) $(ROOTDIR)/ocamlopt $(STDLIBFLAGS)

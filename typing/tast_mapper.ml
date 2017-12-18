@@ -445,8 +445,6 @@ let module_coercion sub = function
         List.map (fun (id,i,c) -> id, i, sub.module_coercion sub c) l2
       in
       Tcoerce_structure (l1', l2')
-  | Tcoerce_primitive pc ->
-      Tcoerce_primitive {pc with pc_env = sub.env sub pc.pc_env}
 
 let module_expr sub x =
   let mod_env = sub.env sub x.mod_env in

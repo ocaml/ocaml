@@ -29,7 +29,11 @@ val get_used_primitives: unit -> Path.t list
 
 val transl_primitive :
   Location.t -> Primitive.description -> Env.t ->
-  Types.type_expr -> Path.t option -> Lambda.lambda
+  Types.type_expr -> Lambda.lambda
+
+val transl_primitive_use :
+  Location.t -> Primitive.description -> Env.t ->
+  Types.type_expr -> Path.t -> Lambda.lambda
 
 val transl_primitive_application :
   Location.t -> Primitive.description -> Env.t ->

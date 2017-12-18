@@ -163,6 +163,27 @@ let attributes i ppf l =
     )
     l
 
+let native_repr i ppf = let open Primitive in function
+  | Same_as_ocaml_repr -> line i ppf "Same_as_ocaml_repr"
+  | Unboxed_float -> line i ppf "Unboxed_float"
+  | Unboxed_integer Pnativeint -> line i ppf "Unboxed_integer Pnativeint"
+  | Unboxed_integer Pint32 -> line i ppf "Unboxed_integer Pint32"
+  | Unboxed_integer Pint64 -> line i ppf "Unboxed_integer Pint64"
+  | Untagged_int -> line i ppf "Untagged_int"
+
+let primitive i ppf x =
+  let open Primitive in 
+  line i ppf "primitive\n";
+  let i = i+1 in
+  line i ppf "prim_name=%s" x.prim_name;
+  line i ppf "prim_arity=%i" x.prim_arity;
+  line i ppf "prim_alloc=%b" x.prim_alloc;
+  line i ppf "prim_native_name=%s" x.prim_native_name;
+  line i ppf "prim_native_repr_args=\n";
+  list (i+1) native_repr ppf x.prim_native_repr_args;
+  line i ppf "prim_native_repr_res=\n";
+  native_repr (i+1) ppf x.prim_native_repr_res
+
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ctyp_loc;
   attributes i ppf x.ctyp_attributes;
@@ -418,7 +439,7 @@ and value_description i ppf x =
        x.val_loc;
   attributes i ppf x.val_attributes;
   core_type (i+1) ppf x.val_desc;
-  list (i+1) string ppf x.val_prim;
+  option (i+1) primitive ppf x.val_prim;
 
 and type_parameter i ppf (x, _variance) = core_type i ppf x
 

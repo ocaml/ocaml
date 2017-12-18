@@ -1,0 +1,12 @@
+main thread:
+Raised by primitive operation at file "callstack.ml", line 12, characters 38-66
+Called from file "callstack.ml", line 13, characters 27-32
+Called from file "callstack.ml", line 14, characters 27-32
+Called from file "callstack.ml", line 15, characters 27-32
+Called from file "callstack.ml", line 17, characters 9-14
+new thread:
+Raised by primitive operation at file "callstack.ml", line 12, characters 38-66
+Called from file "callstack.ml", line 13, characters 27-32
+Called from file "callstack.ml", line 14, characters 27-32
+Called from file "callstack.ml", line 15, characters 27-32
+Called from file "thread.ml", line 39, characters 8-14

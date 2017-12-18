@@ -47,13 +47,8 @@ let rec strengthen ~aliasable env mty p =
 and strengthen_sig ~aliasable env sg p pos =
   match sg with
     [] -> []
-  | (Sig_value(_, desc) as sigelt) :: rem ->
-      let nextpos =
-        match desc.val_kind with
-        | Val_prim _ -> pos
-        | _ -> pos + 1
-      in
-      sigelt :: strengthen_sig ~aliasable env rem p nextpos
+  | (Sig_value _ as sigelt) :: rem ->
+      sigelt :: strengthen_sig ~aliasable env rem p (pos+1)
   | Sig_type(id, {type_kind=Type_abstract}, _) ::
     (Sig_type(id', {type_private=Private}, _) :: _ as rem)
     when Ident.name id = Ident.name id' ^ "#row" ->
@@ -278,9 +273,6 @@ let rec type_paths env p mty =
 and type_paths_sig env p pos sg =
   match sg with
     [] -> []
-  | Sig_value(_id, decl) :: rem ->
-      let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
-      type_paths_sig env p pos' rem
   | Sig_type(id, _decl, _) :: rem ->
       Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
   | Sig_module(id, md, _) :: rem ->
@@ -289,7 +281,7 @@ and type_paths_sig env p pos sg =
         p (pos+1) rem
   | Sig_modtype(id, decl) :: rem ->
       type_paths_sig (Env.add_modtype id decl env) p pos rem
-  | (Sig_typext _ | Sig_class _) :: rem ->
+  | (Sig_value _ | Sig_typext _ | Sig_class _) :: rem ->
       type_paths_sig env p (pos+1) rem
   | (Sig_class_type _) :: rem ->
       type_paths_sig env p pos rem
@@ -305,18 +297,13 @@ let rec no_code_needed env mty =
 and no_code_needed_sig env sg =
   match sg with
     [] -> true
-  | Sig_value(_id, decl) :: rem ->
-      begin match decl.val_kind with
-      | Val_prim _ -> no_code_needed_sig env rem
-      | _ -> false
-      end
   | Sig_module(id, md, _) :: rem ->
       no_code_needed env md.md_type &&
       no_code_needed_sig
         (Env.add_module_declaration ~check:false id md env) rem
   | (Sig_type _ | Sig_modtype _ | Sig_class_type _) :: rem ->
       no_code_needed_sig env rem
-  | (Sig_typext _ | Sig_class _) :: _ ->
+  | (Sig_value _ | Sig_typext _ | Sig_class _) :: _ ->
       false
 
 

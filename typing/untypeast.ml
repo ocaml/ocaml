@@ -51,6 +51,7 @@ type mapper = {
   module_type_declaration:
     mapper -> T.module_type_declaration -> module_type_declaration;
   package_type: mapper -> T.package_type -> package_type;
+  primitive : mapper -> Primitive.description option -> string list;
   open_description: mapper -> T.open_description -> open_description;
   pat: mapper -> T.pattern -> pattern;
   row_field: mapper -> T.row_field -> row_field;
@@ -182,8 +183,8 @@ let structure_item sub item =
 let value_description sub v =
   let loc = sub.location sub v.val_loc in
   let attrs = sub.attributes sub v.val_attributes in
-  Val.mk ~loc ~attrs
-    ~prim:v.val_prim
+  let prim = sub.primitive sub v.val_prim in
+  Val.mk ~loc ~attrs ~prim
     (map_loc sub v.val_name)
     (sub.typ sub v.val_desc)
 
@@ -769,6 +770,16 @@ let class_field sub cf =
 
 let location _sub l = l
 
+let primitive _sub po =
+  let open Primitive in
+  match po with
+  | None -> []
+  | Some p ->
+      if p.prim_native_name <> "" then
+        [p.prim_name; p.prim_native_name]
+      else
+        [p.prim_name]
+
 let default_mapper =
   {
     attribute = attribute ;
@@ -802,6 +813,7 @@ let default_mapper =
     module_type_declaration = module_type_declaration;
     module_binding = module_binding;
     package_type = package_type ;
+    primitive = primitive ;
     open_description = open_description;
     include_description = include_description;
     include_declaration = include_declaration;

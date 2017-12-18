@@ -3,9 +3,10 @@
    include systhreads
    compare_programs = "false"
    * no-flambda
-   reference = "${test_source_directory}/callstack.reference"
-   ** native
    ** bytecode
+     reference = "${test_source_directory}/callstack.byte.reference"
+   ** native
+     reference = "${test_source_directory}/callstack.opt.reference"
 *)
 let[@inline never] f0 () =
   Printexc.print_raw_backtrace stdout (Printexc.get_callstack 100); ()

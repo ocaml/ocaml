@@ -341,20 +341,20 @@ class type c = object method x : X.t end
 
 (* External declarations *)
 
-external foo: unit -> X.t = "foo"
+external foo: unit -> X.t = "%identity"
 ;;
 [%%expect{|
 Line 1, characters 22-25:
-  external foo: unit -> X.t = "foo"
+  external foo: unit -> X.t = "%identity"
                         ^^^
 Warning 3: deprecated: X.t
-external foo : unit -> X.t = "foo"
+external foo : unit -> X.t = "%identity"
 |}]
 
-external foo: unit -> X.t = "foo"[@@ocaml.warning "-3"]
+external foo: unit -> X.t = "%identity"[@@ocaml.warning "-3"]
 ;;
 [%%expect{|
-external foo : unit -> X.t = "foo"
+external foo : unit -> X.t = "%identity"
 |}]
 
 

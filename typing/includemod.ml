@@ -182,7 +182,6 @@ let item_ident_name = function
   | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
 
 let is_runtime_component = function
-  | Sig_value(_,{val_kind = Val_prim _})
   | Sig_type(_,_,_)
   | Sig_modtype(_,_)
   | Sig_class_type(_,_,_) -> false
@@ -212,9 +211,6 @@ let rec print_coercion ppf c =
       pr "@[<2>functor@ (%a)@ (%a)@]"
         print_coercion inp
         print_coercion out
-  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
-      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
-        Printtyp.raw_type_expr pc_type
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
@@ -440,10 +436,7 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
       let cc =
         value_descriptions ~loc env ~mark cxt subst id1 valdecl1 valdecl2
       in
-      begin match valdecl2.val_kind with
-        Val_prim _ -> comps_rec rem
-      | _ -> (pos, cc) :: comps_rec rem
-      end
+      (pos, cc) :: comps_rec rem
   | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
       type_declarations ~loc ~old_env env ~mark cxt subst id1 tydecl1 tydecl2;
       comps_rec rem

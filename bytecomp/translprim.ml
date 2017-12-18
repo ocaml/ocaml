@@ -89,7 +89,7 @@ type prim =
 let used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
   match path with
-    Some (Path.Pdot _ as path) ->
+  | Path.Pdot _ as path ->
       let path = Env.normalize_path (Some loc) env path in
       let unit = Path.head path in
       if Ident.global unit && not (Hashtbl.mem used_primitives path)
@@ -337,13 +337,12 @@ let primitives_table = create_hashtable 57 [
   "%compare", Comparison(Compare, Compare_generic);
 ]
 
-let lookup_primitive loc p env path =
+let lookup_primitive loc p =
   match Hashtbl.find primitives_table p.prim_name with
   | prim -> prim
   | exception Not_found ->
       if String.length p.prim_name > 0 && p.prim_name.[0] = '%' then
         raise(Error(loc, Unknown_builtin_primitive p.prim_name));
-      add_used_primitive loc env path;
       Primitive (Pccall p)
 
 let simplify_constant_constructor = function
@@ -376,6 +375,12 @@ let glb_array_type t1 t2 =
   | Paddrarray, x | x, Paddrarray -> x
   | Pintarray, Pintarray -> Pintarray
   | Pfloatarray, Pfloatarray -> Pfloatarray
+
+(* Always "eta expand" location primitives *)
+let always_expand prim =
+  match prim with
+  | Loc _ -> true
+  | _ -> false
 
 (* Specialize a primitive from available type information. *)
 
@@ -677,14 +682,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
 
 (* Eta-expand a primitive *)
 
-let transl_primitive loc p env ty path =
-  let prim = lookup_primitive loc p env path in
-  let has_constant_constructor = false in
-  let prim =
-    match specialize_primitive env ty ~has_constant_constructor prim with
-    | None -> prim
-    | Some prim -> prim
-  in
+let eta_expand_prim loc p prim =
   let rec make_params n =
     if n <= 0 then [] else Ident.create "prim" :: make_params (n-1)
   in
@@ -698,6 +696,31 @@ let transl_primitive loc p env ty path =
                  attr = default_stub_attribute;
                  loc = loc;
                  body = body; }
+
+let transl_primitive loc p env ty =
+  let prim = lookup_primitive loc p in
+  let has_constant_constructor = false in
+  let prim =
+    match specialize_primitive env ty ~has_constant_constructor prim with
+    | None -> prim
+    | Some prim -> prim
+  in
+  eta_expand_prim loc p prim
+
+let transl_primitive_use loc p env ty path =
+  let prim = lookup_primitive loc p in
+  let has_constant_constructor = false in
+  let expand, prim =
+    match specialize_primitive env ty ~has_constant_constructor prim with
+    | None -> always_expand prim, prim
+    | Some prim -> true, prim
+  in
+  if expand then begin
+    add_used_primitive loc env path;
+    eta_expand_prim loc p prim
+  end else begin
+    transl_value_path ~loc env path
+  end
 
 (* Determine if a primitive is a Pccall or will be turned later into
    a C function call that may raise an exception *)
@@ -716,7 +739,8 @@ let primitive_needs_event_after = function
   | Raise _ | Raise_with_backtrace | Loc _ -> false
 
 let transl_primitive_application loc p env ty path exp args arg_exps =
-  let prim = lookup_primitive loc p env (Some path) in
+  add_used_primitive loc env path;
+  let prim = lookup_primitive loc p in
   let has_constant_constructor =
     match arg_exps with
     | [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]

@@ -382,7 +382,6 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list *
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
-  | Tcoerce_primitive of primitive_coercion
   | Tcoerce_alias of Path.t * module_coercion
 
 and module_type =
@@ -400,14 +399,6 @@ and module_type_desc =
   | Tmty_with of module_type * (Path.t * Longident.t loc * with_constraint) list
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
-
-and primitive_coercion =
-  {
-    pc_desc: Primitive.description;
-    pc_type: type_expr;
-    pc_env: Env.t;
-    pc_loc : Location.t;
-  }
 
 and signature = {
   sig_items : signature_item list;
@@ -522,7 +513,7 @@ and value_description =
     val_name: string loc;
     val_desc: core_type;
     val_val: Types.value_description;
-    val_prim: string list;
+    val_prim: Primitive.description option;
     val_loc: Location.t;
     val_attributes: attributes;
     }
