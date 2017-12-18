@@ -509,7 +509,6 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
 
   /* Reset old stack */
   Stack_sp(old_stack) = 0;
-  Stack_dirty_domain(old_stack) = FIBER_CLEAN;
 
   CAMLreturn0;
 }
