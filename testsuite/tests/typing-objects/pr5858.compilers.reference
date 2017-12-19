@@ -1,7 +1,6 @@
-
-# class type c = object  end
-# Characters 29-30:
+class type c = object  end
+Characters 29-30:
   module type S = sig class c: c end;;
                                ^
 Error: The class type c is not yet completely defined
-# 
+

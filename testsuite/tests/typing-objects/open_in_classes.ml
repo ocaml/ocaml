@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 module M = struct
   type t = int
   let x = 42
