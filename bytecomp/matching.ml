@@ -200,7 +200,8 @@ let ctx_matcher p =
       | Tpat_construct (_, cstr',args)
 (* NB:  may_constr_equal considers (potential) constructor rebinding *)
         when Types.may_equal_constr cstr cstr' ->
-          p,args@rem
+          p,(if Types.equal_tag cstr.cstr_tag cstr'.cstr_tag then args
+            else omegas)@rem
       | Tpat_any -> p,omegas @ rem
       | _ -> raise NoMatch)
   | Tpat_constant cst ->
@@ -1279,9 +1280,14 @@ let get_args_constr p rem = match p with
 
 (* NB: matcher_constr applies to default matrices.
 
-       In that context, matching by constructors of extensible
-       types degrades to arity checking, due to potential rebinding.
-       This comparison is performed by Types.may_equal_constr.
+   In that context, matching by constructors of extensible
+   types degrades to arity checking, due to potential rebinding.
+   This comparison is performed by Types.may_equal_constr.
+
+   As a consequence, type inconstency between subject pattern (q below)
+   and matched constructor (cstr below) may occur. As a counter-measure
+   q arguments are replaced by omega. Notice that the applied test for
+   this type inconsistency situation errs on the safe side.
 *)
 
 let matcher_constr cstr = match cstr.cstr_arity with
@@ -1314,7 +1320,9 @@ let matcher_constr cstr = match cstr.cstr_arity with
         | _, _ -> assert false
         end
     | Tpat_construct (_, cstr', [arg])
-      when Types.may_equal_constr cstr cstr' -> arg::rem
+      when Types.may_equal_constr cstr cstr' ->
+        (if Types.equal_tag cstr.cstr_tag cstr'.cstr_tag then arg
+        else omega)::rem
     | Tpat_any -> omega::rem
     | _ -> raise NoMatch in
     matcher_rec
@@ -1322,7 +1330,9 @@ let matcher_constr cstr = match cstr.cstr_arity with
     fun q rem -> match q.pat_desc with
     | Tpat_or (_,_,_) -> raise OrPat
     | Tpat_construct (_,cstr',args)
-      when  Types.may_equal_constr cstr cstr' -> args @ rem
+      when  Types.may_equal_constr cstr cstr' ->
+        (if Types.equal_tag cstr.cstr_tag cstr'.cstr_tag then args
+        else Parmatch.omegas cstr.cstr_arity) @ rem
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
