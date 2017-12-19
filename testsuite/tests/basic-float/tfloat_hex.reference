@@ -4,3 +4,6 @@ Failure("float_of_string")
 Failure("float_of_string")
 Failure("float_of_string")
 Failure("float_of_string")
+0.
+inf
+inf

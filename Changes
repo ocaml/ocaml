@@ -25,6 +25,10 @@ Working version
 
 ### Standard library:
 
+- MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
+  with very large values of the exponent.
+  (Olivier Andrieu)
+
 ### Other libraries:
 
 * GPR#1406: Unix.isatty now returns true in the native Windows ports when
