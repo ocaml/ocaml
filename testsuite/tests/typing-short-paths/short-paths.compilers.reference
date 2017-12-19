@@ -1,5 +1,4 @@
-
-#                               module Core :
+module Core :
   sig
     module Int :
       sig
@@ -57,32 +56,32 @@
       end
     module Std : sig module Int = Int end
   end
-#     #   val x : 'a Int.Map.t = <abstr>
-# Characters 8-9:
+val x : 'a Int.Map.t = <abstr>
+Characters 8-9:
   let y = x + x ;;
           ^
 Error: This expression has type 'a Int.Map.t
        but an expression was expected of type int
-#           module M : sig type t = A type u = C end
+module M : sig type t = A type u = C end
 module N : sig type t = B end
-# - : M.t = A
-# - : N.t = B
-# - : u = C
-#   type t = M.t = A
+- : M.t = A
+- : N.t = B
+- : u = C
+type t = M.t = A
 type u = M.u = C
-# - : u = C
-#     module L : sig type v = V end
-# - : v = V
-#   module L : sig type v = V end
-# - : v = V
-#     type t1 = A
-# module M1 : sig type u = v and v = t1 end
-# module N1 : sig type u = v and v = t1 end
-# type t1 = B
-# module N2 : sig type u = v and v = N1.v end
-#       module type PR6566 = sig type t = string end
-# module PR6566 : sig type t = int end
-# Characters 26-32:
+- : u = C
+module L : sig type v = V end
+- : v = V
+module L : sig type v = V end
+- : v = V
+type t1 = A
+module M1 : sig type u = v and v = t1 end
+module N1 : sig type u = v and v = t1 end
+type t1 = B
+module N2 : sig type u = v and v = N1.v end
+module type PR6566 = sig type t = string end
+module PR6566 : sig type t = int end
+Characters 26-32:
   module PR6566' : PR6566 = PR6566;;
                             ^^^^^^
 Error: Signature mismatch:
@@ -91,6 +90,6 @@ Error: Signature mismatch:
          type t = int
        is not included in
          type t = string
-#   module A : sig module B : sig type t = T end end
-# module M2 : sig type u = A.B.t type foo = int type v = u end
-# 
+module A : sig module B : sig type t = T end end
+module M2 : sig type u = A.B.t type foo = int type v = u end
+

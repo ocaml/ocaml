@@ -1,8 +1,7 @@
-
-# * * * *   module type S = sig type t end
-# module N : sig type 'a t = 'a end
-# val f : (module S with type t = unit) -> unit = <fun>
-# Characters 19-20:
+module type S = sig type t end
+module N : sig type 'a t = 'a end
+val f : (module S with type t = unit) -> unit = <fun>
+Characters 19-20:
   let () = f (module N);;
                      ^
 Error: Signature mismatch:
@@ -15,4 +14,4 @@ Error: Signature mismatch:
        is not included in
          type t = N.t
        They have different arities.
-# 
+
