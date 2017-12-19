@@ -82,6 +82,11 @@ Working version
 
 ### Runtime system:
 
+- MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
+  only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
+  raise exceptions.
+  (David Allsopp)
+
 - GPR#1431: remove ocamlrun dependencies on curses/terminfo/termcap C library
   (Xavier Leroy, review by Daniel Bünzli)
 

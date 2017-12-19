@@ -294,12 +294,6 @@ bash or by adding Cygwin's bin directory (e.g. `C:\cygwin\bin`) to your `PATH`.
 
 * The replay debugger is partially supported (no reverse execution).
 
-* The default `config/Makefile.mingw` and `config/Makefile.mingw64` pass
-  `-static-libgcc` to the linker. For more information on this topic:
-
-  - http://gcc.gnu.org/onlinedocs/gcc-4.9.1/gcc/Link-Options.html#Link-Options
-  - http://caml.inria.fr/mantis/view.php?id=6411
-
 [[seflexdll]]
 == FlexDLL
 Although the core of FlexDLL is necessarily written in C, the `flexlink` program
