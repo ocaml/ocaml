@@ -182,6 +182,9 @@ Working version
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
 
+- GPR#1538: Make pattern matching compilation more robust to ill-typed columns
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
+
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------
 
