@@ -34,3 +34,5 @@ val split_filename : string -> string * string
 val filetype : string -> string * t
 
 val make_filename : string * t -> string
+
+val action_of_filetype : t -> string
