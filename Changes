@@ -132,6 +132,9 @@ Working version
   (Sébastien Hinderer, review by Gabriel Scherer, Valentin Gatien-Baron
   and Nicolás Ojeda Bär)
 
+- GPR#1520: more robust implementation of Misc.no_overflow_mul
+  (Max Mouratov, review by Xavier Leroy)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
