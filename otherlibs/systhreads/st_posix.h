@@ -24,6 +24,7 @@
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 #include <signal.h>
+#include <time.h>
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
@@ -90,8 +91,14 @@ static void st_thread_join(st_thread_id thr)
 
 static void INLINE st_thread_yield(void)
 {
-#ifndef __linux__
+#ifdef __linux__
   /* sched_yield() doesn't do what we want in Linux 2.6 and up (PR#2663) */
+  /* but not doing anything here would actually disable preemption (PR#7669) */
+  struct timespec t;
+  t.tv_sec = 0;
+  t.tv_nsec = 1;
+  nanosleep(&t, NULL);
+#else
   sched_yield();
 #endif
 }

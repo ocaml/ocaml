@@ -43,6 +43,10 @@ Working version
 - GPR#1477: raw_spacetime_lib can now be used in bytecode.
   (Nicolas Ojeda Bar, review by Mark Shinwell)
 
+- GPR#1533: (a) The implementation of Thread.yield for system thread
+  now uses nanosleep(1) for enabling better preemption.
+  (b) Thread.delay is now an alias for Unix.sleepf.
+
 ### Compiler user-interface and warnings:
 
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
