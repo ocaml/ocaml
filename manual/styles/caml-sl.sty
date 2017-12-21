@@ -1,9 +1,9 @@
 % CAML style option, for use with the caml-latex filter.
 
 \typeout{Document Style option `caml-sl' <7 Apr 92>.}
-
+\newcommand{\hash}{\#}
 {\catcode`\^^M=\active %
- \gdef\@camlinputline#1^^M{\normalsize\tt\# #1\par} %
+ \gdef\@camlinputline#1^^M{\normalsize\tt\hash{} #1\par} %
  \gdef\@camloutputline#1^^M{\small\ttfamily\slshape#1\par} } %
 \def\@camlblankline{\medskip}
 \chardef\@camlbackslash="5C
@@ -42,8 +42,15 @@
 }
 
 % Caml-example related command
-\def\camlexample{\begin{flushleft}}
-\def\endcamlexample{\end{flushleft}}
+\def\camlexample#1{
+  \ifnum\pdfstrcmp{#1}{verbatim}=0
+  \renewcommand{\hash}{}
+  \else
+  \renewcommand{\hash}{\#}
+  \fi
+  \begin{flushleft}
+}
+\def\endcamlexample{\end{flushleft}\renewcommand{\hash}{\#}}
 \def\camlinput{}
 \def\endcamlinput{}
 \def\camloutput{}

@@ -11,8 +11,9 @@ let camlout = {|\\:\1|}
 let camlbunderline = "\\<"
 let camleunderline = "\\>"
 
-let start newline out s =
+let start newline out s args =
   Printf.fprintf out "%s%s" camlbegin s;
+  List.iter (Printf.fprintf out "{%s}") args;
   if newline then Printf.fprintf out "\n"
 
 let stop newline out s =
@@ -21,9 +22,14 @@ let stop newline out s =
 
 let code_env ?(newline=true) env out s =
   Printf.fprintf out "%a%s\n%a"
-    (start false) env s (stop newline) env
+    (fun ppf env -> start false ppf env []) env s (stop newline) env
 
 let main = "example"
+type example_mode = Toplevel | Verbatim
+let string_of_mode =  function
+  | Toplevel -> "toplevel"
+  | Verbatim -> "verbatim"
+
 let input_env = "input"
 let ok_output ="output"
 let error ="error"
@@ -264,15 +270,18 @@ let process_file file =
     if string_match re_start !input 0
     then begin
       let omit_answer = matched_group 1 !input = "*" in
-      let explicit_stop =
+      let mode =
         match matched_group 2 !input with
         | exception Not_found -> raise (Missing_mode(file, !phrase_stop))
-        | "{toplevel}" -> true
-        | "{verbatim}" -> false
+        | "{toplevel}" -> Toplevel
+        | "{verbatim}" -> Verbatim
         | _ -> assert false in
+      let explicit_stop = match mode with
+        | Verbatim -> false
+        | Toplevel -> true  in
       let global_expected = try Output.expected @@ matched_group 4 !input
         with Not_found -> Output.Ok in
-      start true oc main;
+      start true oc main [string_of_mode mode];
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
@@ -348,7 +357,7 @@ let process_file file =
         let output = escape_specials output in
         let phrase = global_replace ~!{|^\(.\)|} camlin phrase
         and output = global_replace ~!{|^\(.\)|} camlout output in
-        start false oc phrase_env;
+        start false oc phrase_env [];
         code_env ~newline:omit_answer input_env oc phrase;
         if not omit_answer then
           code_env ~newline:false (Output.env status) oc output;

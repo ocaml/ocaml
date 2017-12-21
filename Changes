@@ -118,6 +118,9 @@ Working version
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
   (Yawar Amin, review by Gabriel Scherer)
 
+- GPR#1540: manual, decouple verbatim and toplevel style in code examples
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler distribution build system
 
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
