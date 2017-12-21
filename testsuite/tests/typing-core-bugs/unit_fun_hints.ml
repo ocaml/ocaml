@@ -30,6 +30,7 @@ Line _, characters 3-16:
      ^^^^^^^^^^^^^
 Error: This expression has type unit -> unit
        but an expression was expected of type unit
+       because it is in the left-hand side of a sequence
        Hint: Did you forget to provide `()' as argument?
 |}];;
 
