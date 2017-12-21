@@ -1,9 +1,18 @@
 4.06 maintenance branch
 -----------------------
 
+### Bug fixes
+
+- MPR#7661, GPR#1459: fix faulty compilation of patterns
+  using extensible variants constructors
+  (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
+  by Abdelraouf Ouadjaout and Thibault Suzanne)
 
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
+
+- GPR#1538: Make pattern matching compilation more robust to ill-typed columns
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
 
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------
