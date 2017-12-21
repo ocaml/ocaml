@@ -48,7 +48,65 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 (* Compatibility check *)
 (***********************)
 
-(* p and q compatible means, there exists V that matches both *)
+(* Patterns p and q compatible means:
+   there exists value V that matches both, However....
+
+  The case of extension types is dubious, as constructor rebind permits
+  that different constructors are the same (and are thus compatible).
+
+  Compilation must take this into account, consider:
+
+  type t = ..
+  type t += A|B
+  type t += C=A
+
+  let f x y = match x,y with
+  | true,A  -> '1'
+  | _,C     -> '2'
+  | false,A -> '3'
+  | _,_     -> '_'
+
+  As C is bound to A the value of f false A is '2' (and not '3' as it would
+  be in the absence of rebinding).
+
+  Not considering rebinding, patterns "false,A" and "_,C" are incompatible
+  and the compiler can swap the second and third clause, resulting in the
+  (more efficiently compiled) matching
+
+  match x,y with
+  | true,A  -> '1'
+  | false,A -> '3'
+  | _,C     -> '2'
+  | _,_     -> '_'
+
+  This is not correct: when C is bound to A, "f false A" returns '2' (not '3')
+
+
+  However, diagnostics do not take constructor rebinding into account.
+  Notice, that due to module abstraction constructor rebinding is hidden.
+
+  module X : sig type t = .. type t += A|B end = struct
+    type t = ..
+    type t += A
+    type t += B=A
+  end
+
+  open X
+
+  let f x = match x with
+  | A -> '1'
+  | B -> '2'
+  | _ -> '_'
+
+  The second clause above will NOT (and cannot) be flagged as useless.
+
+  Finally, there are two compatibility fonction
+   compat p q      ---> 'syntactic compatibility, used for diagnostics.
+   may_compat p q --->   a safe approximation of possible compat,
+                         for compilation
+
+*)
+
 
 let is_absent tag row = Btype.row_field tag !row = Rabsent
 
@@ -80,38 +138,67 @@ let records_args l1 l2 =
   combine [] [] l1 l2
 
 
-let rec compat p q =
-  match p.pat_desc,q.pat_desc with
+
+module Compat
+    (Constr:sig
+      val equal :
+          Types.constructor_description ->
+            Types.constructor_description ->
+              bool
+    end) = struct
+
+  let rec compat p q = match p.pat_desc,q.pat_desc with
+(* Variables match any value *)
+  | ((Tpat_any|Tpat_var _),_)
+  | (_,(Tpat_any|Tpat_var _)) -> true
+(* Structural induction *)
   | Tpat_alias (p,_,_),_      -> compat p q
   | _,Tpat_alias (q,_,_)      -> compat p q
-  | (Tpat_any|Tpat_var _),_ -> true
-  | _,(Tpat_any|Tpat_var _) -> true
-  | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
-  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2
-  | Tpat_constant c1, Tpat_constant c2 -> const_compare c1 c2 = 0
+  | Tpat_or (p1,p2,_),_ ->
+      (compat p1 q || compat p2 q)
+  | _,Tpat_or (q1,q2,_) ->
+      (compat p q1 || compat p q2)
+(* Constructors, with special case for extension *)
+  | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
+      Constr.equal c1 c2 && compats ps1 ps2
+(* More standard stuff *)
+  | Tpat_variant(l1,op1, _), Tpat_variant(l2,op2,_) ->
+      l1=l2 && ocompat op1 op2
+  | Tpat_constant c1, Tpat_constant c2 ->
+      const_compare c1 c2 = 0
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
-  | Tpat_construct (_, c1,ps1), Tpat_construct (_, c2,ps2) ->
-      Types.equal_tag c1.cstr_tag c2.cstr_tag && compats ps1 ps2
-  | Tpat_variant(l1,Some p1, _r1), Tpat_variant(l2,Some p2,_) ->
-      l1=l2 && compat p1 p2
-  | Tpat_variant (l1,None, _r1), Tpat_variant(l2,None,_) ->
-      l1 = l2
-  | Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
-  | Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
   | Tpat_record (l1,_),Tpat_record (l2,_) ->
       let ps,qs = records_args l1 l2 in
       compats ps qs
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
-  | _,_  ->
-      assert false
+  | _,_  -> assert false (* By typing *)
 
-and compats ps qs = match ps,qs with
-| [], [] -> true
-| p::ps, q::qs -> compat p q && compats ps qs
-| _,_    -> assert false
+  and ocompat op oq = match op,oq with
+  | None,None -> true
+  | Some p,Some q -> compat p q
+  | (None,Some _)|(Some _,None) -> false
+
+  and compats ps qs = match ps,qs with
+  | [], [] -> true
+  | p::ps, q::qs -> compat p q && compats ps qs
+  | _,_    -> assert false (* By typing *)
+
+end
+
+module SyntacticCompat =
+  Compat
+    (struct
+      let equal c1 c2 =  Types.equal_tag c1.cstr_tag c2.cstr_tag
+    end)
+
+let compat =  SyntacticCompat.compat
+and compats = SyntacticCompat.compats
+
+(* Due to (potential) rebinding, two extension constructors
+   of the same arity type may equal *)
 
 exception Empty (* Empty pattern *)
 
@@ -774,7 +861,7 @@ let complete_constrs p all_tags =
   let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
     List.filter
-      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag) 
+      (fun cnstr -> ConstructorTagHashtbl.mem not_tags cnstr.cstr_tag)
       constrs in
   let const, nonconst =
     List.partition (fun cnstr -> cnstr.cstr_arity = 0) others in
