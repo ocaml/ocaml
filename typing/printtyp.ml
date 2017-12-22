@@ -1418,6 +1418,11 @@ let is_unit env ty =
   | Tconstr (p, _, _) -> Path.same p Predef.path_unit
   | _ -> false
 
+let is_ref_path p =
+  match p with
+  | Pdot (Pident id, "ref", _) -> Ident.same id ident_pervasives
+  | _ -> false
+
 let unifiable env ty1 ty2 =
   let snap = Btype.snapshot () in
   let res =
@@ -1439,6 +1444,12 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
       Some (fun ppf ->
         fprintf ppf
           "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
+  | Tconstr (p, [ty1], _), _
+    when is_ref_path p && unifiable env ty1 t4 ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to use `!' to get the content \
+           of a reference somewhere?@]")
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
