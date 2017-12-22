@@ -124,4 +124,4 @@ Line _, characters 0-19:
 Error: This expression has type string t
        but an expression was expected of type int t
        Type string is not compatible with type int
-|}, Principal{||}]
+|}]
