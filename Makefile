@@ -119,7 +119,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/semantics_of_primitives.cmo \
   bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
-  bytecomp/translcore.cmo \
+  bytecomp/translprim.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
   bytecomp/meta.cmo bytecomp/opcodes.cmo \

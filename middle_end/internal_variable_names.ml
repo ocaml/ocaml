@@ -126,8 +126,6 @@ let pintofbint = "Pintofbint"
 let pintoffloat = "Pintoffloat"
 let pisint = "Pisint"
 let pisout = "Pisout"
-let plazyforce = "Plazyforce"
-let ploc = "Ploc"
 let plslbint = "Plslbint"
 let plslint = "Plslint"
 let plsrbint = "Plsrbint"
@@ -227,8 +225,6 @@ let pintofbint_arg = "Pintofbint_arg"
 let pintoffloat_arg = "Pintoffloat_arg"
 let pisint_arg = "Pisint_arg"
 let pisout_arg = "Pisout_arg"
-let plazyforce_arg = "Plazyforce_arg"
-let ploc_arg = "Ploc_arg"
 let plslbint_arg = "Plslbint_arg"
 let plslint_arg = "Plslint_arg"
 let plsrbint_arg = "Plsrbint_arg"
@@ -308,7 +304,6 @@ let of_primitive : Lambda.primitive -> string = function
   | Pignore -> pignore
   | Prevapply -> prevapply
   | Pdirapply -> pdirapply
-  | Ploc _ -> ploc
   | Pgetglobal _ -> pgetglobal
   | Psetglobal _ -> psetglobal
   | Pmakeblock _ -> pmakeblock
@@ -319,7 +314,6 @@ let of_primitive : Lambda.primitive -> string = function
   | Pfloatfield _ -> pfloatfield
   | Psetfloatfield _ -> psetfloatfield
   | Pduprecord _ -> pduprecord
-  | Plazyforce -> plazyforce
   | Pccall _ -> pccall
   | Praise _ -> praise
   | Psequand -> psequand
@@ -413,7 +407,6 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pignore -> pignore_arg
   | Prevapply -> prevapply_arg
   | Pdirapply -> pdirapply_arg
-  | Ploc _ -> ploc_arg
   | Pgetglobal _ -> pgetglobal_arg
   | Psetglobal _ -> psetglobal_arg
   | Pmakeblock _ -> pmakeblock_arg
@@ -424,7 +417,6 @@ let of_primitive_arg : Lambda.primitive -> string = function
   | Pfloatfield _ -> pfloatfield_arg
   | Psetfloatfield _ -> psetfloatfield_arg
   | Pduprecord _ -> pduprecord_arg
-  | Plazyforce -> plazyforce_arg
   | Pccall _ -> pccall_arg
   | Praise _ -> praise_arg
   | Psequand -> psequand_arg

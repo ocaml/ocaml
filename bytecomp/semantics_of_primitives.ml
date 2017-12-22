@@ -37,7 +37,6 @@ let for_primitive (prim : Lambda.primitive) =
                ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
                | "caml_nativeint_format" | "caml_int64_format" ) } ->
       No_effects, No_coeffects
-  | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Pnot
@@ -150,9 +149,6 @@ let for_primitive (prim : Lambda.primitive) =
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque -> Arbitrary_effects, Has_coeffects
-  | Ploc _ ->
-      (* Removed by [Translcore]. *)
-      No_effects, No_coeffects
   | Prevapply
   | Pdirapply ->
       (* Removed by [Simplif], but there is no reason to prevent using

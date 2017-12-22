@@ -78,7 +78,7 @@ let rec apply_coercion loc strict restr arg =
       let carg = apply_coercion loc Alias cc_arg (Lvar param) in
       apply_coercion_result loc strict arg [param] [carg] cc_res
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
-      transl_primitive pc_loc pc_desc pc_env pc_type None
+      Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
       name_lambda strict arg
         (fun _ -> apply_coercion loc Alias cc (transl_normal_path path))
@@ -498,7 +498,7 @@ and transl_structure loc fields cc rootpath final_env = function
                     (fun (pos, cc) ->
                       match cc with
                         Tcoerce_primitive p ->
-                          transl_primitive p.pc_loc
+                          Translprim.transl_primitive p.pc_loc
                             p.pc_desc p.pc_env p.pc_type None
                       | _ -> apply_coercion loc Strict cc (get_field pos))
                     pos_cc_list, loc)
@@ -673,15 +673,16 @@ let required_globals ~flambda body =
       Ident.Set.add id req
   in
   let required =
-    Hashtbl.fold
-      (fun path _ -> add_global (Path.head path)) used_primitives
+    List.fold_left
+      (fun acc path -> add_global (Path.head path) acc)
       (if flambda then globals else Ident.Set.empty)
+      (Translprim.get_used_primitives ())
   in
   let required =
     List.fold_right add_global (Env.get_required_globals ()) required
   in
   Env.reset_required_globals ();
-  Hashtbl.clear used_primitives;
+  Translprim.clear_used_primitives ();
   required
 
 (* Compile an implementation *)
@@ -689,7 +690,7 @@ let required_globals ~flambda body =
 let transl_implementation_flambda module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
-  Hashtbl.clear used_primitives;
+  Translprim.clear_used_primitives ();
   let module_id = Ident.create_persistent module_name in
   let body, size =
     Translobj.transl_label_init
@@ -832,7 +833,7 @@ let field_of_str loc str =
   fun (pos, cc) ->
     match cc with
     | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
-        transl_primitive pc_loc pc_desc pc_env pc_type None
+        Translprim.transl_primitive pc_loc pc_desc pc_env pc_type None
     | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
 
 
@@ -1046,7 +1047,7 @@ let transl_store_structure glob map prims str =
   and store_primitive (pos, prim) cont =
     Lsequence(Lprim(Psetfield(pos, Pointer, Root_initialization),
                     [Lprim(Pgetglobal glob, [], Location.none);
-                     transl_primitive Location.none
+                     Translprim.transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type None],
                     Location.none),
               cont)
@@ -1100,7 +1101,7 @@ let build_ident_map restr idlist more_ids =
 let transl_store_gen module_name ({ str_items = str }, restr) topl =
   reset_labels ();
   primitive_declarations := [];
-  Hashtbl.clear used_primitives;
+  Translprim.clear_used_primitives ();
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) =
     build_ident_map restr (defined_idents str) (more_idents str) in
@@ -1243,7 +1244,7 @@ let transl_toplevel_item_and_close itm =
 
 let transl_toplevel_definition str =
   reset_labels ();
-  Hashtbl.clear used_primitives;
+  Translprim.clear_used_primitives ();
   make_sequence transl_toplevel_item_and_close str.str_items
 
 (* Compile the initialization code for a packed library *)
@@ -1369,4 +1370,4 @@ let reset () =
   transl_store_subst := Ident.Map.empty;
   aliased_idents := Ident.empty;
   Env.reset_required_globals ();
-  Hashtbl.clear used_primitives
+  Translprim.clear_used_primitives ()

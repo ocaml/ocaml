@@ -27,13 +27,6 @@ type compile_time_constant =
   | Ostype_cygwin
   | Backend_type
 
-type loc_kind =
-  | Loc_FILE
-  | Loc_LINE
-  | Loc_MODULE
-  | Loc_LOC
-  | Loc_POS
-
 type immediate_or_pointer =
   | Immediate
   | Pointer
@@ -59,7 +52,6 @@ type primitive =
   | Pignore
   | Prevapply
   | Pdirapply
-  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -72,8 +64,6 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
-  (* Force lazy values *)
-  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -375,7 +365,6 @@ val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
-val lam_of_loc : loc_kind -> Location.t -> lambda
 
 val merge_inline_attributes
    : inline_attribute

@@ -27,13 +27,6 @@ type compile_time_constant =
   | Ostype_cygwin
   | Backend_type
 
-type loc_kind =
-  | Loc_FILE
-  | Loc_LINE
-  | Loc_MODULE
-  | Loc_LOC
-  | Loc_POS
-
 type immediate_or_pointer =
   | Immediate
   | Pointer
@@ -54,7 +47,6 @@ type primitive =
   | Pignore
   | Prevapply
   | Pdirapply
-  | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
@@ -68,7 +60,6 @@ type primitive =
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
-  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -774,31 +765,6 @@ let raise_kind = function
   | Raise_regular -> "raise"
   | Raise_reraise -> "reraise"
   | Raise_notrace -> "raise_notrace"
-
-let lam_of_loc kind loc =
-  let loc_start = loc.Location.loc_start in
-  let (file, lnum, cnum) = Location.get_pos_info loc_start in
-  let enum = loc.Location.loc_end.Lexing.pos_cnum -
-      loc_start.Lexing.pos_cnum + cnum in
-  match kind with
-  | Loc_POS ->
-    Lconst (Const_block (0, [
-          Const_immstring file;
-          Const_base (Const_int lnum);
-          Const_base (Const_int cnum);
-          Const_base (Const_int enum);
-        ]))
-  | Loc_FILE -> Lconst (Const_immstring file)
-  | Loc_MODULE ->
-    let filename = Filename.basename file in
-    let name = Env.get_unit_name () in
-    let module_name = if name = "" then "//"^filename^"//" else name in
-    Lconst (Const_immstring module_name)
-  | Loc_LOC ->
-    let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
-        file lnum cnum enum in
-    Lconst (Const_immstring loc)
-  | Loc_LINE -> Lconst (Const_base (Const_int lnum))
 
 let merge_inline_attributes attr1 attr2 =
   match attr1, attr2 with
