@@ -68,6 +68,7 @@ let rec unsafe_blits dst pos sep seplen = function
 
 let concat sep = function
     [] -> ""
+  | hd :: [] -> hd
   | l -> let seplen = length sep in bts @@
           unsafe_blits
             (B.create (sum_lengths 0 seplen l))
