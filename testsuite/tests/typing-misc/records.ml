@@ -115,4 +115,13 @@ val with_fst : ('a, 'b) t -> 'c -> ('c, 'b) t = <fun>
 type 'a t = { f : 'a; g : 'a };;
 let x = { f = 12; g = 43 };;
 {x with f = "hola"};;
-[%%expect]
+[%%expect{|
+type 'a t = { f : 'a; g : 'a; }
+val x : int t = {f = 12; g = 43}
+Line _, characters 0-19:
+  {x with f = "hola"};;
+  ^^^^^^^^^^^^^^^^^^^
+Error: This expression has type string t
+       but an expression was expected of type int t
+       Type string is not compatible with type int
+|}, Principal{||}]
