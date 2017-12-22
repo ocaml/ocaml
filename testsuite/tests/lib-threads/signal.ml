@@ -3,7 +3,7 @@ let sighandler _ =
   exit 0
 
 let print_message delay c =
-  while true do
+  for i = 1 to 20 do
     print_char c; flush stdout; Thread.delay delay
   done
 
