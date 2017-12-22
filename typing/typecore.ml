@@ -5014,6 +5014,7 @@ let report_error env ppf = function
        longident lid expected provided
   | Label_mismatch(lid, trace) ->
       report_unification_error ppf env trace
+        ~explain_mismatch:false
         (function ppf ->
            fprintf ppf "The record field %a@ belongs to the type"
                    longident lid)
