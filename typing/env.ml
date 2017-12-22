@@ -1136,7 +1136,9 @@ let rec lookup_module_descr_aux ?loc ~mark lid env =
       begin match get_components desc1 with
         Functor_comps f ->
           let loc = match loc with Some l -> l | None -> Location.none in
-          Misc.may (!check_modtype_inclusion ~loc env mty2 p2) f.fcomp_arg;
+          (match f.fcomp_arg with
+          | None ->  raise Not_found (* PR#7611 *)
+          | Some arg -> !check_modtype_inclusion ~loc env mty2 p2 arg);
           (Papply(p1, p2), !components_of_functor_appl' f env p1 p2)
       | Structure_comps _ ->
           raise Not_found
@@ -1204,7 +1206,9 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
       begin match get_components desc1 with
         Functor_comps f ->
           let loc = match loc with Some l -> l | None -> Location.none in
-          Misc.may (!check_modtype_inclusion ~loc env mty2 p2) f.fcomp_arg;
+          (match f.fcomp_arg with
+          | None -> raise Not_found (* PR#7611 *)
+          | Some arg -> (!check_modtype_inclusion ~loc env mty2 p2) arg);
           p
       | Structure_comps _ ->
           raise Not_found

@@ -39,20 +39,24 @@ UNIX_FILES = access.c addrofstr.c chdir.c chmod.c cst2constr.c \
 UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
 ALL_FILES=$(WIN_FILES) $(UNIX_FILES)
-WSOCKLIB=$(call SYSLIB,ws2_32)
-ADVAPI32LIB=$(call SYSLIB,advapi32)
 
 LIBNAME=unix
 COBJS=$(ALL_FILES:.c=.$(O))
 CAMLOBJS=unix.cmo unixLabels.cmo
-LINKOPTS=-cclib $(WSOCKLIB) -cclib $(ADVAPI32LIB)
-LDOPTS=-ldopt $(WSOCKLIB) -ldopt $(ADVAPI32LIB)
+WIN32_LIBS=$(call SYSLIB,ws2_32) $(call SYSLIB,advapi32)
+LINKOPTS=$(addprefix -cclib ,$(WIN32_LIBS))
 EXTRACAMLFLAGS=-nolabels
 EXTRACFLAGS=-I../unix
 HEADERS=unixsupport.h socketaddr.h
 
 
 include ../Makefile
+
+ifeq "$(SYSTEM)" "mingw"
+LDOPTS=-ldopt "-link -static-libgcc" $(addprefix -ldopt ,$(WIN32_LIBS))
+else
+LDOPTS=$(addprefix -ldopt ,$(WIN32_LIBS))
+endif
 
 clean::
 	rm -f $(UNIX_FILES) $(UNIX_CAML_FILES)

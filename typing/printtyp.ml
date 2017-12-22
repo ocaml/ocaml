@@ -1565,7 +1565,7 @@ let rec trace_same_names = function
       type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
   | _ -> ()
 
-let unification_error env unif tr txt1 ppf txt2 =
+let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
@@ -1583,10 +1583,12 @@ let unification_error env unif tr txt1 ppf txt2 =
         "@[<v>\
           @[%t@;<1 2>%a@ \
             %t@;<1 2>%a\
+            %t\
           @]%a%t\
          @]"
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
+        ty_expect_explanation
         (trace false "is not compatible with type") tr
         (explain mis);
       if env <> Env.empty
@@ -1599,9 +1601,11 @@ let unification_error env unif tr txt1 ppf txt2 =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf env ?(unif=true)
-    tr txt1 txt2 =
-  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2)
+let report_unification_error ppf env ?(unif=true) tr
+    ?(type_expected_explanation = fun _ -> ())
+    txt1 txt2 =
+  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2
+                            type_expected_explanation)
 ;;
 
 let trace fst keep_last txt ppf tr =

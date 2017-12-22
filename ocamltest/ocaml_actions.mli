@@ -27,7 +27,7 @@ val check_ocamlopt_byte_output : Actions.t
 val setup_ocamlopt_opt_build_env : Actions.t
 val ocamlopt_opt : Actions.t
 val check_ocamlopt_opt_output : Actions.t
-val expect : Actions.t
+val run_expect : Actions.t
 val compare_bytecode_programs : Actions.t
 val compare_native_programs : Actions.t
 val setup_ocaml_build_env : Actions.t
@@ -36,3 +36,6 @@ val check_ocaml_output : Actions.t
 val setup_ocamlnat_build_env : Actions.t
 val ocamlnat : Actions.t
 val check_ocamlnat_output : Actions.t
+
+val flat_float_array : Actions.t
+val no_flat_float_array : Actions.t

@@ -12,9 +12,8 @@ Working version
 
 ### Type system:
 
-- GPR#1370: Fix code duplication in Cmmgen
-  (Vincent Laviron, with help from Pierre Chambart,
-   reviews by Gabriel Scherer and Luc Maranget)
+- MPR#7611, GPR#1491: reject the use of generative functors as applicative
+  (Valentin Gatien-Baron)
 
 - GPR#1469: Use the information from [@@immediate] annotations when
   computing whether a type can be [@@unboxed]
@@ -26,6 +25,10 @@ Working version
 
 ### Standard library:
 
+- MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
+  with very large values of the exponent.
+  (Olivier Andrieu)
+
 ### Other libraries:
 
 * GPR#1406: Unix.isatty now returns true in the native Windows ports when
@@ -33,8 +36,16 @@ Working version
   colors for the native Windows ports now work under Cygwin/MSYS2.
   (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
 
+- GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix error
+  instead of returning [Not_found] when interrupted by a signal.
+  (Arseniy Alekseyev, review by Mark Shinwell and Xavier Leroy)
+
 - GPR#1477: raw_spacetime_lib can now be used in bytecode.
   (Nicolas Ojeda Bar, review by Mark Shinwell)
+
+- GPR#1533: (a) The implementation of Thread.yield for system thread
+  now uses nanosleep(1) for enabling better preemption.
+  (b) Thread.delay is now an alias for Unix.sleepf.
 
 ### Compiler user-interface and warnings:
 
@@ -49,6 +60,10 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
   Frédéric Bour)
 
+- GPR#1491: Improve error reporting for ill-typed applicative functor
+  types, F(M).t.
+  (Valentin Gatien-Baron, review by Florian Angeletti and Gabriel Radanne)
+
 - GPR#1496: Refactor the code printing explanation for unification type errors,
   in order to avoid duplicating pattern matches
   (Armaël Guéneau, review by Florian Angeletti and Gabriel Scherer)
@@ -58,9 +73,28 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Leo White, review by
   Florian Angeletti and Gabriel Radanne)
 
+- GPR#1534: Extend the warning printed when (*) is used, adding a hint to
+  suggest using ( * ) instead
+  (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
+  Scherer)
+
+- GPR#1510: Add specific explanation for unification errors caused by type
+  constraints propagated by keywords (such as if, while, for...)
+  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
+  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
+
 ### Code generation and optimizations:
 
+- GPR#1370: Fix code duplication in Cmmgen
+  (Vincent Laviron, with help from Pierre Chambart,
+   reviews by Gabriel Scherer and Luc Maranget)
+
 ### Runtime system:
+
+- MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
+  only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
+  raise exceptions.
+  (David Allsopp)
 
 - GPR#1431: remove ocamlrun dependencies on curses/terminfo/termcap C library
   (Xavier Leroy, review by Daniel Bünzli)
@@ -68,6 +102,10 @@ Working version
 - GPR#1478: The Spacetime profiler now works under Windows (but it is not yet
   able to collect profiling information from C stubs).
   (Nicolas Ojeda Bar, review by Xavier Leroy, Mark Shinwell)
+
+- GPR#1526: install the debug and instrumented runtimes
+  (lib{caml,asm}run{d,i}.a)
+  (Gabriel Scherer, reminded by Julia Lawall)
 
 ### Tools:
 
@@ -79,6 +117,9 @@ Working version
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
   (Yawar Amin, review by Gabriel Scherer)
+
+- GPR#1540: manual, decouple verbatim and toplevel style in code examples
+  (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system
 
@@ -93,6 +134,18 @@ Working version
 
 - GPR#1502: more command line options for expect tests
   (Florian Angeletti, review by Gabriel Scherer)
+
+- GPR#1511: show code at error location in expect-style tests,
+  using new Location.show_code_at_location function
+  (Gabriel Scherer and Armaël Guéneau,
+   review by Valentin Gatien-Baron and Damien Doligez)
+
+- GPR#1519, GPR#1532: migrate expect tests to ocamltest
+  (Sébastien Hinderer, review by Gabriel Scherer, Valentin Gatien-Baron
+  and Nicolás Ojeda Bär)
+
+- GPR#1520: more robust implementation of Misc.no_overflow_mul
+  (Max Mouratov, review by Xavier Leroy)
 
 ### Bug fixes
 
@@ -126,6 +179,10 @@ Working version
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
+- PR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
+  Unix.getenv and Unix.environment under Windows.
+  (Nicolas Ojeda Bar, report by Alain Frisch, review by David Allsopp, Xavier
+  Leroy)
 
 4.06 maintenance branch
 -----------------------
@@ -139,6 +196,9 @@ Working version
 
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
+
+- GPR#1538: Make pattern matching compilation more robust to ill-typed columns
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
 
 OCaml 4.06.0 (3 Nov 2017):
 --------------------------

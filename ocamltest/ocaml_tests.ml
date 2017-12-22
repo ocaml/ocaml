@@ -40,10 +40,8 @@ let bytecode =
   ] @ (if Ocamltest_config.arch<>"none" then opt_actions else [])
 }
 
-let native = {
-  test_name = "native";
-  test_run_by_default = true;
-  test_actions =
+let native =
+  let opt_actions =
   [
     setup_ocamlopt_byte_build_env;
     ocamlopt_byte;
@@ -54,8 +52,13 @@ let native = {
     ocamlopt_opt;
     check_ocamlopt_opt_output;
     compare_native_programs;
-  ]
-}
+  ] in
+  {
+    test_name = "native";
+    test_run_by_default = true;
+    test_actions =
+      (if Ocamltest_config.arch<>"none" then opt_actions else [skip])
+  }
 
 let toplevel = {
   test_name = "toplevel";
@@ -73,10 +76,23 @@ let toplevel = {
   ]
 }
 
+let expect =
+{
+  test_name = "expect";
+  test_run_by_default = false;
+  test_actions =
+  [
+    setup_simple_build_env;
+    run_expect;
+    check_program_output
+  ]
+}
+
 let _ =
   List.iter register
   [
     bytecode;
+    native;
     toplevel;
-  ];
-  if (Ocamltest_config.arch <> "none") then register native
+    expect;
+  ]

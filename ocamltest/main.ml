@@ -140,10 +140,12 @@ let test_file test_filename =
              Builtin_variables.test_file, test_basename;
              Builtin_variables.reference, reference_filename;
              Builtin_variables.test_source_directory, test_source_directory;
-             Builtin_variables.test_build_directory_prefix, test_build_directory_prefix;
+             Builtin_variables.test_build_directory_prefix,
+               test_build_directory_prefix;
            ] in
        let root_environment =
-         interprete_environment_statements initial_environment rootenv_statements in
+         interprete_environment_statements
+           initial_environment rootenv_statements in
        let rootenv = Environments.initialize log root_environment in
        let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
        List.iteri

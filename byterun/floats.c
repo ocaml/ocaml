@@ -226,7 +226,19 @@ static int caml_float_of_hex(const char * s, double * res)
       if (*s == 0) return -1;   /* nothing after exponent mark */
       e = strtol(s, &p, 10);
       if (*p != 0) return -1;   /* ill-formed exponent */
-      if (e < INT_MIN || e > INT_MAX) return -1; /* unreasonable exponent */
+      /* Handle exponents larger than int by returning 0/∞ directly.
+	 Mind that INT_MIN/INT_MAX are included in the test so as to capture
+	 the overflow case of strtol on Win64 — long and int have the same
+	 size there. */
+      if (e <= INT_MIN) {
+        *res = 0.;
+        return 0;
+      }
+      else if (e >= INT_MAX) {
+        *res = m == 0 ? 0. : HUGE_VAL;
+        return 0;
+      }
+      /* regular exponent value */
       exp = e;
       s = p;                    /* stop at next loop iteration */
       break;
@@ -261,8 +273,17 @@ static int caml_float_of_hex(const char * s, double * res)
      on several architectures. */
   f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
-  if (dec_point >= 0) exp = exp + (dec_point - n_bits);
-  exp = exp + x_bits;
+  {
+    int adj = x_bits;
+    if (dec_point >= 0) adj = adj + (dec_point - n_bits);
+    /* saturated addition exp + adj */
+    if (adj > 0 && exp > INT_MAX - adj)
+      exp = INT_MAX;
+    else if (adj < 0 && exp < INT_MIN - adj)
+      exp = INT_MIN;
+    else
+      exp = exp + adj;
+  }
   /* Apply exponent if needed */
   if (exp != 0) f = ldexp(f, exp);
   /* Done! */

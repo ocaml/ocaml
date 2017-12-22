@@ -180,7 +180,6 @@ typedef wchar_t char_os;
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
 #define getcwd_os _wgetcwd
-#define getenv_os _wgetenv
 #define system_os _wsystem
 #define rmdir_os _wrmdir
 #define putenv_os _wputenv
@@ -213,7 +212,6 @@ typedef char char_os;
 #define rename_os rename
 #define chdir_os chdir
 #define getcwd_os getcwd
-#define getenv_os getenv
 #define system_os system
 #define rmdir_os rmdir
 #define putenv_os putenv
@@ -250,7 +248,7 @@ typedef char char_os;
 #define CAML_SYS_UNLINK(filename) unlink_os(filename)
 #define CAML_SYS_RENAME(old_name,new_name) rename_os(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) chdir_os(dirname)
-#define CAML_SYS_GETENV(varname) getenv_os(varname)
+#define CAML_SYS_GETENV(varname) getenv(varname)
 #define CAML_SYS_SYSTEM(command) system_os(command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
@@ -304,7 +302,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_CHDIR(dirname)                         \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir_os,dirname)
 #define CAML_SYS_GETENV(varname)                        \
-  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv_os,varname)
+  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
 #define CAML_SYS_SYSTEM(command)                        \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system_os,command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \

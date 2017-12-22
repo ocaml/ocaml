@@ -274,6 +274,8 @@ _ocamltest
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/common/utimes.txt
+
 /testsuite/tests/lib-unix/win-stat/*-file
 /testsuite/tests/lib-unix/win-symlink/link*
 /testsuite/tests/lib-unix/win-symlink/test.txt
@@ -324,10 +326,6 @@ _ocamltest
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
-
-/testsuite/tests/typing-misc/false.flat-float
-/testsuite/tests/typing-misc/true.flat-float
-/testsuite/tests/typing-misc/pr6939.ml
 
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
