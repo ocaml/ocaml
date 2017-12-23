@@ -61,8 +61,7 @@ let rec build_closure_env env_param pos = function
    contain the right names if the -for-pack option is active. *)
 
 let getglobal dbg id =
-  Uprim(P.Pgetglobal (V.create_persistent (Compilenv.symbol_for_global id)),
-        [], dbg)
+  Uprim(P.Pread_symbol (Compilenv.symbol_for_global id), [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -114,9 +113,7 @@ let occurs_var var u =
 let prim_size prim args =
   let open Clambda_primitives in
   match prim with
-    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
-  | Pgetglobal _ -> 1
-  | Psetglobal _ -> 1
+  | Pread_symbol _ -> 1
   | Pmakeblock _ -> 5 + List.length args
   | Pfield _ -> 1
   | Psetfield(_f, isptr, init) ->
@@ -493,9 +490,6 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
      _,
      [ Value_const(Uconst_ref(_, Some (Uconst_string s))) ] ->
       make_const_int (String.length s)
-  (* Identity *)
-  | (Pidentity | Pbytes_to_string | Pbytes_of_string), [arg1], [app1] ->
-      (arg1, app1)
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
@@ -503,19 +497,6 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       | Value_const(Uconst_ref _) -> make_const_bool false
       | Value_closure _ | Value_tuple _ -> make_const_bool false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
-      end
-  (* Compile-time constants *)
-  | Pctconst c, _, _ ->
-      begin match c with
-        | Big_endian -> make_const_bool Arch.big_endian
-        | Word_size -> make_const_int (8*Arch.size_int)
-        | Int_size -> make_const_int (8*Arch.size_int - 1)
-        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
-        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
-        | Backend_type ->
-            make_const_ptr 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -814,10 +795,10 @@ let check_constant_result lam ulam approx =
     Value_const c when is_pure lam -> make_const c
   | Value_global_field (id, i) when is_pure lam ->
       begin match ulam with
-      | Uprim(P.Pfield _, [Uprim(P.Pgetglobal _, _, _)], _) -> (ulam, approx)
+      | Uprim(P.Pfield _, [Uprim(P.Pread_symbol _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            Uprim(P.Pgetglobal (V.create_persistent id), [], Debuginfo.none)
+            Uprim(P.Pread_symbol id, [], Debuginfo.none)
           in
           Uprim(P.Pfield i, [glb], Debuginfo.none), approx
       end
@@ -1032,6 +1013,23 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
+  (* Compile-time constants *)
+  | Lprim(Pctconst c, [arg], _loc) ->
+      let cst, approx =
+        match c with
+        | Big_endian -> make_const_bool Arch.big_endian
+        | Word_size -> make_const_int (8*Arch.size_int)
+        | Int_size -> make_const_int (8*Arch.size_int - 1)
+        | Max_wosize -> make_const_int ((1 lsl ((8*Arch.size_int) - 10)) - 1 )
+        | Ostype_unix -> make_const_bool (Sys.os_type = "Unix")
+        | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
+        | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
+        | Backend_type ->
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
+      in
+      let arg, _approx = close fenv cenv arg in
+      let id = Ident.create_local "dummy" in
+      Ulet(Immutable, Pgenval, VP.create id, arg, cst), approx
   | Lprim(Pignore, [arg], _loc) ->
       let expr, approx = make_const_ptr 0 in
       Usequence(fst (close fenv cenv arg), expr), approx

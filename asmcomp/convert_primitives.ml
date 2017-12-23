@@ -18,8 +18,6 @@
 
 let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   match prim with
-  | Pbytes_to_string -> Pbytes_to_string
-  | Pbytes_of_string -> Pbytes_of_string
   | Pmakeblock (tag, mutability, shape) ->
       Pmakeblock (tag, mutability, shape)
   | Pfield field -> Pfield field
@@ -118,8 +116,10 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
   | Popaque -> Popaque
-  | Pctconst cst -> Pctconst cst
 
+  | Pbytes_to_string
+  | Pbytes_of_string
+  | Pctconst _
   | Pignore
   | Prevapply
   | Pdirapply

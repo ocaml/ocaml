@@ -60,14 +60,8 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   let open Lambda in
   let open Clambda_primitives in
   match prim with
-  | Pidentity -> fprintf ppf "id"
-  | Pbytes_to_string -> fprintf ppf "bytes_to_string"
-  | Pbytes_of_string -> fprintf ppf "bytes_of_string"
-  | Pignore -> fprintf ppf "ignore"
-  | Prevapply -> fprintf ppf "revapply"
-  | Pdirapply -> fprintf ppf "dirapply"
-  | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
-  | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
+  | Pread_symbol sym ->
+      fprintf ppf "read_symbol %s" sym
   | Pmakeblock(tag, Immutable, shape) ->
       fprintf ppf "makeblock %i%a" tag Printlambda.block_shape shape
   | Pmakeblock(tag, Mutable, shape) ->
@@ -161,17 +155,6 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
   | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
   | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
-  | Pctconst c ->
-     let const_name = match c with
-       | Big_endian -> "big_endian"
-       | Word_size -> "word_size"
-       | Int_size -> "int_size"
-       | Max_wosize -> "max_wosize"
-       | Ostype_unix -> "ostype_unix"
-       | Ostype_win32 -> "ostype_win32"
-       | Ostype_cygwin -> "ostype_cygwin"
-       | Backend_type -> "backend_type" in
-     fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi

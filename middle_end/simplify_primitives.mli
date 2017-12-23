@@ -24,5 +24,4 @@ val primitive
   -> Flambda.named
   -> Debuginfo.t
   -> size_int:int
-  -> big_endian:bool
   -> Flambda.named * Simple_value_approx.t * Inlining_cost.Benefit.t

@@ -104,7 +104,7 @@ let is_pbytesrefs = function
   | _ -> false
 
 let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
-      ~big_endian : Flambda.named * A.t * Inlining_cost.Benefit.t =
+    : Flambda.named * A.t * Inlining_cost.Benefit.t =
   let fpc = !Clflags.float_const_prop in
   match p with
   | Pmakeblock(tag_int, Asttypes.Immutable, shape) ->
@@ -216,23 +216,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pisint -> S.const_bool_expr expr true
       | Poffsetint y -> S.const_ptr_expr expr (x + y)
-      | Pctconst c ->
-        begin match c with
-        | Big_endian -> S.const_bool_expr expr big_endian
-        | Word_size -> S.const_int_expr expr (8*size_int)
-        | Int_size -> S.const_int_expr expr (8*size_int - 1)
-        | Max_wosize ->
-          (* CR-someday mshinwell: this function should maybe not live here. *)
-          S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
-        | Ostype_unix ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Unix")
-        | Ostype_win32 ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Win32")
-        | Ostype_cygwin ->
-          S.const_bool_expr expr (String.equal Sys.os_type "Cygwin")
-        | Backend_type ->
-          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
-        end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float (Some x)] when fpc ->

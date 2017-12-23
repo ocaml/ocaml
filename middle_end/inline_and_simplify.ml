@@ -1070,7 +1070,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         let expr, approx, benefit =
           let module Backend = (val (E.backend env) : Backend_intf.S) in
           Simplify_primitives.primitive p (args, args_approxs) tree dbg
-            ~size_int:Backend.size_int ~big_endian:Backend.big_endian
+            ~size_int:Backend.size_int
         in
         let r = R.map_benefit r (B.(+) benefit) in
         let approx =

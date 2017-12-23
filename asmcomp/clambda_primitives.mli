@@ -12,15 +12,7 @@ type boxed =
   | Unboxed
 
 type primitive =
-  | Pidentity
-  | Pbytes_to_string
-  | Pbytes_of_string
-  | Pignore
-  | Prevapply
-  | Pdirapply
-    (* Globals *)
-  | Pgetglobal of Ident.t
-  | Psetglobal of Ident.t
+  | Pread_symbol of string
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int
@@ -109,8 +101,6 @@ type primitive =
   | Pbigstring_set_16 of bool
   | Pbigstring_set_32 of bool
   | Pbigstring_set_64 of bool
-  (* Compile time constants *)
-  | Pctconst of Lambda.compile_time_constant
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer

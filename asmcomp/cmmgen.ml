@@ -1862,8 +1862,8 @@ let rec transl env e =
   (* Primitives *)
   | Uprim(prim, args, dbg) ->
       begin match (simplif_primitive prim, args) with
-        (Pgetglobal id, []) ->
-          Cconst_symbol (V.name id)
+        (Pread_symbol sym, []) ->
+          Cconst_symbol sym
       | (Pmakeblock _, []) ->
           assert false
       | (Pmakeblock(tag, _mut, _kind), args) ->
@@ -2077,10 +2077,8 @@ and transl_ccall env prim args dbg =
 and transl_prim_1 env p arg dbg =
   match p with
   (* Generic operations *)
-    Pidentity | Pbytes_to_string | Pbytes_of_string | Popaque ->
+    Popaque ->
       transl env arg
-  | Pignore ->
-      return_unit(remove_unit (transl env arg))
   (* Heap operations *)
   | Pfield n ->
       get_field env (transl env arg) n dbg
@@ -2106,19 +2104,6 @@ and transl_prim_1 env p arg dbg =
   (* Integer operations *)
   | Pnegint ->
       Cop(Csubi, [Cconst_int 2; transl env arg], dbg)
-  | Pctconst c ->
-      let const_of_bool b = int_const (if b then 1 else 0) in
-      begin
-        match c with
-        | Big_endian -> const_of_bool Arch.big_endian
-        | Word_size -> int_const (8*Arch.size_int)
-        | Int_size -> int_const (8*Arch.size_int - 1)
-        | Max_wosize -> int_const ((1 lsl ((8*Arch.size_int) - 10)) - 1)
-        | Ostype_unix -> const_of_bool (Sys.os_type = "Unix")
-        | Ostype_win32 -> const_of_bool (Sys.os_type = "Win32")
-        | Ostype_cygwin -> const_of_bool (Sys.os_type = "Cygwin")
-        | Backend_type -> int_const 0 (* tag 0 is the same as Native here *)
-      end
   | Poffsetint n ->
       if no_overflow_lsl n 1 then
         add_const (transl env arg) (n lsl 1) dbg

@@ -161,8 +161,6 @@ let for_primitive (prim : Lambda.primitive) =
 
 let for_clambda_primitive (prim : Clambda_primitives.primitive) =
   match prim with
-  | Pignore | Pidentity | Pbytes_to_string | Pbytes_of_string ->
-      No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
   | Pmakearray (_, Immutable) -> No_effects, No_coeffects
@@ -232,10 +230,10 @@ let for_clambda_primitive (prim : Clambda_primitives.primitive) =
   | Pbintcomp _ -> No_effects, No_coeffects
   | Pbigarraydim _ ->
       No_effects, Has_coeffects  (* Some people resize bigarrays in place. *)
+  | Pread_symbol _
   | Pfield _
   | Pfield_computed
   | Pfloatfield _
-  | Pgetglobal _
   | Parrayrefu _
   | Pstringrefu
   | Pbytesrefu
@@ -268,7 +266,6 @@ let for_clambda_primitive (prim : Clambda_primitives.primitive) =
   | Psetfield _
   | Psetfield_computed _
   | Psetfloatfield _
-  | Psetglobal _
   | Parraysetu _
   | Parraysets _
   | Pbytessetu
@@ -283,16 +280,10 @@ let for_clambda_primitive (prim : Clambda_primitives.primitive) =
       (* Whether or not some of these are "unsafe" is irrelevant; they always
          have an effect. *)
       Arbitrary_effects, No_coeffects
-  | Pctconst _ -> No_effects, No_coeffects
   | Pbswap16
   | Pbbswap _ -> No_effects, No_coeffects
   | Pint_as_pointer -> No_effects, No_coeffects
   | Popaque -> Arbitrary_effects, Has_coeffects
-  | Prevapply
-  | Pdirapply ->
-      (* Removed by [Simplif], but there is no reason to prevent using
-         the current analysis function before/during Simplif. *)
-      Arbitrary_effects, Has_coeffects
   | Psequand
   | Psequor ->
       (* Removed by [Closure_conversion] in the flambda pipeline. *)
