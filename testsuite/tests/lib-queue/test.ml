@@ -138,4 +138,25 @@ let () =
   assert (Q.length q2 = 8); assert (Q.to_list q2 = [5; 6; 7; 8; 1; 2; 3; 4]);
 ;;
 
+(* test the "Queue.iter" function *)
+let () =
+  print_endline "MARK iter 0";
+
+  let q = Q.create () in
+  Q.iter (Printf.printf "MARK iter 1 %d\n") q;
+  print_endline "MARK iter 2";
+
+  Q.add 5 q;
+  Q.iter (Printf.printf "MARK iter 3 %d\n") q;
+  print_endline "MARK iter 4";
+
+  Q.add 42 q;
+  Q.iter (Printf.printf "MARK iter 5 %d\n") q;
+  print_endline "MARK iter 6";
+
+  Q.add 20 q;
+  Q.iter (Printf.printf "MARK iter 7 %d\n") q;
+  print_endline "MARK iter 8";
+;;
+
 let () = print_endline "OK"
