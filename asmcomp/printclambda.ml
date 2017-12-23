@@ -35,6 +35,228 @@ let value_kind =
   | Pboxedintval Pint32 -> ":int32"
   | Pboxedintval Pint64 -> ":int64"
 
+let boxed_integer_name = function
+  | Lambda.Pnativeint -> "nativeint"
+  | Lambda.Pint32 -> "int32"
+  | Lambda.Pint64 -> "int64"
+
+let boxed_integer_mark name = function
+  | Lambda.Pnativeint -> Printf.sprintf "Nativeint.%s" name
+  | Lambda.Pint32 -> Printf.sprintf "Int32.%s" name
+  | Lambda.Pint64 -> Printf.sprintf "Int64.%s" name
+
+let print_boxed_integer name ppf bi =
+  fprintf ppf "%s" (boxed_integer_mark name bi);;
+
+let array_kind array_kind =
+  let open Lambda in
+  match array_kind with
+  | Pgenarray -> "gen"
+  | Paddrarray -> "addr"
+  | Pintarray -> "int"
+  | Pfloatarray -> "float"
+
+let primitive ppf (prim:Clambda_primitives.primitive) =
+  let open Lambda in
+  let open Clambda_primitives in
+  match prim with
+  | Pidentity -> fprintf ppf "id"
+  | Pbytes_to_string -> fprintf ppf "bytes_to_string"
+  | Pbytes_of_string -> fprintf ppf "bytes_of_string"
+  | Pignore -> fprintf ppf "ignore"
+  | Prevapply -> fprintf ppf "revapply"
+  | Pdirapply -> fprintf ppf "dirapply"
+  | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
+  | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
+  | Pmakeblock(tag, Immutable, shape) ->
+      fprintf ppf "makeblock %i%a" tag Printlambda.block_shape shape
+  | Pmakeblock(tag, Mutable, shape) ->
+      fprintf ppf "makemutable %i%a" tag Printlambda.block_shape shape
+  | Pfield n -> fprintf ppf "field %i" n
+  | Pfield_computed -> fprintf ppf "field_computed"
+  | Psetfield(n, ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s %i" instr init n
+  | Psetfield_computed (ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s_computed" instr init
+  | Pfloatfield n -> fprintf ppf "floatfield %i" n
+  | Psetfloatfield (n, init) ->
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfloatfield%s %i" init n
+  | Pduprecord (rep, size) ->
+      fprintf ppf "duprecord %a %i" Printlambda.record_rep rep size
+  | Plazyforce -> fprintf ppf "force"
+  | Pccall p -> fprintf ppf "%s" p.Primitive.prim_name
+  | Praise k -> fprintf ppf "%s" (Lambda.raise_kind k)
+  | Psequand -> fprintf ppf "&&"
+  | Psequor -> fprintf ppf "||"
+  | Pnot -> fprintf ppf "not"
+  | Pnegint -> fprintf ppf "~"
+  | Paddint -> fprintf ppf "+"
+  | Psubint -> fprintf ppf "-"
+  | Pmulint -> fprintf ppf "*"
+  | Pdivint Safe -> fprintf ppf "/"
+  | Pdivint Unsafe -> fprintf ppf "/u"
+  | Pmodint Safe -> fprintf ppf "mod"
+  | Pmodint Unsafe -> fprintf ppf "mod_unsafe"
+  | Pandint -> fprintf ppf "and"
+  | Porint -> fprintf ppf "or"
+  | Pxorint -> fprintf ppf "xor"
+  | Plslint -> fprintf ppf "lsl"
+  | Plsrint -> fprintf ppf "lsr"
+  | Pasrint -> fprintf ppf "asr"
+  | Pintcomp(cmp) -> Printlambda.integer_comparison ppf cmp
+  | Poffsetint n -> fprintf ppf "%i+" n
+  | Poffsetref n -> fprintf ppf "+:=%i"n
+  | Pintoffloat -> fprintf ppf "int_of_float"
+  | Pfloatofint -> fprintf ppf "float_of_int"
+  | Pnegfloat -> fprintf ppf "~."
+  | Pabsfloat -> fprintf ppf "abs."
+  | Paddfloat -> fprintf ppf "+."
+  | Psubfloat -> fprintf ppf "-."
+  | Pmulfloat -> fprintf ppf "*."
+  | Pdivfloat -> fprintf ppf "/."
+  | Pfloatcomp(cmp) -> Printlambda.float_comparison ppf cmp
+  | Pstringlength -> fprintf ppf "string.length"
+  | Pstringrefu -> fprintf ppf "string.unsafe_get"
+  | Pstringrefs -> fprintf ppf "string.get"
+  | Pbyteslength -> fprintf ppf "bytes.length"
+  | Pbytesrefu -> fprintf ppf "bytes.unsafe_get"
+  | Pbytessetu -> fprintf ppf "bytes.unsafe_set"
+  | Pbytesrefs -> fprintf ppf "bytes.get"
+  | Pbytessets -> fprintf ppf "bytes.set"
+
+  | Parraylength k -> fprintf ppf "array.length[%s]" (array_kind k)
+  | Pmakearray (k, Mutable) -> fprintf ppf "makearray[%s]" (array_kind k)
+  | Pmakearray (k, Immutable) -> fprintf ppf "makearray_imm[%s]" (array_kind k)
+  | Pduparray (k, Mutable) -> fprintf ppf "duparray[%s]" (array_kind k)
+  | Pduparray (k, Immutable) -> fprintf ppf "duparray_imm[%s]" (array_kind k)
+  | Parrayrefu k -> fprintf ppf "array.unsafe_get[%s]" (array_kind k)
+  | Parraysetu k -> fprintf ppf "array.unsafe_set[%s]" (array_kind k)
+  | Parrayrefs k -> fprintf ppf "array.get[%s]" (array_kind k)
+  | Parraysets k -> fprintf ppf "array.set[%s]" (array_kind k)
+  | Pctconst c ->
+     let const_name = match c with
+       | Big_endian -> "big_endian"
+       | Word_size -> "word_size"
+       | Int_size -> "int_size"
+       | Max_wosize -> "max_wosize"
+       | Ostype_unix -> "ostype_unix"
+       | Ostype_win32 -> "ostype_win32"
+       | Ostype_cygwin -> "ostype_cygwin"
+       | Backend_type -> "backend_type" in
+     fprintf ppf "sys.constant_%s" const_name
+  | Pisint -> fprintf ppf "isint"
+  | Pisout -> fprintf ppf "isout"
+  | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
+  | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
+  | Pcvtbint (bi1, bi2) ->
+      fprintf ppf "%s_of_%s" (boxed_integer_name bi2) (boxed_integer_name bi1)
+  | Pnegbint bi -> print_boxed_integer "neg" ppf bi
+  | Paddbint bi -> print_boxed_integer "add" ppf bi
+  | Psubbint bi -> print_boxed_integer "sub" ppf bi
+  | Pmulbint bi -> print_boxed_integer "mul" ppf bi
+  | Pdivbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "div" ppf bi
+  | Pdivbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "div_unsafe" ppf bi
+  | Pmodbint { size = bi; is_safe = Safe } ->
+      print_boxed_integer "mod" ppf bi
+  | Pmodbint { size = bi; is_safe = Unsafe } ->
+      print_boxed_integer "mod_unsafe" ppf bi
+  | Pandbint bi -> print_boxed_integer "and" ppf bi
+  | Porbint bi -> print_boxed_integer "or" ppf bi
+  | Pxorbint bi -> print_boxed_integer "xor" ppf bi
+  | Plslbint bi -> print_boxed_integer "lsl" ppf bi
+  | Plsrbint bi -> print_boxed_integer "lsr" ppf bi
+  | Pasrbint bi -> print_boxed_integer "asr" ppf bi
+  | Pbintcomp(bi, Ceq) -> print_boxed_integer "==" ppf bi
+  | Pbintcomp(bi, Cne) -> print_boxed_integer "!=" ppf bi
+  | Pbintcomp(bi, Clt) -> print_boxed_integer "<" ppf bi
+  | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" ppf bi
+  | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" ppf bi
+  | Pbintcomp(bi, Cge) -> print_boxed_integer ">=" ppf bi
+  | Pbigarrayref(unsafe, _n, kind, layout) ->
+      Printlambda.print_bigarray "get" unsafe kind ppf layout
+  | Pbigarrayset(unsafe, _n, kind, layout) ->
+      Printlambda.print_bigarray "set" unsafe kind ppf layout
+  | Pbigarraydim(n) -> fprintf ppf "Bigarray.dim_%i" n
+  | Pstring_load_16(unsafe) ->
+     if unsafe then fprintf ppf "string.unsafe_get16"
+     else fprintf ppf "string.get16"
+  | Pstring_load_32(unsafe) ->
+     if unsafe then fprintf ppf "string.unsafe_get32"
+     else fprintf ppf "string.get32"
+  | Pstring_load_64(unsafe) ->
+     if unsafe then fprintf ppf "string.unsafe_get64"
+     else fprintf ppf "string.get64"
+  | Pbytes_load_16(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get16"
+     else fprintf ppf "bytes.get16"
+  | Pbytes_load_32(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get32"
+     else fprintf ppf "bytes.get32"
+  | Pbytes_load_64(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get64"
+     else fprintf ppf "bytes.get64"
+  | Pbytes_set_16(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set16"
+     else fprintf ppf "bytes.set16"
+  | Pbytes_set_32(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set32"
+     else fprintf ppf "bytes.set32"
+  | Pbytes_set_64(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set64"
+     else fprintf ppf "bytes.set64"
+  | Pbigstring_load_16(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_get16"
+     else fprintf ppf "bigarray.array1.get16"
+  | Pbigstring_load_32(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_get32"
+     else fprintf ppf "bigarray.array1.get32"
+  | Pbigstring_load_64(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_get64"
+     else fprintf ppf "bigarray.array1.get64"
+  | Pbigstring_set_16(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_set16"
+     else fprintf ppf "bigarray.array1.set16"
+  | Pbigstring_set_32(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_set32"
+     else fprintf ppf "bigarray.array1.set32"
+  | Pbigstring_set_64(unsafe) ->
+     if unsafe then fprintf ppf "bigarray.array1.unsafe_set64"
+     else fprintf ppf "bigarray.array1.set64"
+  | Pbswap16 -> fprintf ppf "bswap16"
+  | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
+  | Pint_as_pointer -> fprintf ppf "int_as_pointer"
+  | Popaque -> fprintf ppf "opaque"
+
 let rec structured_constant ppf = function
   | Uconst_float x -> fprintf ppf "%F" x
   | Uconst_int32 x -> fprintf ppf "%ldl" x
@@ -157,7 +379,7 @@ and lam ppf = function
   | Uprim(prim, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
-      fprintf ppf "@[<2>(%a%a)@]" Printlambda.primitive prim lams largs
+      fprintf ppf "@[<2>(%a%a)@]" primitive prim lams largs
   | Uswitch(larg, sw, _dbg) ->
       let print_case tag index i ppf =
         for j = 0 to Array.length index - 1 do

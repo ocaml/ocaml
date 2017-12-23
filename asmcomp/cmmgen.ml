@@ -22,6 +22,7 @@ open Primitive
 open Types
 open Lambda
 open Clambda
+open Clambda_primitives
 open Cmm
 open Cmx_format
 
@@ -2196,7 +2197,7 @@ and transl_prim_1 env p arg dbg =
                    dbg))
               dbg
   | prim ->
-      fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
+      fatal_errorf "Cmmgen.transl_prim_1: %a" Printclambda.primitive prim
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
@@ -2497,7 +2498,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | prim ->
-      fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
+      fatal_errorf "Cmmgen.transl_prim_2: %a" Printclambda.primitive prim
 
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
@@ -2670,7 +2671,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (unaligned_set_64 ba_data idx newval dbg))))))
 
   | prim ->
-      fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
+      fatal_errorf "Cmmgen.transl_prim_3: %a" Printclambda.primitive prim
 
 and transl_unbox_float dbg env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f

@@ -2,10 +2,11 @@
 (*                                                                        *)
 (*                                 OCaml                                  *)
 (*                                                                        *)
-(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
-(*     en Automatique.                                                    *)
+(*   Copyright 2017 OCamlPro SAS                                          *)
+(*   Copyright 2017 Jane Street Group LLC                                 *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -13,15 +14,4 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Clambda
-open Format
-
-val clambda: formatter -> ulambda -> unit
-val approx: formatter -> value_approximation -> unit
-val structured_constant: formatter -> ustructured_constant -> unit
-val primitive: formatter -> Clambda_primitives.primitive -> unit
-
-val phantom_defining_expr_opt
-   : formatter
-  -> uphantom_defining_expr option
-  -> unit
+val convert : Lambda.primitive -> Clambda_primitives.primitive

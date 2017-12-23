@@ -50,7 +50,7 @@ let ignore_debuginfo (_ : Debuginfo.t) = ()
 let ignore_int (_ : int) = ()
 let ignore_var (_ : V.t) = ()
 let ignore_var_option (_ : V.t option) = ()
-let ignore_primitive (_ : Lambda.primitive) = ()
+let ignore_primitive (_ : Clambda_primitives.primitive) = ()
 let ignore_string (_ : string) = ()
 let ignore_int_array (_ : int array) = ()
 let ignore_var_with_provenance (_ : VP.t) = ()
@@ -582,7 +582,7 @@ let both_moveable a b =
   | Fixed, Moveable
   | Fixed, Fixed -> Fixed
 
-let primitive_moveable (prim : Lambda.primitive)
+let primitive_moveable (prim : Clambda_primitives.primitive)
     (args : Clambda.ulambda list)
     (var_info : var_info) =
   match prim, args with
@@ -599,7 +599,7 @@ let primitive_moveable (prim : Lambda.primitive)
        is never mutated *)
     Moveable
   | _ ->
-    match Semantics_of_primitives.for_primitive prim with
+    match Semantics_of_primitives.for_clambda_primitive prim with
     | No_effects, No_coeffects -> Moveable
     | No_effects, Has_coeffects
     | Only_generative_effects, No_coeffects

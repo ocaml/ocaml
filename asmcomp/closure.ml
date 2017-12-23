@@ -21,6 +21,7 @@ open Primitive
 open Lambda
 open Switch
 open Clambda
+module P = Clambda_primitives
 
 module Int = Numbers.Int
 module Storer =
@@ -51,7 +52,7 @@ let rec build_closure_env env_param pos = function
     [] -> V.Map.empty
   | id :: rem ->
       V.Map.add id
-        (Uprim(Pfield pos, [Uvar env_param], Debuginfo.none))
+        (Uprim(P.Pfield pos, [Uvar env_param], Debuginfo.none))
           (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -60,7 +61,7 @@ let rec build_closure_env env_param pos = function
    contain the right names if the -for-pack option is active. *)
 
 let getglobal dbg id =
-  Uprim(Pgetglobal (V.create_persistent (Compilenv.symbol_for_global id)),
+  Uprim(P.Pgetglobal (V.create_persistent (Compilenv.symbol_for_global id)),
         [], dbg)
 
 (* Check if a variable occurs in a [clambda] term. *)
@@ -111,6 +112,7 @@ let occurs_var var u =
    some threshold *)
 
 let prim_size prim args =
+  let open Clambda_primitives in
   match prim with
     Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
   | Pgetglobal _ -> 1
@@ -217,13 +219,19 @@ let is_pure_prim p =
   | (No_effects | Only_generative_effects), _ -> true
   | Arbitrary_effects, _ -> false
 
+let is_pure_clambda_prim p =
+  let open Semantics_of_primitives in
+  match Semantics_of_primitives.for_clambda_primitive p with
+  | (No_effects | Only_generative_effects), _ -> true
+  | Arbitrary_effects, _ -> false
+
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
 let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure_clambda args
+  | Uprim(p, args, _) -> is_pure_clambda_prim p && List.for_all is_pure_clambda args
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -237,6 +245,7 @@ let make_const_ptr n = make_const (Uconst_ptr n)
 let make_const_bool b = make_const_ptr(if b then 1 else 0)
 
 let make_integer_comparison cmp x y =
+  let open Clambda_primitives in
   make_const_bool
     (match cmp with
        Ceq -> x = y
@@ -269,6 +278,7 @@ let make_const_int64 n = make_const_ref (Uconst_int64 n)
    floating-point computations is allowed *)
 
 let simplif_arith_prim_pure fpc p (args, approxs) dbg =
+  let open Clambda_primitives in
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
@@ -454,6 +464,7 @@ let field_approx n = function
   | _ -> Value_unknown
 
 let simplif_prim_pure fpc p (args, approxs) dbg =
+  let open Clambda_primitives in
   match p, args, approxs with
   (* Block construction *)
   | Pmakeblock(tag, Immutable, _kind), _, _ ->
@@ -474,7 +485,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   | Pfield n, _, [ Value_const(Uconst_ref(_, Some (Uconst_block(_, l)))) ]
     when n < List.length l ->
       make_const (List.nth l n)
-  | Pfield n, [ Uprim(Pmakeblock _, ul, _) ], [approx]
+  | Pfield n, [ Uprim(P.Pmakeblock _, ul, _) ], [approx]
     when n < List.length ul ->
       (List.nth ul n, field_approx n approx)
   (* Strings *)
@@ -517,7 +528,7 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
     (* XXX : always return the same approxs as simplif_prim_pure? *)
     let approx =
       match p with
-      | Pmakeblock(_, Immutable, _kind) ->
+      | P.Pmakeblock(_, Immutable, _kind) ->
           Value_tuple (Array.of_list approxs)
       | _ ->
           Value_unknown
@@ -676,7 +687,7 @@ let rec substitute loc fpc sb rn ulam =
             substitute loc fpc sb rn u2
           else
             substitute loc fpc sb rn u3
-      | Uprim(Pmakeblock _, _, _) ->
+      | Uprim(P.Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
       | su1 ->
           Uifthenelse(su1, substitute loc fpc sb rn u2,
@@ -726,8 +737,9 @@ let rec bind_params_rec loc fpc subst params args body =
         let p1' = VP.rename p1 in
         let u1, u2 =
           match VP.name p1, a1 with
-          | "*opt*", Uprim(Pmakeblock(0, Immutable, kind), [a], dbg) ->
-              a, Uprim(Pmakeblock(0, Immutable, kind), [Uvar (VP.var p1')], dbg)
+          | "*opt*", Uprim(P.Pmakeblock(0, Immutable, kind), [a], dbg) ->
+              a, Uprim(P.Pmakeblock(0, Immutable, kind),
+                       [Uvar (VP.var p1')], dbg)
           | _ ->
               a1, Uvar (VP.var p1')
         in
@@ -802,12 +814,12 @@ let check_constant_result lam ulam approx =
     Value_const c when is_pure lam -> make_const c
   | Value_global_field (id, i) when is_pure lam ->
       begin match ulam with
-      | Uprim(Pfield _, [Uprim(Pgetglobal _, _, _)], _) -> (ulam, approx)
+      | Uprim(P.Pfield _, [Uprim(P.Pgetglobal _, _, _)], _) -> (ulam, approx)
       | _ ->
           let glb =
-            Uprim(Pgetglobal (V.create_persistent id), [], Debuginfo.none)
+            Uprim(P.Pgetglobal (V.create_persistent id), [], Debuginfo.none)
           in
-          Uprim(Pfield i, [glb], Debuginfo.none), approx
+          Uprim(P.Pfield i, [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 
@@ -891,7 +903,7 @@ let rec close fenv cenv = function
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
-         [Uprim(Pmakeblock _, uargs, _)])
+         [Uprim(P.Pmakeblock _, uargs, _)])
         when List.length uargs = - fundesc.fun_arity ->
           let app =
             direct_apply ~loc ~attribute fundesc funct ufunct uargs in
@@ -1020,6 +1032,11 @@ let rec close fenv cenv = function
         let (ubody, approx) = close fenv_body cenv body in
         (Uletrec(udefs, ubody), approx)
       end
+  | Lprim(Pignore, [arg], _loc) ->
+      let expr, approx = make_const_ptr 0 in
+      Usequence(fst (close fenv cenv arg), expr), approx
+  | Lprim((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _loc) ->
+      close fenv cenv arg
   | Lprim(Pdirapply,[funct;arg], loc)
   | Lprim(Prevapply,[arg;funct], loc) ->
       close fenv cenv (Lapply{ap_should_be_tailcall=false;
@@ -1036,21 +1053,22 @@ let rec close fenv cenv = function
   | Lprim(Pfield n, [lam], loc) ->
       let (ulam, approx) = close fenv cenv lam in
       let dbg = Debuginfo.from_location loc in
-      check_constant_result lam (Uprim(Pfield n, [ulam], dbg))
+      check_constant_result lam (Uprim(P.Pfield n, [ulam], dbg))
                             (field_approx n approx)
   | Lprim(Psetfield(n, is_ptr, init), [Lprim(Pgetglobal id, [], _); lam], loc)->
       let (ulam, approx) = close fenv cenv lam in
       if approx <> Value_unknown then
         (!global_approx).(n) <- approx;
       let dbg = Debuginfo.from_location loc in
-      (Uprim(Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
+      (Uprim(P.Psetfield(n, is_ptr, init), [getglobal dbg id; ulam], dbg),
        Value_unknown)
   | Lprim(Praise k, [arg], loc) ->
       let (ulam, _approx) = close fenv cenv arg in
       let dbg = Debuginfo.from_location loc in
-      (Uprim(Praise k, [ulam], dbg),
+      (Uprim(P.Praise k, [ulam], dbg),
        Value_unknown)
   | Lprim(p, args, loc) ->
+      let p = Convert_primitives.convert p in
       let dbg = Debuginfo.from_location loc in
       simplif_prim !Clflags.float_const_prop
                    p (close_list_approx fenv cenv args) dbg

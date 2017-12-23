@@ -62,6 +62,8 @@ type coeffects = No_coeffects | Has_coeffects
     must also be analysed. *)
 val for_primitive: Lambda.primitive -> effects * coeffects
 
+val for_clambda_primitive: Clambda_primitives.primitive -> effects * coeffects
+
 type return_type =
   | Float
   | Other

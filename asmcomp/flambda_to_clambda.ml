@@ -398,6 +398,7 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   | Prim (Popaque, args, dbg) ->
     Uprim (Pidentity, subst_vars env args, dbg)
   | Prim (p, args, dbg) ->
+    let p = Convert_primitives.convert p in
     Uprim (p, subst_vars env args, dbg)
   | Expr expr -> to_clambda t env expr
 
