@@ -31,4 +31,15 @@ MARK iteri 7 0 5
 MARK iteri 7 1 42
 MARK iteri 7 2 20
 MARK iteri 8
+MARK foldi 0
+MARK foldi 2 0
+MARK foldi 3 0 0 5
+MARK foldi 4 5
+MARK foldi 5 0 0 5
+MARK foldi 5 5 1 42
+MARK foldi 6 42
+MARK foldi 7 0 0 5
+MARK foldi 7 5 1 42
+MARK foldi 7 42 2 20
+MARK foldi 8 42
 OK
