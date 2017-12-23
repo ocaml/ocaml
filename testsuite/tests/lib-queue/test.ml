@@ -200,4 +200,25 @@ let () =
   Printf.printf "MARK fold 8 %d\n" q_max;
 ;;
 
+(* test "iteri" function *)
+let () =
+  print_endline "MARK iteri 0";
+
+  let q = Q.create () in
+  Q.iteri (Printf.printf "MARK iteri 1 %d %d\n") q;
+  print_endline "MARK iteri 2";
+
+  Q.add 5 q;
+  Q.iteri (Printf.printf "MARK iteri 3 %d %d\n") q;
+  print_endline "MARK iteri 4";
+
+  Q.add 42 q;
+  Q.iteri (Printf.printf "MARK iteri 5 %d %d\n") q;
+  print_endline "MARK iteri 6";
+
+  Q.add 20 q;
+  Q.iteri (Printf.printf "MARK iteri 7 %d %d\n") q;
+  print_endline "MARK iteri 8";
+;;
+
 let () = print_endline "OK"
