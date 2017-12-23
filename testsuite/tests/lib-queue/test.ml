@@ -159,4 +159,45 @@ let () =
   print_endline "MARK iter 8";
 ;;
 
+(* test "fold" function *)
+let () =
+  print_endline "MARK fold 0";
+
+  let q = Q.create () in
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 1 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 2 %d\n" q_max;
+
+  Q.add 5 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 3 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 4 %d\n" q_max;
+
+  Q.add 42 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 5 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 6 %d\n" q_max;
+
+  Q.add 20 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 7 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 8 %d\n" q_max;
+;;
+
 let () = print_endline "OK"

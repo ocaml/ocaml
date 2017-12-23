@@ -9,4 +9,15 @@ MARK iter 7 5
 MARK iter 7 42
 MARK iter 7 20
 MARK iter 8
+MARK fold 0
+MARK fold 2 0
+MARK fold 3 0 5
+MARK fold 4 5
+MARK fold 5 0 5
+MARK fold 5 5 42
+MARK fold 6 42
+MARK fold 7 0 5
+MARK fold 7 5 42
+MARK fold 7 42 20
+MARK fold 8 42
 OK
