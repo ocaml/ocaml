@@ -2,15 +2,21 @@
 \label{c:objectexamples}
 \pdfchapterfold{-15}{Tutorial: Objects in OCaml}
 %HEVEA\cutname{objectexamples.html}
-{\it (Chapter written by Jérôme Vouillon, Didier Rémy and Jacques Garrigue)}
+{\it (Chapter written by J\'er\^ome Vouillon, Didier R\'emy and Jacques Garrigue)}
 
 \bigskip
 
 \noindent This chapter gives an overview of the object-oriented features of
-OCaml. Note that the relation between object, class and type
-in OCaml is very different from that in mainstream
-object-oriented languages like Java or C++, so that you should not
-assume that similar keywords mean the same thing.
+OCaml.
+
+Note that the relationship between object, class and type in OCaml is
+different than in mainstream object-oriented languages such as Java and
+C++, so you shouldn't assume that similar keywords mean the same thing.
+Object-oriented features are used much less frequently in OCaml than
+in those languages.  OCaml has alternatives that are often more appropriate,
+such as modules and functors.  Indeed, many OCaml programs do not use objects
+at all.
+
 
 \begin{htmlonly}
 
@@ -18,7 +24,7 @@ assume that similar keywords mean the same thing.
 \ref{ss:immediate-objects} Immediate objects \\
 \ref{ss:reference-to-self} Reference to self \\
 \ref{ss:initializers} Initializers \\
-\ref{ss:virtual-methods} Virtual methods \\
+\ref{ss:virtual-methods} Virtual methods \\NChan
 \ref{ss:private-methods} Private methods \\
 \ref{ss:class-interfaces} Class interfaces \\
 \ref{ss:inheritance} Inheritance \\
@@ -70,7 +76,7 @@ automatically defined by the class definition above. It stands for the
 object type "<get_x : int; move : int -> unit>", listing the methods
 of class "point" along with their types.
 
-We now invoke some methods to "p":
+We now invoke some methods of "p":
 \begin{caml_example}{toplevel}
 p#get_x;;
 p#move 3;;
@@ -219,7 +225,7 @@ in sections \ref{ss:reference-to-self} and \ref{ss:parameterized-classes}.
 \pdfsection{Reference to self}
 \label{ss:reference-to-self}
 
-A method or an initializer can send messages to self (that is,
+A method or an initializer can invoke methods on self (that is,
 the current object).  For that, self must be explicitly bound, here to
 the variable "s" ("s" could be any identifier, even though we will
 often choose the name "self".)
