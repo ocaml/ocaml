@@ -1446,10 +1446,22 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
           "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
   | Tconstr (p, [ty1], _), _
     when is_ref_path p && unifiable env ty1 t4 ->
+      let non_shadowed_deref =
+        match Env.lookup_value (Lident "!") env with
+        | Path.(Pdot (Pident id, "!", _)), _ -> Ident.same id ident_pervasives
+        | _ -> false
+        | exception Not_found -> true
+      in
+      let pp_deref ppf =
+        if non_shadowed_deref then
+          Format.fprintf ppf "!"
+        else
+          Format.fprintf ppf "%s.(!)" ident_pervasives.Ident.name
+      in
       Some (fun ppf ->
         fprintf ppf
-          "@,@[Hint: Did you forget to use `!' to get the content \
-           of a reference somewhere?@]")
+          "@,@[Hint: Did you forget to use `%t' to get the content \
+           of a reference somewhere?@]" pp_deref)
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
