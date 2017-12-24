@@ -23,8 +23,6 @@ open Typedtree
 open Btype
 open Ctype
 
-let debug = Format.eprintf
-
 type type_forcing_context =
   | If_conditional
   | If_no_else_branch
@@ -99,6 +97,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Empty_pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1038,7 +1037,6 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
   let rp k x : pattern = if constrs = None then k (rp x) else k x in
   match sp.ppat_desc with
     Ppat_any ->
-      debug "Ppat_any@.";
       let k' d = rp k {
         pat_desc = d;
         pat_loc = loc; pat_extra=[];
@@ -1047,18 +1045,20 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_env = !env }
       in
       if explode > 0 then
-        let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
-        if sp.ppat_desc = Parsetree.Ppat_any then
-          (debug "Ppat_any: k@."; k' Tpat_any) else
+        let (sp, constrs, labels) =
+          try
+            Parmatch.ppat_of_type !env expected_ty
+          with Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
+        in
+        if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
         if mode = Inside_or then raise Need_backtrack else
         let explode =
           match sp.ppat_desc with
             Parsetree.Ppat_or _ -> explode - 5
           | _ -> explode - 1
         in
-        (debug "Ppat_any: call type_pat again@.";
         type_pat ~constrs:(Some constrs) ~labels:(Some labels)
-          ~explode sp expected_ty k)
+          ~explode sp expected_ty k
       else k' Tpat_any
   | Ppat_var name ->
       let id = (* PR#7330 *)
@@ -1158,7 +1158,6 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_construct(lid, sarg) ->
-      debug "Ppat_construct@.";
       let opath =
         try
           let (p0, p, _) = extract_concrete_variant !env expected_ty in
@@ -1333,23 +1332,21 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_attributes = sp.ppat_attributes;
         pat_env = !env })
   | Ppat_or(sp1, sp2) ->
-      debug "Ppat_or@.";
       let state = save_state env in
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
-        debug "Ppat_or: start p1@.";
         let p1 =
           try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
-          with Need_backtrack -> (debug "Ppat_or: p1 is None@."; None) in
+          with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let p2 =
           try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
-          with Need_backtrack -> (debug "Ppat_or: p2 is None@."; None) in
+          with Need_backtrack -> None in
         let p2_variables = !pattern_variables in
         match p1, p2 with
           None, None -> raise Need_backtrack
@@ -1367,16 +1364,13 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       with
         p -> rp k p
       | exception Need_backtrack when mode <> Inside_or ->
-          debug "Ppat_or: final exn handling@.";
           assert (constrs <> None);
           set_state state env;
           let mode =
             if mode = Split_or then mode else Splitting_or in
-try (debug "Ppat_or: final exn sp1@.";
-type_pat ~mode sp1 expected_ty k) with Error _ ->
-            (debug "Ppat_or: final exn sp2@.";
-            set_state state env;
-            type_pat ~mode sp2 expected_ty k)
+            try type_pat ~mode sp1 expected_ty k with Error _ ->
+              set_state state env;
+              type_pat ~mode sp2 expected_ty k
       end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
@@ -5286,6 +5280,8 @@ let report_error env ppf = function
         longident lid
         "Hint: You are probably missing the `rec' keyword on line"
         line
+  | Empty_pattern ->
+      fprintf ppf "Empty pattern"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

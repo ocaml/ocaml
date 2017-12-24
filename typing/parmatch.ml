@@ -764,7 +764,7 @@ let pat_of_constr ex_pat cstr =
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
 let rec orify_many = function
-| [] -> assert false
+| [] -> raise Empty
 | [x] -> x
 | x :: xs -> orify x (orify_many xs)
 
@@ -781,9 +781,7 @@ let pats_of_type ?(always=false) env ty =
       | Type_variant cl when always || List.length cl = 1 ||
         List.for_all (fun cd -> cd.Types.cd_res <> None) cl ->
           let cstrs = fst (Env.find_type_descrs path env) in
-          Format.eprintf "cstrs length %d@." (List.length cstrs);
           List.map (pat_of_constr (make_pat Tpat_any ty env)) cstrs
-      | Type_variant cl when List.length cl = 0 -> [omega]
       | Type_record _ ->
           let labels = snd (Env.find_type_descrs path env) in
           let fields =

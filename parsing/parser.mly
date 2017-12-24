@@ -1707,7 +1707,7 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list             { (Some $1, $3) }
+    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
   | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
