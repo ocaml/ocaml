@@ -107,6 +107,16 @@ let iter =
   in
   fun f q -> iter f q.first
 
+let iteri =
+  let rec iteri i f cell =
+    match cell with
+    | Nil -> ()
+    | Cons { content; next } ->
+      f i content;
+      iteri (succ i) f next
+  in
+  fun f q -> iteri 0 f q.first
+
 let fold =
   let rec fold f accu cell =
     match cell with

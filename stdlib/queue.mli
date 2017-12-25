@@ -70,6 +70,11 @@ val iter : ('a -> unit) -> 'a t -> unit
    from the least recently entered to the most recently entered.
    The queue itself is unchanged. *)
 
+val iteri : (int -> 'a -> unit) -> 'a t -> unit
+(** If [q] is a queue with elements [a0], [a1], ..., [an],
+    then [iteri f q] is equivalent to [begin f 0 a0; f 1 a1; ... ; f n an end].
+    The queue itself is unchanged. *)
+
 val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** [fold f accu q] is equivalent to [List.fold_left f accu l],
    where [l] is the list of [q]'s elements. The queue remains
