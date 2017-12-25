@@ -97,16 +97,6 @@ let is_empty q =
 let length q =
   q.length
 
-let iter =
-  let rec iter f cell =
-    match cell with
-    | Nil -> ()
-    | Cons { content; next } ->
-      f content;
-      iter f next
-  in
-  fun f q -> iter f q.first
-
 let iteri =
   let rec iteri i f cell =
     match cell with
@@ -116,6 +106,9 @@ let iteri =
       iteri (succ i) f next
   in
   fun f q -> iteri 0 f q.first
+
+let iter =
+  fun f q -> iteri (fun _ a -> f a) q
 
 let fold =
   let rec fold f accu cell =
