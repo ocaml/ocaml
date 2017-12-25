@@ -249,7 +249,9 @@ typedef char char_os;
 #define CAML_SYS_RENAME(old_name,new_name) rename_os(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) chdir_os(dirname)
 #define CAML_SYS_GETENV(varname) getenv(varname)
-#define CAML_SYS_SYSTEM(command) system_os(command)
+#ifndef TARGET_IOS_IPHONE
+  #define CAML_SYS_SYSTEM(command) system_os(command)
+#endif
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
 #else
@@ -303,8 +305,10 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir_os,dirname)
 #define CAML_SYS_GETENV(varname)                        \
   CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
-#define CAML_SYS_SYSTEM(command)                        \
-  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system_os,command)
+#ifndef TARGET_IOS_IPHONE
+  #define CAML_SYS_SYSTEM(command)                        \
+    CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system_os,command)
+#endif
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
   CAML_SYS_PRIM_2(CAML_CPLUGINS_READ_DIRECTORY,caml_read_directory,     \
                   dirname,tbl)
