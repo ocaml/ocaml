@@ -80,6 +80,11 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
    where [l] is the list of [q]'s elements. The queue remains
    unchanged. *)
 
+val foldi : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
+(** If [q] is a queue with elements [a0], [a1], ..., [an],
+    then [fold f acc q] is equivalent to [f ( ... (f (f acc 0 a0) 1 a1) ...) n bn].
+    The queue remains unchanged. *)
+
 val transfer : 'a t -> 'a t -> unit
 (** [transfer q1 q2] adds all of [q1]'s elements at the end of
    the queue [q2], then clears [q1]. It is equivalent to the

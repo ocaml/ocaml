@@ -127,6 +127,16 @@ let fold =
   in
   fun f accu q -> fold f accu q.first
 
+let foldi =
+  let rec foldi f acc i cell =
+    match cell with
+    | Nil -> acc
+    | Cons { content; next } ->
+      let accu = f acc i content in
+      foldi f accu (succ i) next
+  in
+  fun f acc q -> foldi f acc 0 q.first
+
 let transfer q1 q2 =
   if q1.length > 0 then
     match q2.last with
