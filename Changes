@@ -184,6 +184,9 @@ Working version
   (Nicolás Ojeda Bär, report by Alain Frisch, review by David Allsopp, Xavier
   Leroy)
 
+- MPR#7666, GPR#1465: fix partial application of Printexc.raise_with_backtrace.
+  (Nicolás Ojeda Bär)
+
 4.06 maintenance branch
 -----------------------
 

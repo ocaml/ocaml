@@ -687,6 +687,20 @@ and transl_exp0 e =
                   loc = e.exp_loc;
                   body = Lsend(Cached, Lvar meth, Lvar obj,
                                [Lvar cache; Lvar pos], e.exp_loc)}
+      else if p.prim_name = "%raise_with_backtrace" then
+        let exn = Ident.create "exn" and bt = Ident.create "bt" in
+        let kind = Curried in
+        let params = [exn; bt] in
+        let attr = default_stub_attribute in
+        let loc = e.exp_loc in
+        let body =
+          event_before e (Lsequence(Lprim(Pccall prim_restore_raw_backtrace,
+                                          [Lvar exn; Lvar bt], e.exp_loc),
+                                    Lprim(Praise Raise_reraise,
+                                          [event_after e (Lvar exn)],
+                                          e.exp_loc)))
+        in
+        Lfunction{kind; params; attr; loc; body}
       else
         transl_primitive e.exp_loc p e.exp_env e.exp_type (Some path)
   | Texp_ident(_, _, {val_kind = Val_anc _}) ->
@@ -762,9 +776,9 @@ and transl_exp0 e =
         Llet(Strict, Pgenval, vexn, texn2,
              event_before e begin
                Lsequence(
-                 wrap  (Lprim (Pccall prim_restore_raw_backtrace,
-                               [Lvar vexn;bt],
-                               e.exp_loc)),
+                 Lprim (Pccall prim_restore_raw_backtrace,
+                        [Lvar vexn;bt],
+                        e.exp_loc),
                  wrap0 (Lprim(Praise Raise_reraise,
                               [event_after texn1 (Lvar vexn)],
                               e.exp_loc))
