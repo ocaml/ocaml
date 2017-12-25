@@ -110,16 +110,6 @@ let iteri =
 let iter =
   fun f q -> iteri (fun _ a -> f a) q
 
-let fold =
-  let rec fold f accu cell =
-    match cell with
-    | Nil -> accu
-    | Cons { content; next } ->
-      let accu = f accu content in
-      fold f accu next
-  in
-  fun f accu q -> fold f accu q.first
-
 let foldi =
   let rec foldi f acc i cell =
     match cell with
@@ -129,6 +119,9 @@ let foldi =
       foldi f accu (succ i) next
   in
   fun f acc q -> foldi f acc 0 q.first
+
+let fold =
+  fun f acc q -> foldi (fun acc _ a -> f acc a) acc q
 
 let transfer q1 q2 =
   if q1.length > 0 then
