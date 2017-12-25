@@ -1368,9 +1368,9 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
           set_state state env;
           let mode =
             if mode = Split_or then mode else Splitting_or in
-            try type_pat ~mode sp1 expected_ty k with Error _ ->
-              set_state state env;
-              type_pat ~mode sp2 expected_ty k
+          try type_pat ~mode sp1 expected_ty k with Error _ ->
+            set_state state env;
+            type_pat ~mode sp2 expected_ty k
       end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
