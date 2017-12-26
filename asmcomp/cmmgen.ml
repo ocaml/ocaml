@@ -1930,7 +1930,35 @@ let rec transl env e =
           transl_prim_2 env p arg1 arg2 dbg
       | (p, [arg1; arg2; arg3]) ->
           transl_prim_3 env p arg1 arg2 arg3 dbg
-      | (_, _) ->
+      | (Pread_symbol _, _::_::_::_::_)
+      | (Pbigarrayset (_, _, _, _), [])
+      | (Pbigarrayref (_, _, _, _), [])
+      | ((Pbigarraydim _ | Pduparray (_, _)), ([] | _::_::_::_::_))
+        ->
+          fatal_error "Cmmgen.transl:prim, wrong arity"
+      | ((Pfield_computed|Plazyforce|Psequand
+         | Psequor | Pnot | Pnegint | Paddint | Psubint
+         | Pmulint | Pandint | Porint | Pxorint | Plslint
+         | Plsrint | Pasrint | Pintoffloat | Pfloatofint
+         | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
+         | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu
+         | Pstringrefs | Pbyteslength | Pbytesrefu | Pbytessetu
+         | Pbytesrefs | Pbytessets | Pisint | Pisout | Pbittest
+         | Pbswap16 | Pint_as_pointer | Popaque | Pfield _
+         | Psetfield (_, _, _) | Psetfield_computed (_, _)
+         | Pfloatfield _ | Psetfloatfield (_, _) | Pduprecord (_, _)
+         | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _ | Poffsetint _
+         | Poffsetref _ | Pfloatcomp _ | Parraylength _
+         | Parrayrefu _ | Parraysetu _ | Parrayrefs _ | Parraysets _
+         | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _
+         | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _
+         | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
+         | Pasrbint _ | Pbintcomp (_, _) | Pstring_load_16 _
+         | Pstring_load_32 _ | Pstring_load_64 _ | Pstring_set_16 _
+         | Pstring_set_32 _ | Pstring_set_64 _ | Pbigstring_load_16 _
+         | Pbigstring_load_32 _ | Pbigstring_load_64 _ | Pbigstring_set_16 _
+         | Pbigstring_set_32 _ | Pbigstring_set_64 _ | Pbbswap _), _)
+        ->
           fatal_error "Cmmgen.transl:prim"
       end
 
@@ -2181,8 +2209,26 @@ and transl_prim_1 env p arg dbg =
                    [untag_int (transl env arg) dbg],
                    dbg))
               dbg
-  | prim ->
-      fatal_errorf "Cmmgen.transl_prim_1: %a" Printclambda.primitive prim
+  | (Pfield_computed | Plazyforce | Psequand | Psequor
+    | Paddint | Psubint | Pmulint | Pandint
+    | Porint | Pxorint | Plslint | Plsrint | Pasrint
+    | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
+    | Pstringrefu | Pstringrefs | Pbytesrefu | Pbytessetu
+    | Pbytesrefs | Pbytessets | Pisout | Pbittest | Pread_symbol _
+    | Pmakeblock (_, _, _) | Psetfield (_, _, _) | Psetfield_computed (_, _)
+    | Psetfloatfield (_, _) | Pduprecord (_, _) | Pccall _ | Pdivint _
+    | Pmodint _ | Pintcomp _ | Pfloatcomp _ | Pmakearray (_, _)
+    | Pduparray (_, _) | Parrayrefu _ | Parraysetu _
+    | Parrayrefs _ | Parraysets _ | Paddbint _ | Psubbint _ | Pmulbint _
+    | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _
+    | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
+    | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
+    | Pbigarraydim _ | Pstring_load_16 _ | Pstring_load_32 _
+    | Pstring_load_64 _ | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
+    | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
+    | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _)
+    ->
+      fatal_errorf "Cmmgen.transl_prim_1: %a" Printclambda.primitive p
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
@@ -2482,8 +2528,18 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_int_comparison cmp),
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
-  | prim ->
-      fatal_errorf "Cmmgen.transl_prim_2: %a" Printclambda.primitive prim
+  | Plazyforce | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
+  | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
+  | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
+  | Pmakeblock (_, _, _) | Pfield _ | Psetfield_computed (_, _) | Pfloatfield _
+  | Pduprecord (_, _) | Pccall _ | Praise _ | Poffsetint _ | Poffsetref _
+  | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
+  | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
+  | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
+  | Pbigarraydim _ | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
+  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ | Pbbswap _
+    ->
+      fatal_errorf "Cmmgen.transl_prim_2: %a" Printclambda.primitive p
 
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
@@ -2654,9 +2710,25 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           (Cconst_int 7)
                                           dbg) idx
                       (unaligned_set_64 ba_data idx newval dbg))))))
-
-  | prim ->
-      fatal_errorf "Cmmgen.transl_prim_3: %a" Printclambda.primitive prim
+  | Pfield_computed | Plazyforce | Psequand | Psequor | Pnot | Pnegint | Paddint
+  | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
+  | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
+  | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu | Pstringrefs
+  | Pbyteslength | Pbytesrefu | Pbytesrefs | Pisint | Pisout | Pbittest
+  | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _ | Pmakeblock (_, _, _)
+  | Pfield _ | Psetfield (_, _, _) | Pfloatfield _ | Psetfloatfield (_, _)
+  | Pduprecord (_, _) | Pccall _ | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _
+  | Poffsetint _ | Poffsetref _ | Pfloatcomp _ | Pmakearray (_, _)
+  | Pduparray (_, _) | Parraylength _ | Parrayrefu _ | Parrayrefs _
+  | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _ | Paddbint _
+  | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
+  | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
+  | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
+  | Pstring_load_16 _ | Pstring_load_32 _ | Pstring_load_64 _
+  | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
+  | Pbbswap _
+    ->
+      fatal_errorf "Cmmgen.transl_prim_3: %a" Printclambda.primitive p
 
 and transl_unbox_float dbg env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f
