@@ -196,9 +196,9 @@ let uchar_for_uchar_escape lexbuf =
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
-let get_label_name lexbuf =
+let get_label_name ?(offset=1) ?(drop_last=0) lexbuf =
   let s = Lexing.lexeme lexbuf in
-  let name = String.sub s 1 (String.length s - 2) in
+  let name = String.sub s offset (String.length s - 1 - offset - drop_last) in
   if Hashtbl.mem keyword_table name then
     raise (Error(Keyword_as_label name, Location.curr lexbuf));
   name
@@ -448,6 +448,8 @@ rule token = parse
   | "&"  { AMPERSAND }
   | "&&" { AMPERAMPER }
   | "`"  { BACKQUOTE }
+  | '`' ['=' '<' '>' '|' '&' '$'] lowercase identchar * '`'
+            { INFIXIDENT0(get_label_name ~offset:2 ~drop_last:0 lexbuf) }
   | "\'" { QUOTE }
   | "("  { LPAREN }
   | ")"  { RPAREN }
