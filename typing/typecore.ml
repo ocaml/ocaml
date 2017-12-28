@@ -97,6 +97,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Unbound_empty_record_type
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -380,6 +381,20 @@ let extract_label_names env ty =
     List.map (fun l -> l.Types.ld_id) fields
   with Not_found ->
     assert false
+
+let find_empty_record_ty env loc lid_sp_list =
+  if lid_sp_list = [] then
+    match Env.find_empty_record env with
+    | None -> raise (Error(loc, env, Unbound_empty_record_type))
+    | Some (decl, p) -> begin
+        begin_def ();
+        let ty =
+          newconstr p (instance_list env decl.type_params) in
+        end_def ();
+        generalize_structure ty;
+        None, ty
+      end
+  else None, newvar ()
 
 (* Typing of patterns *)
 
@@ -1264,12 +1279,11 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         | _            -> k None
       end
   | Ppat_record(lid_sp_list, closed) ->
-      assert (lid_sp_list <> []);
       let opath, record_ty =
         try
           let (p0, p,_) = extract_concrete_record !env expected_ty in
           Some (p0, p, true), expected_ty
-        with Not_found -> None, newvar ()
+        with Not_found -> find_empty_record_ty !env loc lid_sp_list
       in
       let type_label_pat (label_lid, label, sarg) k =
         begin_def ();
@@ -1278,8 +1292,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         begin try
           unify_pat_types loc !env ty_res record_ty
         with Unify trace ->
-          raise(Error(label_lid.loc, !env,
-                      Label_mismatch(label_lid.txt, trace)))
+          raise(Error(label_lid.loc, !env, Label_mismatch(label_lid.txt, trace)))
         end;
         type_pat sarg ty_arg (fun arg ->
           if vars <> [] then begin
@@ -2965,7 +2978,6 @@ and type_expect_
           exp_env = env }
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
-      assert (lid_sexp_list <> []);
       let opt_exp =
         match opt_sexp with
           None -> None
@@ -2978,7 +2990,7 @@ and type_expect_
             end;
             Some exp
       in
-      let ty_record, opath =
+      let opath, ty_record =
         let get_path ty =
           try
             let (p0, p,_) = extract_concrete_record env ty in
@@ -2989,10 +3001,10 @@ and type_expect_
         match get_path ty_expected with
           None ->
             begin match opt_exp with
-              None -> newvar (), None
+            | None -> find_empty_record_ty env loc lid_sexp_list
             | Some exp ->
                 match get_path exp.exp_type with
-                  None -> newvar (), None
+                  None -> None, newvar ()
                 | Some (_, p', _) as op ->
                     let decl = Env.find_type p' env in
                     begin_def ();
@@ -3000,9 +3012,9 @@ and type_expect_
                       newconstr p' (instance_list env decl.type_params) in
                     end_def ();
                     generalize_structure ty;
-                    ty, op
+                    op, ty
             end
-        | op -> ty_expected, op
+        | op -> op, ty_expected
       in
       let closed = (opt_sexp = None) in
       let lbl_exp_list =
@@ -3028,6 +3040,7 @@ and type_expect_
       in
       check_duplicates lbl_exp_list;
       let opt_exp, label_definitions =
+        if lbl_exp_list = [] then None, [| |] else begin
         let (_lid, lbl, _lbl_exp) = List.hd lbl_exp_list in
         let matching_label lbl =
           List.find
@@ -3077,9 +3090,9 @@ and type_expect_
             in
             let label_definitions = Array.map unify_kept lbl.lbl_all in
             Some {exp with exp_type = ty_exp}, label_definitions
-      in
+        end in
       let num_fields =
-        match lbl_exp_list with [] -> assert false
+        match lbl_exp_list with [] -> 0
         | (_, lbl,_)::_ -> Array.length lbl.lbl_all in
       let opt_exp =
         if opt_sexp <> None && List.length lid_sexp_list = num_fields then
@@ -3087,8 +3100,9 @@ and type_expect_
         else opt_exp
       in
       let label_descriptions, representation =
-        let (_, { lbl_all; lbl_repres }, _) = List.hd lbl_exp_list in
-        lbl_all, lbl_repres
+        match lbl_exp_list with
+        | [] -> [| |], Record_unboxed false
+        | (_, { lbl_all; lbl_repres }, _) :: _ -> lbl_all, lbl_repres
       in
       let fields =
         Array.map2 (fun descr def -> descr, def)
@@ -4098,7 +4112,8 @@ and type_label_exp create env loc ty_expected
   begin try
     unify env (instance_def ty_res) (instance env ty_expected)
   with Unify trace ->
-    raise (Error(lid.loc, env, Label_mismatch(lid.txt, trace)))
+    raise (Error(lid.loc, env,
+                 Label_mismatch(lid.txt, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance_def ty_arg in
@@ -5275,6 +5290,8 @@ let report_error env ppf = function
         longident lid
         "Hint: You are probably missing the `rec' keyword on line"
         line
+  | Unbound_empty_record_type ->
+      fprintf ppf "Unknown empty record type"
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

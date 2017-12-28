@@ -7340,3 +7340,16 @@ module Indexop = struct
   h.Def.%{"three"} <- 3
   let x,y,z = Def.(h.%["one"], h.%("two"), h.%{"three"})
 end
+
+type m = { }
+let x = { }
+type n = m
+let y:n = x
+module X = struct type g = { }  end
+let g = { }
+let n = let open X in { }
+let h = n
+type c = C of { } | D of m * e and e = {};;
+let f = function C {} -> 1 | D ({}, {}) -> 2
+let m, n = (f (C {})), (f (D ({}, {})));;
+let g = function { } -> 2

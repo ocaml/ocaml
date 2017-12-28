@@ -1365,8 +1365,9 @@ and record_declaration ctxt f lbls =
       (core_type ctxt) pld.pld_type
       (attributes ctxt) pld.pld_attributes
   in
-  pp f "{@\n%a}"
-    (list type_record_field ~sep:";@\n" )  lbls
+  if lbls = [] then pp f "{ }" else
+    pp f "{@\n%a}"
+      (list type_record_field ~sep:";@\n" )  lbls
 
 and type_declaration ctxt f x =
   (* type_declaration has an attribute field,

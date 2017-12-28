@@ -909,6 +909,16 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+exception Empty_record of type_declaration * Path.t
+let find_empty_record env =
+  let iter _id (p, (decl, _desc)) =
+    match decl with
+  | {type_kind=Type_record ([], _)} -> raise (Empty_record (decl, p))
+  | _ -> () in
+  try
+    IdTbl.iter iter env.types; None
+  with Empty_record (decl, p) -> Some (decl, p)
+
 let type_of_cstr path = function
   | {cstr_inlined = Some d; _} ->
       (d, ([], List.map snd (Datarepr.labels_of_type path d)))

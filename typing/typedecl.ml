@@ -220,7 +220,6 @@ let make_params env params =
     List.map make_param params
 
 let transl_labels env closed lbls =
-  assert (lbls <> []);
   let all_labels = ref StringSet.empty in
   List.iter
     (fun {pld_name = {txt=name; loc}} ->
@@ -416,10 +415,12 @@ let transl_declaration env sdecl id =
   let unboxed_status =
     match sdecl.ptype_kind with
     | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
-      | Ptype_variant [{pcd_args = Pcstr_record
-                          [{pld_mutable = Immutable; _}]; _}]
-      | Ptype_record [{pld_mutable = Immutable; _}] ->
-    raw_status
+    | Ptype_variant [{pcd_args = Pcstr_record
+                        [{pld_mutable = Immutable; _}]; _}]
+    | Ptype_variant [{pcd_args = Pcstr_record []; _}]
+    | Ptype_record [{pld_mutable = Immutable; _}]
+    | Ptype_record [] ->
+      raw_status
     | _ -> (* The type is not unboxable, mark it as boxed *)
       unboxed_false_default_false
   in
@@ -428,7 +429,6 @@ let transl_declaration env sdecl id =
     match sdecl.ptype_kind with
       | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        assert (scstrs <> []);
         if List.exists (fun cstr -> cstr.pcd_res <> None) scstrs then begin
           match cstrs with
             [] -> ()

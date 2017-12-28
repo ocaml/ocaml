@@ -1707,7 +1707,8 @@ expr_comma_list:
   | expr COMMA expr                             { [$3; $1] }
 ;
 record_expr:
-    simple_expr WITH lbl_expr_list              { (Some $1, $3) }
+    /* empty */                                 { (None, []) }
+  | simple_expr WITH lbl_expr_list              { (Some $1, $3) }
   | lbl_expr_list                               { (None, $1) }
 ;
 lbl_expr_list:
@@ -1857,6 +1858,8 @@ simple_pattern_not_ident:
 ;
 
 simple_delimited_pattern:
+  | LBRACE RBRACE
+    { mkpat(Ppat_record([], Closed)) }
   | LBRACE lbl_pattern_list RBRACE
     { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
   | LBRACE lbl_pattern_list error
@@ -1887,8 +1890,8 @@ pattern_semi_list:
   | pattern_semi_list SEMI pattern              { $3 :: $1 }
 ;
 lbl_pattern_list:
-    lbl_pattern { [$1], Closed }
-  | lbl_pattern SEMI { [$1], Closed }
+    lbl_pattern                          { [$1], Closed }
+  | lbl_pattern SEMI                     { [$1], Closed }
   | lbl_pattern SEMI UNDERSCORE opt_semi { [$1], Open }
   | lbl_pattern SEMI lbl_pattern_list
       { let (fields, closed) = $3 in $1 :: fields, closed }
@@ -2077,8 +2080,8 @@ constructor_arguments:
   | LBRACE label_declarations RBRACE { Pcstr_record $2 }
 ;
 label_declarations:
-    label_declaration                           { [$1] }
-  | label_declaration_semi                      { [$1] }
+    /*empty*/                                   { [  ] }
+  | label_declaration                           { [$1] }
   | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
 label_declaration:
