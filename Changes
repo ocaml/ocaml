@@ -89,6 +89,12 @@ Working version
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
 
+- GPR#1486: ARM 32-bit port: add support for ARMv8 in 32-bit mode,
+  a.k.a. AArch32.
+  For this platform, avoid ITE conditional instruction blocks and use
+  simpler IT blocks instead
+  (Xavier Leroy, review by Mark Shinwell)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
