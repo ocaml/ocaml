@@ -3069,9 +3069,9 @@ and type_expect_
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
                   let _, ty_arg2, ty_res2 = instance_label false lbl in
-                  unify env ty_arg1 ty_arg2;
+                  unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
-                    unify env (instance env ty_expected) ty_res2);
+                    unify_exp_types loc env (instance env ty_expected) ty_res2);
                   Kept ty_arg1
                 end
             in
