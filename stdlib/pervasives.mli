@@ -202,7 +202,7 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
 *)
 
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
-(** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
+(** [__LINE_OF__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler.
     @since 4.02.0
@@ -623,7 +623,7 @@ val string_of_int : int -> string
 
 external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
-   The string is read in decimal (by default, or if the string 
+   The string is read in decimal (by default, or if the string
    begins with [0u]), in hexadecimal (if it begins with [0x] or
    [0X]), in octal (if it begins with [0o] or [0O]), or in binary
    (if it begins with [0b] or [0B]).
