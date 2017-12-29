@@ -99,13 +99,6 @@ let rec regalloc ppf round fd =
     Reg.reinit(); Liveness.fundecl ppf newfd; regalloc ppf (round + 1) newfd
   end else newfd
 
-let cse fd =
-  (* CSE can trigger bad register allocation behaviors, see MPR#7630 *)
-  if List.mem Cmm.No_CSE fd.Mach.fun_codegen_options then
-    fd
-  else
-    CSE.fundecl fd
-
 let (++) x f = f x
 
 let compile_fundecl (ppf : formatter) fd_cmm =
@@ -116,7 +109,7 @@ let compile_fundecl (ppf : formatter) fd_cmm =
   ++ pass_dump_if ppf dump_selection "After instruction selection"
   ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ Profile.record ~accumulate:true "cse" cse
+  ++ Profile.record ~accumulate:true "cse" CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
   ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
