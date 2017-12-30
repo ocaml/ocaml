@@ -1178,7 +1178,7 @@ has taken place since "r" was allocated.
 
 This section outlines how the functions from the Unix "curses" library
 can be made available to OCaml programs. First of all, here is
-the interface "curses.mli" that declares the "curses" primitives and
+the interface "curses.ml" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
 (* File curses.ml -- declaration of primitives and data types *)
