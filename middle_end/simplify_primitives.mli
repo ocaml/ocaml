@@ -19,7 +19,7 @@
 (** Simplifies an application of a primitive based on approximation
     information. *)
 val primitive
-   : Lambda.primitive
+   : Clambda_primitives.primitive
   -> (Variable.t list * (Simple_value_approx.t list))
   -> Flambda.named
   -> Debuginfo.t

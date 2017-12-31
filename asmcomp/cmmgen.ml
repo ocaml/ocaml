@@ -1968,7 +1968,7 @@ let rec transl env e =
       | ((Pbigarraydim _ | Pduparray (_, _)), ([] | _::_::_::_::_))
         ->
           fatal_error "Cmmgen.transl:prim, wrong arity"
-      | ((Pfield_computed|Plazyforce|Psequand
+      | ((Pfield_computed|Psequand
          | Psequor | Pnot | Pnegint | Paddint | Psubint
          | Pmulint | Pandint | Porint | Pxorint | Plslint
          | Plsrint | Pasrint | Pintoffloat | Pfloatofint
@@ -2239,7 +2239,7 @@ and transl_prim_1 env p arg dbg =
                    [untag_int (transl env arg) dbg],
                    dbg))
               dbg
-  | (Pfield_computed | Plazyforce | Psequand | Psequor
+  | (Pfield_computed | Psequand | Psequor
     | Paddint | Psubint | Pmulint | Pandint
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
     | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
@@ -2256,7 +2256,8 @@ and transl_prim_1 env p arg dbg =
     | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
     | Pbigstring_load _ | Pbigstring_set _)
     ->
-      fatal_errorf "Cmmgen.transl_prim_1: %a" Printclambda.primitive p
+      fatal_errorf "Cmmgen.transl_prim_1: %a"
+        Printclambda_primitives.primitive p
 
 and transl_prim_2 env p arg1 arg2 dbg =
   match p with
@@ -2516,7 +2517,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_int_comparison cmp),
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
-  | Plazyforce | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
+  | Pnot | Pnegint | Pintoffloat | Pfloatofint | Pnegfloat
   | Pabsfloat | Pstringlength | Pbyteslength | Pbytessetu | Pbytessets
   | Pisint | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _
   | Pmakeblock (_, _, _) | Pfield _ | Psetfield_computed (_, _) | Pfloatfield _
@@ -2526,7 +2527,8 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
   | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _
     ->
-      fatal_errorf "Cmmgen.transl_prim_2: %a" Printclambda.primitive p
+      fatal_errorf "Cmmgen.transl_prim_2: %a"
+        Printclambda_primitives.primitive p
 
 and transl_prim_3 env p arg1 arg2 arg3 dbg =
   match p with
@@ -2648,7 +2650,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                 check_bound unsafe size dbg (bigstring_length ba dbg)
                   idx (unaligned_set size ba_data idx newval dbg))))))
 
-  | Pfield_computed | Plazyforce | Psequand | Psequor | Pnot | Pnegint | Paddint
+  | Pfield_computed | Psequand | Psequor | Pnot | Pnegint | Paddint
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
   | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
   | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu | Pstringrefs
@@ -2664,7 +2666,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
   | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
     ->
-      fatal_errorf "Cmmgen.transl_prim_3: %a" Printclambda.primitive p
+      fatal_errorf "Cmmgen.transl_prim_3: %a"
+        Printclambda_primitives.primitive p
 
 and transl_unbox_float dbg env = function
     Uconst(Uconst_ref(_, Some (Uconst_float f))) -> Cconst_float f

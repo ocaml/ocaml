@@ -157,8 +157,6 @@ ASMCOMP=\
   asmcomp/reg.cmo asmcomp/debug/reg_with_debug_info.cmo \
   asmcomp/debug/reg_availability_set.cmo \
   asmcomp/mach.cmo asmcomp/proc.cmo \
-  asmcomp/clambda_primitives.cmo \
-  asmcomp/convert_primitives.cmo \
   asmcomp/clambda.cmo asmcomp/printclambda.cmo \
   asmcomp/export_info.cmo \
   asmcomp/export_info_for_pack.cmo \
@@ -195,6 +193,9 @@ ASMCOMP=\
 MIDDLE_END=\
   middle_end/int_replace_polymorphic_compare.cmo \
   middle_end/debuginfo.cmo \
+  asmcomp/clambda_primitives.cmo \
+  asmcomp/convert_primitives.cmo \
+  asmcomp/printclambda_primitives.cmo \
   middle_end/base_types/tag.cmo \
   middle_end/base_types/linkage_name.cmo \
   middle_end/base_types/compilation_unit.cmo \

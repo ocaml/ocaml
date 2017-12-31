@@ -27,8 +27,6 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
-  (* Force lazy values *)
-  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -139,3 +137,5 @@ and raise_kind = Lambda.raise_kind =
   | Raise_regular
   | Raise_reraise
   | Raise_notrace
+
+let equal (x: primitive) (y: primitive) = x = y

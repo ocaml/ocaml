@@ -326,8 +326,6 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
     | Read_symbol_field (symbol, index) ->
       register_implication ~in_nc:(Symbol_field (symbol, index))
         ~implies_in_nc:curr
-    (* Globals are symbols: handle like symbols *)
-    | Prim (Lambda.Pgetglobal _id, [], _) -> ()
     (* Constant constructors: those expressions are constant if all their
        parameters are:
        - makeblock is compiled to a constant block
@@ -337,7 +335,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
        makeblock(Mutable) can be a 'constant' if it is allocated at
        toplevel: if this expression is evaluated only once.
     *)
-    | Prim (Lambda.Pmakeblock (_tag, Asttypes.Immutable, _value_kind), args,
+    | Prim (Pmakeblock (_tag, Asttypes.Immutable, _value_kind), args,
             _dbg) ->
       mark_vars args curr
 (*  (* CR-someday pchambart: If global mutables are allowed: *)
@@ -389,7 +387,7 @@ module Inconstants (P:Param) (Backend:Backend_intf.S) = struct
         mark_var closure curr
       else
         mark_curr curr
-    | Prim (Lambda.Pfield _, [f1], _) ->
+    | Prim (Pfield _, [f1], _) ->
       mark_curr curr;
       mark_var f1 curr
     | Prim (_, args, _) ->

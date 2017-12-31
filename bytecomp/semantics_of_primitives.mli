@@ -68,4 +68,4 @@ type return_type =
   | Float
   | Other
 
-val return_type_of_primitive: Lambda.primitive -> return_type
+val return_type_of_primitive: Clambda_primitives.primitive -> return_type

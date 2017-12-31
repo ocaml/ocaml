@@ -349,7 +349,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
         Allocated_const (Nativeint 0n)
       | _ -> assert false
     in
-    let prim : Lambda.primitive =
+    let prim : Clambda_primitives.primitive =
       match prim with
       | Pdivint _ -> Pdivint Unsafe
       | Pmodint _ -> Pmodint Unsafe
@@ -357,7 +357,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       | Pmodbint { size } -> Pmodbint { size; is_safe = Unsafe }
       | _ -> assert false
     in
-    let comparison : Lambda.primitive =
+    let comparison : Clambda_primitives.primitive =
       match prim with
       | Pdivint _ | Pmodint _ -> Pintcomp Ceq
       | Pdivbint { size } | Pmodbint { size } -> Pbintcomp (size,Ceq)
@@ -470,7 +470,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let symbol = t.symbol_for_global' id in
     t.imported_symbols <- Symbol.Set.add symbol t.imported_symbols;
     name_expr (Symbol symbol) ~name:Names.pgetglobal
-  | Lprim (p, args, loc) ->
+  | Lprim (lambda_p, args, loc) ->
     (* One of the important consequences of the ANF-like representation
        here is that we obtain names corresponding to the components of
        blocks being made (with [Pmakeblock]).  This information can be used
@@ -478,12 +478,13 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
        the allocation, since some field accesses can be tracked back to known
        field values. *)
     let dbg = Debuginfo.from_location loc in
+    let p = Convert_primitives.convert lambda_p in
     Lift_code.lifting_helper (close_list t env args)
       ~evaluation_order:`Right_to_left
-      ~name:(Names.of_primitive_arg p)
+      ~name:(Names.of_primitive_arg lambda_p)
       ~create_body:(fun args ->
         name_expr (Prim (p, args, dbg))
-          ~name:(Names.of_primitive p))
+          ~name:(Names.of_primitive lambda_p))
   | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create Names.switch in
     let aux (i, lam) = i, close t env lam in

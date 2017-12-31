@@ -288,8 +288,6 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     | Some (Value_block (_, fields)) when Array.length fields > i -> fields.(i)
     | _ -> Value_unknown
     end
-  | Prim (Pgetglobal id, _, _) ->
-    Value_symbol (Compilenv.symbol_for_global' id)
   | Prim _ -> Value_unknown
   | Set_of_closures set ->
     let descr : Export_info.descr =

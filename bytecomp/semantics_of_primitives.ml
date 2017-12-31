@@ -173,7 +173,6 @@ let for_clambda_primitive (prim : Clambda_primitives.primitive) =
                ( "caml_format_float" | "caml_format_int" | "caml_int32_format"
                | "caml_nativeint_format" | "caml_int64_format" ) } ->
       No_effects, No_coeffects
-  | Plazyforce
   | Pccall _ -> Arbitrary_effects, Has_coeffects
   | Praise _ -> Arbitrary_effects, No_coeffects
   | Pnot
@@ -277,7 +276,7 @@ type return_type =
   | Float
   | Other
 
-let return_type_of_primitive (prim:Lambda.primitive) =
+let return_type_of_primitive (prim:Clambda_primitives.primitive) =
   match prim with
   | Pfloatofint
   | Pnegfloat
