@@ -11,6 +11,11 @@ type boxed =
   | Boxed
   | Unboxed
 
+type memory_access_size =
+  | Sixteen
+  | Thirty_two
+  | Sixty_four
+
 type primitive =
   | Pread_symbol of string
   (* Operations on heap blocks *)
@@ -84,23 +89,13 @@ type primitive =
   (* size of the nth dimension of a big array *)
   | Pbigarraydim of int
   (* load/set 16,32,64 bits from a string: (unsafe)*)
-  | Pstring_load_16 of bool
-  | Pstring_load_32 of bool
-  | Pstring_load_64 of bool
-  | Pbytes_load_16 of bool
-  | Pbytes_load_32 of bool
-  | Pbytes_load_64 of bool
-  | Pbytes_set_16 of bool
-  | Pbytes_set_32 of bool
-  | Pbytes_set_64 of bool
+  | Pstring_load of (memory_access_size * is_safe)
+  | Pbytes_load of (memory_access_size * is_safe)
+  | Pbytes_set of (memory_access_size * is_safe)
   (* load/set 16,32,64 bits from a
      (char, int8_unsigned_elt, c_layout) Bigarray.Array1.t : (unsafe) *)
-  | Pbigstring_load_16 of bool
-  | Pbigstring_load_32 of bool
-  | Pbigstring_load_64 of bool
-  | Pbigstring_set_16 of bool
-  | Pbigstring_set_32 of bool
-  | Pbigstring_set_64 of bool
+  | Pbigstring_load of (memory_access_size * is_safe)
+  | Pbigstring_set of (memory_access_size * is_safe)
   (* byte swap *)
   | Pbswap16
   | Pbbswap of boxed_integer

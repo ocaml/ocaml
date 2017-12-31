@@ -407,7 +407,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
   | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
     close t env arg
   | Lprim (Pignore, [arg], _) ->
-    let var = Variable.create Internal_variable_names.ignore in
+    let var = Variable.create Names.ignore in
     let defining_expr =
       close_let_bound_expression t var env arg
     in

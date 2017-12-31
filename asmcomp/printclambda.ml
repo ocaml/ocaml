@@ -56,6 +56,19 @@ let array_kind array_kind =
   | Pintarray -> "int"
   | Pfloatarray -> "float"
 
+let access_size size =
+  let open Clambda_primitives in
+  match size with
+  | Sixteen -> "16"
+  | Thirty_two -> "32"
+  | Sixty_four -> "64"
+
+let access_safety safety =
+  let open Lambda in
+  match safety with
+  | Safe -> ""
+  | Unsafe -> "unsafe_"
+
 let primitive ppf (prim:Clambda_primitives.primitive) =
   let open Lambda in
   let open Clambda_primitives in
@@ -190,51 +203,18 @@ let primitive ppf (prim:Clambda_primitives.primitive) =
   | Pbigarrayset(unsafe, _n, kind, layout) ->
       Printlambda.print_bigarray "set" unsafe kind ppf layout
   | Pbigarraydim(n) -> fprintf ppf "Bigarray.dim_%i" n
-  | Pstring_load_16(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get16"
-     else fprintf ppf "string.get16"
-  | Pstring_load_32(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get32"
-     else fprintf ppf "string.get32"
-  | Pstring_load_64(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_get64"
-     else fprintf ppf "string.get64"
-  | Pbytes_load_16(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_get16"
-     else fprintf ppf "bytes.get16"
-  | Pbytes_load_32(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_get32"
-     else fprintf ppf "bytes.get32"
-  | Pbytes_load_64(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_get64"
-     else fprintf ppf "bytes.get64"
-  | Pbytes_set_16(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_set16"
-     else fprintf ppf "bytes.set16"
-  | Pbytes_set_32(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_set32"
-     else fprintf ppf "bytes.set32"
-  | Pbytes_set_64(unsafe) ->
-     if unsafe then fprintf ppf "bytes.unsafe_set64"
-     else fprintf ppf "bytes.set64"
-  | Pbigstring_load_16(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get16"
-     else fprintf ppf "bigarray.array1.get16"
-  | Pbigstring_load_32(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get32"
-     else fprintf ppf "bigarray.array1.get32"
-  | Pbigstring_load_64(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_get64"
-     else fprintf ppf "bigarray.array1.get64"
-  | Pbigstring_set_16(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set16"
-     else fprintf ppf "bigarray.array1.set16"
-  | Pbigstring_set_32(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set32"
-     else fprintf ppf "bigarray.array1.set32"
-  | Pbigstring_set_64(unsafe) ->
-     if unsafe then fprintf ppf "bigarray.array1.unsafe_set64"
-     else fprintf ppf "bigarray.array1.set64"
+  | Pstring_load(size, safety) ->
+      fprintf ppf "string.%sget%s" (access_safety safety) (access_size size)
+  | Pbytes_load(size, safety) ->
+      fprintf ppf "bytes.%sget%s" (access_safety safety) (access_size size)
+  | Pbytes_set(size, safety) ->
+      fprintf ppf "bytes.%sset%s" (access_safety safety) (access_size size)
+  | Pbigstring_load(size, safety) ->
+      fprintf ppf "bigarray.array1.%sget%s"
+        (access_safety safety) (access_size size)
+  | Pbigstring_set(size, safety) ->
+      fprintf ppf "bigarray.array1.%sset%s"
+        (access_safety safety) (access_size size)
   | Pbswap16 -> fprintf ppf "bswap16"
   | Pbbswap(bi) -> print_boxed_integer "bswap" ppf bi
   | Pint_as_pointer -> fprintf ppf "int_as_pointer"

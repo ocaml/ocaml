@@ -1368,9 +1368,11 @@ let max_or_zero a dbg =
     let sign_negation = Cop(Cxor, [sign; Cconst_int (-1)], dbg) in
     Cop(Cand, [sign_negation; a], dbg))
 
-let check_bound unsafe dbg a1 a2 k =
-  if unsafe then k
-  else Csequence(make_checkbound dbg [max_or_zero a1 dbg; a2], k)
+let check_bound safety dbg a1 a2 k =
+  match safety with
+  | Unsafe -> k
+  | Safe ->
+      Csequence(make_checkbound dbg [max_or_zero a1 dbg; a2], k)
 
 (* Simplification of some primitives into C calls *)
 
@@ -1425,11 +1427,11 @@ let simplif_primitive_32bits = function
       Pccall (default_prim ("caml_ba_get_" ^ Int.to_string n))
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
-  | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
-  | Pbytes_load_64(_) -> Pccall (default_prim "caml_bytes_get64")
-  | Pbytes_set_64(_) -> Pccall (default_prim "caml_bytes_set64")
-  | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
-  | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
+  | Pstring_load(Sixty_four, _) -> Pccall (default_prim "caml_string_get64")
+  | Pbytes_load(Sixty_four, _) -> Pccall (default_prim "caml_bytes_get64")
+  | Pbytes_set(Sixty_four, _) -> Pccall (default_prim "caml_string_set64")
+  | Pbigstring_load(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_get64")
+  | Pbigstring_set(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
   | p -> p
 
@@ -1700,12 +1702,12 @@ let rec is_unboxed_number ~strict env e =
             Boxed (Boxed_integer (Pint64, dbg), false)
         | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
             Boxed (Boxed_integer (Pnativeint, dbg), false)
-        | Pstring_load_32(_) | Pbytes_load_32(_) ->
-            Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pstring_load_64(_) | Pbytes_load_64(_) ->
-            Boxed (Boxed_integer (Pint64, dbg), false)
-        | Pbigstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pbigstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pstring_load(Thirty_two,_)
+        | Pbytes_load(Thirty_two,_) -> Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pstring_load(Sixty_four,_)
+        | Pbytes_load(Sixty_four,_) -> Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pbigstring_load(Thirty_two,_) -> Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pbigstring_load(Sixty_four,_) -> Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
         | _ -> No_unboxing
       end
@@ -1943,7 +1945,7 @@ let rec transl env e =
          | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
          | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu
          | Pstringrefs | Pbyteslength | Pbytesrefu | Pbytessetu
-         | Pbytesrefs | Pbytessets | Pisint | Pisout | Pbittest
+         | Pbytesrefs | Pbytessets | Pisint | Pisout
          | Pbswap16 | Pint_as_pointer | Popaque | Pfield _
          | Psetfield (_, _, _) | Psetfield_computed (_, _)
          | Pfloatfield _ | Psetfloatfield (_, _) | Pduprecord (_, _)
@@ -1953,11 +1955,9 @@ let rec transl env e =
          | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _) | Pnegbint _
          | Paddbint _ | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _
          | Pandbint _ | Porbint _ | Pxorbint _ | Plslbint _ | Plsrbint _
-         | Pasrbint _ | Pbintcomp (_, _) | Pstring_load_16 _
-         | Pstring_load_32 _ | Pstring_load_64 _ | Pstring_set_16 _
-         | Pstring_set_32 _ | Pstring_set_64 _ | Pbigstring_load_16 _
-         | Pbigstring_load_32 _ | Pbigstring_load_64 _ | Pbigstring_set_16 _
-         | Pbigstring_set_32 _ | Pbigstring_set_64 _ | Pbbswap _), _)
+         | Pasrbint _ | Pbintcomp (_, _) | Pstring_load _ | Pbytes_load _
+         | Pbytes_set _ | Pbigstring_load _ | Pbigstring_set _
+         | Pbbswap _), _)
         ->
           fatal_error "Cmmgen.transl:prim"
       end
@@ -2214,7 +2214,7 @@ and transl_prim_1 env p arg dbg =
     | Porint | Pxorint | Plslint | Plsrint | Pasrint
     | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
     | Pstringrefu | Pstringrefs | Pbytesrefu | Pbytessetu
-    | Pbytesrefs | Pbytessets | Pisout | Pbittest | Pread_symbol _
+    | Pbytesrefs | Pbytessets | Pisout | Pread_symbol _
     | Pmakeblock (_, _, _) | Psetfield (_, _, _) | Psetfield_computed (_, _)
     | Psetfloatfield (_, _) | Pduprecord (_, _) | Pccall _ | Pdivint _
     | Pmodint _ | Pintcomp _ | Pfloatcomp _ | Pmakearray (_, _)
@@ -2223,10 +2223,8 @@ and transl_prim_1 env p arg dbg =
     | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _ | Pxorbint _
     | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
     | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
-    | Pbigarraydim _ | Pstring_load_16 _ | Pstring_load_32 _
-    | Pstring_load_64 _ | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
-    | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
-    | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _)
+    | Pbigarraydim _ | Pstring_load _ | Pbytes_load _ | Pbytes_set _
+    | Pbigstring_load _ | Pbigstring_set _)
     ->
       fatal_errorf "Cmmgen.transl_prim_1: %a" Printclambda.primitive p
 
@@ -2360,7 +2358,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
               Cop(Cload (Byte_unsigned, Mutable),
                 [add_int str idx dbg], dbg))))) dbg
 
-  | Pstring_load_16(unsafe) | Pbytes_load_16(unsafe) ->
+  | Pstring_load(Sixteen, unsafe) | Pbytes_load(Sixteen, unsafe) ->
      tag_int
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2368,7 +2366,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
              (sub_int (string_length str dbg) (Cconst_int 1) dbg)
              idx (unaligned_load_16 str idx dbg)))) dbg
 
-  | Pbigstring_load_16(unsafe) ->
+  | Pbigstring_load(Sixteen, unsafe) ->
      tag_int
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2380,7 +2378,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 1) dbg) idx
                       (unaligned_load_16 ba_data idx dbg))))) dbg
 
-  | Pstring_load_32(unsafe) | Pbytes_load_32(unsafe) ->
+  | Pstring_load(Thirty_two, unsafe) | Pbytes_load(Thirty_two, unsafe) ->
      box_int dbg Pint32
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2388,7 +2386,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
             (sub_int (string_length str dbg) (Cconst_int 3) dbg)
             idx (unaligned_load_32 str idx dbg))))
 
-  | Pbigstring_load_32(unsafe) ->
+  | Pbigstring_load(Thirty_two, unsafe) ->
      box_int dbg Pint32
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2400,7 +2398,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 3) dbg) idx
                       (unaligned_load_32 ba_data idx dbg)))))
 
-  | Pstring_load_64(unsafe) | Pbytes_load_64(unsafe) ->
+  | Pstring_load(Sixty_four, unsafe) | Pbytes_load(Sixty_four, unsafe) ->
      box_int dbg Pint64
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2408,7 +2406,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
             (sub_int (string_length str dbg) (Cconst_int 7) dbg)
             idx (unaligned_load_64 str idx dbg))))
 
-  | Pbigstring_load_64(unsafe) ->
+  | Pbigstring_load(Sixty_four, unsafe) ->
      box_int dbg Pint64
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2536,8 +2534,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Pmakearray (_, _) | Pduparray (_, _) | Parraylength _ | Parraysetu _
   | Parraysets _ | Pbintofint _ | Pintofbint _ | Pcvtbint (_, _)
   | Pnegbint _ | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _)
-  | Pbigarraydim _ | Pstring_set_16 _ | Pstring_set_32 _ | Pstring_set_64 _
-  | Pbigstring_set_16 _ | Pbigstring_set_32 _ | Pbigstring_set_64 _ | Pbbswap _
+  | Pbigarraydim _ | Pbytes_set _ | Pbigstring_set _ | Pbbswap _
     ->
       fatal_errorf "Cmmgen.transl_prim_2: %a" Printclambda.primitive p
 
@@ -2642,7 +2639,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       float_array_set arr idx newval dbg))))
       end)
 
-  | Pbytes_set_16(unsafe) ->
+  | Pbytes_set(Sixteen, unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2651,7 +2648,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (sub_int (string_length str dbg) (Cconst_int 1) dbg)
                       idx (unaligned_set_16 str idx newval dbg)))))
 
-  | Pbigstring_set_16(unsafe) ->
+  | Pbigstring_set(Sixteen, unsafe) ->
      return_unit
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2665,7 +2662,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_16 ba_data idx newval dbg))))))
 
-  | Pbytes_set_32(unsafe) ->
+  | Pbytes_set(Thirty_two, unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2674,7 +2671,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (sub_int (string_length str dbg) (Cconst_int 3) dbg)
                       idx (unaligned_set_32 str idx newval dbg)))))
 
-  | Pbigstring_set_32(unsafe) ->
+  | Pbigstring_set(Thirty_two, unsafe) ->
      return_unit
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2688,7 +2685,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_32 ba_data idx newval dbg))))))
 
-  | Pbytes_set_64(unsafe) ->
+  | Pbytes_set(Sixty_four, unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2697,7 +2694,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (sub_int (string_length str dbg) (Cconst_int 7) dbg)
                       idx (unaligned_set_64 str idx newval dbg)))))
 
-  | Pbigstring_set_64(unsafe) ->
+  | Pbigstring_set(Sixty_four, unsafe) ->
      return_unit
        (bind "ba" (transl env arg1) (fun ba ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2714,7 +2711,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Psubint | Pmulint | Pandint | Porint | Pxorint | Plslint | Plsrint | Pasrint
   | Pintoffloat | Pfloatofint | Pnegfloat | Pabsfloat | Paddfloat | Psubfloat
   | Pmulfloat | Pdivfloat | Pstringlength | Pstringrefu | Pstringrefs
-  | Pbyteslength | Pbytesrefu | Pbytesrefs | Pisint | Pisout | Pbittest
+  | Pbyteslength | Pbytesrefu | Pbytesrefs | Pisint | Pisout
   | Pbswap16 | Pint_as_pointer | Popaque | Pread_symbol _ | Pmakeblock (_, _, _)
   | Pfield _ | Psetfield (_, _, _) | Pfloatfield _ | Psetfloatfield (_, _)
   | Pduprecord (_, _) | Pccall _ | Praise _ | Pdivint _ | Pmodint _ | Pintcomp _
@@ -2724,9 +2721,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
   | Psubbint _ | Pmulbint _ | Pdivbint _ | Pmodbint _ | Pandbint _ | Porbint _
   | Pxorbint _ | Plslbint _ | Plsrbint _ | Pasrbint _ | Pbintcomp (_, _)
   | Pbigarrayref (_, _, _, _) | Pbigarrayset (_, _, _, _) | Pbigarraydim _
-  | Pstring_load_16 _ | Pstring_load_32 _ | Pstring_load_64 _
-  | Pbigstring_load_16 _ | Pbigstring_load_32 _ | Pbigstring_load_64 _
-  | Pbbswap _
+  | Pstring_load _ | Pbytes_load _ | Pbigstring_load _ | Pbbswap _
     ->
       fatal_errorf "Cmmgen.transl_prim_3: %a" Printclambda.primitive p
 

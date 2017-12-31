@@ -16,6 +16,12 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+let convert_unsafety is_unsafe : Clambda_primitives.is_safe =
+  if is_unsafe then
+    Unsafe
+  else
+    Safe
+
 let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
   match prim with
   | Pmakeblock (tag, mutability, shape) ->
@@ -97,21 +103,36 @@ let convert (prim : Lambda.primitive) : Clambda_primitives.primitive =
       Pbigarrayref (safe, dims, kind, layout)
   | Pbigarrayset (safe, dims, kind, layout) ->
       Pbigarrayset (safe, dims, kind, layout)
-  | Pstring_load_16 unsafe -> Pstring_load_16 unsafe
-  | Pstring_load_32 unsafe -> Pstring_load_32 unsafe
-  | Pstring_load_64 unsafe -> Pstring_load_64 unsafe
-  | Pbytes_load_16 unsafe -> Pbytes_load_16 unsafe
-  | Pbytes_load_32 unsafe -> Pbytes_load_32 unsafe
-  | Pbytes_load_64 unsafe -> Pbytes_load_64 unsafe
-  | Pbytes_set_16 unsafe -> Pbytes_set_16 unsafe
-  | Pbytes_set_32 unsafe -> Pbytes_set_32 unsafe
-  | Pbytes_set_64 unsafe -> Pbytes_set_64 unsafe
-  | Pbigstring_load_16 unsafe -> Pbigstring_load_16 unsafe
-  | Pbigstring_load_32 unsafe -> Pbigstring_load_32 unsafe
-  | Pbigstring_load_64 unsafe -> Pbigstring_load_64 unsafe
-  | Pbigstring_set_16 unsafe -> Pbigstring_set_16 unsafe
-  | Pbigstring_set_32 unsafe -> Pbigstring_set_32 unsafe
-  | Pbigstring_set_64 unsafe -> Pbigstring_set_64 unsafe
+  | Pstring_load_16 is_unsafe ->
+      Pstring_load (Sixteen, convert_unsafety is_unsafe)
+  | Pstring_load_32 is_unsafe ->
+      Pstring_load (Thirty_two, convert_unsafety is_unsafe)
+  | Pstring_load_64 is_unsafe ->
+      Pstring_load (Sixty_four, convert_unsafety is_unsafe)
+  | Pbytes_load_16 is_unsafe ->
+      Pbytes_load (Sixteen, convert_unsafety is_unsafe)
+  | Pbytes_load_32 is_unsafe ->
+      Pbytes_load (Thirty_two, convert_unsafety is_unsafe)
+  | Pbytes_load_64 is_unsafe ->
+      Pbytes_load (Sixty_four, convert_unsafety is_unsafe)
+  | Pbytes_set_16 is_unsafe ->
+      Pbytes_set (Sixteen, convert_unsafety is_unsafe)
+  | Pbytes_set_32 is_unsafe ->
+      Pbytes_set (Thirty_two, convert_unsafety is_unsafe)
+  | Pbytes_set_64 is_unsafe ->
+      Pbytes_set (Sixty_four, convert_unsafety is_unsafe)
+  | Pbigstring_load_16 is_unsafe ->
+      Pbigstring_load (Sixteen, convert_unsafety is_unsafe)
+  | Pbigstring_load_32 is_unsafe ->
+      Pbigstring_load (Thirty_two, convert_unsafety is_unsafe)
+  | Pbigstring_load_64 is_unsafe ->
+      Pbigstring_load (Sixty_four, convert_unsafety is_unsafe)
+  | Pbigstring_set_16 is_unsafe ->
+      Pbigstring_set (Sixteen, convert_unsafety is_unsafe)
+  | Pbigstring_set_32 is_unsafe ->
+      Pbigstring_set (Thirty_two, convert_unsafety is_unsafe)
+  | Pbigstring_set_64 is_unsafe ->
+      Pbigstring_set (Sixty_four, convert_unsafety is_unsafe)
   | Pbigarraydim dim -> Pbigarraydim dim
   | Pbswap16 -> Pbswap16
   | Pint_as_pointer -> Pint_as_pointer
