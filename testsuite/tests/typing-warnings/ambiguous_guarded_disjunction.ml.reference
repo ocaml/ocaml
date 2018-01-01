@@ -139,4 +139,22 @@ val ambiguous_xy_but_not_ambiguous_z : (int -> int -> bool) -> t2 -> int =
   <fun>
 #   * * * * * * * *         val not_ambiguous__as_disjoint_on_second_column_split :
   int option * int -> unit = <fun>
+#   no warning below
+# *                           val solved_ambiguity_typical_example : expr * expr -> unit = <fun>
+#   yet a warning below
+# *                     Characters 164-189:
+    | ((Val y, _) | (_, Val y)) when y < 0 -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 57: Ambiguous or-pattern variables under guard;
+variable y may match different arguments. (See manual section 9.5)
+val guarded_ambiguity : expr * expr -> unit = <fun>
+#     type a = A1 | A2
+#       type 'a alg = Val of 'a | Binop of 'a alg * 'a alg
+#   warning below
+#             Characters 100-125:
+    | ((Val x, _) | (_, Val x)) when pred x -> ()
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 57: Ambiguous or-pattern variables under guard;
+variable x may match different arguments. (See manual section 9.5)
+val cmp : (a -> bool) -> a alg -> a alg -> unit = <fun>
 # 

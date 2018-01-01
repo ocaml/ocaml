@@ -218,3 +218,50 @@ let not_ambiguous__as_disjoint_on_second_column_split = function
 | ((Some a, (1 as b)) | (Some b, (2 as a))) when a = 0 -> ignore a; ignore b
 | _ -> ()
 ;;
+
+let () = print_endline "no warning below";;
+(* we check for the ambiguous case first, so there
+   is no warning *)
+let solved_ambiguity_typical_example = function
+  | (Val x, Val y) ->
+      if x < 0 || y < 0
+      then ()
+      else ()
+  | ((Val x, _) | (_, Val x)) when x < 0 -> ()
+  | (_, Rest) -> ()
+  | (_, Val x) ->
+      (* the reader can expect *)
+      assert (x >= 0);
+      (* to hold here. *)
+      ()
+;;
+
+let () = print_endline "yet a warning below";;
+(* if the check for the ambiguous case is guarded,
+   there is still a warning *)
+let guarded_ambiguity = function
+  | (Val x, Val y) when x < 0 || y < 0 -> ()
+  | ((Val y, _) | (_, Val y)) when y < 0 -> ()
+  | (_, Rest) -> ()
+  | (_, Val x) ->
+      (* the reader can expect *)
+      assert (x >= 0);
+      (* to hold here. *)
+      ()
+;;
+
+(* see GPR#1552 *)
+type a = A1 | A2;;
+
+type 'a alg =
+  | Val of 'a
+  | Binop of 'a alg * 'a alg;;
+
+let () = print_endline "warning below";;
+let cmp (pred : a -> bool) (x : a alg) (y : a alg) =
+  match x, y with
+  | Val A1, Val A1 -> ()
+  | ((Val x, _) | (_, Val x)) when pred x -> ()
+  (* below: silence exhaustiveness/fragility warnings *)
+  | (Val (A1 | A2) | Binop _), _ -> ()
+;;
