@@ -474,7 +474,7 @@ let message = function
       Printf.sprintf
         "Code should not depend on the actual values of\n\
          this constructor's arguments. They are only for information\n\
-         and may change in future versions. (See manual section 8.5)"
+         and may change in future versions. (See manual section 9.5)"
   | Unreachable_case ->
       "this match case is unreachable.\n\
        Consider replacing it with a refutation case '<pat> -> .'"
@@ -496,7 +496,7 @@ let message = function
             "variables " ^ String.concat "," vars in
       Printf.sprintf
         "Ambiguous or-pattern variables under guard;\n\
-         %s may match different arguments. (See manual section 8.5)"
+         %s may match different arguments. (See manual section 9.5)"
         msg
   | No_cmx_file name ->
       Printf.sprintf
