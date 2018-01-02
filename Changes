@@ -196,6 +196,9 @@ Working version
   (Nicolás Ojeda Bär, report by Alain Frisch, review by David Allsopp, Xavier
   Leroy)
 
+- GPR#1550: Make pattern matching warnings more robust to ill-typed columns
+  (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
+
 4.06 maintenance branch
 -----------------------
 
