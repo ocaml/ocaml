@@ -78,6 +78,9 @@ Working version
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
   Scherer)
 
+- GPR#1554: warnings 52 and 57: fix reference to manual detailled explanation
+  (Florian Angeletti)
+
 - GPR#1510: Add specific explanation for unification errors caused by type
   constraints propagated by keywords (such as if, while, for...)
   (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
