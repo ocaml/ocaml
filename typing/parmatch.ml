@@ -2371,28 +2371,39 @@ let rec matrix_stable_vars m = match m with
           Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
       end
   | m ->
-      let m = simplify_first_amb_col m in
-      if not (all_coherent (first_column m))
-      then All
+      let is_negative = function
+        | Negative _ -> true
+        | Positive _ -> false in
+      if List.for_all is_negative m then
+        (* optimization: quit early if there are no positive rows.
+           This may happen often when the initial matrix has many
+           negative cases and few positive cases (a small guarded
+           clause after a long list of clauses) *)
+        All
       else begin
-        (* If the column is ill-typed but deemed coherent, we might
-           spuriously warn about some variables being unstable.
-           As sad as that might be, the warning can be silenced by
-           splitting the or-pattern...  *)
-        let submatrices =
-          let extend_row columns = function
-            | Negative r -> Negative (columns @ r)
-            | Positive r -> Positive { r with row = columns @ r.row } in
-          let q0 = discr_pat omega m in
-          let { default; constrs } =
-            build_specialized_submatrices ~extend_row q0 m in
-          let non_default = List.map snd constrs in
-          if constrs <> [] && full_match false constrs
-          then non_default
-          else default :: non_default in
-        (* A stable variable must be stable in each submatrix. *)
-        let submat_stable = List.map matrix_stable_vars submatrices in
-        List.fold_left stable_inter All submat_stable
+        let m = simplify_first_amb_col m in
+        if not (all_coherent (first_column m))
+        then All
+        else begin
+          (* If the column is ill-typed but deemed coherent, we might
+             spuriously warn about some variables being unstable.
+             As sad as that might be, the warning can be silenced by
+             splitting the or-pattern...  *)
+          let submatrices =
+            let extend_row columns = function
+              | Negative r -> Negative (columns @ r)
+              | Positive r -> Positive { r with row = columns @ r.row } in
+            let q0 = discr_pat omega m in
+            let { default; constrs } =
+              build_specialized_submatrices ~extend_row q0 m in
+            let non_default = List.map snd constrs in
+            if constrs <> [] && full_match false constrs
+            then non_default
+            else default :: non_default in
+          (* A stable variable must be stable in each submatrix. *)
+          let submat_stable = List.map matrix_stable_vars submatrices in
+          List.fold_left stable_inter All submat_stable
+        end
       end
 
 let pattern_stable_vars ns p =
