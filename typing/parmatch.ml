@@ -614,17 +614,17 @@ and set_args_erase_mutable q r = do_set_args true q r
      (Some x, r4)
      (None, r4)
  *)
-let rec simplify_first_col = function
-  | [] -> []
-  | [] :: _ -> assert false (* the rows are non-empty! *)
-  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
-
-and simplify_head_pat p ps k =
+let rec simplify_head_pat p ps k =
   match p.pat_desc with
   | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
   | Tpat_var (_,_) -> (omega, ps) :: k
   | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
   | _ -> (p, ps) :: k
+
+let rec simplify_first_col = function
+  | [] -> []
+  | [] :: _ -> assert false (* the rows are non-empty! *)
+  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
 
 
 (* Builds the specialized matrix of [pss] according to pattern [q].
@@ -1488,8 +1488,8 @@ type answer =
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
 *)
-type row = {no_ors : pattern list ; ors : pattern list ; active : pattern list}
-
+type usefulness_row =
+  {no_ors : pattern list ; ors : pattern list ; active : pattern list}
 
 (*
 let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
@@ -1555,24 +1555,14 @@ let push_or r = match r.active with
 let push_or_column rs = List.map push_or rs
 and push_no_or_column rs = List.map push_no_or rs
 
-(* Those are adaptations of the previous homonymous functions that
-   work on the current column, instead of the first column
-*)
-let rec simplify_first_col = function
+let rec simplify_first_usefulness_col = function
   | [] -> []
   | row :: rows ->
     match row.active with
     | [] -> assert false (* the rows are non-empty! *)
     | p :: ps ->
-      simplify_head_pat p { row with active = ps } (simplify_first_col rows)
-
-and simplify_head_pat p ps k =
-  match p.pat_desc with
-  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-  | Tpat_var (_,_) -> (omega, ps) :: k
-  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-  | _ -> (p, ps) :: k
-
+      simplify_head_pat p { row with active = ps }
+        (simplify_first_usefulness_col rows)
 
 (* Back to normal matrices *)
 let make_vector r = List.rev r.no_ors
@@ -1666,7 +1656,7 @@ let rec every_satisfiables pss qs = match qs.active with
         Unused
     | _ ->
 (* standard case, filter matrix *)
-        let pss = simplify_first_col pss in
+        let pss = simplify_first_usefulness_col pss in
         (* The handling of incoherent matrices is kept in line with
            [satisfiable] *)
         if not (all_coherent (uq :: first_column pss)) then
@@ -2302,24 +2292,25 @@ type amb_row = { row : pattern list ; varsets : IdSet.t list; }
      (Some x, { row = r4; varsets = {} :: s4 })
      (None, { row = r4; varsets = {x} :: s4 })
  *)
-let rec simplify_first_col = function
+let rec simplify_first_amb_col = function
   | [] -> []
   | { row = [] } :: _ -> assert false
   | { row = p::ps; varsets; }::rem ->
-      simplify_head_pat IdSet.empty p ps varsets (simplify_first_col rem)
+      simplify_head_amb_pat IdSet.empty p ps varsets
+        (simplify_first_amb_col rem)
 
-and simplify_head_pat head_bound_variables p ps varsets k =
+and simplify_head_amb_pat head_bound_variables p ps varsets k =
   match p.pat_desc with
   | Tpat_alias (p,x,_) ->
-    simplify_head_pat (IdSet.add x head_bound_variables) p ps varsets k
+    simplify_head_amb_pat (IdSet.add x head_bound_variables) p ps varsets k
   | Tpat_var (x,_) ->
     let rest_of_the_row =
       { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
     in
     (omega, rest_of_the_row) :: k
   | Tpat_or (p1,p2,_) ->
-    simplify_head_pat head_bound_variables p1 ps varsets
-      (simplify_head_pat head_bound_variables p2 ps varsets k)
+    simplify_head_amb_pat head_bound_variables p1 ps varsets
+      (simplify_head_amb_pat head_bound_variables p2 ps varsets k)
   | _ ->
     (p, { row = ps; varsets = head_bound_variables :: varsets; }) :: k
 
@@ -2354,7 +2345,7 @@ let rec matrix_stable_vars rs = match rs with
     (* The stable variables are those stable at any position *)
     Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
 | rs ->
-    let rs = simplify_first_col rs in
+    let rs = simplify_first_amb_col rs in
     if not (all_coherent (first_column rs))
     then All
     else begin
