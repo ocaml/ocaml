@@ -44,6 +44,135 @@ let omega_list l = List.map (fun _ -> omega) l
 
 let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 
+(*******************)
+(* Coherence check *)
+(*******************)
+
+(* For some of the operations we do in this module, we would like (because it
+   simplifies matters) to assume that patterns appearing on a given column in a
+   pattern matrix are /coherent/ (think "of the same type").
+   Unfortunately that is not always true.
+
+   Consider the following (well-typed) example:
+   {[
+     type _ t = S : string t | U : unit t
+
+     let f (type a) (t1 : a t) (t2 : a t) (a : a) =
+       match t1, t2, a with
+       | U, _, () -> ()
+       | _, S, "" -> ()
+   ]}
+
+   Clearly the 3rd column contains incoherent patterns.
+
+   On the example above, most of the algorithms will explore the pattern matrix
+   as illustrated by the following tree:
+
+   {v
+                                                   S
+                                                -------> | "" |
+                             U     | S, "" | __/         | () |
+                         --------> | _, () |   \  ¬ S
+        | U, _, () | __/                        -------> | () |
+        | _, S, "" |   \
+                        ---------> | S, "" | ----------> | "" |
+                           ¬ U                    S
+   v}
+
+   where following an edge labelled by a pattern P means "assuming the value I
+   am matching on is filtered by [P] on the column I am currently looking at,
+   then the following submatrix is still reachable".
+
+   Notice that at any point of that tree, if the first column of a matrix is
+   incoherent, then the branch leading to it can only be taken if the scrutinee
+   is ill-typed.
+   In the example above the only case where we have a matrix with an incoherent
+   first column is when we consider [t1, t2, a] to be [U, S, ...]. However such
+   a value would be ill-typed, so we can never actually get there.
+
+   Checking the first column at each step of the recursion and making the
+   concious decision of "aborting" the algorithm whenever the first column
+   becomes incoherent, allows us to retain the initial assumption in later
+   stages of the algorithms.
+
+   ---
+
+   N.B. two patterns can be considered coherent even though they might not be of
+   the same type.
+
+   That's in part because we only care about the "head" of patterns and leave
+   checking coherence of subpatterns for the next steps of the algorithm:
+   ('a', 'b') and (1, ()) will be deemed coherent because they are both a tuples
+   of arity 2 (we'll notice at a later stage the incoherence of 'a' and 1).
+
+   But also because it can be hard/costly to determine exactly whether two
+   patterns are of the same type or not (eg. in the example above with _ and S,
+   but see also the module [Coherence_illustration] in
+   testsuite/tests/basic-more/robustmatch.ml).
+
+   For the moment our weak, loosely-syntactic, coherence check seems to be
+   enough and we leave it to each user to consider (and document!) what happens
+   when an "incoherence" is not detected by this check.
+*)
+
+(* Given the first column of a simplified matrix, this function first looks for
+   a "discriminating" pattern on that column (i.e. a non-omega one) and then
+   check that every other head pattern in the column is coherent with that one.
+*)
+let all_coherent column =
+  let coherent_heads hp1 hp2 =
+    match hp1.pat_desc, hp2.pat_desc with
+    | (Tpat_var _ | Tpat_alias _ | Tpat_or _), _
+    | _, (Tpat_var _ | Tpat_alias _ | Tpat_or _) ->
+      assert false
+    | Tpat_construct (_, c, _), Tpat_construct (_, c', _) ->
+      c.cstr_consts = c'.cstr_consts
+      && c.cstr_nonconsts = c'.cstr_nonconsts
+    | Tpat_constant c1, Tpat_constant c2 -> begin
+        match c1, c2 with
+        | Const_char _, Const_char _
+        | Const_int _, Const_int _
+        | Const_int32 _, Const_int32 _
+        | Const_int64 _, Const_int64 _
+        | Const_nativeint _, Const_nativeint _
+        | Const_float _, Const_float _
+        | Const_string _, Const_string _ -> true
+        | ( Const_char _
+          | Const_int _
+          | Const_int32 _
+          | Const_int64 _
+          | Const_nativeint _
+          | Const_float _
+          | Const_string _), _ -> false
+      end
+    | Tpat_tuple l1, Tpat_tuple l2 -> List.length l1 = List.length l2
+    | Tpat_record ((_, lbl1, _) :: _, _), Tpat_record ((_, lbl2, _) :: _, _) ->
+      Array.length lbl1.lbl_all = Array.length lbl2.lbl_all
+    | Tpat_any, _
+    | _, Tpat_any
+    | Tpat_record ([], _), Tpat_record ([], _)
+    | Tpat_variant _, Tpat_variant _
+    | Tpat_array _, Tpat_array _
+    | Tpat_lazy _, Tpat_lazy _ -> true
+    | _, _ -> false
+  in
+  match
+    List.find (fun head_pat ->
+      match head_pat.pat_desc with
+      | Tpat_var _ | Tpat_alias _ | Tpat_or _ -> assert false
+      | Tpat_any -> false
+      | _ -> true
+    ) column
+  with
+  | exception Not_found ->
+    (* only omegas on the column: the column is coherent. *)
+    true
+  | discr_pat ->
+    List.for_all (coherent_heads discr_pat) column
+
+let first_column simplified_matrix =
+  List.map fst simplified_matrix
+
 (***********************)
 (* Compatibility check *)
 (***********************)
@@ -181,7 +310,7 @@ module Compat
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
-  | _,_  -> assert false (* By typing *)
+  | _,_  -> false
 
   and ocompat op oq = match op,oq with
   | None,None -> true
@@ -191,7 +320,7 @@ module Compat
   and compats ps qs = match ps,qs with
   | [], [] -> true
   | p::ps, q::qs -> compat p q && compats ps qs
-  | _,_    -> assert false (* By typing *)
+  | _,_    -> false
 
 end
 
@@ -249,9 +378,9 @@ let simple_match p1 p2 =
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
   | Tpat_constant(c1), Tpat_constant(c2) -> const_compare c1 c2 = 0
-  | Tpat_tuple _, Tpat_tuple _ -> true
   | Tpat_lazy _, Tpat_lazy _ -> true
   | Tpat_record _ , Tpat_record _ -> true
+  | Tpat_tuple p1s, Tpat_tuple p2s
   | Tpat_array p1s, Tpat_array p2s -> List.length p1s = List.length p2s
   | _, (Tpat_any | Tpat_var(_)) -> true
   | _, _ -> false
@@ -329,8 +458,8 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_lazy omega) q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
 
-(* Consider a pattern matrix whose first column has been simplified
-   to contain only _ or a head constructor
+(* Consider a pattern matrix whose first column has been simplified to contain
+   only _ or a head constructor
      | p1, r1...
      | p2, r2...
      | p3, r3...
@@ -996,6 +1125,21 @@ and has_instances = function
     Does there exists at least one value vector, es such that :
      1- for all ps in pss ps # es (ps and es are not compatible)
      2- qs <= es                  (es matches qs)
+
+   ---
+
+   In two places in the following function, we check the coherence of the first
+   column of (pss + qs).
+   If it is incoherent, then we exit early saying that (pss + qs) is not
+   satisfiable (which is equivalent to saying "oh, we shouldn't have considered
+   that branch, no good result came come from here").
+
+   But what happens if we have a coherent but ill-typed column?
+   - we might end up returning [false], which is equivalent to noticing the
+   incompatibility: clearly this is fine.
+   - if we end up returning [true] then we're saying that [qs] is useful while
+   it is not. This is sad but not the end of the world, we're just allowing dead
+   code to survive.
 *)
 let rec satisfiable pss qs = match pss with
 | [] -> has_instances qs
@@ -1008,27 +1152,34 @@ let rec satisfiable pss qs = match pss with
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let pss = simplify_first_col pss in
-        let q0 = discr_pat omega pss in
-        begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
-        | { default; constrs = [] } ->
-          (* first column of pss is made of variables only *)
-          satisfiable default qs
-        | { default; constrs }  ->
-            if full_match false constrs then
-              List.exists
-                (fun (p,pss) ->
-                  not (is_absent_pat p) &&
-                  satisfiable pss (simple_match_args p omega @ qs))
-                constrs
-            else
+        if not (all_coherent (first_column pss)) then (
+          false
+        ) else (
+          let q0 = discr_pat omega pss in
+          match build_specialized_submatrices ~extend_row:(@) q0 pss with
+          | { default; constrs = [] } ->
+              (* first column of pss is made of variables only *)
               satisfiable default qs
-        end
+          | { default; constrs }  ->
+              if full_match false constrs then
+                List.exists
+                  (fun (p,pss) ->
+                    not (is_absent_pat p) &&
+                    satisfiable pss (simple_match_args p omega @ qs))
+                  constrs
+              else
+                satisfiable default qs
+        )
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
         let pss = simplify_first_col pss in
-        let q0 = discr_pat q pss in
-        satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
-          (simple_match_args q0 q @ qs)
+        if not (all_coherent (q :: first_column pss)) then (
+          false
+        ) else (
+          let q0 = discr_pat q pss in
+          satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
+            (simple_match_args q0 q @ qs)
+        )
 
 (* While [satisfiable] only checks whether the last row of [pss + qs] is
    satisfiable, this function returns the (possibly empty) list of vectors [es]
@@ -1036,7 +1187,10 @@ let rec satisfiable pss qs = match pss with
      1- for all ps in pss, ps # es (ps and es are not compatible)
      2- qs <= es                   (es matches qs)
 
-   This is done to enable GADT handling *)
+   This is done to enable GADT handling
+
+   For considerations regarding the coherence check, see the comment on
+   [satisfiable] above.  *)
 let rec list_satisfying_vectors pss qs =
   match pss with
   | [] -> if has_instances qs then [qs] else []
@@ -1050,46 +1204,54 @@ let rec list_satisfying_vectors pss qs =
           list_satisfying_vectors pss (q::qs)
       | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
           let pss = simplify_first_col pss in
-          let q0 = discr_pat omega pss in
-          let wild default_matrix p =
-            List.map (fun qs -> p::qs)
-              (list_satisfying_vectors default_matrix qs)
-          in
-          begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
-          | { default; constrs = [] } ->
-              (* first column of pss is made of variables only *)
-              wild default omega
-          | { default; constrs = ((p,_)::_ as constrs) } ->
-              let for_constrs () =
-                List.flatten (
-                  List.map (fun (p,pss) ->
-                    if is_absent_pat p then
-                      []
-                    else
-                      let witnesses =
-                        list_satisfying_vectors pss
-                          (simple_match_args p omega @ qs)
-                      in
-                      List.map (set_args p) witnesses
-                  ) constrs
-                )
-              in
-              if full_match false constrs then for_constrs () else
-              match p.pat_desc with
-              | Tpat_construct _ ->
-                  (* activate this code for checking non-gadt constructors *)
-                  wild default (build_other_constrs constrs p) @ for_constrs ()
-              | _ ->
-                  wild default omega
-          end
+          if not (all_coherent (first_column pss)) then (
+            []
+          ) else (
+            let q0 = discr_pat omega pss in
+            let wild default_matrix p =
+              List.map (fun qs -> p::qs)
+                (list_satisfying_vectors default_matrix qs)
+            in
+            match build_specialized_submatrices ~extend_row:(@) q0 pss with
+            | { default; constrs = [] } ->
+                (* first column of pss is made of variables only *)
+                wild default omega
+            | { default; constrs = ((p,_)::_ as constrs) } ->
+                let for_constrs () =
+                  List.flatten (
+                    List.map (fun (p,pss) ->
+                      if is_absent_pat p then
+                        []
+                      else
+                        let witnesses =
+                          list_satisfying_vectors pss
+                            (simple_match_args p omega @ qs)
+                        in
+                        List.map (set_args p) witnesses
+                    ) constrs
+                  )
+                in
+                if full_match false constrs then for_constrs () else
+                match p.pat_desc with
+                | Tpat_construct _ ->
+                    (* activate this code for checking non-gadt constructors *)
+                    wild default (build_other_constrs constrs p)
+                    @ for_constrs ()
+                | _ ->
+                    wild default omega
+          )
       | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
       | q::qs ->
           let pss = simplify_first_col pss in
-          let q0 = discr_pat q pss in
-          List.map (set_args q0)
-            (list_satisfying_vectors
-               (build_specialized_submatrix ~extend_row:(@) q0 pss)
-               (simple_match_args q0 q @ qs))
+          if not (all_coherent (q :: first_column pss)) then (
+            []
+          ) else (
+            let q0 = discr_pat q pss in
+            List.map (set_args q0)
+              (list_satisfying_vectors
+                 (build_specialized_submatrix ~extend_row:(@) q0 pss)
+                 (simple_match_args q0 q @ qs))
+          )
 
 (******************************************)
 (* Look for a row that matches some value *)
@@ -1118,9 +1280,11 @@ let rec do_match pss qs = match qs with
       do_match (remove_first_column pss) qs
   | _ ->
       let q0 = normalize_pat q in
+      let pss = simplify_first_col pss in
+      (* [pss] will (or won't) match [q0 :: qs] regardless of the coherence of
+         its first column. *)
       do_match
-        (build_specialized_submatrix ~extend_row:(@) q0
-           (simplify_first_col pss))
+        (build_specialized_submatrix ~extend_row:(@) q0 pss)
         (simple_match_args q0 q @ qs)
 
 
@@ -1173,45 +1337,60 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
 | []::_ ->  No_matching_value
 | pss   ->
     let pss = simplify_first_col pss in
-    let q0 = discr_pat omega pss in
-    begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
-    | { default; constrs = [] } ->
-        (* first column of pss is made of variables only *)
-        begin match exhaust ext default (n-1) with
-        | Witnesses r -> Witnesses (List.map (fun row -> q0::row) r)
-        | r -> r
-      end
-    | { default; constrs } ->
-        let try_non_omega (p,pss) =
-          if is_absent_pat p then
-            No_matching_value
-          else
-            match
-              exhaust
-                ext pss (List.length (simple_match_args p omega) + n - 1)
-            with
-            | Witnesses r -> Witnesses (List.map (fun row ->  (set_args p row)) r)
-            | r       -> r in
-        let before = try_many try_non_omega constrs in
-        if
-          full_match false constrs && not (should_extend ext constrs)
-        then
-          before
-        else
-          let r =  exhaust ext default (n-1) in
-          match r with
-          | No_matching_value -> before
-          | Witnesses r ->
-              try
-                let p = build_other ext constrs in
-                let dug = List.map (fun tail -> p :: tail) r in
-                match before with
-                | No_matching_value -> Witnesses dug
-                | Witnesses x -> Witnesses (x @ dug)
+    if not (all_coherent (first_column pss)) then
+      (* We're considering an ill-typed branch, we won't actually be able to
+         produce a well typed value taking that branch. *)
+      No_matching_value
+    else (
+      (* Assuming the first column is ill-typed but considered coherent, we
+         might end up producing an ill-typed witness of non-exhaustivity
+         corresponding to the current branch.
+
+         If [exhaust] has been called by [do_check_partial], then the witnesses
+         produced get typechecked and the ill-typed ones are discarded.
+
+         If [exhaust] has been called by [do_check_fragile], then it is possible
+         we might fail to warn the user that the matching is fragile. See for
+         example testsuite/tests/warnings/w04_failure.ml. *)
+      let q0 = discr_pat omega pss in
+      match build_specialized_submatrices ~extend_row:(@) q0 pss with
+      | { default; constrs = [] } ->
+          (* first column of pss is made of variables only *)
+          begin match exhaust ext default (n-1) with
+          | Witnesses r -> Witnesses (List.map (fun row -> q0::row) r)
+          | r -> r
+        end
+      | { default; constrs } ->
+          let try_non_omega (p,pss) =
+            if is_absent_pat p then
+              No_matching_value
+            else
+              match
+                exhaust
+                  ext pss (List.length (simple_match_args p omega) + n - 1)
               with
-      (* cannot occur, since constructors don't make a full signature *)
-              | Empty -> fatal_error "Parmatch.exhaust"
-    end
+              | Witnesses r -> Witnesses (List.map (fun row ->  (set_args p row)) r)
+              | r       -> r in
+          let before = try_many try_non_omega constrs in
+          if
+            full_match false constrs && not (should_extend ext constrs)
+          then
+            before
+          else
+            let r =  exhaust ext default (n-1) in
+            match r with
+            | No_matching_value -> before
+            | Witnesses r ->
+                try
+                  let p = build_other ext constrs in
+                  let dug = List.map (fun tail -> p :: tail) r in
+                  match before with
+                  | No_matching_value -> Witnesses dug
+                  | Witnesses x -> Witnesses (x @ dug)
+                with
+        (* cannot occur, since constructors don't make a full signature *)
+                | Empty -> fatal_error "Parmatch.exhaust"
+  )
 
 let exhaust ext pss n =
   let ret = exhaust ext pss n in
@@ -1244,47 +1423,50 @@ let rec pressure_variants tdefs = function
   | []::_ -> true
   | pss   ->
       let pss = simplify_first_col pss in
-      let q0 = discr_pat omega pss in
-      begin match build_specialized_submatrices ~extend_row:(@) q0 pss with
-      | { default; constrs = [] } -> pressure_variants tdefs default
-      | { default; constrs } ->
-          let rec try_non_omega = function
-            | (_p,pss) :: rem ->
-                let ok = pressure_variants tdefs pss in
-                (* The order below matters : we want [pressure_variants] to be
-                   called on all the specialized submatrices because we might
-                   close some variant in any of them regardless of whether [ok]
-                   is true for [pss] or not *)
-                try_non_omega rem && ok
-            | [] -> true
-          in
-          if full_match (tdefs=None) constrs then
-            try_non_omega constrs
-          else if tdefs = None then
-            pressure_variants None default
-          else
-            let full = full_match true constrs in
-            let ok =
-              if full then
-                try_non_omega constrs
-              else (
-                let { constrs = partial_constrs; _ } =
-                  build_specialized_submatrices ~extend_row:(@) q0
-                    (mark_partial pss)
-                in
-                try_non_omega partial_constrs
-              )
+      if not (all_coherent (first_column pss)) then
+        true
+      else (
+        let q0 = discr_pat omega pss in
+        match build_specialized_submatrices ~extend_row:(@) q0 pss with
+        | { default; constrs = [] } -> pressure_variants tdefs default
+        | { default; constrs } ->
+            let rec try_non_omega = function
+              | (_p,pss) :: rem ->
+                  let ok = pressure_variants tdefs pss in
+                  (* The order below matters : we want [pressure_variants] to be
+                    called on all the specialized submatrices because we might
+                    close some variant in any of them regardless of whether [ok]
+                    is true for [pss] or not *)
+                  try_non_omega rem && ok
+              | [] -> true
             in
-            begin match constrs, tdefs with
-              ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
-                let row = row_of_pat p in
-                if Btype.row_fixed row
-                || pressure_variants None default then ()
-                else close_variant env row
-            | _ -> ()
-            end;
-            ok
-      end
+            if full_match (tdefs=None) constrs then
+              try_non_omega constrs
+            else if tdefs = None then
+              pressure_variants None default
+            else
+              let full = full_match true constrs in
+              let ok =
+                if full then
+                  try_non_omega constrs
+                else (
+                  let { constrs = partial_constrs; _ } =
+                    build_specialized_submatrices ~extend_row:(@) q0
+                      (mark_partial pss)
+                  in
+                  try_non_omega partial_constrs
+                )
+              in
+              begin match constrs, tdefs with
+                ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
+                  let row = row_of_pat p in
+                  if Btype.row_fixed row
+                  || pressure_variants None default then ()
+                  else close_variant env row
+              | _ -> ()
+              end;
+              ok
+      )
 
 
 (* Yet another satisfiable function *)
@@ -1393,7 +1575,7 @@ and simplify_head_pat p ps k =
 
 
 (* Back to normal matrices *)
-let make_vector r = r.no_ors
+let make_vector r = List.rev r.no_ors
 
 let make_matrix rs = List.map make_vector rs
 
@@ -1485,11 +1667,17 @@ let rec every_satisfiables pss qs = match qs.active with
     | _ ->
 (* standard case, filter matrix *)
         let pss = simplify_first_col pss in
-        let q0 = discr_pat q pss in
-        every_satisfiables
-          (build_specialized_submatrix q0 pss
-             ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
-          {qs with active=simple_match_args q0 q @ rem}
+        (* The handling of incoherent matrices is kept in line with
+           [satisfiable] *)
+        if not (all_coherent (uq :: first_column pss)) then
+          Unused
+        else (
+          let q0 = discr_pat q pss in
+          every_satisfiables
+            (build_specialized_submatrix q0 pss
+              ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
+            {qs with active=simple_match_args q0 q @ rem}
+        )
     end
 
 (*
@@ -2167,11 +2355,26 @@ let rec matrix_stable_vars rs = match rs with
     (* The stable variables are those stable at any position *)
     List.fold_left IdSet.union IdSet.empty stables_in_varsets
 | rs ->
-   let submatrices = split_rows (simplify_first_col rs) in
-   let submat_stable = List.map matrix_stable_vars submatrices in
-   (* a stable variable must be stable in each submatrix;
-      if the matrix has at least one row, there is at least one submatrix *)
-   reduce IdSet.inter submat_stable
+    let rs = simplify_first_col rs in
+    if not (all_coherent (first_column rs)) then (
+      (* If the first column is incoherent, then all the variables of this
+         matrix are stable. *)
+      List.fold_left (fun acc (_, { varsets; _ }) ->
+        List.fold_left IdSet.union acc varsets
+      ) IdSet.empty rs
+    ) else (
+      (* If the column is ill-typed but deemed coherent, we might spuriously
+         warn about some variables being unstable.
+
+         As sad as that might be, the warning can be silenced by splitting the
+         or-pattern...
+      *)
+      let submatrices = split_rows rs in
+      let submat_stable = List.map matrix_stable_vars submatrices in
+      (* a stable variable must be stable in each submatrix;
+        if the matrix has at least one row, there is at least one submatrix *)
+      reduce IdSet.inter submat_stable
+    )
 
 let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
 
