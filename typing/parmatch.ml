@@ -2325,14 +2325,6 @@ and simplify_head_pat head_bound_variables p ps varsets k =
 
 (* Compute stable bindings *)
 
-let split_rows rows =
-  let extend_row columns r =
-    { r with row = columns @ r.row } in
-  let q0 = discr_pat omega rows in
-  match build_specialized_submatrices ~extend_row q0 rows with
-  | { default; constrs = [] } -> [default]
-  | { default = _; constrs } -> List.map snd constrs
-
 type stable_vars =
   | All
   | Vars of IdSet.t
@@ -2363,18 +2355,32 @@ let rec matrix_stable_vars rs = match rs with
     Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
 | rs ->
     let rs = simplify_first_col rs in
-    if not (all_coherent (first_column rs)) then All
+    if not (all_coherent (first_column rs))
+    then All
     else begin
       (* If the column is ill-typed but deemed coherent, we might spuriously
          warn about some variables being unstable.
-
          As sad as that might be, the warning can be silenced by splitting the
          or-pattern...
       *)
-      let submatrices = split_rows rs in
-      let submat_stable = List.map matrix_stable_vars submatrices in
-      (* a stable variable must be stable in each submatrix *)
-      List.fold_left stable_inter All submat_stable
+      let extend_row columns r =
+        { r with row = columns @ r.row } in
+      let q0 = discr_pat omega rs in
+      match build_specialized_submatrices ~extend_row q0 rs with
+      | { default; constrs = [] } ->
+          (* the first column contains no head constructor;
+             they are all _ after simplification, so it can be dropped *)
+          matrix_stable_vars default
+      | { default = _; constrs } ->
+          (* A stable variable must be stable in each submatrix.
+
+             If the first column contains some head constructors, there
+             is no need to look at stability for the default matrix: all
+             other submatrices contain the default matrix, so they have
+             less stable variables. *)
+          let submatrices = List.map snd constrs in
+          let submat_stable = List.map matrix_stable_vars submatrices in
+          List.fold_left stable_inter All submat_stable
     end
 
 let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
