@@ -130,6 +130,10 @@ Working version
 - GPR#1540: manual, decouple verbatim and toplevel style in code examples
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1556: manual, add a consistency test for manual references inside
+  the compiler source code.
+  (Florian Angeletti, review by Gabriel Scherer)
+
 ### Compiler distribution build system
 
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
