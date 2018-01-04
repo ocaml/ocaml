@@ -265,3 +265,18 @@ let cmp (pred : a -> bool) (x : a alg) (y : a alg) =
   (* below: silence exhaustiveness/fragility warnings *)
   | (Val (A1 | A2) | Binop _), _ -> ()
 ;;
+
+type a = A1;;
+
+type 'a alg =
+  | Val of 'a
+  | Binop of 'a alg * 'a alg;;
+
+let () = print_endline "no warning below";;
+let cmp (pred : a -> bool) (x : a alg) (y : a alg) =
+  match x, y with
+  | Val A1, Val A1 -> ()
+  | ((Val x, _) | (_, Val x)) when pred x -> ()
+  (* below: silence exhaustiveness/fragility warnings *)
+  | (Val A1 | Binop _), _ -> ()
+;;

@@ -157,4 +157,8 @@ val guarded_ambiguity : expr * expr -> unit = <fun>
 Warning 57: Ambiguous or-pattern variables under guard;
 variable x may match different arguments. (See manual section 9.5)
 val cmp : (a -> bool) -> a alg -> a alg -> unit = <fun>
+#   type a = A1
+#       type 'a alg = Val of 'a | Binop of 'a alg * 'a alg
+#   no warning below
+#             val cmp : (a -> bool) -> a alg -> a alg -> unit = <fun>
 # 

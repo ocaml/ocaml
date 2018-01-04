@@ -2386,7 +2386,10 @@ let rec matrix_stable_vars m = match m with
           let q0 = discr_pat omega m in
           let { default; constrs } =
             build_specialized_submatrices ~extend_row q0 m in
-          default :: List.map snd constrs in
+          let non_default = List.map snd constrs in
+          if constrs <> [] && full_match false constrs
+          then non_default
+          else default :: non_default in
         (* A stable variable must be stable in each submatrix. *)
         let submat_stable = List.map matrix_stable_vars submatrices in
         List.fold_left stable_inter All submat_stable
