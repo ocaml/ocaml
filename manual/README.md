@@ -219,3 +219,9 @@ when this extension is used `@` characters must be escaped as `\@`.
 This extension is used mainly in the language reference part of the manual.
 and a more complete description of the notation used is available in the
 first subsection of `refman/refman.etex`.
+
+Consistency tests
+-----------------
+
+The `tests` folder contains consistency tests that checks that the manual
+and the rest of the compiler sources stay synced.

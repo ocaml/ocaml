@@ -53,7 +53,6 @@ VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/ot
 
 etex-files: $(BLURB)
 all: libs
-	sh ./check-stdlib-modules $(CSLDIR)
 
 libs: $(FILES)
 
@@ -96,7 +95,7 @@ clean:
 
 .etex.tex: $(TEXQUOTE)
 	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
-	&& cp $*.texquote_error.tex $*.tex\
+	&& mv $*.texquote_error.tex $*.tex\
 	|| printf "Failure when generating %s\n" $*.tex
 
 
