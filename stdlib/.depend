@@ -89,8 +89,8 @@ complex.cmo : complex.cmi
 complex.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.cmx : string.cmx char.cmx bytes.cmx digest.cmi
-domain.cmo : atomic.cmi domain.cmi
-domain.cmx : atomic.cmx domain.cmi
+domain.cmo : int64.cmi atomic.cmi domain.cmi
+domain.cmx : int64.cmx atomic.cmx domain.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
@@ -219,8 +219,8 @@ complex.cmo : complex.cmi
 complex.p.cmx : complex.cmi
 digest.cmo : string.cmi char.cmi bytes.cmi digest.cmi
 digest.p.cmx : string.p.cmx char.p.cmx bytes.p.cmx digest.cmi
-domain.cmo : atomic.cmi domain.cmi
-domain.p.cmx : atomic.p.cmx domain.cmi
+domain.cmo : int64.cmi atomic.cmi domain.cmi
+domain.p.cmx : int64.p.cmx atomic.p.cmx domain.cmi
 filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.p.cmx string.p.cmx random.p.cmx printf.p.cmx lazy.p.cmx buffer.p.cmx \

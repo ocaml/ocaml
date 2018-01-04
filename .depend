@@ -875,6 +875,7 @@ asmcomp/strmatch.cmo : bytecomp/lambda.cmi typing/ident.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo asmcomp/strmatch.cmi
 asmcomp/strmatch.cmx : bytecomp/lambda.cmx typing/ident.cmx asmcomp/cmm.cmx \
     asmcomp/arch.cmx asmcomp/strmatch.cmi
+driver/compdynlink.cmi :
 driver/compenv.cmi :
 driver/compile.cmi :
 driver/compmisc.cmi : typing/env.cmi
