@@ -600,7 +600,7 @@ end) = struct
   open Name
 
   let get_type_path env d =
-    match (get_type d).desc with
+    match (repr (get_type d)).desc with
     | Tconstr(p, _, _) -> p
     | _ -> assert false
 

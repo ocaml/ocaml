@@ -46,7 +46,8 @@ all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install: install-$(RUNTIMED)
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader_ur \
+	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
+	  camlheader_ur \
 	  $(INSTALL_LIBDIR)
 	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
 

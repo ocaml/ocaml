@@ -39,6 +39,8 @@ eqparsetree.cmo : ../parsing/parsetree.cmi ../parsing/longident.cmi \
     ../parsing/location.cmi ../parsing/asttypes.cmi
 eqparsetree.cmx : ../parsing/parsetree.cmi ../parsing/longident.cmx \
     ../parsing/location.cmx ../parsing/asttypes.cmi
+make_opcodes.cmo :
+make_opcodes.cmx :
 objinfo.cmo : ../asmcomp/printclambda.cmi ../utils/misc.cmi \
     ../utils/config.cmi ../asmcomp/cmx_format.cmi ../typing/cmt_format.cmi \
     ../bytecomp/cmo_format.cmi ../typing/cmi_format.cmi \
