@@ -786,10 +786,14 @@ let row_of_pat pat =
 
 (*
   Check whether the first column of env makes up a complete signature or
-  not.
+  not. We work on the discriminating patterns of each sub-matrix: they
+  are simplified, and are not omega/Tpat_any.
 *)
-
 let full_match closing env =  match env with
+| ({pat_desc = (Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_or _)},_) :: _ ->
+    (* discriminating patterns are simplified *)
+    assert false
+| [] -> false
 | ({pat_desc = Tpat_construct(_,c,_)},_) :: _ ->
     if c.cstr_consts < 0 then false (* extensions *)
     else List.length env = c.cstr_consts + c.cstr_nonconsts
@@ -824,10 +828,6 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
-| []
-  ->
-    assert false
 
 (* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
@@ -1157,20 +1157,17 @@ let rec satisfiable pss qs = match pss with
         if not (all_coherent (first_column pss)) then
           false
         else begin
-          let q0 = discr_pat omega pss in
-          match build_specialized_submatrices ~extend_row:(@) q0 pss with
-          | { default; constrs = [] } ->
-              (* first column of pss is made of variables only *)
-              satisfiable default qs
-          | { default; constrs }  ->
-              if full_match false constrs then
-                List.exists
-                  (fun (p,pss) ->
-                    not (is_absent_pat p) &&
-                    satisfiable pss (simple_match_args p omega @ qs))
-                  constrs
-              else
-                satisfiable default qs
+          let { default; constrs } =
+            let q0 = discr_pat omega pss in
+            build_specialized_submatrices ~extend_row:(@) q0 pss in
+          if not (full_match false constrs) then
+            satisfiable default qs
+          else
+            List.exists
+              (fun (p,pss) ->
+                 not (is_absent_pat p) &&
+                 satisfiable pss (simple_match_args p omega @ qs))
+              constrs
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
@@ -2400,7 +2397,7 @@ let rec matrix_stable_vars m = match m with
             let { default; constrs } =
               build_specialized_submatrices ~extend_row q0 m in
             let non_default = List.map snd constrs in
-            if constrs <> [] && full_match false constrs
+            if full_match false constrs
             then non_default
             else default :: non_default in
           (* A stable variable must be stable in each submatrix. *)
