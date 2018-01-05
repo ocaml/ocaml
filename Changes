@@ -204,7 +204,7 @@ Working version
   to ill-typed columns
   (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
 
-- MPR#7704: Soundness issue with private rows and module inclusion
+- MPR#7704, GPR#1559: Soundness issue with private rows and module inclusion
   (Jacques Garrigue, report by Jeremy Yallop)
 
 - MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
