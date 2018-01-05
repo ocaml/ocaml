@@ -614,24 +614,32 @@ and set_args_erase_mutable q r = do_set_args true q r
      (Some x, r4)
      (None, r4)
  *)
-let rec simplify_head_pat p ps k =
-  match p.pat_desc with
-  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-  | Tpat_var (_,_) -> (omega, ps) :: k
-  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-  | _ -> (p, ps) :: k
+type simplified_pattern = pattern (* no Tpat_var, Tpat_alias or Tpat_or *)
+type 'row simplified_matrix = (simplified_pattern * 'row) list
 
-let rec simplify_first_col = function
-  | [] -> []
-  | [] :: _ -> assert false (* the rows are non-empty! *)
-  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+module Row = struct
+  type row = Typedtree.pattern list
 
+  let rec simplify_head_pat p ps k =
+    match p.pat_desc with
+    | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+    | Tpat_var (_,_) -> (omega, ps) :: k
+    | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+    | _ -> (p, ps) :: k
+
+  let rec simplify_first_col : row list -> row simplified_matrix = function
+    | [] -> []
+    | [] :: _ -> assert false (* the rows are non-empty! *)
+    | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+end
+
+let simplify_first_col = Row.simplify_first_col
 
 (* Builds the specialized matrix of [pss] according to pattern [q].
    See section 3.1 of http://moscova.inria.fr/~maranget/papers/warn/warn.pdf
 
    NOTES:
-   - expects [pss] to be a "simplified matrix", cf. [simplify_first_col]
+   - expects [pss] to be a simplified matrix, cf. [simplify_first_col]
    - [q] was produced by [discr_pat]
    - we are polymorphic on the type of matrices we work on, in particular a row
    might not simply be a [pattern list]. That's why we have the [extend_row]
@@ -1483,92 +1491,90 @@ type answer =
   | Upartial of Typedtree.pattern list  (* Mixed, with list of useless ones *)
 
 
+module Usefulness = struct
+  (* this row type enable column processing inside the matrix
+      - left  ->  elements not to be processed,
+      - right ->  elements to be processed
+  *)
+  type row =
+    {no_ors : pattern list ; ors : pattern list ; active : pattern list}
 
-(* this row type enable column processing inside the matrix
-    - left  ->  elements not to be processed,
-    - right ->  elements to be processed
-*)
-type usefulness_row =
-  {no_ors : pattern list ; ors : pattern list ; active : pattern list}
+  (*
+  let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
+    pretty_line ors ; prerr_string " *" ;
+    pretty_line no_ors ; prerr_string " *" ;
+    pretty_line active
 
-(*
-let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
-  pretty_line ors ; prerr_string " *" ;
-  pretty_line no_ors ; prerr_string " *" ;
-  pretty_line active
+  let pretty_rows rs =
+    prerr_endline "begin matrix" ;
+    List.iter
+      (fun r ->
+        pretty_row r ;
+        prerr_endline "")
+      rs ;
+    prerr_endline "end matrix"
+  *)
 
-let pretty_rows rs =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun r ->
-      pretty_row r ;
-      prerr_endline "")
-    rs ;
-  prerr_endline "end matrix"
-*)
+  (* Initial build *)
+  let make_row ps = {ors=[] ; no_ors=[]; active=ps}
 
-(* Initial build *)
-let make_row ps = {ors=[] ; no_ors=[]; active=ps}
+  let make_rows pss = List.map make_row pss
 
-let make_rows pss = List.map make_row pss
+  (* Useful to detect and expand  or pats inside as pats *)
+  let rec unalias p = match p.pat_desc with
+  | Tpat_alias (p,_,_) -> unalias p
+  | _ -> p
 
+  let is_var p = match (unalias p).pat_desc with
+  | Tpat_any|Tpat_var _ -> true
+  | _                   -> false
 
-(* Useful to detect and expand  or pats inside as pats *)
-let rec unalias p = match p.pat_desc with
-| Tpat_alias (p,_,_) -> unalias p
-| _ -> p
+  let is_var_column rs =
+    List.for_all
+      (fun r -> match r.active with
+      | p::_ -> is_var p
+      | []   -> assert false)
+      rs
 
+  (* Standard or-args for left-to-right matching *)
+  let rec or_args p = match p.pat_desc with
+  | Tpat_or (p1,p2,_) -> p1,p2
+  | Tpat_alias (p,_,_)  -> or_args p
+  | _                 -> assert false
 
-let is_var p = match (unalias p).pat_desc with
-| Tpat_any|Tpat_var _ -> true
-| _                   -> false
+  (* Just remove current column *)
+  let remove r = match r.active with
+  | _::rem -> {r with active=rem}
+  | []     -> assert false
 
-let is_var_column rs =
-  List.for_all
-    (fun r -> match r.active with
-    | p::_ -> is_var p
-    | []   -> assert false)
-    rs
+  let remove_column rs = List.map remove rs
 
-(* Standard or-args for left-to-right matching *)
-let rec or_args p = match p.pat_desc with
-| Tpat_or (p1,p2,_) -> p1,p2
-| Tpat_alias (p,_,_)  -> or_args p
-| _                 -> assert false
+  (* Current column has been processed *)
+  let push_no_or r = match r.active with
+  | p::rem -> { r with no_ors = p::r.no_ors ; active=rem}
+  | [] -> assert false
 
-(* Just remove current column *)
-let remove r = match r.active with
-| _::rem -> {r with active=rem}
-| []     -> assert false
+  let push_or r = match r.active with
+  | p::rem -> { r with ors = p::r.ors ; active=rem}
+  | [] -> assert false
 
-let remove_column rs = List.map remove rs
+  let push_or_column rs = List.map push_or rs
+  and push_no_or_column rs = List.map push_no_or rs
 
-(* Current column has been processed *)
-let push_no_or r = match r.active with
-| p::rem -> { r with no_ors = p::r.no_ors ; active=rem}
-| [] -> assert false
+  let rec simplify_first_col : row list -> row simplified_matrix = function
+    | [] -> []
+    | row :: rows ->
+      match row.active with
+      | [] -> assert false (* the rows are non-empty! *)
+      | p :: ps ->
+        Row.simplify_head_pat p { row with active = ps }
+          (simplify_first_col rows)
 
-let push_or r = match r.active with
-| p::rem -> { r with ors = p::r.ors ; active=rem}
-| [] -> assert false
+  (* Back to normal matrices *)
+  let make_vector r = List.rev r.no_ors
 
-let push_or_column rs = List.map push_or rs
-and push_no_or_column rs = List.map push_no_or rs
-
-let rec simplify_first_usefulness_col = function
-  | [] -> []
-  | row :: rows ->
-    match row.active with
-    | [] -> assert false (* the rows are non-empty! *)
-    | p :: ps ->
-      simplify_head_pat p { row with active = ps }
-        (simplify_first_usefulness_col rows)
-
-(* Back to normal matrices *)
-let make_vector r = List.rev r.no_ors
-
-let make_matrix rs = List.map make_vector rs
-
+  let make_matrix rs = List.map make_vector rs
+end
 
 (* Standard union on answers *)
 let union_res r1 r2 = match r1, r2 with
@@ -1580,6 +1586,7 @@ let union_res r1 r2 = match r1, r2 with
 
 (* propose or pats for expansion *)
 let extract_elements qs =
+  let open Usefulness in
   let rec do_rec seen = function
     | [] -> []
     | q::rem ->
@@ -1599,7 +1606,7 @@ let transpose rs = match rs with
       i rem
 
 let extract_columns pss qs = match pss with
-| [] -> List.map (fun _ -> []) qs.ors
+| [] -> List.map (fun _ -> []) qs.Usefulness.ors
 | _  ->
   let rows = List.map extract_elements pss in
   transpose rows
@@ -1609,66 +1616,68 @@ let extract_columns pss qs = match pss with
    check or-patterns argument usefulness (terminal case)
 *)
 
-let rec every_satisfiables pss qs = match qs.active with
-| []     ->
-    (* qs is now partitionned,  check usefulness *)
-    begin match qs.ors with
-    | [] -> (* no or-patterns *)
-        if satisfiable (make_matrix pss) (make_vector qs) then
-          Used
-        else
+let rec every_satisfiables pss qs =
+  let open Usefulness in
+  match qs.active with
+  | []     ->
+      (* qs is now partitionned,  check usefulness *)
+      begin match qs.ors with
+      | [] -> (* no or-patterns *)
+          if satisfiable (make_matrix pss) (make_vector qs) then
+            Used
+          else
+            Unused
+      | _  -> (* n or-patterns -> 2n expansions *)
+          List.fold_right2
+            (fun pss qs r -> match r with
+            | Unused -> Unused
+            | _ ->
+                match qs.active with
+                | [q] ->
+                    let q1,q2 = or_args q in
+                    let r_loc = every_both pss qs q1 q2 in
+                    union_res r r_loc
+                | _   -> assert false)
+            (extract_columns pss qs) (extract_elements qs)
+            Used
+      end
+  | q::rem ->
+      let uq = unalias q in
+      begin match uq.pat_desc with
+      | Tpat_any | Tpat_var _ ->
+          if is_var_column pss then
+  (* forget about ``all-variable''  columns now *)
+            every_satisfiables (remove_column pss) (remove qs)
+          else
+  (* otherwise this is direct food for satisfiable *)
+            every_satisfiables (push_no_or_column pss) (push_no_or qs)
+      | Tpat_or (q1,q2,_) ->
+          if
+            q1.pat_loc.Location.loc_ghost &&
+            q2.pat_loc.Location.loc_ghost
+          then
+  (* syntactically generated or-pats should not be expanded *)
+            every_satisfiables (push_no_or_column pss) (push_no_or qs)
+          else
+  (* this is a real or-pattern *)
+            every_satisfiables (push_or_column pss) (push_or qs)
+      | Tpat_variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
           Unused
-    | _  -> (* n or-patterns -> 2n expansions *)
-        List.fold_right2
-          (fun pss qs r -> match r with
-          | Unused -> Unused
-          | _ ->
-              match qs.active with
-              | [q] ->
-                  let q1,q2 = or_args q in
-                  let r_loc = every_both pss qs q1 q2 in
-                  union_res r r_loc
-              | _   -> assert false)
-          (extract_columns pss qs) (extract_elements qs)
-          Used
-    end
-| q::rem ->
-    let uq = unalias q in
-    begin match uq.pat_desc with
-    | Tpat_any | Tpat_var _ ->
-        if is_var_column pss then
-(* forget about ``all-variable''  columns now *)
-          every_satisfiables (remove_column pss) (remove qs)
-        else
-(* otherwise this is direct food for satisfiable *)
-          every_satisfiables (push_no_or_column pss) (push_no_or qs)
-    | Tpat_or (q1,q2,_) ->
-        if
-          q1.pat_loc.Location.loc_ghost &&
-          q2.pat_loc.Location.loc_ghost
-        then
-(* syntactically generated or-pats should not be expanded *)
-          every_satisfiables (push_no_or_column pss) (push_no_or qs)
-        else
-(* this is a real or-pattern *)
-          every_satisfiables (push_or_column pss) (push_or qs)
-    | Tpat_variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
-        Unused
-    | _ ->
-(* standard case, filter matrix *)
-        let pss = simplify_first_usefulness_col pss in
-        (* The handling of incoherent matrices is kept in line with
-           [satisfiable] *)
-        if not (all_coherent (uq :: first_column pss)) then
-          Unused
-        else begin
-          let q0 = discr_pat q pss in
-          every_satisfiables
-            (build_specialized_submatrix q0 pss
-              ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
-            {qs with active=simple_match_args q0 q @ rem}
-        end
-    end
+      | _ ->
+  (* standard case, filter matrix *)
+          let pss = simplify_first_col pss in
+          (* The handling of incoherent matrices is kept in line with
+             [satisfiable] *)
+          if not (all_coherent (uq :: first_column pss)) then
+            Unused
+          else begin
+            let q0 = discr_pat q pss in
+            every_satisfiables
+              (build_specialized_submatrix q0 pss
+                ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
+              {qs with active=simple_match_args q0 q @ rem}
+          end
+      end
 
 (*
   This function ``every_both'' performs the usefulness check
@@ -1680,8 +1689,8 @@ let rec every_satisfiables pss qs = match qs.active with
   - all matching work performed on qs.no_ors is not performed again.
   *)
 and every_both pss qs q1 q2 =
-  let qs1 = {qs with active=[q1]}
-  and qs2 =  {qs with active=[q2]} in
+  let qs1 = {qs with Usefulness.active=[q1]}
+  and qs2 =  {qs with Usefulness.active=[q2]} in
   let r1 = every_satisfiables pss qs1
   and r2 =  every_satisfiables (if compat q1 q2 then qs1::pss else pss) qs2 in
   match r1 with
@@ -2073,6 +2082,7 @@ let do_check_fragile loc casel pss =
 (********************************)
 
 let check_unused pred casel =
+  let open Usefulness in
   if Warnings.is_active Warnings.Unused_match
   || List.exists (fun c -> c.c_rhs.exp_desc = Texp_unreachable) casel then
     let rec do_rec pref = function
@@ -2248,9 +2258,7 @@ let check_partial pred loc casel =
 
 module IdSet = Set.Make(Ident)
 
-let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
-
-(* Row for ambiguous variable search,
+(* Rows for ambiguous variable search:
    row is the traditional pattern row,
    varsets contain a list of head variable sets (varsets)
 
@@ -2261,7 +2269,7 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
    the pattern and may be bound to distinct sub-parts of the matched
    value.
 
-   All rows of a (sub)matrix have rows of the same length,
+   All positive rows of a (sub)matrix have rows of the same length,
    but also varsets of the same length.
 
    Varsets are populated when simplifying the first column
@@ -2278,19 +2286,37 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
      (Some x, { row = r4; varsets = {} :: s4 })
      (None, { row = r4; varsets = {x} :: s4 })
 *)
-type amb_row = { row : pattern list ; varsets : IdSet.t list; }
+module Varsets = struct
+  type row = { row : pattern list ; varsets : IdSet.t list; }
 
-(*
-   To accurately report ambiguous variables, one must consider
-   that previous clauses have already matched some values.
-   Consider for example:
+  let simplify_head_pat head_bound_variables varsets ~add_column p ps k =
+    let rec simpl head_bound_variables varsets p ps k =
+      match p.pat_desc with
+      | Tpat_alias (p,x,_) ->
+        simpl (IdSet.add x head_bound_variables) varsets p ps k
+      | Tpat_var (x,_) ->
+        let rest_of_the_row =
+          { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
+        in
+        add_column omega rest_of_the_row k
+      | Tpat_or (p1,p2,_) ->
+        simpl head_bound_variables varsets p1 ps
+          (simpl head_bound_variables varsets p2 ps k)
+      | _ ->
+        add_column p { row = ps; varsets = head_bound_variables :: varsets; } k
+    in simpl head_bound_variables varsets p ps k
+end
 
-     | (Foo x, Foo y) -> ...
-     | ((Foo x, _) | (_, Foo x)) when bar x -> ...
+(* To accurately report ambiguous variables, one must consider that
+   previous clauses have already matched some values.  Consider for
+   example:
 
-   The second line taken in isolation uses an unstable variable,
-   but the discriminating values, of the shape [(Foo v1, Foo v2)],
-   would all be filtered by the line above.
+     | (Foo x, Foo y) -> ...  | ((Foo x, _) | (_, Foo x)) when bar
+   x -> ...
+
+   The second line taken in isolation uses an unstable variable, but
+   the discriminating values, of the shape [(Foo v1, Foo v2)], would
+   all be filtered by the line above.
 
    To track this information, the matrices we analyze contain both
    *positive* rows, that describe the rows currently being analyzed
@@ -2305,34 +2331,25 @@ type amb_row = { row : pattern list ; varsets : IdSet.t list; }
 *)
 type ('a, 'b) signed = Positive of 'a | Negative of 'b
 
-let rec simplify_first_amb_col = function
-  | [] -> []
-  | (Negative [] | Positive { row = []; _ }) :: _  -> assert false
-  | Negative (n :: ns) :: rem ->
-      simplify_head_amb_pat_neg n ns
-        (simplify_first_amb_col rem)
-  | Positive { row = p::ps; varsets; }::rem ->
-      simplify_head_amb_pat_pos IdSet.empty p ps varsets
-        (simplify_first_amb_col rem)
+module Amb = struct
+  type row = (Varsets.row, Row.row) signed
 
-and simplify_head_amb_pat_neg p ps k =
-  Misc.map_end (fun (n, ns) -> (n, Negative ns))
-    (simplify_head_pat p ps []) k
+  let rec simplify_first_col : row list -> row simplified_matrix = function
+    | [] -> []
+    | (Negative [] | Positive Varsets.{ row = []; _ }) :: _  -> assert false
+    | Negative (n :: ns) :: rem ->
+        simplify_head_pat_neg n ns
+          (simplify_first_col rem)
+    | Positive Varsets.{ row = p::ps; varsets; }::rem ->
+        let add_column p ps k = (p, Positive ps) :: k in
+        Varsets.simplify_head_pat
+          IdSet.empty varsets
+          ~add_column p ps (simplify_first_col rem)
 
-and simplify_head_amb_pat_pos head_bound_variables p ps varsets k =
-  match p.pat_desc with
-  | Tpat_alias (p,x,_) ->
-    simplify_head_amb_pat_pos (IdSet.add x head_bound_variables) p ps varsets k
-  | Tpat_var (x,_) ->
-    let rest_of_the_row =
-      { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
-    in
-    (omega, Positive rest_of_the_row) :: k
-  | Tpat_or (p1,p2,_) ->
-    simplify_head_amb_pat_pos head_bound_variables p1 ps varsets
-      (simplify_head_amb_pat_pos head_bound_variables p2 ps varsets k)
-  | _ ->
-    (p, Positive { row = ps; varsets = head_bound_variables :: varsets; }) :: k
+  and simplify_head_pat_neg p ps k =
+    Misc.map_end (fun (n, ns) -> (n, Negative ns))
+      (Row.simplify_head_pat p ps []) k
+end
 
 (* Compute stable bindings *)
 
@@ -2348,7 +2365,10 @@ let reduce f = function
 | [] -> invalid_arg "reduce"
 | x::xs -> List.fold_left f x xs
 
-let rec matrix_stable_vars m = match m with
+let rec matrix_stable_vars m =
+  let open Varsets in
+  let open Amb in
+  match m with
   | [] -> All
   | ((Positive {row = []; _} | Negative []) :: _) as empty_rows ->
       let exception Negative_empty_row in
@@ -2381,7 +2401,7 @@ let rec matrix_stable_vars m = match m with
            clause after a long list of clauses) *)
         All
       else begin
-        let m = simplify_first_amb_col m in
+        let m = simplify_first_col m in
         if not (all_coherent (first_column m)) then
           All
         else begin
@@ -2409,7 +2429,7 @@ let rec matrix_stable_vars m = match m with
 let pattern_stable_vars ns p =
   matrix_stable_vars
     (List.fold_left (fun m n -> Negative n :: m)
-       [Positive {varsets = []; row = [p]}] ns)
+       [Positive Varsets.{varsets = []; row = [p]}] ns)
 
 (* All identifier paths that appear in an expression that occurs
    as a clause right hand side or guard.
@@ -2462,6 +2482,8 @@ let all_rhs_idents exp =
   end) in
   Iterator.iter_expression exp;
   !ids
+
+let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
 let check_ambiguous_bindings =
   let open Warnings in
