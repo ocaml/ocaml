@@ -1249,7 +1249,8 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
-      unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
+      if constrs = None || l <> Parmatch.any_extra_tag then
+        unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
       let k arg =
         rp k {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
