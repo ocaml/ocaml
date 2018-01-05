@@ -117,7 +117,8 @@ of `unified-options.etex` contains the relevant information.
 Latex extensions
 ----------------
 
-###Caml environments
+### Caml environments
+
 The tool `tool/caml-tex2` is used to generate the latex code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
@@ -184,13 +185,15 @@ let f x = x +. pi;;
 Beware that the detection code for these pseudo-environments is quite brittle
 and the environments must start and end at the beginning of the line.
 
-###Quoting
+### Quoting
+
 The tool `tools/texquote2` provides support for verbatim-like quotes using
 `\"` delimiters. More precisely, outside of caml environments and verbatim
 environments, `texquote2` translates double quotes `"text"` to
 `\machine{escaped_text}`.
 
-###BNF grammar notation
+### BNF grammar notation
+
 The tool `tools/transf` provides support for BNF grammar notations and special
 quotes for non-terminal. When transf is used, the environment `syntax` can
 be used to describe grammars using BNF notation:
