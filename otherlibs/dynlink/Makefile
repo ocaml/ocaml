@@ -141,13 +141,14 @@ extract_crc: $(COMPILEROBJS) dynlink.cma extract_crc.cmo
 	$(OCAMLC) -o $@ $^
 
 install:
+	$(MKDIR) "$(INSTALL_LIBDIR)/dynlink"
 	$(INSTALL_DATA) \
 	  dynlink.cmi dynlink.cma \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/dynlink"
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	  dynlink.cmti dynlink.mli \
-	  "$(INSTALL_LIBDIR)"
+	  "$(INSTALL_LIBDIR)/dynlink"
 endif
 	$(INSTALL_PROG) \
 	  extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
@@ -156,8 +157,8 @@ installopt:
 	if $(NATDYNLINK); then \
 	  $(INSTALL_DATA) \
 	    $(NATOBJS) dynlink.cmxa dynlink.$(A) \
-	    "$(INSTALL_LIBDIR)" && \
-	  cd "$(INSTALL_LIBDIR)" && $(RANLIB) dynlink.$(A); \
+	    "$(INSTALL_LIBDIR)/dynlink" && \
+	  cd "$(INSTALL_LIBDIR)/dynlink" && $(RANLIB) dynlink.$(A); \
 	fi
 
 partialclean:
