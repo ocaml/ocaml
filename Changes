@@ -205,7 +205,7 @@ Working version
   (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
 
 - MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
-  (Jacques Garrigue, report by Jeremy Yallop)
+  (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
 
 - MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
   (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
