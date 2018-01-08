@@ -213,6 +213,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _noassert = set Clflags.noassert
   let _nolabels = set Clflags.classic
   let _nostdlib = set Clflags.no_stdlib
+  let _nostdincludes = set Clflags.no_stdincludes
   let _open s = Clflags.open_modules := s :: !Clflags.open_modules
   let _pp s = Clflags.preprocessor := Some s
   let _ppx s = Clflags.all_ppx := s :: !Clflags.all_ppx

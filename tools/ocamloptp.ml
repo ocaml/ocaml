@@ -103,6 +103,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nodynlink = option "-nodynlink"
   let _nolabels = option "-nolabels"
   let _nostdlib = option "-nostdlib"
+  let _nostdincludes = option "-nostdincludes"
   let _no_unbox_free_vars_of_closures = option "-no-unbox-free-vars-of-closures"
   let _no_unbox_specialised_args = option "-no-unbox-specialised-args"
   let _o s = option_with_arg "-o" s

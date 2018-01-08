@@ -359,7 +359,14 @@ let mk_nopromptcont f =
 
 let mk_nostdlib f =
   "-nostdlib", Arg.Unit f,
-  " Do not add default directory to the list of include directories"
+  " Do not add libraries distributed with the compiler to \
+    the list of include directories"
+;;
+
+let mk_nostdincludes f =
+  "-nostdincludes", Arg.Unit f,
+  " Do not add libraries distributed with the compiler other than stdlib to \
+    the list of include directories"
 ;;
 
 let mk_no_unbox_free_vars_of_closures f =
@@ -854,6 +861,7 @@ module type Common_options = sig
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
   val _nopervasives : unit -> unit
+  val _nostdincludes : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit
@@ -1123,6 +1131,7 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;
+    mk_nostdincludes F._nostdincludes;
     mk_o F._o;
     mk_opaque F._opaque;
     mk_open F._open;
@@ -1201,6 +1210,7 @@ struct
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;
+    mk_nostdincludes F._nostdincludes;
     mk_open F._open;
     mk_ppx F._ppx;
     mk_principal F._principal;
@@ -1302,6 +1312,7 @@ struct
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;
+    mk_nostdincludes F._nostdincludes;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o F._o;
@@ -1425,6 +1436,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_nopromptcont F._nopromptcont;
     mk_nostdlib F._nostdlib;
     mk_nopervasives F._nopervasives;
+    mk_nostdincludes F._nostdincludes;
     mk_no_unbox_free_vars_of_closures F._no_unbox_free_vars_of_closures;
     mk_no_unbox_specialised_args F._no_unbox_specialised_args;
     mk_o2 F._o2;
@@ -1509,6 +1521,7 @@ struct
     mk_noassert F._noassert;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
+    mk_nostdincludes F._nostdincludes;
     mk_open F._open;
     mk_pp F._pp;
     mk_ppx F._ppx;

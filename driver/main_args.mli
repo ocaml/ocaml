@@ -29,6 +29,7 @@ module type Common_options = sig
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
   val _nopervasives : unit -> unit
+  val _nostdincludes : unit -> unit
   val _open : string -> unit
   val _ppx : string -> unit
   val _principal : unit -> unit

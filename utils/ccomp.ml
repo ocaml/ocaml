@@ -104,7 +104,7 @@ let compile_file ?output ?(opt="") ?stable_name name =
          (quote_prefixed "-I"
             (List.map (Misc.expand_directory Config.standard_library)
                (List.rev !Clflags.include_dirs)))
-         (Clflags.std_include_flag "-I")
+         (String.concat " " (Clflags.std_include_flags "-I"))
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it
             outputs (in fairness, the tedious thing is that there's no switch to

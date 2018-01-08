@@ -72,7 +72,8 @@ val dllibs : string list ref
 val compile_only : bool ref
 val output_name : string option ref
 val include_dirs : string list ref
-val no_std_include : bool ref
+val no_stdlib : bool ref
+val no_stdincludes : bool ref
 val print_types : bool ref
 val make_archive : bool ref
 val debug : bool ref
@@ -180,8 +181,8 @@ val inline_lifting_benefit : Int_arg_helper.parsed ref
 val default_inline_branch_factor : float
 val inline_branch_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
-val std_include_flag : string -> string
-val std_include_dir : unit -> string list
+val std_include_flags : string -> string list
+val std_include_dirs : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
 val pic_code : bool ref

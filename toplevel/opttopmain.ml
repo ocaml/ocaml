@@ -190,6 +190,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_stdlib
   let _nopervasives = set nopervasives
+  let _nostdincludes = set no_stdincludes
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
   let _no_principal = clear principal

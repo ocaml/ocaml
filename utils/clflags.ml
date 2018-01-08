@@ -46,6 +46,7 @@ let compile_only = ref false            (* -c *)
 and output_name = ref (None : string option) (* -o *)
 and include_dirs = ref ([] : string list)(* -I *)
 and no_stdlib = ref false               (* -nostdlib *)
+and no_stdincludes = ref false          (* -nostdincludes *)
 and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
@@ -144,14 +145,31 @@ let flambda_invariant_checks =
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 
-let std_include_flag prefix =
-  if !no_stdlib then ""
-  else (prefix ^ (Filename.quote Config.standard_library))
-;;
+let std_includes () =
+  if !no_stdlib
+  then []
+  else
+    "stdlib" ::
+      (if !no_stdincludes
+       then []
+       else [
+         "bigarray";
+         "dynlink";
+         "graphics";
+         "raw_spacetime_lib";
+         "str";
+         "unix";
+       ])
 
-let std_include_dir () =
-  if !no_stdlib then [] else [Config.standard_library]
-;;
+let std_include_dirs () =
+  List.map (fun lib ->
+    match lib with
+    | "stdlib" -> Config.standard_library
+    | _ -> Filename.concat Config.standard_library lib
+  ) (std_includes ())
+
+let std_include_flags prefix =
+  List.map (fun dir -> prefix ^ Filename.quote dir) (std_include_dirs ())
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)

@@ -360,6 +360,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nopromptcont = set nopromptcont
   let _nostdlib = set no_stdlib
   let _nopervasives = set nopervasives
+  let _nostdincludes = set no_stdincludes
   let _open s = open_modules := s :: !open_modules
   let _ppx _s = (* disabled *) ()
   let _principal = set principal

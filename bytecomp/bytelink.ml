@@ -540,7 +540,8 @@ let build_custom_runtime prim_name exec_name =
       [] in
   Ccomp.call_linker Ccomp.Exe exec_name
     (debug_prefix_map @ [prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
-    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
+    (String.concat " " (Clflags.std_include_flags "-I")
+     ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode bytecode_name exec_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in

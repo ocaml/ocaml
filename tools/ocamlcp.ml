@@ -86,6 +86,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"
   let _nostdlib = option "-nostdlib"
+  let _nostdincludes = option "-nostdincludes"
   let _o s = option_with_arg "-o" s
   let _opaque = option "-opaque"
   let _open s = option_with_arg "-open" s

@@ -78,6 +78,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_stdlib
+  let _nostdincludes = set no_stdincludes
   let _o s = output_name := Some s
   let _opaque = set opaque
   let _open s = open_modules := s :: !open_modules

@@ -141,6 +141,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _nodynlink = clear dlcode
   let _nolabels = set classic
   let _nostdlib = set no_stdlib
+  let _nostdincludes = set no_stdincludes
   let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
   let _no_unbox_specialised_args = clear unbox_specialised_args
   let _o s = output_name := Some s
