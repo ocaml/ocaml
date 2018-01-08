@@ -980,7 +980,7 @@ let build_other_constant proj make first next p env =
   the first column of env
 *)
 
-let any_extra_tag = "AnyExtraTag"
+let any_extra_tag = "*any extra tag*"
 
 let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
