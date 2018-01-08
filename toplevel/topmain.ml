@@ -101,9 +101,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let clear r () = r := false
 
   let _absname = set Location.absname
-  let _I dir =
-    let dir = Misc.expand_directory Config.standard_library dir in
-    include_dirs := dir :: !include_dirs
+  let _I dir = include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
   let _noinit = set noinit
   let _labels = clear classic
