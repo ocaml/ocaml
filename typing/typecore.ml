@@ -1249,6 +1249,8 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
+      (* PR#7404: allow any_extra_tag blindly, as it would not unify with
+         the abstract row variable *)
       if constrs = None || l <> Parmatch.any_extra_tag || sarg <> None then
         unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
       let k arg =
