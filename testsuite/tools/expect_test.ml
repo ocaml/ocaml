@@ -323,7 +323,7 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
-  if not !Clflags.no_std_include then begin
+  if not !Clflags.no_stdlib then begin
     match !repo_root with
     | None -> ()
     | Some dir ->
@@ -331,7 +331,7 @@ let main fname =
            compiler, not the installed one. We use
            [Compenv.last_include_dirs] to make sure that the stdlib
            directory is the last one. *)
-        Clflags.no_std_include := true;
+        Clflags.no_stdlib := true;
         Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
   end;
   Compmisc.init_path false;
@@ -358,7 +358,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let _nolabels = set classic
   let _noprompt = set noprompt
   let _nopromptcont = set nopromptcont
-  let _nostdlib = set no_std_include
+  let _nostdlib = set no_stdlib
   let _nopervasives = set nopervasives
   let _open s = open_modules := s :: !open_modules
   let _ppx _s = (* disabled *) ()

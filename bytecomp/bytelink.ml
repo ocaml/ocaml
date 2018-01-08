@@ -340,7 +340,7 @@ let link_bytecode tolink exec_name standalone =
        let check_dlls = standalone && Config.target = Config.host in
        if check_dlls then begin
          (* Initialize the DLL machinery *)
-         Dll.init_compile !Clflags.no_std_include;
+         Dll.init_compile !Clflags.no_stdlib;
          Dll.add_path !load_path;
          try Dll.open_dlls Dll.For_checking sharedobjs
          with Failure reason -> raise(Error(Cannot_open_dll reason))
