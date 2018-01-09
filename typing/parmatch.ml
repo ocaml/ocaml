@@ -614,17 +614,17 @@ and set_args_erase_mutable q r = do_set_args true q r
      (Some x, r4)
      (None, r4)
  *)
-let rec simplify_first_col = function
-  | [] -> []
-  | [] :: _ -> assert false (* the rows are non-empty! *)
-  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
-
-and simplify_head_pat p ps k =
+let rec simplify_head_pat p ps k =
   match p.pat_desc with
   | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
   | Tpat_var (_,_) -> (omega, ps) :: k
   | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
   | _ -> (p, ps) :: k
+
+let rec simplify_first_col = function
+  | [] -> []
+  | [] :: _ -> assert false (* the rows are non-empty! *)
+  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
 
 
 (* Builds the specialized matrix of [pss] according to pattern [q].
@@ -1490,8 +1490,8 @@ type answer =
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
 *)
-type row = {no_ors : pattern list ; ors : pattern list ; active : pattern list}
-
+type usefulness_row =
+  {no_ors : pattern list ; ors : pattern list ; active : pattern list}
 
 (*
 let pretty_row {ors=ors ; no_ors=no_ors; active=active} =
@@ -1557,24 +1557,14 @@ let push_or r = match r.active with
 let push_or_column rs = List.map push_or rs
 and push_no_or_column rs = List.map push_no_or rs
 
-(* Those are adaptations of the previous homonymous functions that
-   work on the current column, instead of the first column
-*)
-let rec simplify_first_col = function
+let rec simplify_first_usefulness_col = function
   | [] -> []
   | row :: rows ->
     match row.active with
     | [] -> assert false (* the rows are non-empty! *)
     | p :: ps ->
-      simplify_head_pat p { row with active = ps } (simplify_first_col rows)
-
-and simplify_head_pat p ps k =
-  match p.pat_desc with
-  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-  | Tpat_var (_,_) -> (omega, ps) :: k
-  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-  | _ -> (p, ps) :: k
-
+      simplify_head_pat p { row with active = ps }
+        (simplify_first_usefulness_col rows)
 
 (* Back to normal matrices *)
 let make_vector r = List.rev r.no_ors
@@ -1668,7 +1658,7 @@ let rec every_satisfiables pss qs = match qs.active with
         Unused
     | _ ->
 (* standard case, filter matrix *)
-        let pss = simplify_first_col pss in
+        let pss = simplify_first_usefulness_col pss in
         (* The handling of incoherent matrices is kept in line with
            [satisfiable] *)
         if not (all_coherent (uq :: first_column pss)) then
@@ -2275,23 +2265,9 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 
    All rows of a (sub)matrix have rows of the same length,
    but also varsets of the same length.
-*)
 
-type amb_row = { row : pattern list ; varsets : IdSet.t list; }
-
-(* Given a matrix of non-empty rows
-   p1 :: r1...
-   p2 :: r2...
-   p3 :: r3...
-
-   Simplify the first column [p1 p2 p3] by splitting all or-patterns and
-   collecting the head-bound variables (the varset). The result is a list of
-   couples
-     (simple head pattern, rest of row)
-   where a "simple head pattern" starts with either the catch-all pattern omega
-   (_) or a head constructor, and the "rest of the row" has the head-bound
-   variables pushed as a new varset.
-
+   Varsets are populated when simplifying the first column
+   -- the variables of the head pattern are collected in a new varset.
    For example,
      { row = x :: r1; varsets = s1 }
      { row = (Some _) as y :: r2; varsets  = s2 }
@@ -2300,30 +2276,65 @@ type amb_row = { row : pattern list ; varsets : IdSet.t list; }
    becomes
      (_, { row = r1; varsets = {x} :: s1 })
      (Some _, { row = r2; varsets = {y} :: s2 })
-     (None, { row = r3; varsets = s3 ++ {x, y} })
+     (None, { row = r3; varsets = {x, y} :: s3 })
      (Some x, { row = r4; varsets = {} :: s4 })
      (None, { row = r4; varsets = {x} :: s4 })
- *)
-let rec simplify_first_col = function
-  | [] -> []
-  | { row = [] } :: _ -> assert false
-  | { row = p::ps; varsets; }::rem ->
-      simplify_head_pat IdSet.empty p ps varsets (simplify_first_col rem)
+*)
+type amb_row = { row : pattern list ; varsets : IdSet.t list; }
 
-and simplify_head_pat head_bound_variables p ps varsets k =
+(*
+   To accurately report ambiguous variables, one must consider
+   that previous clauses have already matched some values.
+   Consider for example:
+
+     | (Foo x, Foo y) -> ...
+     | ((Foo x, _) | (_, Foo x)) when bar x -> ...
+
+   The second line taken in isolation uses an unstable variable,
+   but the discriminating values, of the shape [(Foo v1, Foo v2)],
+   would all be filtered by the line above.
+
+   To track this information, the matrices we analyze contain both
+   *positive* rows, that describe the rows currently being analyzed
+   (of type Varsets.row, so that their varsets are tracked) and
+   *negative rows*, that describe the cases already matched against.
+
+   The values matched by a signed matrix are the values matched by
+   some of the positive rows but none of the negative rows. In
+   particular, a variable is stable if, for any value not matched by
+   any of the negative rows, the environment captured by any of the
+   matching positive rows is identical.
+*)
+type ('a, 'b) signed = Positive of 'a | Negative of 'b
+
+let rec simplify_first_amb_col = function
+  | [] -> []
+  | (Negative [] | Positive { row = []; _ }) :: _  -> assert false
+  | Negative (n :: ns) :: rem ->
+      simplify_head_amb_pat_neg n ns
+        (simplify_first_amb_col rem)
+  | Positive { row = p::ps; varsets; }::rem ->
+      simplify_head_amb_pat_pos IdSet.empty p ps varsets
+        (simplify_first_amb_col rem)
+
+and simplify_head_amb_pat_neg p ps k =
+  Misc.map_end (fun (n, ns) -> (n, Negative ns))
+    (simplify_head_pat p ps []) k
+
+and simplify_head_amb_pat_pos head_bound_variables p ps varsets k =
   match p.pat_desc with
   | Tpat_alias (p,x,_) ->
-    simplify_head_pat (IdSet.add x head_bound_variables) p ps varsets k
+    simplify_head_amb_pat_pos (IdSet.add x head_bound_variables) p ps varsets k
   | Tpat_var (x,_) ->
     let rest_of_the_row =
       { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
     in
-    (omega, rest_of_the_row) :: k
+    (omega, Positive rest_of_the_row) :: k
   | Tpat_or (p1,p2,_) ->
-    simplify_head_pat head_bound_variables p1 ps varsets
-      (simplify_head_pat head_bound_variables p2 ps varsets k)
+    simplify_head_amb_pat_pos head_bound_variables p1 ps varsets
+      (simplify_head_amb_pat_pos head_bound_variables p2 ps varsets k)
   | _ ->
-    (p, { row = ps; varsets = head_bound_variables :: varsets; }) :: k
+    (p, Positive { row = ps; varsets = head_bound_variables :: varsets; }) :: k
 
 (* Compute stable bindings *)
 
@@ -2339,53 +2350,68 @@ let reduce f = function
 | [] -> invalid_arg "reduce"
 | x::xs -> List.fold_left f x xs
 
-let rec matrix_stable_vars rs = match rs with
-| [] -> All
-| { row = []; _ } :: _ ->
-    (* All rows have the same number of columns;
-       if the first row is empty, they all are. *)
-    List.iter (fun {row; _} -> assert (row = [])) rs;
-
-    (* A variable is stable in a given varset if, in each row, it
-       appears in this varset -- rather than in another position in
-       the list of binding sets. We can thus compute the stable
-       variables of each varset by pairwise intersection. *)
-    let rows_varsets = List.map (fun { varsets; _ } -> varsets) rs in
-    let stables_in_varsets = reduce (List.map2 IdSet.inter) rows_varsets in
-
-    (* The stable variables are those stable at any position *)
-    Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
-| rs ->
-    let rs = simplify_first_col rs in
-    if not (all_coherent (first_column rs))
-    then All
-    else begin
-      (* If the column is ill-typed but deemed coherent, we might spuriously
-         warn about some variables being unstable.
-         As sad as that might be, the warning can be silenced by splitting the
-         or-pattern...
-      *)
-      let extend_row columns r =
-        { r with row = columns @ r.row } in
-      let q0 = discr_pat omega rs in
-      match build_specialized_submatrices ~extend_row q0 rs with
-      | { default; constrs = [] } ->
-          (* the first column contains no head constructor;
-             they are all _ after simplification, so it can be dropped *)
-          matrix_stable_vars default
-      | { default = _; constrs } ->
-          (* A stable variable must be stable in each submatrix.
-
-             If the first column contains some head constructors, there
-             is no need to look at stability for the default matrix: all
-             other submatrices contain the default matrix, so they have
-             less stable variables. *)
-          let submatrices = List.map snd constrs in
+let rec matrix_stable_vars m = match m with
+  | [] -> All
+  | ((Positive {row = []; _} | Negative []) :: _) as empty_rows ->
+      let exception Negative_empty_row in
+      (* if at least one empty row is negative, the matrix matches no value *)
+      let get_varsets = function
+        | Negative n ->
+            (* All rows have the same number of columns;
+               if the first row is empty, they all are. *)
+            assert (n = []);
+            raise Negative_empty_row
+        | Positive p ->
+            assert (p.row = []);
+            p.varsets in
+      begin match List.map get_varsets empty_rows with
+      | exception Negative_empty_row -> All
+      | rows_varsets ->
+          let stables_in_varsets =
+            reduce (List.map2 IdSet.inter) rows_varsets in
+          (* The stable variables are those stable at any position *)
+          Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
+      end
+  | m ->
+      let is_negative = function
+        | Negative _ -> true
+        | Positive _ -> false in
+      if List.for_all is_negative m then
+        (* optimization: quit early if there are no positive rows.
+           This may happen often when the initial matrix has many
+           negative cases and few positive cases (a small guarded
+           clause after a long list of clauses) *)
+        All
+      else begin
+        let m = simplify_first_amb_col m in
+        if not (all_coherent (first_column m))
+        then All
+        else begin
+          (* If the column is ill-typed but deemed coherent, we might
+             spuriously warn about some variables being unstable.
+             As sad as that might be, the warning can be silenced by
+             splitting the or-pattern...  *)
+          let submatrices =
+            let extend_row columns = function
+              | Negative r -> Negative (columns @ r)
+              | Positive r -> Positive { r with row = columns @ r.row } in
+            let q0 = discr_pat omega m in
+            let { default; constrs } =
+              build_specialized_submatrices ~extend_row q0 m in
+            let non_default = List.map snd constrs in
+            if constrs <> [] && full_match false constrs
+            then non_default
+            else default :: non_default in
+          (* A stable variable must be stable in each submatrix. *)
           let submat_stable = List.map matrix_stable_vars submatrices in
           List.fold_left stable_inter All submat_stable
-    end
+        end
+      end
 
-let pattern_stable_vars p = matrix_stable_vars [{varsets = []; row = [p]}]
+let pattern_stable_vars ns p =
+  matrix_stable_vars
+    (List.fold_left (fun m n -> Negative n :: m)
+       [Positive {varsets = []; row = [p]}] ns)
 
 (* All identifier paths that appear in an expression that occurs
    as a clause right hand side or guard.
@@ -2444,14 +2470,13 @@ let check_ambiguous_bindings =
   let warn0 = Ambiguous_pattern [] in
   fun cases ->
     if is_active warn0 then
-      List.iter
-        (fun case -> match case with
-        | { c_guard=None ; _} -> ()
+      let check_case ns case = match case with
+        | { c_lhs = p; c_guard=None ; _} -> [p]::ns
         | { c_lhs=p; c_guard=Some g; _} ->
             let all =
               IdSet.inter (pattern_vars p) (all_rhs_idents g) in
             if not (IdSet.is_empty all) then begin
-              match pattern_stable_vars p with
+              match pattern_stable_vars ns p with
               | All -> ()
               | Vars stable ->
                   let ambiguous = IdSet.diff all stable in
@@ -2460,5 +2485,7 @@ let check_ambiguous_bindings =
                     let warn = Ambiguous_pattern pps in
                     Location.prerr_warning p.pat_loc warn
                   end
-            end)
-        cases
+            end;
+            ns
+      in
+      ignore (List.fold_left check_case [] cases)
