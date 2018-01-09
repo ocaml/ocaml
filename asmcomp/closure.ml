@@ -608,7 +608,12 @@ let rec substitute loc fpc sb rn ulam =
   | Ustaticfail (nfail, args) ->
       let nfail =
         match rn with
-        | Some rn -> (try Tbl.find nfail rn with Not_found -> nfail)
+        | Some rn ->
+          begin try
+            Tbl.find nfail rn
+          with Not_found ->
+            fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
+          end
         | None -> nfail in
       Ustaticfail (nfail, List.map (substitute loc fpc sb rn) args)
   | Ucatch(nfail, ids, u1, u2) ->
