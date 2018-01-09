@@ -186,7 +186,7 @@ Working version
   (Jacques Garrigue, report by Nicolas Ojeda Bar)
 
 - MPR#7702, GPR#1553: refresh raise counts when inlining a function
-  (Vincent Laviron, Xavier Clerc, report by Cheng Sun, review by Gabriel Scherer)
+  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
 
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
