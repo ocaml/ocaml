@@ -110,3 +110,6 @@ val inactive : partial:partial -> pattern -> bool
 
 (* Ambiguous bindings *)
 val check_ambiguous_bindings : case list -> unit
+
+(* The tag used for open polymorphic variant types *)
+val some_other_tag : label

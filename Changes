@@ -217,6 +217,9 @@ Working version
   (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
   by Abdelraouf Ouadjaout and Thibault Suzanne)
 
+- MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
+  (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
+
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
 
