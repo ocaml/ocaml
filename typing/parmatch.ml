@@ -620,17 +620,21 @@ type 'row simplified_matrix = (simplified_pattern * 'row) list
 module Row = struct
   type row = Typedtree.pattern list
 
-  let rec simplify_head_pat p ps k =
-    match p.pat_desc with
-    | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-    | Tpat_var (_,_) -> (omega, ps) :: k
-    | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-    | _ -> (p, ps) :: k
+  let simplify_head_pat ~add_column p ps k =
+    let rec simplify_head_pat p ps k =
+      match p.pat_desc with
+      | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+      | Tpat_var (_,_) -> add_column omega ps k
+      | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+      | _ -> add_column p ps k
+    in simplify_head_pat p ps k
 
   let rec simplify_first_col : row list -> row simplified_matrix = function
     | [] -> []
     | [] :: _ -> assert false (* the rows are non-empty! *)
-    | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+    | (p::ps) :: rows ->
+        let add_column p ps k = (p, ps) :: k in
+        simplify_head_pat ~add_column p ps (simplify_first_col rows)
 end
 
 let simplify_first_col = Row.simplify_first_col
@@ -1567,7 +1571,9 @@ module Usefulness = struct
       match row.active with
       | [] -> assert false (* the rows are non-empty! *)
       | p :: ps ->
-        Row.simplify_head_pat p { row with active = ps }
+        let add_column p ps k =
+          (p, { row with active = ps }) :: k in
+        Row.simplify_head_pat ~add_column p ps
           (simplify_first_col rows)
 
   (* Back to normal matrices *)
@@ -2338,17 +2344,14 @@ module Amb = struct
     | [] -> []
     | (Negative [] | Positive Varsets.{ row = []; _ }) :: _  -> assert false
     | Negative (n :: ns) :: rem ->
-        simplify_head_pat_neg n ns
-          (simplify_first_col rem)
+        let add_column n ns k = (n, Negative ns) :: k in
+        Row.simplify_head_pat
+          ~add_column n ns (simplify_first_col rem)
     | Positive Varsets.{ row = p::ps; varsets; }::rem ->
         let add_column p ps k = (p, Positive ps) :: k in
         Varsets.simplify_head_pat
           IdSet.empty varsets
           ~add_column p ps (simplify_first_col rem)
-
-  and simplify_head_pat_neg p ps k =
-    Misc.map_end (fun (n, ns) -> (n, Negative ns))
-      (Row.simplify_head_pat p ps []) k
 end
 
 (* Compute stable bindings *)
