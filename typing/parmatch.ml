@@ -786,10 +786,14 @@ let row_of_pat pat =
 
 (*
   Check whether the first column of env makes up a complete signature or
-  not.
+  not. We work on the discriminating patterns of each sub-matrix: they
+  are simplified, and are not omega/Tpat_any.
 *)
-
 let full_match closing env =  match env with
+| ({pat_desc = (Tpat_any | Tpat_var _ | Tpat_alias _ | Tpat_or _)},_) :: _ ->
+    (* discriminating patterns are simplified *)
+    assert false
+| [] -> false
 | ({pat_desc = Tpat_construct(_,c,_)},_) :: _ ->
     if c.cstr_consts < 0 then false (* extensions *)
     else List.length env = c.cstr_consts + c.cstr_nonconsts
@@ -824,10 +828,6 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_record(_)},_) :: _ -> true
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
-| ({pat_desc = (Tpat_any|Tpat_var _|Tpat_alias _|Tpat_or _)},_) :: _
-| []
-  ->
-    assert false
 
 (* Written as a non-fragile matching, PR#7451 originated from a fragile matching below. *)
 let should_extend ext env = match ext with
@@ -1154,34 +1154,31 @@ let rec satisfiable pss qs = match pss with
           satisfiable pss (q::qs)
     | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
         let pss = simplify_first_col pss in
-        if not (all_coherent (first_column pss)) then (
+        if not (all_coherent (first_column pss)) then
           false
-        ) else (
-          let q0 = discr_pat omega pss in
-          match build_specialized_submatrices ~extend_row:(@) q0 pss with
-          | { default; constrs = [] } ->
-              (* first column of pss is made of variables only *)
-              satisfiable default qs
-          | { default; constrs }  ->
-              if full_match false constrs then
-                List.exists
-                  (fun (p,pss) ->
-                    not (is_absent_pat p) &&
-                    satisfiable pss (simple_match_args p omega @ qs))
-                  constrs
-              else
-                satisfiable default qs
-        )
+        else begin
+          let { default; constrs } =
+            let q0 = discr_pat omega pss in
+            build_specialized_submatrices ~extend_row:(@) q0 pss in
+          if not (full_match false constrs) then
+            satisfiable default qs
+          else
+            List.exists
+              (fun (p,pss) ->
+                 not (is_absent_pat p) &&
+                 satisfiable pss (simple_match_args p omega @ qs))
+              constrs
+        end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
         let pss = simplify_first_col pss in
-        if not (all_coherent (q :: first_column pss)) then (
+        if not (all_coherent (q :: first_column pss)) then
           false
-        ) else (
+        else begin
           let q0 = discr_pat q pss in
           satisfiable (build_specialized_submatrix ~extend_row:(@) q0 pss)
             (simple_match_args q0 q @ qs)
-        )
+        end
 
 (* While [satisfiable] only checks whether the last row of [pss + qs] is
    satisfiable, this function returns the (possibly empty) list of vectors [es]
@@ -1206,9 +1203,9 @@ let rec list_satisfying_vectors pss qs =
           list_satisfying_vectors pss (q::qs)
       | {pat_desc = (Tpat_any | Tpat_var(_))}::qs ->
           let pss = simplify_first_col pss in
-          if not (all_coherent (first_column pss)) then (
+          if not (all_coherent (first_column pss)) then
             []
-          ) else (
+          else begin
             let q0 = discr_pat omega pss in
             let wild default_matrix p =
               List.map (fun qs -> p::qs)
@@ -1234,26 +1231,27 @@ let rec list_satisfying_vectors pss qs =
                   )
                 in
                 if full_match false constrs then for_constrs () else
-                match p.pat_desc with
+                begin match p.pat_desc with
                 | Tpat_construct _ ->
                     (* activate this code for checking non-gadt constructors *)
                     wild default (build_other_constrs constrs p)
                     @ for_constrs ()
                 | _ ->
                     wild default omega
-          )
+                end
+          end
       | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> []
       | q::qs ->
           let pss = simplify_first_col pss in
-          if not (all_coherent (q :: first_column pss)) then (
+          if not (all_coherent (q :: first_column pss)) then
             []
-          ) else (
+          else begin
             let q0 = discr_pat q pss in
             List.map (set_args q0)
               (list_satisfying_vectors
                  (build_specialized_submatrix ~extend_row:(@) q0 pss)
                  (simple_match_args q0 q @ qs))
-          )
+          end
 
 (******************************************)
 (* Look for a row that matches some value *)
@@ -1343,7 +1341,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
       (* We're considering an ill-typed branch, we won't actually be able to
          produce a well typed value taking that branch. *)
       No_matching_value
-    else (
+    else begin
       (* Assuming the first column is ill-typed but considered coherent, we
          might end up producing an ill-typed witness of non-exhaustivity
          corresponding to the current branch.
@@ -1392,7 +1390,7 @@ let rec exhaust (ext:Path.t option) pss n = match pss with
                 with
         (* cannot occur, since constructors don't make a full signature *)
                 | Empty -> fatal_error "Parmatch.exhaust"
-  )
+  end
 
 let exhaust ext pss n =
   let ret = exhaust ext pss n in
@@ -1427,7 +1425,7 @@ let rec pressure_variants tdefs = function
       let pss = simplify_first_col pss in
       if not (all_coherent (first_column pss)) then
         true
-      else (
+      else begin
         let q0 = discr_pat omega pss in
         match build_specialized_submatrices ~extend_row:(@) q0 pss with
         | { default; constrs = [] } -> pressure_variants tdefs default
@@ -1451,13 +1449,13 @@ let rec pressure_variants tdefs = function
               let ok =
                 if full then
                   try_non_omega constrs
-                else (
+                else begin
                   let { constrs = partial_constrs; _ } =
                     build_specialized_submatrices ~extend_row:(@) q0
                       (mark_partial pss)
                   in
                   try_non_omega partial_constrs
-                )
+                end
               in
               begin match constrs, tdefs with
                 ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
@@ -1468,7 +1466,7 @@ let rec pressure_variants tdefs = function
               | _ -> ()
               end;
               ok
-      )
+      end
 
 
 (* Yet another satisfiable function *)
@@ -1663,13 +1661,13 @@ let rec every_satisfiables pss qs = match qs.active with
            [satisfiable] *)
         if not (all_coherent (uq :: first_column pss)) then
           Unused
-        else (
+        else begin
           let q0 = discr_pat q pss in
           every_satisfiables
             (build_specialized_submatrix q0 pss
               ~extend_row:(fun ps r -> { r with active = ps @ r.active }))
             {qs with active=simple_match_args q0 q @ rem}
-        )
+        end
     end
 
 (*
@@ -2384,8 +2382,8 @@ let rec matrix_stable_vars m = match m with
         All
       else begin
         let m = simplify_first_amb_col m in
-        if not (all_coherent (first_column m))
-        then All
+        if not (all_coherent (first_column m)) then
+          All
         else begin
           (* If the column is ill-typed but deemed coherent, we might
              spuriously warn about some variables being unstable.
@@ -2399,7 +2397,7 @@ let rec matrix_stable_vars m = match m with
             let { default; constrs } =
               build_specialized_submatrices ~extend_row q0 m in
             let non_default = List.map snd constrs in
-            if constrs <> [] && full_match false constrs
+            if full_match false constrs
             then non_default
             else default :: non_default in
           (* A stable variable must be stable in each submatrix. *)
