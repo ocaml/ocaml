@@ -73,18 +73,22 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Leo White, review by
   Florian Angeletti and Gabriel Radanne)
 
+- GPR#1510: Add specific explanation for unification errors caused by type
+  constraints propagated by keywords (such as if, while, for...)
+  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
+  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
+
 - GPR#1534: Extend the warning printed when (*) is used, adding a hint to
   suggest using ( * ) instead
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
   Scherer)
 
+- GPR#1552: do not warn about ambiguous variables in guards (warning 57)
+  when the ambiguous values have been filtered by a previous clause
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
+
 - GPR#1554: warnings 52 and 57: fix reference to manual detailed explanation
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
-
-- GPR#1510: Add specific explanation for unification errors caused by type
-  constraints propagated by keywords (such as if, while, for...)
-  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
-  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
 
 ### Code generation and optimizations:
 
