@@ -196,6 +196,9 @@ Working version
 - MPR#7695, GPR#1541: Fatal error: exception Ctype.Unify(_) with field override
   (Jacques Garrigue, report by Nicolás Ojeda Bär)
 
+- MPR#7702, GPR#1553: refresh raise counts when inlining a function
+  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
+
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
