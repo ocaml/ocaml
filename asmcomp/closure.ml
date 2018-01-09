@@ -502,7 +502,8 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
 (* Substitute variables in a [ulambda] term (a body of an inlined function)
    and perform some more simplifications on integer primitives.
    Also perform alpha-conversion on let-bound identifiers to avoid
-   clashes with locally-generated identifiers.
+   clashes with locally-generated identifiers, and refresh raise counts
+   in order to avoid clashes with inlined code from other modules.
    The variables must not be assigned in the term.
    This is used to substitute "trivial" arguments for parameters
    during inline expansion, and also for the translation of let rec
