@@ -79,8 +79,6 @@ function (`A x : t) -> x;;
 [%%expect{|
 type t = private [> `A of string ]
 Line _, characters 0-24:
-  function (`A x : t) -> x;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
 `<some other tag>
