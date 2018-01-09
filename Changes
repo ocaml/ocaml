@@ -8,6 +8,9 @@
   (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
   by Abdelraouf Ouadjaout and Thibault Suzanne)
 
+- MPR#7702, GPR#1553: refresh raise counts when inlining a function
+  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
+
 - MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
   (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
 
