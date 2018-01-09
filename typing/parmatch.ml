@@ -980,7 +980,7 @@ let build_other_constant proj make first next p env =
   the first column of env
 *)
 
-let any_extra_tag = "*any extra tag*"
+let some_other_tag = "<some other tag>"
 
 let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
@@ -1019,7 +1019,7 @@ let build_other ext env = match env with
         [] row.row_fields
     with
       [] ->
-        make_other_pat any_extra_tag true
+        make_other_pat some_other_tag true
     | pat::other_pats ->
         List.fold_left
           (fun p_res pat ->

@@ -103,6 +103,6 @@ Line _, characters 0-24:
   ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-`*any extra tag*
+`<some other tag>
 - : t -> string = <fun>
 |}]
