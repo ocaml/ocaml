@@ -195,6 +195,10 @@ let get_global_info global_ident = (
             let (ui, crc) = read_unit_info filename in
             if ui.ui_name <> modname then
               raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (* Linking to a compilation unit expected to go into a
+               pack (ui_for_pack = Some ...) is possible only from
+               inside the same pack, but it is perfectly ok to link to
+               an unit outside of the pack. *)
             (match ui.ui_for_pack, current_unit.ui_for_pack with
              | None, _ -> ()
              | Some p1, Some p2 when String.equal p1 p2 -> ()
@@ -451,7 +455,7 @@ let report_error ppf = function
       fprintf ppf "%a@ was built with -for-pack %s, but this module isn't"
         Location.print_filename filename pack_1
   | Mismatching_for_pack(filename, pack_1, Some pack_2) ->
-      fprintf ppf "%a@ was built with -for-pack %s, but this module is built\
+      fprintf ppf "%a@ was built with -for-pack %s, but this module is built \
                    with -for-pack %s"
         Location.print_filename filename pack_1 pack_2
 
