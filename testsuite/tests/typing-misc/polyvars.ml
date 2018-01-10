@@ -89,7 +89,7 @@ Line _, characters 0-41:
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(`<some other tag>, `<some other tag>)
+(`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line _, characters 0-29:
   function `B,1 -> 1 | _,1 -> 2;;
@@ -154,6 +154,17 @@ Line _, characters 0-24:
   ^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-`<some other tag>
+`<some private tag>
 - : t -> string = <fun>
+|}]
+
+let f = function `AnyExtraTag, _ -> 1 | _, (`AnyExtraTag|`AnyExtraTag') -> 2;;
+[%%expect{|
+Line _, characters 8-76:
+  let f = function `AnyExtraTag, _ -> 1 | _, (`AnyExtraTag|`AnyExtraTag') -> 2;;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(`AnyExtraTag', `AnyExtraTag'')
+val f : [> `AnyExtraTag ] * [> `AnyExtraTag | `AnyExtraTag' ] -> int = <fun>
 |}]
