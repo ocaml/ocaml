@@ -756,7 +756,6 @@ and skip_hash_bang = parse
             set_pre_extra_docstrings pre_pos (List.rev a)
     in
     let rec loop lines docs lexbuf =
-      docs_initial_newline_state := NoLine;
       match token_with_comments lexbuf with
       | COMMENT (s, loc) ->
           add_comment (s, loc);
@@ -793,12 +792,15 @@ and skip_hash_bang = parse
               | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
               | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
           in
-          loop !docs_initial_newline_state docs' lexbuf
+          loop NoLine docs' lexbuf
       | tok ->
           attach lines docs (lexeme_start_p lexbuf);
           tok
     in
-      loop !docs_initial_newline_state Initial lexbuf
+    let tok = loop !docs_initial_newline_state Initial lexbuf in
+    docs_initial_newline_state := NoLine;
+    tok
+
 
   let init () =
     is_in_string := false;
