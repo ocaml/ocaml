@@ -226,6 +226,7 @@ else
 fi
 if $dorebase; then
     # temporary solution to the cygwin fork problem
+    # see https://github.com/alainfrisch/flexdll/issues/50
     rebase -b 0x7cd20000 otherlibs/unix/dllunix.so
     rebase -b 0x7cdc0000 otherlibs/systhreads/dllthreads.so
 fi
