@@ -1,3 +1,12 @@
+(* TEST
+   * flat-float-array
+   ** toplevel
+   compiler_reference = "${test_source_directory}/test.ml.reference-flat"
+   * no-flat-float-array
+   ** toplevel
+   compiler_reference = "${test_source_directory}/test.ml.reference-noflat"
+*)
+
 (* Check the unboxing *)
 
 (* For concrete types *)
