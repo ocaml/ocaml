@@ -1,5 +1,4 @@
-
-#                                   Characters 292-322:
+Characters 355-385:
        match M.is_t () with None -> 0
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
@@ -12,9 +11,9 @@ module type T =
     val is_t : unit -> unit is_t option
   end
 module Make : functor (M : T) -> sig val f : unit -> int end
-#         Characters 89-90:
+Characters 89-90:
     let g : t -> int = function _ -> .
                                 ^
 Error: This match case could not be refuted.
        Here is an example of a value that would reach it: T (Is Eq)
-# 
+

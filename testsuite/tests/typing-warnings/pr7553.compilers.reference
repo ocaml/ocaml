@@ -1,12 +1,11 @@
-
-# module A : sig type foo end
-#         module rec B : sig type bar = Bar of A.foo end
-#       Characters 22-28:
+module A : sig type foo end
+module rec B : sig type bar = Bar of A.foo end
+Characters 22-28:
     open A
     ^^^^^^
 Warning 33: unused open A.
 module rec C : sig  end
-#                 Characters 110-114:
+Characters 110-114:
         let None = None
             ^^^^
 Warning 8: this pattern-matching is not exhaustive.
@@ -17,4 +16,4 @@ Characters 93-99:
         ^^^^^^
 Warning 33: unused open A.
 module rec D : sig module M : sig module X : sig  end end end
-#   
+

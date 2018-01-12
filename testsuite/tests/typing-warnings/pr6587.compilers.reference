@@ -1,7 +1,6 @@
-
-#         module A : sig val f : fpclass -> fpclass end
-#   type fpclass = A
-#           Characters 49-85:
+module A : sig val f : fpclass -> fpclass end
+type fpclass = A
+Characters 49-85:
   ..struct
       let f A = FP_normal
     end
@@ -14,4 +13,4 @@ Error: Signature mismatch:
          val f : fpclass -> Pervasives.fpclass
        is not included in
          val f : fpclass -> fpclass
-# 
+
