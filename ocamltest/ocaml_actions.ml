@@ -679,23 +679,30 @@ let run_test_program_in_toplevel toplevel log env =
   let expected_exit_status = expected_compiler_exit_status env toplevel in
   let source_directory = Actions_helpers.test_source_directory env in
   let build_directory = Actions_helpers.test_build_directory env in
-  let compilerreference_prefix =
-    Filename.make_path [source_directory; testfile_basename] in
-  let compilerreference_filename =
-    compiler_reference_filename env compilerreference_prefix toplevel in
-  let compiler_reference_variable = toplevel.compiler_reference_variable in
-  let compiler_output_filename =
-    Filename.make_filename toplevel.compiler_directory "output" in
-  let compiler_output =
-    Filename.make_path [build_directory; compiler_output_filename] in
   let compiler_output_variable = toplevel.compiler_output_variable in
-  let newenv = Environments.add_bindings
-    [
-      (compiler_reference_variable, compilerreference_filename);
-      (compiler_output_variable, compiler_output);
-    ] env in
-  if Sys.file_exists compiler_output_filename then
-    Sys.remove compiler_output_filename;
+  let (env, compiler_output) =
+    (match Environments.lookup compiler_output_variable env with 
+    | Some value -> (env, value)
+    | None ->
+      let compiler_output_filename =
+        Filename.make_filename toplevel.compiler_directory "output" in
+      let value =
+        Filename.make_path [build_directory; compiler_output_filename] in
+      let env' = Environments.add compiler_output_variable value env in
+      (env', value)) in
+  let compiler_reference_variable = toplevel.compiler_reference_variable in
+  let env =
+    if Environments.is_variable_defined compiler_reference_variable env then env
+    else begin
+      let compilerreference_prefix =
+        Filename.make_path [source_directory; testfile_basename] in
+      let compilerreference_filename =
+        compiler_reference_filename env compilerreference_prefix toplevel in
+      Environments.add
+        compiler_reference_variable compilerreference_filename env
+    end in
+  if Sys.file_exists compiler_output then
+    Sys.remove compiler_output;
   let ocamlsrcdir = ocamlsrcdir () in
   let compiler = match toplevel.compiler_backend with
     | Sys.Native -> ocamlopt_byte_compiler
@@ -705,7 +712,7 @@ let run_test_program_in_toplevel toplevel log env =
   let modules_with_filetypes = List.map Filetype.filetype (modules env) in
   let aux = compile_modules
     ocamlsrcdir compiler compiler_name compiler_output_variable
-    modules_with_filetypes log newenv in
+    modules_with_filetypes log env in
   match aux with
     | Fail _ | Skip _ -> aux
     | Pass auxenv ->
