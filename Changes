@@ -11,6 +11,9 @@
 - MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
   (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
 
+- MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
+  (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
+
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
 
