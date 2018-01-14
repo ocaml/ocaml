@@ -120,6 +120,9 @@ Working version
   (lib{caml,asm}run{d,i}.a)
   (Gabriel Scherer, reminded by Julia Lawall)
 
+- GPR#1563: simplify implementation of LSRINT and ASRINT
+  (Max Mouratov, review by Frédéric Bour)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested

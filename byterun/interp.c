@@ -1002,10 +1002,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(LSLINT):
       accu = (value)((((intnat) accu - 1) << Long_val(*sp++)) + 1); Next;
     Instruct(LSRINT):
-      accu = (value)((((uintnat) accu - 1) >> Long_val(*sp++)) | 1);
-      Next;
+      accu = (value)((((uintnat) accu) >> Long_val(*sp++)) | 1); Next;
     Instruct(ASRINT):
-      accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
+      accu = (value)((((intnat) accu) >> Long_val(*sp++)) | 1); Next;
 
 #define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
