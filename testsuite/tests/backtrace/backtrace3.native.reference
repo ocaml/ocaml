@@ -10,11 +10,17 @@ Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 11, characters 4-11
 Re-raised at file "backtrace3.ml", line 20, characters 41-50
-Called from file "backtrace3.ml", line 28, characters 11-23
+Called from file "backtrace3.ml", line 34, characters 11-23
+c
 Uncaught exception Backtrace3.Error("c")
-Raised at file "backtrace3.ml", line 24, characters 6-23
-Called from file "backtrace3.ml", line 28, characters 11-23
+Raised at file "backtrace3.ml", line 24, characters 41-58
+Called from file "backtrace3.ml", line 34, characters 11-23
+d
 Uncaught exception Backtrace3.Error("d")
+Raised at file "backtrace3.ml", line 27, characters 41-50
+Called from file "backtrace3.ml", line 34, characters 11-23
+e
+Uncaught exception Backtrace3.Error("e")
 Raised at file "backtrace3.ml", line 7, characters 16-32
 Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 7, characters 42-53
@@ -22,6 +28,16 @@ Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 7, characters 42-53
 Called from file "backtrace3.ml", line 11, characters 4-11
-Called from file "backtrace3.ml", line 28, characters 11-23
+Re-raised at file "backtrace3.ml", line 30, characters 41-51
+Called from file "backtrace3.ml", line 34, characters 11-23
+Uncaught exception Backtrace3.Error("f")
+Raised at file "backtrace3.ml", line 7, characters 16-32
+Called from file "backtrace3.ml", line 7, characters 42-53
+Called from file "backtrace3.ml", line 7, characters 42-53
+Called from file "backtrace3.ml", line 7, characters 42-53
+Called from file "backtrace3.ml", line 7, characters 42-53
+Called from file "backtrace3.ml", line 7, characters 42-53
+Called from file "backtrace3.ml", line 11, characters 4-11
+Called from file "backtrace3.ml", line 34, characters 11-23
 Uncaught exception Invalid_argument("index out of bounds")
-Raised by primitive operation at file "backtrace3.ml", line 28, characters 14-22
+Raised by primitive operation at file "backtrace3.ml", line 34, characters 14-22

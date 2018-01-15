@@ -21,7 +21,13 @@ let g msg =
   | exception (Error "c") ->
       (* according to the current re-raise policy (a static condition),
          this does not re-raise *)
-      raise (Error "c")
+      print_string "c"; print_newline(); raise (Error "c")
+  | exception (Error "d" as exn as _exn2) ->
+      (* this should Re-raise, appending to the current backtrace *)
+      print_string "d"; print_newline(); raise exn
+  | exception (Error "e" as _exn as exn2) ->
+      (* this should Re-raise, appending to the current backtrace *)
+      print_string "e"; print_newline(); raise exn2
 
 let run args =
   try
@@ -36,4 +42,6 @@ let _ =
   run [| "b" |];
   run [| "c" |];
   run [| "d" |];
+  run [| "e" |];
+  run [| "f" |];
   run [| |]
