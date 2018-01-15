@@ -1089,15 +1089,18 @@ and transl_cases cases =
   List.map transl_case cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
-  match c_lhs.pat_desc with
-  | Tpat_var (id, _)
-  | Tpat_alias (_, id, _) ->
-      Hashtbl.replace try_ids id ();
-      Misc.try_finally
-        (fun () -> c_lhs, transl_guard c_guard c_rhs)
-        (fun () -> Hashtbl.remove try_ids id)
-  | _ ->
-      c_lhs, transl_guard c_guard c_rhs
+  let rec iter_exn_names f pat =
+    match pat.pat_desc with
+    | Tpat_var (id, _) -> f id
+    | Tpat_alias (p, id, _) ->
+        f id;
+        iter_exn_names f p
+    | _ -> ()
+  in
+  iter_exn_names (fun id -> Hashtbl.replace try_ids id ()) c_lhs;
+  Misc.try_finally
+    (fun () -> c_lhs, transl_guard c_guard c_rhs)
+    (fun () -> iter_exn_names (Hashtbl.remove try_ids) c_lhs)
 
 and transl_cases_try cases =
   let cases =

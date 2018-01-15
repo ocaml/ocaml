@@ -197,6 +197,9 @@ Working version
 - GPR#1520: more robust implementation of Misc.no_overflow_mul
   (Max Mouratov, review by Xavier Leroy)
 
+- GPR#1567: register all idents relevant for reraise
+  (Thomas Refis, review by Alain Frisch and Frédéric Bour)
+
 - GPR#1573: emitcode: merge events after instructions reordering
   (Thomas Refis and Leo White, with help from David Allsopp, review by Frédéric
   Bour)

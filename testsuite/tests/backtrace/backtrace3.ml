@@ -28,6 +28,17 @@ let g msg =
   | exception (Error "e" as _exn as exn2) ->
       (* this should Re-raise, appending to the current backtrace *)
       print_string "e"; print_newline(); raise exn2
+  | exception (exn as exn2) ->
+      match exn with
+      | Error "f" ->
+          (* this should Re-raise, appending to the current backtrace *)
+          print_string "f"; print_newline(); raise exn
+      | Error "g" ->
+          (* this should Re-raise, appending to the current backtrace *)
+          print_string "g"; print_newline(); raise exn2
+      | x ->
+          (* this should *not* Re-raise *)
+          raise x
 
 let run args =
   try
@@ -44,4 +55,6 @@ let _ =
   run [| "d" |];
   run [| "e" |];
   run [| "f" |];
+  run [| "g" |];
+  run [| "h" |];
   run [| |]
