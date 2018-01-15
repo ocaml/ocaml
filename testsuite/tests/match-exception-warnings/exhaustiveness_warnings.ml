@@ -35,10 +35,14 @@ let test_match_exhaustiveness_nest1 () =
 ;;
 
 [%%expect{|
-Line _, characters 13-24:
+Line _, characters 4-73:
+  ....match None with
+      | Some false -> ()
       | None | exception _ -> ()
-               ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some true
+val test_match_exhaustiveness_nest1 : unit -> unit = <fun>
 |}]
 ;;
 
@@ -49,10 +53,14 @@ let test_match_exhaustiveness_nest2 () =
 ;;
 
 [%%expect{|
-Line _, characters 19-30:
+Line _, characters 4-73:
+  ....match None with
       | Some false | exception _ -> ()
-                     ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+      | None -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some true
+val test_match_exhaustiveness_nest2 : unit -> unit = <fun>
 |}]
 ;;
 
@@ -64,9 +72,22 @@ let test_match_exhaustiveness_full () =
 ;;
 
 [%%expect{|
-Line _, characters 19-30:
+Line _, characters 4-111:
+  ....match None with
+      | exception e -> ()
       | Some false | exception _ -> ()
-                     ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+      | None | exception _ -> ()
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some true
+Line _, characters 29-30:
+      | Some false | exception _ -> ()
+                               ^
+Warning 11: this match case is unused.
+Line _, characters 23-24:
+      | None | exception _ -> ()
+                         ^
+Warning 11: this match case is unused.
+val test_match_exhaustiveness_full : unit -> unit = <fun>
 |}]
 ;;

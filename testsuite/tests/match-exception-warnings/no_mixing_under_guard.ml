@@ -14,8 +14,8 @@ let guarded f =
 [%%expect{|
 exception Exit
 val r : string ref = {contents = ""}
-Line _, characters 11-25:
+Line _, characters 4-25:
     | true | exception Exit when r := "hello"; true -> !r
-             ^^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+      ^^^^^^^^^^^^^^^^^^^^^
+Error: Mixing value and exception patterns under when-guards is not supported.
 |}]

@@ -25,23 +25,18 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 8-19:
-    | _ | exception _ -> ()
-          ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+val f : (unit -> 'a) -> unit = <fun>
 |}]
 ;;
 
 let f x =
   match x () with
   | Arg.(Set _ | exception Bad _) -> ()
+  | _ -> ()
 ;;
 
 [%%expect{|
-Line _, characters 17-32:
-    | Arg.(Set _ | exception Bad _) -> ()
-                   ^^^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+val f : (unit -> Arg.spec) -> unit = <fun>
 |}]
 ;;
 
@@ -52,10 +47,7 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 5-24:
-    | (exception (_ : exn) : int) -> ()
-       ^^^^^^^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+val f : (unit -> int) -> unit = <fun>
 |}]
 ;;
 
@@ -70,7 +62,7 @@ let f x =
 Line _, characters 7-18:
     with exception _ -> ()
          ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -84,7 +76,7 @@ let f x =
 Line _, characters 4-17:
     | (exception _) as _pat -> ()
       ^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -97,7 +89,7 @@ let f x =
 Line _, characters 8-19:
     | (_, exception _, _) -> ()
           ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -111,7 +103,7 @@ let f x =
 Line _, characters 9-22:
     | lazy (exception _) -> ()
            ^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -124,7 +116,7 @@ let f x =
 Line _, characters 17-28:
     | { contents = exception _ } -> ()
                    ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -137,7 +129,7 @@ let f x =
 Line _, characters 7-18:
     | [| exception _ |] -> ()
          ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -150,7 +142,7 @@ let f x =
 Line _, characters 9-22:
     | Some (exception _) -> ()
            ^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -163,7 +155,7 @@ let f x =
 Line _, characters 7-20:
     | `A (exception _) -> ()
          ^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]
 ;;
 
@@ -176,5 +168,5 @@ let f = function
 Line _, characters 4-15:
     | exception _ -> ()
       ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+Error: Exception patterns are not allowed in this position.
 |}]

@@ -24,10 +24,11 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 11-22:
+Line _, characters 21-22:
     | None | exception _ -> .
-             ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+                       ^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: _
 |}]
 ;;
 
@@ -40,10 +41,11 @@ let f x =
 
 
 [%%expect{|
-Line _, characters 4-23:
+Line _, characters 14-23:
     | exception Not_found | None -> .
-      ^^^^^^^^^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+                ^^^^^^^^^
+Error: This match case could not be refuted.
+       Here is an example of a value that would reach it: Not_found
 |}]
 ;;
 
@@ -54,9 +56,6 @@ let f x =
 ;;
 
 [%%expect{|
-Line _, characters 8-19:
-    | _ | exception _ -> ()
-          ^^^^^^^^^^^
-Error: Exception patterns must be at the top level of a match case.
+val f : 'a -> unit = <fun>
 |}]
 ;;
