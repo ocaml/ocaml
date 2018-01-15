@@ -129,13 +129,12 @@ val cygwin : bool
 
 val word_size : int
 (** Size of one word on the machine currently executing the OCaml
-   program, in bits: 32 or 64. *)
+    program, in bits: 32 or 64. *)
 
 val int_size : int
-(** Size of an int.  It is 31 bits (resp. 63 bits) when using the
-    OCaml compiler on a 32 bits (resp. 64 bits) platform.  It may
-    differ for other compilers, e.g. it is 32 bits when compiling to
-    JavaScript.
+(** Size of [int], in bits. It is 31 (resp. 63) when using OCaml on a
+    32-bit (resp. 64-bit) platform. It may differ for other implementations,
+    e.g. it can be 32 bits when compiling to JavaScript.
     @since 4.03.0 *)
 
 val big_endian : bool
