@@ -511,15 +511,56 @@ endif
 	fi
 
 # Installation
+
+# $(call install_into,dir, a b, .c .d) copies {a,b}.{c,d} as dir/{a,b}.{c,d}
+# (if such files exists and after creating dir if needed).
+install_into = \
+  $(MKDIR) "$(1)" && \
+  TMP= && \
+  for d in $(2); do \
+    for suf in $(3); do \
+      if test -f "$$d$$suf"; then TMP="$$TMP $$d$$suf"; fi; \
+    done; \
+  done && \
+  if [ "$$TMP" ]; then $(INSTALL_DATA) $$TMP "$(1)"; fi
+
+# Here we add the mli's without ml's, which don't appear in the other variables
+# Such files can be found by running:
+# git ls-files | grep -v 'testsuite' | sed -n 's/\(.*\)\.mli$/\1/p' |
+#   while read f; do if ! [ -f $f.ml ]; then echo $f; fi; done
+COMMON_MODULES=$(COMMON:.cmo=) parsing/parsetree parsing/asttypes typing/annot \
+  typing/outcometree
+BYTECOMP_MODULES=$(BYTECOMP:.cmo=) bytecomp/cmo_format
+OPTCOMP_MODULES=$(OPTCOMP:.cmo=) asmcomp/cmx_format asmcomp/x86_ast \
+  middle_end/backend_intf middle_end/inlining_decision_intf \
+  middle_end/simplify_boxed_integer_ops_intf
+TOPLEVEL_MODULES=$(TOPLEVEL:.cmo=)
+OPTTOPLEVEL_MODULES=$(OPTTOPLEVEL:.cmo=)
+
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+SOURCE_ARTIFACTS=.cmt .cmti .mli
+else
+SOURCE_ARTIFACTS=
+endif
+
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	  VERSION \
-	  "$(INSTALL_LIBDIR)"
+# Transitional: leftover cmi,cma etc from a previous installation can confuse
+# tools like findlib, so cleanup before installing more files.
+	cd "$(INSTALL_LIBDIR)" && \
+	  ls -1 *.cmi *.cmo *.cma *.cmx *.cmxa *.cmxs 2> /dev/null | \
+	  grep -v '\*\|profiling\|std_exit' | \
+	  xargs rm -f
+	cd "$(INSTALL_COMPLIBDIR)" && \
+	  ls -1 *.cmi *.cmo *.cma *.cmx *.cmxa *.cmxs 2> /dev/null | \
+	  grep -v '\*\|optmain\|main\|topstart' | \
+	  xargs rm -f
+# End transitional
+	$(INSTALL_DATA) VERSION "$(INSTALL_LIBDIR)"
 	$(MAKE) -C runtime install
 	$(INSTALL_PROG) ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
 ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
@@ -530,38 +571,24 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
 endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
-	$(INSTALL_DATA) \
-	   utils/*.cmi \
-	   parsing/*.cmi \
-	   typing/*.cmi \
-	   bytecomp/*.cmi \
-	   driver/*.cmi \
-	   toplevel/*.cmi \
-	   "$(INSTALL_COMPLIBDIR)"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmt typing/*.cmti typing/*.mli \
-	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
-	   "$(INSTALL_COMPLIBDIR)"
-endif
-	$(INSTALL_DATA) \
-	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
-	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
-	   "$(INSTALL_COMPLIBDIR)"
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlcommon, \
+          $(COMMON_MODULES), .cmi $(SOURCE_ARTIFACTS))
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlbytecomp, \
+          $(BYTECOMP_MODULES), .cmi $(SOURCE_ARTIFACTS))
+	$(call install_into,$(INSTALL_LIBDIR)/ocamltoplevel, \
+          $(TOPLEVEL_MODULES), .cmi $(SOURCE_ARTIFACTS))
+	$(call install_into,$(INSTALL_COMPLIBDIR), \
+          $(BYTESTART:.cmo=) $(TOPLEVELSTART:.cmo=), \
+	  .cmo .cmi $(SOURCE_ARTIFACTS));
+	$(INSTALL_DATA) compilerlibs/ocamlcommon.cma \
+	  "$(INSTALL_LIBDIR)/ocamlcommon"
+	$(INSTALL_DATA) compilerlibs/ocamlbytecomp.cma \
+	  "$(INSTALL_LIBDIR)/ocamlbytecomp"
+	$(INSTALL_DATA) compilerlibs/ocamltoplevel.cma \
+	  "$(INSTALL_LIBDIR)/ocamltoplevel"
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
-	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmi \
-	   "$(INSTALL_LIBDIR)"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   toplevel/topdirs.cmt toplevel/topdirs.cmti \
-           toplevel/topdirs.mli \
-	   "$(INSTALL_LIBDIR)"
-endif
+	$(call install_into,$(INSTALL_LIBDIR), \
+          toplevel/topdirs, .cmi $(SOURCE_ARTIFACTS));
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
@@ -570,10 +597,6 @@ endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i install || exit $$?; \
 	done
-# Transitional: findlib 1.7.3 is confused if leftover num.cm? files remain
-# from an previous installation of OCaml before otherlibs/num was removed.
-	rm -f "$(INSTALL_LIBDIR)"/num.cm?
-# End transitional
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  $(MAKE) -C ocamldoc install; \
 	fi
@@ -604,32 +627,12 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
 endif
 	$(MAKE) -C stdlib installopt
-	$(INSTALL_DATA) \
-	    middle_end/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmi \
-	    "$(INSTALL_COMPLIBDIR)"
-ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	    middle_end/*.cmt middle_end/*.cmti \
-	    middle_end/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmt middle_end/base_types/*.cmti \
-	    middle_end/base_types/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-	    asmcomp/*.cmt asmcomp/*.cmti \
-	    asmcomp/*.mli \
-	    "$(INSTALL_COMPLIBDIR)"
-endif
-	$(INSTALL_DATA) \
-	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
-	    "$(INSTALL_COMPLIBDIR)"
+	$(call install_into,$(INSTALL_COMPLIBDIR), \
+          $(OPTSTART:.cmo=), .cmo .cmi $(SOURCE_ARTIFACTS));
+	$(call install_into,$(INSTALL_LIBDIR)/ocamloptcomp, \
+          $(OPTCOMP_MODULES), .cmi $(SOURCE_ARTIFACTS))
+	$(INSTALL_DATA) compilerlibs/ocamloptcomp.cma \
+	  "$(INSTALL_LIBDIR)/ocamloptcomp"
 	if test -n "$(WITH_OCAMLDOC)"; then \
 	  $(MAKE) -C ocamldoc installopt; \
 	fi
@@ -662,41 +665,52 @@ installoptopt:
 	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
-	$(INSTALL_DATA) \
-	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
-	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
-	$(INSTALL_DATA) \
-           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
-	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
-	   compilerlibs/ocamloptcomp.cmxa  compilerlibs/ocamloptcomp.$(A) \
-	   $(BYTESTART:.cmo=.cmx) $(BYTESTART:.cmo=.$(O)) \
-	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
-	   "$(INSTALL_COMPLIBDIR)"
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlcommon, \
+          $(COMMON_MODULES), .cmx)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlbytecomp, \
+          $(BYTECOMP_MODULES), .cmx)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamloptcomp, \
+          $(OPTCOMP_MODULES), .cmx)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlcommon, \
+          compilerlibs/ocamlcommon, .cmxa .$(A))
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlbytecomp, \
+          compilerlibs/ocamlbytecomp, .cmxa .$(A))
+	$(call install_into,$(INSTALL_LIBDIR)/ocamloptcomp, \
+          compilerlibs/ocamloptcomp, .cmxa .$(A))
+	$(call install_into,$(INSTALL_COMPLIBDIR), \
+          $(BYTESTART:.cmo=) $(OPTSTART:.cmo=), .cmx .$(O))
+	cd "$(INSTALL_LIBDIR)/ocamlcommon" && $(RANLIB) ocamlcommon.$(A)
+	cd "$(INSTALL_LIBDIR)/ocamlbytecomp" && $(RANLIB) ocamlbytecomp.$(A)
+	cd "$(INSTALL_LIBDIR)/ocamloptcomp" && $(RANLIB) ocamloptcomp.$(A)
 	if test -f ocamlnat$(EXE) ; then \
 	  $(INSTALL_PROG) \
 	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
 	  $(INSTALL_DATA) \
 	     toplevel/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
-	  $(INSTALL_DATA) \
-	     compilerlibs/ocamlopttoplevel.cmxa \
-	     compilerlibs/ocamlopttoplevel.$(A) \
-	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
-	     "$(INSTALL_COMPLIBDIR)"; \
+	  $(call install_into,$(INSTALL_LIBDIR)/ocamlopttoplevel, \
+	    $(OPTTOPLEVEL_MODULES), .cmi .cmx $(SOURCE_ARTIFACTS)); \
+	  $(call install_into,$(INSTALL_LIBDIR)/ocamlopttoplevel, \
+	    compilerlibs/ocamlopttoplevel, .cmxa .$(A)); \
+	  $(call install_into,$(INSTALL_COMPLIBDIR), \
+	    $(OPTTOPLEVELSTART:.cmo=), .cmi .cmx $(SOURCE_ARTIFACTS) .$(O)); \
+	  cd "$(INSTALL_LIBDIR)/ocamlopttoplevel" && \
+	    $(RANLIB) ocamlopttoplevel.$(A); \
 	fi
-	cd "$(INSTALL_COMPLIBDIR)" && \
-	   $(RANLIB) ocamlcommon.$(A) ocamlbytecomp.$(A) ocamloptcomp.$(A)
 
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
 install-compiler-sources:
 ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
-	$(INSTALL_DATA) \
-	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
-	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
-	   asmcomp/*.ml \
-	   "$(INSTALL_COMPLIBDIR)"
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlcommon, $(COMMON), .ml)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlbytecomp, $(BYTECOMP), .ml)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamltoplevel, $(TOPLEVEL), .ml)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamloptcomp, $(OPTCOMP), .ml)
+	$(call install_into,$(INSTALL_LIBDIR)/ocamlopttoplevel, \
+	  $(OPTTOPLEVEL), .ml)
+	$(call install_into,$(INSTALL_COMPLIBDIR), \
+	  $(BYTESTART:.cmo=) $(OPTSTART:.cmo=) \
+	  $(TOPLEVELSTART:.cmo=) $(OPTTOPLEVELSTART:.cmo=), .ml)
 endif
 
 # Run all tests
