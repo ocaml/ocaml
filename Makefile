@@ -243,6 +243,8 @@ MIDDLE_END=\
   middle_end/flambda_invariants.cmo \
   middle_end/middle_end.cmo
 
+OPTCOMP=$(MIDDLE_END) $(ASMCOMP)
+
 TOPLEVEL=toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
@@ -795,7 +797,7 @@ partialclean::
 
 # The native-code compiler
 
-compilerlibs/ocamloptcomp.cma: $(MIDDLE_END) $(ASMCOMP)
+compilerlibs/ocamloptcomp.cma: $(OPTCOMP)
 	$(CAMLC) -a -o $@ $^
 
 partialclean::
@@ -895,7 +897,7 @@ partialclean::
 
 # The native-code compiler compiled with itself
 
-compilerlibs/ocamloptcomp.cmxa: $(MIDDLE_END:.cmo=.cmx) $(ASMCOMP:.cmo=.cmx)
+compilerlibs/ocamloptcomp.cmxa: $(OPTCOMP:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $^
 partialclean::
 	rm -f compilerlibs/ocamloptcomp.cmxa compilerlibs/ocamloptcomp.$(A)
@@ -907,8 +909,7 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 partialclean::
 	rm -f ocamlopt.opt
 
-$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(MIDDLE_END:.cmo=.cmx) \
-$(ASMCOMP:.cmo=.cmx): ocamlopt
+$(COMMON:.cmo=.cmx) $(BYTECOMP:.cmo=.cmx) $(OPTCOMP:.cmo=.cmx): ocamlopt
 
 # The predefined exceptions and primitives
 
