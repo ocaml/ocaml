@@ -257,6 +257,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tpat_or (p1, p2, rowo) ->
           Tpat_or (map_pattern p1, map_pattern p2, rowo)
         | Tpat_lazy p -> Tpat_lazy (map_pattern p)
+        | Tpat_exception p -> Tpat_exception (map_pattern p)
         | Tpat_constant _
         | Tpat_any
         | Tpat_var _ -> pat.pat_desc
@@ -293,11 +294,10 @@ module MakeMap(Map : MapArgument) = struct
                         in
                         (label, expo)
                       ) list )
-        | Texp_match (exp, list1, list2, partial) ->
+        | Texp_match (exp, list, partial) ->
           Texp_match (
             map_expression exp,
-            map_cases list1,
-            map_cases list2,
+            map_cases list,
             partial
           )
         | Texp_try (exp, list) ->

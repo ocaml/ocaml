@@ -110,7 +110,9 @@ val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
-val name_pattern : string -> Typedtree.case list -> Ident.t
+val name_pattern : string -> Typedtree.pattern list -> Ident.t
+
+val name_cases : string -> Typedtree.case list -> Ident.t
 
 val self_coercion : (Path.t * Location.t list ref) list ref
 
@@ -159,7 +161,8 @@ type error =
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
-  | Exception_pattern_below_toplevel
+  | Exception_pattern_disallowed
+  | Mixed_value_and_exception_patterns_under_guard
   | Inlined_record_escape
   | Inlined_record_expected
   | Unrefuted_pattern of Typedtree.pattern

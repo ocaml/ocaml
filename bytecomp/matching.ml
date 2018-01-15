@@ -682,6 +682,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_lazy p -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
+| Tpat_exception _ -> assert false
 
 exception Cannot_flatten
 
@@ -2853,6 +2854,7 @@ let find_in_pat pred =
         find_rec p || find_rec q
     | Tpat_constant _ | Tpat_var _
     | Tpat_any | Tpat_variant (_,None,_) -> false
+    | Tpat_exception _ -> assert false
   end in
   find_rec
 
@@ -2862,6 +2864,7 @@ let is_lazy_pat = function
   | Tpat_tuple _|Tpat_construct _ | Tpat_array _
   | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
       -> false
+  | Tpat_exception _ -> assert false
 
 let is_lazy p = find_in_pat is_lazy_pat p
 
@@ -2878,6 +2881,7 @@ let have_mutable_field p = match p with
 | Tpat_or _
 | Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
+| Tpat_exception _ -> assert false
 
 let is_mutable p = find_in_pat have_mutable_field p
 

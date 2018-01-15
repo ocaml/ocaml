@@ -94,7 +94,8 @@ type error =
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
-  | Exception_pattern_below_toplevel
+  | Exception_pattern_disallowed
+  | Mixed_value_and_exception_patterns_under_guard
   | Inlined_record_escape
   | Inlined_record_expected
   | Unrefuted_pattern of pattern
@@ -598,7 +599,7 @@ let rec build_as_type env p =
           newty (Tvariant{row with row_closed=false; row_more=newvar()})
       end
   | Tpat_any | Tpat_var _ | Tpat_constant _
-  | Tpat_array _ | Tpat_lazy _ -> p.pat_type
+  | Tpat_array _ | Tpat_lazy _ | Tpat_exception _ -> p.pat_type
 
 let build_or_pat env loc lid =
   let path, decl = Typetexp.find_type env lid.loc lid.txt
@@ -648,6 +649,19 @@ let build_or_pat env loc lid =
              pat_loc=gloc; pat_env=env; pat_type=ty; pat_attributes=[]})
           pat pats in
       (path, rp { r with pat_loc = loc },ty)
+
+let split_cases env cases =
+  let add_case lst case = function
+    | None -> lst
+    | Some c_lhs -> { case with c_lhs } :: lst
+  in
+  List.fold_right (fun ({ c_lhs; c_guard } as case) (vals, exns) ->
+    match split_pattern c_lhs with
+    | Some _, Some _ when c_guard <> None ->
+      raise (Error (c_lhs.pat_loc, env,
+                    Mixed_value_and_exception_patterns_under_guard))
+    | vp, ep -> add_case vals case vp, add_case exns case ep
+  ) cases ([], [])
 
 (* Type paths *)
 
@@ -1054,20 +1068,22 @@ exception Need_backtrack
    Unification may update the typing environment. *)
 (* constrs <> None => called from parmatch: backtrack on or-patterns
    explode > 0 => explode Ppat_any for gadts *)
-let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
-    sp expected_ty k =
+let rec type_pat ?(exception_allowed=false) ~constrs ~labels ~no_existentials
+          ~mode ~explode ~env sp expected_ty k =
   Builtin_attributes.warning_scope sp.ppat_attributes
     (fun () ->
-       type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
-         sp expected_ty k
+       type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
+         ~explode ~env sp expected_ty k
     )
 
-and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
-    sp expected_ty k =
+and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
+      ~explode ~env sp expected_ty k =
   let mode' = if mode = Splitting_or then Normal else mode in
-  let type_pat ?(constrs=constrs) ?(labels=labels) ?(mode=mode')
-      ?(explode=explode) ?(env=env) =
-    type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env in
+  let type_pat ?(exception_allowed=false) ?(constrs=constrs) ?(labels=labels)
+        ?(mode=mode') ?(explode=explode) ?(env=env) =
+    type_pat ~exception_allowed ~constrs ~labels ~no_existentials ~mode ~explode
+      ~env
+  in
   let loc = sp.ppat_loc in
   let rp k x : pattern = if constrs = None then k (rp x) else k x in
   match sp.ppat_desc with
@@ -1369,14 +1385,16 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let p1 =
-          try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
+          try Some (type_pat ~exception_allowed ~mode:Inside_or sp1 expected_ty
+                      (fun x -> x))
           with Need_backtrack -> None in
         let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
         pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let p2 =
-          try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
+          try Some (type_pat ~exception_allowed ~mode:Inside_or sp2 expected_ty
+                      (fun x -> x))
           with Need_backtrack -> None in
         let p2_variables = !pattern_variables in
         match p1, p2 with
@@ -1399,9 +1417,10 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
           set_state state env;
           let mode =
             if mode = Split_or then mode else Splitting_or in
-          try type_pat ~mode sp1 expected_ty k with Error _ ->
+          try type_pat ~exception_allowed ~mode sp1 expected_ty k
+          with Error _ ->
             set_state state env;
-            type_pat ~mode sp2 expected_ty k
+            type_pat ~exception_allowed ~mode sp2 expected_ty k
       end
   | Ppat_lazy sp1 ->
       let nv = newvar () in
@@ -1429,7 +1448,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         end else ty, ty
       in
       unify_pat_types loc !env ty expected_ty;
-      type_pat sp expected_ty' (fun p ->
+      type_pat ~exception_allowed sp expected_ty' (fun p ->
         (*Format.printf "%a@.%a@."
           Printtyp.raw_type_expr ty
           Printtyp.raw_type_expr p.pat_type;*)
@@ -1456,23 +1475,36 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let path, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc lid in
       let new_env = ref new_env in
-      type_pat ~env:new_env p expected_ty ( fun p ->
+      type_pat ~exception_allowed ~env:new_env p expected_ty ( fun p ->
         env := Env.copy_local !env ~from:!new_env;
         k { p with pat_extra =( Tpat_open (path,lid,!new_env),
                             loc, sp.ppat_attributes) :: p.pat_extra }
       )
-  | Ppat_exception _ ->
-      raise (Error (loc, !env, Exception_pattern_below_toplevel))
+  | Ppat_exception p ->
+      if not exception_allowed then
+        raise (Error (loc, !env, Exception_pattern_disallowed))
+      else begin
+        let p_exn = type_pat p Predef.type_exn k in
+        rp k {
+          pat_desc = Tpat_exception p_exn;
+          pat_loc = sp.ppat_loc;
+          pat_extra = [];
+          pat_type = expected_ty;
+          pat_env = !env;
+          pat_attributes = sp.ppat_attributes;
+        }
+      end
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-let type_pat ?no_existentials ?constrs ?labels ?(mode=Normal)
+let type_pat ?exception_allowed ?no_existentials ?constrs ?labels ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
   gadt_equations_level := Some lev;
   try
     let r =
-      type_pat ~no_existentials ~constrs ~labels ~mode ~explode ~env sp
-        expected_ty (fun x -> x) in
+      type_pat ?exception_allowed ~no_existentials ~constrs ~labels ~mode
+        ~explode ~env sp expected_ty (fun x -> x)
+    in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     gadt_equations_level := None;
     r
@@ -1531,10 +1563,10 @@ let add_pattern_variables ?check ?check_as env pv =
     )
     pv env
 
-let type_pattern ~lev env spat scope expected_ty =
+let type_pattern ?exception_allowed ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
-  let pat = type_pat ~lev new_env spat expected_ty in
+  let pat = type_pat ?exception_allowed ~lev new_env spat expected_ty in
   let pvs = get_ref pattern_variables in
   let unpacks = get_ref module_variables in
   (pat, !new_env, get_ref pattern_force, pvs, unpacks)
@@ -1664,11 +1696,24 @@ let rec is_nonexpansive exp =
   | Texp_function _ -> true
   | Texp_apply(e, (_,None)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map snd el)
-  | Texp_match(e, cases, [], _) ->
+  | Texp_match(e, cases, _) ->
+     (* Not sure this is necessary, if [e] is nonexpansive then we shouldn't
+         care if there are exception patterns. But the previous version enforced
+         that there be none, so... *)
+      let contains_exception_pat p =
+        let res = ref false in
+        iter_pattern (fun p ->
+          match p.pat_desc with
+          | Tpat_exception _ -> res := true
+          | _ -> ()
+        ) p;
+        !res
+      in
       is_nonexpansive e &&
       List.for_all
-        (fun {c_lhs = _; c_guard; c_rhs} ->
+        (fun {c_lhs; c_guard; c_rhs} ->
            is_nonexpansive_opt c_guard && is_nonexpansive c_rhs
+           && not (contains_exception_pat c_lhs)
         ) cases
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
@@ -2045,11 +2090,14 @@ let proper_exp_loc exp =
 
 let rec name_pattern default = function
     [] -> Ident.create default
-  | {c_lhs=p; _} :: rem ->
-      match p.pat_desc with
-        Tpat_var (id, _) -> id
-      | Tpat_alias(_, id, _) -> id
-      | _ -> name_pattern default rem
+  | p :: rem ->
+    match p.pat_desc with
+      Tpat_var (id, _) -> id
+    | Tpat_alias(_, id, _) -> id
+    | _ -> name_pattern default rem
+
+let name_cases default lst =
+  name_pattern default (List.map (fun c -> c.c_lhs) lst)
 
 (* Typing of expressions *)
 
@@ -2317,25 +2365,12 @@ and type_expect_
       end_def ();
       if not (is_nonexpansive arg) then generalize_expansive env arg.exp_type;
       generalize arg.exp_type;
-      let rec split_cases vc ec = function
-        | [] -> List.rev vc, List.rev ec
-        | {pc_lhs = {ppat_desc=Ppat_exception p}} as c :: rest ->
-            split_cases vc ({c with pc_lhs = p} :: ec) rest
-        | c :: rest ->
-            split_cases (c :: vc) ec rest
+      let cases, partial =
+        type_cases ~exception_allowed:true env arg.exp_type ty_expected true loc
+          caselist
       in
-      let val_caselist, exn_caselist = split_cases [] [] caselist in
-      if val_caselist = [] && exn_caselist <> [] then
-        raise (Error (loc, env, No_value_clauses));
-      (* Note: val_caselist = [] and exn_caselist = [], i.e. a fully
-         empty pattern matching can be generated by Camlp4 with its
-         revised syntax.  Let's accept it for backward compatibility. *)
-      let val_cases, partial =
-        type_cases env arg.exp_type ty_expected true loc val_caselist in
-      let exn_cases, _ =
-        type_cases env Predef.type_exn ty_expected false loc exn_caselist in
       re {
-        exp_desc = Texp_match(arg, val_cases, exn_cases, partial);
+        exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc; exp_extra = [];
         exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;
@@ -3233,7 +3268,7 @@ and type_function ?in_function loc attrs env ty_expected_explained l caselist =
   if is_optional l && not_function ty_res then
     Location.prerr_warning (List.hd cases).c_lhs.pat_loc
       Warnings.Unerasable_optional_argument;
-  let param = name_pattern "param" cases in
+  let param = name_cases "param" cases in
   re {
     exp_desc = Texp_function { arg_label = l; param; cases; partial; };
     exp_loc = loc; exp_extra = [];
@@ -3635,7 +3670,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
               args @ [Nolabel, Some eta_var])}
         in
         let cases = [case eta_pat e] in
-        let param = name_pattern "param" cases in
+        let param = name_cases "param" cases in
         { texp with exp_type = ty_fun; exp_desc =
           Texp_function { arg_label = Nolabel; param; cases;
             partial = Total; } }
@@ -3971,7 +4006,8 @@ and check_scope_escape loc env level ty =
   with Unify trace ->
     raise(Error(loc, env, Pattern_type_clash(trace)))
 
-and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
+and type_cases ?exception_allowed ?in_function env ty_arg ty_res partial_flag
+      loc caselist =
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
   let contains_polyvars = List.exists contains_polymorphic_variant patterns in
@@ -4029,7 +4065,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         generalize_structure ty_arg;
         let expected_ty_arg = instance ty_arg in
         let (pat, ext_env, force, pvs, unpacks) =
-          type_pattern ~lev env pc_lhs scope expected_ty_arg
+          type_pattern ?exception_allowed ~lev env pc_lhs scope expected_ty_arg
         in
         pattern_force := force @ !pattern_force;
         let pat =
@@ -4152,9 +4188,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
     else ty_arg'
   in
+  let val_cases, exn_cases = split_cases env cases in
+  if val_cases = [] && exn_cases <> [] then
+    raise (Error (loc, env, No_value_clauses));
   let partial =
     if partial_flag then
-      check_partial ~lev env (instance ty_arg_check) loc cases
+      check_partial ~lev env (instance ty_arg_check) loc val_cases
     else
       Partial
   in
@@ -4165,9 +4204,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     List.iter (fun { typed_pat; branch_env; _ } ->
       check_absent_variant branch_env typed_pat
     ) half_typed_cases;
-    check_unused ~lev env (instance ty_arg_check) cases ;
+    check_unused ~lev env (instance ty_arg_check) val_cases ;
+    check_unused ~lev env Predef.type_exn exn_cases ;
     if do_init then end_def ();
-    Parmatch.check_ambiguous_bindings cases
+    Parmatch.check_ambiguous_bindings val_cases ;
+    Parmatch.check_ambiguous_bindings exn_cases
   in
   if contains_polyvars || do_init then
     add_delayed_check (fun () -> unused_check do_init)
@@ -4743,9 +4784,13 @@ let report_error env ppf = function
   | No_value_clauses ->
       fprintf ppf
         "None of the patterns in this 'match' expression match values."
-  | Exception_pattern_below_toplevel ->
+  | Exception_pattern_disallowed ->
       fprintf ppf
-        "@[Exception patterns must be at the top level of a match case.@]"
+        "@[Exception patterns are not allowed in this position.@]"
+  | Mixed_value_and_exception_patterns_under_guard ->
+      fprintf ppf
+        "@[Mixing value and exception patterns under when-guards is not \
+         supported.@]"
   | Inlined_record_escape ->
       fprintf ppf
         "@[This form is not allowed as the type of the inlined record could \
