@@ -719,8 +719,8 @@ installoptopt:
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
 	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
-	   driver/*.cmx asmcomp/*.cmx \
-	  "$(INSTALL_COMPLIBDIR)"
+	   driver/*.cmx asmcomp/*.cmx middle_end/*.cmx \
+	   middle_end/base_types/*.cmx "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
