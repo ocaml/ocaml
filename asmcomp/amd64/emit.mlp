@@ -496,7 +496,7 @@ let emit_instr fallthrough i =
           I.xor (res32 i 0) (res32 i 0)
         | _ ->
           I.mov (int 0) (res i 0)
-      end else if (n > 0n) && (n < 0x01_0000_0000n) then begin
+      end else if (n > 0n) && (n <= 0xFFFF_FFFFn) then begin
         match i.res.(0).loc with
         | Reg _ ->
           (* Similarly, setting only the bottom half clears the top half. *)
