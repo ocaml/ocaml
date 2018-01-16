@@ -106,7 +106,6 @@ module I : sig
   val bswap: arg -> unit
   val call: arg -> unit
   val cdq: unit -> unit
-  val cdqe: unit -> unit
   val cmp: arg -> arg -> unit
   val comisd: arg -> arg -> unit
   val cqo: unit -> unit
