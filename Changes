@@ -439,6 +439,14 @@ Working version
 
 ### Compiler distribution build system:
 
+* GPR#1569: install bigarray,dynlink,graphics,raw_spacetime_lib,str,unix each
+  in a separate directory +bigarray,+dynlink etc, and add these directories
+  to the initial search path unless -nostdincludes is given. The stdlib is
+  now installed in +stdlib, which is in the initial search path.
+  If code relies on the layout of the installation directory other than through
+  the `-I +something` option, that code may break.
+  (Valentin Gatien-Baron, review by Nicolás Ojeda Bär)
+
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
   control (non-)installation of ".byte" executables.
   (Mark Shinwell, review by Sébastien Hinderer and Gabriel Scherer)
@@ -504,6 +512,11 @@ Working version
   contributors are now expected to check that check-typo passes on their
   pull requests; see CONTRIBUTING.md for more details.
   (David Allsopp, review by Damien Doligez and Sébastien Hinderer)
+
+* GPR#1569: install each compiler libs in a separate directory. Code that
+  builds against, say, ocamlcommon now needs to specify -I +ocamlcommon
+  instead of -I +compiler-libs (or both for compatibility).
+  (Valentin Gatien-Baron, review by Nicolás Ojeda Bär)
 
 - GPR#1610: Remove positions from paths
   (Leo White, review by Frédéric Bour and Thomas Refis)
