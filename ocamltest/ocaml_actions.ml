@@ -95,6 +95,12 @@ let stdlib_flags ocamlsrcdir =
   let stdlib_path = stdlib ocamlsrcdir in
   "-nostdlib -I " ^ stdlib_path
 
+let toplevel_directory ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "toplevel"]
+
+let include_toplevel_directory ocamlsrcdir =
+  "-I " ^ (toplevel_directory ocamlsrcdir)
+
 let c_includes ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "byterun"]
 
@@ -732,6 +738,7 @@ let run_test_program_in_toplevel toplevel log env =
           toplevel.compiler_flags;
           stdlib_flags ocamlsrcdir;
           directory_flags auxenv;
+          include_toplevel_directory ocamlsrcdir;
           flags auxenv;
         ] in
         let exit_status =
