@@ -304,6 +304,11 @@ let emit_instr = function
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 
+let remerge_events ev1 = function
+  | Kevent ev2 :: c ->
+    Kevent (Bytegen.merge_events ev1 ev2) :: c
+  | c -> Kevent ev1 :: c
+
 let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
@@ -372,13 +377,13 @@ let rec emit = function
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;
       emit c
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
-      emit (Kpush :: instr1 :: instr2 :: ev :: c)
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+      emit (Kpush :: instr1 :: instr2 :: remerge_events ev c)
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
     c ->
-      emit (Kpush :: instr :: ev :: c)
+      emit (Kpush :: instr :: remerge_events ev c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)
