@@ -160,7 +160,7 @@ Working version
   (Gabriel Scherer and Armaël Guéneau,
    review by Valentin Gatien-Baron and Damien Doligez)
 
-- GPR#1519, GPR#1532: migrate expect tests to ocamltest
+- GPR#1519, GPR#1532, GRP#1570: migrate tests to ocamltest
   (Sébastien Hinderer, review by Gabriel Scherer, Valentin Gatien-Baron
   and Nicolás Ojeda Bär)
 
