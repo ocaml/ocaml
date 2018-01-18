@@ -1023,7 +1023,7 @@ let build_other ext env = match env with
           if Btype.row_fixed row then some_private_tag else
           let rec mktag tag =
             if List.mem tag tags then mktag (tag ^ "'") else tag in
-          mktag "AnyExtraTag"
+          mktag "AnyOtherTag"
         in make_other_pat tag true
     | pat::other_pats ->
         List.fold_left
