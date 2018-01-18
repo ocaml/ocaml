@@ -44,7 +44,8 @@ let initial_env () =
     let lid = {loc; txt = Longident.parse m } in
     let me = Parsetree.({pmod_desc=Pmod_ident lid;
                          pmod_loc=loc; pmod_attributes=[]}) in
-    snd (Typemod.type_open_ ?toplevel:None Override env lid.loc me) in
+    let _, _, env = (Typemod.type_open_ ?toplevel:None Override env lid.loc me) in
+    env in
   (* Open the list of modules given as arguments of the "-open" flag
      The list is reversed to open the modules in the left-to-right order *)
   let to_open = List.rev !Clflags.open_modules in

@@ -48,7 +48,8 @@ let open_implicit_module m env =
   let loc = Location.in_file "command line" in
   let lid = {loc; txt = Longident.parse m } in
   let me = Parsetree.({pmod_desc=Pmod_ident lid; pmod_loc=loc; pmod_attributes=[]}) in
-  snd (Typemod.type_open_ ?toplevel:None Override env lid.loc me)
+  let _, _, env = (Typemod.type_open_ ?toplevel:None Override env lid.loc me) in
+  env
 
 let initial_env () =
   Ident.reinit();
