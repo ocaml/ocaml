@@ -75,7 +75,6 @@ exception AsInt
 let const_as_int = function
   | Const_base(Const_int i) -> i
   | Const_base(Const_char c) -> Char.code c
-  | Const_pointer i -> i
   | _ -> raise AsInt
 
 let is_immed i = immed_min <= i && i <= immed_max
@@ -238,10 +237,6 @@ let emit_instr = function
           else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opCONST0 + i)
-          else (out opCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
@@ -369,10 +364,6 @@ let rec emit = function
           else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opPUSHCONST0 + i)
-          else (out opPUSHCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->

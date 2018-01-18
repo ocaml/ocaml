@@ -66,7 +66,6 @@ and uconstant ppf = function
       fprintf ppf "%S=%a" s structured_constant c
   | Uconst_ref (s, None) -> fprintf ppf "%S"s
   | Uconst_int i -> fprintf ppf "%i" i
-  | Uconst_ptr i -> fprintf ppf "%ia" i
 
 and lam ppf = function
   | Uvar id ->
