@@ -214,6 +214,9 @@ Working version
   to ill-typed columns
   (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
 
+- MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
+  (Jacques Garrigue, report by Thomas Refis)
+
 - MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
   (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
 

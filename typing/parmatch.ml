@@ -980,7 +980,7 @@ let build_other_constant proj make first next p env =
   the first column of env
 *)
 
-let some_other_tag = "<some other tag>"
+let some_private_tag = "<some private tag>"
 
 let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
@@ -1019,7 +1019,12 @@ let build_other ext env = match env with
         [] row.row_fields
     with
       [] ->
-        make_other_pat some_other_tag true
+        let tag =
+          if Btype.row_fixed row then some_private_tag else
+          let rec mktag tag =
+            if List.mem tag tags then mktag (tag ^ "'") else tag in
+          mktag "AnyOtherTag"
+        in make_other_pat tag true
     | pat::other_pats ->
         List.fold_left
           (fun p_res pat ->

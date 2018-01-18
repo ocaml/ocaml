@@ -926,58 +926,6 @@ type 'a t = < a : 'a >
 type u = 'a t as 'a
 |}];;
 
-
-(* Variant tests *)
-type t = A | B;;
-function `A,_ -> 1 | _,A -> 2 | _,B -> 3;;
-function `A,_ -> 1 | _,(A|B) -> 2;;
-function Some `A, _ -> 1 | Some _, A -> 2 | None, A -> 3 | _, B -> 4;;
-function Some `A, A -> 1 | Some `A, B -> 1
-       | Some _, A -> 2  | None, A -> 3 | _, B -> 4;;
-function A, `A -> 1 | A, `B -> 2 | B, _ -> 3;;
-function `A, A -> 1 | `B, A -> 2 | _, B -> 3;;
-function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
-function `B,1 -> 1 | _,1 -> 2;;
-function 1,`B -> 1 | 1,_ -> 2;;
-[%%expect {|
-type t = A | B
-- : [> `A ] * t -> int = <fun>
-- : [> `A ] * t -> int = <fun>
-- : [> `A ] option * t -> int = <fun>
-- : [> `A ] option * t -> int = <fun>
-- : t * [< `A | `B ] -> int = <fun>
-- : [< `A | `B ] * t -> int = <fun>
-Line _, characters 0-41:
-  function (`A|`B), _ -> 0 | _,(`A|`B) -> 1;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(`<some other tag>, `<some other tag>)
-- : [> `A | `B ] * [> `A | `B ] -> int = <fun>
-Line _, characters 0-29:
-  function `B,1 -> 1 | _,1 -> 2;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(_, 0)
-Line _, characters 21-24:
-  function `B,1 -> 1 | _,1 -> 2;;
-                       ^^^
-Warning 11: this match case is unused.
-- : [< `B ] * int -> int = <fun>
-Line _, characters 0-29:
-  function 1,`B -> 1 | 1,_ -> 2;;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(0, _)
-Line _, characters 21-24:
-  function 1,`B -> 1 | 1,_ -> 2;;
-                       ^^^
-Warning 11: this match case is unused.
-- : int * [< `B ] -> int = <fun>
-|}];;
-
 (* pass typetexp, but fails during Typedecl.check_recursion *)
 type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
