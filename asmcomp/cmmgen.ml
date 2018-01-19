@@ -2828,9 +2828,9 @@ let transl_function f =
       transl env body in
   let fun_codegen_options =
     if !Clflags.optimize_for_speed then
-      [ Reduce_code_size ]
-    else
       []
+    else
+      [ Reduce_code_size ]
   in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
