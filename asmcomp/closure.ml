@@ -210,7 +210,7 @@ let lambda_smaller lam threshold =
   with Exit ->
     false
 
-let is_pure_clambda_prim p =
+let is_pure_prim p =
   let open Semantics_of_primitives in
   match Semantics_of_primitives.for_primitive p with
   | (No_effects | Only_generative_effects), _ -> true
@@ -219,13 +219,13 @@ let is_pure_clambda_prim p =
 (* Check if a clambda term is ``pure'',
    that is without side-effects *and* not containing function definitions *)
 
-let rec is_pure_clambda = function
+let rec is_pure = function
     Uvar _ -> true
   | Uconst _ -> true
-  | Uprim(p, args, _) -> is_pure_clambda_prim p && List.for_all is_pure_clambda args
-  | Uoffset(arg, _) -> is_pure_clambda arg
+  | Uprim(p, args, _) -> is_pure_prim p && List.for_all is_pure args
+  | Uoffset(arg, _) -> is_pure arg
   | Ulet(Immutable, _, _var, def, body) ->
-      is_pure_clambda def && is_pure_clambda body
+      is_pure def && is_pure body
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -500,7 +500,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
       simplif_arith_prim_pure fpc p (args, approxs) dbg
 
 let simplif_prim fpc p (args, approxs as args_approxs) dbg =
-  if List.for_all is_pure_clambda args
+  if List.for_all is_pure args
   then simplif_prim_pure fpc p args_approxs dbg
   else
     (* XXX : always return the same approxs as simplif_prim_pure? *)
@@ -702,7 +702,7 @@ let is_simple_argument = function
 
 let no_effects = function
   | Uclosure _ -> true
-  | u -> is_pure_clambda u
+  | u -> is_pure u
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
@@ -764,7 +764,7 @@ let direct_apply fundesc ufunct uargs ~loc ~attribute =
      If the function is not closed, we evaluate ufunct as part of the
      arguments.
      If the function is closed, we force the evaluation of ufunct first. *)
-  if not fundesc.fun_closed || is_pure_clambda ufunct
+  if not fundesc.fun_closed || is_pure ufunct
   then app
   else Usequence(ufunct, app)
 
@@ -782,8 +782,8 @@ let strengthen_approx appl approx =
 
 let check_constant_result ulam approx =
   match approx with
-    Value_const c when is_pure_clambda ulam -> make_const c
-  | Value_global_field (id, i) when is_pure_clambda ulam ->
+    Value_const c when is_pure ulam -> make_const c
+  | Value_global_field (id, i) when is_pure ulam ->
       begin match ulam with
       | Uprim(P.Pfield _, [Uprim(P.Pread_symbol _, _, _)], _) -> (ulam, approx)
       | _ ->
@@ -798,7 +798,7 @@ let check_constant_result ulam approx =
    or discard it if it's pure *)
 
 let sequence_constant_expr ulam1 (ulam2, approx2 as res2) =
-  if is_pure_clambda ulam1 then res2 else (Usequence(ulam1, ulam2), approx2)
+  if is_pure ulam1 then res2 else (Usequence(ulam1, ulam2), approx2)
 
 (* Maintain the approximation of the global structure being defined *)
 
@@ -964,7 +964,7 @@ let rec close fenv cenv = function
           let (ubody, abody) = close fenv cenv body in
           (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
       | (_, Value_const _)
-        when str = Alias || is_pure_clambda ulam ->
+        when str = Alias || is_pure ulam ->
           close (V.Map.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
