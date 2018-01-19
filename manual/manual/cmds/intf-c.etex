@@ -2338,7 +2338,7 @@ them, you need to include both "<caml/misc.h>" and "<caml/osdeps.h>".
 \item "char_os* caml_stat_strdup_to_os(const char *)" copies the argument while
 translating from OCaml encoding to the platform encoding. This function is
 typically used to convert the "char *" underlying an OCaml string before passing
-it to an operating system API that takes an Unicode argument. Under Unix, it is
+it to an operating system API that takes a Unicode argument. Under Unix, it is
 equivalent to "caml_stat_strdup".
 
 {\bf Note:} For maximum backwards compatibility in Unicode mode, if the argument
