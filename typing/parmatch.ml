@@ -614,17 +614,21 @@ and set_args_erase_mutable q r = do_set_args true q r
      (Some x, r4)
      (None, r4)
  *)
-let rec simplify_head_pat p ps k =
-  match p.pat_desc with
-  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-  | Tpat_var (_,_) -> (omega, ps) :: k
-  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-  | _ -> (p, ps) :: k
+let simplify_head_pat ~add_column p ps k =
+  let rec simplify_head_pat p ps k =
+    match p.pat_desc with
+    | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+    | Tpat_var (_,_) -> add_column omega ps k
+    | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+    | _ -> add_column p ps k
+  in simplify_head_pat p ps k
 
 let rec simplify_first_col = function
   | [] -> []
   | [] :: _ -> assert false (* the rows are non-empty! *)
-  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+  | (p::ps) :: rows ->
+      let add_column p ps k = (p, ps) :: k in
+      simplify_head_pat ~add_column p ps (simplify_first_col rows)
 
 
 (* Builds the specialized matrix of [pss] according to pattern [q].
@@ -1561,7 +1565,9 @@ let rec simplify_first_usefulness_col = function
     match row.active with
     | [] -> assert false (* the rows are non-empty! *)
     | p :: ps ->
-      simplify_head_pat p { row with active = ps }
+      let add_column p ps k =
+        (p, { row with active = ps }) :: k in
+      simplify_head_pat ~add_column p ps
         (simplify_first_usefulness_col rows)
 
 (* Back to normal matrices *)
@@ -2280,6 +2286,23 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
 *)
 type amb_row = { row : pattern list ; varsets : IdSet.t list; }
 
+let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
+  let rec simpl head_bound_variables varsets p ps k =
+    match p.pat_desc with
+    | Tpat_alias (p,x,_) ->
+      simpl (IdSet.add x head_bound_variables) varsets p ps k
+    | Tpat_var (x,_) ->
+      let rest_of_the_row =
+        { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
+      in
+      add_column omega rest_of_the_row k
+    | Tpat_or (p1,p2,_) ->
+      simpl head_bound_variables varsets p1 ps
+        (simpl head_bound_variables varsets p2 ps k)
+    | _ ->
+      add_column p { row = ps; varsets = head_bound_variables :: varsets; } k
+  in simpl head_bound_variables varsets p ps k
+
 (*
    To accurately report ambiguous variables, one must consider
    that previous clauses have already matched some values.
@@ -2309,30 +2332,14 @@ let rec simplify_first_amb_col = function
   | [] -> []
   | (Negative [] | Positive { row = []; _ }) :: _  -> assert false
   | Negative (n :: ns) :: rem ->
-      simplify_head_amb_pat_neg n ns
-        (simplify_first_amb_col rem)
+      let add_column n ns k = (n, Negative ns) :: k in
+      simplify_head_pat
+        ~add_column n ns (simplify_first_amb_col rem)
   | Positive { row = p::ps; varsets; }::rem ->
-      simplify_head_amb_pat_pos IdSet.empty p ps varsets
-        (simplify_first_amb_col rem)
-
-and simplify_head_amb_pat_neg p ps k =
-  Misc.map_end (fun (n, ns) -> (n, Negative ns))
-    (simplify_head_pat p ps []) k
-
-and simplify_head_amb_pat_pos head_bound_variables p ps varsets k =
-  match p.pat_desc with
-  | Tpat_alias (p,x,_) ->
-    simplify_head_amb_pat_pos (IdSet.add x head_bound_variables) p ps varsets k
-  | Tpat_var (x,_) ->
-    let rest_of_the_row =
-      { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
-    in
-    (omega, Positive rest_of_the_row) :: k
-  | Tpat_or (p1,p2,_) ->
-    simplify_head_amb_pat_pos head_bound_variables p1 ps varsets
-      (simplify_head_amb_pat_pos head_bound_variables p2 ps varsets k)
-  | _ ->
-    (p, Positive { row = ps; varsets = head_bound_variables :: varsets; }) :: k
+      let add_column p ps k = (p, Positive ps) :: k in
+      simplify_head_amb_pat
+        IdSet.empty varsets
+        ~add_column p ps (simplify_first_amb_col rem)
 
 (* Compute stable bindings *)
 
