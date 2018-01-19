@@ -225,6 +225,9 @@ Working version
 - MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
   (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
 
+- MPR#7712, GPR#1576: assertion failure with type abbreviations
+  (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
+
 4.06 maintenance branch
 -----------------------
 
