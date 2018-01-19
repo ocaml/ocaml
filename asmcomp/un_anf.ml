@@ -599,7 +599,7 @@ let primitive_moveable (prim : Clambda_primitives.primitive)
        is never mutated *)
     Moveable
   | _ ->
-    match Semantics_of_primitives.for_clambda_primitive prim with
+    match Semantics_of_primitives.for_primitive prim with
     | No_effects, No_coeffects -> Moveable
     | No_effects, Has_coeffects
     | Only_generative_effects, No_coeffects

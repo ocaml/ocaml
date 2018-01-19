@@ -212,7 +212,7 @@ let lambda_smaller lam threshold =
 
 let is_pure_clambda_prim p =
   let open Semantics_of_primitives in
-  match Semantics_of_primitives.for_clambda_primitive p with
+  match Semantics_of_primitives.for_primitive p with
   | (No_effects | Only_generative_effects), _ -> true
   | Arbitrary_effects, _ -> false
 

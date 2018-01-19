@@ -60,7 +60,7 @@ type coeffects = No_coeffects | Has_coeffects
     the (non-)(co)effectfulness of the arguments in a primitive application.
     To determine whether such an application is (co)effectful, the arguments
     must also be analysed. *)
-val for_clambda_primitive: Clambda_primitives.primitive -> effects * coeffects
+val for_primitive: Clambda_primitives.primitive -> effects * coeffects
 
 type return_type =
   | Float

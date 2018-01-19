@@ -19,7 +19,7 @@
 type effects = No_effects | Only_generative_effects | Arbitrary_effects
 type coeffects = No_coeffects | Has_coeffects
 
-let for_clambda_primitive (prim : Clambda_primitives.primitive) =
+let for_primitive (prim : Clambda_primitives.primitive) =
   match prim with
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
