@@ -229,6 +229,9 @@ let rec is_pure_clambda = function
     Uvar _ -> true
   | Uconst _ -> true
   | Uprim(p, args, _) -> is_pure_clambda_prim p && List.for_all is_pure_clambda args
+  | Uoffset(arg, _) -> is_pure_clambda arg
+  | Ulet(Immutable, _, _var, def, body) ->
+      is_pure_clambda def && is_pure_clambda body
   | _ -> false
 
 (* Simplify primitive operations on known arguments *)
@@ -749,6 +752,16 @@ let rec is_pure = function
   | Levent(lam, _ev) -> is_pure lam
   | _ -> false
 
+let is_pure lam ulam =
+  let lam_pure = is_pure lam in
+  let ulam_pure = is_pure_clambda ulam in
+  if lam_pure && not ulam_pure then
+    Misc.fatal_errorf "mismatching purity:@.lam: %b@.%a@.clam: %b@.%a@.@."
+      lam_pure Printlambda.lambda lam
+      ulam_pure Printclambda.clambda ulam
+  else
+    lam_pure
+
 let warning_if_forced_inline ~loc ~attribute warning =
   if attribute = Always_inline then
     Location.prerr_warning loc
@@ -774,7 +787,7 @@ let direct_apply fundesc funct ufunct uargs ~loc ~attribute =
      If the function is not closed, we evaluate ufunct as part of the
      arguments.
      If the function is closed, we force the evaluation of ufunct first. *)
-  if not fundesc.fun_closed || is_pure funct
+  if not fundesc.fun_closed || is_pure funct ufunct
   then app
   else Usequence(ufunct, app)
 
@@ -792,8 +805,8 @@ let strengthen_approx appl approx =
 
 let check_constant_result lam ulam approx =
   match approx with
-    Value_const c when is_pure lam -> make_const c
-  | Value_global_field (id, i) when is_pure lam ->
+    Value_const c when is_pure lam ulam -> make_const c
+  | Value_global_field (id, i) when is_pure lam ulam ->
       begin match ulam with
       | Uprim(P.Pfield _, [Uprim(P.Pread_symbol _, _, _)], _) -> (ulam, approx)
       | _ ->
@@ -808,7 +821,7 @@ let check_constant_result lam ulam approx =
    or discard it if it's pure *)
 
 let sequence_constant_expr lam ulam1 (ulam2, approx2 as res2) =
-  if is_pure lam then res2 else (Usequence(ulam1, ulam2), approx2)
+  if is_pure lam ulam1 then res2 else (Usequence(ulam1, ulam2), approx2)
 
 (* Maintain the approximation of the global structure being defined *)
 
@@ -974,7 +987,7 @@ let rec close fenv cenv = function
           let (ubody, abody) = close fenv cenv body in
           (Ulet(Mutable, kind, VP.create id, ulam, ubody), abody)
       | (_, Value_const _)
-        when str = Alias || is_pure lam ->
+        when str = Alias || is_pure lam ulam ->
           close (V.Map.add id alam fenv) cenv body
       | (_, _) ->
           let (ubody, abody) = close (V.Map.add id alam fenv) cenv body in
