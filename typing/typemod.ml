@@ -104,9 +104,11 @@ let in_nested_struct () = !open_struct_level <> 0
 let enter_struct () = incr open_struct_level
 let leave_struct () = decr open_struct_level
 
+let open_generated s = String.contains s '#'
+
 let type_open_ ?used_slot ?toplevel ovf env loc me =
   match me.pmod_desc with
-  | Pmod_functor _ | Pmod_unpack _ | Pmod_extension _ ->
+  | Pmod_functor _ | Pmod_extension _ ->
       raise(Error(me.pmod_loc, env, Invalid_open me))
   | Pmod_ident lid -> begin
       let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
@@ -126,16 +128,15 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
           ignore (extract_sig_open env lid.loc md.md_type);
           assert false
     end
-  | _ -> begin
+  | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ ->
       enter_struct ();
       let ident = gen_mod_ident () in
       let tme = !type_module_fwd env me in
       leave_struct ();
-      begin
-      match tme.mod_type with
-      | Mty_signature _ -> ()
-      | _ -> raise(Error(me.pmod_loc, env, Invalid_open me));
-      end;
+      (match tme.mod_type with
+       | Mty_signature _ | Mty_ident _ -> ()
+       | Mty_functor _ | Mty_alias _ ->
+           raise(Error(me.pmod_loc, env, Invalid_open me)));
       let md = {
         md_type = tme.mod_type;
         md_loc = me.pmod_loc;
@@ -144,12 +145,11 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       let newenv = Env.enter_module_declaration ident md env in
       let root = Pident ident in
       match Env.open_signature ~loc ?used_slot ?toplevel ovf root newenv with
-      | None -> assert false
+      | None -> assert false (* not possible to open a Mty_functor *)
       | Some opened_env -> Some (ident, md, newenv), tme, opened_env
-    end
 
 let type_open ?toplevel env sod =
-  let (md, tme, newenv) =
+  let (inserted_md, tme, open_env) =
     Builtin_attributes.warning_scope sod.popen_attributes
       (fun () ->
          type_open_ ?toplevel sod.popen_override env sod.popen_loc
@@ -164,7 +164,7 @@ let type_open ?toplevel env sod =
       open_loc = sod.popen_loc;
     }
   in
-  md, newenv, od
+  inserted_md, open_env, od
 
 (* Record a module type *)
 let rm node =
@@ -728,13 +728,14 @@ let simplify_signature sg =
 
 
 let remove_inserted_modtype mty =
-  let remove =
-    List.filter (
-      function
-      | Sig_module({Ident.name}, _, _) when String.contains name '#' -> false
-      | _ -> true) in
   let rec aux = function
-    | Mty_signature sg -> Mty_signature (remove sg)
+    | Mty_signature sg ->
+        let sg =
+          List.filter (
+            function
+            | Sig_module({Ident.name}, _, _) when open_generated name -> false
+            | _ -> true) sg in
+        Mty_signature sg
     | Mty_functor (id, mty_arg, mty_res) ->
         Mty_functor (id,
         (match mty_arg with
@@ -922,13 +923,13 @@ and transl_signature env sg =
             sg :: rem,
             final_env
         | Psig_open sod -> begin
-            let (id, newenv, od) = type_open env sod in
-            let (trem, rem, final_env) = transl_sig newenv srem in
+            let (id, open_env, od) = type_open env sod in
+            let (trem, rem, final_env) = transl_sig open_env srem in
             match id with
             | None -> mksig (Tsig_open od) env loc :: trem, rem, final_env
             | Some (id, _md, _env) ->
                 let s_rem = Mty_signature rem in
-                match Mtype.nondep_supertype newenv id s_rem with
+                match Mtype.nondep_supertype open_env id s_rem with
                 | Mty_signature rem' ->
                     mksig (Tsig_open od) env loc :: trem, rem', final_env
                 | exception Not_found ->
@@ -1667,32 +1668,32 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             mkstr (Tstr_modtype mtd) newenv loc :: str_rem, sg :: sig_rem,
             final_env
         | Pstr_open sod -> begin
-            let (md, newenv, od) = type_open ~toplevel env sod in
-            let str_rem, sig_rem, final_env = type_struct newenv srem in
-            match md with
-            | None -> mkstr (Tstr_open od) newenv loc :: str_rem,
+            let (inserted_md, open_env, od) = type_open ~toplevel env sod in
+            let str_rem, sig_rem, final_env = type_struct open_env srem in
+            match inserted_md with
+            | None -> mkstr (Tstr_open od) open_env loc :: str_rem,
                       sig_rem, final_env
-            | Some (id, md, menv) ->
+            | Some (id, md, md_env) ->
                 let tm =
                   Tstr_module {mb_id=id;
                                mb_name={txt=Ident.name id; loc=Location.none};
                                mb_expr = od.open_expr;
                                mb_attributes=od.open_expr.mod_attributes;
                                mb_loc=od.open_expr.mod_loc} in
-                let tm_str = { str_desc = tm; str_loc = loc; str_env = env } in
-                let open_str = mkstr (Tstr_open od) menv loc in
+                let tm_str = { str_desc = tm; str_loc = loc; str_env = md_env } in
+                let open_str = mkstr (Tstr_open od) open_env loc in
                 let md_sig =
                   Sig_module (id, {md_type=md.Types.md_type; md_loc=loc;
                                    md_attributes = []}, Trec_not) in
                 if not (in_nested_struct ()) then
                   let s_rem = Mty_signature sig_rem in
-                  match Mtype.nondep_supertype newenv id s_rem with
+                  match Mtype.nondep_supertype open_env id s_rem with
                   | Mty_signature sg ->
                       tm_str :: open_str :: str_rem, md_sig :: sg, final_env
                   | exception Not_found ->
                       raise (Error(loc, env,
                                    Cannot_eliminate_anon_module(id, sig_rem)))
-                  | _ -> assert false
+                  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
                 else
                   tm_str :: open_str :: str_rem, md_sig :: sig_rem, final_env
           end
@@ -1779,48 +1780,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             Builtin_attributes.warning_attribute x;
             let str_rem, sig_rem, final_env = type_struct env srem in
             mkstr (Tstr_attribute x) env loc :: str_rem, sig_rem, final_env
-    in
-    (*
-    let rec type_struct env sstr =
-      Ctype.init_def(Ident.current_time());
-      match sstr with
-      | [] -> ([], [], [], env)
-      | pstr :: srem -> begin
-          let previous_saved_types = Cmt_format.get_saved_types () in
-          let desc, sg, new_env = type_str_item env srem pstr in
-          let str = { str_desc = desc; str_loc = pstr.pstr_loc; str_env = env } in
-          Cmt_format.set_saved_types (Cmt_format.Partial_structure_item str
-                                      :: previous_saved_types);
-          let (str_rem, sig_rem, fsig_rem, final_env) = type_struct new_env srem in
-          match extract_open_struct desc with
-          | Some (tm, md, id, md_env) -> begin
-              let loc = pstr.pstr_loc in
-              let tm_str = {str_desc = tm; str_loc = loc;
-                            str_env = env} in
-              let open_str = {str with str_env = md_env} in
-              let md_sig =
-                Sig_module (id, {md_type=md.Types.md_type; md_loc=loc;
-                                 md_attributes = []}, Trec_not) in
-              if not (in_nested_struct ()) then begin
-                let fs_rem = Mty_signature fsig_rem in begin
-                match Mtype.nondep_supertype new_env id fs_rem with
-                | Mty_signature sg ->
-                    (tm_str :: open_str :: str_rem, sg,
-                     md_sig :: sg, final_env)
-                | exception Not_found ->
-                    raise(Error(pstr.pstr_loc, env,
-                                Cannot_eliminate_anon_module(id, fsig_rem)))
-                | _ -> assert false
-                end
-              end else
-                (tm_str :: open_str :: str_rem, sig_rem,
-                 md_sig :: fsig_rem, final_env)
-            end
-          | None ->
-              (str :: str_rem, sg @ sig_rem, sg @ fsig_rem, final_env)
-      end
   in
-  *)
   if !Clflags.annotations then
     (* moved to genannot *)
     List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
@@ -1838,7 +1798,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   let (str, sg, env) =
-    type_structure ~toplevel:true false None env s Location.none in
+    Misc.protect_refs [R(open_struct_level, 0)] (fun () ->
+      type_structure ~toplevel:true false None env s Location.none) in
   let (str, _coerce) = ImplementationHooks.apply_hooks
       { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
   in
@@ -1958,7 +1919,7 @@ let simplify_signature sg =
         if StringSet.mem name val_names then k
         else (component :: sg, StringSet.add name val_names)
     | Sig_module({Ident.name}, _, _) :: sg
-        when String.contains name '#' -> aux sg
+        when open_generated name -> aux sg
     | component :: sg ->
         let (sg, val_names) = aux sg in
         (component :: sg, val_names)
@@ -1967,70 +1928,72 @@ let simplify_signature sg =
   sg
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  Cmt_format.clear ();
-  try
-  Typecore.reset_delayed_checks ();
-  Env.reset_required_globals ();
-  if !Clflags.print_types then (* #7656 *)
-    Warnings.parse_options false "-32-34-37-38-60";
-  let (str, sg, finalenv) =
-    type_structure initial_env ast (Location.in_file sourcefile) in
-  let simple_sg = simplify_signature sg in
-  if !Clflags.print_types then begin
-    Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env initial_env
-      (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
-    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
-  end else begin
-    let sourceintf =
-      Filename.remove_extension sourcefile ^ !Config.interface_suffix in
-    if Sys.file_exists sourceintf then begin
-      let intf_file =
-        try
-          find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
-        with Not_found ->
-          raise(Error(Location.in_file sourcefile, Env.empty,
-                      Interface_not_compiled sourceintf)) in
-      let dclsig = Env.read_signature modulename intf_file in
-      let coercion =
-        Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+  Misc.protect_refs [R(open_struct_level, 0)] (fun () ->
+    Cmt_format.clear ();
+    try
+    Typecore.reset_delayed_checks ();
+    Env.reset_required_globals ();
+    if !Clflags.print_types then (* #7656 *)
+      Warnings.parse_options false "-32-34-37-38-60";
+    let (str, sg, finalenv) =
+      type_structure initial_env ast (Location.in_file sourcefile) in
+    let simple_sg = simplify_signature sg in
+    if !Clflags.print_types then begin
       Typecore.force_delayed_checks ();
-      (* It is important to run these checks after the inclusion test above,
-         so that value declarations which are not used internally but exported
-         are not reported as being unused. *)
-      Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
-        (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
-      (str, coercion)
+      Printtyp.wrap_printing_env initial_env
+        (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
+      (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
     end else begin
-      let coercion =
-        Includemod.compunit initial_env sourcefile sg
-                            "(inferred signature)" simple_sg in
-      check_nongen_schemes finalenv simple_sg;
-      normalize_signature finalenv simple_sg;
-      Typecore.force_delayed_checks ();
-      (* See comment above. Here the target signature contains all
-         the value being exported. We can still capture unused
-         declarations like "let x = true;; let x = 1;;", because in this
-         case, the inferred signature contains only the last declaration. *)
-      if not !Clflags.dont_write_files then begin
-        let deprecated = Builtin_attributes.deprecated_of_str ast in
-        let cmi =
-          Env.save_signature ~deprecated
-            simple_sg modulename (outputprefix ^ ".cmi")
-        in
-        Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-          (Cmt_format.Implementation str)
-          (Some sourcefile) initial_env (Some cmi);
-      end;
-      (str, coercion)
-    end
-    end
-  with e ->
-    Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
-      (Cmt_format.Partial_implementation
-         (Array.of_list (Cmt_format.get_saved_types ())))
-      (Some sourcefile) initial_env None;
-    raise e
+      let sourceintf =
+        Filename.remove_extension sourcefile ^ !Config.interface_suffix in
+      if Sys.file_exists sourceintf then begin
+        let intf_file =
+          try
+            find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+          with Not_found ->
+            raise(Error(Location.in_file sourcefile, Env.empty,
+                        Interface_not_compiled sourceintf)) in
+        let dclsig = Env.read_signature modulename intf_file in
+        let coercion =
+          Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+        Typecore.force_delayed_checks ();
+        (* It is important to run these checks after the inclusion test above,
+           so that value declarations which are not used internally but exported
+           are not reported as being unused. *)
+        Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
+          (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
+        (str, coercion)
+      end else begin
+        let coercion =
+          Includemod.compunit initial_env sourcefile sg
+                              "(inferred signature)" simple_sg in
+        check_nongen_schemes finalenv simple_sg;
+        normalize_signature finalenv simple_sg;
+        Typecore.force_delayed_checks ();
+        (* See comment above. Here the target signature contains all
+           the value being exported. We can still capture unused
+           declarations like "let x = true;; let x = 1;;", because in this
+           case, the inferred signature contains only the last declaration. *)
+        if not !Clflags.dont_write_files then begin
+          let deprecated = Builtin_attributes.deprecated_of_str ast in
+          let cmi =
+            Env.save_signature ~deprecated
+              simple_sg modulename (outputprefix ^ ".cmi")
+          in
+          Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
+            (Cmt_format.Implementation str)
+            (Some sourcefile) initial_env (Some cmi);
+        end;
+        (str, coercion)
+      end
+      end
+    with e ->
+      Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename
+        (Cmt_format.Partial_implementation
+           (Array.of_list (Cmt_format.get_saved_types ())))
+        (Some sourcefile) initial_env None;
+      raise e
+  )
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   ImplementationHooks.apply_hooks { Misc.sourcefile }

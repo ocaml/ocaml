@@ -47,8 +47,8 @@ let open_implicit_module m env =
   let open Asttypes in
   let loc = Location.in_file "command line" in
   let lid = {loc; txt = Longident.parse m } in
-  let me = Parsetree.({pmod_desc=Pmod_ident lid; pmod_loc=loc; pmod_attributes=[]}) in
-  let _, _, env = (Typemod.type_open_ ?toplevel:None Override env lid.loc me) in
+  let me = Ast_helper.Mod.ident ~loc ~attrs:[] lid in
+  let _, _, env = (Typemod.type_open_ ?toplevel:None Override env loc me) in
   env
 
 let initial_env () =
