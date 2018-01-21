@@ -79,12 +79,27 @@ let ocaml_dot_opt ocamlsrcdir =
 let cmpbyt ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "tools"; "cmpbyt"]
 
+let expect_program ocamlsrcdir =
+  Filename.make_path
+    [ocamlsrcdir; "testsuite"; "tools"; Filename.mkexe "expect_test"]
+
+let expect_command ocamlsrcdir =
+  let ocamlrun = ocamlrun ocamlsrcdir in
+  let expect_test = expect_program ocamlsrcdir in
+  ocamlrun ^ " " ^ expect_test
+
 let stdlib ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "stdlib"]
 
 let stdlib_flags ocamlsrcdir =
   let stdlib_path = stdlib ocamlsrcdir in
   "-nostdlib -I " ^ stdlib_path
+
+let toplevel_directory ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "toplevel"]
+
+let include_toplevel_directory ocamlsrcdir =
+  "-I " ^ (toplevel_directory ocamlsrcdir)
 
 let c_includes ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "byterun"]
@@ -251,6 +266,8 @@ let backend_flags env =
     Ocaml_variables.ocamlc_flags
     Ocaml_variables.ocamlopt_flags
 
+let dumb_term = [|"TERM=dumb"|]
+
 let link_modules
     ocamlsrcdir compiler compilername compileroutput program_variable
     custom c_headers_flags log env modules
@@ -286,6 +303,7 @@ let link_modules
   ] in
   let exit_status =
     Actions_helpers.run_cmd
+      ~environment:dumb_term
       ~stdout_variable:compileroutput
       ~stderr_variable:compileroutput
       ~append:true
@@ -450,11 +468,52 @@ let ocamlopt_opt = Actions.make
   "ocamlopt.opt"
   (compile_test_program Builtin_variables.program2 ocamlopt_opt_compiler)
 
-let run_expect log env =
-  let newenv = Environments.apply_modifiers env Ocaml_modifiers.expect in
-  Actions_helpers.run_script log newenv
+let run_expect_once ocamlsrcdir input_file principal log env =
+  let expect_flags = try Sys.getenv "EXPECT_FLAGS" with Not_found -> "" in
+  let repo_root = "-repo-root " ^ ocamlsrcdir in
+  let principal_flag = if principal then "-principal" else "" in
+  let commandline =
+  [
+    expect_command ocamlsrcdir;
+    expect_flags;
+    flags env;
+    repo_root;
+    principal_flag;
+    input_file
+  ] in
+  let exit_status =
+    Actions_helpers.run_cmd ~environment:dumb_term log env commandline in
+  if exit_status=0 then Pass env
+  else Fail (Actions_helpers.mkreason
+    "expect" (String.concat " " commandline) exit_status)
 
-let expect = Actions.make "expect" run_expect
+let run_expect_twice ocamlsrcdir input_file log env =
+  let corrected filename = Filename.make_filename filename "corrected" in
+  let first_run = run_expect_once ocamlsrcdir input_file false log env in
+  match first_run with
+    | Skip _ | Fail _ -> first_run
+    | Pass env1 ->
+      let intermediate_file = corrected input_file in
+      let second_run =
+        run_expect_once ocamlsrcdir intermediate_file true log env1 in
+      (match second_run with
+      | Skip _ | Fail _ -> second_run
+      | Pass env2 ->
+        let output_file = corrected intermediate_file in
+        let output_env = Environments.add_bindings
+        [
+          Builtin_variables.reference, input_file;
+          Builtin_variables.output, output_file
+        ] env2 in
+        Pass output_env
+      )
+
+let run_expect log env =
+  let ocamlsrcdir = ocamlsrcdir () in
+  let input_file = Actions_helpers.testfile env in
+  run_expect_twice ocamlsrcdir input_file log env
+
+let run_expect = Actions.make "run-expect" run_expect
 
 let make_check_compiler_output name compiler = Actions.make
   name
@@ -546,62 +605,154 @@ let compare_native_programs = Actions.make
   "compare-native-programs"
   (compare_programs Sys.Native native_programs_comparison_tool)
 
+let compile_module
+  ocamlsrcdir compiler compilername compileroutput log env
+  (module_basename, module_filetype) =
+  let backend = compiler.compiler_backend in
+  let filename = Filetype.make_filename (module_basename, module_filetype) in
+  let expected_exit_status = expected_compiler_exit_status env compiler in
+  let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
+    (Filetype.action_of_filetype module_filetype) filename
+      (expected_exit_status) in
+  let compile_commandline input_file output_file optional_flags =
+    let compile = "-c " ^ input_file in
+    let output = match output_file with
+      | None -> ""
+      | Some file -> "-o " ^ file in
+    [
+      compilername;
+      stdlib_flags ocamlsrcdir;
+      flags env;
+      backend_flags env backend;
+      optional_flags;
+      compile;
+      output;
+    ] in
+  let exec commandline =
+    Printf.fprintf log "%s\n%!" what;
+    let exit_status = 
+      Actions_helpers.run_cmd
+        ~stdout_variable:compileroutput
+        ~stderr_variable:compileroutput 
+        ~append:true log env commandline in
+    if exit_status=expected_exit_status
+    then Pass env
+    else Fail (Actions_helpers.mkreason
+      what (String.concat " " commandline) exit_status) in
+  match module_filetype with
+    | Filetype.Interface ->
+      let interface_name =
+        Filetype.make_filename (module_basename, Filetype.Interface) in
+      let commandline = compile_commandline interface_name None "" in
+      exec commandline
+    | Filetype.Implementation ->
+      let module_extension = Ocaml_backends.module_extension backend in
+      let module_output_name =
+        Filename.make_filename module_basename module_extension in
+      let commandline =
+        compile_commandline filename (Some module_output_name) "" in
+      exec commandline
+    | Filetype.C ->
+      let object_extension = Config.ext_obj in
+      let _object_filename = module_basename ^ object_extension in
+      let commandline =
+        compile_commandline filename None (c_includes_flags ocamlsrcdir) in
+      exec commandline
+    | _ ->
+      let reason = Printf.sprintf "File %s of type %s not supported yet"
+        filename (Filetype.string_of_filetype module_filetype) in
+      (Fail reason)
+
+let compile_modules
+    ocamlsrcdir compiler compilername compileroutput
+    modules_with_filetypes log initial_env
+  =
+  let compile_mod env mod_ =
+    compile_module ocamlsrcdir compiler compilername compileroutput
+    log env mod_ in
+  let rec compile_mods env = function
+    | [] -> Pass env
+    | m::ms ->
+      (match compile_mod env m with
+        | Fail _ | Skip _ as error -> error
+        | Pass newenv -> (compile_mods newenv ms)
+      ) in
+  compile_mods initial_env modules_with_filetypes
+
 let run_test_program_in_toplevel toplevel log env =
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
   let expected_exit_status = expected_compiler_exit_status env toplevel in
-  let what =
-    Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
-      testfile
-      (Ocaml_backends.string_of_backend toplevel.compiler_backend)
-      expected_exit_status in
-  Printf.fprintf log "%s\n%!" what;
   let source_directory = Actions_helpers.test_source_directory env in
-  let compiler_directory_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
-  let compiler_directory_name =
-    toplevel.compiler_directory ^ compiler_directory_suffix in
-  let build_directory = Filename.make_path
-    [Actions_helpers.test_build_directory env; compiler_directory_name] in
-  let compilerreference_prefix =
-    Filename.make_path [source_directory; testfile_basename] in
-  let compilerreference_filename =
-    compiler_reference_filename env compilerreference_prefix toplevel in
-  let compiler_reference_variable = toplevel.compiler_reference_variable in
-  let compiler_output_filename =
-    Filename.make_filename toplevel.compiler_directory "output" in
-  let compiler_output =
-    Filename.make_path [build_directory; compiler_output_filename] in
+  let build_directory = Actions_helpers.test_build_directory env in
   let compiler_output_variable = toplevel.compiler_output_variable in
-  let newenv = Environments.add_bindings
-    [
-      (compiler_reference_variable, compilerreference_filename);
-      (compiler_output_variable, compiler_output);
-    ] env in
-  if Sys.file_exists compiler_output_filename then
-    Sys.remove compiler_output_filename;
+  let (env, compiler_output) =
+    (match Environments.lookup compiler_output_variable env with 
+    | Some value -> (env, value)
+    | None ->
+      let compiler_output_filename =
+        Filename.make_filename toplevel.compiler_directory "output" in
+      let value =
+        Filename.make_path [build_directory; compiler_output_filename] in
+      let env' = Environments.add compiler_output_variable value env in
+      (env', value)) in
+  let compiler_reference_variable = toplevel.compiler_reference_variable in
+  let env =
+    if Environments.is_variable_defined compiler_reference_variable env then env
+    else begin
+      let compilerreference_prefix =
+        Filename.make_path [source_directory; testfile_basename] in
+      let compilerreference_filename =
+        compiler_reference_filename env compilerreference_prefix toplevel in
+      Environments.add
+        compiler_reference_variable compilerreference_filename env
+    end in
+  if Sys.file_exists compiler_output then
+    Sys.remove compiler_output;
   let ocamlsrcdir = ocamlsrcdir () in
-  let toplevel_name = toplevel.compiler_name ocamlsrcdir in
-  let toplevel_default_flags = "-noinit -no-version -noprompt" in
-  let commandline =
-  [
-    toplevel_name;
-    toplevel_default_flags;
-    toplevel.compiler_flags;
-    stdlib_flags ocamlsrcdir;
-    directory_flags env;
-    flags env;
-  ] in
-  let exit_status =
-    Actions_helpers.run_cmd
-      ~stdin_variable:Builtin_variables.test_file
-      ~stdout_variable:compiler_output_variable
-      ~stderr_variable:compiler_output_variable
-      log newenv commandline in
-  if exit_status=expected_exit_status
-  then Pass newenv
-  else Fail (Actions_helpers.mkreason
-    what (String.concat " " commandline) exit_status)
+  let compiler = match toplevel.compiler_backend with
+    | Sys.Native -> ocamlopt_byte_compiler
+    | Sys.Bytecode -> ocamlc_byte_compiler
+    | Sys.Other _ -> assert false in
+  let compiler_name = compiler.compiler_name ocamlsrcdir in
+  let modules_with_filetypes = List.map Filetype.filetype (modules env) in
+  let aux = compile_modules
+    ocamlsrcdir compiler compiler_name compiler_output_variable
+    modules_with_filetypes log env in
+  match aux with
+    | Fail _ | Skip _ -> aux
+    | Pass auxenv ->
+      begin
+        let what =
+          Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
+          testfile
+          (Ocaml_backends.string_of_backend toplevel.compiler_backend)
+          expected_exit_status in
+        Printf.fprintf log "%s\n%!" what;
+        let toplevel_name = toplevel.compiler_name ocamlsrcdir in
+        let toplevel_default_flags = "-noinit -no-version -noprompt" in
+        let commandline =
+        [
+          toplevel_name;
+          toplevel_default_flags;
+          toplevel.compiler_flags;
+          stdlib_flags ocamlsrcdir;
+          directory_flags auxenv;
+          include_toplevel_directory ocamlsrcdir;
+          flags auxenv;
+        ] in
+        let exit_status =
+          Actions_helpers.run_cmd
+            ~environment:dumb_term
+            ~stdin_variable:Builtin_variables.test_file
+            ~stdout_variable:compiler_output_variable
+            ~stderr_variable:compiler_output_variable
+            log auxenv commandline in
+        if exit_status=expected_exit_status
+        then Pass auxenv
+        else Fail (Actions_helpers.mkreason
+          what (String.concat " " commandline) exit_status)
+      end
 
 let ocaml = Actions.make
   "ocaml"
@@ -628,6 +779,28 @@ let config_variables _log env = Environments.add_bindings
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
+let flat_float_array = Actions.make
+  "flat-float-array"
+  (fun log env ->
+    if Ocamltest_config.flat_float_array then
+    begin
+      Printf.fprintf log
+        "The flat-float-array action succeeds.\n%!";
+      Pass env
+    end else
+      Skip "Compiler configured with -no-flat-float-array.")
+
+let no_flat_float_array = make
+  "no-flat-float-array"
+  (fun log env ->
+    if not Ocamltest_config.flat_float_array then
+    begin
+      Printf.fprintf log
+        "The no-flat-float-array action succeeds.\n%!";
+      Pass env
+    end else
+      Skip "The compiler has been configured with -flat-float-array.")
+
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;
   Environments.register_initializer "config_variables" config_variables;
@@ -645,7 +818,7 @@ let _ =
     setup_ocamlopt_opt_build_env;
     ocamlopt_opt;
     check_ocamlopt_opt_output;
-    expect;
+    run_expect;
     compare_bytecode_programs;
     compare_native_programs;
     setup_ocaml_build_env;
@@ -654,4 +827,6 @@ let _ =
     setup_ocamlnat_build_env;
     ocamlnat;
     check_ocamlnat_output;
+    flat_float_array;
+    no_flat_float_array;
   ]

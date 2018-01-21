@@ -26,6 +26,10 @@ else
   ocamlsrcdir := $(abspath $(shell pwd)/..)
 endif
 
+ifeq "$(TOOLCHAIN)" "msvc"
+CPP := $(CPP) 2> nul
+endif
+
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
@@ -173,6 +177,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
+	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  $< > $@
 
 .PHONY: clean

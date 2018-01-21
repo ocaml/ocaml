@@ -268,6 +268,20 @@
 #  define STACK_PROBE_SIZE $32768
 #endif
 
+/* Registers holding arguments of C functions. */
+
+#if defined(SYS_mingw64) || defined(SYS_cygwin)
+#define C_ARG_1 %rcx
+#define C_ARG_2 %rdx
+#define C_ARG_3 %r8
+#define C_ARG_4 %r9
+#else
+#define C_ARG_1 %rdi
+#define C_ARG_2 %rsi
+#define C_ARG_3 %rdx
+#define C_ARG_4 %rcx
+#endif
+
         .text
 
         .globl  G(caml_system__code_begin)
@@ -508,8 +522,8 @@ LBL(caml_start_program):
         pushq   %rdi; CFI_ADJUST (8)
         pushq   %rsi; CFI_ADJUST (8)
         /* No need to push %r12: it's callee-save. */
-        movq    %r12, %rdi
-        LEA_VAR(caml_start_program, %rsi)
+        movq    %r12, C_ARG_1
+        LEA_VAR(caml_start_program, C_ARG_2)
         call    GCALL(caml_spacetime_c_to_ocaml)
         popq    %rsi; CFI_ADJUST (-8)
         popq    %rdi; CFI_ADJUST (-8)
@@ -556,20 +570,6 @@ LBL(108):
         orq     $2, %rax
         jmp     LBL(109)
 CFI_ENDPROC
-
-/* Registers holding arguments of C functions. */
-
-#if defined(SYS_mingw64) || defined(SYS_cygwin)
-#define C_ARG_1 %rcx
-#define C_ARG_2 %rdx
-#define C_ARG_3 %r8
-#define C_ARG_4 %r9
-#else
-#define C_ARG_1 %rdi
-#define C_ARG_2 %rsi
-#define C_ARG_3 %rdx
-#define C_ARG_4 %rcx
-#endif
 
 /* Raise an exception from OCaml */
 

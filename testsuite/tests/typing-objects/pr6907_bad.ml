@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 class type ['e] t = object('s)
   method update : 'e -> 's
 end;;

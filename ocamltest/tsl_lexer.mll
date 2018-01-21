@@ -39,6 +39,7 @@ rule token = parse
   | "*)" { TSL_END_OCAML_STYLE }
   | "," { COMA }
   | '*'+ { TEST_DEPTH (String.length (Lexing.lexeme lexbuf)) }
+  | "+=" { PLUSEQUAL }
   | "=" { EQUAL }
   | identchar *
     { let s = Lexing.lexeme lexbuf in

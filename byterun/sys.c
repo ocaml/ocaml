@@ -332,25 +332,43 @@ CAMLprim value caml_sys_getcwd(value unit)
 CAMLprim value caml_sys_unsafe_getenv(value var)
 {
   char_os * res, * p;
+  value val;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
   p = caml_stat_strdup_to_os(String_val(var));
+#ifdef _WIN32
+  res = caml_win32_getenv(p);
+#else
   res = CAML_SYS_GETENV(p);
+#endif
   caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string_of_os(res);
+  val = caml_copy_string_of_os(res);
+#ifdef _WIN32
+  caml_stat_free(res);
+#endif
+  return val;
 }
 
 CAMLprim value caml_sys_getenv(value var)
 {
   char_os * res, * p;
+  value val;
 
   if (! caml_string_is_c_safe(var)) caml_raise_not_found();
   p = caml_stat_strdup_to_os(String_val(var));
+#ifdef _WIN32
+  res = caml_win32_getenv(p);
+#else
   res = caml_secure_getenv(p);
+#endif
   caml_stat_free(p);
   if (res == 0) caml_raise_not_found();
-  return caml_copy_string_of_os(res);
+  val = caml_copy_string_of_os(res);
+#ifdef _WIN32
+  caml_stat_free(res);
+#endif
+  return val;
 }
 
 char_os * caml_exe_name;

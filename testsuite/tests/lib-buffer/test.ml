@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 open Printf
 ;;
 
@@ -44,9 +47,9 @@ let validate f str msg =
 let () = print_string "Standard Library: Module Buffer\n"
 ;;
 
-let truncate_neg : unit = 
+let truncate_neg : unit =
   let msg =  "truncate: negative" in
-  try 
+  try
     Buffer.truncate buf (-1);
     failed msg
   with
@@ -63,7 +66,7 @@ let truncate_large : unit =
 ;;
 
 let truncate_correct : unit =
-  let n' = n - 1 
+  let n' = n - 1
   and msg =  "truncate: in-range" in
   try
     Buffer.truncate buf n';

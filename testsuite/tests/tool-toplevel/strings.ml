@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Test the printing of strings in the terminal *)
 "\n\t\r\b";;
 

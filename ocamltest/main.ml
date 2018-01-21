@@ -79,9 +79,9 @@ and run_test_i log common_prefix path behavior i test_tree =
   run_test log common_prefix new_path behavior test_tree
 
 let get_test_source_directory test_dirname =
-  if (Filename.is_relative test_dirname) then begin
-    Sys.chdir test_dirname; Sys.getcwd()
-  end else test_dirname
+  if (Filename.is_relative test_dirname) then
+    Sys.with_chdir test_dirname Sys.getcwd
+  else test_dirname
 
 let get_test_build_directory_prefix test_dirname =
   let ocamltestdir_variable = "OCAMLTESTDIR" in
@@ -92,6 +92,8 @@ let get_test_build_directory_prefix test_dirname =
 
 let test_file test_filename =
   (* Printf.printf "# reading test file %s\n%!" test_filename; *)
+  (* Save current working directory *)
+  let cwd = Sys.getcwd() in
   let tsl_block = tsl_block_of_file_safe test_filename in
   let (rootenv_statements, test_trees) = test_trees_of_tsl_block tsl_block in
   let test_trees = match test_trees with
@@ -116,38 +118,44 @@ let test_file test_filename =
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
   Sys.make_directory test_build_directory_prefix;
-  Sys.chdir test_build_directory_prefix;
-  let log =
-    if !Options.log_to_stderr then stderr else begin
-      let log_filename = test_prefix ^ ".log" in
-      open_out log_filename
-    end in
-  let install_hook name =
-    let hook_name = Filename.make_filename hookname_prefix name in
-    if Sys.file_exists hook_name then begin
-      let hook = Actions_helpers.run_hook hook_name in
-      Actions.set_hook name hook
-    end in
-  StringSet.iter install_hook action_names;
+  Sys.with_chdir test_build_directory_prefix
+    (fun () ->
+       let log =
+         if !Options.log_to_stderr then stderr else begin
+           let log_filename = test_prefix ^ ".log" in
+           open_out log_filename
+         end in
+       let install_hook name =
+         let hook_name = Filename.make_filename hookname_prefix name in
+         if Sys.file_exists hook_name then begin
+           let hook = Actions_helpers.run_hook hook_name in
+           Actions.set_hook name hook
+         end in
+       StringSet.iter install_hook action_names;
 
-  let reference_filename = Filename.concat
-    test_source_directory (test_prefix ^ ".reference") in
-  let initial_environment = Environments.from_bindings
-  [
-    Builtin_variables.test_file, test_basename;
-    Builtin_variables.reference, reference_filename;
-    Builtin_variables.test_source_directory, test_source_directory;
-    Builtin_variables.test_build_directory_prefix, test_build_directory_prefix;
-  ] in
-  let root_environment =
-    interprete_environment_statements initial_environment rootenv_statements in
-  let rootenv = Environments.initialize log root_environment in
-  let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
-  List.iteri
-    (run_test_i log common_prefix "" (Run rootenv))
-    test_trees;
-  Actions.clear_all_hooks();
-  if not !Options.log_to_stderr then close_out log
+       let reference_filename = Filename.concat
+           test_source_directory (test_prefix ^ ".reference") in
+       let initial_environment = Environments.from_bindings
+           [
+             Builtin_variables.test_file, test_basename;
+             Builtin_variables.reference, reference_filename;
+             Builtin_variables.test_source_directory, test_source_directory;
+             Builtin_variables.test_build_directory_prefix,
+               test_build_directory_prefix;
+           ] in
+       let root_environment =
+         interprete_environment_statements
+           initial_environment rootenv_statements in
+       let rootenv = Environments.initialize log root_environment in
+       let common_prefix = " ... testing '" ^ test_basename ^ "' with" in
+       List.iteri
+         (run_test_i log common_prefix "" (Run rootenv))
+         test_trees;
+       Actions.clear_all_hooks();
+       if not !Options.log_to_stderr then close_out log
+    );
+  (* Restore current working directory  *)
+  Sys.chdir cwd
 
 let main () =
   if !Options.files_to_test = [] then begin

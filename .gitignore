@@ -213,7 +213,6 @@ _ocamltest
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
-/otherlibs/win32unix/utimes.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -252,7 +251,6 @@ _ocamltest
 /testsuite/tests/asmgen/*.s
 /testsuite/tests/asmgen/*.out.manifest
 
-/testsuite/tests/basic/*.safe-string
 
 /testsuite/tests/embedded/caml
 
@@ -275,6 +273,8 @@ _ocamltest
 /testsuite/tests/lib-scanf/tscanf_data
 
 /testsuite/tests/lib-threads/*.byt
+
+/testsuite/tests/lib-unix/common/utimes.txt
 
 /testsuite/tests/lib-unix/win-stat/*-file
 /testsuite/tests/lib-unix/win-symlink/link*
@@ -326,10 +326,6 @@ _ocamltest
 /testsuite/tests/tool-lexyacc/scanner.ml
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
-
-/testsuite/tests/typing-misc/false.flat-float
-/testsuite/tests/typing-misc/true.flat-float
-/testsuite/tests/typing-misc/pr6939.ml
 
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml

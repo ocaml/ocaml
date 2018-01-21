@@ -154,6 +154,17 @@ module Sys = struct
         copy_chan ic oc
       end
     end
+
+  let with_chdir path f =
+    let oldcwd = Sys.getcwd () in
+    Sys.chdir path;
+    match f () with
+    | r ->
+        Sys.chdir oldcwd;
+        r
+    | exception e ->
+        Sys.chdir oldcwd;
+        raise e
 end
 
 module StringSet = struct

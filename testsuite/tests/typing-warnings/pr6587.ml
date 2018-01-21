@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+*)
+
 
 module A: sig val f: fpclass -> fpclass end =
   struct

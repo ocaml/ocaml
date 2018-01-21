@@ -33,6 +33,9 @@ let test_source_directory env =
 let test_build_directory env =
   Environments.safe_lookup Builtin_variables.test_build_directory env
 
+let test_build_directory_prefix env =
+  Environments.safe_lookup Builtin_variables.test_build_directory_prefix env
+
 let words_of_variable env variable =
   String.words (Environments.safe_lookup variable env)
 
@@ -61,6 +64,12 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
   setup_symlinks (test_source_directory env) build_dir files;
   Sys.chdir build_dir;
   Pass env
+
+let setup_simple_build_env add_testfile additional_files log env =
+  let build_env = Environments.add
+    Builtin_variables.test_build_directory
+    (test_build_directory_prefix env) env in
+  setup_build_env add_testfile additional_files log build_env
 
 let run_cmd
     ?(environment=[||])

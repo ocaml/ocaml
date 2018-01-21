@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Subtyping is "syntactic" *)
 fun (x : < x : int >) y z -> (y :> 'a), (x :> 'a), (z :> 'a);;
 (* - : (< x : int > as 'a) -> 'a -> 'a * 'a = <fun> *)

@@ -18,12 +18,6 @@
 open Ocamltest_stdlib
 open Environments
 
-let expect =
-[
-  Add (Builtin_variables.script,
-    "bash ${OCAMLSRCDIR}/testsuite/tools/expect");
-]
-
 let principal =
 [
   Append (Ocaml_variables.flags, " -principal ");
@@ -51,12 +45,28 @@ let unixlibdir = if Sys.os_type="Win32" then "win32unix" else "unix"
 let unix = make_library_modifier
   "unix" (compiler_subdir ["otherlibs"; unixlibdir])
 
+let bigarray =
+  make_library_modifier "bigarray" (compiler_subdir ["otherlibs"; "bigarray"])
+
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
+let compilerlibs_subdirs =
+[
+  "utils"; "parsing"; "typing"; "bytecomp"; "compilerlibs";
+]
+
+let add_compiler_subdir subdir =
+  Append (Ocaml_variables.directories, (wrap (compiler_subdir [subdir])))
+
+let ocamlcommon =
+  (Append (Ocaml_variables.libraries, wrap "ocamlcommon")) ::
+  (List.map add_compiler_subdir compilerlibs_subdirs)
+
 let _ =
-  register_modifiers "expect" expect;
   register_modifiers "principal" principal;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
-  register_modifiers "str" str
+  register_modifiers "bigarray" bigarray;
+  register_modifiers "str" str;
+  register_modifiers "ocamlcommon" ocamlcommon

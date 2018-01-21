@@ -1413,8 +1413,32 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
-let explanation unif t3 t4 : (Format.formatter -> unit) option =
+let is_unit env ty =
+  match (Ctype.expand_head env ty).desc with
+  | Tconstr (p, _, _) -> Path.same p Predef.path_unit
+  | _ -> false
+
+let unifiable env ty1 ty2 =
+  let snap = Btype.snapshot () in
+  let res =
+    try Ctype.unify env ty1 ty2; true
+    with Unify _ -> false
+  in
+  Btype.backtrack snap;
+  res
+
+let explanation env unif t3 t4 : (Format.formatter -> unit) option =
   match t3.desc, t4.desc with
+  | Tarrow (_, ty1, ty2, _), _
+    when is_unit env ty1 && unifiable env ty2 t4 ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to provide `()' as argument?@]")
+  | _, Tarrow (_, ty1, ty2, _)
+    when is_unit env ty1 && unifiable env t3 ty2 ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
@@ -1490,11 +1514,11 @@ let explanation unif t3 t4 : (Format.formatter -> unit) option =
   | _ ->
       None
 
-let rec mismatch unif = function
+let rec mismatch env unif = function
     (_, t) :: (_, t') :: rem ->
-      begin match mismatch unif rem with
+      begin match mismatch env unif rem with
         Some _ as m -> m
-      | None -> explanation unif t t'
+      | None -> explanation env unif t t'
       end
   | [] -> None
   | _ -> assert false
@@ -1541,11 +1565,11 @@ let rec trace_same_names = function
       type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
   | _ -> ()
 
-let unification_error env unif tr txt1 ppf txt2 =
+let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
-  let mis = mismatch unif tr in
+  let mis = mismatch env unif tr in
   match tr with
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
@@ -1559,10 +1583,12 @@ let unification_error env unif tr txt1 ppf txt2 =
         "@[<v>\
           @[%t@;<1 2>%a@ \
             %t@;<1 2>%a\
+            %t\
           @]%a%t\
          @]"
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
+        ty_expect_explanation
         (trace false "is not compatible with type") tr
         (explain mis);
       if env <> Env.empty
@@ -1575,9 +1601,11 @@ let unification_error env unif tr txt1 ppf txt2 =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf env ?(unif=true)
-    tr txt1 txt2 =
-  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2)
+let report_unification_error ppf env ?(unif=true) tr
+    ?(type_expected_explanation = fun _ -> ())
+    txt1 txt2 =
+  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2
+                            type_expected_explanation)
 ;;
 
 let trace fst keep_last txt ppf tr =
@@ -1600,7 +1628,7 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     and tr2 = List.map prepare_expansion tr2 in
     fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
-    let mis = mismatch true tr2 in
+    let mis = mismatch env true tr2 in
     fprintf ppf "%a%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
       (explain mis))

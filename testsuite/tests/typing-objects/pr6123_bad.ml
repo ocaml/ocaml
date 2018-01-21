@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 class virtual name =
 object
 end

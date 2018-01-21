@@ -22,6 +22,7 @@ open Typedtree
 open Lambda
 open Parmatch
 open Printf
+open Printpat
 
 
 let dbg = false
@@ -60,6 +61,18 @@ let string_of_lam lam =
   Printlambda.lambda Format.str_formatter lam ;
   Format.flush_str_formatter ()
 
+let all_record_args lbls = match lbls with
+| (_,{lbl_all=lbl_all},_)::_ ->
+    let t =
+      Array.map
+        (fun lbl -> mknoloc (Longident.Lident "?temp?"), lbl,omega)
+        lbl_all in
+    List.iter
+      (fun ((_, lbl,_) as x) ->  t.(lbl.lbl_pos) <- x)
+      lbls ;
+    Array.to_list t
+|  _ -> fatal_error "Parmatch.all_record_args"
+
 type matrix = pattern list list
 
 let add_omega_column pss = List.map (fun ps -> omega::ps) pss
@@ -70,9 +83,9 @@ let pretty_ctx ctx =
   List.iter
     (fun {left=left ; right=right} ->
       prerr_string "LEFT:" ;
-      pretty_line left ;
+      pretty_line Format.err_formatter left ;
       prerr_string " RIGHT:" ;
-      pretty_line right ;
+      pretty_line Format.err_formatter right ;
       prerr_endline "")
     ctx
 
@@ -163,7 +176,7 @@ let filter_matrix matcher pss =
         end
     | [] -> []
     | _ ->
-        pretty_matrix pss ;
+        pretty_matrix Format.err_formatter pss ;
         fatal_error "Matching.filter_matrix" in
   filter_rec pss
 
@@ -211,24 +224,29 @@ let ctx_matcher p =
   | Tpat_array omegas ->
       let len = List.length omegas in
       (fun q rem -> match q.pat_desc with
-      | Tpat_array args when List.length args=len ->
-          p,args @ rem
+      | Tpat_array args when List.length args = len -> p,args @ rem
       | Tpat_any -> p, omegas @ rem
       | _ -> raise NoMatch)
   | Tpat_tuple omegas ->
+      let len = List.length omegas  in
       (fun q rem -> match q.pat_desc with
-      | Tpat_tuple args -> p,args @ rem
-      | _          -> p, omegas @ rem)
-  | Tpat_record (l,_) -> (* Records are normalized *)
+      | Tpat_tuple args when List.length args = len -> p,args @ rem
+      | Tpat_any -> p, omegas @ rem
+      | _ -> raise NoMatch)
+  | Tpat_record (((_, lbl, _) :: _) as l,_) -> (* Records are normalized *)
+      let len = Array.length lbl.lbl_all in
       (fun q rem -> match q.pat_desc with
-      | Tpat_record (l',_) ->
+      | Tpat_record (((_, lbl', _) :: _) as l',_)
+        when Array.length lbl'.lbl_all = len ->
           let l' = all_record_args l' in
           p, List.fold_right (fun (_, _,p) r -> p::r) l' rem
-      | _ -> p,List.fold_right (fun (_, _,p) r -> p::r) l rem)
+      | Tpat_any -> p,List.fold_right (fun (_, _,p) r -> p::r) l rem
+      | _ -> raise NoMatch)
   | Tpat_lazy omega ->
       (fun q rem -> match q.pat_desc with
       | Tpat_lazy arg -> p, (arg::rem)
-      | _          -> p, (omega::rem))
+      | Tpat_any      -> p, (omega::rem)
+      | _             -> raise NoMatch)
  | _ -> fatal_error "Matching.ctx_matcher"
 
 
@@ -399,7 +417,7 @@ let pretty_cases cases =
     (fun (ps,_l) ->
       List.iter
         (fun p ->
-          Parmatch.top_pretty Format.str_formatter p ;
+          top_pretty Format.str_formatter p ;
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
@@ -416,7 +434,7 @@ let pretty_def def =
   List.iter
     (fun (pss,i) ->
       Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix pss)
+      pretty_matrix Format.err_formatter pss)
     def ;
   prerr_endline "+++++++++++++++++++++"
 
@@ -436,7 +454,7 @@ let rec pretty_precompiled = function
   | PmOr x ->
       prerr_endline "++++ OR ++++" ;
       pretty_pm x.body ;
-      pretty_matrix x.or_matrix ;
+      pretty_matrix Format.err_formatter x.or_matrix ;
       List.iter
         (fun (_,i,_,pm) ->
           eprintf "++ Handler %d ++\n" i ;
@@ -1427,8 +1445,10 @@ let get_arg_lazy p rem = match p with
 
 let matcher_lazy p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
-| Tpat_var _          -> get_arg_lazy omega rem
-| _                   -> get_arg_lazy p rem
+| Tpat_any
+| Tpat_var _          -> omega :: rem
+| Tpat_lazy arg       -> arg :: rem
+| _                   -> raise NoMatch
 
 (* Inlining the tag tests before calling the primitive that works on
    lazy blocks. This is also used in translcore.ml.
@@ -1554,8 +1574,10 @@ let get_args_tuple arity p rem = match p with
 
 let matcher_tuple arity p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
-| Tpat_var _          -> get_args_tuple arity omega rem
-| _                   ->  get_args_tuple arity p rem
+| Tpat_any
+| Tpat_var _ -> omegas arity @ rem
+| Tpat_tuple args when List.length args = arity -> args @ rem
+| _ ->  raise NoMatch
 
 let make_tuple_matching loc arity def = function
     [] -> fatal_error "Matching.make_tuple_matching"
@@ -1591,8 +1613,14 @@ let get_args_record num_fields p rem = match p with
 
 let matcher_record num_fields p rem = match p.pat_desc with
 | Tpat_or (_,_,_) -> raise OrPat
-| Tpat_var _      -> get_args_record num_fields omega rem
-| _               -> get_args_record num_fields p rem
+| Tpat_any
+| Tpat_var _      ->
+  record_matching_line num_fields [] @ rem
+| Tpat_record ([], _) when num_fields = 0 -> rem
+| Tpat_record ((_, lbl, _) :: _ as lbl_pat_list, _)
+  when Array.length lbl.lbl_all = num_fields ->
+    record_matching_line num_fields lbl_pat_list @ rem
+| _ -> raise NoMatch
 
 let make_record_matching loc all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"

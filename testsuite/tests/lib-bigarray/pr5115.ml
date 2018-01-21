@@ -1,3 +1,7 @@
+(* TEST
+   include bigarray
+*)
+
 (* PR#5115 - multiple evaluation of bigarray expr *)
 
 open Bigarray

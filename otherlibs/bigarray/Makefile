@@ -21,6 +21,10 @@ CAMLOBJS=bigarray.cmo
 
 include ../Makefile
 
+ifeq "$(SYSTEM)" "mingw"
+LDOPTS=-ldopt "-link -static-libgcc"
+endif
+
 mmap.$(O): ../$(UNIXLIB)/mmap.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(OUTPUTOBJ)$@ $<
 mmap_ba.$(O): ../unix/mmap_ba.c

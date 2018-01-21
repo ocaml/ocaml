@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -w a "
+*)
+
 (* Test int32 arithmetic and optimizations using the MD5 algorithm *)
 
 open Printf
@@ -130,10 +134,10 @@ let string_to_data s =
   data
 
 let int32_to_string n s i =
-  s.[i+3] <- Char.chr (Int32.to_int (Int32.shift_right n 24) land 0xFF);
-  s.[i+2] <- Char.chr (Int32.to_int (Int32.shift_right n 16) land 0xFF);
-  s.[i+1] <- Char.chr (Int32.to_int (Int32.shift_right n 8) land 0xFF);
-  s.[i] <- Char.chr (Int32.to_int n land 0xFF)
+  Bytes.set s (i+3) (Char.chr (Int32.to_int (Int32.shift_right n 24) land 0xFF));
+  Bytes.set s (i+2) (Char.chr (Int32.to_int (Int32.shift_right n 16) land 0xFF));
+  Bytes.set s (i+1) (Char.chr (Int32.to_int (Int32.shift_right n 8) land 0xFF));
+  Bytes.set s i (Char.chr (Int32.to_int n land 0xFF))
 
 let init () =
   { buf = Bytes.create 64;

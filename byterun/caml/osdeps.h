@@ -111,6 +111,8 @@ extern void caml_probe_win32_version(void);
 extern void caml_setup_win32_terminal(void);
 extern void caml_restore_win32_terminal(void);
 
+extern wchar_t *caml_win32_getenv(wchar_t const *);
+
 /* Windows Unicode support */
 
 extern int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);

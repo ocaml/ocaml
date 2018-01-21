@@ -1,3 +1,7 @@
+(* TEST
+   include testing
+*)
+
 (* these are not valid under -strict-formats, but we test them here
    for backward-compatibility *)
 open Printf

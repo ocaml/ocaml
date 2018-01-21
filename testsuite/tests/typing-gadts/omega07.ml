@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 (*
    An attempt at encoding omega examples from the 2nd Central European
    Functional Programming School:
