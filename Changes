@@ -11,7 +11,7 @@ Working version
   Scherer)
 
 - GPR#1506: Extending `open` to accept arbitrary module expression
-  (Runhang Li, review by Jeremy Yallop)
+  (Runhang Li, review by Alain Frisch, Florian Angeletti, Jeremy Yallop)
 
 ### Type system:
 
