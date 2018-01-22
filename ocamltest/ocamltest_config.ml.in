@@ -17,6 +17,8 @@
 
 let arch = "@@ARCH@@"
 
+let shared_libraries = @@SHARED_LIBRARIES@@
+
 let unix = @@UNIX@@
 
 let c_preprocessor = "@@CPP@@"

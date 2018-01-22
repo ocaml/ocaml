@@ -18,6 +18,9 @@
 val arch : string
 (** Architecture for the native compiler, "none" if it is disabled *)
 
+val shared_libraries : bool
+(** [true] if shared libraries are supported, [false] otherwise *)
+
 val unix : bool
 (** [true] on Unix systems, [false] on non-Unix systems *)
 

@@ -15,6 +15,9 @@
 
 (* Helper functions when writing actions *)
 
+val pass_or_skip
+  : bool -> string -> string -> out_channel -> Environments.t -> Actions.result
+
 val mkreason : string -> string -> int -> string
 
 val testfile : Environments.t -> string

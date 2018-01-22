@@ -170,6 +170,7 @@ ocamltest.opt$(EXE): $(native_modules)
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
+	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \

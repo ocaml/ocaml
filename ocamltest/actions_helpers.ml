@@ -18,6 +18,12 @@
 open Ocamltest_stdlib
 open Actions
 
+let pass_or_skip test log_on_pass log_on_skip log env =
+  if test then begin
+    Printf.fprintf log "%s%!" log_on_pass;
+    Pass env
+  end else Skip log_on_skip
+
 let mkreason what commandline exitcode =
   Printf.sprintf "%s: command\n%s\nfailed with exit code %d"
     what commandline exitcode

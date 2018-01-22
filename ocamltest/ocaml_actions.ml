@@ -781,25 +781,21 @@ let config_variables _log env = Environments.add_bindings
 
 let flat_float_array = Actions.make
   "flat-float-array"
-  (fun log env ->
-    if Ocamltest_config.flat_float_array then
-    begin
-      Printf.fprintf log
-        "The flat-float-array action succeeds.\n%!";
-      Pass env
-    end else
-      Skip "Compiler configured with -no-flat-float-array.")
+  (Actions_helpers.pass_or_skip Ocamltest_config.flat_float_array
+    "The flat-float-array action succeeds.\n"
+    "Compiler configured with -no-flat-float-array.")
 
 let no_flat_float_array = make
   "no-flat-float-array"
-  (fun log env ->
-    if not Ocamltest_config.flat_float_array then
-    begin
-      Printf.fprintf log
-        "The no-flat-float-array action succeeds.\n%!";
-      Pass env
-    end else
-      Skip "The compiler has been configured with -flat-float-array.")
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.flat_float_array)
+    "The no-flat-float-array action succeeds.\n"
+    "The compiler has been configured with -flat-float-array.")
+
+let shared_libraries = Actions.make
+  "shared-libraries"
+  (Actions_helpers.pass_or_skip Ocamltest_config.shared_libraries
+    "Shared libraries are supported.\n"
+    "Shared libraries are not supported.")
 
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;
@@ -829,4 +825,5 @@ let _ =
     check_ocamlnat_output;
     flat_float_array;
     no_flat_float_array;
+    shared_libraries;
   ]
