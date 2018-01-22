@@ -200,11 +200,11 @@ let run_script =
 
 let run_hook hook_name log input_env =
   Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name;
-  let envfile = Filename.temp_file "ocamltest-" ".env" in
-  Printf.fprintf log "Hook should write environemnt modifiers to %s\n%!"
-    envfile;
+  let response_file = Filename.temp_file "ocamltest-" ".response" in
+  Printf.fprintf log "Hook should write its response to %s\n%!"
+    response_file;
   let hookenv = Environments.add
-    Builtin_variables.ocamltest_env envfile input_env in
+    Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
     Environments.to_system_env ~f:string_of_binding hookenv in
   let open Run_command in
@@ -221,11 +221,12 @@ let run_hook hook_name log input_env =
   } in let exit_status = run settings in
   match exit_status with
     | 0 ->
-      let modifiers = Environments.modifiers_of_file envfile in
+      let modifiers = Environments.modifiers_of_file response_file in
       Pass (Environments.apply_modifiers hookenv modifiers)
     | _ ->
-      let msg = Printf.sprintf "Hook returned %d" exit_status in
-      if exit_status=125 then Skip msg else Fail msg
+      Printf.fprintf log "Hook returned %d" exit_status;
+      let reason = String.trim (Sys.string_of_file response_file) in
+      if exit_status=125 then Skip reason else Fail reason
 
 let check_output kind_of_output output_variable reference_variable log env =
   let reference_filename = Environments.safe_lookup reference_variable env in
