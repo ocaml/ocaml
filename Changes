@@ -83,8 +83,9 @@ Working version
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
   Scherer)
 
-- GPR#1552: do not warn about ambiguous variables in guards (warning 57)
-  when the ambiguous values have been filtered by a previous clause
+- GPR#1552, GPR#1577: do not warn about ambiguous variables in guards
+  (warning 57) when the ambiguous values have been filtered by
+  a previous clause
   (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
 
 - GPR#1554: warnings 52 and 57: fix reference to manual detailed explanation
