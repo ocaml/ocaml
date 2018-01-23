@@ -97,25 +97,31 @@ let is_empty q =
 let length q =
   q.length
 
-let iter =
-  let rec iter f cell =
+let iteri =
+  let rec iteri i f cell =
     match cell with
     | Nil -> ()
     | Cons { content; next } ->
-      f content;
-      iter f next
+      f i content;
+      iteri (succ i) f next
   in
-  fun f q -> iter f q.first
+  fun f q -> iteri 0 f q.first
+
+let iter =
+  fun f q -> iteri (fun _ a -> f a) q
+
+let foldi =
+  let rec foldi f acc i cell =
+    match cell with
+    | Nil -> acc
+    | Cons { content; next } ->
+      let accu = f acc i content in
+      foldi f accu (succ i) next
+  in
+  fun f acc q -> foldi f acc 0 q.first
 
 let fold =
-  let rec fold f accu cell =
-    match cell with
-    | Nil -> accu
-    | Cons { content; next } ->
-      let accu = f accu content in
-      fold f accu next
-  in
-  fun f accu q -> fold f accu q.first
+  fun f acc q -> foldi (fun acc _ a -> f acc a) acc q
 
 let transfer q1 q2 =
   if q1.length > 0 then

@@ -138,4 +138,128 @@ let () =
   assert (Q.length q2 = 8); assert (Q.to_list q2 = [5; 6; 7; 8; 1; 2; 3; 4]);
 ;;
 
+(* test the "Queue.iter" function *)
+let () =
+  print_endline "MARK iter 0";
+
+  let q = Q.create () in
+  Q.iter (Printf.printf "MARK iter 1 %d\n") q;
+  print_endline "MARK iter 2";
+
+  Q.add 5 q;
+  Q.iter (Printf.printf "MARK iter 3 %d\n") q;
+  print_endline "MARK iter 4";
+
+  Q.add 42 q;
+  Q.iter (Printf.printf "MARK iter 5 %d\n") q;
+  print_endline "MARK iter 6";
+
+  Q.add 20 q;
+  Q.iter (Printf.printf "MARK iter 7 %d\n") q;
+  print_endline "MARK iter 8";
+;;
+
+(* test "fold" function *)
+let () =
+  print_endline "MARK fold 0";
+
+  let q = Q.create () in
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 1 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 2 %d\n" q_max;
+
+  Q.add 5 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 3 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 4 %d\n" q_max;
+
+  Q.add 42 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 5 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 6 %d\n" q_max;
+
+  Q.add 20 q;
+  let q_max =
+    Q.fold (fun acc a ->
+              Printf.printf "MARK fold 7 %d %d\n" acc a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK fold 8 %d\n" q_max;
+;;
+
+(* test "iteri" function *)
+let () =
+  print_endline "MARK iteri 0";
+
+  let q = Q.create () in
+  Q.iteri (Printf.printf "MARK iteri 1 %d %d\n") q;
+  print_endline "MARK iteri 2";
+
+  Q.add 5 q;
+  Q.iteri (Printf.printf "MARK iteri 3 %d %d\n") q;
+  print_endline "MARK iteri 4";
+
+  Q.add 42 q;
+  Q.iteri (Printf.printf "MARK iteri 5 %d %d\n") q;
+  print_endline "MARK iteri 6";
+
+  Q.add 20 q;
+  Q.iteri (Printf.printf "MARK iteri 7 %d %d\n") q;
+  print_endline "MARK iteri 8";
+;;
+
+(* test "foldi" function *)
+let () =
+  print_endline "MARK foldi 0";
+
+  let q = Q.create () in
+  let q_max =
+    Q.foldi (fun acc i a ->
+              Printf.printf "MARK foldi 1 %d %d %d\n" acc i a;
+              max acc a)
+           0 q
+  in
+  Printf.printf "MARK foldi 2 %d\n" q_max;
+
+  Q.add 5 q;
+  let q_max =
+    Q.foldi (fun acc i a ->
+               Printf.printf "MARK foldi 3 %d %d %d\n" acc i a;
+               max acc a)
+           0 q
+  in
+  Printf.printf "MARK foldi 4 %d\n" q_max;
+
+  Q.add 42 q;
+  let q_max =
+    Q.foldi (fun acc i a ->
+               Printf.printf "MARK foldi 5 %d %d %d\n" acc i a;
+               max acc a)
+           0 q
+  in
+  Printf.printf "MARK foldi 6 %d\n" q_max;
+
+  Q.add 20 q;
+  let q_max =
+    Q.foldi (fun acc i a ->
+               Printf.printf "MARK foldi 7 %d %d %d\n" acc i a;
+               max acc a)
+           0 q
+  in
+  Printf.printf "MARK foldi 8 %d\n" q_max;
+;;
+
 let () = print_endline "OK"

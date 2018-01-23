@@ -1,1 +1,45 @@
+MARK iter 0
+MARK iter 2
+MARK iter 3 5
+MARK iter 4
+MARK iter 5 5
+MARK iter 5 42
+MARK iter 6
+MARK iter 7 5
+MARK iter 7 42
+MARK iter 7 20
+MARK iter 8
+MARK fold 0
+MARK fold 2 0
+MARK fold 3 0 5
+MARK fold 4 5
+MARK fold 5 0 5
+MARK fold 5 5 42
+MARK fold 6 42
+MARK fold 7 0 5
+MARK fold 7 5 42
+MARK fold 7 42 20
+MARK fold 8 42
+MARK iteri 0
+MARK iteri 2
+MARK iteri 3 0 5
+MARK iteri 4
+MARK iteri 5 0 5
+MARK iteri 5 1 42
+MARK iteri 6
+MARK iteri 7 0 5
+MARK iteri 7 1 42
+MARK iteri 7 2 20
+MARK iteri 8
+MARK foldi 0
+MARK foldi 2 0
+MARK foldi 3 0 0 5
+MARK foldi 4 5
+MARK foldi 5 0 0 5
+MARK foldi 5 5 1 42
+MARK foldi 6 42
+MARK foldi 7 0 0 5
+MARK foldi 7 5 1 42
+MARK foldi 7 42 2 20
+MARK foldi 8 42
 OK
