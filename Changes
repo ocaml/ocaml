@@ -207,7 +207,7 @@ Working version
 - MPR#7702, GPR#1553: refresh raise counts when inlining a function
   (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
 
-- MPR#7711: Internal typechecker error triggered by a constraint on
+- MPR#7711, GPR#1581: Internal typechecker error triggered by a constraint on
    self type in a class type
   (Jacques Garrigue, report by Florian Angeletti)
 
