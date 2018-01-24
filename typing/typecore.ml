@@ -4684,8 +4684,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
-      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg
-    else ty_arg
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
+    else ty_arg'
   in
   let partial =
     if partial_flag then

@@ -27,12 +27,6 @@ let f2 () =
   | (None : empty option) -> ()
 ;;
 [%%expect {|
-Line _, characters 2-49:
-  ..match None with
-    | (None : empty option) -> ()
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some _
 val f2 : unit -> unit = <fun>
 |}]
 
@@ -42,12 +36,6 @@ let f3 () =
   | (None : empty option) -> ()
 ;;
 [%%expect {|
-Line _, characters 2-46:
-  ..match x with
-    | (None : empty option) -> ()
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Some _
 val f3 : unit -> unit = <fun>
 |}]
 
@@ -66,11 +54,7 @@ let f2' () =
   | Some _ -> .
 ;;
 [%%expect {|
-Line _, characters 4-10:
-    | Some _ -> .
-      ^^^^^^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: Some _
+val f2' : unit -> unit = <fun>
 |}]
 
 let f3' () =
@@ -80,11 +64,7 @@ let f3' () =
   | Some _ -> .
 ;;
 [%%expect {|
-Line _, characters 4-10:
-    | Some _ -> .
-      ^^^^^^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: Some _
+val f3' : unit -> unit = <fun>
 |}]
 
 
@@ -109,12 +89,6 @@ let f () =
   ()
 ;;
 [%%expect{|
-Line _, characters 2-51:
-  ..let (Left () : (unit, empty) t) = Left () in
-    ()
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Right _
 val f : unit -> unit = <fun>
 |}]
 
@@ -144,12 +118,6 @@ let f () =
   | (Left () : (unit, empty) t) -> ()
 ;;
 [%%expect {|
-Line _, characters 2-58:
-  ..match Left () with
-    | (Left () : (unit, empty) t) -> ()
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-Right _
 val f : unit -> unit = <fun>
 |}]
 
@@ -161,9 +129,5 @@ let f () =
   | (Right _ : (unit, empty) t) -> .
 ;;
 [%%expect {|
-Line _, characters 5-12:
-    | (Right _ : (unit, empty) t) -> .
-       ^^^^^^^
-Error: This match case could not be refuted.
-       Here is an example of a value that would reach it: Right _
+val f : unit -> unit = <fun>
 |}]
