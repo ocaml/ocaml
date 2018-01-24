@@ -1,3 +1,7 @@
+(* TEST
+   modules = "cmstub.c cmmain.c"
+*)
+
 (* OCaml part of the code *)
 
 let rec fib n =
