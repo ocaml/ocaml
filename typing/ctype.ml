@@ -291,6 +291,11 @@ let associate_fields fields1 fields2 =
   in
   associate [] [] [] (fields1, fields2)
 
+let is_self_type = function
+  | Tobject (ty, _) ->
+      List.exists (fun (m,_,_) -> m = dummy_method) (fst (flatten_fields ty))
+  | _ -> false
+
 (**** Check whether an object is open ****)
 
 (* +++ The abbreviation should eventually be expanded *)
@@ -310,6 +315,7 @@ let concrete_object ty =
   match (object_row ty).desc with
   | Tvar _             -> false
   | _                  -> true
+
 
 (**** Close an object ****)
 
@@ -2437,7 +2443,9 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
-        link_type t1' t2
+        if is_self_type d1
+        then link_type t1' t2' (* PR#7711 *)
+        else link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'
     end;
