@@ -1,3 +1,5 @@
+(* TEST *)
+
 let _ =
   let a = [| 0.0; -. 0.0 |] in
   Printf.printf "%Lx %Lx\n"
