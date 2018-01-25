@@ -24,7 +24,7 @@ at all.
 \ref{ss:immediate-objects} Immediate objects \\
 \ref{ss:reference-to-self} Reference to self \\
 \ref{ss:initializers} Initializers \\
-\ref{ss:virtual-methods} Virtual methods \\NChan
+\ref{ss:virtual-methods} Virtual methods \\
 \ref{ss:private-methods} Private methods \\
 \ref{ss:class-interfaces} Class interfaces \\
 \ref{ss:inheritance} Inheritance \\

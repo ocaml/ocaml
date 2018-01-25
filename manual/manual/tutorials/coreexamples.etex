@@ -115,7 +115,7 @@ data structures. Most OCaml data structures are immutable, but a few
 (most notably arrays) are {\em mutable}, meaning that they can be
 modified in-place at any time.
 
-The OCaml notation for the type of a function with multiple arguments is
+The OCaml notation for the type of a function with multiple arguments is \\
 "arg1_type -> arg2_type -> ... -> return_type".  For example,
 the type inferred for "insert", "'a -> 'a list -> 'a list", means that "insert"
 takes two arguments, an element of any type "'a" and a list with elements of
