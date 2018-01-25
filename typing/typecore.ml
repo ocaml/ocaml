@@ -4689,7 +4689,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   in
   let partial =
     if partial_flag then
-      check_partial ~lev env ty_arg_check loc cases
+      check_partial ~lev env (instance env ty_arg_check) loc cases
     else
       Partial
   in
