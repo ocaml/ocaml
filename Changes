@@ -143,6 +143,10 @@ Working version
 - GPR#1540: manual, decouple verbatim and toplevel style in code examples
   (Florian Angeletti, review by Gabriel Scherer)
 
+- PR#7698, GPR#1545: improve wording in OCaml manual in several places,
+  mostly in Chapter 1.  This addresses the easier changes suggested in the PR.
+  (Jim Fehrle, review by Florian Angeletti and David Allsopp)
+
 - GPR#1556: manual, add a consistency test for manual references inside
   the compiler source code.
   (Florian Angeletti, review by Gabriel Scherer)
