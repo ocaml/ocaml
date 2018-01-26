@@ -287,11 +287,15 @@ let output_entry ic ctx tr e =
     ctx.goto_state ctx init_num;
     pr ctx "in\n";
   end;
-  pr ctx "\
-\n  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\
-\n  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\
-\n    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos};\
-\n  match __ocaml_lex_result with\n";
+  pr ctx {|
+  let _curr_p = lexbuf.Lexing.lex_curr_p in
+  if _curr_p != Lexing.dummy_pos then begin
+    lexbuf.Lexing.lex_start_p <- _curr_p;
+    lexbuf.Lexing.lex_curr_p <- {_curr_p with
+         Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos}
+  end;
+  match __ocaml_lex_result with
+|};
   List.iter
     (fun (num, env, loc) ->
       pr ctx "  | ";
