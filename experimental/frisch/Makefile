@@ -90,6 +90,7 @@ ARGS=-o bench.exe -nostdlib \
      my_lexer.ml bench.ml
 bench_ocamllex:
 	@cp $(ROOT)/parsing/lexer.mll my_lexer.mll
+	cp my_lexer2.mll my_lexer.mll
 	@(cd $(ROOT)/lex && make ocamllex)
 	@$(ROOT)/boot/ocamlrun $(ROOT)/lex/ocamllex -ml my_lexer.mll
 	@echo WITH -ml flag:
