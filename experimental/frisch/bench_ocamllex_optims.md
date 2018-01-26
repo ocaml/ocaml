@@ -14,7 +14,14 @@ We run the output of:
 runtime by the C support code
 
    - `ocamllex -ml`, i.e. the automaton is translated to OCaml code;
-this is done on before and after the optimizations.
+this is done on before and after the optimizations;
+
+In adition, since it turned out that the automatic update of lex_start_p by
+the generated code is quite costly, there is now logic so that
+the generated code does not update this field and lex_curr_p when
+lex_start_p is initially physically equal to Lexing.dummy_pos.  This is also
+tested (only for the simpler lexer, since the OCaml one update the field in
+its actions).
 
 For each case, we compile the benchmark with:
 
@@ -95,4 +102,9 @@ WITH -ml flag, BRANCH:
   NATIVE, -inline 1000:     98.30 Mb/s      10.17 ms/Mb   alloc x    21.94
   NATIVE, -inline 10  :     87.16 Mb/s      11.47 ms/Mb   alloc x    21.94
   BYTECODE            :      6.48 Mb/s     154.43 ms/Mb   alloc x    21.93
+
+WITH -ml flag, BRANCH, dummy_pos:
+  NATIVE, -inline 1000:    152.68 Mb/s       6.55 ms/Mb   alloc x     1.00
+  NATIVE, -inline 10  :    133.97 Mb/s       7.46 ms/Mb   alloc x     1.00
+  BYTECODE            :      7.42 Mb/s     134.81 ms/Mb   alloc x     1.00
 ````

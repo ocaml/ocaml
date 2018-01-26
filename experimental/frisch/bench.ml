@@ -1,5 +1,6 @@
 let lexing s =
   let lexbuf = Lexing.from_string s in
+  lexbuf.lex_curr_p <- Lexing.dummy_pos;
   let rec loop () =
     match My_lexer.token lexbuf with
     | Parser.EOF -> ()
