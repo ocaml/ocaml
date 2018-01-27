@@ -66,6 +66,7 @@ ocaml_plugin := \
   ocaml_modifiers.mli ocaml_modifiers.ml \
   ocaml_directories.mli ocaml_directories.ml \
   ocaml_files.mli ocaml_files.ml \
+  ocaml_flags.mli ocaml_flags.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 

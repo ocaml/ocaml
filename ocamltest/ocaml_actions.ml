@@ -40,36 +40,6 @@ let expect_command ocamlsrcdir =
   let expect_test = Ocaml_files.expect_test ocamlsrcdir in
   ocamlrun ^ " " ^ expect_test
 
-let stdlib_flags ocamlsrcdir =
-  let stdlib_path = Ocaml_directories.stdlib ocamlsrcdir in
-  "-nostdlib -I " ^ stdlib_path
-
-let include_toplevel_directory ocamlsrcdir =
-  "-I " ^ (Ocaml_directories.toplevel ocamlsrcdir)
-
-let c_includes_flags ocamlsrcdir =
-  let dir = Ocaml_directories.runtime ocamlsrcdir in
-  "-ccopt -I" ^ dir
-
-let use_runtime backend ocamlsrcdir = match backend with
-  | Sys.Bytecode ->
-    let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
-    "-use-runtime " ^ ocamlrun
-  | _ -> ""
-
-let runtime_variant_flags backend ocamlsrcdir =
-  let variant = Ocaml_files.runtime_variant() in
-  if variant=Ocaml_files.Normal then ""
-  else begin
-    let variant_str = if variant=Ocaml_files.Debug then "d" else "i" in
-    let backend_lib = match backend with
-      | Sys.Bytecode -> "byterun"
-      | Sys.Native -> "asmrun"
-      | Sys.Other _ -> "stdlib" in
-    let backend_lib_dir = Filename.make_path [ocamlsrcdir; backend_lib] in
-    ("-runtime-variant " ^ variant_str ^" -I " ^ backend_lib_dir)
-  end
-
 (* Compiler descriptions *)
 
 type compiler_description = {
@@ -232,9 +202,9 @@ let link_modules
     compilername;
     customstr;
     c_headers_flags;
-    use_runtime backend ocamlsrcdir;
-    runtime_variant_flags backend ocamlsrcdir;
-    stdlib_flags ocamlsrcdir;
+    Ocaml_flags.use_runtime backend ocamlsrcdir;
+    Ocaml_flags.runtime_variant backend ocamlsrcdir;
+    Ocaml_flags.stdlib ocamlsrcdir;
     "-linkall";
     directory_flags env;
     flags env;
@@ -265,7 +235,7 @@ let compile_program
   let backend = compiler.compiler_backend in
   let custom = (backend = Sys.Bytecode) && has_c_file in
   let c_headers_flags =
-    if has_c_file then c_includes_flags ocamlsrcdir else "" in
+    if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
   link_modules
     ocamlsrcdir compiler compilername compileroutput
     program_variable custom c_headers_flags log env modules
@@ -564,7 +534,7 @@ let compile_module
       | Some file -> "-o " ^ file in
     [
       compilername;
-      stdlib_flags ocamlsrcdir;
+      Ocaml_flags.stdlib ocamlsrcdir;
       flags env;
       backend_flags env backend;
       optional_flags;
@@ -599,7 +569,8 @@ let compile_module
       let object_extension = Config.ext_obj in
       let _object_filename = module_basename ^ object_extension in
       let commandline =
-        compile_commandline filename None (c_includes_flags ocamlsrcdir) in
+        compile_commandline filename None
+          (Ocaml_flags.c_includes ocamlsrcdir) in
       exec commandline
     | _ ->
       let reason = Printf.sprintf "File %s of type %s not supported yet"
@@ -679,9 +650,9 @@ let run_test_program_in_toplevel toplevel log env =
           toplevel_name;
           toplevel_default_flags;
           toplevel.compiler_flags;
-          stdlib_flags ocamlsrcdir;
+          Ocaml_flags.stdlib ocamlsrcdir;
           directory_flags auxenv;
-          include_toplevel_directory ocamlsrcdir;
+          Ocaml_flags.include_toplevel_directory ocamlsrcdir;
           flags auxenv;
         ] in
         let exit_status =

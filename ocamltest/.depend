@@ -45,11 +45,11 @@ main.cmx : tsl_semantics.cmx tsl_parser.cmx tsl_lexer.cmx tests.cmx \
     actions_helpers.cmx actions.cmx main.cmi
 main.cmi :
 ocaml_actions.cmo : variables.cmi ocamltest_stdlib.cmi ocamltest_config.cmi \
-    ocaml_variables.cmi ocaml_files.cmi ocaml_directories.cmi \
+    ocaml_variables.cmi ocaml_flags.cmi ocaml_files.cmi ocaml_directories.cmi \
     ocaml_backends.cmi filetype.cmi filecompare.cmi environments.cmi \
     builtin_variables.cmi actions_helpers.cmi actions.cmi ocaml_actions.cmi
 ocaml_actions.cmx : variables.cmx ocamltest_stdlib.cmx ocamltest_config.cmx \
-    ocaml_variables.cmx ocaml_files.cmx ocaml_directories.cmx \
+    ocaml_variables.cmx ocaml_flags.cmx ocaml_files.cmx ocaml_directories.cmx \
     ocaml_backends.cmx filetype.cmx filecompare.cmx environments.cmx \
     builtin_variables.cmx actions_helpers.cmx actions.cmx ocaml_actions.cmi
 ocaml_actions.cmi : actions.cmi
@@ -64,6 +64,11 @@ ocaml_directories.cmi :
 ocaml_files.cmo : ocamltest_stdlib.cmi ocaml_files.cmi
 ocaml_files.cmx : ocamltest_stdlib.cmx ocaml_files.cmi
 ocaml_files.cmi :
+ocaml_flags.cmo : ocamltest_stdlib.cmi ocaml_files.cmi ocaml_directories.cmi \
+    ocaml_flags.cmi
+ocaml_flags.cmx : ocamltest_stdlib.cmx ocaml_files.cmx ocaml_directories.cmx \
+    ocaml_flags.cmi
+ocaml_flags.cmi : ocaml_backends.cmi
 ocaml_modifiers.cmo : ocamltest_stdlib.cmi ocamltest_config.cmi \
     ocaml_variables.cmi environments.cmi builtin_variables.cmi \
     ocaml_modifiers.cmi
