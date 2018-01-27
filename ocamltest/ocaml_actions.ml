@@ -18,28 +18,6 @@
 open Ocamltest_stdlib
 open Actions
 
-(* Compilers and flags *)
-
-let ocamlc_dot_byte ocamlsrcdir =
-  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
-  let ocamlc = Ocaml_files.ocamlc ocamlsrcdir in
-  ocamlrun ^ " " ^ ocamlc
-
-let ocamlopt_dot_byte ocamlsrcdir =
-  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
-  let ocamlopt = Ocaml_files.ocamlopt ocamlsrcdir in
-  ocamlrun ^ " " ^ ocamlopt
-
-let ocaml_dot_byte ocamlsrcdir =
-  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
-  let ocaml = Ocaml_files.ocaml ocamlsrcdir in
-  ocamlrun ^ " " ^ ocaml
-
-let expect_command ocamlsrcdir =
-  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
-  let expect_test = Ocaml_files.expect_test ocamlsrcdir in
-  ocamlrun ^ " " ^ expect_test
-
 (* Compiler descriptions *)
 
 type compiler_description = {
@@ -56,7 +34,7 @@ type compiler_description = {
 
 let ocamlc_byte_compiler =
 {
-  compiler_name = ocamlc_dot_byte;
+  compiler_name = Ocaml_commands.ocamlrun_ocamlc;
   compiler_flags = "";
   compiler_directory = "ocamlc.byte";
   compiler_backend = Sys.Bytecode;
@@ -80,7 +58,7 @@ let ocamlc_opt_compiler =
 
 let ocamlopt_byte_compiler =
 {
-  compiler_name = ocamlopt_dot_byte;
+  compiler_name = Ocaml_commands.ocamlrun_ocamlopt;
   compiler_flags = "";
   compiler_directory = "ocamlopt.byte";
   compiler_backend = Sys.Native;
@@ -103,7 +81,7 @@ let ocamlopt_opt_compiler =
 (* Top-levels *)
 
 let ocaml_compiler = {
-  compiler_name = ocaml_dot_byte;
+  compiler_name = Ocaml_commands.ocamlrun_ocaml;
   compiler_flags = "";
   compiler_directory = "ocaml";
   compiler_backend = Sys.Bytecode;
@@ -387,7 +365,7 @@ let run_expect_once ocamlsrcdir input_file principal log env =
   let principal_flag = if principal then "-principal" else "" in
   let commandline =
   [
-    expect_command ocamlsrcdir;
+    Ocaml_commands.ocamlrun_expect_test ocamlsrcdir;
     expect_flags;
     flags env;
     repo_root;
