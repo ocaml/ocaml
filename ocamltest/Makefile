@@ -64,6 +64,7 @@ ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \
   ocaml_variables.mli ocaml_variables.ml \
   ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_files.mli ocaml_files.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 

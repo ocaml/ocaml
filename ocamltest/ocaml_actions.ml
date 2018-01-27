@@ -20,72 +20,24 @@ open Actions
 
 (* Compilers and flags *)
 
-let ocamlsrcdir () =
-  try Sys.getenv "OCAMLSRCDIR"
-  with Not_found -> Ocamltest_config.ocamlsrcdir
-
-type runtime_variant =
-  | Normal
-  | Debug
-  | Instrumented
-
-let runtime_variant() =
-  let use_runtime = try Sys.getenv "USE_RUNTIME" with Not_found -> "" in
-  if use_runtime="d" then Debug
-  else if use_runtime="i" then Instrumented
-  else Normal
-
-let ocamlrun ocamlsrcdir =
-  let runtime = match runtime_variant () with
-    | Normal -> "ocamlrun"
-    | Debug -> "ocamlrund"
-    | Instrumented -> "ocamlruni" in
-  let ocamlrunfile = Filename.mkexe runtime in
-  Filename.make_path [ocamlsrcdir; "byterun"; ocamlrunfile]
-
-let ocamlc ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "ocamlc"]
-
-let ocaml ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "ocaml"]
-
 let ocamlc_dot_byte ocamlsrcdir =
-  let ocamlrun = ocamlrun ocamlsrcdir in
-  let ocamlc = ocamlc ocamlsrcdir in
+  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
+  let ocamlc = Ocaml_files.ocamlc ocamlsrcdir in
   ocamlrun ^ " " ^ ocamlc
 
-let ocamlc_dot_opt ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "ocamlc.opt"]
-
-let ocamlopt ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "ocamlopt"]
-
 let ocamlopt_dot_byte ocamlsrcdir =
-  let ocamlrun = ocamlrun ocamlsrcdir in
-  let ocamlopt = ocamlopt ocamlsrcdir in
+  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
+  let ocamlopt = Ocaml_files.ocamlopt ocamlsrcdir in
   ocamlrun ^ " " ^ ocamlopt
 
-let ocamlopt_dot_opt ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "ocamlopt.opt"]
-
 let ocaml_dot_byte ocamlsrcdir =
-  let ocamlrun = ocamlrun ocamlsrcdir in
-  let ocaml = ocaml ocamlsrcdir in
+  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
+  let ocaml = Ocaml_files.ocaml ocamlsrcdir in
   ocamlrun ^ " " ^ ocaml
 
-let ocaml_dot_opt ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; Filename.mkexe "ocamlnat"]
-
-let cmpbyt ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "tools"; "cmpbyt"]
-
-let expect_program ocamlsrcdir =
-  Filename.make_path
-    [ocamlsrcdir; "testsuite"; "tools"; Filename.mkexe "expect_test"]
-
 let expect_command ocamlsrcdir =
-  let ocamlrun = ocamlrun ocamlsrcdir in
-  let expect_test = expect_program ocamlsrcdir in
+  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
+  let expect_test = Ocaml_files.expect_test ocamlsrcdir in
   ocamlrun ^ " " ^ expect_test
 
 let stdlib ocamlsrcdir =
@@ -110,15 +62,15 @@ let c_includes_flags ocamlsrcdir =
 
 let use_runtime backend ocamlsrcdir = match backend with
   | Sys.Bytecode ->
-    let ocamlrun = ocamlrun ocamlsrcdir in
+    let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
     "-use-runtime " ^ ocamlrun
   | _ -> ""
 
 let runtime_variant_flags backend ocamlsrcdir =
-  let variant = runtime_variant() in
-  if variant=Normal then ""
+  let variant = Ocaml_files.runtime_variant() in
+  if variant=Ocaml_files.Normal then ""
   else begin
-    let variant_str = if variant=Debug then "d" else "i" in
+    let variant_str = if variant=Ocaml_files.Debug then "d" else "i" in
     let backend_lib = match backend with
       | Sys.Bytecode -> "byterun"
       | Sys.Native -> "asmrun"
@@ -154,7 +106,7 @@ let ocamlc_byte_compiler =
 
 let ocamlc_opt_compiler =
 {
-  compiler_name = ocamlc_dot_opt;
+  compiler_name = Ocaml_files.ocamlc_dot_opt;
   compiler_flags = "";
   compiler_directory = "ocamlc.opt";
   compiler_backend = Sys.Bytecode;
@@ -178,7 +130,7 @@ let ocamlopt_byte_compiler =
 
 let ocamlopt_opt_compiler =
 {
-  compiler_name = ocamlopt_dot_opt;
+  compiler_name = Ocaml_files.ocamlopt_dot_opt;
   compiler_flags = "";
   compiler_directory = "ocamlopt.opt";
   compiler_backend = Sys.Native;
@@ -200,7 +152,7 @@ let ocaml_compiler = {
 }
 
 let ocamlnat_compiler = {
-  compiler_name = ocaml_dot_opt;
+  compiler_name = Ocaml_files.ocamlnat;
   compiler_flags = "-S"; (* Keep intermediate assembly files *)
   compiler_directory = "ocamlnat";
   compiler_backend = Sys.Native;
@@ -436,7 +388,7 @@ let compile_test_program program_variable compiler log env =
     ] env in
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
-  let ocamlsrcdir = ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
@@ -509,7 +461,7 @@ let run_expect_twice ocamlsrcdir input_file log env =
       )
 
 let run_expect log env =
-  let ocamlsrcdir = ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
   let input_file = Actions_helpers.testfile env in
   run_expect_twice ocamlsrcdir input_file log env
 
@@ -584,15 +536,15 @@ let compare_programs backend comparison_tool log env =
   end else really_compare_programs backend comparison_tool log env
 
 let make_bytecode_programs_comparison_tool ocamlsrcdir =
-  let ocamlrun = ocamlrun ocamlsrcdir in
-  let cmpbyt = cmpbyt ocamlsrcdir in
+  let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
+  let cmpbyt = Ocaml_files.cmpbyt ocamlsrcdir in
   let tool_name = ocamlrun ^ " " ^ cmpbyt in
   Filecompare.make_comparison_tool tool_name ""
 
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 
 let compare_bytecode_programs_code log env =
-  let ocamlsrcdir = ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
   let bytecode_programs_comparison_tool =
     make_bytecode_programs_comparison_tool ocamlsrcdir in
   compare_programs Sys.Bytecode bytecode_programs_comparison_tool log env
@@ -709,7 +661,7 @@ let run_test_program_in_toplevel toplevel log env =
     end in
   if Sys.file_exists compiler_output then
     Sys.remove compiler_output;
-  let ocamlsrcdir = ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
   let compiler = match toplevel.compiler_backend with
     | Sys.Native -> ocamlopt_byte_compiler
     | Sys.Bytecode -> ocamlc_byte_compiler
@@ -775,7 +727,7 @@ let config_variables _log env = Environments.add_bindings
       Ocamltest_config.ocamlc_default_flags;
     Ocaml_variables.ocamlopt_default_flags,
       Ocamltest_config.ocamlopt_default_flags;
-    Ocaml_variables.ocamlsrcdir, ocamlsrcdir();
+    Ocaml_variables.ocamlsrcdir, Ocaml_files.ocamlsrcdir();
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
