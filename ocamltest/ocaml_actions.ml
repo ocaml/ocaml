@@ -18,108 +18,6 @@
 open Ocamltest_stdlib
 open Actions
 
-(* Compiler descriptions *)
-
-type compiler_description = {
-  compiler_name : string -> string;
-  compiler_flags : string;
-  compiler_directory : string;
-  compiler_backend : Sys.backend_type;
-  compiler_exit_status_variabe : Variables.t;
-  compiler_reference_variable : Variables.t;
-  compiler_output_variable : Variables.t
-}
-
-(* Compilers compiling byte-code programs *)
-
-let ocamlc_byte_compiler =
-{
-  compiler_name = Ocaml_commands.ocamlrun_ocamlc;
-  compiler_flags = "";
-  compiler_directory = "ocamlc.byte";
-  compiler_backend = Sys.Bytecode;
-  compiler_exit_status_variabe = Ocaml_variables.ocamlc_byte_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference;
-  compiler_output_variable = Ocaml_variables.compiler_output;
-}
-
-let ocamlc_opt_compiler =
-{
-  compiler_name = Ocaml_files.ocamlc_dot_opt;
-  compiler_flags = "";
-  compiler_directory = "ocamlc.opt";
-  compiler_backend = Sys.Bytecode;
-  compiler_exit_status_variabe = Ocaml_variables.ocamlc_opt_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference2;
-  compiler_output_variable = Ocaml_variables.compiler_output2;
-}
-
-(* Compilers compiling native-code programs *)
-
-let ocamlopt_byte_compiler =
-{
-  compiler_name = Ocaml_commands.ocamlrun_ocamlopt;
-  compiler_flags = "";
-  compiler_directory = "ocamlopt.byte";
-  compiler_backend = Sys.Native;
-  compiler_exit_status_variabe = Ocaml_variables.ocamlopt_byte_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference;
-  compiler_output_variable = Ocaml_variables.compiler_output;
-}
-
-let ocamlopt_opt_compiler =
-{
-  compiler_name = Ocaml_files.ocamlopt_dot_opt;
-  compiler_flags = "";
-  compiler_directory = "ocamlopt.opt";
-  compiler_backend = Sys.Native;
-  compiler_exit_status_variabe = Ocaml_variables.ocamlopt_opt_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference2;
-  compiler_output_variable = Ocaml_variables.compiler_output2;
-}
-
-(* Top-levels *)
-
-let ocaml_compiler = {
-  compiler_name = Ocaml_commands.ocamlrun_ocaml;
-  compiler_flags = "";
-  compiler_directory = "ocaml";
-  compiler_backend = Sys.Bytecode;
-  compiler_exit_status_variabe = Ocaml_variables.ocaml_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference;
-  compiler_output_variable = Ocaml_variables.compiler_output;
-}
-
-let ocamlnat_compiler = {
-  compiler_name = Ocaml_files.ocamlnat;
-  compiler_flags = "-S"; (* Keep intermediate assembly files *)
-  compiler_directory = "ocamlnat";
-  compiler_backend = Sys.Native;
-  compiler_exit_status_variabe = Ocaml_variables.ocamlnat_exit_status;
-  compiler_reference_variable = Ocaml_variables.compiler_reference2;
-  compiler_output_variable = Ocaml_variables.compiler_output2;
-}
-
-let expected_compiler_exit_status env compiler =
-  try int_of_string
-    (Environments.safe_lookup compiler.compiler_exit_status_variabe env)
-  with _ -> 0
-
-let compiler_reference_filename env prefix compiler =
-  let compiler_reference_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env in
-  let suffix =
-    if compiler_reference_suffix<>""
-    then compiler_reference_suffix ^ ".reference"
-    else ".reference" in
-  let mk s = (Filename.make_filename prefix s) ^ suffix in
-  let filename = mk compiler.compiler_directory in
-  if Sys.file_exists filename then filename else
-  let filename = mk
-    (Ocaml_backends.string_of_backend compiler.compiler_backend) in
-  if Sys.file_exists filename then filename else
-  mk "compilers"
-
 (* Extracting information from environment *)
 
 let get_backend_value_from_env env bytecode_var native_var =
@@ -163,8 +61,9 @@ let link_modules
     ocamlsrcdir compiler compilername compileroutput program_variable
     custom c_headers_flags log env modules
   =
-  let backend = compiler.compiler_backend in
-  let expected_exit_status = expected_compiler_exit_status env compiler in
+  let backend = compiler.Ocaml_compilers.backend in
+  let expected_exit_status =
+    Ocaml_compilers.expected_exit_status env compiler in
   let executable_name = match Environments.lookup program_variable env with
     | None -> assert false
     | Some program -> program in
@@ -210,7 +109,7 @@ let compile_program
   =
   let is_c_file (_filename, filetype) = filetype=Filetype.C in
   let has_c_file = List.exists is_c_file modules in
-  let backend = compiler.compiler_backend in
+  let backend = compiler.Ocaml_compilers.backend in
   let custom = (backend = Sys.Bytecode) && has_c_file in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
@@ -258,7 +157,7 @@ let setup_compiler_build_env compiler log env =
   let compiler_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
   let compiler_directory_name =
-    compiler.compiler_directory ^ compiler_directory_suffix in
+    compiler.Ocaml_compilers.directory ^ compiler_directory_suffix in
   let build_dir = Filename.concat
     (Environments.safe_lookup
       Builtin_variables.test_build_directory_prefix env)
@@ -271,22 +170,34 @@ let mk_compiler_env_setup name compiler =
   Actions.make name (setup_compiler_build_env compiler)
 
 let setup_ocamlc_byte_build_env =
-  mk_compiler_env_setup "setup-ocamlc.byte-build-env" ocamlc_byte_compiler
+  mk_compiler_env_setup 
+    "setup-ocamlc.byte-build-env"
+    Ocaml_compilers.ocamlc_byte
 
 let setup_ocamlc_opt_build_env =
-  mk_compiler_env_setup "setup-ocamlc.opt-build-env" ocamlc_opt_compiler
+  mk_compiler_env_setup
+    "setup-ocamlc.opt-build-env"
+    Ocaml_compilers.ocamlc_opt
 
 let setup_ocamlopt_byte_build_env =
-  mk_compiler_env_setup "setup-ocamlopt.byte-build-env" ocamlopt_byte_compiler
+  mk_compiler_env_setup
+    "setup-ocamlopt.byte-build-env"
+    Ocaml_compilers.ocamlopt_byte
 
 let setup_ocamlopt_opt_build_env =
-  mk_compiler_env_setup "setup-ocamlopt.opt-build-env" ocamlopt_opt_compiler
+  mk_compiler_env_setup
+    "setup-ocamlopt.opt-build-env"
+    Ocaml_compilers.ocamlopt_opt
 
 let setup_ocaml_build_env =
-  mk_compiler_env_setup "setup-ocaml-build-env" ocaml_compiler
+  mk_compiler_env_setup
+    "setup-ocaml-build-env"
+    Ocaml_compilers.ocaml
 
 let setup_ocamlnat_build_env =
-  mk_compiler_env_setup "setup-ocamlnat-build-env" ocamlnat_compiler
+  mk_compiler_env_setup
+    "setup-ocamlnat-build-env"
+    Ocaml_compilers.ocamlnat
 
 let prepare_module (module_name, module_type) =
   match module_type with
@@ -297,7 +208,7 @@ let prepare_module (module_name, module_type) =
     | Filetype.Grammar -> assert false
 
 let compile_test_program program_variable compiler log env =
-  let backend = compiler.compiler_backend in
+  let backend = compiler.Ocaml_compilers.backend in
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
   let source_directory = Actions_helpers.test_source_directory env in
@@ -306,8 +217,9 @@ let compile_test_program program_variable compiler log env =
   let compilerreference_prefix =
     Filename.make_path [source_directory; testfile_basename] in
   let compilerreference_filename =
-    compiler_reference_filename env compilerreference_prefix compiler in
-  let compiler_reference_variable = compiler.compiler_reference_variable in
+    Ocaml_compilers.reference_filename env compilerreference_prefix compiler in
+  let compiler_reference_variable =
+    compiler.Ocaml_compilers.reference_variable in
   let executable_filename =
     Filename.mkexe
       (Filename.make_filename
@@ -315,10 +227,10 @@ let compile_test_program program_variable compiler log env =
   let executable_path =
     Filename.make_path [build_directory; executable_filename] in
   let compiler_output_filename =
-    Filename.make_filename compiler.compiler_directory "output" in
+    Filename.make_filename compiler.Ocaml_compilers.directory "output" in
   let compiler_output =
     Filename.make_path [build_directory; compiler_output_filename] in
-  let compiler_output_variable = compiler.compiler_output_variable in
+  let compiler_output_variable = compiler.Ocaml_compilers.output_variable in
   let newenv = Environments.add_bindings
     [
       (program_variable, executable_path);
@@ -328,7 +240,7 @@ let compile_test_program program_variable compiler log env =
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  let compilername = compiler.compiler_name ocamlsrcdir in
+  let compilername = compiler.Ocaml_compilers.name ocamlsrcdir in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
   let prepared_modules =
@@ -343,21 +255,29 @@ let compile_test_program program_variable compiler log env =
 
 (* Compile actions *)
 
-let ocamlc_byte = Actions.make
-  "ocamlc.byte"
-  (compile_test_program Builtin_variables.program ocamlc_byte_compiler)
+let ocamlc_byte =
+  Actions.make
+    "ocamlc.byte"
+    (compile_test_program
+      Builtin_variables.program Ocaml_compilers.ocamlc_byte)
 
-let ocamlc_opt = Actions.make
-  "ocamlc.opt"
-  (compile_test_program Builtin_variables.program2 ocamlc_opt_compiler)
+let ocamlc_opt =
+  Actions.make
+    "ocamlc.opt"
+    (compile_test_program
+      Builtin_variables.program2 Ocaml_compilers.ocamlc_opt)
 
-let ocamlopt_byte = Actions.make
-  "ocamlopt.byte"
-  (compile_test_program Builtin_variables.program ocamlopt_byte_compiler)
+let ocamlopt_byte =
+  Actions.make
+    "ocamlopt.byte"
+    (compile_test_program
+      Builtin_variables.program Ocaml_compilers.ocamlopt_byte)
 
-let ocamlopt_opt = Actions.make
-  "ocamlopt.opt"
-  (compile_test_program Builtin_variables.program2 ocamlopt_opt_compiler)
+let ocamlopt_opt =
+  Actions.make
+    "ocamlopt.opt"
+    (compile_test_program
+      Builtin_variables.program2 Ocaml_compilers.ocamlopt_opt)
 
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = try Sys.getenv "EXPECT_FLAGS" with Not_found -> "" in
@@ -410,20 +330,20 @@ let make_check_compiler_output name compiler = Actions.make
   name
   (Actions_helpers.check_output
     "compiler"
-    compiler.compiler_output_variable
-    compiler.compiler_reference_variable)
+    compiler.Ocaml_compilers.output_variable
+    compiler.Ocaml_compilers.reference_variable)
 
 let check_ocamlc_byte_output = make_check_compiler_output
-  "check-ocamlc.byte-output" ocamlc_byte_compiler
+  "check-ocamlc.byte-output" Ocaml_compilers.ocamlc_byte
 
 let check_ocamlc_opt_output = make_check_compiler_output
-  "check-ocamlc.opt-output" ocamlc_opt_compiler
+  "check-ocamlc.opt-output" Ocaml_compilers.ocamlc_opt
 
 let check_ocamlopt_byte_output = make_check_compiler_output
-  "check-ocamlopt.byte-output" ocamlopt_byte_compiler
+  "check-ocamlopt.byte-output" Ocaml_compilers.ocamlopt_byte
 
 let check_ocamlopt_opt_output = make_check_compiler_output
-  "check-ocamlopt.opt-output" ocamlopt_opt_compiler
+  "check-ocamlopt.opt-output" Ocaml_compilers.ocamlopt_opt
 
 let really_compare_programs backend comparison_tool log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -499,9 +419,10 @@ let compare_native_programs = Actions.make
 let compile_module
   ocamlsrcdir compiler compilername compileroutput log env
   (module_basename, module_filetype) =
-  let backend = compiler.compiler_backend in
+  let backend = compiler.Ocaml_compilers.backend in
   let filename = Filetype.make_filename (module_basename, module_filetype) in
-  let expected_exit_status = expected_compiler_exit_status env compiler in
+  let expected_exit_status =
+    Ocaml_compilers.expected_exit_status env compiler in
   let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
     (Filetype.action_of_filetype module_filetype) filename
       (expected_exit_status) in
@@ -574,39 +495,42 @@ let compile_modules
 let run_test_program_in_toplevel toplevel log env =
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
-  let expected_exit_status = expected_compiler_exit_status env toplevel in
+  let expected_exit_status =
+    Ocaml_compilers.expected_exit_status env toplevel in
   let source_directory = Actions_helpers.test_source_directory env in
   let build_directory = Actions_helpers.test_build_directory env in
-  let compiler_output_variable = toplevel.compiler_output_variable in
+  let compiler_output_variable = toplevel.Ocaml_compilers.output_variable in
   let (env, compiler_output) =
     (match Environments.lookup compiler_output_variable env with 
     | Some value -> (env, value)
     | None ->
       let compiler_output_filename =
-        Filename.make_filename toplevel.compiler_directory "output" in
+        Filename.make_filename toplevel.Ocaml_compilers.directory "output" in
       let value =
         Filename.make_path [build_directory; compiler_output_filename] in
       let env' = Environments.add compiler_output_variable value env in
       (env', value)) in
-  let compiler_reference_variable = toplevel.compiler_reference_variable in
+  let compiler_reference_variable =
+    toplevel.Ocaml_compilers.reference_variable in
   let env =
     if Environments.is_variable_defined compiler_reference_variable env then env
     else begin
       let compilerreference_prefix =
         Filename.make_path [source_directory; testfile_basename] in
       let compilerreference_filename =
-        compiler_reference_filename env compilerreference_prefix toplevel in
+        Ocaml_compilers.reference_filename
+          env compilerreference_prefix toplevel in
       Environments.add
         compiler_reference_variable compilerreference_filename env
     end in
   if Sys.file_exists compiler_output then
     Sys.remove compiler_output;
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  let compiler = match toplevel.compiler_backend with
-    | Sys.Native -> ocamlopt_byte_compiler
-    | Sys.Bytecode -> ocamlc_byte_compiler
+  let compiler = match toplevel.Ocaml_compilers.backend with
+    | Sys.Native -> Ocaml_compilers.ocamlopt_byte
+    | Sys.Bytecode -> Ocaml_compilers.ocamlc_byte
     | Sys.Other _ -> assert false in
-  let compiler_name = compiler.compiler_name ocamlsrcdir in
+  let compiler_name = compiler.Ocaml_compilers.name ocamlsrcdir in
   let modules_with_filetypes = List.map Filetype.filetype (modules env) in
   let aux = compile_modules
     ocamlsrcdir compiler compiler_name compiler_output_variable
@@ -618,16 +542,16 @@ let run_test_program_in_toplevel toplevel log env =
         let what =
           Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
           testfile
-          (Ocaml_backends.string_of_backend toplevel.compiler_backend)
+          (Ocaml_backends.string_of_backend toplevel.Ocaml_compilers.backend)
           expected_exit_status in
         Printf.fprintf log "%s\n%!" what;
-        let toplevel_name = toplevel.compiler_name ocamlsrcdir in
+        let toplevel_name = toplevel.Ocaml_compilers.name ocamlsrcdir in
         let toplevel_default_flags = "-noinit -no-version -noprompt" in
         let commandline =
         [
           toplevel_name;
           toplevel_default_flags;
-          toplevel.compiler_flags;
+          toplevel.Ocaml_compilers.flags;
           Ocaml_flags.stdlib ocamlsrcdir;
           directory_flags auxenv;
           Ocaml_flags.include_toplevel_directory ocamlsrcdir;
@@ -648,17 +572,17 @@ let run_test_program_in_toplevel toplevel log env =
 
 let ocaml = Actions.make
   "ocaml"
-  (run_test_program_in_toplevel ocaml_compiler)
+  (run_test_program_in_toplevel Ocaml_compilers.ocaml)
 
 let ocamlnat = Actions.make
   "ocamlnat"
-  (run_test_program_in_toplevel ocamlnat_compiler)
+  (run_test_program_in_toplevel Ocaml_compilers.ocamlnat)
 
 let check_ocaml_output = make_check_compiler_output
-  "check-ocaml-output" ocaml_compiler
+  "check-ocaml-output" Ocaml_compilers.ocaml
 
 let check_ocamlnat_output = make_check_compiler_output
-  "check-ocamlnat-output" ocamlnat_compiler
+  "check-ocamlnat-output" Ocaml_compilers.ocamlnat
 
 let config_variables _log env = Environments.add_bindings
   [
