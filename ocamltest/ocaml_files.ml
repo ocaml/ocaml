@@ -13,13 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Locations of files and directories inside the OCaml source tree *)
+(* Locations of files in the OCaml source tree *)
 
 open Ocamltest_stdlib
-
-let ocamlsrcdir () =
-  try Sys.getenv "OCAMLSRCDIR"
-  with Not_found -> Ocamltest_config.ocamlsrcdir
 
 type runtime_variant =
   | Normal

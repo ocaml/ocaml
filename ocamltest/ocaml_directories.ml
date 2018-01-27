@@ -13,29 +13,19 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Locations of files in the OCaml source tree *)
+(* Locations of directories in the OCaml source tree *)
 
-type runtime_variant =
-  | Normal
-  | Debug
-  | Instrumented
+open Ocamltest_stdlib
 
-val runtime_variant : unit -> runtime_variant
+let srcdir () =
+  try Sys.getenv "OCAMLSRCDIR"
+  with Not_found -> Ocamltest_config.ocamlsrcdir
 
-val ocamlrun : string -> string
+let stdlib ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "stdlib"]
 
-val ocamlc : string -> string
+let toplevel ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "toplevel"]
 
-val ocaml : string -> string
-
-val ocamlc_dot_opt : string -> string
-
-val ocamlopt : string -> string
-
-val ocamlopt_dot_opt : string -> string
-
-val ocamlnat : string -> string
-
-val cmpbyt : string -> string
-
-val expect_test : string -> string
+let runtime ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "byterun"]

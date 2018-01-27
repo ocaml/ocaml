@@ -13,29 +13,12 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Locations of files in the OCaml source tree *)
+(* Locations of directories in the OCaml source tree *)
 
-type runtime_variant =
-  | Normal
-  | Debug
-  | Instrumented
+val srcdir : unit -> string
 
-val runtime_variant : unit -> runtime_variant
+val stdlib : string -> string
 
-val ocamlrun : string -> string
+val toplevel : string -> string
 
-val ocamlc : string -> string
-
-val ocaml : string -> string
-
-val ocamlc_dot_opt : string -> string
-
-val ocamlopt : string -> string
-
-val ocamlopt_dot_opt : string -> string
-
-val ocamlnat : string -> string
-
-val cmpbyt : string -> string
-
-val expect_test : string -> string
+val runtime : string -> string

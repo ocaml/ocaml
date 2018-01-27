@@ -40,24 +40,15 @@ let expect_command ocamlsrcdir =
   let expect_test = Ocaml_files.expect_test ocamlsrcdir in
   ocamlrun ^ " " ^ expect_test
 
-let stdlib ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "stdlib"]
-
 let stdlib_flags ocamlsrcdir =
-  let stdlib_path = stdlib ocamlsrcdir in
+  let stdlib_path = Ocaml_directories.stdlib ocamlsrcdir in
   "-nostdlib -I " ^ stdlib_path
 
-let toplevel_directory ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "toplevel"]
-
 let include_toplevel_directory ocamlsrcdir =
-  "-I " ^ (toplevel_directory ocamlsrcdir)
-
-let c_includes ocamlsrcdir =
-  Filename.make_path [ocamlsrcdir; "byterun"]
+  "-I " ^ (Ocaml_directories.toplevel ocamlsrcdir)
 
 let c_includes_flags ocamlsrcdir =
-  let dir = c_includes ocamlsrcdir in
+  let dir = Ocaml_directories.runtime ocamlsrcdir in
   "-ccopt -I" ^ dir
 
 let use_runtime backend ocamlsrcdir = match backend with
@@ -388,7 +379,7 @@ let compile_test_program program_variable compiler log env =
     ] env in
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
-  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
   let compilername = compiler.compiler_name ocamlsrcdir in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
@@ -461,7 +452,7 @@ let run_expect_twice ocamlsrcdir input_file log env =
       )
 
 let run_expect log env =
-  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
   let input_file = Actions_helpers.testfile env in
   run_expect_twice ocamlsrcdir input_file log env
 
@@ -544,7 +535,7 @@ let make_bytecode_programs_comparison_tool ocamlsrcdir =
 let native_programs_comparison_tool = Filecompare.default_comparison_tool
 
 let compare_bytecode_programs_code log env =
-  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
   let bytecode_programs_comparison_tool =
     make_bytecode_programs_comparison_tool ocamlsrcdir in
   compare_programs Sys.Bytecode bytecode_programs_comparison_tool log env
@@ -661,7 +652,7 @@ let run_test_program_in_toplevel toplevel log env =
     end in
   if Sys.file_exists compiler_output then
     Sys.remove compiler_output;
-  let ocamlsrcdir = Ocaml_files.ocamlsrcdir () in
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
   let compiler = match toplevel.compiler_backend with
     | Sys.Native -> ocamlopt_byte_compiler
     | Sys.Bytecode -> ocamlc_byte_compiler
@@ -727,7 +718,7 @@ let config_variables _log env = Environments.add_bindings
       Ocamltest_config.ocamlc_default_flags;
     Ocaml_variables.ocamlopt_default_flags,
       Ocamltest_config.ocamlopt_default_flags;
-    Ocaml_variables.ocamlsrcdir, Ocaml_files.ocamlsrcdir();
+    Ocaml_variables.ocamlsrcdir, Ocaml_directories.srcdir();
     Ocaml_variables.os_type, Sys.os_type;
   ] env
 
