@@ -170,7 +170,7 @@ let mk_compiler_env_setup name compiler =
   Actions.make name (setup_compiler_build_env compiler)
 
 let setup_ocamlc_byte_build_env =
-  mk_compiler_env_setup 
+  mk_compiler_env_setup
     "setup-ocamlc.byte-build-env"
     Ocaml_compilers.ocamlc_byte
 
@@ -442,10 +442,10 @@ let compile_module
     ] in
   let exec commandline =
     Printf.fprintf log "%s\n%!" what;
-    let exit_status = 
+    let exit_status =
       Actions_helpers.run_cmd
         ~stdout_variable:compileroutput
-        ~stderr_variable:compileroutput 
+        ~stderr_variable:compileroutput
         ~append:true log env commandline in
     if exit_status=expected_exit_status
     then Pass env
@@ -501,7 +501,7 @@ let run_test_program_in_toplevel toplevel log env =
   let build_directory = Actions_helpers.test_build_directory env in
   let compiler_output_variable = toplevel.Ocaml_compilers.output_variable in
   let (env, compiler_output) =
-    (match Environments.lookup compiler_output_variable env with 
+    (match Environments.lookup compiler_output_variable env with
     | Some value -> (env, value)
     | None ->
       let compiler_output_filename =
