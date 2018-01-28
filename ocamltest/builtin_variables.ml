@@ -47,6 +47,9 @@ let program = make ("program",
 let program2 = make ("program2",
   "Name of program produced by ocamlc.opt and ocamlopt.opt")
 
+let promote = make ("promote",
+  "Set to \"true\" to overwrite reference files with the test output")
+
 let reference = make ("reference",
   "Path of file to which program output should be compared")
 

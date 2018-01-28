@@ -267,6 +267,12 @@ let check_output kind_of_output output_variable reference_variable log env =
       let reason =
         Printf.sprintf "%s output %s differs from reference %s: \n%s\n"
         kind_of_output output_filename reference_filename diffstr in
+      if Environments.lookup_as_bool Builtin_variables.promote env = Some true
+      then begin
+        Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
+          kind_of_output output_filename reference_filename;
+        Sys.copy_file output_filename reference_filename;
+      end;
       (Result.fail_with_reason reason, env)
     | Filecompare.Unexpected_output ->
       let banner = String.make 40 '=' in

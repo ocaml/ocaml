@@ -190,6 +190,9 @@ Working version
 - GPR#1520: more robust implementation of Misc.no_overflow_mul
   (Max Mouratov, review by Xavier Leroy)
 
+- GPR#1586: ocamltest "-promote" option for reference file promotion
+  (Gabriel Scherer)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path

@@ -124,6 +124,7 @@ let test_file test_filename =
            let log_filename = test_prefix ^ ".log" in
            open_out log_filename
          end in
+       let promote = string_of_bool !Options.promote in
        let install_hook name =
          let hook_name = Filename.make_filename hookname_prefix name in
          if Sys.file_exists hook_name then begin
@@ -141,6 +142,7 @@ let test_file test_filename =
              Builtin_variables.test_source_directory, test_source_directory;
              Builtin_variables.test_build_directory_prefix,
                test_build_directory_prefix;
+             Builtin_variables.promote, promote;
            ] in
        let root_environment =
          interprete_environment_statements

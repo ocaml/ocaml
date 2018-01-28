@@ -32,6 +32,8 @@ val output : Variables.t
 val program : Variables.t
 val program2 : Variables.t
 
+val promote : Variables.t
+
 val reference : Variables.t
 
 val script : Variables.t
