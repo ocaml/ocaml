@@ -233,7 +233,8 @@ Working version
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
 
-- GPR#1530, GPR#1574: testsuite, fix 'make parallel' target
+- GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
+  to work on ocamltest-based tests.
   (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)
 
 4.06 maintenance branch
