@@ -204,7 +204,7 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  file=$(DIR)/ocamltests; \
 	  (IFS=$$(printf "\r\n"); while read testfile; do \
-		  TERM=dumb \
+		  TERM=dumb OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest \
 		    $(ocamltest) $(DIR)/$$testfile || \
 		    touch $(failstamp); \
 	  done < $$file) || touch $(failstamp); \
