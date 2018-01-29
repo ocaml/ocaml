@@ -174,7 +174,7 @@ module Compat
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
-  | _,_  -> assert false (* By typing *)
+  | _,_  -> false
 
   and ocompat op oq = match op,oq with
   | None,None -> true
@@ -184,7 +184,7 @@ module Compat
   and compats ps qs = match ps,qs with
   | [], [] -> true
   | p::ps, q::qs -> compat p q && compats ps qs
-  | _,_    -> assert false (* By typing *)
+  | _,_    -> false
 
 end
 
