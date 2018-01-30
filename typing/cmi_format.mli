@@ -42,6 +42,7 @@ type error =
     Not_an_interface of string
   | Wrong_version_interface of string * string
   | Corrupted_interface of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 

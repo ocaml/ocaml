@@ -44,7 +44,8 @@ type unit_infos =
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
     mutable ui_export_info: export_info;
-    mutable ui_force_link: bool }               (* Always linked *)
+    mutable ui_force_link: bool;                (* Always linked *)
+    ui_flat_float_arrays : bool; }        (* Whether file may contain flat arrays *)
 
 (* Each .a library has a matching .cmxa file that provides the following
    infos on the library: *)
@@ -64,6 +65,7 @@ type dynunit = {
   dynu_imports_cmi: (string * Digest.t option) list;
   dynu_imports_cmx: (string * Digest.t option) list;
   dynu_defines: string list;
+  dynu_flat_float_arrays : bool;
 }
 
 type dynheader = {

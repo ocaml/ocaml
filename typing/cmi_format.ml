@@ -24,6 +24,7 @@ type error =
     Not_an_interface of string
   | Wrong_version_interface of string * string
   | Corrupted_interface of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -65,6 +66,9 @@ let read_cmi filename =
       end
     end;
     let cmi = input_cmi ic in
+    if List.mem Flat_float_array cmi.cmi_flags
+    && not Config.flat_float_array then
+      raise (Error (May_contain_flat_float_arrays filename));
     close_in ic;
     cmi
   with End_of_file | Failure _ ->
@@ -101,6 +105,10 @@ let report_error ppf = function
   | Corrupted_interface filename ->
       fprintf ppf "Corrupted compiled interface@ %a"
         Location.print_filename filename
+  | May_contain_flat_float_arrays filename ->
+    fprintf ppf
+      "%a has been produced by a compiler with support for flat float arrays."
+      Location.print_filename filename
 
 let () =
   Location.register_error_of_exn
