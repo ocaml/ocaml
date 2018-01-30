@@ -2257,9 +2257,7 @@ let check_partial pred loc casel =
    to a specific guard.
 *)
 
-module IdSet = Set.Make(Ident)
-
-let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
+let pattern_vars p = Ident.Set.of_list (Typedtree.pat_bound_idents p)
 
 (* Row for ambiguous variable search,
    row is the traditional pattern row,
@@ -2289,16 +2287,16 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
      (Some x, { row = r4; varsets = {} :: s4 })
      (None, { row = r4; varsets = {x} :: s4 })
 *)
-type amb_row = { row : pattern list ; varsets : IdSet.t list; }
+type amb_row = { row : pattern list ; varsets : Ident.Set.t list; }
 
 let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
   let rec simpl head_bound_variables varsets p ps k =
     match p.pat_desc with
     | Tpat_alias (p,x,_) ->
-      simpl (IdSet.add x head_bound_variables) varsets p ps k
+      simpl (Ident.Set.add x head_bound_variables) varsets p ps k
     | Tpat_var (x,_) ->
       let rest_of_the_row =
-        { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
+        { row = ps; varsets = Ident.Set.add x head_bound_variables :: varsets; }
       in
       add_column omega rest_of_the_row k
     | Tpat_or (p1,p2,_) ->
@@ -2343,18 +2341,18 @@ let rec simplify_first_amb_col = function
   | Positive { row = p::ps; varsets; }::rem ->
       let add_column p ps k = (p, Positive ps) :: k in
       simplify_head_amb_pat
-        IdSet.empty varsets
+        Ident.Set.empty varsets
         ~add_column p ps (simplify_first_amb_col rem)
 
 (* Compute stable bindings *)
 
 type stable_vars =
   | All
-  | Vars of IdSet.t
+  | Vars of Ident.Set.t
 
 let stable_inter sv1 sv2 = match sv1, sv2 with
   | All, sv | sv, All -> sv
-  | Vars s1, Vars s2 -> Vars (IdSet.inter s1 s2)
+  | Vars s1, Vars s2 -> Vars (Ident.Set.inter s1 s2)
 
 let reduce f = function
 | [] -> invalid_arg "reduce"
@@ -2378,9 +2376,10 @@ let rec matrix_stable_vars m = match m with
       | exception Negative_empty_row -> All
       | rows_varsets ->
           let stables_in_varsets =
-            reduce (List.map2 IdSet.inter) rows_varsets in
+            reduce (List.map2 Ident.Set.inter) rows_varsets in
           (* The stable variables are those stable at any position *)
-          Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
+          Vars
+            (List.fold_left Ident.Set.union Ident.Set.empty stables_in_varsets)
       end
   | m ->
       let is_negative = function
@@ -2442,13 +2441,13 @@ let pattern_stable_vars ns p =
 *)
 
 let all_rhs_idents exp =
-  let ids = ref IdSet.empty in
+  let ids = ref Ident.Set.empty in
   let module Iterator = TypedtreeIter.MakeIterator(struct
     include TypedtreeIter.DefaultIteratorArgument
     let enter_expression exp = match exp.exp_desc with
       | Texp_ident (path, _lid, _descr) ->
           List.iter
-            (fun id -> ids := IdSet.add id !ids)
+            (fun id -> ids := Ident.Set.add id !ids)
             (Path.heads path)
       | _ -> ()
 
@@ -2465,9 +2464,9 @@ let all_rhs_idents exp =
            {mod_desc=
             Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
            _) ->
-             assert (IdSet.mem id_exp !ids) ;
-             if not (IdSet.mem id_mod !ids) then begin
-               ids := IdSet.remove id_exp !ids
+             assert (Ident.Set.mem id_exp !ids) ;
+             if not (Ident.Set.mem id_mod !ids) then begin
+               ids := Ident.Set.remove id_exp !ids
              end
       | _ -> assert false
       end
@@ -2484,14 +2483,15 @@ let check_ambiguous_bindings =
         | { c_lhs = p; c_guard=None ; _} -> [p]::ns
         | { c_lhs=p; c_guard=Some g; _} ->
             let all =
-              IdSet.inter (pattern_vars p) (all_rhs_idents g) in
-            if not (IdSet.is_empty all) then begin
+              Ident.Set.inter (pattern_vars p) (all_rhs_idents g) in
+            if not (Ident.Set.is_empty all) then begin
               match pattern_stable_vars ns p with
               | All -> ()
               | Vars stable ->
-                  let ambiguous = IdSet.diff all stable in
-                  if not (IdSet.is_empty ambiguous) then begin
-                    let pps = IdSet.elements ambiguous |> List.map Ident.name in
+                  let ambiguous = Ident.Set.diff all stable in
+                  if not (Ident.Set.is_empty ambiguous) then begin
+                    let pps =
+                      Ident.Set.elements ambiguous |> List.map Ident.name in
                     let warn = Ambiguous_pattern pps in
                     Location.prerr_warning p.pat_loc warn
                   end
