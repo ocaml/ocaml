@@ -716,17 +716,25 @@ let rec update_level env level expand ty =
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
           (* Format.printf "update_level: %i < %i@." level (get_level env p); *)
-          if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
-          iter_type_expr (update_level env level expand) ty
+          raise (Unify [(ty, newvar2 level)])
         end
-    | Tconstr(_, _ :: _, _) when expand ->
+    | Tconstr(p, (_::_ as tl), _) ->
         begin try
+          if not expand then raise Cannot_expand;
           link_type ty (!forward_try_expand_once env ty);
           update_level env level expand ty
         with Cannot_expand ->
           set_level ty level;
-          iter_type_expr (update_level env level expand) ty
-        end          
+          (* PR#7636: do not update levels of irrelevant argument *)
+          let variance =
+            try (Env.find_type p env).type_variance
+            with Not_found -> List.map (fun _ -> Variance.may_inv) tl
+          in
+          List.iter2
+            (fun ty var ->
+              if var <> Variance.null then update_level env level expand ty)
+            tl variance
+        end
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
