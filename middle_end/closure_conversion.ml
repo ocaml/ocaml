@@ -19,7 +19,6 @@
 module Env = Closure_conversion_aux.Env
 module Function_decls = Closure_conversion_aux.Function_decls
 module Function_decl = Function_decls.Function_decl
-module IdentSet = Lambda.IdentSet
 
 let name_expr = Flambda_utils.name_expr
 
@@ -602,7 +601,7 @@ and close_functions t external_env function_declarations : Flambda.named =
      a single block with tag [Closure_tag].) *)
   let set_of_closures =
     let free_vars =
-      IdentSet.fold (fun var map ->
+      Ident.Set.fold (fun var map ->
           let internal_var =
             Env.find_var closure_env_without_parameters var
           in

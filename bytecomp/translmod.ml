@@ -112,11 +112,11 @@ and apply_coercion_result loc strict funct params args cc_res =
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
   (*Format.eprintf "%a@." Printlambda.lambda lam;
-  IdentSet.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
+  Ident.Set.iter (fun id -> Format.eprintf "%a " Ident.print id) fv;
   Format.eprintf "@.";*)
   let (lam,s) =
     List.fold_left (fun (lam,s) (id',pos,c) ->
-      if IdentSet.mem id' fv then
+      if Ident.Set.mem id' fv then
         let id'' = Ident.create (Ident.name id') in
         (Llet(Alias, Pgenval, id'',
               apply_coercion loc Alias c (get_field pos),lam),
@@ -266,7 +266,7 @@ let reorder_rec_bindings bindings =
         if init.(i) = None then begin
           status.(i) <- Inprogress;
           for j = 0 to num_bindings - 1 do
-            if IdentSet.mem id.(j) fv.(i) then emit_binding j
+            if Ident.Set.mem id.(j) fv.(i) then emit_binding j
           done
         end;
         res := (id.(i), init.(i), rhs.(i)) :: !res;
@@ -472,7 +472,7 @@ and transl_structure loc fields cc rootpath final_env = function
             Format.eprintf "@]@.";*)
             let v = Array.of_list (List.rev fields) in
             let get_field pos = Lvar v.(pos)
-            and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+            and ids = List.fold_right Ident.Set.add fields Ident.Set.empty in
             let lam =
               Lprim(Pmakeblock(0, Immutable, None),
                   List.map
@@ -484,7 +484,7 @@ and transl_structure loc fields cc rootpath final_env = function
                       | _ -> apply_coercion loc Strict cc (get_field pos))
                     pos_cc_list, loc)
             and id_pos_list =
-              List.filter (fun (id,_,_) -> not (IdentSet.mem id ids))
+              List.filter (fun (id,_,_) -> not (Ident.Set.mem id ids))
                 id_pos_list
             in
             wrap_id_pos_list loc id_pos_list get_field lam,
@@ -1143,7 +1143,7 @@ let toploop_setvalue id lam =
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
 let close_toplevel_term (lam, ()) =
-  IdentSet.fold (fun id l -> Llet(Strict, Pgenval, id,
+  Ident.Set.fold (fun id l -> Llet(Strict, Pgenval, id,
                                   toploop_getvalue id, l))
                 (free_variables lam) lam
 

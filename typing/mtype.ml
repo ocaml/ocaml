@@ -305,7 +305,6 @@ let contains_type env mty =
 
 module PathSet = Set.Make (Path)
 module PathMap = Map.Make (Path)
-module IdentSet = Set.Make (Ident)
 
 let rec get_prefixes = function
     Pident _ -> PathSet.empty
@@ -334,10 +333,10 @@ let rec collect_ids subst bindings p =
       Pident id ->
         let ids =
           try collect_ids subst bindings (Ident.find_same id bindings)
-          with Not_found -> IdentSet.empty
+          with Not_found -> Ident.Set.empty
         in
-        IdentSet.add id ids
-    | _ -> IdentSet.empty
+        Ident.Set.add id ids
+    | _ -> Ident.Set.empty
     end
 
 let collect_arg_paths mty =
@@ -365,8 +364,8 @@ let collect_arg_paths mty =
   let it = {type_iterators with it_path; it_signature_item} in
   it.it_module_type it mty;
   it.it_module_type unmark_iterators mty;
-  PathSet.fold (fun p -> IdentSet.union (collect_ids !subst !bindings p))
-    !paths IdentSet.empty
+  PathSet.fold (fun p -> Ident.Set.union (collect_ids !subst !bindings p))
+    !paths Ident.Set.empty
 
 let rec remove_aliases env excl mty =
   match mty with
@@ -385,7 +384,7 @@ and remove_aliases_sig env excl sg =
   | Sig_module(id, md, rs) :: rem  ->
       let mty =
         match md.md_type with
-          Mty_alias _ when IdentSet.mem id excl ->
+          Mty_alias _ when Ident.Set.mem id excl ->
             md.md_type
         | mty ->
             remove_aliases env excl mty
