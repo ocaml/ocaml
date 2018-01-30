@@ -209,7 +209,7 @@ Working version
 
 - MPR#7711, GPR#1581: Internal typechecker error triggered by a constraint on
    self type in a class type
-  (Jacques Garrigue, report by Florian Angeletti)
+  (Jacques Garrigue, report and review by Florian Angeletti)
 
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)

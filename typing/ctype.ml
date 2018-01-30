@@ -316,7 +316,6 @@ let concrete_object ty =
   | Tvar _             -> false
   | _                  -> true
 
-
 (**** Close an object ****)
 
 let close_object ty =
@@ -2443,8 +2442,8 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
-        if is_self_type d1
-        then link_type t1' t2' (* PR#7711 *)
+        if is_self_type d1 (* PR#7711: do not abbreviate self type *)
+        then link_type t1' t2' 
         else link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'
