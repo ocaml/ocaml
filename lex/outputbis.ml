@@ -339,6 +339,15 @@ let choose_inlining entry_points transitions =
     )
     transitions
 
+let goto_state inline transitions ctx pref n =
+  if inline.(n) then
+    output_trans_body pref ctx transitions.(n)
+  else
+    pr ctx "%s__ocaml_lex_state%d lexbuf %s _buf _len _curr _last%s\n"
+      pref n
+      (last_action ctx)
+      (if ctx.has_refill then " k" else "")
+
 (* Main output function *)
 
 let output_lexdef ic oc tr header rh
@@ -347,16 +356,14 @@ let output_lexdef ic oc tr header rh
   copy_chunk ic oc tr header false;
   let has_refill = output_refill_handler ic oc tr rh in
   let inline = choose_inlining entry_points transitions in
-  let goto_state ctx pref n =
-    if inline.(n) then
-      output_trans_body pref ctx transitions.(n)
-    else
-      pr ctx "%s__ocaml_lex_state%d lexbuf %s _buf _len _curr _last%s\n"
-        pref n
-        (last_action ctx)
-        (if ctx.has_refill then " k" else "")
+  let ctx =
+    {
+      has_refill;
+      oc;
+      goto_state = goto_state inline transitions;
+      last_action = None;
+    }
   in
-  let ctx = {has_refill; oc; goto_state; last_action=None} in
   output_automata ctx transitions inline;
   begin match entry_points with
     [] -> ()
