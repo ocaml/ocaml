@@ -312,13 +312,9 @@ let output_entry ic ctx tr e =
   pr ctx "\n\n"
 
 
-(* Main output function *)
+(* Determine which states to inline *)
 
-let output_lexdef ic oc tr header rh
-                  entry_points transitions trailer =
-
-  copy_chunk ic oc tr header false;
-  let has_refill = output_refill_handler ic oc tr rh in
+let choose_inlining entry_points transitions =
   let counters = Array.make (Array.length transitions) 0 in
   let count i = counters.(i) <- counters.(i) + 1 in
   List.iter (fun e -> count (fst e.auto_initial_state)) entry_points;
@@ -336,14 +332,21 @@ let output_lexdef ic oc tr header rh
       | Perform _ -> ()
     )
     transitions;
-  let inline =
-    Array.mapi
-      (fun i -> function
-         | Perform _ -> true
-         | Shift _ -> counters.(i) = 1
-      )
-      transitions
-  in
+  Array.mapi
+    (fun i -> function
+       | Perform _ -> true
+       | Shift _ -> counters.(i) = 1
+    )
+    transitions
+
+(* Main output function *)
+
+let output_lexdef ic oc tr header rh
+                  entry_points transitions trailer =
+
+  copy_chunk ic oc tr header false;
+  let has_refill = output_refill_handler ic oc tr rh in
+  let inline = choose_inlining entry_points transitions in
   let goto_state ctx pref n =
     if inline.(n) then
       output_trans_body pref ctx transitions.(n)
