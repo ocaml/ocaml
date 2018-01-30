@@ -291,9 +291,14 @@ let associate_fields fields1 fields2 =
   in
   associate [] [] [] (fields1, fields2)
 
+let rec has_dummy_method ty =
+  match repr ty with
+    {desc = Tfield (m, _, _, ty2)} ->
+      m = dummy_method || has_dummy_method ty2
+  | _ -> false
+
 let is_self_type = function
-  | Tobject (ty, _) ->
-      List.exists (fun (m,_,_) -> m = dummy_method) (fst (flatten_fields ty))
+  | Tobject (ty, _) -> has_dummy_method ty
   | _ -> false
 
 (**** Check whether an object is open ****)
