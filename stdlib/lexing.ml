@@ -63,7 +63,7 @@ external c_new_engine : lex_tables -> int -> lexbuf -> int
 
 let engine tbl state buf =
   let result = c_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 && buf.lex_curr_p != dummy_pos then begin
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
@@ -73,7 +73,7 @@ let engine tbl state buf =
 
 let new_engine tbl state buf =
   let result = c_new_engine tbl state buf in
-  if result >= 0 then begin
+  if result >= 0 && buf.lex_curr_p != dummy_pos then begin
     buf.lex_start_p <- buf.lex_curr_p;
     buf.lex_curr_p <- {buf.lex_curr_p
                        with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
@@ -215,10 +215,12 @@ let lexeme_end_p lexbuf = lexbuf.lex_curr_p
 
 let new_line lexbuf =
   let lcp = lexbuf.lex_curr_p in
-  lexbuf.lex_curr_p <- { lcp with
-    pos_lnum = lcp.pos_lnum + 1;
-    pos_bol = lcp.pos_cnum;
-  }
+  if lcp != dummy_pos then
+    lexbuf.lex_curr_p <-
+      { lcp with
+        pos_lnum = lcp.pos_lnum + 1;
+        pos_bol = lcp.pos_cnum;
+      }
 
 
 
@@ -227,5 +229,6 @@ let new_line lexbuf =
 let flush_input lb =
   lb.lex_curr_pos <- 0;
   lb.lex_abs_pos <- 0;
-  lb.lex_curr_p <- {lb.lex_curr_p with pos_cnum = 0};
+  let lcp = lb.lex_curr_p in
+  if lcp != dummy_pos then lb.lex_curr_p <- {lcp with pos_cnum = 0};
   lb.lex_buffer_len <- 0;

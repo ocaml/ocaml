@@ -73,7 +73,12 @@ type lexbuf =
    accurate, they must be initialised before the first use of the
    lexbuf, and updated by the relevant lexer actions (i.e. at each
    end of line -- see also [new_line]).
- *)
+
+   Updating [lex_curr_p] and [lex_start_p] is disabled if
+   [lex_curr_p] is physically equal to [dummy_pos].  Setting
+   [lex_curr_p] to [dummy_pos] before calling the engine can thus be
+   used to avoid useless allocations and memory writes in contexts where
+   [lex_start_p] and [lex_curr_p] are not needed.  *)
 
 val from_channel : in_channel -> lexbuf
 (** Create a lexer buffer on the given input channel.
