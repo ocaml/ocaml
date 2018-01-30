@@ -192,7 +192,7 @@ Working version
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
-- MPR#7636, GPR#: Constant type cannot be generalized
+- MPR#7636, GPR#1588: Constant type cannot be generalized
   (Jacques Garrigue, report by Christophe Raffalli)
 
 - PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
