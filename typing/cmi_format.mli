@@ -18,6 +18,7 @@ type pers_flags =
   | Deprecated of string
   | Opaque
   | Unsafe_string
+  | Flat_float_array
 
 type cmi_infos = {
     cmi_name : string;
