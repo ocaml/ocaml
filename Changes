@@ -135,6 +135,9 @@ Working version
   structures and signatures (e.g. "include struct … include(struct … end) … end")
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
+- GPR#1585: optimize output of "ocamllex -ml"
+  (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
