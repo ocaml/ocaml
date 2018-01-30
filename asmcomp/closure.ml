@@ -1141,7 +1141,7 @@ and close_functions fenv cenv fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    Ident.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
