@@ -29,50 +29,50 @@ type ctx = {
 let pr ctx = fprintf ctx.oc
 
 let output_auto_defs ctx =
-  if ctx.has_refill then
-    pr ctx {|
-let rec __ocaml_lex_refill_buf lexbuf _buf _len _curr _last _last_action state k =
-  if lexbuf.Lexing.lex_eof_reached then
-    state lexbuf _last_action _buf _len _curr _last k 256
-  else begin
-    lexbuf.Lexing.lex_curr_pos <- _curr;
-    lexbuf.Lexing.lex_last_pos <- _last;
-    __ocaml_lex_refill
-      (fun lexbuf ->
-        let _curr = lexbuf.Lexing.lex_curr_pos in
-        let _last = lexbuf.Lexing.lex_last_pos in
-        let _len = lexbuf.Lexing.lex_buffer_len in
-        let _buf = lexbuf.Lexing.lex_buffer in
-        if _curr < _len then
-          state lexbuf _last_action _buf _len (_curr + 1) _last k
-            (Char.code (Bytes.unsafe_get _buf _curr))
-        else
-          __ocaml_lex_refill_buf lexbuf _buf _len _curr _last _last_action
-            state k
-      )
-      lexbuf
+  if ctx.has_refill then begin
+    pr ctx "\n";
+    pr ctx "let rec __ocaml_lex_refill_buf lexbuf _buf _len _curr _last _last_action state k =\n";
+    pr ctx "  if lexbuf.Lexing.lex_eof_reached then\n";
+    pr ctx "    state lexbuf _last_action _buf _len _curr _last k 256\n";
+    pr ctx "  else begin\n";
+    pr ctx "    lexbuf.Lexing.lex_curr_pos <- _curr;\n";
+    pr ctx "    lexbuf.Lexing.lex_last_pos <- _last;\n";
+    pr ctx "    __ocaml_lex_refill\n";
+    pr ctx "      (fun lexbuf ->\n";
+    pr ctx "        let _curr = lexbuf.Lexing.lex_curr_pos in\n";
+    pr ctx "        let _last = lexbuf.Lexing.lex_last_pos in\n";
+    pr ctx "        let _len = lexbuf.Lexing.lex_buffer_len in\n";
+    pr ctx "        let _buf = lexbuf.Lexing.lex_buffer in\n";
+    pr ctx "        if _curr < _len then\n";
+    pr ctx "          state lexbuf _last_action _buf _len (_curr + 1) _last k\n";
+    pr ctx "            (Char.code (Bytes.unsafe_get _buf _curr))\n";
+    pr ctx "        else\n";
+    pr ctx "          __ocaml_lex_refill_buf lexbuf _buf _len _curr _last _last_action\n";
+    pr ctx "            state k\n";
+    pr ctx "      )\n";
+    pr ctx "      lexbuf\n";
+    pr ctx "  end\n";
+    pr ctx "\n";
+  end else begin
+    pr ctx "\n";
+    pr ctx "let rec __ocaml_lex_refill_buf lexbuf _buf _len _curr _last =\n";
+    pr ctx "  if lexbuf.Lexing.lex_eof_reached then\n";
+    pr ctx "    256, _buf, _len, _curr, _last\n";
+    pr ctx "  else begin\n";
+    pr ctx "    lexbuf.Lexing.lex_curr_pos <- _curr;\n";
+    pr ctx "    lexbuf.Lexing.lex_last_pos <- _last;\n";
+    pr ctx "    lexbuf.Lexing.refill_buff lexbuf;\n";
+    pr ctx "    let _curr = lexbuf.Lexing.lex_curr_pos in\n";
+    pr ctx "    let _last = lexbuf.Lexing.lex_last_pos in\n";
+    pr ctx "    let _len = lexbuf.Lexing.lex_buffer_len in\n";
+    pr ctx "    let _buf = lexbuf.Lexing.lex_buffer in\n";
+    pr ctx "    if _curr < _len then\n";
+    pr ctx "      Char.code (Bytes.unsafe_get _buf _curr), _buf, _len, (_curr + 1), _last\n";
+    pr ctx "    else\n";
+    pr ctx "      __ocaml_lex_refill_buf lexbuf _buf _len _curr _last\n";
+    pr ctx "  end\n";
+    pr ctx "\n";
   end
-|}
-  else
-    pr ctx {|
-let rec __ocaml_lex_refill_buf lexbuf _buf _len _curr _last =
-  if lexbuf.Lexing.lex_eof_reached then
-    256, _buf, _len, _curr, _last
-  else begin
-    lexbuf.Lexing.lex_curr_pos <- _curr;
-    lexbuf.Lexing.lex_last_pos <- _last;
-    lexbuf.Lexing.refill_buff lexbuf;
-    let _curr = lexbuf.Lexing.lex_curr_pos in
-    let _last = lexbuf.Lexing.lex_last_pos in
-    let _len = lexbuf.Lexing.lex_buffer_len in
-    let _buf = lexbuf.Lexing.lex_buffer in
-    if _curr < _len then
-      Char.code (Bytes.unsafe_get _buf _curr), _buf, _len, (_curr + 1), _last
-    else
-      __ocaml_lex_refill_buf lexbuf _buf _len _curr _last
-  end
-
-|}
 
 let output_memory_actions pref oc = function
   | []  -> ()
@@ -218,13 +218,13 @@ let output_trans_body pref ctx = function
           "%slet state lexbuf _last_action _buf _len _curr _last k = function\n"
           pref;
         output_moves ctx pref move;
-        pr ctx "  in\n\
+        pr ctx "%sin\n\
                 %sif _curr >= _len then\n\
                 %s  __ocaml_lex_refill_buf lexbuf _buf _len _curr _last _last_action state k\n\
                 %selse\n\
                 %s  state lexbuf _last_action _buf _len (_curr + 1) _last k\n\
-                %s    (Char.code (Bytes.unsafe_get _buf _curr))"
-        pref pref pref pref pref
+                %s    (Char.code (Bytes.unsafe_get _buf _curr))\n"
+        pref pref pref pref pref pref
       end
       else begin
         pr ctx "%slet next_char, _buf, _len, _curr, _last =\n\
@@ -255,56 +255,61 @@ let output_automata ctx auto inline =
       first := false;
     end
   done;
-  output_char ctx.oc '\n'
+  pr ctx "\n\n"
 
 
 (* Output the entries *)
 
-let output_entry ic ctx tr e =
-  let init_num, init_moves = e.auto_initial_state in
-  pr ctx "%s %alexbuf =\n" e.auto_name output_args e.auto_args;
+let output_init ctx pref e =
   if e.auto_mem_size > 0 then
-    pr ctx "  lexbuf.Lexing.lex_mem <- Array.make %d (-1);" e.auto_mem_size;
-  pr ctx {|
-  let _curr = lexbuf.Lexing.lex_curr_pos in
-  let _last = _curr in
-  let _len = lexbuf.Lexing.lex_buffer_len in
-  let _buf = lexbuf.Lexing.lex_buffer in
-  let _last_action = -1 in
-  lexbuf.Lexing.lex_start_pos <- _curr;
-|};
-  output_memory_actions "  " ctx.oc init_moves;
-  if ctx.has_refill
-  then pr ctx "\n  let k = (fun lexbuf __ocaml_lex_result ->"
-  else begin
-    pr ctx "\n  let __ocaml_lex_result =\n";
-    ctx.goto_state ctx "  " init_num;
-    pr ctx "in\n";
-  end;
-  pr ctx {|
-  let _curr_p = lexbuf.Lexing.lex_curr_p in
-  if _curr_p != Lexing.dummy_pos then begin
-    lexbuf.Lexing.lex_start_p <- _curr_p;
-    lexbuf.Lexing.lex_curr_p <- {_curr_p with
-         Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos}
-  end;
-  match __ocaml_lex_result with
-|};
+    pr ctx "%slexbuf.Lexing.lex_mem <- Array.make %d (-1);\n"
+      pref e.auto_mem_size;
+  pr ctx "%slet _curr = lexbuf.Lexing.lex_curr_pos in\n" pref;
+  pr ctx "%slet _last = _curr in\n" pref;
+  pr ctx "%slet _len = lexbuf.Lexing.lex_buffer_len in\n" pref;
+  pr ctx "%slet _buf = lexbuf.Lexing.lex_buffer in\n" pref;
+  pr ctx "%slet _last_action = -1 in\n" pref;
+  pr ctx "%slexbuf.Lexing.lex_start_pos <- _curr;\n" pref
+
+let output_rules ic ctx pref tr e =
+  pr ctx "%sbegin\n" pref;
+  pr ctx "%s  let _curr_p = lexbuf.Lexing.lex_curr_p in\n" pref;
+  pr ctx "%s  if _curr_p != Lexing.dummy_pos then begin\n" pref;
+  pr ctx "%s    lexbuf.Lexing.lex_start_p <- _curr_p;\n" pref;
+  pr ctx "%s    lexbuf.Lexing.lex_curr_p <-\n" pref;
+  pr ctx "%s      {_curr_p with Lexing.pos_cnum =\n" pref;
+  pr ctx "%s       lexbuf.Lexing.lex_abs_pos+lexbuf.Lexing.lex_curr_pos}\n" pref;
+  pr ctx "%s  end\n" pref;
+  pr ctx "%send;\n" pref;
+  pr ctx "%smatch __ocaml_lex_result with\n" pref;
   List.iter
     (fun (num, env, loc) ->
-      pr ctx "  | ";
-      pr ctx "%d ->\n" num;
-      output_env ic ctx.oc tr env ;
+      pr ctx "%s| %d ->\n" pref num;
+      output_env ic ctx.oc tr env;
       copy_chunk ic ctx.oc tr loc true;
       pr ctx "\n")
     e.auto_actions;
-  pr ctx "  | _ -> raise (Failure \"lexing: empty token\")\n";
+  pr ctx "%s| _ -> raise (Failure \"lexing: empty token\")\n" pref
+
+let output_entry ic ctx tr e =
+  let init_num, init_moves = e.auto_initial_state in
+  pr ctx "%s %alexbuf =\n" e.auto_name output_args e.auto_args;
+  output_memory_actions "  " ctx.oc init_moves;
+
   if ctx.has_refill then begin
-    pr ctx "  )\n  in  \n";
+    pr ctx "  let k lexbuf __ocaml_lex_result =\n";
+    output_rules ic ctx "    " tr e;
+    pr ctx "  in\n";
+    output_init ctx "  " e;
     ctx.goto_state ctx "  " init_num
-  end
-  else
-    pr ctx "\n\n"
+  end else begin
+    pr ctx "  let __ocaml_lex_result =\n";
+    output_init ctx "    " e;
+    ctx.goto_state ctx "    " init_num;
+    pr ctx "  in\n";
+    output_rules ic ctx "  " tr e
+  end;
+  pr ctx "\n\n"
 
 
 (* Main output function *)
