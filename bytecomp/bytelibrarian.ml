@@ -22,6 +22,7 @@ open Cmo_format
 type error =
     File_not_found of string
   | Not_an_object_file of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -68,6 +69,8 @@ let copy_object_file oc name =
       let compunit_pos = input_binary_int ic in
       seek_in ic compunit_pos;
       let compunit = (input_value ic : compilation_unit) in
+      if compunit.cu_flat_float_arrays && not Config.flat_float_array
+      then raise(Error(May_contain_flat_float_arrays file_name));
       Bytelink.check_consistency file_name compunit;
       copy_compunit ic oc compunit;
       close_in ic;
@@ -121,6 +124,10 @@ let report_error ppf = function
   | Not_an_object_file name ->
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
+  | May_contain_flat_float_arrays file ->
+      fprintf ppf "%a has been produced by a compiler with support for\
+                   flat float arrays."
+        Location.print_filename file
 
 let () =
   Location.register_error_of_exn

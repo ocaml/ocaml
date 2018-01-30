@@ -47,6 +47,7 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -67,6 +68,12 @@ let read_file filename priv =
 
   if header.dynu_magic <> cmxs_magic_number
   then raise(Error(Not_a_bytecode_file dll));
+  List.iter
+    (fun dynunit ->
+       if dynunit.dynu_flat_float_arrays
+       && not (Obj.(tag @@ repr [| 0. |] = double_array_tag)) then
+         raise(Error(May_contain_flat_float_arrays dll)))
+    header.dynu_units;
   (dll, handle, header.dynu_units)
 
 
@@ -251,6 +258,9 @@ let error_message = function
       "error loading shared library: " ^ reason
   | Inconsistent_implementation name ->
       "implementation mismatch on " ^ name
+  | May_contain_flat_float_arrays name ->
+      name ^ " has been produced by a compiler with support for " ^
+      "flat float arrays."
 
 let is_native = true
 let adapt_filename f = Filename.chop_extension f ^ ".cmxs"

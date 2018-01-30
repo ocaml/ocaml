@@ -427,7 +427,8 @@ let to_file outchan unit_name objfile ~required_globals code =
       cu_required_globals = Ident.Set.elements required_globals;
       cu_force_link = !Clflags.link_everything;
       cu_debug = pos_debug;
-      cu_debugsize = size_debug } in
+      cu_debugsize = size_debug;
+      cu_flat_float_arrays = Config.flat_float_array; } in
   init();                               (* Free out_buffer and reloc_info *)
   Btype.cleanup_abbrev ();              (* Remove any cached abbreviation
                                            expansion before saving *)

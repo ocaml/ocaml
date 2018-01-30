@@ -147,6 +147,7 @@ type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
   | Illegal_renaming of string * string * string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 

@@ -25,6 +25,7 @@ type error =
   | Not_an_object_file of string
   | Illegal_renaming of string * string * string
   | File_not_found of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 

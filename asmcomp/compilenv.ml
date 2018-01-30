@@ -29,6 +29,7 @@ type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
   | Illegal_renaming of string * string * string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -85,7 +86,8 @@ let current_unit =
     ui_apply_fun = [];
     ui_send_fun = [];
     ui_force_link = false;
-    ui_export_info = default_ui_export_info }
+    ui_export_info = default_ui_export_info;
+    ui_flat_float_arrays = Config.flat_float_array; }
 
 let symbolname_for_pack pack name =
   match pack with
@@ -164,6 +166,10 @@ let read_unit_info filename =
       raise(Error(Not_a_unit_info filename))
     end;
     let ui = (input_value ic : unit_infos) in
+    if ui.ui_flat_float_arrays && not Config.flat_float_array then begin
+      close_in ic;
+      raise(Error(May_contain_flat_float_arrays filename));
+    end;
     let crc = Digest.input ic in
     close_in ic;
     (ui, crc)
@@ -437,6 +443,10 @@ let report_error ppf = function
       fprintf ppf "%a@ contains the description for unit\
                    @ %s when %s was expected"
         Location.print_filename filename name modname
+  | May_contain_flat_float_arrays filename ->
+    fprintf ppf
+      "%a has been produced by a compiler with support for flat float arrays."
+      Location.print_filename filename
 
 let () =
   Location.register_error_of_exn

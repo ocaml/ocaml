@@ -27,6 +27,7 @@ type error =
   | Not_an_object_file of string
   | Illegal_renaming of string * string * string
   | File_not_found of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -116,6 +117,8 @@ let read_member_info file = (
         let compunit = (input_value ic : compilation_unit) in
         if compunit.cu_name <> name
         then raise(Error(Illegal_renaming(name, file, compunit.cu_name)));
+        if compunit.cu_flat_float_arrays && not Config.flat_float_array
+        then raise(Error(May_contain_flat_float_arrays file));
         close_in ic;
         PM_impl compunit
       with x ->
@@ -264,7 +267,8 @@ let package_object_files ~ppf_dump files targetfile targetname coercion =
         cu_required_globals = Ident.Set.elements required_globals;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
-        cu_debugsize = pos_final - pos_debug } in
+        cu_debugsize = pos_final - pos_debug;
+        cu_flat_float_arrays = Config.flat_float_array; } in
     Emitcode.marshal_to_channel_with_possibly_32bit_compat
       ~filename:targetfile ~kind:"bytecode unit"
       oc compunit;
@@ -315,6 +319,10 @@ let report_error ppf = function
         Location.print_filename file name id
   | File_not_found file ->
       fprintf ppf "File %s not found" file
+  | May_contain_flat_float_arrays file ->
+      fprintf ppf "%a has been produced by a compiler with support for\
+                   flat float arrays."
+        Location.print_filename file
 
 let () =
   Location.register_error_of_exn

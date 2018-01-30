@@ -170,6 +170,12 @@ and really_load_file recursive ppf name filename ic =
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
       let cu : compilation_unit = input_value ic in
+      if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
+        fprintf ppf "%s has been produced by a compiler with support for\
+                     flat float arrays."
+          filename;
+        raise Load_failed
+      end;
       if recursive then
         List.iter
           (function

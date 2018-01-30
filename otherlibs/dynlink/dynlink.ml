@@ -34,6 +34,7 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
+  | May_contain_flat_float_arrays of string
 
 exception Error of error
 
@@ -66,7 +67,9 @@ let () =
           | Cannot_open_dll s ->
               Printf.sprintf "Cannot_open_dll %S" s
           | Inconsistent_implementation s ->
-              Printf.sprintf "Inconsistent_implementation %S" s in
+              Printf.sprintf "Inconsistent_implementation %S" s
+          | May_contain_flat_float_arrays s ->
+              Printf.sprintf "May_contain_flat_float_arrays %S" s in
           Some (Printf.sprintf "Dynlink.Error(Dynlink.%s)" msg)
       | _ -> None)
 
@@ -265,6 +268,8 @@ let loadfile file_name =
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
       let cu = (input_value ic : compilation_unit) in
+      if cu.cu_flat_float_arrays && not Config.flat_float_array then
+        raise(Error(May_contain_flat_float_arrays file_name));
       load_compunit ic file_name file_digest cu
     end else
     if buffer = Config.cma_magic_number then begin
@@ -324,7 +329,10 @@ let error_message = function
   | Cannot_open_dll reason ->
       "error loading shared library: " ^ reason
   | Inconsistent_implementation name ->
-      "implementation mismatch on " ^ name
+    "implementation mismatch on " ^ name
+  | May_contain_flat_float_arrays name ->
+      name ^ " has been produced by a compiler with support for " ^
+      "flat float arrays."
 
 let is_native = false
 let adapt_filename f = f
