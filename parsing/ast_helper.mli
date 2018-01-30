@@ -168,7 +168,7 @@ module Exp:
     val object_: ?loc:loc -> ?attrs:attrs -> class_structure -> expression
     val newtype: ?loc:loc -> ?attrs:attrs -> str -> expression -> expression
     val pack: ?loc:loc -> ?attrs:attrs -> module_expr -> expression
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> module_expr
               -> expression -> expression
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> expression
     val unreachable: ?loc:loc -> ?attrs:attrs -> unit -> expression
@@ -352,7 +352,7 @@ module Cty:
     val arrow: ?loc:loc -> ?attrs:attrs -> arg_label -> core_type ->
       class_type -> class_type
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_type
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> class_type
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> module_expr -> class_type
                -> class_type
   end
 
@@ -392,7 +392,7 @@ module Cl:
     val constraint_: ?loc:loc -> ?attrs:attrs -> class_expr -> class_type ->
       class_expr
     val extension: ?loc:loc -> ?attrs:attrs -> extension -> class_expr
-    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> lid -> class_expr
+    val open_: ?loc:loc -> ?attrs:attrs -> override_flag -> module_expr -> class_expr
                -> class_expr
   end
 

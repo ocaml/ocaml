@@ -666,8 +666,8 @@ and expression ctxt f x =
     | Pexp_poly (e, Some ct) ->
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
           (simple_expr ctxt) e (core_type ctxt) ct
-    | Pexp_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pexp_open (ovf, m, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) (module_expr ctxt) m
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
@@ -830,8 +830,8 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
-  | Pcty_open (ovf, lid, e) ->
-      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+  | Pcty_open (ovf, m, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) (module_expr ctxt) m 
         (class_type ctxt) e
 
 (* [class type a = object end] *)
@@ -949,8 +949,8 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
-    | Pcl_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pcl_open (ovf, m, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) (module_expr ctxt) m
           (class_expr ctxt) e
 
 and module_type ctxt f x =

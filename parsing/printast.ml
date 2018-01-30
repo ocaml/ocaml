@@ -372,7 +372,7 @@ and expression i ppf x =
       module_expr i ppf me
   | Pexp_open (ovf, m, e) ->
       line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+        (module_expr i) m;
       expression i ppf e
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
@@ -487,7 +487,7 @@ and class_type i ppf x =
       payload i ppf arg
   | Pcty_open (ovf, m, e) ->
       line i ppf "Pcty_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+        (module_expr i) m;
       class_type i ppf e
 
 and class_signature i ppf cs =
@@ -578,7 +578,7 @@ and class_expr i ppf x =
       payload i ppf arg
   | Pcl_open (ovf, m, e) ->
       line i ppf "Pcl_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident_loc m;
+        (module_expr i) m;
       class_expr i ppf e
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =

@@ -346,7 +346,7 @@ and expression_desc =
 
            (module ME : S) is represented as
            Pexp_constraint(Pexp_pack, Ptyp_package S) *)
-  | Pexp_open of override_flag * Longident.t loc * expression
+  | Pexp_open of override_flag * module_expr * expression
         (* M.(E)
            let open M in E
            let! open M in E *)
@@ -505,7 +505,7 @@ and class_type_desc =
          *)
   | Pcty_extension of extension
         (* [%id] *)
-  | Pcty_open of override_flag * Longident.t loc * class_type
+  | Pcty_open of override_flag * module_expr * class_type
         (* let open M in CT *)
 
 and class_signature =
@@ -597,7 +597,7 @@ and class_expr_desc =
         (* (CE : CT) *)
   | Pcl_extension of extension
   (* [%id] *)
-  | Pcl_open of override_flag * Longident.t loc * class_expr
+  | Pcl_open of override_flag * module_expr * class_expr
   (* let open M in CE *)
 
 
