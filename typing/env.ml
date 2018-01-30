@@ -66,6 +66,7 @@ type error =
   | Depend_on_unsafe_string_unit of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
+  | Depend_on_flat_float_array_unit of string * string
 
 exception Error of error
 
@@ -698,7 +699,8 @@ let save_pers_struct crc ps =
         | Rectypes -> ()
         | Deprecated _ -> ()
         | Unsafe_string -> ()
-        | Opaque -> add_imported_opaque modname)
+        | Opaque -> add_imported_opaque modname
+        | Flat_float_array -> ())
     ps.ps_flags;
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import modname
@@ -749,7 +751,10 @@ let acknowledge_pers_struct check modname
             if Config.safe_string then
               error (Depend_on_unsafe_string_unit (ps.ps_name, !current_unit));
         | Deprecated _ -> ()
-        | Opaque -> add_imported_opaque modname)
+        | Opaque -> add_imported_opaque modname
+        | Flat_float_array ->
+          if not Config.flat_float_array then
+            error (Depend_on_flat_float_array_unit(ps.ps_name, !current_unit)))
     ps.ps_flags;
   if check then check_consistency ps;
   Hashtbl.add persistent_structures modname (Some ps);
@@ -807,6 +812,10 @@ let check_pers_struct ~loc name =
               name
         | Depend_on_unsafe_string_unit (name, _) ->
             Printf.sprintf "%s uses -unsafe-string"
+                           name
+        | Depend_on_flat_float_array_unit (name, _) ->
+            Printf.sprintf
+              "%s uses flat float arrays"
               name
         | Missing_module _ -> assert false
         | Illegal_value_name _ -> assert false
@@ -2233,6 +2242,7 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       if !Clflags.opaque then [Cmi_format.Opaque] else [];
       (if !Clflags.unsafe_string then [Cmi_format.Unsafe_string] else []);
       (match deprecated with Some s -> [Deprecated s] | None -> []);
+      (if Config.flat_float_array then [Cmi_format.Flat_float_array] else []);
     ]
   in
   Misc.try_finally (fun () ->
@@ -2434,6 +2444,11 @@ let report_error ppf = function
   | Illegal_value_name(_loc, name) ->
       fprintf ppf "'%s' is not a valid value identifier."
         name
+  | Depend_on_flat_float_array_unit(import, export) ->
+      fprintf ppf
+        "@[<hov>Unit %s imports from %s, compiled with flat float arrays.@ %s@]"
+        export import "This compiler has been configured without support \
+                       for flat float arrays (-no-flat-float-array)"
 
 let () =
   Location.register_error_of_exn

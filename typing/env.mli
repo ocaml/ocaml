@@ -267,6 +267,7 @@ type error =
   | Depend_on_unsafe_string_unit of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
+  | Depend_on_flat_float_array_unit of string * string
 
 exception Error of error
 
