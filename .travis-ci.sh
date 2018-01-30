@@ -154,3 +154,16 @@ tests)
    exit 1
    ;;
 esac
+
+CheckBootstrapedNoFlatArray () {
+  cat<<EOF
+------------------------------------------------------------------------
+This test checks that the bytecode compiler in the boot/ directory has
+been compiled with the '-no-flat_float_array' flag.
+------------------------------------------------------------------------
+EOF
+  if test -n "$(./boot/ocamlc -config | grep '^flat_float_array: false$')"
+  then echo pass
+  else exit 1
+  fi
+}
