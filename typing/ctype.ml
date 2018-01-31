@@ -43,7 +43,7 @@ open Btype
    - All nodes of a type have a level : that way, one know whether a
      node need to be duplicated or not when instantiating a type.
    - Levels of a type are decreasing (generic level being considered
-     as greatest).
+     as greatest), except for null-variant parameters of type constructors.
    - The level of a type constructor is superior to the binding
      time of its path.
    - Recursive types without limitation should be handled (even if
@@ -759,7 +759,6 @@ let rec update_level env level expand ty =
         raise (Unify [(ty1, newvar2 level)])
     | _ ->
         set_level ty level;
-        (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level expand) ty
   end
 
