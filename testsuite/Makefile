@@ -238,7 +238,13 @@ promote:
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote
+	@if [ -f $(DIR)/ocamltests ]; then \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest" \
+	    OCAMLTESTFLAGS="-promote"; \
+	else \
+	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
+	fi
 
 .PHONY: lib
 lib:
