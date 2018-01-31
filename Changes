@@ -23,6 +23,9 @@ Working version
   when configured with -no-flat-float-array
   (Jeremy Yallop, report by Gabriel Scherer)
 
+- GPR#1583: propagate refined ty_arg to Parmatch checks
+  (Thomas Refis, review by Jacques Garrigue)
+
 ### Standard library:
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats

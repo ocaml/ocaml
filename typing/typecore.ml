@@ -4583,6 +4583,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     match caselist with
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
+  let take_partial_instance =
+    if !Clflags.principal || erase_either
+    then Some false else None
+  in
   if propagate then begin_def (); (* propagation of the argument *)
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
@@ -4599,10 +4603,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) =
-          let partial =
-            if !Clflags.principal || erase_either
-            then Some false else None in
-          let ty_arg = instance ?partial env ty_arg in
+          let ty_arg = instance ?partial:take_partial_instance env ty_arg in
           type_pattern ~lev env pc_lhs scope ty_arg
         in
         pattern_force := force @ !pattern_force;
@@ -4630,11 +4631,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  if propagate || erase_either then unify_pats (instance env ty_arg);
+  if take_partial_instance <> None then unify_pats (instance env ty_arg);
   if propagate then begin
     List.iter
       (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
     end_def ();
+    generalize ty_arg';
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
   end;
   (* type bodies *)
@@ -4682,12 +4684,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
-      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg
-    else ty_arg
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
+    else ty_arg'
   in
   let partial =
     if partial_flag then
-      check_partial ~lev env ty_arg_check loc cases
+      check_partial ~lev env (instance env ty_arg_check) loc cases
     else
       Partial
   in
