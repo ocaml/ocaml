@@ -65,10 +65,7 @@ let prepare_module (module_name, module_type) =
     | Filetype.Lexer -> assert false
     | Filetype.Grammar -> assert false
 
-let compile_program
-    ocamlsrcdir compiler program_variable
-    log env
-  =
+let compile_program ocamlsrcdir compiler program_variable log env =
   let backend = compiler.Ocaml_compilers.backend in
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
@@ -125,6 +122,37 @@ let compile_program
       log env commandline in
   if exit_status=expected_exit_status
   then Pass (Environments.add program_variable program_file env)
+  else Fail (Actions_helpers.mkreason
+    what (String.concat " " commandline) exit_status)
+
+let compile_module ocamlsrcdir compiler module_ log env =
+  let backend = compiler.Ocaml_compilers.backend in
+  let expected_exit_status =
+    Ocaml_compilers.expected_exit_status env compiler in
+  let what = Printf.sprintf "Compiling modules %s" module_ in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    compiler.Ocaml_compilers.name ocamlsrcdir;
+    Ocaml_flags.use_runtime backend ocamlsrcdir;
+    Ocaml_flags.runtime_variant backend ocamlsrcdir;
+    Ocaml_flags.stdlib ocamlsrcdir;
+    directory_flags env;
+    flags env;
+    libraries backend env;
+    backend_default_flags env backend;
+    backend_flags env backend;
+    "-c " ^ module_;
+  ] in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:compiler.Ocaml_compilers.output_variable
+      ~stderr_variable:compiler.Ocaml_compilers.output_variable
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then Pass env
   else Fail (Actions_helpers.mkreason
     what (String.concat " " commandline) exit_status)
 
@@ -241,7 +269,9 @@ let setup_ocamlnat_build_env =
 
 let compile program_variable compiler log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  compile_program ocamlsrcdir compiler program_variable log env
+  match Environments.lookup Ocaml_variables.module_ env with
+    | None -> compile_program ocamlsrcdir compiler program_variable log env
+    | Some module_ -> compile_module ocamlsrcdir compiler module_ log env
 
 (* Compile actions *)
 
