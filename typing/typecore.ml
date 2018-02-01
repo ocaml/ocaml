@@ -1956,6 +1956,13 @@ struct
       | Texp_letmodule (_, _, _, e)
       | Texp_sequence (_, e)
       | Texp_letexception (_, e) -> classify_expression e
+      | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
+          classify_expression e
+      | Texp_construct _ -> Static
+      | Texp_record { representation = Record_unboxed _;
+                      fields = [| _, Overridden (_,e) |] } ->
+          classify_expression e
+      | Texp_record _ -> Static
       | Texp_ident _
       | Texp_for _
       | Texp_constant _
@@ -1963,9 +1970,7 @@ struct
       | Texp_instvar _
       | Texp_tuple _
       | Texp_array _
-      | Texp_construct _
       | Texp_variant _
-      | Texp_record _
       | Texp_setfield _
       | Texp_while _
       | Texp_setinstvar _
