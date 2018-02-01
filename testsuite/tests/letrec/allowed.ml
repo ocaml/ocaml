@@ -103,3 +103,6 @@ let rec d =
        V d
      else
        W);;
+
+type r = R of r list [@@unboxed];;
+let rec a = R [a];;
