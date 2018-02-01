@@ -58,7 +58,7 @@ let backend_flags env =
 let dumb_term = [|"TERM=dumb"|]
 
 let link_modules
-    ocamlsrcdir compiler compilername compileroutput program_variable
+    ocamlsrcdir compiler program_variable
     custom c_headers_flags log env modules
   =
   let backend = compiler.Ocaml_compilers.backend in
@@ -76,7 +76,7 @@ let link_modules
   let customstr = if custom then "-custom" else "" in
   let commandline =
   [
-    compilername;
+    compiler.Ocaml_compilers.name ocamlsrcdir;
     customstr;
     c_headers_flags;
     Ocaml_flags.use_runtime backend ocamlsrcdir;
@@ -94,8 +94,8 @@ let link_modules
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
-      ~stdout_variable:compileroutput
-      ~stderr_variable:compileroutput
+      ~stdout_variable:compiler.Ocaml_compilers.output_variable
+      ~stderr_variable:compiler.Ocaml_compilers.output_variable
       ~append:true
       log env commandline in
   if exit_status=expected_exit_status
@@ -104,7 +104,7 @@ let link_modules
     what (String.concat " " commandline) exit_status)
 
 let compile_program
-    ocamlsrcdir compiler compilername compileroutput program_variable
+    ocamlsrcdir compiler program_variable
     log env modules
   =
   let is_c_file (_filename, filetype) = filetype=Filetype.C in
@@ -114,7 +114,7 @@ let compile_program
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
   link_modules
-    ocamlsrcdir compiler compilername compileroutput
+    ocamlsrcdir compiler
     program_variable custom c_headers_flags log env modules
 
 let module_has_interface directory module_name =
@@ -240,7 +240,6 @@ let compile_test_program program_variable compiler log env =
   if Sys.file_exists compiler_output_filename then
     Sys.remove compiler_output_filename;
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  let compilername = compiler.Ocaml_compilers.name ocamlsrcdir in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
   let prepared_modules =
@@ -249,8 +248,6 @@ let compile_test_program program_variable compiler log env =
   compile_program
     ocamlsrcdir
     compiler
-    compilername
-    compiler_output_variable
     program_variable log newenv prepared_modules
 
 (* Compile actions *)
