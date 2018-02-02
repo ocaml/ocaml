@@ -29,6 +29,10 @@ Working version
 - GPR#1583: propagate refined ty_arg to Parmatch checks
   (Thomas Refis, review by Jacques Garrigue)
 
+- GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
+  For instance users can now use a largeFile.ml file in their project.
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
+
 ### Standard library:
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
