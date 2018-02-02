@@ -115,6 +115,7 @@ let _ = List.iter register_variable
     directories;
     flags;
     libraries;
+    module_;
     modules;
     ocamlc_flags;
     ocamlc_default_flags;
