@@ -57,22 +57,47 @@ let backend_flags env =
 
 let dumb_term = [|"TERM=dumb"|]
 
-let link_modules
+let prepare_module (module_name, module_type) =
+  match module_type with
+    | Filetype.Implementation | Filetype.Interface | Filetype.C ->
+      [(module_name, module_type)]
+    | Filetype.C_minus_minus -> assert false
+    | Filetype.Lexer -> assert false
+    | Filetype.Grammar -> assert false
+
+let compile_program
     ocamlsrcdir compiler program_variable
-    custom c_headers_flags log env modules
+    log env
   =
   let backend = compiler.Ocaml_compilers.backend in
+  let testfile = Actions_helpers.testfile env in
+  let testfile_basename = Filename.chop_extension testfile in
+  let build_directory =
+    Actions_helpers.test_build_directory env in
+  let program_filename =
+    Filename.mkexe
+      (Filename.make_filename
+        testfile_basename (Ocaml_backends.executable_extension backend)) in
+  let program_file =
+    Filename.make_path [build_directory; program_filename] in
+  let source_modules =
+    Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
+  let modules =
+    List.concatmap prepare_module
+      (List.map Filetype.filetype source_modules) in
+  let is_c_file (_filename, filetype) = filetype=Filetype.C in
+  let has_c_file = List.exists is_c_file modules in
+  let custom = (backend = Sys.Bytecode) && has_c_file in
+  let c_headers_flags =
+    if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
   let expected_exit_status =
     Ocaml_compilers.expected_exit_status env compiler in
-  let executable_name = match Environments.lookup program_variable env with
-    | None -> assert false
-    | Some program -> program in
   let module_names =
     String.concat " " (List.map Filetype.make_filename modules) in
   let what = Printf.sprintf "Linking modules %s into %s"
-    module_names executable_name in
+    module_names program_file in
   Printf.fprintf log "%s\n%!" what;
-  let output = "-o " ^ executable_name in
+  let output = "-o " ^ program_file in
   let customstr = if custom then "-custom" else "" in
   let commandline =
   [
@@ -99,23 +124,9 @@ let link_modules
       ~append:true
       log env commandline in
   if exit_status=expected_exit_status
-  then Pass env
+  then Pass (Environments.add program_variable program_file env)
   else Fail (Actions_helpers.mkreason
     what (String.concat " " commandline) exit_status)
-
-let compile_program
-    ocamlsrcdir compiler program_variable
-    log env modules
-  =
-  let is_c_file (_filename, filetype) = filetype=Filetype.C in
-  let has_c_file = List.exists is_c_file modules in
-  let backend = compiler.Ocaml_compilers.backend in
-  let custom = (backend = Sys.Bytecode) && has_c_file in
-  let c_headers_flags =
-    if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
-  link_modules
-    ocamlsrcdir compiler
-    program_variable custom c_headers_flags log env modules
 
 let module_has_interface directory module_name =
   let interface_name =
@@ -228,40 +239,9 @@ let setup_ocamlnat_build_env =
     "setup-ocamlnat-build-env"
     Ocaml_compilers.ocamlnat
 
-let prepare_module (module_name, module_type) =
-  match module_type with
-    | Filetype.Implementation | Filetype.Interface | Filetype.C ->
-      [(module_name, module_type)]
-    | Filetype.C_minus_minus -> assert false
-    | Filetype.Lexer -> assert false
-    | Filetype.Grammar -> assert false
-
 let compile_test_program program_variable compiler log env =
-  let backend = compiler.Ocaml_compilers.backend in
-  let testfile = Actions_helpers.testfile env in
-  let testfile_basename = Filename.chop_extension testfile in
-  let build_directory =
-    Actions_helpers.test_build_directory env in
-  let executable_filename =
-    Filename.mkexe
-      (Filename.make_filename
-        testfile_basename (Ocaml_backends.executable_extension backend)) in
-  let executable_path =
-    Filename.make_path [build_directory; executable_filename] in
-  let newenv = Environments.add_bindings
-    [
-      (program_variable, executable_path);
-    ] env in
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  let source_modules =
-    Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
-  let prepared_modules =
-    List.concatmap prepare_module
-      (List.map Filetype.filetype source_modules) in
-  compile_program
-    ocamlsrcdir
-    compiler
-    program_variable log newenv prepared_modules
+  compile_program ocamlsrcdir compiler program_variable log env
 
 (* Compile actions *)
 
