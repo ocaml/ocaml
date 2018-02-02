@@ -239,7 +239,7 @@ let setup_ocamlnat_build_env =
     "setup-ocamlnat-build-env"
     Ocaml_compilers.ocamlnat
 
-let compile_test_program program_variable compiler log env =
+let compile program_variable compiler log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
   compile_program ocamlsrcdir compiler program_variable log env
 
@@ -248,25 +248,25 @@ let compile_test_program program_variable compiler log env =
 let ocamlc_byte =
   Actions.make
     "ocamlc.byte"
-    (compile_test_program
+    (compile
       Builtin_variables.program Ocaml_compilers.ocamlc_byte)
 
 let ocamlc_opt =
   Actions.make
     "ocamlc.opt"
-    (compile_test_program
+    (compile
       Builtin_variables.program2 Ocaml_compilers.ocamlc_opt)
 
 let ocamlopt_byte =
   Actions.make
     "ocamlopt.byte"
-    (compile_test_program
+    (compile
       Builtin_variables.program Ocaml_compilers.ocamlopt_byte)
 
 let ocamlopt_opt =
   Actions.make
     "ocamlopt.opt"
-    (compile_test_program
+    (compile
       Builtin_variables.program2 Ocaml_compilers.ocamlopt_opt)
 
 let run_expect_once ocamlsrcdir input_file principal log env =
