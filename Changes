@@ -17,6 +17,10 @@
 - MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
   (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
 
+- MPR#7713, GPR#1587: Make pattern matching warnings more robust
+  to ill-typed columns; this is a backport of GPR#1550 from 4.07+dev
+  (Thomas Refis, review by Gabriel Scherer, report by Andreas Hauptmann)
+
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
 
