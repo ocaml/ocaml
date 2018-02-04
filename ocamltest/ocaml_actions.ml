@@ -121,9 +121,15 @@ let compile_program ocamlsrcdir compiler program_variable log env =
       ~append:true
       log env commandline in
   if exit_status=expected_exit_status
-  then Pass (Environments.add program_variable program_file env)
-  else Fail (Actions_helpers.mkreason
-    what (String.concat " " commandline) exit_status)
+  then begin
+    let newenv = Environments.add program_variable program_file env in
+    (Result.pass, newenv)
+  end else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
 
 let compile_module ocamlsrcdir compiler module_ log env =
   let backend = compiler.Ocaml_compilers.backend in
@@ -152,9 +158,13 @@ let compile_module ocamlsrcdir compiler module_ log env =
       ~append:true
       log env commandline in
   if exit_status=expected_exit_status
-  then Pass env
-  else Fail (Actions_helpers.mkreason
-    what (String.concat " " commandline) exit_status)
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
 
 let module_has_interface directory module_name =
   let interface_name =
@@ -314,30 +324,30 @@ let run_expect_once ocamlsrcdir input_file principal log env =
   ] in
   let exit_status =
     Actions_helpers.run_cmd ~environment:dumb_term log env commandline in
-  if exit_status=0 then Pass env
-  else Fail (Actions_helpers.mkreason
-    "expect" (String.concat " " commandline) exit_status)
+  if exit_status=0 then (Result.pass, env)
+  else begin
+    let reason = (Actions_helpers.mkreason
+      "expect" (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
 
 let run_expect_twice ocamlsrcdir input_file log env =
   let corrected filename = Filename.make_filename filename "corrected" in
-  let first_run = run_expect_once ocamlsrcdir input_file false log env in
-  match first_run with
-    | Skip _ | Fail _ -> first_run
-    | Pass env1 ->
-      let intermediate_file = corrected input_file in
-      let second_run =
-        run_expect_once ocamlsrcdir intermediate_file true log env1 in
-      (match second_run with
-      | Skip _ | Fail _ -> second_run
-      | Pass env2 ->
-        let output_file = corrected intermediate_file in
-        let output_env = Environments.add_bindings
-        [
-          Builtin_variables.reference, input_file;
-          Builtin_variables.output, output_file
-        ] env2 in
-        Pass output_env
-      )
+  let (result1, env1) = run_expect_once ocamlsrcdir input_file false log env in
+  if Result.is_pass result1 then begin
+    let intermediate_file = corrected input_file in
+    let (result2, env2) =
+      run_expect_once ocamlsrcdir intermediate_file true log env1 in
+    if Result.is_pass result2 then begin
+      let output_file = corrected intermediate_file in
+      let output_env = Environments.add_bindings
+      [
+        Builtin_variables.reference, input_file;
+        Builtin_variables.output, output_file
+      ] env2 in
+      (Result.pass, output_env)
+    end else (result2, env2)
+  end else (result1, env1)
 
 let run_expect log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
@@ -378,15 +388,15 @@ let really_compare_programs backend comparison_tool log env =
   } in
   if Ocamltest_config.flambda && backend = Sys.Native
   then begin
-    Printf.fprintf log
-      "flambda temporarily disables comparison of native programs";
-    Pass env
+    let reason =
+      "flambda temporarily disables comparison of native programs" in
+    (Result.pass_with_reason reason, env)
   end else
   if backend = Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
   then begin
-    Printf.fprintf log
-      "comparison of native programs temporarily disabled under Windows";
-    Pass env
+    let reason =
+      "comparison of native programs temporarily disabled under Windows" in
+    (Result.pass_with_reason reason, env)
   end else begin
     let comparison_tool =
       if backend=Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
@@ -395,23 +405,23 @@ let really_compare_programs backend comparison_tool log env =
           Filecompare.make_cmp_tool bytes_to_ignore
         else comparison_tool in
     match Filecompare.compare_files ~tool:comparison_tool files with
-      | Filecompare.Same -> Pass env
+      | Filecompare.Same -> (Result.pass, env)
       | Filecompare.Different ->
         let reason = Printf.sprintf "Files %s and %s are different"
           program program2 in
-        Fail reason
+        (Result.fail_with_reason reason, env)
       | Filecompare.Unexpected_output -> assert false
       | Filecompare.Error (commandline, exitcode) ->
         let reason = Actions_helpers.mkreason what commandline exitcode in
-        Fail reason
+        (Result.fail_with_reason reason, env)
   end
 
 let compare_programs backend comparison_tool log env =
   let compare_programs =
     Environments.safe_lookup Ocaml_variables.compare_programs env in
   if compare_programs = "false" then begin
-    Printf.fprintf log "Skipping program comparison (disabled)";
-    Pass env
+    let reason = "program comparison disabled" in
+    (Result.pass_with_reason reason, env)
   end else really_compare_programs backend comparison_tool log env
 
 let make_bytecode_programs_comparison_tool ocamlsrcdir =
@@ -468,9 +478,13 @@ let compile_module
         ~stderr_variable:compileroutput
         ~append:true log env commandline in
     if exit_status=expected_exit_status
-    then Pass env
-    else Fail (Actions_helpers.mkreason
-      what (String.concat " " commandline) exit_status) in
+    then (Result.pass, env)
+    else begin
+      let reason =
+        (Actions_helpers.mkreason
+          what (String.concat " " commandline) exit_status) in
+      (Result.fail_with_reason reason, env)
+    end in
   match module_filetype with
     | Filetype.Interface ->
       let interface_name =
@@ -494,7 +508,7 @@ let compile_module
     | _ ->
       let reason = Printf.sprintf "File %s of type %s not supported yet"
         filename (Filetype.string_of_filetype module_filetype) in
-      (Fail reason)
+      (Result.fail_with_reason reason, env)
 
 let compile_modules
     ocamlsrcdir compiler compilername compileroutput
@@ -504,12 +518,11 @@ let compile_modules
     compile_module ocamlsrcdir compiler compilername compileroutput
     log env mod_ in
   let rec compile_mods env = function
-    | [] -> Pass env
+    | [] -> (Result.pass, env)
     | m::ms ->
-      (match compile_mod env m with
-        | Fail _ | Skip _ as error -> error
-        | Pass newenv -> (compile_mods newenv ms)
-      ) in
+      (let (result, newenv) = compile_mod env m in
+      if Result.is_pass result then (compile_mods newenv ms)
+      else (result, newenv)) in
   compile_mods initial_env modules_with_filetypes
 
 let run_test_program_in_toplevel toplevel log env =
@@ -524,43 +537,44 @@ let run_test_program_in_toplevel toplevel log env =
     | Sys.Other _ -> assert false in
   let compiler_name = compiler.Ocaml_compilers.name ocamlsrcdir in
   let modules_with_filetypes = List.map Filetype.filetype (modules env) in
-  let aux = compile_modules
+  let (modules_result, modules_env) = compile_modules
     ocamlsrcdir compiler compiler_name compiler_output_variable
     modules_with_filetypes log env in
-  match aux with
-    | Fail _ | Skip _ -> aux
-    | Pass auxenv ->
-      begin
-        let what =
-          Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
-          testfile
-          (Ocaml_backends.string_of_backend toplevel.Ocaml_compilers.backend)
-          expected_exit_status in
-        Printf.fprintf log "%s\n%!" what;
-        let toplevel_name = toplevel.Ocaml_compilers.name ocamlsrcdir in
-        let toplevel_default_flags = "-noinit -no-version -noprompt" in
-        let commandline =
-        [
-          toplevel_name;
-          toplevel_default_flags;
-          toplevel.Ocaml_compilers.flags;
-          Ocaml_flags.stdlib ocamlsrcdir;
-          directory_flags auxenv;
-          Ocaml_flags.include_toplevel_directory ocamlsrcdir;
-          flags auxenv;
-        ] in
-        let exit_status =
-          Actions_helpers.run_cmd
-            ~environment:dumb_term
-            ~stdin_variable:Builtin_variables.test_file
-            ~stdout_variable:compiler_output_variable
-            ~stderr_variable:compiler_output_variable
-            log auxenv commandline in
-        if exit_status=expected_exit_status
-        then Pass auxenv
-        else Fail (Actions_helpers.mkreason
-          what (String.concat " " commandline) exit_status)
-      end
+  if Result.is_pass modules_result then begin
+    let what =
+      Printf.sprintf "Running %s in %s toplevel (expected exit status: %d)"
+      testfile
+      (Ocaml_backends.string_of_backend toplevel.Ocaml_compilers.backend)
+      expected_exit_status in
+    Printf.fprintf log "%s\n%!" what;
+    let toplevel_name = toplevel.Ocaml_compilers.name ocamlsrcdir in
+    let toplevel_default_flags = "-noinit -no-version -noprompt" in
+    let commandline =
+    [
+      toplevel_name;
+      toplevel_default_flags;
+      toplevel.Ocaml_compilers.flags;
+      Ocaml_flags.stdlib ocamlsrcdir;
+      directory_flags modules_env;
+      Ocaml_flags.include_toplevel_directory ocamlsrcdir;
+      flags modules_env;
+    ] in
+    let exit_status =
+      Actions_helpers.run_cmd
+        ~environment:dumb_term
+        ~stdin_variable:Builtin_variables.test_file
+        ~stdout_variable:compiler_output_variable
+        ~stderr_variable:compiler_output_variable
+        log modules_env commandline in
+    if exit_status=expected_exit_status
+    then (Result.pass, modules_env)
+    else begin
+      let reason =
+        (Actions_helpers.mkreason
+          what (String.concat " " commandline) exit_status) in
+      (Result.fail_with_reason reason, modules_env)
+    end
+  end else (modules_result, modules_env)
 
 let ocaml = Actions.make
   "ocaml"

@@ -50,6 +50,7 @@ core := \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
+  result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   tsl_ast.mli tsl_ast.ml \

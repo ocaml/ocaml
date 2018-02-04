@@ -15,21 +15,7 @@
 
 (* Definition of actions, basic blocks for tests *)
 
-type result =
-  | Pass of Environments.t
-  | Fail of string
-  | Skip of string
-
-let string_of_reason prefix reason =
-  if reason="" then prefix
-  else prefix ^ " (" ^ reason ^ ")"
-
-let string_of_result = function
-  | Pass _ -> "Pass"
-  | Fail reason -> string_of_reason "Fail" reason
-  | Skip reason -> string_of_reason "Skip" reason
-
-type code = out_channel -> Environments.t -> result
+type code = out_channel -> Environments.t -> Result.t * Environments.t
 
 type t = {
   name : string;

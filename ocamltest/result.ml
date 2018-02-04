@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,28 +13,45 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of actions, basic blocks for tests *)
+(* Definition of test-result related types and functions *)
 
-type code = out_channel -> Environments.t -> Result.t * Environments.t
+type status = Pass | Skip | Fail
 
-type t
+type t = {
+  status : status;
+  reason : string option
+}
 
-val action_name : t -> string
+let result_of_status s = { status = s; reason = None }
 
-val make : string -> code -> t
+let pass = result_of_status Pass
 
-val compare : t -> t -> int
+let skip = result_of_status Skip
 
-val register : t -> unit
+let fail = result_of_status Fail
 
-val get_registered_actions : unit -> t list
+let result_with_reason s r = { status = s; reason = Some r }
 
-val lookup : string -> t option
+let pass_with_reason r = result_with_reason Pass r
 
-val set_hook : string -> code -> unit
-val clear_hook : string -> unit
-val clear_all_hooks : unit -> unit
+let skip_with_reason r = result_with_reason Skip r
 
-val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
+let fail_with_reason r = result_with_reason Fail r
 
-module ActionSet : Set.S with type elt = t
+let string_of_status = function
+  | Pass -> "passed"
+  | Skip -> "skipped"
+  | Fail -> "failed"
+
+let string_of_reason = function
+  | None -> ""
+  | Some reason -> (" (" ^ reason ^ ")")
+
+let string_of_result r =
+  (string_of_status r.status) ^ (string_of_reason r.reason)
+
+let is_pass r = r.status = Pass
+
+let is_skip r = r.status = Skip
+
+let is_fail r = r.status = Fail

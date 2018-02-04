@@ -20,33 +20,38 @@ open Actions
 
 let pass = make
   "pass"
-  (fun log env ->
-    Printf.fprintf log "The pass action always succeeds.\n%!";
-    Pass env)
+  (fun _log env ->
+    let result =
+      Result.pass_with_reason "The pass action always succeeds." in
+    (result, env))
 
 let skip = make
   "skip"
-  (fun _log _env -> Skip "The skip action always skips.")
+  (fun _log env ->
+    let result = Result.skip_with_reason "The skip action always skips." in
+    (result, env))
 
 let fail = make
   "fail"
-  (fun _log _env -> Fail "The fail action always fails.")
+  (fun _log env ->
+    let result = Result.fail_with_reason "The fail action always fails." in
+    (result, env))
 
 let dumpenv = make
   "dumpenv"
   (fun log env ->
-    Environments.dump log env; Pass env)
+    Environments.dump log env; (Result.pass, env))
 
 let unix = make
   "unix"
   (Actions_helpers.pass_or_skip Ocamltest_config.unix
-    "The unix action succeeds because we are on a Unix system.\n"
+    "The unix action succeeds because we are on a Unix system."
     "The unix action skips because we are on a Windows system.")
 
 let windows = make
   "windows"
   (Actions_helpers.pass_or_skip (not Ocamltest_config.unix)
-    "The windows action succeeds because we are on a Windows system.\n"
+    "The windows action succeeds because we are on a Windows system."
     "The windows action skips because we are on a Unix system.")
 
 let setup_build_env = make

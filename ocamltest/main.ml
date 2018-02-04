@@ -66,11 +66,10 @@ let rec run_test log common_prefix path behavior = function
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      let t = Tests.run log testenv test in
-      (match t with
-      | Actions.Pass env -> "passed", Run env
-      | Actions.Skip _ -> "skipped", Skip_all_tests
-      | Actions.Fail _ -> "failed", Skip_all_tests) in
+      let (result, newenv) = Tests.run log testenv test in
+      let s = Result.string_of_result result in
+      if Result.is_pass result then (s, Run newenv)
+      else (s, Skip_all_tests) in
   Printf.printf "%s\n%!" msg;
   List.iteri (run_test_i log common_prefix path b) subtrees
 and run_test_i log common_prefix path behavior i test_tree =

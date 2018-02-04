@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*             Sebastien Hinderer, projet Gallium, INRIA Paris            *)
 (*                                                                        *)
-(*   Copyright 2016 Institut National de Recherche en Informatique et     *)
+(*   Copyright 2018 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
@@ -13,28 +13,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of actions, basic blocks for tests *)
+(* Definition of test-result related types and functions *)
 
-type code = out_channel -> Environments.t -> Result.t * Environments.t
+type status = Pass | Skip | Fail
 
-type t
+type t = {
+  status : status;
+  reason : string option
+}
 
-val action_name : t -> string
+val pass : t
 
-val make : string -> code -> t
+val skip : t
 
-val compare : t -> t -> int
+val fail : t
 
-val register : t -> unit
+val pass_with_reason : string -> t
 
-val get_registered_actions : unit -> t list
+val skip_with_reason : string -> t
 
-val lookup : string -> t option
+val fail_with_reason : string -> t
 
-val set_hook : string -> code -> unit
-val clear_hook : string -> unit
-val clear_all_hooks : unit -> unit
+val string_of_result : t -> string
 
-val run : out_channel -> Environments.t -> t -> Result.t * Environments.t
+val is_pass : t -> bool
 
-module ActionSet : Set.S with type elt = t
+val is_skip : t -> bool
+
+val is_fail : t -> bool
