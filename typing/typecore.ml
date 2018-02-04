@@ -1254,7 +1254,10 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
-      unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
+      (* PR#7404: allow some_private_tag blindly, as it would not unify with
+         the abstract row variable *)
+      if l = Parmatch.some_private_tag then assert (constrs <> None)
+      else unify_pat_types loc !env (newty (Tvariant row)) expected_ty;
       let k arg =
         rp k {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
@@ -1958,6 +1961,13 @@ struct
       | Texp_letmodule (_, _, _, e)
       | Texp_sequence (_, e)
       | Texp_letexception (_, e) -> classify_expression e
+      | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
+          classify_expression e
+      | Texp_construct _ -> Static
+      | Texp_record { representation = Record_unboxed _;
+                      fields = [| _, Overridden (_,e) |] } ->
+          classify_expression e
+      | Texp_record _ -> Static
       | Texp_ident _
       | Texp_for _
       | Texp_constant _
@@ -1965,9 +1975,7 @@ struct
       | Texp_instvar _
       | Texp_tuple _
       | Texp_array _
-      | Texp_construct _
       | Texp_variant _
-      | Texp_record _
       | Texp_setfield _
       | Texp_while _
       | Texp_setinstvar _
@@ -3074,9 +3082,9 @@ and type_expect_
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
                   let _, ty_arg2, ty_res2 = instance_label false lbl in
-                  unify env ty_arg1 ty_arg2;
+                  unify_exp_types loc env ty_arg1 ty_arg2;
                   with_explanation (fun () ->
-                    unify env (instance env ty_expected) ty_res2);
+                    unify_exp_types loc env (instance env ty_expected) ty_res2);
                   Kept ty_arg1
                 end
             in
@@ -4585,6 +4593,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     match caselist with
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
+  let take_partial_instance =
+    if !Clflags.principal || erase_either
+    then Some false else None
+  in
   if propagate then begin_def (); (* propagation of the argument *)
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
@@ -4601,10 +4613,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) =
-          let partial =
-            if !Clflags.principal || erase_either
-            then Some false else None in
-          let ty_arg = instance ?partial env ty_arg in
+          let ty_arg = instance ?partial:take_partial_instance env ty_arg in
           type_pattern ~lev env pc_lhs scope ty_arg
         in
         pattern_force := force @ !pattern_force;
@@ -4632,11 +4641,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
-  if propagate || erase_either then unify_pats (instance env ty_arg);
+  if take_partial_instance <> None then unify_pats (instance env ty_arg);
   if propagate then begin
     List.iter
       (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
     end_def ();
+    generalize ty_arg';
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
   end;
   (* type bodies *)
@@ -4684,12 +4694,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
-      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg
-    else ty_arg
+      Subst.type_expr (Subst.for_saving Subst.identity) ty_arg'
+    else ty_arg'
   in
   let partial =
     if partial_flag then
-      check_partial ~lev env ty_arg_check loc cases
+      check_partial ~lev env (instance env ty_arg_check) loc cases
     else
       Partial
   in

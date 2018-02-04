@@ -20,7 +20,7 @@
 type t
 (** The type for Unicode characters.
 
-    A value of this type represents an Unicode
+    A value of this type represents a Unicode
     {{:http://unicode.org/glossary/#unicode_scalar_value}scalar
     value} which is an integer in the ranges [0x0000]...[0xD7FF] or
     [0xE000]...[0x10FFFF]. *)
@@ -58,11 +58,11 @@ val pred : t -> t
     @raise Invalid_argument if [u] is {!min}. *)
 
 val is_valid : int -> bool
-(** [is_valid n] is [true] iff [n] is an Unicode scalar value
+(** [is_valid n] is [true] iff [n] is a Unicode scalar value
     (i.e. in the ranges [0x0000]...[0xD7FF] or [0xE000]...[0x10FFFF]).*)
 
 val of_int : int -> t
-(** [of_int i] is [i] as an Unicode character.
+(** [of_int i] is [i] as a Unicode character.
 
     @raise Invalid_argument if [i] does not satisfy {!is_valid}. *)
 
@@ -77,7 +77,7 @@ val is_char : t -> bool
 (** [is_char u] is [true] iff [u] is a latin1 OCaml character. *)
 
 val of_char : char -> t
-(** [of_char c] is [c] as an Unicode character. *)
+(** [of_char c] is [c] as a Unicode character. *)
 
 val to_char : t -> char
 (** [to_char u] is [u] as an OCaml latin1 character.

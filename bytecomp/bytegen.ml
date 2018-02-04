@@ -146,7 +146,7 @@ let rec size_of_lambda env = function
   | Lvar id ->
       begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Lfunction{params} as funct ->
-      RHS_function (1 + IdentSet.cardinal(free_variables funct),
+      RHS_function (1 + Ident.Set.cardinal(free_variables funct),
                     List.length params)
   | Llet (Strict, _k, id, Lprim (Pduprecord (kind, size), _, _), body)
     when check_recordwith_updates id body ->
@@ -519,7 +519,7 @@ let rec comp_expr env exp sz cont =
         end
   | Lfunction{params; body} -> (* assume kind = Curried *)
       let lbl = new_label() in
-      let fv = IdentSet.elements(free_variables exp) in
+      let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
         { params = params; body = body; label = lbl;
           free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
@@ -536,7 +536,7 @@ let rec comp_expr env exp sz cont =
                       decl then begin
         (* let rec of functions *)
         let fv =
-          IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in
+          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
         let rec_idents = List.map (fun (id, _lam) -> id) decl in
         let rec comp_fun pos = function
             [] -> []

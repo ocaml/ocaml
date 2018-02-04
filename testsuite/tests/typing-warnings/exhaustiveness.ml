@@ -1,3 +1,8 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+*)
+
 (* Warn about all relevant cases when possible *)
 let f = function
     None, None -> 1

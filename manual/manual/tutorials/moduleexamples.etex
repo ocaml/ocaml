@@ -178,19 +178,12 @@ module type PRIOQUEUE_WITH_OPT =
 \section{Functors}
 \pdfsection{Functors}
 
-Functors are ``functions'' from structures to structures. They are used to
-express parameterized structures: a structure \var{A} parameterized by a
-structure \var{B} is simply a functor \var{F} with a formal parameter
-\var{B} (along with the expected signature for \var{B}) which returns
-the actual structure \var{A} itself. The functor \var{F} can then be
-applied to one or several implementations \nth{B}{1} \ldots \nth{B}{n}
-of \var{B}, yielding the corresponding structures
-\nth{A}{1} \ldots \nth{A}{n}.
+Functors are ``functions'' from modules to modules. Functors let you create
+parameterized modules and then provide other modules as parameter(s) to get
+a specific implementation.  For instance, a "Set" module implementing sets
+as sorted lists could be parameterized to work with any module that provides
+an element type and a comparison function "compare" (such as "OrderedString"):
 
-For instance, here is a structure implementing sets as sorted lists,
-parameterized by a structure providing the type of the set elements
-and an ordering function over this type (used to keep the sets
-sorted):
 \begin{caml_example}{toplevel}
 type comparison = Less | Equal | Greater;;
 module type ORDERED_TYPE =

@@ -291,6 +291,16 @@ let associate_fields fields1 fields2 =
   in
   associate [] [] [] (fields1, fields2)
 
+let rec has_dummy_method ty =
+  match repr ty with
+    {desc = Tfield (m, _, _, ty2)} ->
+      m = dummy_method || has_dummy_method ty2
+  | _ -> false
+
+let is_self_type = function
+  | Tobject (ty, _) -> has_dummy_method ty
+  | _ -> false
+
 (**** Check whether an object is open ****)
 
 (* +++ The abbreviation should eventually be expanded *)
@@ -2437,7 +2447,9 @@ and unify3 env t1 t1' t2 t2' =
     begin match !umode with
     | Expression ->
         occur !env t1' t2';
-        link_type t1' t2
+        if is_self_type d1 (* PR#7711: do not abbreviate self type *)
+        then link_type t1' t2' 
+        else link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'
     end;

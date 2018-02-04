@@ -64,6 +64,11 @@ ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \
   ocaml_variables.mli ocaml_variables.ml \
   ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_directories.mli ocaml_directories.ml \
+  ocaml_files.mli ocaml_files.ml \
+  ocaml_flags.mli ocaml_flags.ml \
+  ocaml_commands.mli ocaml_commands.ml \
+  ocaml_compilers.mli ocaml_compilers.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 
@@ -170,6 +175,7 @@ ocamltest.opt$(EXE): $(native_modules)
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
+	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \

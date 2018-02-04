@@ -471,7 +471,7 @@ CAMLprim value caml_ba_dim(value vb, value vn)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat n = Long_val(vn);
-  if (n >= b->num_dims) caml_invalid_argument("Bigarray.dim");
+  if (n < 0 || n >= b->num_dims) caml_invalid_argument("Bigarray.dim");
   return Val_long(b->dim[n]);
 }
 

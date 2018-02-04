@@ -39,3 +39,5 @@ val check_ocamlnat_output : Actions.t
 
 val flat_float_array : Actions.t
 val no_flat_float_array : Actions.t
+
+val shared_libraries : Actions.t

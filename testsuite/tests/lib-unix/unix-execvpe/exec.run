@@ -8,7 +8,7 @@ exec > ${output} 2>&1
 subdir=${test_source_directory}/subdir
 
 # Let ocamltest know where we write our output
-echo output=\"${output}\" > ${ocamltest_env}
+echo output=\"${output}\" > ${ocamltest_response}
 
 export PATH="/bin:/usr/bin:${subdir}:"
 export BAR=bar

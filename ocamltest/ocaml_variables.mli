@@ -39,6 +39,8 @@ val flags : Variables.t
 
 val libraries : Variables.t
 
+val module_ : Variables.t
+
 val modules : Variables.t
 
 val ocamlc_flags : Variables.t

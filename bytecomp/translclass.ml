@@ -402,8 +402,8 @@ let rec build_class_lets cl =
 let rec get_class_meths cl =
   match cl.cl_desc with
     Tcl_structure cl ->
-      Meths.fold (fun _ -> IdentSet.add) cl.cstr_meths IdentSet.empty
-  | Tcl_ident _ -> IdentSet.empty
+      Meths.fold (fun _ -> Ident.Set.add) cl.cstr_meths Ident.Set.empty
+  | Tcl_ident _ -> Ident.Set.empty
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_let (_, _, _, cl)
   | Tcl_apply (cl, _)
@@ -518,7 +518,7 @@ let const_path local = function
   | Lconst _ -> true
   | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
-      List.for_all (fun x -> not (IdentSet.mem x fv)) local
+      List.for_all (fun x -> not (Ident.Set.mem x fv)) local
   | p -> module_path p
 
 let rec builtin_meths self env env2 body =
@@ -645,19 +645,19 @@ let transl_class ids cl_id pub_meths cl vflag =
   let meth_ids = get_class_meths cl in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
-    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (IdentSet.elements fv); *)
-    let fv = List.fold_right IdentSet.remove !new_ids' fv in
+    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (Ident.Set.elements fv); *)
+    let fv = List.fold_right Ident.Set.remove !new_ids' fv in
     (* We need to handle method ids specially, as they do not appear
        in the typing environment (PR#3576, PR#4560) *)
     (* very hacky: we add and remove free method ids on the fly,
        depending on the visit order... *)
     method_ids :=
-      IdentSet.diff (IdentSet.union (free_methods lam) !method_ids) meth_ids;
-    (* prerr_ids "meth_ids =" (IdentSet.elements meth_ids);
-       prerr_ids "method_ids =" (IdentSet.elements !method_ids); *)
-    let new_ids = List.fold_right IdentSet.add new_ids !method_ids in
-    let fv = IdentSet.inter fv new_ids in
-    new_ids' := !new_ids' @ IdentSet.elements fv;
+      Ident.Set.diff (Ident.Set.union (free_methods lam) !method_ids) meth_ids;
+    (* prerr_ids "meth_ids =" (Ident.Set.elements meth_ids);
+       prerr_ids "method_ids =" (Ident.Set.elements !method_ids); *)
+    let new_ids = List.fold_right Ident.Set.add new_ids !method_ids in
+    let fv = Ident.Set.inter fv new_ids in
+    new_ids' := !new_ids' @ Ident.Set.elements fv;
     (* prerr_ids "new_ids' =" !new_ids'; *)
     let i = ref (i0-1) in
     List.fold_left
@@ -679,7 +679,7 @@ let transl_class ids cl_id pub_meths cl vflag =
           builtin_meths [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
-             (if not (IdentSet.mem env (free_variables body')) then body' else
+             (if not (Ident.Set.mem env (free_variables body')) then body' else
               Llet(Alias, Pgenval, env,
                    Lprim(Pfield_computed,
                          [Lvar self; Lvar env2],
@@ -748,7 +748,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                                    params = [cla]; body = cl_init}) in
     Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
-    if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
+    if List.for_all (fun id -> not (Ident.Set.mem id fv)) ids then
       mkappl (oo_prim "make_class",[transl_meth_list pub_meths;
                                     Lvar class_init])
     else

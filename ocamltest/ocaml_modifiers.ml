@@ -51,6 +51,9 @@ let bigarray =
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
+let threads = make_library_modifier
+  "threads" (compiler_subdir ["otherlibs"; "systhreads"])
+
 let compilerlibs_subdirs =
 [
   "utils"; "parsing"; "typing"; "bytecomp"; "compilerlibs";
@@ -69,4 +72,6 @@ let _ =
   register_modifiers "unix" unix;
   register_modifiers "bigarray" bigarray;
   register_modifiers "str" str;
-  register_modifiers "ocamlcommon" ocamlcommon
+  register_modifiers "ocamlcommon" ocamlcommon;
+  register_modifiers "threads" threads;
+  ()

@@ -16,8 +16,6 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-module IdentSet = Lambda.IdentSet
-
 module Env = struct
   type t = {
     variables : Variable.t Ident.tbl;
@@ -90,7 +88,7 @@ module Function_decls = struct
       kind : Lambda.function_kind;
       params : Ident.t list;
       body : Lambda.lambda;
-      free_idents_of_body : IdentSet.t;
+      free_idents_of_body : Ident.Set.t;
       attr : Lambda.function_attribute;
       loc : Location.t;
     }
@@ -128,7 +126,7 @@ module Function_decls = struct
 
   type t = {
     function_decls : Function_decl.t list;
-    all_free_idents : IdentSet.t;
+    all_free_idents : Ident.Set.t;
   }
 
   (* All identifiers free in the bodies of the given function declarations,
@@ -140,8 +138,8 @@ module Function_decls = struct
       function_decls Variable.Map.empty
 
   let all_free_idents function_decls =
-    Variable.Map.fold (fun _ -> IdentSet.union)
-      (free_idents_by_function function_decls) IdentSet.empty
+    Variable.Map.fold (fun _ -> Ident.Set.union)
+      (free_idents_by_function function_decls) Ident.Set.empty
 
   (* All identifiers of simultaneously-defined functions in [ts]. *)
   let let_rec_idents function_decls =
@@ -151,8 +149,8 @@ module Function_decls = struct
   let all_params function_decls =
     List.concat (List.map Function_decl.params function_decls)
 
-  let set_diff (from : IdentSet.t) (idents : Ident.t list) =
-    List.fold_right IdentSet.remove idents from
+  let set_diff (from : Ident.Set.t) (idents : Ident.t list) =
+    List.fold_right Ident.Set.remove idents from
 
   (* CR-someday lwhite: use a different name from above or explain the
      difference *)
@@ -179,7 +177,7 @@ module Function_decls = struct
         t.function_decls (Env.clear_local_bindings external_env)
     in
     (* For free variables. *)
-    IdentSet.fold (fun id env ->
+    Ident.Set.fold (fun id env ->
         Env.add_var env id (Variable.create (Ident.name id)))
       t.all_free_idents closure_env
 end

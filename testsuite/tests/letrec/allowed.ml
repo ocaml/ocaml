@@ -79,3 +79,30 @@ let rec deep_cycle : [`Tuple of [`Shared of 'a] array] as 'a
    by an overzealous check.  Constructing float arrays in recursive
    bindings is fine when they don't partake in the recursion. *)
 let rec _x = let _ = [| 1.0 |] in 1. in ();;
+
+(* This test is not allowed if 'a' is unboxed, but should be accepted
+   as written *)
+type a = {a: b}
+and b = X of a | Y
+
+let rec a =
+  {a=
+    (if Sys.opaque_identity true then
+       X a
+     else
+       Y)};;
+
+(* This test is not allowed if 'c' is unboxed, but should be accepted
+   as written *)
+type d = D of e
+and e = V of d | W;;
+
+let rec d =
+  D
+    (if Sys.opaque_identity true then
+       V d
+     else
+       W);;
+
+type r = R of r list [@@unboxed];;
+let rec a = R [a];;

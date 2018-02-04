@@ -39,25 +39,15 @@ let dumpenv = make
 
 let unix = make
   "unix"
-  (fun log env ->
-    if Ocamltest_config.unix then
-    begin
-      Printf.fprintf log
-        "The unix action succeeds because we are on a Unix system.\n%!";
-      Pass env
-    end else
-      Skip "The unix action skips because we are on a Windows system.")
+  (Actions_helpers.pass_or_skip Ocamltest_config.unix
+    "The unix action succeeds because we are on a Unix system.\n"
+    "The unix action skips because we are on a Windows system.")
 
 let windows = make
   "windows"
-  (fun log env ->
-    if not Ocamltest_config.unix then
-    begin
-      Printf.fprintf log
-        "The windows action succeeds because we are on a Windows system.\n%!";
-      Pass env
-    end else
-      Skip "The windows action skips because we are on a Unix system.")
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.unix)
+    "The windows action succeeds because we are on a Windows system.\n"
+    "The windows action skips because we are on a Unix system.")
 
 let setup_build_env = make
   "setup-build-env"

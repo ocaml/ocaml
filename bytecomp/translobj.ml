@@ -162,7 +162,7 @@ let transl_label_init f =
 let wrapping = ref false
 let top_env = ref Env.empty
 let classes = ref []
-let method_ids = ref IdentSet.empty
+let method_ids = ref Ident.Set.empty
 
 let oo_add_class id =
   classes := id :: !classes;
@@ -178,7 +178,7 @@ let oo_wrap env req f x =
     cache_required := req;
     top_env := env;
     classes := [];
-    method_ids := IdentSet.empty;
+    method_ids := Ident.Set.empty;
     let lambda = f x in
     let lambda =
       List.fold_left
@@ -207,4 +207,4 @@ let reset () =
   wrapping := false;
   top_env := Env.empty;
   classes := [];
-  method_ids := IdentSet.empty
+  method_ids := Ident.Set.empty

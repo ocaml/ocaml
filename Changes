@@ -7,21 +7,31 @@ Working version
 
 - GPR#1467: Allow expressions sequences inside extended indexing and bigarray
   indexing operators, e.g.: e1.![e2; e3; ...], etc.
-  (Nicolas Ojeda Bar, review by Gabriel Radanne, Damien Doligez, Gabriel
+  (Nicolás Ojeda Bär, review by Gabriel Radanne, Damien Doligez, Gabriel
   Scherer)
 
 ### Type system:
+
+- MPR#7717, GPR#1593: don't treat unboxed constructor size as statically known
+  (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
 
 - MPR#7611, GPR#1491: reject the use of generative functors as applicative
   (Valentin Gatien-Baron)
 
 - GPR#1469: Use the information from [@@immediate] annotations when
   computing whether a type can be [@@unboxed]
-  (Damien Doligez, report by Stephan Muenzel, review by ...)
+  (Damien Doligez, report by Stephan Muenzel, review by Alain Frisch)
 
 - GPR#1516: Allow float array construction in recursive bindings
   when configured with -no-flat-float-array
   (Jeremy Yallop, report by Gabriel Scherer)
+
+- GPR#1583: propagate refined ty_arg to Parmatch checks
+  (Thomas Refis, review by Jacques Garrigue)
+
+- GPR#1513: Allow compilation units to shadow sub-modules of Pervasives.
+  For instance users can now use a largeFile.ml file in their project.
+  (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
 
 ### Standard library:
 
@@ -34,14 +44,14 @@ Working version
 * GPR#1406: Unix.isatty now returns true in the native Windows ports when
   passed a file descriptor connected to a Cygwin PTY. In particular, compiler
   colors for the native Windows ports now work under Cygwin/MSYS2.
-  (Nicolas Ojeda Bar, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
+  (Nicolás Ojeda Bär, review by Gabriel Scherer, David Allsopp, Xavier Leroy)
 
 - GPR#1451: [getpwuid], [getgrgid], [getpwnam], [getgrnam] now raise Unix error
   instead of returning [Not_found] when interrupted by a signal.
   (Arseniy Alekseyev, review by Mark Shinwell and Xavier Leroy)
 
 - GPR#1477: raw_spacetime_lib can now be used in bytecode.
-  (Nicolas Ojeda Bar, review by Mark Shinwell)
+  (Nicolás Ojeda Bär, review by Mark Shinwell)
 
 - GPR#1533: (a) The implementation of Thread.yield for system thread
   now uses nanosleep(1) for enabling better preemption.
@@ -73,21 +83,40 @@ Working version
   (Arthur Charguéraud and Armaël Guéneau, with help from Leo White, review by
   Florian Angeletti and Gabriel Radanne)
 
+- GPR#1510: Add specific explanation for unification errors caused by type
+  constraints propagated by keywords (such as if, while, for...)
+  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
+  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
+
 - GPR#1534: Extend the warning printed when (*) is used, adding a hint to
   suggest using ( * ) instead
   (Armaël Guéneau, with help and review from Florian Angeletti and Gabriel
   Scherer)
 
-- GPR#1510: Add specific explanation for unification errors caused by type
-  constraints propagated by keywords (such as if, while, for...)
-  (Armaël Guéneau and Gabriel Scherer, original design by Arthur Charguéraud,
-  review by Frédéric Bour, Gabriel Radanne and Alain Frisch)
+- GPR#1552, GPR#1577: do not warn about ambiguous variables in guards
+  (warning 57) when the ambiguous values have been filtered by
+  a previous clause
+  (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
+
+- GPR#1554: warnings 52 and 57: fix reference to manual detailed explanation
+  (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
 
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
+
+- MPR#7630 GPR#1401: Faster compilation of large modules with Flambda.
+  (Pierre Chambart, report by Emilio Jesús Gallego Arias,
+  Pierre-Marie Pédrot and Paul Steckler, review by Gabriel Scherer
+  and Leo White)
+
+- GPR#1486: ARM 32-bit port: add support for ARMv8 in 32-bit mode,
+  a.k.a. AArch32.
+  For this platform, avoid ITE conditional instruction blocks and use
+  simpler IT blocks instead
+  (Xavier Leroy, review by Mark Shinwell)
 
 ### Runtime system:
 
@@ -101,11 +130,14 @@ Working version
 
 - GPR#1478: The Spacetime profiler now works under Windows (but it is not yet
   able to collect profiling information from C stubs).
-  (Nicolas Ojeda Bar, review by Xavier Leroy, Mark Shinwell)
+  (Nicolás Ojeda Bär, review by Xavier Leroy, Mark Shinwell)
 
 - GPR#1526: install the debug and instrumented runtimes
   (lib{caml,asm}run{d,i}.a)
   (Gabriel Scherer, reminded by Julia Lawall)
+
+- GPR#1563: simplify implementation of LSRINT and ASRINT
+  (Max Mouratov, review by Frédéric Bour)
 
 ### Tools:
 
@@ -113,12 +145,23 @@ Working version
   structures and signatures (e.g. "include struct … include(struct … end) … end")
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
+- GPR#1585: optimize output of "ocamllex -ml"
+  (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
   (Yawar Amin, review by Gabriel Scherer)
 
 - GPR#1540: manual, decouple verbatim and toplevel style in code examples
+  (Florian Angeletti, review by Gabriel Scherer)
+
+- PR#7698, GPR#1545: improve wording in OCaml manual in several places,
+  mostly in Chapter 1.  This addresses the easier changes suggested in the PR.
+  (Jim Fehrle, review by Florian Angeletti and David Allsopp)
+
+- GPR#1556: manual, add a consistency test for manual references inside
+  the compiler source code.
   (Florian Angeletti, review by Gabriel Scherer)
 
 ### Compiler distribution build system
@@ -129,7 +172,7 @@ Working version
 
 ### Internal/compiler-libs changes:
 
-- GPR#1488: Refreshing parmatch
+- GPR#1488, GPR#1560: Refreshing parmatch
   (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
 
 - GPR#1502: more command line options for expect tests
@@ -140,7 +183,7 @@ Working version
   (Gabriel Scherer and Armaël Guéneau,
    review by Valentin Gatien-Baron and Damien Doligez)
 
-- GPR#1519, GPR#1532: migrate expect tests to ocamltest
+- GPR#1519, GPR#1532, GRP#1570: migrate tests to ocamltest
   (Sébastien Hinderer, review by Gabriel Scherer, Valentin Gatien-Baron
   and Nicolás Ojeda Bär)
 
@@ -164,7 +207,7 @@ Working version
 
 - PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
   avoid unintended shifts of the argument timestamp depending on DST setting.
-  (Nicolas Ojeda Bar, review by David Allsopp, Xavier Leroy)
+  (Nicolás Ojeda Bär, review by David Allsopp, Xavier Leroy)
 
 - MPR#7668: -principal is broken with polymorphic variants
   (Jacques Garrigue, report by Jun Furuse)
@@ -176,13 +219,40 @@ Working version
 - MPR#7682, GPR#1495: fix [@@unboxed] for records with 1 polymorphic field
   (Alain Frisch, report by Stéphane Graham-Lengrand, review by Gabriel Scherer)
 
+- MPR#7695, GPR#1541: Fatal error: exception Ctype.Unify(_) with field override
+  (Jacques Garrigue, report by Nicolás Ojeda Bär)
+
+- MPR#7702, GPR#1553: refresh raise counts when inlining a function
+  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
+
+- MPR#7711, GPR#1581: Internal typechecker error triggered by a constraint on
+   self type in a class type
+  (Jacques Garrigue, report and review by Florian Angeletti)
+
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
 - PR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
   Unix.getenv and Unix.environment under Windows.
-  (Nicolas Ojeda Bar, report by Alain Frisch, review by David Allsopp, Xavier
+  (Nicolás Ojeda Bär, report by Alain Frisch, review by David Allsopp, Xavier
   Leroy)
+
+- GPR#1550, GPR#1555: Make pattern matching warnings more robust
+  to ill-typed columns
+  (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
+
+- MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
+  (Jacques Garrigue, report by Thomas Refis)
+
+- MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
+  (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
+
+- MPR#7712, GPR#1576: assertion failure with type abbreviations
+  (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
+
+- GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
+  to work on ocamltest-based tests.
+  (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)
 
 4.06 maintenance branch
 -----------------------
@@ -193,6 +263,9 @@ Working version
   using extensible variants constructors
   (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
   by Abdelraouf Ouadjaout and Thibault Suzanne)
+
+- MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
+  (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
 
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
@@ -301,7 +374,7 @@ OCaml 4.06.0 (3 Nov 2017):
   separate the "unaligned" and "aligned" parts of the documentation string. If
   tab is not present, then space is used as a fallback. Allows to have spaces in
   the unaligned part, which is useful for Tuple options.
-  (Nicolas Ojeda Bar, review by Alain Frisch and Gabriel Scherer)
+  (Nicolás Ojeda Bär, review by Alain Frisch and Gabriel Scherer)
 
 * GPR#615: Format, add symbolic formatters that output symbolic
   pretty-printing items. New fields have been added to the
@@ -358,7 +431,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 - MPR#7564, GPR#1211: Allow forward slashes in the target of symbolic links
   created by Unix.symlink under Windows.
-  (Nicolas Ojeda Bar, review by David Allsopp)
+  (Nicolás Ojeda Bär, review by David Allsopp)
 
 * MPR#7640, GPR#1414: reimplementation of Unix.execvpe to fix issues
   with the 4.05 implementation.  The main issue is that the current
@@ -378,7 +451,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 - GPR#1217: Restrict Unix.environment in privileged contexts; add
   Unix.unsafe_environment.
-  (Jeremy Yallop, review by Mark Shinwell, Nicolas Ojeda Bar,
+  (Jeremy Yallop, review by Mark Shinwell, Nicolás Ojeda Bär,
   Damien Doligez and Hannes Mehnert)
 
 - GPR#1321: Reimplement Unix.isatty on Windows. It no longer returns true for
@@ -450,8 +523,8 @@ OCaml 4.06.0 (3 Nov 2017):
   allocator represents a trade-off between worse generated code
   performance for higher compilation speed (especially interesting in
   some cases graph coloring is necessarily quadratic).
-  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolas Ojeda
-  Bar, review by Nicolas Ojeda Bar and Alain Frisch)
+  (Marcell Fischbach and Benedikt Meurer, adapted by Nicolás Ojeda Bär, review
+  by Nicolás Ojeda Bär and Alain Frisch)
 
 - MPR#6927, GPR#988: On macOS, when compiling bytecode stubs, plugins,
   and shared libraries through -output-obj, generate dylibs instead of
@@ -637,7 +710,7 @@ OCaml 4.06.0 (3 Nov 2017):
 
 * MPR#3771, GPR#153, GPR#1200, GPR#1357, GPR#1362, GPR#1363, GPR#1369, GPR#1398,
   GPR#1446, GPR#1448: Unicode support for the Windows runtime.
-  (ygrek, Nicolas Ojeda Bar, review by Alain Frisch, David Allsopp, Damien
+  (ygrek, Nicolás Ojeda Bär, review by Alain Frisch, David Allsopp, Damien
   Doligez)
 
 * MPR#7594, GPR#1274, GPR#1368: String_val now returns 'const char*', not
@@ -1155,7 +1228,7 @@ OCaml 4.05.0 (13 Jul 2017):
 - GPR#1042: Fix escaping of command-line arguments in
   Unix.create_process{,_env} under Windows.  Arguments with tabs should now
   be received verbatim by the child process.
-  (Nicolas Ojeda Bar, Andreas Hauptmann review by Xavier Leroy)
+  (Nicolás Ojeda Bär, Andreas Hauptmann review by Xavier Leroy)
 
 ### Debugging and profiling:
 
@@ -1287,7 +1360,7 @@ OCaml 4.05.0 (13 Jul 2017):
 
 - GPR#803: new ocamllex-based tool to extract bytecode compiler
   opcode information from C headers.
-  (Nicolas Ojeda Bar)
+  (Nicolás Ojeda Bär)
 
 - GPR#827: install missing mli and cmti files, new make target
   install-compiler-sources for installation of compiler-libs ml files
@@ -1941,7 +2014,7 @@ OCaml 4.04.0 (4 Nov 2016):
   cf. PR#7313, meaning that you may sometimes need to add type annotations
   to explicitly instantiate non-generalizable type variables.
   (Jacques Garrigue, following discussion with Jeremy Yallop,
-   Nicolas Ojeda Bar and Alain Frisch)
+   Nicolás Ojeda Bär and Alain Frisch)
 
 - PR#7112: Aliased arguments ignored for equality of module types
   (Jacques Garrigue, report by Leo White)
@@ -1963,7 +2036,7 @@ OCaml 4.04.0 (4 Nov 2016):
   (Pierre Chambart, report by Reed Wilson, review by Mark Shinwell)
 
 - PR#7260: GADT + subtyping compile time crash
-  (Jacques Garrigue, report by Nicolas Ojeda Bar)
+  (Jacques Garrigue, report by Nicolás Ojeda Bär)
 
 - PR#7269: Segfault from conjunctive constraints in GADT
   (Jacques Garrigue, report by Stephen Dolan)
@@ -2018,7 +2091,7 @@ OCaml 4.04.0 (4 Nov 2016):
   (Bogdan Tătăroiu, review by Thomas Braibant and Alain Frisch)
 
 - GPR#700: Fix maximum weak bucket size
-  (Nicolas Ojeda Bar, review by François Bobot)
+  (Nicolás Ojeda Bär, review by François Bobot)
 
 - GPR#708 Allow more module aliases in strengthening (Leo White)
 
@@ -2343,7 +2416,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 - GPR#545: use reraise to preserve backtrace on
   `match .. with exception e -> raise e`
-  (Nicolas Ojeda Bar, review by Gabriel Scherer)
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
 ### Runtime system:
 

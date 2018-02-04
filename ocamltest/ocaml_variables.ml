@@ -63,6 +63,9 @@ let flags = make ("flags",
 let libraries = make ("libraries",
   "Libraries the program should be linked with")
 
+let module_ = make ("module",
+  "Compile one module at once")
+
 let modules = make ("modules",
   "Other modules of the test")
 
@@ -112,6 +115,7 @@ let _ = List.iter register_variable
     directories;
     flags;
     libraries;
+    module_;
     modules;
     ocamlc_flags;
     ocamlc_default_flags;

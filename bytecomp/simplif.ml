@@ -31,7 +31,7 @@ let rec eliminate_ref id = function
       Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
                      ap_args = List.map (eliminate_ref id) ap.ap_args}
   | Lfunction _ as lam ->
-      if IdentSet.mem id (free_variables lam)
+      if Ident.Set.mem id (free_variables lam)
       then raise Real_reference
       else lam
   | Llet(str, kind, v, e1, e2) ->
@@ -661,7 +661,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         (* Check that those *opt* identifiers don't appear in the remaining
            body. This should not appear, but let's be on the safe side. *)
         let fv = Lambda.free_variables body in
-        List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
+        List.iter (fun (id, _) -> if Ident.Set.mem id fv then raise Exit) map;
 
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in

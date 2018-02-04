@@ -88,7 +88,7 @@ legacy:
 .PHONY: legacy-without-report
 legacy-without-report: lib tools
 	@for dir in tests/*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
+	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir LEGACY=y; \
 	done 2>&1 | tee -a _log
 	@$(MAKE) $(NO_PRINT) retries
 
@@ -200,6 +200,14 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
+	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
+	  echo "Running tests from '$$DIR' ..."; \
+	  file=$(DIR)/ocamltests; \
+	  (IFS=$$(printf "\r\n"); while read testfile; do \
+		  TERM=dumb OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest \
+		    $(ocamltest) $(DIR)/$$testfile || \
+		    touch $(failstamp); \
+	  done < $$file) || touch $(failstamp); \
 	fi
 
 .PHONY: clean-one
