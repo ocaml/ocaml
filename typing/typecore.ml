@@ -5290,8 +5290,7 @@ let report_error env ppf = function
         longident lid
         "Hint: You are probably missing the `rec' keyword on line"
         line
-  | Empty_pattern ->
-      fprintf ppf "Empty pattern"
+  | Empty_pattern -> assert false
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
