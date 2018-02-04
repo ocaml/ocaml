@@ -24,3 +24,8 @@ let g (x:m) =
 [%%expect{|
 val g : m -> 'a = <fun>
 |}]
+
+let f : t option -> int = function None -> 3 
+[%%expect{|
+val f : t option -> int = <fun>
+|}]
