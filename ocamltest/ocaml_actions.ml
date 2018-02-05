@@ -625,6 +625,12 @@ let native_compiler = Actions.make
     "native compiler available"
     "native compiler not available")
 
+let afl_support = Actions.make
+  "afl-support"
+  (Actions_helpers.pass_or_skip Ocamltest_config.afl_support
+    "support for AFL instrumentation enabled"
+    "support for AFL instrumentation disabled")
+
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;
   Environments.register_initializer "config_variables" config_variables;
@@ -655,4 +661,5 @@ let _ =
     no_flat_float_array;
     shared_libraries;
     native_compiler;
+    afl_support;
   ]

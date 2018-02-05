@@ -43,3 +43,5 @@ val no_flat_float_array : Actions.t
 val shared_libraries : Actions.t
 
 val native_compiler : Actions.t
+
+val afl_support : Actions.t

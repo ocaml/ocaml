@@ -175,6 +175,7 @@ ocamltest.opt$(EXE): $(native_modules)
 
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
+	  -e 's|@@AFL_SUPPORT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
