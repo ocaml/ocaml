@@ -51,8 +51,10 @@ let bigarray =
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
-let systhreads = make_library_modifier
-  "threads" (compiler_subdir ["otherlibs"; "systhreads"])
+let systhreads =
+  unix @
+  (make_library_modifier
+    "threads" (compiler_subdir ["otherlibs"; "systhreads"]))
 
 let compilerlibs_subdirs =
 [
