@@ -222,9 +222,6 @@ Working version
 - MPR#7695, GPR#1541: Fatal error: exception Ctype.Unify(_) with field override
   (Jacques Garrigue, report by Nicolás Ojeda Bär)
 
-- MPR#7702, GPR#1553: refresh raise counts when inlining a function
-  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
-
 - MPR#7711, GPR#1581: Internal typechecker error triggered by a constraint on
    self type in a class type
   (Jacques Garrigue, report and review by Florian Angeletti)
@@ -244,9 +241,6 @@ Working version
 - MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
   (Jacques Garrigue, report by Thomas Refis)
 
-- MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
-  (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
-
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
 
@@ -264,8 +258,18 @@ Working version
   (Luc Maranget, review by Thomas Refis and Gabriel Scherer, report
   by Abdelraouf Ouadjaout and Thibault Suzanne)
 
+- MPR#7702, GPR#1553: refresh raise counts when inlining a function
+  (Vincent Laviron, Xavier Clerc, report by Cheng Sun)
+
 - MPR#7704, GPR#1559: Soundness issue with private rows and pattern-matching
   (Jacques Garrigue, report by Jeremy Yallop, review by Thomas Refis)
+
+- MPR#7705, GPR#1558: add missing bounds check in Bigarray.Genarray.nth_dim.
+  (Nicolás Ojeda Bär, report by Jeremy Yallop, review by Gabriel Scherer)
+
+- MPR#7713, GPR#1587: Make pattern matching warnings more robust
+  to ill-typed columns; this is a backport of GPR#1550 from 4.07+dev
+  (Thomas Refis, review by Gabriel Scherer, report by Andreas Hauptmann)
 
 - GPR#1470: Don't commute negation with float comparison
   (Leo White, review by Xavier Leroy)
