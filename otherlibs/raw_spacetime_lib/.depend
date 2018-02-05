@@ -1,21 +1,18 @@
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
-raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
-raw_spacetime_lib.cmi :
+spacetime_offline.$(O): spacetime_offline.c ../../byterun/caml/alloc.h \
+ ../../byterun/caml/misc.h ../../byterun/caml/config.h \
+ ../../byterun/caml/m.h ../../byterun/caml/s.h \
+ ../../byterun/caml/mlvalues.h ../../byterun/caml/config.h \
+ ../../byterun/caml/fail.h ../../byterun/caml/gc.h \
+ ../../byterun/caml/intext.h ../../byterun/caml/io.h \
+ ../../byterun/caml/major_gc.h ../../byterun/caml/freelist.h \
+ ../../byterun/caml/memory.h ../../byterun/caml/gc.h \
+ ../../byterun/caml/major_gc.h ../../byterun/caml/minor_gc.h \
+ ../../byterun/caml/address_class.h ../../byterun/caml/minor_gc.h \
+ ../../byterun/caml/misc.h ../../byterun/caml/mlvalues.h \
+ ../../byterun/caml/roots.h ../../byterun/caml/memory.h \
+ ../../byterun/caml/signals.h ../../byterun/caml/stack.h \
+ ../../byterun/caml/sys.h ../../byterun/caml/spacetime.h \
+ ../../byterun/caml/stack.h ../../byterun/caml/s.h
 raw_spacetime_lib.cmo : raw_spacetime_lib.cmi
 raw_spacetime_lib.cmx : raw_spacetime_lib.cmi
 raw_spacetime_lib.cmi :
