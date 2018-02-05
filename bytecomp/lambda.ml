@@ -481,8 +481,83 @@ let free_ids get l =
     | Lsend _ | Levent _ | Lifused _ -> ()
   in free l; !fv
 
-let free_variables l =
-  free_ids (function Lvar id -> [id] | _ -> []) l
+let rec free_variables = function
+  | Lvar id -> Ident.Set.singleton id
+  | Lconst _ -> Ident.Set.empty
+  | Lapply{ap_func = fn; ap_args = args} ->
+      free_variables_list (free_variables fn) args
+  | Lfunction{body; params} ->
+      Ident.Set.diff (free_variables body)
+        (Ident.Set.of_list params)
+  | Llet(_str, _k, id, arg, body) ->
+      Ident.Set.union
+        (free_variables arg)
+        (Ident.Set.remove id (free_variables body))
+  | Lletrec(decl, body) ->
+      let set = free_variables_list (free_variables body) (List.map snd decl) in
+      Ident.Set.diff set (Ident.Set.of_list (List.map fst decl))
+  | Lprim(_p, args, _loc) ->
+      free_variables_list Ident.Set.empty args
+  | Lswitch(arg, sw,_) ->
+      let set =
+        free_variables_list
+          (free_variables_list (free_variables arg)
+             (List.map snd sw.sw_consts))
+          (List.map snd sw.sw_blocks)
+      in
+      begin match sw.sw_failaction with
+      | None -> set
+      | Some failaction -> Ident.Set.union set (free_variables failaction)
+      end
+  | Lstringswitch (arg,cases,default,_) ->
+      let set =
+        free_variables_list (free_variables arg)
+          (List.map snd cases)
+      in
+      begin match default with
+      | None -> set
+      | Some default -> Ident.Set.union set (free_variables default)
+      end
+  | Lstaticraise (_,args) ->
+      free_variables_list Ident.Set.empty args
+  | Lstaticcatch(body, (_, params), handler) ->
+      Ident.Set.union
+        (Ident.Set.diff
+           (free_variables handler)
+           (Ident.Set.of_list params))
+        (free_variables body)
+  | Ltrywith(body, param, handler) ->
+      Ident.Set.union
+        (Ident.Set.remove
+           param
+           (free_variables handler))
+        (free_variables body)
+  | Lifthenelse(e1, e2, e3) ->
+      Ident.Set.union
+        (Ident.Set.union (free_variables e1) (free_variables e2))
+        (free_variables e3)
+  | Lsequence(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lwhile(e1, e2) ->
+      Ident.Set.union (free_variables e1) (free_variables e2)
+  | Lfor(v, lo, hi, _dir, body) ->
+      let set = Ident.Set.union (free_variables lo) (free_variables hi) in
+      Ident.Set.union set (Ident.Set.remove v (free_variables body))
+  | Lassign(id, e) ->
+      Ident.Set.add id (free_variables e)
+  | Lsend (_k, met, obj, args, _) ->
+      free_variables_list
+        (Ident.Set.union (free_variables met) (free_variables obj))
+        args
+  | Levent (lam, _evt) ->
+      free_variables lam
+  | Lifused (_v, e) ->
+      (* Shouldn't v be considered a free variable ? *)
+      free_variables e
+
+and free_variables_list set exprs =
+  List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
+    set exprs
 
 let free_methods l =
   free_ids (function Lsend(Self, Lvar meth, _, _, _) -> [meth] | _ -> []) l

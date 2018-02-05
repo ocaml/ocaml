@@ -338,6 +338,11 @@ val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val subst: lambda Ident.Map.t -> lambda -> lambda
+(** Apply a substitution to a lambda-term.
+    Assumes that the image of the substitution is out of reach
+    of the bound variables of the lambda-term (no capture). *)
+
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
