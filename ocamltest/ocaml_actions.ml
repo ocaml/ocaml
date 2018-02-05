@@ -616,8 +616,14 @@ let no_flat_float_array = make
 let shared_libraries = Actions.make
   "shared-libraries"
   (Actions_helpers.pass_or_skip Ocamltest_config.shared_libraries
-    "Shared libraries are supported.\n"
+    "Shared libraries are supported."
     "Shared libraries are not supported.")
+
+let native_compiler = Actions.make
+  "native-compiler"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.arch <> "none")
+    "native compiler available"
+    "native compiler not available")
 
 let _ =
   Environments.register_initializer "find_source_modules" find_source_modules;
@@ -648,4 +654,5 @@ let _ =
     flat_float_array;
     no_flat_float_array;
     shared_libraries;
+    native_compiler;
   ]
