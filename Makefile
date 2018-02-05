@@ -1172,6 +1172,8 @@ ifneq ($(shell grep '\#define ARCH_SIXTYFOUR' byterun/caml/m.h 2> /dev/null),)
 	   $(MAKE) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
 	 done; \
 	 exit $$STATUS
+else
+	 @echo "Architecture tests are disable on 32-bit platforms."
 endif
 
 # Compiler Plugins
