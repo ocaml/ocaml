@@ -24,6 +24,9 @@ val shared_libraries : bool
 val unix : bool
 (** [true] on Unix systems, [false] on non-Unix systems *)
 
+val system : string
+(** The content of the SYSTEM Make variable *)
+
 val c_preprocessor : string
 (** Command to use to invoke the C preprocessor *)
 

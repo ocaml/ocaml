@@ -54,6 +54,20 @@ let windows = make
     "The windows action succeeds because we are on a Windows system."
     "The windows action skips because we are on a Unix system.")
 
+let bsd_system = "bsd_elf"
+
+let bsd = make
+  "bsd"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system = bsd_system)
+    "on a BSD system"
+    "not on a BSD system")
+
+let not_bsd = make
+  "not-bsd"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system <> bsd_system)
+    "not on a BSD system"
+    "on a BSD system")
+
 let setup_build_env = make
   "setup-build-env"
   (Actions_helpers.setup_build_env true [])
@@ -95,6 +109,8 @@ let _ =
     dumpenv;
     unix;
     windows;
+    bsd;
+    not_bsd;
     setup_build_env;
     run;
     script;

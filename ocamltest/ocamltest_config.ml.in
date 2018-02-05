@@ -21,6 +21,8 @@ let shared_libraries = @@SHARED_LIBRARIES@@
 
 let unix = @@UNIX@@
 
+let system = "@@SYSTEM@@"
+
 let c_preprocessor = "@@CPP@@"
 
 let ocamlsrcdir = "@@OCAMLSRCDIR@@"
