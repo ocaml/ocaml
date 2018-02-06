@@ -190,13 +190,28 @@ let run_program =
     Builtin_variables.program
     (Some Builtin_variables.arguments)
 
-let run_script =
-  run
+let run_script log env =
+  let response_file = Filename.temp_file "ocamltest-" ".response" in
+  Printf.fprintf log "Script should write its response to %s\n%!"
+    response_file;
+  let scriptenv = Environments.add
+    Builtin_variables.ocamltest_response response_file env in
+  let (result, newenv) = run
     "Running script"
     false
     true
     Builtin_variables.script
     None
+    log scriptenv in
+  if Result.is_pass result then begin
+    let modifiers = Environments.modifiers_of_file response_file in
+    let modified_env = Environments.apply_modifiers newenv modifiers in
+    (result, modified_env)
+  end else begin
+    let reason = String.trim (Sys.string_of_file response_file) in
+    let newresult = { result with Result.reason = Some reason } in
+    (newresult, newenv)
+  end
 
 let run_hook hook_name log input_env =
   Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name;
