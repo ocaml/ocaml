@@ -42,17 +42,33 @@ let dumpenv = make
   (fun log env ->
     Environments.dump log env; (Result.pass, env))
 
-let unix = make
-  "unix"
-  (Actions_helpers.pass_or_skip Ocamltest_config.unix
-    "The unix action succeeds because we are on a Unix system."
-    "The unix action skips because we are on a Windows system.")
+let libunix = make
+  "libunix"
+  (Actions_helpers.pass_or_skip Ocamltest_config.libunix
+    "libunix available"
+    "libunix not available")
+
+let libwin32unix = make
+  "libwin32unix"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.libunix)
+    "libwin32unix available"
+    "libwin32unix not available")
+
+let windows_OS = "Windows_NT"
+
+let get_OS () = try Sys.getenv "OS" with Not_found -> ""
 
 let windows = make
   "windows"
-  (Actions_helpers.pass_or_skip (not Ocamltest_config.unix)
-    "The windows action succeeds because we are on a Windows system."
-    "The windows action skips because we are on a Unix system.")
+  (Actions_helpers.pass_or_skip (get_OS () = windows_OS)
+    "running on Windows"
+    "not running on Windows")
+
+let not_windows = make
+  "not-windows"
+  (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
+    "not running on Windows"
+    "running on Windows")
 
 let bsd_system = "bsd_elf"
 
@@ -107,8 +123,10 @@ let _ =
     skip;
     fail;
     dumpenv;
-    unix;
+    libunix;
+    libwin32unix;
     windows;
+    not_windows;
     bsd;
     not_bsd;
     setup_build_env;

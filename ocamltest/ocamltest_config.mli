@@ -21,8 +21,8 @@ val arch : string
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)
 
-val unix : bool
-(** [true] on Unix systems, [false] on non-Unix systems *)
+val libunix : bool
+(** [true] for unix, [false] for win32unix *)
 
 val system : string
 (** The content of the SYSTEM Make variable *)

@@ -21,11 +21,13 @@ val fail : Actions.t
 
 val dumpenv : Actions.t
 
-val unix : Actions.t
+val libunix : Actions.t
+val libwin32unix : Actions.t
+
 val windows : Actions.t
+val not_windows : Actions.t
 
 val bsd : Actions.t
-
 val not_bsd : Actions.t
 
 val setup_build_env : Actions.t
