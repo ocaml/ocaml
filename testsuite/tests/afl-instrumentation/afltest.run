@@ -2,8 +2,8 @@
 
 set -e
 
-$OCAMLOPT -c -afl-instrument test.ml
-$OCAMLOPT -afl-inst-ratio 0 test.cmx harness.ml -o test
+output="${program}".output
+exec > ${output} 2>&1
 
 NTESTS=`./test len`
 failures=''
@@ -28,6 +28,9 @@ for t in `seq 1 $NTESTS`; do
   fi
 done
 
-if [ -z "$failures" ]; then echo "all tests passed"; else exit 1; fi
-
-rm -f {test,harness}.{cmi,cmx,o} test output-{1,2,2-predicted}
+if [ -z "$failures" ]; then
+  echo "all tests passed"; 
+  exit ${TEST_PASS}
+else
+  exit ${TEST_FAIL};
+fi
