@@ -320,7 +320,7 @@ let report_error ppf = function
   | File_not_found file ->
       fprintf ppf "File %s not found" file
   | May_contain_flat_float_arrays file ->
-      fprintf ppf "%a has been produced by a compiler with support for\
+      fprintf ppf "%a has been produced by a compiler with support for \
                    flat float arrays."
         Location.print_filename file
 

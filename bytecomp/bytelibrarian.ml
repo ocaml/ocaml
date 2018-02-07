@@ -125,7 +125,7 @@ let report_error ppf = function
       fprintf ppf "The file %a is not a bytecode object file"
         Location.print_filename name
   | May_contain_flat_float_arrays file ->
-      fprintf ppf "%a has been produced by a compiler with support for\
+      fprintf ppf "%a has been produced by a compiler with support for \
                    flat float arrays."
         Location.print_filename file
 

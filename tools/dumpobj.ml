@@ -499,7 +499,7 @@ let dump_obj ic =
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
   if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
-    prerr_endline "File has been produced by a compiler with support for\
+    prerr_endline "File has been produced by a compiler with support for \
                    flat float arrays";
     exit 2
   end;

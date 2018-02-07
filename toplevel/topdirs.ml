@@ -171,7 +171,7 @@ and really_load_file recursive ppf name filename ic =
       seek_in ic compunit_pos;
       let cu : compilation_unit = input_value ic in
       if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
-        fprintf ppf "%s has been produced by a compiler with support for\
+        fprintf ppf "%s has been produced by a compiler with support for \
                      flat float arrays."
           filename;
         raise Load_failed

@@ -703,7 +703,7 @@ let report_error ppf = function
   | Required_module_unavailable s ->
       fprintf ppf "Required module `%s' is unavailable" s
   | May_contain_flat_float_arrays file ->
-      fprintf ppf "%a has been produced by a compiler with support for\
+      fprintf ppf "%a has been produced by a compiler with support for \
                    flat float arrays."
         Location.print_filename file
 

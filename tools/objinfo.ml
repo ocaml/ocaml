@@ -265,7 +265,7 @@ let read_dyn_header filename ic =
 let dump_obj filename =
   let check_float_float_arrays has_float_arrays =
     if not Config.flat_float_array && has_float_arrays then begin
-      printf "File has been produced by a compiler with support for\
+      printf "File has been produced by a compiler with support for \
               flat float arrays";
       exit 2
     end
