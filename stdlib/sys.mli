@@ -149,6 +149,10 @@ val max_array_length : int
     array is [max_array_length/2] on 32-bit machines and
     [max_array_length] on 64-bit machines. *)
 
+val flat_float_array : bool
+(** Whether the compiler and runtime automagically flatten float arrays.
+    @since 4.07.0 *)
+
 external runtime_variant : unit -> string = "caml_runtime_variant"
 (** Return the name of the runtime variant the program is running on.
     This is normally the argument given to [-runtime-variant] at compile

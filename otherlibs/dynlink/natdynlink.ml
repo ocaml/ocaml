@@ -71,7 +71,7 @@ let read_file filename priv =
   List.iter
     (fun dynunit ->
        if dynunit.dynu_flat_float_arrays
-       && not (Obj.(tag @@ repr [| 0. |] = double_array_tag)) then
+       && not Sys.flat_float_array then
          raise(Error(May_contain_flat_float_arrays dll)))
     header.dynu_units;
   (dll, handle, header.dynu_units)
