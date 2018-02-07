@@ -424,8 +424,8 @@ let really_compare_programs backend comparison_tool log env =
 
 let compare_programs backend comparison_tool log env =
   let compare_programs =
-    Environments.safe_lookup Ocaml_variables.compare_programs env in
-  if compare_programs = "false" then begin
+    Environments.lookup_as_bool Ocaml_variables.compare_programs env in
+  if compare_programs = Some false then begin
     let reason = "program comparison disabled" in
     (Result.pass_with_reason reason, env)
   end else really_compare_programs backend comparison_tool log env

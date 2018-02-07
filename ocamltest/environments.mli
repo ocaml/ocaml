@@ -29,6 +29,11 @@ val lookup : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
 val is_variable_defined : Variables.t -> t -> bool
 
+val lookup_as_bool : Variables.t -> t -> bool option
+(** returns [Some true] if the variable is set to ["true"],
+    [Some false] if it is set to another string, and
+    [None] if not set. *)
+
 val add : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
 
