@@ -65,18 +65,26 @@ let prepare_module (module_name, module_type) =
     | Filetype.Lexer -> assert false
     | Filetype.Grammar -> assert false
 
-let compile_program ocamlsrcdir compiler program_variable log env =
-  let backend = compiler.Ocaml_compilers.backend in
+let get_program_filename backend env =
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
-  let build_directory =
-    Actions_helpers.test_build_directory env in
   let program_filename =
     Filename.mkexe
       (Filename.make_filename
         testfile_basename (Ocaml_backends.executable_extension backend)) in
-  let program_file =
-    Filename.make_path [build_directory; program_filename] in
+  let test_build_directory =
+    Actions_helpers.test_build_directory env in
+  Filename.make_path [test_build_directory; program_filename]
+
+let compile_program ocamlsrcdir compiler program_variable log env =
+  let backend = compiler.Ocaml_compilers.backend in
+  let (env, program_file) =
+    match Environments.lookup program_variable env with
+      | None ->
+        let p = get_program_filename backend env in
+        let env' = Environments.add program_variable p env in
+        (env', p)
+      | Some p -> (env, p) in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
   let modules =
@@ -121,10 +129,8 @@ let compile_program ocamlsrcdir compiler program_variable log env =
       ~append:true
       log env commandline in
   if exit_status=expected_exit_status
-  then begin
-    let newenv = Environments.add program_variable program_file env in
-    (Result.pass, newenv)
-  end else begin
+  then (Result.pass, env)
+  else begin
     let reason =
       (Actions_helpers.mkreason
         what (String.concat " " commandline) exit_status) in
