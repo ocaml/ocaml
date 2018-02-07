@@ -19,7 +19,7 @@ type t = {
   name : string -> string;
   flags : string;
   directory : string;
-  backend : Ocamltest_stdlib.Sys.backend_type;
+  backend : Ocaml_backends.t;
   exit_status_variabe : Variables.t;
   reference_variable : Variables.t;
   output_variable : Variables.t

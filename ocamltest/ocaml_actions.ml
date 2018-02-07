@@ -92,7 +92,7 @@ let compile_program ocamlsrcdir compiler program_variable log env =
       (List.map Filetype.filetype source_modules) in
   let is_c_file (_filename, filetype) = filetype=Filetype.C in
   let has_c_file = List.exists is_c_file modules in
-  let custom = (backend = Sys.Bytecode) && has_c_file in
+  let custom = (backend = Ocaml_backends.Bytecode) && has_c_file in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
   let expected_exit_status =
@@ -392,20 +392,22 @@ let really_compare_programs backend comparison_tool log env =
     Filecompare.reference_filename = program;
     Filecompare.output_filename = program2
   } in
-  if Ocamltest_config.flambda && backend = Sys.Native
+  if Ocamltest_config.flambda && backend = Ocaml_backends.Native
   then begin
     let reason =
       "flambda temporarily disables comparison of native programs" in
     (Result.pass_with_reason reason, env)
   end else
-  if backend = Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+  if backend = Ocaml_backends.Native &&
+    (Sys.os_type="Win32" || Sys.os_type="Cygwin")
   then begin
     let reason =
       "comparison of native programs temporarily disabled under Windows" in
     (Result.pass_with_reason reason, env)
   end else begin
     let comparison_tool =
-      if backend=Sys.Native && (Sys.os_type="Win32" || Sys.os_type="Cygwin")
+      if backend=Ocaml_backends.Native &&
+        (Sys.os_type="Win32" || Sys.os_type="Cygwin")
         then
           let bytes_to_ignore = 512 (* comparison_start_address program *) in
           Filecompare.make_cmp_tool bytes_to_ignore
@@ -442,7 +444,8 @@ let compare_bytecode_programs_code log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
   let bytecode_programs_comparison_tool =
     make_bytecode_programs_comparison_tool ocamlsrcdir in
-  compare_programs Sys.Bytecode bytecode_programs_comparison_tool log env
+  compare_programs
+    Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
 
 let compare_bytecode_programs = Actions.make
   "compare-bytecode-programs"
@@ -450,7 +453,7 @@ let compare_bytecode_programs = Actions.make
 
 let compare_native_programs = Actions.make
   "compare-native-programs"
-  (compare_programs Sys.Native native_programs_comparison_tool)
+  (compare_programs Ocaml_backends.Native native_programs_comparison_tool)
 
 let compile_module
   ocamlsrcdir compiler compilername compileroutput log env
@@ -538,9 +541,8 @@ let run_test_program_in_toplevel toplevel log env =
   let compiler_output_variable = toplevel.Ocaml_compilers.output_variable in
   let ocamlsrcdir = Ocaml_directories.srcdir () in
   let compiler = match toplevel.Ocaml_compilers.backend with
-    | Sys.Native -> Ocaml_compilers.ocamlopt_byte
-    | Sys.Bytecode -> Ocaml_compilers.ocamlc_byte
-    | Sys.Other _ -> assert false in
+    | Ocaml_backends.Native -> Ocaml_compilers.ocamlopt_byte
+    | Ocaml_backends.Bytecode -> Ocaml_compilers.ocamlc_byte in
   let compiler_name = compiler.Ocaml_compilers.name ocamlsrcdir in
   let modules_with_filetypes = List.map Filetype.filetype (modules env) in
   let (modules_result, modules_env) = compile_modules

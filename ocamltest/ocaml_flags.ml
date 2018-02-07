@@ -29,10 +29,10 @@ let c_includes ocamlsrcdir =
   "-ccopt -I" ^ dir
 
 let use_runtime backend ocamlsrcdir = match backend with
-  | Sys.Bytecode ->
+  | Ocaml_backends.Bytecode ->
     let ocamlrun = Ocaml_files.ocamlrun ocamlsrcdir in
     "-use-runtime " ^ ocamlrun
-  | _ -> ""
+  | Ocaml_backends.Native -> ""
 
 let runtime_variant backend ocamlsrcdir =
   let variant = Ocaml_files.runtime_variant() in
@@ -40,9 +40,8 @@ let runtime_variant backend ocamlsrcdir =
   else begin
     let variant_str = if variant=Ocaml_files.Debug then "d" else "i" in
     let backend_lib = match backend with
-      | Sys.Bytecode -> "byterun"
-      | Sys.Native -> "asmrun"
-      | Sys.Other _ -> "stdlib" in
+      | Ocaml_backends.Bytecode -> "byterun"
+      | Ocaml_backends.Native -> "asmrun" in
     let backend_lib_dir = Filename.make_path [ocamlsrcdir; backend_lib] in
     ("-runtime-variant " ^ variant_str ^" -I " ^ backend_lib_dir)
   end
