@@ -88,11 +88,11 @@ let compile_program ocamlsrcdir compiler program_variable log env =
         let env' = Environments.add program_variable p env in
         (env', p)
       | Some p -> (env, p) in
-  let source_modules =
-    Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
+  let all_modules =
+    Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let modules =
     List.concatmap prepare_module
-      (List.map Ocaml_filetypes.filetype source_modules) in
+      (List.map Ocaml_filetypes.filetype all_modules) in
   let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C in
   let has_c_file = List.exists is_c_file modules in
   let custom = (backend = Ocaml_backends.Bytecode) && has_c_file in
@@ -205,7 +205,7 @@ let find_source_modules log env =
       specified_modules in
   print_module_names log "Source" source_modules;
   Environments.add
-    Ocaml_variables.source_modules
+    Ocaml_variables.all_modules
     (String.concat " " (List.map Ocaml_filetypes.make_filename source_modules))
     env
 
@@ -228,7 +228,7 @@ let setup_compiler_build_env compiler log env =
         compiler_reference_variable compiler_reference_filename env
     end in
   let source_modules =
-    Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
+    Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let compiler_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
   let compiler_directory_name =
