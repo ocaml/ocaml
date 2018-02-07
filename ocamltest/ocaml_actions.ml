@@ -68,7 +68,7 @@ let prepare_module (module_name, module_type) =
     | Lexer -> assert false
     | Grammar -> assert false
 
-let get_program_filename backend env =
+let get_program_file backend env =
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
   let program_filename =
@@ -84,7 +84,7 @@ let compile_program ocamlsrcdir compiler program_variable log env =
   let (env, program_file) =
     match Environments.lookup program_variable env with
       | None ->
-        let p = get_program_filename backend env in
+        let p = get_program_file backend env in
         let env' = Environments.add program_variable p env in
         (env', p)
       | Some p -> (env, p) in
