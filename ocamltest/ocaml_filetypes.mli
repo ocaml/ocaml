@@ -13,7 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Types of input files involved in an OCaml project and related functions *)
+(* Types of files involved in an OCaml project and related functions *)
+
+type backend_specific = Object | Library | Program
 
 type t =
   | Implementation
@@ -22,6 +24,8 @@ type t =
   | C_minus_minus
   | Lexer
   | Grammar
+  | Binary_interface
+  | Backend_specific of Ocaml_backends.t * backend_specific
 
 val string_of_filetype : t -> string
 

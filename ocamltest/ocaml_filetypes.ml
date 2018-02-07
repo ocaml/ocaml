@@ -13,7 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Types of input files involved in an OCaml project and related functions *)
+(* Types of files involved in an OCaml project and related functions *)
+
+type backend_specific = Object | Library | Program
 
 type t =
   | Implementation
@@ -22,6 +24,13 @@ type t =
   | C_minus_minus
   | Lexer
   | Grammar
+  | Binary_interface
+  | Backend_specific of Ocaml_backends.t * backend_specific
+
+let string_of_backend_specific = function
+  | Object -> "object"
+  | Library -> "library"
+  | Program -> "program"
 
 let string_of_filetype = function
   | Implementation -> "implementation"
@@ -30,6 +39,10 @@ let string_of_filetype = function
   | C_minus_minus -> "C minus minus source file"
   | Lexer -> "lexer"
   | Grammar -> "grammar"
+  | Binary_interface -> "binary interface"
+  | Backend_specific (backend, filetype) ->
+    ((Ocaml_backends.string_of_backend backend) ^ " " ^
+      (string_of_backend_specific filetype))
 
 let extension_of_filetype = function
   | Implementation -> "ml"
@@ -38,6 +51,16 @@ let extension_of_filetype = function
   | C_minus_minus -> "cmm"
   | Lexer -> "mll"
   | Grammar -> "mly"
+  | Binary_interface -> "cmi"
+  | Backend_specific (backend, filetype) ->
+    begin match (backend, filetype) with
+      | (Ocaml_backends.Native, Object) -> "cmx"
+      | (Ocaml_backends.Native, Library) -> "cmxa"
+      | (Ocaml_backends.Native, Program) -> "opt"
+      | (Ocaml_backends.Bytecode, Object) -> "cmo"
+      | (Ocaml_backends.Bytecode, Library) -> "cma"
+      | (Ocaml_backends.Bytecode, Program) -> "byte"
+    end
 
 let filetype_of_extension = function
   | "ml" -> Implementation
@@ -46,6 +69,13 @@ let filetype_of_extension = function
   | "cmm" -> C_minus_minus
   | "mll" -> Lexer
   | "mly" -> Grammar
+  | "cmi" -> Binary_interface
+  | "cmx" -> Backend_specific (Ocaml_backends.Native, Object)
+  | "cmxa" -> Backend_specific (Ocaml_backends.Native, Library)
+  | "opt" -> Backend_specific (Ocaml_backends.Native, Program)
+  | "cmo" -> Backend_specific (Ocaml_backends.Bytecode, Object)
+  | "cma" -> Backend_specific (Ocaml_backends.Bytecode, Library)
+  | "byte" -> Backend_specific (Ocaml_backends.Bytecode, Program)
   | _ -> raise Not_found
 
 let split_filename name =
@@ -75,3 +105,4 @@ let action_of_filetype = function
   | C_minus_minus -> "Processing C-- file"
   | Lexer -> "Generating lexer"
   | Grammar -> "Generating parser"
+  | filetype -> ("nothing to do for " ^ (string_of_filetype filetype))

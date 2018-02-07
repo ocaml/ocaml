@@ -62,6 +62,8 @@ let prepare_module (module_name, module_type) =
   match module_type with
     | Implementation | Interface | C ->
       [(module_name, module_type)]
+    | Binary_interface -> [(module_name, module_type)]
+    | Backend_specific _ -> [(module_name, module_type)]
     | C_minus_minus -> assert false
     | Lexer -> assert false
     | Grammar -> assert false

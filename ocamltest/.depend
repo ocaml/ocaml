@@ -73,9 +73,9 @@ ocaml_directories.cmi :
 ocaml_files.cmo : ocamltest_stdlib.cmi ocaml_files.cmi
 ocaml_files.cmx : ocamltest_stdlib.cmx ocaml_files.cmi
 ocaml_files.cmi :
-ocaml_filetypes.cmo : ocaml_filetypes.cmi
-ocaml_filetypes.cmx : ocaml_filetypes.cmi
-ocaml_filetypes.cmi :
+ocaml_filetypes.cmo : ocaml_backends.cmi ocaml_filetypes.cmi
+ocaml_filetypes.cmx : ocaml_backends.cmx ocaml_filetypes.cmi
+ocaml_filetypes.cmi : ocaml_backends.cmi
 ocaml_flags.cmo : ocamltest_stdlib.cmi ocaml_files.cmi ocaml_directories.cmi \
     ocaml_backends.cmi ocaml_flags.cmi
 ocaml_flags.cmx : ocamltest_stdlib.cmx ocaml_files.cmx ocaml_directories.cmx \
