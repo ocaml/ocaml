@@ -190,7 +190,9 @@ Working version
 - GPR#1520: more robust implementation of Misc.no_overflow_mul
   (Max Mouratov, review by Xavier Leroy)
 
-- GPR#1586: ocamltest "-promote" option for reference file promotion
+- GPR#1586: testsuite: 'make promote' for ocamltest tests
+  (The new "-promote" option for ocamltest is experimental
+  and subject to change/removal).
   (Gabriel Scherer)
 
 ### Bug fixes

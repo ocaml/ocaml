@@ -43,7 +43,8 @@ let promote = ref false
 let commandline_options =
 [
   ("-e", Arg.Set log_to_stderr, "Log to stderr instead of a file.");
-  ("-promote", Arg.Set promote, "Overwrite reference files with the test output");
+  ("-promote", Arg.Set promote,
+   "Overwrite reference files with the test output (experimental, unstable)");
   ("-show-actions", Arg.Unit show_actions, "Show available actions.");
   ("-show-tests", Arg.Unit show_tests, "Show available tests.");
 ]
