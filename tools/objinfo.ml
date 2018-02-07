@@ -263,6 +263,13 @@ let read_dyn_header filename ic =
   with Failure _ | Sys_error _ -> None
 
 let dump_obj filename =
+  let check_float_float_arrays has_float_arrays =
+    if not Config.flat_float_array && has_float_arrays then begin
+      printf "File has been produced by a compiler with support for\
+              flat float arrays";
+      exit 2
+    end
+  in
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
   let len_magic_number = String.length cmo_magic_number in
@@ -272,12 +279,17 @@ let dump_obj filename =
     seek_in ic cu_pos;
     let cu = (input_value ic : compilation_unit) in
     close_in ic;
+    if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
+
+    end;
     print_cmo_infos cu
   end else if magic_number = cma_magic_number then begin
     let toc_pos = input_binary_int ic in
     seek_in ic toc_pos;
     let toc = (input_value ic : library) in
     close_in ic;
+    check_float_float_arrays
+      (List.exists (fun cu -> cu.cu_flat_float_arrays) toc.lib_units);
     print_cma_infos toc
   end else if magic_number = cmi_magic_number ||
               magic_number = cmt_magic_number then begin
@@ -296,10 +308,13 @@ let dump_obj filename =
     let ui = (input_value ic : unit_infos) in
     let crc = Digest.input ic in
     close_in ic;
+    check_float_float_arrays ui.ui_flat_float_arrays;
     print_cmx_infos (ui, crc)
   end else if magic_number = cmxa_magic_number then begin
     let li = (input_value ic : library_infos) in
     close_in ic;
+    check_float_float_arrays
+      (List.exists (fun (ui, _) -> ui.ui_flat_float_arrays) li.lib_units);
     print_cmxa_infos li
   end else begin
     let pos_trailer = in_channel_length ic - len_magic_number in
@@ -315,9 +330,13 @@ let dump_obj filename =
           printf "Unable to read info on file %s\n" filename;
           exit 2
       | Some header ->
-          if header.dynu_magic = Config.cmxs_magic_number then
+          if header.dynu_magic = Config.cmxs_magic_number then begin
+            check_float_float_arrays
+              (List.exists
+                 (fun du -> du.dynu_flat_float_arrays)
+                 header.dynu_units);
             print_cmxs_infos header
-          else begin
+          end else begin
             printf "Wrong magic number\n"; exit 2
           end;
           close_in ic

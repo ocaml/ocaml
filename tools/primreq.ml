@@ -45,6 +45,11 @@ let scan_obj filename =
     seek_in ic cu_pos;
     let cu = (input_value ic : compilation_unit) in
     close_in ic;
+    if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
+      prerr_endline "File has been produced by a compiler with support for\
+                     flat float arrays";
+      exit 2
+    end;
     scan_info cu
   end else
   if buffer = cma_magic_number then begin

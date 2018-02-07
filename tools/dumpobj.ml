@@ -498,6 +498,11 @@ let dump_obj ic =
   let cu_pos = input_binary_int ic in
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
+  if cu.cu_flat_float_arrays && not Config.flat_float_array then begin
+    prerr_endline "File has been produced by a compiler with support for\
+                   flat float arrays";
+    exit 2
+  end;
   reloc := cu.cu_reloc;
   if !print_reloc_info then
     List.iter print_reloc cu.cu_reloc;
