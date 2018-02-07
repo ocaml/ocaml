@@ -195,7 +195,9 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 	$(CAMLOPT) -a -o $@ $^
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" \
+	    -e "s|%%FLAT_FLOAT_ARRAY%%|$(FLAT_FLOAT_ARRAY)|" \
+	    sys.mlp > $@
 
 .PHONY: clean
 clean::
