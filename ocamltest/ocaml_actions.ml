@@ -58,12 +58,13 @@ let backend_flags env =
 let dumb_term = [|"TERM=dumb"|]
 
 let prepare_module (module_name, module_type) =
+  let open Ocaml_filetypes in
   match module_type with
-    | Filetype.Implementation | Filetype.Interface | Filetype.C ->
+    | Implementation | Interface | C ->
       [(module_name, module_type)]
-    | Filetype.C_minus_minus -> assert false
-    | Filetype.Lexer -> assert false
-    | Filetype.Grammar -> assert false
+    | C_minus_minus -> assert false
+    | Lexer -> assert false
+    | Grammar -> assert false
 
 let get_program_filename backend env =
   let testfile = Actions_helpers.testfile env in
@@ -89,8 +90,8 @@ let compile_program ocamlsrcdir compiler program_variable log env =
     Actions_helpers.words_of_variable env Ocaml_variables.source_modules in
   let modules =
     List.concatmap prepare_module
-      (List.map Filetype.filetype source_modules) in
-  let is_c_file (_filename, filetype) = filetype=Filetype.C in
+      (List.map Ocaml_filetypes.filetype source_modules) in
+  let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C in
   let has_c_file = List.exists is_c_file modules in
   let custom = (backend = Ocaml_backends.Bytecode) && has_c_file in
   let c_headers_flags =
@@ -98,7 +99,7 @@ let compile_program ocamlsrcdir compiler program_variable log env =
   let expected_exit_status =
     Ocaml_compilers.expected_exit_status env compiler in
   let module_names =
-    String.concat " " (List.map Filetype.make_filename modules) in
+    String.concat " " (List.map Ocaml_filetypes.make_filename modules) in
   let what = Printf.sprintf "Linking modules %s into %s"
     module_names program_file in
   Printf.fprintf log "%s\n%!" what;
@@ -174,26 +175,26 @@ let compile_module ocamlsrcdir compiler module_ log env =
 
 let module_has_interface directory module_name =
   let interface_name =
-    Filetype.make_filename (module_name, Filetype.Interface) in
+    Ocaml_filetypes.make_filename (module_name, Ocaml_filetypes.Interface) in
   let interface_fullpath = Filename.make_path [directory;interface_name] in
   Sys.file_exists interface_fullpath
 
 let add_module_interface directory module_description =
   match module_description with
-    | (filename, Filetype.Implementation) when
+    | (filename, Ocaml_filetypes.Implementation) when
       module_has_interface directory filename ->
-        [(filename, Filetype.Interface); module_description]
+        [(filename, Ocaml_filetypes.Interface); module_description]
   | _ -> [module_description]
 
 let print_module_names log description modules =
   Printf.fprintf log "%s modules: %s\n%!"
     description
-    (String.concat " " (List.map Filetype.make_filename modules))
+    (String.concat " " (List.map Ocaml_filetypes.make_filename modules))
 
 let find_source_modules log env =
   let source_directory = Actions_helpers.test_source_directory env in
   let specified_modules =
-    List.map Filetype.filetype
+    List.map Ocaml_filetypes.filetype
       ((modules env) @ [(Actions_helpers.testfile env)]) in
   print_module_names log "Specified" specified_modules;
   let source_modules =
@@ -203,7 +204,7 @@ let find_source_modules log env =
   print_module_names log "Source" source_modules;
   Environments.add
     Ocaml_variables.source_modules
-    (String.concat " " (List.map Filetype.make_filename source_modules))
+    (String.concat " " (List.map Ocaml_filetypes.make_filename source_modules))
     env
 
 let setup_compiler_build_env compiler log env =
@@ -459,11 +460,12 @@ let compile_module
   ocamlsrcdir compiler compilername compileroutput log env
   (module_basename, module_filetype) =
   let backend = compiler.Ocaml_compilers.backend in
-  let filename = Filetype.make_filename (module_basename, module_filetype) in
+  let filename =
+    Ocaml_filetypes.make_filename (module_basename, module_filetype) in
   let expected_exit_status =
     Ocaml_compilers.expected_exit_status env compiler in
   let what = Printf.sprintf "%s for file %s (expected exit status: %d)"
-    (Filetype.action_of_filetype module_filetype) filename
+    (Ocaml_filetypes.action_of_filetype module_filetype) filename
       (expected_exit_status) in
   let compile_commandline input_file output_file optional_flags =
     let compile = "-c " ^ input_file in
@@ -495,19 +497,20 @@ let compile_module
       (Result.fail_with_reason reason, env)
     end in
   match module_filetype with
-    | Filetype.Interface ->
+    | Ocaml_filetypes.Interface ->
       let interface_name =
-        Filetype.make_filename (module_basename, Filetype.Interface) in
+        Ocaml_filetypes.make_filename
+          (module_basename, Ocaml_filetypes.Interface) in
       let commandline = compile_commandline interface_name None "" in
       exec commandline
-    | Filetype.Implementation ->
+    | Ocaml_filetypes.Implementation ->
       let module_extension = Ocaml_backends.module_extension backend in
       let module_output_name =
         Filename.make_filename module_basename module_extension in
       let commandline =
         compile_commandline filename (Some module_output_name) "" in
       exec commandline
-    | Filetype.C ->
+    | Ocaml_filetypes.C ->
       let object_extension = Config.ext_obj in
       let _object_filename = module_basename ^ object_extension in
       let commandline =
@@ -516,7 +519,7 @@ let compile_module
       exec commandline
     | _ ->
       let reason = Printf.sprintf "File %s of type %s not supported yet"
-        filename (Filetype.string_of_filetype module_filetype) in
+        filename (Ocaml_filetypes.string_of_filetype module_filetype) in
       (Result.fail_with_reason reason, env)
 
 let compile_modules
@@ -544,7 +547,8 @@ let run_test_program_in_toplevel toplevel log env =
     | Ocaml_backends.Native -> Ocaml_compilers.ocamlopt_byte
     | Ocaml_backends.Bytecode -> Ocaml_compilers.ocamlc_byte in
   let compiler_name = compiler.Ocaml_compilers.name ocamlsrcdir in
-  let modules_with_filetypes = List.map Filetype.filetype (modules env) in
+  let modules_with_filetypes =
+    List.map Ocaml_filetypes.filetype (modules env) in
   let (modules_result, modules_env) = compile_modules
     ocamlsrcdir compiler compiler_name compiler_output_variable
     modules_with_filetypes log env in
