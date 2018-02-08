@@ -178,7 +178,7 @@ let rec rename_append_bytecode_list packagename oc mapping defined ofs
           let root = Path.Pident (Ident.create_persistent prefix) in
           rename_append_bytecode_list packagename oc mapping (id :: defined)
             (ofs + size) prefix
-            (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos))
+            (Subst.add_module id (Path.Pdot (root, Ident.name id))
                               subst)
             rem
 

@@ -154,7 +154,7 @@ let rec size_of_lambda env = function
       | Record_regular | Record_inlined _ -> RHS_block size
       | Record_unboxed _ -> assert false
       | Record_float -> RHS_floatblock size
-      | Record_extension -> RHS_block (size + 1)
+      | Record_extension _ -> RHS_block (size + 1)
       end
   | Llet(_str, _k, id, arg, body) ->
       size_of_lambda (Ident.add id (size_of_lambda env arg) env) body
@@ -177,7 +177,7 @@ let rec size_of_lambda env = function
       RHS_block size
   | Lprim (Pduprecord (Record_unboxed _, _), _, _) ->
       assert false
-  | Lprim (Pduprecord (Record_extension, size), _, _) ->
+  | Lprim (Pduprecord (Record_extension _, size), _, _) ->
       RHS_block (size + 1)
   | Lprim (Pduprecord (Record_float, size), _, _) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda env lam

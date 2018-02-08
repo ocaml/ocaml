@@ -17,7 +17,7 @@
 
 type t =
     Pident of Ident.t
-  | Pdot of t * string * int
+  | Pdot of t * string
   | Papply of t * t
 
 val same: t -> t -> bool
@@ -26,8 +26,6 @@ val find_free_opt: Ident.t list -> t -> Ident.t option
 val exists_free: Ident.t list -> t -> bool
 val scope: t -> int
 val flatten : t -> [ `Contains_apply | `Ok of Ident.t * string list ]
-
-val nopos: int
 
 val name: ?paren:(string -> bool) -> t -> string
     (* [paren] tells whether a path suffix needs parentheses *)

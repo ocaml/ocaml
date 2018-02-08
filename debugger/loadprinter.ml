@@ -17,7 +17,6 @@
 
 open Misc
 open Longident
-open Path
 open Types
 
 (* Error report *)
@@ -89,15 +88,17 @@ let loadfile ppf name =
 (* Note: evaluation proceeds in the debugger memory space, not in
    the debuggee. *)
 
-let rec eval_path = function
-    Pident id -> Symtable.get_global_value id
-  | Pdot(p, _, pos) -> Obj.field (eval_path p) pos
-  | Papply _ -> fatal_error "Loadprinter.eval_path"
+let rec eval_address = function
+  | Env.Aident id -> Symtable.get_global_value id
+  | Env.Adot(addr, pos) -> Obj.field (eval_address addr) pos
 
 (* PR#7258: get rid of module aliases before evaluating paths *)
 
-let eval_path path =
-  eval_path (Env.normalize_path (Some Location.none) Env.empty path)
+let eval_value_path env path =
+  match Env.find_value_address path env with
+  | addr -> eval_address addr
+  | exception Not_found ->
+      fatal_error ("Cannot find address for: " ^ (Path.name path))
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
@@ -140,7 +141,7 @@ let install_printer ppf lid =
   let (ty_arg, path, is_old_style) = find_printer_type lid in
   let v =
     try
-      use_debugger_symtable eval_path path
+      use_debugger_symtable (eval_value_path Env.empty) path
     with Symtable.Error(Symtable.Undefined_global s) ->
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =

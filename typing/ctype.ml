@@ -213,7 +213,7 @@ let restore_global_level gl =
 let is_object_type path =
   let name =
     match path with Path.Pident id -> Ident.name id
-    | Path.Pdot(_, s,_) -> s
+    | Path.Pdot(_, s) -> s
     | Path.Papply _ -> assert false
   in name.[0] = '#'
 
@@ -754,11 +754,11 @@ let rec normalize_package_path env p =
   | Some (Mty_ident p) -> normalize_package_path env p
   | Some (Mty_signature _ | Mty_functor _ | Mty_alias _) | None ->
       match p with
-        Path.Pdot (p1, s, n) ->
+        Path.Pdot (p1, s) ->
           (* For module aliases *)
           let p1' = Env.normalize_path None env p1 in
           if Path.same p1 p1' then p else
-          normalize_package_path env (Path.Pdot (p1', s, n))
+          normalize_package_path env (Path.Pdot (p1', s))
       | _ -> p
 
 let check_scope_escape env level ty =
@@ -2382,7 +2382,7 @@ let complete_type_list ?(allow_absent=false) env nl1 lv2 mty2 nl2 tl2 =
      It'd be nice if we avoided creating such temporary dummy modules and broken
      environments though. *)
   let id2 = Ident.create_local "Pkg" in
-  let env' = Env.add_module id2 mty2 env in
+  let env' = Env.add_module id2 Mp_present mty2 env in
   let rec complete nl1 ntl2 =
     match nl1, ntl2 with
       [], _ -> ntl2
@@ -3871,7 +3871,7 @@ let memq_warn t visited =
 let rec lid_of_path ?(hash="") = function
     Path.Pident id ->
       Longident.Lident (hash ^ Ident.name id)
-  | Path.Pdot (p1, s, _) ->
+  | Path.Pdot (p1, s) ->
       Longident.Ldot (lid_of_path p1, hash ^ s)
   | Path.Papply (p1, p2) ->
       Longident.Lapply (lid_of_path ~hash p1, lid_of_path p2)
@@ -4380,10 +4380,10 @@ let rec normalize_type_rec env visited ty =
     let tm = row_of_type ty in
     begin if not (is_Tconstr ty) && is_constr_row ~allow_ident:false tm then
       match tm.desc with (* PR#7348 *)
-        Tconstr (Path.Pdot(m,i,pos), tl, _abbrev) ->
+        Tconstr (Path.Pdot(m,i), tl, _abbrev) ->
           let i' = String.sub i 0 (String.length i - 4) in
           log_type ty;
-          ty.desc <- Tconstr(Path.Pdot(m,i',pos), tl, ref Mnil)
+          ty.desc <- Tconstr(Path.Pdot(m,i'), tl, ref Mnil)
       | _ -> assert false
     else match ty.desc with
     | Tvariant row ->

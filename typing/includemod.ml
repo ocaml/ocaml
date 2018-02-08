@@ -178,7 +178,7 @@ let item_ident_name = function
     Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
   | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
   | Sig_typext(id, d, _) -> (id, d.ext_loc, Field_typext(Ident.name id))
-  | Sig_module(id, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
+  | Sig_module(id, _, d, _) -> (id, d.md_loc, Field_module(Ident.name id))
   | Sig_modtype(id, d) -> (id, d.mtd_loc, Field_modtype(Ident.name id))
   | Sig_class(id, d, _) -> (id, d.cty_loc, Field_class(Ident.name id))
   | Sig_class_type(id, d, _) -> (id, d.clty_loc, Field_classtype(Ident.name id))
@@ -186,11 +186,12 @@ let item_ident_name = function
 let is_runtime_component = function
   | Sig_value(_,{val_kind = Val_prim _})
   | Sig_type(_,_,_)
+  | Sig_module(_,Mp_absent,_,_)
   | Sig_modtype(_,_)
   | Sig_class_type(_,_,_) -> false
   | Sig_value(_,_)
   | Sig_typext(_,_,_)
-  | Sig_module(_,_,_)
+  | Sig_module(_,Mp_present,_,_)
   | Sig_class(_, _,_) -> true
 
 (* Print a coercion *)
@@ -217,7 +218,7 @@ let rec print_coercion ppf c =
   | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
       pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
         Printtyp.raw_type_expr pc_type
-  | Tcoerce_alias (p, c) ->
+  | Tcoerce_alias (_, p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
         print_coercion c
@@ -258,8 +259,8 @@ let rec modtypes ~loc env ~mark cxt subst mty1 mty2 =
                       :: reasons))
 
 and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
-  match (mty1, mty2) with
-  | (Mty_alias(pres1, p1), Mty_alias(pres2, p2)) -> begin
+  match mty1, mty2 with
+  | Mty_alias p1, Mty_alias p2 ->
       if Env.is_functor_arg p2 env then
         raise (Error[cxt, env, Invalid_module_alias p2]);
       if not (Path.same p1 p2) then begin
@@ -267,21 +268,8 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
         and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
         if not (Path.same p1 p2) then raise Dont_match
       end;
-      match pres1, pres2 with
-      | Mta_present, Mta_present -> Tcoerce_none
-        (* Should really be Tcoerce_ignore if it existed *)
-      | Mta_absent, Mta_absent -> Tcoerce_none
-        (* Should really be Tcoerce_empty if it existed *)
-      | Mta_present, Mta_absent -> Tcoerce_none
-      | Mta_absent, Mta_present ->
-        let p1 = try
-            Env.normalize_path (Some Location.none) env p1
-          with Env.Error (Env.Missing_module (_, _, path)) ->
-            raise (Error[cxt, env, Unbound_module_path path])
-        in
-        Tcoerce_alias (p1, Tcoerce_none)
-    end
-  | (Mty_alias(pres1, p1), _) -> begin
+      Tcoerce_none
+  | (Mty_alias p1, _) -> begin
       let p1 = try
         Env.normalize_path (Some Location.none) env p1
       with Env.Error (Env.Missing_module (_, _, path)) ->
@@ -291,10 +279,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
         Mtype.strengthen ~aliasable:true env
           (expand_module_alias env cxt p1) p1
       in
-      let cc = modtypes ~loc env ~mark cxt subst mty1 mty2 in
-      match pres1 with
-      | Mta_present -> cc
-      | Mta_absent -> Tcoerce_alias (p1, cc)
+      modtypes ~loc env ~mark cxt subst mty1 mty2
     end
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes ~loc env ~mark cxt subst
@@ -317,7 +302,7 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
           (Arg param1::cxt) Subst.identity arg2' arg1
       in
       let cc_res =
-        modtypes ~loc (Env.add_module param1 arg2' env) ~mark
+        modtypes ~loc (Env.add_module param1 Mp_present arg2' env) ~mark
           (Body param1::cxt)
           (Subst.add_module param2 (Path.Pident param1) subst)
           res1 res2
@@ -352,7 +337,7 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
   let (id_pos_list,_) =
     List.fold_left
       (fun (l,pos) -> function
-          Sig_module (id, _, _) ->
+          Sig_module (id, Mp_present, _, _) ->
             ((id,pos,Tcoerce_none)::l , pos+1)
         | item -> (l, if is_runtime_component item then pos+1 else pos))
       ([], 0) sig1 in
@@ -362,7 +347,10 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
       [] -> pos, tbl
     | item :: rem ->
         let (id, _loc, name) = item_ident_name item in
-        let nextpos = if is_runtime_component item then pos + 1 else pos in
+        let pos, nextpos =
+          if is_runtime_component item then pos, pos + 1
+          else -1, pos
+        in
         build_component_table nextpos
                               (FieldMap.add name (id, item, pos) tbl) rem in
   let len1, comps1 =
@@ -453,9 +441,17 @@ and signature_components ~loc old_env ~mark env cxt subst paired =
     :: rem ->
       extension_constructors ~loc env ~mark cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
+  | (Sig_module(id1, pres1, mty1, _),
+     Sig_module(_id2, pres2, mty2, _), pos) :: rem -> begin
       let cc = module_declarations ~loc env ~mark cxt subst id1 mty1 mty2 in
-      (pos, cc) :: comps_rec rem
+      let rem = comps_rec rem in
+      match pres1, pres2, mty1.md_type with
+      | Mp_present, Mp_present, _ -> (pos, cc) :: rem
+      | _, Mp_absent, _ -> rem
+      | Mp_absent, Mp_present, Mty_alias p1 ->
+          (pos, Tcoerce_alias (env, p1, cc)) :: rem
+      | Mp_absent, Mp_present, _ -> assert false
+    end
   | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
       modtype_infos ~loc env ~mark cxt subst id1 info1 info2;
       comps_rec rem
@@ -520,7 +516,7 @@ and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
 let can_alias env path =
   let rec no_apply = function
     | Path.Pident _ -> true
-    | Path.Pdot(p, _, _) -> no_apply p
+    | Path.Pdot(p, _) -> no_apply p
     | Path.Papply _ -> false
   in
   no_apply path && not (Env.is_functor_arg path env)
@@ -680,8 +676,8 @@ and argname x =
 let path_of_context = function
     Module id :: rem ->
       let rec subm path = function
-          [] -> path
-        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id, -1)) rem
+        | [] -> path
+        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id)) rem
         | _ -> assert false
       in subm (Path.Pident id) rem
   | _ -> assert false

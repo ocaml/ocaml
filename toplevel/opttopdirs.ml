@@ -147,7 +147,7 @@ let find_printer_type ppf lid =
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path !toplevel_env path in
+    let v = eval_value_path !toplevel_env path in
     let print_function =
       if is_old_style then
         (fun _formatter repr -> Obj.obj v (Obj.obj repr))

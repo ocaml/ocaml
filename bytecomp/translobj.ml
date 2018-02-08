@@ -21,11 +21,12 @@ open Lambda
 (* Get oo primitives identifiers *)
 
 let oo_prim name =
-  try
-    transl_normal_path
-      (fst (Env.lookup_value (Ldot (Lident "CamlinternalOO", name)) Env.empty))
-  with Not_found ->
-    fatal_error ("Primitive " ^ name ^ " not found.")
+  let env = Env.empty in
+  let lid = Ldot (Lident "CamlinternalOO", name) in
+  match Env.lookup_value lid env with
+  | path, _ -> transl_value_path Location.none env path
+  | exception Not_found ->
+      fatal_error ("Primitive " ^ name ^ " not found.")
 
 (* Share blocks *)
 
