@@ -37,6 +37,11 @@ let make_library_modifier library directory =
 let compiler_subdir subdir =
   Filename.make_path (Ocamltest_config.ocamlsrcdir :: subdir)
 
+let config = 
+[
+  Append (Ocaml_variables.directories, (wrap (compiler_subdir ["config"])));
+]
+
 let testing = make_library_modifier
   "testing" (compiler_subdir ["testsuite"; "lib"])
 
@@ -70,6 +75,7 @@ let ocamlcommon =
 
 let _ =
   register_modifiers "principal" principal;
+  register_modifiers "config" config;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
   register_modifiers "bigarray" bigarray;
