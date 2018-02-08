@@ -1,7 +1,7 @@
 (* TEST (* Just a test-driver *)
    * native-compiler
    ** script
-       script = "sh ${test_source_directory}/afl-showmap-available"
+       script = "sh ${test_source_directory}/has-afl-showmap.precheck"
        files = "harness.ml  test.ml"
    *** setup-ocamlopt.byte-build-env
    **** ocamlopt.byte
