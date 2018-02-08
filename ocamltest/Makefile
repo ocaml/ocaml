@@ -185,6 +185,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
+	  -e 's|@@SPACETIME@@|$(WITH_SPACETIME)|' \
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  $< > $@

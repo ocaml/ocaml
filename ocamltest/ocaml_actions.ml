@@ -626,6 +626,30 @@ let no_flat_float_array = make
     "The no-flat-float-array action succeeds.\n"
     "The compiler has been configured with -flat-float-array.")
 
+let flambda = Actions.make
+  "flambda"
+  (Actions_helpers.pass_or_skip Ocamltest_config.flambda
+    "support for flambda enabled"
+    "support for flambda disabled")
+
+let no_flambda = make
+  "no-flambda"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.flambda)
+    "support for flambda disabled"
+    "support for flambda enabled")
+
+let spacetime = Actions.make
+  "spacetime"
+  (Actions_helpers.pass_or_skip Ocamltest_config.spacetime
+    "support for spacetime enabled"
+    "support for spacetime disabled")
+
+let no_spacetime = make
+  "no-spacetime"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.spacetime)
+    "support for spacetime disabled"
+    "support for spacetime enabled")
+
 let shared_libraries = Actions.make
   "shared-libraries"
   (Actions_helpers.pass_or_skip Ocamltest_config.shared_libraries
@@ -672,6 +696,10 @@ let _ =
     check_ocamlnat_output;
     flat_float_array;
     no_flat_float_array;
+    flambda;
+    no_flambda;
+    spacetime;
+    no_spacetime;
     shared_libraries;
     native_compiler;
     afl_support;

@@ -31,6 +31,8 @@ let ocamlsrcdir = "@@OCAMLSRCDIR@@"
 
 let flambda = @@FLAMBDA@@
 
+let spacetime = @@SPACETIME@@
+
 let ocamlc_default_flags = "@@OCAMLCDEFAULTFLAGS@@"
 let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
 
