@@ -81,7 +81,10 @@ val mod_use_file : formatter -> string -> bool
            [use_file] prints the types and values of the results.
            [use_silently] does not print them.
            [mod_use_file] wrap the file contents into a module. *)
-val eval_path: Env.t -> Path.t -> Obj.t
+val eval_module_path: Env.t -> Path.t -> Obj.t
+val eval_value_path: Env.t -> Path.t -> Obj.t
+val eval_extension_path: Env.t -> Path.t -> Obj.t
+val eval_class_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
 val record_backtrace : unit -> unit
 

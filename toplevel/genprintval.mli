@@ -34,7 +34,7 @@ module type OBJ =
 module type EVALPATH =
   sig
     type valu
-    val eval_path: Env.t -> Path.t -> valu
+    val eval_address: Env.address -> valu
     exception Error
     val same_value: valu -> valu -> bool
   end

@@ -935,7 +935,7 @@ module Analyser =
         let f = match ele with
           Element_module m ->
             (function
-                Types.Sig_module (ident,md,_) ->
+                Types.Sig_module (ident,_,md,_) ->
                   let n1 = Name.simple m.m_name
                   and n2 = Ident.name ident in
                   (

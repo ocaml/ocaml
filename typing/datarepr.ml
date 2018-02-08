@@ -130,7 +130,7 @@ let constructor_descrs ty_path decl cstrs =
             else Record_inlined idx_nonconst
           in
           constructor_args decl.type_private cd_args cd_res
-            (Path.Pdot (ty_path, cstr_name, Path.nopos)) representation
+            (Path.Pdot (ty_path, cstr_name)) representation
         in
         let cstr =
           { cstr_name;
@@ -159,7 +159,7 @@ let extension_descr path_ext ext =
   in
   let existentials, cstr_args, cstr_inlined =
     constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
-      path_ext Record_extension
+      path_ext (Record_extension path_ext)
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;

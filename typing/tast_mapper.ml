@@ -336,10 +336,11 @@ let expr sub x =
           path,
           List.map (tuple3 id id (sub.expr sub)) list
         )
-    | Texp_letmodule (id, s, mexpr, exp) ->
+    | Texp_letmodule (id, s, pres, mexpr, exp) ->
         Texp_letmodule (
           id,
           s,
+          pres,
           sub.module_expr sub mexpr,
           sub.expr sub exp
         )
@@ -446,8 +447,8 @@ let module_coercion sub = function
   | Tcoerce_none -> Tcoerce_none
   | Tcoerce_functor (c1,c2) ->
       Tcoerce_functor (sub.module_coercion sub c1, sub.module_coercion sub c2)
-  | Tcoerce_alias (p, c1) ->
-      Tcoerce_alias (p, sub.module_coercion sub c1)
+  | Tcoerce_alias (env, p, c1) ->
+      Tcoerce_alias (sub.env sub env, p, sub.module_coercion sub c1)
   | Tcoerce_structure (l1, l2) ->
       let l1' = List.map (fun (i,c) -> i, sub.module_coercion sub c) l1 in
       let l2' =

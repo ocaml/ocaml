@@ -107,7 +107,8 @@ and expression_desc =
   | Texp_instvar of Path.t * Path.t * string loc
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Path.t * string loc * expression) list
-  | Texp_letmodule of Ident.t * string loc * module_expr * expression
+  | Texp_letmodule of
+      Ident.t * string loc * Types.module_presence * module_expr * expression
   | Texp_letexception of extension_constructor * expression
   | Texp_assert of expression
   | Texp_lazy of expression
@@ -241,6 +242,7 @@ and module_binding =
     {
      mb_id: Ident.t;
      mb_name: string loc;
+     mb_presence: module_presence;
      mb_expr: module_expr;
      mb_attributes: attribute list;
      mb_loc: Location.t;
@@ -260,7 +262,7 @@ and module_coercion =
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of primitive_coercion
-  | Tcoerce_alias of Path.t * module_coercion
+  | Tcoerce_alias of Env.t * Path.t * module_coercion
 
 and module_type =
   { mty_desc: module_type_desc;
@@ -318,6 +320,7 @@ and module_declaration =
     {
      md_id: Ident.t;
      md_name: string loc;
+     md_presence: module_presence;
      md_type: module_type;
      md_attributes: attribute list;
      md_loc: Location.t;

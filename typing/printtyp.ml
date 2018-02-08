@@ -285,7 +285,7 @@ let ident ppf id = pp_print_string ppf
 let ident_stdlib = Ident.create_persistent "Stdlib"
 
 let non_shadowed_pervasive = function
-  | Pdot(Pident id, s, _) as path ->
+  | Pdot(Pident id, s) as path ->
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
        with Not_found -> true)
@@ -305,7 +305,7 @@ let find_double_underscore s =
 
 let rec module_path_is_an_alias_of env path ~alias_of =
   match Env.find_module path env with
-  | { md_type = Mty_alias (_, path'); _ } ->
+  | { md_type = Mty_alias path'; _ } ->
     Path.same path' alias_of ||
     module_path_is_an_alias_of env path' ~alias_of
   | _ -> false
@@ -315,8 +315,8 @@ let rec module_path_is_an_alias_of env path ~alias_of =
    for Foo__bar. This pattern is used by the stdlib. *)
 let rec rewrite_double_underscore_paths env p =
   match p with
-  | Pdot (p, s, n) ->
-    Pdot (rewrite_double_underscore_paths env p, s, n)
+  | Pdot (p, s) ->
+    Pdot (rewrite_double_underscore_paths env p, s)
   | Papply (a, b) ->
     Papply (rewrite_double_underscore_paths env a,
             rewrite_double_underscore_paths env b)
@@ -348,9 +348,9 @@ let rewrite_double_underscore_paths env p =
 let rec tree_of_path namespace = function
   | Pident id ->
       Oide_ident (ident_name namespace id)
-  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
+  | Pdot(_, s) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
-  | Pdot(p, s, _pos) ->
+  | Pdot(p, s) ->
       Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
@@ -579,7 +579,7 @@ let penalty s =
 let rec path_size = function
     Pident id ->
       penalty (Ident.name id), -Ident.scope id
-  | Pdot (p, _, _) ->
+  | Pdot (p, _) ->
       let (l, b) = path_size p in (1+l, b)
   | Papply (p1, p2) ->
       let (l, b) = path_size p1 in
@@ -1511,7 +1511,7 @@ let recursive_sigitem = function
   | Sig_class(id,_,rs) -> Some(id,rs,3)
   | Sig_class_type (id,_,rs) -> Some(id,rs,2)
   | Sig_type(id, _, rs)
-  | Sig_module(id, _, rs) -> Some (id,rs,0)
+  | Sig_module(id, _, _, rs) -> Some (id,rs,0)
   | _ -> None
 
 let skip k l = snd (Misc.Stdlib.List.split_at k l)
@@ -1542,12 +1542,12 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       let res =
         match ty_arg with None -> tree_of_modtype ~ellipsis ty_res
         | Some mty ->
-            wrap_env (Env.add_module ~arg:true param mty)
+            wrap_env (Env.add_module ~arg:true param Mp_present mty)
                      (tree_of_modtype ~ellipsis) ty_res
       in
       Omty_functor (Ident.name param,
                     may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
-  | Mty_alias(_, p) ->
+  | Mty_alias p ->
       Omty_alias (tree_of_path Module p)
 
 and tree_of_signature sg =
@@ -1574,7 +1574,7 @@ and trees_of_sigitem = function
       [tree_of_type_declaration id decl rs]
   | Sig_typext(id, ext, es) ->
       [tree_of_extension_constructor id ext es]
-  | Sig_module(id, md, rs) ->
+  | Sig_module(id, _, md, rs) ->
       let ellipsis =
         List.exists (function
           | Parsetree.{attr_name = {txt="..."}; attr_payload = PStr []} -> true

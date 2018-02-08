@@ -46,7 +46,7 @@ let fmt_ident = Ident.print
 let rec fmt_path_aux f x =
   match x with
   | Path.Pident (s) -> fprintf f "%a" fmt_ident s;
-  | Path.Pdot (y, s, _pos) -> fprintf f "%a.%s" fmt_path_aux y s;
+  | Path.Pdot (y, s) -> fprintf f "%a.%s" fmt_path_aux y s;
   | Path.Papply (y, z) ->
       fprintf f "%a(%a)" fmt_path_aux y fmt_path_aux z;
 ;;
@@ -152,7 +152,7 @@ let record_representation i ppf = let open Types in function
   | Record_float -> line i ppf "Record_float\n"
   | Record_unboxed b -> line i ppf "Record_unboxed %b\n" b
   | Record_inlined i -> line i ppf "Record_inlined %d\n" i
-  | Record_extension -> line i ppf "Record_extension\n"
+  | Record_extension p -> line i ppf "Record_extension %a\n" fmt_path p
 
 let attribute i ppf k a =
   line i ppf "%s \"%s\"\n" k a.Parsetree.attr_name.txt;
@@ -391,7 +391,7 @@ and expression i ppf x =
   | Texp_override (_, l) ->
       line i ppf "Texp_override\n";
       list i string_x_expression ppf l;
-  | Texp_letmodule (s, _, me, e) ->
+  | Texp_letmodule (s, _, _, me, e) ->
       line i ppf "Texp_letmodule \"%a\"\n" fmt_ident s;
       module_expr i ppf me;
       expression i ppf e;
