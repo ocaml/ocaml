@@ -39,7 +39,7 @@ let compiler_subdir subdir =
 
 let config = 
 [
-  Append (Ocaml_variables.directories, (wrap (compiler_subdir ["config"])));
+  Append (Ocaml_variables.directories, (wrap (compiler_subdir ["utils"])));
 ]
 
 let testing = make_library_modifier
