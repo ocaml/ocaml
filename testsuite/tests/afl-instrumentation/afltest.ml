@@ -2,7 +2,7 @@
    * native-compiler
    ** no-afl-instrument
    *** script
-       script = "sh ${test_source_directory}/afl-showmap-available"
+       script = "sh ${test_source_directory}/has-afl-showmap.sh"
        files = "harness.ml  test.ml"
    **** setup-ocamlopt.byte-build-env
    ***** ocamlopt.byte
