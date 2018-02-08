@@ -115,7 +115,6 @@ let compile_program ocamlsrcdir compiler program_variable log env =
     Ocaml_flags.use_runtime backend ocamlsrcdir;
     Ocaml_flags.runtime_variant backend ocamlsrcdir;
     Ocaml_flags.stdlib ocamlsrcdir;
-    "-linkall";
     directory_flags env;
     flags env;
     libraries backend env;
