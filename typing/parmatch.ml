@@ -347,24 +347,11 @@ let clean_copy ty =
   if ty.level = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
 
-(* As reported in PR#6394 it is possible for recursive modules to add incoherent
-   equations into the environment.
-   So assuming we're working on the same example as in PR#6394, when looking at
-   constructor [A] we end up calling [expand_head] on [t] (the type of [A]) and
-   get [int * bool].
-   This will result in a proper error later on during type checking, meanwhile
-   we need to "survive" and be somewhat aware that we're working on bogus input
-*)
-
-type constructor_type_path =
-  | Ok of Path.t
-  | Inconsistent_environment
-
 let get_constructor_type_path ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
   match ty.desc with
-  | Tconstr (path,_,_) -> Ok path
-  | _ -> Inconsistent_environment
+  | Tconstr (path,_,_) -> path
+  | _ -> assert false
 
 (****************************)
 (* Utilities for matching   *)
@@ -842,13 +829,8 @@ let should_extend ext env = match ext with
       begin match p.pat_desc with
       | Tpat_construct
           (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
-            (match get_constructor_type_path p.pat_type p.pat_env with
-             | Ok path -> Path.same path ext
-             | Inconsistent_environment ->
-               (* returning [true] here could result in more computations being
-                  done to check exhaustivity. Which is clearly not necessary
-                  since the code doesn't typecheck anyway. *)
-               false)
+            let path = get_constructor_type_path p.pat_type p.pat_env in
+            Path.same path ext
       | Tpat_construct
           (_, {cstr_tag=(Cstr_extension _)},_) -> false
       | Tpat_constant _|Tpat_tuple _|Tpat_variant _
@@ -994,9 +976,10 @@ let build_other ext env = match env with
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
     | Some ext ->
-        (match get_constructor_type_path p.pat_type p.pat_env with
-         | Ok path when Path.same ext path -> extra_pat
-         | _ -> build_other_constrs env p)
+        if Path.same ext (get_constructor_type_path p.pat_type p.pat_env) then
+          extra_pat
+        else
+          build_other_constrs env p
     | _ ->
         build_other_constrs env p
     end
@@ -2025,17 +2008,11 @@ let extendable_path path =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
-    (match get_constructor_type_path p.pat_type p.pat_env with
-     | Ok path ->
-         List.fold_left
-           collect_paths_from_pat
-           (if extendable_path path then add_path path r else r)
-           ps
-     | Inconsistent_environment ->
-       (* no need to recurse on the constructor arguments: since we know the
-          code won't typecheck anyway, whatever we might compute would be
-          useless anyway. *)
-       r)
+    let path = get_constructor_type_path p.pat_type p.pat_env in
+    List.fold_left
+      collect_paths_from_pat
+      (if extendable_path path then add_path path r else r)
+      ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->

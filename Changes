@@ -26,6 +26,9 @@ Working version
   when configured with -no-flat-float-array
   (Jeremy Yallop, report by Gabriel Scherer)
 
+- GPR#1468: Do not enrich type_decls with incoherent manifests
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 - GPR#1583: propagate refined ty_arg to Parmatch checks
   (Thomas Refis, review by Jacques Garrigue)
 

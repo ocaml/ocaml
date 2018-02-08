@@ -194,6 +194,9 @@ val matches: Env.t -> type_expr -> type_expr -> bool
         (* Same as [moregeneral false], implemented using the two above
            functions and backtracking. Ignore levels *)
 
+val reify_univars : Env.t -> Types.type_expr -> Types.type_expr
+        (* Replaces all the variables of a type by a univar. *)
+
 type class_match_failure =
     CM_Virtual_class
   | CM_Parameter_arity_mismatch of int * int
@@ -290,3 +293,5 @@ val maybe_pointer_type : Env.t -> type_expr -> bool
 val package_subtype :
     (Env.t -> Path.t -> Longident.t list -> type_expr list ->
       Path.t -> Longident.t list -> type_expr list -> bool) ref
+
+val mcomp : Env.t -> type_expr -> type_expr -> unit
