@@ -148,6 +148,10 @@ Working version
   structures and signatures (e.g. "include struct … include(struct … end) … end")
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
+- MPR#7710: `ocamldep -sort` should exit with nonzero code in case of
+  cyclic dependencies
+  (Xavier Leroy, report by Mantis user baileyparker)
+
 - GPR#1585: optimize output of "ocamllex -ml"
   (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
 
