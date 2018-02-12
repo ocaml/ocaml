@@ -99,3 +99,76 @@ Error: This expression has type b = a but an expression was expected of type
        This instance of a is ambiguous:
        it would escape the scope of its equation
 |}]
+
+(* First reported in MPR#7617: the typechecker arbitrarily picks a
+   representative for an ambivalent type escaping its scope.
+   The commit that was implemented poses problems of its own: we are now
+   unifying the type of the patterns in the environment of each pattern, instead
+   of the outter one. The code discussed in PR#7617 passes because each branch
+   contains the same equation, but consider the following cases: *)
+
+let f (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : a) | (_ : b)] -> []
+  | _, [(_ : a)] -> []
+;;
+[%%expect{|
+Line _, characters 4-16:
+    | _, [(_ : a)] -> []
+      ^^^^^^^^^^^^
+Error: This pattern matches values of type (a, b) eq * a list
+       but a pattern was expected which matches values of type
+         (a, b) eq * b list
+       Type a is not compatible with type b
+|}]
+
+let g1 (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : a) | (_ : b)] -> []
+  | _, [(_ : b)] -> []
+;;
+[%%expect{|
+val g1 : ('a, 'b) eq -> 'c list = <fun>
+|}]
+
+let g2 (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | Refl, [(_ : b) | (_ : a)] -> []
+  | _, [(_ : a)] -> []
+;;
+[%%expect{|
+Line _, characters 4-16:
+    | _, [(_ : a)] -> []
+      ^^^^^^^^^^^^
+Error: This pattern matches values of type (a, b) eq * a list
+       but a pattern was expected which matches values of type
+         (a, b) eq * b list
+       Type a is not compatible with type b
+|}]
+
+let h1 (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | _, [(_ : a)] -> []
+  | Refl, [(_ : a) | (_ : b)] -> []
+;;
+[%%expect{|
+val h1 : ('a, 'b) eq -> 'c list = <fun>
+|}]
+
+let h2 (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | _, [(_ : b)] -> []
+  | Refl, [(_ : a) | (_ : b)] -> []
+;;
+[%%expect{|
+val h2 : ('a, 'b) eq -> 'c list = <fun>
+|}]
+
+let h3 (type a b) (x : (a, b) eq) =
+  match x, [] with
+  | _, [(_ : a)] -> []
+  | Refl, [(_ : b) | (_ : a)] -> []
+;;
+[%%expect{|
+val h3 : ('a, 'b) eq -> 'c list = <fun>
+|}]
