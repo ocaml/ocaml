@@ -4606,9 +4606,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         in
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
+        begin_def ();
+        let ty_arg = instance ?partial:take_partial_instance ty_arg in
+        end_def ();
+        generalize_structure ty_arg;
+        let expected_ty_arg = instance ty_arg in
         let (pat, ext_env, force, unpacks) =
-          let ty_arg = instance ?partial:take_partial_instance ty_arg in
-          type_pattern ~lev env pc_lhs scope ty_arg
+          type_pattern ~lev env pc_lhs scope expected_ty_arg
         in
         pattern_force := force @ !pattern_force;
         let pat =
@@ -4618,16 +4622,18 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             { pat with pat_type = instance pat.pat_type }
           end else pat
         in
-        (pat, (ext_env, unpacks)))
+        (pat, ty_arg, (ext_env, unpacks)))
       caselist in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
   let unify_pats ty =
-    List.iter (fun (pat, (ext_env, _)) -> unify_pat ext_env pat ty)
-      pat_env_list in
+    List.iter (fun (pat, pat_ty, _) ->
+      unify_pat_types pat.pat_loc env pat_ty ty
+    ) pat_env_list
+  in
   unify_pats ty_arg';
   (* Check for polymorphic variants to close *)
-  let patl = List.map fst pat_env_list in
+  let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
@@ -4647,7 +4653,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
+      (fun (pat, _, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
         let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -4698,7 +4704,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       Partial
   in
   let unused_check () =
-    List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
+    List.iter (fun (pat, _, (env, _)) -> check_absent_variant env pat)
       pat_env_list;
     check_unused ~lev env (instance ty_arg_check) cases ;
     Parmatch.check_ambiguous_bindings cases
@@ -4712,6 +4718,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance ty_res) (newvar ()) ;
+    (* Ensure that no ambivalent pattern type escapes its branch *)
+    unify_pat_types loc env ty_arg' (newvar ()) ;
   end;
   cases, partial
 
