@@ -1056,7 +1056,7 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
               || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
+      (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles
@@ -1072,7 +1072,8 @@ let find_type_expansion_opt path env =
   match decl.type_manifest with
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  | Some body ->
+      (decl.type_params, body, decl.type_expansion_scope)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =

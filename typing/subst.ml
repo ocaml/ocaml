@@ -299,7 +299,8 @@ let type_declaration s decl =
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
-      type_newtype_level = None;
+      type_is_newtype = false;
+      type_expansion_scope = None;
       type_loc = loc s decl.type_loc;
       type_attributes = attrs s decl.type_attributes;
       type_immediate = decl.type_immediate;

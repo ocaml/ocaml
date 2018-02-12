@@ -359,7 +359,8 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;

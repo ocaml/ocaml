@@ -150,7 +150,8 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: Variance.t list;
-    type_newtype_level: (int * int) option;
+    type_is_newtype: bool;
+    type_expansion_scope: int option;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
     type_immediate: bool;
