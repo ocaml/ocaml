@@ -42,6 +42,11 @@ Working version
   with very large values of the exponent.
   (Olivier Andrieu)
 
+- GPR#110, GPR#1604, MPR#6706: Change the set operator ([]<-) to translate to
+  Bytes.set instead of String.set.
+  This avoids a deprecation warning when using the operator correctly.
+  (Eyyüb Sari, resurrected by Jacques-Pascal Deplaix)
+
 ### Other libraries:
 
 * GPR#1406: Unix.isatty now returns true in the native Windows ports when
