@@ -956,7 +956,8 @@ clean::
 otherlibs_all := bigarray dynlink graph raw_spacetime_lib \
   str systhreads threads unix win32graph win32unix
 subdirs := asmrun byterun debugger lex ocamldoc ocamltest stdlib tools \
-  $(addprefix otherlibs/, $(otherlibs_all))
+  $(addprefix otherlibs/, $(otherlibs_all)) \
+  ocamldoc/stdlib_non_prefixed
 
 .PHONY: alldepend
 ifeq "$(TOOLCHAIN)" "msvc"

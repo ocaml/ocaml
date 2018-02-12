@@ -13,15 +13,21 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(** The initially opened module.
+(** The OCaml Standard library.
 
-   This module provides the basic operations over the built-in types
-   (numbers, booleans, byte sequences, strings, exceptions, references,
-   lists, arrays, input-output channels, ...).
+    This module is automatically opened at the beginning of each
+    compilation. All components of this module can therefore be
+    referred by their short name, without prefixing them by [Stdlib].
+*)
 
-   This module is automatically opened at the beginning of each compilation.
-   All components of this module can therefore be referred by their short
-   name, without prefixing them by [Pervasives].
+module Pervasives : sig
+(** Pervasive operations.
+
+    This module provides the basic operations over the built-in types
+    (numbers, booleans, byte sequences, strings, exceptions, references,
+    lists, arrays, input-output channels, ...).
+
+    This module is included in the toplevel [Stdlib] module.
 *)
 
 
@@ -1219,3 +1225,53 @@ val valid_float_lexem : string -> string
 val unsafe_really_input : in_channel -> bytes -> int -> int -> unit
 
 val do_at_exit : unit -> unit
+end
+
+include module type of struct include Pervasives end
+
+(*MODULE_ALIASES*)
+module Arg          = Arg
+module Array        = Array
+module ArrayLabels  = ArrayLabels
+module Buffer       = Buffer
+module Bytes        = Bytes
+module BytesLabels  = BytesLabels
+module Callback     = Callback
+module Char         = Char
+module Complex      = Complex
+module Digest       = Digest
+module Ephemeron    = Ephemeron
+module Filename     = Filename
+module Format       = Format
+module Gc           = Gc
+module Genlex       = Genlex
+module Hashtbl      = Hashtbl
+module Int32        = Int32
+module Int64        = Int64
+module Lazy         = Lazy
+module Lexing       = Lexing
+module List         = List
+module ListLabels   = ListLabels
+module Map          = Map
+module Marshal      = Marshal
+module MoreLabels   = MoreLabels
+module Nativeint    = Nativeint
+module Obj          = Obj
+module Oo           = Oo
+module Parsing      = Parsing
+module Printexc     = Printexc
+module Printf       = Printf
+module Queue        = Queue
+module Random       = Random
+module Scanf        = Scanf
+module Set          = Set
+module Sort         = Sort
+module Spacetime    = Spacetime
+module Stack        = Stack
+module StdLabels    = StdLabels
+module Stream       = Stream
+module String       = String
+module StringLabels = StringLabels
+module Sys          = Sys
+module Uchar        = Uchar
+module Weak         = Weak

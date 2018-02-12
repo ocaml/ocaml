@@ -1,6 +1,8 @@
 CORE_INTF=Pervasives.tex
 
-STDLIB_INTF=Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
+CSLDIR=$(RELEASEDIR)
+
+STDLIB_INTF= Arg.tex Array.tex ArrayLabels.tex Char.tex Complex.tex \
   Digest.tex Filename.tex Format.tex \
   Gc.tex Genlex.tex Hashtbl.tex Int32.tex Int64.tex \
   Lazy.tex Lexing.tex List.tex ListLabels.tex Map.tex Marshal.tex \
@@ -21,22 +23,7 @@ OTHERLIB_INTF=Unix.tex UnixLabels.tex Str.tex \
   Thread.tex Mutex.tex Condition.tex Event.tex ThreadUnix.tex \
   Dynlink.tex Bigarray.tex
 
-
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(COMPILER_LIBS_INTF) $(OTHERLIB_INTF)
-
-MLIS=$(CSLDIR)/stdlib/*.mli \
-	$(CSLDIR)/utils/*.mli \
-	$(CSLDIR)/parsing/*.mli \
-	$(CSLDIR)/driver/pparse.mli \
-	$(CSLDIR)/typing/typemod.mli \
-	$(CSLDIR)/bytecomp/simplif.mli \
-	$(CSLDIR)/otherlibs/bigarray/bigarray.mli \
-	$(CSLDIR)/otherlibs/dynlink/dynlink.mli \
-	$(CSLDIR)/otherlibs/graph/graphics.mli \
-	$(CSLDIR)/otherlibs/graph/graphicsX11.mli \
-	$(CSLDIR)/otherlibs/str/*.mli \
-	$(CSLDIR)/otherlibs/systhreads/*.mli \
-	$(CSLDIR)/otherlibs/unix/*.mli
 
 BLURB=core.tex builtin.tex stdlib.tex compilerlibs.tex \
   libunix.tex libstr.tex libnum.tex libgraph.tex \
@@ -47,9 +34,7 @@ FILES=$(BLURB) $(INTF)
 FORMAT=../../tools/format-intf
 TEXQUOTE=../../tools/texquote2
 
-CSLDIR=$(RELEASEDIR)
-
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
+VPATH=.:$(STDLIB_DIR):$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
 
 etex-files: $(BLURB)
 all: libs
@@ -58,24 +43,18 @@ libs: $(FILES)
 
 OCAMLDOC=$(if $(wildcard $(CSLDIR)/ocamldoc/ocamldoc.opt),\
   $(CSLDIR)/ocamldoc/ocamldoc.opt,\
-  $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc)
+  $(CSLDIR)/byterun/ocamlrun $(CSLDIR)/ocamldoc/ocamldoc) \
+  -nostdlib -initially-opened-module Pervasives
 
-$(INTF): interfaces
-interfaces: $(MLIS)
-	$(OCAMLDOC) -latex \
-	-I $(CSLDIR)/utils \
-	-I $(CSLDIR)/stdlib \
-	-I $(CSLDIR)/parsing \
-	-I $(CSLDIR)/typing \
-	-I $(CSLDIR)/driver \
-	-I $(CSLDIR)/bytecomp \
-	-I $(CSLDIR)/otherlibs/bigarray \
-	-I $(CSLDIR)/otherlibs/dynlink \
-	-I $(CSLDIR)/otherlibs/graph \
-	-I $(CSLDIR)/otherlibs/str \
-	-I $(CSLDIR)/otherlibs/systhreads \
-	-I $(CSLDIR)/otherlibs/unix \
-	$(MLIS) \
+# Copy and unprefix the standard library when needed
+SRC=../../..
+include $(SRC)/ocamldoc/Makefile.unprefix
+
+$(INTF):  interfaces
+interfaces: $(STDLIB_CMIS)
+	 $(OCAMLDOC) -latex \
+	-I $(STDLIB_UNPREFIXED) \
+	$(STDLIB_MLIS) \
 	-sepfiles \
 	-latextitle "1,subsection*" \
 	-latextitle "2,subsubsection*" \
@@ -88,7 +67,6 @@ interfaces: $(MLIS)
 
 clean:
 	rm -f $(FILES)
-
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .mli

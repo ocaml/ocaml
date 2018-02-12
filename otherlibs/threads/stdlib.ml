@@ -13,10 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Same as ../../stdlib/pervasives.ml, except that I/O functions have
+(* Same as ../../stdlib/stdlib.ml, except that I/O functions have
    been redefined to not block the whole process, but only the calling
    thread. *)
 
+module Pervasives = struct
 (* type 'a option = None | Some of 'a *)
 
 (* Exceptions *)
@@ -634,3 +635,53 @@ let exit retcode =
   sys_exit retcode
 
 let _ = register_named_value "Pervasives.do_at_exit" do_at_exit
+end
+
+include Pervasives
+
+(*MODULE_ALIASES*)
+module Arg          = Arg
+module Array        = Array
+module ArrayLabels  = ArrayLabels
+module Buffer       = Buffer
+module Bytes        = Bytes
+module BytesLabels  = BytesLabels
+module Callback     = Callback
+module Char         = Char
+module Complex      = Complex
+module Digest       = Digest
+module Ephemeron    = Ephemeron
+module Filename     = Filename
+module Format       = Format
+module Gc           = Gc
+module Genlex       = Genlex
+module Hashtbl      = Hashtbl
+module Int32        = Int32
+module Int64        = Int64
+module Lazy         = Lazy
+module Lexing       = Lexing
+module List         = List
+module ListLabels   = ListLabels
+module Map          = Map
+module Marshal      = Marshal
+module MoreLabels   = MoreLabels
+module Nativeint    = Nativeint
+module Obj          = Obj
+module Oo           = Oo
+module Parsing      = Parsing
+module Printexc     = Printexc
+module Printf       = Printf
+module Queue        = Queue
+module Random       = Random
+module Scanf        = Scanf
+module Set          = Set
+module Sort         = Sort
+module Spacetime    = Spacetime
+module Stack        = Stack
+module StdLabels    = StdLabels
+module Stream       = Stream
+module String       = String
+module StringLabels = StringLabels
+module Sys          = Sys
+module Uchar        = Uchar
+module Weak         = Weak

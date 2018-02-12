@@ -1257,6 +1257,15 @@ OCaml 4.05.0 (13 Jul 2017):
   (François Bobot, review by Gabriel Scherer, Xavier Leroy, Damien Doligez,
    Frédéric Bour)
 
+* GPR#1010: pack all standard library modules into a single module Stdlib
+  which is the default opened module (Stdlib itself includes Pervasives) to free
+  up the global namespace for other standard libraries, while still allowing any
+  OCaml standard library module to be referred to as Stdlib.Module). This is
+  implemented efficiently using module aliases (prefixing all modules with
+  Stdlib__, e.g. Stdlib__string).
+  (Jérémie Dimino, David Allsopp and Florian Angeletti, review by David Allsopp
+   and Gabriel Radanne)
+
 ### Manual and documentation:
 
 - MPR#6597, GPR#1030: add forward references to language extensions
