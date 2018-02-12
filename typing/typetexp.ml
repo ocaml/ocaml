@@ -71,10 +71,6 @@ exception Error_forward of Location.error
 
 type variable_context = int * (string, type_expr) Tbl.t
 
-(* Local definitions *)
-
-let instance_list = Ctype.instance_list Env.empty
-
 (* Narrowing unbound identifier errors. *)
 
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
@@ -342,9 +338,9 @@ and transl_type_aux env policy styp =
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, env, Invalid_variable_name ("'" ^ name)));
       begin try
-        instance env (List.assoc name !univars)
+        instance (List.assoc name !univars)
       with Not_found -> try
-        instance env (fst(Tbl.find name !used_variables))
+        instance (fst(Tbl.find name !used_variables))
       with Not_found ->
         let v =
           if policy = Univars then new_pre_univar ~name () else newvar ~name ()
@@ -491,7 +487,7 @@ and transl_type_aux env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
-              instance env (fst(Tbl.find alias !used_variables))
+              instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
@@ -512,7 +508,7 @@ and transl_type_aux env policy styp =
             end_def ();
             generalize_structure t;
           end;
-          let t = instance env t in
+          let t = instance t in
           let px = Btype.proxy t in
           begin match px.desc with
           | Tvar None -> Btype.log_type px; px.desc <- Tvar (Some alias)
@@ -824,7 +820,7 @@ let transl_simple_type_univars env styp =
   in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-        instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;

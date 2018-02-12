@@ -252,13 +252,12 @@ let enter_met_env ?check loc lab kind ty val_env met_env par_env =
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
-  let instance = Ctype.instance val_env in
   let (id, virt) =
     try
       let (id, mut', virt', ty') = Vars.find lab !vars in
       if mut' <> mut then
         raise (Error(loc, val_env, Mutability_mismatch(lab, mut)));
-      Ctype.unify val_env (instance ty) (instance ty');
+      Ctype.unify val_env (Ctype.instance ty) (Ctype.instance ty');
       (if not inh then Some id else None),
       (if virt' = Concrete then virt' else virt)
     with
@@ -885,7 +884,7 @@ and class_structure cl_num final val_env met_env loc
     (* Generalize the spine of methods accessed through self *)
     Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) ms;
     meths :=
-      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance val_env ty)) ms;
+      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance ty)) ms;
     (* But keep levels correct on the type of self *)
     Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
   end;
@@ -1010,7 +1009,7 @@ and class_expr_aux cl_num val_env met_env scl =
              {exp_desc =
               Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
-              exp_type = Ctype.instance val_env' vd.val_type;
+              exp_type = Ctype.instance vd.val_type;
               exp_attributes = []; (* check *)
               exp_env = val_env'})
           end
@@ -1165,7 +1164,7 @@ and class_expr_aux cl_num val_env met_env scl =
                {exp_desc =
                 Texp_ident(path, mknoloc(Longident.Lident (Ident.name id)),vd);
                 exp_loc = Location.none; exp_extra = [];
-                exp_type = Ctype.instance val_env vd.val_type;
+                exp_type = Ctype.instance vd.val_type;
                 exp_attributes = [];
                 exp_env = val_env;
                }
@@ -1447,7 +1446,7 @@ let class_infos define_class kind
   begin try
     Ctype.unify env
       (constructor_type constr obj_type)
-      (Ctype.instance env constr_type)
+      (Ctype.instance constr_type)
   with Ctype.Unify trace ->
     raise(Error(cl.pci_loc, env,
                 Constructor_type_mismatch (cl.pci_name.txt, trace)))
@@ -1518,7 +1517,7 @@ let class_infos define_class kind
      cty_new =
        begin match cl.pci_virt with
        | Virtual  -> None
-       | Concrete -> Some (Ctype.instance env constr_type)
+       | Concrete -> Some (Ctype.instance constr_type)
        end;
      cty_loc = cl.pci_loc;
      cty_attributes = cl.pci_attributes;
@@ -1768,7 +1767,7 @@ let rec unify_parents env ty cl =
       begin try
         let decl = Env.find_class p env in
         let _, body = Ctype.find_cltype_for_path env decl.cty_path in
-        Ctype.unify env ty (Ctype.instance env body)
+        Ctype.unify env ty (Ctype.instance body)
       with
         Not_found -> ()
       | _exn -> assert false

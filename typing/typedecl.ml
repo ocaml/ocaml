@@ -1427,7 +1427,7 @@ let transl_extension_constructor env type_path type_params
         let (args, cstr_res) = Ctype.instance_constructor cdescr in
         let res, ret_type =
           if cdescr.cstr_generalized then
-            let params = Ctype.instance_list env type_params in
+            let params = Ctype.instance_list type_params in
             let res = Ctype.newconstr type_path params in
             let ret_type = Some (Ctype.newconstr type_path params) in
               res, ret_type
@@ -1576,7 +1576,7 @@ let transl_type_extension extend env loc styext =
   let ttype_params = make_params env styext.ptyext_params in
   let type_params = List.map (fun (cty, _) -> cty.ctyp_type) ttype_params in
   List.iter2 (Ctype.unify_var env)
-    (Ctype.instance_list env type_decl.type_params)
+    (Ctype.instance_list type_decl.type_params)
     type_params;
   let constructors =
     List.map (transl_extension_constructor env type_path

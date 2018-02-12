@@ -953,8 +953,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?env ?partial ?keep_names ty =
-  let copy = copy ?env ?partial ?keep_names in
+let rec copy ?partial ?keep_names ty =
+  let copy = copy ?partial ?keep_names in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
@@ -1076,19 +1076,13 @@ let simple_copy t = copy t
 
 (**** Variants of instantiations ****)
 
-let gadt_env env =
-  if Env.has_local_constraints env
-  then Some env
-  else None
-
-let instance ?partial env sch =
-  let env = gadt_env env in
+let instance ?partial sch =
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  let ty = copy ?env ?partial sch in
+  let ty = copy ?partial sch in
   cleanup_types ();
   ty
 
@@ -1097,16 +1091,15 @@ let instance_def sch =
   cleanup_types ();
   ty
 
-let generic_instance env sch =
+let generic_instance sch =
   let old = !current_level in
   current_level := generic_level;
-  let ty = instance env sch in
+  let ty = instance sch in
   current_level := old;
   ty
 
-let instance_list env schl =
-  let env = gadt_env env in
-  let tyl = List.map (fun t -> copy ?env t) schl in
+let instance_list schl =
+  let tyl = List.map (fun t -> copy t) schl in
   cleanup_types ();
   tyl
 
@@ -1846,7 +1839,7 @@ let enter_poly env univar_pairs t1 tl1 t2 tl2 f =
 let univar_pairs = ref []
 
 (* assumption: [ty] is fully generalized. *)
-let reify_univars env ty =
+let reify_univars ty =
   let rec subst_univar vars ty =
     let ty = repr ty in
     if ty.level >= lowest_level then begin
@@ -1864,7 +1857,7 @@ let reify_univars env ty =
   let vars = ref [] in
   subst_univar vars ty;
   unmark_type ty;
-  let ty = copy ~env ty in
+  let ty = copy ty in
   cleanup_types ();
   newty2 ty.level (Tpoly(repr ty, !vars))
 
@@ -2292,7 +2285,7 @@ let nondep_instance env level id ty =
   if level = generic_level then duplicate_type ty else
   let old = !current_level in
   current_level := level;
-  let ty = instance env ty in
+  let ty = instance ty in
   current_level := old;
   ty
 
@@ -3201,10 +3194,10 @@ let moregeneral env inst_nongen pat_sch subj_sch =
      then copied with [duplicate_type].  That way, its levels won't be
      changed.
   *)
-  let subj = duplicate_type (instance env subj_sch) in
+  let subj = duplicate_type (instance subj_sch) in
   current_level := generic_level;
   (* Duplicate generic variables *)
-  let patt = instance env pat_sch in
+  let patt = instance pat_sch in
   let res =
     try moregen inst_nongen (TypePairs.create 13) env patt subj; true with
       Unify _ -> false
