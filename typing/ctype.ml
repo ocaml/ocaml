@@ -726,14 +726,10 @@ let rec update_level env level expand ty =
       Tconstr(p, _tl, _abbrev) when level < get_path_scope p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          (* if is_newtype env p then raise Cannot_expand; *)
           link_type ty (!forward_try_expand_once env ty);
           update_level env level expand ty
         with Cannot_expand ->
-          (* +++ Levels should be restored... *)
-          (* Format.printf "update_level: %i < %i@." level (get_path_scope p); *)
-          if level < get_path_scope p then raise (Unify [(ty, newvar2 level)]);
-          iter_type_expr (update_level env level expand) ty
+          raise (Unify [(ty, newvar2 level)])
         end
     | Tconstr(_, _ :: _, _) when expand ->
         begin try
