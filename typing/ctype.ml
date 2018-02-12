@@ -736,7 +736,7 @@ let rec update_level env level expand ty =
         with Cannot_expand ->
           set_level ty level;
           iter_type_expr (update_level env level expand) ty
-        end          
+        end
     | Tpackage (p, nl, tl) when level < Path.binding_time p ->
         let p' = normalize_package_path env p in
         if Path.same p p' then raise (Unify [(ty, newvar2 level)]);
@@ -2471,7 +2471,7 @@ and unify3 env t1 t1' t2 t2' =
     | Expression ->
         occur !env t1' t2';
         if is_self_type d1 (* PR#7711: do not abbreviate self type *)
-        then link_type t1' t2' 
+        then link_type t1' t2'
         else link_type t1' t2
     | Pattern ->
         add_type_equality t1' t2'
