@@ -686,54 +686,6 @@ and subst_opt s = function
   | Some e -> Some (subst s e)
 
 
-(* Apply a substitution to a lambda-term.
-   Assumes that the bound variables of the lambda-term do not
-   belong to the domain of the substitution.
-   Assumes that the image of the substitution is out of reach
-   of the bound variables of the lambda-term (no capture). *)
-
-let subst_lambda s lam =
-  let rec subst = function
-    Lvar id as l ->
-      begin try Ident.find_same id s with Not_found -> l end
-  | Lconst _ as l -> l
-  | Lapply ap ->
-      Lapply{ap with ap_func = subst ap.ap_func;
-                     ap_args = List.map subst ap.ap_args}
-  | Lfunction{kind; params; body; attr; loc} ->
-      Lfunction{kind; params; body = subst body; attr; loc}
-  | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
-  | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
-  | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
-  | Lswitch(arg, sw, loc) ->
-      Lswitch(subst arg,
-              {sw with sw_consts = List.map subst_case sw.sw_consts;
-                       sw_blocks = List.map subst_case sw.sw_blocks;
-                       sw_failaction = subst_opt  sw.sw_failaction; },
-              loc)
-  | Lstringswitch (arg,cases,default,loc) ->
-      Lstringswitch
-        (subst arg,List.map subst_strcase cases,subst_opt default,loc)
-  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
-  | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
-  | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
-  | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
-  | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
-  | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
-  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
-  | Lassign(id, e) -> Lassign(id, subst e)
-  | Lsend (k, met, obj, args, loc) ->
-      Lsend (k, subst met, subst obj, List.map subst args, loc)
-  | Levent (lam, evt) -> Levent (subst lam, evt)
-  | Lifused (v, e) -> Lifused (v, subst e)
-  and subst_decl (id, exp) = (id, subst exp)
-  and subst_case (key, case) = (key, subst case)
-  and subst_strcase (key, case) = (key, subst case)
-  and subst_opt = function
-    | None -> None
-    | Some e -> Some (subst e)
-  in subst lam
-
 let rec map f lam =
   let lam =
     match lam with
