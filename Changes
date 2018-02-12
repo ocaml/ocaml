@@ -90,6 +90,10 @@ Working version
 - GPR#1986, MPR#6450: Add Set.disjoint
   (Nicolás Ojeda Bär, review by Gabriel Scherer)
 
+* GPR#1605: Deprecate Stdlib.Pervasives. Following #1010, Pervasives
+  is no longer needed and Stdlib should be used instead.
+  (Jérémie Dimino, review by Nicolás Ojeda Bär)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
