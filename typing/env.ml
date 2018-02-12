@@ -1984,14 +1984,6 @@ let add_local_type path info env =
   { env with
     local_constraints = PathMap.add path info env.local_constraints }
 
-let add_local_constraint path info elv env =
-  match info with
-    {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
-      (* elv is the expansion level, lv is the definition level *)
-      let info = {info with type_newtype_level = Some (lv, elv)} in
-      add_local_type path info env
-  | _ -> assert false
-
 
 (* Insertion of bindings by name *)
 

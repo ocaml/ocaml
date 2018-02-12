@@ -2257,9 +2257,10 @@ let add_gadt_equation env source destination =
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let source_lev = find_newtype_level !env source in
-    let decl = new_declaration (Some (source_lev, source_lev)) (Some destination) in
-    let newtype_level = get_newtype_level () in
-    env := Env.add_local_constraint source decl newtype_level !env;
+    let decl =
+      new_declaration (Some (source_lev, get_newtype_level ())) (Some destination)
+    in
+    env := Env.add_local_type source decl !env;
     cleanup_abbrev ()
   end
 
