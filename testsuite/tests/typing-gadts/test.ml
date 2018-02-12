@@ -1178,7 +1178,7 @@ Line _, characters 24-25:
                           ^
 Error: This expression has type b = int
        but an expression was expected of type a = int
-       Type int is not compatible with type a = int
+       Type b = int is not compatible with type int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 |}];;

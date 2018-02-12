@@ -2242,15 +2242,22 @@ let find_lowest_level ty =
 
 let find_newtype_level env path =
   try match (Env.find_type path env).type_newtype_level with
-    Some x -> x
+    Some (x, _) -> x
   | None -> raise Not_found
-  with Not_found -> let lev = Path.binding_time path in (lev, lev)
+  with Not_found -> Path.binding_time path
+
+let find_expansion_level env path =
+  (* always guarded by a call to [is_newtype], so we *always* have a newtype
+     level. *)
+  match (Env.find_type path env).type_newtype_level with
+  | Some (_, x) -> x
+  | None -> assert false
 
 let add_gadt_equation env source destination =
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let source_lev = find_newtype_level !env source in
-    let decl = new_declaration (Some source_lev) (Some destination) in
+    let decl = new_declaration (Some (source_lev, source_lev)) (Some destination) in
     let newtype_level = get_newtype_level () in
     env := Env.add_local_constraint source decl newtype_level !env;
     cleanup_abbrev ()
@@ -2395,7 +2402,7 @@ let rec unify (env:Env.t ref) t1 t2 =
       && is_newtype !env p1 && is_newtype !env p2 ->
         (* Do not use local constraints more than necessary *)
         begin try
-          if find_newtype_level !env p1 < find_newtype_level !env p2 then
+          if find_expansion_level !env p1 > find_expansion_level !env p2 then
             unify env t1 (try_expand_once !env t2)
           else
             unify env (try_expand_once !env t1) t2

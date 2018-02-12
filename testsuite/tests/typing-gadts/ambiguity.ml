@@ -15,7 +15,13 @@ let ret_e1 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
   | _ -> x
 ;;
 [%%expect{|
-val ret_e1 : bool -> ('a, 'b) eq -> 'a -> 'b -> 'a = <fun>
+Line _, characters 29-30:
+    | Refl -> if b then x else y
+                               ^
+Error: This expression has type b = a but an expression was expected of type
+         a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let ret_e2 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
@@ -24,10 +30,13 @@ let ret_e2 (type a b) (b : bool) (wit : (a, b) eq) (x : a) (y : b) =
   | _ -> y
 ;;
 [%%expect{|
-Line _, characters 9-10:
-    | _ -> y
-           ^
-Error: This expression has type b but an expression was expected of type a
+Line _, characters 29-30:
+    | Refl -> if b then x else y
+                               ^
+Error: This expression has type b = a but an expression was expected of type
+         a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let ret_ei1 (type a) (b : bool) (wit : (a, int) eq) (x : a) =
@@ -67,7 +76,13 @@ let ret_f (type a b) (wit : (a, b) eq) (x : a) (y : b) =
   | _ -> [x]
 ;;
 [%%expect{|
-val ret_f : ('a, 'b) eq -> 'a -> 'b -> 'a list = <fun>
+Line _, characters 16-17:
+    | Refl -> [x; y]
+                  ^
+Error: This expression has type b = a but an expression was expected of type
+         a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let ret_g1 (type a b) (wit : (a, b) eq) (x : a) (y : b) =
@@ -76,15 +91,11 @@ let ret_g1 (type a b) (wit : (a, b) eq) (x : a) (y : b) =
   | _ -> [y]
 ;;
 [%%expect{|
-Line _, characters 10-11:
-    | _ -> [y]
-            ^
-Error: This expression has type b but an expression was expected of type a
-|}, Principal{|
-Line _, characters 9-12:
-    | _ -> [y]
-           ^^^
-Error: This expression has type b list but an expression was expected of type
-         a list
-       Type b is not compatible with type a
+Line _, characters 16-17:
+    | Refl -> [x; y]
+                  ^
+Error: This expression has type b = a but an expression was expected of type
+         a
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 |}]
