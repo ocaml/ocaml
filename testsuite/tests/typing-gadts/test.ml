@@ -1207,7 +1207,14 @@ let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) 
   if b then x else y
 ;;
 [%%expect{|
-val f : bool -> ('a, 'b) eq -> ('a, int) eq -> 'a -> 'b -> 'a = <fun>
+Line _, characters 19-20:
+    if b then x else y
+                     ^
+Error: This expression has type b = int
+       but an expression was expected of type a = int
+       Type a = int is not compatible with type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 |}];;
 
 let f (type a b c) (b : bool) (w1 : (a,b) eq) (w2 : (a,int) eq) (x : a) (y : b) =

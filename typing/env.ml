@@ -451,7 +451,6 @@ type t = {
   functor_args: unit Ident.tbl;
   summary: summary;
   local_constraints: type_declaration PathMap.t;
-  gadt_instances: (int * TypeSet.t ref) list;
   flags: int;
 }
 
@@ -494,7 +493,6 @@ and functor_components = {
 let copy_local ~from env =
   { env with
     local_constraints = from.local_constraints;
-    gadt_instances = from.gadt_instances;
     flags = from.flags }
 
 let same_constr = ref (fun _ _ _ -> assert false)
@@ -534,7 +532,7 @@ let empty = {
   modules = IdTbl.empty; modtypes = IdTbl.empty;
   components = IdTbl.empty; classes = IdTbl.empty;
   cltypes = IdTbl.empty;
-  summary = Env_empty; local_constraints = PathMap.empty; gadt_instances = [];
+  summary = Env_empty; local_constraints = PathMap.empty;
   flags = 0;
   functor_args = Ident.empty;
  }
@@ -1536,52 +1534,6 @@ let find_shadowed_types path env =
   List.map fst
     (find_shadowed
        (fun env -> env.types) (fun comps -> comps.comp_types) path env)
-
-
-(* GADT instance tracking *)
-
-let add_gadt_instance_level lv env =
-  {env with
-   gadt_instances = (lv, ref TypeSet.empty) :: env.gadt_instances}
-
-let is_Tlink = function {desc = Tlink _} -> true | _ -> false
-
-let gadt_instance_level env t =
-  let rec find_instance = function
-      [] -> None
-    | (lv, r) :: rem ->
-        if TypeSet.exists is_Tlink !r then
-          (* Should we use set_typeset ? *)
-          r := TypeSet.fold (fun ty -> TypeSet.add (repr ty)) !r TypeSet.empty;
-        if TypeSet.mem t !r then Some lv else find_instance rem
-  in find_instance env.gadt_instances
-
-let add_gadt_instances env lv tl =
-  let r =
-    try List.assoc lv env.gadt_instances with Not_found -> assert false in
-  (* Format.eprintf "Added";
-  List.iter (fun ty -> Format.eprintf "@ %a" !Btype.print_raw ty) tl;
-  Format.eprintf "@."; *)
-  set_typeset r (List.fold_right TypeSet.add tl !r)
-
-(* Only use this after expand_head! *)
-let add_gadt_instance_chain env lv t =
-  let r =
-    try List.assoc lv env.gadt_instances with Not_found -> assert false in
-  let rec add_instance t =
-    let t = repr t in
-    if not (TypeSet.mem t !r) then begin
-      (* Format.eprintf "@ %a" !Btype.print_raw t; *)
-      set_typeset r (TypeSet.add t !r);
-      match t.desc with
-        Tconstr (p, _, memo) ->
-          may add_instance (find_expans Private p !memo)
-      | _ -> ()
-    end
-  in
-  (* Format.eprintf "Added chain"; *)
-  add_instance t
-  (* Format.eprintf "@." *)
 
 (* Expand manifest module type names at the top of the given module type *)
 

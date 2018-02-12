@@ -709,10 +709,23 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s, n))
       | _ -> p
 
+let update_scope scope ty =
+  match scope with
+  | None -> ()
+  | Some lvl ->
+    let ty = repr ty in
+    let scope =
+      match ty.scope with
+      | None -> lvl
+      | Some lvl' -> max lvl lvl'
+    in
+    if ty.level < scope then raise (Unify [(ty, newvar2 ty.level)]);
+    ty.scope <- (Some scope)
+
 let rec update_level env level expand ty =
   let ty = repr ty in
   if ty.level > level then begin
-    begin match Env.gadt_instance_level env ty with
+    begin match ty.scope with
       Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
     | None -> ()
     end;
@@ -962,14 +975,7 @@ let rec copy ?env ?partial ?keep_names ty =
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
-    begin match env with
-      Some env when Env.has_local_constraints env ->
-        begin match Env.gadt_instance_level env ty with
-          Some lv -> Env.add_gadt_instances env lv [t]
-        | None -> ()
-        end
-    | _ -> ()
-    end;
+    t.scope <- ty.scope;
     ty.desc <- Tsubst t;
     t.desc <-
       begin match desc with
@@ -1400,7 +1406,7 @@ let check_abbrev_env env =
 let expand_abbrev_gen kind find_type_expansion env ty =
   check_abbrev_env env;
   match ty with
-    {desc = Tconstr (path, args, abbrev); level = level} ->
+    {desc = Tconstr (path, args, abbrev); level = level; scope} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
       begin match find_expans kind path !lookup_abbrev with
         Some ty' ->
@@ -1415,6 +1421,14 @@ let expand_abbrev_gen kind find_type_expansion env ty =
                  typing error *)
               ()
             end;
+          begin try
+            update_scope scope ty';
+          with Unify _ ->
+            (* XXX This should not happen.
+               However, levels are not correctly restored after a
+               typing error *)
+            ()
+          end;
           let ty' = repr ty' in
           (* assert (ty != ty'); *) (* PR#7324 *)
           ty'
@@ -1432,11 +1446,12 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             (* For gadts, remember type as non exportable *)
             (* The ambiguous level registered for ty' should be the highest *)
             if !trace_gadt_instances then begin
-              match max lv (Env.gadt_instance_level env ty) with
+              match max lv ty.scope with
                 None -> ()
               | Some lv ->
                   if level < lv then raise (Unify [(ty, newvar2 level)]);
-                  Env.add_gadt_instances env lv [ty; ty']
+                  ty.scope <- (Some lv);
+                  ty'.scope <- (Some lv)
             end;
             ty'
       end
@@ -1480,14 +1495,6 @@ let rec try_expand_head try_once env ty =
   let ty' = try_once env ty in
   try try_expand_head try_once env ty'
   with Cannot_expand -> ty'
-
-let try_expand_head try_once env ty =
-  let ty' = try_expand_head try_once env ty in
-  begin match Env.gadt_instance_level env ty' with
-    None -> ()
-  | Some lv -> Env.add_gadt_instance_chain env lv ty
-  end;
-  ty'
 
 (* Unsafe full expansion, may raise Unify. *)
 let expand_head_unif env ty =
@@ -2361,7 +2368,8 @@ let unify1_var env t1 t2 =
   let d1 = t1.desc in
   link_type t1 t2;
   try
-    update_level env t1.level t2
+    update_level env t1.level t2;
+    update_scope t1.scope t2
   with Unify _ as e ->
     t1.desc <- d1;
     raise e
@@ -2388,6 +2396,7 @@ let rec unify (env:Env.t ref) t1 t2 =
     | (Tunivar _, Tunivar _) ->
         unify_univar t1 t2 !univar_pairs;
         update_level !env t1.level t2;
+        update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
           when Path.same p1 p2 (* && actual_mode !env = Old *)
@@ -2397,6 +2406,7 @@ let rec unify (env:Env.t ref) t1 t2 =
             && not (has_cached_expansion p1 !a1
                  || has_cached_expansion p2 !a2) ->
         update_level !env t1.level t2;
+        update_scope t1.scope t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _))
       when Env.has_local_constraints !env
@@ -2426,19 +2436,14 @@ and unify2 env t1 t2 =
   let t1' = expand_head_unif !env t1 in
   let t2' = expand_head_unif !env t2 in
   let lv = min t1'.level t2'.level in
+  let scope = max t1'.scope t2'.scope in
   update_level !env lv t2;
   update_level !env lv t1;
+  update_scope scope t2;
+  update_scope scope t1;
   if unify_eq t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
-  if !trace_gadt_instances then begin
-    (* All types in chains already have the same ambiguity levels *)
-    let ilevel t =
-      match Env.gadt_instance_level !env t with None -> 0 | Some lv -> lv in
-    let lv1 = ilevel t1 and lv2 = ilevel t2 in
-    if lv1 > lv2 then Env.add_gadt_instance_chain !env lv1 t2 else
-    if lv2 > lv1 then Env.add_gadt_instance_chain !env lv2 t1
-  end;
   let t1, t2 =
     if !Clflags.principal
     && (find_lowest_level t1' < lv || find_lowest_level t2' < lv) then
@@ -2649,7 +2654,10 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;
         try
-          if !trace_gadt_instances then update_level !env va.level t1;
+          if !trace_gadt_instances then begin
+            update_level !env va.level t1;
+            update_scope va.scope t1
+          end;
           unify env t1 t2
         with Unify trace ->
           raise (Unify ((newty (Tfield(n, k1, t1, newty Tnil)),
@@ -2739,6 +2747,7 @@ and unify_row env row1 row2 =
     else
       let ty = newgenty (Tvariant {row0 with row_fields = rest}) in
       update_level !env rm.level ty;
+      update_scope rm.scope ty;
       link_type rm ty
   in
   let md1 = rm1.desc and md2 = rm2.desc in
@@ -2807,7 +2816,11 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       | (tu::_, []) | ([], tu::_) -> occur_univar !env tu
       end;
       (* Is this handling of levels really principal? *)
-      List.iter (update_level !env (repr more).level) (tl1' @ tl2');
+      List.iter (fun ty ->
+        let rm = repr more in
+        update_level !env rm.level ty;
+        update_scope rm.scope ty;
+      ) (tl1' @ tl2');
       let e = ref None in
       let f1' = Reither(c1 || c2, tl1', m1 || m2, e)
       and f2' = Reither(c1 || c2, tl2', m1 || m2, e) in
@@ -2817,12 +2830,16 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Rabsent, Rabsent -> ()
   | Reither(false, tl, _, e1), Rpresent(Some t2) when not fixed1 ->
       set_row_field e1 f2;
-      update_level !env (repr more).level t2;
+      let rm = repr more in
+      update_level !env rm.level t2;
+      update_scope rm.scope t2;
       (try List.iter (fun t1 -> unify env t1 t2) tl
       with exn -> e1 := None; raise exn)
   | Rpresent(Some t1), Reither(false, tl, _, e2) when not fixed2 ->
       set_row_field e2 f1;
-      update_level !env (repr more).level t1;
+      let rm = repr more in
+      update_level !env rm.level t1;
+      update_scope rm.scope t1;
       (try List.iter (unify env t1) tl
       with exn -> e2 := None; raise exn)
   | Reither(true, [], _, e1), Rpresent None when not fixed1 ->
@@ -2868,6 +2885,7 @@ let unify_var env t1 t2 =
       begin try
         occur env t1 t2;
         update_level env t1.level t2;
+        update_scope t1.scope t2;
         link_type t1 t2;
         reset_trace_gadt_instances reset_tracing;
       with Unify trace ->
@@ -2954,6 +2972,7 @@ let filter_method env name priv ty =
       let ty1 = newvar () in
       let ty' = newobj ty1 in
       update_level env ty.level ty';
+      update_scope ty.scope ty';
       link_type ty ty';
       filter_method_field env name priv ty1
   | Tobject(f, _) ->
@@ -3018,6 +3037,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     match (t1.desc, t2.desc) with
       (Tvar _, _) when may_instantiate inst_nongen t1 ->
         moregen_occur env t1.level t2;
+        update_scope t1.scope t2;
         occur env t1 t2;
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -3035,6 +3055,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           match (t1'.desc, t2'.desc) with
             (Tvar _, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env t1'.level t2;
+              update_scope t1'.scope t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
@@ -3126,6 +3147,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
         newgenty (Tvariant {row2 with row_fields = r2; row_name = None})
       in
       moregen_occur env rm1.level ext;
+      update_scope rm1.scope ext;
       link_type rm1 ext
   | Tconstr _, Tconstr _ ->
       moregen inst_nongen type_pairs env rm1 rm2

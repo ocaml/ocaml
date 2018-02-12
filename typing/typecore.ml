@@ -4574,10 +4574,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     Ident.set_current_time (get_current_level ());
     let lev = Ident.current_time () in
     Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
-    (lev, Env.add_gadt_instance_level lev env)
+    lev
   in
-  let lev, env =
-    if has_gadts then init_env () else (get_current_level (), env)
+  let lev =
+    if has_gadts then init_env () else get_current_level ()
   in
 (*  if has_gadts then
     Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res; *)
@@ -4683,8 +4683,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
   let do_init = has_gadts || needs_exhaust_check in
-  let lev, env =
-    if do_init && not has_gadts then init_env () else lev, env in
+  let lev =
+    if do_init && not has_gadts then init_env () else lev in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
