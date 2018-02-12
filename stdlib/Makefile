@@ -252,7 +252,7 @@ $(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.p.cmx
+$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmx
 
 clean::
 	rm -f *.cm* *.$(O) *.$(A) *.odoc
