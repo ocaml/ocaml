@@ -683,7 +683,7 @@ let forward_try_expand_once = (* Forward declaration *)
       module M = struct type t let _ = (x : t list ref) end
     (without this constraint, the type system would actually be unsound.)
 *)
-let get_level env p =
+let get_path_scope env p =
   try
     match (Env.find_type p env).type_newtype_level with
       | None -> Path.binding_time p
@@ -730,7 +730,7 @@ let rec update_level env level expand ty =
     | None -> ()
     end;
     match ty.desc with
-      Tconstr(p, _tl, _abbrev) when level < get_level env p ->
+      Tconstr(p, _tl, _abbrev) when level < get_path_scope env p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           (* if is_newtype env p then raise Cannot_expand; *)
@@ -738,8 +738,8 @@ let rec update_level env level expand ty =
           update_level env level expand ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
-          (* Format.printf "update_level: %i < %i@." level (get_level env p); *)
-          if level < get_level env p then raise (Unify [(ty, newvar2 level)]);
+          (* Format.printf "update_level: %i < %i@." level (get_path_scope env p); *)
+          if level < get_path_scope env p then raise (Unify [(ty, newvar2 level)]);
           iter_type_expr (update_level env level expand) ty
         end
     | Tconstr(_, _ :: _, _) when expand ->
@@ -756,13 +756,13 @@ let rec update_level env level expand ty =
         log_type ty; ty.desc <- Tpackage (p', nl, tl);
         update_level env level expand ty
     | Tobject(_, ({contents=Some(p, _tl)} as nm))
-      when level < get_level env p ->
+      when level < get_path_scope env p ->
         set_name nm None;
         update_level env level expand ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, _tl) when level < get_level env p ->
+        | Some (p, _tl) when level < get_path_scope env p ->
             log_type ty;
             ty.desc <- Tvariant {row with row_name = None}
         | _ -> ()
@@ -2247,12 +2247,6 @@ let find_lowest_level ty =
     end
   in find ty; unmark_type ty; !lowest
 
-let find_newtype_level env path =
-  try match (Env.find_type path env).type_newtype_level with
-    Some (x, _) -> x
-  | None -> raise Not_found
-  with Not_found -> Path.binding_time path
-
 let find_expansion_level env path =
   (* always guarded by a call to [is_newtype], so we *always* have a newtype
      level. *)
@@ -2263,7 +2257,7 @@ let find_expansion_level env path =
 let add_gadt_equation env source destination =
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
-    let source_lev = find_newtype_level !env source in
+    let source_lev = get_path_scope !env source in
     let decl =
       new_declaration (Some (source_lev, get_newtype_level ())) (Some destination)
     in
@@ -2533,7 +2527,7 @@ and unify3 env t1 t1' t2 t2' =
         when is_instantiable !env path && is_instantiable !env path'
         && !generate_equations ->
           let source, destination =
-            if find_newtype_level !env path > find_newtype_level !env path'
+            if get_path_scope !env path > get_path_scope !env path'
             then  path , t2'
             else  path', t1'
           in
