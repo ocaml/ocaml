@@ -290,21 +290,6 @@ let non_shadowed_pervasive = function
       Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
        with Not_found -> true)
-  | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
-      Ident.same id ident_stdlib &&
-      (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
-      (try
-         let td =
-           Env.find_type (Env.lookup_type (Lident s) !printing_env)
-             !printing_env
-         in
-         match td.type_private, td.type_manifest with
-         | Private, _ | _, None -> false
-         | Public, Some te ->
-           match (Btype.repr te).desc with
-           | Tconstr (path', _, _) -> Path.same path path'
-           | _ -> false
-       with Not_found -> true)
   | _ -> false
 
 let find_double_underscore s =
