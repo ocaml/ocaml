@@ -662,8 +662,8 @@ let transl_class ids cl_id pub_meths cl vflag =
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (lfield env !i)  subst)
-      Ident.empty !new_ids'
+        incr i; Ident.Map.add id (lfield env !i)  subst)
+      Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
   let msubst arr = function
@@ -671,7 +671,7 @@ let transl_class ids cl_id pub_meths cl vflag =
         let env = Ident.create "env" in
         let body' =
           if new_ids = [] then body else
-          subst_lambda (subst env body 0 new_ids_meths) body in
+          Lambda.subst (subst env body 0 new_ids_meths) body in
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
@@ -698,7 +698,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
-    let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
+    let lam = Lambda.subst (subst env1 lam 1 new_ids_init) lam in
     Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
     Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
