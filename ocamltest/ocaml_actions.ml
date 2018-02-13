@@ -95,7 +95,6 @@ let compile_program ocamlsrcdir compiler program_variable log env =
       (List.map Ocaml_filetypes.filetype all_modules) in
   let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C in
   let has_c_file = List.exists is_c_file modules in
-  let custom = (backend = Ocaml_backends.Bytecode) && has_c_file in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
   let expected_exit_status =
@@ -106,14 +105,11 @@ let compile_program ocamlsrcdir compiler program_variable log env =
     module_names program_file in
   Printf.fprintf log "%s\n%!" what;
   let output = "-o " ^ program_file in
-  let customstr = if custom then "-custom" else "" in
   let commandline =
   [
     compiler.Ocaml_compilers.name ocamlsrcdir;
-    customstr;
+    Ocaml_flags.runtime_flags ocamlsrcdir backend has_c_file;
     c_headers_flags;
-    Ocaml_flags.use_runtime backend ocamlsrcdir;
-    Ocaml_flags.runtime_variant backend ocamlsrcdir;
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
     flags env;
@@ -148,8 +144,6 @@ let compile_module ocamlsrcdir compiler module_ log env =
   let commandline =
   [
     compiler.Ocaml_compilers.name ocamlsrcdir;
-    Ocaml_flags.use_runtime backend ocamlsrcdir;
-    Ocaml_flags.runtime_variant backend ocamlsrcdir;
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
     flags env;
