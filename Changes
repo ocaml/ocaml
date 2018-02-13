@@ -36,6 +36,9 @@ Working version
   For instance users can now use a largeFile.ml file in their project.
   (Jérémie Dimino, review by Nicolas Ojeda Bar, Alain Frisch and Gabriel Radanne)
 
+- GPR#1609: Changes to ambivalence scope tracking
+  (Thomas Refis and Leo White, review by Jacques Garrigue)
+
 ### Standard library:
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
