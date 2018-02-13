@@ -19,15 +19,9 @@ let ok (type a b) (x : (a, b) eq) =
 ;;
 [%%expect{|
 type ('a, 'b) eq = Refl : ('a, 'a) eq
-Line _, characters 2-54:
-  ..match x, [] with
+Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Refl, _::_::_)
-Line _, characters 2-54:
-  ..match x, [] with
-    | Refl, [(_ : a) | (_ : b)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
        but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
@@ -39,17 +33,9 @@ let fails (type a b) (x : (a, b) eq) =
   | Refl, [(_ : b) | (_ : a)] -> []
 ;;
 [%%expect{|
-Line _, characters 2-90:
-  ..match x, [] with
+Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
-    | Refl, [(_ : b) | (_ : a)] -> []
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Refl, _::_::_)
-Line _, characters 2-90:
-  ..match x, [] with
-    | Refl, [(_ : a) | (_ : b)] -> []
-    | Refl, [(_ : b) | (_ : a)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
        but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:

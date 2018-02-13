@@ -4536,6 +4536,10 @@ and type_statement ?explanation env sexp =
   end
 
 (* Typing of match cases *)
+and check_scope_escape loc env level ty =
+  try Ctype.check_scope_escape level ty
+  with Unify trace ->
+    raise(Error(loc, env, Pattern_type_clash(trace)))
 
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
@@ -4563,6 +4567,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     | [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true
   in
+  let outer_level = get_current_level () in
   let init_env () =
     (* raise level for existentials *)
     begin_def ();
@@ -4617,6 +4622,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             { pat with pat_type = instance pat.pat_type }
           end else pat
         in
+        (* Ensure that no ambivalent pattern type escapes its branch *)
+        check_scope_escape pat.pat_loc env outer_level ty_arg;
         (pat, ty_arg, (ext_env, unpacks)))
       caselist in
   (* Unify all cases (delayed to keep it order-free) *)
@@ -4717,8 +4724,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     end_def ();
     (* Ensure that existential types do not escape *)
     unify_exp_types loc env (instance ty_res) (newvar ()) ;
-    (* Ensure that no ambivalent pattern type escapes its branch *)
-    unify_pat_types loc env ty_arg' (newvar ()) ;
   end;
   cases, partial
 

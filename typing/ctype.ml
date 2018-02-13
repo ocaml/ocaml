@@ -702,6 +702,27 @@ let rec normalize_package_path env p =
           normalize_package_path env (Path.Pdot (p1', s, n))
       | _ -> p
 
+let check_scope_escape level ty =
+  let rec aux ty =
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      ty.level <- pivot_level - ty.level;
+      begin match ty.scope with
+        Some lv ->
+        let var = newvar2 level in
+        if level < lv then raise (Unify [(ty,ty); (var, var)])
+      | None -> ()
+      end;
+      iter_type_expr aux ty
+    end
+  in
+  try
+    aux ty;
+    unmark_type ty
+  with Unify trace ->
+    let var = newvar2 level in
+    raise (Unify ((ty, ty) :: (var, var) :: trace))
+
 let update_scope scope ty =
   match scope with
   | None -> ()

@@ -113,13 +113,13 @@ let f (type a b) (x : (a, b) eq) =
   | _, [(_ : a)] -> []
 ;;
 [%%expect{|
-Line _, characters 4-16:
-    | _, [(_ : a)] -> []
-      ^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * a list
-       but a pattern was expected which matches values of type
-         (a, b) eq * b list
-       Type a is not compatible with type b
+Line _, characters 4-29:
+    | Refl, [(_ : a) | (_ : b)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type (a, b) eq * b list
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let g1 (type a b) (x : (a, b) eq) =
@@ -128,10 +128,9 @@ let g1 (type a b) (x : (a, b) eq) =
   | _, [(_ : b)] -> []
 ;;
 [%%expect{|
-Line _, characters 2-77:
-  ..match x, [] with
+Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
-    | _, [(_ : b)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
        but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
@@ -144,13 +143,13 @@ let g2 (type a b) (x : (a, b) eq) =
   | _, [(_ : a)] -> []
 ;;
 [%%expect{|
-Line _, characters 4-16:
-    | _, [(_ : a)] -> []
-      ^^^^^^^^^^^^
-Error: This pattern matches values of type (a, b) eq * a list
-       but a pattern was expected which matches values of type
-         (a, b) eq * b list
-       Type a is not compatible with type b
+Line _, characters 4-29:
+    | Refl, [(_ : b) | (_ : a)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type (a, b) eq * b list
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let h1 (type a b) (x : (a, b) eq) =
@@ -163,9 +162,9 @@ Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type
-         (a, b) eq * a list
-       Type b is not compatible with type a
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 let h2 (type a b) (x : (a, b) eq) =
@@ -174,10 +173,9 @@ let h2 (type a b) (x : (a, b) eq) =
   | Refl, [(_ : a) | (_ : b)] -> []
 ;;
 [%%expect{|
-Line _, characters 2-77:
-  ..match x, [] with
-    | _, [(_ : b)] -> []
+Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
        but a pattern was expected which matches values of type 'a
        This instance of b is ambiguous:
@@ -194,7 +192,7 @@ Line _, characters 4-29:
     | Refl, [(_ : b) | (_ : a)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: This pattern matches values of type (a, b) eq * b list
-       but a pattern was expected which matches values of type
-         (a, b) eq * a list
-       Type b is not compatible with type a
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
