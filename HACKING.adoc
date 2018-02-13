@@ -307,6 +307,20 @@ OCaml's GitHub repository and then push "mybranch" to your fork.
 7. You should receive a bunch of e-mails with the build logs for each
 slave and each tested configuration (with and without flambda) attached.
 
+==== Changing what the CI does
+
+INRIA's CI runs the script tools/ci-build. In particular, when running
+the CI on a publicly available branch as explained in the previous
+section, you can edit this script to change what the CI will test.
+
+For instance, parallel builds are only tested for the main builds. In
+order to test parallel builds with a custom branch, add this at the
+beginning of tools/ci-build:
+
+----
+OCAML_JOBS=10
+----
+
 === The `caml-commits` mailing list
 
 If you would like to receive email notifications of all commits made to the main
