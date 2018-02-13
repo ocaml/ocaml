@@ -496,11 +496,11 @@ module Make(Ord: OrderedType) = struct
     let to_seq_at low m =
       let rec aux low m c = match m with
         | Empty -> c
-        | Node (l, k, v, r, _) ->
-            begin match Ord.compare k low with
-              | 0 -> More (k, v, r, c)
+        | Node {l; v; d; r; _} ->
+            begin match Ord.compare v low with
+              | 0 -> More (v, d, r, c)
               | n when n<0 -> aux low r c
-              | _ -> aux low l (More (k, v, r, c))
+              | _ -> aux low l (More (v, d, r, c))
             end
       in
       seq_of_enum_ (aux low m End)
