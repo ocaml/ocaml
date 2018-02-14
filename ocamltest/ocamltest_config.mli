@@ -18,7 +18,7 @@
 val arch : string
 (** Architecture for the native compiler, "none" if it is disabled *)
 
-val afl_support : bool
+val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
 
 val shared_libraries : bool

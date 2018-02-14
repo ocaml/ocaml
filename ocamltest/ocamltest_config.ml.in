@@ -17,7 +17,7 @@
 
 let arch = "@@ARCH@@"
 
-let afl_support = @@AFL_SUPPORT@@
+let afl_instrument = @@AFL_INSTRUMENT@@
 
 let shared_libraries = @@SHARED_LIBRARIES@@
 
