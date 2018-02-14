@@ -139,7 +139,7 @@ let compile_module ocamlsrcdir compiler module_ log env =
   let backend = compiler.Ocaml_compilers.backend in
   let expected_exit_status =
     Ocaml_compilers.expected_exit_status env compiler in
-  let what = Printf.sprintf "Compiling modules %s" module_ in
+  let what = Printf.sprintf "Compiling module %s" module_ in
   Printf.fprintf log "%s\n%!" what;
   let commandline =
   [
