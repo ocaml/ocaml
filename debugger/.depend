@@ -81,14 +81,14 @@ lexer.cmx : parser.cmx lexer.cmi
 lexer.cmi : parser.cmi
 loadprinter.cmo : ../typing/types.cmi ../bytecomp/symtable.cmi printval.cmi \
     ../typing/printtyp.cmi ../typing/path.cmi parameters.cmi \
-    ../utils/misc.cmi ../parsing/longident.cmi ../parsing/location.cmi \
-    ../typing/env.cmi ../typing/ctype.cmi ../utils/config.cmi \
-    ../driver/compdynlink.cmi loadprinter.cmi
+    ../utils/misc.cmi ../parsing/longident.cmi ../typing/env.cmi \
+    ../typing/ctype.cmi ../utils/config.cmi ../driver/compdynlink.cmi \
+    loadprinter.cmi
 loadprinter.cmx : ../typing/types.cmx ../bytecomp/symtable.cmx printval.cmx \
     ../typing/printtyp.cmx ../typing/path.cmx parameters.cmx \
-    ../utils/misc.cmx ../parsing/longident.cmx ../parsing/location.cmx \
-    ../typing/env.cmx ../typing/ctype.cmx ../utils/config.cmx \
-    ../driver/compdynlink.cmi loadprinter.cmi
+    ../utils/misc.cmx ../parsing/longident.cmx ../typing/env.cmx \
+    ../typing/ctype.cmx ../utils/config.cmx ../driver/compdynlink.cmi \
+    loadprinter.cmi
 loadprinter.cmi : ../parsing/longident.cmi ../driver/compdynlink.cmi
 main.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi time_travel.cmi \
     show_information.cmi question.cmi program_management.cmi primitives.cmi \
@@ -127,13 +127,13 @@ primitives.cmo : $(UNIXDIR)/unix.cmi primitives.cmi
 primitives.cmx : $(UNIXDIR)/unix.cmx primitives.cmi
 primitives.cmi : $(UNIXDIR)/unix.cmi
 printval.cmo : ../typing/types.cmi ../bytecomp/symtable.cmi \
-    ../typing/printtyp.cmi ../typing/path.cmi parser_aux.cmi \
-    ../typing/outcometree.cmi ../typing/oprint.cmi \
-    ../toplevel/genprintval.cmi debugcom.cmi printval.cmi
+    ../typing/printtyp.cmi parser_aux.cmi ../typing/outcometree.cmi \
+    ../typing/oprint.cmi ../toplevel/genprintval.cmi ../typing/env.cmi \
+    debugcom.cmi printval.cmi
 printval.cmx : ../typing/types.cmx ../bytecomp/symtable.cmx \
-    ../typing/printtyp.cmx ../typing/path.cmx parser_aux.cmi \
-    ../typing/outcometree.cmi ../typing/oprint.cmx \
-    ../toplevel/genprintval.cmx debugcom.cmx printval.cmi
+    ../typing/printtyp.cmx parser_aux.cmi ../typing/outcometree.cmi \
+    ../typing/oprint.cmx ../toplevel/genprintval.cmx ../typing/env.cmx \
+    debugcom.cmx printval.cmi
 printval.cmi : ../typing/types.cmi ../typing/path.cmi parser_aux.cmi \
     ../typing/env.cmi debugcom.cmi
 program_loading.cmo : unix_tools.cmi $(UNIXDIR)/unix.cmi \

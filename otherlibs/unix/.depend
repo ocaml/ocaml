@@ -82,10 +82,10 @@ cstringv.o: cstringv.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/freelist.h ../../runtime/caml/minor_gc.h \
  ../../runtime/caml/address_class.h ../../runtime/caml/osdeps.h \
  ../../runtime/caml/memory.h unixsupport.h
-dup.o: dup.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+dup2.o: dup2.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  unixsupport.h
-dup2.o: dup2.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
+dup.o: dup.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  unixsupport.h
 envir.o: envir.c ../../runtime/caml/config.h ../../runtime/caml/m.h \
@@ -291,12 +291,6 @@ mkfifo.o: mkfifo.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
  ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/mlvalues.h ../../runtime/caml/memory.h \
  ../../runtime/caml/signals.h unixsupport.h
-mmap.o: mmap.c ../../runtime/caml/bigarray.h ../../runtime/caml/config.h \
- ../../runtime/caml/m.h ../../runtime/caml/s.h \
- ../../runtime/caml/mlvalues.h ../../runtime/caml/misc.h \
- ../../runtime/caml/fail.h ../../runtime/caml/io.h \
- ../../runtime/caml/mlvalues.h ../../runtime/caml/signals.h \
- ../../runtime/caml/sys.h unixsupport.h
 mmap_ba.o: mmap_ba.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
@@ -305,6 +299,12 @@ mmap_ba.o: mmap_ba.c ../../runtime/caml/alloc.h ../../runtime/caml/misc.h \
  ../../runtime/caml/major_gc.h ../../runtime/caml/freelist.h \
  ../../runtime/caml/minor_gc.h ../../runtime/caml/address_class.h \
  ../../runtime/caml/misc.h
+mmap.o: mmap.c ../../runtime/caml/bigarray.h ../../runtime/caml/config.h \
+ ../../runtime/caml/m.h ../../runtime/caml/s.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/fail.h ../../runtime/caml/io.h \
+ ../../runtime/caml/mlvalues.h ../../runtime/caml/signals.h \
+ ../../runtime/caml/sys.h unixsupport.h
 nice.o: nice.c ../../runtime/caml/mlvalues.h ../../runtime/caml/config.h \
  ../../runtime/caml/m.h ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  unixsupport.h
@@ -407,16 +407,16 @@ sleep.o: sleep.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/signals.h ../../runtime/caml/mlvalues.h unixsupport.h
-socket.o: socket.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
- ../../runtime/caml/config.h ../../runtime/caml/m.h \
- ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
- ../../runtime/caml/mlvalues.h unixsupport.h
 socketaddr.o: socketaddr.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \
  ../../runtime/caml/alloc.h ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/memory.h unixsupport.h socketaddr.h \
  ../../runtime/caml/misc.h
+socket.o: socket.c ../../runtime/caml/fail.h ../../runtime/caml/misc.h \
+ ../../runtime/caml/config.h ../../runtime/caml/m.h \
+ ../../runtime/caml/s.h ../../runtime/caml/mlvalues.h \
+ ../../runtime/caml/mlvalues.h unixsupport.h
 socketpair.o: socketpair.c ../../runtime/caml/mlvalues.h \
  ../../runtime/caml/config.h ../../runtime/caml/m.h \
  ../../runtime/caml/s.h ../../runtime/caml/misc.h \

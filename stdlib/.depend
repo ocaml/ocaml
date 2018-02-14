@@ -126,8 +126,8 @@ stdlib__moreLabels.cmi : stdlib__set.cmi stdlib__seq.cmi stdlib__map.cmi stdlib_
 stdlib__nativeint.cmo : stdlib__sys.cmi stdlib.cmi stdlib__nativeint.cmi
 stdlib__nativeint.cmx : stdlib__sys.cmx stdlib.cmx stdlib__nativeint.cmi
 stdlib__nativeint.cmi :
-stdlib__obj.cmo : stdlib__marshal.cmi stdlib__int32.cmi stdlib__obj.cmi
-stdlib__obj.cmx : stdlib__marshal.cmx stdlib__int32.cmx stdlib__obj.cmi
+stdlib__obj.cmo : stdlib__sys.cmi stdlib__marshal.cmi stdlib__int32.cmi stdlib__obj.cmi
+stdlib__obj.cmx : stdlib__sys.cmx stdlib__marshal.cmx stdlib__int32.cmx stdlib__obj.cmi
 stdlib__obj.cmi : stdlib__int32.cmi
 stdlib__oo.cmo : camlinternalOO.cmi stdlib__oo.cmi
 stdlib__oo.cmx : camlinternalOO.cmx stdlib__oo.cmi
@@ -304,8 +304,8 @@ stdlib__moreLabels.cmo : stdlib__set.cmi stdlib__map.cmi stdlib__hashtbl.cmi std
 stdlib__moreLabels.p.cmx : stdlib__set.cmx stdlib__map.cmx stdlib__hashtbl.cmx stdlib__moreLabels.cmi
 stdlib__nativeint.cmo : stdlib__sys.cmi stdlib.cmi stdlib__nativeint.cmi
 stdlib__nativeint.p.cmx : stdlib__sys.cmx stdlib.cmx stdlib__nativeint.cmi
-stdlib__obj.cmo : stdlib__marshal.cmi stdlib__int32.cmi stdlib__obj.cmi
-stdlib__obj.p.cmx : stdlib__marshal.cmx stdlib__int32.cmx stdlib__obj.cmi
+stdlib__obj.cmo : stdlib__sys.cmi stdlib__marshal.cmi stdlib__int32.cmi stdlib__obj.cmi
+stdlib__obj.p.cmx : stdlib__sys.cmx stdlib__marshal.cmx stdlib__int32.cmx stdlib__obj.cmi
 stdlib__oo.cmo : camlinternalOO.cmi stdlib__oo.cmi
 stdlib__oo.p.cmx : camlinternalOO.cmx stdlib__oo.cmi
 stdlib__option.cmo : stdlib__seq.cmi stdlib__option.cmi
