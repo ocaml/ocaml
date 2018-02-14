@@ -799,3 +799,65 @@ end;;
 module X : sig module N : sig  end end
 module Y : sig module type S = sig module N = X.N end end
 |}];;
+
+module type S = sig
+  module M : sig
+    module A : sig end
+    module B : sig end
+  end
+  module N = M.A
+end
+
+module Foo = struct
+  module B = struct let x = 0 end
+  module A = struct let x = "hello" end
+end
+
+module Bar : S with module M := Foo = struct module N = Foo.A end
+
+let s : string = Bar.N.x
+[%%expect {|
+module type S =
+  sig
+    module M : sig module A : sig  end module B : sig  end end
+    module N = M.A
+  end
+module Foo :
+  sig module B : sig val x : int end module A : sig val x : string end end
+module Bar : sig module N = Foo.A end
+val s : string = "hello"
+|}]
+
+
+module M : sig
+  module N : sig
+    module A : sig val x : string end
+    module B : sig val x : int end
+  end
+  module F (X : sig module A = N.A end) : sig val s : string end
+end = struct
+  module N = struct
+    module B = struct let x = 0 end
+    module A = struct let x = "hello" end
+  end
+  module F (X : sig module A : sig val x : string end end) = struct
+    let s = X.A.x
+  end
+end
+
+module N = M.F(struct module A = M.N.A end)
+
+let s : string = N.s
+[%%expect {|
+module M :
+  sig
+    module N :
+      sig
+        module A : sig val x : string end
+        module B : sig val x : int end
+      end
+    module F : functor (X : sig module A = N.A end) -> sig val s : string end
+  end
+module N : sig val s : string end
+val s : string = "hello"
+|}]
