@@ -11,7 +11,11 @@ default:
 	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
 	  echo 'skipped (shared libraries not available)'; \
 	else \
-	  $(SET_LD_PATH) $(MAKE) doc; \
+	  if [ -n "$(WITH_OCAMLDOC)" ]; then \
+	    $(SET_LD_PATH) $(MAKE) doc; \
+	  else \
+	    echo 'skipped (ocamldoc not built)'; \
+	  fi; \
 	fi
 
 .PHONY: doc
