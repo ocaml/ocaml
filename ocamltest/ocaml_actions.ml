@@ -281,7 +281,7 @@ let setup_ocamlnat_build_env =
 
 let compile program_variable compiler log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  match Environments.lookup Ocaml_variables.module_ env with
+  match Environments.lookup_nonempty Ocaml_variables.module_ env with
     | None -> compile_program ocamlsrcdir compiler program_variable log env
     | Some module_ -> compile_module ocamlsrcdir compiler module_ log env
 

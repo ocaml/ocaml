@@ -26,6 +26,7 @@ val to_system_env :
   ?f : (Variables.t -> string -> string) -> t -> string array
 
 val lookup : Variables.t -> t -> string option
+val lookup_nonempty : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
 val is_variable_defined : Variables.t -> t -> bool
 
