@@ -1491,29 +1491,29 @@ let constant_defining_value_approx
     end
 
 (* See documentation on [Let_rec_symbol] in flambda.mli. *)
-let define_let_rec_symbol_approx env defs =
+let define_let_rec_symbol_approx orig_env defs =
   (* First declare an empty version of the symbols *)
-  let env =
-    List.fold_left (fun env (symbol, _) ->
-        E.add_symbol env symbol (A.value_unresolved (Symbol symbol)))
-      env defs
+  let init_env =
+    List.fold_left (fun building_env (symbol, _) ->
+        E.add_symbol building_env symbol (A.value_unresolved (Symbol symbol)))
+      orig_env defs
   in
-  let rec loop times env =
+  let rec loop times lookup_env =
     if times <= 0 then
-      env
+      lookup_env
     else
       let env =
-        List.fold_left (fun newenv (symbol, constant_defining_value) ->
+        List.fold_left (fun building_env (symbol, constant_defining_value) ->
             let approx =
-              constant_defining_value_approx env constant_defining_value
+              constant_defining_value_approx lookup_env constant_defining_value
             in
             let approx = A.augment_with_symbol approx symbol in
-            E.redefine_symbol newenv symbol approx)
-          env defs
+            E.add_symbol building_env symbol approx)
+          orig_env defs
       in
       loop (times-1) env
   in
-  loop 2 env
+  loop 2 init_env
 
 let simplify_constant_defining_value
     env r symbol
@@ -1573,19 +1573,32 @@ let rec simplify_program_body env r (program : Flambda.program_body)
   : Flambda.program_body * R.t =
   match program with
   | Let_rec_symbol (defs, program) ->
-    let env = define_let_rec_symbol_approx env defs in
-    let env, r, defs =
-      List.fold_left (fun (newenv, r, defs) (symbol, def) ->
-          let r, def, approx =
-            simplify_constant_defining_value env r symbol def
-          in
-          let approx = A.augment_with_symbol approx symbol in
-          let newenv = E.redefine_symbol newenv symbol approx in
-          (newenv, r, (symbol, def) :: defs))
+    let set_of_closures_defs, other_defs =
+      List.partition
+        (function
+          | (_, Flambda.Set_of_closures _) -> true
+          | _ -> false)
+        defs in
+    let process_defs ~lookup_env ~env r defs =
+      List.fold_left (fun (building_env, r, defs) (symbol, def) ->
+        let r, def, approx =
+          simplify_constant_defining_value lookup_env r symbol def
+        in
+        let approx = A.augment_with_symbol approx symbol in
+        let building_env = E.add_symbol building_env symbol approx in
+        (building_env, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
+    let env, r, set_of_closures_defs =
+      let lookup_env = define_let_rec_symbol_approx env defs in
+      process_defs ~lookup_env ~env r set_of_closures_defs
+    in
+    let env, r, other_defs =
+      let lookup_env = define_let_rec_symbol_approx env other_defs in
+      process_defs ~lookup_env ~env r other_defs
+    in
     let program, r = simplify_program_body env r program in
-    Let_rec_symbol (defs, program), r
+    Let_rec_symbol (set_of_closures_defs @ other_defs, program), r
   | Let_symbol (symbol, constant_defining_value, program) ->
     let r, constant_defining_value, approx =
       simplify_constant_defining_value env r symbol constant_defining_value
