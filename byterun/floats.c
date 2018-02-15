@@ -291,46 +291,56 @@ static int caml_float_of_hex(const char * s, double * res)
   return 0;
 }
 
-CAMLprim value caml_float_of_string(value vs)
-{
-  char parse_buffer[64];
-  char * buf, * dst, * end;
-  const char *src;
-  mlsize_t len;
-  int sign;
-  double d;
-
-  /* Check for hexadecimal FP constant */
-  src = String_val(vs);
-  sign = 1;
-  if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; };
-  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
-    if (caml_float_of_hex(src + 2, &d) == -1)
-      caml_failwith("float_of_string");
-    return caml_copy_double(sign < 0 ? -d : d);
-  }
-  /* Remove '_' characters before calling strtod () */
-  len = caml_string_length(vs);
-  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
-  src = String_val(vs);
-  dst = buf;
-  while (len--) {
-    char c = *src++;
-    if (c != '_') *dst++ = c;
-  }
-  *dst = 0;
-  if (dst == buf) goto error;
-  /* Convert using strtod */
-  d = strtod((const char *) buf, &end);
-  if (end != dst) goto error;
-  if (buf != parse_buffer) caml_stat_free(buf);
-  return caml_copy_double(d);
- error:
-  if (buf != parse_buffer) caml_stat_free(buf);
-  caml_failwith("float_of_string");
-  return Val_unit; /* not reached */
+#define FLOAT_OF_STRING(name,fail,wrap) CAMLprim value (name)(value vs) \
+{ \
+  char parse_buffer[64]; \
+  char * buf, * dst, * end; \
+  const char *src; \
+  mlsize_t len; \
+  int sign; \
+  double d; \
+ \
+  /* Check for hexadecimal FP constant */ \
+  src = String_val(vs); \
+  sign = 1; \
+  if (*src == '-') { sign = -1; src++; } \
+  else if (*src == '+') { src++; }; \
+  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) { \
+    if (caml_float_of_hex(src + 2, &d) == -1) \
+      fail; \
+    return wrap(caml_copy_double(sign < 0 ? -d : d)); \
+  } \
+  /* Remove '_' characters before calling strtod () */ \
+  len = caml_string_length(vs); \
+  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1); \
+  src = String_val(vs); \
+  dst = buf; \
+  while (len--) { \
+    char c = *src++; \
+    if (c != '_') *dst++ = c; \
+  } \
+  *dst = 0; \
+  if (dst == buf) goto error; \
+  /* Convert using strtod */ \
+  d = strtod((const char *) buf, &end); \
+  if (end != dst) goto error; \
+  if (buf != parse_buffer) caml_stat_free(buf); \
+  return wrap(caml_copy_double(d));                 \
+ error: \
+  if (buf != parse_buffer) caml_stat_free(buf); \
+  fail; \
+  return Val_unit; /* not reached */ \
 }
+
+/*
+CAMLprim value caml_float_of_string
+*/
+FLOAT_OF_STRING(caml_float_of_string,caml_failwith("float_of_string"),)
+
+/*
+CAMLprim value caml_float_of_string_opt
+*/
+FLOAT_OF_STRING(caml_float_of_string_opt,return Val_long(0),caml_alloc_some)
 
 CAMLprim value caml_int_of_float(value f)
 {

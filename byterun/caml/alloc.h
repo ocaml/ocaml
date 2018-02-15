@@ -39,6 +39,7 @@ CAMLextern value caml_copy_double (double);
 CAMLextern value caml_copy_int32 (int32_t);       /* defined in [ints.c] */
 CAMLextern value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
 CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
+CAMLextern value caml_alloc_some (value);
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const ** array);
 CAMLextern value caml_alloc_sprintf(const char * format, ...)

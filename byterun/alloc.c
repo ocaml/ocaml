@@ -91,6 +91,14 @@ CAMLexport value caml_alloc_tuple(mlsize_t n)
   return caml_alloc(n, 0);
 }
 
+CAMLexport value caml_alloc_some(value v)
+{
+  value result;
+  Alloc_small (result, 1, 0);
+  Field(result, 0) = v;
+  return result;
+}
+
 /* [len] is a number of bytes (chars) */
 CAMLexport value caml_alloc_string (mlsize_t len)
 {

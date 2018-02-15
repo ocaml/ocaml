@@ -275,10 +275,7 @@ let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 
 external float_of_string : string -> float = "caml_float_of_string"
 
-let float_of_string_opt s =
-  (* TODO: provide this directly as a non-raising primitive. *)
-  try Some (float_of_string s)
-  with Failure _ -> None
+external float_of_string_opt: string -> float option = "caml_float_of_string_opt"
 
 (* List operations -- more in module List *)
 

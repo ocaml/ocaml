@@ -671,7 +671,7 @@ external float_of_string : string -> float = "caml_float_of_string"
    Raise [Failure "float_of_string"] if the given string is not a valid
    representation of a float. *)
 
-val float_of_string_opt: string -> float option
+external float_of_string_opt: string -> float option = "caml_float_of_string_opt"
 (** Same as [float_of_string], but returns [None] instead of raising.
     @since 4.05
 *)
