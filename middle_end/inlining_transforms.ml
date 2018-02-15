@@ -30,7 +30,7 @@ let which_function_parameters_can_we_specialise ~params ~args
   assert (List.length params = List.length args);
   assert (List.length args = List.length args_approxs);
   List.fold_right2 (fun (var, arg) approx
-    (worth_specialising_args, spec_args, args, args_decl) ->
+    (worth_specialising_args, spec_args) ->
       let spec_args =
         if Variable.Map.mem var (Lazy.force invariant_params) ||
            Variable.Set.mem var specialised_args
@@ -47,9 +47,9 @@ let which_function_parameters_can_we_specialise ~params ~args
         else
           worth_specialising_args
       in
-      worth_specialising_args, spec_args, arg :: args, args_decl)
+      worth_specialising_args, spec_args)
     (List.combine params args) args_approxs
-    (Variable.Set.empty, Variable.Map.empty, [], [])
+    (Variable.Set.empty, Variable.Map.empty)
 
 (** Fold over all variables bound by the given closure, which is bound to the
     variable [lhs_of_application], and corresponds to the given
@@ -207,7 +207,7 @@ let inline_by_copying_function_declaration ~env ~r
   in
   let original_function_decls = function_decls in
   let specialised_args_set = Variable.Map.keys specialised_args in
-  let worth_specialising_args, specialisable_args, args, args_decl =
+  let worth_specialising_args, specialisable_args =
     which_function_parameters_can_we_specialise
       ~params:(Parameter.List.vars function_decl.params) ~args ~args_approxs
       ~invariant_params
@@ -528,10 +528,5 @@ let inline_by_copying_function_declaration ~env ~r
       in
       Flambda_utils.bind ~bindings:free_vars_for_lets ~body
     in
-    (* Now bind the variables that will hold the arguments from the original
-       application. *)
-    let expr : Flambda.t =
-      Flambda_utils.bind ~body:duplicated_application ~bindings:args_decl
-    in
     let env = E.activate_freshening (E.set_never_inline env) in
-    Some (simplify env r expr)
+    Some (simplify env r duplicated_application)
