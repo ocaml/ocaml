@@ -84,7 +84,7 @@ let fold_over_projections_of_vars_bound_by_closures
        let function_free_vars = function_decl.free_variables in
        let function_params = Parameter.Set.vars function_decl.params in
        let bound_variables =
-         function_free_vars -- function_params -- function_names
+         (function_free_vars -- function_params) -- function_names
        in
        Variable.Set.fold
          (fun var acc ->
