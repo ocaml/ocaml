@@ -454,33 +454,6 @@ let iter f = function
   | Lifused (_v, e) ->
       f e
 
-
-let free_ids get l =
-  let fv = ref Ident.Set.empty in
-  let rec free l =
-    iter free l;
-    fv := List.fold_right Ident.Set.add (get l) !fv;
-    match l with
-      Lfunction{params} ->
-        List.iter (fun param -> fv := Ident.Set.remove param !fv) params
-    | Llet(_str, _k, id, _arg, _body) ->
-        fv := Ident.Set.remove id !fv
-    | Lletrec(decl, _body) ->
-        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
-    | Lstaticcatch(_e1, (_,vars), _e2) ->
-        List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
-    | Ltrywith(_e1, exn, _e2) ->
-        fv := Ident.Set.remove exn !fv
-    | Lfor(v, _e1, _e2, _dir, _e3) ->
-        fv := Ident.Set.remove v !fv
-    | Lassign(id, _e) ->
-        fv := Ident.Set.add id !fv
-    | Lvar _ | Lconst _ | Lapply _
-    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
-    | Lifthenelse _ | Lsequence _ | Lwhile _
-    | Lsend _ | Levent _ | Lifused _ -> ()
-  in free l; !fv
-
 let rec free_variables = function
   | Lvar id -> Ident.Set.singleton id
   | Lconst _ -> Ident.Set.empty
@@ -558,9 +531,6 @@ let rec free_variables = function
 and free_variables_list set exprs =
   List.fold_left (fun set expr -> Ident.Set.union (free_variables expr) set)
     set exprs
-
-let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, _, _, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0

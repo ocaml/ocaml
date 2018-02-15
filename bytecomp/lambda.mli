@@ -324,7 +324,6 @@ val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit
 val free_variables: lambda -> Ident.Set.t
-val free_methods: lambda -> Ident.Set.t
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
