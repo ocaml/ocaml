@@ -296,14 +296,33 @@ let inline_by_copying_function_declaration ~env ~r
     None
   else
     let set_of_closures_var = new_var "dup_set_of_closures" in
+    let required_functions =
+      Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)
+        ~entry_point:closure_id_being_applied
+        function_decls
+    in
     (* The free variable map for the duplicated declaration(s) maps the
        "internal" names used within the function bodies to fresh names,
        which in turn are bound to projections from the set of closures being
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
-      fold_over_projections_of_vars_bound_by_closures ~closure_id_being_applied
-        ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
+      let function_decls =
+        Flambda.create_function_declarations
+          ~funs:(Variable.Set.fold
+                   (fun var acc ->
+                      Variable.Map.add
+                        var
+                        (Variable.Map.find var function_decls.funs)
+                        acc)
+                   required_functions
+                   Variable.Map.empty)
+      in
+      fold_over_projections_of_vars_bound_by_closures
+        ~closure_id_being_applied
+        ~lhs_of_application
+        ~function_decls
+        ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure : Flambda.specialised_to =
             { var = new_var "from_closure";
@@ -312,11 +331,6 @@ let inline_by_copying_function_declaration ~env ~r
           in
           Variable.Map.add internal_var from_closure map,
             (from_closure.var, expr)::for_lets)
-    in
-    let required_functions =
-      Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)
-        ~entry_point:closure_id_being_applied
-        function_decls
     in
     let funs =
       Variable.Map.filter (fun func _ ->
