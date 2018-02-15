@@ -408,7 +408,7 @@ let iter_opt f = function
   | None -> ()
   | Some e -> f e
 
-let iter f = function
+let iter_head_constructor f = function
     Lvar _
   | Lconst _ -> ()
   | Lapply{ap_func = fn; ap_args = args} ->

@@ -632,7 +632,7 @@ let _ =
 let scan_used_globals lam =
   let globals = ref Ident.Set.empty in
   let rec scan lam =
-    Lambda.iter scan lam;
+    Lambda.iter_head_constructor scan lam;
     match lam with
       Lprim ((Pgetglobal id | Psetglobal id), _, _) ->
         globals := Ident.Set.add id !globals

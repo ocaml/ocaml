@@ -633,7 +633,7 @@ let prerr_ids msg ids =
 let free_methods l =
   let fv = ref Ident.Set.empty in
   let rec free l =
-    Lambda.iter free l;
+    Lambda.iter_head_constructor free l;
     match l with
     | Lsend(Self, Lvar meth, _, _, _) ->
         fv := Ident.Set.add meth !fv
