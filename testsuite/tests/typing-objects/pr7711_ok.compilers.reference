@@ -1,3 +1,0 @@
-type 'a r = 'a constraint 'a = < w : int -> int; .. >
-class type virtual ct = object method virtual w : int -> int end
-
