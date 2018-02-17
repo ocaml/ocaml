@@ -496,3 +496,13 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   return res;
 #endif
 }
+
+CAMLprim value caml_string_of_bytes(value bv)
+{
+  return bv;
+}
+
+CAMLprim value caml_bytes_of_string(value bv)
+{
+  return bv;
+}
