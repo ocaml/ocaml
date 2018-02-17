@@ -3547,7 +3547,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              | _      -> CM_Hide_public lab::err
              end
            in
-           if Concr.mem lab sign1.csig_concr then err
+           if lab = dummy_method || Concr.mem lab sign1.csig_concr then err
            else CM_Hide_virtual ("method", lab) :: err)
         miss1 []
     in

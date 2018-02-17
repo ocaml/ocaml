@@ -1572,6 +1572,21 @@ let final_decl env define_class
     raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, trace)))
   end;
 
+  (* make the dummy method disappear *)
+  begin
+    let self_type = Ctype.self_type clty.cty_type in
+    let methods, _ =
+      Ctype.flatten_fields
+        (Ctype.object_fields (Ctype.expand_head env self_type))
+    in
+    List.iter (fun (lab,kind,_) ->
+      if lab = dummy_method then
+        match Btype.field_kind_repr kind with
+          Fvar r -> Btype.set_kind r Fabsent
+        | _ -> ()
+    ) methods
+  end;
+
   List.iter Ctype.generalize clty.cty_params;
   generalize_class_type true clty.cty_type;
   Misc.may  Ctype.generalize clty.cty_new;
