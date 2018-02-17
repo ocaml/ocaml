@@ -1367,7 +1367,8 @@ let simplif_primitive_32bits = function
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
-  | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
+  | Pbytes_load_64(_) -> Pccall (default_prim "caml_bytes_get64")
+  | Pbytes_set_64(_) -> Pccall (default_prim "caml_bytes_set64")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
@@ -1636,8 +1637,10 @@ let rec is_unboxed_number ~strict env e =
             Boxed (Boxed_integer (Pint64, dbg), false)
         | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
             Boxed (Boxed_integer (Pnativeint, dbg), false)
-        | Pstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pstring_load_32(_) | Pbytes_load_32(_) ->
+            Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pstring_load_64(_) | Pbytes_load_64(_) ->
+            Boxed (Boxed_integer (Pint64, dbg), false)
         | Pbigstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
         | Pbigstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
@@ -2229,7 +2232,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
               Cop(Cload (Byte_unsigned, Mutable),
                 [add_int str idx dbg], dbg))))) dbg
 
-  | Pstring_load_16(unsafe) ->
+  | Pstring_load_16(unsafe) | Pbytes_load_16(unsafe) ->
      tag_int
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2249,7 +2252,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 1) dbg) idx
                       (unaligned_load_16 ba_data idx dbg))))) dbg
 
-  | Pstring_load_32(unsafe) ->
+  | Pstring_load_32(unsafe) | Pbytes_load_32(unsafe) ->
      box_int dbg Pint32
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2269,7 +2272,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 3) dbg) idx
                       (unaligned_load_32 ba_data idx dbg)))))
 
-  | Pstring_load_64(unsafe) ->
+  | Pstring_load_64(unsafe) | Pbytes_load_64(unsafe) ->
      box_int dbg Pint64
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2512,7 +2515,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       float_array_set arr idx newval dbg))))
       end)
 
-  | Pstring_set_16(unsafe) ->
+  | Pbytes_set_16(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2535,7 +2538,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_16 ba_data idx newval dbg))))))
 
-  | Pstring_set_32(unsafe) ->
+  | Pbytes_set_32(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2558,7 +2561,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_32 ba_data idx newval dbg))))))
 
-  | Pstring_set_64(unsafe) ->
+  | Pbytes_set_64(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
