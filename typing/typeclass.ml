@@ -782,6 +782,15 @@ and class_field_aux self_loc cl_num self_type meths vars
   | Pcf_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
+(* N.B. the self type of a final object type doesn't contain a dummy method in
+   the beginning.
+   We only explicitely add a dummy method to class definitions (and class (type)
+   declarations)), which are later removed (made absent) by [final_decl].
+
+   If we ever find a dummy method in a final object self type, it means that
+   somehow we've unified the self type of the object with the self type of a not
+   yet finished class.
+   When this happens, we cannot close the object type and must error. *)
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =
   (* Environment for substructures *)
@@ -790,11 +799,15 @@ and class_structure cl_num final val_env met_env loc
   (* Location of self. Used for locations of self arguments *)
   let self_loc = {spat.ppat_loc with Location.loc_ghost = true} in
 
-  (* Self type, with a dummy method preventing it from being closed/escaped. *)
-  let self_type = Ctype.newvar () in
-  Ctype.unify val_env
-    (Ctype.filter_method val_env dummy_method Private self_type)
-    (Ctype.newty (Ttuple []));
+  let self_type = Ctype.newobj (Ctype.newvar ()) in
+
+  (* Adding a dummy method to the self type prevents it from being closed /
+     escaping.
+     That isn't needed for objects though. *)
+  if not final then
+    Ctype.unify val_env
+      (Ctype.filter_method val_env dummy_method Private self_type)
+      (Ctype.newty (Ttuple []));
 
   (* Private self is used for private method calls *)
   let private_self = if final then Ctype.newvar () else self_type in
@@ -862,13 +875,7 @@ and class_structure cl_num final val_env met_env loc
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
-          if lab = dummy_method then
-            (* allow public self and private self to be unified *)
-            match Btype.field_kind_repr kind with
-              Fvar r -> Btype.set_kind r Fabsent; rem
-            | _ -> rem
-          else
-            Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
+           Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
         methods (Ctype.newty Tnil) in
     begin try
       Ctype.unify val_env private_self
