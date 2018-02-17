@@ -334,6 +334,7 @@ let op_shapes = [
   opVECTLENGTH, Nothing;
   opGETVECTITEM, Nothing;
   opSETVECTITEM, Nothing;
+  opGETISTRINGCHAR, Nothing;
   opGETSTRINGCHAR, Nothing;
   opSETSTRINGCHAR, Nothing;
   opBRANCH, Disp;

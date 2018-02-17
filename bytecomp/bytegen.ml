@@ -360,8 +360,9 @@ let comp_primitive p args =
   | Pstringrefs -> Kccall("caml_string_get", 2)
   | Pbytesrefs -> Kccall("caml_bytes_get", 2)
   | Pbytessets -> Kccall("caml_bytes_set", 3)
-  | Pstringrefu | Pbytesrefu -> Kgetstringchar
-  | Pbytessetu -> Ksetstringchar
+  | Pstringrefu -> Kgetstringchar
+  | Pbytesrefu -> Kgetbyteschar
+  | Pbytessetu -> Ksetbyteschar
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
   | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
   | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)

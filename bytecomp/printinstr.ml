@@ -56,7 +56,8 @@ let instruction ppf = function
   | Kgetvectitem -> fprintf ppf "\tgetvectitem"
   | Ksetvectitem -> fprintf ppf "\tsetvectitem"
   | Kgetstringchar -> fprintf ppf "\tgetstringchar"
-  | Ksetstringchar -> fprintf ppf "\tsetstringchar"
+  | Kgetbyteschar -> fprintf ppf "\tgetbyteschar"
+  | Ksetbyteschar -> fprintf ppf "\tsetbyteschar"
   | Kbranch lbl -> fprintf ppf "\tbranch L%i" lbl
   | Kbranchif lbl -> fprintf ppf "\tbranchif L%i" lbl
   | Kbranchifnot lbl -> fprintf ppf "\tbranchifnot L%i" lbl

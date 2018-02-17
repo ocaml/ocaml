@@ -78,7 +78,8 @@ type instruction =
   | Kgetvectitem
   | Ksetvectitem
   | Kgetstringchar
-  | Ksetstringchar
+  | Kgetbyteschar
+  | Ksetbyteschar
   | Kbranch of label
   | Kbranchif of label
   | Kbranchifnot of label
