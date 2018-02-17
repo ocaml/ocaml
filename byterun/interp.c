@@ -778,8 +778,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       sp += 2;
       Next;
 
-/* String operations */
-
+/* Bytes/String operations */
+    Instruct(GETISTRINGCHAR):
     Instruct(GETSTRINGCHAR):
       accu = Val_int(Byte_u(accu, Long_val(sp[0])));
       sp += 1;
