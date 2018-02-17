@@ -80,3 +80,35 @@ Error: The method parent has type < child : 'a; previous : 'b option >
        but is expected to have type < previous : < .. > option; .. >
        Self type cannot escape its class
 |}]
+
+(* Also didn't work in 4.03 *)
+
+type gadt = Not_really_though : gadt
+
+let _ =
+  object(self)
+    method previous = None
+    method child Not_really_though =
+      object
+        inherit child1 self
+        inherit child2
+      end
+  end;;
+[%%expect{|
+type gadt = Not_really_though : gadt
+Line _, characters 16-22:
+          inherit child2
+                  ^^^^^^
+Error: The method parent has type
+         < child : gadt -> 'a; previous : 'b option >
+       but is expected to have type < previous : < .. > option; .. >
+       Self type cannot escape its class
+|}, Principal{|
+type gadt = Not_really_though : gadt
+Line _, characters 16-22:
+          inherit child2
+                  ^^^^^^
+Error: The method parent has type < child : 'a -> 'b; previous : 'c option >
+       but is expected to have type < previous : < .. > option; .. >
+       Self type cannot escape its class
+|}]
