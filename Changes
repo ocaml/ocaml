@@ -148,6 +148,9 @@ Working version
 - GPR#1487: Treat negated float comparisons more directly
   (Leo White, review by Xavier Leroy)
 
+* GPR#1617: Make string/bytes distinguishable in the bytecode.
+  (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
