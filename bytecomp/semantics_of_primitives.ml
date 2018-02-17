@@ -21,7 +21,9 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Lambda.primitive) =
   match prim with
-  | Pignore | Pidentity | Pbytes_to_string | Pbytes_of_string ->
+  | Pignore | Pidentity ->
+      No_effects, No_coeffects
+  | Pbytes_to_string | Pbytes_of_string ->
       No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
