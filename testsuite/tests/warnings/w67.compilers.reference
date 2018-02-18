@@ -1,0 +1,24 @@
+File "w67.ml", line 12, characters 8-23:
+12 | let _ = Some 0 = Some 1
+             ^^^^^^^^^^^^^^^
+Warning 67: This (=) comparison could not be simplified and will use the
+generic comparison function, which compares data based on
+the structure of the runtime representation.
+File "w67.ml", line 21, characters 8-23:
+21 | and _ = Some 0 = Some 1
+             ^^^^^^^^^^^^^^^
+Warning 67: This (=) comparison could not be simplified and will use the
+generic comparison function, which compares data based on
+the structure of the runtime representation.
+File "w67.ml", line 27, characters 5-20:
+27 |   if Some 0 = Some 1 then ();
+          ^^^^^^^^^^^^^^^
+Warning 67: This (=) comparison could not be simplified and will use the
+generic comparison function, which compares data based on
+the structure of the runtime representation.
+File "w67.ml", line 25, characters 5-20:
+25 |   if Some 0 = Some 1 then ();
+          ^^^^^^^^^^^^^^^
+Warning 67: This (=) comparison could not be simplified and will use the
+generic comparison function, which compares data based on
+the structure of the runtime representation.

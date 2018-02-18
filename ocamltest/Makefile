@@ -153,7 +153,7 @@ include_directories := $(addprefix -I , $(directories))
 
 flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
-  -w +a-4-9-41-42-44-45-48 -warn-error A
+  -w +a-4-9-41-42-44-45-48-67 -warn-error A
 
 ocamlc := $(ROOTDIR)/runtime/ocamlrun $(ROOTDIR)/ocamlc $(flags)
 

@@ -1,5 +1,5 @@
 (* TEST
-   flags = " -w A -strict-sequence "
+   flags = " -w A-67 -strict-sequence "
    * expect
 *)
 

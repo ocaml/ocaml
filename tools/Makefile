@@ -79,8 +79,8 @@ CAMLOPT = $(CAMLRUN) $(ROOTDIR)/ocamlopt -g -nostdlib -I $(ROOTDIR)/stdlib
 CAMLLEX = $(CAMLRUN) $(ROOTDIR)/boot/ocamllex
 INCLUDES = $(addprefix -I $(ROOTDIR)/,utils parsing typing bytecomp asmcomp \
                        middle_end middle_end/base_types driver toplevel)
-COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48 -strict-sequence -warn-error A \
- -safe-string -strict-formats -bin-annot $(INCLUDES)
+COMPFLAGS = -absname -w +a-4-9-41-42-44-45-48-67 -warn-error A \
+ -safe-string -strict-sequence -strict-formats -bin-annot $(INCLUDES)
 LINKFLAGS = $(INCLUDES)
 VPATH := $(filter-out -I,$(INCLUDES))
 

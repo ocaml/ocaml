@@ -456,6 +456,8 @@ let rec compile_functor mexp coercion root_path loc =
 (* Compile a module expression *)
 
 and transl_module cc rootpath mexp =
+  Builtin_attributes.warning_scope ~ppwarning:false mexp.mod_attributes
+  @@ fun () ->
   List.iter (Translattribute.check_attribute_on_module mexp)
     mexp.mod_attributes;
   let loc = mexp.mod_loc in
@@ -686,8 +688,10 @@ and transl_structure loc fields cc rootpath final_env = function
                     transl_module Tcoerce_none None od.open_expr, body), size
           end
       | Tstr_modtype _
-      | Tstr_class_type _
-      | Tstr_attribute _ ->
+      | Tstr_class_type _ ->
+          transl_structure loc fields cc rootpath final_env rem
+      | Tstr_attribute attr ->
+          Builtin_attributes.warning_attribute ~ppwarning:false attr;
           transl_structure loc fields cc rootpath final_env rem
 
 (* Update forward declaration in Translcore *)
@@ -954,6 +958,8 @@ let transl_store_structure glob map prims aliases str =
         | Tstr_module{mb_id=id;mb_loc=loc;mb_presence=Mp_present;
                       mb_expr={mod_desc = Tmod_structure str} as mexp;
                       mb_attributes} ->
+            Builtin_attributes.warning_scope ~ppwarning:false mb_attributes
+            @@ fun () ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               mb_attributes;
             let lam =
@@ -982,6 +988,8 @@ let transl_store_structure glob map prims aliases str =
           } ->
             (*    Format.printf "coerc id %s: %a@." (Ident.unique_name id)
                                 Includemod.print_coercion cc; *)
+            Builtin_attributes.warning_scope ~ppwarning:false mb_attributes
+            @@ fun () ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               mb_attributes;
             let lam =
@@ -1049,6 +1057,8 @@ let transl_store_structure glob map prims aliases str =
             incl_attributes;
             incl_type;
           } ->
+            Builtin_attributes.warning_scope ~ppwarning:false incl_attributes
+            @@ fun () ->
             List.iter (Translattribute.check_attribute_on_module mexp)
               incl_attributes;
             (* Shouldn't we use mod_attributes instead of incl_attributes?
@@ -1141,8 +1151,10 @@ let transl_store_structure glob map prims aliases str =
                          store_idents 0 ids)
           end
         | Tstr_modtype _
-        | Tstr_class_type _
-        | Tstr_attribute _ ->
+        | Tstr_class_type _ ->
+            transl_store rootpath subst cont rem
+        | Tstr_attribute attr ->
+            Builtin_attributes.warning_attribute ~ppwarning:false attr;
             transl_store rootpath subst cont rem
 
   and store_ident loc id =

@@ -24,10 +24,10 @@ case $1 in
   stdlib__buffer.cmx|stdlib__buffer.p.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
   stdlib__buffer.cm[io]) echo ' -w A';;
-  camlinternalFormat.cm[io]) echo ' -w Ae';;
+  camlinternalFormat.cm[io]) echo ' -w Ae-67';;
   camlinternalFormatBasics*.cm[iox]) echo ' -nopervasives';;
   stdlib__printf.cm[io]|stdlib__format.cm[io]|stdlib__scanf.cm[io])
-      echo ' -w Ae';;
+      echo ' -w Ae-67';;
   stdlib__scanf.cmx|stdlib__scanf.p.cmx) echo ' -inline 9';;
   *Labels.cm[ox]|*Labels.p.cmx) echo ' -nolabels -no-alias-deps';;
   stdlib__float.cm[ox]|stdlib__float.p.cmx) echo ' -nolabels -no-alias-deps';;

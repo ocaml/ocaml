@@ -5,6 +5,10 @@ Working version
 
 ### Language features:
 
+- Add optional warning for usage of the generic comparison function.
+  (Christopher Zimmermamm, with help and review from
+  Alain Frisch, Gabriel Radanne, Gabriel Scherer)
+
 - MPR#6422, MPR#7083, GPR#305, GPR#1568: Allow "exception" under or-patterns
   (Thomas Refis, with help and review from Alain Frisch, Gabriel Scherer, Jeremy
   Yallop, Leo White and Luc Maranget)

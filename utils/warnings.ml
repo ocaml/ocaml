@@ -91,6 +91,7 @@ type t =
   | Unsafe_without_parsing                  (* 64 *)
   | Redefining_unit of string               (* 65 *)
   | Unused_open_bang of string              (* 66 *)
+  | Generic_comparison of string            (* 67 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -168,9 +169,10 @@ let number = function
   | Unsafe_without_parsing -> 64
   | Redefining_unit _ -> 65
   | Unused_open_bang _ -> 66
+  | Generic_comparison _ -> 67
 ;;
 
-let last_warning_number = 66
+let last_warning_number = 67
 ;;
 
 (* Must be the max number returned by the [number] function. *)
@@ -391,7 +393,7 @@ let parse_options errflag s =
   current := {(!current) with error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-66";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-66-67";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -624,6 +626,11 @@ let message = function
         "This type declaration is defining a new '()' constructor\n\
          which shadows the existing one.\n\
          Hint: Did you mean 'type %s = unit'?" name
+  | Generic_comparison op ->
+      Printf.sprintf
+        "This (%s) comparison could not be simplified and will use the\n\
+         generic comparison function, which compares data based on\n\
+         the structure of the runtime representation." op
 ;;
 
 let nerrors = ref 0;;
@@ -768,6 +775,7 @@ let descriptions =
    64, "-unsafe used with a preprocessor returning a syntax tree";
    65, "Type declaration defining a new '()' constructor";
    66, "Unused open! statement";
+   67, "Generic comparison";
   ]
 ;;
 
