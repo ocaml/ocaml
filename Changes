@@ -104,6 +104,9 @@ Working version
 - GPR#1554: warnings 52 and 57: fix reference to manual detailed explanation
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
 
+- GPR#1618: add the -dno-unique-ids and -dunique-ids compiler flags
+  (Sébastien Hinderer, review by xxx)
+
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen
