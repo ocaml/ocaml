@@ -151,3 +151,42 @@ Error: The method parent has type
        but is expected to have type < previous : < .. > option; .. >
        Self type cannot escape its class
 |}]
+
+
+(* that makes sense *)
+
+class leading_up_to = object(self : 'a)
+  method previous : 'a option = None
+  method child =
+    object
+      inherit child1 self
+      inherit child2
+    end
+end;;
+[%%expect{|
+Line _, characters 4-65:
+  ....object
+        inherit child1 self
+        inherit child2
+      end
+Error: This object has virtual methods.
+       The following methods are undefined : previous child
+|}]
+
+(* that makes me sad *)
+
+class assertion_failure = object(self : 'a)
+  method previous : 'a option = None
+  method child =
+    object
+      inherit child1 self
+      inherit child2
+
+      method previous = None
+      method child = assert false
+    end
+end;;
+[%%expect{|
+Uncaught exception: File "typing/ctype.ml", line 347, characters 30-36: Assertion failed
+
+|}]
