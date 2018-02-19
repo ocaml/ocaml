@@ -209,6 +209,9 @@ Working version
   and subject to change/removal).
   (Gabriel Scherer)
 
+- GPR#1619: expect_test: print all the exceptions, even the unexpected ones
+  (Thomas Refis, review by Jérémie Dimino)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path

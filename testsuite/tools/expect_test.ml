@@ -253,8 +253,15 @@ let eval_expect_file _fname ~file_contents =
         try
           exec_phrase ppf phrase
         with exn ->
-          Location.report_exception ppf exn;
-          false)
+          let bt = Printexc.get_raw_backtrace () in
+          begin try Location.report_exception ppf exn
+          with _ ->
+            Format.fprintf ppf "Uncaught exception: %s\n%s\n"
+              (Printexc.to_string exn)
+              (Printexc.raw_backtrace_to_string bt)
+          end;
+          false
+      )
     in
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
