@@ -329,6 +329,7 @@ let close_object ty =
     match ty.desc with
       Tvar _ ->
         link_type ty (newty2 ty.level Tnil)
+    | Tfield(lab, _, _, _) when lab = dummy_method -> raise (Unify [])
     | Tfield(_, _, _, ty') -> close ty'
     | _                    -> assert false
   in

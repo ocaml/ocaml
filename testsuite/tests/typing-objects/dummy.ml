@@ -130,9 +130,6 @@ class just_to_see3 :
   object method child : gadt -> child2 method previous : child2 option end
 |}]
 
-
-(* that makes sense *)
-
 class leading_up_to = object(self : 'a)
   method previous : 'a option = None
   method child =
@@ -147,11 +144,11 @@ Line _, characters 4-65:
         inherit child1 self
         inherit child2
       end
-Error: This object has virtual methods.
-       The following methods are undefined : previous child
+Error: Cannot close type of object literal:
+       < child : '_weak1; previous : 'a option; _.. > as 'a
+       it has been unified with the self type of a class that is not yet
+       completely defined.
 |}]
-
-(* that makes me sad *)
 
 class assertion_failure = object(self : 'a)
   method previous : 'a option = None
@@ -165,6 +162,16 @@ class assertion_failure = object(self : 'a)
     end
 end;;
 [%%expect{|
-Uncaught exception: File "typing/ctype.ml", line 347, characters 30-36: Assertion failed
+Line _, characters 4-129:
+  ....object
+        inherit child1 self
+        inherit child2
 
+        method previous = None
+        method child = assert false
+      end
+Error: Cannot close type of object literal:
+       < child : '_weak2; previous : 'a option; _.. > as 'a
+       it has been unified with the self type of a class that is not yet
+       completely defined.
 |}]

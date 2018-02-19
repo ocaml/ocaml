@@ -75,6 +75,7 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
+  | Closing_self_type of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -864,7 +865,10 @@ and class_structure cl_num final val_env met_env loc
   if final then begin
     (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
-    Ctype.close_object self_type;
+    begin try Ctype.close_object self_type
+    with Ctype.Unify [] ->
+      raise(Error(loc, val_env, Closing_self_type self_type))
+    end;
     let mets = virtual_methods {sign with csig_self = self_type} in
     let vals =
       Vars.fold
@@ -1409,7 +1413,9 @@ let class_infos define_class kind
   begin
     let ty = Ctype.self_type obj_type in
     Ctype.hide_private_methods ty;
-    Ctype.close_object ty;
+    begin try Ctype.close_object ty
+    with Ctype.Unify [] -> raise(Error(cl.pci_loc, env, Closing_self_type ty))
+    end;
     begin try
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->
@@ -2000,6 +2006,12 @@ let report_error env ppf = function
   | Duplicate (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has multiple definitions in this object@]"
                     kind name
+  | Closing_self_type self ->
+    fprintf ppf
+      "@[Cannot close type of object literal:@ %a@,\
+       it has been unified with the self type of a class that is not yet@ \
+       completely defined.@]"
+      Printtyp.type_scheme self
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)
