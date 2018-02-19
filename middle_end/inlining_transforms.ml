@@ -309,14 +309,9 @@ let inline_by_copying_function_declaration ~env ~r
     let free_vars, free_vars_for_lets =
       let function_decls =
         Flambda.create_function_declarations
-          ~funs:(Variable.Set.fold
-                   (fun var acc ->
-                      Variable.Map.add
-                        var
-                        (Variable.Map.find var function_decls.funs)
-                        acc)
-                   required_functions
-                   Variable.Map.empty)
+          ~funs:(Variable.Map.filter
+                   (fun var _ -> Variable.Set.mem var required_functions)
+                   function_decls.funs)
       in
       fold_over_projections_of_vars_bound_by_closures
         ~closure_id_being_applied
