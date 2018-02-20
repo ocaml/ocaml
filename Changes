@@ -66,6 +66,10 @@ Working version
 
 ### Bug fixes:
 
+- GPR#1623: Segfault on Windows 64 bits when expanding wildcards in arguments.
+  (Marc Lasson, review by David Allsopp, Alain Frisch, Sébastien Hinderer,
+   Xavier Leroy, Nicolas Ojeda Bar)
+
 - MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
   ignored when used on streams based on input channels.
   (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
@@ -75,7 +79,6 @@ Working version
 
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
-
 
 OCaml 4.07
 ----------
