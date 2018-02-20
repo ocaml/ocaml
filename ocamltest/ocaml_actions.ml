@@ -611,14 +611,14 @@ let config_variables _log env = Environments.add_bindings
 let flat_float_array = Actions.make
   "flat-float-array"
   (Actions_helpers.pass_or_skip Ocamltest_config.flat_float_array
-    "The flat-float-array action succeeds.\n"
-    "Compiler configured with -no-flat-float-array.")
+    "compiler configured with -flat-float-array"
+    "compiler configured with -no-flat-float-array")
 
 let no_flat_float_array = make
   "no-flat-float-array"
   (Actions_helpers.pass_or_skip (not Ocamltest_config.flat_float_array)
-    "The no-flat-float-array action succeeds.\n"
-    "The compiler has been configured with -flat-float-array.")
+    "compiler configured with -no-flat-float-array"
+    "compiler configured with -flat-float-array")
 
 let flambda = Actions.make
   "flambda"
