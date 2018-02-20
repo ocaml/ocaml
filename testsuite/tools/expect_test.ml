@@ -336,6 +336,7 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
+  Config.load_path := [];
   List.iter [ "stdlib" ] ~f:(fun s ->
     Topdirs.dir_directory (Filename.concat !repo_root s));
   Toploop.initialize_toplevel_env ();
