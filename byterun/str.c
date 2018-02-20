@@ -206,15 +206,6 @@ CAMLprim value caml_bytes_set16(value str, value index, value newval)
   return Val_unit;
 }
 
-/**
- * [caml_string_set16] is deprecated,
- * use [caml_bytes_set16] instead
- */
-CAMLprim value caml_string_set16(value str, value index, value newval)
-{
-  return caml_bytes_set16(str,index,newval);
-}
-
 CAMLprim value caml_bytes_set32(value str, value index, value newval)
 {
   unsigned char b1, b2, b3, b4;
@@ -238,15 +229,6 @@ CAMLprim value caml_bytes_set32(value str, value index, value newval)
   Byte_u(str, idx + 2) = b3;
   Byte_u(str, idx + 3) = b4;
   return Val_unit;
-}
-
-/**
- * [caml_string_set32] is deprecated,
- * use [caml_bytes_set32] instead
- */
-CAMLprim value caml_string_set32(value str, value index, value newval)
-{
-  return caml_bytes_set32(str,index,newval);
 }
 
 CAMLprim value caml_bytes_set64(value str, value index, value newval)
@@ -285,16 +267,6 @@ CAMLprim value caml_bytes_set64(value str, value index, value newval)
   Byte_u(str, idx + 7) = b8;
   return Val_unit;
 }
-
-/**
- * [caml_string_set64] is deprecated,
- * use [caml_bytes_set64] instead
- */
-CAMLprim value caml_string_set64(value str, value index, value newval)
-{
-  return caml_bytes_set64(str,index,newval);
-}
-
 
 CAMLprim value caml_string_equal(value s1, value s2)
 {
