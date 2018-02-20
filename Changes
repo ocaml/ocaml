@@ -265,6 +265,9 @@ Working version
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
+- MPR#7391, GPR#1620: Do not put a dummy method in object types
+  (Thomas Refis, review by Jacques Garrigue)
+
 - PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
   avoid unintended shifts of the argument timestamp depending on DST setting.
   (Nicolás Ojeda Bär, review by David Allsopp, Xavier Leroy)
