@@ -502,6 +502,10 @@ OCaml 4.07
   which could result in some elements of Sys.argv being truncated in some cases.
   (Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
+- GPR#1623: Segfault on Windows 64 bits when expanding wildcards in arguments.
+  (Marc Lasson, review by David Allsopp, Alain Frisch, Sébastien Hinderer,
+   Xavier Leroy, Nicolas Ojeda Bar)
+
 - GPR#1661: more precise principality warning regarding record fields
   disambiguation
   (Thomas Refis, review by Leo White)
