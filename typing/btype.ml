@@ -72,6 +72,7 @@ type change =
     Ctype of type_expr * type_desc
   | Ccompress of type_expr * type_desc * type_desc
   | Clevel of type_expr * int
+  | Cscope of type_expr * int option
   | Cname of
       (Path.t * type_expr list) option ref * (Path.t * type_expr list) option
   | Crow of row_field option ref * row_field option
@@ -639,6 +640,7 @@ let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
   | Ccompress  (ty, desc, _) -> ty.desc <- desc
   | Clevel (ty, level) -> ty.level <- level
+  | Cscope (ty, scope) -> ty.scope <- scope
   | Cname  (r, v) -> r := v
   | Crow   (r, v) -> r := v
   | Ckind  (r, v) -> r := v
@@ -672,6 +674,9 @@ let link_type ty ty' =
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level
+let set_scope ty scope =
+  if ty.id <= !last_snapshot then log_change (Cscope (ty, ty.scope));
+  ty.scope <- scope
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =

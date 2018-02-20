@@ -734,7 +734,7 @@ let update_scope scope ty =
       | Some lvl' -> max lvl lvl'
     in
     if ty.level < scope then raise (Unify [(ty, newvar2 ty.level)]);
-    ty.scope <- (Some scope)
+    set_scope ty (Some scope)
 
 let rec update_level env level expand ty =
   let ty = repr ty in
@@ -985,7 +985,7 @@ let rec copy ?partial ?keep_names ty =
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
-    t.scope <- ty.scope;
+    set_scope t ty.scope;
     ty.desc <- Tsubst t;
     t.desc <-
       begin match desc with
@@ -1454,8 +1454,8 @@ let expand_abbrev_gen kind find_type_expansion env ty =
                 None -> ()
               | Some lv ->
                   if level < lv then raise (Unify [(ty, newvar2 level)]);
-                  ty.scope <- (Some lv);
-                  ty'.scope <- (Some lv)
+                  set_scope ty (Some lv);
+                  set_scope ty' (Some lv)
             end;
             ty'
       end
