@@ -105,7 +105,7 @@ Working version
   (Florian Angeletti, review by Thomas Refis and Gabriel Scherer)
 
 - GPR#1618: add the -dno-unique-ids and -dunique-ids compiler flags
-  (Sébastien Hinderer, review by xxx)
+  (Sébastien Hinderer, review by Leo White and Damien Doligez)
 
 ### Code generation and optimizations:
 
