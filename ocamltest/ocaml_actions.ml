@@ -312,7 +312,7 @@ let ocamlopt_opt =
       Builtin_variables.program2 Ocaml_compilers.ocamlopt_opt)
 
 let run_expect_once ocamlsrcdir input_file principal log env =
-  let expect_flags = try Sys.getenv "EXPECT_FLAGS" with Not_found -> "" in
+  let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
   let principal_flag = if principal then "-principal" else "" in
   let commandline =

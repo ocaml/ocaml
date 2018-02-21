@@ -23,7 +23,7 @@ type runtime_variant =
   | Instrumented
 
 let runtime_variant() =
-  let use_runtime = try Sys.getenv "USE_RUNTIME" with Not_found -> "" in
+  let use_runtime = Sys.safe_getenv "USE_RUNTIME" in
   if use_runtime="d" then Debug
   else if use_runtime="i" then Instrumented
   else Normal

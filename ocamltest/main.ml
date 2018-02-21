@@ -93,8 +93,10 @@ let get_test_source_directory test_dirname =
 
 let get_test_build_directory_prefix test_dirname =
   let ocamltestdir_variable = "OCAMLTESTDIR" in
-  let root = try Sys.getenv ocamltestdir_variable with
-    | Not_found -> (Filename.concat (Sys.getcwd ()) "_ocamltest") in
+  let root =
+    Sys.getenv_with_default_value ocamltestdir_variable
+      (Filename.concat (Sys.getcwd ()) "_ocamltest")
+  in
   if test_dirname = "." then root
   else Filename.concat root test_dirname
 

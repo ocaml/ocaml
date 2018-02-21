@@ -56,7 +56,7 @@ let libwin32unix = make
 
 let windows_OS = "Windows_NT"
 
-let get_OS () = try Sys.getenv "OS" with Not_found -> ""
+let get_OS () = Sys.safe_getenv "OS"
 
 let windows = make
   "windows"

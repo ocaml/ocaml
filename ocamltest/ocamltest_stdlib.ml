@@ -165,6 +165,10 @@ module Sys = struct
     | exception e ->
         Sys.chdir oldcwd;
         raise e
+
+  let getenv_with_default_value variable default_value =
+    try Sys.getenv variable with Not_found -> default_value
+  let safe_getenv variable = getenv_with_default_value variable ""
 end
 
 module StringSet = struct

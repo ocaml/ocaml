@@ -51,6 +51,8 @@ module Sys : sig
   val string_of_file : string -> string
   val copy_file : string -> string -> unit
   val with_chdir : string -> (unit -> 'a) -> 'a
+  val getenv_with_default_value : string -> string -> string
+  val safe_getenv : string -> string
 end
 
 module StringSet : sig

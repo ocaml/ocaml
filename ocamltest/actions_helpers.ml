@@ -123,8 +123,7 @@ let caml_ld_library_path = "CAML_LD_LIBRARY_PATH"
 
 let string_of_binding variable value =
   if variable=Builtin_variables.ld_library_path then begin
-    let current_value =
-      try Sys.getenv caml_ld_library_path with Not_found -> "" in
+    let current_value = Sys.safe_getenv caml_ld_library_path in
     let local_value =
       (String.concat Filename.path_sep (String.words value)) in
     let new_value =
