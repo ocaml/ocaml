@@ -299,8 +299,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
-  int saved_mode;
-
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
   /* Default behavior is to exit, which we get by not handling the event */
