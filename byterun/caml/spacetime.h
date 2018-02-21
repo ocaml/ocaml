@@ -157,9 +157,9 @@ extern shape_table* caml_spacetime_dynamic_shape_tables;
 
 typedef struct ext_table* spacetime_unwind_info_cache;
 
-extern value caml_spacetime_trie_root;
-extern value* caml_spacetime_trie_node_ptr;
-extern value* caml_spacetime_finaliser_trie_root;
+CAMLdata value caml_spacetime_trie_root;
+CAMLdata value* caml_spacetime_trie_node_ptr;
+CAMLdata value* caml_spacetime_finaliser_trie_root;
 
 extern allocation_point* caml_all_allocation_points;
 

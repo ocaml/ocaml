@@ -23,8 +23,8 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-CAMLextern int caml_debugger_in_use;
-CAMLextern int caml_debugger_fork_mode; /* non-zero for parent */
+CAMLdata int caml_debugger_in_use;
+CAMLdata int caml_debugger_fork_mode; /* non-zero for parent */
 extern uintnat caml_event_count;
 
 enum event_kind {

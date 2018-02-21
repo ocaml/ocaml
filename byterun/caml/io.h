@@ -102,12 +102,12 @@ intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* The locking machinery */
 
-CAMLextern void (*caml_channel_mutex_free) (struct channel *);
-CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
-CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+CAMLdata void (*caml_channel_mutex_free) (struct channel *);
+CAMLdata void (*caml_channel_mutex_lock) (struct channel *);
+CAMLdata void (*caml_channel_mutex_unlock) (struct channel *);
+CAMLdata void (*caml_channel_mutex_unlock_exn) (void);
 
-CAMLextern struct channel * caml_all_opened_channels;
+CAMLdata struct channel * caml_all_opened_channels;
 
 #define Lock(channel) \
   if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)

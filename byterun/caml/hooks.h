@@ -29,7 +29,7 @@ extern "C" {
 
 /* executed just before calling the entry point of a dynamically
    loaded native code module. */
-CAMLextern void (*caml_natdynlink_hook)(void* handle, const char* unit);
+CAMLdata void (*caml_natdynlink_hook)(void* handle, const char* unit);
 
 #endif /* NATIVE_CODE */
 

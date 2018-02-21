@@ -52,7 +52,7 @@ void caml_startup_pooled (char_os ** argv);
 value caml_startup_pooled_exn (char_os ** argv);
 void caml_shutdown (void);
 
-CAMLextern int caml_callback_depth;
+CAMLdata int caml_callback_depth;
 
 #ifdef __cplusplus
 }

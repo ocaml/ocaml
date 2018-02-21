@@ -59,7 +59,7 @@ struct longjmp_buffer {
 #define siglongjmp(buf,val) longjmp(buf,val)
 #endif
 
-CAMLextern struct longjmp_buffer * caml_external_raise;
+CAMLdata struct longjmp_buffer * caml_external_raise;
 extern value caml_exn_bucket;
 int caml_is_special_exception(value exn);
 

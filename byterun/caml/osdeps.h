@@ -19,15 +19,15 @@
 #define CAML_OSDEPS_H
 
 #ifdef _WIN32
-extern unsigned short caml_win32_major;
-extern unsigned short caml_win32_minor;
-extern unsigned short caml_win32_build;
-extern unsigned short caml_win32_revision;
+#include "misc.h"
+CAMLdata unsigned short caml_win32_major;
+CAMLdata unsigned short caml_win32_minor;
+CAMLdata unsigned short caml_win32_build;
+CAMLdata unsigned short caml_win32_revision;
 #endif
 
 #ifdef CAML_INTERNALS
 
-#include "misc.h"
 #include "memory.h"
 
 /* Read at most [n] bytes from file descriptor [fd] into buffer [buf].

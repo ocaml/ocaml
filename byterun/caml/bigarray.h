@@ -121,7 +121,7 @@ uintnat caml_ba_num_elts(struct caml_ba_array * b);
 
 #ifdef CAML_INTERNALS
 
-CAMLextern int caml_ba_element_size[];
+CAMLdata int caml_ba_element_size[];
 void caml_ba_finalize(value v);
 int caml_ba_compare(value v1, value v2);
 intnat caml_ba_hash(value v);

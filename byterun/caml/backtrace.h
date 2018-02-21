@@ -54,7 +54,7 @@
 /* Non zero iff backtraces are recorded.
  * One should use to change this variable [caml_record_backtrace].
  */
-CAMLextern int caml_backtrace_active;
+CAMLdata int caml_backtrace_active;
 
 /* The [backtrace_slot] type represents values stored in the
  * [caml_backtrace_buffer].  In bytecode, it is the same as a
@@ -79,8 +79,8 @@ typedef void * backtrace_slot;
  * Its maximum size is determined by [BACKTRACE_BUFFER_SIZE] from
  * [backtrace_prim.h], but this shouldn't affect users.
  */
-CAMLextern backtrace_slot * caml_backtrace_buffer;
-CAMLextern int caml_backtrace_pos;
+CAMLdata backtrace_slot * caml_backtrace_buffer;
+CAMLdata int caml_backtrace_pos;
 
 /* [caml_backtrace_last_exn] stores the last exception value that was raised,
  * iff [caml_backtrace_active != 0].
@@ -94,7 +94,7 @@ CAMLextern int caml_backtrace_pos;
  *   interpreter;
  * - directly resetting [caml_backtrace_pos] to 0 in native runtimes for raise.
  */
-CAMLextern value caml_backtrace_last_exn;
+CAMLdata value caml_backtrace_last_exn;
 
 /* [caml_record_backtrace] toggle backtrace recording on and off.
  * This function can be called at runtime by user-code, or during

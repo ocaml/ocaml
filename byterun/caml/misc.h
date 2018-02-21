@@ -72,6 +72,7 @@ typedef char * addr;
 #define CAMLexport
 #define CAMLprim
 #define CAMLextern extern
+#define CAMLdata CAMLextern
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */

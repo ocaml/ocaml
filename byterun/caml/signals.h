@@ -29,7 +29,7 @@ extern "C" {
 #ifdef CAML_INTERNALS
 extern intnat volatile caml_signals_are_pending;
 extern intnat volatile caml_pending_signals[];
-CAMLextern int volatile caml_something_to_do;
+CAMLdata int volatile caml_something_to_do;
 extern int volatile caml_requested_major_slice;
 extern int volatile caml_requested_minor_gc;
 
@@ -43,10 +43,10 @@ void caml_process_pending_signals(void);
 void caml_process_event(void);
 int caml_set_signal_action(int signo, int action);
 
-CAMLextern void (*caml_enter_blocking_section_hook)(void);
-CAMLextern void (*caml_leave_blocking_section_hook)(void);
-CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
-CAMLextern void (* volatile caml_async_action_hook)(void);
+CAMLdata void (*caml_enter_blocking_section_hook)(void);
+CAMLdata void (*caml_leave_blocking_section_hook)(void);
+CAMLdata int (*caml_try_leave_blocking_section_hook)(void);
+CAMLdata void (* volatile caml_async_action_hook)(void);
 #endif /* CAML_INTERNALS */
 
 void caml_enter_blocking_section (void);
