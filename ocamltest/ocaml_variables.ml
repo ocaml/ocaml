@@ -22,6 +22,8 @@
   should be similar. Is there a way to enforce this?
 *)
 
+open Ocamltest_stdlib
+
 open Variables (* Should not be necessary with a ppx *)
 
 let all_modules = make ("all_modules",
@@ -29,6 +31,24 @@ let all_modules = make ("all_modules",
 
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
+
+let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
+
+let export_caml_ld_library_path value =
+  let current_value = Sys.safe_getenv caml_ld_library_path_name in
+  let local_value =
+    (String.concat Filename.path_sep (String.words value)) in
+  let new_value =
+    if local_value="" then current_value else
+    if current_value="" then local_value else
+    String.concat Filename.path_sep [local_value; current_value] in
+  Printf.sprintf "%s=%s" caml_ld_library_path_name new_value
+
+let caml_ld_library_path =
+  make_with_exporter
+    export_caml_ld_library_path
+    ("ld_library_path",
+      "List of paths to lookup for loading dynamic libraries")
 
 let compare_programs = make ("compare_programs",
   "Set to \"false\" to disable program comparison")

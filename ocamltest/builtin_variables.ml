@@ -15,8 +15,6 @@
 
 (* Definition of variables used by built-in actions *)
 
-open Ocamltest_stdlib
-
 (* The variables are listed in alphabetical order *)
 
 (*
@@ -31,24 +29,6 @@ let arguments = make ("arguments",
 
 let files = make ("files",
   "Files used by the tests")
-
-let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
-
-let export_ld_library_path value =
-  let current_value = Sys.safe_getenv caml_ld_library_path_name in
-  let local_value =
-    (String.concat Filename.path_sep (String.words value)) in
-  let new_value =
-    if local_value="" then current_value else
-    if current_value="" then local_value else
-    String.concat Filename.path_sep [local_value; current_value] in
-  Printf.sprintf "%s=%s" caml_ld_library_path_name new_value
-
-let ld_library_path =
-  make_with_exporter
-    export_ld_library_path
-    ("ld_library_path",
-      "List of paths to lookup for loading dynamic libraries")
 
 let ocamltest_response = make ("ocamltest_response",
   "File used by hooks to send back information.")

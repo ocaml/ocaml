@@ -21,8 +21,6 @@ val arguments : Variables.t
 
 val files : Variables.t
 
-val ld_library_path : Variables.t
-
 val ocamltest_response : Variables.t
 
 val ocamltest_log : Variables.t

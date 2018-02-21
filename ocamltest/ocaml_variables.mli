@@ -21,6 +21,8 @@ val all_modules : Variables.t
 
 val c_preprocessor : Variables.t
 
+val caml_ld_library_path : Variables.t
+
 val compare_programs : Variables.t
 
 val compiler_directory_suffix : Variables.t

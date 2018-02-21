@@ -31,7 +31,7 @@ let make_library_modifier library directory =
 [
   Append (Ocaml_variables.directories, (wrap directory));
   Append (Ocaml_variables.libraries, (wrap library));
-  Append (Builtin_variables.ld_library_path, (wrap directory));
+  Append (Ocaml_variables.caml_ld_library_path, (wrap directory));
 ]
 
 let compiler_subdir subdir =
