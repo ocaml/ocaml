@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Definition of environment variabless *)
+(* Definition of environment variables *)
 
 type t = {
   variable_name : string;
