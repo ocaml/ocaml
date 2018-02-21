@@ -81,13 +81,7 @@ let get_program_file backend env =
 
 let compile_program ocamlsrcdir compiler program_variable log env =
   let backend = compiler.Ocaml_compilers.backend in
-  let (env, program_file) =
-    match Environments.lookup program_variable env with
-      | None ->
-        let p = get_program_file backend env in
-        let env' = Environments.add program_variable p env in
-        (env', p)
-      | Some p -> (env, p) in
+  let program_file = Environments.safe_lookup program_variable env in
   let all_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let modules =
@@ -203,6 +197,7 @@ let find_source_modules log env =
     env
 
 let setup_compiler_build_env compiler log env =
+  let backend = compiler.Ocaml_compilers.backend in
   let source_directory = Actions_helpers.test_source_directory env in
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
@@ -242,9 +237,36 @@ let setup_compiler_build_env compiler log env =
         (env', file)) in
   if Sys.file_exists compiler_output_file then
     Sys.remove compiler_output_file;
-  let newenv =
+  let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  Actions_helpers.setup_build_env false source_modules log newenv
+  let env =
+    if compiler.Ocaml_compilers.is_toplevel then env
+    else begin
+      let (prog_var, output_var) =
+        if compiler.Ocaml_compilers.is_native
+        then (Builtin_variables.program2, None)
+        else (Builtin_variables.program, Some Builtin_variables.output)
+      in
+      let (auxenv, program_file) = match Environments.lookup prog_var env with
+        | None ->
+          let p = get_program_file backend env in
+          let env' = Environments.add prog_var p env in
+          (env', p)
+        | Some p -> (env, p)
+      in
+      (match output_var with
+        | None -> auxenv
+        | Some outputvar ->
+          if Environments.is_variable_defined outputvar auxenv
+          then auxenv
+          else begin
+            let output_file = program_file ^ ".output" in
+            Environments.add outputvar output_file auxenv
+          end
+      )
+    end
+  in
+  Actions_helpers.setup_build_env false source_modules log env
 
 let mk_compiler_env_setup name compiler =
   Actions.make name (setup_compiler_build_env compiler)
