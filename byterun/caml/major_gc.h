@@ -59,7 +59,7 @@ extern uintnat caml_fl_wsz_at_phase_change;
    since they must be available for their finalizer.
   */
 
-CAMLextern char *caml_heap_start;
+extern char *caml_heap_start;
 extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
 

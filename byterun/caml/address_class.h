@@ -68,7 +68,7 @@ int caml_page_table_lookup(void * addr);
 #define Pagetable2_size (1 << Pagetable2_log)
 #define Pagetable1_log (Page_log + Pagetable2_log)
 #define Pagetable1_size (1 << (32 - Pagetable1_log))
-CAMLextern unsigned char * caml_page_table[Pagetable1_size];
+extern unsigned char * caml_page_table[Pagetable1_size];
 
 #define Pagetable_index1(a) (((uintnat)(a)) >> Pagetable1_log)
 #define Pagetable_index2(a) \

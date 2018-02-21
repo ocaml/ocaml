@@ -55,7 +55,7 @@ value caml_alloc_custom(struct custom_operations * ops,
 
 void caml_register_custom_operations(struct custom_operations * ops);
 
-CAMLextern int caml_compare_unordered;
+extern int caml_compare_unordered;
   /* Used by custom comparison to report unordered NaN-like cases. */
 
 #ifdef CAML_INTERNALS

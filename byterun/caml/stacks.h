@@ -29,7 +29,7 @@ CAMLextern value * caml_stack_high;
 CAMLextern value * caml_stack_threshold;
 CAMLextern value * caml_extern_sp;
 CAMLextern value * caml_trapsp;
-CAMLextern value * caml_trap_barrier;
+extern value * caml_trap_barrier;
 
 #define Trap_pc(tp) (((code_t *)(tp))[0])
 #define Trap_link(tp) (((value **)(tp))[1])
