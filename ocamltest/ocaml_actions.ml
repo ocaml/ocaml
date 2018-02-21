@@ -604,6 +604,7 @@ let config_variables _log env = Environments.add_bindings
       Ocamltest_config.ocamlc_default_flags;
     Ocaml_variables.ocamlopt_default_flags,
       Ocamltest_config.ocamlopt_default_flags;
+    Ocaml_variables.ocamlrunparam, Sys.safe_getenv "OCAMLRUNPARAM";
     Ocaml_variables.ocamlsrcdir, Ocaml_directories.srcdir();
     Ocaml_variables.os_type, Sys.os_type;
   ] env

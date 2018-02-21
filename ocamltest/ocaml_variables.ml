@@ -116,6 +116,15 @@ let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
 let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
   "Expected exit status of ocamlopt.opt")
 
+let export_ocamlrunparam value =
+  Printf.sprintf "%s=%s" "OCAMLRUNPARAM" value
+
+let ocamlrunparam =
+  make_with_exporter
+    export_ocamlrunparam
+    ("ocamlrunparam",
+      "Equivalent of OCAMLRUNPARAM")
+
 let ocamlsrcdir = make ("ocamlsrcdir",
   "Where OCaml sources are")
 
@@ -148,5 +157,6 @@ let _ = List.iter register_variable
     ocamlnat_exit_status;
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
+    ocamlrunparam;
     os_type;
   ]
