@@ -20,6 +20,8 @@ type t = {
   flags : string;
   directory : string;
   backend : Ocaml_backends.t;
+  is_toplevel : bool;
+  is_native : bool;
   exit_status_variabe : Variables.t;
   reference_variable : Variables.t;
   output_variable : Variables.t

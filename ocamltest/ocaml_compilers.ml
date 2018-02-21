@@ -22,6 +22,8 @@ type t = {
   flags : string;
   directory : string;
   backend : Ocaml_backends.t;
+  is_toplevel : bool;
+  is_native : bool;
   exit_status_variabe : Variables.t;
   reference_variable : Variables.t;
   output_variable : Variables.t
@@ -35,6 +37,8 @@ let ocamlc_byte =
   flags = "";
   directory = "ocamlc.byte";
   backend = Ocaml_backends.Bytecode;
+  is_toplevel = false;
+  is_native = false;
   exit_status_variabe = Ocaml_variables.ocamlc_byte_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
@@ -46,6 +50,8 @@ let ocamlc_opt =
   flags = "";
   directory = "ocamlc.opt";
   backend = Ocaml_backends.Bytecode;
+  is_toplevel = false;
+  is_native = true;
   exit_status_variabe = Ocaml_variables.ocamlc_opt_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
@@ -59,6 +65,8 @@ let ocamlopt_byte =
   flags = "";
   directory = "ocamlopt.byte";
   backend = Ocaml_backends.Native;
+  is_toplevel = false;
+  is_native = false;
   exit_status_variabe = Ocaml_variables.ocamlopt_byte_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
@@ -70,6 +78,8 @@ let ocamlopt_opt =
   flags = "";
   directory = "ocamlopt.opt";
   backend = Ocaml_backends.Native;
+  is_toplevel = false;
+  is_native = true;
   exit_status_variabe = Ocaml_variables.ocamlopt_opt_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
@@ -82,6 +92,8 @@ let ocaml = {
   flags = "";
   directory = "ocaml";
   backend = Ocaml_backends.Bytecode;
+  is_toplevel = true;
+  is_native = false;
   exit_status_variabe = Ocaml_variables.ocaml_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
@@ -92,6 +104,8 @@ let ocamlnat = {
   flags = "-S"; (* Keep intermediate assembly files *)
   directory = "ocamlnat";
   backend = Ocaml_backends.Native;
+  is_toplevel = true;
+  is_native = true;
   exit_status_variabe = Ocaml_variables.ocamlnat_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
