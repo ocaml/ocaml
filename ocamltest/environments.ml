@@ -27,10 +27,6 @@ let to_bindings env =
   let f variable value lst = (variable, value) :: lst in
   VariableMap.fold f env []
 
-let string_of_binding variable value =
-  let name = (Variables.name_of_variable variable) in
-  Printf.sprintf "%s=%s" name value
-
 let expand env value =
   let bindings = to_bindings env in
   let f (variable, value) = ((Variables.name_of_variable variable), value) in
@@ -39,11 +35,12 @@ let expand env value =
   let b = Buffer.create 100 in
   try Buffer.add_substitute b subst value; Buffer.contents b with _ -> value
 
-let to_system_env ?(f= string_of_binding) env =
+let to_system_env env =
   let system_env = Array.make (VariableMap.cardinal env) "" in
   let i = ref 0 in
   let store variable value =
-    system_env.(!i) <- f variable (expand env value);
+    system_env.(!i) <-
+      Variables.string_of_binding variable (expand env value);
     incr i in
   VariableMap.iter store env;
   system_env

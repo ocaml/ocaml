@@ -21,9 +21,7 @@ val empty : t
 
 val from_bindings : (Variables.t * string) list -> t
 val to_bindings : t -> (Variables.t * string) list
-val string_of_binding : Variables.t -> string -> string
-val to_system_env :
-  ?f : (Variables.t -> string -> string) -> t -> string array
+val to_system_env : t -> string array
 
 val lookup : Variables.t -> t -> string option
 val lookup_nonempty : Variables.t -> t -> string option

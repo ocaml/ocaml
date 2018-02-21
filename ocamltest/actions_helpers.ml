@@ -119,20 +119,6 @@ let run_cmd
     Run_command.log = log
   }
 
-let caml_ld_library_path = "CAML_LD_LIBRARY_PATH"
-
-let string_of_binding variable value =
-  if variable=Builtin_variables.ld_library_path then begin
-    let current_value = Sys.safe_getenv caml_ld_library_path in
-    let local_value =
-      (String.concat Filename.path_sep (String.words value)) in
-    let new_value =
-      if local_value="" then current_value else
-      if current_value="" then local_value else
-      String.concat Filename.path_sep [local_value; current_value] in
-    Printf.sprintf "%s=%s" caml_ld_library_path new_value
-  end else Environments.string_of_binding variable value
-
 let run
     (log_message : string)
     (redirect_output : bool)
@@ -167,7 +153,7 @@ let run
         Environments.add_bindings bindings env
       end else env in
     let systemenv =
-      Environments.to_system_env ~f:string_of_binding execution_env in
+      Environments.to_system_env execution_env in
     match run_cmd ~environment:systemenv log execution_env commandline with
       | 0 ->
         let newenv =
@@ -220,7 +206,7 @@ let run_hook hook_name log input_env =
   let hookenv = Environments.add
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
-    Environments.to_system_env ~f:string_of_binding hookenv in
+    Environments.to_system_env hookenv in
   let open Run_command in
   let settings = {
     progname = "sh";
