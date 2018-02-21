@@ -69,7 +69,7 @@ and expression =
 and exp_extra =
   | Texp_constraint of core_type
   | Texp_coerce of core_type option * core_type
-  | Texp_open of override_flag * Longident.t loc * Env.t
+  | Texp_open of open_description
   | Texp_poly of core_type option
   | Texp_newtype of string
 
@@ -153,7 +153,7 @@ and class_expr_desc =
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
     (* Visible instance variables, methods and concrete methods *)
-  | Tcl_open of override_flag * Longident.t loc * Env.t * class_expr
+  | Tcl_open of open_description * class_expr
 
 and class_structure =
   {
@@ -334,6 +334,7 @@ and open_description =
      open_expr: module_expr;
      open_override: override_flag;
      open_loc: Location.t;
+     open_env: Env.t;
      open_attributes: attribute list;
     }
 
@@ -482,7 +483,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
-  | Tcty_open of override_flag * Longident.t loc * Env.t * class_type
+  | Tcty_open of open_description * class_type
 
 and class_signature = {
     csig_self: core_type;

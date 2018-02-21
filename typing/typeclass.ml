@@ -553,12 +553,13 @@ and class_type_aux env scty =
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
 
-  | Pcty_open (ovf, lid, e) ->
-      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc;
-                pmod_attributes=[]} in
-      let (_tme, newenv) = !Typecore.type_open ovf env scty.pcty_loc me in
+  | Pcty_open (ovf, me, e) ->
+      let (tme, newenv) = !Typecore.type_open ovf env scty.pcty_loc me in
       let clty = class_type newenv e in
-      cltyp (Tcty_open (ovf, lid, newenv, clty)) clty.cltyp_type
+      let od = {
+        open_expr=tme; open_override=ovf; open_loc=scty.pcty_loc;
+        open_env=newenv; open_attributes=scty.pcty_attributes} in
+      cltyp (Tcty_open (od, clty)) clty.cltyp_type
 
   | Pcty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
@@ -1226,13 +1227,12 @@ and class_expr_aux cl_num val_env met_env scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
-  | Pcl_open (ovf, lid, e) ->
+  | Pcl_open (ovf, me, e) ->
       let used_slot = ref false in
-      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc; pmod_attributes=[]} in
       let (_, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc me in
-      let (_, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
+      let (tme, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
       let cl = class_expr cl_num new_val_env new_met_env e in
-      rc {cl_desc = Tcl_open (ovf, lid, new_val_env, cl);
+      rc {cl_desc = Tcl_open (ovf, tme, new_val_env, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
           cl_env = val_env;

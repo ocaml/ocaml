@@ -2244,7 +2244,8 @@ struct
           Use.(inspect (join ty (class_expr env ce)))
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
-      | Tcl_open (_, _, _, ce) ->
+      | Tcl_open (_, ce) ->
+          (* TODO DEP *)
           class_expr env ce
   and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     fun env { Typedtree.c_lhs; c_guard; c_rhs } ~scrutinee:ty ->
@@ -2344,7 +2345,7 @@ struct
             Use.join ty (class_expr env ce)
         | Tcl_constraint (ce, _, _, _, _) ->
             class_expr env ce
-        | Tcl_open (_, _, _, ce) ->
+        | Tcl_open (_, ce) ->
             class_expr env ce
     in
     match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
@@ -3723,13 +3724,14 @@ and type_expect_
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (ovf, lid, e) ->
-      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc;
-                pmod_attributes=[]} in
-      let (_tme, newenv) = !type_open ovf env sexp.pexp_loc me in
+  | Pexp_open (ovf, me, e) ->
+      let (tme, newenv) = !type_open ovf env sexp.pexp_loc me in
       let exp = type_expect newenv e ty_expected_explained in
+      let od = { open_expr=tme; open_override=ovf;
+                 open_loc=loc; open_env=newenv; (*TODO*)
+                 open_attributes=sexp.pexp_attributes } in
       { exp with
-        exp_extra = (Texp_open (ovf, lid, newenv), loc,
+        exp_extra = (Texp_open od, loc,
                      sexp.pexp_attributes) ::
                       exp.exp_extra;
       }

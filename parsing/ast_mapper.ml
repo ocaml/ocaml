@@ -195,8 +195,8 @@ module CT = struct
     | Pcty_arrow (lab, t, ct) ->
         arrow ~loc ~attrs lab (sub.typ sub t) (sub.class_type sub ct)
     | Pcty_extension x -> extension ~loc ~attrs (sub.extension sub x)
-    | Pcty_open (ovf, lid, ct) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_type sub ct)
+    | Pcty_open (ovf, me, ct) ->
+        open_ ~loc ~attrs ovf (sub.module_expr sub me) (sub.class_type sub ct)
 
   let map_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs}
     =
@@ -394,8 +394,8 @@ module E = struct
     | Pexp_newtype (s, e) ->
         newtype ~loc ~attrs (map_loc sub s) (sub.expr sub e)
     | Pexp_pack me -> pack ~loc ~attrs (sub.module_expr sub me)
-    | Pexp_open (ovf, lid, e) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.expr sub e)
+    | Pexp_open (ovf, me, e) ->
+        open_ ~loc ~attrs ovf (sub.module_expr sub me) (sub.expr sub e)
     | Pexp_extension x -> extension ~loc ~attrs (sub.extension sub x)
     | Pexp_unreachable -> unreachable ~loc ~attrs ()
 end
@@ -458,8 +458,8 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         constraint_ ~loc ~attrs (sub.class_expr sub ce) (sub.class_type sub ct)
     | Pcl_extension x -> extension ~loc ~attrs (sub.extension sub x)
-    | Pcl_open (ovf, lid, ce) ->
-        open_ ~loc ~attrs ovf (map_loc sub lid) (sub.class_expr sub ce)
+    | Pcl_open (ovf, me, ce) ->
+        open_ ~loc ~attrs ovf (sub.module_expr sub me) (sub.class_expr sub ce)
 
   let map_kind sub = function
     | Cfk_concrete (o, e) -> Cfk_concrete (o, sub.expr sub e)

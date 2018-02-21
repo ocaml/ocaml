@@ -329,8 +329,8 @@ let exp_extra sub (extra, loc, attrs) sexp =
                      sub.typ sub cty2)
     | Texp_constraint cty ->
         Pexp_constraint (sexp, sub.typ sub cty)
-    | Texp_open (ovf, lid, _) ->
-        Pexp_open (ovf, map_loc sub lid, sexp)
+    | Texp_open od ->
+        Pexp_open (od.open_override, sub.module_expr sub od.open_expr, sexp)
     | Texp_poly cto -> Pexp_poly (sexp, map_opt (sub.typ sub) cto)
     | Texp_newtype s -> Pexp_newtype (mkloc s loc, sexp)
   in
@@ -634,8 +634,8 @@ let class_expr sub cexpr =
     | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
         Pcl_constraint (sub.class_expr sub cl,  sub.class_type sub clty)
 
-    | Tcl_open (ovf, lid, _env, e) ->
-        Pcl_open (ovf, lid, sub.class_expr sub e)
+    | Tcl_open (od, e) ->
+        Pcl_open (od.open_override, sub.module_expr sub od.open_expr, sub.class_expr sub e)
 
     | Tcl_ident _ -> assert false
     | Tcl_constraint (_, None, _, _, _) -> assert false
@@ -651,8 +651,8 @@ let class_type sub ct =
         Pcty_constr (map_loc sub lid, List.map (sub.typ sub) list)
     | Tcty_arrow (label, ct, cl) ->
         Pcty_arrow (label, sub.typ sub ct, sub.class_type sub cl)
-    | Tcty_open (ovf, lid, _env, e) ->
-        Pcty_open (ovf, lid, sub.class_type sub e)
+    | Tcty_open (od, e) ->
+        Pcty_open (od.open_override, sub.module_expr sub od.open_expr, sub.class_type sub e)
   in
   Cty.mk ~loc ~attrs desc
 

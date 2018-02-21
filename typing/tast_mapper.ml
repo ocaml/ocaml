@@ -218,8 +218,10 @@ let expr sub x =
         Texp_constraint (sub.typ sub cty)
     | Texp_coerce (cty1, cty2) ->
         Texp_coerce (opt (sub.typ sub) cty1, sub.typ sub cty2)
-    | Texp_open (ovf, loc, env) ->
-        Texp_open (ovf, loc, sub.env sub env)
+    | Texp_open od ->
+        Texp_open {od with
+                   open_expr = sub.module_expr sub od.open_expr;
+                   open_env = sub.env sub od.open_env}
     | Texp_newtype _ as d -> d
     | Texp_poly cto -> Texp_poly (opt (sub.typ sub) cto)
   in
@@ -524,8 +526,11 @@ let class_expr sub x =
         )
     | Tcl_ident (path, lid, tyl) ->
         Tcl_ident (path, lid, List.map (sub.typ sub) tyl)
-    | Tcl_open (ovf, lid, env, e) ->
-        Tcl_open (ovf, lid, sub.env sub env, sub.class_expr sub e)
+    | Tcl_open (od, e) ->
+        Tcl_open (
+          {od with
+           open_expr = sub.module_expr sub od.open_expr;
+           open_env = sub.env sub od.open_env}, sub.class_expr sub e)
   in
   {x with cl_desc; cl_env}
 
@@ -546,8 +551,10 @@ let class_type sub x =
            sub.typ sub ct,
            sub.class_type sub cl
           )
-    | Tcty_open (ovf, lid, env, e) ->
-        Tcty_open (ovf, lid, sub.env sub env, sub.class_type sub e)
+    | Tcty_open (od, e) ->
+        Tcty_open ({od with
+                    open_expr = sub.module_expr sub od.open_expr;
+                    open_env = sub.env sub od.open_env}, sub.class_type sub e)
   in
   {x with cltyp_desc; cltyp_env}
 

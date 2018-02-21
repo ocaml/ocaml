@@ -89,8 +89,7 @@ let iterator =
     | Pexp_construct (id, _)
     | Pexp_field (_, id)
     | Pexp_setfield (_, id, _)
-    | Pexp_new id
-    | Pexp_open (_, id, _) -> simple_longident id
+    | Pexp_new id -> simple_longident id
     | Pexp_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
     | _ -> ()

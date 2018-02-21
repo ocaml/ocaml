@@ -279,9 +279,10 @@ and expression_extra i ppf x attrs =
       attributes i ppf attrs;
       option i core_type ppf cto1;
       core_type i ppf cto2;
-  | Texp_open (ovf, lid, _) ->
-      line i ppf "Texp_open %a \"%a\"\n" fmt_override_flag ovf fmt_longident lid;
+  | Texp_open od ->
+      line i ppf "Texp_open %a\n" fmt_override_flag od.open_override;
       attributes i ppf attrs;
+      module_expr i ppf od.open_expr
   | Texp_poly cto ->
       line i ppf "Texp_poly\n";
       attributes i ppf attrs;
@@ -493,9 +494,9 @@ and class_type i ppf x =
       arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
-  | Tcty_open (ovf, id, _, e) ->
-      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident id;
+  | Tcty_open (od, e) ->
+      line i ppf "Tcty_open %a\n" fmt_override_flag od.open_override;
+      module_expr i ppf od.open_expr;
       class_type i ppf e
 
 and class_signature i ppf { csig_self = ct; csig_fields = l } =
@@ -578,9 +579,9 @@ and class_expr i ppf x =
       class_expr i ppf ce;
       class_type i ppf ct
   | Tcl_constraint (ce, None, _, _, _) -> class_expr i ppf ce
-  | Tcl_open (ovf, id, _, e) ->
-      line i ppf "Tcty_open %a \"%a\"\n" fmt_override_flag ovf
-        fmt_longident id;
+  | Tcl_open (od, e) ->
+      line i ppf "Tcty_open %a \n" fmt_override_flag od.open_override;
+      module_expr i ppf od.open_expr;
       class_expr i ppf e
 
 and class_structure i ppf { cstr_self = p; cstr_fields = l } =

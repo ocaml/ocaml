@@ -186,8 +186,8 @@ module CT = struct
     | Pcty_arrow (_lab, t, ct) ->
         sub.typ sub t; sub.class_type sub ct
     | Pcty_extension x -> sub.extension sub x
-    | Pcty_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.class_type sub e
+    | Pcty_open (_ovf, me, e) ->
+        sub.module_expr sub me; sub.class_type sub e
 
   let iter_field sub {pctf_desc = desc; pctf_loc = loc; pctf_attributes = attrs}
     =
@@ -372,8 +372,8 @@ module E = struct
     | Pexp_object cls -> sub.class_structure sub cls
     | Pexp_newtype (_s, e) -> sub.expr sub e
     | Pexp_pack me -> sub.module_expr sub me
-    | Pexp_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.expr sub e
+    | Pexp_open (_ovf, me, e) ->
+        sub.module_expr sub me; sub.expr sub e
     | Pexp_extension x -> sub.extension sub x
     | Pexp_unreachable -> ()
 end
@@ -434,8 +434,8 @@ module CE = struct
     | Pcl_constraint (ce, ct) ->
         sub.class_expr sub ce; sub.class_type sub ct
     | Pcl_extension x -> sub.extension sub x
-    | Pcl_open (_ovf, lid, e) ->
-        iter_loc sub lid; sub.class_expr sub e
+    | Pcl_open (_ovf, me, e) ->
+        sub.module_expr sub me; sub.class_expr sub e
 
   let iter_kind sub = function
     | Cfk_concrete (_o, e) -> sub.expr sub e

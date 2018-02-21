@@ -160,32 +160,6 @@ let add_type_extension bv te =
   add bv te.ptyext_path;
   List.iter (add_extension_constructor bv) te.ptyext_constructors
 
-let rec add_class_type bv cty =
-  match cty.pcty_desc with
-    Pcty_constr(l, tyl) ->
-      add bv l; List.iter (add_type bv) tyl
-  | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
-      add_type bv ty;
-      List.iter (add_class_type_field bv) fieldl
-  | Pcty_arrow(_, ty1, cty2) ->
-      add_type bv ty1; add_class_type bv cty2
-  | Pcty_extension e -> handle_extension e
-  | Pcty_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_class_type bv e
-
-and add_class_type_field bv pctf =
-  match pctf.pctf_desc with
-    Pctf_inherit cty -> add_class_type bv cty
-  | Pctf_val(_, _, _, ty) -> add_type bv ty
-  | Pctf_method(_, _, _, ty) -> add_type bv ty
-  | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
-  | Pctf_attribute _ -> ()
-  | Pctf_extension e -> handle_extension e
-
-let add_class_description bv infos =
-  add_class_type bv infos.pci_expr
-
-let add_class_type_declaration = add_class_description
 
 let pattern_bv = ref StringMap.empty
 
@@ -268,7 +242,10 @@ let rec add_expr bv exp =
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module_expr bv m
   | Pexp_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_expr bv e
+      let Node(s, m') = add_module_binding bv m in
+      add_names s;
+      let bv = StringMap.fold StringMap.add m' bv in
+      add_expr bv e
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
                               "extension_constructor"); _ },
                      PStr [item]) as e) ->
@@ -383,7 +360,7 @@ and add_sig_item (bv, m) item =
   | Psig_class cdl ->
       List.iter (add_class_description bv) cdl; (bv, m)
   | Psig_class_type cdtl ->
-      List.iter (add_class_type_declaration bv) cdtl; (bv, m)
+      List.iter (add_class_type_declaration () bv) cdtl; (bv, m)
   | Psig_attribute _ -> (bv, m)
   | Psig_extension (e, _) ->
       handle_extension e;
@@ -411,6 +388,36 @@ and add_module_expr bv modl =
       add_expr bv e
   | Pmod_extension e ->
       handle_extension e
+
+and add_class_type bv cty =
+  match cty.pcty_desc with
+    Pcty_constr(l, tyl) ->
+      add bv l; List.iter (add_type bv) tyl
+  | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
+      add_type bv ty;
+      List.iter (add_class_type_field bv) fieldl
+  | Pcty_arrow(_, ty1, cty2) ->
+      add_type bv ty1; add_class_type bv cty2
+  | Pcty_extension e -> handle_extension e
+  | Pcty_open (_ovf, m, e) ->
+      let Node(s, m') = add_module_binding bv m in
+      add_names s;
+      let bv = StringMap.fold StringMap.add m' bv in
+      add_class_type bv e
+
+and add_class_type_field bv pctf =
+  match pctf.pctf_desc with
+    Pctf_inherit cty -> add_class_type bv cty
+  | Pctf_val(_, _, _, ty) -> add_type bv ty
+  | Pctf_method(_, _, _, ty) -> add_type bv ty
+  | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pctf_attribute _ -> ()
+  | Pctf_extension e -> handle_extension e
+
+and add_class_description bv infos =
+  add_class_type bv infos.pci_expr
+
+and add_class_type_declaration () = add_class_description
 
 and add_structure bv item_list =
   let (bv, m) = add_structure_binding bv item_list in
@@ -462,7 +469,7 @@ and add_struct_item (bv, m) item : _ StringMap.t * _ StringMap.t =
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; (bv, m)
   | Pstr_class_type cdtl ->
-      List.iter (add_class_type_declaration bv) cdtl; (bv, m)
+      List.iter (add_class_type_declaration () bv) cdtl; (bv, m)
   | Pstr_include incl ->
       let Node (s, m') as n = add_module_binding bv incl.pincl_mod in
       if !Clflags.transparent_modules then
@@ -508,7 +515,10 @@ and add_class_expr bv ce =
       add_class_expr bv ce; add_class_type bv ct
   | Pcl_extension e -> handle_extension e
   | Pcl_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_class_expr bv e
+      let Node(s, m') = add_module_binding bv m in
+      add_names s;
+      let bv = StringMap.fold StringMap.add m' bv in
+      add_class_expr bv e
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with
