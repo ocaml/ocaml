@@ -77,7 +77,7 @@ endif
 
 YACCFLAGS=-v --strict
 CAMLLEX=$(CAMLRUN) boot/ocamllex
-CAMLDEP=$(CAMLRUN) tools/ocamldep
+CAMLDEP=$(CAMLRUN) boot/ocamlc -depend
 DEPFLAGS=$(INCLUDES)
 
 OCAMLDOC_OPT=$(WITH_OCAMLDOC:=.opt)
