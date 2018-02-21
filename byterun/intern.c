@@ -777,7 +777,7 @@ CAMLprim value caml_input_value_to_outside_heap(value vchan)
   CAMLreturn (res);
 }
 
-CAMLexport value caml_input_val_from_string(value str, intnat ofs)
+CAMLexport value caml_input_val_from_bytes(value str, intnat ofs)
 {
   CAMLparam1 (str);
   CAMLlocal1 (obj);
@@ -801,7 +801,12 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 
 CAMLprim value caml_input_value_from_string(value str, value ofs)
 {
-  return caml_input_val_from_string(str, Long_val(ofs));
+  return caml_input_val_from_bytes(str, Long_val(ofs));
+}
+
+CAMLprim value caml_input_value_from_bytes(value str, value ofs)
+{
+  return caml_input_val_from_bytes(str, Long_val(ofs));
 }
 
 static value input_val_from_block(struct marshal_header * h)
