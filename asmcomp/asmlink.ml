@@ -422,4 +422,6 @@ let reset () =
   implementations_defined := [];
   cmx_required := [];
   interfaces := [];
-  implementations := []
+  implementations := [];
+  lib_ccobjs := [];
+  lib_ccopts := []

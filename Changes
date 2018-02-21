@@ -215,6 +215,9 @@ Working version
 - GPR#1619: expect_test: print all the exceptions, even the unexpected ones
   (Thomas Refis, review by Jérémie Dimino)
 
+- MPR#7738, GPR#1624: Asmlink.reset also resets lib_ccobjs/ccopts
+  (Cedric Cellier, review by Gabriel Scherer)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
