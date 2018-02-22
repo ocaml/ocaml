@@ -69,10 +69,14 @@ typedef char * addr;
 
 /* Export control (to mark primitives and to handle Windows DLL) */
 
-#define CAMLexport
-#define CAMLprim
+#if __GNUC__ >= 4 && !defined(_WIN32) && !defined(__CYGWIN__)
+  #define CAMLexport __attribute__ ((visibility ("default")))
+#else
+  #define CAMLexport
+#endif
+#define CAMLprim CAMLexport
 #define CAMLextern extern
-#define CAMLdata CAMLextern
+#define CAMLdata CAMLextern CAMLexport
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
