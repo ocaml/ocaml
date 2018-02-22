@@ -16,8 +16,6 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-let rename_var var =
-  Mutable_variable.create (Variable.name var)
   (* Variable.rename var *)
   (*   ~current_compilation_unit:(Compilation_unit.get_current_exn ()) *)
 
@@ -117,7 +115,7 @@ let eliminate_ref_of_expr flam =
   else
     let convertible_variables =
       Variable.Map.mapi (fun v size ->
-          Array.init size (fun _ -> rename_var v))
+          Array.init size (fun _ -> Mutable_variable.create_from_variable v))
         convertible_variables
     in
     let convertible_variable v = Variable.Map.mem v convertible_variables in

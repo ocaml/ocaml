@@ -1440,8 +1440,9 @@ middle_end/flambda_utils.cmi : middle_end/base_types/variable.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
     bytecomp/switch.cmi middle_end/base_types/static_exception.cmi \
     middle_end/base_types/set_of_closures_id.cmi middle_end/projection.cmi \
-    middle_end/parameter.cmi middle_end/flambda.cmi \
-    middle_end/base_types/closure_id.cmi middle_end/backend_intf.cmi
+    middle_end/parameter.cmi middle_end/internal_variable_names.cmi \
+    middle_end/flambda.cmi middle_end/base_types/closure_id.cmi \
+    middle_end/backend_intf.cmi
 middle_end/freshening.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/symbol.cmi \
@@ -1676,7 +1677,7 @@ middle_end/lift_code.cmx : middle_end/base_types/variable.cmx \
     middle_end/flambda.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/lift_code.cmi
 middle_end/lift_code.cmi : middle_end/base_types/variable.cmi \
-    middle_end/flambda.cmi
+    middle_end/internal_variable_names.cmi middle_end/flambda.cmi
 middle_end/lift_constants.cmo : middle_end/base_types/variable.cmi \
     middle_end/base_types/var_within_closure.cmi \
     middle_end/base_types/tag.cmi middle_end/base_types/symbol.cmi \
@@ -1993,8 +1994,10 @@ middle_end/base_types/mutable_variable.cmo : \
 middle_end/base_types/mutable_variable.cmx : \
     middle_end/base_types/variable.cmx \
     middle_end/base_types/mutable_variable.cmi
-middle_end/base_types/mutable_variable.cmi : utils/identifiable.cmi \
-    typing/ident.cmi middle_end/base_types/compilation_unit.cmi
+middle_end/base_types/mutable_variable.cmi : \
+    middle_end/base_types/variable.cmi middle_end/internal_variable_names.cmi \
+    utils/identifiable.cmi typing/ident.cmi \
+    middle_end/base_types/compilation_unit.cmi
 middle_end/base_types/set_of_closures_id.cmo : utils/identifiable.cmi \
     middle_end/base_types/id_types.cmi \
     middle_end/base_types/compilation_unit.cmi \
@@ -2043,13 +2046,16 @@ middle_end/base_types/var_within_closure.cmx : \
     middle_end/base_types/var_within_closure.cmi
 middle_end/base_types/var_within_closure.cmi : \
     middle_end/base_types/closure_element.cmi
-middle_end/base_types/variable.cmo : utils/misc.cmi utils/identifiable.cmi \
+middle_end/base_types/variable.cmo : utils/misc.cmi \
+    middle_end/internal_variable_names.cmi utils/identifiable.cmi \
     typing/ident.cmi middle_end/base_types/compilation_unit.cmi \
     middle_end/base_types/variable.cmi
-middle_end/base_types/variable.cmx : utils/misc.cmx utils/identifiable.cmx \
+middle_end/base_types/variable.cmx : utils/misc.cmx \
+    middle_end/internal_variable_names.cmx utils/identifiable.cmx \
     typing/ident.cmx middle_end/base_types/compilation_unit.cmx \
     middle_end/base_types/variable.cmi
-middle_end/base_types/variable.cmi : utils/identifiable.cmi typing/ident.cmi \
+middle_end/base_types/variable.cmi : middle_end/internal_variable_names.cmi \
+    utils/identifiable.cmi typing/ident.cmi \
     middle_end/base_types/compilation_unit.cmi
 asmcomp/debug/available_regs.cmo : asmcomp/debug/reg_with_debug_info.cmi \
     asmcomp/debug/reg_availability_set.cmi asmcomp/reg.cmi asmcomp/proc.cmi \

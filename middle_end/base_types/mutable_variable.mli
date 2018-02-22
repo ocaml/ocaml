@@ -20,9 +20,15 @@ include Identifiable.S
 
 val create
    : ?current_compilation_unit:Compilation_unit.t
-  -> string
+  -> Internal_variable_names.t
   -> t
+
 val create_with_same_name_as_ident : Ident.t -> t
+
+val create_from_variable
+  : ?current_compilation_unit:Compilation_unit.t
+  -> Variable.t
+  -> t
 
 val rename
    : ?current_compilation_unit:Compilation_unit.t

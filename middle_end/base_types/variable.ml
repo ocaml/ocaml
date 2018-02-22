@@ -61,7 +61,7 @@ end)
 
 let previous_name_stamp = ref (-1)
 
-let create ?current_compilation_unit name =
+let create_with_name_string ?current_compilation_unit name =
   let compilation_unit =
     match current_compilation_unit with
     | Some compilation_unit -> compilation_unit
@@ -76,16 +76,15 @@ let create ?current_compilation_unit name =
     name_stamp;
   }
 
+let create ?current_compilation_unit name =
+  let name = (name : Internal_variable_names.t :> string) in
+  create_with_name_string ?current_compilation_unit name
+
 let create_with_same_name_as_ident ident =
-  create (Ident.name ident)
+  create_with_name_string (Ident.name ident)
 
 let rename ?current_compilation_unit t =
-  let current_compilation_unit =
-    match current_compilation_unit with
-    | Some compilation_unit -> compilation_unit
-    | None -> Compilation_unit.get_current_exn ()
-  in
-  create ~current_compilation_unit t.name
+  create_with_name_string ?current_compilation_unit t.name
 
 let in_compilation_unit t cu =
   Compilation_unit.equal cu t.compilation_unit

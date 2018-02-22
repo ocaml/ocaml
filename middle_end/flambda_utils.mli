@@ -88,7 +88,12 @@ val bind
   -> Flambda.t
 
 val name_expr
-    : name:string
+    : name:Internal_variable_names.t
+   -> Flambda.named
+   -> Flambda.t
+
+val name_expr_from_var
+    : var:Variable.t
    -> Flambda.named
    -> Flambda.t
 

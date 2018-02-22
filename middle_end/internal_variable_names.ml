@@ -14,6 +14,8 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+type t = string
+
 let anon_fn = "anon_fn"
 let apply_arg = "apply_arg"
 let apply_funct = "apply_funct"

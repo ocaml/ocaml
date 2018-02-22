@@ -24,6 +24,14 @@ let name_expr ~name (named : Flambda.named) : Flambda.t =
   in
   Flambda.create_let var named (Var var)
 
+let name_expr_from_var ~var (named : Flambda.named) : Flambda.t =
+  let var =
+    Variable.rename
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      var
+  in
+  Flambda.create_let var named (Var var)
+
 let find_declaration cf ({ funs } : Flambda.function_declarations) =
   Variable.Map.find (Closure_id.unwrap cf) funs
 

@@ -22,6 +22,7 @@ module Function_decl = Function_decls.Function_decl
 module Names = Internal_variable_names
 
 let name_expr = Flambda_utils.name_expr
+let name_expr_from_var = Flambda_utils.name_expr_from_var
 
 type t = {
   current_unit_id : Ident.t;
@@ -100,14 +101,14 @@ let tupled_function_call_stub original_params unboxed_version
     ~specialise:Default_specialise ~is_a_functor:false
 
 let register_const t (constant:Flambda.constant_defining_value) name
-      : Flambda.constant_defining_value_block_field * string =
+    : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
   let var = Variable.create name in
   let symbol = Symbol.of_variable var in
   t.declared_symbols <- (symbol, constant) :: t.declared_symbols;
   Symbol symbol, name
 
 let rec declare_const t (const : Lambda.structured_constant)
-      : Flambda.constant_defining_value_block_field * string =
+    : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
   match const with
   | Const_base (Const_int c) -> (Const (Int c), Names.const_int)
   | Const_base (Const_char c) -> (Const (Char c), Names.const_char)
@@ -148,7 +149,7 @@ let rec declare_const t (const : Lambda.structured_constant)
     register_const t const Names.const_block
 
 let close_const t (const : Lambda.structured_constant)
-      : Flambda.named * string =
+      : Flambda.named * Internal_variable_names.t =
   match declare_const t const with
   | Const c, name ->
     Const c, name
@@ -624,8 +625,8 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
       }
     in
     Expr (Flambda.create_let set_of_closures_var set_of_closures
-      (name_expr (Project_closure (project_closure))
-        ~name:(Variable.name let_bound_var)))
+      (name_expr_from_var (Project_closure (project_closure))
+        ~var:let_bound_var))
   | lam -> Expr (close t env lam)
 
 let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
