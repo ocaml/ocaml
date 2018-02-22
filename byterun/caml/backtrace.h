@@ -103,7 +103,7 @@ CAMLdata value caml_backtrace_last_exn;
  * It might be called before GC initialization, so it shouldn't do OCaml
  * allocation.
  */
-CAMLprim value caml_record_backtrace(value vflag);
+extern value caml_record_backtrace(value vflag);
 
 
 #ifndef NATIVE_CODE
@@ -129,7 +129,7 @@ extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
 void caml_print_exception_backtrace(void);
 
 void caml_init_backtrace(void);
-CAMLexport void caml_init_debug_info(void);
+void caml_init_debug_info(void);
 
 #endif /* CAML_INTERNALS */
 
