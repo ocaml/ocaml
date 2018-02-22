@@ -465,14 +465,14 @@ case "$ccfamily" in
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
     common_cflags="-std=gnu99 -O";
-    internal_cflags="$gcc_warnings";;
+    internal_cflags="$gcc_warnings -fvisibility=hidden";;
   gcc-4-*)
     common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
 -fno-builtin-memcmp";
-    internal_cflags="$gcc_warnings";;
+    internal_cflags="$gcc_warnings -fvisibility=hidden";;
   gcc-*)
     common_cflags="-O2 -fno-strict-aliasing -fwrapv";
-    internal_cflags="$gcc_warnings";;
+    internal_cflags="$gcc_warnings -fvisibility=hidden";;
   *)
     common_cflags="-O";;
 esac
