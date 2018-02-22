@@ -29,9 +29,9 @@
 #include "caml/misc.h"
 #include "caml/osdeps.h"
 
-int caml_debugger_in_use = 0;
+CAMLexport int caml_debugger_in_use = 0;
 uintnat caml_event_count;
-int caml_debugger_fork_mode = 1; /* parent by default */
+CAMLexport int caml_debugger_fork_mode = 1; /* parent by default */
 
 #if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
@@ -43,7 +43,7 @@ void caml_debugger(enum event_kind event)
 {
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
 }
 
@@ -437,7 +437,7 @@ void caml_debugger(enum event_kind event)
   }
 }
 
-void caml_debugger_cleanup_fork(void)
+CAMLexport void caml_debugger_cleanup_fork(void)
 {
   /* We could remove all of the breakpoints, but closing the connection
    * means that they'll just be skipped anyway. */

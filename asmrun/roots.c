@@ -31,9 +31,9 @@
 
 /* Roots registered from C functions */
 
-struct caml__roots_block *caml_local_roots = NULL;
+CAMLexport struct caml__roots_block *caml_local_roots = NULL;
 
-void (*caml_scan_roots_hook) (scanning_action) = NULL;
+CAMLexport void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
 frame_descr ** caml_frame_descriptors = NULL;
@@ -435,9 +435,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
-void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                         uintnat last_retaddr, value * gc_regs,
-                         struct caml__roots_block * local_roots)
+CAMLexport void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
+                                    uintnat last_retaddr, value * gc_regs,
+                                    struct caml__roots_block * local_roots)
 {
   char * sp;
   uintnat retaddr;
@@ -509,7 +509,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   }
 }
 
-uintnat (*caml_stack_usage_hook)(void) = NULL;
+CAMLexport uintnat (*caml_stack_usage_hook)(void) = NULL;
 
 uintnat caml_stack_usage (void)
 {

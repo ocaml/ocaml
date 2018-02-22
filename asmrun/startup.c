@@ -168,7 +168,7 @@ void caml_startup(char_os **argv)
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_main(char_os **argv)
+CAMLexport void caml_main(char_os **argv)
 {
   caml_startup(argv);
 }

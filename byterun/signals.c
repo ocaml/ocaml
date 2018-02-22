@@ -46,7 +46,7 @@ CAMLexport intnat volatile caml_pending_signals[NSIG];
 
 /* Execute all pending signals */
 
-void caml_process_pending_signals(void)
+CAMLexport void caml_process_pending_signals(void)
 {
   int i;
 
@@ -68,7 +68,7 @@ void caml_process_pending_signals(void)
        in caml_garbage_collection
 */
 
-void caml_record_signal(int signal_number)
+CAMLexport void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   caml_signals_are_pending = 1;

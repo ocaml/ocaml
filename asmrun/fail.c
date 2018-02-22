@@ -57,7 +57,7 @@ CAMLnoreturn_end;
 
 char * caml_exception_pointer = NULL;
 
-void caml_raise(value v)
+CAMLexport void caml_raise(value v)
 {
   Unlock_exn();
   if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
@@ -76,12 +76,12 @@ void caml_raise(value v)
   caml_raise_exception(v);
 }
 
-void caml_raise_constant(value tag)
+CAMLexport void caml_raise_constant(value tag)
 {
   caml_raise(tag);
 }
 
-void caml_raise_with_arg(value tag, value arg)
+CAMLexport void caml_raise_with_arg(value tag, value arg)
 {
   CAMLparam2 (tag, arg);
   CAMLlocal1 (bucket);
@@ -93,7 +93,7 @@ void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
-void caml_raise_with_args(value tag, int nargs, value args[])
+CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
 {
   CAMLparam1 (tag);
   CAMLxparamN (args, nargs);
@@ -108,7 +108,7 @@ void caml_raise_with_args(value tag, int nargs, value args[])
   CAMLnoreturn;
 }
 
-void caml_raise_with_string(value tag, char const *msg)
+CAMLexport void caml_raise_with_string(value tag, char const *msg)
 {
   CAMLparam1(tag);
   value v_msg = caml_copy_string(msg);
@@ -116,57 +116,57 @@ void caml_raise_with_string(value tag, char const *msg)
   CAMLnoreturn;
 }
 
-void caml_failwith (char const *msg)
+CAMLexport void caml_failwith (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Failure, msg);
 }
 
-void caml_failwith_value (value msg)
+CAMLexport void caml_failwith_value (value msg)
 {
   caml_raise_with_arg((value) caml_exn_Failure, msg);
 }
 
-void caml_invalid_argument (char const *msg)
+CAMLexport void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }
 
-void caml_invalid_argument_value (value msg)
+CAMLexport void caml_invalid_argument_value (value msg)
 {
   caml_raise_with_arg((value) caml_exn_Invalid_argument, msg);
 }
 
-void caml_raise_out_of_memory(void)
+CAMLexport void caml_raise_out_of_memory(void)
 {
   caml_raise_constant((value) caml_exn_Out_of_memory);
 }
 
-void caml_raise_stack_overflow(void)
+CAMLexport void caml_raise_stack_overflow(void)
 {
   caml_raise_constant((value) caml_exn_Stack_overflow);
 }
 
-void caml_raise_sys_error(value msg)
+CAMLexport void caml_raise_sys_error(value msg)
 {
   caml_raise_with_arg((value) caml_exn_Sys_error, msg);
 }
 
-void caml_raise_end_of_file(void)
+CAMLexport void caml_raise_end_of_file(void)
 {
   caml_raise_constant((value) caml_exn_End_of_file);
 }
 
-void caml_raise_zero_divide(void)
+CAMLexport void caml_raise_zero_divide(void)
 {
   caml_raise_constant((value) caml_exn_Division_by_zero);
 }
 
-void caml_raise_not_found(void)
+CAMLexport void caml_raise_not_found(void)
 {
   caml_raise_constant((value) caml_exn_Not_found);
 }
 
-void caml_raise_sys_blocked_io(void)
+CAMLexport void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
 }
@@ -177,7 +177,7 @@ void caml_raise_sys_blocked_io(void)
 
 static value * caml_array_bound_error_exn = NULL;
 
-void caml_array_bound_error(void)
+CAMLexport void caml_array_bound_error(void)
 {
   if (caml_array_bound_error_exn == NULL) {
     caml_array_bound_error_exn =
