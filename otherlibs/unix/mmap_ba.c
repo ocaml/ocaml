@@ -35,7 +35,7 @@
 #define ALLOC_FUNCTION caml_unix_mapped_alloc
 #endif
 
-CAMLextern void UNMAP_FILE_FUNCTION(void * addr, uintnat len);
+void UNMAP_FILE_FUNCTION(void * addr, uintnat len);
 
 static void caml_ba_mapped_finalize(value v)
 {

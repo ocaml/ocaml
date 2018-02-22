@@ -79,22 +79,22 @@ enum {
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
 
-CAMLextern struct channel * caml_open_descriptor_in (int);
-CAMLextern struct channel * caml_open_descriptor_out (int);
-CAMLextern void caml_close_channel (struct channel *);
-CAMLextern int caml_channel_binary_mode (struct channel *);
-CAMLextern value caml_alloc_channel(struct channel *chan);
+struct channel * caml_open_descriptor_in (int);
+struct channel * caml_open_descriptor_out (int);
+void caml_close_channel (struct channel *);
+int caml_channel_binary_mode (struct channel *);
+value caml_alloc_channel(struct channel *chan);
 
-CAMLextern int caml_flush_partial (struct channel *);
-CAMLextern void caml_flush (struct channel *);
-CAMLextern void caml_putword (struct channel *, uint32_t);
-CAMLextern int caml_putblock (struct channel *, char *, intnat);
-CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
+int caml_flush_partial (struct channel *);
+void caml_flush (struct channel *);
+void caml_putword (struct channel *, uint32_t);
+int caml_putblock (struct channel *, char *, intnat);
+void caml_really_putblock (struct channel *, char *, intnat);
 
-CAMLextern unsigned char caml_refill (struct channel *);
-CAMLextern uint32_t caml_getword (struct channel *);
-CAMLextern int caml_getblock (struct channel *, char *, intnat);
-CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
+unsigned char caml_refill (struct channel *);
+uint32_t caml_getword (struct channel *);
+int caml_getblock (struct channel *, char *, intnat);
+intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* Extract a struct channel * from the heap object representing it */
 

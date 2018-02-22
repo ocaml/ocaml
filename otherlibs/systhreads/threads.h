@@ -20,8 +20,8 @@
 extern "C" {
 #endif
 
-CAMLextern void caml_enter_blocking_section (void);
-CAMLextern void caml_leave_blocking_section (void);
+void caml_enter_blocking_section (void);
+void caml_leave_blocking_section (void);
 #define caml_acquire_runtime_system caml_leave_blocking_section
 #define caml_release_runtime_system caml_enter_blocking_section
 
@@ -50,8 +50,8 @@ CAMLextern void caml_leave_blocking_section (void);
    use the runtime system (typically, a blocking I/O operation).
 */
 
-CAMLextern int caml_c_thread_register(void);
-CAMLextern int caml_c_thread_unregister(void);
+int caml_c_thread_register(void);
+int caml_c_thread_unregister(void);
 
 /* If a thread is created by C code (instead of by OCaml itself),
    it must be registered with the OCaml runtime system before

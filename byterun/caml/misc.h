@@ -100,23 +100,22 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLnoreturn_start
-CAMLextern int caml_failed_assert (char *, char *, int)
+int caml_failed_assert (char *, char *, int)
 CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
 #endif
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error (char *msg)
+void caml_fatal_error (char *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
+void caml_fatal_error_arg (char *fmt, char *arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
+void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
 CAMLnoreturn_end;
 
 /* Detection of available C built-in functions, the Clang way. */
@@ -347,7 +346,7 @@ extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
-CAMLextern int caml_read_directory(char_os * dirname, struct ext_table * contents);
+int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
 /* Deprecated aliases */
 #define caml_aligned_malloc caml_stat_alloc_aligned_noexc

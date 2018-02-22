@@ -55,7 +55,7 @@ extern char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
 extern char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
 
 /* Same, but search an executable name in the system path for executables. */
-CAMLextern char_os * caml_search_exe_in_path(const char_os * name);
+char_os * caml_search_exe_in_path(const char_os * name);
 
 /* Same, but search a shared library in the given path. */
 extern char_os * caml_search_dll_in_path(struct ext_table * path, const char_os * name);

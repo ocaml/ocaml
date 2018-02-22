@@ -29,12 +29,12 @@ intnat caml_darken_all_roots_slice (intnat);
 void caml_do_roots (scanning_action, int);
 extern uintnat caml_incremental_roots_count;
 #ifndef NATIVE_CODE
-CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
-                                     struct caml__roots_block *);
+void caml_do_local_roots (scanning_action, value *, value *,
+                          struct caml__roots_block *);
 #else
-CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                                    uintnat last_retaddr, value * gc_regs,
-                                    struct caml__roots_block * local_roots);
+void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
+                         uintnat last_retaddr, value * gc_regs,
+                         struct caml__roots_block * local_roots);
 #endif
 
 CAMLextern void (*caml_scan_roots_hook) (scanning_action);

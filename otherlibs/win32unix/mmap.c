@@ -49,8 +49,7 @@ static void caml_ba_sys_error(void);
 #endif
 
 /* Defined in [mmap_ba.c] */
-CAMLextern value
-ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim);
+value ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim);
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)

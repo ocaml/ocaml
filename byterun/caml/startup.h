@@ -21,16 +21,16 @@
 #include "mlvalues.h"
 #include "exec.h"
 
-CAMLextern void caml_main(char_os **argv);
+void caml_main(char_os **argv);
 
-CAMLextern void caml_startup_code(
-           code_t code, asize_t code_size,
-           char *data, asize_t data_size,
-           char *section_table, asize_t section_table_size,
-           int pooling,
-           char_os **argv);
+void caml_startup_code(
+  code_t code, asize_t code_size,
+  char *data, asize_t data_size,
+  char *section_table, asize_t section_table_size,
+  int pooling,
+  char_os **argv);
 
-CAMLextern value caml_startup_code_exn(
+value caml_startup_code_exn(
   code_t code, asize_t code_size,
   char *data, asize_t data_size,
   char *section_table, asize_t section_table_size,

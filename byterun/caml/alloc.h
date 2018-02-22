@@ -27,38 +27,37 @@
 extern "C" {
 #endif
 
-CAMLextern value caml_alloc (mlsize_t wosize, tag_t);
-CAMLextern value caml_alloc_small (mlsize_t wosize, tag_t);
-CAMLextern value caml_alloc_tuple (mlsize_t wosize);
-CAMLextern value caml_alloc_float_array (mlsize_t len);
-CAMLextern value caml_alloc_string (mlsize_t len);  /* len in bytes (chars) */
-CAMLextern value caml_alloc_initialized_string (mlsize_t len, const char *);
-CAMLextern value caml_copy_string (char const *);
-CAMLextern value caml_copy_string_array (char const **);
-CAMLextern value caml_copy_double (double);
-CAMLextern value caml_copy_int32 (int32_t);       /* defined in [ints.c] */
-CAMLextern value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
-CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
-CAMLextern value caml_alloc_array (value (*funct) (char const *),
-                                   char const ** array);
-CAMLextern value caml_alloc_sprintf(const char * format, ...)
+value caml_alloc (mlsize_t wosize, tag_t);
+value caml_alloc_small (mlsize_t wosize, tag_t);
+value caml_alloc_tuple (mlsize_t wosize);
+value caml_alloc_float_array (mlsize_t len);
+value caml_alloc_string (mlsize_t len);  /* len in bytes (chars) */
+value caml_alloc_initialized_string (mlsize_t len, const char *);
+value caml_copy_string (char const *);
+value caml_copy_string_array (char const **);
+value caml_copy_double (double);
+value caml_copy_int32 (int32_t);       /* defined in [ints.c] */
+value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
+value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
+value caml_alloc_array (value (*funct) (char const *),
+                        char const ** array);
+value caml_alloc_sprintf(const char * format, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
 
-CAMLextern value caml_alloc_with_profinfo (mlsize_t, tag_t, intnat);
-CAMLextern value caml_alloc_small_with_my_or_given_profinfo (
-  mlsize_t, tag_t, uintnat);
-CAMLextern value caml_alloc_small_with_profinfo (mlsize_t, tag_t, intnat);
+value caml_alloc_with_profinfo (mlsize_t, tag_t, intnat);
+value caml_alloc_small_with_my_or_given_profinfo (mlsize_t, tag_t, uintnat);
+value caml_alloc_small_with_profinfo (mlsize_t, tag_t, intnat);
 
 typedef void (*final_fun)(value);
-CAMLextern value caml_alloc_final (mlsize_t wosize,
-                                   final_fun, /*finalization function*/
-                                   mlsize_t, /*resources consumed*/
-                                   mlsize_t  /*max resources*/);
+value caml_alloc_final (mlsize_t wosize,
+                        final_fun, /*finalization function*/
+                        mlsize_t, /*resources consumed*/
+                        mlsize_t  /*max resources*/);
 
-CAMLextern int caml_convert_flag_list (value, int *);
+int caml_convert_flag_list (value, int *);
 
 /* Convenience functions to deal with unboxable types. */
 static inline value caml_alloc_unboxed (value arg) { return arg; }

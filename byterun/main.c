@@ -26,10 +26,10 @@
 #include <windows.h>
 #endif
 
-CAMLextern void caml_main (char_os **);
+void caml_main (char_os **);
 
 #ifdef _WIN32
-CAMLextern void caml_expand_command_line (int *, wchar_t ***);
+void caml_expand_command_line (int *, wchar_t ***);
 
 int wmain(int argc, wchar_t **argv)
 #else
