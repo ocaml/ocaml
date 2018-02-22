@@ -1000,8 +1000,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
-CAMLprim uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
-                                                   uintnat index_within_node)
+CAMLexport uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
+                                                     uintnat index_within_node)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
