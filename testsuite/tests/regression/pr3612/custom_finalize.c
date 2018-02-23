@@ -58,7 +58,7 @@ value caml_test_pr3612_counter(value unit)
   return Val_int(alloc_counter-free_counter);
 }
 
-CAMLprim value caml_test_pr3612_init(value unit)
+value caml_test_pr3612_init(value unit)
 {
   caml_register_custom_operations(&caml_test_ops);
   return Val_unit;

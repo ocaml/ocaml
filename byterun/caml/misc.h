@@ -75,6 +75,7 @@ typedef char * addr;
   #define CAMLexport
 #endif
 #define CAMLprim CAMLexport
+#define CAMLstub CAMLprim
 #define CAMLextern extern
 #define CAMLdata CAMLextern CAMLexport
 

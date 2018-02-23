@@ -20,7 +20,7 @@
 
 extern value stub1(void);
 
-CAMLprim value stub2(void) {
+CAMLstub value stub2(void) {
   printf("This is stub2, calling stub1:\n"); fflush(stdout);
   stub1();
   printf("Ok!\n"); fflush(stdout);

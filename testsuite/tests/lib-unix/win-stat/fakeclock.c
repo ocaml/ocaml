@@ -151,7 +151,7 @@ void ReplaceFunction(char* fn, char* module, void* pNew)
 
 static int patched = 0;
 
-CAMLprim value set_fake_clock(value time)
+value set_fake_clock(value time)
 {
   CAMLparam1(time);
 

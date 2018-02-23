@@ -89,7 +89,7 @@ functions and macros are described in detail below.  For instance,
 here is the declaration for the C function implementing the "input"
 primitive:
 \begin{verbatim}
-CAMLprim value input(value channel, value buffer, value offset, value length)
+CAMLstub value input(value channel, value buffer, value offset, value length)
 {
   ...
 }
@@ -109,13 +109,13 @@ to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
 functions for the 7-argument primitive "Nat.add_nat":
 \begin{verbatim}
-CAMLprim value add_nat_native(value nat1, value ofs1, value len1,
+CAMLstub value add_nat_native(value nat1, value ofs1, value len1,
                               value nat2, value ofs2, value len2,
                               value carry_in)
 {
   ...
 }
-CAMLprim value add_nat_bytecode(value * argv, int argn)
+CAMLstub value add_nat_bytecode(value * argv, int argn)
 {
   return add_nat_native(argv[0], argv[1], argv[2], argv[3],
                         argv[4], argv[5], argv[6]);
@@ -147,7 +147,7 @@ call the first function, and convert the returned C value to OCaml
 value. For instance, here is the stub code for the "input"
 primitive:
 \begin{verbatim}
-CAMLprim value input(value channel, value buffer, value offset, value length)
+CAMLstub value input(value channel, value buffer, value offset, value length)
 {
   return Val_long(getblock((struct channel *) channel,
                            &Byte(buffer, Long_val(offset)),
@@ -155,7 +155,7 @@ CAMLprim value input(value channel, value buffer, value offset, value length)
 }
 \end{verbatim}
 (Here, "Val_long", "Long_val" and so on are conversion macros for the
-type "value", that will be described later.  The "CAMLprim" macro
+type "value", that will be described later. The "CAMLstub" macro
 expands to the required compiler directives to ensure that the
 function is exported and accessible from OCaml.)
 The hard work is performed by the function "getblock", which is
@@ -1411,7 +1411,7 @@ example, if the OCaml code contains the declaration
 \end{verbatim}
 the corresponding C stub can be written as follows:
 \begin{verbatim}
-    CAMLprim value caml_apply(value vf, value vx)
+    CAMLstub value caml_apply(value vf, value vx)
     {
       CAMLparam2(vf, vx);
       CAMLlocal1(vy);
@@ -2066,12 +2066,12 @@ external foo
 In this case the C functions must look like:
 
 \begin{verbatim}
-CAMLprim double foo(double a, double b)
+CAMLstub double foo(double a, double b)
 {
   ...
 }
 
-CAMLprim value foo_byte(value a, value b)
+CAMLstub value foo_byte(value a, value b)
 {
   return caml_copy_double(foo(Double_val(a), Double_val(b)))
 }
@@ -2223,7 +2223,7 @@ IP address of a host name.  The "gethostbyname" function can block for
 a long time, so we choose to release the OCaml run-time system while it
 is running.
 \begin{verbatim}
-CAMLprim stub_gethostbyname(value vname)
+CAMLstub value stub_gethostbyname(value vname)
 {
   CAMLparam1 (vname);
   CAMLlocal1 (vres);
@@ -2400,7 +2400,7 @@ The rest of the binding is the same for both platforms:
 #include <caml/osdeps.h>
 #include <stdlib.h>
 
-CAMLprim value stub_getenv(value var_name)
+CAMLstub value stub_getenv(value var_name)
 {
   CAMLparam1(var_name);
   CAMLlocal1(var_value);

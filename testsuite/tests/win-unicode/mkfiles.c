@@ -12,7 +12,7 @@
 #include <io.h>
 
 /* Returns an OCaml string with the UTF-16 representation of [s], *including* the final (2-byte) NULL */
-CAMLprim value caml_to_utf16(value s)
+value caml_to_utf16(value s)
 {
   CAMLparam1(s);
   CAMLlocal1(w);
@@ -26,7 +26,7 @@ CAMLprim value caml_to_utf16(value s)
   CAMLreturn(w);
 }
 
-CAMLprim value caml_create_file(value s, value contents)
+value caml_create_file(value s, value contents)
 {
   CAMLparam2(s, contents);
   FILE * f;
