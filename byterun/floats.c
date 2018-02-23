@@ -502,7 +502,7 @@ CAMLprim value caml_ceil_float(value f)
   return caml_copy_double(ceil(Double_val(f)));
 }
 
-CAMLexport double caml_hypot(double x, double y)
+double caml_hypot(double x, double y)
 {
 #ifdef HAS_C99_FLOAT_OPS
   return hypot(x, y);
@@ -527,7 +527,7 @@ CAMLprim value caml_hypot_float(value f, value g)
 
 /* These emulations of expm1() and log1p() are due to William Kahan.
    See http://www.plunk.org/~hatch/rightway.php */
-CAMLexport double caml_expm1(double x)
+double caml_expm1(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
   return expm1(x);
@@ -541,7 +541,7 @@ CAMLexport double caml_expm1(double x)
 #endif
 }
 
-CAMLexport double caml_log1p(double x)
+double caml_log1p(double x)
 {
 #ifdef HAS_C99_FLOAT_OPS
   return log1p(x);
@@ -573,7 +573,7 @@ union double_as_two_int32 {
 #endif
 };
 
-CAMLexport double caml_copysign(double x, double y)
+double caml_copysign(double x, double y)
 {
 #ifdef HAS_C99_FLOAT_OPS
   return copysign(x, y);
