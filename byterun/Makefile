@@ -88,7 +88,7 @@ endif
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
-  intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
+  intern.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c callback.c weak.c finalise.c stacks.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c
 
