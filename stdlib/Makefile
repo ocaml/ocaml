@@ -51,7 +51,8 @@ OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
   $(P)filename.cmo $(P)complex.cmo \
   $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
   $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
-  $(P)spacetime.cmo camlinternalBigarray.cmo
+  $(P)spacetime.cmo camlinternalBigarray.cmo \
+  $(P)float.cmo
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 
 .PHONY: all
