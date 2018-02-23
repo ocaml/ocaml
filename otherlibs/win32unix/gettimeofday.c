@@ -22,7 +22,7 @@
 /* Unix epoch as a Windows timestamp in hundreds of ns */
 #define epoch_ft 116444736000000000.0;
 
-CAMLprim value unix_gettimeofday(value unit)
+CAMLstub value unix_gettimeofday(value unit)
 {
   FILETIME ft;
   double tm;

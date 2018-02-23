@@ -19,7 +19,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
+CAMLstub value unix_read(value fd, value buf, value ofs, value vlen)
 {
   intnat len;
   DWORD numbytes, numread;

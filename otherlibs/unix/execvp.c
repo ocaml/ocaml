@@ -21,7 +21,7 @@
 #include "unixsupport.h"
 #include "errno.h"
 
-CAMLprim value unix_execvp(value path, value args)
+CAMLstub value unix_execvp(value path, value args)
 {
   char_os ** argv;
   char_os * wpath;
@@ -38,7 +38,7 @@ CAMLprim value unix_execvp(value path, value args)
 
 #ifdef HAS_EXECVPE
 
-CAMLprim value unix_execvpe(value path, value args, value env)
+CAMLstub value unix_execvpe(value path, value args, value env)
 {
   char_os ** argv;
   char_os ** envp;
@@ -58,7 +58,7 @@ CAMLprim value unix_execvpe(value path, value args, value env)
 
 #else
 
-CAMLprim value unix_execvpe(value path, value args, value env)
+CAMLstub value unix_execvpe(value path, value args, value env)
 {
   unix_error(ENOSYS, "execvpe", path);
   return Val_unit;

@@ -33,7 +33,7 @@ typedef BOOLEAN (WINAPI *LPFN_CREATESYMBOLICLINK) (LPWSTR, LPWSTR, DWORD);
 static LPFN_CREATESYMBOLICLINK pCreateSymbolicLink = NULL;
 static int no_symlink = 0;
 
-CAMLprim value unix_symlink(value to_dir, value osource, value odest)
+CAMLstub value unix_symlink(value to_dir, value osource, value odest)
 {
   CAMLparam3(to_dir, osource, odest);
   DWORD flags = (Bool_val(to_dir) ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0);
@@ -75,7 +75,7 @@ again:
 
 #define luid_eq(l, r) (l.LowPart == r.LowPart && l.HighPart == r.HighPart)
 
-CAMLprim value unix_has_symlink(value unit)
+CAMLstub value unix_has_symlink(value unit)
 {
   CAMLparam1(unit);
   HANDLE hProcess = GetCurrentProcess();

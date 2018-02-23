@@ -20,7 +20,7 @@
 
 extern int error_table[];
 
-CAMLprim value unix_error_message(value err)
+CAMLstub value unix_error_message(value err)
 {
   int errnum;
   errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];

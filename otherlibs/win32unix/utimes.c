@@ -35,7 +35,7 @@ static void convert_time(double unixTime, FILETIME* ft)
   ft->dwHighDateTime = u.HighPart;
 }
 
-CAMLprim value unix_utimes(value path, value atime, value mtime)
+CAMLstub value unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
   WCHAR *wpath;

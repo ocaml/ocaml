@@ -15,7 +15,7 @@
 
 #include "libgraph.h"
 
-CAMLprim value caml_gr_open_subwindow(value vx, value vy, value width, value height)
+CAMLstub value caml_gr_open_subwindow(value vx, value vy, value width, value height)
 {
   Window win;
 
@@ -33,7 +33,7 @@ CAMLprim value caml_gr_open_subwindow(value vx, value vy, value width, value hei
   return (caml_gr_id_of_window (win));
 }
 
-CAMLprim value caml_gr_close_subwindow(value wid)
+CAMLstub value caml_gr_close_subwindow(value wid)
 {
   Window win;
 

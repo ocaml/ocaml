@@ -18,7 +18,7 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
+CAMLstub value unix_dup2(value cloexec, value fd1, value fd2)
 {
   if (Int_val(fd2) == Int_val(fd1)) {
     /* In this case, dup3 fails and dup2 does nothing. */

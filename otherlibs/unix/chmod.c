@@ -23,7 +23,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_chmod(value path, value perm)
+CAMLstub value unix_chmod(value path, value perm)
 {
   CAMLparam2(path, perm);
   char_os * p;

@@ -22,7 +22,7 @@
 /* PR#4749: pick a size that matches that of I/O buffers */
 #define SIZEBUF 4096
 
-CAMLprim value unix_pipe(value cloexec, value unit)
+CAMLstub value unix_pipe(value cloexec, value unit)
 {
   SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;

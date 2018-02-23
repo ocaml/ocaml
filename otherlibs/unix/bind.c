@@ -21,7 +21,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_bind(value socket, value address)
+CAMLstub value unix_bind(value socket, value address)
 {
   int ret;
   union sock_addr_union addr;
@@ -35,7 +35,7 @@ CAMLprim value unix_bind(value socket, value address)
 
 #else
 
-CAMLprim value unix_bind(value socket, value address)
+CAMLstub value unix_bind(value socket, value address)
 { caml_invalid_argument("bind not implemented"); }
 
 #endif

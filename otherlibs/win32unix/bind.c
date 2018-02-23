@@ -17,7 +17,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_bind(socket, address)
+CAMLstub value unix_bind(socket, address)
      value socket, address;
 {
   int ret;

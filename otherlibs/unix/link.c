@@ -18,7 +18,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_link(value path1, value path2)
+CAMLstub value unix_link(value path1, value path2)
 {
   CAMLparam2(path1, path2);
   char * p1;

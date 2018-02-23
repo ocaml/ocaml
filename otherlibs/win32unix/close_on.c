@@ -30,13 +30,13 @@ int win_set_inherit(value fd, BOOL inherit)
   return 0;
 }
 
-CAMLprim value win_set_close_on_exec(value fd)
+CAMLstub value win_set_close_on_exec(value fd)
 {
   if (win_set_inherit(fd, FALSE) == -1) uerror("set_close_on_exec", Nothing);
   return Val_unit;
 }
 
-CAMLprim value win_clear_close_on_exec(value fd)
+CAMLstub value win_clear_close_on_exec(value fd)
 {
   if (win_set_inherit(fd, TRUE) == -1) uerror("clear_close_on_exec", Nothing);
   return Val_unit;

@@ -17,8 +17,7 @@
 #include <caml/signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_set_nonblock(socket)
-     value socket;
+CAMLstub value unix_set_nonblock(value socket)
 {
   u_long non_block = 1;
 
@@ -30,8 +29,7 @@ CAMLprim value unix_set_nonblock(socket)
   return Val_unit;
 }
 
-CAMLprim value unix_clear_nonblock(socket)
-     value socket;
+CAMLstub value unix_clear_nonblock(value socket)
 {
   u_long non_block = 0;
 

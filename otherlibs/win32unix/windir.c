@@ -23,7 +23,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value win_findfirst(value name)
+CAMLstub value win_findfirst(value name)
 {
   HANDLE h;
   value v;
@@ -55,7 +55,7 @@ CAMLprim value win_findfirst(value name)
   return v;
 }
 
-CAMLprim value win_findnext(value valh)
+CAMLstub value win_findnext(value valh)
 {
   WIN32_FIND_DATAW fileinfo;
   BOOL retcode;
@@ -73,7 +73,7 @@ CAMLprim value win_findnext(value valh)
   return caml_copy_string_of_utf16(fileinfo.cFileName);
 }
 
-CAMLprim value win_findclose(value valh)
+CAMLstub value win_findclose(value valh)
 {
   if (! FindClose(Handle_val(valh))) {
     win32_maperr(GetLastError());

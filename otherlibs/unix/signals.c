@@ -60,7 +60,7 @@ static value encode_sigset(sigset_t * set)
 
 static int sigprocmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
 
-CAMLprim value unix_sigprocmask(value vaction, value vset)
+CAMLstub value unix_sigprocmask(value vaction, value vset)
 {
   int how;
   sigset_t set, oldset;
@@ -75,14 +75,14 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
   return encode_sigset(&oldset);
 }
 
-CAMLprim value unix_sigpending(value unit)
+CAMLstub value unix_sigpending(value unit)
 {
   sigset_t pending;
   if (sigpending(&pending) == -1) uerror("sigpending", Nothing);
   return encode_sigset(&pending);
 }
 
-CAMLprim value unix_sigsuspend(value vset)
+CAMLstub value unix_sigsuspend(value vset)
 {
   sigset_t set;
   int retcode;
@@ -96,13 +96,13 @@ CAMLprim value unix_sigsuspend(value vset)
 
 #else
 
-CAMLprim value unix_sigprocmask(value vaction, value vset)
+CAMLstub value unix_sigprocmask(value vaction, value vset)
 { caml_invalid_argument("Unix.sigprocmask not available"); }
 
-CAMLprim value unix_sigpending(value unit)
+CAMLstub value unix_sigpending(value unit)
 { caml_invalid_argument("Unix.sigpending not available"); }
 
-CAMLprim value unix_sigsuspend(value vset)
+CAMLstub value unix_sigsuspend(value vset)
 { caml_invalid_argument("Unix.sigsuspend not available"); }
 
 #endif

@@ -33,7 +33,7 @@
 #endif
 #endif
 
-CAMLprim value unix_times(value unit)
+CAMLstub value unix_times(value unit)
 {
 #ifdef HAS_GETRUSAGE
 

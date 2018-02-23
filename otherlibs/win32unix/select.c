@@ -975,7 +975,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   return res;
 }
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+CAMLstub value unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
 {
   /* Event associated to handle */

@@ -113,7 +113,7 @@ static int caml_grow_file(int fd, file_offset size)
 }
 
 
-CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+CAMLstub value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
                                  value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
@@ -195,7 +195,7 @@ CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
 
 #else
 
-CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+CAMLstub value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
                                  value vshared, value vdim, value vpos)
 {
   caml_invalid_argument("Unix.map_file: not supported");
@@ -204,7 +204,7 @@ CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
 
 #endif
 
-CAMLprim value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
+CAMLstub value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
 {
   return MAP_FILE_FUNCTION(argv[0], argv[1], argv[2],
                            argv[3], argv[4], argv[5]);

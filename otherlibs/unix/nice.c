@@ -20,7 +20,7 @@
 #include <unistd.h>
 #endif
 
-CAMLprim value unix_nice(value incr)
+CAMLstub value unix_nice(value incr)
 {
   int ret;
   errno = 0;

@@ -15,7 +15,7 @@
 
 #include "libgraph.h"
 
-CAMLprim value caml_gr_sound(value vfreq, value vdur)
+CAMLstub value caml_gr_sound(value vfreq, value vdur)
 {
   XKeyboardControl kbdcontrol;
 

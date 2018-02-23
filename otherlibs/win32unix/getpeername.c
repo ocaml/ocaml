@@ -17,8 +17,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_getpeername(sock)
-     value sock;
+CAMLstub value unix_getpeername(value sock)
 {
   int retcode;
   union sock_addr_union addr;

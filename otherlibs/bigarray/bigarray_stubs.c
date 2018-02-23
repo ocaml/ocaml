@@ -35,7 +35,7 @@
 
 /* Allocate a bigarray from OCaml */
 
-CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
+CAMLstub value caml_ba_create(value vkind, value vlayout, value vdim)
 {
   intnat dim[CAML_BA_MAX_NUM_DIMS];
   mlsize_t num_dims;
@@ -143,19 +143,19 @@ value caml_ba_get_N(value vb, value * vind, int nind)
   }
 }
 
-CAMLprim value caml_ba_get_1(value vb, value vind1)
+CAMLstub value caml_ba_get_1(value vb, value vind1)
 {
   return caml_ba_get_N(vb, &vind1, 1);
 }
 
-CAMLprim value caml_ba_get_2(value vb, value vind1, value vind2)
+CAMLstub value caml_ba_get_2(value vb, value vind1, value vind2)
 {
   value vind[2];
   vind[0] = vind1; vind[1] = vind2;
   return caml_ba_get_N(vb, vind, 2);
 }
 
-CAMLprim value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
+CAMLstub value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
 {
   value vind[3];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
@@ -163,7 +163,7 @@ CAMLprim value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
 }
 
 #if 0
-CAMLprim value caml_ba_get_4(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_get_4(value vb, value vind1, value vind2,
                      value vind3, value vind4)
 {
   value vind[4];
@@ -171,7 +171,7 @@ CAMLprim value caml_ba_get_4(value vb, value vind1, value vind2,
   return caml_ba_get_N(vb, vind, 4);
 }
 
-CAMLprim value caml_ba_get_5(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_get_5(value vb, value vind1, value vind2,
                      value vind3, value vind4, value vind5)
 {
   value vind[5];
@@ -180,7 +180,7 @@ CAMLprim value caml_ba_get_5(value vb, value vind1, value vind2,
   return caml_ba_get_N(vb, vind, 5);
 }
 
-CAMLprim value caml_ba_get_6(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_get_6(value vb, value vind1, value vind2,
                      value vind3, value vind4, value vind5, value vind6)
 {
   value vind[6];
@@ -190,13 +190,13 @@ CAMLprim value caml_ba_get_6(value vb, value vind1, value vind2,
 }
 #endif
 
-CAMLprim value caml_ba_get_generic(value vb, value vind)
+CAMLstub value caml_ba_get_generic(value vb, value vind)
 {
   return caml_ba_get_N(vb, &Field(vind, 0), Wosize_val(vind));
 }
 
 
-CAMLprim value caml_ba_uint8_get16(value vb, value vind)
+CAMLstub value caml_ba_uint8_get16(value vb, value vind)
 {
   intnat res;
   unsigned char b1, b2;
@@ -213,7 +213,7 @@ CAMLprim value caml_ba_uint8_get16(value vb, value vind)
   return Val_int(res);
 }
 
-CAMLprim value caml_ba_uint8_get32(value vb, value vind)
+CAMLstub value caml_ba_uint8_get32(value vb, value vind)
 {
   intnat res;
   unsigned char b1, b2, b3, b4;
@@ -232,7 +232,7 @@ CAMLprim value caml_ba_uint8_get32(value vb, value vind)
   return caml_copy_int32(res);
 }
 
-CAMLprim value caml_ba_uint8_get64(value vb, value vind)
+CAMLstub value caml_ba_uint8_get64(value vb, value vind)
 {
   uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
@@ -314,19 +314,19 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_ba_set_1(value vb, value vind1, value newval)
+CAMLstub value caml_ba_set_1(value vb, value vind1, value newval)
 {
   return caml_ba_set_aux(vb, &vind1, 1, newval);
 }
 
-CAMLprim value caml_ba_set_2(value vb, value vind1, value vind2, value newval)
+CAMLstub value caml_ba_set_2(value vb, value vind1, value vind2, value newval)
 {
   value vind[2];
   vind[0] = vind1; vind[1] = vind2;
   return caml_ba_set_aux(vb, vind, 2, newval);
 }
 
-CAMLprim value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
+CAMLstub value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
                      value newval)
 {
   value vind[3];
@@ -335,7 +335,7 @@ CAMLprim value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
 }
 
 #if 0
-CAMLprim value caml_ba_set_4(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_set_4(value vb, value vind1, value vind2,
                      value vind3, value vind4, value newval)
 {
   value vind[4];
@@ -343,7 +343,7 @@ CAMLprim value caml_ba_set_4(value vb, value vind1, value vind2,
   return caml_ba_set_aux(vb, vind, 4, newval);
 }
 
-CAMLprim value caml_ba_set_5(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_set_5(value vb, value vind1, value vind2,
                      value vind3, value vind4, value vind5, value newval)
 {
   value vind[5];
@@ -352,7 +352,7 @@ CAMLprim value caml_ba_set_5(value vb, value vind1, value vind2,
   return caml_ba_set_aux(vb, vind, 5, newval);
 }
 
-CAMLprim value caml_ba_set_6(value vb, value vind1, value vind2,
+CAMLstub value caml_ba_set_6(value vb, value vind1, value vind2,
                      value vind3, value vind4, value vind5,
                      value vind6, value newval)
 {
@@ -368,12 +368,12 @@ value caml_ba_set_N(value vb, value * vind, int nargs)
 }
 #endif
 
-CAMLprim value caml_ba_set_generic(value vb, value vind, value newval)
+CAMLstub value caml_ba_set_generic(value vb, value vind, value newval)
 {
   return caml_ba_set_aux(vb, &Field(vind, 0), Wosize_val(vind), newval);
 }
 
-CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
+CAMLstub value caml_ba_uint8_set16(value vb, value vind, value newval)
 {
   unsigned char b1, b2;
   intnat val;
@@ -393,7 +393,7 @@ CAMLprim value caml_ba_uint8_set16(value vb, value vind, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
+CAMLstub value caml_ba_uint8_set32(value vb, value vind, value newval)
 {
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(vind);
@@ -419,7 +419,7 @@ CAMLprim value caml_ba_uint8_set32(value vb, value vind, value newval)
   return Val_unit;
 }
 
-CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
+CAMLstub value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
@@ -459,7 +459,7 @@ CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 
 /* Return the number of dimensions of a big array */
 
-CAMLprim value caml_ba_num_dims(value vb)
+CAMLstub value caml_ba_num_dims(value vb)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   return Val_long(b->num_dims);
@@ -467,7 +467,7 @@ CAMLprim value caml_ba_num_dims(value vb)
 
 /* Return the n-th dimension of a big array */
 
-CAMLprim value caml_ba_dim(value vb, value vn)
+CAMLstub value caml_ba_dim(value vb, value vn)
 {
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   intnat n = Long_val(vn);
@@ -475,31 +475,31 @@ CAMLprim value caml_ba_dim(value vb, value vn)
   return Val_long(b->dim[n]);
 }
 
-CAMLprim value caml_ba_dim_1(value vb)
+CAMLstub value caml_ba_dim_1(value vb)
 {
   return caml_ba_dim(vb, Val_int(0));
 }
 
-CAMLprim value caml_ba_dim_2(value vb)
+CAMLstub value caml_ba_dim_2(value vb)
 {
   return caml_ba_dim(vb, Val_int(1));
 }
 
-CAMLprim value caml_ba_dim_3(value vb)
+CAMLstub value caml_ba_dim_3(value vb)
 {
   return caml_ba_dim(vb, Val_int(2));
 }
 
 /* Return the kind of a big array */
 
-CAMLprim value caml_ba_kind(value vb)
+CAMLstub value caml_ba_kind(value vb)
 {
   return Val_caml_ba_kind(Caml_ba_array_val(vb)->flags & CAML_BA_KIND_MASK);
 }
 
 /* Return the layout of a big array */
 
-CAMLprim value caml_ba_layout(value vb)
+CAMLstub value caml_ba_layout(value vb)
 {
   int layout = Caml_ba_array_val(vb)->flags & CAML_BA_LAYOUT_MASK;
   return Val_caml_ba_layout(layout);
@@ -533,7 +533,7 @@ static void caml_ba_update_proxy(struct caml_ba_array * b1,
 
 /* Slicing */
 
-CAMLprim value caml_ba_slice(value vb, value vind)
+CAMLstub value caml_ba_slice(value vb, value vind)
 {
   CAMLparam2 (vb, vind);
   #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
@@ -578,7 +578,7 @@ CAMLprim value caml_ba_slice(value vb, value vind)
 
 /* Changing the layout of an array (memory is shared) */
 
-CAMLprim value caml_ba_change_layout(value vb, value vlayout)
+CAMLstub value caml_ba_change_layout(value vb, value vlayout)
 {
   CAMLparam2 (vb, vlayout);
   CAMLlocal1 (res);
@@ -605,7 +605,7 @@ CAMLprim value caml_ba_change_layout(value vb, value vlayout)
 
 /* Extracting a sub-array of same number of dimensions */
 
-CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
+CAMLstub value caml_ba_sub(value vb, value vofs, value vlen)
 {
   CAMLparam3 (vb, vofs, vlen);
   CAMLlocal1 (res);
@@ -651,7 +651,7 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
 #define LEAVE_RUNTIME_OP_CUTOFF 4096
 #define is_mmapped(ba) ((ba)->flags & CAML_BA_MAPPED_FILE)
 
-CAMLprim value caml_ba_blit(value vsrc, value vdst)
+CAMLstub value caml_ba_blit(value vsrc, value vdst)
 {
   CAMLparam2(vsrc, vdst);
   struct caml_ba_array * src = Caml_ba_array_val(vsrc);
@@ -703,7 +703,7 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
   FILL_GEN_LOOP(num_elts + num_elts,                                         \
     for (p = data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
 
-CAMLprim value caml_ba_fill(value vb, value vinit)
+CAMLstub value caml_ba_fill(value vb, value vinit)
 {
   CAMLparam1(vb);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -785,7 +785,7 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
 /* Reshape an array: change dimensions and number of dimensions, preserving
    array contents */
 
-CAMLprim value caml_ba_reshape(value vb, value vdim)
+CAMLstub value caml_ba_reshape(value vb, value vdim)
 {
   CAMLparam2 (vb, vdim);
   CAMLlocal1 (res);

@@ -28,7 +28,7 @@
 #include <grp.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_initgroups(value user, value group)
+CAMLstub value unix_initgroups(value user, value group)
 {
   if (! caml_string_is_c_safe(user))
     unix_error(EINVAL, "initgroups", user);
@@ -40,7 +40,7 @@ CAMLprim value unix_initgroups(value user, value group)
 
 #else
 
-CAMLprim value unix_initgroups(value user, value group)
+CAMLstub value unix_initgroups(value user, value group)
 { caml_invalid_argument("initgroups not implemented"); }
 
 #endif

@@ -61,8 +61,7 @@ c_node_type caml_spacetime_offline_classify_c_node(c_node* node)
   return (node->pc & 2) ? CALL : ALLOCATION;
 }
 
-CAMLprim value caml_spacetime_compare_node(
-      value node1, value node2)
+CAMLstub value caml_spacetime_compare_node(value node1, value node2)
 {
   CAMLassert(!Is_in_value_area(node1));
   CAMLassert(!Is_in_value_area(node2));
@@ -76,36 +75,36 @@ CAMLprim value caml_spacetime_compare_node(
   return Val_long(1);
 }
 
-CAMLprim value caml_spacetime_unmarshal_trie (value v_channel)
+CAMLstub value caml_spacetime_unmarshal_trie (value v_channel)
 {
   return caml_input_value_to_outside_heap(v_channel);
 }
 
-CAMLprim value caml_spacetime_node_num_header_words(value unit)
+CAMLstub value caml_spacetime_node_num_header_words(value unit)
 {
   unit = Val_unit;
   return Val_long(Node_num_header_words);
 }
 
-CAMLprim value caml_spacetime_is_ocaml_node(value node)
+CAMLstub value caml_spacetime_is_ocaml_node(value node)
 {
   CAMLassert(Is_ocaml_node(node) || Is_c_node(node));
   return Val_bool(Is_ocaml_node(node));
 }
 
-CAMLprim value caml_spacetime_ocaml_function_identifier(value node)
+CAMLstub value caml_spacetime_ocaml_function_identifier(value node)
 {
   CAMLassert(Is_ocaml_node(node));
   return caml_copy_int64((uint64_t) Decode_node_pc(Node_pc(node)));
 }
 
-CAMLprim value caml_spacetime_ocaml_tail_chain(value node)
+CAMLstub value caml_spacetime_ocaml_tail_chain(value node)
 {
   CAMLassert(Is_ocaml_node(node));
   return Tail_link(node);
 }
 
-CAMLprim value caml_spacetime_classify_direct_call_point
+CAMLstub value caml_spacetime_classify_direct_call_point
       (value node, value offset)
 {
   uintnat field;
@@ -126,7 +125,7 @@ CAMLprim value caml_spacetime_classify_direct_call_point
   }
 }
 
-CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
+CAMLstub value caml_spacetime_ocaml_allocation_point_annotation
       (value node, value offset)
 {
   uintnat profinfo_shifted;
@@ -134,7 +133,7 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_annotation
   return Val_long(Spacetime_profinfo_hd(profinfo_shifted));
 }
 
-CAMLprim value caml_spacetime_ocaml_allocation_point_count
+CAMLstub value caml_spacetime_ocaml_allocation_point_count
       (value node, value offset)
 {
   value count = Alloc_point_count(node, Long_val(offset));
@@ -142,19 +141,19 @@ CAMLprim value caml_spacetime_ocaml_allocation_point_count
   return count;
 }
 
-CAMLprim value caml_spacetime_ocaml_direct_call_point_callee_node
+CAMLstub value caml_spacetime_ocaml_direct_call_point_callee_node
       (value node, value offset)
 {
   return Direct_callee_node(node, Long_val(offset));
 }
 
-CAMLprim value caml_spacetime_ocaml_direct_call_point_call_count
-(value node, value offset)
+CAMLstub value caml_spacetime_ocaml_direct_call_point_call_count
+      (value node, value offset)
 {
   return Direct_call_count(node, Long_val(offset));
 }
 
-CAMLprim value caml_spacetime_ocaml_indirect_call_point_callees
+CAMLstub value caml_spacetime_ocaml_indirect_call_point_callees
       (value node, value offset)
 {
   value callees = Indirect_pc_linked_list(node, Long_val(offset));
@@ -163,7 +162,7 @@ CAMLprim value caml_spacetime_ocaml_indirect_call_point_callees
   return callees;
 }
 
-CAMLprim value caml_spacetime_c_node_is_call(value node)
+CAMLstub value caml_spacetime_c_node_is_call(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);
@@ -177,7 +176,7 @@ CAMLprim value caml_spacetime_c_node_is_call(value node)
   return Val_unit;  /* silence compiler warning */
 }
 
-CAMLprim value caml_spacetime_c_node_next(value node)
+CAMLstub value caml_spacetime_c_node_next(value node)
 {
   c_node* c_node;
 
@@ -188,7 +187,7 @@ CAMLprim value caml_spacetime_c_node_next(value node)
   return c_node->next;
 }
 
-CAMLprim value caml_spacetime_c_node_call_site(value node)
+CAMLstub value caml_spacetime_c_node_call_site(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);
@@ -197,7 +196,7 @@ CAMLprim value caml_spacetime_c_node_call_site(value node)
   return caml_copy_int64((uint64_t) Decode_c_node_pc(c_node->pc));
 }
 
-CAMLprim value caml_spacetime_c_node_callee_node(value node)
+CAMLstub value caml_spacetime_c_node_callee_node(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);
@@ -213,7 +212,7 @@ CAMLprim value caml_spacetime_c_node_callee_node(value node)
   return c_node->data.call.callee_node;
 }
 
-CAMLprim value caml_spacetime_c_node_call_count(value node)
+CAMLstub value caml_spacetime_c_node_call_count(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);
@@ -226,7 +225,7 @@ CAMLprim value caml_spacetime_c_node_call_count(value node)
   return c_node->data.call.call_count;
 }
 
-CAMLprim value caml_spacetime_c_node_profinfo(value node)
+CAMLstub value caml_spacetime_c_node_profinfo(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);
@@ -237,7 +236,7 @@ CAMLprim value caml_spacetime_c_node_profinfo(value node)
   return Val_long(Spacetime_profinfo_hd(c_node->data.allocation.profinfo));
 }
 
-CAMLprim value caml_spacetime_c_node_allocation_count(value node)
+CAMLstub value caml_spacetime_c_node_allocation_count(value node)
 {
   c_node* c_node;
   CAMLassert(node != (value) NULL);

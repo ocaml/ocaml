@@ -18,7 +18,7 @@
 
 extern value val_process_id;
 
-CAMLprim value unix_getpid(value unit)
+CAMLstub value unix_getpid(value unit)
 {
   return val_process_id;
 }

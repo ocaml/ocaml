@@ -47,7 +47,7 @@ static value unix_convert_itimer(struct itimerval *tp)
 
 static int itimers[3] = { ITIMER_REAL, ITIMER_VIRTUAL, ITIMER_PROF };
 
-CAMLprim value unix_setitimer(value which, value newval)
+CAMLstub value unix_setitimer(value which, value newval)
 {
   struct itimerval new, old;
   unix_set_timeval(&new.it_interval, Double_field(newval, 0));
@@ -57,7 +57,7 @@ CAMLprim value unix_setitimer(value which, value newval)
   return unix_convert_itimer(&old);
 }
 
-CAMLprim value unix_getitimer(value which)
+CAMLstub value unix_getitimer(value which)
 {
   struct itimerval val;
   if (getitimer(itimers[Int_val(which)], &val) == -1)
@@ -67,9 +67,9 @@ CAMLprim value unix_getitimer(value which)
 
 #else
 
-CAMLprim value unix_setitimer(value which, value newval)
+CAMLstub value unix_setitimer(value which, value newval)
 { caml_invalid_argument("setitimer not implemented"); }
-CAMLprim value unix_getitimer(value which)
+CAMLstub value unix_getitimer(value which)
 { caml_invalid_argument("getitimer not implemented"); }
 
 #endif

@@ -39,7 +39,7 @@ double to_sec(FILETIME ft) {
 }
 
 
-CAMLprim value unix_times(value unit) {
+CAMLstub value unix_times(value unit) {
   value res;
   FILETIME creation, exit, stime, utime;
 

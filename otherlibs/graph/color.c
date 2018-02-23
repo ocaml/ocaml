@@ -216,7 +216,7 @@ int caml_gr_rgb_pixel(long unsigned int pixel)
     ((color.red >> 8) << 16) + ((color.green >> 8) << 8) + (color.blue >> 8);
 }
 
-CAMLprim value caml_gr_set_color(value vrgb)
+CAMLstub value caml_gr_set_color(value vrgb)
 {
   int xcolor;
   caml_gr_check_open();

@@ -66,7 +66,7 @@ static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
   return i.QuadPart;
 }
 
-CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
+CAMLstub value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
                                  value vshared, value vdim, value vstart)
 {
   HANDLE fd, fmap;
@@ -144,7 +144,7 @@ CAMLprim value MAP_FILE_FUNCTION(value vfd, value vkind, value vlayout,
   return ALLOC_FUNCTION(flags, num_dims, addr, dim);
 }
 
-CAMLprim value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
+CAMLstub value MAP_FILE_FUNCTION_BYTECODE(value * argv, int argn)
 {
   return MAP_FILE_FUNCTION(argv[0], argv[1], argv[2],
                            argv[3], argv[4], argv[5]);

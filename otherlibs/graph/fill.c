@@ -16,7 +16,7 @@
 #include "libgraph.h"
 #include <caml/memory.h>
 
-CAMLprim value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
+CAMLstub value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -35,7 +35,7 @@ CAMLprim value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_fill_poly(value array)
+CAMLstub value caml_gr_fill_poly(value array)
 {
   XPoint * points;
   int npoints, i;
@@ -61,7 +61,7 @@ CAMLprim value caml_gr_fill_poly(value array)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry,
+CAMLstub value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry,
                                     value va1, value va2)
 {
   int x = Int_val(vx);
@@ -83,7 +83,7 @@ CAMLprim value caml_gr_fill_arc_nat(value vx, value vy, value vrx, value vry,
   return Val_unit;
 }
 
-CAMLprim value caml_gr_fill_arc(value *argv, int argc)
+CAMLstub value caml_gr_fill_arc(value *argv, int argc)
 {
   return caml_gr_fill_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4],
                               argv[5]);

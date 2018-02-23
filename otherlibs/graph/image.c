@@ -48,13 +48,13 @@ value caml_gr_new_image(int w, int h)
   return res;
 }
 
-CAMLprim value caml_gr_create_image(value vw, value vh)
+CAMLstub value caml_gr_create_image(value vw, value vh)
 {
   caml_gr_check_open();
   return caml_gr_new_image(Int_val(vw), Int_val(vh));
 }
 
-CAMLprim value caml_gr_blit_image(value im, value vx, value vy)
+CAMLstub value caml_gr_blit_image(value im, value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -66,7 +66,7 @@ CAMLprim value caml_gr_blit_image(value im, value vx, value vy)
   return Val_unit;
 }
 
-CAMLprim value caml_gr_draw_image(value im, value vx, value vy)
+CAMLstub value caml_gr_draw_image(value im, value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);

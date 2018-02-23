@@ -25,7 +25,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLstub value unix_accept(value cloexec, value sock)
 {
   int retcode;
   value res;
@@ -58,7 +58,7 @@ CAMLprim value unix_accept(value cloexec, value sock)
 
 #else
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLstub value unix_accept(value cloexec, value sock)
 { caml_invalid_argument("accept not implemented"); }
 
 #endif

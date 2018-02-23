@@ -204,7 +204,7 @@ unix_setsockopt_aux(char * name,
   return Val_unit;
 }
 
-CAMLprim value unix_getsockopt(value vty, value vsocket, value voption)
+CAMLstub value unix_getsockopt(value vty, value vsocket, value voption)
 {
   enum option_type ty = Int_val(vty);
   struct socket_option * opt = &(sockopt_table[ty][Int_val(voption)]);
@@ -215,7 +215,7 @@ CAMLprim value unix_getsockopt(value vty, value vsocket, value voption)
                              vsocket);
 }
 
-CAMLprim value unix_setsockopt(value vty, value vsocket, value voption,
+CAMLstub value unix_setsockopt(value vty, value vsocket, value voption,
                                value val)
 {
   enum option_type ty = Int_val(vty);

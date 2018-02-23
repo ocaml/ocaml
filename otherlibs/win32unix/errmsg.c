@@ -25,7 +25,7 @@
 
 extern int error_table[];
 
-CAMLprim value unix_error_message(value err)
+CAMLstub value unix_error_message(value err)
 {
   int errnum;
   wchar_t buffer[512];

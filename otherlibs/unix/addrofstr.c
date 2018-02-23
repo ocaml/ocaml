@@ -22,7 +22,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_inet_addr_of_string(value s)
+CAMLstub value unix_inet_addr_of_string(value s)
 {
   if (! caml_string_is_c_safe(s)) caml_failwith("inet_addr_of_string");
 #if defined(HAS_IPV6)
@@ -91,7 +91,7 @@ CAMLprim value unix_inet_addr_of_string(value s)
 
 #else
 
-CAMLprim value unix_inet_addr_of_string(value s)
+CAMLstub value unix_inet_addr_of_string(value s)
 { caml_invalid_argument("inet_addr_of_string not implemented"); }
 
 #endif

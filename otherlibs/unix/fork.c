@@ -19,7 +19,7 @@
 #include <caml/debugger.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_fork(value unit)
+CAMLstub value unix_fork(value unit)
 {
   int ret;
   ret = fork();

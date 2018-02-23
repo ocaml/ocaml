@@ -3095,7 +3095,7 @@ let compunit (ulam, preallocated_blocks, constants) =
   emit_preallocated_blocks preallocated_blocks c3
 
 (*
-CAMLprim value caml_cache_public_method (value meths, value tag, value *cache)
+value caml_cache_public_method (value meths, value tag, value *cache)
 {
   int li = 3, hi = Field(meths,0), mi;
   while (li < hi) { // no need to check the 1st time

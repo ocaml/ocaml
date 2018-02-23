@@ -55,7 +55,7 @@ static value convert_addrinfo(struct addrinfo * a)
   CAMLreturn(vres);
 }
 
-CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
+CAMLstub value unix_getaddrinfo(value vnode, value vserv, value vopts)
 {
   CAMLparam3(vnode, vserv, vopts);
   CAMLlocal3(vres, v, e);
@@ -129,7 +129,7 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
 
 #else
 
-CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
+CAMLstub value unix_getaddrinfo(value vnode, value vserv, value vopts)
 { caml_invalid_argument("getaddrinfo not implemented"); }
 
 #endif

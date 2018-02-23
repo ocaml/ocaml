@@ -24,7 +24,7 @@
 
 extern int socket_domain_table[], socket_type_table[];
 
-CAMLprim value unix_socketpair(value cloexec, value domain,
+CAMLstub value unix_socketpair(value cloexec, value domain,
                                value type, value proto)
 {
   int sv[2];
@@ -50,7 +50,7 @@ CAMLprim value unix_socketpair(value cloexec, value domain,
 
 #else
 
-CAMLprim value unix_socketpair(value domain, value type, value proto)
+CAMLstub value unix_socketpair(value domain, value type, value proto)
 { caml_invalid_argument("socketpair not implemented"); }
 
 #endif

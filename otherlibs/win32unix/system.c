@@ -24,7 +24,7 @@
 #include <process.h>
 #include <stdio.h>
 
-CAMLprim value win_system(cmd)
+CAMLstub value win_system(cmd)
      value cmd;
 {
   int ret;

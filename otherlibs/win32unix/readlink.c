@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <winioctl.h>
 
-CAMLprim value unix_readlink(value opath)
+CAMLstub value unix_readlink(value opath)
 {
   CAMLparam1(opath);
   CAMLlocal1(result);

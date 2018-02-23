@@ -47,7 +47,7 @@ static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
   return i.QuadPart;
 }
 
-CAMLprim value unix_lseek(value fd, value ofs, value cmd)
+CAMLstub value unix_lseek(value fd, value ofs, value cmd)
 {
   __int64 ret;
 
@@ -60,7 +60,7 @@ CAMLprim value unix_lseek(value fd, value ofs, value cmd)
   return Val_long(ret);
 }
 
-CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
+CAMLstub value unix_lseek_64(value fd, value ofs, value cmd)
 {
   __int64 ret;
 

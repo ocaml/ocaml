@@ -41,7 +41,7 @@ static int open_cloexec_flags[15] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CLOEXEC, KEEPEXEC
 };
 
-CAMLprim value unix_open(value path, value flags, value perm)
+CAMLstub value unix_open(value path, value flags, value perm)
 {
   int fileaccess, createflags, fileattrib, filecreate, sharemode, cloexec;
   SECURITY_ATTRIBUTES attr;

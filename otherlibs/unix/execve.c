@@ -20,7 +20,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_execve(value path, value args, value env)
+CAMLstub value unix_execve(value path, value args, value env)
 {
   char_os ** argv;
   char_os ** envp;

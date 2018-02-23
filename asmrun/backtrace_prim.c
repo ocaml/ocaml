@@ -116,7 +116,7 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
    (hopefully less often). Instead of using a bounded buffer as
    [caml_stash_backtrace], we first traverse the stack to compute the
    right size, then allocate space for the trace. */
-CAMLprim value caml_get_current_callstack(value max_frames_value)
+CAMLstub value caml_get_current_callstack(value max_frames_value)
 {
   CAMLparam1(max_frames_value);
   CAMLlocal1(trace);
@@ -232,13 +232,13 @@ void caml_debuginfo_location(debuginfo dbg, /*out*/ struct caml_loc_info * li)
   li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);
 }
 
-CAMLprim value caml_add_debug_info(backtrace_slot start, value size,
+CAMLstub value caml_add_debug_info(backtrace_slot start, value size,
                                    value events)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_remove_debug_info(backtrace_slot start)
+CAMLstub value caml_remove_debug_info(backtrace_slot start)
 {
   return Val_unit;
 }

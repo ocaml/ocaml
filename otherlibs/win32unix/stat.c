@@ -307,7 +307,7 @@ static int do_stat(int do_lstat, int use_64, char* opath, HANDLE fstat, __int64*
   return ret;
 }
 
-CAMLprim value unix_stat(value path)
+CAMLstub value unix_stat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -319,7 +319,7 @@ CAMLprim value unix_stat(value path)
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_stat_64(value path)
+CAMLstub value unix_stat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -331,7 +331,7 @@ CAMLprim value unix_stat_64(value path)
   return stat_aux(1, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat(value path)
+CAMLstub value unix_lstat(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -343,7 +343,7 @@ CAMLprim value unix_lstat(value path)
   return stat_aux(0, st_ino, &buf);
 }
 
-CAMLprim value unix_lstat_64(value path)
+CAMLstub value unix_lstat_64(value path)
 {
   struct _stat64 buf;
   __int64 st_ino;
@@ -401,12 +401,12 @@ static value do_fstat(value handle, int use_64)
   return stat_aux(use_64, st_ino, &buf);
 }
 
-CAMLprim value unix_fstat(value handle)
+CAMLstub value unix_fstat(value handle)
 {
   return do_fstat(handle, 0);
 }
 
-CAMLprim value unix_fstat_64(value handle)
+CAMLstub value unix_fstat_64(value handle)
 {
   return do_fstat(handle, 1);
 }

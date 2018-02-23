@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_dup2(value cloexec, value fd1, value fd2)
+CAMLstub value unix_dup2(value cloexec, value fd1, value fd2)
 {
   HANDLE oldh, newh;
 

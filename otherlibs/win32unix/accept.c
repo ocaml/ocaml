@@ -20,7 +20,7 @@
 #include "unixsupport.h"
 #include "socketaddr.h"
 
-CAMLprim value unix_accept(value cloexec, value sock)
+CAMLstub value unix_accept(value cloexec, value sock)
 {
   SOCKET sconn = Socket_val(sock);
   SOCKET snew;

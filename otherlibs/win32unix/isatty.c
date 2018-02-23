@@ -18,7 +18,7 @@
 #include <caml/osdeps.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_isatty(value fd)
+CAMLstub value unix_isatty(value fd)
 {
   return Val_bool(caml_win32_isatty(win_CRT_fd_of_filedescr(fd)));
 }

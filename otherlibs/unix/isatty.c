@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_isatty(value fd)
+CAMLstub value unix_isatty(value fd)
 {
   return (Val_bool(isatty(Int_val(fd))));
 }

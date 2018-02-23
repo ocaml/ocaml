@@ -19,7 +19,7 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-CAMLprim value unix_pipe(value cloexec, value vunit)
+CAMLstub value unix_pipe(value cloexec, value vunit)
 {
   int fd[2];
   value res;

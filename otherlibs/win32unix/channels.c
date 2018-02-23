@@ -40,7 +40,7 @@ int win_CRT_fd_of_filedescr(value handle)
   }
 }
 
-CAMLprim value win_inchannel_of_filedescr(value handle)
+CAMLstub value win_inchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -58,7 +58,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_outchannel_of_filedescr(value handle)
+CAMLstub value win_outchannel_of_filedescr(value handle)
 {
   CAMLparam1(handle);
   CAMLlocal1(vchan);
@@ -74,7 +74,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   CAMLreturn(vchan);
 }
 
-CAMLprim value win_filedescr_of_channel(value vchan)
+CAMLstub value win_filedescr_of_channel(value vchan)
 {
   CAMLparam1(vchan);
   CAMLlocal1(fd);
@@ -92,7 +92,7 @@ CAMLprim value win_filedescr_of_channel(value vchan)
   CAMLreturn(fd);
 }
 
-CAMLprim value win_handle_fd(value vfd)
+CAMLstub value win_handle_fd(value vfd)
 {
   int crt_fd = Int_val(vfd);
   /* PR#4750: do not use the _or_socket variant as it can cause performance

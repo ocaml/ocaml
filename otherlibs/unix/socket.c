@@ -38,7 +38,7 @@ int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-CAMLprim value unix_socket(value cloexec, value domain,
+CAMLstub value unix_socket(value cloexec, value domain,
                            value type, value proto)
 {
   int retcode;
@@ -58,7 +58,7 @@ CAMLprim value unix_socket(value cloexec, value domain,
 
 #else
 
-CAMLprim value unix_socket(value cloexec, value domain,
+CAMLstub value unix_socket(value cloexec, value domain,
                            value type,value proto)
 { caml_invalid_argument("socket not implemented"); }
 

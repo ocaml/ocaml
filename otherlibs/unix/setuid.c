@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_setuid(value uid)
+CAMLstub value unix_setuid(value uid)
 {
   if (setuid(Int_val(uid)) == -1) uerror("setuid", Nothing);
   return Val_unit;

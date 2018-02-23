@@ -458,7 +458,7 @@ static void caml_thread_reinitialize(void)
 
 /* Initialize the thread machinery */
 
-CAMLprim value caml_thread_initialize(value unit)
+CAMLstub value caml_thread_initialize(value unit)
 {
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
@@ -509,7 +509,7 @@ CAMLprim value caml_thread_initialize(value unit)
    thread take 25ms on average / 50ms in the worst case, so we don't do it on
    program exit. */
 
-CAMLprim value caml_thread_cleanup(value unit)
+CAMLstub value caml_thread_cleanup(value unit)
 {
   if (caml_tick_thread_running){
     caml_tick_thread_stop = 1;
@@ -573,7 +573,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   return 0;
 }
 
-CAMLprim value caml_thread_new(value clos)
+CAMLstub value caml_thread_new(value clos)
 {
   caml_thread_t th;
   st_retcode err;
@@ -672,7 +672,7 @@ CAMLexport int caml_c_thread_unregister(void)
 
 /* Return the current thread */
 
-CAMLprim value caml_thread_self(value unit)
+CAMLstub value caml_thread_self(value unit)
 {
   if (curr_thread == NULL) caml_invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
@@ -680,14 +680,14 @@ CAMLprim value caml_thread_self(value unit)
 
 /* Return the identifier of a thread */
 
-CAMLprim value caml_thread_id(value th)
+CAMLstub value caml_thread_id(value th)
 {
   return Ident(th);
 }
 
 /* Print uncaught exception and backtrace */
 
-CAMLprim value caml_thread_uncaught_exception(value exn)
+CAMLstub value caml_thread_uncaught_exception(value exn)
 {
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
@@ -700,7 +700,7 @@ CAMLprim value caml_thread_uncaught_exception(value exn)
 
 /* Terminate current thread */
 
-CAMLprim value caml_thread_exit(value unit)
+CAMLstub value caml_thread_exit(value unit)
 {
   struct longjmp_buffer * exit_buf = NULL;
 
@@ -730,7 +730,7 @@ CAMLprim value caml_thread_exit(value unit)
 
 /* Allow re-scheduling */
 
-CAMLprim value caml_thread_yield(value unit)
+CAMLstub value caml_thread_yield(value unit)
 {
   if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
   caml_enter_blocking_section();
@@ -741,7 +741,7 @@ CAMLprim value caml_thread_yield(value unit)
 
 /* Suspend the current thread until another thread terminates */
 
-CAMLprim value caml_thread_join(value th)
+CAMLstub value caml_thread_join(value th)
 {
   st_retcode rc = caml_threadstatus_wait(Terminated(th));
   st_check_error(rc, "Thread.join");
@@ -778,7 +778,7 @@ static struct custom_operations caml_mutex_ops = {
   custom_deserialize_default
 };
 
-CAMLprim value caml_mutex_new(value unit)
+CAMLstub value caml_mutex_new(value unit)
 {
   st_mutex mut = NULL;          /* suppress warning */
   value wrapper;
@@ -789,7 +789,7 @@ CAMLprim value caml_mutex_new(value unit)
   return wrapper;
 }
 
-CAMLprim value caml_mutex_lock(value wrapper)
+CAMLstub value caml_mutex_lock(value wrapper)
 {
   st_mutex mut = Mutex_val(wrapper);
   st_retcode retcode;
@@ -806,7 +806,7 @@ CAMLprim value caml_mutex_lock(value wrapper)
   return Val_unit;
 }
 
-CAMLprim value caml_mutex_unlock(value wrapper)
+CAMLstub value caml_mutex_unlock(value wrapper)
 {
   st_mutex mut = Mutex_val(wrapper);
   st_retcode retcode;
@@ -816,7 +816,7 @@ CAMLprim value caml_mutex_unlock(value wrapper)
   return Val_unit;
 }
 
-CAMLprim value caml_mutex_try_lock(value wrapper)
+CAMLstub value caml_mutex_try_lock(value wrapper)
 {
   st_mutex mut = Mutex_val(wrapper);
   st_retcode retcode;
@@ -857,7 +857,7 @@ static struct custom_operations caml_condition_ops = {
   custom_compare_ext_default
 };
 
-CAMLprim value caml_condition_new(value unit)
+CAMLstub value caml_condition_new(value unit)
 {
   st_condvar cond = NULL;       /* suppress warning */
   value wrapper;
@@ -868,7 +868,7 @@ CAMLprim value caml_condition_new(value unit)
   return wrapper;
 }
 
-CAMLprim value caml_condition_wait(value wcond, value wmut)
+CAMLstub value caml_condition_wait(value wcond, value wmut)
 {
   st_condvar cond = Condition_val(wcond);
   st_mutex mut = Mutex_val(wmut);
@@ -883,14 +883,14 @@ CAMLprim value caml_condition_wait(value wcond, value wmut)
   return Val_unit;
 }
 
-CAMLprim value caml_condition_signal(value wrapper)
+CAMLstub value caml_condition_signal(value wrapper)
 {
   st_check_error(st_condvar_signal(Condition_val(wrapper)),
                  "Condition.signal");
   return Val_unit;
 }
 
-CAMLprim value caml_condition_broadcast(value wrapper)
+CAMLstub value caml_condition_broadcast(value wrapper)
 {
   st_check_error(st_condvar_broadcast(Condition_val(wrapper)),
                  "Condition.broadcast");

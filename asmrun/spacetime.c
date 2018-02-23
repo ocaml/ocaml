@@ -157,7 +157,7 @@ static void caml_spacetime_write_magic_number_internal(struct channel* chan)
   Unlock(chan);
 }
 
-CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+CAMLstub value caml_spacetime_write_magic_number(value v_channel)
 {
   caml_spacetime_write_magic_number_internal(Channel(v_channel));
   return Val_unit;
@@ -289,12 +289,12 @@ void caml_spacetime_register_shapes(void* dynlinked_table)
   caml_spacetime_dynamic_shape_tables = table;
 }
 
-CAMLprim value caml_spacetime_trie_is_initialized (value v_unit)
+CAMLstub value caml_spacetime_trie_is_initialized (value v_unit)
 {
   return (caml_spacetime_trie_root == Val_unit) ? Val_false : Val_true;
 }
 
-CAMLprim value caml_spacetime_get_trie_root (value v_unit)
+CAMLstub value caml_spacetime_get_trie_root (value v_unit)
 {
   return caml_spacetime_trie_root;
 }
@@ -345,7 +345,7 @@ static void caml_spacetime_save_event_internal (value v_time_opt,
   caml_stat_free(Hp_val(v_time));
 }
 
-CAMLprim value caml_spacetime_save_event (value v_time_opt,
+CAMLstub value caml_spacetime_save_event (value v_time_opt,
                                           value v_channel,
                                           value v_event_name)
 {
@@ -405,7 +405,7 @@ void save_trie (struct channel *chan, double time_override,
   Unlock(chan);
 }
 
-CAMLprim value caml_spacetime_save_trie (value v_time_opt, value v_channel)
+CAMLstub value caml_spacetime_save_trie (value v_time_opt, value v_channel)
 {
   struct channel* channel = Channel(v_channel);
   double time_override = 0.0;
@@ -507,7 +507,7 @@ static value find_tail_node(value node, void* callee)
   return found;
 }
 
-CAMLprim value caml_spacetime_allocate_node(
+CAMLstub value caml_spacetime_allocate_node(
       int size_including_header, void* pc, value* node_hole)
 {
   value node;
@@ -610,7 +610,7 @@ static void* last_indirect_node_hole_ptr_callee;
 static value* last_indirect_node_hole_ptr_node_hole;
 static call_point* last_indirect_node_hole_ptr_result;
 
-CAMLprim value* caml_spacetime_indirect_node_hole_ptr
+CAMLstub value* caml_spacetime_indirect_node_hole_ptr
       (void* callee, value* node_hole, value caller_node)
 {
   /* Find the address of the node hole for an indirect call to [callee].
@@ -1000,8 +1000,8 @@ void caml_spacetime_c_to_ocaml(void* ocaml_entry_point,
 extern void caml_garbage_collection(void);  /* signals_asm.c */
 extern void caml_array_bound_error(void);  /* fail.c */
 
-CAMLexport uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
-                                                     uintnat index_within_node)
+CAMLstub uintnat caml_spacetime_generate_profinfo (void* profinfo_words,
+                                                   uintnat index_within_node)
 {
   /* Called from code that creates a value's header inside an OCaml
      function. */
@@ -1085,7 +1085,7 @@ void caml_spacetime_automatic_snapshot (void)
   }
 }
 
-CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
+CAMLstub value caml_spacetime_save_event_for_automatic_snapshots
   (value v_event_name)
 {
   if (automatic_snapshots) {
@@ -1109,12 +1109,12 @@ void caml_spacetime_automatic_save (void)
   }
 }
 
-CAMLprim value caml_spacetime_enabled (value v_unit)
+CAMLstub value caml_spacetime_enabled (value v_unit)
 {
   return Val_true;
 }
 
-CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+CAMLstub value caml_register_channel_for_spacetime (value v_channel)
 {
   struct channel* channel = Channel(v_channel);
   channel->flags |= CHANNEL_FLAG_BLOCKING_WRITE;
@@ -1125,35 +1125,35 @@ CAMLprim value caml_register_channel_for_spacetime (value v_channel)
 
 /* Functions for when the compiler was not configured with "-spacetime". */
 
-CAMLprim value caml_spacetime_write_magic_number(value v_channel)
+CAMLstub value caml_spacetime_write_magic_number(value v_channel)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_enabled (value v_unit)
+CAMLstub value caml_spacetime_enabled (value v_unit)
 {
   return Val_false;
 }
 
-CAMLprim value caml_spacetime_save_event (value v_time_opt,
+CAMLstub value caml_spacetime_save_event (value v_time_opt,
                                           value v_channel,
                                           value v_event_name)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_event_for_automatic_snapshots
+CAMLstub value caml_spacetime_save_event_for_automatic_snapshots
   (value v_event_name)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_spacetime_save_trie (value ignored)
+CAMLstub value caml_spacetime_save_trie (value ignored)
 {
   return Val_unit;
 }
 
-CAMLprim value caml_register_channel_for_spacetime (value v_channel)
+CAMLstub value caml_register_channel_for_spacetime (value v_channel)
 {
   return Val_unit;
 }

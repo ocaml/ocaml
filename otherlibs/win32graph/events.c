@@ -181,7 +181,7 @@ static value caml_gr_wait_event_blocking(int mask)
                                       ev.key);
 }
 
-CAMLprim value caml_gr_wait_event(value eventlist) /* ML */
+CAMLstub value caml_gr_wait_event(value eventlist)
 {
   int mask, poll;
 

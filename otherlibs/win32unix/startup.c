@@ -22,8 +22,7 @@
 
 value val_process_id;
 
-CAMLprim value win_startup(unit)
-     value unit;
+CAMLstub value win_startup(value unit)
 {
   WSADATA wsaData;
   int i;
@@ -40,8 +39,7 @@ CAMLprim value win_startup(unit)
   return Val_unit;
 }
 
-CAMLprim value win_cleanup(unit)
-     value unit;
+CAMLstub value win_cleanup(value unit)
 {
   worker_cleanup();
 

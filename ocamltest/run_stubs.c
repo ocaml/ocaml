@@ -77,7 +77,7 @@ end:
   free(text);
 }
 
-CAMLprim value caml_run_command(value caml_settings)
+CAMLstub value caml_run_command(value caml_settings)
 {
   int res;
   command_settings settings;

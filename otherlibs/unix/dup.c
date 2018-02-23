@@ -18,7 +18,7 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-CAMLprim value unix_dup(value cloexec, value fd)
+CAMLstub value unix_dup(value cloexec, value fd)
 {
   int ret;
 #ifdef F_DUPFD_CLOEXEC

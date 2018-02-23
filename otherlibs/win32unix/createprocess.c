@@ -123,7 +123,7 @@ value win_create_process_native(value cmd, value cmdline, value env,
   return Val_long(hProcess);
 }
 
-CAMLprim value win_create_process(value * argv, int argn)
+CAMLstub value win_create_process(value * argv, int argn)
 {
   return win_create_process_native(argv[0], argv[1], argv[2],
                                    argv[3], argv[4], argv[5]);
@@ -144,7 +144,7 @@ static int win_has_console(void)
   }
 }
 
-CAMLprim value win_terminate_process(value v_pid)
+CAMLstub value win_terminate_process(value v_pid)
 {
   return (Val_bool(TerminateProcess((HANDLE) Long_val(v_pid), 0)));
 }

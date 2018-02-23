@@ -23,7 +23,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-CAMLprim value unix_gettimeofday(value unit)
+CAMLstub value unix_gettimeofday(value unit)
 {
   struct timeval tp;
   if (gettimeofday(&tp, NULL) == -1) uerror("gettimeofday", Nothing);
@@ -32,7 +32,7 @@ CAMLprim value unix_gettimeofday(value unit)
 
 #else
 
-CAMLprim value unix_gettimeofday(value unit)
+CAMLstub value unix_gettimeofday(value unit)
 { caml_invalid_argument("gettimeofday not implemented"); }
 
 #endif

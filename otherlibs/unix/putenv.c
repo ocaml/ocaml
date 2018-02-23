@@ -28,7 +28,7 @@
 
 #ifdef HAS_PUTENV
 
-CAMLprim value unix_putenv(value name, value val)
+CAMLstub value unix_putenv(value name, value val)
 {
   char * s;
   char_os * p;
@@ -49,7 +49,7 @@ CAMLprim value unix_putenv(value name, value val)
 
 #else
 
-CAMLprim value unix_putenv(value name, value val)
+CAMLstub value unix_putenv(value name, value val)
 { caml_invalid_argument("putenv not implemented"); }
 
 #endif

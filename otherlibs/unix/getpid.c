@@ -16,7 +16,7 @@
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_getpid(value unit)
+CAMLstub value unix_getpid(value unit)
 {
   return Val_int(getpid());
 }

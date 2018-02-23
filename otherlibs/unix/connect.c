@@ -22,7 +22,7 @@
 
 #include "socketaddr.h"
 
-CAMLprim value unix_connect(value socket, value address)
+CAMLstub value unix_connect(value socket, value address)
 {
   int retcode;
   union sock_addr_union addr;
@@ -38,7 +38,7 @@ CAMLprim value unix_connect(value socket, value address)
 
 #else
 
-CAMLprim value unix_connect(value socket, value address)
+CAMLstub value unix_connect(value socket, value address)
 { caml_invalid_argument("connect not implemented"); }
 
 #endif

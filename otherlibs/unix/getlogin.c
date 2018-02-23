@@ -20,7 +20,7 @@
 
 extern char * getlogin(void);
 
-CAMLprim value unix_getlogin(value unit)
+CAMLstub value unix_getlogin(value unit)
 {
   char * name;
   name = getlogin();

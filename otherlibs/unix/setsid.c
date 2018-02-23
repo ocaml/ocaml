@@ -20,7 +20,7 @@
 #include <unistd.h>
 #endif
 
-CAMLprim value unix_setsid(value unit)
+CAMLstub value unix_setsid(value unit)
 {
 #ifdef HAS_SETSID
   return Val_int(setsid());

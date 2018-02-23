@@ -64,7 +64,7 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   return res;
 }
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+CAMLstub value unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
 {
   fd_set read, write, except;
@@ -107,8 +107,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
 #else
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
-                           value timeout)
+CAMLstub value unix_select(value readfds, value writefds, value exceptfds,
+                             value timeout)
 { caml_invalid_argument("select not implemented"); }
 
 #endif

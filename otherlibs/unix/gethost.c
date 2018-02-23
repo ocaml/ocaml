@@ -89,7 +89,7 @@ static value alloc_host_entry(struct hostent *entry)
   return res;
 }
 
-CAMLprim value unix_gethostbyaddr(value a)
+CAMLstub value unix_gethostbyaddr(value a)
 {
   struct in_addr adr = GET_INET_ADDR(a);
   struct hostent * hp;
@@ -123,7 +123,7 @@ CAMLprim value unix_gethostbyaddr(value a)
   return alloc_host_entry(hp);
 }
 
-CAMLprim value unix_gethostbyname(value name)
+CAMLstub value unix_gethostbyname(value name)
 {
   struct hostent * hp;
   char * hostname;
@@ -169,10 +169,10 @@ CAMLprim value unix_gethostbyname(value name)
 
 #else
 
-CAMLprim value unix_gethostbyaddr(value name)
+CAMLstub value unix_gethostbyaddr(value name)
 { caml_invalid_argument("gethostbyaddr not implemented"); }
 
-CAMLprim value unix_gethostbyname(value name)
+CAMLstub value unix_gethostbyname(value name)
 { caml_invalid_argument("gethostbyname not implemented"); }
 
 #endif

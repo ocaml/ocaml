@@ -20,8 +20,7 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_mkdir(path, perm)
-     value path, perm;
+CAMLstub value unix_mkdir(value path, value perm)
 {
   int err;
   wchar_t * wpath;
