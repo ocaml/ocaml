@@ -34,6 +34,7 @@ val lookup_as_bool : Variables.t -> t -> bool option
     [None] if not set. *)
 
 val add : Variables.t -> string -> t -> t
+val add_if_undefined : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
 
 val append : Variables.t -> string -> t -> t
