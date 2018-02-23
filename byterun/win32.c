@@ -398,7 +398,7 @@ static void expand_pattern(wchar_t * pat)
 }
 
 
-CAMLexport void caml_expand_command_line(int * argcp, wchar_t *** argvp)
+void caml_expand_command_line(int * argcp, wchar_t *** argvp)
 {
   int i;
   argc = 0;
