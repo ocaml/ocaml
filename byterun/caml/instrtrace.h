@@ -23,7 +23,7 @@
 #include "mlvalues.h"
 #include "misc.h"
 
-extern intnat caml_icount;
+CAMLdata intnat caml_icount;
 void caml_stop_here (void);
 void caml_disasm_instr (code_t pc);
 void caml_trace_value_file (value v, code_t prog, int proglen, FILE * f);

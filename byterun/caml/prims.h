@@ -22,18 +22,18 @@
 
 typedef value (*c_primitive)();
 
-extern c_primitive caml_builtin_cprim[];
-extern char * caml_names_of_builtin_cprim[];
+CAMLdata c_primitive caml_builtin_cprim[];
+CAMLdata char * caml_names_of_builtin_cprim[];
 
-extern struct ext_table caml_prim_table;
+CAMLdata struct ext_table caml_prim_table;
 #ifdef DEBUG
-extern struct ext_table caml_prim_name_table;
+CAMLdata struct ext_table caml_prim_name_table;
 #endif
 
 #define Primitive(n) ((c_primitive)(caml_prim_table.contents[n]))
 
-extern char * caml_section_table;
-extern asize_t caml_section_table_size;
+CAMLdata char * caml_section_table;
+CAMLdata asize_t caml_section_table_size;
 
 #endif /* CAML_INTERNALS */
 

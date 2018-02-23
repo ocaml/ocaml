@@ -18,7 +18,7 @@
 
 #ifdef CAML_INTERNALS
 
-extern int caml_compare_unordered;
+CAMLdata int caml_compare_unordered;
 
 #endif /* CAML_INTERNALS */
 

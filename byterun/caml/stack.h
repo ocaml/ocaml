@@ -92,8 +92,8 @@ typedef struct {
 
 /* Hash table of frame descriptors */
 
-extern frame_descr ** caml_frame_descriptors;
-extern int caml_frame_descriptors_mask;
+CAMLdata frame_descr ** caml_frame_descriptors;
+CAMLdata int caml_frame_descriptors_mask;
 
 #define Hash_retaddr(addr) \
   (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)
@@ -104,18 +104,18 @@ void caml_unregister_frametable(intnat *);
 void caml_register_dyn_global(void *);
 
 uintnat caml_stack_usage (void);
-extern uintnat (*caml_stack_usage_hook)(void);
+CAMLdata uintnat (*caml_stack_usage_hook)(void);
 
 /* Declaration of variables used in the asm code */
 CAMLdata char * caml_top_of_stack;
 CAMLdata char * caml_bottom_of_stack;
 CAMLdata uintnat caml_last_return_address;
 CAMLdata value * caml_gc_regs;
-extern char * caml_exception_pointer;
-extern value * caml_globals[];
-extern char caml_globals_map[];
-extern intnat caml_globals_inited;
-extern intnat * caml_frametable[];
+CAMLdata char * caml_exception_pointer;
+CAMLdata value * caml_globals[];
+CAMLdata char caml_globals_map[];
+CAMLdata intnat caml_globals_inited;
+CAMLdata intnat * caml_frametable[];
 
 frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
 

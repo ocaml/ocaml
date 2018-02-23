@@ -364,7 +364,7 @@ int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
 /* GC flags and messages */
 
-extern uintnat caml_verb_gc;
+CAMLdata uintnat caml_verb_gc;
 void caml_gc_message (int, char *, ...)
 #ifdef __GNUC__
   __attribute__ ((format (printf, 2, 3)))
@@ -372,7 +372,7 @@ void caml_gc_message (int, char *, ...)
 ;
 
 /* Runtime warnings */
-extern uintnat caml_runtime_warnings;
+CAMLdata uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
 
 #ifdef DEBUG
@@ -430,8 +430,8 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #include <time.h>
 #include <stdio.h>
 
-extern intnat caml_stat_minor_collections;
-extern intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
+CAMLdata intnat caml_stat_minor_collections;
+CAMLdata intnat CAML_INSTR_STARTTIME, CAML_INSTR_STOPTIME;
 
 struct CAML_INSTR_BLOCK {
   struct timespec ts[10];
@@ -440,7 +440,7 @@ struct CAML_INSTR_BLOCK {
   struct CAML_INSTR_BLOCK *next;
 };
 
-extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
+CAMLdata struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 
 /* Declare a timer/counter name. [t] must be a new variable name. */
 #define CAML_INSTR_DECLARE(t)                                       \

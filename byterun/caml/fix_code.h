@@ -24,9 +24,9 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern code_t caml_start_code;
-extern asize_t caml_code_size;
-extern unsigned char * caml_saved_code;
+CAMLdata code_t caml_start_code;
+CAMLdata asize_t caml_code_size;
+CAMLdata unsigned char * caml_saved_code;
 
 void caml_init_code_fragments(void);
 void caml_load_code (int fd, asize_t len);
@@ -35,8 +35,8 @@ void caml_set_instruction (code_t pos, opcode_t instr);
 int caml_is_instruction (opcode_t instr1, opcode_t instr2);
 
 #ifdef THREADED_CODE
-extern char ** caml_instr_table;
-extern char * caml_instr_base;
+CAMLdata char ** caml_instr_table;
+CAMLdata char * caml_instr_base;
 void caml_thread_code (code_t code, asize_t len);
 #endif
 

@@ -27,11 +27,11 @@ extern "C" {
 #endif
 
 #ifdef CAML_INTERNALS
-extern intnat volatile caml_signals_are_pending;
+CAMLdata intnat volatile caml_signals_are_pending;
 CAMLdata intnat volatile caml_pending_signals[];
 CAMLdata int volatile caml_something_to_do;
-extern int volatile caml_requested_major_slice;
-extern int volatile caml_requested_minor_gc;
+CAMLdata int volatile caml_requested_major_slice;
+CAMLdata int volatile caml_requested_minor_gc;
 
 void caml_request_major_slice (void);
 void caml_request_minor_gc (void);

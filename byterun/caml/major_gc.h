@@ -33,12 +33,12 @@ typedef struct {
 #define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
 
-extern int caml_gc_phase;
-extern int caml_gc_subphase;
-extern uintnat caml_allocated_words;
-extern double caml_extra_heap_resources;
-extern uintnat caml_dependent_size, caml_dependent_allocated;
-extern uintnat caml_fl_wsz_at_phase_change;
+CAMLdata int caml_gc_phase;
+CAMLdata int caml_gc_subphase;
+CAMLdata uintnat caml_allocated_words;
+CAMLdata double caml_extra_heap_resources;
+CAMLdata uintnat caml_dependent_size, caml_dependent_allocated;
+CAMLdata uintnat caml_fl_wsz_at_phase_change;
 
 #define Phase_mark 0
 #define Phase_clean 1
@@ -59,15 +59,15 @@ extern uintnat caml_fl_wsz_at_phase_change;
    since they must be available for their finalizer.
   */
 
-extern char *caml_heap_start;
-extern uintnat total_heap_size;
-extern char *caml_gc_sweep_hp;
+CAMLdata char *caml_heap_start;
+CAMLdata uintnat total_heap_size;
+CAMLdata char *caml_gc_sweep_hp;
 
-extern int caml_major_window;
-double caml_major_ring[Max_major_window];
-int caml_major_ring_index;
-double caml_major_work_credit;
-extern double caml_gc_clock;
+CAMLdata int caml_major_window;
+CAMLdata double caml_major_ring[Max_major_window];
+CAMLdata int caml_major_ring_index;
+CAMLdata double caml_major_work_credit;
+CAMLdata double caml_gc_clock;
 
 /* [caml_major_gc_hook] is called just between the end of the mark
    phase and the beginning of the sweep phase of the major GC */

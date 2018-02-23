@@ -22,15 +22,15 @@
 
 void caml_init_atom_table (void);
 
-extern uintnat caml_init_percent_free;
-extern uintnat caml_init_max_percent_free;
-extern uintnat caml_init_minor_heap_wsz;
-extern uintnat caml_init_heap_chunk_sz;
-extern uintnat caml_init_heap_wsz;
-extern uintnat caml_init_max_stack_wsz;
-extern uintnat caml_init_major_window;
-extern uintnat caml_trace_level;
-extern uintnat caml_cleanup_on_exit;
+CAMLdata uintnat caml_init_percent_free;
+CAMLdata uintnat caml_init_max_percent_free;
+CAMLdata uintnat caml_init_minor_heap_wsz;
+CAMLdata uintnat caml_init_heap_chunk_sz;
+CAMLdata uintnat caml_init_heap_wsz;
+CAMLdata uintnat caml_init_max_stack_wsz;
+CAMLdata uintnat caml_init_major_window;
+CAMLdata uintnat caml_trace_level;
+CAMLdata uintnat caml_cleanup_on_exit;
 
 void caml_parse_ocamlrunparam (void);
 

@@ -20,12 +20,12 @@
 
 #include "misc.h"
 
-extern double
+CAMLdata double
      caml_stat_minor_words,
      caml_stat_promoted_words,
      caml_stat_major_words;
 
-extern intnat
+CAMLdata intnat
      caml_stat_minor_collections,
      caml_stat_major_collections,
      caml_stat_heap_wsz,

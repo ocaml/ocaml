@@ -33,7 +33,7 @@ value caml_sys_exit (value);
 double caml_sys_time_unboxed(value);
 value caml_sys_get_argv(value unit);
 
-extern char_os * caml_exe_name;
+CAMLdata char_os * caml_exe_name;
 
 #ifdef __cplusplus
 }

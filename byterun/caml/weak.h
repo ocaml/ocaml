@@ -22,8 +22,8 @@
 
 #include "mlvalues.h"
 
-extern value caml_ephe_list_head;
-extern value caml_ephe_none;
+CAMLdata value caml_ephe_list_head;
+CAMLdata value caml_ephe_none;
 
 
 /** The first field 0:  weak list;

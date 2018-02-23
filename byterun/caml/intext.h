@@ -131,7 +131,7 @@ value caml_input_value_to_outside_heap (value channel);
      malloc blocks that are not added to the heap.  Not for the
      casual user. */
 
-extern int caml_extern_allow_out_of_heap;
+CAMLdata int caml_extern_allow_out_of_heap;
   /* Permit the marshaller to traverse structures that look like OCaml
      values but do not live in the OCaml heap. */
 
@@ -196,7 +196,7 @@ struct code_fragment {
 
 struct code_fragment * caml_extern_find_code(char *addr);
 
-struct ext_table caml_code_fragments_table;
+CAMLdata struct ext_table caml_code_fragments_table;
 
 #endif /* CAML_INTERNALS */
 
