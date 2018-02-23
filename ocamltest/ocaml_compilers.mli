@@ -22,7 +22,7 @@ type t = {
   backend : Ocaml_backends.t;
   is_toplevel : bool;
   is_native : bool;
-  exit_status_variabe : Variables.t;
+  exit_status_variable : Variables.t;
   reference_variable : Variables.t;
   output_variable : Variables.t
 }

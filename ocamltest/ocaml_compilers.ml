@@ -24,7 +24,7 @@ type t = {
   backend : Ocaml_backends.t;
   is_toplevel : bool;
   is_native : bool;
-  exit_status_variabe : Variables.t;
+  exit_status_variable : Variables.t;
   reference_variable : Variables.t;
   output_variable : Variables.t
 }
@@ -39,7 +39,7 @@ let ocamlc_byte =
   backend = Ocaml_backends.Bytecode;
   is_toplevel = false;
   is_native = false;
-  exit_status_variabe = Ocaml_variables.ocamlc_byte_exit_status;
+  exit_status_variable = Ocaml_variables.ocamlc_byte_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
 }
@@ -52,7 +52,7 @@ let ocamlc_opt =
   backend = Ocaml_backends.Bytecode;
   is_toplevel = false;
   is_native = true;
-  exit_status_variabe = Ocaml_variables.ocamlc_opt_exit_status;
+  exit_status_variable = Ocaml_variables.ocamlc_opt_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
 }
@@ -67,7 +67,7 @@ let ocamlopt_byte =
   backend = Ocaml_backends.Native;
   is_toplevel = false;
   is_native = false;
-  exit_status_variabe = Ocaml_variables.ocamlopt_byte_exit_status;
+  exit_status_variable = Ocaml_variables.ocamlopt_byte_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
 }
@@ -80,7 +80,7 @@ let ocamlopt_opt =
   backend = Ocaml_backends.Native;
   is_toplevel = false;
   is_native = true;
-  exit_status_variabe = Ocaml_variables.ocamlopt_opt_exit_status;
+  exit_status_variable = Ocaml_variables.ocamlopt_opt_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
 }
@@ -94,7 +94,7 @@ let ocaml = {
   backend = Ocaml_backends.Bytecode;
   is_toplevel = true;
   is_native = false;
-  exit_status_variabe = Ocaml_variables.ocaml_exit_status;
+  exit_status_variable = Ocaml_variables.ocaml_exit_status;
   reference_variable = Ocaml_variables.compiler_reference;
   output_variable = Ocaml_variables.compiler_output;
 }
@@ -106,14 +106,14 @@ let ocamlnat = {
   backend = Ocaml_backends.Native;
   is_toplevel = true;
   is_native = true;
-  exit_status_variabe = Ocaml_variables.ocamlnat_exit_status;
+  exit_status_variable = Ocaml_variables.ocamlnat_exit_status;
   reference_variable = Ocaml_variables.compiler_reference2;
   output_variable = Ocaml_variables.compiler_output2;
 }
 
 let expected_exit_status env compiler =
   try int_of_string
-    (Environments.safe_lookup compiler.exit_status_variabe env)
+    (Environments.safe_lookup compiler.exit_status_variable env)
   with _ -> 0
 
 let reference_filename env prefix compiler =
