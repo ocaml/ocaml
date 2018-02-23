@@ -293,7 +293,7 @@ void caml_Store_double_val (value,double);
   #define Store_double_array_field(v,i,d) Store_double_flat_field(v,i,d)
 #else
   #define Double_array_field(v,i) Double_val (Field(v,i))
-  extern void caml_Store_double_array_field (value, mlsize_t, double);
+  void caml_Store_double_array_field (value, mlsize_t, double);
   #define Store_double_array_field(v,i,d) caml_Store_double_array_field (v,i,d)
 #endif
 

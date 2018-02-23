@@ -58,7 +58,7 @@
 
 #ifdef WITH_SPACETIME
 struct ext_table;
-extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
+uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
 #define Make_header_allocated_here(wosize, tag, color)                        \
       (Make_header_with_profinfo(wosize, tag, color,                          \
         caml_spacetime_my_profinfo(NULL, wosize))                             \

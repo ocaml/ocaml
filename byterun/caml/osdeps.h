@@ -36,7 +36,7 @@ CAMLdata unsigned short caml_win32_revision;
    (This distinction matters for Win32, but not for Unix.)
    Return number of bytes read.
    In case of error, raises [Sys_error] or [Sys_blocked_io]. */
-extern int caml_read_fd(int fd, int flags, void * buf, int n);
+int caml_read_fd(int fd, int flags, void * buf, int n);
 
 /* Write at most [n] bytes from buffer [buf] onto file descriptor [fd].
    [flags] indicates whether [fd] is a socket
@@ -44,21 +44,22 @@ extern int caml_read_fd(int fd, int flags, void * buf, int n);
    (This distinction matters for Win32, but not for Unix.)
    Return number of bytes written.
    In case of error, raises [Sys_error] or [Sys_blocked_io]. */
-extern int caml_write_fd(int fd, int flags, void * buf, int n);
+int caml_write_fd(int fd, int flags, void * buf, int n);
 
 /* Decompose the given path into a list of directories, and add them
    to the given table. */
-extern char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
+char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
 
 /* Search the given file in the given list of directories.
    If not found, return a copy of [name]. */
-extern char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
+char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
 
 /* Same, but search an executable name in the system path for executables. */
 char_os * caml_search_exe_in_path(const char_os * name);
 
 /* Same, but search a shared library in the given path. */
-extern char_os * caml_search_dll_in_path(struct ext_table * path, const char_os * name);
+char_os * caml_search_dll_in_path(struct ext_table * path,
+                                  const char_os * name);
 
 /* Open a shared library and return a handle on it.
    If [for_execution] is true, perform full symbol resolution and
@@ -69,54 +70,54 @@ extern char_os * caml_search_dll_in_path(struct ext_table * path, const char_os 
    If [global] is true, symbols from the shared library can be used
    to resolve for other libraries to be opened later on.
    Return [NULL] on error. */
-extern void * caml_dlopen(char_os * libname, int for_execution, int global);
+void * caml_dlopen(char_os * libname, int for_execution, int global);
 
 /* Close a shared library handle */
-extern void caml_dlclose(void * handle);
+void caml_dlclose(void * handle);
 
 /* Look up the given symbol in the given shared library.
    Return [NULL] if not found, or symbol value if found. */
-extern void * caml_dlsym(void * handle, const char * name);
+void * caml_dlsym(void * handle, const char * name);
 
-extern void * caml_globalsym(const char * name);
+void * caml_globalsym(const char * name);
 
 /* Return an error message describing the most recent dynlink failure. */
-extern char * caml_dlerror(void);
+char * caml_dlerror(void);
 
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
-extern int caml_read_directory(char_os * dirname, struct ext_table * contents);
+int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
    GetModuleFileName under Windows).  Return NULL on error,
    string allocated with [caml_stat_alloc] on success. */
-extern char_os * caml_executable_name(void);
+char_os * caml_executable_name(void);
 
 /* Secure version of [getenv]: returns NULL if the process has special
    privileges (setuid bit, setgid bit, capabilities).
 */
-extern char_os *caml_secure_getenv(char_os const *var);
+char_os *caml_secure_getenv(char_os const *var);
 
 /* If [fd] refers to a terminal or console, return the number of rows
    (lines) that it displays.  Otherwise, or if the number of rows
    cannot be determined, return -1. */
-extern int caml_num_rows_fd(int fd);
+int caml_num_rows_fd(int fd);
 
 #ifdef _WIN32
 
-extern int caml_win32_rename(const wchar_t *, const wchar_t *);
+int caml_win32_rename(const wchar_t *, const wchar_t *);
 
-extern void caml_probe_win32_version(void);
-extern void caml_setup_win32_terminal(void);
-extern void caml_restore_win32_terminal(void);
+void caml_probe_win32_version(void);
+void caml_setup_win32_terminal(void);
+void caml_restore_win32_terminal(void);
 
-extern wchar_t *caml_win32_getenv(wchar_t const *);
+wchar_t *caml_win32_getenv(wchar_t const *);
 
 /* Windows Unicode support */
 
-extern int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);
-extern int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outlen);
+int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);
+int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outlen);
 
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
@@ -126,7 +127,7 @@ extern int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, in
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
 */
-extern wchar_t* caml_stat_strdup_to_utf16(const char *s);
+wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
 /* [caml_stat_strdup_of_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
@@ -135,15 +136,15 @@ extern wchar_t* caml_stat_strdup_to_utf16(const char *s);
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
 */
-extern char* caml_stat_strdup_of_utf16(const wchar_t *s);
+char* caml_stat_strdup_of_utf16(const wchar_t *s);
 
 /* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
    [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
    or in the current code page otherwise.
 */
-extern value caml_copy_string_of_utf16(const wchar_t *s);
+value caml_copy_string_of_utf16(const wchar_t *s);
 
-extern int caml_win32_isatty(int fd);
+int caml_win32_isatty(int fd);
 
 #endif /* _WIN32 */
 

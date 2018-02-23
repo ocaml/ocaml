@@ -163,23 +163,21 @@ CAMLdata value* caml_spacetime_finaliser_trie_root;
 
 extern allocation_point* caml_all_allocation_points;
 
-extern void caml_spacetime_initialize(void);
-extern uintnat caml_spacetime_my_profinfo(
-  spacetime_unwind_info_cache*, uintnat);
-extern c_node_type caml_spacetime_classify_c_node(c_node* node);
-extern c_node* caml_spacetime_c_node_of_stored_pointer(value);
-extern c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
-extern value caml_spacetime_stored_pointer_of_c_node(c_node* node);
-extern void caml_spacetime_register_thread(value*, value*);
-extern void caml_spacetime_register_shapes(void*);
-extern value caml_spacetime_frame_table(void);
-extern value caml_spacetime_shape_table(void);
-extern void caml_spacetime_save_snapshot (struct channel *chan,
-                                          double time_override,
-                                          int use_time_override);
-extern value caml_spacetime_timestamp(double time_override,
-                                      int use_time_override);
-extern void caml_spacetime_automatic_snapshot (void);
+void caml_spacetime_initialize(void);
+uintnat caml_spacetime_my_profinfo(spacetime_unwind_info_cache*, uintnat);
+c_node_type caml_spacetime_classify_c_node(c_node* node);
+c_node* caml_spacetime_c_node_of_stored_pointer(value);
+c_node* caml_spacetime_c_node_of_stored_pointer_not_null(value);
+value caml_spacetime_stored_pointer_of_c_node(c_node* node);
+void caml_spacetime_register_thread(value*, value*);
+void caml_spacetime_register_shapes(void*);
+value caml_spacetime_frame_table(void);
+value caml_spacetime_shape_table(void);
+void caml_spacetime_save_snapshot (struct channel *chan,
+                                   double time_override,
+                                   int use_time_override);
+value caml_spacetime_timestamp(double time_override, int use_time_override);
+void caml_spacetime_automatic_snapshot (void);
 
 /* For use in runtime functions that are executed from OCaml
    code, to save the overhead of using libunwind every time. */

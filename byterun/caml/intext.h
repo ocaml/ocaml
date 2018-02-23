@@ -126,7 +126,7 @@ intnat caml_output_value_to_block(value v, value flags,
 value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
 
-extern value caml_input_value_to_outside_heap (value channel);
+value caml_input_value_to_outside_heap (value channel);
   /* As for [caml_input_value], but the value is unmarshalled into
      malloc blocks that are not added to the heap.  Not for the
      casual user. */
@@ -135,7 +135,7 @@ extern int caml_extern_allow_out_of_heap;
   /* Permit the marshaller to traverse structures that look like OCaml
      values but do not live in the OCaml heap. */
 
-extern value caml_output_value(value vchan, value v, value flags);
+value caml_output_value(value vchan, value v, value flags);
 #endif /* CAML_INTERNALS */
 
 value caml_input_val_from_string (value str, intnat ofs);

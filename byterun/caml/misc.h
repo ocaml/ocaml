@@ -166,7 +166,7 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
   return __builtin_mul_overflow(a, b, res);
 }
 #else
-extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
 /* Windows Unicode support */
@@ -325,7 +325,7 @@ struct cplugin_context {
 /* end of CAML_CPLUGIN_CONTEXT_API version 0 */
 };
 
-extern void caml_cplugins_init(char_os * exe_name, char_os **argv);
+void caml_cplugins_init(char_os * exe_name, char_os **argv);
 
 /* A plugin MUST define a symbol "caml_cplugin_init" with the prototype:
 
@@ -345,11 +345,11 @@ struct ext_table {
   void ** contents;
 };
 
-extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
-extern int caml_ext_table_add(struct ext_table * tbl, void * data);
-extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
-extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
-extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
+void caml_ext_table_init(struct ext_table * tbl, int init_capa);
+int caml_ext_table_add(struct ext_table * tbl, void * data);
+void caml_ext_table_remove(struct ext_table * tbl, void * data);
+void caml_ext_table_free(struct ext_table * tbl, int free_entries);
+void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
 int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
@@ -411,14 +411,14 @@ int caml_runtime_warnings_active(void);
 /* Note: the first argument is in fact a [value] but we don't have this
    type available yet because we can't include [mlvalues.h] in this file.
 */
-extern void caml_set_fields (intnat v, unsigned long, unsigned long);
+void caml_set_fields (intnat v, unsigned long, unsigned long);
 #endif /* DEBUG */
 
 
 /* snprintf emulation for Win32 */
 
 #if defined(_WIN32) && !defined(_UCRT)
-extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
+int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
@@ -501,11 +501,11 @@ extern struct CAML_INSTR_BLOCK *CAML_INSTR_LOG;
 /* This function is called at the start of the program to set up
    the data for the above macros.
 */
-extern void CAML_INSTR_INIT (void);
+void CAML_INSTR_INIT (void);
 
 /* This function is automatically called by the runtime to output
    the collected data to the dump file. */
-extern void CAML_INSTR_ATEXIT (void);
+void CAML_INSTR_ATEXIT (void);
 
 #else /* CAML_INSTR */
 

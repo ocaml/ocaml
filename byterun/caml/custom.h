@@ -59,11 +59,10 @@ CAMLdata int caml_compare_unordered;
   /* Used by custom comparison to report unordered NaN-like cases. */
 
 #ifdef CAML_INTERNALS
-extern struct custom_operations * caml_find_custom_operations(char * ident);
-extern struct custom_operations *
-          caml_final_custom_operations(void (*fn)(value));
+struct custom_operations * caml_find_custom_operations(char * ident);
+struct custom_operations * caml_final_custom_operations(void (*fn)(value));
 
-extern void caml_init_custom_operations(void);
+void caml_init_custom_operations(void);
 
 extern struct custom_operations caml_nativeint_ops;
 extern struct custom_operations caml_int32_ops;

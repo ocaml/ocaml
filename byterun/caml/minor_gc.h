@@ -57,20 +57,20 @@ struct caml_custom_elt {
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
 extern struct caml_custom_table caml_custom_table;
 
-extern void caml_set_minor_heap_size (asize_t); /* size in bytes */
-extern void caml_empty_minor_heap (void);
+void caml_set_minor_heap_size (asize_t); /* size in bytes */
+void caml_empty_minor_heap (void);
 void caml_gc_dispatch (void);
 void garbage_collection (void); /* def in asmrun/signals_asm.c */
-extern void caml_realloc_ref_table (struct caml_ref_table *);
-extern void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
-extern void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
-extern void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
-                                   asize_t, asize_t);
-extern void caml_realloc_custom_table (struct caml_custom_table *);
-extern void caml_alloc_custom_table (struct caml_custom_table *,
-                                     asize_t, asize_t);
-extern void caml_oldify_one (value, value *);
-extern void caml_oldify_mopup (void);
+void caml_realloc_ref_table (struct caml_ref_table *);
+void caml_alloc_table (struct caml_ref_table *, asize_t, asize_t);
+void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *);
+void caml_alloc_ephe_table (struct caml_ephe_ref_table *,
+                            asize_t, asize_t);
+void caml_realloc_custom_table (struct caml_custom_table *);
+void caml_alloc_custom_table (struct caml_custom_table *,
+                              asize_t, asize_t);
+void caml_oldify_one (value, value *);
+void caml_oldify_mopup (void);
 
 #define Oldify(p) do{ \
     value __oldify__v__ = *p; \

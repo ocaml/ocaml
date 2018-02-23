@@ -103,7 +103,7 @@ CAMLdata value caml_backtrace_last_exn;
  * It might be called before GC initialization, so it shouldn't do OCaml
  * allocation.
  */
-extern value caml_record_backtrace(value vflag);
+value caml_record_backtrace(value vflag);
 
 
 #ifndef NATIVE_CODE
@@ -114,7 +114,7 @@ extern char_os * caml_cds_file;
 /* Primitive called _only_ by runtime to record unwinded frames to
  * backtrace.  A similar primitive exists for native code, but with a
  * different prototype. */
-extern void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
+void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
 
 #endif
 
