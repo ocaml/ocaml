@@ -95,8 +95,8 @@ let compile_program ocamlsrcdir compiler program_variable log env =
     Ocaml_compilers.expected_exit_status env compiler in
   let module_names =
     String.concat " " (List.map Ocaml_filetypes.make_filename modules) in
-  let what = Printf.sprintf "Linking modules %s into %s"
-    module_names program_file in
+  let what = Printf.sprintf "Compiling program %s from modules %s"
+    program_file module_names in
   Printf.fprintf log "%s\n%!" what;
   let output = "-o " ^ program_file in
   let commandline =
