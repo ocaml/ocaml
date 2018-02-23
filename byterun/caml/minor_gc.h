@@ -20,12 +20,12 @@
 #include "address_class.h"
 #include "config.h"
 
-extern value *caml_young_start, *caml_young_end;
-extern value *caml_young_alloc_start, *caml_young_alloc_end;
-extern value *caml_young_ptr, *caml_young_limit;
-extern value *caml_young_trigger;
-extern asize_t caml_minor_heap_wsz;
-extern int caml_in_minor_collection;
+CAMLdata value *caml_young_start, *caml_young_end;
+CAMLdata value *caml_young_alloc_start, *caml_young_alloc_end;
+CAMLdata value *caml_young_ptr, *caml_young_limit;
+CAMLdata value *caml_young_trigger;
+CAMLdata asize_t caml_minor_heap_wsz;
+CAMLdata int caml_in_minor_collection;
 
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \
@@ -38,7 +38,7 @@ extern int caml_in_minor_collection;
 }
 
 struct caml_ref_table CAML_TABLE_STRUCT(value *);
-extern struct caml_ref_table caml_ref_table;
+CAMLdata struct caml_ref_table caml_ref_table;
 
 struct caml_ephe_ref_elt {
   value ephe;      /* an ephemeron in major heap */
@@ -46,7 +46,7 @@ struct caml_ephe_ref_elt {
 };
 
 struct caml_ephe_ref_table CAML_TABLE_STRUCT(struct caml_ephe_ref_elt);
-extern struct caml_ephe_ref_table caml_ephe_ref_table;
+CAMLdata struct caml_ephe_ref_table caml_ephe_ref_table;
 
 struct caml_custom_elt {
   value block;     /* The finalized block in the minor heap. */
@@ -55,7 +55,7 @@ struct caml_custom_elt {
 };
 
 struct caml_custom_table CAML_TABLE_STRUCT(struct caml_custom_elt);
-extern struct caml_custom_table caml_custom_table;
+CAMLdata struct caml_custom_table caml_custom_table;
 
 void caml_set_minor_heap_size (asize_t); /* size in bytes */
 void caml_empty_minor_heap (void);

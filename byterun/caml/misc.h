@@ -96,9 +96,10 @@ extern "C" {
    The others can allocate and even call back to OCaml code.
 */
 typedef void (*caml_timing_hook) (void);
-extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
-extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
-extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
+CAMLdata caml_timing_hook caml_major_slice_begin_hook,
+                          caml_major_slice_end_hook, caml_minor_gc_begin_hook,
+                          caml_minor_gc_end_hook, caml_finalise_begin_hook,
+                          caml_finalise_end_hook;
 
 /* Assertions */
 
@@ -274,7 +275,7 @@ typedef char char_os;
 
 #define CAML_CPLUGINS_PRIMS_BITMAP  ((1 << CAML_CPLUGINS_PRIMS_MAX)-1)
 
-extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
+CAMLdata intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 
 #define CAML_SYS_PRIM_1(code,prim,arg1)               \
   (caml_cplugins_prim == NULL) ? prim(arg1) :    \

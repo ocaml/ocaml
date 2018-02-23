@@ -366,7 +366,7 @@ CAMLdata header_t caml_atom_table[];
 
 /* The table of global identifiers */
 
-extern value caml_global_data;
+CAMLdata value caml_global_data;
 
 value caml_set_oo_id(value obj);
 

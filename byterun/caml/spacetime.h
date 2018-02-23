@@ -152,8 +152,8 @@ typedef struct shape_table {
   struct shape_table* next;
 } shape_table;
 
-extern uint64_t** caml_spacetime_static_shape_tables;
-extern shape_table* caml_spacetime_dynamic_shape_tables;
+CAMLdata uint64_t** caml_spacetime_static_shape_tables;
+CAMLdata shape_table* caml_spacetime_dynamic_shape_tables;
 
 typedef struct ext_table* spacetime_unwind_info_cache;
 
@@ -161,7 +161,7 @@ CAMLdata value caml_spacetime_trie_root;
 CAMLdata value* caml_spacetime_trie_node_ptr;
 CAMLdata value* caml_spacetime_finaliser_trie_root;
 
-extern allocation_point* caml_all_allocation_points;
+CAMLdata allocation_point* caml_all_allocation_points;
 
 void caml_spacetime_initialize(void);
 uintnat caml_spacetime_my_profinfo(spacetime_unwind_info_cache*, uintnat);

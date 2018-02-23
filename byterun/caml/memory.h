@@ -59,7 +59,7 @@ void caml_disown_for_heap (char *mem);
 int caml_add_to_heap (char *mem);
 color_t caml_allocation_color (void *hp);
 
-extern int caml_huge_fallback_count;
+CAMLdata int caml_huge_fallback_count;
 
 
 /* [caml_stat_*] functions below provide an interface to the static memory
