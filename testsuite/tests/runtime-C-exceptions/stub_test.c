@@ -9,7 +9,7 @@ char *some_dynamic_string_that_should_be_freed()
     return strdup("bar");
 }
 
-CAMLexport value dynamic_invalid_argument(value unit)
+value dynamic_invalid_argument(value unit)
 {
     CAMLparam1(unit);
     char *dynamic_msg = some_dynamic_string_that_should_be_freed();
