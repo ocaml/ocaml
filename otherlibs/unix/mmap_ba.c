@@ -67,8 +67,7 @@ static struct custom_operations caml_ba_mapped_ops = {
 /* [caml_ba_mapped_alloc] allocates a new bigarray object in the heap
    corresponding to a memory-mapped file. */
 
-CAMLexport value
-ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim)
+value ALLOC_FUNCTION(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat asize;
   int i;

@@ -29,7 +29,7 @@
 #define EAFNOSUPPORT WSAEAFNOSUPPORT
 #endif
 
-CAMLexport value alloc_inet_addr(struct in_addr * a)
+value alloc_inet_addr(struct in_addr * a)
 {
   value res;
   /* Use a string rather than an abstract block so that it can be
@@ -41,7 +41,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
 
 #ifdef HAS_IPV6
 
-CAMLexport value alloc_inet6_addr(struct in6_addr * a)
+value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
   res = caml_alloc_initialized_string(16, (char *)a);
