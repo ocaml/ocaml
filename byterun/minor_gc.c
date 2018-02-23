@@ -473,7 +473,7 @@ CAMLexport void caml_gc_dispatch (void)
 /* For backward compatibility with Lablgtk: do a minor collection to
    ensure that the minor heap is empty.
 */
-CAMLexport void caml_minor_collection (void)
+void caml_minor_collection (void)
 {
   caml_requested_minor_gc = 1;
   caml_gc_dispatch ();

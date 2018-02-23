@@ -120,7 +120,7 @@ CAMLexport void caml_close_channel(struct channel *channel)
   caml_stat_free(channel);
 }
 
-CAMLexport file_offset caml_channel_size(struct channel *channel)
+file_offset caml_channel_size(struct channel *channel)
 {
   file_offset offset;
   file_offset end;
@@ -231,7 +231,7 @@ CAMLexport void caml_really_putblock(struct channel *channel,
   }
 }
 
-CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
+void caml_seek_out(struct channel *channel, file_offset dest)
 {
   caml_flush(channel);
   caml_enter_blocking_section();
@@ -243,15 +243,14 @@ CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
   channel->offset = dest;
 }
 
-CAMLexport file_offset caml_pos_out(struct channel *channel)
+file_offset caml_pos_out(struct channel *channel)
 {
   return channel->offset + (file_offset)(channel->curr - channel->buff);
 }
 
 /* Input */
 
-/* caml_do_read is exported for Cash */
-CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
+int caml_do_read(int fd, char *p, unsigned int n)
 {
   return caml_read_fd(fd, 0, p, n);
 }
@@ -323,7 +322,7 @@ CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
   return n - k;
 }
 
-CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
+void caml_seek_in(struct channel *channel, file_offset dest)
 {
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
@@ -340,12 +339,12 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
   }
 }
 
-CAMLexport file_offset caml_pos_in(struct channel *channel)
+file_offset caml_pos_in(struct channel *channel)
 {
   return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
-CAMLexport intnat caml_input_scan_line(struct channel *channel)
+intnat caml_input_scan_line(struct channel *channel)
 {
   char * p;
   int n;
@@ -390,8 +389,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
-/* FIXME CAMLexport, but not in io.h  exported for Cash ? */
-CAMLexport void caml_finalize_channel(value vchan)
+void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
