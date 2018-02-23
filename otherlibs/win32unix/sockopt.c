@@ -106,7 +106,7 @@ union option_value {
   struct timeval tv;
 };
 
-CAMLexport value
+value
 unix_getsockopt_aux(char * name,
                     enum option_type ty, int level, int option,
                     value socket)
@@ -165,7 +165,7 @@ unix_getsockopt_aux(char * name,
   }
 }
 
-CAMLexport value
+value
 unix_setsockopt_aux(char * name,
                     enum option_type ty, int level, int option,
                     value socket, value val)
