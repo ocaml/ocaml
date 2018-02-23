@@ -203,18 +203,16 @@ let setup_compiler_build_env compiler log env =
   let testfile_basename = Filename.chop_extension testfile in
   let compiler_reference_variable =
     compiler.Ocaml_compilers.reference_variable in
-  let env = 
-    if Environments.is_variable_defined compiler_reference_variable env
-    then env
-    else begin
-      let compiler_reference_prefix =
-        Filename.make_path [source_directory; testfile_basename] in
-      let compiler_reference_filename =
-        Ocaml_compilers.reference_filename
-          env compiler_reference_prefix compiler in
-      Environments.add
-        compiler_reference_variable compiler_reference_filename env
-    end in
+  let compiler_reference_prefix =
+    Filename.make_path [source_directory; testfile_basename] in
+  let compiler_reference_filename =
+    Ocaml_compilers.reference_filename
+      env compiler_reference_prefix compiler in
+  let env =
+    Environments.add_if_undefined
+      compiler_reference_variable
+      compiler_reference_filename env
+  in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
   let compiler_directory_suffix =
@@ -226,15 +224,16 @@ let setup_compiler_build_env compiler log env =
       Builtin_variables.test_build_directory_prefix env)
     compiler_directory_name in
   let compiler_output_variable = compiler.Ocaml_compilers.output_variable in
-  let (env, compiler_output_file) =
-    (match Environments.lookup compiler_output_variable env with
-    | Some value -> (env, value)
-    | None ->
-      let compiler_output_filename =
-        Filename.make_filename compiler.Ocaml_compilers.directory "output" in
-        let file = Filename.make_path [build_dir; compiler_output_filename] in
-        let env' = Environments.add compiler_output_variable file env in
-        (env', file)) in
+  let compiler_output_filename =
+    Filename.make_filename compiler.Ocaml_compilers.directory "output" in
+  let compiler_output_file =
+    Filename.make_path [build_dir; compiler_output_filename]
+  in
+  let env =
+    Environments.add_if_undefined
+      compiler_output_variable
+      compiler_output_file env
+  in
   if Sys.file_exists compiler_output_file then
     Sys.remove compiler_output_file;
   let env =
