@@ -44,7 +44,7 @@ Working version
 
 ### Other libraries:
 
-- MPR#7445, GPR#1629: Graphics.open_graph displays the correct window title on
+- MPR#7745, GPR#1629: Graphics.open_graph displays the correct window title on
   Windows again (fault introduced by 4.06 Unicode changes).
   (David Allsopp)
 
