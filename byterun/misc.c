@@ -84,6 +84,8 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
   exit(2);
 }
 
+struct ext_table caml_code_fragments_table;
+
 /* If you change the caml_ext_table* functions, also update
    asmrun/spacetime.c:find_trie_node_from_libunwind. */
 
