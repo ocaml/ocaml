@@ -1,3 +1,12 @@
+4.06 maintenance branch:
+------------------------
+
+### Other libraries:
+
+- MPR#7745, GPR#1629: Graphics.open_graph displays the correct window title on
+  Windows again (fault introduced by 4.06 Unicode changes).
+  (David Allsopp)
+
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
 
