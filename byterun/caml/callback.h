@@ -27,30 +27,32 @@
 extern "C" {
 #endif
 
-value caml_callback (value closure, value arg);
-value caml_callback2 (value closure, value arg1, value arg2);
-value caml_callback3 (value closure, value arg1, value arg2, value arg3);
-value caml_callbackN (value closure, int narg, value args[]);
+CAMLpublic value caml_callback (value closure, value arg);
+CAMLpublic value caml_callback2 (value closure, value arg1, value arg2);
+CAMLpublic value caml_callback3 (value closure, value arg1, value arg2,
+                                 value arg3);
+CAMLpublic value caml_callbackN (value closure, int narg, value args[]);
 
-value caml_callback_exn (value closure, value arg);
-value caml_callback2_exn (value closure, value arg1, value arg2);
-value caml_callback3_exn (value closure, value arg1, value arg2, value arg3);
-value caml_callbackN_exn (value closure, int narg, value args[]);
+CAMLpublic value caml_callback_exn (value closure, value arg);
+CAMLpublic value caml_callback2_exn (value closure, value arg1, value arg2);
+CAMLpublic value caml_callback3_exn (value closure, value arg1, value arg2,
+                                     value arg3);
+CAMLpublic value caml_callbackN_exn (value closure, int narg, value args[]);
 
 #define Make_exception_result(v) ((v) | 2)
 #define Is_exception_result(v) (((v) & 3) == 2)
 #define Extract_exception(v) ((v) & ~3)
 
-value * caml_named_value (char const * name);
+CAMLpublic value * caml_named_value (char const * name);
 typedef void (*caml_named_action) (value*, char *);
-void caml_iterate_named_values(caml_named_action f);
+CAMLpublic void caml_iterate_named_values(caml_named_action f);
 
-void caml_main (char_os ** argv);
-void caml_startup (char_os ** argv);
-value caml_startup_exn (char_os ** argv);
-void caml_startup_pooled (char_os ** argv);
-value caml_startup_pooled_exn (char_os ** argv);
-void caml_shutdown (void);
+CAMLpublic void caml_main (char_os ** argv);
+CAMLpublic void caml_startup (char_os ** argv);
+CAMLpublic value caml_startup_exn (char_os ** argv);
+CAMLpublic void caml_startup_pooled (char_os ** argv);
+CAMLpublic value caml_startup_pooled_exn (char_os ** argv);
+CAMLpublic void caml_shutdown (void);
 
 CAMLdata int caml_callback_depth;
 

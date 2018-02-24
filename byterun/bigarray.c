@@ -36,7 +36,7 @@
 
 /* Compute the number of elements of a big array */
 
-CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
+uintnat caml_ba_num_elts(struct caml_ba_array * b)
 {
   uintnat num_elts;
   int i;
@@ -47,7 +47,7 @@ CAMLexport uintnat caml_ba_num_elts(struct caml_ba_array * b)
 
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
-CAMLexport int caml_ba_element_size[] =
+int caml_ba_element_size[] =
 { 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
@@ -59,7 +59,7 @@ CAMLexport int caml_ba_element_size[] =
 
 /* Compute the number of bytes for the elements of a big array */
 
-CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
+uintnat caml_ba_byte_size(struct caml_ba_array * b)
 {
   return caml_ba_num_elts(b)
          * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
@@ -89,8 +89,7 @@ struct custom_operations caml_ba_ops = {
    [data] cannot point into the OCaml heap.
    [dim] may point into an object in the OCaml heap.
 */
-CAMLexport value
-caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
+value caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 {
   uintnat num_elts, asize, size;
   int i;
@@ -130,7 +129,7 @@ caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim)
 /* Same as caml_ba_alloc, but dimensions are passed as a list of
    arguments */
 
-CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
+value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
 {
   va_list ap;
   intnat dim[CAML_BA_MAX_NUM_DIMS];
@@ -147,7 +146,7 @@ CAMLexport value caml_ba_alloc_dims(int flags, int num_dims, void * data, ...)
 
 /* Finalization of a big array */
 
-CAMLexport void caml_ba_finalize(value v)
+void caml_ba_finalize(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
 
@@ -173,7 +172,7 @@ CAMLexport void caml_ba_finalize(value v)
 
 /* Comparison of two big arrays */
 
-CAMLexport int caml_ba_compare(value v1, value v2)
+int caml_ba_compare(value v1, value v2)
 {
   struct caml_ba_array * b1 = Caml_ba_array_val(v1);
   struct caml_ba_array * b2 = Caml_ba_array_val(v2);
@@ -256,7 +255,7 @@ CAMLexport int caml_ba_compare(value v1, value v2)
 
 /* Hashing of a bigarray */
 
-CAMLexport intnat caml_ba_hash(value v)
+intnat caml_ba_hash(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   intnat num_elts, n;
@@ -366,9 +365,7 @@ static void caml_ba_serialize_longarray(void * data,
 #endif
 }
 
-CAMLexport void caml_ba_serialize(value v,
-                              uintnat * wsize_32,
-                              uintnat * wsize_64)
+void caml_ba_serialize(value v, uintnat * wsize_32, uintnat * wsize_64)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   intnat num_elts;
@@ -437,7 +434,7 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
 #endif
 }
 
-CAMLexport uintnat caml_ba_deserialize(void * dst)
+uintnat caml_ba_deserialize(void * dst)
 {
   struct caml_ba_array * b = dst;
   int i, elt_size;

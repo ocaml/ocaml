@@ -49,13 +49,13 @@
 
 /* Hooks for locking channels */
 
-CAMLexport void (*caml_channel_mutex_free) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_lock) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_unlock) (struct channel *) = NULL;
-CAMLexport void (*caml_channel_mutex_unlock_exn) (void) = NULL;
+void (*caml_channel_mutex_free) (struct channel *) = NULL;
+void (*caml_channel_mutex_lock) (struct channel *) = NULL;
+void (*caml_channel_mutex_unlock) (struct channel *) = NULL;
+void (*caml_channel_mutex_unlock_exn) (void) = NULL;
 
 /* List of opened channels */
-CAMLexport struct channel * caml_all_opened_channels = NULL;
+struct channel * caml_all_opened_channels = NULL;
 
 /* Basic functions over type struct channel *.
    These functions can be called directly from C.
@@ -63,7 +63,7 @@ CAMLexport struct channel * caml_all_opened_channels = NULL;
 
 /* Functions shared between input and output */
 
-CAMLexport struct channel * caml_open_descriptor_in(int fd)
+struct channel * caml_open_descriptor_in(int fd)
 {
   struct channel * channel;
 
@@ -88,7 +88,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   return channel;
 }
 
-CAMLexport struct channel * caml_open_descriptor_out(int fd)
+struct channel * caml_open_descriptor_out(int fd)
 {
   struct channel * channel;
 
@@ -110,7 +110,7 @@ static void unlink_channel(struct channel *channel)
   }
 }
 
-CAMLexport void caml_close_channel(struct channel *channel)
+void caml_close_channel(struct channel *channel)
 {
   CAML_SYS_CLOSE(channel->fd);
   if (channel->refcount > 0) return;
@@ -140,7 +140,7 @@ file_offset caml_channel_size(struct channel *channel)
   return end;
 }
 
-CAMLexport int caml_channel_binary_mode(struct channel *channel)
+int caml_channel_binary_mode(struct channel *channel)
 {
 #if defined(_WIN32) || defined(__CYGWIN__)
   int oldmode = setmode(channel->fd, O_BINARY);
@@ -158,7 +158,7 @@ CAMLexport int caml_channel_binary_mode(struct channel *channel)
    end of the flush, or false if some data remains in the buffer.
  */
 
-CAMLexport int caml_flush_partial(struct channel *channel)
+int caml_flush_partial(struct channel *channel)
 {
   int towrite, written;
 
@@ -177,14 +177,14 @@ CAMLexport int caml_flush_partial(struct channel *channel)
 
 /* Flush completely the buffer. */
 
-CAMLexport void caml_flush(struct channel *channel)
+void caml_flush(struct channel *channel)
 {
   while (! caml_flush_partial(channel)) /*nothing*/;
 }
 
 /* Output data */
 
-CAMLexport void caml_putword(struct channel *channel, uint32_t w)
+void caml_putword(struct channel *channel, uint32_t w)
 {
   if (! caml_channel_binary_mode(channel))
     caml_failwith("output_binary_int: not a binary channel");
@@ -194,7 +194,7 @@ CAMLexport void caml_putword(struct channel *channel, uint32_t w)
   caml_putch(channel, w);
 }
 
-CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
+int caml_putblock(struct channel *channel, char *p, intnat len)
 {
   int n, free, towrite, written;
 
@@ -220,8 +220,7 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
   }
 }
 
-CAMLexport void caml_really_putblock(struct channel *channel,
-                                     char *p, intnat len)
+void caml_really_putblock(struct channel *channel, char *p, intnat len)
 {
   int written;
   while (len > 0) {
@@ -255,7 +254,7 @@ int caml_do_read(int fd, char *p, unsigned int n)
   return caml_read_fd(fd, 0, p, n);
 }
 
-CAMLexport unsigned char caml_refill(struct channel *channel)
+unsigned char caml_refill(struct channel *channel)
 {
   int n;
 
@@ -268,7 +267,7 @@ CAMLexport unsigned char caml_refill(struct channel *channel)
   return (unsigned char)(channel->buff[0]);
 }
 
-CAMLexport uint32_t caml_getword(struct channel *channel)
+uint32_t caml_getword(struct channel *channel)
 {
   int i;
   uint32_t res;
@@ -282,7 +281,7 @@ CAMLexport uint32_t caml_getword(struct channel *channel)
   return res;
 }
 
-CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
+int caml_getblock(struct channel *channel, char *p, intnat len)
 {
   int n, avail, nread;
 
@@ -309,7 +308,7 @@ CAMLexport int caml_getblock(struct channel *channel, char *p, intnat len)
 }
 
 /* Returns the number of bytes read. */
-CAMLexport intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
+intnat caml_really_getblock(struct channel *chan, char *p, intnat n)
 {
   intnat k = n;
   int r;
@@ -448,7 +447,7 @@ static struct custom_operations channel_operations = {
   custom_compare_ext_default
 };
 
-CAMLexport value caml_alloc_channel(struct channel *chan)
+value caml_alloc_channel(struct channel *chan)
 {
   value res;
   chan->refcount++;             /* prevent finalization during next alloc */

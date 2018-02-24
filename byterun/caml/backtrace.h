@@ -126,10 +126,10 @@ void caml_stash_backtrace(value exn, code_t pc, value * sp, int reraise);
  * use of registered exception printers, and is used when possible in place of
  * this function after [Printexc] initialization.
  */
-void caml_print_exception_backtrace(void);
+CAMLpublic void caml_print_exception_backtrace(void);
 
 void caml_init_backtrace(void);
-void caml_init_debug_info(void);
+CAMLpublic void caml_init_debug_info(void);
 
 #endif /* CAML_INTERNALS */
 

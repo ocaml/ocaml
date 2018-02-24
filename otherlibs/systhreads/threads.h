@@ -16,6 +16,8 @@
 #ifndef CAML_THREADS_H
 #define CAML_THREADS_H
 
+#include <caml/misc.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -50,8 +52,8 @@ void caml_leave_blocking_section (void);
    use the runtime system (typically, a blocking I/O operation).
 */
 
-int caml_c_thread_register(void);
-int caml_c_thread_unregister(void);
+CAMLpublic int caml_c_thread_register(void);
+CAMLpublic int caml_c_thread_unregister(void);
 
 /* If a thread is created by C code (instead of by OCaml itself),
    it must be registered with the OCaml runtime system before

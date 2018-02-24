@@ -44,7 +44,7 @@
 
 #ifdef ARCH_ALIGN_DOUBLE
 
-CAMLexport double caml_Double_val(value val)
+double caml_Double_val(value val)
 {
   union { value v[2]; double d; } buffer;
 
@@ -54,7 +54,7 @@ CAMLexport double caml_Double_val(value val)
   return buffer.d;
 }
 
-CAMLexport void caml_Store_double_val(value val, double dbl)
+void caml_Store_double_val(value val, double dbl)
 {
   union { value v[2]; double d; } buffer;
 
@@ -66,7 +66,7 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 
 #endif
 
-CAMLexport value caml_copy_double(double d)
+value caml_copy_double(double d)
 {
   value res;
 
@@ -80,7 +80,7 @@ CAMLexport value caml_copy_double(double d)
 }
 
 #ifndef FLAT_FLOAT_ARRAY
-CAMLexport void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
+void caml_Store_double_array_field(value val, mlsize_t i, double dbl)
 {
   CAMLparam1 (val);
   value d = caml_copy_double (dbl);

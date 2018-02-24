@@ -47,7 +47,7 @@ static inline double fmin(double a, double b) {
 
 uintnat caml_percent_free;
 uintnat caml_major_heap_increment;
-CAMLexport char *caml_heap_start;
+char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Pase_clean,
                              Phase_sweep, or Phase_idle */

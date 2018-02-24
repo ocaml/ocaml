@@ -722,8 +722,7 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
   return res;
 }
 
-CAMLexport intnat caml_output_value_to_block(value v, value flags,
-                                             char * buf, intnat len)
+intnat caml_output_value_to_block(value v, value flags, char * buf, intnat len)
 {
   char header[32];
   int header_len;
@@ -754,9 +753,9 @@ CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
   return Val_long(l);
 }
 
-CAMLexport void caml_output_value_to_malloc(value v, value flags,
-                                            /*out*/ char ** buf,
-                                            /*out*/ intnat * len)
+void caml_output_value_to_malloc(value v, value flags,
+                                 /*out*/ char ** buf,
+                                 /*out*/ intnat * len)
 {
   char header[32];
   int header_len;
@@ -782,52 +781,52 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
 
 /* Functions for writing user-defined marshallers */
 
-CAMLexport void caml_serialize_int_1(int i)
+void caml_serialize_int_1(int i)
 {
   if (extern_ptr + 1 > extern_limit) grow_extern_output(1);
   extern_ptr[0] = i;
   extern_ptr += 1;
 }
 
-CAMLexport void caml_serialize_int_2(int i)
+void caml_serialize_int_2(int i)
 {
   if (extern_ptr + 2 > extern_limit) grow_extern_output(2);
   store16(extern_ptr, i);
   extern_ptr += 2;
 }
 
-CAMLexport void caml_serialize_int_4(int32_t i)
+void caml_serialize_int_4(int32_t i)
 {
   if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
   store32(extern_ptr, i);
   extern_ptr += 4;
 }
 
-CAMLexport void caml_serialize_int_8(int64_t i)
+void caml_serialize_int_8(int64_t i)
 {
   if (extern_ptr + 8 > extern_limit) grow_extern_output(8);
   store64(extern_ptr, i);
   extern_ptr += 8;
 }
 
-CAMLexport void caml_serialize_float_4(float f)
+void caml_serialize_float_4(float f)
 {
   caml_serialize_block_4(&f, 1);
 }
 
-CAMLexport void caml_serialize_float_8(double f)
+void caml_serialize_float_8(double f)
 {
   caml_serialize_block_float_8(&f, 1);
 }
 
-CAMLexport void caml_serialize_block_1(void * data, intnat len)
+void caml_serialize_block_1(void * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memcpy(extern_ptr, data, len);
   extern_ptr += len;
 }
 
-CAMLexport void caml_serialize_block_2(void * data, intnat len)
+void caml_serialize_block_2(void * data, intnat len)
 {
   if (extern_ptr + 2 * len > extern_limit) grow_extern_output(2 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -844,7 +843,7 @@ CAMLexport void caml_serialize_block_2(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_4(void * data, intnat len)
+void caml_serialize_block_4(void * data, intnat len)
 {
   if (extern_ptr + 4 * len > extern_limit) grow_extern_output(4 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -861,7 +860,7 @@ CAMLexport void caml_serialize_block_4(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_8(void * data, intnat len)
+void caml_serialize_block_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -878,7 +877,7 @@ CAMLexport void caml_serialize_block_8(void * data, intnat len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
+void caml_serialize_block_float_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
@@ -905,7 +904,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 
 /* Find where a code pointer comes from */
 
-CAMLexport struct code_fragment * caml_extern_find_code(char *addr)
+struct code_fragment * caml_extern_find_code(char *addr)
 {
   int i;
   for (i = caml_code_fragments_table.size - 1; i >= 0; i--) {

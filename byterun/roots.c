@@ -27,9 +27,9 @@
 #include "caml/roots.h"
 #include "caml/stacks.h"
 
-CAMLexport struct caml__roots_block *caml_local_roots = NULL;
+struct caml__roots_block *caml_local_roots = NULL;
 
-CAMLexport void (*caml_scan_roots_hook) (scanning_action f) = NULL;
+void (*caml_scan_roots_hook) (scanning_action f) = NULL;
 
 /* FIXME should rename to [caml_oldify_minor_roots] and synchronise with
    asmrun/roots.c */
@@ -98,9 +98,9 @@ void caml_do_roots (scanning_action f, int do_globals)
   CAML_INSTR_TIME (tmr, "major_roots/hook");
 }
 
-CAMLexport void caml_do_local_roots (scanning_action f, value *stack_low,
-                                     value *stack_high,
-                                     struct caml__roots_block *local_roots)
+void caml_do_local_roots (scanning_action f, value *stack_low,
+                          value *stack_high,
+                          struct caml__roots_block *local_roots)
 {
   register value * sp;
   struct caml__roots_block *lr;

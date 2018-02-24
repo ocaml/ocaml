@@ -57,20 +57,20 @@ struct generic_table CAML_TABLE_STRUCT(char);
 
 asize_t caml_minor_heap_wsz;
 static void *caml_young_base = NULL;
-CAMLexport value *caml_young_start = NULL, *caml_young_end = NULL;
-CAMLexport value *caml_young_alloc_start = NULL,
-                 *caml_young_alloc_mid = NULL,
-                 *caml_young_alloc_end = NULL;
-CAMLexport value *caml_young_ptr = NULL, *caml_young_limit = NULL;
-CAMLexport value *caml_young_trigger = NULL;
+value *caml_young_start = NULL, *caml_young_end = NULL;
+value *caml_young_alloc_start = NULL,
+      *caml_young_alloc_mid = NULL,
+      *caml_young_alloc_end = NULL;
+value *caml_young_ptr = NULL, *caml_young_limit = NULL;
+value *caml_young_trigger = NULL;
 
-CAMLexport struct caml_ref_table
+struct caml_ref_table
   caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
-CAMLexport struct caml_ephe_ref_table
+struct caml_ephe_ref_table
   caml_ephe_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 
-CAMLexport struct caml_custom_table
+struct caml_custom_table
   caml_custom_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
 /* Table of custom blocks in the minor heap that contain finalizers
    or GC speed parameters. */
@@ -424,7 +424,7 @@ extern uintnat caml_instr_alloc_jump;
    functions, etc.
    Leave enough room in the minor heap to allocate at least one object.
 */
-CAMLexport void caml_gc_dispatch (void)
+void caml_gc_dispatch (void)
 {
   value *trigger = caml_young_trigger; /* save old value of trigger */
 #ifdef CAML_INSTR
@@ -479,7 +479,7 @@ void caml_minor_collection (void)
   caml_gc_dispatch ();
 }
 
-CAMLexport value caml_check_urgent_gc (value extra_root)
+value caml_check_urgent_gc (value extra_root)
 {
   CAMLparam1 (extra_root);
   if (caml_requested_major_slice || caml_requested_minor_gc){

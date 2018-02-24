@@ -30,10 +30,10 @@
 /* The table of debug information fragments */
 struct ext_table caml_debug_info;
 
-CAMLexport int32_t caml_backtrace_active = 0;
-CAMLexport int32_t caml_backtrace_pos = 0;
-CAMLexport backtrace_slot * caml_backtrace_buffer = NULL;
-CAMLexport value caml_backtrace_last_exn = Val_unit;
+int32_t caml_backtrace_active = 0;
+int32_t caml_backtrace_pos = 0;
+backtrace_slot * caml_backtrace_buffer = NULL;
+value caml_backtrace_last_exn = Val_unit;
 
 void caml_init_backtrace(void)
 {
@@ -107,7 +107,7 @@ static void print_location(struct caml_loc_info * li, int index)
 }
 
 /* Print a backtrace */
-CAMLexport void caml_print_exception_backtrace(void)
+void caml_print_exception_backtrace(void)
 {
   int i;
   struct caml_loc_info li;

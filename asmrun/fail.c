@@ -57,7 +57,7 @@ CAMLnoreturn_end;
 
 char * caml_exception_pointer = NULL;
 
-CAMLexport void caml_raise(value v)
+void caml_raise(value v)
 {
   Unlock_exn();
   if (caml_exception_pointer == NULL) caml_fatal_uncaught_exception(v);
@@ -76,12 +76,12 @@ CAMLexport void caml_raise(value v)
   caml_raise_exception(v);
 }
 
-CAMLexport void caml_raise_constant(value tag)
+void caml_raise_constant(value tag)
 {
   caml_raise(tag);
 }
 
-CAMLexport void caml_raise_with_arg(value tag, value arg)
+void caml_raise_with_arg(value tag, value arg)
 {
   CAMLparam2 (tag, arg);
   CAMLlocal1 (bucket);
@@ -93,7 +93,7 @@ CAMLexport void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
+void caml_raise_with_args(value tag, int nargs, value args[])
 {
   CAMLparam1 (tag);
   CAMLxparamN (args, nargs);
@@ -108,7 +108,7 @@ CAMLexport void caml_raise_with_args(value tag, int nargs, value args[])
   CAMLnoreturn;
 }
 
-CAMLexport void caml_raise_with_string(value tag, char const *msg)
+void caml_raise_with_string(value tag, char const *msg)
 {
   CAMLparam1(tag);
   value v_msg = caml_copy_string(msg);
@@ -116,57 +116,57 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_failwith (char const *msg)
+void caml_failwith (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Failure, msg);
 }
 
-CAMLexport void caml_failwith_value (value msg)
+void caml_failwith_value (value msg)
 {
   caml_raise_with_arg((value) caml_exn_Failure, msg);
 }
 
-CAMLexport void caml_invalid_argument (char const *msg)
+void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }
 
-CAMLexport void caml_invalid_argument_value (value msg)
+void caml_invalid_argument_value (value msg)
 {
   caml_raise_with_arg((value) caml_exn_Invalid_argument, msg);
 }
 
-CAMLexport void caml_raise_out_of_memory(void)
+void caml_raise_out_of_memory(void)
 {
   caml_raise_constant((value) caml_exn_Out_of_memory);
 }
 
-CAMLexport void caml_raise_stack_overflow(void)
+void caml_raise_stack_overflow(void)
 {
   caml_raise_constant((value) caml_exn_Stack_overflow);
 }
 
-CAMLexport void caml_raise_sys_error(value msg)
+void caml_raise_sys_error(value msg)
 {
   caml_raise_with_arg((value) caml_exn_Sys_error, msg);
 }
 
-CAMLexport void caml_raise_end_of_file(void)
+void caml_raise_end_of_file(void)
 {
   caml_raise_constant((value) caml_exn_End_of_file);
 }
 
-CAMLexport void caml_raise_zero_divide(void)
+void caml_raise_zero_divide(void)
 {
   caml_raise_constant((value) caml_exn_Division_by_zero);
 }
 
-CAMLexport void caml_raise_not_found(void)
+void caml_raise_not_found(void)
 {
   caml_raise_constant((value) caml_exn_Not_found);
 }
 
-CAMLexport void caml_raise_sys_blocked_io(void)
+void caml_raise_sys_blocked_io(void)
 {
   caml_raise_constant((value) caml_exn_Sys_blocked_io);
 }
@@ -177,7 +177,7 @@ CAMLexport void caml_raise_sys_blocked_io(void)
 
 static value * caml_array_bound_error_exn = NULL;
 
-CAMLexport void caml_array_bound_error(void)
+void caml_array_bound_error(void)
 {
   if (caml_array_bound_error_exn == NULL) {
     caml_array_bound_error_exn =

@@ -44,7 +44,7 @@
 #endif
 
 extern int caml_parser_trace;
-CAMLexport header_t caml_atom_table[256];
+header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
 
 /* Initialize the atom table and the static data and code area limits. */
@@ -168,7 +168,7 @@ void caml_startup(char_os **argv)
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-CAMLexport void caml_main(char_os **argv)
+void caml_main(char_os **argv)
 {
   caml_startup(argv);
 }

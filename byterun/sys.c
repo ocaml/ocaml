@@ -72,7 +72,7 @@ static char * error_message(void)
 #define EWOULDBLOCK (-1)
 #endif
 
-CAMLexport void caml_sys_error(value arg)
+void caml_sys_error(value arg)
 {
   CAMLparam1 (arg);
   char * err;
@@ -93,7 +93,7 @@ CAMLexport void caml_sys_error(value arg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_sys_io_error(value arg)
+void caml_sys_io_error(value arg)
 {
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();

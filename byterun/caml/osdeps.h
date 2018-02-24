@@ -55,7 +55,7 @@ char_os * caml_decompose_path(struct ext_table * tbl, char_os * path);
 char_os * caml_search_in_path(struct ext_table * path, const char_os * name);
 
 /* Same, but search an executable name in the system path for executables. */
-char_os * caml_search_exe_in_path(const char_os * name);
+CAMLpublic char_os * caml_search_exe_in_path(const char_os * name);
 
 /* Same, but search a shared library in the given path. */
 char_os * caml_search_dll_in_path(struct ext_table * path,
@@ -87,7 +87,8 @@ char * caml_dlerror(void);
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
-int caml_read_directory(char_os * dirname, struct ext_table * contents);
+CAMLpublic int caml_read_directory(char_os * dirname,
+                                   struct ext_table * contents);
 
 /* Recover executable name if possible (/proc/sef/exe under Linux,
    GetModuleFileName under Windows).  Return NULL on error,
@@ -112,12 +113,14 @@ void caml_probe_win32_version(void);
 void caml_setup_win32_terminal(void);
 void caml_restore_win32_terminal(void);
 
-wchar_t *caml_win32_getenv(wchar_t const *);
+CAMLpublic wchar_t *caml_win32_getenv(wchar_t const *);
 
 /* Windows Unicode support */
 
-int win_multi_byte_to_wide_char(const char* s, int slen, wchar_t *out, int outlen);
-int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outlen);
+CAMLpublic int win_multi_byte_to_wide_char(const char* s, int slen,
+                                           wchar_t *out, int outlen);
+CAMLpublic int win_wide_char_to_multi_byte(const wchar_t* s, int slen,
+                                           char *out, int outlen);
 
 /* [caml_stat_strdup_to_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-16.  The encoding of [s] is assumed to be UTF-8 if
@@ -127,7 +130,7 @@ int win_wide_char_to_multi_byte(const wchar_t* s, int slen, char *out, int outle
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
 */
-wchar_t* caml_stat_strdup_to_utf16(const char *s);
+CAMLpublic wchar_t* caml_stat_strdup_to_utf16(const char *s);
 
 /* [caml_stat_strdup_of_utf16(s)] returns a NULL-terminated copy of [s],
    re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero or
@@ -136,15 +139,15 @@ wchar_t* caml_stat_strdup_to_utf16(const char *s);
    The returned string is allocated with [caml_stat_alloc], so it should be free
    using [caml_stat_free].
 */
-char* caml_stat_strdup_of_utf16(const wchar_t *s);
+CAMLpublic char* caml_stat_strdup_of_utf16(const wchar_t *s);
 
 /* [caml_copy_string_of_utf16(s)] returns an OCaml string containing a copy of
    [s] re-encoded in UTF-8 if [caml_windows_unicode_runtime_enabled] is non-zero
    or in the current code page otherwise.
 */
-value caml_copy_string_of_utf16(const wchar_t *s);
+CAMLpublic value caml_copy_string_of_utf16(const wchar_t *s);
 
-int caml_win32_isatty(int fd);
+CAMLpublic int caml_win32_isatty(int fd);
 
 #endif /* _WIN32 */
 

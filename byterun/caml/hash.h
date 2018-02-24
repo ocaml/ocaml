@@ -24,12 +24,12 @@
 extern "C" {
 #endif
 
-uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d);
-uint32_t caml_hash_mix_intnat(uint32_t h, intnat d);
-uint32_t caml_hash_mix_int64(uint32_t h, int64_t d);
-uint32_t caml_hash_mix_double(uint32_t h, double d);
-uint32_t caml_hash_mix_float(uint32_t h, float d);
-uint32_t caml_hash_mix_string(uint32_t h, value s);
+CAMLpublic uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d);
+CAMLpublic uint32_t caml_hash_mix_intnat(uint32_t h, intnat d);
+CAMLpublic uint32_t caml_hash_mix_int64(uint32_t h, int64_t d);
+CAMLpublic uint32_t caml_hash_mix_double(uint32_t h, double d);
+CAMLpublic uint32_t caml_hash_mix_float(uint32_t h, float d);
+CAMLpublic uint32_t caml_hash_mix_string(uint32_t h, value s);
 
 #ifdef __cplusplus
 }

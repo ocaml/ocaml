@@ -70,14 +70,26 @@ typedef char * addr;
 /* Export control (to mark primitives and to handle Windows DLL) */
 
 #if __GNUC__ >= 4 && !defined(_WIN32) && !defined(__CYGWIN__)
-  #define CAMLexport __attribute__ ((visibility ("default")))
+  #define CAMLpublic __attribute__ ((visibility ("default")))
 #else
-  #define CAMLexport
+  #define CAMLpublic
 #endif
-#define CAMLprim CAMLexport
+/* CAMLexport used to be used to mark __declspec(dllexport) in pre-FlexDLL
+   days. It is no longer used in the distribution, but is left for third-party
+   compatibility. */
+#define CAMLexport
+/* CAMLprim used to serve the dual purpose of applying __declspec(dllexport) and
+   also allowing the primitives table for the bytecode runtime to be
+   constructed for the C sources. It was also mentioned in the manual, so it
+   remains as an alias for CAMLpublic, although it shouldn't be used outside
+   the distribution. */
+#define CAMLprim CAMLpublic
+/* CAMLextern used to be used to mark __declspec(dllimport) in pre-FlexDLL
+   days. It wants to be restricted to data symbols only, but because CAMLextern
+   was public, CAMLdata has been introduced for this purpose. */
 #define CAMLstub CAMLprim
 #define CAMLextern extern
-#define CAMLdata CAMLextern CAMLexport
+#define CAMLdata CAMLextern CAMLpublic
 
 /* Weak function definitions that can be overridden by external libs */
 /* Conservatively restricted to ELF and MacOSX platforms */
@@ -114,15 +126,16 @@ CAMLnoreturn_end;
 #endif
 
 CAMLnoreturn_start
-void caml_fatal_error (char *msg)
+CAMLpublic void caml_fatal_error (char *msg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-void caml_fatal_error_arg (char *fmt, char *arg)
+CAMLpublic void caml_fatal_error_arg (char *fmt, char *arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
+CAMLpublic void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2,
+                                       char *arg2)
 CAMLnoreturn_end;
 
 /* Detection of available C built-in functions, the Clang way. */
@@ -168,7 +181,7 @@ static inline int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
   return __builtin_mul_overflow(a, b, res);
 }
 #else
-int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
+CAMLpublic int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 #endif
 
 /* Windows Unicode support */
@@ -353,7 +366,8 @@ void caml_ext_table_remove(struct ext_table * tbl, void * data);
 void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
-int caml_read_directory(char_os * dirname, struct ext_table * contents);
+CAMLpublic int caml_read_directory(char_os * dirname,
+                                   struct ext_table * contents);
 
 /* Deprecated aliases */
 #define caml_aligned_malloc caml_stat_alloc_aligned_noexc

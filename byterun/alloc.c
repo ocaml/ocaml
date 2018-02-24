@@ -31,7 +31,7 @@
 #define Setup_for_gc
 #define Restore_after_gc
 
-CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
+value caml_alloc (mlsize_t wosize, tag_t tag)
 {
   value result;
   mlsize_t i;
@@ -57,7 +57,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
+value caml_alloc_small (mlsize_t wosize, tag_t tag)
 {
   value result;
 
@@ -68,7 +68,7 @@ CAMLexport value caml_alloc_small (mlsize_t wosize, tag_t tag)
   return result;
 }
 
-CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
+value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
   tag_t tag, uintnat profinfo)
 {
   if (profinfo == 0) {
@@ -86,13 +86,13 @@ CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
 }
 
 /* [n] is a number of words (fields) */
-CAMLexport value caml_alloc_tuple(mlsize_t n)
+value caml_alloc_tuple(mlsize_t n)
 {
   return caml_alloc(n, 0);
 }
 
 /* [len] is a number of bytes (chars) */
-CAMLexport value caml_alloc_string (mlsize_t len)
+value caml_alloc_string (mlsize_t len)
 {
   value result;
   mlsize_t offset_index;
@@ -111,7 +111,7 @@ CAMLexport value caml_alloc_string (mlsize_t len)
 }
 
 /* [len] is a number of bytes (chars) */
-CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
+value caml_alloc_initialized_string (mlsize_t len, const char *p)
 {
   value result = caml_alloc_string (len);
   memcpy((char *)String_val(result), p, len);
@@ -121,14 +121,13 @@ CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
 /* [len] is a number of words.
    [mem] and [max] are relative (without unit).
 */
-CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
-                                   mlsize_t mem, mlsize_t max)
+value caml_alloc_final (mlsize_t len, final_fun fun, mlsize_t mem, mlsize_t max)
 {
   return caml_alloc_custom(caml_final_custom_operations(fun),
                            len * sizeof(value), mem, max);
 }
 
-CAMLexport value caml_copy_string(char const *s)
+value caml_copy_string(char const *s)
 {
   int len;
   value res;
@@ -138,8 +137,7 @@ CAMLexport value caml_copy_string(char const *s)
   return res;
 }
 
-CAMLexport value caml_alloc_array(value (*funct)(char const *),
-                                  char const ** arr)
+value caml_alloc_array(value (*funct)(char const *), char const ** arr)
 {
   CAMLparam0 ();
   mlsize_t nbr, n;
@@ -183,12 +181,12 @@ value caml_alloc_float_array(mlsize_t len)
 }
 
 
-CAMLexport value caml_copy_string_array(char const ** arr)
+value caml_copy_string_array(char const ** arr)
 {
   return caml_alloc_array(caml_copy_string, arr);
 }
 
-CAMLexport int caml_convert_flag_list(value list, int *flags)
+int caml_convert_flag_list(value list, int *flags)
 {
   int res;
   res = 0;

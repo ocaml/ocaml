@@ -221,14 +221,14 @@ value caml_static_release_bytecode(value prog, value len)
   return Val_unit; /* not reached */
 }
 
-CAMLexport value * caml_stack_low;
-CAMLexport value * caml_stack_high;
-CAMLexport value * caml_stack_threshold;
-CAMLexport value * caml_extern_sp;
-CAMLexport value * caml_trapsp;
+value * caml_stack_low;
+value * caml_stack_high;
+value * caml_stack_threshold;
+value * caml_extern_sp;
+value * caml_trapsp;
 int caml_callback_depth;
 int volatile caml_something_to_do;
 void (* volatile caml_async_action_hook)(void);
-CAMLexport struct longjmp_buffer * caml_external_raise;
+struct longjmp_buffer * caml_external_raise;
 
 #endif

@@ -216,7 +216,8 @@ typedef opcode_t * code_t;
 #define Object_tag 248
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
-value caml_get_public_method (value obj, value tag);
+/* caml_get_public_method is a primitive */
+CAMLpublic value caml_get_public_method (value obj, value tag);
 /* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
 /* caml_get_public_method returns 0 if tag not in the table.
@@ -232,7 +233,7 @@ value caml_get_public_method (value obj, value tag);
 #define Lazy_tag 246
 
 /* Another special case: variants */
-value caml_hash_variant(char const * tag);
+CAMLpublic value caml_hash_variant(char const * tag);
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
@@ -258,8 +259,8 @@ value caml_hash_variant(char const * tag);
 #define String_val(x) ((char *) Bp_val(x))
 #endif
 #define Bytes_val(x) ((unsigned char *) Bp_val(x))
-mlsize_t caml_string_length (value);   /* size in bytes */
-int caml_string_is_c_safe (value);
+CAMLpublic mlsize_t caml_string_length (value);   /* size in bytes */
+CAMLpublic int caml_string_is_c_safe (value);
   /* true if string contains no '\0' null characters */
 
 /* Floating-point numbers. */
@@ -269,8 +270,8 @@ int caml_string_is_c_safe (value);
 #define Double_val(v) (* (double *)(v))
 #define Store_double_val(v,d) (* (double *)(v) = (d))
 #else
-double caml_Double_val (value);
-void caml_Store_double_val (value,double);
+CAMLpublic double caml_Double_val (value);
+CAMLpublic void caml_Store_double_val (value,double);
 #define Double_val(v) caml_Double_val(v)
 #define Store_double_val(v,d) caml_Store_double_val(v,d)
 #endif
@@ -293,7 +294,7 @@ void caml_Store_double_val (value,double);
   #define Store_double_array_field(v,i,d) Store_double_flat_field(v,i,d)
 #else
   #define Double_array_field(v,i) Double_val (Field(v,i))
-  void caml_Store_double_array_field (value, mlsize_t, double);
+  CAMLpublic void caml_Store_double_array_field (value, mlsize_t, double);
   #define Store_double_array_field(v,i,d) caml_Store_double_array_field (v,i,d)
 #endif
 
@@ -319,8 +320,8 @@ void caml_Store_double_val (value,double);
   }
 #endif /* FLAT_FLOAT_ARRAY */
 
-mlsize_t caml_array_length (value);   /* size in items */
-int caml_is_double_array (value);   /* 0 is false, 1 is true */
+CAMLpublic mlsize_t caml_array_length (value);   /* size in items */
+CAMLpublic int caml_is_double_array (value);   /* 0 is false, 1 is true */
 
 
 /* Custom blocks.  They contain a pointer to a "method suite"
@@ -339,7 +340,7 @@ struct custom_operations;       /* defined in [custom.h] */
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64_t *) Data_custom_val(v)))
 #else
-int64_t caml_Int64_val(value v);
+CAMLpublic int64_t caml_Int64_val(value v);
 #define Int64_val(v) caml_Int64_val(v)
 #endif
 
@@ -368,7 +369,8 @@ CAMLdata header_t caml_atom_table[];
 
 CAMLdata value caml_global_data;
 
-value caml_set_oo_id(value obj);
+/* caml_set_oo_id is a primitive */
+CAMLpublic value caml_set_oo_id(value obj);
 
 #ifdef __cplusplus
 }

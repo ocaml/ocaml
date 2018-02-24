@@ -109,11 +109,12 @@ struct caml_ba_array {
 extern "C" {
 #endif
 
-value caml_ba_alloc(int flags, int num_dims, void * data, intnat * dim);
-value caml_ba_alloc_dims(int flags, int num_dims, void * data,
-                         ... /*dimensions, with type intnat */);
-uintnat caml_ba_byte_size(struct caml_ba_array * b);
-uintnat caml_ba_num_elts(struct caml_ba_array * b);
+CAMLpublic value caml_ba_alloc(int flags, int num_dims, void * data,
+                               intnat * dim);
+CAMLpublic value caml_ba_alloc_dims(int flags, int num_dims, void * data,
+                                    ... /*dimensions, with type intnat */);
+CAMLpublic uintnat caml_ba_byte_size(struct caml_ba_array * b);
+CAMLpublic uintnat caml_ba_num_elts(struct caml_ba_array * b);
 
 #ifdef __cplusplus
 }
@@ -122,11 +123,11 @@ uintnat caml_ba_num_elts(struct caml_ba_array * b);
 #ifdef CAML_INTERNALS
 
 CAMLdata int caml_ba_element_size[];
-void caml_ba_finalize(value v);
-int caml_ba_compare(value v1, value v2);
-intnat caml_ba_hash(value v);
-void caml_ba_serialize(value, uintnat *, uintnat *);
-uintnat caml_ba_deserialize(void * dst);
+CAMLpublic void caml_ba_finalize(value v);
+CAMLpublic int caml_ba_compare(value v1, value v2);
+CAMLpublic intnat caml_ba_hash(value v);
+CAMLpublic void caml_ba_serialize(value, uintnat *, uintnat *);
+CAMLpublic uintnat caml_ba_deserialize(void * dst);
 
 #endif
 

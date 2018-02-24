@@ -24,12 +24,12 @@
 #include "caml/mlvalues.h"
 #include "caml/stacks.h"
 
-CAMLexport value * caml_stack_low;
-CAMLexport value * caml_stack_high;
-CAMLexport value * caml_stack_threshold;
-CAMLexport value * caml_extern_sp;
-CAMLexport value * caml_trapsp;
-CAMLexport value * caml_trap_barrier;
+value * caml_stack_low;
+value * caml_stack_high;
+value * caml_stack_threshold;
+value * caml_extern_sp;
+value * caml_trapsp;
+value * caml_trap_barrier;
 value caml_global_data = 0;
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
@@ -107,7 +107,7 @@ void caml_change_max_stack_size (uintnat new_max_size)
   caml_max_stack_size = new_max_size;
 }
 
-CAMLexport uintnat (*caml_stack_usage_hook)(void) = NULL;
+uintnat (*caml_stack_usage_hook)(void) = NULL;
 
 uintnat caml_stack_usage(void)
 {

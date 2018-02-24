@@ -608,7 +608,7 @@ CAMLstub value caml_thread_new(value clos)
 
 /* Register a thread already created from C */
 
-CAMLexport int caml_c_thread_register(void)
+int caml_c_thread_register(void)
 {
   caml_thread_t th;
   st_retcode err;
@@ -654,7 +654,7 @@ CAMLexport int caml_c_thread_register(void)
 /* Unregister a thread that was created from C and registered with
    the function above */
 
-CAMLexport int caml_c_thread_unregister(void)
+int caml_c_thread_unregister(void)
 {
   caml_thread_t th = st_tls_get(thread_descriptor_key);
   /* Not registered? */

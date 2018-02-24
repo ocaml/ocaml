@@ -218,7 +218,7 @@ struct custom_operations caml_int32_ops = {
   custom_compare_ext_default
 };
 
-CAMLexport value caml_copy_int32(int32_t i)
+value caml_copy_int32(int32_t i)
 {
   value res = caml_alloc_custom(&caml_int32_ops, 4, 0, 1);
   Int32_val(res) = i;
@@ -360,7 +360,7 @@ CAMLprim value caml_int32_float_of_bits(value vi)
 
 #ifdef ARCH_ALIGN_INT64
 
-CAMLexport int64_t caml_Int64_val(value v)
+int64_t caml_Int64_val(value v)
 {
   union { int32_t i[2]; int64_t j; } buffer;
   buffer.i[0] = ((int32_t *) Data_custom_val(v))[0];
@@ -414,7 +414,7 @@ struct custom_operations caml_int64_ops = {
   custom_compare_ext_default
 };
 
-CAMLexport value caml_copy_int64(int64_t i)
+value caml_copy_int64(int64_t i)
 {
   value res = caml_alloc_custom(&caml_int64_ops, 8, 0, 1);
 #ifndef ARCH_ALIGN_INT64
@@ -700,7 +700,7 @@ struct custom_operations caml_nativeint_ops = {
   custom_compare_ext_default
 };
 
-CAMLexport value caml_copy_nativeint(intnat i)
+value caml_copy_nativeint(intnat i)
 {
   value res = caml_alloc_custom(&caml_nativeint_ops, sizeof(intnat), 0, 1);
   Nativeint_val(res) = i;

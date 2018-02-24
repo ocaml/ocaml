@@ -35,23 +35,23 @@ extern "C" {
 #endif
 
 
-value caml_alloc_shr (mlsize_t wosize, tag_t);
+CAMLpublic value caml_alloc_shr (mlsize_t wosize, tag_t);
 #ifdef WITH_PROFINFO
-value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
-value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t, header_t);
+CAMLpublic value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+CAMLpublic value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t, header_t);
 #else
 #define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
   caml_alloc_shr(size, tag)
 #define caml_alloc_shr_preserving_profinfo(size, tag, header) \
   caml_alloc_shr(size, tag)
 #endif /* WITH_PROFINFO */
-value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
-void caml_adjust_gc_speed (mlsize_t, mlsize_t);
-void caml_alloc_dependent_memory (mlsize_t bsz);
-void caml_free_dependent_memory (mlsize_t bsz);
-void caml_modify (value *, value);
-void caml_initialize (value *, value);
-value caml_check_urgent_gc (value);
+CAMLpublic value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
+CAMLpublic void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLpublic void caml_alloc_dependent_memory (mlsize_t bsz);
+CAMLpublic void caml_free_dependent_memory (mlsize_t bsz);
+CAMLpublic void caml_modify (value *, value);
+CAMLpublic void caml_initialize (value *, value);
+CAMLpublic value caml_check_urgent_gc (value);
 int caml_init_alloc_for_heap (void);
 char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 void caml_free_for_heap (char *mem);
@@ -83,7 +83,7 @@ typedef void* caml_stat_block;
    of functions. In this case, calling [caml_stat_destroy_pool] will not free
    the claimed heap memory, resulting in leaks.
 */
-void caml_stat_create_pool(void);
+CAMLpublic void caml_stat_create_pool(void);
 
 /* [caml_stat_destroy_pool] frees all the heap memory claimed by the pool.
 
@@ -91,7 +91,7 @@ void caml_stat_create_pool(void);
    in backward compatibility mode, becoming thin wrappers around [malloc]
    family of functions.
 */
-void caml_stat_destroy_pool(void);
+CAMLpublic void caml_stat_destroy_pool(void);
 
 #endif /* CAML_INTERNALS */
 
@@ -99,12 +99,12 @@ void caml_stat_destroy_pool(void);
    (in bytes) and returns a pointer to it. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
-caml_stat_block caml_stat_alloc(asize_t);
+CAMLpublic caml_stat_block caml_stat_alloc(asize_t);
 
 /* [caml_stat_alloc_noexc(size)] allocates a memory block of the requested [size]
    (in bytes) and returns a pointer to it, or NULL in case the request fails.
 */
-caml_stat_block caml_stat_alloc_noexc(asize_t);
+CAMLpublic caml_stat_block caml_stat_alloc_noexc(asize_t);
 
 /* [caml_stat_alloc_aligned(size, modulo, block*)] allocates a memory block of
    the requested [size] (in bytes), the starting address of which is aligned to
@@ -112,23 +112,24 @@ caml_stat_block caml_stat_alloc_noexc(asize_t);
    well as the unaligned [block] (as an output parameter). It throws an OCaml
    exception in case the request fails, and so requires the runtime lock.
 */
-void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
+CAMLpublic void* caml_stat_alloc_aligned(asize_t, int modulo, caml_stat_block*);
 
 /* [caml_stat_alloc_aligned_noexc] is a variant of [caml_stat_alloc_aligned]
    that returns NULL in case the request fails, and doesn't require the runtime
    lock to be held.
 */
-void* caml_stat_alloc_aligned_noexc(asize_t, int modulo, caml_stat_block*);
+CAMLpublic void* caml_stat_alloc_aligned_noexc(asize_t, int modulo,
+                                               caml_stat_block*);
 
 /* [caml_stat_calloc_noexc(num, size)] allocates a block of memory for an array
    of [num] elements, each of them [size] bytes long, and initializes all its
    bits to zero, effectively allocating a zero-initialized memory block of
    [num * size] bytes. It returns NULL in case the request fails.
 */
-caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
+CAMLpublic caml_stat_block caml_stat_calloc_noexc(asize_t, asize_t);
 
 /* [caml_stat_free(block)] deallocates the provided [block]. */
-void caml_stat_free(caml_stat_block);
+CAMLpublic void caml_stat_free(caml_stat_block);
 
 /* [caml_stat_resize(block, size)] changes the size of the provided [block] to
    [size] bytes. The function may move the memory block to a new location (whose
@@ -138,12 +139,12 @@ void caml_stat_free(caml_stat_block);
    portion is indeterminate. The function throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
-caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
+CAMLpublic caml_stat_block caml_stat_resize(caml_stat_block, asize_t);
 
 /* [caml_stat_resize_noexc] is a variant of [caml_stat_resize] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
-caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
+CAMLpublic caml_stat_block caml_stat_resize_noexc(caml_stat_block, asize_t);
 
 
 /* A [caml_stat_block] containing a NULL-terminated string */
@@ -153,24 +154,24 @@ typedef char* caml_stat_string;
    copy of the NULL-terminated string [s]. It throws an OCaml exception in case
    the request fails, and so requires the runtime lock to be held.
 */
-caml_stat_string caml_stat_strdup(const char *s);
+CAMLpublic caml_stat_string caml_stat_strdup(const char *s);
 #ifdef _WIN32
-wchar_t* caml_stat_wcsdup(const wchar_t *s);
+CAMLpublic wchar_t* caml_stat_wcsdup(const wchar_t *s);
 #endif
 
 /* [caml_stat_strdup_noexc] is a variant of [caml_stat_strdup] that returns NULL
    in case the request fails, and doesn't require the runtime lock.
 */
-caml_stat_string caml_stat_strdup_noexc(const char *s);
+CAMLpublic caml_stat_string caml_stat_strdup_noexc(const char *s);
 
 /* [caml_stat_strconcat(nargs, strings)] concatenates NULL-terminated [strings]
    (an array of [char*] of size [nargs]) into a new string, dropping all NULLs,
    except for the very last one. It throws an OCaml exception in case the
    request fails, and so requires the runtime lock to be held.
 */
-caml_stat_string caml_stat_strconcat(int n, ...);
+CAMLpublic caml_stat_string caml_stat_strconcat(int n, ...);
 #ifdef _WIN32
-wchar_t* caml_stat_wcsconcat(int n, ...);
+CAMLpublic wchar_t* caml_stat_wcsconcat(int n, ...);
 #endif
 
 
@@ -550,12 +551,12 @@ CAMLdata struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    for the duration of the program, or until [caml_remove_global_root] is
    called. */
 
-void caml_register_global_root (value *);
+CAMLpublic void caml_register_global_root (value *);
 
 /* [caml_remove_global_root] removes a memory root registered on a global C
    variable with [caml_register_global_root]. */
 
-void caml_remove_global_root (value *);
+CAMLpublic void caml_remove_global_root (value *);
 
 /* [caml_register_generational_global_root] registers a global C
    variable as a memory root for the duration of the program, or until
@@ -569,13 +570,13 @@ void caml_remove_global_root (value *);
    In return for these constraints, scanning of memory roots during
    minor collection is made more efficient. */
 
-void caml_register_generational_global_root (value *);
+CAMLpublic void caml_register_generational_global_root (value *);
 
 /* [caml_remove_generational_global_root] removes a memory root
    registered on a global C variable with
    [caml_register_generational_global_root]. */
 
-void caml_remove_generational_global_root (value *);
+CAMLpublic void caml_remove_generational_global_root (value *);
 
 /* [caml_modify_generational_global_root(r, newval)]
    modifies the value contained in [r], storing [newval] inside.
@@ -584,7 +585,7 @@ void caml_remove_generational_global_root (value *);
    generational global roots.  [r] must be a global memory root
    previously registered with [caml_register_generational_global_root]. */
 
-void caml_modify_generational_global_root(value *r, value newval);
+CAMLpublic void caml_modify_generational_global_root(value *r, value newval);
 
 #ifdef __cplusplus
 }

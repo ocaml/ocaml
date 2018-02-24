@@ -48,7 +48,7 @@ static void add_string(struct stringbuf *buf, const char *s)
   buf->ptr += len;
 }
 
-CAMLexport char * caml_format_exception(value exn)
+char * caml_format_exception(value exn)
 {
   mlsize_t start, i;
   value bucket, v;

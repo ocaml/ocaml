@@ -64,20 +64,19 @@ void caml_gc_message (int level, char *msg, ...)
   }
 }
 
-CAMLexport void caml_fatal_error (char *msg)
+void caml_fatal_error (char *msg)
 {
   fprintf (stderr, "%s", msg);
   exit(2);
 }
 
-CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
+void caml_fatal_error_arg (char *fmt, char *arg)
 {
   fprintf (stderr, fmt, arg);
   exit(2);
 }
 
-CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
+void caml_fatal_error_arg2 (char *fmt1, char *arg1, char *fmt2, char *arg2)
 {
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);
@@ -141,7 +140,7 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
 /* Integer arithmetic with overflow detection */
 
 #if ! (__GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow))
-CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
+int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
 #define HALF_SIZE (sizeof(uintnat) * 4)
 #define HALF_MASK (((uintnat)1 << HALF_SIZE) - 1)

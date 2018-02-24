@@ -32,7 +32,7 @@
 
 /* Initialize the atom table */
 
-CAMLexport header_t caml_atom_table[256];
+header_t caml_atom_table[256];
 void caml_init_atom_table(void)
 {
   int i;
@@ -145,7 +145,7 @@ static void call_registered_value(char* name)
     caml_callback_exn(*f, Val_unit);
 }
 
-CAMLexport void caml_shutdown(void)
+void caml_shutdown(void)
 {
   if (startup_count <= 0)
     caml_fatal_error("Fatal error: a call to caml_shutdown has no "

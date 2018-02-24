@@ -21,16 +21,16 @@
 #include "mlvalues.h"
 #include "exec.h"
 
-void caml_main(char_os **argv);
+CAMLpublic void caml_main(char_os **argv);
 
-void caml_startup_code(
+CAMLpublic void caml_startup_code(
   code_t code, asize_t code_size,
   char *data, asize_t data_size,
   char *section_table, asize_t section_table_size,
   int pooling,
   char_os **argv);
 
-value caml_startup_code_exn(
+CAMLpublic value caml_startup_code_exn(
   code_t code, asize_t code_size,
   char *data, asize_t data_size,
   char *section_table, asize_t section_table_size,

@@ -26,8 +26,8 @@ extern "C" {
 
 #define NO_ARG Val_int(0)
 
-void caml_sys_error (value);
-void caml_sys_io_error (value);
+CAMLpublic void caml_sys_error (value);
+CAMLpublic void caml_sys_io_error (value);
 void caml_sys_init (char_os * exe_name, char_os ** argv);
 value caml_sys_exit (value);
 double caml_sys_time_unboxed(value);

@@ -186,7 +186,7 @@ wchar_t * caml_search_in_path(struct ext_table * path, const wchar_t * name)
   return caml_stat_wcsdup(name);
 }
 
-CAMLexport wchar_t * caml_search_exe_in_path(const wchar_t * name)
+wchar_t * caml_search_exe_in_path(const wchar_t * name)
 {
   wchar_t * fullname, * filepart;
   char * u8;
@@ -745,7 +745,7 @@ wchar_t *caml_secure_getenv (wchar_t const *var)
    In contrast, the OCaml runtime system still calls _wgetenv from the C runtime
    system, via caml_secure_getenv. The result is statically allocated and needs
    no deallocation. */
-CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
+wchar_t *caml_win32_getenv(wchar_t const *lpName)
 {
   wchar_t * lpBuffer;
   DWORD nSize = 256, res;
@@ -838,7 +838,7 @@ static uintnat windows_unicode_strict = 1;
    the argument string is encoded in the local codepage. */
 static uintnat windows_unicode_fallback = 1;
 
-CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out, int outlen)
+int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out, int outlen)
 {
   int retcode;
 
@@ -865,7 +865,7 @@ CAMLexport int win_multi_byte_to_wide_char(const char *s, int slen, wchar_t *out
 #define WC_ERR_INVALID_CHARS 0
 #endif
 
-CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out, int outlen)
+int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out, int outlen)
 {
   int retcode;
 
@@ -885,7 +885,7 @@ CAMLexport int win_wide_char_to_multi_byte(const wchar_t *s, int slen, char *out
   return retcode;
 }
 
-CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
+value caml_copy_string_of_utf16(const wchar_t *s)
 {
   int retcode, slen;
   value v;
@@ -898,7 +898,7 @@ CAMLexport value caml_copy_string_of_utf16(const wchar_t *s)
   return v;
 }
 
-CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
+inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
 {
   wchar_t * ws;
   int retcode;
@@ -910,7 +910,7 @@ CAMLexport inline wchar_t* caml_stat_strdup_to_utf16(const char *s)
   return ws;
 }
 
-CAMLexport caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
+caml_stat_string caml_stat_strdup_of_utf16(const wchar_t *s)
 {
   caml_stat_string out;
   int retcode;
@@ -999,7 +999,7 @@ static int caml_win32_is_cygwin_pty(HANDLE hFile)
   return 0;
 }
 
-CAMLexport int caml_win32_isatty(int fd)
+int caml_win32_isatty(int fd)
 {
   DWORD lpMode;
   HANDLE hFile = (HANDLE)_get_osfhandle(fd);

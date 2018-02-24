@@ -163,16 +163,16 @@ CAMLstub value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
 }
 
 #if 0
-CAMLstub value caml_ba_get_4(value vb, value vind1, value vind2,
-                     value vind3, value vind4)
+CAMLstub value caml_ba_get_4(value vb, value vind1, value vind2, value vind3,
+                             value vind4)
 {
   value vind[4];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3; vind[3] = vind4;
   return caml_ba_get_N(vb, vind, 4);
 }
 
-CAMLstub value caml_ba_get_5(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5)
+CAMLstub value caml_ba_get_5(value vb, value vind1, value vind2, value vind3,
+                             value vind4, value vind5)
 {
   value vind[5];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
@@ -180,8 +180,8 @@ CAMLstub value caml_ba_get_5(value vb, value vind1, value vind2,
   return caml_ba_get_N(vb, vind, 5);
 }
 
-CAMLstub value caml_ba_get_6(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5, value vind6)
+CAMLstub value caml_ba_get_6(value vb, value vind1, value vind2, value vind3,
+                             value vind4, value vind5, value vind6)
 {
   value vind[6];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
@@ -335,16 +335,16 @@ CAMLstub value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
 }
 
 #if 0
-CAMLstub value caml_ba_set_4(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value newval)
+CAMLstub value caml_ba_set_4(value vb, value vind1, value vind2, value vind3,
+                             value vind4, value newval)
 {
   value vind[4];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3; vind[3] = vind4;
   return caml_ba_set_aux(vb, vind, 4, newval);
 }
 
-CAMLstub value caml_ba_set_5(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5, value newval)
+CAMLstub value caml_ba_set_5(value vb, value vind1, value vind2, value vind3,
+                             value vind4, value vind5, value newval)
 {
   value vind[5];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
@@ -352,9 +352,9 @@ CAMLstub value caml_ba_set_5(value vb, value vind1, value vind2,
   return caml_ba_set_aux(vb, vind, 5, newval);
 }
 
-CAMLstub value caml_ba_set_6(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5,
-                     value vind6, value newval)
+CAMLstub value caml_ba_set_6(value vb, value vind1, value vind2, value vind3,
+                             value vind4, value vind5, value vind6,
+                             value newval)
 {
   value vind[6];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;

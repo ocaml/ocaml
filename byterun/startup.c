@@ -304,7 +304,7 @@ extern int caml_ensure_spacetime_dot_o_is_included;
 
 /* Main entry point when loading code from a file */
 
-CAMLexport void caml_main(char_os **argv)
+void caml_main(char_os **argv)
 {
   int fd, pos;
   struct exec_trailer trail;
@@ -430,12 +430,11 @@ CAMLexport void caml_main(char_os **argv)
 
 /* Main entry point when code is linked in as initialized data */
 
-CAMLexport value caml_startup_code_exn(
-           code_t code, asize_t code_size,
-           char *data, asize_t data_size,
-           char *section_table, asize_t section_table_size,
-           int pooling,
-           char_os **argv)
+value caml_startup_code_exn(code_t code, asize_t code_size,
+                            char *data, asize_t data_size,
+                            char *section_table, asize_t section_table_size,
+                            int pooling,
+                            char_os **argv)
 {
   char_os * cds_file;
   char_os * exe_name;
@@ -507,12 +506,11 @@ CAMLexport value caml_startup_code_exn(
   return caml_interprete(caml_start_code, caml_code_size);
 }
 
-CAMLexport void caml_startup_code(
-           code_t code, asize_t code_size,
-           char *data, asize_t data_size,
-           char *section_table, asize_t section_table_size,
-           int pooling,
-           char_os **argv)
+void caml_startup_code(code_t code, asize_t code_size,
+                       char *data, asize_t data_size,
+                       char *section_table, asize_t section_table_size,
+                       int pooling,
+                       char_os **argv)
 {
   value res;
 

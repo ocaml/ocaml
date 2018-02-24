@@ -28,7 +28,7 @@
 #include "caml/misc.h"
 
 /* returns a number of bytes (chars) */
-CAMLexport mlsize_t caml_string_length(value s)
+mlsize_t caml_string_length(value s)
 {
   mlsize_t temp;
   temp = Bosize_val(s) - 1;
@@ -50,7 +50,7 @@ CAMLprim value caml_ml_bytes_length(value s)
   return caml_ml_string_length(s);
 }
 
-CAMLexport int caml_string_is_c_safe (value s)
+int caml_string_is_c_safe (value s)
 {
   return strlen(String_val(s)) == caml_string_length(s);
 }
@@ -378,7 +378,7 @@ CAMLprim value caml_bitvect_test(value bv, value n)
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
 }
 
-CAMLexport value caml_alloc_sprintf(const char * format, ...)
+value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;
   char buf[128];

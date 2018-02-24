@@ -45,7 +45,7 @@
   h *= 0xc2b2ae35; \
   h ^= h >> 16;
 
-CAMLexport uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d)
+uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d)
 {
   MIX(h, d);
   return h;
@@ -53,7 +53,7 @@ CAMLexport uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d)
 
 /* Mix a platform-native integer. */
 
-CAMLexport uint32_t caml_hash_mix_intnat(uint32_t h, intnat d)
+uint32_t caml_hash_mix_intnat(uint32_t h, intnat d)
 {
   uint32_t n;
 #ifdef ARCH_SIXTYFOUR
@@ -73,7 +73,7 @@ CAMLexport uint32_t caml_hash_mix_intnat(uint32_t h, intnat d)
 
 /* Mix a 64-bit integer. */
 
-CAMLexport uint32_t caml_hash_mix_int64(uint32_t h, int64_t d)
+uint32_t caml_hash_mix_int64(uint32_t h, int64_t d)
 {
   uint32_t hi = (uint32_t) (d >> 32), lo = (uint32_t) d;
   MIX(h, lo);
@@ -86,7 +86,7 @@ CAMLexport uint32_t caml_hash_mix_int64(uint32_t h, int64_t d)
    Treats all NaNs identically.
 */
 
-CAMLexport uint32_t caml_hash_mix_double(uint32_t hash, double d)
+uint32_t caml_hash_mix_double(uint32_t hash, double d)
 {
   union {
     double d;
@@ -119,7 +119,7 @@ CAMLexport uint32_t caml_hash_mix_double(uint32_t hash, double d)
    Treats all NaNs identically.
 */
 
-CAMLexport uint32_t caml_hash_mix_float(uint32_t hash, float d)
+uint32_t caml_hash_mix_float(uint32_t hash, float d)
 {
   union {
     float f;
@@ -142,7 +142,7 @@ CAMLexport uint32_t caml_hash_mix_float(uint32_t hash, float d)
 
 /* Mix an OCaml string */
 
-CAMLexport uint32_t caml_hash_mix_string(uint32_t h, value s)
+uint32_t caml_hash_mix_string(uint32_t h, value s)
 {
   mlsize_t len = caml_string_length(s);
   mlsize_t i;
@@ -404,7 +404,7 @@ static void hash_aux(struct hash_state* h, value obj)
 
 /* Hashing variant tags */
 
-CAMLexport value caml_hash_variant(char const * tag)
+value caml_hash_variant(char const * tag)
 {
   value accu;
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */

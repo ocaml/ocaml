@@ -41,12 +41,12 @@
 
 /* The set of pending signals (received but not yet processed) */
 
-CAMLexport intnat volatile caml_signals_are_pending = 0;
-CAMLexport intnat volatile caml_pending_signals[NSIG];
+intnat volatile caml_signals_are_pending = 0;
+intnat volatile caml_pending_signals[NSIG];
 
 /* Execute all pending signals */
 
-CAMLexport void caml_process_pending_signals(void)
+void caml_process_pending_signals(void)
 {
   int i;
 
@@ -68,7 +68,7 @@ CAMLexport void caml_process_pending_signals(void)
        in caml_garbage_collection
 */
 
-CAMLexport void caml_record_signal(int signal_number)
+void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   caml_signals_are_pending = 1;
@@ -102,14 +102,14 @@ static int caml_try_leave_blocking_section_default(void)
   return res;
 }
 
-CAMLexport void (*caml_enter_blocking_section_hook)(void) =
+void (*caml_enter_blocking_section_hook)(void) =
    caml_enter_blocking_section_default;
-CAMLexport void (*caml_leave_blocking_section_hook)(void) =
+void (*caml_leave_blocking_section_hook)(void) =
    caml_leave_blocking_section_default;
-CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
+int (*caml_try_leave_blocking_section_hook)(void) =
    caml_try_leave_blocking_section_default;
 
-CAMLexport void caml_enter_blocking_section(void)
+void caml_enter_blocking_section(void)
 {
   while (1){
     /* Process all pending signals now */
@@ -122,7 +122,7 @@ CAMLexport void caml_enter_blocking_section(void)
   }
 }
 
-CAMLexport void caml_leave_blocking_section(void)
+void caml_leave_blocking_section(void)
 {
   int saved_errno;
   /* Save the value of errno (PR#5982). */
@@ -318,7 +318,7 @@ static int posix_signals[] = {
   SIGPOLL, SIGSYS, SIGTRAP, SIGURG, SIGXCPU, SIGXFSZ
 };
 
-CAMLexport int caml_convert_signal_number(int signo)
+int caml_convert_signal_number(int signo)
 {
   if (signo < 0 && signo >= -(sizeof(posix_signals) / sizeof(int)))
     return posix_signals[-signo-1];
@@ -326,7 +326,7 @@ CAMLexport int caml_convert_signal_number(int signo)
     return signo;
 }
 
-CAMLexport int caml_rev_convert_signal_number(int signo)
+int caml_rev_convert_signal_number(int signo)
 {
   int i;
   for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)

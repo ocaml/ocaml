@@ -34,7 +34,7 @@ enum event_kind {
 
 void caml_debugger_init (void);
 void caml_debugger (enum event_kind event);
-void caml_debugger_cleanup_fork (void);
+CAMLpublic void caml_debugger_cleanup_fork (void);
 
 /* Communication protocol */
 
