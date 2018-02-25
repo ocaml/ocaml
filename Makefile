@@ -280,12 +280,7 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
-TOPINCLUDES=-I otherlibs/$(UNIXLIB) \
-  -I otherlibs/bigarray \
-  -I otherlibs/dynlink \
-  -I otherlibs/str \
-  -I otherlibs/$(GRAPHLIB) \
-  -I otherlibs/raw_spacetime_lib
+TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 RUNTOP=./byterun/ocamlrun ./ocaml \
   -nostdlib -I stdlib \
   -noinit $(TOPFLAGS) $(TOPINCLUDES)
