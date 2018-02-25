@@ -280,11 +280,18 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
 INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
 
+TOPINCLUDES=-I otherlibs/$(UNIXLIB) \
+  -I otherlibs/bigarray \
+  -I otherlibs/dynlink \
+  -I otherlibs/str \
+  -I otherlibs/$(GRAPHLIB) \
+  -I otherlibs/raw_spacetime_lib
 RUNTOP=./byterun/ocamlrun ./ocaml \
   -nostdlib -I stdlib \
-  -noinit $(TOPFLAGS) \
-  -I otherlibs/$(UNIXLIB)
-NATRUNTOP=./ocamlnat$(EXE) -nostdlib -I stdlib -noinit $(TOPFLAGS)
+  -noinit $(TOPFLAGS) $(TOPINCLUDES)
+NATRUNTOP=./ocamlnat$(EXE) \
+  -nostdlib -I stdlib \
+  -noinit $(TOPFLAGS) $(TOPINCLUDES)
 ifeq "$(UNIX_OR_WIN32)" "unix"
 EXTRAPATH=
 else
