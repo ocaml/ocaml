@@ -814,7 +814,6 @@ runtop:
 natruntop:
 	$(MAKE) core
 	$(MAKE) opt
-	$(MAKE) opt.opt
 	$(MAKE) ocamlnat
 	@rlwrap --help 2>/dev/null && $(EXTRAPATH) rlwrap $(NATRUNTOP) ||\
 	  $(EXTRAPATH) $(NATRUNTOP)
