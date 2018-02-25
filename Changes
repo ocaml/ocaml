@@ -283,6 +283,10 @@ OCaml 4.07
   platforms, making this option unusable on platforms where it wasn't
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
 
+- GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
+  sign-extension operations
+  (LemonBoy, review by Alain Frisch)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
