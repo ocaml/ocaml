@@ -157,7 +157,7 @@ static void thread_restore_std_descr(void);
 
 /* Initialize the thread machinery */
 
-value thread_initialize(value unit)       /* ML */
+CAMLprim value thread_initialize(value unit)
 {
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
@@ -206,7 +206,7 @@ value thread_initialize(value unit)       /* ML */
 
 /* Initialize the interval timer used for preemption */
 
-value thread_initialize_preemption(value unit)     /* ML */
+CAMLprim value thread_initialize_preemption(value unit)
 {
   struct itimerval timer;
 
@@ -219,7 +219,7 @@ value thread_initialize_preemption(value unit)     /* ML */
 
 /* Create a thread */
 
-value thread_new(value clos)          /* ML */
+CAMLprim value thread_new(value clos)
 {
   caml_thread_t th;
   /* Allocate the thread and its stack */
@@ -270,7 +270,7 @@ value thread_new(value clos)          /* ML */
 
 /* Return the thread identifier */
 
-value thread_id(value th)             /* ML */
+CAMLprim value thread_id(value th)
 {
   return ((caml_thread_t)th)->ident;
 }
@@ -521,7 +521,7 @@ static void check_callback(void)
 
 /* Reschedule without suspending the current thread */
 
-value thread_yield(value unit)        /* ML */
+CAMLprim value thread_yield(value unit)
 {
   CAMLassert(curr_thread != NULL);
   Assign(curr_thread->retval, Val_unit);
@@ -547,7 +547,7 @@ static void thread_reschedule(void)
 
 /* Request a re-scheduling as soon as possible */
 
-value thread_request_reschedule(value unit)    /* ML */
+CAMLprim value thread_request_reschedule(value unit)
 {
   caml_async_action_hook = thread_reschedule;
   caml_something_to_do = 1;
@@ -556,7 +556,7 @@ value thread_request_reschedule(value unit)    /* ML */
 
 /* Suspend the current thread */
 
-value thread_sleep(value unit)        /* ML */
+CAMLprim value thread_sleep(value unit)
 {
   CAMLassert(curr_thread != NULL);
   check_callback();
@@ -590,12 +590,12 @@ static value thread_wait_rw(int kind, value fd)
   }
 }
 
-value thread_wait_read(value fd)
+CAMLprim value thread_wait_read(value fd)
 {
   return thread_wait_rw(BLOCKED_READ, fd);
 }
 
-value thread_wait_write(value fd)
+CAMLprim value thread_wait_write(value fd)
 {
   return thread_wait_rw(BLOCKED_WRITE, fd);
 }
@@ -614,19 +614,19 @@ static value thread_wait_timed_rw(int kind, value arg)
   return schedule_thread();
 }
 
-value thread_wait_timed_read(value arg)
+CAMLprim value thread_wait_timed_read(value arg)
 {
   return thread_wait_timed_rw(BLOCKED_READ, arg);
 }
 
-value thread_wait_timed_write(value arg)
+CAMLprim value thread_wait_timed_write(value arg)
 {
   return thread_wait_timed_rw(BLOCKED_WRITE, arg);
 }
 
 /* Suspend the current thread on a select() request */
 
-value thread_select(value arg)        /* ML */
+CAMLprim value thread_select(value arg)
 {
   double date;
   check_callback();
@@ -646,13 +646,13 @@ value thread_select(value arg)        /* ML */
 
 /* Primitives to implement suspension on buffered channels */
 
-value thread_inchan_ready(value vchan) /* ML */
+CAMLprim value thread_inchan_ready(value vchan)
 {
   struct channel * chan = Channel(vchan);
   return Val_bool(chan->curr < chan->max);
 }
 
-value thread_outchan_ready(value vchan, value vsize) /* ML */
+CAMLprim value thread_outchan_ready(value vchan, value vsize)
 {
   struct channel * chan = Channel(vchan);
   intnat size = Long_val(vsize);
@@ -670,7 +670,7 @@ value thread_outchan_ready(value vchan, value vsize) /* ML */
 
 /* Suspend the current thread for some time */
 
-value thread_delay(value time)          /* ML */
+CAMLprim value thread_delay(value time)
 {
   double date = timeofday() + Double_val(time);
   CAMLassert(curr_thread != NULL);
@@ -682,7 +682,7 @@ value thread_delay(value time)          /* ML */
 
 /* Suspend the current thread until another thread terminates */
 
-value thread_join(value th)          /* ML */
+CAMLprim value thread_join(value th)
 {
   check_callback();
   CAMLassert(curr_thread != NULL);
@@ -694,7 +694,7 @@ value thread_join(value th)          /* ML */
 
 /* Suspend the current thread until a Unix process exits */
 
-value thread_wait_pid(value pid)          /* ML */
+CAMLprim value thread_wait_pid(value pid)
 {
   CAMLassert(curr_thread != NULL);
   check_callback();
@@ -705,7 +705,7 @@ value thread_wait_pid(value pid)          /* ML */
 
 /* Reactivate another thread */
 
-value thread_wakeup(value thread)     /* ML */
+CAMLprim value thread_wakeup(value thread)
 {
   caml_thread_t th = (caml_thread_t) thread;
   switch (th->status) {
@@ -723,7 +723,7 @@ value thread_wakeup(value thread)     /* ML */
 
 /* Return the current thread */
 
-value thread_self(value unit)         /* ML */
+CAMLprim value thread_self(value unit)
 {
   CAMLassert(curr_thread != NULL);
   return (value) curr_thread;
@@ -731,7 +731,7 @@ value thread_self(value unit)         /* ML */
 
 /* Kill a thread */
 
-value thread_kill(value thread)       /* ML */
+CAMLprim value thread_kill(value thread)
 {
   value retval = Val_unit;
   caml_thread_t th = (caml_thread_t) thread;
@@ -766,7 +766,7 @@ value thread_kill(value thread)       /* ML */
 
 /* Print uncaught exception and backtrace */
 
-value thread_uncaught_exception(value exn)  /* ML */
+CAMLprim value thread_uncaught_exception(value exn)
 {
   char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
