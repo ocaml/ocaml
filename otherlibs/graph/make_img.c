@@ -17,7 +17,7 @@
 #include "image.h"
 #include <caml/memory.h>
 
-value caml_gr_make_image(value m)
+CAMLprim value caml_gr_make_image(value m)
 {
   int width, height;
   value im;

@@ -15,7 +15,7 @@
 
 #include "libgraph.h"
 
-value caml_gr_point_color(value vx, value vy)
+CAMLprim value caml_gr_point_color(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);

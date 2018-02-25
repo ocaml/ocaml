@@ -48,7 +48,7 @@ static int caml_gr_error_handler(Display *display, XErrorEvent *error);
 static int caml_gr_ioerror_handler(Display *display);
 value caml_gr_clear_graph(void);
 
-value caml_gr_open_graph(value arg)
+CAMLprim value caml_gr_open_graph(value arg)
 {
   char display_name[256], geometry_spec[64];
   const char * p;
@@ -206,7 +206,7 @@ value caml_gr_open_graph(value arg)
   return Val_unit;
 }
 
-value caml_gr_close_graph(void)
+CAMLprim value caml_gr_close_graph(void)
 {
   if (caml_gr_initialized) {
 #ifdef USE_INTERVAL_TIMER
@@ -238,13 +238,13 @@ value caml_gr_id_of_window(Window win)
   return caml_copy_string( tmp );
 }
 
-value caml_gr_window_id(void)
+CAMLprim value caml_gr_window_id(void)
 {
   caml_gr_check_open();
   return caml_gr_id_of_window(caml_gr_window.win);
 }
 
-value caml_gr_set_window_title(value n)
+CAMLprim value caml_gr_set_window_title(value n)
 {
   if (window_name != NULL) caml_stat_free(window_name);
   window_name = caml_stat_strdup(String_val(n));
@@ -256,7 +256,7 @@ value caml_gr_set_window_title(value n)
   return Val_unit;
 }
 
-value caml_gr_resize_window (value vx, value vy)
+CAMLprim value caml_gr_resize_window (value vx, value vy)
 {
   caml_gr_check_open ();
 
@@ -281,7 +281,7 @@ value caml_gr_resize_window (value vx, value vy)
   return Val_unit;
 }
 
-value caml_gr_clear_graph(void)
+CAMLprim value caml_gr_clear_graph(void)
 {
   caml_gr_check_open();
   if(caml_gr_remember_modeflag) {
@@ -302,19 +302,19 @@ value caml_gr_clear_graph(void)
   return Val_unit;
 }
 
-value caml_gr_size_x(void)
+CAMLprim value caml_gr_size_x(void)
 {
   caml_gr_check_open();
   return Val_int(caml_gr_window.w);
 }
 
-value caml_gr_size_y(void)
+CAMLprim value caml_gr_size_y(void)
 {
   caml_gr_check_open();
   return Val_int(caml_gr_window.h);
 }
 
-value caml_gr_synchronize(void)
+CAMLprim value caml_gr_synchronize(void)
 {
   caml_gr_check_open();
   XCopyArea(caml_gr_display, caml_gr_bstore.win, caml_gr_window.win,
@@ -326,13 +326,13 @@ value caml_gr_synchronize(void)
   return Val_unit ;
 }
 
-value caml_gr_display_mode(value flag)
+CAMLprim value caml_gr_display_mode(value flag)
 {
   caml_gr_display_modeflag = Bool_val (flag);
   return Val_unit ;
 }
 
-value caml_gr_remember_mode(value flag)
+CAMLprim value caml_gr_remember_mode(value flag)
 {
   caml_gr_remember_modeflag = Bool_val(flag);
   return Val_unit ;
@@ -343,12 +343,12 @@ value caml_gr_remember_mode(value flag)
    called either between two bytecode instructions, or during a blocking
    primitive. In either case, not in the middle of an Xlib call. */
 
-value caml_gr_sigio_signal(value unit)
+CAMLprim value caml_gr_sigio_signal(value unit)
 {
   return Val_int(EVENT_SIGNAL);
 }
 
-value caml_gr_sigio_handler(void)
+CAMLprim value caml_gr_sigio_handler(void)
 {
   XEvent grevent;
 

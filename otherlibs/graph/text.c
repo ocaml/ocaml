@@ -28,14 +28,14 @@ static void caml_gr_get_font(const char *fontname)
   XSetFont(caml_gr_display, caml_gr_bstore.gc, caml_gr_font->fid);
 }
 
-value caml_gr_set_font(value fontname)
+CAMLprim value caml_gr_set_font(value fontname)
 {
   caml_gr_check_open();
   caml_gr_get_font(String_val(fontname));
   return Val_unit;
 }
 
-value caml_gr_set_text_size (value sz)
+CAMLprim value caml_gr_set_text_size (value sz)
 {
   return Val_unit;
 }
@@ -56,7 +56,7 @@ static void caml_gr_draw_text(const char *txt, int len)
   caml_gr_x += XTextWidth(caml_gr_font, txt, len);
 }
 
-value caml_gr_draw_char(value chr)
+CAMLprim value caml_gr_draw_char(value chr)
 {
   char str[1];
   caml_gr_check_open();
@@ -65,14 +65,14 @@ value caml_gr_draw_char(value chr)
   return Val_unit;
 }
 
-value caml_gr_draw_string(value str)
+CAMLprim value caml_gr_draw_string(value str)
 {
   caml_gr_check_open();
   caml_gr_draw_text(String_val(str), caml_string_length(str));
   return Val_unit;
 }
 
-value caml_gr_text_size(value str)
+CAMLprim value caml_gr_text_size(value str)
 {
   int width;
   value res;

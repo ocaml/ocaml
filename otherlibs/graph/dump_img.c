@@ -18,7 +18,7 @@
 #include <caml/alloc.h>
 #include <caml/memory.h>
 
-value caml_gr_dump_image(value image)
+CAMLprim value caml_gr_dump_image(value image)
 {
   int width, height, i, j;
   XImage * idata, * imask;

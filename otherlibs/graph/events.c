@@ -249,7 +249,7 @@ static value caml_gr_wait_event_blocking(long mask)
   return res;
 }
 
-value caml_gr_wait_event(value eventlist) /* ML */
+CAMLprim value caml_gr_wait_event(value eventlist)
 {
   int mask;
   Bool poll;

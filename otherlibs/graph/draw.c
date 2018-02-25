@@ -16,7 +16,7 @@
 #include "libgraph.h"
 #include <caml/alloc.h>
 
-value caml_gr_plot(value vx, value vy)
+CAMLprim value caml_gr_plot(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -32,24 +32,24 @@ value caml_gr_plot(value vx, value vy)
   return Val_unit;
 }
 
-value caml_gr_moveto(value vx, value vy)
+CAMLprim value caml_gr_moveto(value vx, value vy)
 {
   caml_gr_x = Int_val(vx);
   caml_gr_y = Int_val(vy);
   return Val_unit;
 }
 
-value caml_gr_current_x(void)
+CAMLprim value caml_gr_current_x(void)
 {
   return Val_int(caml_gr_x);
 }
 
-value caml_gr_current_y(void)
+CAMLprim value caml_gr_current_y(void)
 {
   return Val_int(caml_gr_y);
 }
 
-value caml_gr_lineto(value vx, value vy)
+CAMLprim value caml_gr_lineto(value vx, value vy)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -67,7 +67,7 @@ value caml_gr_lineto(value vx, value vy)
   return Val_unit;
 }
 
-value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
+CAMLprim value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -86,8 +86,8 @@ value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
   return Val_unit;
 }
 
-value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1,
-                           value va2)
+CAMLprim value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry,
+                                    value va1, value va2)
 {
   int x = Int_val(vx);
   int y = Int_val(vy);
@@ -108,13 +108,13 @@ value caml_gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1,
   return Val_unit;
 }
 
-value caml_gr_draw_arc(value *argv, int argc)
+CAMLprim value caml_gr_draw_arc(value *argv, int argc)
 {
   return caml_gr_draw_arc_nat(argv[0], argv[1], argv[2], argv[3], argv[4],
                               argv[5]);
 }
 
-value caml_gr_set_line_width(value vwidth)
+CAMLprim value caml_gr_set_line_width(value vwidth)
 {
   int width = Int_val(vwidth);
 
