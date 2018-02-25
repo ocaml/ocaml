@@ -1927,14 +1927,26 @@ struct
       | Texp_let (_, _, e)
       | Texp_letmodule (_, _, _, e)
       | Texp_sequence (_, e)
-      | Texp_letexception (_, e) -> classify_expression e
+      | Texp_letexception (_, e) ->
+          classify_expression e
+
       | Texp_construct (_, {cstr_tag = Cstr_unboxed}, [e]) ->
           classify_expression e
-      | Texp_construct _ -> Static
+      | Texp_construct _ ->
+          Static
+
       | Texp_record { representation = Record_unboxed _;
                       fields = [| _, Overridden (_,e) |] } ->
           classify_expression e
-      | Texp_record _ -> Static
+      | Texp_record _ ->
+          Static
+
+      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
+        when is_ref vd ->
+          Static
+      | Texp_apply _ ->
+          Dynamic
+
       | Texp_ident _
       | Texp_for _
       | Texp_constant _
@@ -1951,17 +1963,17 @@ struct
       | Texp_function _
       | Texp_lazy _
       | Texp_unreachable
-      | Texp_extension_constructor _ -> Static
-      | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
-        when is_ref vd -> Static
-      | Texp_apply _
+      | Texp_extension_constructor _ ->
+          Static
+
       | Texp_match _
       | Texp_ifthenelse _
       | Texp_send _
       | Texp_field _
       | Texp_assert _
       | Texp_try _
-      | Texp_override _ -> Dynamic
+      | Texp_override _ ->
+          Dynamic
 
   let rec expression : Env.env -> Typedtree.expression -> Use.t =
     fun env exp -> match exp.exp_desc with
