@@ -122,11 +122,18 @@ val add_bytes : t -> bytes -> unit
 
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
-   [ofs] in string [s] and appends them at the end of buffer [b]. *)
+   [ofs] in string [s] and appends them at the end of buffer [b].
+
+    Raise [Invalid_argument] if [ofs] and [len] do not designate a valid
+    range of [s]. *)
 
 val add_subbytes : t -> bytes -> int -> int -> unit
 (** [add_subbytes b s ofs len] takes [len] characters from offset
     [ofs] in byte sequence [s] and appends them at the end of buffer [b].
+
+    Raise [Invalid_argument] if [ofs] and [len] do not designate a valid
+    range of [s].
+
     @since 4.02 *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
@@ -154,7 +161,10 @@ val add_channel : t -> in_channel -> int -> unit
    input channel [ic] and stores them at the end of buffer [b].
    @raise End_of_file if the channel contains fewer than [n]
    characters. In this case, the characters are still added to
-   the buffer, so as to avoid loss of data. *)
+   the buffer, so as to avoid loss of data.
+
+   Raise [Invalid_argument] if [len < 0] or [len > Sys.max_string_length].
+ *)
 
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]
