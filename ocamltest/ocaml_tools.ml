@@ -13,36 +13,20 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Descriptions of the OCaml compilers and toplevels *)
+(* Descriptions of the OCaml tools *)
 
-class compiler :
-  name : (string -> string) ->
-  flags : string ->
-  directory : string ->
-  exit_status_variable : Variables.t ->
-  reference_variable : Variables.t ->
-  output_variable : Variables.t ->
-  backend : Ocaml_backends.t ->
-  is_toplevel : bool ->
-  is_native : bool ->
-object inherit Ocaml_tools.tool
-  method backend : Ocaml_backends.t
-  method is_toplevel : bool
-  method is_native : bool
+class tool
+  ~(name : string -> string)
+  ~(flags : string)
+  ~(directory : string)
+  ~(exit_status_variable : Variables.t)
+  ~(reference_variable : Variables.t)
+  ~(output_variable : Variables.t)
+= object
+  method name = name
+  method flags = flags
+  method directory = directory
+  method exit_status_variable = exit_status_variable
+  method reference_variable = reference_variable
+  method output_variable = output_variable
 end
-
-val ocamlc_byte : compiler
-
-val ocamlc_opt : compiler
-
-val ocamlopt_byte : compiler
-
-val ocamlopt_opt : compiler
-
-val ocaml : compiler
-
-val ocamlnat : compiler
-
-val expected_exit_status : Environments.t -> compiler -> int
-
-val reference_filename : Environments.t -> string -> compiler -> string

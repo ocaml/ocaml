@@ -59,12 +59,13 @@ ocaml_commands.cmo : ocaml_files.cmi ocaml_commands.cmi
 ocaml_commands.cmx : ocaml_files.cmx ocaml_commands.cmi
 ocaml_commands.cmi :
 ocaml_compilers.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
-    ocaml_files.cmi ocaml_commands.cmi ocaml_backends.cmi environments.cmi \
-    ocaml_compilers.cmi
+    ocaml_tools.cmi ocaml_files.cmi ocaml_commands.cmi ocaml_backends.cmi \
+    environments.cmi ocaml_compilers.cmi
 ocaml_compilers.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
-    ocaml_files.cmx ocaml_commands.cmx ocaml_backends.cmx environments.cmx \
-    ocaml_compilers.cmi
-ocaml_compilers.cmi : variables.cmi ocaml_backends.cmi environments.cmi
+    ocaml_tools.cmx ocaml_files.cmx ocaml_commands.cmx ocaml_backends.cmx \
+    environments.cmx ocaml_compilers.cmi
+ocaml_compilers.cmi : variables.cmi ocaml_tools.cmi ocaml_backends.cmi \
+    environments.cmi
 ocaml_directories.cmo : ocamltest_stdlib.cmi ocamltest_config.cmi \
     ocaml_backends.cmi ocaml_directories.cmi
 ocaml_directories.cmx : ocamltest_stdlib.cmx ocamltest_config.cmx \
@@ -91,6 +92,9 @@ ocaml_tests.cmo : tests.cmi ocamltest_config.cmi ocaml_actions.cmi \
 ocaml_tests.cmx : tests.cmx ocamltest_config.cmx ocaml_actions.cmx \
     builtin_actions.cmx ocaml_tests.cmi
 ocaml_tests.cmi : tests.cmi
+ocaml_tools.cmo : variables.cmi ocaml_tools.cmi
+ocaml_tools.cmx : variables.cmx ocaml_tools.cmi
+ocaml_tools.cmi : variables.cmi
 ocaml_variables.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi
 ocaml_variables.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmi
 ocaml_variables.cmi : variables.cmi
