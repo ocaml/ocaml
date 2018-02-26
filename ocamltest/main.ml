@@ -38,6 +38,13 @@ let is_test filename =
     | _ -> false
 *)
 
+(* this primitive announce should be used for tests
+   that were aborted on system error before ocamltest
+   could parse them *)
+let announce_test_error test_filename error =
+  Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
+    (Filename.basename test_filename) error
+
 let tsl_block_of_file test_filename =
   let input_channel = open_in test_filename in
   let lexbuf = Lexing.from_channel input_channel in
@@ -49,10 +56,12 @@ let tsl_block_of_file test_filename =
 let tsl_block_of_file_safe test_filename =
   try tsl_block_of_file test_filename with
   | Sys_error message ->
-    Printf.eprintf "%s\n" message;
+    Printf.eprintf "%s\n%!" message;
+    announce_test_error test_filename message;
     exit 1
   | Parsing.Parse_error ->
-    Printf.eprintf "Could not read test block in %s\n" test_filename;
+    Printf.eprintf "Could not read test block in %s\n%!" test_filename;
+    announce_test_error test_filename "could not read test block";
     exit 1
 
 let print_usage () =
