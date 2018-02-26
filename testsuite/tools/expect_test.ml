@@ -328,7 +328,7 @@ let process_expect_file fname =
   let correction = eval_expect_file fname ~file_contents in
   write_corrected ~file:corrected_fname ~file_contents correction
 
-let repo_root = ref ""
+let repo_root = ref None
 
 let main fname =
   Toploop.override_sys_argv
@@ -336,8 +336,18 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
-  List.iter [ "stdlib" ] ~f:(fun s ->
-    Topdirs.dir_directory (Filename.concat !repo_root s));
+  if not !Clflags.no_std_include then begin
+    match !repo_root with
+    | None -> ()
+    | Some dir ->
+        (* If we pass [-repo-root], use the stdlib from inside the
+           compiler, not the installed one. We use
+           [Compenv.last_include_dirs] to make sure that the stdlib
+           directory is the last one. *)
+        Clflags.no_std_include := true;
+        Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
+  end;
+  Compmisc.init_path false;
   Toploop.initialize_toplevel_env ();
   Sys.interactive := false;
   process_expect_file fname;
@@ -406,8 +416,9 @@ end);;
 
 let args =
   Arg.align
-    ( [ "-repo-root", Arg.Set_string repo_root,
-        "<dir> root of the OCaml repository"
+    ( [ "-repo-root", Arg.String (fun s -> repo_root := Some s),
+        "<dir> root of the OCaml repository. This causes the tool to use \
+         the stdlib from the current source tree rather than the installed one."
       ] @ Options.list
     )
 
