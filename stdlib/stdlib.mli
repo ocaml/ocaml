@@ -672,6 +672,9 @@ external classify_float : (float [@unboxed]) -> fpclass =
 val ( ^ ) : string -> string -> string
 (** String concatenation.
     Right-associative operator, see {!Ocaml_operators} for more information.
+
+    Raise [Invalid_argument "Bytes.create"] if the resulting string would be
+    larger than {!Sys.max_string_length}.
 *)
 
 (** {1 Character operations}
