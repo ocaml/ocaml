@@ -219,6 +219,9 @@ Working version
 - GPR#1619: expect_test: print all the exceptions, even the unexpected ones
   (Thomas Refis, review by Jérémie Dimino)
 
+- GPR#1621: expect_test: make sure to not use the installed stdlib
+  (Jérémie Dimino, review by Thomas Refis)
+
 - MPR#7738, GPR#1624: Asmlink.reset also resets lib_ccobjs/ccopts
   (Cedric Cellier, review by Gabriel Scherer)
 
