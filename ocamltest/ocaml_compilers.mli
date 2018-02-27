@@ -27,6 +27,8 @@ class compiler :
 object inherit Ocaml_tools.tool
   method backend : Ocaml_backends.t
   method is_native : bool
+  method program_variable : Variables.t
+  method program_output_variable : Variables.t option
 end
 
 val ocamlc_byte : compiler
