@@ -38,12 +38,12 @@ class compiler
 
   method backend = backend
   method is_native = is_native
-  
+
   method program_variable =
     if is_native
     then Builtin_variables.program2
     else Builtin_variables.program
-  
+
   method program_output_variable =
     if is_native then None else Some Builtin_variables.output
 

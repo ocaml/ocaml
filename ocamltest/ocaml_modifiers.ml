@@ -37,7 +37,7 @@ let make_library_modifier library directory =
 let compiler_subdir subdir =
   Filename.make_path (Ocamltest_config.ocamlsrcdir :: subdir)
 
-let config = 
+let config =
 [
   Append (Ocaml_variables.directories, (wrap (compiler_subdir ["utils"])));
 ]
