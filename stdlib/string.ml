@@ -100,15 +100,19 @@ let trim s =
     then bts (B.trim (bos s))
   else s
 
+let needs_escape s =
+  let n = length s in
+  let i = ref 0 in
+  let esc = ref false in
+  while !i < n && not !esc do
+    match unsafe_get s !i with
+    | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> esc := true
+    | _ -> incr i
+  done;
+  !esc
+
 let escaped s =
-  let rec needs_escape i =
-    if i >= length s then false else
-      match unsafe_get s i with
-      | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
-      | ' ' .. '~' -> needs_escape (i+1)
-      | _ -> true
-  in
-  if needs_escape 0 then
+  if needs_escape s then
     bts (B.escaped (bos s))
   else
     s
