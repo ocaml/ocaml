@@ -234,8 +234,7 @@ let setup_tool_build_env tool log env =
       tool_output_variable
       tool_output_file env
   in
-  if Sys.file_exists tool_output_file then
-    Sys.remove tool_output_file;
+  Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
   let env =

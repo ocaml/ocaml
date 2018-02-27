@@ -154,6 +154,9 @@ module Sys = struct
         copy_chan ic oc
       end
     end
+  
+  let force_remove file =
+    if file_exists file then remove file
 
   let with_chdir path f =
     let oldcwd = Sys.getcwd () in
