@@ -85,7 +85,8 @@ let constructor_args priv cd_args cd_res path rep =
           type_private = priv;
           type_manifest = None;
           type_variance = List.map (fun _ -> Variance.full) type_params;
-          type_newtype_level = None;
+          type_is_newtype = false;
+          type_expansion_scope = None;
           type_loc = Location.none;
           type_attributes = [];
           type_immediate = false;
@@ -176,7 +177,7 @@ let extension_descr path_ext ext =
       cstr_inlined;
     }
 
-let none = {desc = Ttuple []; level = -1; id = -1}
+let none = {desc = Ttuple []; level = -1; scope = None; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
   { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;

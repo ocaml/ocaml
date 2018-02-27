@@ -19,17 +19,13 @@ let ok (type a b) (x : (a, b) eq) =
 ;;
 [%%expect{|
 type ('a, 'b) eq = Refl : ('a, 'a) eq
-Line _, characters 2-54:
-  ..match x, [] with
+Line _, characters 4-29:
     | Refl, [(_ : a) | (_ : b)] -> []
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Refl, _::_::_)
-Line _, characters 22-23:
-    | Refl, [(_ : a) | (_ : b)] -> []
-                        ^
-Warning 12: this sub-pattern is unused.
-val ok : ('a, 'b) eq -> 'c list = <fun>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This pattern matches values of type (a, b) eq * b list
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
 let fails (type a b) (x : (a, b) eq) =
   match x, [] with
@@ -37,22 +33,13 @@ let fails (type a b) (x : (a, b) eq) =
   | Refl, [(_ : b) | (_ : a)] -> []
 ;;
 [%%expect{|
-Line _, characters 2-90:
-  ..match x, [] with
-    | Refl, [(_ : a) | (_ : b)] -> []
-    | Refl, [(_ : b) | (_ : a)] -> []
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a case that is not matched:
-(Refl, _::_::_)
-Line _, characters 22-23:
-    | Refl, [(_ : a) | (_ : b)] -> []
-                        ^
-Warning 12: this sub-pattern is unused.
 Line _, characters 4-29:
-    | Refl, [(_ : b) | (_ : a)] -> []
+    | Refl, [(_ : a) | (_ : b)] -> []
       ^^^^^^^^^^^^^^^^^^^^^^^^^
-Warning 11: this match case is unused.
-val fails : ('a, 'b) eq -> 'c list = <fun>
+Error: This pattern matches values of type (a, b) eq * b list
+       but a pattern was expected which matches values of type 'a
+       This instance of b is ambiguous:
+       it would escape the scope of its equation
 |}]
 
 (* branches must be unified! *)
