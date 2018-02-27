@@ -242,26 +242,16 @@ let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   let (r, env) = setup_tool_build_env compiler log env in
   if Result.is_pass r then
   begin
-    let env =
-      let prog_var = compiler#program_variable in
-      let output_var = compiler#program_output_variable in
-      let (auxenv, program_file) = match Environments.lookup prog_var env with
-        | None ->
-          let p = get_program_file compiler#backend env in
-          let env' = Environments.add prog_var p env in
-          (env', p)
-        | Some p -> (env, p)
-      in
-      (match output_var with
-        | None -> auxenv
-        | Some outputvar ->
-          if Environments.is_variable_defined outputvar auxenv
-          then auxenv
-          else begin
-            let output_file = program_file ^ ".output" in
-            Environments.add outputvar output_file auxenv
-          end
-      )
+    let prog_var = compiler#program_variable in
+    let prog_output_var = compiler#program_output_variable in
+    let default_prog_file = get_program_file compiler#backend env in
+    let env = Environments.add_if_undefined prog_var default_prog_file env in
+    let prog_file = Environments.safe_lookup prog_var env in
+    let prog_output_file = prog_file ^ ".output" in
+    let env = match prog_output_var with
+      | None -> env
+      | Some outputvar ->
+        Environments.add_if_undefined outputvar prog_output_file env
     in
     (r, env)
   end else (r, env)
