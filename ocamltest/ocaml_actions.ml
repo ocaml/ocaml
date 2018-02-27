@@ -196,53 +196,53 @@ let find_source_modules log env =
     (String.concat " " (List.map Ocaml_filetypes.make_filename source_modules))
     env
 
-let setup_compiler_build_env compiler log env =
-  let backend = compiler#backend in
+let setup_tool_build_env tool log env =
+  let backend = tool#backend in
   let source_directory = Actions_helpers.test_source_directory env in
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
-  let compiler_reference_variable =
-    compiler#reference_variable in
-  let compiler_reference_prefix =
+  let tool_reference_variable =
+    tool#reference_variable in
+  let tool_reference_prefix =
     Filename.make_path [source_directory; testfile_basename] in
-  let compiler_reference_filename =
-    compiler#reference_file env compiler_reference_prefix
+  let tool_reference_file =
+    tool#reference_file env tool_reference_prefix
   in 
   let env =
     Environments.add_if_undefined
-      compiler_reference_variable
-      compiler_reference_filename env
+      tool_reference_variable
+      tool_reference_file env
   in
   let source_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
-  let compiler_directory_suffix =
+  let tool_directory_suffix =
     Environments.safe_lookup Ocaml_variables.compiler_directory_suffix env in
-  let compiler_directory_name =
-    compiler#directory ^ compiler_directory_suffix in
+  let tool_directory_name =
+    tool#directory ^ tool_directory_suffix in
   let build_dir = Filename.concat
     (Environments.safe_lookup
       Builtin_variables.test_build_directory_prefix env)
-    compiler_directory_name in
-  let compiler_output_variable = compiler#output_variable in
-  let compiler_output_filename =
-    Filename.make_filename compiler#directory "output" in
-  let compiler_output_file =
-    Filename.make_path [build_dir; compiler_output_filename]
+    tool_directory_name in
+  let tool_output_variable = tool#output_variable in
+  let tool_output_filename =
+    Filename.make_filename tool#directory "output" in
+  let tool_output_file =
+    Filename.make_path [build_dir; tool_output_filename]
   in
   let env =
     Environments.add_if_undefined
-      compiler_output_variable
-      compiler_output_file env
+      tool_output_variable
+      tool_output_file env
   in
-  if Sys.file_exists compiler_output_file then
-    Sys.remove compiler_output_file;
+  if Sys.file_exists tool_output_file then
+    Sys.remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
   let env =
-    if compiler#is_toplevel then env
+    if tool#is_toplevel then env
     else begin
       let (prog_var, output_var) =
-        if compiler#is_native
+        if tool#is_native
         then (Builtin_variables.program2, None)
         else (Builtin_variables.program, Some Builtin_variables.output)
       in
@@ -267,8 +267,17 @@ let setup_compiler_build_env compiler log env =
   in
   Actions_helpers.setup_build_env false source_modules log env
 
-let mk_compiler_env_setup name compiler =
+let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
+  setup_tool_build_env compiler log env
+
+let setup_toplevel_build_env (toplevel : Ocaml_toplevels.toplevel) log env =
+  setup_tool_build_env toplevel log env
+
+let mk_compiler_env_setup name (compiler : Ocaml_compilers.compiler) =
   Actions.make name (setup_compiler_build_env compiler)
+
+let mk_toplevel_env_setup name (toplevel : Ocaml_toplevels.toplevel) =
+  Actions.make name (setup_toplevel_build_env toplevel)
 
 let setup_ocamlc_byte_build_env =
   mk_compiler_env_setup
@@ -291,12 +300,12 @@ let setup_ocamlopt_opt_build_env =
     Ocaml_compilers.ocamlopt_opt
 
 let setup_ocaml_build_env =
-  mk_compiler_env_setup
+  mk_toplevel_env_setup
     "setup-ocaml-build-env"
     Ocaml_toplevels.ocaml
 
 let setup_ocamlnat_build_env =
-  mk_compiler_env_setup
+  mk_toplevel_env_setup
     "setup-ocamlnat-build-env"
     Ocaml_toplevels.ocamlnat
 
