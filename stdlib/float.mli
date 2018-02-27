@@ -246,3 +246,13 @@ val compare: t -> t -> int
 
 val equal: t -> t -> bool
 (** The equal function for floating-point numbers, compared using {!compare}. *)
+
+module Array : sig
+  type t = floatarray
+  external create : int -> t = "caml_floatarray_create"
+  external length : t -> int = "%floatarray_length"
+  external get : t -> int -> float = "%floatarray_safe_get"
+  external set : t -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
+end

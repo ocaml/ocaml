@@ -265,11 +265,11 @@ external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 
 module Floatarray : sig
-  external create : int -> floatarray = "caml_floatarray_create"
-  external length : floatarray -> int = "%floatarray_length"
-  external get : floatarray -> int -> float = "%floatarray_safe_get"
-  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
-  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
-  external unsafe_set : floatarray -> int -> float -> unit
-      = "%floatarray_unsafe_set"
+  type t = floatarray
+  external create : int -> t = "caml_floatarray_create"
+  external length : t -> int = "%floatarray_length"
+  external get : t -> int -> float = "%floatarray_safe_get"
+  external set : t -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
 end

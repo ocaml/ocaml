@@ -85,3 +85,13 @@ external modf : float -> float * float = "caml_modf_float"
 type t = float
 external compare : float -> float -> int = "%compare"
 let equal x y = compare x y = 0
+
+module Array = struct
+  type t = floatarray
+  external create : int -> t = "caml_floatarray_create"
+  external length : t -> int = "%floatarray_length"
+  external get : t -> int -> float = "%floatarray_safe_get"
+  external set : t -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : t -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : t -> int -> float -> unit = "%floatarray_unsafe_set"
+end

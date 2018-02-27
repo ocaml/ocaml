@@ -37,7 +37,7 @@ P=stdlib__
 
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
 OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
-  $(P)sys.cmo $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo \
+  $(P)sys.cmo $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
   $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
@@ -51,8 +51,8 @@ OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
   $(P)filename.cmo $(P)complex.cmo \
   $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
   $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
-  $(P)spacetime.cmo camlinternalBigarray.cmo \
-  $(P)float.cmo
+  $(P)spacetime.cmo camlinternalBigarray.cmo
+
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 
 .PHONY: all
