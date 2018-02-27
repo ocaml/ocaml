@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Descriptions of the OCaml compilers *)
+(* Descriptions of the OCaml toplevels *)
 
-class compiler :
+class toplevel :
   name : (string -> string) ->
   flags : string ->
   directory : string ->
@@ -31,10 +31,6 @@ object inherit Ocaml_tools.tool
   method is_native : bool
 end
 
-val ocamlc_byte : compiler
+val ocaml : toplevel
 
-val ocamlc_opt : compiler
-
-val ocamlopt_byte : compiler
-
-val ocamlopt_opt : compiler
+val ocamlnat : toplevel

@@ -71,6 +71,7 @@ ocaml_plugin := \
   ocaml_commands.mli ocaml_commands.ml \
   ocaml_tools.mli ocaml_tools.ml \
   ocaml_compilers.mli ocaml_compilers.ml \
+  ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 

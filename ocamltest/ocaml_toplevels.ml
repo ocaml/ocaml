@@ -13,11 +13,11 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Description of the OCaml compilers *)
+(* Description of the OCaml toplevels *)
 
 open Ocamltest_stdlib
 
-class compiler
+class toplevel
   ~(name : string -> string)
   ~(flags : string)
   ~(directory : string)
@@ -35,11 +35,9 @@ class compiler
   ~reference_variable:reference_variable
   ~output_variable:output_variable
   as tool
-
   method backend = backend
   method is_toplevel = is_toplevel
   method is_native = is_native
-
   method ! reference_file env prefix =
     let default = tool#reference_file env prefix in
     if Sys.file_exists default then default else
@@ -49,52 +47,27 @@ class compiler
       (Ocaml_backends.string_of_backend self#backend) in
     if Sys.file_exists filename then filename else
     mk "compilers"
+
 end
 
-(* Compilers compiling byte-code programs *)
-
-let ocamlc_byte = new compiler
-  ~name: Ocaml_commands.ocamlrun_ocamlc
+let ocaml = new toplevel
+  ~name: Ocaml_commands.ocamlrun_ocaml
   ~flags: ""
-  ~directory: "ocamlc.byte"
-  ~exit_status_variable: Ocaml_variables.ocamlc_byte_exit_status
+  ~directory: "ocaml"
+  ~exit_status_variable: Ocaml_variables.ocaml_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
   ~backend: Ocaml_backends.Bytecode
-  ~is_toplevel: false
+  ~is_toplevel: true
   ~is_native: false
 
-let ocamlc_opt = new compiler
-  ~name: Ocaml_files.ocamlc_dot_opt
-  ~flags: ""
-  ~directory: "ocamlc.opt"
-  ~exit_status_variable: Ocaml_variables.ocamlc_opt_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference2
-  ~output_variable: Ocaml_variables.compiler_output2
-  ~backend: Ocaml_backends.Bytecode
-  ~is_toplevel: false
-  ~is_native: true
-
-(* Compilers compiling native-code programs *)
-
-let ocamlopt_byte = new compiler
-  ~name: Ocaml_commands.ocamlrun_ocamlopt
-  ~flags: ""
-  ~directory: "ocamlopt.byte"
-  ~exit_status_variable: Ocaml_variables.ocamlopt_byte_exit_status
-  ~reference_variable: Ocaml_variables.compiler_reference
-  ~output_variable: Ocaml_variables.compiler_output
-  ~backend: Ocaml_backends.Native
-  ~is_toplevel: false
-  ~is_native: false
-
-let ocamlopt_opt = new compiler
-  ~name: Ocaml_files.ocamlopt_dot_opt
-  ~flags: ""
-  ~directory: "ocamlopt.opt"
-  ~exit_status_variable: Ocaml_variables.ocamlopt_opt_exit_status
+let ocamlnat = new toplevel
+  ~name: Ocaml_files.ocamlnat
+  ~flags: "-S" (* Keep intermediate assembly files *)
+  ~directory: "ocamlnat"
+  ~exit_status_variable: Ocaml_variables.ocamlnat_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
   ~backend: Ocaml_backends.Native
-  ~is_toplevel: false
+  ~is_toplevel: true
   ~is_native: true

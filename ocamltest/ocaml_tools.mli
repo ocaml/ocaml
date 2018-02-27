@@ -29,4 +29,8 @@ object
   method exit_status_variable : Variables.t
   method reference_variable : Variables.t
   method output_variable : Variables.t
+  method reference_filename_suffix : Environments.t -> string
+  method reference_file : Environments.t -> string -> string
 end
+
+val expected_exit_status : Environments.t -> tool -> int
