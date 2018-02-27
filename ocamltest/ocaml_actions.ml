@@ -243,11 +243,8 @@ let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   if Result.is_pass r then
   begin
     let env =
-      let (prog_var, output_var) =
-        if compiler#is_native
-        then (Builtin_variables.program2, None)
-        else (Builtin_variables.program, Some Builtin_variables.output)
-      in
+      let prog_var = compiler#program_variable in
+      let output_var = compiler#program_output_variable in
       let (auxenv, program_file) = match Environments.lookup prog_var env with
         | None ->
           let p = get_program_file compiler#backend env in

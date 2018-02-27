@@ -62,10 +62,10 @@ ocaml_commands.cmx : ocaml_files.cmx ocaml_commands.cmi
 ocaml_commands.cmi :
 ocaml_compilers.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
     ocaml_tools.cmi ocaml_files.cmi ocaml_commands.cmi ocaml_backends.cmi \
-    ocaml_compilers.cmi
+    builtin_variables.cmi ocaml_compilers.cmi
 ocaml_compilers.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
     ocaml_tools.cmx ocaml_files.cmx ocaml_commands.cmx ocaml_backends.cmx \
-    ocaml_compilers.cmi
+    builtin_variables.cmx ocaml_compilers.cmi
 ocaml_compilers.cmi : variables.cmi ocaml_tools.cmi ocaml_backends.cmi
 ocaml_directories.cmo : ocamltest_stdlib.cmi ocamltest_config.cmi \
     ocaml_backends.cmi ocaml_directories.cmi
