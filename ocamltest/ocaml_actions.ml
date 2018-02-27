@@ -197,7 +197,6 @@ let find_source_modules log env =
     env
 
 let setup_tool_build_env tool log env =
-  let backend = tool#backend in
   let source_directory = Actions_helpers.test_source_directory env in
   let testfile = Actions_helpers.testfile env in
   let testfile_basename = Filename.chop_extension testfile in
@@ -237,17 +236,21 @@ let setup_tool_build_env tool log env =
   Sys.force_remove tool_output_file;
   let env =
     Environments.add Builtin_variables.test_build_directory build_dir env in
-  let env =
-    if tool#is_toplevel then env
-    else begin
+  Actions_helpers.setup_build_env false source_modules log env
+
+let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
+  let (r, env) = setup_tool_build_env compiler log env in
+  if Result.is_pass r then
+  begin
+    let env =
       let (prog_var, output_var) =
-        if tool#is_native
+        if compiler#is_native
         then (Builtin_variables.program2, None)
         else (Builtin_variables.program, Some Builtin_variables.output)
       in
       let (auxenv, program_file) = match Environments.lookup prog_var env with
         | None ->
-          let p = get_program_file backend env in
+          let p = get_program_file compiler#backend env in
           let env' = Environments.add prog_var p env in
           (env', p)
         | Some p -> (env, p)
@@ -262,12 +265,9 @@ let setup_tool_build_env tool log env =
             Environments.add outputvar output_file auxenv
           end
       )
-    end
-  in
-  Actions_helpers.setup_build_env false source_modules log env
-
-let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
-  setup_tool_build_env compiler log env
+    in
+    (r, env)
+  end else (r, env)
 
 let setup_toplevel_build_env (toplevel : Ocaml_toplevels.toplevel) log env =
   setup_tool_build_env toplevel log env
