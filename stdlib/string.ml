@@ -100,17 +100,14 @@ let trim s =
     then bts (B.trim (bos s))
   else s
 
-let needs_escape s =
-  let rec aux s n i =
-    if i >= n then false else
-      match String.unsafe_get s i with
-      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> true
-      | _ -> aux s n (i+1)
-  in
-  aux s (String.length s) 0
+let rec needs_escape s n i =
+  if i >= n then false else
+    match String.unsafe_get s i with
+    | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> true
+    | _ -> needs_escape s n (i+1)
 
 let escaped s =
-  if needs_escape s then
+  if needs_escape s (String.length s) 0 then
     bts (B.escaped (bos s))
   else
     s
