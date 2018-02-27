@@ -102,14 +102,14 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let commandline =
   [
     compiler#name ocamlsrcdir;
-    Ocaml_flags.runtime_flags ocamlsrcdir compiler#backend has_c_file;
+    Ocaml_flags.runtime_flags ocamlsrcdir compiler#target has_c_file;
     c_headers_flags;
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
     flags env;
-    libraries compiler#backend env;
-    backend_default_flags env compiler#backend;
-    backend_flags env compiler#backend;
+    libraries compiler#target env;
+    backend_default_flags env compiler#target;
+    backend_flags env compiler#target;
     output;
     module_names
   ] in
@@ -140,9 +140,9 @@ let compile_module ocamlsrcdir compiler module_ log env =
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
     flags env;
-    libraries compiler#backend env;
-    backend_default_flags env compiler#backend;
-    backend_flags env compiler#backend;
+    libraries compiler#target env;
+    backend_default_flags env compiler#target;
+    backend_flags env compiler#target;
     "-c " ^ module_;
   ] in
   let exit_status =
@@ -243,7 +243,7 @@ let setup_compiler_build_env (compiler : Ocaml_compilers.compiler) log env =
   begin
     let prog_var = compiler#program_variable in
     let prog_output_var = compiler#program_output_variable in
-    let default_prog_file = get_program_file compiler#backend env in
+    let default_prog_file = get_program_file compiler#target env in
     let env = Environments.add_if_undefined prog_var default_prog_file env in
     let prog_file = Environments.safe_lookup prog_var env in
     let prog_output_file = prog_file ^ ".output" in
@@ -465,7 +465,7 @@ let compare_native_programs = Actions.make
 let compile_module
   ocamlsrcdir compiler compilername compileroutput log env
   (module_basename, module_filetype) =
-  let backend = compiler#backend in
+  let backend = compiler#target in
   let filename =
     Ocaml_filetypes.make_filename (module_basename, module_filetype) in
   let expected_exit_status =

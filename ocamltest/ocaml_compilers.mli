@@ -22,11 +22,11 @@ class compiler :
   exit_status_variable : Variables.t ->
   reference_variable : Variables.t ->
   output_variable : Variables.t ->
-  backend : Ocaml_backends.t ->
-  is_native : bool ->
+  host : Ocaml_backends.t ->
+  target : Ocaml_backends.t ->
 object inherit Ocaml_tools.tool
-  method backend : Ocaml_backends.t
-  method is_native : bool
+  method host : Ocaml_backends.t
+  method target : Ocaml_backends.t
   method program_variable : Variables.t
   method program_output_variable : Variables.t option
 end

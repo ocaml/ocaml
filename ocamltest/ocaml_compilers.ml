@@ -24,8 +24,8 @@ class compiler
   ~(exit_status_variable : Variables.t)
   ~(reference_variable : Variables.t)
   ~(output_variable : Variables.t)
-  ~(backend : Ocaml_backends.t)
-  ~(is_native : bool)
+  ~(host : Ocaml_backends.t)
+  ~(target : Ocaml_backends.t)
 = object (self) inherit Ocaml_tools.tool
   ~name:name
   ~family:"compiler"
@@ -36,16 +36,18 @@ class compiler
   ~output_variable:output_variable
   as tool
 
-  method backend = backend
-  method is_native = is_native
+  method host = host
+  method target = target
 
   method program_variable =
-    if is_native
+    if Ocaml_backends.is_native host
     then Builtin_variables.program2
     else Builtin_variables.program
 
   method program_output_variable =
-    if is_native then None else Some Builtin_variables.output
+    if Ocaml_backends.is_native host
+    then None
+    else Some Builtin_variables.output
 
   method ! reference_file env prefix =
     let default = tool#reference_file env prefix in
@@ -53,12 +55,10 @@ class compiler
     let suffix = self#reference_filename_suffix env in
     let mk s = (Filename.make_filename prefix s) ^ suffix in
     let filename = mk
-      (Ocaml_backends.string_of_backend self#backend) in
+      (Ocaml_backends.string_of_backend target) in
     if Sys.file_exists filename then filename else
     mk "compilers"
 end
-
-(* Compilers compiling byte-code programs *)
 
 let ocamlc_byte = new compiler
   ~name: Ocaml_commands.ocamlrun_ocamlc
@@ -67,8 +67,8 @@ let ocamlc_byte = new compiler
   ~exit_status_variable: Ocaml_variables.ocamlc_byte_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
-  ~backend: Ocaml_backends.Bytecode
-  ~is_native: false
+  ~host: Ocaml_backends.Bytecode
+  ~target: Ocaml_backends.Bytecode
 
 let ocamlc_opt = new compiler
   ~name: Ocaml_files.ocamlc_dot_opt
@@ -77,10 +77,8 @@ let ocamlc_opt = new compiler
   ~exit_status_variable: Ocaml_variables.ocamlc_opt_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
-  ~backend: Ocaml_backends.Bytecode
-  ~is_native: true
-
-(* Compilers compiling native-code programs *)
+  ~host: Ocaml_backends.Native
+  ~target: Ocaml_backends.Bytecode
 
 let ocamlopt_byte = new compiler
   ~name: Ocaml_commands.ocamlrun_ocamlopt
@@ -89,8 +87,8 @@ let ocamlopt_byte = new compiler
   ~exit_status_variable: Ocaml_variables.ocamlopt_byte_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
-  ~backend: Ocaml_backends.Native
-  ~is_native: false
+  ~host: Ocaml_backends.Bytecode
+  ~target: Ocaml_backends.Native
 
 let ocamlopt_opt = new compiler
   ~name: Ocaml_files.ocamlopt_dot_opt
@@ -99,5 +97,5 @@ let ocamlopt_opt = new compiler
   ~exit_status_variable: Ocaml_variables.ocamlopt_opt_exit_status
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
-  ~backend: Ocaml_backends.Native
-  ~is_native: true
+  ~host: Ocaml_backends.Native
+  ~target: Ocaml_backends.Native

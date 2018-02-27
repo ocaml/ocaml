@@ -25,7 +25,6 @@ class toplevel
   ~(reference_variable : Variables.t)
   ~(output_variable : Variables.t)
   ~(backend : Ocaml_backends.t)
-  ~(is_native : bool)
   ~(compiler : Ocaml_compilers.compiler)
 = object (self) inherit Ocaml_tools.tool
   ~name:name
@@ -37,7 +36,6 @@ class toplevel
   ~output_variable:output_variable
   as tool
   method backend = backend
-  method is_native = is_native
   method compiler = compiler
   method ! reference_file env prefix =
     let default = tool#reference_file env prefix in
@@ -59,7 +57,6 @@ let ocaml = new toplevel
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
   ~backend: Ocaml_backends.Bytecode
-  ~is_native: false
   ~compiler: Ocaml_compilers.ocamlc_byte
 
 let ocamlnat = new toplevel
@@ -70,5 +67,4 @@ let ocamlnat = new toplevel
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
   ~backend: Ocaml_backends.Native
-  ~is_native: true
   ~compiler: Ocaml_compilers.ocamlc_opt
