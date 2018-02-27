@@ -712,6 +712,11 @@ and skip_hash_bang = parse
            token was a newline. *)
     | BlankLine (* There have been blank lines. *)
 
+  (* At the beginning of a file, do not attach docstrings to a non-existing
+     previous element. In particular, a lone docstring in an otherwise empty
+     file should be made floating. *)
+  let docs_initial_newline_state = ref BlankLine
+
   type doc_state =
     | Initial  (* There have been no docstrings yet *)
     | After of docstring list
@@ -792,12 +797,16 @@ and skip_hash_bang = parse
           attach lines docs (lexeme_start_p lexbuf);
           tok
     in
-      loop NoLine Initial lexbuf
+    let tok = loop !docs_initial_newline_state Initial lexbuf in
+    docs_initial_newline_state := NoLine;
+    tok
+
 
   let init () =
     is_in_string := false;
     comment_start_loc := [];
     comment_list := [];
+    docs_initial_newline_state := BlankLine;
     match !preprocessor with
     | None -> ()
     | Some (init, _preprocess) -> init ()

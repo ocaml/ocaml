@@ -1,0 +1,11 @@
+[
+  structure_item (lone_docstring.ml[5,53+0]..[7,175+3])
+    Pstr_attribute "ocaml.text"
+    [
+      structure_item (lone_docstring.ml[5,53+0]..[7,175+3])
+        Pstr_eval
+        expression (lone_docstring.ml[5,53+0]..[7,175+3])
+          Pexp_constant PConst_string(" This comment should not be droped. Beware that this test is very sensitive\n    to the presence or absence of newline.\n ",None)
+    ]
+]
+

@@ -243,6 +243,10 @@ Working version
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
+- MPR#7138,GPR#1561: do not drop documentation comments in (otherwise) empty
+  files
+  (Florian Angeletti, review by Thomas Refis)
+
 - PR#7660, GPR#1445: Use native Windows API to implement Unix.utimes in order to
   avoid unintended shifts of the argument timestamp depending on DST setting.
   (Nicolás Ojeda Bär, review by David Allsopp, Xavier Leroy)
