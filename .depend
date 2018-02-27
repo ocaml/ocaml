@@ -558,14 +558,14 @@ bytecomp/emitcode.cmo : bytecomp/translmod.cmi typing/primitive.cmi \
     bytecomp/opcodes.cmo utils/misc.cmi bytecomp/meta.cmi \
     parsing/location.cmi bytecomp/lambda.cmi bytecomp/instruct.cmi \
     typing/ident.cmi typing/env.cmi utils/config.cmi bytecomp/cmo_format.cmi \
-    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
-    bytecomp/emitcode.cmi
+    utils/clflags.cmi bytecomp/bytegen.cmi typing/btype.cmi \
+    parsing/asttypes.cmi bytecomp/emitcode.cmi
 bytecomp/emitcode.cmx : bytecomp/translmod.cmx typing/primitive.cmx \
     bytecomp/opcodes.cmx utils/misc.cmx bytecomp/meta.cmx \
     parsing/location.cmx bytecomp/lambda.cmx bytecomp/instruct.cmx \
     typing/ident.cmx typing/env.cmx utils/config.cmx bytecomp/cmo_format.cmi \
-    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
-    bytecomp/emitcode.cmi
+    utils/clflags.cmx bytecomp/bytegen.cmx typing/btype.cmx \
+    parsing/asttypes.cmi bytecomp/emitcode.cmi
 bytecomp/emitcode.cmi : bytecomp/instruct.cmi typing/ident.cmi \
     bytecomp/cmo_format.cmi
 bytecomp/instruct.cmo : typing/types.cmi typing/subst.cmi \

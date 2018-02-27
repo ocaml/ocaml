@@ -63,6 +63,9 @@ stdlib__filename.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__random.cmi std
 stdlib__filename.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__random.cmx stdlib__printf.cmx stdlib__lazy.cmx stdlib__buffer.cmx \
     stdlib__filename.cmi
 stdlib__filename.cmi :
+stdlib__float.cmo : stdlib__float.cmi
+stdlib__float.cmx : stdlib__float.cmi
+stdlib__float.cmi :
 stdlib__format.cmo : stdlib__string.cmi stdlib__list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi stdlib__buffer.cmi stdlib__format.cmi
 stdlib__format.cmx : stdlib__string.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
@@ -230,6 +233,8 @@ stdlib__filename.cmo : stdlib__sys.cmi stdlib__string.cmi stdlib__random.cmi std
     stdlib__filename.cmi
 stdlib__filename.p.cmx : stdlib__sys.cmx stdlib__string.cmx stdlib__random.cmx stdlib__printf.cmx stdlib__lazy.cmx stdlib__buffer.cmx \
     stdlib__filename.cmi
+stdlib__float.cmo : stdlib__float.cmi
+stdlib__float.p.cmx : stdlib__float.cmi
 stdlib__format.cmo : stdlib__string.cmi stdlib__list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi stdlib__buffer.cmi stdlib__format.cmi
 stdlib__format.p.cmx : stdlib__string.cmx stdlib__list.cmx camlinternalFormatBasics.cmx \
