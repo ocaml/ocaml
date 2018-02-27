@@ -99,12 +99,13 @@ ocaml_tools.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
     environments.cmx ocaml_tools.cmi
 ocaml_tools.cmi : variables.cmi environments.cmi
 ocaml_toplevels.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
-    ocaml_tools.cmi ocaml_files.cmi ocaml_commands.cmi ocaml_backends.cmi \
-    ocaml_toplevels.cmi
+    ocaml_tools.cmi ocaml_files.cmi ocaml_compilers.cmi ocaml_commands.cmi \
+    ocaml_backends.cmi ocaml_toplevels.cmi
 ocaml_toplevels.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
-    ocaml_tools.cmx ocaml_files.cmx ocaml_commands.cmx ocaml_backends.cmx \
-    ocaml_toplevels.cmi
-ocaml_toplevels.cmi : variables.cmi ocaml_tools.cmi ocaml_backends.cmi
+    ocaml_tools.cmx ocaml_files.cmx ocaml_compilers.cmx ocaml_commands.cmx \
+    ocaml_backends.cmx ocaml_toplevels.cmi
+ocaml_toplevels.cmi : variables.cmi ocaml_tools.cmi ocaml_compilers.cmi \
+    ocaml_backends.cmi
 ocaml_variables.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi
 ocaml_variables.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmi
 ocaml_variables.cmi : variables.cmi

@@ -548,15 +548,13 @@ let compile_modules
       else (result, newenv)) in
   compile_mods initial_env modules_with_filetypes
 
-let run_test_program_in_toplevel toplevel log env =
+let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
   let testfile = Actions_helpers.testfile env in
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (toplevel :> Ocaml_tools.tool) in
   let compiler_output_variable = toplevel#output_variable in
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  let compiler = match toplevel#backend with
-    | Ocaml_backends.Native -> Ocaml_compilers.ocamlopt_byte
-    | Ocaml_backends.Bytecode -> Ocaml_compilers.ocamlc_byte in
+  let compiler = toplevel#compiler in
   let compiler_name = compiler#name ocamlsrcdir in
   let modules_with_filetypes =
     List.map Ocaml_filetypes.filetype (modules env) in
