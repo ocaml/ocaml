@@ -25,7 +25,6 @@ class compiler
   ~(reference_variable : Variables.t)
   ~(output_variable : Variables.t)
   ~(backend : Ocaml_backends.t)
-  ~(is_toplevel : bool)
   ~(is_native : bool)
 = object (self) inherit Ocaml_tools.tool
   ~name:name
@@ -37,7 +36,6 @@ class compiler
   as tool
 
   method backend = backend
-  method is_toplevel = is_toplevel
   method is_native = is_native
 
   method ! reference_file env prefix =
@@ -61,7 +59,6 @@ let ocamlc_byte = new compiler
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
   ~backend: Ocaml_backends.Bytecode
-  ~is_toplevel: false
   ~is_native: false
 
 let ocamlc_opt = new compiler
@@ -72,7 +69,6 @@ let ocamlc_opt = new compiler
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
   ~backend: Ocaml_backends.Bytecode
-  ~is_toplevel: false
   ~is_native: true
 
 (* Compilers compiling native-code programs *)
@@ -85,7 +81,6 @@ let ocamlopt_byte = new compiler
   ~reference_variable: Ocaml_variables.compiler_reference
   ~output_variable: Ocaml_variables.compiler_output
   ~backend: Ocaml_backends.Native
-  ~is_toplevel: false
   ~is_native: false
 
 let ocamlopt_opt = new compiler
@@ -96,5 +91,4 @@ let ocamlopt_opt = new compiler
   ~reference_variable: Ocaml_variables.compiler_reference2
   ~output_variable: Ocaml_variables.compiler_output2
   ~backend: Ocaml_backends.Native
-  ~is_toplevel: false
   ~is_native: true

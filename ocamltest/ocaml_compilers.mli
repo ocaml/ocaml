@@ -23,11 +23,9 @@ class compiler :
   reference_variable : Variables.t ->
   output_variable : Variables.t ->
   backend : Ocaml_backends.t ->
-  is_toplevel : bool ->
   is_native : bool ->
 object inherit Ocaml_tools.tool
   method backend : Ocaml_backends.t
-  method is_toplevel : bool
   method is_native : bool
 end
 
