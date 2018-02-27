@@ -101,15 +101,13 @@ let trim s =
   else s
 
 let needs_escape s =
-  let n = length s in
-  let i = ref 0 in
-  let esc = ref false in
-  while !i < n && not !esc do
-    match unsafe_get s !i with
-    | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> esc := true
-    | _ -> incr i
-  done;
-  !esc
+  let rec aux s n i =
+    if i >= n then false else
+      match String.unsafe_get s i with
+      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> true
+      | _ -> aux s n (i+1)
+  in
+  aux s (String.length s) 0
 
 let escaped s =
   if needs_escape s then
