@@ -19,6 +19,7 @@ open Ocamltest_stdlib
 
 class tool
   ~(name : string -> string)
+  ~(family : string)
   ~(flags : string)
   ~(directory : string)
   ~(exit_status_variable : Variables.t)
@@ -26,6 +27,7 @@ class tool
   ~(output_variable : Variables.t)
 = object (self)
   method name = name
+  method family = family
   method flags = flags
   method directory = directory
   method exit_status_variable = exit_status_variable

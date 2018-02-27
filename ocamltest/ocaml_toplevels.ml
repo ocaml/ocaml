@@ -29,6 +29,7 @@ class toplevel
   ~(compiler : Ocaml_compilers.compiler)
 = object (self) inherit Ocaml_tools.tool
   ~name:name
+  ~family:"toplevel"
   ~flags:flags
   ~directory:directory
   ~exit_status_variable:exit_status_variable

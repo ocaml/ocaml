@@ -28,6 +28,7 @@ class compiler
   ~(is_native : bool)
 = object (self) inherit Ocaml_tools.tool
   ~name:name
+  ~family:"compiler"
   ~flags:flags
   ~directory:directory
   ~exit_status_variable:exit_status_variable

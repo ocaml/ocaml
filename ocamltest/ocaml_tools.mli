@@ -17,6 +17,7 @@
 
 class tool :
   name : (string -> string) ->
+  family : string ->
   flags : string ->
   directory : string ->
   exit_status_variable : Variables.t ->
@@ -24,6 +25,7 @@ class tool :
   output_variable : Variables.t ->
 object
   method name : string -> string
+  method family : string
   method flags : string
   method directory : string
   method exit_status_variable : Variables.t

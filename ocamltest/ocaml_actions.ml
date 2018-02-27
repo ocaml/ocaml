@@ -374,23 +374,23 @@ let run_expect log env =
 
 let run_expect = Actions.make "run-expect" run_expect
 
-let make_check_compiler_output name compiler = Actions.make
+let make_check_tool_output name tool = Actions.make
   name
   (Actions_helpers.check_output
-    "compiler"
-    compiler#output_variable
-    compiler#reference_variable)
+    tool#family
+    tool#output_variable
+    tool#reference_variable)
 
-let check_ocamlc_byte_output = make_check_compiler_output
+let check_ocamlc_byte_output = make_check_tool_output
   "check-ocamlc.byte-output" Ocaml_compilers.ocamlc_byte
 
-let check_ocamlc_opt_output = make_check_compiler_output
+let check_ocamlc_opt_output = make_check_tool_output
   "check-ocamlc.opt-output" Ocaml_compilers.ocamlc_opt
 
-let check_ocamlopt_byte_output = make_check_compiler_output
+let check_ocamlopt_byte_output = make_check_tool_output
   "check-ocamlopt.byte-output" Ocaml_compilers.ocamlopt_byte
 
-let check_ocamlopt_opt_output = make_check_compiler_output
+let check_ocamlopt_opt_output = make_check_tool_output
   "check-ocamlopt.opt-output" Ocaml_compilers.ocamlopt_opt
 
 let really_compare_programs backend comparison_tool log env =
@@ -605,10 +605,10 @@ let ocamlnat = Actions.make
   "ocamlnat"
   (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat)
 
-let check_ocaml_output = make_check_compiler_output
+let check_ocaml_output = make_check_tool_output
   "check-ocaml-output" Ocaml_toplevels.ocaml
 
-let check_ocamlnat_output = make_check_compiler_output
+let check_ocamlnat_output = make_check_tool_output
   "check-ocamlnat-output" Ocaml_toplevels.ocamlnat
 
 let config_variables _log env = Environments.add_bindings
