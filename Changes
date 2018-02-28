@@ -42,6 +42,10 @@ Working version
   with very large values of the exponent.
   (Olivier Andrieu)
 
+- GPR#1637: String.escaped is faster does and not allocate when called with a
+  string that does not contain any characters needing to be escaped.
+  (Alain Frisch, review by Xavier Leroy and Gabriel Scherer)
+
 ### Other libraries:
 
 - MPR#7745, GPR#1629: Graphics.open_graph displays the correct window title on
