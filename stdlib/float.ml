@@ -3,6 +3,7 @@
 (*                                 OCaml                                  *)
 (*                                                                        *)
 (*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                        Nicolas Ojeda Bar, LexiFi                       *)
 (*                                                                        *)
 (*   Copyright 2018 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
