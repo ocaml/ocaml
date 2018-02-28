@@ -185,12 +185,12 @@ let init () =
 (* Emission of one instruction *)
 
 let emit_comp = function
-| Ceq -> out opEQ    | Cneq -> out opNEQ
+| Ceq -> out opEQ    | Cne -> out opNEQ
 | Clt -> out opLTINT | Cle -> out opLEINT
 | Cgt -> out opGTINT | Cge -> out opGEINT
 
 and emit_branch_comp = function
-| Ceq -> out opBEQ    | Cneq -> out opBNEQ
+| Ceq -> out opBEQ    | Cne -> out opBNEQ
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
@@ -321,7 +321,7 @@ let rec emit = function
         emit rem
   | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
       when is_immed_const k ->
-        emit_branch_comp (negate_comparison c) ;
+        emit_branch_comp (negate_integer_comparison c) ;
         out_const k ;
         out_label lbl ;
         emit rem

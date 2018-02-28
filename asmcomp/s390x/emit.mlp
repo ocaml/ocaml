@@ -252,14 +252,17 @@ let name_for_int_comparison_imm = function
   | Iunsigned cmp -> ("clgfi", branch_for_comparison cmp)
 
 (* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered*)
-let branch_for_float_comparison cmp neg =
-   match cmp with
-     Ceq -> if neg then 7  else 8
-   | Cne -> if neg then 8  else 7
-   | Cle -> if neg then 3  else 12
-   | Cgt -> if neg then 13 else 2
-   | Cge -> if neg then 5  else 10
-   | Clt -> if neg then 11 else 4
+let branch_for_float_comparison = function
+  | CFeq -> 8
+  | CFneq -> 7
+  | CFle -> 12
+  | CFnle -> 3
+  | CFgt -> 2
+  | CFngt -> 1
+  | CFge -> 10
+  | CFnge -> 5
+  | CFlt -> 4
+  | CFnlt -> 1
 
 (* Names for various instructions *)
 
@@ -554,9 +557,9 @@ let emit_instr i =
             let (comp, mask) = name_for_int_comparison_imm cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	brcl	{emit_int mask}, {emit_label lbl}\n`
-        | Ifloattest(cmp, neg) ->
+        | Ifloattest cmp ->
             `	cdbr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            let mask = branch_for_float_comparison cmp neg in
+            let mask = branch_for_float_comparison cmp in
             `	brcl	{emit_int mask}, {emit_label lbl}\n`
         | Ioddtest ->
             `	tmll	{emit_reg i.arg.(0)}, 1\n`;

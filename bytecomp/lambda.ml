@@ -80,14 +80,14 @@ type primitive =
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pintcomp of comparison
+  | Pintcomp of integer_comparison
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
   | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp of comparison
+  | Pfloatcomp of float_comparison
   (* String operations *)
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
@@ -121,7 +121,7 @@ type primitive =
   | Plslbint of boxed_integer
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
-  | Pbintcomp of boxed_integer * comparison
+  | Pbintcomp of boxed_integer * integer_comparison
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
@@ -152,8 +152,11 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
-and comparison =
-    Ceq | Cneq | Clt | Cgt | Cle | Cge
+and integer_comparison =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
@@ -664,15 +667,45 @@ let bind str var exp body =
     Lvar var' when Ident.same var var' -> body
   | _ -> Llet(str, Pgenval, var, exp, body)
 
-and commute_comparison = function
-| Ceq -> Ceq| Cneq -> Cneq
-| Clt -> Cgt | Cle -> Cge
-| Cgt -> Clt | Cge -> Cle
+let negate_integer_comparison = function
+  | Ceq -> Cne
+  | Cne -> Ceq
+  | Clt -> Cge
+  | Cle -> Cgt
+  | Cgt -> Cle
+  | Cge -> Clt
 
-and negate_comparison = function
-| Ceq -> Cneq| Cneq -> Ceq
-| Clt -> Cge | Cle -> Cgt
-| Cgt -> Cle | Cge -> Clt
+let swap_integer_comparison = function
+  | Ceq -> Ceq
+  | Cne -> Cne
+  | Clt -> Cgt
+  | Cle -> Cge
+  | Cgt -> Clt
+  | Cge -> Cle
+
+let negate_float_comparison = function
+  | CFeq -> CFneq
+  | CFneq -> CFeq
+  | CFlt -> CFnlt
+  | CFnlt -> CFlt
+  | CFgt -> CFngt
+  | CFngt -> CFgt
+  | CFle -> CFnle
+  | CFnle -> CFle
+  | CFge -> CFnge
+  | CFnge -> CFge
+
+let swap_float_comparison = function
+  | CFeq -> CFeq
+  | CFneq -> CFneq
+  | CFlt -> CFgt
+  | CFnlt -> CFngt
+  | CFle -> CFge
+  | CFnle -> CFnge
+  | CFgt -> CFlt
+  | CFngt -> CFnlt
+  | CFge -> CFle
+  | CFnge -> CFnle
 
 let raise_kind = function
   | Raise_regular -> "raise"
