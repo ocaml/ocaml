@@ -22,6 +22,7 @@
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 /* [size] is a number of bytes */
 CAMLexport value caml_alloc_custom(struct custom_operations * ops,
