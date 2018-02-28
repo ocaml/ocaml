@@ -247,6 +247,9 @@ val compare: t -> t -> int
 val equal: t -> t -> bool
 (** The equal function for floating-point numbers, compared using {!compare}. *)
 
+val hash: t -> int
+(** The hash function for floating-point numbers. *)
+
 module Array : sig
   type t = floatarray
   external create : int -> t = "caml_floatarray_create"

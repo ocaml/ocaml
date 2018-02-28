@@ -85,6 +85,8 @@ external modf : float -> float * float = "caml_modf_float"
 type t = float
 external compare : float -> float -> int = "%compare"
 let equal x y = compare x y = 0
+external seeded_hash_param : int -> int -> int -> float -> int = "caml_hash" [@@noalloc]
+let hash x = seeded_hash_param 10 100 0 x
 
 module Array = struct
   type t = floatarray
