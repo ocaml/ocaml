@@ -27,6 +27,9 @@ open Variables (* Should not be necessary with a ppx *)
 let arguments = make ("arguments",
   "Arguments passed to executed programs and scripts")
 
+let exit_status = make ("exit_status",
+  "Expected program exit status")
+
 let files = make ("files",
   "Files used by the tests")
 
@@ -83,6 +86,7 @@ let test_fail = make ("TEST_FAIL",
 let _ = List.iter register_variable
   [
     arguments;
+    exit_status;
     files;
     ocamltest_response;
     ocamltest_log;

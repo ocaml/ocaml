@@ -46,6 +46,11 @@ let test_build_directory_prefix env =
 let words_of_variable env variable =
   String.words (Environments.safe_lookup variable env)
 
+let exit_status_of_variable env variable =
+  try int_of_string
+    (Environments.safe_lookup variable env)
+  with _ -> 0
+
 let files env = words_of_variable env Builtin_variables.files
 
 let setup_symlinks test_source_directory build_directory files =
@@ -154,18 +159,25 @@ let run
       end else env in
     let systemenv =
       Environments.to_system_env execution_env in
-    match run_cmd ~environment:systemenv log execution_env commandline with
-      | 0 ->
-        let newenv =
-          if redirect_output
-          then Environments.add Builtin_variables.output output env
-          else env in
-        (Result.pass, newenv)
-      | _ as exitcode ->
-        let reason = mkreason what (String.concat " " commandline) exitcode in
-        if exitcode = 125 && can_skip
-        then (Result.skip_with_reason reason, execution_env)
-        else (Result.fail_with_reason reason, execution_env)
+    let expected_exit_status =
+      exit_status_of_variable env Builtin_variables.exit_status
+    in
+    let exit_status =
+      run_cmd ~environment:systemenv log execution_env commandline
+    in
+    if exit_status=expected_exit_status
+    then begin
+      let newenv =
+        if redirect_output
+        then Environments.add Builtin_variables.output output env
+        else env in
+      (Result.pass, newenv)
+    end else begin
+      let reason = mkreason what (String.concat " " commandline) exit_status in
+      if exit_status = 125 && can_skip
+      then (Result.skip_with_reason reason, execution_env)
+      else (Result.fail_with_reason reason, execution_env)
+    end
 
 let run_program =
   run

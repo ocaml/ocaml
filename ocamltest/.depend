@@ -94,9 +94,9 @@ ocaml_tests.cmx : tests.cmx ocamltest_config.cmx ocaml_actions.cmx \
     builtin_actions.cmx ocaml_tests.cmi
 ocaml_tests.cmi : tests.cmi
 ocaml_tools.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
-    environments.cmi ocaml_tools.cmi
+    environments.cmi actions_helpers.cmi ocaml_tools.cmi
 ocaml_tools.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
-    environments.cmx ocaml_tools.cmi
+    environments.cmx actions_helpers.cmx ocaml_tools.cmi
 ocaml_tools.cmi : variables.cmi environments.cmi
 ocaml_toplevels.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
     ocaml_tools.cmi ocaml_files.cmi ocaml_compilers.cmi ocaml_commands.cmi \

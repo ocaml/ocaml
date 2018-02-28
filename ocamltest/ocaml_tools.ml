@@ -48,6 +48,4 @@ class tool
 end
 
 let expected_exit_status env tool =
-  try int_of_string
-    (Environments.safe_lookup tool#exit_status_variable env)
-  with _ -> 0
+  Actions_helpers.exit_status_of_variable env tool#exit_status_variable
