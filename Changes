@@ -289,6 +289,10 @@ Working version
   to work on ocamltest-based tests.
   (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)
 
+- GPR#1622: fix bug in the expansion of command-line arguments under Windows
+  which could result in some elements of Sys.argv being truncated in some cases.
+  (Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
 4.06 maintenance branch
 -----------------------
 

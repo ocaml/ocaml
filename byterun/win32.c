@@ -383,7 +383,7 @@ static void expand_pattern(wchar_t * pat)
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
   for (i = wcslen(prefix); i > 0; i--) {
-    char c = prefix[i - 1];
+    wchar_t c = prefix[i - 1];
     if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
   /* No separator was found, it's a filename pattern without a leading directory. */
