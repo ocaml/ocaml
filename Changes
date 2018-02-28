@@ -31,6 +31,11 @@ be mentioned in the 4.06 section below instead of here.)
 
 ### Runtime system:
 
+- MPR#7100, GPR#1476: trigger a minor GC when custom blocks accumulate
+  in minor heap
+  (Alain Frisch, report by talex, review by Damien Doligez, Leo White,
+  Gabriel Scherer)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
