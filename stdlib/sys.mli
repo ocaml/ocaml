@@ -27,7 +27,10 @@ val argv : string array
    given to the program. *)
 
 val executable_name : string
-(** The name of the file containing the executable currently running. *)
+(** The name of the file containing the executable currently running.
+    This name may be absolute or relative to the current directory, depending
+    on the platform and whether the program was compiled to bytecode or a native
+    executable. *)
 
 external file_exists : string -> bool = "caml_sys_file_exists"
 (** Test if a file with the given name exists. *)
