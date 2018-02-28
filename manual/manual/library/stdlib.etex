@@ -62,6 +62,7 @@ from being garbage-collected \\
 \subsubsection*{Arithmetic:}
 \begin{tabular}{lll}
 "Complex" & p.~\pageref{Complex} & Complex numbers \\
+"Float" & p.~\pageref{Float} & Floating-point numbers \\
 "Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
 "Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\
 "Nativeint" & p.~\pageref{Nativeint} & operations on platform-native
