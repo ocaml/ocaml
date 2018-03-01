@@ -22,3 +22,5 @@ val ocamlrun_ocamlopt : string -> string
 val ocamlrun_ocaml : string -> string
 
 val ocamlrun_expect_test : string -> string
+
+val ocamlrun_ocamllex : string -> string
