@@ -38,6 +38,12 @@ let directory_flags env =
 
 let flags env = Environments.safe_lookup Ocaml_variables.flags env
 
+let ocamllex_flags env =
+  Environments.safe_lookup Ocaml_variables.ocamllex_flags env
+
+let ocamlyacc_flags env =
+  Environments.safe_lookup Ocaml_variables.ocamlyacc_flags env
+
 let libraries backend env =
   let value = Environments.safe_lookup Ocaml_variables.libraries env in
   let libs = String.words value in
@@ -57,16 +63,84 @@ let backend_flags env =
 
 let dumb_term = [|"TERM=dumb"|]
 
-let prepare_module (module_name, module_type) =
+type module_generator = {
+  description : string;
+  command : string -> string;
+  flags : Environments.t -> string;
+  generated_compilation_units :
+    string -> (string * Ocaml_filetypes.t) list
+}
+
+let ocamllex =
+{
+  description = "lexer";
+  command = Ocaml_commands.ocamlrun_ocamllex;
+  flags = ocamllex_flags;
+  generated_compilation_units =
+    fun lexer_name -> [(lexer_name, Ocaml_filetypes.Implementation)]
+}
+
+let ocamlyacc =
+{
+  description = "parser";
+  command = Ocaml_files.ocamlyacc;
+  flags = ocamlyacc_flags;
+  generated_compilation_units =
+    fun parser_name ->
+      [
+        (parser_name, Ocaml_filetypes.Interface);
+        (parser_name, Ocaml_filetypes.Implementation)
+      ]
+}
+
+let generate_module generator ocamlsrcdir output_variable input log env =
+  let basename = fst input in
+  let input_file = Ocaml_filetypes.make_filename input in
+  let what =
+    Printf.sprintf "Generating %s module from %s"
+    generator.description input_file
+  in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    generator.command ocamlsrcdir;
+    generator.flags env;
+    input_file
+  ] in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:output_variable
+      ~stderr_variable:output_variable
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then generator.generated_compilation_units basename
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    Printf.fprintf log "%s\n%!" reason;
+    []
+  end
+
+let generate_lexer = generate_module ocamllex
+
+let generate_parser = generate_module ocamlyacc
+
+let prepare_module ocamlsrcdir output_variable log env input =
+  let input_type = snd input in
   let open Ocaml_filetypes in
-  match module_type with
-    | Implementation | Interface | C ->
-      [(module_name, module_type)]
-    | Binary_interface -> [(module_name, module_type)]
-    | Backend_specific _ -> [(module_name, module_type)]
+  match input_type with
+    | Implementation | Interface | C -> [input]
+    | Binary_interface -> [input]
+    | Backend_specific _ -> [input]
     | C_minus_minus -> assert false
-    | Lexer -> assert false
-    | Grammar -> assert false
+    | Lexer ->
+      generate_lexer ocamlsrcdir output_variable input log env
+    | Grammar ->
+      generate_parser ocamlsrcdir output_variable input log env
 
 let get_program_file backend env =
   let testfile = Actions_helpers.testfile env in
@@ -84,9 +158,10 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let program_file = Environments.safe_lookup program_variable env in
   let all_modules =
     Actions_helpers.words_of_variable env Ocaml_variables.all_modules in
+  let output_variable = compiler#output_variable in
+  let prepare = prepare_module ocamlsrcdir output_variable log env in
   let modules =
-    List.concatmap prepare_module
-      (List.map Ocaml_filetypes.filetype all_modules) in
+    List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
   let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
