@@ -238,10 +238,11 @@ let int_literals = ref ([] : (nativeint * int) list)
 
 (* Masks for conditional branches after comparisons *)
 
+(* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = overflow*)
 let branch_for_comparison = function
-    Ceq -> 8  | Cne -> 7
-  | Cle -> 12 | Cgt -> 2
-  | Cge -> 10 | Clt -> 4
+  | Ceq -> 0b1000 | Cne -> 0b0111 (* BRNEL is 0111 rather than 0110 *)
+  | Cle -> 0b1100 | Cgt -> 0b0010
+  | Cge -> 0b1010 | Clt -> 0b0100
 
 let name_for_int_comparison = function
     Isigned cmp -> ("cgr", branch_for_comparison cmp)
@@ -253,16 +254,20 @@ let name_for_int_comparison_imm = function
 
 (* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered*)
 let branch_for_float_comparison = function
-  | CFeq -> 8
-  | CFneq -> 7
-  | CFle -> 12
-  | CFnle -> 3
-  | CFgt -> 2
-  | CFngt -> 13
-  | CFge -> 10
-  | CFnge -> 5
-  | CFlt -> 4
-  | CFnlt -> 11
+  | CFeq  -> 0b1000
+  | CFneq -> 0b0111
+
+  | CFle  -> 0b1100
+  | CFnle -> 0b0011
+
+  | CFgt  -> 0b0010
+  | CFngt -> 0b1101
+
+  | CFge  -> 0b1010
+  | CFnge -> 0b0101
+
+  | CFlt  -> 0b0100
+  | CFnlt -> 0b1011
 
 (* Names for various instructions *)
 
