@@ -39,3 +39,7 @@ val ocamlnat : string -> string
 val cmpbyt : string -> string
 
 val expect_test : string -> string
+
+val ocamllex : string -> string
+
+val ocamlyacc : string -> string

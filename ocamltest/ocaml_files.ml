@@ -60,3 +60,9 @@ let cmpbyt ocamlsrcdir =
 let expect_test ocamlsrcdir =
   Filename.make_path
     [ocamlsrcdir; "testsuite"; "tools"; Filename.mkexe "expect_test"]
+
+let ocamllex ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "lex"; "ocamllex"]
+
+let ocamlyacc ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "yacc"; Filename.mkexe "ocamlyacc"]
