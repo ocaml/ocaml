@@ -1685,7 +1685,7 @@ let rec local_non_recursive_abbrev strict visited env p ty =
         begin try
           (* try expanding, since [p] could be hidden *)
           local_non_recursive_abbrev strict visited env p
-            (try_expand_head try_expand_once env ty)
+            (try_expand_head try_expand_once_opt env ty)
         with Cannot_expand ->
           let params =
             try (Env.find_type p' env).type_params
@@ -2257,6 +2257,8 @@ let get_gadt_equations_level () =
   | Some x -> x
 
 let add_gadt_equation env source destination =
+  (* Format.eprintf "@[add_gadt_equation %s %a@]@."
+    (Path.name source) !Btype.print_raw destination; *)
   if local_non_recursive_abbrev !env source destination then begin
     let destination = duplicate_type destination in
     let expansion_scope =

@@ -289,6 +289,9 @@ Working version
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
 
+- MPR#7747: Type checker can loop infinitly and consumes all computer memory
+  (Jacques Garrigue, report by kantian)
+
 - GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
   to work on ocamltest-based tests.
   (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)
