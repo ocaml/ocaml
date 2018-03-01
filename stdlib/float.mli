@@ -72,7 +72,7 @@ val max_float : float
 val min_float : float
 (** The smallest positive, non-zero, non-denormalized value of type [float]. *)
 
-val epsilon_float : float
+val epsilon : float
 (** The difference between [1.0] and the smallest exactly representable
     floating-point number greater than [1.0]. *)
 
