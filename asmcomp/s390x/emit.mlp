@@ -258,11 +258,11 @@ let branch_for_float_comparison = function
   | CFle -> 12
   | CFnle -> 3
   | CFgt -> 2
-  | CFngt -> 1
+  | CFngt -> 13
   | CFge -> 10
   | CFnge -> 5
   | CFlt -> 4
-  | CFnlt -> 1
+  | CFnlt -> 11
 
 (* Names for various instructions *)
 
