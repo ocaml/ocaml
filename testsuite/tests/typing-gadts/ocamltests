@@ -40,6 +40,7 @@ pr7397.ml
 pr7421.ml
 pr7432.ml
 pr7618.ml
+pr7747.ml
 term-conv.ml
 test.ml
 unify_mb.ml
