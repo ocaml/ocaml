@@ -92,11 +92,17 @@ let module_ = make ("module",
 let modules = make ("modules",
   "Other modules of the test")
 
+let ocamllex_flags = make ("ocamllex_flags",
+  "Flags passed to ocamllex")
+
 let ocamlopt_flags = make ("ocamlopt_flags",
   "Flags passed to ocamlopt.byte and ocamlopt.opt")
 
 let ocamlopt_default_flags = make ("ocamlopt_default_flags",
   "Flags passed by default to ocamlopt.byte and ocamlopt.opt")
+
+let ocamlyacc_flags = make ("ocamlyacc_flags",
+  "Flags passed to ocamlyacc")
 
 let ocaml_exit_status = make ("ocaml_exit_status",
   "Expected exit status of ocaml")
@@ -159,4 +165,6 @@ let _ = List.iter register_variable
     ocamlopt_opt_exit_status;
     ocamlrunparam;
     os_type;
+    ocamllex_flags;
+    ocamlyacc_flags;
   ]
