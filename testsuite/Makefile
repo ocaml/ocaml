@@ -18,7 +18,8 @@ NO_PRINT=`$(MAKE) empty --no-print-directory >/dev/null 2>&1 \
 	  && echo --no-print-directory`
 
 FIND=find
-include ../config/Makefile
+TOPDIR := ..
+include $(TOPDIR)/Makefile.tools
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(SYSTEM)" "cygwin"
@@ -38,6 +39,8 @@ else # Windows
                                      $(ROOT)/flexdll/flexlink.exe" $(EMPTY)
   endif
 endif
+
+failstamp := failure.stamp
 
 ocamltest_directory := ../ocamltest
 
@@ -85,7 +88,7 @@ legacy:
 .PHONY: legacy-without-report
 legacy-without-report: lib tools
 	@for dir in tests/*; do \
-	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
+	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir LEGACY=y; \
 	done 2>&1 | tee -a _log
 	@$(MAKE) $(NO_PRINT) retries
 
@@ -97,14 +100,14 @@ new:
 
 .PHONY: new-without-report
 new-without-report: lib tools
-	@for file in `$(find) tests -name ocamltests`; do \
+	@rm -f $(failstamp)
+	@(for file in `$(find) tests -name ocamltests`; do \
 	  dir=`dirname $$file`; \
 	  echo Running tests from \'$$dir\' ... ; \
-	  while read testfile; do \
-	    TERM=dumb OCAMLRUNPARAM= \
-	      $(ocamltest) $$dir/$${testfile/$$'\r'}; \
-	  done < $$file; \
-	done 2>&1 | tee -a _log
+	  $(MAKE) exec-ocamltest DIR=$$dir \
+	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
+	done || touch $(failstamp)) 2>&1 | tee -a _log
+	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: all-%
 all-%: lib tools
@@ -181,6 +184,7 @@ one: lib tools
 	  exit 1; \
 	fi
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
+	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: exec-one
 exec-one:
@@ -194,7 +198,23 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  cd $(DIR) && \
 	  $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) || echo '=> unexpected error'; \
+	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
+	  echo "Running tests from '$$DIR' ..."; \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest" \
+	    OCAMLTESTFLAGS=""; \
 	fi
+
+.PHONY: exec-ocamltest
+exec-ocamltest:
+	@if [ -z "$(DIR)" ]; then exit 1; fi
+	@if [ ! -d "$(DIR)" ]; then exit 1; fi
+	@file=$(DIR)/ocamltests; \
+	(IFS=$$(printf "\r\n"); while read testfile; do \
+	   TERM=dumb $(OCAMLTESTENV) \
+	     $(ocamltest) $(OCAMLTESTFLAGS) $(DIR)/$$testfile || \
+	   touch $(failstamp); \
+	done < $$file) || touch $(failstamp)
 
 .PHONY: clean-one
 clean-one:
@@ -218,7 +238,13 @@ promote:
 	  echo "Directory '$(DIR)' does not exist."; \
 	  exit 1; \
 	fi
-	@cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote
+	@if [ -f $(DIR)/ocamltests ]; then \
+	  $(MAKE) exec-ocamltest DIR=$(DIR) \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest" \
+	    OCAMLTESTFLAGS="-promote"; \
+	else \
+	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
+	fi
 
 .PHONY: lib
 lib:
@@ -236,6 +262,7 @@ clean:
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 	$(FIND) . -name '*_ocamltest*' | xargs rm -rf
+	rm -f $(failstamp)
 
 .PHONY: report
 report:

@@ -55,6 +55,7 @@ val input_lexbuf: Lexing.lexbuf option ref
 
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
+val print_error_prefix: formatter -> unit
 val print_error: formatter -> t -> unit
 val print_error_cur_file: formatter -> unit -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
@@ -73,6 +74,8 @@ val default_warning_printer : t -> formatter -> Warnings.t -> unit
 (** Original warning printer for use in hooks. *)
 
 val highlight_locations: formatter -> t list -> bool
+
+val show_code_at_location: formatter -> Lexing.lexbuf -> t -> unit
 
 type 'a loc = {
   txt : 'a;

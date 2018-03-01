@@ -210,6 +210,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
 
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree

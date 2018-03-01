@@ -162,10 +162,13 @@ IGNORE_DIRS="
     (cat "$f" | tr -d '\r'; echo) \
     | awk -v rules="$rules" -v svnrules="$svnrules" -v file="$f" \
       '
+        function is_err(name) {
+          return (("," rules svnrules ",") !~ ("[, ]" name "[, ]"));
+        }
+
         function err(name, msg) {
           ++ counts[name];
-          if (("," rules svnrules ",") !~ ("[, ]" name "[, ]") \
-              && counts[name] <= 10){
+          if (is_err(name) && counts[name] <= 10){
             printf ("%s:%d.%d:", file, NR, RSTART + RLENGTH);
             printf (" [%s] %s\n", name, msg);
             got_errors = 1;
@@ -204,8 +207,13 @@ IGNORE_DIRS="
           }
         }
 
-        match($0, /[\200-\377]/) {
+        match($0, /[\200-\377]/) \
+        && state != "authors" && state != "copyright" {
           err("non-ascii", "non-ASCII character(s)");
+          if (header_utf8 && !is_err("non-ascii")) {
+            err("non-ascii-utf8", \
+                "non-ASCII character(s) AND UTF-8 encountered");
+          }
         }
 
         match($0, /[^\t\200-\377 -~]/) {
@@ -221,9 +229,13 @@ IGNORE_DIRS="
         }
 
         $0 !~ /\t/ && length($0) > 80 {
-          RSTART = 81;
-          RLENGTH = 0;
-          err("long-line", "line is over 80 columns");
+          t = $0;
+          sub(/https?:[A-Za-z0-9._~:/?#\[\]@!$&\047()*+,;=%-]{73,}$/, "", t);
+          if (length(t) > 80) {
+            RSTART = 81;
+            RLENGTH = 0;
+            err("long-line", "line is over 80 columns");
+          }
         }
 
         $0 !~ /\t/ && length($0) > 132 {
@@ -232,7 +244,23 @@ IGNORE_DIRS="
           err("very-long-line", "line is over 132 columns");
         }
 
+        # Record that the header contained UTF-8 sequences
+        match($0, /[\300-\367][\200-\277]+/) \
+        && (state == "authors" || state == "copyright") {
+          header_utf8 = 1;
+          if (counts["non-ascii"] > 0 && is_err("non-ascii")) {
+            err("non-ascii-utf8", \
+                "non-ASCII character(s) AND UTF-8 encountered");
+          }
+        }
+
         # Header-recognition automaton. Read this from bottom to top.
+        # Valid UTF-8 chars are recognised in copyright and authors
+        # TODO: ensure all files are valid UTF-8 before awking them.
+        # Note that this code also assumes that combining characters are NOT
+        # used (i.e. that every Unicode code-point corresponds to exactly
+        # one displayed character, i.e. no Camels and no including
+        # weird-and-wonderful ways of encoded accented letters).
 
         state == "close" && $0 ~ /\*{74}/ { state = "OK"; }
         state == "close" { state = "(last line)"; }
@@ -242,11 +270,14 @@ IGNORE_DIRS="
                                                  { state = "blurb"; }
         state == "blurb1" { state = "(blurb line 1)"; }
         state == "copyright" && $0 ~ /\* {72}\*/ { state = "blurb1"; }
-        state == "copyright" && $0 !~ /\*   Copyright [0-9]{4}.{54} \*/ \
-                             && $0 !~ /\*     .{66} \*/ \
+        state == "copyright" \
+          && $0 !~ /\*   Copyright [0-9]{4}([\300-\367][\200-\277]+|.){54} \*/ \
+          && $0 !~ /\*     ([\300-\367][\200-\277]+|.){66} \*/ \
                       { state = "(copyright lines)"; }
         state == "authors" && $0 ~ /\* {72}\*/ { state = "copyright"; }
-        state == "authors" && $0 !~ /\* .{70} \*/ { state = "(authors)"; }
+        state == "authors" \
+          && $0 !~ /\* ([\300-\367][\200-\277]+|.){70} \*/ \
+                      { state = "(authors)"; }
         state == "blank2" && $0 ~ /\* {72}\*/ { state = "authors"; }
         state == "blank2" { state = "(blank line 2)"; }
         state == "title" && $0 ~ /\* {33}OCaml {34}\*/ { state = "blank2"; }

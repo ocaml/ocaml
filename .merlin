@@ -25,9 +25,6 @@ B ./otherlibs/dynlink
 S ./otherlibs/graph
 B ./otherlibs/graph
 
-S ./otherlibs/num
-B ./otherlibs/num
-
 S ./otherlibs/str
 B ./otherlibs/str
 
@@ -43,8 +40,8 @@ B ./otherlibs/unix
 S ./parsing
 B ./parsing
 
-S ./stdlib
-B ./stdlib
+STDLIB ./stdlib
+FLG -open Stdlib -nopervasives
 
 S ./toplevel
 B ./toplevel

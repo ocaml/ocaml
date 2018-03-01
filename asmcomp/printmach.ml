@@ -68,11 +68,11 @@ let regsetaddr ppf s =
     s
 
 let intcomp = function
-  | Isigned c -> Printf.sprintf " %ss " (Printcmm.comparison c)
-  | Iunsigned c -> Printf.sprintf " %su " (Printcmm.comparison c)
+  | Isigned c -> Printf.sprintf " %ss " (Printcmm.integer_comparison c)
+  | Iunsigned c -> Printf.sprintf " %su " (Printcmm.integer_comparison c)
 
 let floatcomp c =
-    Printf.sprintf " %sf " (Printcmm.comparison c)
+    Printf.sprintf " %sf " (Printcmm.float_comparison c)
 
 let intop = function
   | Iadd -> " + "
@@ -105,9 +105,8 @@ let test tst ppf arg =
   | Ifalsetest -> fprintf ppf "not %a" reg arg.(0)
   | Iinttest cmp -> fprintf ppf "%a%s%a" reg arg.(0) (intcomp cmp) reg arg.(1)
   | Iinttest_imm(cmp, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intcomp cmp) n
-  | Ifloattest(cmp, neg) ->
-      fprintf ppf "%s%a%s%a"
-       (if neg then "not " else "")
+  | Ifloattest cmp ->
+      fprintf ppf "%a%s%a"
        reg arg.(0) (floatcomp cmp) reg arg.(1)
   | Ieventest -> fprintf ppf "%a & 1 == 0" reg arg.(0)
   | Ioddtest -> fprintf ppf "%a & 1 == 1" reg arg.(0)

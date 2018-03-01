@@ -56,28 +56,24 @@ if %CYGWIN_UPGRADE_REQUIRED% equ 1 (
 goto :EOF
 
 :install
-rem Temporarily initialise the submodule in the main (msvc64) build
-git submodule update --init flexdll
-git worktree add ..\build-mingw32 -b appveyor-build-mingw32
-cd ..\build-mingw32
-git submodule update --init flexdll
-git worktree add ..\build-msvc32 -b appveyor-build-msvc32
-rem Temporarily initialise the submodule in the msvc32 build
-cd ..\build-msvc32
+chcp 65001 > nul
+rem This must be kept in sync with appveyor_build.sh
+set BUILD_PREFIX=🐫реализация
+git worktree add "..\%BUILD_PREFIX%-msvc64" -b appveyor-build-msvc64
+git worktree add "..\%BUILD_PREFIX%-mingw32" -b appveyor-build-mingw32
+git worktree add "..\%BUILD_PREFIX%-msvc32" -b appveyor-build-msvc32
+cd "..\%BUILD_PREFIX%-mingw32"
 git submodule update --init flexdll
 
-rem appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-0.35.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
-appveyor DownloadFile "http://alain.frisch.fr/flexdll/flexdll-bin-0.35.zip" -FileName "flexdll.zip" || exit /b 1
+cd "%APPVEYOR_BUILD_FOLDER%"
+appveyor DownloadFile "https://github.com/alainfrisch/flexdll/archive/0.37.tar.gz" -FileName "flexdll.tar.gz" || exit /b 1
+appveyor DownloadFile "https://github.com/alainfrisch/flexdll/releases/download/0.37/flexdll-bin-0.37.zip" -FileName "flexdll.zip" || exit /b 1
 rem flexdll.zip is processed here, rather than in appveyor_build.sh because the
 rem unzip command comes from MSYS2 (via Git for Windows) and it has to be
 rem invoked via cmd /c in a bash script which is weird(er).
 mkdir "%APPVEYOR_BUILD_FOLDER%\..\flexdll"
 move flexdll.zip "%APPVEYOR_BUILD_FOLDER%\..\flexdll"
 cd "%APPVEYOR_BUILD_FOLDER%\..\flexdll" && unzip -q flexdll.zip
-
-rem Make sure the Cygwin path comes before the Git one (otherwise cygpath
-rem gets confused as to which root it's in).
-set Path=C:\cygwin64\bin;%OCAMLROOT%\bin\flexdll;%Path%
 
 rem CYGWIN_PACKAGES is the list of required Cygwin packages (cygwin is included
 rem in the list just so that the Cygwin version is always displayed on the log).
@@ -113,7 +109,5 @@ goto :EOF
 rem Reconfigure the environment for the msvc64 build
 call :RestoreVars
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat"
-"%APPVEYOR_BUILD_FOLDER%\ocamlc.opt" -version || exit /b 1
-set CAML_LD_LIBRARY_PATH=%OCAMLROOT%/lib/stublibs
 "%CYG_ROOT%\bin\bash.exe" -lec "$APPVEYOR_BUILD_FOLDER/appveyor_build.sh test" || exit /b 1
 goto :EOF

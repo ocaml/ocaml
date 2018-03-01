@@ -289,11 +289,14 @@ let mk_not dbg cmm =
   | Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1], _); Cconst_int 1], dbg') -> begin
       match c with
       | Cop(Ccmpi cmp, [c1; c2], dbg'') ->
-          tag_int (Cop(Ccmpi (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+          tag_int
+            (Cop(Ccmpi (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
       | Cop(Ccmpa cmp, [c1; c2], dbg'') ->
-          tag_int (Cop(Ccmpa (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+          tag_int
+            (Cop(Ccmpa (negate_integer_comparison cmp), [c1; c2], dbg'')) dbg'
       | Cop(Ccmpf cmp, [c1; c2], dbg'') ->
-          tag_int (Cop(Ccmpf (negate_comparison cmp), [c1; c2], dbg'')) dbg'
+          tag_int
+            (Cop(Ccmpf (negate_float_comparison cmp), [c1; c2], dbg'')) dbg'
       | _ ->
         (* 0 -> 3, 1 -> 1 *)
         Cop(Csubi, [Cconst_int 3; Cop(Clsl, [c; Cconst_int 1], dbg)], dbg)
@@ -870,13 +873,9 @@ let curry_function n =
 
 (* Comparisons *)
 
-let transl_comparison = function
-    Lambda.Ceq -> Ceq
-  | Lambda.Cneq -> Cne
-  | Lambda.Cge -> Cge
-  | Lambda.Cgt -> Cgt
-  | Lambda.Cle -> Cle
-  | Lambda.Clt -> Clt
+let transl_int_comparison cmp = cmp
+
+let transl_float_comparison cmp = cmp
 
 (* Translate structured constants *)
 
@@ -1365,7 +1364,7 @@ let simplif_primitive_32bits = function
   | Plsrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right_unsigned")
   | Pasrbint Pint64 -> Pccall (default_prim "caml_int64_shift_right")
   | Pbintcomp(Pint64, Lambda.Ceq) -> Pccall (default_prim "caml_equal")
-  | Pbintcomp(Pint64, Lambda.Cneq) -> Pccall (default_prim "caml_notequal")
+  | Pbintcomp(Pint64, Lambda.Cne) -> Pccall (default_prim "caml_notequal")
   | Pbintcomp(Pint64, Lambda.Clt) -> Pccall (default_prim "caml_lessthan")
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
@@ -2200,7 +2199,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       Cop(Cor, [asr_int (transl env arg1) (untag_int(transl env arg2) dbg) dbg;
                 Cconst_int 1], dbg)
   | Pintcomp cmp ->
-      tag_int(Cop(Ccmpi(transl_comparison cmp),
+      tag_int(Cop(Ccmpi(transl_int_comparison cmp),
                   [transl env arg1; transl env arg2], dbg)) dbg
   | Pisout ->
       transl_isout (transl env arg1) (transl env arg2) dbg
@@ -2222,7 +2221,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                     [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
                     dbg))
   | Pfloatcomp cmp ->
-      tag_int(Cop(Ccmpf(transl_comparison cmp),
+      tag_int(Cop(Ccmpf(transl_float_comparison cmp),
                   [transl_unbox_float dbg env arg1; transl_unbox_float dbg env arg2],
                   dbg)) dbg
 
@@ -2417,7 +2416,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int dbg env bi arg1;
                       untag_int(transl env arg2) dbg], dbg))
   | Pbintcomp(bi, cmp) ->
-      tag_int (Cop(Ccmpi(transl_comparison cmp),
+      tag_int (Cop(Ccmpi(transl_int_comparison cmp),
                      [transl_unbox_int dbg env bi arg1;
                       transl_unbox_int dbg env bi arg2], dbg)) dbg
   | prim ->
@@ -3045,18 +3044,24 @@ let emit_gc_roots_table ~symbols cont =
 (* Build preallocated blocks (used for Flambda [Initialize_symbol]
    constructs, and Clambda global module) *)
 
-let preallocate_block cont { Clambda.symbol; exported; tag; size } =
+let preallocate_block cont { Clambda.symbol; exported; tag; fields } =
   let space =
     (* These words will be registered as roots and as such must contain
        valid values, in case we are in no-naked-pointers mode.  Likewise
        the block header must be black, below (see [caml_darken]), since
        the overall record may be referenced. *)
-    Array.to_list
-      (Array.init size (fun _index ->
-        Cint (Nativeint.of_int 1 (* Val_unit *))))
+    List.map (fun field ->
+        match field with
+        | None ->
+            Cint (Nativeint.of_int 1 (* Val_unit *))
+        | Some (Uconst_field_int n) ->
+            cint_const n
+        | Some (Uconst_field_ref label) ->
+            Csymbol_address label)
+      fields
   in
   let data =
-    Cint(black_block_header tag size) ::
+    Cint(black_block_header tag (List.length fields)) ::
     if exported then
       Cglobal_symbol symbol ::
       Cdefine_symbol symbol :: space

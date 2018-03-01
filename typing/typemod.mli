@@ -36,7 +36,8 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Types.signature -> unit
 val type_open_:
-        ?used_slot:bool ref -> ?toplevel:bool -> Asttypes.override_flag ->
+        ?used_slot:bool ref -> ?toplevel:bool ->
+        Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
 val modtype_of_package:
         Env.t -> Location.t ->
@@ -51,6 +52,12 @@ val save_signature:
 
 val package_units:
   Env.t -> string list -> string -> string -> Typedtree.module_coercion
+
+(* Should be in Envaux, but it breaks the build of the debugger *)
+val initial_env:
+  loc:Location.t -> safe_string:bool ->
+  initially_opened_module:string option ->
+  open_implicit_modules:string list -> Env.t
 
 type error =
     Cannot_apply of module_type

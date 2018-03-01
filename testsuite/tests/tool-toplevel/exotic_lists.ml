@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 module L = struct
         type ('a,'b) t = [] | (::) of 'a * ('b,'a) t
 end;;

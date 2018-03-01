@@ -18,12 +18,20 @@
 val arch : string
 (** Architecture for the native compiler, "none" if it is disabled *)
 
-val unix : bool
-(** [true] on Unix systems, [false] on non-Unix systems *)
+val afl_instrument : bool
+(** Whether AFL support has been enabled in the compiler *)
+
+val shared_libraries : bool
+(** [true] if shared libraries are supported, [false] otherwise *)
+
+val libunix : bool
+(** [true] for unix, [false] for win32unix *)
+
+val system : string
+(** The content of the SYSTEM Make variable *)
 
 val c_preprocessor : string
 (** Command to use to invoke the C preprocessor *)
-
 
 val ocamlc_default_flags : string
 (** Flags passed by default to ocamlc.byte and ocamlc.opt *)
@@ -37,5 +45,11 @@ val ocamlsrcdir : string
 val flambda : bool
 (** Whether flambda has been enabled at configure time *)
 
+val spacetime : bool
+(** Whether Spacetime profiling has been enabled at configure time *)
+
 val safe_string : bool
 (** Whether the compiler was configured with -safe-string *)
+
+val flat_float_array : bool
+(* Whether the compiler was configured with -flat-float-array *)

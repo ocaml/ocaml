@@ -106,6 +106,7 @@ FORCE_SAFE_STRING=false
 DEFAULT_SAFE_STRING=true
 WINDOWS_UNICODE=1
 AFL_INSTRUMENT=false
+AWK=gawk
 
 ########## Configuration for the bytecode compiler
 
@@ -156,10 +157,10 @@ MKEXE_BOOT=$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUTEXE)$(1) $(2)
 MKEXE_ANSI=$(FLEXLINK) -exe
 
 ### How to build a static library
-MKLIB=rm -f $(1); $(TOOLPREF)ar rc $(1) $(2); $(RANLIB) $(1)
+MKLIB=rm -f $(1) && $(TOOLPREF)ar rcs $(1) $(2)
 #ml let mklib out files opts =
-#ml   Printf.sprintf "rm -f %s && %sar rcs %s %s %s"
-#ml                  out toolpref opts out files;;
+#ml   Printf.sprintf "%sar rcs %s %s %s"
+#ml                  toolpref opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)

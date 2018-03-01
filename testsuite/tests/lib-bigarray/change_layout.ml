@@ -1,10 +1,14 @@
+(* TEST
+   include bigarray
+*)
+
 (** Test the various change_layout for Genarray and the various Array[n] *)
 
 open Bigarray
 
 let pp_sep ppf () = Format.fprintf ppf ";@ "
  let print_array pp ppf a =
- Format.fprintf ppf "@[<hov>⟦%a⟧@]"
+ Format.fprintf ppf "@[<hov>[|%a|]@]"
     Format.(pp_print_list ~pp_sep pp) (Array.to_list a)
 
 let print_index = print_array Format.pp_print_int

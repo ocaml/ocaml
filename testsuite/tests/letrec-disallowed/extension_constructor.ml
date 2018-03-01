@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 (* Example from Stephen Dolan.
    Accessing an extension constructor involves accessing the module
    in which it's defined.

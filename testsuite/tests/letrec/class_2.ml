@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* class expressions may also contain local recursive bindings *)
 class test =
   let rec f = print_endline "f"; fun x -> g x

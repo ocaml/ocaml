@@ -1,3 +1,8 @@
+(* TEST
+   flags += " -w a "
+   modules = "globrootsprim.c"
+*)
+
 module type GLOBREF = sig
   type t
   val register: string -> t

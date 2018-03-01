@@ -29,7 +29,9 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Path.t
+  | Env_open of summary * Misc.StringSet.t * Path.t
+  (** The string set argument of [Env_open] represents a list of module names
+      to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
   | Env_copy_types of summary * string list
@@ -89,40 +91,41 @@ val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
-val add_gadt_instance_level: int -> t -> t
-val gadt_instance_level: t -> type_expr -> int option
-val add_gadt_instances: t -> int -> type_expr list -> unit
-val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
 (* ?loc is used to report 'deprecated module' warnings *)
 
 val lookup_value:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * value_description
 val lookup_constructor:
-  ?loc:Location.t -> Longident.t -> t -> constructor_description
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
 val lookup_label:
-  ?loc:Location.t -> Longident.t -> t -> label_description
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> label_description
 val lookup_all_labels:
-  ?loc:Location.t ->
+  ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
 val lookup_type:
-  ?loc:Location.t -> Longident.t -> t -> Path.t
+  ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
   (* Since 4.04, this function no longer returns [type_description].
      To obtain it, you should either call [Env.find_type], or replace
      it by [Typetexp.find_type] *)
 val lookup_module:
-  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+  load:bool -> ?loc:Location.t -> ?mark:bool -> Longident.t -> t -> Path.t
 val lookup_modtype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype:
-  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
+  ?loc:Location.t -> ?mark:bool ->
+  Longident.t -> t -> Path.t * class_type_declaration
 
 val copy_types: string list -> t -> t
   (* Used only in Typecore.duplicate_ident_types. *)
@@ -144,7 +147,6 @@ val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
@@ -157,8 +159,26 @@ val add_signature: signature -> t -> t
    not a structure. *)
 val open_signature:
     ?used_slot:bool ref ->
-    ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
+    ?loc:Location.t -> ?toplevel:bool ->
+    Asttypes.override_flag -> Path.t ->
       t -> t option
+
+(* Similar to [open_signature], except that modules from the load path
+   have precedence over sub-modules of the opened module.
+
+   For instance, if opening a module [M] with a sub-module [X]:
+   - if the load path contains a [x.cmi] file, then resolving [X] in the
+     new environment yields the same result as resolving [X] in the
+     old environment
+   - otherwise, in the new environment [X] resolves to [M.X]
+*)
+val open_signature_of_initially_opened_module:
+    Path.t -> t -> t option
+
+(* Similar to [open_signature] except that sub-modules of the opened modules
+   that are in [hidden_submodules] are not added to the environment. *)
+val open_signature_from_env_summary:
+    Path.t -> t -> hidden_submodules:Misc.StringSet.t -> t option
 
 val open_pers_signature: string -> t -> t
 

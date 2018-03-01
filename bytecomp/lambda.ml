@@ -80,14 +80,14 @@ type primitive =
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pintcomp of comparison
+  | Pintcomp of integer_comparison
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
   | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp of comparison
+  | Pfloatcomp of float_comparison
   (* String operations *)
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
@@ -121,7 +121,7 @@ type primitive =
   | Plslbint of boxed_integer
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
-  | Pbintcomp of boxed_integer * comparison
+  | Pbintcomp of boxed_integer * integer_comparison
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
@@ -152,8 +152,11 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
-and comparison =
-    Ceq | Cneq | Clt | Cgt | Cle | Cge
+and integer_comparison =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and value_kind =
     Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
@@ -455,28 +458,26 @@ let iter f = function
       f e
 
 
-module IdentSet = Set.Make(Ident)
-
 let free_ids get l =
-  let fv = ref IdentSet.empty in
+  let fv = ref Ident.Set.empty in
   let rec free l =
     iter free l;
-    fv := List.fold_right IdentSet.add (get l) !fv;
+    fv := List.fold_right Ident.Set.add (get l) !fv;
     match l with
       Lfunction{params} ->
-        List.iter (fun param -> fv := IdentSet.remove param !fv) params
+        List.iter (fun param -> fv := Ident.Set.remove param !fv) params
     | Llet(_str, _k, id, _arg, _body) ->
-        fv := IdentSet.remove id !fv
+        fv := Ident.Set.remove id !fv
     | Lletrec(decl, _body) ->
-        List.iter (fun (id, _exp) -> fv := IdentSet.remove id !fv) decl
+        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
     | Lstaticcatch(_e1, (_,vars), _e2) ->
-        List.iter (fun id -> fv := IdentSet.remove id !fv) vars
+        List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
     | Ltrywith(_e1, exn, _e2) ->
-        fv := IdentSet.remove exn !fv
+        fv := Ident.Set.remove exn !fv
     | Lfor(v, _e1, _e2, _dir, _e3) ->
-        fv := IdentSet.remove v !fv
+        fv := Ident.Set.remove v !fv
     | Lassign(id, _e) ->
-        fv := IdentSet.add id !fv
+        fv := Ident.Set.add id !fv
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
     | Lifthenelse _ | Lsequence _ | Lwhile _
@@ -495,12 +496,6 @@ let raise_count = ref 0
 let next_raise_count () =
   incr raise_count ;
   !raise_count
-
-let negative_raise_count = ref 0
-
-let next_negative_raise_count () =
-  decr negative_raise_count ;
-  !negative_raise_count
 
 (* Anticipated staticraise, for guards *)
 let staticfail = Lstaticraise (0,[])
@@ -672,15 +667,45 @@ let bind str var exp body =
     Lvar var' when Ident.same var var' -> body
   | _ -> Llet(str, Pgenval, var, exp, body)
 
-and commute_comparison = function
-| Ceq -> Ceq| Cneq -> Cneq
-| Clt -> Cgt | Cle -> Cge
-| Cgt -> Clt | Cge -> Cle
+let negate_integer_comparison = function
+  | Ceq -> Cne
+  | Cne -> Ceq
+  | Clt -> Cge
+  | Cle -> Cgt
+  | Cgt -> Cle
+  | Cge -> Clt
 
-and negate_comparison = function
-| Ceq -> Cneq| Cneq -> Ceq
-| Clt -> Cge | Cle -> Cgt
-| Cgt -> Cle | Cge -> Clt
+let swap_integer_comparison = function
+  | Ceq -> Ceq
+  | Cne -> Cne
+  | Clt -> Cgt
+  | Cle -> Cge
+  | Cgt -> Clt
+  | Cge -> Cle
+
+let negate_float_comparison = function
+  | CFeq -> CFneq
+  | CFneq -> CFeq
+  | CFlt -> CFnlt
+  | CFnlt -> CFlt
+  | CFgt -> CFngt
+  | CFngt -> CFgt
+  | CFle -> CFnle
+  | CFnle -> CFle
+  | CFge -> CFnge
+  | CFnge -> CFge
+
+let swap_float_comparison = function
+  | CFeq -> CFeq
+  | CFneq -> CFneq
+  | CFlt -> CFgt
+  | CFnlt -> CFngt
+  | CFle -> CFge
+  | CFnle -> CFnge
+  | CFgt -> CFlt
+  | CFngt -> CFnlt
+  | CFge -> CFle
+  | CFnge -> CFnle
 
 let raise_kind = function
   | Raise_regular -> "raise"

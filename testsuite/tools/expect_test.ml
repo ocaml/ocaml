@@ -132,11 +132,18 @@ let split_chunks phrases =
 module Compiler_messages = struct
   let print_loc ppf (loc : Location.t) =
     let startchar = loc.loc_start.pos_cnum - loc.loc_start.pos_bol in
-    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+    let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_bol in
     Format.fprintf ppf "Line _";
     if startchar >= 0 then
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
-    Format.fprintf ppf ":@,"
+    Format.fprintf ppf ":@.";
+    if startchar >= 0 then
+      begin match !Location.input_lexbuf with
+      | None -> ()
+      | Some lexbuf ->
+         Location.show_code_at_location ppf lexbuf loc
+      end;
+    ()
 
   let capture ppf ~f =
     Misc.protect_refs
@@ -182,6 +189,7 @@ let parse_contents ~fname contents =
   let lexbuf = Lexing.from_string contents in
   Location.init lexbuf fname;
   Location.input_name := fname;
+  Location.input_lexbuf := Some lexbuf;
   Parse.use_file lexbuf
 
 let eval_expectation expectation ~output =
@@ -245,8 +253,15 @@ let eval_expect_file _fname ~file_contents =
         try
           exec_phrase ppf phrase
         with exn ->
-          Location.report_exception ppf exn;
-          false)
+          let bt = Printexc.get_raw_backtrace () in
+          begin try Location.report_exception ppf exn
+          with _ ->
+            Format.fprintf ppf "Uncaught exception: %s\n%s\n"
+              (Printexc.to_string exn)
+              (Printexc.raw_backtrace_to_string bt)
+          end;
+          false
+      )
     in
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
@@ -313,7 +328,7 @@ let process_expect_file fname =
   let correction = eval_expect_file fname ~file_contents in
   write_corrected ~file:corrected_fname ~file_contents correction
 
-let repo_root = ref ""
+let repo_root = ref None
 
 let main fname =
   Toploop.override_sys_argv
@@ -321,25 +336,97 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
-  List.iter [ "stdlib" ] ~f:(fun s ->
-    Topdirs.dir_directory (Filename.concat !repo_root s));
+  if not !Clflags.no_std_include then begin
+    match !repo_root with
+    | None -> ()
+    | Some dir ->
+        (* If we pass [-repo-root], use the stdlib from inside the
+           compiler, not the installed one. We use
+           [Compenv.last_include_dirs] to make sure that the stdlib
+           directory is the last one. *)
+        Clflags.no_std_include := true;
+        Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
+  end;
+  Compmisc.init_path false;
   Toploop.initialize_toplevel_env ();
   Sys.interactive := false;
   process_expect_file fname;
   exit 0
 
+module Options = Main_args.Make_bytetop_options (struct
+  let set r () = r := true
+  let clear r () = r := false
+  open Clflags
+  let _absname = set Location.absname
+  let _I dir =
+    let dir = Misc.expand_directory Config.standard_library dir in
+    include_dirs := dir :: !include_dirs
+  let _init s = init_file := Some s
+  let _noinit = set noinit
+  let _labels = clear classic
+  let _alias_deps = clear transparent_modules
+  let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
+  let _no_app_funct = clear applicative_functors
+  let _noassert = set noassert
+  let _nolabels = set classic
+  let _noprompt = set noprompt
+  let _nopromptcont = set nopromptcont
+  let _nostdlib = set no_std_include
+  let _open s = open_modules := s :: !open_modules
+  let _ppx _s = (* disabled *) ()
+  let _principal = set principal
+  let _no_principal = clear principal
+  let _rectypes = set recursive_types
+  let _no_rectypes = clear recursive_types
+  let _safe_string = clear unsafe_string
+  let _short_paths = clear real_paths
+  let _stdin () = (* disabled *) ()
+  let _strict_sequence = set strict_sequence
+  let _no_strict_sequence = clear strict_sequence
+  let _strict_formats = set strict_formats
+  let _no_strict_formats = clear strict_formats
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = clear unboxed_types
+  let _unsafe = set fast
+  let _unsafe_string = set unsafe_string
+  let _version () = (* disabled *) ()
+  let _vnum () = (* disabled *) ()
+  let _no_version = set noversion
+  let _w s = Warnings.parse_options false s
+  let _warn_error s = Warnings.parse_options true s
+  let _warn_help = Warnings.help_warnings
+  let _dparsetree = set dump_parsetree
+  let _dtypedtree = set dump_typedtree
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
+  let _dsource = set dump_source
+  let _drawlambda = set dump_rawlambda
+  let _dlambda = set dump_lambda
+  let _dflambda = set dump_flambda
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
+  let _dinstr = set dump_instr
+
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
+
+  let anonymous s = main s
+end);;
+
 let args =
   Arg.align
-    [ "-repo-root", Set_string repo_root,
-      "<dir> root of the OCaml repository"
-    ; "-principal", Set Clflags.principal,
-      " Evaluate the file with -principal set"
-    ]
+    ( [ "-repo-root", Arg.String (fun s -> repo_root := Some s),
+        "<dir> root of the OCaml repository. This causes the tool to use \
+         the stdlib from the current source tree rather than the installed one."
+      ] @ Options.list
+    )
 
 let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
 let () =
+  Clflags.color := Some Misc.Color.Never;
   Clflags.error_size := 0;
   try
     Arg.parse args main usage;

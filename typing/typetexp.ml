@@ -52,10 +52,15 @@ type error =
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
   | Unbound_cltype of Longident.t
-  | Ill_typed_functor_application of Longident.t
+  | Ill_typed_functor_application
+      of Longident.t * Longident.t * Includemod.error list option
   | Illegal_reference_to_recursive_module
-  | Access_functor_as_structure of Longident.t
-  | Apply_structure_as_functor of Longident.t
+  | Wrong_use_of_module of Longident.t * [ `Structure_used_as_functor
+                                         | `Abstract_used_as_functor
+                                         | `Functor_used_as_structure
+                                         | `Abstract_used_as_structure
+                                         | `Generative_used_as_applicative
+                                         ]
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
@@ -65,10 +70,6 @@ exception Error_forward of Location.error
 
 
 type variable_context = int * (string, type_expr) Tbl.t
-
-(* Local definitions *)
-
-let instance_list = Ctype.instance_list Env.empty
 
 (* Narrowing unbound identifier errors. *)
 
@@ -81,6 +82,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
     | Env.Recmodule ->
         raise (Error (loc, env, Illegal_reference_to_recursive_module))
   in
+  let error e = raise (Error (loc, env, e)) in
   begin match lid with
   | Longident.Lident _ -> ()
   | Longident.Ldot (mlid, _) ->
@@ -88,33 +90,44 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       let md = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
       | Mty_functor _ ->
-          raise (Error (loc, env, Access_functor_as_structure mlid))
-      | Mty_alias(_, p) ->
-          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
-      | _ -> ()
+         error (Wrong_use_of_module (mlid, `Functor_used_as_structure))
+      | Mty_ident _ ->
+         error (Wrong_use_of_module (mlid, `Abstract_used_as_structure))
+      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | Mty_signature _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
       let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
-      begin match Env.scrape_alias env fmd.md_type with
-      | Mty_signature _ ->
-          raise (Error (loc, env, Apply_structure_as_functor flid))
-      | Mty_alias(_, p) ->
-          raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
-      | _ -> ()
-      end;
+      let mty_param =
+        match Env.scrape_alias env fmd.md_type with
+        | Mty_signature _ ->
+           error (Wrong_use_of_module (flid, `Structure_used_as_functor))
+        | Mty_ident _ ->
+           error (Wrong_use_of_module (flid, `Abstract_used_as_functor))
+        | Mty_alias(_, p) -> error (Cannot_scrape_alias(flid, p))
+        | Mty_functor (_, None, _) ->
+           error (Wrong_use_of_module (flid, `Generative_used_as_applicative))
+        | Mty_functor (_, Some mty_param, _) -> mty_param
+      in
       check_module mlid;
-      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
+      let mpath = Env.lookup_module ~load:true mlid env in
+      let mmd = Env.find_module mpath env in
       begin match Env.scrape_alias env mmd.md_type with
-      | Mty_alias(_, p) ->
-          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
-      | _ ->
-          raise (Error (loc, env, Ill_typed_functor_application lid))
+      | Mty_alias(_, p) -> error (Cannot_scrape_alias(mlid, p))
+      | mty_arg ->
+         let details =
+           try Includemod.check_modtype_inclusion
+                 ~loc env mty_arg mpath mty_param;
+               None (* should be impossible *)
+           with Includemod.Error e -> Some e
+         in
+         error (Ill_typed_functor_application (flid, mlid, details))
       end
   end;
-  raise (Error (loc, env, make_error lid))
+  error (make_error lid)
 
-let find_component (lookup : ?loc:_ -> _) make_error env loc lid =
+let find_component (lookup : ?loc:_ -> ?mark:_ -> _) make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
@@ -161,7 +174,7 @@ let find_value env loc lid =
   r
 
 let lookup_module ?(load=false) env loc lid =
-  find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
+  find_component (fun ?loc ?mark lid env -> (Env.lookup_module ~load ?loc ?mark lid env))
     (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =
@@ -325,9 +338,9 @@ and transl_type_aux env policy styp =
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, env, Invalid_variable_name ("'" ^ name)));
       begin try
-        instance env (List.assoc name !univars)
+        instance (List.assoc name !univars)
       with Not_found -> try
-        instance env (fst(Tbl.find name !used_variables))
+        instance (fst(Tbl.find name !used_variables))
       with Not_found ->
         let v =
           if policy = Univars then new_pre_univar ~name () else newvar ~name ()
@@ -474,7 +487,7 @@ and transl_type_aux env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
-              instance env (fst(Tbl.find alias !used_variables))
+              instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty.ctyp_type with Unify trace ->
@@ -495,7 +508,7 @@ and transl_type_aux env policy styp =
             end_def ();
             generalize_structure t;
           end;
-          let t = instance env t in
+          let t = instance t in
           let px = Btype.proxy t in
           begin match px.desc with
           | Tvar None -> Btype.log_type px; px.desc <- Tvar (Some alias)
@@ -807,7 +820,7 @@ let transl_simple_type_univars env styp =
   in
   make_fixed_univars typ.ctyp_type;
     { typ with ctyp_type =
-        instance env (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
+        instance (Btype.newgenty (Tpoly (typ.ctyp_type, univs))) }
 
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
@@ -953,14 +966,33 @@ let report_error env ppf = function
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
       spellcheck ppf fold_cltypes env lid;
-  | Ill_typed_functor_application lid ->
-      fprintf ppf "Ill-typed functor application %a" longident lid
+  | Ill_typed_functor_application (flid, mlid, details) ->
+     (match details with
+     | None ->
+        fprintf ppf "@[Ill-typed functor application %a(%a)@]"
+          longident flid longident mlid
+     | Some inclusion_error ->
+        fprintf ppf "@[The type of %a does not match %a's parameter@\n%a@]"
+          longident mlid longident flid Includemod.report_error inclusion_error)
   | Illegal_reference_to_recursive_module ->
-      fprintf ppf "Illegal recursive module reference"
-  | Access_functor_as_structure lid ->
-      fprintf ppf "The module %a is a functor, not a structure" longident lid
-  | Apply_structure_as_functor lid ->
-      fprintf ppf "The module %a is a structure, not a functor" longident lid
+     fprintf ppf "Illegal recursive module reference"
+  | Wrong_use_of_module (lid, details) ->
+     (match details with
+     | `Structure_used_as_functor ->
+        fprintf ppf "@[The module %a is a structure, it cannot be applied@]"
+          longident lid
+     | `Abstract_used_as_functor ->
+        fprintf ppf "@[The module %a is abstract, it cannot be applied@]"
+          longident lid
+     | `Functor_used_as_structure ->
+        fprintf ppf "@[The module %a is a functor, \
+                       it cannot have any components@]" longident lid
+     | `Abstract_used_as_structure ->
+        fprintf ppf "@[The module %a is abstract, \
+                       it cannot have any components@]" longident lid
+     | `Generative_used_as_applicative ->
+        fprintf ppf "@[The functor %a is generative,@ it@ cannot@ be@ \
+                       applied@ in@ type@ expressions@]" longident lid)
   | Cannot_scrape_alias(lid, p) ->
       fprintf ppf
         "The module %a is an alias for module %a, which is missing"

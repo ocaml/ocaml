@@ -105,8 +105,8 @@ let size_expr (env:environment) exp =
 (* Swap the two arguments of an integer comparison *)
 
 let swap_intcomp = function
-    Isigned cmp -> Isigned(swap_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(swap_comparison cmp)
+    Isigned cmp -> Isigned(swap_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(swap_integer_comparison cmp)
 
 (* Naming of registers *)
 
@@ -511,11 +511,11 @@ method select_condition = function
     Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
   | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
@@ -523,13 +523,13 @@ method select_condition = function
   | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
   | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args, _) ->
-      (Ifloattest(cmp, false), Ctuple args)
+      (Ifloattest cmp, Ctuple args)
   | Cop(Cand, [arg; Cconst_int 1], _) ->
       (Ioddtest, arg)
   | arg ->

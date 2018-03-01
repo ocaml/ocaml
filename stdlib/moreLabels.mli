@@ -97,8 +97,12 @@ module Hashtbl : sig
       val length : 'a t -> int
       val stats: 'a t -> statistics
     end
-  module Make : functor (H : HashedType) -> S with type key = H.t
-  module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
+  module Make : functor (H : HashedType) -> S
+    with type key = H.t
+     and type 'a t = 'a Hashtbl.Make(H).t
+  module MakeSeeded (H : SeededHashedType) : SeededS
+    with type key = H.t
+     and type 'a t = 'a Hashtbl.MakeSeeded(H).t
   val hash : 'a -> int
   val seeded_hash : int -> 'a -> int
   val hash_param : int -> int -> 'a -> int
@@ -149,7 +153,9 @@ module Map : sig
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
   end
-  module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
+  module Make : functor (Ord : OrderedType) -> S
+    with type key = Ord.t
+     and type 'a t = 'a Map.Make(Ord).t
 end
 
 module Set : sig
@@ -194,5 +200,7 @@ module Set : sig
       val find_last_opt: f:(elt -> bool) -> t -> elt option
       val of_list: elt list -> t
     end
-  module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
+  module Make : functor (Ord : OrderedType) -> S
+    with type elt = Ord.t
+     and type t = Set.Make(Ord).t
 end

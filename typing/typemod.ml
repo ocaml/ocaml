@@ -94,6 +94,38 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
+let type_initially_opened_module env module_name =
+  let loc = Location.in_file "compiler internals" in
+  let lid = { Asttypes.loc; txt = Longident.Lident module_name } in
+  let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
+  match Env.open_signature_of_initially_opened_module path env with
+  | Some env -> path, env
+  | None ->
+      let md = Env.find_module path env in
+      ignore (extract_sig_open env lid.loc md.md_type);
+      assert false
+
+let initial_env ~loc ~safe_string ~initially_opened_module
+      ~open_implicit_modules =
+  let env =
+    if safe_string then
+      Env.initial_safe_string
+    else
+      Env.initial_unsafe_string
+  in
+  let env =
+    match initially_opened_module with
+    | None -> env
+    | Some name ->
+      snd (type_initially_opened_module env name)
+  in
+  let open_implicit_module env m =
+    let open Asttypes in
+    let lid = {loc; txt = Longident.parse m } in
+    snd (type_open_ Override env lid.loc lid)
+  in
+  List.fold_left open_implicit_module env open_implicit_modules
+
 let type_open ?toplevel env sod =
   let (path, newenv) =
     Builtin_attributes.warning_scope sod.popen_attributes
@@ -214,9 +246,7 @@ let retype_applicative_functor_type ~loc env funct arg =
     | Mty_functor (_, Some mty_param, _) -> mty_param
     | _ -> assert false (* could trigger due to MPR#7611 *)
   in
-  let aliasable = not (Env.is_functor_arg arg env) in
-  ignore(Includemod.modtypes ~loc env
-           (Mtype.strengthen ~aliasable env mty_arg arg) mty_param)
+  Includemod.check_modtype_inclusion ~loc env mty_arg arg mty_param
 
 (* When doing a deep destructive substitution with type M.N.t := .., we change M
    and M.N and so we have to check that uses of the modules other than just
@@ -329,7 +359,8 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
@@ -1082,7 +1113,7 @@ let enrich_type_decls anchor decls oldenv newenv =
           let id = info.typ_id in
           let info' =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
-              info.typ_type
+              id info.typ_type
           in
             Env.add_type ~check:true id info' e)
         oldenv decls

@@ -180,10 +180,8 @@ typedef wchar_t char_os;
 #define rename_os caml_win32_rename
 #define chdir_os _wchdir
 #define getcwd_os _wgetcwd
-#define getenv_os _wgetenv
 #define system_os _wsystem
 #define rmdir_os _wrmdir
-#define utime_os _wutime
 #define putenv_os _wputenv
 #define chmod_os _wchmod
 #define execv_os _wexecv
@@ -214,10 +212,8 @@ typedef char char_os;
 #define rename_os rename
 #define chdir_os chdir
 #define getcwd_os getcwd
-#define getenv_os getenv
 #define system_os system
 #define rmdir_os rmdir
-#define utime_os utime
 #define putenv_os putenv
 #define chmod_os chmod
 #define execv_os execv
@@ -252,7 +248,7 @@ typedef char char_os;
 #define CAML_SYS_UNLINK(filename) unlink_os(filename)
 #define CAML_SYS_RENAME(old_name,new_name) rename_os(old_name, new_name)
 #define CAML_SYS_CHDIR(dirname) chdir_os(dirname)
-#define CAML_SYS_GETENV(varname) getenv_os(varname)
+#define CAML_SYS_GETENV(varname) getenv(varname)
 #define CAML_SYS_SYSTEM(command) system_os(command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
 
@@ -306,7 +302,7 @@ extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
 #define CAML_SYS_CHDIR(dirname)                         \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir_os,dirname)
 #define CAML_SYS_GETENV(varname)                        \
-  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv_os,varname)
+  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
 #define CAML_SYS_SYSTEM(command)                        \
   CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system_os,command)
 #define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
@@ -353,6 +349,10 @@ extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
 
 CAMLextern int caml_read_directory(char_os * dirname, struct ext_table * contents);
 
+/* Deprecated aliases */
+#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
+#define caml_strdup caml_stat_strdup
+#define caml_strconcat caml_stat_strconcat
 
 #ifdef CAML_INTERNALS
 
@@ -368,11 +368,6 @@ void caml_gc_message (int, char *, ...)
 /* Runtime warnings */
 extern uintnat caml_runtime_warnings;
 int caml_runtime_warnings_active(void);
-
-/* Deprecated aliases */
-#define caml_aligned_malloc caml_stat_alloc_aligned_noexc
-#define caml_strdup caml_stat_strdup
-#define caml_strconcat caml_stat_strconcat
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR

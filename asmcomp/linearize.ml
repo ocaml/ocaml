@@ -59,15 +59,15 @@ type fundecl =
 (* Invert a test *)
 
 let invert_integer_test = function
-    Isigned cmp -> Isigned(Cmm.negate_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(Cmm.negate_comparison cmp)
+    Isigned cmp -> Isigned(Cmm.negate_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(Cmm.negate_integer_comparison cmp)
 
 let invert_test = function
     Itruetest -> Ifalsetest
   | Ifalsetest -> Itruetest
   | Iinttest(cmp) -> Iinttest(invert_integer_test cmp)
   | Iinttest_imm(cmp, n) -> Iinttest_imm(invert_integer_test cmp, n)
-  | Ifloattest(cmp, neg) -> Ifloattest(cmp, not neg)
+  | Ifloattest(cmp) -> Ifloattest(Cmm.negate_float_comparison cmp)
   | Ieventest -> Ioddtest
   | Ioddtest -> Ieventest
 

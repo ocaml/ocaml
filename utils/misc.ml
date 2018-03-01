@@ -308,7 +308,9 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
-let no_overflow_mul a b = b <> 0 && (a * b) / b = a
+(* Taken from Hacker's Delight, chapter "Overflow Detection" *)
+let no_overflow_mul a b =
+  not ((a = min_int && b < 0) || (b <> 0 && (a * b) / b <> a))
 
 let no_overflow_lsl a k =
   0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k

@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+*.odoc
 
 # local to root directory
 
@@ -157,6 +158,7 @@ _ocamltest
 
 /ocamldoc/ocamldoc
 /ocamldoc/ocamldoc.opt
+/ocamldoc/odoc
 /ocamldoc/odoc_crc.ml
 /ocamldoc/odoc_lexer.ml
 /ocamldoc/odoc_ocamlhtml.ml
@@ -167,6 +169,7 @@ _ocamltest
 /ocamldoc/odoc_text_parser.ml
 /ocamldoc/odoc_text_parser.mli
 /ocamldoc/stdlib_man
+/ocamldoc/stdlib_non_prefixed/*.mli
 /ocamldoc/stdlib_html
 /ocamldoc/*.output
 /ocamldoc/test_stdlib
@@ -182,7 +185,7 @@ _ocamltest
 
 /otherlibs/dynlink/extract_crc
 /otherlibs/threads/marshal.mli
-/otherlibs/threads/pervasives.mli
+/otherlibs/threads/stdlib.mli
 /otherlibs/threads/unix.mli
 /otherlibs/win32graph/graphics.ml
 /otherlibs/win32graph/graphics.mli
@@ -213,7 +216,6 @@ _ocamltest
 /otherlibs/win32unix/strofaddr.c
 /otherlibs/win32unix/time.c
 /otherlibs/win32unix/unlink.c
-/otherlibs/win32unix/utimes.c
 
 /parsing/parser.ml
 /parsing/parser.mli
@@ -241,6 +243,7 @@ _ocamltest
 /testsuite/**/*.native
 /testsuite/**/program
 /testsuite/**/_log
+/testsuite/failure.stamp
 
 /testsuite/_retries
 
@@ -251,7 +254,6 @@ _ocamltest
 /testsuite/tests/asmgen/*.s
 /testsuite/tests/asmgen/*.out.manifest
 
-/testsuite/tests/basic/*.safe-string
 
 /testsuite/tests/embedded/caml
 
@@ -275,7 +277,12 @@ _ocamltest
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/common/utimes.txt
+
 /testsuite/tests/lib-unix/win-stat/*-file
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
+
 /testsuite/tests/lib-unix/win-symlink/link*
 /testsuite/tests/lib-unix/win-symlink/test.txt
 
@@ -323,10 +330,6 @@ _ocamltest
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
-/testsuite/tests/typing-misc/false.flat-float
-/testsuite/tests/typing-misc/true.flat-float
-/testsuite/tests/typing-misc/pr6939.ml
-
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
@@ -339,11 +342,6 @@ _ocamltest
 /testsuite/tests/typing-unboxed-types/false.flat-float
 /testsuite/tests/typing-unboxed-types/true.flat-float
 /testsuite/tests/typing-unboxed-types/test.ml.reference
-
-/testsuite/tests/translprim/false.flat-float
-/testsuite/tests/translprim/true.flat-float
-/testsuite/tests/translprim/array_spec.ml.reference
-/testsuite/tests/translprim/module_coercion.ml.reference
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c

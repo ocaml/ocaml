@@ -918,6 +918,8 @@ val flush_symbolic_output_buffer :
 val add_symbolic_output_item :
   symbolic_output_buffer -> symbolic_output_item -> unit
 (** [add_symbolic_output_item sob itm] adds item [itm] to buffer [sob].
+
+  @since 4.06.0
 *)
 
 val formatter_of_symbolic_output_buffer : symbolic_output_buffer -> formatter

@@ -1,3 +1,6 @@
+(* TEST
+   * toplevel
+*)
 
 external a : (int [@untagged]) -> unit = "a" "a_nat"
 external b : (int32 [@unboxed]) -> unit = "b" "b_nat"

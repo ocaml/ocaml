@@ -1,3 +1,5 @@
+(* TEST *)
+
 (* test evaluation order
 
    'y' is translated into a constant, and is therefore considered

@@ -1,3 +1,6 @@
+(* TEST
+*)
+
 type t = ..
 
 module M = struct

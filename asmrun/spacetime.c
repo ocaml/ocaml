@@ -27,6 +27,10 @@
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#ifdef _WIN32
+#include <process.h> /* for _getpid */
+#include <direct.h> /* for _wgetcwd */
+#endif
 
 #include "caml/alloc.h"
 #include "caml/backtrace_prim.h"
@@ -49,7 +53,11 @@
 
 /* We force "noinline" in certain places to be sure we know how many
    frames there will be on the stack. */
+#ifdef _MSC_VER
+#define NOINLINE __declspec(noinline)
+#else
 #define NOINLINE __attribute__((noinline))
+#endif
 
 #ifdef HAS_LIBUNWIND
 #define UNW_LOCAL_ONLY
@@ -99,6 +107,14 @@ allocation_point* caml_all_allocation_points = NULL;
 
 static const uintnat chunk_size = 1024 * 1024;
 
+#ifdef _WIN32
+#define strdup_os wcsdup
+#define snprintf_os _snwprintf
+#else
+#define strdup_os strdup
+#define snprintf_os snprintf
+#endif
+
 static void reinitialise_free_node_block(void)
 {
   size_t index;
@@ -113,10 +129,6 @@ static void reinitialise_free_node_block(void)
 
 #ifndef O_BINARY
 #define O_BINARY 0
-#endif
-
-#if defined (_WIN32) || defined (_WIN64)
-extern value val_process_id;
 #endif
 
 enum {
@@ -151,21 +163,23 @@ CAMLprim value caml_spacetime_write_magic_number(value v_channel)
   return Val_unit;
 }
 
-static char* automatic_snapshot_dir;
+static char_os* automatic_snapshot_dir;
 
 static void open_snapshot_channel(void)
 {
   int fd;
-  char filename[8192];
+  char_os filename[8192];
   int pid;
-#if defined (_WIN32) || defined (_WIN64)
-  pid = Int_val(val_process_id);
+  int filename_len = sizeof(filename)/sizeof(char_os);
+#ifdef _WIN32
+  pid = _getpid();
 #else
   pid = getpid();
 #endif
-  snprintf(filename, 8192, "%s/spacetime-%d", automatic_snapshot_dir, pid);
-  filename[8191] = '\0';
-  fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+  snprintf_os(filename, filename_len, _T("%s/spacetime-%d"),
+              automatic_snapshot_dir, pid);
+  filename[filename_len-1] = _T('\0');
+  fd = open_os(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
   if (fd == -1) {
     automatic_snapshots = 0;
   }
@@ -187,8 +201,8 @@ static void maybe_reopen_snapshot_channel(void)
      was written during that time) and then open a new one. */
 
   int pid;
-#if defined (_WIN32) || defined (_WIN64)
-  pid = Int_val(val_process_id);
+#ifdef _WIN32
+  pid = _getpid();
 #else
   pid = getpid();
 #endif
@@ -205,40 +219,40 @@ void caml_spacetime_initialize(void)
 {
   /* Note that this is called very early (even prior to GC initialisation). */
 
-  char *ap_interval;
+  char_os *ap_interval;
 
   reinitialise_free_node_block();
 
   caml_spacetime_static_shape_tables = &caml_spacetime_shapes;
 
-  ap_interval = caml_secure_getenv ("OCAML_SPACETIME_INTERVAL");
+  ap_interval = caml_secure_getenv (_T("OCAML_SPACETIME_INTERVAL"));
   if (ap_interval != NULL) {
     unsigned int interval = 0;
-    sscanf(ap_interval, "%u", &interval);
+    sscanf_os(ap_interval, _T("%u"), &interval);
     if (interval != 0) {
       double time;
-      char cwd[4096];
-      char* user_specified_automatic_snapshot_dir;
+      char_os cwd[4096];
+      char_os* user_specified_automatic_snapshot_dir;
       int dir_ok = 1;
 
       user_specified_automatic_snapshot_dir =
-        caml_secure_getenv("OCAML_SPACETIME_SNAPSHOT_DIR");
+        caml_secure_getenv(_T("OCAML_SPACETIME_SNAPSHOT_DIR"));
 
       if (user_specified_automatic_snapshot_dir == NULL) {
 #if defined(HAS_GETCWD)
-        if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        if (getcwd_os(cwd, sizeof(cwd)/sizeof(char_os)) == NULL) {
           dir_ok = 0;
         }
 #else
         dir_ok = 0;
 #endif
         if (dir_ok) {
-          automatic_snapshot_dir = strdup(cwd);
+          automatic_snapshot_dir = strdup_os(cwd);
         }
       }
       else {
         automatic_snapshot_dir =
-          strdup(user_specified_automatic_snapshot_dir);
+          strdup_os(user_specified_automatic_snapshot_dir);
       }
 
       if (dir_ok) {

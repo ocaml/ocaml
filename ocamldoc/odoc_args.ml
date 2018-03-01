@@ -241,6 +241,8 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _where = Compenv.print_standard_library
   let _verbose = set Clflags.verbose
   let _nopervasives = set Clflags.nopervasives
+  let _dno_unique_ids = unset Clflags.unique_ids
+  let _dunique_ids = set Clflags.unique_ids
   let _dsource = set Clflags.dump_source
   let _dparsetree = set Clflags.dump_parsetree
   let _dtypedtree = set Clflags.dump_typedtree
@@ -254,6 +256,8 @@ end)
 (** The default option list *)
 let default_options = Options.list @
 [
+  "-initially-opened-module", Arg.Set_string Odoc_global.initially_opened_module,
+  M.initially_opened_module;
   "-text", Arg.String (fun s ->
        Odoc_global.files := !Odoc_global.files @ [Odoc_global.Text_file s]),
     M.option_text ;

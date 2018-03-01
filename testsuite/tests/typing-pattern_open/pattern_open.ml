@@ -1,3 +1,7 @@
+(* TEST
+   * toplevel
+*)
+
 let pp fmt = Printf.printf fmt
 
 type 'a box = B of 'a

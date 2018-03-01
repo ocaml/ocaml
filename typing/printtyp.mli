@@ -75,7 +75,9 @@ val prepare_expansion: type_expr * type_expr -> type_expr * type_expr
 val trace:
     bool -> bool-> string -> formatter -> (type_expr * type_expr) list -> unit
 val report_unification_error:
-    formatter -> Env.t -> ?unif:bool -> (type_expr * type_expr) list ->
+    formatter -> Env.t -> ?unif:bool ->
+    (type_expr * type_expr) list ->
+    ?type_expected_explanation:(formatter -> unit) ->
     (formatter -> unit) -> (formatter -> unit) ->
     unit
 val report_subtyping_error:
@@ -88,3 +90,8 @@ val report_ambiguous_type_error:
 (* for toploop *)
 val print_items: (Env.t -> signature_item -> 'a option) ->
   Env.t -> signature_item list -> (out_sig_item * 'a option) list
+
+(* Simple heuristic to rewrite Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias for
+   Foo__bar. This pattern is used by the stdlib. *)
+val rewrite_double_underscore_paths: Env.t -> Path.t -> Path.t
+

@@ -17,6 +17,11 @@
 
 /* Win32-specific stuff */
 
+/* FILE_INFO_BY_HANDLE_CLASS and FILE_NAME_INFO are only available from Windows
+   Vista onwards */
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+
 #define WIN32_LEAN_AND_MEAN
 #include <wtypes.h>
 #include <winbase.h>
@@ -294,8 +299,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
-  int saved_mode;
-
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
   /* Default behavior is to exit, which we get by not handling the event */
@@ -380,7 +383,7 @@ static void expand_pattern(wchar_t * pat)
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
   for (i = wcslen(prefix); i > 0; i--) {
-    char c = prefix[i - 1];
+    wchar_t c = prefix[i - 1];
     if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
   /* No separator was found, it's a filename pattern without a leading directory. */
@@ -731,7 +734,51 @@ int caml_snprintf(char * buf, size_t size, const char * format, ...)
 wchar_t *caml_secure_getenv (wchar_t const *var)
 {
   /* Win32 doesn't have a notion of setuid bit, so getenv is safe. */
-  return CAML_SYS_GETENV (var);
+  return _wgetenv(var);
+}
+
+/* caml_win32_getenv is used to implement Sys.getenv and Unix.getenv in such a
+   way that they get direct access to the Win32 environment rather than to the
+   copy that is cached by the C runtime system. The result of caml_win32_getenv
+   is dynamically allocated and must be explicitly deallocated.
+
+   In contrast, the OCaml runtime system still calls _wgetenv from the C runtime
+   system, via caml_secure_getenv. The result is statically allocated and needs
+   no deallocation. */
+CAMLexport wchar_t *caml_win32_getenv(wchar_t const *lpName)
+{
+  wchar_t * lpBuffer;
+  DWORD nSize = 256, res;
+
+  lpBuffer = caml_stat_alloc_noexc(nSize * sizeof(wchar_t));
+
+  if (lpBuffer == NULL)
+    return NULL;
+
+  res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
+
+  if (res == 0) {
+    caml_stat_free(lpBuffer);
+    return NULL;
+  }
+
+  if (res < nSize)
+    return lpBuffer;
+
+  nSize = res;
+  lpBuffer = caml_stat_resize_noexc(lpBuffer, nSize * sizeof(wchar_t));
+
+  if (lpBuffer == NULL)
+    return NULL;
+
+  res = GetEnvironmentVariable(lpName, lpBuffer, nSize);
+
+  if (res == 0 || res >= nSize) {
+    caml_stat_free(lpBuffer);
+    return NULL;
+  }
+
+  return lpBuffer;
 }
 
 /* The rename() implementation in MSVC's CRT is based on MoveFile()
@@ -890,16 +937,93 @@ void caml_probe_win32_version(void)
     UINT len = 0;
     VS_FIXEDFILEINFO* vsfi = NULL;
     VerQueryValue(versionInfo, L"\\", (void**)&vsfi, &len);
-    caml_win32_major = HIWORD(vsfi->dwFileVersionMS);
-    caml_win32_minor = LOWORD(vsfi->dwFileVersionMS);
-    caml_win32_build = HIWORD(vsfi->dwFileVersionLS);
-    caml_win32_revision = LOWORD(vsfi->dwFileVersionLS);
+    caml_win32_major = HIWORD(vsfi->dwProductVersionMS);
+    caml_win32_minor = LOWORD(vsfi->dwProductVersionMS);
+    caml_win32_build = HIWORD(vsfi->dwProductVersionLS);
+    caml_win32_revision = LOWORD(vsfi->dwProductVersionLS);
   }
   free(versionInfo);
 }
 
+static UINT startup_codepage = 0;
+
 void caml_setup_win32_terminal(void)
 {
-  if (caml_win32_major >= 10)
-    SetConsoleOutputCP(CP_UTF8);
+  if (caml_win32_major >= 10) {
+    startup_codepage = GetConsoleOutputCP();
+    if (startup_codepage != CP_UTF8)
+      SetConsoleOutputCP(CP_UTF8);
+  }
+}
+
+void caml_restore_win32_terminal(void)
+{
+  if (startup_codepage != 0)
+    SetConsoleOutputCP(startup_codepage);
+}
+
+/* Detect if a named pipe corresponds to a Cygwin/MSYS pty: see
+   https://github.com/mirror/newlib-cygwin/blob/00e9bf2/winsup/cygwin/dtable.cc#L932
+*/
+typedef
+BOOL (WINAPI *tGetFileInformationByHandleEx)(HANDLE, FILE_INFO_BY_HANDLE_CLASS,
+                                             LPVOID, DWORD);
+
+static int caml_win32_is_cygwin_pty(HANDLE hFile)
+{
+  char buffer[1024];
+  FILE_NAME_INFO * nameinfo = (FILE_NAME_INFO *) buffer;
+  static tGetFileInformationByHandleEx pGetFileInformationByHandleEx = INVALID_HANDLE_VALUE;
+
+  if (pGetFileInformationByHandleEx == INVALID_HANDLE_VALUE)
+    pGetFileInformationByHandleEx =
+      (tGetFileInformationByHandleEx)GetProcAddress(GetModuleHandle(L"KERNEL32.DLL"),
+                                                    "GetFileInformationByHandleEx");
+
+  if (pGetFileInformationByHandleEx == NULL)
+    return 0;
+
+  /* Get pipe name. GetFileInformationByHandleEx does not NULL-terminate the string, so reduce
+     the buffer size to allow for adding one. */
+  if (! pGetFileInformationByHandleEx(hFile, FileNameInfo, buffer, sizeof(buffer) - sizeof(WCHAR)))
+    return 0;
+
+  nameinfo->FileName[nameinfo->FileNameLength / sizeof(WCHAR)] = L'\0';
+
+  /* check if this could be a msys pty pipe ('msys-XXXX-ptyN-XX')
+     or a cygwin pty pipe ('cygwin-XXXX-ptyN-XX') */
+  if ((wcsstr(nameinfo->FileName, L"msys-") ||
+       wcsstr(nameinfo->FileName, L"cygwin-")) && wcsstr(nameinfo->FileName, L"-pty"))
+    return 1;
+
+  return 0;
+}
+
+CAMLexport int caml_win32_isatty(int fd)
+{
+  DWORD lpMode;
+  HANDLE hFile = (HANDLE)_get_osfhandle(fd);
+
+  if (hFile == INVALID_HANDLE_VALUE)
+    return 0;
+
+  switch (GetFileType(hFile)) {
+    case FILE_TYPE_CHAR:
+      /* Both console handles and the NUL device are FILE_TYPE_CHAR.  The NUL
+         device returns FALSE for a GetConsoleMode call. _isatty incorrectly
+         only uses GetFileType (see GPR#1321). */
+      return GetConsoleMode(hFile, &lpMode);
+    case FILE_TYPE_PIPE:
+      /* Cygwin PTYs are implemented using named pipes */
+      return caml_win32_is_cygwin_pty(hFile);
+    default:
+      break;
+  }
+
+  return 0;
+}
+
+int caml_num_rows_fd(int fd)
+{
+  return -1;
 }

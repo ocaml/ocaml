@@ -1,3 +1,7 @@
+(* TEST
+   modules = "custom_finalize.c"
+*)
+
 type t
 
 external test_alloc : unit -> t = "caml_test_pr3612_alloc"

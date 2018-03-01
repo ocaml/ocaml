@@ -1,3 +1,10 @@
+(* TEST
+   flags = "-dparsetree"
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+   *** check-ocamlc.byte-output
+*)
+
 type 'a with_default
   =  ?size:int       (** default [42] *)
   -> ?resizable:bool (** default [true] *)

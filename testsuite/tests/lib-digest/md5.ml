@@ -1,3 +1,7 @@
+(* TEST
+   flags += " -w a "
+*)
+
 (* Test int32 arithmetic and optimizations using the MD5 algorithm *)
 
 open Printf
@@ -120,18 +124,20 @@ let string_to_data s =
   for i = 0 to 15 do
     let j = i lsl 2 in
     data.(i) <-
-      Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+3) |> Char.code)) 24)
-        (Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+2) |> Char.code)) 16)
-          (Int32.logor (Int32.shift_left (Int32.of_int (Bytes.get s (j+1) |> Char.code)) 8)
-                       (Int32.of_int (Bytes.get s j |> Char.code))))
+      let byte n = Bytes.get s (j+n) |> Char.code |> Int32.of_int in
+      let open Int32 in
+      byte 0
+      |> logor (shift_left (byte 1) 8)
+      |> logor (shift_left (byte 2) 16)
+      |> logor (shift_left (byte 3) 24)
   done;
   data
 
 let int32_to_string n s i =
-  s.[i+3] <- Char.chr (Int32.to_int (Int32.shift_right n 24) land 0xFF);
-  s.[i+2] <- Char.chr (Int32.to_int (Int32.shift_right n 16) land 0xFF);
-  s.[i+1] <- Char.chr (Int32.to_int (Int32.shift_right n 8) land 0xFF);
-  s.[i] <- Char.chr (Int32.to_int n land 0xFF)
+  Bytes.set s (i+3) (Char.chr (Int32.to_int (Int32.shift_right n 24) land 0xFF));
+  Bytes.set s (i+2) (Char.chr (Int32.to_int (Int32.shift_right n 16) land 0xFF));
+  Bytes.set s (i+1) (Char.chr (Int32.to_int (Int32.shift_right n 8) land 0xFF));
+  Bytes.set s i (Char.chr (Int32.to_int n land 0xFF))
 
 let init () =
   { buf = Bytes.create 64;

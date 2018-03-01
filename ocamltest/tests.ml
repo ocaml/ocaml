@@ -43,7 +43,7 @@ let lookup name =
 
 let test_of_action action =
 {
-  test_name = action.Actions.action_name;
+  test_name = Actions.action_name action;
   test_run_by_default = false;
   test_actions = [action]
 }
@@ -51,25 +51,18 @@ let test_of_action action =
 let run_actions log testenv actions =
   let total = List.length actions in
   let rec run_actions_aux action_number env = function
-    | [] -> Actions.Pass env
+    | [] -> (Result.pass, env)
     | action::remaining_actions ->
       begin
         Printf.fprintf log "Running action %d/%d (%s)\n%!"
-          action_number total action.Actions.action_name;
-        let result = Actions.run log env action in
-        let report = match result with
-          | Actions.Pass _ -> "succeded."
-          | Actions.Fail reason ->
-            ("failed for the following reason:\n" ^ reason)
-          | Actions.Skip reason ->
-            ("has been skipped for the following reason:\n" ^ reason) in
+          action_number total (Actions.action_name action);
+        let (result, env') = Actions.run log env action in
         Printf.fprintf log "Action %d/%d (%s) %s\n%!"
-          action_number total action.Actions.action_name
-          report;
-        match result with
-          | Actions.Pass env' ->
-            run_actions_aux (action_number+1) env' remaining_actions
-          | _ -> result
+          action_number total (Actions.action_name action)
+          (Result.string_of_result result);
+        if Result.is_pass result
+        then run_actions_aux (action_number+1) env' remaining_actions
+        else (result, env')
       end in
   run_actions_aux 1 testenv actions
 

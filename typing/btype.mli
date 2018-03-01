@@ -198,6 +198,7 @@ val link_type: type_expr -> type_expr -> unit
         (* Set the desc field of [t1] to [Tlink t2], logging the old
            value if there is an active snapshot *)
 val set_level: type_expr -> int -> unit
+val set_scope: type_expr -> int option -> unit
 val set_name:
     (Path.t * type_expr list) option ref ->
     (Path.t * type_expr list) option -> unit

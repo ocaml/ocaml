@@ -1,3 +1,6 @@
+(* TEST
+   include testing
+*)
 
 let sequor b1 b2 =
   let b1 = ref b1 in

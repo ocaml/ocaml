@@ -16,6 +16,9 @@
 # Default behaviour, for if core.autocrlf isn't set
 * text=auto
 
+# Don't believe there's a way to wrap lines in .gitattributes
+.gitattributes ocaml-typo=long-line
+
 # Binary files
 /boot/ocamlc binary
 /boot/ocamllex binary
@@ -46,11 +49,12 @@ README*                  ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 # appveyor_build.cmd only has missing-header because dra27 too lazy to update
 # check-typo to interpret Cmd-style comments!
-/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header
+/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/appveyor_build.sh       ocaml-typo=non-ascii
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
-asmcomp/power/NOTES.md   ocaml-typo=missing-header,long-line
+asmcomp/power/NOTES.md   ocaml-typo=missing-header
 
 asmrun/i386.S            ocaml-typo=long-line
 
@@ -80,6 +84,7 @@ otherlibs/win32unix/symlink.c     ocaml-typo=long-line
 stdlib/hashbang     ocaml-typo=white-at-eol,missing-lf
 
 testsuite/tests/**                        ocaml-typo=missing-header
+testsuite/tests/lib-unix/win-stat/fakeclock.c ocaml-typo=
 testsuite/tests/lib-bigarray-2/bigarrf.f  ocaml-typo=missing-header,tab
 testsuite/tests/misc-unsafe/almabench.ml  ocaml-typo=missing-header,long-line
 testsuite/typing                          ocaml-typo=missing-header

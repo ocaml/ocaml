@@ -1,3 +1,9 @@
+(* TEST
+   flags = " -w A -strict-sequence "
+   * toplevel
+   * toplevel with principal
+*)
+
 (* Use type information *)
 module M1 = struct
   type t = {x: int; y: int}

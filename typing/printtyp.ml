@@ -48,29 +48,101 @@ let ident ppf id = pp_print_string ppf (ident_name id)
 
 (* Print a path *)
 
-let ident_pervasives = Ident.create_persistent "Pervasives"
+let ident_stdlib = Ident.create_persistent "Stdlib"
 let printing_env = ref Env.empty
 let non_shadowed_pervasive = function
-  | Pdot(Pident id, s, _pos) as path ->
-      Ident.same id ident_pervasives &&
+  | Pdot(Pident id, s, _) as path ->
+      Ident.same id ident_stdlib &&
       (try Path.same path (Env.lookup_type (Lident s) !printing_env)
        with Not_found -> true)
+  | Pdot(Pdot (Pident id, "Pervasives", _), s, _) as path ->
+      Ident.same id ident_stdlib &&
+      (* Make sure Stdlib.<s> is the same as Stdlib.Pervasives.<s> *)
+      (try
+         let td =
+           Env.find_type (Env.lookup_type (Lident s) !printing_env)
+             !printing_env
+         in
+         match td.type_private, td.type_manifest with
+         | Private, _ | _, None -> false
+         | Public, Some te ->
+           match (Btype.repr te).desc with
+           | Tconstr (path', _, _) -> Path.same path path'
+           | _ -> false
+       with Not_found -> true)
   | _ -> false
+
+let find_double_underscore s =
+  let len = String.length s in
+  let rec loop i =
+    if i + 1 >= len then
+      None
+    else if s.[i] = '_' && s.[i + 1] = '_' then
+      Some i
+    else
+      loop (i + 1)
+  in
+  loop 0
+
+let rec module_path_is_an_alias_of env path ~alias_of =
+  match Env.find_module path env with
+  | { md_type = Mty_alias (_, path'); _ } ->
+    Path.same path' alias_of ||
+    module_path_is_an_alias_of env path' ~alias_of
+  | _ -> false
+  | exception Not_found -> false
+
+(* Simple heuristic to print Foo__bar.* as Foo.Bar.* when Foo.Bar is an alias
+   for Foo__bar. This pattern is used by the stdlib. *)
+let rec rewrite_double_underscore_paths env p =
+  match p with
+  | Pdot (p, s, n) ->
+    Pdot (rewrite_double_underscore_paths env p, s, n)
+  | Papply (a, b) ->
+    Papply (rewrite_double_underscore_paths env a,
+            rewrite_double_underscore_paths env b)
+  | Pident id ->
+    let name = Ident.name id in
+    match find_double_underscore name with
+    | None -> p
+    | Some i ->
+      let better_lid =
+        Ldot
+          (Lident (String.sub name 0 i),
+           String.capitalize_ascii
+             (String.sub name (i + 2) (String.length name - i - 2)))
+      in
+      match Env.lookup_module ~load:true better_lid env with
+      | exception Not_found -> p
+      | p' ->
+        if module_path_is_an_alias_of env p' ~alias_of:p then
+          p'
+        else
+          p
+
+let rewrite_double_underscore_paths env p =
+  if env == Env.empty then
+    p
+  else
+    rewrite_double_underscore_paths env p
 
 let rec tree_of_path = function
   | Pident id ->
       Oide_ident (ident_name id)
-  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
+  | Pdot(_, s, _pos) as path
+    when non_shadowed_pervasive path ->
       Oide_ident s
   | Pdot(p, s, _pos) ->
       Oide_dot (tree_of_path p, s)
   | Papply(p1, p2) ->
-      Oide_apply (tree_of_path p1, tree_of_path p2)
+    Oide_apply (tree_of_path p1,
+                tree_of_path p2)
 
 let rec path ppf = function
   | Pident id ->
       ident ppf id
-  | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
+  | Pdot(_, s, _pos) as path
+    when non_shadowed_pervasive path ->
       pp_print_string ppf s
   | Pdot(p, s, _pos) ->
       path ppf p;
@@ -78,6 +150,11 @@ let rec path ppf = function
       pp_print_string ppf s
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
+
+let tree_of_path p =
+  tree_of_path (rewrite_double_underscore_paths !printing_env p)
+let path ppf p =
+  path ppf (rewrite_double_underscore_paths !printing_env p)
 
 let rec string_of_out_ident = function
   | Oide_ident s -> s
@@ -292,13 +369,9 @@ let penalty s =
   if s <> "" && s.[0] = '_' then
     10
   else
-    try
-      for i = 0 to String.length s - 2 do
-        if s.[i] = '_' && s.[i + 1] = '_' then
-          raise Exit
-      done;
-      1
-    with Exit -> 10
+    match find_double_underscore s with
+    | None -> 1
+    | Some _ -> 10
 
 let rec path_size = function
     Pident id ->
@@ -315,9 +388,11 @@ let same_printing_env env =
 
 let set_printing_env env =
   printing_env := env;
-  if !Clflags.real_paths
-  || !printing_env == Env.empty || same_printing_env env then () else
-  begin
+  if !Clflags.real_paths ||
+     !printing_env == Env.empty ||
+     same_printing_env env then
+    ()
+  else begin
     (* printf "Reset printing_map@."; *)
     printing_old := env;
     printing_pers := Env.used_persistent ();
@@ -380,7 +455,9 @@ let rec get_best_path r =
       get_best_path r
 
 let best_type_path p =
-  if !Clflags.real_paths || !printing_env == Env.empty
+  if !printing_env == Env.empty
+  then (p, Id)
+  else if !Clflags.real_paths
   then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
@@ -757,6 +834,15 @@ let type_expr ppf ty = typexp false ppf ty
 and type_sch ppf ty = typexp true ppf ty
 
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true ppf ty
+
+let type_expansion ppf ty1 ty2 =
+  let tree1 = tree_of_typexp false ty1 in
+  let tree2 = tree_of_typexp false ty2 in
+  let pp = !Oprint.out_type in
+  if tree1 = tree2 then
+    pp ppf tree1
+  else
+    fprintf ppf "@[<2>%a@ =@ %a@]" pp tree1 pp tree2
 
 (* Maxence *)
 let type_scheme_max ?(b_reset_names=true) ppf ty =
@@ -1197,7 +1283,8 @@ let filter_rem_sig item rem =
 let dummy =
   { type_params = []; type_arity = 0; type_kind = Type_abstract;
     type_private = Public; type_manifest = None; type_variance = [];
-    type_newtype_level = None; type_loc = Location.none;
+    type_is_newtype = false; type_expansion_scope = None;
+    type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
     type_unboxed = unboxed_false_default_false;
@@ -1352,7 +1439,7 @@ let type_expansion t ppf t' =
   then begin add_delayed (proxy t); type_expr ppf t end
   else
   let t' = if proxy t == proxy t' then unalias t' else t' in
-  fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
+  type_expansion ppf t t'
 
 let type_path_expansion tp ppf tp' =
   if Path.same tp tp' then path ppf tp else
@@ -1413,89 +1500,120 @@ let print_tags ppf fields =
       fprintf ppf "`%s" t;
       List.iter (fun (t, _) -> fprintf ppf ",@ `%s" t) fields
 
-let has_explanation t3 t4 =
-  match t3.desc, t4.desc with
-    Tfield _, (Tnil|Tconstr _) | (Tnil|Tconstr _), Tfield _
-  | Tnil, Tconstr _ | Tconstr _, Tnil
-  | _, Tvar _ | Tvar _, _
-  | Tvariant _, Tvariant _ -> true
-  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) -> l = l'
+let is_unit env ty =
+  match (Ctype.expand_head env ty).desc with
+  | Tconstr (p, _, _) -> Path.same p Predef.path_unit
   | _ -> false
 
-let rec mismatch = function
+let unifiable env ty1 ty2 =
+  let snap = Btype.snapshot () in
+  let res =
+    try Ctype.unify env ty1 ty2; true
+    with Unify _ -> false
+  in
+  Btype.backtrack snap;
+  res
+
+let explanation env unif t3 t4 : (Format.formatter -> unit) option =
+  match t3.desc, t4.desc with
+  | Tarrow (_, ty1, ty2, _), _
+    when is_unit env ty1 && unifiable env ty2 t4 ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to provide `()' as argument?@]")
+  | _, Tarrow (_, ty1, ty2, _)
+    when is_unit env ty1 && unifiable env t3 ty2 ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
+  | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
+      Some (fun ppf ->
+        fprintf ppf "@,Self type cannot escape its class")
+  | Tconstr (p, _, _), Tvar _
+    when unif && t4.level < Path.binding_time p ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+          path p)
+  | Tvar _, Tconstr (p, _, _)
+    when unif && t3.level < Path.binding_time p ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+          path p)
+  | Tvar _, Tunivar _ | Tunivar _, Tvar _ ->
+      Some (fun ppf ->
+        fprintf ppf "@,The universal variable %a would escape its scope"
+          type_expr (if is_Tunivar t3 then t3 else t4))
+  | Tvar _, _ | _, Tvar _ ->
+      Some (fun ppf ->
+        let t, t' = if is_Tvar t3 then (t3, t4) else (t4, t3) in
+        if occur_in Env.empty t t' then
+          fprintf ppf "@,@[<hov>The type variable %a occurs inside@ %a@]"
+            type_expr t type_expr t'
+        else
+          fprintf ppf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
+            type_expr t'
+            "it would escape the scope of its equation")
+  | Tfield (lab, _, _, _), _ when lab = dummy_method ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,Self type cannot be unified with a closed object type")
+  | _, Tfield (lab, _, _, _) when lab = dummy_method ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,Self type cannot be unified with a closed object type")
+  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) when l = l' ->
+      Some (fun ppf ->
+        fprintf ppf "@,Types for method %s are incompatible" l)
+  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[The first object type has no method %s@]" l)
+  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[The second object type has no method %s@]" l)
+  | Tnil, Tconstr _ | Tconstr _, Tnil ->
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[The %s object type has an abstract row, it cannot be closed@]"
+          (if t4.desc = Tnil then "first" else "second"))
+  | Tvariant row1, Tvariant row2 ->
+      Some (fun ppf ->
+        let row1 = row_repr row1 and row2 = row_repr row2 in
+        begin match
+          row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
+        | [], true, [], true ->
+            fprintf ppf "@,These two variant types have no intersection"
+        | [], true, (_::_ as fields), _ ->
+            fprintf ppf
+              "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
+              print_tags fields
+        | (_::_ as fields), _, [], true ->
+            fprintf ppf
+              "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
+              print_tags fields
+        | [l1,_], true, [l2,_], true when l1 = l2 ->
+            fprintf ppf "@,Types for tag `%s are incompatible" l1
+        | _ -> ()
+        end)
+  | _ ->
+      None
+
+let rec mismatch env unif = function
     (_, t) :: (_, t') :: rem ->
-      begin match mismatch rem with
+      begin match mismatch env unif rem with
         Some _ as m -> m
-      | None ->
-          if has_explanation t t' then Some(t,t') else None
+      | None -> explanation env unif t t'
       end
   | [] -> None
   | _ -> assert false
 
-let explanation unif t3 t4 ppf =
-  match t3.desc, t4.desc with
-  | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
-      fprintf ppf "@,Self type cannot escape its class"
-  | Tconstr (p, _, _), Tvar _
-    when unif && t4.level < Path.binding_time p ->
-      fprintf ppf
-        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        path p
-  | Tvar _, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
-      fprintf ppf
-        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-        path p
-  | Tvar _, Tunivar _ | Tunivar _, Tvar _ ->
-      fprintf ppf "@,The universal variable %a would escape its scope"
-        type_expr (if is_Tunivar t3 then t3 else t4)
-  | Tvar _, _ | _, Tvar _ ->
-      let t, t' = if is_Tvar t3 then (t3, t4) else (t4, t3) in
-      if occur_in Env.empty t t' then
-        fprintf ppf "@,@[<hov>The type variable %a occurs inside@ %a@]"
-          type_expr t type_expr t'
-      else
-        fprintf ppf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
-          type_expr t'
-          "it would escape the scope of its equation"
-  | Tfield (lab, _, _, _), _ when lab = dummy_method ->
-      fprintf ppf
-        "@,Self type cannot be unified with a closed object type"
-  | _, Tfield (lab, _, _, _) when lab = dummy_method ->
-      fprintf ppf
-        "@,Self type cannot be unified with a closed object type"
-  | Tfield (l,_,_,{desc=Tnil}), Tfield (l',_,_,{desc=Tnil}) when l = l' ->
-      fprintf ppf "@,Types for method %s are incompatible" l
-  | (Tnil|Tconstr _), Tfield (l, _, _, _) ->
-      fprintf ppf
-        "@,@[The first object type has no method %s@]" l
-  | Tfield (l, _, _, _), (Tnil|Tconstr _) ->
-      fprintf ppf
-        "@,@[The second object type has no method %s@]" l
-  | Tnil, Tconstr _ | Tconstr _, Tnil ->
-      fprintf ppf
-        "@,@[The %s object type has an abstract row, it cannot be closed@]"
-        (if t4.desc = Tnil then "first" else "second")
-  | Tvariant row1, Tvariant row2 ->
-      let row1 = row_repr row1 and row2 = row_repr row2 in
-      begin match
-        row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
-      | [], true, [], true ->
-          fprintf ppf "@,These two variant types have no intersection"
-      | [], true, (_::_ as fields), _ ->
-          fprintf ppf
-            "@,@[The first variant type does not allow tag(s)@ @[<hov>%a@]@]"
-            print_tags fields
-      | (_::_ as fields), _, [], true ->
-          fprintf ppf
-            "@,@[The second variant type does not allow tag(s)@ @[<hov>%a@]@]"
-            print_tags fields
-      | [l1,_], true, [l2,_], true when l1 = l2 ->
-          fprintf ppf "@,Types for tag `%s are incompatible" l1
-      | _ -> ()
-      end
-  | _ -> ()
-
+let explain mis ppf =
+  match mis with
+  | None -> ()
+  | Some explain -> explain ppf
 
 let warn_on_missing_def env ppf t =
   match t.desc with
@@ -1509,11 +1627,6 @@ let warn_on_missing_def env ppf t =
            in path.@]" path p
     end
   | _ -> ()
-
-let explanation unif mis ppf =
-  match mis with
-    None -> ()
-  | Some (t3, t4) -> explanation unif t3 t4 ppf
 
 let ident_same_name id1 id2 =
   if Ident.equal id1 id2 && not (Ident.same id1 id2) then begin
@@ -1539,11 +1652,11 @@ let rec trace_same_names = function
       type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
   | _ -> ()
 
-let unification_error env unif tr txt1 ppf txt2 =
+let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
-  let mis = mismatch tr in
+  let mis = mismatch env unif tr in
   match tr with
   | [] | _ :: [] -> assert false
   | t1 :: t2 :: tr ->
@@ -1557,12 +1670,14 @@ let unification_error env unif tr txt1 ppf txt2 =
         "@[<v>\
           @[%t@;<1 2>%a@ \
             %t@;<1 2>%a\
+            %t\
           @]%a%t\
          @]"
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
+        ty_expect_explanation
         (trace false "is not compatible with type") tr
-        (explanation unif mis);
+        (explain mis);
       if env <> Env.empty
       then begin
         warn_on_missing_def env ppf t1;
@@ -1573,9 +1688,11 @@ let unification_error env unif tr txt1 ppf txt2 =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf env ?(unif=true)
-    tr txt1 txt2 =
-  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2)
+let report_unification_error ppf env ?(unif=true) tr
+    ?(type_expected_explanation = fun _ -> ())
+    txt1 txt2 =
+  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2
+                            type_expected_explanation)
 ;;
 
 let trace fst keep_last txt ppf tr =
@@ -1598,10 +1715,10 @@ let report_subtyping_error ppf env tr1 txt1 tr2 =
     and tr2 = List.map prepare_expansion tr2 in
     fprintf ppf "@[<v>%a" (trace true (tr2 = []) txt1) tr1;
     if tr2 = [] then fprintf ppf "@]" else
-    let mis = mismatch tr2 in
+    let mis = mismatch env true tr2 in
     fprintf ppf "%a%t@]"
       (trace false (mis = None) "is not compatible with type") tr2
-      (explanation true mis))
+      (explain mis))
 
 let report_ambiguous_type_error ppf env (tp0, tp0') tpl txt1 txt2 txt3 =
   wrap_printing_env env (fun () ->

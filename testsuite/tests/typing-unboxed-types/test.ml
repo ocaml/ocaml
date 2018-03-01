@@ -1,3 +1,12 @@
+(* TEST
+   * flat-float-array
+   ** toplevel
+   compiler_reference = "${test_source_directory}/test.ml.reference-flat"
+   * no-flat-float-array
+   ** toplevel
+   compiler_reference = "${test_source_directory}/test.ml.reference-noflat"
+*)
+
 (* Check the unboxing *)
 
 (* For concrete types *)
@@ -161,3 +170,12 @@ type 'a s
 type ('a, 'p) t = private 'a s
 type 'a packed = T : ('a, _) t -> 'a packed [@@unboxed]
 ;;
+
+(* MPR#7682 *)
+type f = {field: 'a. 'a list} [@@unboxed];;
+let g = Array.make 10 { field=[] };;
+let h = g.(5);;
+
+(* Using [@@immediate] information (GPR#1469) *)
+type 'a t [@@immediate];;
+type u = U : 'a t -> u [@@unboxed];;
