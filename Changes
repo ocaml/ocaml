@@ -163,6 +163,10 @@ Working version
 - GPR#1563: simplify implementation of LSRINT and ASRINT
   (Max Mouratov, review by Frédéric Bour)
 
+- GPR#1644: remove caml_alloc_float_array from the bytecode primitives list
+  (it's a native code primitive)
+  (David Allsopp)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
