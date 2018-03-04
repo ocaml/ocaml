@@ -265,4 +265,18 @@
 </tr></table>
 
 
+
+<pre><code><span id="TYPEe"><span class="keyword">type</span> <code class="type"></code>e</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code></table>
+
+<div class="info ">
+<div class="info-desc">
+<p>Empty variant</p>
+</div>
+</div>
+
 </body></html>

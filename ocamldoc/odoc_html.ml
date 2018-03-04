@@ -1780,12 +1780,14 @@ class html =
              | Some _ -> "</pre>"
             );
           bs b "<table class=\"typetable\">\n";
-          let print_one constr =
+          let print_bar () =
             bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
             bs b "<code>";
             bs b (self#keyword "|");
             bs b "</code></td>\n<td align=\"left\" valign=\"top\" >\n";
-            bs b "<code>";
+            bs b "<code>" in
+          let print_one constr =
+            print_bar ();
             bp b "<span id=\"%s\">%s</span>"
               (Naming.const_target t constr)
               (self#constructor constr.vc_name);
@@ -1823,7 +1825,8 @@ class html =
             );
             bs b "\n</tr>"
           in
-          print_concat b "\n" print_one l;
+          if l = [] then print_bar () else
+            print_concat b "\n" print_one l;
           bs b "</table>\n"
 
       | Type_record l ->
