@@ -289,6 +289,87 @@ let rec insert x btree =
                 else Node(y, left, insert x right);;
 \end{caml_example}
 
+
+\subsection{Record and variant disambiguation}
+( This subsection can be skipped on the first reading )
+
+Astute readers may have wondered what happens when two or more record
+fields or constructors share the same name,
+
+\begin{caml_example*}{toplevel}
+type first =  { x : int; y:int; z:int }
+type middle = { x:int; y:int }
+type last =   { x: int };;
+type first_variant = A | B | C
+type last_variant = A;;
+\end{caml_example*}
+
+The answer is that when confronted with multiple options, OCaml
+picks the last defined type. For instance,
+
+\begin{caml_example}{toplevel}
+let look_at_x r = r.x;;
+let is_b x = match x with B -> true | _ -> false  ;;
+\end{caml_example}
+
+Nevertheless, Ocaml tries to disambiguate between the different record
+fields or constructors using the locally available information.
+For instance, if you use pattern matching to destructure both fields
+"x" and "y",
+
+\begin{caml_example}{toplevel}
+let look_at_xy {x;y;_} = x + y;;
+\end{caml_example}
+
+OCaml infers that the possible choices are only "first" and "middle",
+since the type "last" does not have a field "y". Ocaml thus picks the
+type "middle" as the last defined type between the two possible types.
+This disambiguation is local, consequently the following function fails
+
+\begin{caml_example}{toplevel}[error]
+let look_at_x_then_y r =
+  let x = r.x in
+  x + r.y;;
+\end{caml_example}
+
+Indeed, due to the line "let x = r.x in", OCaml has already deduced that
+the type of "r" was "last". Since "last" does not define a field "y",
+"r.y" is then an error.
+Similarly, pattern matching on constructors with
+
+\begin{caml_example}{toplevel}[error]
+let is_a_or_b x = match x with
+  | A -> true
+  | B -> true;;
+\end{caml_example}
+
+fails because OCaml has already inferred that the type of the argument
+was "last_variant" by the time it reaches the case "B".
+This problem can be avoided by adding an explicit type annotation
+in order to help OCaml disambiguates between the different types:
+
+\begin{caml_example}{toplevel}
+let look_at_x_then_y_then_z (r:first) =
+  let x = r.x in
+  x + r.z;;
+\end{caml_example}
+
+Here "(r:first)" is an explicit annotation telling OCaml that
+the type of "r" is "first". We can use the same annotations to guide
+the disambiguation of variants:
+
+\begin{caml_example}{toplevel}
+let rotate_abc_to_bac (x:first_variant) = match x with
+  | A -> (B:first_variant)
+  | B -> A
+  | C -> C;;
+\end{caml_example}
+
+Those explicit type annotations can in fact be used anywhere.
+Most of the time they are unnecessary, but they are useful to guide
+disambiguation, to debug unexpected type errors, or combined with some
+of the more advanced features of OCaml described in later chapters.
+
 \section{Imperative features}
 \pdfsection{Imperative features}
 
