@@ -123,6 +123,8 @@ Working version
 
 ### Runtime system:
 
+- MPR#7721, GPR#1602: add support for caml_alloc_octets
+
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
   only dllbigarray.dll and libbigarray.a. Allows the use of C++ libraries which
   raise exceptions.

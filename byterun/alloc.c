@@ -138,6 +138,22 @@ CAMLexport value caml_copy_string(char const *s)
   return res;
 }
 
+static struct custom_operations octets_custom_ops = {
+  "octets",
+  custom_finalize_default,
+  custom_compare_default,
+  custom_compare_ext_default,
+  custom_hash_default,
+  custom_serialize_default,
+  custom_deserialize_default
+};
+
+/* [len] is a number of bytes */
+CAMLexport value caml_alloc_octets (mlsize_t len)
+{
+  return caml_alloc_custom(&octets_custom_ops, len, 0, 1);
+}
+
 CAMLexport value caml_alloc_array(value (*funct)(char const *),
                                   char const ** arr)
 {

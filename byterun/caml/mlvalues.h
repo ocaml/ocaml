@@ -332,6 +332,9 @@ CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
 #define Data_custom_val(v) ((void *) &Field((v), 1))
 struct custom_operations;       /* defined in [custom.h] */
 
+/* Simplified custom bytes allocation layered on top of custom blocks */
+#define Data_octets_val(v) ((void *) &Field((v), 1))
+
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
 
 #define Int32_val(v) (*((int32_t *) Data_custom_val(v)))
