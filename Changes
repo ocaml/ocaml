@@ -360,6 +360,10 @@ Working version
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
 
+- MPR#7726, GPR#1639: Recursive modules, equi-recursive types
+   and stack overflow
+  (Jacques Garrigue, report by Jeremy Yallop)
+
 - MPR#7747: Type checker can loop infinitly and consumes all computer memory
   (Jacques Garrigue, report by kantian)
 

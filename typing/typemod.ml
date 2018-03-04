@@ -991,9 +991,9 @@ and transl_recmodule_modtypes env sdecls =
     List.fold_left
       (fun env (id, _, mty) -> Env.add_module ~arg:true id mty env)
       env curr in
-  let make_env2 curr =
+  let make_env2 ?(arg=true) curr =
     List.fold_left
-      (fun env (id, _, mty) -> Env.add_module ~arg:true id mty.mty_type env)
+      (fun env (id, _, mty) -> Env.add_module ~arg id mty.mty_type env)
       env curr in
   let transition env_c curr =
     List.map2
@@ -1032,7 +1032,7 @@ and transl_recmodule_modtypes env sdecls =
       (fun () -> transition env0 init)
   in
   let env1 = make_env2 dcl1 in
-  check_recmod_typedecls env1 sdecls dcl1;
+  check_recmod_typedecls (make_env2 ~arg:false dcl1) sdecls dcl1;
   let dcl2 = transition env1 dcl1 in
 (*
   List.iter
@@ -1041,7 +1041,7 @@ and transl_recmodule_modtypes env sdecls =
     dcl2;
 *)
   let env2 = make_env2 dcl2 in
-  check_recmod_typedecls env2 sdecls dcl2;
+  check_recmod_typedecls (make_env2 ~arg:false dcl2) sdecls dcl2;
   let dcl2 =
     List.map2
       (fun pmd (id, id_loc, mty) ->
@@ -1580,7 +1580,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                    md_loc = md.md_loc;
                  }
                in
-               Env.add_module_declaration ~check:true md.md_id mdecl env
+               Env.enter_module_declaration md.md_id mdecl env
             )
             env decls
         in
