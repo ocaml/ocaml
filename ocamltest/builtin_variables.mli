@@ -36,6 +36,9 @@ val promote : Variables.t
 
 val reference : Variables.t
 
+val skip_header_lines : Variables.t
+val skip_header_bytes : Variables.t
+
 val script : Variables.t
 
 val stdin : Variables.t

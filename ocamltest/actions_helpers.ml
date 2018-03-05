@@ -243,7 +243,13 @@ let run_hook hook_name log input_env =
       then (Result.skip_with_reason reason, hookenv)
       else (Result.fail_with_reason reason, hookenv)
 
-let check_output kind_of_output output_variable reference_variable log env =
+let check_output kind_of_output output_variable reference_variable log
+    env =
+  let to_int = function None -> 0 | Some s -> int_of_string s in
+  let skip_lines =
+    to_int (Environments.lookup Builtin_variables.skip_header_lines env) in
+  let skip_bytes =
+    to_int (Environments.lookup Builtin_variables.skip_header_bytes env) in
   let reference_filename = Environments.safe_lookup reference_variable env in
   let output_filename = Environments.safe_lookup output_variable env in
   Printf.fprintf log "Comparing %s output %s to reference %s\n%!"
@@ -254,7 +260,9 @@ let check_output kind_of_output output_variable reference_variable log env =
     Filecompare.reference_filename = reference_filename;
     Filecompare.output_filename = output_filename
   } in
-  match Filecompare.check_file files with
+  let tool =
+    Filecompare.(make_cmp_tool ~ignore:{lines=skip_lines;bytes=skip_bytes}) in
+  match Filecompare.check_file ~tool files with
     | Filecompare.Same -> (Result.pass, env)
     | Filecompare.Different ->
       let diff = Filecompare.diff files in

@@ -25,6 +25,31 @@ let principal =
   Add (Ocaml_variables.compiler_reference_suffix, ".principal");
 ]
 
+let latex =
+  [
+    Add (Ocaml_variables.ocamldoc_backend, "latex");
+    Append (Ocaml_variables.ocamldoc_flags, "-latex-type-prefix=TYP ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latex-module-prefix= ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latex-value-prefix=  ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latex-module-type-prefix= ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latextitle=1,subsection* ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latextitle=2,subsubsection* ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latextitle=6,subsection* ");
+    Append (Ocaml_variables.ocamldoc_flags, "-latextitle=7,subsubsection* ");
+  ]
+
+
+let html =
+  [
+    Add (Ocaml_variables.ocamldoc_backend, "html");
+    Append (Ocaml_variables.ocamldoc_flags, "-colorize-code ");
+  ]
+
+let man =
+  [
+    Add (Ocaml_variables.ocamldoc_backend, "man");
+  ]
+
 let wrap str = (" " ^ str ^ " ")
 
 let make_library_modifier library directory =
@@ -82,4 +107,7 @@ let _ =
   register_modifiers "str" str;
   register_modifiers "ocamlcommon" ocamlcommon;
   register_modifiers "systhreads" systhreads;
+  register_modifiers "latex" latex;
+  register_modifiers "html" html;
+  register_modifiers "man" man;
   ()

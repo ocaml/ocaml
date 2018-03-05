@@ -137,6 +137,27 @@ let ocamlsrcdir = make ("ocamlsrcdir",
 let os_type = make ("os_type",
   "The OS we are running on")
 
+let ocamldoc_flags = Variables.make ("ocamldoc_flags",
+  "ocamldoc flags")
+
+let ocamldoc_backend = Variables.make ("ocamldoc_backend",
+  "ocamldoc backend (html, latex, man, ... )")
+
+let ocamldoc_exit_status =
+  Variables.make ( "ocamldoc_exit_status", "expected ocamldoc exit status")
+
+let ocamldoc_output =
+  Variables.make ( "ocamldoc_output", "Where to log ocamldoc output")
+
+let ocamldoc_reference =
+  Variables.make ( "ocamldoc_reference",
+                   "Where to find expected ocamldoc output")
+
+
+let plugins =
+  Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
+
+
 let _ = List.iter register_variable
   [
     all_modules;
@@ -167,4 +188,10 @@ let _ = List.iter register_variable
     os_type;
     ocamllex_flags;
     ocamlyacc_flags;
+    ocamldoc_flags;
+    ocamldoc_backend;
+    ocamldoc_output;
+    ocamldoc_reference;
+    ocamldoc_exit_status;
+    plugins
   ]

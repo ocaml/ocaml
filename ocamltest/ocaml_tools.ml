@@ -49,3 +49,23 @@ end
 
 let expected_exit_status env tool =
   Actions_helpers.exit_status_of_variable env tool#exit_status_variable
+
+
+let ocamldoc =
+  object inherit
+  tool
+    ~name:Ocaml_files.ocamldoc
+    ~family:"doc"
+    ~flags:""
+    ~directory:"ocamldoc"
+    ~exit_status_variable:Ocaml_variables.ocamldoc_exit_status
+    ~reference_variable:Ocaml_variables.ocamldoc_reference
+    ~output_variable:Ocaml_variables.ocamldoc_output
+
+    method ! reference_filename_suffix env =
+      let backend =
+        Environments.safe_lookup Ocaml_variables.ocamldoc_backend env in
+      if backend = "" then
+        ".reference"
+      else "." ^ backend ^ ".reference"
+  end

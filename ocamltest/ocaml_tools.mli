@@ -36,3 +36,5 @@ object
 end
 
 val expected_exit_status : Environments.t -> tool -> int
+
+val ocamldoc: tool

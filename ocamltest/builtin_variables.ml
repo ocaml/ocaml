@@ -53,6 +53,16 @@ let promote = make ("promote",
 let reference = make ("reference",
   "Path of file to which program output should be compared")
 
+let skip_header_lines =
+  make ( "skip_header_lines",
+         "The number of lines to skip when comparing program output \
+          with the reference file")
+
+let skip_header_bytes =
+  make ( "skip_header_bytes",
+         "The number of bytes to skip when comparing program output \
+          with the reference file")
+
 let script = make ("script",
   "External script to run")
 
@@ -93,6 +103,8 @@ let _ = List.iter register_variable
     output;
     program; program2;
     reference;
+    skip_header_lines;
+    skip_header_bytes;
     script;
     stdin;
     stdout;

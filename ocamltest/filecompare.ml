@@ -23,21 +23,22 @@ type result =
   | Unexpected_output
   | Error of string * int
 
+type ignore = {bytes: int; lines: int}
 type tool =
   |  External of {
                    tool_name : string;
                    tool_flags : string;
                    result_of_exitcode : string -> int -> result
                 }
-  | Internal of int
+  | Internal of ignore
 
 let cmp_result_of_exitcode commandline = function
   | 0 -> Same
   | 1 -> Different
   | exit_code -> (Error (commandline, exit_code))
 
-let make_cmp_tool bytes_to_ignore =
-  Internal bytes_to_ignore
+let make_cmp_tool ~ignore =
+  Internal ignore
 
 let make_comparison_tool ?(result_of_exitcode = cmp_result_of_exitcode)
                          name flags =
@@ -48,7 +49,7 @@ let make_comparison_tool ?(result_of_exitcode = cmp_result_of_exitcode)
       result_of_exitcode
     }
 
-let default_comparison_tool = make_cmp_tool 0
+let default_comparison_tool = make_cmp_tool ~ignore:{bytes=0;lines=0}
 
 type filetype = Binary | Text
 
@@ -58,14 +59,20 @@ type files = {
   output_filename : string;
 }
 
-let read_text_file fn =
+let read_text_file lines_to_drop fn =
   let ic = open_in_bin fn in
   let drop_cr s =
     let l = String.length s in
     if l > 0 && s.[l - 1] = '\r' then String.sub s 0 (l - 1)
     else raise Exit
   in
-  let rec loop acc =
+  let rec drop k =
+    if k = 0 then
+      loop []
+    else
+      let stop = try ignore (input_line ic); false with End_of_file -> true in
+      if stop then [] else drop (k-1)
+  and loop acc =
     match input_line ic with
     | s -> loop (s :: acc)
     | exception End_of_file ->
@@ -73,10 +80,10 @@ let read_text_file fn =
       try List.rev_map drop_cr acc
       with Exit -> List.rev acc
   in
-  loop []
+  drop lines_to_drop
 
-let compare_text_files file1 file2 =
-  if read_text_file file1 = read_text_file file2 then
+let compare_text_files dropped_lines file1 file2 =
+  if read_text_file 0 file1 = read_text_file dropped_lines file2 then
     Same
   else
     Different
@@ -138,13 +145,14 @@ let compare_files ?(tool = default_comparison_tool) files =
         ~stdout_fname:dev_null ~stderr_fname:dev_null commandline in
       let status = Run_command.run settings in
       result_of_exitcode commandline status
-  | Internal bytes_to_ignore ->
+  | Internal ignore ->
       match files.filetype with
         | Text ->
             (* bytes_to_ignore is silently ignored for text files *)
-            compare_text_files files.reference_filename files.output_filename
+            compare_text_files ignore.lines
+              files.reference_filename files.output_filename
         | Binary ->
-            compare_binary_files bytes_to_ignore
+            compare_binary_files ignore.bytes
                                  files.reference_filename files.output_filename
 
 let check_file ?(tool = default_comparison_tool) files =

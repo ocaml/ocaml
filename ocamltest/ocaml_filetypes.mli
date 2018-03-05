@@ -26,6 +26,7 @@ type t =
   | Grammar
   | Binary_interface
   | Backend_specific of Ocaml_backends.t * backend_specific
+  | Text (** text-only documentation file *)
 
 val string_of_filetype : t -> string
 

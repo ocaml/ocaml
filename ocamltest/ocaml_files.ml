@@ -66,3 +66,7 @@ let ocamllex ocamlsrcdir =
 
 let ocamlyacc ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "yacc"; Filename.mkexe "ocamlyacc"]
+
+let ocamldoc ocamlsrcdir =
+  Filename.make_path
+    [ocamlsrcdir; "ocamldoc"; "ocamldoc"]
