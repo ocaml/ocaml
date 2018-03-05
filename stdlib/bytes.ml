@@ -261,7 +261,7 @@ let compare (x: t) (y: t) = Pervasives.compare x y
 external equal : t -> t -> bool = "caml_string_equal"
 
 (* Deprecated functions implemented via other deprecated functions *)
-(* XXX KC: [@@@ocaml.warning "-3"] *)
+[@@@ocaml.warning "-3"]
 let uppercase s = map Char.uppercase s
 let lowercase s = map Char.lowercase s
 
