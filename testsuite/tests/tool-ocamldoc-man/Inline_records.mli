@@ -1,3 +1,7 @@
+(* TEST
+   * ocamldoc with man
+*)
+
 (**
   This test focuses on the printing of documentation for inline record
   within the latex generator.
