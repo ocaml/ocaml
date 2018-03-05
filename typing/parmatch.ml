@@ -897,7 +897,7 @@ let pat_of_constr ex_pat cstr =
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
 let rec orify_many = function
-| [] -> raise Empty
+| [] -> assert false
 | [x] -> x
 | x :: xs -> orify x (orify_many xs)
 
@@ -1937,7 +1937,8 @@ let contains_extension pat =
 (* Build an untyped or-pattern from its expected type *)
 let ppat_of_type env ty =
   match pats_of_type env ty with
-    [{pat_desc = Tpat_any}] ->
+  | [] -> raise Empty
+  | [{pat_desc = Tpat_any}] ->
       (Conv.mkpat Parsetree.Ppat_any, Hashtbl.create 0, Hashtbl.create 0)
   | pats ->
       Conv.conv (orify_many pats)
