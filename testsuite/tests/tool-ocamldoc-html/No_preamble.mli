@@ -1,3 +1,6 @@
+(* TEST
+   * ocamldoc with html
+*)
 
 open String
 

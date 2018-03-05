@@ -1,3 +1,7 @@
+(* TEST
+   * ocamldoc with html
+*)
+
 (** Check that all toplevel items are given a unique id. *)
 
 exception Ex
@@ -10,4 +14,3 @@ class type ct= object end
 [@@@attribute]
 module M: sig end
 module type s = sig end
-

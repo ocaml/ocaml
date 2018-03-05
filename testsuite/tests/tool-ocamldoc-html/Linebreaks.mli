@@ -1,3 +1,10 @@
+(* TEST
+   * ocamldoc with html
+   ** check-program-output
+      output="type_Linebreaks.html"
+      reference="${test_source_directory}/type_Linebreaks.reference"
+*)
+
 (**
    This file tests the encoding of linebreak inside OCaml code by the
    ocamldoc html backend.
