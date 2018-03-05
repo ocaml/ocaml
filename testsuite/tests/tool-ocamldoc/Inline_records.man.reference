@@ -24,6 +24,15 @@ within the latex generator\&.
 A nice exception
 
 .sp
+
+.I exception Less 
+.B of 
+.B int
+
+.sp
+A less simple exception
+
+.sp
 .I type ext 
 = ..
 

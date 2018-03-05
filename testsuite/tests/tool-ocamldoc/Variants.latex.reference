@@ -40,7 +40,17 @@ type t =
   | A
 \end{ocamldoccode}
 \begin{ocamldoccomment}
-doc for A
+doc for A.
+        \begin{ocamldoccode}
+0
+\end{ocamldoccode}
+
+        With three paragraphs.
+        \begin{ocamldoccode}
+1
+\end{ocamldoccode}
+
+        To check styling
 
 
 \end{ocamldoccomment}

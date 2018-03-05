@@ -1,5 +1,6 @@
 (* TEST
    * ocamldoc with html
+   * ocamldoc with latex
 *)
 
 (** This test is here to check the latex code generated for variants *)

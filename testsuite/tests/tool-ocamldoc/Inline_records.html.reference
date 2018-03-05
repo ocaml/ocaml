@@ -32,6 +32,13 @@
 </div>
 </div>
 
+<pre><span id="EXCEPTIONLess"><span class="keyword">exception</span> Less</span> <span class="keyword">of</span> <code class="type">int</code></pre>
+<div class="info ">
+<div class="info-desc">
+<p>A less simple exception</p>
+</div>
+</div>
+
 <pre><span id="TYPEext"><span class="keyword">type</span> <code class="type"></code>ext</span> = ..</pre>
 <div class="info ">
 <div class="info-desc">
