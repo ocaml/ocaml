@@ -168,8 +168,10 @@ let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then
-    debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
+  if Filename.is_relative path then begin
+    let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
+    debug_dirs := StringSet.add cwd !debug_dirs;
+  end;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 

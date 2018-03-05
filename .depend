@@ -1,6 +1,9 @@
 utils/arg_helper.cmo : utils/arg_helper.cmi
 utils/arg_helper.cmx : utils/arg_helper.cmi
 utils/arg_helper.cmi :
+utils/build_path_prefix_map.cmo : utils/build_path_prefix_map.cmi
+utils/build_path_prefix_map.cmx : utils/build_path_prefix_map.cmi
+utils/build_path_prefix_map.cmi :
 utils/ccomp.cmo : utils/misc.cmi utils/config.cmi utils/clflags.cmi \
     utils/ccomp.cmi
 utils/ccomp.cmx : utils/misc.cmx utils/config.cmx utils/clflags.cmx \
@@ -105,9 +108,9 @@ parsing/lexer.cmx : utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
     parsing/location.cmx parsing/docstrings.cmx parsing/lexer.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmo : utils/warnings.cmi utils/terminfo.cmi utils/misc.cmi \
-    utils/clflags.cmi parsing/location.cmi
+    utils/clflags.cmi utils/build_path_prefix_map.cmi parsing/location.cmi
 parsing/location.cmx : utils/warnings.cmx utils/terminfo.cmx utils/misc.cmx \
-    utils/clflags.cmx parsing/location.cmi
+    utils/clflags.cmx utils/build_path_prefix_map.cmx parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
 parsing/longident.cmo : utils/misc.cmi parsing/longident.cmi
 parsing/longident.cmx : utils/misc.cmx parsing/longident.cmi

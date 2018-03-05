@@ -89,6 +89,11 @@ val print: formatter -> t -> unit
 val print_compact: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
+val rewrite_absolute_path: string -> string
+    (** rewrite absolute path to honor the BUILD_PATH_PREFIX_MAP
+        variable (https://reproducible-builds.org/specs/build-path-prefix-map/)
+        if it is set. *)
+
 val absolute_path: string -> string
 
 val show_filename: string -> string
