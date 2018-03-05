@@ -991,7 +991,7 @@ and transl_recmodule_modtypes env sdecls =
     List.fold_left
       (fun env (id, _, mty) -> Env.add_module ~arg:true id mty env)
       env curr in
-  let make_env2 ?(arg=true) curr =
+  let make_env2 ~arg curr =
     List.fold_left
       (fun env (id, _, mty) -> Env.add_module ~arg id mty.mty_type env)
       env curr in
@@ -1031,7 +1031,7 @@ and transl_recmodule_modtypes env sdecls =
     Warnings.without_warnings
       (fun () -> transition env0 init)
   in
-  let env1 = make_env2 dcl1 in
+  let env1 = make_env2 ~arg:true  dcl1 in
   check_recmod_typedecls (make_env2 ~arg:false dcl1) sdecls dcl1;
   let dcl2 = transition env1 dcl1 in
 (*
@@ -1040,7 +1040,7 @@ and transl_recmodule_modtypes env sdecls =
       Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
     dcl2;
 *)
-  let env2 = make_env2 dcl2 in
+  let env2 = make_env2 ~arg:true dcl2 in
   check_recmod_typedecls (make_env2 ~arg:false dcl2) sdecls dcl2;
   let dcl2 =
     List.map2
