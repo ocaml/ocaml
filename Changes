@@ -359,7 +359,6 @@ Working version
 
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
-<<<<<<< HEAD
 
 - MPR#7726, GPR#1639: Recursive modules, equi-recursive types
    and stack overflow
@@ -367,14 +366,6 @@ Working version
 
 - MPR#7747: Type checker can loop infinitly and consumes all computer memory
   (Jacques Garrigue, report by kantian)
-=======
-  
-- MPR#7747: Type checker can loop infinitly and consumes all computer memory
-  (Jacques Garrigue, report by kantian)
-  
-- MPR#7726: Recursive modules, equi-recursive types and stack overflow
-  (Jacques Garrigue, report by Jeremy Yallop)
->>>>>>> typo in Changes
 
 - GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
   to work on ocamltest-based tests.
