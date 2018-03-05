@@ -1,3 +1,7 @@
+(* TEST
+   * ocamldoc with latex
+*)
+
 (** Testing display of extensible variant types and exceptions.
 
    @test_types_display

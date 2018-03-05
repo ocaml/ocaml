@@ -1,3 +1,7 @@
+(* TEST
+  * ocamldoc with latex
+*)
+
 (** Test for level 0 headings 
  
   {1 Level 1} 

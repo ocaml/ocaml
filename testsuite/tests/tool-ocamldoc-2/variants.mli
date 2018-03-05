@@ -1,3 +1,7 @@
+(* TEST
+   * ocamldoc with latex
+*)
+
 (** This test is here to check the latex code generated for variants *)
 
 type s = A | B (** only B is documented here *) | C
