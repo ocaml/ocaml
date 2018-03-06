@@ -1685,7 +1685,8 @@ let rec is_nonexpansive exp =
       is_nonexpansive exp
   | Texp_apply (
       { exp_desc = Texp_ident (_, _, {val_kind =
-             Val_prim {Primitive.prim_name = "%raise"}}) },
+             Val_prim {Primitive.prim_name =
+                         ("%raise" | "%reraise" | "%raise_notrace")}}) },
       [Nolabel, Some e]) ->
      is_nonexpansive e
   | _ -> false

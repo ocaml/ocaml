@@ -42,6 +42,9 @@ Working version
 - GPR#1609: Changes to ambivalence scope tracking
   (Thomas Refis and Leo White, review by Jacques Garrigue)
 
+- GPR#1628: Treat reraise and raise_notrace as nonexpansive.
+  (Leo White, review by Alain Frisch)
+
 ### Standard library:
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
