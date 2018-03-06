@@ -58,11 +58,11 @@ PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
 ifeq "$(RUNTIMED)" "true"
-all: camlheaderd
+all: camlheaderd target_camlheaderd
 endif
 
 ifeq "$(RUNTIMEI)" "true"
-all: camlheaderi
+all: camlheaderi target_camlheaderi
 endif
 
 ifeq "$(PROFILING)" "true"
@@ -187,6 +187,9 @@ camlheaderi: headernt.c
 	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
 	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
 	mv tmpheaderi.exe camlheaderi
+
+target_camlheaderi: camlheaderi
+	cp camlheaderi target_camlheaderi
 
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)
