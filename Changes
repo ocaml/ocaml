@@ -10,6 +10,9 @@ Working version
   (Nicolás Ojeda Bär, review by Gabriel Radanne, Damien Doligez, Gabriel
   Scherer)
 
+- GPR#1546: Allow empty variants
+  (Runhang Li, review by Gabriel Radanne and Jacques Garrigue)
+
 ### Type system:
 
 - MPR#7717, GPR#1593: don't treat unboxed constructor size as statically known

@@ -97,6 +97,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Empty_pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1037,7 +1038,11 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         pat_env = !env }
       in
       if explode > 0 then
-        let (sp, constrs, labels) = Parmatch.ppat_of_type !env expected_ty in
+        let (sp, constrs, labels) =
+          try
+            Parmatch.ppat_of_type !env expected_ty
+          with Parmatch.Empty -> raise (Error (loc, !env, Empty_pattern))
+        in
         if sp.ppat_desc = Parsetree.Ppat_any then k' Tpat_any else
         if mode = Inside_or then raise Need_backtrack else
         let explode =
@@ -5296,6 +5301,7 @@ let report_error env ppf = function
         longident lid
         "Hint: You are probably missing the `rec' keyword on line"
         line
+  | Empty_pattern -> assert false
 
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)

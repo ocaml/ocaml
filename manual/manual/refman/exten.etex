@@ -2363,3 +2363,18 @@ let dict =
 dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
+
+\section{Empty variant types\label{s:empty-variants} }
+(Introduced in 4.07.0)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' '|'
+\end{syntax}
+This extension allows user to define empty variants.
+Empty variant type can be eliminated by refutation case of pattern matching.
+\begin{caml_example*}{verbatim}
+type t = |
+let f (x: t) = match x with _ -> .
+\end{caml_example*}

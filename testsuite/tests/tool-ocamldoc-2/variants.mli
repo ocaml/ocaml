@@ -36,3 +36,6 @@ type b =
   B (** doc for B *)
 
 type no_documentation = A | B | C
+
+(** Empty variant *)
+type e = |

@@ -187,4 +187,18 @@ type no_documentation =
 \index{no-underscoredocumentation@\verb`no_documentation`}
 
 
+
+
+\label{TYPVariants.e}\begin{ocamldoccode}
+type e =
+  |
+\end{ocamldoccode}
+\index{e@\verb`e`}
+\begin{ocamldocdescription}
+Empty variant
+
+
+\end{ocamldocdescription}
+
+
 \end{document}
