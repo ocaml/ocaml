@@ -250,6 +250,10 @@ Working version
 - MPR#7738, GPR#1624: Asmlink.reset also resets lib_ccobjs/ccopts
   (Cedric Cellier, review by Gabriel Scherer)
 
+- GPR#1646 : add ocamldoc test to ocamltest and
+  migrate ocamldoc tests to ocamltest
+  (Florian Angeletti, review by Sébastien Hinderer)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
