@@ -37,6 +37,8 @@ val compiler_output : Variables.t
 
 val compiler_output2 : Variables.t
 
+val compile_only : Variables.t
+
 val directories : Variables.t
 
 val flags : Variables.t

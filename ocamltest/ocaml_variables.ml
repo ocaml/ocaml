@@ -71,6 +71,9 @@ let compiler_output = make ("compiler_output",
 let compiler_output2 = make ("compiler_output2",
   "Where to log output of native compilers")
 
+let compile_only = make ("compile_only",
+  "Compile only (do not link)")
+
 let ocamlc_flags = make ("ocamlc_flags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
 
@@ -169,6 +172,7 @@ let _ = List.iter register_variable
     compiler_reference_suffix;
     compiler_output;
     compiler_output2;
+    compile_only;
     directories;
     flags;
     libraries;

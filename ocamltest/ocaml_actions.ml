@@ -177,7 +177,13 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let what = Printf.sprintf "Compiling program %s from modules %s"
     program_file module_names in
   Printf.fprintf log "%s\n%!" what;
-  let output = "-o " ^ program_file in
+  let compile_only =
+    Environments.lookup_as_bool Ocaml_variables.compile_only env = Some true
+  in
+  let compile_flags =
+    if compile_only then " -c " else ""
+  in
+  let output = if compile_only then "" else "-o " ^ program_file in
   let commandline =
   [
     compiler#name ocamlsrcdir;
@@ -189,6 +195,7 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
     libraries compiler#target env;
     backend_default_flags env compiler#target;
     backend_flags env compiler#target;
+    compile_flags;
     output;
     module_names
   ] in
