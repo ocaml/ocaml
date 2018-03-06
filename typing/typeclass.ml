@@ -75,6 +75,7 @@ type error =
   | Mutability_mismatch of string * mutable_flag
   | No_overriding of string * string
   | Duplicate of string * string
+  | Closing_self_type of type_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -782,6 +783,15 @@ and class_field_aux self_loc cl_num self_type meths vars
   | Pcf_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
+(* N.B. the self type of a final object type doesn't contain a dummy method in
+   the beginning.
+   We only explicitely add a dummy method to class definitions (and class (type)
+   declarations)), which are later removed (made absent) by [final_decl].
+
+   If we ever find a dummy method in a final object self type, it means that
+   somehow we've unified the self type of the object with the self type of a not
+   yet finished class.
+   When this happens, we cannot close the object type and must error. *)
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =
   (* Environment for substructures *)
@@ -790,11 +800,15 @@ and class_structure cl_num final val_env met_env loc
   (* Location of self. Used for locations of self arguments *)
   let self_loc = {spat.ppat_loc with Location.loc_ghost = true} in
 
-  (* Self type, with a dummy method preventing it from being closed/escaped. *)
-  let self_type = Ctype.newvar () in
-  Ctype.unify val_env
-    (Ctype.filter_method val_env dummy_method Private self_type)
-    (Ctype.newty (Ttuple []));
+  let self_type = Ctype.newobj (Ctype.newvar ()) in
+
+  (* Adding a dummy method to the self type prevents it from being closed /
+     escaping.
+     That isn't needed for objects though. *)
+  if not final then
+    Ctype.unify val_env
+      (Ctype.filter_method val_env dummy_method Private self_type)
+      (Ctype.newty (Ttuple []));
 
   (* Private self is used for private method calls *)
   let private_self = if final then Ctype.newvar () else self_type in
@@ -851,7 +865,10 @@ and class_structure cl_num final val_env met_env loc
   if final then begin
     (* Unify private_self and a copy of self_type. self_type will not
        be modified after this point *)
-    Ctype.close_object self_type;
+    begin try Ctype.close_object self_type
+    with Ctype.Unify [] ->
+      raise(Error(loc, val_env, Closing_self_type self_type))
+    end;
     let mets = virtual_methods {sign with csig_self = self_type} in
     let vals =
       Vars.fold
@@ -862,13 +879,7 @@ and class_structure cl_num final val_env met_env loc
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
-          if lab = dummy_method then
-            (* allow public self and private self to be unified *)
-            match Btype.field_kind_repr kind with
-              Fvar r -> Btype.set_kind r Fabsent; rem
-            | _ -> rem
-          else
-            Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
+           Ctype.newty(Tfield(lab, Btype.copy_kind kind, ty, rem)))
         methods (Ctype.newty Tnil) in
     begin try
       Ctype.unify val_env private_self
@@ -1402,7 +1413,9 @@ let class_infos define_class kind
   begin
     let ty = Ctype.self_type obj_type in
     Ctype.hide_private_methods ty;
-    Ctype.close_object ty;
+    begin try Ctype.close_object ty
+    with Ctype.Unify [] -> raise(Error(cl.pci_loc, env, Closing_self_type ty))
+    end;
     begin try
       List.iter2 (Ctype.unify env) obj_params obj_params'
     with Ctype.Unify _ ->
@@ -1570,6 +1583,21 @@ let final_decl env define_class
   begin try Ctype.collapse_conj_params env clty.cty_params
   with Ctype.Unify trace ->
     raise(Error(cl.pci_loc, env, Non_collapsable_conjunction (id, clty, trace)))
+  end;
+
+  (* make the dummy method disappear *)
+  begin
+    let self_type = Ctype.self_type clty.cty_type in
+    let methods, _ =
+      Ctype.flatten_fields
+        (Ctype.object_fields (Ctype.expand_head env self_type))
+    in
+    List.iter (fun (lab,kind,_) ->
+      if lab = dummy_method then
+        match Btype.field_kind_repr kind with
+          Fvar r -> Btype.set_kind r Fabsent
+        | _ -> ()
+    ) methods
   end;
 
   List.iter Ctype.generalize clty.cty_params;
@@ -1978,6 +2006,12 @@ let report_error env ppf = function
   | Duplicate (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has multiple definitions in this object@]"
                     kind name
+  | Closing_self_type self ->
+    fprintf ppf
+      "@[Cannot close type of object literal:@ %a@,\
+       it has been unified with the self type of a class that is not yet@ \
+       completely defined.@]"
+      Printtyp.type_scheme self
 
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)

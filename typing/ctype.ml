@@ -329,6 +329,7 @@ let close_object ty =
     match ty.desc with
       Tvar _ ->
         link_type ty (newty2 ty.level Tnil)
+    | Tfield(lab, _, _, _) when lab = dummy_method -> raise (Unify [])
     | Tfield(_, _, _, ty') -> close ty'
     | _                    -> assert false
   in
@@ -3547,7 +3548,7 @@ let match_class_types ?(trace=true) env pat_sch subj_sch =
              | _      -> CM_Hide_public lab::err
              end
            in
-           if Concr.mem lab sign1.csig_concr then err
+           if lab = dummy_method || Concr.mem lab sign1.csig_concr then err
            else CM_Hide_virtual ("method", lab) :: err)
         miss1 []
     in
