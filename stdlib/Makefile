@@ -160,27 +160,33 @@ else # Windows
 # TODO: see whether there is a way to further merge the rules below
 # with those above
 
-camlheader target_camlheader camlheader_ur: headernt.c
+camlheader: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
 	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
+
+target_camlheader: camlheader
 	cp camlheader target_camlheader
+
+camlheader_ur: camlheader
 	cp camlheader camlheader_ur
 
-camlheaderd target_camlheaderd: headernt.c
+camlheaderd: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderd
+	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
+	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
+	mv tmpheaderd.exe camlheaderd
+
+target_camlheaderd: camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderi
+	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
+	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
+	mv tmpheaderi.exe camlheaderi
 
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)
