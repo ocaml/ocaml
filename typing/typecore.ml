@@ -2888,6 +2888,12 @@ and type_format loc str env =
         | Float_G  -> mk_constr "Float_G"  []
         | Float_pG -> mk_constr "Float_pG" []
         | Float_sG -> mk_constr "Float_sG" []
+        | Float_h  -> mk_constr "Float_h"  []
+        | Float_ph -> mk_constr "Float_ph" []
+        | Float_sh -> mk_constr "Float_sh" []
+        | Float_H  -> mk_constr "Float_H"  []
+        | Float_pH -> mk_constr "Float_pH" []
+        | Float_sH -> mk_constr "Float_sH" []
         | Float_F  -> mk_constr "Float_F"  []
       and mk_counter cnt = match cnt with
         | Line_counter  -> mk_constr "Line_counter"  []

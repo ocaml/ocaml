@@ -1162,6 +1162,9 @@ fun ib fmt readers -> match fmt with
                | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
                | Float_G | Float_pG | Float_sG), pad, prec, rest) ->
     pad_prec_scanf ib rest readers pad prec scan_float token_float
+  | Float ((Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH),
+           _pad, _prec, _rest) ->
+    assert false (* TODO *)
 
   | Bool rest ->
     let _ = scan_bool ib in
