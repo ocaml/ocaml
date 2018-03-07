@@ -56,7 +56,7 @@ static const struct event_details* all_events[] = {
 static caml_plat_mutex lock = CAML_PLAT_MUTEX_INITIALIZER;
 static FILE* output;
 static int num_users;
-static uint64 initial_timestamp;
+static uint64_t initial_timestamp;
 
 #define EVENT_BUFFER_SIZE 8192
 struct event_buffer {
@@ -68,9 +68,9 @@ struct event_buffer {
 static __thread struct event_buffer evbuf;
 
 
-static uint64 timestamp()
+static uint64_t timestamp()
 {
-  uint64 now = 0;
+  uint64_t now = 0;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -124,7 +124,7 @@ static char* write_16(char* p, int x)
   return p + 2;
 }
 
-static char* write_32(char* p, uint32 x)
+static char* write_32(char* p, uint32_t x)
 {
   p[0] = (unsigned char)(x >> 24);
   p[1] = (unsigned char)(x >> 16);
@@ -136,7 +136,7 @@ static char* write_32(char* p, uint32 x)
 static char* write_timestamp(char* p)
 {
   int i;
-  uint64 now_ns = timestamp() - initial_timestamp;
+  uint64_t now_ns = timestamp() - initial_timestamp;
   for (i = 64 - 8; i >= 0; i -= 8) {
     *p++ = (unsigned char)(now_ns >> i);
   }
@@ -192,7 +192,7 @@ void flush_eventlog()
 {
   if (evbuf.buffer && evbuf.remaining < EVENT_BUFFER_SIZE) {
     caml_gc_log("Flushing event log");
-    uint32 len = (uint32)(evbuf.pos - evbuf.buffer);
+    uint32_t len = (uint32_t)(evbuf.pos - evbuf.buffer);
     char* p = evbuf.buffer;
     p += 2;  /* skip EVENT_BLOCK_MARKER */
     p += 8;  /* skip timestamp */
