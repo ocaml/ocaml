@@ -197,7 +197,10 @@ type precision_ebb = Precision_EBB : ('a, 'b) precision -> precision_ebb
                                (* Constants *)
 
 (* Default precision for float printing. *)
-let default_float_precision = 6
+let default_float_precision = -6
+  (* For %h and %H formats, a negative precision means "as many digits as
+     necessary".  For the other FP formats, we take the absolute value
+     of the precision, hence 6 digits by default. *)
 
 (******************************************************************************)
                                (* Externals *)
@@ -212,6 +215,8 @@ external format_nativeint: string -> nativeint -> string
   = "caml_nativeint_format"
 external format_int64: string -> int64 -> string
   = "caml_int64_format"
+external hexstring_of_float: float -> int -> char -> string
+  = "caml_hexstring_of_float"
 
 (******************************************************************************)
                      (* Tools to pretty-print formats *)
@@ -266,6 +271,8 @@ let char_of_fconv fconv = match fconv with
   | Float_f | Float_pf | Float_sf -> 'f' | Float_e | Float_pe | Float_se -> 'e'
   | Float_E | Float_pE | Float_sE -> 'E' | Float_g | Float_pg | Float_sg -> 'g'
   | Float_G | Float_pG | Float_sG -> 'G' | Float_F -> 'F'
+  | Float_h | Float_ph | Float_sh -> 'h' | Float_H | Float_pH | Float_sH -> 'H'
+
 
 (* Convert a scanning counter to char. *)
 let char_of_counter counter = match counter with
@@ -407,11 +414,14 @@ let bprint_altint_fmt buf ign_flag iconv pad prec c =
 
 (* Print the optionnal '+' associated to a float conversion. *)
 let bprint_fconv_flag buf fconv = match fconv with
-  | Float_pf | Float_pe | Float_pE | Float_pg | Float_pG ->
+  | Float_pf | Float_pe | Float_pE
+  | Float_pg | Float_pG | Float_ph | Float_pH ->
     buffer_add_char buf '+'
-  | Float_sf | Float_se | Float_sE | Float_sg | Float_sG ->
+  | Float_sf | Float_se | Float_sE
+  | Float_sg | Float_sG | Float_sh | Float_sH ->
     buffer_add_char buf ' '
-  | Float_f | Float_e | Float_E | Float_g | Float_G | Float_F ->
+  | Float_f | Float_e | Float_E
+  | Float_g | Float_G | Float_F | Float_h | Float_H ->
     ()
 
 (* Print a complete float format in a buffer (ex: "%+*.3f"). *)
@@ -1366,22 +1376,34 @@ let convert_int64 iconv n = format_int64 (format_of_aconv iconv 'L') n
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
 let convert_float fconv prec x =
-  let prec = abs prec in
-  let str = format_float (format_of_fconv fconv prec) x in
-  if fconv <> Float_F then str else
-    let len = String.length str in
-    let rec is_valid i =
-      if i = len then false else
-        match str.[i] with
-        | '.' | 'e' | 'E' -> true
-        | _ -> is_valid (i + 1)
-    in
-    match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero ->
-      if is_valid 0 then str else str ^ "."
-    | FP_infinite ->
-      if x < 0.0 then "neg_infinity" else "infinity"
-    | FP_nan -> "nan"
+  match fconv with
+  | Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH ->
+    let sign =
+      match fconv with
+      | Float_ph | Float_pH -> '+'
+      | Float_sh | Float_sH -> ' '
+      | _ -> '-' in
+    let str = hexstring_of_float x prec sign in
+    begin match fconv with
+    | Float_H | Float_pH | Float_sH -> String.uppercase_ascii str
+    | _ -> str
+    end
+  | _ ->
+    let str = format_float (format_of_fconv fconv prec) x in
+    if fconv <> Float_F then str else
+      let len = String.length str in
+      let rec is_valid i =
+        if i = len then false else
+          match str.[i] with
+          | '.' | 'e' | 'E' -> true
+          | _ -> is_valid (i + 1)
+      in
+      match classify_float x with
+      | FP_normal | FP_subnormal | FP_zero ->
+        if is_valid 0 then str else str ^ "."
+      | FP_infinite ->
+        if x < 0.0 then "neg_infinity" else "infinity"
+      | FP_nan -> "nan"
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
@@ -2262,7 +2284,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
           make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int64 (iconv, pad', prec', fmt_rest'))
-    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' ->
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' | 'h' | 'H' ->
       let fconv = compute_float_conv pct_ind str_ind (get_plus ())
         (get_space ()) symb in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
@@ -2727,6 +2749,12 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | false, false, 'G' -> Float_G
     | false,  true, 'G' -> Float_sG
     |  true, false, 'G' -> Float_pG
+    | false, false, 'h' -> Float_h
+    | false,  true, 'h' -> Float_sh
+    |  true, false, 'h' -> Float_ph
+    | false, false, 'H' -> Float_H
+    | false,  true, 'H' -> Float_sH
+    |  true, false, 'H' -> Float_pH
     | false, false, 'F' -> Float_F
     |  true,  true, _ ->
       if legacy_behavior then

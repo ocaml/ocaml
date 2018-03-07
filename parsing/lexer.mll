@@ -25,6 +25,7 @@ type error =
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
   | Literal_overflow of string
+  | Invalid_literal of string
 ;;
 
 exception Error of error * Location.t;;
@@ -189,20 +190,6 @@ let cvt_nativeint_literal s =
   Nativeint.neg (Nativeint.of_string ("-" ^ String.sub s 0
                                                        (String.length s - 1)))
 
-(* Remove underscores from float literals *)
-
-let remove_underscores s =
-  let l = String.length s in
-  let b = Bytes.create l in
-  let rec remove src dst =
-    if src >= l then
-      if dst >= l then s else Bytes.sub_string b 0 dst
-    else
-      match s.[src] with
-        '_' -> remove (src + 1) dst
-      |  c  -> Bytes.set b dst c; remove (src + 1) (dst + 1)
-  in remove 0 0
-
 (* recover the name from a LABEL or OPTLABEL token *)
 
 let get_label_name lexbuf =
@@ -272,6 +259,8 @@ let report_error ppf = function
   | Literal_overflow ty ->
       fprintf ppf "Integer literal exceeds the range of representable \
                    integers of type %s" ty
+  | Invalid_literal s ->
+      fprintf ppf "Invalid literal %s" s
 
 let () =
   Location.register_error_of_exn
@@ -309,6 +298,11 @@ let float_literal =
   ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
   (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+let hex_float_literal =
+  '0' ['x' 'X']
+  ['0'-'9' 'A'-'F' 'a'-'f']['0'-'9' 'A'-'F' 'a'-'f' '_']*
+  ('.' ['0'-'9' 'A'-'F' 'a'-'f' '_']*)?
+  (['p' 'P'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
 
 rule token = parse
   | "\\" newline {
@@ -352,8 +346,8 @@ rule token = parse
         with Failure _ ->
           raise (Error(Literal_overflow "int", Location.curr lexbuf))
       }
-  | float_literal
-      { FLOAT (remove_underscores(Lexing.lexeme lexbuf)) }
+  | float_literal | hex_float_literal
+      { FLOAT (Lexing.lexeme lexbuf) }
   | int_literal "l"
       { try
           INT32 (cvt_int32_literal (Lexing.lexeme lexbuf))
@@ -369,6 +363,8 @@ rule token = parse
           NATIVEINT (cvt_nativeint_literal (Lexing.lexeme lexbuf))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
+  | (float_literal | hex_float_literal | int_literal) identchar+
+      { raise (Error(Invalid_literal (Lexing.lexeme lexbuf), Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
         is_in_string := true;

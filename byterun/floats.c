@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "caml/alloc.h"
 #include "caml/fail.h"
@@ -89,46 +90,178 @@ CAMLprim value caml_format_float(value fmt, value arg)
   return res;
 }
 
-#if 0
-/*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
+CAMLprim value caml_hexstring_of_float(value arg, value vprec, value vstyle)
 {
-  char parse_buffer[64];
-  char * buf, * src, * dst, * end;
-  mlsize_t len, lenvs;
-  double d;
-  intnat flen = Long_val(l);
-  intnat fidx = Long_val(idx);
+  union { uint64_t i; double d; } u;
+  int sign, exp;
+  uint64_t m;
+  char buffer[64];
+  char * buf, * p;
+  intnat prec;
+  int d;
+  value res;
 
-  lenvs = caml_string_length(vs);
-  len =
-    fidx >= 0 && fidx < lenvs && flen > 0 && flen <= lenvs - fidx
-    ? flen : 0;
-  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
-  src = String_val(vs) + fidx;
-  dst = buf;
-  while (len--) {
-    char c = *src++;
-    if (c != '_') *dst++ = c;
+  /* Allocate output buffer */
+  prec = Long_val(vprec);
+                  /* 12 chars for sign, 0x, decimal point, exponent */
+  buf = (prec + 12 <= 64 ? buffer : caml_stat_alloc(prec + 12));
+  /* Extract sign, mantissa, and exponent */
+  u.d = Double_val(arg);
+  sign = u.i >> 63;
+  exp = (u.i >> 52) & 0x7FF;
+  m = u.i & (((uint64_t) 1 << 52) - 1);
+  /* Put sign */
+  p = buf;
+  if (sign) {
+    *p++ = '-';
+  } else {
+    switch (Int_val(vstyle)) {
+    case '+': *p++ = '+'; break;
+    case ' ': *p++ = ' '; break;
+    }
   }
-  *dst = 0;
-  if (dst == buf) goto error;
-  d = strtod((const char *) buf, &end);
-  if (end != dst) goto error;
-  if (buf != parse_buffer) caml_stat_free(buf);
-  return caml_copy_double(d);
- error:
-  if (buf != parse_buffer) caml_stat_free(buf);
-  caml_failwith("float_of_string");
+  /* Treat special cases */
+  if (exp == 0x7FF) {
+    char * txt;
+    if (m == 0) txt = "infinity"; else txt = "nan";
+    memcpy(p, txt, strlen(txt));
+    p[strlen(txt)] = 0;
+    res = caml_copy_string(buf);
+  } else {
+    /* Output "0x" prefix */
+    *p++ = '0'; *p++ = 'x';
+    /* Normalize exponent and mantissa */
+    if (exp == 0) {
+      if (m != 0) exp = -1022;    /* denormal */
+    } else {
+      exp = exp - 1023;
+      m = m | ((uint64_t) 1 << 52);
+    }
+    /* If a precision is given, and is small, round mantissa accordingly */
+    prec = Long_val(vprec);
+    if (prec >= 0 && prec < 13) {
+      int i = 52 - prec * 4;
+      uint64_t unit = (uint64_t) 1 << i;
+      uint64_t half = unit >> 1;
+      uint64_t mask = unit - 1;
+      uint64_t frac = m & mask;
+      m = m & ~mask;
+      /* Round to nearest, ties to even */
+      if (frac > half || (frac == half && (m & unit) != 0)) {
+        m += unit;
+      }
+    }
+    /* Leading digit */
+    d = m >> 52;
+    *p++ = (d < 10 ? d + '0' : d - 10 + 'a');
+    m = (m << 4) & (((uint64_t) 1 << 56) - 1);
+    /* Fractional digits.  If a precision is given, print that number of
+       digits.  Otherwise, print as many digits as needed to represent
+       the mantissa exactly. */
+    if (prec >= 0 ? prec > 0 : m != 0) {
+      *p++ = '.';
+      while (prec >= 0 ? prec > 0 : m != 0) {
+        d = m >> 52;
+        *p++ = (d < 10 ? d + '0' : d - 10 + 'a');
+        m = (m << 4) & (((uint64_t) 1 << 56) - 1);
+        prec--;
+      }
+    }
+    *p = 0;
+    /* Add exponent */
+    res = caml_alloc_sprintf("%sp%+d", buf, exp);
+  }
+  if (buf != buffer) caml_stat_free(buf);
+  return res;
 }
-#endif
+
+static int caml_float_of_hex(const char * s, double * res)
+{
+  int64_t m = 0;                /* the mantissa - top 60 bits at most */
+  int n_bits = 0;               /* total number of bits read */
+  int m_bits = 0;               /* number of bits in mantissa */
+  int x_bits = 0;               /* number of bits after mantissa */
+  int dec_point = -1;           /* bit count corresponding to decimal point */
+                                /* -1 if no decimal point seen */
+  int exp = 0;                  /* exponent */
+  char * p;                     /* for converting the exponent */
+
+  while (*s != 0) {
+    char c = *s++;
+    switch (c) {
+    case '_':
+      break;
+    case '.':
+      if (dec_point >= 0) return -1; /* multiple decimal points */
+      dec_point = n_bits;
+      break;
+    case 'p': case 'P': {
+      long e;
+      if (*s == 0) return -1;   /* nothing after exponent mark */
+      e = strtol(s, &p, 10);
+      if (*p != 0) return -1;   /* ill-formed exponent */
+      if (e < INT_MIN || e > INT_MAX) return -1; /* unreasonable exponent */
+      exp = e;
+      s = p;                    /* stop at next loop iteration */
+      break;
+    }
+    default: {                  /* Nonzero digit */
+      int d;
+      if (c >= '0' && c <= '9') d = c - '0';
+      else if (c >= 'A' && c <= 'F') d = c - 'A' + 10;
+      else if (c >= 'a' && c <= 'f') d = c - 'a' + 10;
+      else return -1;           /* bad digit */
+      n_bits += 4;
+      if (d == 0 && m == 0) break; /* leading zeros are skipped */
+      if (m_bits < 60) {
+        /* There is still room in m.  Add this digit to the mantissa. */
+        m = (m << 4) + d;
+        m_bits += 4;
+      } else {
+        /* We've already collected 60 significant bits in m.
+           Now all we care about is whether there is a nonzero bit
+           after. In this case, round m to odd so that the later
+           rounding of m to FP produces the correct result. */
+        if (d != 0) m |= 1;        /* round to odd */
+        x_bits += 4;
+      }
+      break;
+    }
+    }
+  }
+  /* Convert mantissa to FP.  We use a signed conversion because we can
+     (m has 60 bits at most) and because it is faster 
+     on several architectures. */
+  double f = (double) (int64_t) m;
+  /* Adjust exponent to take decimal point and extra digits into account */
+  if (dec_point >= 0) exp = exp + (dec_point - n_bits);
+  exp = exp + x_bits;
+  /* Apply exponent if needed */
+  if (exp != 0) f = ldexp(f, exp);
+  /* Done! */
+  *res = f;
+  return 0;
+}
 
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
   char * buf, * src, * dst, * end;
   mlsize_t len;
+  int sign;
   double d;
 
+  /* Check for hexadecimal FP constant */
+  src = String_val(vs);
+  sign = 1;
+  if (*src == '-') { sign = -1; src++; }
+  else if (*src == '+') { src++; }; 
+  if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
+    if (caml_float_of_hex(src + 2, &d) == -1)
+      caml_failwith("float_of_string");
+    return caml_copy_double(sign < 0 ? -d : d);
+  }
+  /* Remove '_' characters before calling strtod () */
   len = caml_string_length(vs);
   buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
   src = String_val(vs);
@@ -139,6 +272,7 @@ CAMLprim value caml_float_of_string(value vs)
   }
   *dst = 0;
   if (dst == buf) goto error;
+  /* Convert using strtod */
   d = strtod((const char *) buf, &end);
   if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
