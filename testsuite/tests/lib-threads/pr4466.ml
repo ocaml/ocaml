@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 open Printf
 
 (* Regression test for PR#4466: select timeout with simultaneous read

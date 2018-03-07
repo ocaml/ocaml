@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 open Printf
 
 (* Threads, sockets, and buffered I/O channels *)
