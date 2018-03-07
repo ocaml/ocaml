@@ -72,6 +72,6 @@ extern int caml_executable_name(char * name, int name_len);
    millisecond). This makes it useful for benchmarking and timeouts, but not
    for telling the time. The units are always nanoseconds, but the achieved
    resolution may be less. The starting point is unspecified. */
-extern int64 caml_time_counter(void);
+extern int64_t caml_time_counter(void);
 
 #endif /* CAML_OSDEPS_H */

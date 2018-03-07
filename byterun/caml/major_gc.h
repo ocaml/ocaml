@@ -26,10 +26,10 @@ struct heap_stats {
 void caml_accum_heap_stats(struct heap_stats* acc, const struct heap_stats* s);
 
 struct gc_stats {
-  uint64 minor_words;
-  uint64 promoted_words;
-  uint64 major_words;
-  uint64 minor_collections;
+  uint64_t minor_words;
+  uint64_t promoted_words;
+  uint64_t major_words;
+  uint64_t minor_collections;
   struct heap_stats major_heap;
 };
 void caml_sample_gc_stats(struct gc_stats* buf);

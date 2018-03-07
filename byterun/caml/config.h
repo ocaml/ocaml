@@ -91,8 +91,6 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
-#endif
-
 /* Endianness of floats */
 
 /* ARCH_FLOAT_ENDIANNESS encodes the byte order of doubles as follows:

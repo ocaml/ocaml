@@ -171,7 +171,7 @@ void caml_plat_cond_init(caml_plat_cond*, caml_plat_mutex*);
 void caml_plat_wait(caml_plat_cond*);
 /* like caml_plat_wait, but if caml_time_counter() surpasses the second parameter
    without a signal, then this function returns 1. */
-int caml_plat_timedwait(caml_plat_cond*, int64);
+int caml_plat_timedwait(caml_plat_cond*, int64_t);
 void caml_plat_broadcast(caml_plat_cond*);
 void caml_plat_cond_free(caml_plat_cond*);
 

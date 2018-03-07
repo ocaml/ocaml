@@ -86,7 +86,7 @@ void caml_plat_wait(caml_plat_cond* cond)
   check_err("wait", pthread_cond_wait(&cond->cond, cond->mutex));
 }
 
-int caml_plat_timedwait(caml_plat_cond* cond, int64 until)
+int caml_plat_timedwait(caml_plat_cond* cond, int64_t until)
 {
   struct timespec t;
   int err;

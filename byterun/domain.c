@@ -83,7 +83,7 @@ static struct dom_internal all_domains[Max_domains];
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
 
-static int64 startup_timestamp;
+static int64_t startup_timestamp;
 
 #ifdef __APPLE__
   /* OSX has issues with dynamic loading + exported TLS.
@@ -625,11 +625,11 @@ void caml_print_stats () {
   caml_gc_stat(Val_unit);
   caml_sample_gc_stats(&s);
   fprintf(stderr,"**** GC stats ****\n");
-  fprintf(stderr, "Minor words:\t\t%llu\n", s.minor_words);
-  fprintf(stderr, "Promoted words:\t\t%llu\n", s.promoted_words);
-  fprintf(stderr, "Major words:\t\t%llu\n", s.major_words);
-  fprintf(stderr, "Minor collections:\t%llu\n", s.minor_collections);
-  fprintf(stderr, "Major collections:\t%llu\n", (uint64) Caml_state->stat_major_collections);
+  fprintf(stderr, "Minor words:\t\t%lu\n", s.minor_words);
+  fprintf(stderr, "Promoted words:\t\t%lu\n", s.promoted_words);
+  fprintf(stderr, "Major words:\t\t%lu\n", s.major_words);
+  fprintf(stderr, "Minor collections:\t%lu\n", s.minor_collections);
+  fprintf(stderr, "Major collections:\t%lu\n", (uint64_t) Caml_state->stat_major_collections);
 
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   memset(&ds,0,sizeof(struct detailed_stats));
@@ -952,7 +952,7 @@ CAMLprim value caml_ml_domain_ticks(value unused)
 
 CAMLprim value caml_ml_domain_yield_until(value t)
 {
-  int64 ts = Int64_val(t) + startup_timestamp;
+  int64_t ts = Int64_val(t) + startup_timestamp;
   struct interruptor* s = &domain_self->interruptor;
   value ret = Val_int(1); /* Domain.Sync.Notify */
   int res;
