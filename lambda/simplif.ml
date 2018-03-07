@@ -554,8 +554,14 @@ let simplify_lets lam =
       | _ -> mklet StrictOpt kind v (simplif l1) (simplif l2)
       end
   | Llet(str, kind, v, l1, l2) -> mklet str kind v (simplif l1) (simplif l2)
-  | Lletrec(bindings, body) ->
-      Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
+  | Lletrec(bindings, body) -> begin
+      match Dissect_letrec.dissect_letrec ~bindings ~body with
+      | Dissect_letrec.Unchanged ->
+          Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings,
+                  simplif body)
+      | Dissect_letrec.Dissected expr ->
+          simplif expr
+    end
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
   | Lswitch(l, sw, loc) ->
       let new_l = simplif l

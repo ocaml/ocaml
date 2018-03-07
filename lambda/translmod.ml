@@ -405,12 +405,14 @@ let compile_recmodule compile_rhs bindings cont =
 
 (* Code to translate class entries in a structure *)
 
+let class_block_size = 4
+
 let transl_class_bindings cl_list =
   let ids = List.map (fun (ci, _) -> ci.ci_id_class) cl_list in
   (ids,
    List.map
      (fun ({ci_id_class=id; ci_expr=cl; ci_virt=vf}, meths) ->
-       (id, transl_class ids id meths cl vf))
+       (id, transl_class ids id meths cl vf, class_block_size))
      cl_list)
 
 (* Compile one or more functors, merging curried functors to produce
@@ -679,7 +681,9 @@ and transl_structure loc fields cc rootpath final_env = function
             transl_structure loc (List.rev_append ids fields)
               cc rootpath final_env rem
           in
-          Lletrec(class_bindings, body), size
+          Dissect_letrec.preallocate_letrec
+            ~bindings:class_bindings ~body,
+          size
       | Tstr_include incl ->
           let ids = bound_value_identifiers incl.incl_type in
           let modl = incl.incl_mod in
@@ -1095,7 +1099,9 @@ let transl_store_structure glob map prims aliases str =
         | Tstr_class cl_list ->
             let (ids, class_bindings) = transl_class_bindings cl_list in
             let lam =
-              Lletrec(class_bindings, store_idents Location.none ids)
+              Dissect_letrec.preallocate_letrec
+                ~bindings:class_bindings
+                ~body:(store_idents Location.none ids)
             in
             Lsequence(Lambda.subst no_env_update subst lam,
                       transl_store rootpath (add_idents false ids subst)
@@ -1430,7 +1436,9 @@ let transl_toplevel_item item =
          be a value named identically *)
       let (ids, class_bindings) = transl_class_bindings cl_list in
       List.iter set_toplevel_unique_name ids;
-      Lletrec(class_bindings, make_sequence toploop_setvalue_id ids)
+      Dissect_letrec.preallocate_letrec
+        ~bindings:class_bindings
+        ~body:(make_sequence toploop_setvalue_id ids)
   | Tstr_include incl ->
       let ids = bound_value_identifiers incl.incl_type in
       let modl = incl.incl_mod in
