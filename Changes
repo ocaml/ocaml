@@ -212,6 +212,9 @@ Working version
 - GPR#1585: optimize output of "ocamllex -ml"
   (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
 
+- MPR#7687: deprecate -thread option, which is equivalent to -I +threads.
+  (Nicolás Ojeda Bär, report by Daniel Bünzli)
+
 ### Manual and documentation:
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
