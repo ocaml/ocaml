@@ -1776,7 +1776,7 @@ When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
 \subsection{Built-in extension nodes}
