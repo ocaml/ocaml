@@ -85,7 +85,7 @@ struct caml_thread_struct {
   value * sp;
   intnat trap_spoff;
   value backtrace_pos;          /* The backtrace info for this thread */
-  backtrace_slot * backtrace_buffer;
+  code_t * backtrace_buffer;
   value backtrace_last_exn;
   value status;                 /* RUNNABLE, KILLED. etc (see below) */
   value fd;     /* File descriptor on which we're doing read or write */

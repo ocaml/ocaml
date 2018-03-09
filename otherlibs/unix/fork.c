@@ -19,6 +19,7 @@
 #include <caml/debugger.h>
 #include "unixsupport.h"
 #include <caml/domain.h>
+#include <caml/fail.h>
 
 CAMLprim value unix_fork(value unit)
 {

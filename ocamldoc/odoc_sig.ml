@@ -844,7 +844,7 @@ module Analyser =
             let new_env = Odoc_env.add_extension env e.ex_name in
             (maybe_more, new_env, [ Element_exception e ])
 
-        | Parsetree.Psig_effect ext -> failwith "Not implemented" (* FIXME *)
+        | Parsetree.Psig_effect _ext -> failwith "Not implemented" (* FIXME *)
 
         | Parsetree.Psig_type (rf, name_type_decl_list) ->
             let extended_env =
@@ -914,7 +914,6 @@ module Analyser =
                   let loc_start = Loc.start type_decl.Parsetree.ptype_loc in
                   let new_end = Loc.end_ type_decl.Parsetree.ptype_loc
                                 + maybe_more in
->>>>>>> b4.04.2
                   let new_type =
                     {
                       ty_name = Name.concat current_module_name name.txt ;

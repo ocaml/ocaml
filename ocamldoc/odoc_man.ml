@@ -560,13 +560,6 @@ class man =
     method man_of_type b t =
       Odoc_info.reset_type_names () ;
       let father = Name.father t.ty_name in
-      let field_comment = function
-        | None -> ()
-        | Some t ->
-          bs b "  (* ";
-          self#man_of_info b (Some t);
-          bs b " *) "
-      in
       bs b ".I type ";
       self#man_of_type_expr_param_list b father t;
       (

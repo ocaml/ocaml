@@ -128,18 +128,18 @@ static unsigned char re_word_letters[32] = {
    Beginning of group #N is at 2N, end is at 2N+1.
    Take position = -1 when group wasn't matched. */
 
-static value re_alloc_groups(value re, value str)
+static value re_alloc_groups(value re, unsigned char * starttxt,
+                             struct re_group * groups)
 {
-  CAMLparam1(str);
+  CAMLparam1(re);
   CAMLlocal1(res);
-  unsigned char * starttxt = (unsigned char *) String_val(str);
   int n = Numgroups(re);
   int i;
   struct re_group * group;
 
-  res = alloc(n * 2, 0);
+  res = caml_alloc(n * 2, 0);
   for (i = 0; i < n; i++) {
-    group = &(re_group[i]);
+    group = &(groups[i]);
     if (group->start == NULL || group->end == NULL) {
       caml_initialize_field(res, i * 2, Val_int(-1));
       caml_initialize_field(res, i * 2 + 1, Val_int(-1));
