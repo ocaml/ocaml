@@ -20,6 +20,14 @@ open Actions
 
 (* Extracting information from environment *)
 
+let native_support = Ocamltest_config.arch <> "none"
+
+let no_native_compilers _log env =
+  (Result.skip_with_reason "native compilers disabled", env)
+
+let native_action a =
+  if native_support then a else (Actions.update a no_native_compilers)
+
 let get_backend_value_from_env env bytecode_var native_var =
   Ocaml_backends.make_backend_function
     (Environments.safe_lookup bytecode_var env)
@@ -356,19 +364,22 @@ let setup_ocamlc_byte_build_env =
     Ocaml_compilers.ocamlc_byte
 
 let setup_ocamlc_opt_build_env =
-  mk_compiler_env_setup
-    "setup-ocamlc.opt-build-env"
-    Ocaml_compilers.ocamlc_opt
+  native_action 
+    (mk_compiler_env_setup
+      "setup-ocamlc.opt-build-env"
+      Ocaml_compilers.ocamlc_opt)
 
 let setup_ocamlopt_byte_build_env =
-  mk_compiler_env_setup
-    "setup-ocamlopt.byte-build-env"
-    Ocaml_compilers.ocamlopt_byte
+  native_action
+    (mk_compiler_env_setup
+      "setup-ocamlopt.byte-build-env"
+      Ocaml_compilers.ocamlopt_byte)
 
 let setup_ocamlopt_opt_build_env =
-  mk_compiler_env_setup
-    "setup-ocamlopt.opt-build-env"
-    Ocaml_compilers.ocamlopt_opt
+  native_action
+    (mk_compiler_env_setup
+      "setup-ocamlopt.opt-build-env"
+      Ocaml_compilers.ocamlopt_opt)
 
 let setup_ocaml_build_env =
   mk_toplevel_env_setup
@@ -376,10 +387,10 @@ let setup_ocaml_build_env =
     Ocaml_toplevels.ocaml
 
 let setup_ocamlnat_build_env =
-  mk_toplevel_env_setup
-    "setup-ocamlnat-build-env"
-    Ocaml_toplevels.ocamlnat
-
+  native_action
+    (mk_toplevel_env_setup
+      "setup-ocamlnat-build-env"
+      Ocaml_toplevels.ocamlnat)
 
 let compile (compiler : Ocaml_compilers.compiler) log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
@@ -395,19 +406,22 @@ let ocamlc_byte =
     (compile Ocaml_compilers.ocamlc_byte)
 
 let ocamlc_opt =
-  Actions.make
-    "ocamlc.opt"
-    (compile Ocaml_compilers.ocamlc_opt)
+  native_action
+    (Actions.make
+      "ocamlc.opt"
+      (compile Ocaml_compilers.ocamlc_opt))
 
 let ocamlopt_byte =
-  Actions.make
-    "ocamlopt.byte"
-    (compile Ocaml_compilers.ocamlopt_byte)
+  native_action
+    (Actions.make
+      "ocamlopt.byte"
+      (compile Ocaml_compilers.ocamlopt_byte))
 
 let ocamlopt_opt =
-  Actions.make
-    "ocamlopt.opt"
-    (compile Ocaml_compilers.ocamlopt_opt)
+  native_action
+    (Actions.make
+      "ocamlopt.opt"
+      (compile Ocaml_compilers.ocamlopt_opt))
 
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
@@ -466,14 +480,20 @@ let make_check_tool_output name tool = Actions.make
 let check_ocamlc_byte_output = make_check_tool_output
   "check-ocamlc.byte-output" Ocaml_compilers.ocamlc_byte
 
-let check_ocamlc_opt_output = make_check_tool_output
-  "check-ocamlc.opt-output" Ocaml_compilers.ocamlc_opt
+let check_ocamlc_opt_output =
+  native_action
+    (make_check_tool_output
+      "check-ocamlc.opt-output" Ocaml_compilers.ocamlc_opt)
 
-let check_ocamlopt_byte_output = make_check_tool_output
-  "check-ocamlopt.byte-output" Ocaml_compilers.ocamlopt_byte
+let check_ocamlopt_byte_output =
+  native_action
+    (make_check_tool_output
+      "check-ocamlopt.byte-output" Ocaml_compilers.ocamlopt_byte)
 
-let check_ocamlopt_opt_output = make_check_tool_output
-  "check-ocamlopt.opt-output" Ocaml_compilers.ocamlopt_opt
+let check_ocamlopt_opt_output =
+  native_action
+    (make_check_tool_output
+      "check-ocamlopt.opt-output" Ocaml_compilers.ocamlopt_opt)
 
 let really_compare_programs backend comparison_tool log env =
   let program = Environments.safe_lookup Builtin_variables.program env in
@@ -541,13 +561,17 @@ let compare_bytecode_programs_code log env =
   compare_programs
     Ocaml_backends.Bytecode bytecode_programs_comparison_tool log env
 
-let compare_bytecode_programs = Actions.make
-  "compare-bytecode-programs"
-  compare_bytecode_programs_code
+let compare_bytecode_programs =
+  native_action
+    (Actions.make
+      "compare-bytecode-programs"
+      compare_bytecode_programs_code)
 
-let compare_native_programs = Actions.make
-  "compare-native-programs"
-  (compare_programs Ocaml_backends.Native native_programs_comparison_tool)
+let compare_native_programs =
+  native_action
+    (Actions.make
+      "compare-native-programs"
+      (compare_programs Ocaml_backends.Native native_programs_comparison_tool))
 
 let compile_module
   ocamlsrcdir compiler compilername compileroutput log env
@@ -682,15 +706,19 @@ let ocaml = Actions.make
   "ocaml"
   (run_test_program_in_toplevel Ocaml_toplevels.ocaml)
 
-let ocamlnat = Actions.make
-  "ocamlnat"
-  (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat)
+let ocamlnat =
+  native_action
+    (Actions.make
+      "ocamlnat"
+      (run_test_program_in_toplevel Ocaml_toplevels.ocamlnat))
 
 let check_ocaml_output = make_check_tool_output
   "check-ocaml-output" Ocaml_toplevels.ocaml
 
-let check_ocamlnat_output = make_check_tool_output
-  "check-ocamlnat-output" Ocaml_toplevels.ocamlnat
+let check_ocamlnat_output =
+  native_action
+    (make_check_tool_output
+      "check-ocamlnat-output" Ocaml_toplevels.ocamlnat)
 
 let config_variables _log env = Environments.add_bindings
   [
@@ -763,7 +791,6 @@ let no_afl_instrument = Actions.make
   (Actions_helpers.pass_or_skip (not Ocamltest_config.afl_instrument)
     "AFL instrumentation disabled"
     "AFL instrumentation enabled")
-
 
 let ocamldoc = Ocaml_tools.ocamldoc
 
