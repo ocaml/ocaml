@@ -1163,7 +1163,8 @@ let instance_constructor ?in_pattern cstr =
           | _ -> "ex"
         in
         let (id, new_env) =
-          Env.enter_type (get_new_abstract_name name) decl !env in
+          Env.enter_type ~check:false (get_new_abstract_name name) decl !env
+        in
         env := new_env;
         let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
         let tv = copy existential in
@@ -1957,7 +1958,7 @@ let reify env t =
   let create_fresh_constr lev name =
     let decl = new_declaration (Some (newtype_level, newtype_level)) None in
     let name = get_new_abstract_name name in
-    let (id, new_env) = Env.enter_type name decl !env in
+    let (id, new_env) = Env.enter_type ~check:false name decl !env in
     let t = newty2 lev (Tconstr (Path.Pident id,[],ref Mnil))  in
     env := new_env;
     t
