@@ -62,12 +62,13 @@ void process_fd(char * s)
 
 #endif
 
-int main(int argc, char ** argv)
+#include "caml/mlvalues.h"
+#include "caml/memory.h"
+
+CAMLprim value caml_process_fd(value CAMLnum, value CAMLfd)
 {
-  int i;
-  for (i = 1; i < argc; i++) {
-    printf("#%d: ", i);
-    process_fd(argv[i]);
-  }
-  return 0;
+  CAMLparam2(CAMLnum, CAMLfd);
+  printf("#%d: ", Int_val(CAMLnum));
+  process_fd(String_val(CAMLfd));
+  CAMLreturn(Val_unit);
 }

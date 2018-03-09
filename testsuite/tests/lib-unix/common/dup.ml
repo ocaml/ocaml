@@ -1,3 +1,7 @@
+(* TEST
+include unix
+*)
+
 let _ =
   let f = Unix.dup ~cloexec:true Unix.stdout in
   let txt = "Some output\n" in
