@@ -18,6 +18,7 @@ type variant =
   | VString of string
   | VList of variant list
   | VPair of variant * variant
+;;
 
 let rec variantize: type t. t ty -> t -> variant =
   fun ty x ->
@@ -31,8 +32,23 @@ let rec variantize: type t. t ty -> t -> variant =
     | Pair (ty1, ty2) ->
         VPair (variantize ty1 (fst x), variantize ty2 (snd x))
         (* t = ('a, 'b) for some 'a and 'b *)
+;;
+[%%expect{|
+type 'a ty =
+    Int : int ty
+  | String : string ty
+  | List : 'a ty -> 'a list ty
+  | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
+type variant =
+    VInt of int
+  | VString of string
+  | VList of variant list
+  | VPair of variant * variant
+val variantize : 't ty -> 't -> variant = <fun>
+|}];;
 
 exception VariantMismatch
+;;
 
 let rec devariantize: type t. t ty -> variant -> t =
   fun ty v ->
@@ -45,6 +61,10 @@ let rec devariantize: type t. t ty -> variant -> t =
         (devariantize ty1 x1, devariantize ty2 x2)
     | _ -> raise VariantMismatch
 ;;
+[%%expect{|
+exception VariantMismatch
+val devariantize : 't ty -> variant -> 't = <fun>
+|}];;
 
 (* Handling records *)
 
@@ -80,6 +100,7 @@ type variant =
   | VList of variant list
   | VPair of variant * variant
   | VRecord of (string * variant) list
+;;
 
 let rec variantize: type t. t ty -> t -> variant =
   fun ty x ->
@@ -98,6 +119,24 @@ let rec variantize: type t. t ty -> t -> variant =
           (List.map (fun (Field{field_type; label; get}) ->
                        (label, variantize field_type (get x))) fields)
 ;;
+[%%expect{|
+type 'a ty =
+    Int : int ty
+  | String : string ty
+  | List : 'a ty -> 'a list ty
+  | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
+  | Record : 'a record -> 'a ty
+and 'a record = { path : string; fields : 'a field_ list; }
+and 'a field_ = Field : ('a, 'b) field -> 'a field_
+and ('a, 'b) field = { label : string; field_type : 'b ty; get : 'a -> 'b; }
+type variant =
+    VInt of int
+  | VString of string
+  | VList of variant list
+  | VPair of variant * variant
+  | VRecord of (string * variant) list
+val variantize : 't ty -> 't -> variant = <fun>
+|}];;
 
 (* Extraction *)
 
@@ -126,6 +165,7 @@ and ('a, 'builder, 'b) field_ =
    get: ('a -> 'b);
    set: ('builder -> 'b -> unit);
   }
+;;
 
 let rec devariantize: type t. t ty -> variant -> t =
   fun ty v ->
@@ -148,12 +188,36 @@ let rec devariantize: type t. t ty -> variant -> t =
         of_builder builder
     | _ -> raise VariantMismatch
 ;;
+[%%expect{|
+type 'a ty =
+    Int : int ty
+  | String : string ty
+  | List : 'a ty -> 'a list ty
+  | Pair : ('a ty * 'b ty) -> ('a * 'b) ty
+  | Record : ('a, 'builder) record -> 'a ty
+and ('a, 'builder) record = {
+  path : string;
+  fields : ('a, 'builder) field list;
+  create_builder : unit -> 'builder;
+  of_builder : 'builder -> 'a;
+}
+and ('a, 'builder) field =
+    Field : ('a, 'builder, 'b) field_ -> ('a, 'builder) field
+and ('a, 'builder, 'b) field_ = {
+  label : string;
+  field_type : 'b ty;
+  get : 'a -> 'b;
+  set : 'builder -> 'b -> unit;
+}
+val devariantize : 't ty -> variant -> 't = <fun>
+|}];;
 
 type my_record  =
     {
      a: int;
      b: string list;
     }
+;;
 
 let my_record =
   let fields =
@@ -174,6 +238,16 @@ let my_record =
   in
   Record {path = "My_module.my_record"; fields; create_builder; of_builder}
 ;;
+[%%expect{|
+type my_record = { a : int; b : string list; }
+val my_record : my_record ty =
+  Record
+   {path = "My_module.my_record";
+    fields =
+     [Field {label = "a"; field_type = Int; get = <fun>; set = <fun>};
+      Field {label = "b"; field_type = List String; get = <fun>; set = <fun>}];
+    create_builder = <fun>; of_builder = <fun>}
+|}];;
 
 (* Extension to recursive types and polymorphic variants *)
 (* by Jacques Garrigue *)
@@ -219,6 +293,7 @@ type _ ty_env =              (* type variable substitution *)
 
 (* Comparing selectors *)
 type (_,_) eq = Eq: ('a,'a) eq
+;;
 
 let rec eq_sel : type a b c. (a,b) ty_sel -> (a,c) ty_sel -> (b,c) eq option =
   fun s1 s2 ->
@@ -227,6 +302,38 @@ let rec eq_sel : type a b c. (a,b) ty_sel -> (a,c) ty_sel -> (b,c) eq option =
     | Ttl s1, Ttl s2 ->
         (match eq_sel s1 s2 with None -> None | Some Eq -> Some Eq)
     | _ -> None
+;;
+[%%expect{|
+type noarg = Noarg
+type (_, _) ty =
+    Int : (int, 'c) ty
+  | String : (string, 'd) ty
+  | List : ('a, 'e) ty -> ('a list, 'e) ty
+  | Option : ('a, 'e) ty -> ('a option, 'e) ty
+  | Pair : (('a, 'e) ty * ('b, 'e) ty) -> ('a * 'b, 'e) ty
+  | Var : ('a, 'a -> 'e) ty
+  | Rec : ('a, 'a -> 'e) ty -> ('a, 'e) ty
+  | Pop : ('a, 'e) ty -> ('a, 'b -> 'e) ty
+  | Conv : string * ('a -> 'b) * ('b -> 'a) * ('b, 'e) ty -> ('a, 'e) ty
+  | Sum : ('a, 'e, 'b) ty_sum -> ('a, 'e) ty
+and ('a, 'e, 'b) ty_sum = {
+  sum_proj : 'a -> string * 'e ty_dyn option;
+  sum_cases : (string * ('e, 'b) ty_case) list;
+  sum_inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
+}
+and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
+and (_, _) ty_sel =
+    Thd : ('a -> 'b, 'a) ty_sel
+  | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
+and (_, _) ty_case =
+    TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
+  | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
+type _ ty_env =
+    Enil : unit ty_env
+  | Econs : ('a, 'e) ty * 'e ty_env -> ('a -> 'e) ty_env
+type (_, _) eq = Eq : ('a, 'a) eq
+val eq_sel : ('a, 'b) ty_sel -> ('a, 'c) ty_sel -> ('b, 'c) eq option = <fun>
+|}];;
 
 (* Auxiliary function to get the type of a case from its selector *)
 let rec get_case : type a b e.
@@ -245,6 +352,11 @@ let rec get_case : type a b e.
       end
   | [] -> raise Not_found
 ;;
+[%%expect{|
+val get_case :
+  ('b, 'a) ty_sel ->
+  (string * ('e, 'b) ty_case) list -> string * ('a, 'e) ty option = <fun>
+|}];;
 
 (* Untyped representation of values *)
 type variant =
@@ -255,8 +367,9 @@ type variant =
   | VPair of variant * variant
   | VConv of string * variant
   | VSum of string * variant option
+;;
 
-let may_map f = function Some x -> Some (f x) | None -> None
+let may_map f = function Some x -> Some (f x) | None -> None ;;
 
 let rec variantize : type a e. e ty_env -> (a,e) ty -> a -> variant =
   fun e ty v ->
@@ -274,6 +387,18 @@ let rec variantize : type a e. e ty_env -> (a,e) ty -> a -> variant =
       let tag, arg = ops.sum_proj v in
       VSum (tag, may_map (function Tdyn (ty,arg) -> variantize e ty arg) arg)
 ;;
+[%%expect{|
+type variant =
+    VInt of int
+  | VString of string
+  | VList of variant list
+  | VOption of variant option
+  | VPair of variant * variant
+  | VConv of string * variant
+  | VSum of string * variant option
+val may_map : ('a -> 'b) -> 'a option -> 'b option = <fun>
+val variantize : 'e ty_env -> ('a, 'e) ty -> 'a -> variant = <fun>
+|}];;
 
 let rec devariantize : type t e. e ty_env -> (t, e) ty -> variant -> t =
   fun e ty v ->
@@ -298,21 +423,51 @@ let rec devariantize : type t e. e ty_env -> (t, e) ty -> variant -> t =
       end
   | _ -> raise VariantMismatch
 ;;
+[%%expect{|
+val devariantize : 'e ty_env -> ('t, 'e) ty -> variant -> 't = <fun>
+|}];;
 
 (* First attempt: represent 1-constructor variants using Conv *)
 let wrap_A t = Conv ("`A", (fun (`A x) -> x), (fun x -> `A x), t);;
+[%%expect{|
+val wrap_A : ('a, 'b) ty -> ([ `A of 'a ], 'b) ty = <fun>
+|}];;
 
 let ty a = Rec (wrap_A (Option (Pair (a, Var)))) ;;
+[%%expect{|
+val ty : ('a, ([ `A of ('a * 'b) option ] as 'b) -> 'c) ty -> ('b, 'c) ty =
+  <fun>
+|}];;
 let v = variantize Enil (ty Int);;
+[%%expect{|
+val v : ([ `A of (int * 'a) option ] as 'a) -> variant = <fun>
+|}];;
 let x = v (`A (Some (1, `A (Some (2, `A None))))) ;;
+[%%expect{|
+val x : variant =
+  VConv ("`A",
+   VOption
+    (Some
+      (VPair (VInt 1,
+        VConv ("`A",
+         VOption (Some (VPair (VInt 2, VConv ("`A", VOption None)))))))))
+|}];;
 
 (* Can also use it to decompose a tuple *)
 
 let triple t1 t2 t3 =
   Conv ("Triple", (fun (a,b,c) -> (a,(b,c))),
-        (fun (a,(b,c)) -> (a,b,c)), Pair (t1, Pair (t2, t3)))
+        (fun (a,(b,c)) -> (a,b,c)), Pair (t1, Pair (t2, t3)));;
+[%%expect{|
+val triple :
+  ('a, 'b) ty -> ('c, 'b) ty -> ('d, 'b) ty -> ('a * 'c * 'd, 'b) ty = <fun>
+|}];;
 
 let v = variantize Enil (triple String Int Int) ("A", 2, 3) ;;
+[%%expect{|
+val v : variant =
+  VConv ("Triple", VPair (VString "A", VPair (VInt 2, VInt 3)))
+|}];;
 
 (* Second attempt: introduce a real sum construct *)
 let ty_abc =
@@ -333,12 +488,28 @@ let ty_abc =
         [ "A", TCarg (Thd, Int); "B", TCarg (Ttl Thd, String);
           "C", TCnoarg (Ttl (Ttl Thd)) ] }
 ;;
+[%%expect{|
+val ty_abc : ([ `A of int | `B of string | `C ], 'a) ty =
+  Sum
+   {sum_proj = <fun>;
+    sum_cases =
+     [("A", TCarg (Thd, Int)); ("B", TCarg (Ttl Thd, String));
+      ("C", TCnoarg (Ttl (Ttl Thd)))];
+    sum_inj = <fun>}
+|}];;
 
-let v = variantize Enil ty_abc (`A 3)
-let a = devariantize Enil ty_abc v
+let v = variantize Enil ty_abc (`A 3);;
+[%%expect{|
+val v : variant = VSum ("A", Some (VInt 3))
+|}];;
+let a = devariantize Enil ty_abc v;;
+[%%expect{|
+val a : [ `A of int | `B of string | `C ] = `A 3
+|}];;
 
 (* And an example with recursion... *)
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist]
+;;
 
 let ty_list : type a e. (a, e) ty -> (a vlist, e) ty = fun t ->
   let tcons = Pair (Pop t, Var) in
@@ -354,9 +525,19 @@ let ty_list : type a e. (a, e) ty -> (a vlist, e) ty = fun t ->
          : (noarg -> a * a vlist -> unit, c) ty_sel * c -> a vlist)
          (* One can also write the type annotation directly *)
      })
+;;
+[%%expect{|
+type 'a vlist = [ `Cons of 'a * 'a vlist | `Nil ]
+val ty_list : ('a, 'e) ty -> ('a vlist, 'e) ty = <fun>
+|}];;
 
 let v = variantize Enil (ty_list Int) (`Cons (1, `Cons (2, `Nil))) ;;
-
+[%%expect{|
+val v : variant =
+  VSum ("Cons",
+   Some
+    (VPair (VInt 1, VSum ("Cons", Some (VPair (VInt 2, VSum ("Nil", None)))))))
+|}];;
 
 (* Simpler but weaker approach *)
 
@@ -374,6 +555,7 @@ type (_,_) ty =
              -> ('a, 'e) ty
 and 'e ty_dyn =
   | Tdyn : ('a,'e) ty * 'a -> 'e ty_dyn
+;;
 
 let ty_abc : ([`A of int | `B of string | `C],'e) ty =
   (* Could also use [get_case] for proj, but direct definition is shorter *)
@@ -388,6 +570,22 @@ let ty_abc : ([`A of int | `B of string | `C],'e) ty =
     | "C", None -> `C
     | _ -> invalid_arg "ty_abc"))
 ;;
+[%%expect{|
+type (_, _) ty =
+    Int : (int, 'c) ty
+  | String : (string, 'd) ty
+  | List : ('a, 'e) ty -> ('a list, 'e) ty
+  | Option : ('a, 'e) ty -> ('a option, 'e) ty
+  | Pair : (('a, 'e) ty * ('b, 'e) ty) -> ('a * 'b, 'e) ty
+  | Var : ('a, 'a -> 'e) ty
+  | Rec : ('a, 'a -> 'e) ty -> ('a, 'e) ty
+  | Pop : ('a, 'e) ty -> ('a, 'b -> 'e) ty
+  | Conv : string * ('a -> 'b) * ('b -> 'a) * ('b, 'e) ty -> ('a, 'e) ty
+  | Sum : ('a -> string * 'e ty_dyn option) *
+      (string * 'e ty_dyn option -> 'a) -> ('a, 'e) ty
+and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
+val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum (<fun>, <fun>)
+|}];;
 
 (* Breaks: no way to pattern-match on a full recursive type *)
 let ty_list : type a e. (a,e) ty -> (a vlist,e) ty = fun t ->
@@ -398,6 +596,13 @@ let ty_list : type a e. (a,e) ty -> (a vlist,e) ty = fun t ->
   (function "Nil", None -> `Nil
     | "Cons", Some (Tdyn (Pair (_, Var), (p : a * a vlist))) -> `Cons p)))
 ;;
+[%%expect{|
+Line _, characters 41-58:
+Error: This pattern matches values of type a * a vlist
+       but a pattern was expected which matches values of type
+         $Tdyn_'a = $0 * $1
+       Type a is not compatible with type $0
+|}];;
 
 (* Define Sum using object instead of record for first-class polymorphism *)
 
@@ -444,10 +649,35 @@ let ty_abc : ([`A of int | `B of string | `C] as 'a, 'e) ty =
         Thd, v -> `A v
       | Ttl Thd, v -> `B v
       | Ttl (Ttl Thd), Noarg -> `C
-      | _ -> assert false
   end)
+;;
+[%%expect{|
+type (_, _) ty =
+    Int : (int, 'd) ty
+  | String : (string, 'f) ty
+  | List : ('a, 'e) ty -> ('a list, 'e) ty
+  | Option : ('a, 'e) ty -> ('a option, 'e) ty
+  | Pair : (('a, 'e) ty * ('b, 'e) ty) -> ('a * 'b, 'e) ty
+  | Var : ('a, 'a -> 'e) ty
+  | Rec : ('a, 'a -> 'e) ty -> ('a, 'e) ty
+  | Pop : ('a, 'e) ty -> ('a, 'b -> 'e) ty
+  | Conv : string * ('a -> 'b) * ('b -> 'a) * ('b, 'e) ty -> ('a, 'e) ty
+  | Sum :
+      < cases : (string * ('e, 'b) ty_case) list;
+        inj : 'c. ('b, 'c) ty_sel * 'c -> 'a;
+        proj : 'a -> string * 'e ty_dyn option > -> ('a, 'e) ty
+and 'e ty_dyn = Tdyn : ('a, 'e) ty * 'a -> 'e ty_dyn
+and (_, _) ty_sel =
+    Thd : ('a -> 'b, 'a) ty_sel
+  | Ttl : ('b -> 'c, 'd) ty_sel -> ('a -> 'b -> 'c, 'd) ty_sel
+and (_, _) ty_case =
+    TCarg : ('b, 'a) ty_sel * ('a, 'e) ty -> ('e, 'b) ty_case
+  | TCnoarg : ('b, noarg) ty_sel -> ('e, 'b) ty_case
+val ty_abc : ([ `A of int | `B of string | `C ], 'e) ty = Sum <obj>
+|}];;
 
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist]
+;;
 
 let ty_list : type a e. (a, e) ty -> (a vlist, e) ty = fun t ->
   let tcons = Pair (Pop t, Var) in
@@ -462,6 +692,10 @@ let ty_list : type a e. (a, e) ty -> (a vlist, e) ty = fun t ->
       | Ttl Thd, v -> `Cons v
   end))
 ;;
+[%%expect{|
+type 'a vlist = [ `Cons of 'a * 'a vlist | `Nil ]
+val ty_list : ('a, 'e) ty -> ('a vlist, 'e) ty = <fun>
+|}];;
 
 (*
 type (_,_) ty_assoc =

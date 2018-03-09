@@ -1,21 +1,25 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Software emulation of 64-bit integer arithmetic, for C compilers
    that do not support it.  */
 
 #ifndef CAML_INT64_EMUL_H
 #define CAML_INT64_EMUL_H
+
+#ifdef CAML_INTERNALS
 
 #include <math.h>
 
@@ -283,5 +287,7 @@ static int64_t I64_bswap(int64_t x)
            ((x.h & 0xFF000000) >> 24));
   return res;
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INT64_EMUL_H */

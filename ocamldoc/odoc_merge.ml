@@ -1,20 +1,21 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Merge of information from [.ml] and [.mli] for a module.*)
 
 open Odoc_types
-
-module Name = Odoc_name
 open Odoc_parameter
 open Odoc_value
 open Odoc_type
@@ -110,7 +111,7 @@ let merge_info merge_options (m1 : info) (m2 : info) =
       [], [] -> []
     | l, []
     | [], l -> l
-    | l1, l2 ->
+    | l1, _ ->
         if List.mem Merge_before merge_options then
           merge_before_tags (m1.i_before @ m2.i_before)
         else

@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Liveness analysis.
    Annotate mach code with the set of regs live at each point. *)
@@ -32,18 +35,24 @@ let rec live i finally =
      before the instruction sequence.
      The instruction i is annotated by the set of registers live across
      the instruction. *)
+  let arg =
+    if Config.spacetime
+      && Mach.spacetime_node_hole_pointer_is_live_before i
+    then Array.append i.arg [| Proc.loc_spacetime_node_hole |]
+    else i.arg
+  in
   match i.desc with
     Iend ->
       i.live <- finally;
       finally
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       i.live <- Reg.Set.empty; (* no regs are live across *)
-      Reg.set_of_array i.arg
+      Reg.set_of_array arg
   | Iop op ->
       let after = live i.next finally in
       if Proc.op_is_pure op                    (* no side effects *)
       && Reg.disjoint_set_array after i.res    (* results are not used after *)
-      && not (Proc.regs_are_volatile i.arg)    (* no stack-like hard reg *)
+      && not (Proc.regs_are_volatile arg)      (* no stack-like hard reg *)
       && not (Proc.regs_are_volatile i.res)    (*            is involved *)
       then begin
         (* This operation is dead code.  Ignore its arguments. *)
@@ -53,8 +62,8 @@ let rec live i finally =
         let across_after = Reg.diff_set_array after i.res in
         let across =
           match op with
-          | Icall_ind | Icall_imm _ | Iextcall _
-          | Iintop Icheckbound | Iintop_imm(Icheckbound, _) ->
+          | Icall_ind _ | Icall_imm _ | Iextcall _
+          | Iintop (Icheckbound _) | Iintop_imm(Icheckbound _, _) ->
               (* The function call may raise an exception, branching to the
                  nearest enclosing try ... with. Similarly for bounds checks.
                  Hence, everything that must be live at the beginning of
@@ -63,21 +72,21 @@ let rec live i finally =
            | _ ->
                across_after in
         i.live <- across;
-        Reg.add_set_array across i.arg
+        Reg.add_set_array across arg
       end
-  | Iifthenelse(test, ifso, ifnot) ->
+  | Iifthenelse(_test, ifso, ifnot) ->
       let at_join = live i.next finally in
       let at_fork = Reg.Set.union (live ifso at_join) (live ifnot at_join) in
       i.live <- at_fork;
-      Reg.add_set_array at_fork i.arg
-  | Iswitch(index, cases) ->
+      Reg.add_set_array at_fork arg
+  | Iswitch(_index, cases) ->
       let at_join = live i.next finally in
       let at_fork = ref Reg.Set.empty in
       for i = 0 to Array.length cases - 1 do
         at_fork := Reg.Set.union !at_fork (live cases.(i) at_join)
       done;
       i.live <- !at_fork;
-      Reg.add_set_array !at_fork i.arg
+      Reg.add_set_array !at_fork arg
   | Iloop(body) ->
       let at_top = ref Reg.Set.empty in
       (* Yes, there are better algorithms, but we'll just iterate till
@@ -117,7 +126,7 @@ let rec live i finally =
       before_body
   | Iraise _ ->
       i.live <- !live_at_raise;
-      Reg.add_set_array !live_at_raise i.arg
+      Reg.add_set_array !live_at_raise arg
 
 let reset () =
   live_at_raise := Reg.Set.empty;
@@ -125,8 +134,13 @@ let reset () =
 
 let fundecl ppf f =
   let initially_live = live f.fun_body Reg.Set.empty in
-  (* Sanity check: only function parameters can be live at entrypoint *)
+  (* Sanity check: only function parameters (and the Spacetime node hole
+     register, if profiling) can be live at entrypoint *)
   let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
+  let wrong_live =
+    if not Config.spacetime then wrong_live
+    else Reg.Set.remove Proc.loc_spacetime_node_hole wrong_live
+  in
   if not (Reg.Set.is_empty wrong_live) then begin
     Format.fprintf ppf "%a@." Printmach.regset wrong_live;
     Misc.fatal_error "Liveness.fundecl"

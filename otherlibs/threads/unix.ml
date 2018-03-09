@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* An alternate implementation of the Unix module from ../unix
    which is safe in conjunction with bytecode threads. *)
@@ -356,7 +358,8 @@ let pipe() =
   set_nonblock out_fd;
   fd_pair
 
-external symlink : string -> string -> unit = "unix_symlink"
+external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
+external has_symlink : unit -> bool = "unix_has_symlink"
 external readlink : string -> string = "unix_readlink"
 external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
 
@@ -472,6 +475,7 @@ external localtime : float -> tm = "unix_localtime"
 external mktime : tm -> float * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 
+let sleepf = delay
 let sleep secs = delay (float secs)
 
 external times : unit -> process_times = "unix_times"

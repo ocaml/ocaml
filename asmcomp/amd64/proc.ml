@@ -1,14 +1,18 @@
-(***********************************************************************)
+# 2 "asmcomp/amd64/proc.ml"
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the AMD64 processor *)
 
@@ -26,13 +30,6 @@ let win64 =
   match Config.system with
   | "win64" | "mingw64" | "cygwin" -> true
   | _                   -> false
-
-(* Which asm conventions to use *)
-
-let masm =
-  match Config.ccomp_type with
-  | "msvc" -> true
-  | _      -> false
 
 (* Registers available for register allocation *)
 
@@ -75,6 +72,8 @@ let masm =
      Linux's dynamic loader also destroys r10.
 *)
 
+let max_arguments_for_tailcalls = 10
+
 let int_reg_name =
   match Config.ccomp_type with
   | "msvc" ->
@@ -99,8 +98,7 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-    Int -> 0
-  | Addr -> 0
+  | Val | Int | Addr -> 0
   | Float -> 1
 
 let num_available_registers = [| 13; 16 |]
@@ -133,8 +131,8 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let rax = phys_reg 0
-let rcx = phys_reg 5
 let rdx = phys_reg 4
+let r13 = phys_reg 9
 let rbp = phys_reg 12
 let rxmm15 = phys_reg 115
 
@@ -155,7 +153,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -176,14 +174,22 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
+
+let max_int_args_in_regs () =
+  if Config.spacetime then 9 else 10
 
 let loc_arguments arg =
-  calling_conventions 0 9 100 109 outgoing arg
+  calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 9 100 109 incoming arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 ((max_int_args_in_regs ()) - 1) 100 109 incoming arg
+  in
+  loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+
+let loc_spacetime_node_hole = r13
 
 (* C calling conventions under Unix:
      first integer args in rdi, rsi, rdx, rcx, r8, r9
@@ -199,7 +205,7 @@ let loc_results res =
      Return value in rax or xmm0. *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 let unix_loc_external_arguments arg =
   calling_conventions 2 7 100 107 outgoing arg
@@ -215,7 +221,7 @@ let win64_loc_external_arguments arg =
   and ofs = ref 32 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !reg < 4 then begin
           loc.(i) <- phys_reg win64_int_external_arguments.(!reg);
           incr reg
@@ -234,14 +240,21 @@ let win64_loc_external_arguments arg =
   done;
   (loc, Misc.align !ofs 16)  (* keep stack 16-aligned *)
 
-let loc_external_arguments =
-  if win64 then win64_loc_external_arguments else unix_loc_external_arguments
+let loc_external_arguments arg =
+  let arg =
+    Array.map (fun regs -> assert (Array.length regs = 1); regs.(0)) arg
+  in
+  let loc, alignment =
+    if win64 then win64_loc_external_arguments arg
+    else unix_loc_external_arguments arg
+  in
+  Array.map (fun reg -> [|reg|]) loc, alignment
 
 let loc_exn_bucket = rax
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 
@@ -259,16 +272,23 @@ let destroyed_at_c_call =
        108;109;110;111;112;113;114;115])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _) -> all_phys_regs
-  | Iop(Iextcall(_, alloc, stack_ofs)) ->
+    Iop(Icall_ind _ | Icall_imm _ ->
+      all_phys_regs
+  | Iop(Iextcall {alloc; stack_ofs; }) ->
       assert (stack_ofs >= 0);
       if alloc || stack_ofs > 0 then all_phys_regs
       else destroyed_at_c_call
   | Iop(Iintop(Idiv | Imod)) | Iop(Iintop_imm((Idiv | Imod), _))
         -> [| rax; rdx |]
   | Iop(Istore(Single, _, _)) -> [| rxmm15 |]
+  | Iop(Ialloc _) when Config.spacetime
+        -> [| rax; loc_spacetime_node_hole |]
   | Iop(Ialloc _ | Iintop(Imulh | Icomp _) | Iintop_imm((Icomp _), _))
         -> [| rax |]
+  | Iop (Iintop (Icheckbound _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
+  | Iop (Iintop_imm(Icheckbound _, _)) when Config.spacetime ->
+      [| loc_spacetime_node_hole |]
   | Iswitch(_, _) -> [| rax; rdx |]
   | Iop Iloadmut -> [| rax; rdx |]
   | _ ->
@@ -285,11 +305,11 @@ let destroyed_at_raise = all_phys_regs
 
 
 let safe_register_pressure = function
-    Iextcall(_,_,_) -> if win64 then if fp then 7 else 8 else 0
+    Iextcall _ -> if win64 then if fp then 7 else 8 else 0
   | _ -> if fp then 10 else 11
 
 let max_register_pressure = function
-    Iextcall(_, _,_) ->
+    Iextcall _ ->
       if win64 then
         if fp then [| 7; 10 |]  else [| 8; 10 |]
         else
@@ -306,9 +326,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _ | Iloadmut
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Ilea _) -> true
   | Ispecific _ -> false
   | _ -> true
@@ -321,13 +341,7 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  if masm then
-    Ccomp.command (Config.asm ^
-                   Filename.quote outfile ^ " " ^ Filename.quote infile ^
-                   (if !Clflags.verbose then "" else ">NUL"))
-  else
-    Ccomp.command (Config.asm ^ " -o " ^
-                   Filename.quote outfile ^ " " ^ Filename.quote infile)
+  X86_proc.assemble_file infile outfile
 
 let init () =
   if fp then begin

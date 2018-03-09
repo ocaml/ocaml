@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Text generation.
 
@@ -21,7 +24,6 @@ open Type
 open Value
 open Module
 open Class
-open Parameter
 
 (** A class used to get a [text] for info structures. *)
 class virtual info =
@@ -96,13 +98,10 @@ class virtual info =
 
     (** Return [text] value for the given "see also" reference. *)
     method text_of_see (see_ref, t)  =
-      let t_ref =
-        match see_ref with
-          Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
-        | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
-        | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
-      in
-      t_ref
+      match see_ref with
+        Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
+      | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
+      | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
 
     (** Return [text] value for the given list of "see also" references.*)
     method text_of_sees l =
@@ -192,12 +191,10 @@ class virtual to_text =
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.
@@ -208,12 +205,10 @@ class virtual to_text =
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
       in
-      let s2 = Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
-          f
-          s
-      in
-      s2
+      Str.global_substitute
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([A-Z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Get a string for a [Types.class_type] where all idents are relative. *)
     method normal_class_type m_name t =
@@ -231,6 +226,11 @@ class virtual to_text =
     method normal_type_list ?par m_name sep t =
       self#relative_idents m_name (Odoc_info.string_of_type_list ?par sep t)
 
+    method normal_cstr_args ?par m_name = function
+      | Cstr_tuple l -> self#normal_type_list ?par m_name " * " l
+      | Cstr_record r -> self#relative_idents m_name
+                            (Odoc_str.string_of_record r)
+
     (** Get a string for a list of class or class type type parameters
        where all idents are relative. *)
     method normal_class_type_param_list m_name t =
@@ -244,14 +244,12 @@ class virtual to_text =
 
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
-      let t = List.flatten
-          (List.map
-             (fun s -> [Code s ; Newline ])
-             (Str.split (Str.regexp "\n")
-                (self#normal_type module_name t))
-          )
-      in
-      t
+      List.flatten
+        (List.map
+           (fun s -> [Code s ; Newline ])
+           (Str.split (Str.regexp "\n")
+              (self#normal_type module_name t))
+        )
 
     (** Return [text] value for a given short [Types.type_expr].*)
     method text_of_short_type_expr module_name t =
@@ -269,15 +267,13 @@ class virtual to_text =
 
     (** @return [text] value to represent parameters of a class (with arraows).*)
     method text_of_class_params module_name c =
-      let t = Odoc_info.text_concat
-          [Newline]
-          (List.map
-             (fun s -> [Code s])
-             (Str.split (Str.regexp "\n")
-                (self#normal_class_params module_name c))
-          )
-      in
-      t
+      Odoc_info.text_concat
+        [Newline]
+        (List.map
+           (fun s -> [Code s])
+           (Str.split (Str.regexp "\n")
+              (self#normal_class_params module_name c))
+        )
 
     (** @return [text] value to represent a [Types.module_type]. *)
     method text_of_module_type t =
@@ -339,19 +335,19 @@ class virtual to_text =
       let father = Name.father e.ex_name in
       Format.fprintf Format.str_formatter "@[<hov 2>exception %s" s_name ;
       (match e.ex_args, e.ex_ret with
-         [], None -> ()
-       | l, None ->
-           Format.fprintf Format.str_formatter " %s@ %s"
-             "of"
-             (self#normal_type_list ~par: false father " * " l)
-       | [], Some r ->
+         Cstr_tuple [], None -> ()
+       | Cstr_tuple [], Some r ->
            Format.fprintf Format.str_formatter " %s@ %s"
              ":"
              (self#normal_type father r)
-       | l, Some r ->
+       | args, None ->
+           Format.fprintf Format.str_formatter " %s@ %s"
+             "of"
+             (self#normal_cstr_args ~par:false father args)
+       | args, Some r ->
            Format.fprintf Format.str_formatter " %s@ %s@ %s@ %s"
              ":"
-             (self#normal_type_list ~par: false father " * " l)
+             (self#normal_cstr_args ~par:false father args)
              "->"
              (self#normal_type father r)
       );
@@ -558,7 +554,7 @@ class virtual to_text =
           [Code ((if with_def_syntax then " : " else "")^
                  Odoc_messages.struct_end^" ")]
 
-      | Module_functor (p, k)  ->
+      | Module_functor (_, k)  ->
           (if with_def_syntax then [Code " : "] else []) @
           [Code "functor ... "] @
           [Code " -> "] @

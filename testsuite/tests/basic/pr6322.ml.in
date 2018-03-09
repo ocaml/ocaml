@@ -1,0 +1,11 @@
+(* No string sharing PR#6322. This test is not applicable when OCaml is compiled with -safe-string. *)
+
+let test x = match x with
+  | true -> "a"
+  | false -> "a"
+
+let () =
+  let s1 = test true in
+  let s2 = test false in
+  s1.[0] <- 'p';
+  if s1 <> s2 then Printf.printf "PR#6322=Ok\n%!"

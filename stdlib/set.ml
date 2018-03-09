@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Sets over ordered types *)
 
@@ -36,6 +38,7 @@ module type S =
     val equal: t -> t -> bool
     val subset: t -> t -> bool
     val iter: (elt -> unit) -> t -> unit
+    val map: (elt -> elt) -> t -> t
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     val for_all: (elt -> bool) -> t -> bool
     val exists: (elt -> bool) -> t -> bool
@@ -115,7 +118,12 @@ module Make(Ord: OrderedType) =
       | Node(l, v, r, _) as t ->
           let c = Ord.compare x v in
           if c = 0 then t else
-          if c < 0 then bal (add x l) v r else bal l v (add x r)
+          if c < 0 then
+            let ll = add x l in
+            if l == ll then t else bal ll v r
+          else
+            let rr = add x r in
+            if r == rr then t else bal l v rr
 
     let singleton x = Node(Empty, x, Empty, 1)
 
@@ -128,12 +136,12 @@ module Make(Ord: OrderedType) =
 
     let rec add_min_element v = function
       | Empty -> singleton v
-      | Node (l, x, r, h) ->
+      | Node (l, x, r, _h) ->
         bal (add_min_element v l) x r
 
     let rec add_max_element v = function
       | Empty -> singleton v
-      | Node (l, x, r, h) ->
+      | Node (l, x, r, _h) ->
         bal l x (add_max_element v r)
 
     (* Same as create and bal, but no assumptions are made on the
@@ -152,19 +160,19 @@ module Make(Ord: OrderedType) =
 
     let rec min_elt = function
         Empty -> raise Not_found
-      | Node(Empty, v, r, _) -> v
-      | Node(l, v, r, _) -> min_elt l
+      | Node(Empty, v, _, _) -> v
+      | Node(l, _, _, _) -> min_elt l
 
     let rec max_elt = function
         Empty -> raise Not_found
-      | Node(l, v, Empty, _) -> v
-      | Node(l, v, r, _) -> max_elt r
+      | Node(_, v, Empty, _) -> v
+      | Node(_, _, r, _) -> max_elt r
 
     (* Remove the smallest element of the given set *)
 
     let rec remove_min_elt = function
         Empty -> invalid_arg "Set.remove_min_elt"
-      | Node(Empty, v, r, _) -> r
+      | Node(Empty, _, r, _) -> r
       | Node(l, v, r, _) -> bal (remove_min_elt l) v r
 
     (* Merge two trees l and r into one.
@@ -218,10 +226,18 @@ module Make(Ord: OrderedType) =
 
     let rec remove x = function
         Empty -> Empty
-      | Node(l, v, r, _) ->
+      | (Node(l, v, r, _) as t) ->
           let c = Ord.compare x v in
-          if c = 0 then merge l r else
-          if c < 0 then bal (remove x l) v r else bal l v (remove x r)
+          if c = 0 then merge l r
+          else
+            if c < 0 then
+              let ll = remove x l in
+              if l == ll then t
+              else bal ll v r
+            else
+              let rr = remove x r in
+              if r == rr then t
+              else bal l v rr
 
     let rec union s1 s2 =
       match (s1, s2) with
@@ -241,8 +257,8 @@ module Make(Ord: OrderedType) =
 
     let rec inter s1 s2 =
       match (s1, s2) with
-        (Empty, t2) -> Empty
-      | (t1, Empty) -> Empty
+        (Empty, _) -> Empty
+      | (_, Empty) -> Empty
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
             (l2, false, r2) ->
@@ -252,7 +268,7 @@ module Make(Ord: OrderedType) =
 
     let rec diff s1 s2 =
       match (s1, s2) with
-        (Empty, t2) -> Empty
+        (Empty, _) -> Empty
       | (t1, Empty) -> t1
       | (Node(l1, v1, r1, _), t2) ->
           match split v1 t2 with
@@ -319,12 +335,14 @@ module Make(Ord: OrderedType) =
 
     let rec filter p = function
         Empty -> Empty
-      | Node(l, v, r, _) ->
+      | (Node(l, v, r, _)) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pv = p v in
           let r' = filter p r in
-          if pv then join l' v r' else concat l' r'
+          if pv then
+            if l==l' && r==r' then t else join l' v r'
+          else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)
@@ -339,7 +357,7 @@ module Make(Ord: OrderedType) =
 
     let rec cardinal = function
         Empty -> 0
-      | Node(l, v, r, _) -> cardinal l + 1 + cardinal r
+      | Node(l, _, r, _) -> cardinal l + 1 + cardinal r
 
     let rec elements_aux accu = function
         Empty -> accu
@@ -356,6 +374,25 @@ module Make(Ord: OrderedType) =
           let c = Ord.compare x v in
           if c = 0 then v
           else find x (if c < 0 then l else r)
+
+    let try_join l v r =
+      (* [join l v r] can only be called when (elements of l < v <
+         elements of r); use [try_join l v r] when this property may
+         not hold, but you hope it does hold in the common case *)
+      if (l = Empty || Ord.compare (max_elt l) v < 0)
+      && (r = Empty || Ord.compare v (min_elt r) < 0)
+      then join l v r
+      else union l (add v r)
+
+    let rec map f = function
+      | Empty -> Empty
+      | Node (l, v, r, _) as t ->
+         (* enforce left-to-right evaluation order *)
+         let l' = map f l in
+         let v' = f v in
+         let r' = map f r in
+         if l == l' && v == v' && r == r' then t
+         else try_join l' v' r'
 
     let of_sorted_list l =
       let rec sub n l =

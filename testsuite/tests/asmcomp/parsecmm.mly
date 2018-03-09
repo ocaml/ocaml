@@ -1,15 +1,3 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
-
 /* A simple parser for C-- */
 
 %{
@@ -47,6 +35,7 @@ let access_array base numelt size =
 %token ADDA
 %token ADDF
 %token ADDI
+%token ADDV
 %token ADDR
 %token ALIGN
 %token ALLOC
@@ -101,6 +90,7 @@ let access_array base numelt size =
 %token LTI
 %token MODI
 %token MULF
+%token MULH
 %token MULI
 %token NEA
 %token NEF
@@ -108,7 +98,7 @@ let access_array base numelt size =
 %token OR
 %token <int> POINTER
 %token PROJ
-%token <Lambda.raise_kind> RAISE
+%token <Cmm.raise_kind> RAISE
 %token RBRACKET
 %token RPAREN
 %token SEQ
@@ -117,13 +107,13 @@ let access_array base numelt size =
 %token STAR
 %token STORE
 %token <string> STRING
-%token SUBA
 %token SUBF
 %token SUBI
 %token SWITCH
 %token TRY
 %token UNIT
 %token UNSIGNED
+%token VAL
 %token WHILE
 %token WITH
 %token XOR
@@ -162,7 +152,8 @@ machtype:
   | componentlist               { Array.of_list(List.rev $1) }
 ;
 component:
-    ADDR                        { Addr }
+    VAL                         { Val }
+  | ADDR                        { Addr }
   | INT                         { Int }
   | FLOAT                       { Float }
 ;
@@ -182,7 +173,7 @@ expr:
   | LPAREN APPLY expr exprlist machtype RPAREN
                 { Cop(Capply($5, Debuginfo.none), $3 :: List.rev $4) }
   | LPAREN EXTCALL STRING exprlist machtype RPAREN
-                { Cop(Cextcall($3, $5, false, Debuginfo.none), List.rev $4) }
+               {Cop(Cextcall($3, $5, false, Debuginfo.none, None), List.rev $4)}
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
@@ -201,17 +192,20 @@ expr:
   | LPAREN TRY sequence WITH bind_ident sequence RPAREN
                 { unbind_ident $5; Ctrywith($3, $5, $6) }
   | LPAREN ADDRAREF expr expr RPAREN
-      { Cop(Cload Word, [access_array $3 $4 Arch.size_addr]) }
+      { Cop(Cload Word_val, [access_array $3 $4 Arch.size_addr]) }
   | LPAREN INTAREF expr expr RPAREN
-      { Cop(Cload Word, [access_array $3 $4 Arch.size_int]) }
+      { Cop(Cload Word_int, [access_array $3 $4 Arch.size_int]) }
   | LPAREN FLOATAREF expr expr RPAREN
       { Cop(Cload Double_u, [access_array $3 $4 Arch.size_float]) }
   | LPAREN ADDRASET expr expr expr RPAREN
-      { Cop(Cstore Word, [access_array $3 $4 Arch.size_addr; $5]) }
+      { Cop(Cstore (Word_val, Assignment),
+            [access_array $3 $4 Arch.size_addr; $5]) }
   | LPAREN INTASET expr expr expr RPAREN
-      { Cop(Cstore Word, [access_array $3 $4 Arch.size_int; $5]) }
+      { Cop(Cstore (Word_int, Assignment),
+            [access_array $3 $4 Arch.size_int; $5]) }
   | LPAREN FLOATASET expr expr expr RPAREN
-      { Cop(Cstore Double_u, [access_array $3 $4 Arch.size_float; $5]) }
+      { Cop(Cstore (Double_u, Assignment),
+            [access_array $3 $4 Arch.size_float; $5]) }
 ;
 exprlist:
     exprlist expr               { $2 :: $1 }
@@ -235,8 +229,8 @@ chunk:
   | SIGNED HALF                 { Sixteen_signed }
   | UNSIGNED INT32              { Thirtytwo_unsigned }
   | SIGNED INT32                { Thirtytwo_signed }
-  | INT                         { Word }
-  | ADDR                        { Word }
+  | INT                         { Word_int }
+  | ADDR                        { Word_val }
   | FLOAT32                     { Single }
   | FLOAT64                     { Double }
   | FLOAT                       { Double_u }
@@ -244,14 +238,14 @@ chunk:
 ;
 unaryop:
     LOAD chunk                  { Cload $2 }
-  | ALLOC                       { Calloc }
+  | ALLOC                       { Calloc Debuginfo.none }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
   | RAISE                       { Craise ($1, Debuginfo.none) }
   | ABSF                        { Cabsf }
 ;
 binaryop:
-    STORE chunk                 { Cstore $2 }
+    STORE chunk                 { Cstore ($2, Assignment) }
   | ADDI                        { Caddi }
   | SUBI                        { Csubi }
   | MULI                        { Cmuli }
@@ -270,7 +264,7 @@ binaryop:
   | GTI                         { Ccmpi Cgt }
   | GEI                         { Ccmpi Cge }
   | ADDA                        { Cadda }
-  | SUBA                        { Csuba }
+  | ADDV                        { Caddv }
   | EQA                         { Ccmpa Ceq }
   | NEA                         { Ccmpa Cne }
   | LTA                         { Ccmpa Clt }
@@ -287,6 +281,7 @@ binaryop:
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
   | CHECKBOUND                  { Ccheckbound Debuginfo.none }
+  | MULH                        { Cmulhi }
 ;
 sequence:
     expr sequence               { Csequence($1, $2) }
@@ -312,13 +307,12 @@ datalist:
 ;
 dataitem:
     STRING COLON                { Cdefine_symbol $1 }
-  | INTCONST COLON              { Cdefine_label $1 }
   | BYTE INTCONST               { Cint8 $2 }
   | HALF INTCONST               { Cint16 $2 }
   | INT INTCONST                { Cint(Nativeint.of_int $2) }
   | FLOAT FLOATCONST            { Cdouble (float_of_string $2) }
   | ADDR STRING                 { Csymbol_address $2 }
-  | ADDR INTCONST               { Clabel_address $2 }
+  | VAL STRING                 { Csymbol_address $2 }
   | KSTRING STRING              { Cstring $2 }
   | SKIP INTCONST               { Cskip $2 }
   | ALIGN INTCONST              { Calign $2 }

@@ -1,14 +1,68 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2005 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(** Optimization parameters represented as ints indexed by round number. *)
+module Int_arg_helper : sig
+  type parsed
+
+  val parse : string -> string -> parsed ref -> unit
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+  val parse_no_error : string -> parsed ref -> parse_result
+
+  val get : key:int -> parsed -> int
+end
+
+(** Optimization parameters represented as floats indexed by round number. *)
+module Float_arg_helper : sig
+  type parsed
+
+  val parse : string -> string -> parsed ref -> unit
+
+  type parse_result =
+    | Ok
+    | Parse_failed of exn
+  val parse_no_error : string -> parsed ref -> parse_result
+
+  val get : key:int -> parsed -> float
+end
+
+type inlining_arguments = {
+  inline_call_cost : int option;
+  inline_alloc_cost : int option;
+  inline_prim_cost : int option;
+  inline_branch_cost : int option;
+  inline_indirect_cost : int option;
+  inline_lifting_benefit : int option;
+  inline_branch_factor : float option;
+  inline_max_depth : int option;
+  inline_max_unroll : int option;
+  inline_threshold : float option;
+  inline_toplevel_threshold : int option;
+}
+
+val classic_arguments : inlining_arguments
+val o1_arguments : inlining_arguments
+val o2_arguments : inlining_arguments
+val o3_arguments : inlining_arguments
+
+(** Set all the inlining arguments for a round.
+    The default is set if no round is provided. *)
+val use_inlining_arguments_set : ?round:int -> inlining_arguments -> unit
 
 val objfiles : string list ref
 val ccobjs : string list ref
@@ -43,6 +97,7 @@ val noprompt : bool ref
 val nopromptcont : bool ref
 val init_file : string option ref
 val noinit : bool ref
+val noversion : bool ref
 val use_prims : string ref
 val use_runtime : string ref
 val principal : bool ref
@@ -67,7 +122,11 @@ val dump_parsetree : bool ref
 val dump_typedtree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
+val dump_rawclambda : bool ref
 val dump_clambda : bool ref
+val dump_rawflambda : bool ref
+val dump_flambda : bool ref
+val dump_flambda_let : int option ref
 val dump_instr : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
@@ -86,15 +145,61 @@ val dump_linear : bool ref
 val keep_startup_file : bool ref
 val dump_combine : bool ref
 val native_code : bool ref
-val inline_threshold : int ref
+val default_inline_threshold : float
+val inline_threshold : Float_arg_helper.parsed ref
+val inlining_report : bool ref
+val simplify_rounds : int option ref
+val default_simplify_rounds : int ref
+val rounds : unit -> int
+val default_inline_max_unroll : int
+val inline_max_unroll : Int_arg_helper.parsed ref
+val default_inline_toplevel_threshold : int
+val inline_toplevel_threshold : Int_arg_helper.parsed ref
+val default_inline_call_cost : int
+val default_inline_alloc_cost : int
+val default_inline_prim_cost : int
+val default_inline_branch_cost : int
+val default_inline_indirect_cost : int
+val default_inline_lifting_benefit : int
+val inline_call_cost : Int_arg_helper.parsed ref
+val inline_alloc_cost : Int_arg_helper.parsed ref
+val inline_prim_cost : Int_arg_helper.parsed ref
+val inline_branch_cost : Int_arg_helper.parsed ref
+val inline_indirect_cost : Int_arg_helper.parsed ref
+val inline_lifting_benefit : Int_arg_helper.parsed ref
+val default_inline_branch_factor : float
+val inline_branch_factor : Float_arg_helper.parsed ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
+val pic_code : bool ref
 val runtime_variant : string ref
 val force_slash : bool ref
 val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+val print_timings : bool ref
+val flambda_invariant_checks : bool ref
+val unbox_closures : bool ref
+val unbox_closures_factor : int ref
+val default_unbox_closures_factor : int
+val unbox_free_vars_of_closures : bool ref
+val unbox_specialised_args : bool ref
+val clambda_checks : bool ref
+val default_inline_max_depth : int
+val inline_max_depth : Int_arg_helper.parsed ref
+val remove_unused_arguments : bool ref
+val dump_flambda_verbose : bool ref
+val classic_inlining : bool ref
+
+val all_passes : string list ref
+val dumped_pass : string -> bool
+val set_dumped_pass : string -> bool -> unit
+
+val parse_color_setting : string -> Misc.Color.setting option
+val color : Misc.Color.setting ref
+
+val unboxed_types : bool ref

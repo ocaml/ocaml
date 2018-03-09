@@ -1,19 +1,24 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          OCaml port by John Malecki and Xavier Leroy                *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
+(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 {
 
 open Parser
+
+exception Int_overflow
 
 }
 
@@ -63,7 +68,9 @@ and lexeme =    (* Read a lexeme *)
     | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
     | '0' ['o' 'O'] ['0'-'7']+
     | '0' ['b' 'B'] ['0'-'1']+
-      { INTEGER (Int64.of_string (Lexing.lexeme lexbuf)) }
+      { try INTEGER (Int64.of_string (Lexing.lexeme lexbuf))
+        with Failure _ -> raise Int_overflow
+      }
   | '*'
       { STAR }
   | "-"
@@ -71,7 +78,7 @@ and lexeme =    (* Read a lexeme *)
   | "."
       { DOT }
   | "#"
-      { SHARP }
+      { HASH }
   | "@"
       { AT }
   | "$"

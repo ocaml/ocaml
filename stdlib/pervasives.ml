@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* type 'a option = None | Some of 'a *)
 
@@ -127,33 +129,50 @@ external ( +. ) : float -> float -> float = "%addfloat"
 external ( -. ) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
 external ( /. ) : float -> float -> float = "%divfloat"
-external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
-external exp : float -> float = "caml_exp_float" "exp" "float"
-external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
-external acos : float -> float = "caml_acos_float" "acos" "float"
-external asin : float -> float = "caml_asin_float" "asin" "float"
-external atan : float -> float = "caml_atan_float" "atan" "float"
-external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+external ( ** ) : float -> float -> float = "caml_power_float" "pow"
+  [@@unboxed] [@@noalloc]
+external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
+  [@@unboxed] [@@noalloc]
+external acos : float -> float = "caml_acos_float" "acos"
+  [@@unboxed] [@@noalloc]
+external asin : float -> float = "caml_asin_float" "asin"
+  [@@unboxed] [@@noalloc]
+external atan : float -> float = "caml_atan_float" "atan"
+  [@@unboxed] [@@noalloc]
+external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
+  [@@unboxed] [@@noalloc]
 external hypot : float -> float -> float
-               = "caml_hypot_float" "caml_hypot" "float"
-external cos : float -> float = "caml_cos_float" "cos" "float"
-external cosh : float -> float = "caml_cosh_float" "cosh" "float"
-external log : float -> float = "caml_log_float" "log" "float"
-external log10 : float -> float = "caml_log10_float" "log10" "float"
-external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
-external sin : float -> float = "caml_sin_float" "sin" "float"
-external sinh : float -> float = "caml_sinh_float" "sinh" "float"
-external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
-external tan : float -> float = "caml_tan_float" "tan" "float"
-external tanh : float -> float = "caml_tanh_float" "tanh" "float"
-external ceil : float -> float = "caml_ceil_float" "ceil" "float"
-external floor : float -> float = "caml_floor_float" "floor" "float"
+               = "caml_hypot_float" "caml_hypot" [@@unboxed] [@@noalloc]
+external cos : float -> float = "caml_cos_float" "cos" [@@unboxed] [@@noalloc]
+external cosh : float -> float = "caml_cosh_float" "cosh"
+  [@@unboxed] [@@noalloc]
+external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
+external log10 : float -> float = "caml_log10_float" "log10"
+  [@@unboxed] [@@noalloc]
+external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+  [@@unboxed] [@@noalloc]
+external sin : float -> float = "caml_sin_float" "sin" [@@unboxed] [@@noalloc]
+external sinh : float -> float = "caml_sinh_float" "sinh"
+  [@@unboxed] [@@noalloc]
+external sqrt : float -> float = "caml_sqrt_float" "sqrt"
+  [@@unboxed] [@@noalloc]
+external tan : float -> float = "caml_tan_float" "tan" [@@unboxed] [@@noalloc]
+external tanh : float -> float = "caml_tanh_float" "tanh"
+  [@@unboxed] [@@noalloc]
+external ceil : float -> float = "caml_ceil_float" "ceil"
+  [@@unboxed] [@@noalloc]
+external floor : float -> float = "caml_floor_float" "floor"
+  [@@unboxed] [@@noalloc]
 external abs_float : float -> float = "%absfloat"
 external copysign : float -> float -> float
-                  = "caml_copysign_float" "caml_copysign" "float"
-external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+                  = "caml_copysign_float" "caml_copysign"
+                  [@@unboxed] [@@noalloc]
+external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
+  [@@unboxed] [@@noalloc]
 external frexp : float -> float * int = "caml_frexp_float"
-external ldexp : float -> int -> float = "caml_ldexp_float"
+external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
+  "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
 external modf : float -> float * float = "caml_modf_float"
 external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
@@ -179,19 +198,19 @@ type fpclass =
   | FP_zero
   | FP_infinite
   | FP_nan
-external classify_float : float -> fpclass = "caml_classify_float"
+external classify_float : (float [@unboxed]) -> fpclass =
+  "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
 
 (* String and byte sequence operations -- more in modules String and Bytes *)
 
 external string_length : string -> int = "%string_length"
 external bytes_length : bytes -> int = "%string_length"
-external bytes_create : int -> bytes = "caml_create_string"
+external bytes_create : int -> bytes = "caml_create_bytes"
 external string_blit : string -> int -> bytes -> int -> int -> unit
-                     = "caml_blit_string" "noalloc"
+                     = "caml_blit_string" [@@noalloc]
 external bytes_blit : bytes -> int -> bytes -> int -> int -> unit
-                        = "caml_blit_string" "noalloc"
-external bytes_unsafe_to_string : bytes -> string = "%identity"
-external bytes_unsafe_of_string : string -> bytes = "%identity"
+                        = "caml_blit_bytes" [@@noalloc]
+external bytes_unsafe_to_string : bytes -> string = "%bytes_to_string"
 
 let ( ^ ) s1 s2 =
   let l1 = string_length s1 and l2 = string_length s2 in
@@ -256,9 +275,9 @@ let valid_float_lexem s =
     | _ -> s
   in
   loop 0
-;;
 
-let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
+
+let string_of_float f = valid_float_lexem (format_float "%.12g" f)
 
 external float_of_string : string -> float = "caml_float_of_string"
 
@@ -291,8 +310,13 @@ type open_flag =
 
 external open_desc : string -> open_flag list -> int -> int = "caml_sys_open"
 
+external set_out_channel_name: out_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_out_gen mode perm name =
-  open_descriptor_out(open_desc name mode perm)
+  let c = open_descriptor_out(open_desc name mode perm) in
+  set_out_channel_name c name;
+  c
 
 let open_out name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name
@@ -312,9 +336,9 @@ let flush_all () =
   in iter (out_channels_list ())
 
 external unsafe_output : out_channel -> bytes -> int -> int -> unit
-                       = "caml_ml_output"
+                       = "caml_ml_output_bytes"
 external unsafe_output_string : out_channel -> string -> int -> int -> unit
-                              = "caml_ml_output"
+                       = "caml_ml_output"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
 
@@ -354,8 +378,13 @@ external set_binary_mode_out : out_channel -> bool -> unit
 
 (* General input functions *)
 
+external set_in_channel_name: in_channel -> string -> unit =
+  "caml_ml_set_channel_name"
+
 let open_in_gen mode perm name =
-  open_descriptor_in(open_desc name mode perm)
+  let c = open_descriptor_in(open_desc name mode perm) in
+  set_in_channel_name c name;
+  c
 
 let open_in name =
   open_in_gen [Open_rdonly; Open_text] 0 name
@@ -428,7 +457,7 @@ external seek_in : in_channel -> int -> unit = "caml_ml_seek_in"
 external pos_in : in_channel -> int = "caml_ml_pos_in"
 external in_channel_length : in_channel -> int = "caml_ml_channel_size"
 external close_in : in_channel -> unit = "caml_ml_close_channel"
-let close_in_noerr ic = (try close_in ic with _ -> ());;
+let close_in_noerr ic = (try close_in ic with _ -> ())
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
 
@@ -484,7 +513,7 @@ type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 
-let string_of_format (Format (fmt, str)) = str
+let string_of_format (Format (_fmt, str)) = str
 
 external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->

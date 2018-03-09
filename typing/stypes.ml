@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2003 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Recording and dumping (partial) type information *)
 
@@ -41,8 +44,8 @@ let get_location ti =
   | Ti_expr e  -> e.exp_loc
   | Ti_class c -> c.cl_loc
   | Ti_mod m   -> m.mod_loc
-  | An_call (l, k) -> l
-  | An_ident (l, s, k) -> l
+  | An_call (l, _k) -> l
+  | An_ident (l, _s, _k) -> l
 ;;
 
 let annotations = ref ([] : annotation list);;

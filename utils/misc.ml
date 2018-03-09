@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Errors *)
 
@@ -26,6 +29,17 @@ let try_finally work cleanup =
   cleanup ();
   result
 ;;
+
+type ref_and_value = R : 'a ref * 'a -> ref_and_value
+
+let protect_refs =
+  let set_refs l = List.iter (fun (R (r, v)) -> r := v) l in
+  fun refs f ->
+    let backup = List.map (fun (R (r, _)) -> R (r, !r)) refs in
+    set_refs refs;
+    match f () with
+    | x           -> set_refs backup; x
+    | exception e -> set_refs backup; raise e
 
 (* List functions *)
 
@@ -59,21 +73,100 @@ let rec split_last = function
       let (lst, last) = split_last tl in
       (hd :: lst, last)
 
-let rec samelist pred l1 l2 =
-  match (l1, l2) with
+module Stdlib = struct
+  module List = struct
+    type 'a t = 'a list
+
+    let rec compare cmp l1 l2 =
+      match l1, l2 with
+      | [], [] -> 0
+      | [], _::_ -> -1
+      | _::_, [] -> 1
+      | h1::t1, h2::t2 ->
+        let c = cmp h1 h2 in
+        if c <> 0 then c
+        else compare cmp t1 t2
+
+    let rec equal eq l1 l2 =
+      match l1, l2 with
   | ([], []) -> true
-  | (hd1 :: tl1, hd2 :: tl2) -> pred hd1 hd2 && samelist pred tl1 tl2
+      | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
   | (_, _) -> false
 
-(* Options *)
+    let filter_map f l =
+      let rec aux acc l =
+        match l with
+        | [] -> List.rev acc
+        | h :: t ->
+          match f h with
+          | None -> aux acc t
+          | Some v -> aux (v :: acc) t
+      in
+      aux [] l
 
-let may f = function
-    Some x -> f x
+    let map2_prefix f l1 l2 =
+      let rec aux acc l1 l2 =
+        match l1, l2 with
+        | [], _ -> (List.rev acc, l2)
+        | _ :: _, [] -> raise (Invalid_argument "map2_prefix")
+        | h1::t1, h2::t2 ->
+          let h = f h1 h2 in
+          aux (h :: acc) t1 t2
+      in
+      aux [] l1 l2
+
+    let some_if_all_elements_are_some l =
+      let rec aux acc l =
+        match l with
+        | [] -> Some (List.rev acc)
+        | None :: _ -> None
+        | Some h :: t -> aux (h :: acc) t
+      in
+      aux [] l
+
+    let split_at n l =
+      let rec aux n acc l =
+        if n = 0
+        then List.rev acc, l
+        else
+          match l with
+          | [] -> raise (Invalid_argument "split_at")
+          | t::q -> aux (n-1) (t::acc) q
+      in
+      aux n [] l
+  end
+
+  module Option = struct
+    type 'a t = 'a option
+
+    let equal eq o1 o2 =
+      match o1, o2 with
+      | None, None -> true
+      | Some e1, Some e2 -> eq e1 e2
+      | _, _ -> false
+
+    let iter f = function
+      | Some x -> f x
   | None -> ()
 
-let may_map f = function
-    Some x -> Some (f x)
+    let map f = function
+      | Some x -> Some (f x)
   | None -> None
+
+    let fold f a b =
+      match a with
+      | None -> b
+      | Some a -> f a b
+
+    let value_default f ~default a =
+      match a with
+      | None -> default
+      | Some a -> f a
+  end
+end
+
+let may = Stdlib.Option.iter
+let may_map = Stdlib.Option.map
 
 (* File functions *)
 
@@ -119,8 +212,9 @@ let find_in_path_uncap path name =
 
 let remove_file filename =
   try
-    Sys.remove filename
-  with Sys_error msg ->
+    if Sys.file_exists filename
+    then Sys.remove filename
+  with Sys_error _msg ->
     ()
 
 (* Expand a -I option: if it starts with +, make it relative to the standard
@@ -178,7 +272,22 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
-let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
+let no_overflow_mul a b = b <> 0 && (a * b) / b = a
+
+let no_overflow_lsl a k =
+  0 <= k && k < Sys.word_size && min_int asr k <= a && a <= max_int asr k
+
+module Int_literal_converter = struct
+  (* To convert integer literals, allowing max_int + 1 (PR#4210) *)
+  let cvt_int_aux str neg of_string =
+    if String.length str = 0 || str.[0]= '-'
+    then of_string str
+    else neg (of_string ("-" ^ str))
+  let int s = cvt_int_aux s (~-) int_of_string
+  let int32 s = cvt_int_aux s Int32.neg Int32.of_string
+  let int64 s = cvt_int_aux s Int64.neg Int64.of_string
+  let nativeint s = cvt_int_aux s Nativeint.neg Nativeint.of_string
+end
 
 (* String operations *)
 
@@ -331,23 +440,271 @@ let edit_distance a b cutoff =
     else Some result
   end
 
-
-(* split a string [s] at every char [c], and return the list of sub-strings *)
-let split s c =
-  let len = String.length s in
-  let rec iter pos to_rev =
-    if pos = len then List.rev ("" :: to_rev) else
-      match try
-              Some ( String.index_from s pos c )
-        with Not_found -> None
-      with
-          Some pos2 ->
-            if pos2 = pos then iter (pos+1) ("" :: to_rev) else
-              iter (pos2+1) ((String.sub s pos (pos2-pos)) :: to_rev)
-        | None -> List.rev ( String.sub s pos (len-pos) :: to_rev )
+let spellcheck env name =
+  let cutoff =
+    match String.length name with
+      | 1 | 2 -> 0
+      | 3 | 4 -> 1
+      | 5 | 6 -> 2
+      | _ -> 3
   in
-  iter 0 []
+  let compare target acc head =
+    match edit_distance target head cutoff with
+      | None -> acc
+      | Some dist ->
+         let (best_choice, best_dist) = acc in
+         if dist < best_dist then ([head], dist)
+         else if dist = best_dist then (head :: best_choice, dist)
+         else acc
+  in
+  fst (List.fold_left (compare name) ([], max_int) env)
+
+let did_you_mean ppf get_choices =
+  (* flush now to get the error report early, in the (unheard of) case
+     where the search in the get_choices function would take a bit of
+     time; in the worst case, the user has seen the error, she can
+     interrupt the process before the spell-checking terminates. *)
+  Format.fprintf ppf "@?";
+  match get_choices () with
+  | [] -> ()
+  | choices ->
+     let rest, last = split_last choices in
+     Format.fprintf ppf "@\nHint: Did you mean %s%s%s?@?"
+       (String.concat ", " rest)
+       (if rest = [] then "" else " or ")
+       last
 
 let cut_at s c =
   let pos = String.index s c in
   String.sub s 0 pos, String.sub s (pos+1) (String.length s - pos - 1)
+
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+module StringMap = Map.Make(struct type t = string let compare = compare end)
+
+(* Color handling *)
+module Color = struct
+  (* use ANSI color codes, see https://en.wikipedia.org/wiki/ANSI_escape_code *)
+  type color =
+    | Black
+    | Red
+    | Green
+    | Yellow
+    | Blue
+    | Magenta
+    | Cyan
+    | White
+  ;;
+
+  type style =
+    | FG of color (* foreground *)
+    | BG of color (* background *)
+    | Bold
+    | Reset
+
+  let ansi_of_color = function
+    | Black -> "0"
+    | Red -> "1"
+    | Green -> "2"
+    | Yellow -> "3"
+    | Blue -> "4"
+    | Magenta -> "5"
+    | Cyan -> "6"
+    | White -> "7"
+
+  let code_of_style = function
+    | FG c -> "3" ^ ansi_of_color c
+    | BG c -> "4" ^ ansi_of_color c
+    | Bold -> "1"
+    | Reset -> "0"
+
+  let ansi_of_style_l l =
+    let s = match l with
+      | [] -> code_of_style Reset
+      | [s] -> code_of_style s
+      | _ -> String.concat ";" (List.map code_of_style l)
+    in
+    "\x1b[" ^ s ^ "m"
+
+  type styles = {
+    error: style list;
+    warning: style list;
+    loc: style list;
+  }
+
+  let default_styles = {
+    warning = [Bold; FG Magenta];
+    error = [Bold; FG Red];
+    loc = [Bold];
+  }
+
+  let cur_styles = ref default_styles
+  let get_styles () = !cur_styles
+  let set_styles s = cur_styles := s
+
+  (* map a tag to a style, if the tag is known.
+     @raise Not_found otherwise *)
+  let style_of_tag s = match s with
+    | "error" -> (!cur_styles).error
+    | "warning" -> (!cur_styles).warning
+    | "loc" -> (!cur_styles).loc
+    | _ -> raise Not_found
+
+  let color_enabled = ref true
+
+  (* either prints the tag of [s] or delegate to [or_else] *)
+  let mark_open_tag ~or_else s =
+    try
+      let style = style_of_tag s in
+      if !color_enabled then ansi_of_style_l style else ""
+    with Not_found -> or_else s
+
+  let mark_close_tag ~or_else s =
+    try
+      let _ = style_of_tag s in
+      if !color_enabled then ansi_of_style_l [Reset] else ""
+    with Not_found -> or_else s
+
+  (* add color handling to formatter [ppf] *)
+  let set_color_tag_handling ppf =
+    let open Format in
+    let functions = pp_get_formatter_tag_functions ppf () in
+    let functions' = {functions with
+      mark_open_tag=(mark_open_tag ~or_else:functions.mark_open_tag);
+      mark_close_tag=(mark_close_tag ~or_else:functions.mark_close_tag);
+    } in
+    pp_set_mark_tags ppf true; (* enable tags *)
+    pp_set_formatter_tag_functions ppf functions';
+    (* also setup margins *)
+    pp_set_margin ppf (pp_get_margin std_formatter());
+    ()
+
+  external isatty : out_channel -> bool = "caml_sys_isatty"
+
+  (* reasonable heuristic on whether colors should be enabled *)
+  let should_enable_color () =
+    let term = try Sys.getenv "TERM" with Not_found -> "" in
+    term <> "dumb"
+    && term <> ""
+    && isatty stderr
+
+  type setting = Auto | Always | Never
+
+  let setup =
+    let first = ref true in (* initialize only once *)
+    let formatter_l =
+      [Format.std_formatter; Format.err_formatter; Format.str_formatter]
+    in
+    fun o ->
+      if !first then (
+        first := false;
+        Format.set_mark_tags true;
+        List.iter set_color_tag_handling formatter_l;
+        color_enabled := (match o with
+          | Always -> true
+          | Auto -> should_enable_color ()
+          | Never -> false
+        )
+      );
+      ()
+end
+
+let normalise_eol s =
+  let b = Buffer.create 80 in
+    for i = 0 to String.length s - 1 do
+      if s.[i] <> '\r' then Buffer.add_char b s.[i]
+    done;
+    Buffer.contents b
+
+let delete_eol_spaces src =
+  let len_src = String.length src in
+  let dst = Bytes.create len_src in
+  let rec loop i_src i_dst =
+    if i_src = len_src then
+      i_dst
+    else
+      match src.[i_src] with
+      | ' ' | '\t' ->
+        loop_spaces 1 (i_src + 1) i_dst
+      | c ->
+        Bytes.set dst i_dst c;
+        loop (i_src + 1) (i_dst + 1)
+  and loop_spaces spaces i_src i_dst =
+    if i_src = len_src then
+      i_dst
+    else
+      match src.[i_src] with
+      | ' ' | '\t' ->
+        loop_spaces (spaces + 1) (i_src + 1) i_dst
+      | '\n' ->
+        Bytes.set dst i_dst '\n';
+        loop (i_src + 1) (i_dst + 1)
+      | _ ->
+        for n = 0 to spaces do
+          Bytes.set dst (i_dst + n) src.[i_src - spaces + n]
+        done;
+        loop (i_src + 1) (i_dst + spaces + 1)
+  in
+  let stop = loop 0 0 in
+  Bytes.sub_string dst 0 stop
+
+type hook_info = {
+  sourcefile : string;
+}
+
+type xyz =     {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+
+exception HookExnWrapper of xyz
+    (** An exception raised by a hook will be wrapped into a
+        [HookExnWrapper] constructor by the hook machinery.  *)
+
+(*
+exception HookExnWrapper of
+    {
+      error: exn;
+      hook_name: string;
+      hook_info: hook_info;
+    }
+    (** An exception raised by a hook will be wrapped into a
+        [HookExnWrapper] constructor by the hook machinery.  *)
+*)
+
+exception HookExn of exn
+
+let raise_direct_hook_exn e = raise (HookExn e)
+
+let fold_hooks list hook_info ast =
+  List.fold_left (fun ast (hook_name,f) ->
+    try
+      f hook_info ast
+    with
+    | HookExn e -> raise e
+    | error -> raise (HookExnWrapper {error; hook_name; hook_info})
+       (* when explicit reraise with backtrace will be available,
+          it should be used here *)
+
+  ) ast (List.sort compare list)
+
+module type HookSig = sig
+  type t
+
+  val add_hook : string -> (hook_info -> t -> t) -> unit
+  val apply_hooks : hook_info -> t -> t
+end
+
+module MakeHooks(M: sig
+    type t
+  end) : HookSig with type t = M.t
+= struct
+
+  type t = M.t
+
+  let hooks = ref []
+  let add_hook name f = hooks := (name, f) :: !hooks
+  let apply_hooks sourcefile intf =
+    fold_hooks !hooks sourcefile intf
+end

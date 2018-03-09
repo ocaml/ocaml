@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* A variant of the "lambda" code with direct / indirect calls explicit
    and closures explicit too *)
@@ -26,20 +29,21 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
+  | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant
+  | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
-type ulambda =
+and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
-  | Ulet of Ident.t * ulambda * ulambda
+  | Ulet of mutable_flag * value_kind * Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
@@ -53,6 +57,7 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
+  | Uunreachable
 
 and ufunction = {
   label  : function_label;
@@ -87,6 +92,21 @@ type value_approximation =
   | Value_const of uconstant
   | Value_global_field of string * int
 
+(* Preallocated globals *)
+
+type preallocated_block = {
+  symbol : string;
+  exported : bool;
+  tag : int;
+  size : int;
+}
+
+type preallocated_constant = {
+  symbol : string;
+  exported : bool;
+  definition : ustructured_constant;
+}
+
 (* Comparison functions for constants.  We must not use Pervasives.compare
    because it compares "0.0" and "-0.0" equal.  (PR#6442) *)
 
@@ -104,7 +124,7 @@ let rec compare_float_lists l1 l2 =
 
 let compare_constants c1 c2 =
   match c1, c2 with
-  | Uconst_ref(lbl1, c1), Uconst_ref(lbl2, c2) -> String.compare lbl1 lbl2
+  | Uconst_ref(lbl1, _c1), Uconst_ref(lbl2, _c2) -> String.compare lbl1 lbl2
       (* Same labels -> same constants.
          Different labels -> different constants, even if the contents
            match, because of string constants that must not be
@@ -133,6 +153,7 @@ let rank_structured_constant = function
   | Uconst_block _ -> 4
   | Uconst_float_array _ -> 5
   | Uconst_string _ -> 6
+  | Uconst_closure _ -> 7
 
 let compare_structured_constants c1 c2 =
   match c1, c2 with
@@ -140,11 +161,14 @@ let compare_structured_constants c1 c2 =
   | Uconst_int32 x1, Uconst_int32 x2 -> Int32.compare x1 x2
   | Uconst_int64 x1, Uconst_int64 x2 -> Int64.compare x1 x2
   | Uconst_nativeint x1, Uconst_nativeint x2 -> Nativeint.compare x1 x2
-  | Uconst_block(t1, l1), Uconst_block(t2, l2) -> 
+  | Uconst_block(t1, l1), Uconst_block(t2, l2) ->
       let c = t1 - t2 (* no overflow possible here *) in
       if c <> 0 then c else compare_constant_lists l1 l2
   | Uconst_float_array l1, Uconst_float_array l2 ->
       compare_float_lists l1 l2
   | Uconst_string s1, Uconst_string s2 -> String.compare s1 s2
-  | _, _ -> rank_structured_constant c1 - rank_structured_constant c2
-                (* no overflow possible here *)
+  | Uconst_closure (_,lbl1,_), Uconst_closure (_,lbl2,_) ->
+      String.compare lbl1 lbl2
+  | _, _ ->
+    (* no overflow possible here *)
+    rank_structured_constant c1 - rank_structured_constant c2

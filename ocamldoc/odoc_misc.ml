@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let no_blanks s =
   let len = String.length s in
@@ -65,7 +68,7 @@ let list_concat sep =
   let rec iter = function
       [] -> []
     | [h] -> [h]
-    | h :: q -> h :: sep :: q
+    | h :: q -> h :: sep :: iter q
   in
   iter
 
@@ -123,7 +126,7 @@ let rec string_of_text t =
       | Odoc_types.Latex s -> "{% "^s^" %}"
       | Odoc_types.Link (s, t) ->
           "["^s^"]"^(string_of_text t)
-      | Odoc_types.Ref (name, _, Some text) ->
+      | Odoc_types.Ref (_name, _, Some text) ->
           Printf.sprintf "[%s]" (string_of_text text)
       | Odoc_types.Ref (name, _, None) ->
           iter (Odoc_types.Code name)
@@ -223,9 +226,9 @@ let apply_opt f v_opt =
     None -> None
   | Some v -> Some (f v)
 
-let string_of_date ?(hour=true) d =
+let string_of_date ?(absolute=false) ?(hour=true) d =
   let add_0 s = if String.length s < 2 then "0"^s else s in
-  let t = Unix.localtime d in
+  let t = (if absolute then Unix.gmtime else Unix.localtime) d in
   (string_of_int (t.Unix.tm_year + 1900))^"-"^
   (add_0 (string_of_int (t.Unix.tm_mon + 1)))^"-"^
   (add_0 (string_of_int t.Unix.tm_mday))^
@@ -238,6 +241,14 @@ let string_of_date ?(hour=true) d =
      ""
   )
 
+let current_date =
+  let time =
+    try
+      float_of_string (Sys.getenv "SOURCE_DATE_EPOCH")
+    with
+      Not_found -> Unix.time ()
+  in string_of_date ~absolute: true ~hour: false time
+
 
 let rec text_list_concat sep l =
   match l with
@@ -247,7 +258,7 @@ let rec text_list_concat sep l =
       t @ (sep :: (text_list_concat sep q))
 
 let rec text_no_title_no_list t =
-  let rec iter t_ele =
+  let iter t_ele =
     match t_ele with
     | Odoc_types.Title (_,_,t) -> text_no_title_no_list t
     | Odoc_types.List l
@@ -305,7 +316,7 @@ let get_titles_in_text t =
     | Odoc_types.Left t
     | Odoc_types.Right t
     | Odoc_types.Emphasize t -> iter_text t
-    | Odoc_types.Latex s -> ()
+    | Odoc_types.Latex _ -> ()
     | Odoc_types.Link (_, t)
     | Odoc_types.Superscript t
     | Odoc_types.Subscript t  -> iter_text t
@@ -333,7 +344,7 @@ let rec get_before_dot s =
     let len = String.length s in
     let n = String.index s '.' in
     if n + 1 >= len then
-      (* le point est le dernier caractere *)
+      (* The dot is the last character *)
       (true, s, "")
     else
       match s.[n+1] with

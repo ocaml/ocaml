@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Loading and installation of user-defined printer functions *)
 
@@ -20,7 +23,7 @@ open Types
 (* Error report *)
 
 type error =
-  | Load_failure of Dynlink.error
+  | Load_failure of Compdynlink.error
   | Unbound_identifier of Longident.t
   | Unavailable_module of string * Longident.t
   | Wrong_type of Longident.t
@@ -38,8 +41,8 @@ let use_debugger_symtable fn arg =
   let old_symtable = Symtable.current_state() in
   begin match !debugger_symtable with
   | None ->
-      Dynlink.init();
-      Dynlink.allow_unsafe_modules true;
+      Compdynlink.init();
+      Compdynlink.allow_unsafe_modules true;
       debugger_symtable := Some(Symtable.current_state())
   | Some st ->
       Symtable.restore_state st
@@ -60,7 +63,7 @@ open Format
 let rec loadfiles ppf name =
   try
     let filename = find_in_path !Config.load_path name in
-    use_debugger_symtable Dynlink.loadfile filename;
+    use_debugger_symtable Compdynlink.loadfile filename;
     let d = Filename.dirname name in
     if d <> Filename.current_dir_name then begin
       if not (List.mem d !Config.load_path) then
@@ -69,14 +72,17 @@ let rec loadfiles ppf name =
     fprintf ppf "File %s loaded@." filename;
     true
   with
-  | Dynlink.Error (Dynlink.Unavailable_unit unit) ->
+  | Compdynlink.Error (Compdynlink.Unavailable_unit unit) ->
       loadfiles ppf (String.uncapitalize_ascii unit ^ ".cmo")
         &&
       loadfiles ppf name
   | Not_found ->
       fprintf ppf "Cannot find file %s@." name;
       false
-  | Dynlink.Error e ->
+  | Sys_error msg ->
+      fprintf ppf "%s: %s@." name msg;
+      false
+  | Compdynlink.Error e ->
       raise(Error(Load_failure e))
 
 let loadfile ppf name =
@@ -88,8 +94,8 @@ let loadfile ppf name =
 
 let rec eval_path = function
     Pident id -> Symtable.get_global_value id
-  | Pdot(p, s, pos) -> Obj.field (eval_path p) pos
-  | Papply(p1, p2) -> fatal_error "Loadprinter.eval_path"
+  | Pdot(p, _, pos) -> Obj.field (eval_path p) pos
+  | Papply _ -> fatal_error "Loadprinter.eval_path"
 
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
@@ -103,7 +109,7 @@ let () =
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =
-  let (printer_type, _) =
+  let printer_type =
     try
       Env.lookup_type (Ldot(Lident "Topdirs", typename)) Env.empty
     with Not_found ->
@@ -140,13 +146,13 @@ let install_printer ppf lid =
       raise(Error(Unavailable_module(s, lid))) in
   let print_function =
     if is_old_style then
-      (fun formatter repr -> Obj.obj v (Obj.obj repr))
+      (fun _formatter repr -> Obj.obj v (Obj.obj repr))
     else
       (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
   Printval.install_printer path ty_arg ppf print_function
 
 let remove_printer lid =
-  let (ty_arg, path, is_old_style) = find_printer_type lid in
+  let (_ty_arg, path, _is_old_style) = find_printer_type lid in
   try
     Printval.remove_printer path
   with Not_found ->
@@ -159,7 +165,7 @@ open Format
 let report_error ppf = function
   | Load_failure e ->
       fprintf ppf "@[Error during code loading: %s@]@."
-        (Dynlink.error_message e)
+        (Compdynlink.error_message e)
   | Unbound_identifier lid ->
       fprintf ppf "@[Unbound identifier %a@]@."
       Printtyp.longident lid

@@ -25,6 +25,9 @@
                     + (tag_t) (tag)))                                         \
       )
 
+#define Make_header_with_profinfo(wosize, tag, color, profinfo) \
+  Make_header(wosize,tag,color)
+
 #define Whitehd_hd(hd) (((hd)  & ~(3 << 8)))
 
 #endif /* CAML_GC_H */

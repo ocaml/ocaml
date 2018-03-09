@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* To control the runtime system and bytecode interpreter *)
 
@@ -23,3 +26,8 @@ external invoke_traced_function : Obj.t -> Obj.t -> Obj.t -> Obj.t
                                 = "caml_invoke_traced_function"
 external get_section_table : unit -> (string * Obj.t) list
                            = "caml_get_section_table"
+external add_debug_info :
+  bytes -> int -> Instruct.debug_event list array -> unit
+                        = "caml_add_debug_info"
+external remove_debug_info : bytes -> unit
+                           = "caml_remove_debug_info"

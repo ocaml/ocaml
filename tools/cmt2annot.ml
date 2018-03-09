@@ -1,37 +1,45 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*                  Fabrice Le Fessant, INRIA Saclay                   *)
 (*                                                                     *)
 (*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Generate an .annot file from a .cmt file. *)
 
 open Asttypes
 open Typedtree
+open Tast_mapper
 
 let bind_variables scope =
-  object
-    inherit Tast_iter.iter as super
-
-    method! pattern pat =
-      super # pattern pat;
-      match pat.pat_desc with
+  let super = Tast_mapper.default in
+  let pat sub p =
+    begin match p.pat_desc with
       | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
-          Stypes.record (Stypes.An_ident (pat.pat_loc,
+        Stypes.record (Stypes.An_ident (p.pat_loc,
                                           Ident.name id,
                                           Annot.Idef scope))
       | _ -> ()
-  end
+    end;
+    super.pat sub p;
+  in
+  {super with pat}
+
+let bind_variables scope =
+  let o = bind_variables scope in
+  fun p -> ignore (o.pat o p)
 
 let bind_bindings scope bindings =
   let o = bind_variables scope in
-  List.iter (fun x -> o # pattern x.vb_pat) bindings
+  List.iter (fun x -> o x.vb_pat) bindings
 
 let bind_cases l =
   List.iter
@@ -42,23 +50,21 @@ let bind_cases l =
         | None -> c_rhs.exp_loc
         | Some g -> {c_rhs.exp_loc with loc_start=g.exp_loc.loc_start}
       in
-      (bind_variables loc) # pattern c_lhs) l
+      bind_variables loc  c_lhs
+    )
+    l
 
-let iterator rebuild_env =
-  object(this)
-    val scope = Location.none  (* scope of the surrounding structure *)
-
-    inherit Tast_iter.iter as super
-
-    method! class_expr node =
+let rec iterator ~scope rebuild_env =
+  let super = Tast_mapper.default in
+  let class_expr sub node =
       Stypes.record (Stypes.Ti_class node);
-      super # class_expr node
+    super.class_expr sub node
 
-    method! module_expr node =
+  and module_expr _sub node =
       Stypes.record (Stypes.Ti_mod node);
-      Tast_iter.module_expr {< scope = node.mod_loc >} node
+    super.module_expr (iterator ~scope:node.mod_loc rebuild_env) node
 
-    method! expression exp =
+  and expr sub exp =
       begin match exp.exp_desc with
       | Texp_ident (path, _, _) ->
           let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
@@ -99,13 +105,14 @@ let iterator rebuild_env =
       | _ -> ()
       end;
       Stypes.record (Stypes.Ti_expr exp);
-      super # expression exp
+    super.expr sub exp
 
-    method! pattern pat =
-      super # pattern pat;
-      Stypes.record (Stypes.Ti_pat pat)
+  and pat sub p =
+    Stypes.record (Stypes.Ti_pat p);
+    super.pat sub p
+  in
 
-    method private structure_item_rem s rem =
+  let structure_item_rem sub s rem =
       begin match s with
       | {str_desc = Tstr_value (rec_flag, bindings); str_loc = loc} ->
           let open Location in
@@ -119,36 +126,35 @@ let iterator rebuild_env =
           ()
       end;
       Stypes.record_phrase s.str_loc;
-      super # structure_item s
-
-    method! structure_item s =
+    super.structure_item sub s
+  in
+  let structure_item sub s =
       (* This will be used for Partial_structure_item.
          We don't have here the location of the "next" item,
          this will give a slightly different scope for the non-recursive
          binding case. *)
-      this # structure_item_rem s []
-
-    method! structure l =
+    structure_item_rem sub s []
+  and structure sub l =
       let rec loop = function
-        | str :: rem -> this # structure_item_rem str rem; loop rem
-        | [] -> ()
+      | str :: rem -> structure_item_rem sub str rem :: loop rem
+      | [] -> []
       in
-      loop l.str_items
-
-(* TODO: support binding for Tcl_fun, Tcl_let, etc *)
-  end
+    {l with str_items = loop l.str_items}
+  in
+  {super with class_expr; module_expr; expr; pat; structure_item; structure}
 
 let binary_part iter x =
+  let app f x = ignore (f iter x) in
   let open Cmt_format in
   match x with
-  | Partial_structure x -> iter # structure x
-  | Partial_structure_item x -> iter # structure_item x
-  | Partial_expression x -> iter # expression x
-  | Partial_pattern x -> iter # pattern x
-  | Partial_class_expr x -> iter # class_expr x
-  | Partial_signature x -> iter # signature x
-  | Partial_signature_item x -> iter # signature_item x
-  | Partial_module_type x -> iter # module_type x
+  | Partial_structure x -> app iter.structure x
+  | Partial_structure_item x -> app iter.structure_item x
+  | Partial_expression x -> app iter.expr x
+  | Partial_pattern x -> app iter.pat x
+  | Partial_class_expr x -> app iter.class_expr x
+  | Partial_signature x -> app iter.signature x
+  | Partial_signature_item x -> app iter.signature_item x
+  | Partial_module_type x -> app iter.module_type x
 
 let gen_annot target_filename filename
               {Cmt_format.cmt_loadpath; cmt_annots; cmt_use_summaries; _} =
@@ -161,10 +167,10 @@ let gen_annot target_filename filename
     | Some "-" -> None
     | Some _ -> target_filename
   in
-  let iterator = iterator cmt_use_summaries in
+  let iterator = iterator ~scope:Location.none cmt_use_summaries in
   match cmt_annots with
   | Implementation typedtree ->
-      iterator # structure typedtree;
+      ignore (iterator.structure iterator typedtree);
       Stypes.dump target_filename
   | Interface _ ->
       Printf.eprintf "Cannot generate annotations for interface file\n%!";

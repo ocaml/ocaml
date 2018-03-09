@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Representation and manipulation of values, class attributes and class methods. *)
 
@@ -95,22 +98,16 @@ let parameter_list_from_arrows typ =
    so there is nothing to merge. With this dummy list we can merge the
    parameter names from the .ml and the type from the .mli file. *)
 let dummy_parameter_list typ =
-  let normal_name s =
-    match s with
-      "" -> s
-    | _ ->
-        match s.[0] with
-          '?' -> String.sub s 1 ((String.length s) - 1)
-        | _ -> s
-  in
+  let normal_name = Odoc_misc.label_name in
   Printtyp.mark_loops typ;
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
     match t.Types.desc with
     | Types.Ttuple l ->
-        if label = "" then
+        let open Asttypes in
+        if label = Nolabel then
           Odoc_parameter.Tuple
-            (List.map (fun t2 -> iter ("", t2)) l, t)
+            (List.map (fun t2 -> iter (Nolabel, t2)) l, t)
         else
           (* if there is a label, then we don't want to decompose the tuple *)
           Odoc_parameter.Simple_name

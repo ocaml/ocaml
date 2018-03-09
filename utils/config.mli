@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* System configuration *)
 
@@ -90,6 +93,11 @@ val stack_threshold: int
 val profile_slop : int
         (* Size in words of extra stack slop space at the bottom of stack if
            profiling is enabled. See byterun/config.h *)
+val stack_safety_margin: int
+        (* Size in words of the safety margin between the bottom of
+           the stack and the stack pointer. This margin can be used by
+           intermediate computations of some instructions, or the event
+           handler. *)
 
 val architecture: string
         (* Name of processor type for the native-code compiler *)
@@ -123,6 +131,9 @@ val default_executable_name: string
 val systhread_supported : bool
         (* Whether the system thread library is implemented *)
 
+val flexdll_dirs : string list
+        (* Directories needed for the FlexDLL objects *)
+
 val host : string
         (* Whether the compiler is a cross-compiler *)
 
@@ -134,3 +145,18 @@ val print_config : out_channel -> unit;;
 val stats : bool
         (* Whether the compiler records detailed statistics about the program.
            Warning: Expect a substantial performance hit. *)
+val flambda : bool
+        (* Whether the compiler was configured for flambda *)
+
+val spacetime : bool
+        (* Whether the compiler was configured for Spacetime profiling *)
+val profinfo_width : int
+        (* How many bits are to be used in values' headers for profiling
+           information *)
+val libunwind_available : bool
+        (* Whether the libunwind library is available on the target *)
+val libunwind_link_flags : string
+        (* Linker flags to use libunwind *)
+
+val safe_string: bool
+        (* Whether the compiler was configured with -safe-string *)

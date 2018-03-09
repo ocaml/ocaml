@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
@@ -19,6 +21,9 @@
 /* <private> */
 #include "../../config/m.h"
 #include "../../config/s.h"
+#ifdef BOOTSTRAPPING_FLEXLINK
+#undef SUPPORT_DYNAMIC_LINKING
+#endif
 /* </private> */
 
 #ifndef CAML_NAME_SPACE
@@ -70,6 +75,12 @@ typedef ARCH_INT32_TYPE int32_t;
 typedef ARCH_UINT32_TYPE uint32_t;
 typedef ARCH_INT64_TYPE int64_t;
 typedef ARCH_UINT64_TYPE uint64_t;
+#if SIZEOF_SHORT == 2
+typedef short int16_t;
+typedef unsigned short uint16_t;
+#else
+#error "No 16-bit integer type available"
+#endif
 #endif
 
 #if SIZEOF_PTR == SIZEOF_LONG
@@ -106,6 +117,7 @@ typedef uint64_t uintnat;
 #define ARCH_FLOAT_ENDIANNESS 0x01234567
 #endif
 
+
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 
@@ -115,14 +127,14 @@ typedef uint64_t uintnat;
 #endif
 
 
-/* Do not change this definition. */
-#define Page_size (1 << Page_log)
-
 /* Memory model parameters */
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
-   It must be a multiple of [sizeof (value)] and >= 8 and <= 20. */
+   [Page_size] must be a multiple of [sizeof (value)].
+   [Page_log] must be be >= 8 and <= 20.
+   Do not change the definition of [Page_size]. */
 #define Page_log 12             /* A page is 4 kilobytes. */
+#define Page_size (1 << Page_log)
 
 /* Size of extra stack slop space if profiling is enabled (words) */
 #define Profile_slop 128
@@ -140,6 +152,7 @@ typedef uint64_t uintnat;
 /* Maximum size of a block allocated in the young generation (words). */
 /* Must be > 4 */
 #define Max_young_wosize 256
+#define Max_young_whsize (Whsize_wosize (Max_young_wosize))
 
 
 /* Minimum size of the minor zone (words).
@@ -199,5 +212,13 @@ typedef uint64_t uintnat;
 
 /* Maximum number of domains */
 #define Max_domains (1 << Minor_heap_sel_bits)
+
+/* Default setting for the major GC slice smoothing window: 1
+   (i.e. no smoothing)
+*/
+#define Major_window_def 1
+
+/* Maximum size of the major GC slice smoothing window. */
+#define Max_major_window 50
 
 #endif /* CAML_CONFIG_H */

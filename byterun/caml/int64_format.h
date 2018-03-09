@@ -1,21 +1,25 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* printf-like formatting of 64-bit integers, in case the C library
    printf() function does not support them. */
 
 #ifndef CAML_INT64_FORMAT_H
 #define CAML_INT64_FORMAT_H
+
+#ifdef CAML_INTERNALS
 
 static void I64_format(char * buffer, char * fmt, int64_t x)
 {
@@ -101,5 +105,7 @@ static void I64_format(char * buffer, char * fmt, int64_t x)
   }
   *p = 0;
 }
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INT64_FORMAT_H */

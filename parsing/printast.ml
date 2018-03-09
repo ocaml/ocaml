@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes;;
 open Format;;
@@ -41,25 +44,26 @@ let rec fmt_longident_aux f x =
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
 
-let fmt_longident_loc f x =
+let fmt_longident_loc f (x : Longident.t loc) =
   fprintf f "\"%a\" %a" fmt_longident_aux x.txt fmt_location x.loc;
 ;;
 
-let fmt_string_loc f x =
+let fmt_string_loc f (x : string loc) =
   fprintf f "\"%s\" %a" x.txt fmt_location x.loc;
 ;;
 
+let fmt_char_option f = function
+  | None -> fprintf f "None"
+  | Some c -> fprintf f "Some %c" c
+
 let fmt_constant f x =
   match x with
-  | Const_int (i) -> fprintf f "Const_int %d" i;
-  | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
-  | Const_string (s, None) -> fprintf f "Const_string(%S,None)" s;
-  | Const_string (s, Some delim) ->
-      fprintf f "Const_string (%S,Some %S)" s delim;
-  | Const_float (s) -> fprintf f "Const_float %s" s;
-  | Const_int32 (i) -> fprintf f "Const_int32 %ld" i;
-  | Const_int64 (i) -> fprintf f "Const_int64 %Ld" i;
-  | Const_nativeint (i) -> fprintf f "Const_nativeint %nd" i;
+  | Pconst_integer (i,m) -> fprintf f "PConst_int (%s,%a)" i fmt_char_option m;
+  | Pconst_char (c) -> fprintf f "PConst_char %02x" (Char.code c);
+  | Pconst_string (s, None) -> fprintf f "PConst_string(%S,None)" s;
+  | Pconst_string (s, Some delim) ->
+      fprintf f "PConst_string (%S,Some %S)" s delim;
+  | Pconst_float (s,m) -> fprintf f "PConst_float (%s,%a)" s fmt_char_option m;
 ;;
 
 let fmt_mutable_flag f x =
@@ -128,8 +132,11 @@ let option i f ppf x =
 let longident_loc i ppf li = line i ppf "%a\n" fmt_longident_loc li;;
 let string i ppf s = line i ppf "\"%s\"\n" s;;
 let string_loc i ppf s = line i ppf "%a\n" fmt_string_loc s;;
-let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
-let label i ppf x = line i ppf "label=\"%s\"\n" x;;
+let arg_label i ppf = function
+  | Nolabel -> line i ppf "Nolabel\n"
+  | Optional s -> line i ppf "Optional \"%s\"\n" s
+  | Labelled s -> line i ppf "Labelled \"%s\"\n" s
+;;
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
@@ -140,7 +147,7 @@ let rec core_type i ppf x =
   | Ptyp_var (s) -> line i ppf "Ptyp_var %s\n" s;
   | Ptyp_arrow (l, ct1, ct2) ->
       line i ppf "Ptyp_arrow\n";
-      string i ppf l;
+      arg_label i ppf l;
       core_type i ppf ct1;
       core_type i ppf ct2;
   | Ptyp_tuple l ->
@@ -235,6 +242,9 @@ and pattern i ppf x =
       line i ppf "Ppat_effect\n";
       pattern i ppf p1;
       pattern i ppf p2
+  | Ppat_open (m,p) ->
+      line i ppf "Ppat_open \"%a\"\n" fmt_longident_loc m;
+      pattern i ppf p
   | Ppat_extension (s, arg) ->
       line i ppf "Ppat_extension \"%s\"\n" s.txt;
       payload i ppf arg
@@ -254,7 +264,8 @@ and expression i ppf x =
       line i ppf "Pexp_function\n";
       list i case ppf l;
   | Pexp_fun (l, eo, p, e) ->
-      line i ppf "Pexp_fun \"%s\"\n" l;
+      line i ppf "Pexp_fun\n";
+      arg_label i ppf l;
       option i expression ppf eo;
       pattern i ppf p;
       expression i ppf e;
@@ -337,6 +348,10 @@ and expression i ppf x =
       line i ppf "Pexp_letmodule %a\n" fmt_string_loc s;
       module_expr i ppf me;
       expression i ppf e;
+  | Pexp_letexception (cd, e) ->
+      line i ppf "Pexp_letexception\n";
+      extension_constructor i ppf cd;
+      expression i ppf e;
   | Pexp_assert (e) ->
       line i ppf "Pexp_assert\n";
       expression i ppf e;
@@ -363,6 +378,8 @@ and expression i ppf x =
   | Pexp_extension (s, arg) ->
       line i ppf "Pexp_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pexp_unreachable ->
+      line i ppf "Pexp_unreachable"
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_string_loc
@@ -399,6 +416,7 @@ and attributes i ppf l =
 
 and payload i ppf = function
   | PStr x -> structure i ppf x
+  | PSig x -> signature i ppf x
   | PTyp x -> core_type i ppf x
   | PPat (x, None) -> pattern i ppf x
   | PPat (x, Some g) ->
@@ -443,7 +461,7 @@ and extension_constructor_kind i ppf x =
   match x with
       Pext_decl(a, r) ->
         line i ppf "Pext_decl\n";
-        list (i+1) core_type ppf a;
+        constructor_arguments (i+1) ppf a;
         option (i+1) core_type ppf r;
     | Pext_rebind li ->
         line i ppf "Pext_rebind\n";
@@ -479,7 +497,8 @@ and class_type i ppf x =
       line i ppf "Pcty_signature\n";
       class_signature i ppf cs;
   | Pcty_arrow (l, co, cl) ->
-      line i ppf "Pcty_arrow \"%s\"\n" l;
+      line i ppf "Pcty_arrow\n";
+      arg_label i ppf l;
       core_type i ppf co;
       class_type i ppf cl;
   | Pcty_extension (s, arg) ->
@@ -553,7 +572,7 @@ and class_expr i ppf x =
       class_structure i ppf cs;
   | Pcl_fun (l, eo, p, e) ->
       line i ppf "Pcl_fun\n";
-      label i ppf l;
+      arg_label i ppf l;
       option i expression ppf eo;
       pattern i ppf p;
       class_expr i ppf e;
@@ -662,8 +681,8 @@ and signature_item i ppf x =
   | Psig_value vd ->
       line i ppf "Psig_value\n";
       value_description i ppf vd;
-  | Psig_type l ->
-      line i ppf "Psig_type\n";
+  | Psig_type (rf, l) ->
+      line i ppf "Psig_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
@@ -773,8 +792,8 @@ and structure_item i ppf x =
   | Pstr_primitive vd ->
       line i ppf "Pstr_primitive\n";
       value_description i ppf vd;
-  | Pstr_type l ->
-      line i ppf "Pstr_type\n";
+  | Pstr_type (rf, l) ->
+      line i ppf "Pstr_type %a\n" fmt_rec_flag rf;
       list i type_declaration ppf l;
   | Pstr_typext te ->
       line i ppf "Pstr_typext\n";
@@ -838,8 +857,12 @@ and constructor_decl i ppf
   line i ppf "%a\n" fmt_location pcd_loc;
   line (i+1) ppf "%a\n" fmt_string_loc pcd_name;
   attributes i ppf pcd_attributes;
-  list (i+1) core_type ppf pcd_args;
+  constructor_arguments (i+1) ppf pcd_args;
   option (i+1) core_type ppf pcd_res
+
+and constructor_arguments i ppf = function
+  | Pcstr_tuple l -> list i core_type ppf l
+  | Pcstr_record l -> list i label_decl ppf l
 
 and label_decl i ppf {pld_name; pld_mutable; pld_type; pld_loc; pld_attributes}=
   line i ppf "%a\n" fmt_location pld_loc;
@@ -876,7 +899,8 @@ and longident_x_expression i ppf (li, e) =
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l,e) =
-  line i ppf "<label> \"%s\"\n" l;
+  line i ppf "<arg>\n";
+  arg_label i ppf l;
   expression (i+1) ppf e;
 
 and label_x_bool_x_core_type_list i ppf x =
@@ -903,7 +927,8 @@ and directive_argument i ppf x =
   match x with
   | Pdir_none -> line i ppf "Pdir_none\n"
   | Pdir_string (s) -> line i ppf "Pdir_string \"%s\"\n" s;
-  | Pdir_int (n) -> line i ppf "Pdir_int %d\n" n;
+  | Pdir_int (n, None) -> line i ppf "Pdir_int %s\n" n;
+  | Pdir_int (n, Some m) -> line i ppf "Pdir_int %s%c\n" n m;
   | Pdir_ident (li) -> line i ppf "Pdir_ident %a\n" fmt_longident li;
   | Pdir_bool (b) -> line i ppf "Pdir_bool %s\n" (string_of_bool b);
 ;;

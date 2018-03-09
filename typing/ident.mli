@@ -1,18 +1,29 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Identifiers (unique names) *)
 
 type t = { stamp: int; name: string; mutable flags: int }
+
+include Identifiable.S with type t := t
+(* Notes:
+   - [equal] compares identifiers by name
+   - [compare x y] is 0 if [same x y] is true.
+   - [compare] compares identifiers by binding location
+*)
+
 
 val create: string -> t
 val create_persistent: string -> t
@@ -22,14 +33,13 @@ val name: t -> string
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
-val equal: t -> t -> bool
-        (* Compare identifiers by name. *)
 val same: t -> t -> bool
         (* Compare identifiers by binding location.
            Two identifiers are the same either if they are both
            non-persistent and have been created by the same call to
            [new], or if they are both persistent and have the same
            name. *)
+val compare: t -> t -> int
 val hide: t -> t
         (* Return an identifier with same name as the given identifier,
            but stamp different from any stamp returned by new.
@@ -44,8 +54,6 @@ val binding_time: t -> int
 val current_time: unit -> int
 val set_current_time: int -> unit
 val reinit: unit -> unit
-
-val print: Format.formatter -> t -> unit
 
 type 'a tbl
         (* Association tables from identifiers to type 'a. *)

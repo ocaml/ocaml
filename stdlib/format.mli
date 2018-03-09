@@ -1,20 +1,22 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Pretty printing.
 
-   This module implements a pretty-printing facility to format text
-   within 'pretty-printing boxes'. The pretty-printer breaks lines
+   This module implements a pretty-printing facility to format values
+   within 'pretty-printing boxes'. The pretty-printer splits lines
    at specified break hints, and indents lines according to the box
    structure.
 
@@ -24,7 +26,7 @@
     http://caml.inria.fr/resources/doc/guides/format.en.html}.
 
    You may consider this module as providing an extension to the
-   [printf] facility to provide automatic line breaking. The addition of
+   [printf] facility to provide automatic line splitting. The addition of
    pretty-printing annotations to your regular [printf] formats gives you
    fancy indentation and line breaks.
    Pretty-printing annotations are described below in the documentation of
@@ -66,7 +68,7 @@
 
    Warning: the material output by the following functions is delayed
    in the pretty-printer queue in order to compute the proper line
-   breaking. Hence, you should not mix calls to the printing functions
+   splitting. Hence, you should not mix calls to the printing functions
    of the basic I/O system with calls to the functions of this module:
    this could result in some strange output seemingly unrelated with
    the evaluation order of printing commands.
@@ -77,14 +79,18 @@
 val open_box : int -> unit
 (** [open_box d] opens a new pretty-printing box
    with offset [d].
+
+   This box prints material as much as possible on every line.
+
+   A break hint splits the line if there is no more room on the line to
+   print the remainder of the box.
+   A break hint also splits the line if the splitting ``moves to the left''
+   (i.e. it gives an indentation smaller than the one of the current line).
+
    This box is the general purpose pretty-printing box.
-   Material in this box is displayed 'horizontal or vertical':
-   break hints inside the box may lead to a new line, if there
-   is no more room on the line to print the remainder of the box,
-   or if a new line may lead to a new indentation
-   (demonstrating the indentation of the box).
-   When a new line is printed in the box, [d] is added to the
-   current indentation. *)
+
+   If the pretty-printer splits the line in the box, offset [d] is added to
+   the current indentation. *)
 
 val close_box : unit -> unit
 (** Closes the most recently opened pretty-printing box. *)
@@ -113,30 +119,45 @@ val print_bool : bool -> unit
 
 (** {6 Break hints} *)
 
+(** A 'break hint' tells the pretty-printer to output some space or split the
+  line whichever way is more appropriate to the current box splitting rules.
+
+  Break hints are used to separate printing items and are mandatory to let
+  the pretty-printer correctly split lines and indent items.
+
+  Simple break hints are:
+  - the 'space': output a space or split the line if appropriate,
+  - the 'cut': split the line if appropriate.
+
+  Note: the notions of space and line splitting are abstract for the
+  pretty-printing engine, since those notions can be completely defined
+  by the programmer.
+  However, in the pretty-printer default setting, ``output a space'' simply
+  means printing a space character (ASCII code 32) and ``split the line''
+  is printing a newline character (ASCII code 10).
+
+*)
+
 val print_space : unit -> unit
-(** [print_space ()] is used to separate items (typically to print
-   a space between two words).
-   It indicates that the line may be split at this
-   point. It either prints one space or splits the line.
-   It is equivalent to [print_break 1 0]. *)
+(** [print_space ()] the 'space' break hint:
+  the pretty-printer may split the line at this
+  point, otherwise it prints one space.
+  It is equivalent to [print_break 1 0]. *)
 
 val print_cut : unit -> unit
-(** [print_cut ()] is used to mark a good break position.
-   It indicates that the line may be split at this
-   point. It either prints nothing or splits the line.
-   This allows line splitting at the current
-   point, without printing spaces or adding indentation.
-   It is equivalent to [print_break 0 0]. *)
+(** [print_cut ()] the 'cut' break hint:
+  the pretty-printer may split the line at this
+  point, otherwise it prints nothing.
+  It is equivalent to [print_break 0 0]. *)
 
 val print_break : int -> int -> unit
-(** Inserts a break hint in a pretty-printing box.
-   [print_break nspaces offset] indicates that the line may
-   be split (a newline character is printed) at this point,
-   if the contents of the current box does not fit on the
-   current line.
-   If the line is split at that point, [offset] is added to
-   the current indentation. If the line is not split,
-   [nspaces] spaces are printed. *)
+(** [print_break nspaces offset] the 'full' break hint:
+  the pretty-printer may split the line at this
+  point, otherwise it prints [nspaces] spaces.
+
+  If the pretty-printer splits the line, [offset] is added to
+  the current indentation.
+*)
 
 val print_flush : unit -> unit
 (** Flushes the pretty printer: all opened boxes are closed,
@@ -146,8 +167,10 @@ val print_newline : unit -> unit
 (** Equivalent to [print_flush] followed by a new line. *)
 
 val force_newline : unit -> unit
-(** Forces a newline in the current box. Not the normal way of
-   pretty-printing, you should prefer break hints. *)
+(** Forces a new line in the current box.
+  Not the normal way of pretty-printing, since the new line does not reset
+  the current line count.
+  You should prefer using break hints within a vertcal box. *)
 
 val print_if_newline : unit -> unit
 (** Executes the next formatting command if the preceding line
@@ -157,9 +180,9 @@ val print_if_newline : unit -> unit
 (** {6 Margin} *)
 
 val set_margin : int -> unit
-(** [set_margin d] sets the value of the right margin
-   to [d] (in characters): this value is used to detect line
-   overflows that leads to split lines.
+(** [set_margin d] sets the right margin to [d] (in characters):
+  the pretty-printer splits lines that overflow the right margin according to
+  the break hints given.
    Nothing happens if [d] is smaller than 2.
    If [d] is too large, the right margin is set to the maximum
    admissible value (which is greater than [10^9]). *)
@@ -170,16 +193,16 @@ val get_margin : unit -> int
 (** {6 Maximum indentation limit} *)
 
 val set_max_indent : int -> unit
-(** [set_max_indent d] sets the value of the maximum
-   indentation limit to [d] (in characters):
-   once this limit is reached, boxes are rejected to the left,
+(** [set_max_indent d] sets the maximum indentation limit of lines to [d] (in
+  characters):
+  once this limit is reached, new boxes are rejected to the left,
    if they do not fit on the current line.
    Nothing happens if [d] is smaller than 2.
    If [d] is too large, the limit is set to the maximum
    admissible value (which is greater than [10^9]). *)
 
 val get_max_indent : unit -> int
-(** Return the value of the maximum indentation limit (in characters). *)
+(** Return the maximum indentation limit (in characters). *)
 
 (** {6 Formatting depth: maximum number of boxes allowed before ellipsis} *)
 
@@ -199,61 +222,45 @@ val over_max_boxes : unit -> bool
 (** {6 Advanced formatting} *)
 
 val open_hbox : unit -> unit
-(** [open_hbox ()] opens a new pretty-printing box.
-   This box is 'horizontal': the line is not split in this box
-   (new lines may still occur inside boxes nested deeper). *)
+(** [open_hbox ()] opens a new 'horizontal' pretty-printing box.
+
+  This box prints material on a single line.
+
+  Break hints in a horizontal box never split the line.
+  (Line splitting may still occur inside boxes nested deeper). *)
 
 val open_vbox : int -> unit
-(** [open_vbox d] opens a new pretty-printing box
+(** [open_vbox d] opens a new 'vertical' pretty-printing box
    with offset [d].
-   This box is 'vertical': every break hint inside this
-   box leads to a new line.
-   When a new line is printed in the box, [d] is added to the
+
+  This box prints material on as many lines as break hints in the box.
+
+  Every break hint in a vertical box splits the line.
+
+  If the pretty-printer splits the line in the box, [d] is added to the
    current indentation. *)
 
 val open_hvbox : int -> unit
-(** [open_hvbox d] opens a new pretty-printing box
+(** [open_hvbox d] opens a new 'horizontal-vertical' pretty-printing box
    with offset [d].
-   This box is 'horizontal-vertical': it behaves as an
-   'horizontal' box if it fits on a single line,
-   otherwise it behaves as a 'vertical' box.
-   When a new line is printed in the box, [d] is added to the
-   current indentation. *)
+
+  This box behaves as an horizontal box if it fits on a single line,
+  otherwise it behaves as a vertical box.
+
+  If the pretty-printer splits the line in the box, [d] is added to the
+  current indentation. *)
 
 val open_hovbox : int -> unit
-(** [open_hovbox d] opens a new pretty-printing box
-   with offset [d].
-   This box is 'horizontal or vertical': break hints
-   inside this box may lead to a new line, if there is no more room
-   on the line to print the remainder of the box.
-   When a new line is printed in the box, [d] is added to the
-   current indentation. *)
+(** [open_hovbox d] opens a new 'horizontal-or-vertical' pretty-printing box
+  with offset [d].
 
-(** {6 Tabulations} *)
+  This box prints material as much as possible on every line.
 
-val open_tbox : unit -> unit
-(** Opens a tabulation box. *)
+  A break hint splits the line if there is no more room on the line to
+  print the remainder of the box.
 
-val close_tbox : unit -> unit
-(** Closes the most recently opened tabulation box. *)
-
-val print_tbreak : int -> int -> unit
-(** Break hint in a tabulation box.
-   [print_tbreak spaces offset] moves the insertion point to
-   the next tabulation ([spaces] being added to this position).
-   Nothing occurs if insertion point is already on a
-   tabulation mark.
-   If there is no next tabulation on the line, then a newline
-   is printed and the insertion point moves to the first
-   tabulation of the box.
-   If a new line is printed, [offset] is added to the current
-   indentation. *)
-
-val set_tab : unit -> unit
-(** Sets a tabulation mark at the current insertion point. *)
-
-val print_tab : unit -> unit
-(** [print_tab ()] is equivalent to [print_tbreak 0 0]. *)
+  If the pretty-printer splits the line in the box, [d] is added to the
+  current indentation. *)
 
 (** {6 Ellipsis} *)
 
@@ -264,19 +271,19 @@ val set_ellipsis_text : string -> unit
 val get_ellipsis_text : unit -> string
 (** Return the text of the ellipsis. *)
 
-(** {6:tags Semantics Tags} *)
+(** {6:tags Semantic Tags} *)
 
 type tag = string
 
-(** {i Semantics tags} (or simply {e tags}) are used to decorate printed
+(** {i Semantic tags} (or simply {e tags}) are used to decorate printed
    entities for user's defined purposes, e.g. setting font and giving size
-   indications for a display device, or marking delimitation of semantics
+  indications for a display device, or marking delimitation of semantic
    entities (e.g. HTML or TeX elements or terminal escape sequences).
 
-   By default, those tags do not influence line breaking calculation:
+  By default, those tags do not influence line splitting calculation:
    the tag 'markers' are not considered as part of the printing
-   material that drives line breaking (in other words, the length of
-   those strings is considered as zero for line breaking).
+  material that drives line splitting (in other words, the length of
+  those strings is considered as zero for line splitting).
 
    Thus, tag handling is in some sense transparent to pretty-printing
    and does not interfere with usual indentation. Hence, a single
@@ -292,18 +299,18 @@ type tag = string
    formatter specific function with the name of the tag as argument:
    that 'tag printing' function can then print any regular material
    to the formatter (so that this material is enqueued as usual in the
-   formatter queue for further line-breaking computation). Marking a
+  formatter queue for further line splitting computation). Marking a
    tag means to output an arbitrary string (the 'tag marker'),
    directly into the output device of the formatter. Hence, the
    formatter specific 'tag marking' function must return the tag
    marker string associated to its tag argument. Being flushed
    directly into the output device of the formatter, tag marker
    strings are not considered as part of the printing material that
-   drives line breaking (in other words, the length of the strings
+  drives line splitting (in other words, the length of the strings
    corresponding to tag markers is considered as zero for line
-   breaking). In addition, advanced users may take advantage of
+  splitting). In addition, advanced users may take advantage of
    the specificity of tag markers to be precisely output when the
-   pretty printer has already decided where to break the lines, and
+  pretty printer has already decided where to split the lines, and
    precisely when the queue is flushed into the output device.
 
    In the spirit of HTML tags, the default tag marking functions
@@ -372,7 +379,7 @@ val get_formatter_output_functions :
 
 (** The [Format] module is versatile enough to let you completely redefine
  the meaning of pretty printing: you may provide your own functions to define
- how to handle indentation, line breaking, and even printing of all the
+  how to handle indentation, line splitting, and even printing of all the
  characters that have to be printed! *)
 
 type formatter_out_functions = {
@@ -381,7 +388,6 @@ type formatter_out_functions = {
   out_newline : unit -> unit;
   out_spaces : int -> unit;
 }
-
 
 val set_formatter_out_functions : formatter_out_functions -> unit
 (** [set_formatter_out_functions f]
@@ -402,10 +408,10 @@ val set_formatter_out_functions : formatter_out_functions -> unit
 
 val get_formatter_out_functions : unit -> formatter_out_functions
 (** Return the current output functions of the pretty-printer,
-   including line breaking and indentation functions. Useful to record the
+  including line splitting and indentation functions. Useful to record the
    current setting and restore it afterwards. *)
 
-(** {6:tagsmeaning Changing the meaning of printing semantics tags} *)
+(** {6:tagsmeaning Changing the meaning of printing semantic tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -447,7 +453,7 @@ type formatter
 
   Defining new pretty-printers permits unrelated output of material in
   parallel on several output channels.
-  All the parameters of a pretty-printer are local to this pretty-printer:
+  All the parameters of a pretty-printer are local to a formatter:
   margin, maximum indentation limit, maximum number of boxes
   simultaneously opened, ellipsis, and so on, are specific to
   each pretty-printer and may be fixed independently.
@@ -520,11 +526,6 @@ val pp_force_newline : formatter -> unit -> unit
 val pp_print_flush : formatter -> unit -> unit
 val pp_print_newline : formatter -> unit -> unit
 val pp_print_if_newline : formatter -> unit -> unit
-val pp_open_tbox : formatter -> unit -> unit
-val pp_close_tbox : formatter -> unit -> unit
-val pp_print_tbreak : formatter -> int -> int -> unit
-val pp_set_tab : formatter -> unit -> unit
-val pp_print_tab : formatter -> unit -> unit
 val pp_set_tags : formatter -> bool -> unit
 val pp_set_print_tags : formatter -> bool -> unit
 val pp_set_mark_tags : formatter -> bool -> unit
@@ -564,15 +565,23 @@ val pp_get_formatter_out_functions :
    evaluation of these primitives. For instance,
    [print_string] is equal to [pp_print_string std_formatter]. *)
 
+val pp_flush_formatter : formatter -> unit
+(** [pp_flush_formatter fmt] flushes [fmt]'s internal queue, ensuring that all
+    the printing and flushing actions have been performed. In addition, this
+    operation will close all boxes and reset the state of the formatter.
+
+    This will not flush [fmt]'s output. In most cases, the user may want to use
+    {!pp_print_flush} instead. *)
+
 (** {6 Convenience formatting functions.} *)
 
 val pp_print_list:
   ?pp_sep:(formatter -> unit -> unit) ->
   (formatter -> 'a -> unit) -> (formatter -> 'a list -> unit)
-(** [pp_print_list ?pp_sep pp_v ppf l] prints the list [l]. [pp_v] is
-    used on the elements of [l] and each element is separated by
-    a call to [pp_sep] (defaults to {!pp_print_cut}). Does nothing on
-    empty lists.
+(** [pp_print_list ?pp_sep pp_v ppf l] prints items of list [l],
+  using [pp_v] to print each item, and calling [pp_sep]
+  between items ([pp_sep] defaults to {!pp_print_cut}).
+  Does nothing on empty lists.
 
     @since 4.02.0
 *)
@@ -604,27 +613,27 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
      box may be optionally specified with the following syntax:
      the [<] character, followed by an optional box type indication,
      then an optional integer offset, and the closing [>] character.
-     Box type is one of [h], [v], [hv], [b], or [hov],
-     which stand respectively for an horizontal box, a vertical box,
-     an 'horizontal-vertical' box, or an 'horizontal or
-     vertical' box ([b] standing for an 'horizontal or
-     vertical' box demonstrating indentation and [hov] standing
-     for a regular'horizontal or vertical' box).
-     For instance, [@\[<hov 2>] opens an 'horizontal or vertical'
+    Box type is one of [h], [v], [hv], [b], or [hov].
+    '[h]' stands for an 'horizontal' box,
+    '[v]' stands for a 'vertical' box,
+    '[hv]' stands for an 'horizontal-vertical' box,
+    '[b]' stands for an 'horizontal-or-vertical' box demonstrating indentation,
+    '[hov]' stands a simple 'horizontal-or-vertical' box.
+    For instance, [@\[<hov 2>] opens an 'horizontal-or-vertical'
      box with indentation 2 as obtained with [open_hovbox 2].
      For more details about boxes, see the various box opening
      functions [open_*box].
    - [@\]]: close the most recently opened pretty-printing box.
-   - [@,]: output a good break hint, as with [print_cut ()].
-   - [@ ]: output a good break space, as with [print_space ()].
-   - [@;]: output a fully specified good break as with [print_break]. The
-     [nspaces] and [offset] parameters of the break may be
+  - [@,]: output a 'cut' break hint, as with [print_cut ()].
+  - [@ ]: output a 'space' break hint, as with [print_space ()].
+  - [@;]: output a 'full' break hint as with [print_break]. The
+    [nspaces] and [offset] parameters of the break hint may be
      optionally specified with the following syntax:
      the [<] character, followed by an integer [nspaces] value,
      then an integer [offset], and a closing [>] character.
      If no parameters are provided, the good break defaults to a
-     good break space.
-   - [@.]: flush the pretty printer and output a new line, as with
+    'space' break hint.
+  - [@.]: flush the pretty printer and split the line, as with
      [print_newline ()].
    - [@<n>]: print the following item as if it were of length [n].
      Hence, [printf "@<0>%s" arg] prints [arg] as a zero length string.
@@ -643,16 +652,19 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a
    - [@\}]: close the most recently opened tag.
    - [@?]: flush the pretty printer as with [print_flush ()].
      This is equivalent to the conversion [%!].
-   - [@\n]: force a newline, as with [force_newline ()].
-   - [@@]: print a single [@] character.
+  - [@\n]: force a newline, as with [force_newline ()], not the normal way
+    of pretty-printing, you should prefer using break hints inside a vertical
+    box.
+
+  Note: If you need to prevent the interpretation of a [@] character as a
+  pretty-printing indication, you must escape it with a [%] character.
+  Old quotation mode [@@] is deprecated since it is not compatible with
+  formatted input interpretation of character ['@'].
 
    Example: [printf "@[%s@ %d@]@." "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space ();
     print_int 1; close_box (); print_newline ()].
-   It prints [x = 1] within a pretty-printing box.
-
-   Note: If you need to prevent the interpretation of a [@] character as a
-   pretty-printing indication, you can also escape it with a [%] character.
+  It prints [x = 1] within a pretty-printing 'horizontal-or-vertical' box.
 
 *)
 
@@ -694,12 +706,14 @@ val ifprintf : formatter -> ('a, formatter, unit) format -> 'a
 
 (** Formatted output functions with continuations. *)
 
-val kfprintf : (formatter -> 'a) -> formatter ->
+val kfprintf :
+  (formatter -> 'a) -> formatter ->
               ('b, formatter, unit, 'a) format4 -> 'b
 (** Same as [fprintf] above, but instead of returning immediately,
    passes the formatter to its first argument at the end of printing. *)
 
-val ikfprintf : (formatter -> 'a) -> formatter ->
+val ikfprintf :
+  (formatter -> 'a) -> formatter ->
               ('b, formatter, unit, 'a) format4 -> 'b
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing.
@@ -760,3 +774,45 @@ val pp_get_all_formatter_output_functions :
   (int -> unit)
 [@@ocaml.deprecated "Use Format.pp_get_formatter_out_functions instead."]
 (** @deprecated Subsumed by [pp_get_formatter_out_functions]. *)
+
+(** Tabulation boxes are deprecated. *)
+
+val pp_open_tbox : formatter -> unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val pp_close_tbox : formatter -> unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val pp_print_tbreak : formatter -> int -> int -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val pp_set_tab : formatter -> unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val pp_print_tab : formatter -> unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val open_tbox : unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val close_tbox : unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val print_tbreak : int -> int -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val set_tab : unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)
+
+val print_tab : unit -> unit
+[@@ocaml.deprecated "Tabulation boxes are not supported any more."]
+(** @deprecated since 4.03.0 *)

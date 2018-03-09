@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Printf
 
 let build_result ngroups input =
@@ -389,11 +377,11 @@ let automated_test() =
   test_search_forward r n "ething"
     [||];
 
-  start_test "Search for /^ÿ/";
-  let r = Str.regexp "^ÿ" in
+  start_test "Search for /^\255/";
+  let r = Str.regexp "^\255" in
   let n = 0 in
-  test_search_forward r n "ÿ"
-    [|"ÿ"|];
+  test_search_forward r n "\255"
+    [|"\255"|];
 
   start_test "Search for /^[0-9]+$/";
   let r = Str.regexp "^[0-9]+$" in
@@ -502,7 +490,9 @@ let automated_test() =
     [||];
 
   start_test "Search for /^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$/";
-  let r = Str.regexp_case_fold "^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$" in
+  let r =
+    Str.regexp_case_fold "^[a-z0-9][a-z0-9-]*\\(\\.[a-z0-9][A-Z0-9-]*\\)*\\.$"
+  in
   let n = 1 in
   test_search_forward r n "a."
     [|"a."; "~"|];
@@ -523,8 +513,12 @@ let automated_test() =
   test_search_forward r n "-abc.peq."
     [||];
 
-  start_test "Search for /^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$/";
-  let r = Str.regexp "^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$" in
+  start_test "Search for /^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\
+                         \\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$/";
+  let r =
+    Str.regexp "^\\*\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\
+                \\(\\.[a-z]\\([a-z0-9-]*[a-z0-9]+\\)?\\)*$"
+  in
   let n = 3 in
   test_search_forward r n "*.a"
     [|"*.a"; "~"; "~"; "~"|];
@@ -569,8 +563,12 @@ let automated_test() =
   test_search_forward r n "\"1234\" : things"
     [||];
 
-  start_test "Search for /^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\\(h\\(i\\(j\\)\\)\\)$/";
-  let r = Str.regexp "^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\\(h\\(i\\(j\\)\\)\\)$" in
+  start_test "Search for /^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\
+                         \\(h\\(i\\(j\\)\\)\\)$/";
+  let r =
+    Str.regexp "^\\(a\\(b\\(c\\)\\)\\)\\(d\\(e\\(f\\)\\)\\)\
+                \\(h\\(i\\(j\\)\\)\\)$"
+  in
   let n = 9 in
   test_search_forward r n "abcdefhij"
     [|"abcdefhij"; "abc"; "bc"; "c"; "def"; "ef"; "f"; "hij"; "ij"; "j"|];
@@ -581,8 +579,11 @@ let automated_test() =
   test_search_forward r n ".^$*(+)|{?,?}"
     [|".^$*(+)|{?,?}"|];
 
-  start_test "Search for /\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)/";
-  let r = Str.regexp "\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)" in
+  start_test "Search for /\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \
+                         \\1\\(\\)2\\(3\\)/";
+  let r =
+    Str.regexp "\\(cat\\(a\\(ract\\|tonic\\)\\|erpillar\\)\\) \\1\\(\\)2\\(3\\)"
+  in
   let n = 5 in
   test_search_forward r n "cataract cataract23"
     [|"cataract cataract23"; "cataract"; "aract"; "ract"; ""; "3"|];
@@ -591,8 +592,12 @@ let automated_test() =
   test_search_forward r n "caterpillar caterpillar23"
     [|"caterpillar caterpillar23"; "caterpillar"; "erpillar"; "~"; ""; "3"|];
 
-  start_test "Search for /^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]/";
-  let r = Str.regexp "^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]" in
+  start_test "Search for /^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] \
+              +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]/";
+  let r =
+    Str.regexp "^From +\\([^ ]+\\) +[a-zA-Z][a-zA-Z][a-zA-Z] \
+                +[a-zA-Z][a-zA-Z][a-zA-Z] +[0-9]?[0-9] +[0-9][0-9]:[0-9][0-9]"
+  in
   let n = 1 in
   test_search_forward r n "From abcd  Mon Sep 01 12:33:02 1997"
     [|"From abcd  Mon Sep 01 12:33"; "abcd"|];
@@ -672,6 +677,21 @@ let automated_test() =
   let n = 0 in
   test_search_forward r n "qerpoiuab\000cdwerltkh"
     [| "\000cd" |];
+
+  (* PR#6989 *)
+  start_test "Many groups";
+  test_search_forward
+    (Str.regexp
+      "\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\\(\\)\
+       \\(\\)\\(x\\)\\(y\\)")
+    33 "xy"
+    [| "xy";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
+       ""; "x"; "y" |];
 
   (** Backward searches *)
   start_test "Backward search for /the quick/";
@@ -776,84 +796,103 @@ let automated_test() =
     let _NameChar = "[A-Za-z0-9_:.-]\\|[^\x00-\x7F]" in
     let _Name = "\\(" ^ _NameStrt ^ "\\)\\(" ^ _NameChar ^ "\\)*" in
     let _QuoteSE = "\"[^\"]*\"\\|'[^']*'" in
-    let _DT_IdentSE = _S ^ _Name ^ "\\(" ^ _S ^ "\\(" ^ _Name ^ "\\|" ^ _QuoteSE ^ "\\)\\)*" in
+    let _DT_IdentSE =
+      _S ^ _Name ^ "\\(" ^ _S ^ "\\(" ^ _Name ^ "\\|" ^ _QuoteSE ^ "\\)\\)*"
+    in
     let _MarkupDeclCE = "\\([^]\"'><]\\|" ^ _QuoteSE ^ "\\)*>" in
     let _S1 = "[\n\r\t ]" in
     let _UntilQMs = "[^?]*\\?+" in
-    let _PI_Tail = "\\?>\\|" ^ _S1 ^ _UntilQMs ^ "\\([^>?]" ^ _UntilQMs ^ "\\)*>" in
-    let _DT_ItemSE = "<\\(!\\(--" ^ _Until2Hyphens ^ ">\\|[^-]" ^ _MarkupDeclCE ^ "\\)\\|\\?" ^ _Name ^ "\\(" ^ _PI_Tail ^ "\\)\\)\\|%" ^ _Name ^ ";\\|" ^ _S1 in
-    let _DocTypeCE = _DT_IdentSE ^ "\\(" ^ _S ^ "\\)?\\(\\[\\(" ^ _DT_ItemSE ^ "\\)*]\\(" ^ _S ^ "\\)?\\)?>?" in
-    let _DeclCE = "--\\(" ^ _CommentCE ^ "\\)?\\|\\[_CDATA\\[\\(" ^ _CDATA_CE ^ "\\)?\\|_DOCTYPE\\(" ^ _DocTypeCE ^ "\\)?" in
+    let _PI_Tail =
+      "\\?>\\|" ^ _S1 ^ _UntilQMs ^ "\\([^>?]" ^ _UntilQMs ^ "\\)*>"
+    in
+    let _DT_ItemSE =
+      "<\\(!\\(--" ^ _Until2Hyphens ^ ">\\|[^-]" ^ _MarkupDeclCE ^ "\\)\\|\\?"
+      ^ _Name ^ "\\(" ^ _PI_Tail ^ "\\)\\)\\|%" ^ _Name ^ ";\\|" ^ _S1
+    in
+    let _DocTypeCE =
+      _DT_IdentSE ^ "\\(" ^ _S ^ "\\)?\\(\\[\\(" ^ _DT_ItemSE ^ "\\)*]\\("
+      ^ _S ^ "\\)?\\)?>?"
+    in
+    let _DeclCE =
+      "--\\(" ^ _CommentCE ^ "\\)?\\|\\[_CDATA\\[\\(" ^ _CDATA_CE
+      ^ "\\)?\\|_DOCTYPE\\(" ^ _DocTypeCE ^ "\\)?"
+    in
     let _PI_CE = _Name ^ "\\(" ^ _PI_Tail ^ "\\)?" in
     let _EndTagCE = _Name ^ "\\(" ^ _S ^ "\\)?>?" in
     let _AttValSE = "\"[^<\"]*\"\\|'[^<']*'" in
-    let _ElemTagCE = _Name ^ "\\(" ^ _S ^ _Name ^ "\\(" ^ _S ^ "\\)?=\\(" ^ _S ^ "\\)?\\(" ^ _AttValSE ^ "\\)\\)*\\(" ^ _S ^ "\\)?/?>?" in
-    let _MarkupSPE = "<\\(!\\(" ^ _DeclCE ^ "\\)?\\|\\?\\(" ^ _PI_CE ^ "\\)?\\|/\\(" ^ _EndTagCE ^ "\\)?\\|\\(" ^ _ElemTagCE ^ "\\)?\\)" in
+    let _ElemTagCE =
+      _Name ^ "\\(" ^ _S ^ _Name ^ "\\(" ^ _S ^ "\\)?=\\(" ^ _S ^ "\\)?\\("
+      ^ _AttValSE ^ "\\)\\)*\\(" ^ _S ^ "\\)?/?>?"
+    in
+    let _MarkupSPE =
+      "<\\(!\\(" ^ _DeclCE ^ "\\)?\\|\\?\\(" ^ _PI_CE ^ "\\)?\\|/\\("
+      ^ _EndTagCE ^ "\\)?\\|\\(" ^ _ElemTagCE ^ "\\)?\\)"
+    in
     let _XML_SPE = _TextSE ^ "\\|" ^ _MarkupSPE in
     let input = "\
-<?xml version=\"1.0\"?>
-<?xml-stylesheet type=\"text/css\" href=\"nutrition.css\"?>
-<!DOCTYPE root [
-   <!ELEMENT root (stem)>
-   <!ELEMENT stem EMPTY>
-]>
-<!ELEMENT name (#PCDATA)>
-<![CDATA[my
-escaped text]]> 
-<nutrition>
-<daily-values>
-	<total-fat units=\"g\">65</total-fat>
-	<saturated-fat units=\"g\">20</saturated-fat>
-	<cholesterol units=\"mg\">300</cholesterol>
-	<sodium units=\"mg\">2400</sodium>
-	<carb units=\"g\">300</carb>
-	<fiber units=\"g\">25</fiber>
-	<protein units=\"g\">50</protein>
-</daily-values>
-<food>
-	<name>Avocado Dip</name>
-	<mfr>Sunnydale</mfr>
-	<serving units=\"g\">29</serving>
-	<calories total=\"110\" fat=\"100\"/>
-	<total-fat>11</total-fat>
-	<saturated-fat>3</saturated-fat>
-	<cholesterol>5</cholesterol>
-	<sodium>210</sodium>
-	<carb>2</carb>
-	<fiber>0</fiber>
-	<protein>1</protein>
-	<vitamins>
-		<a>0</a>
-		<c>0</c>
-	</vitamins>
-	<minerals>
-		<ca>0</ca>
-		<fe>0</fe>
-	</minerals>
-</food>
-<!--
-<food>
-	<name></name>
-	<mfr></mfr>
-	<serving units=\"g\"></serving>
-	<calories total=\"\" fat=\"\"/>
-	<total-fat></total-fat>
-	<saturated-fat></saturated-fat>
-	<cholesterol></cholesterol>
-	<sodium></sodium>
-	<carb></carb>
-	<fiber></fiber>
-	<protein></protein>
-	<vitamins>
-		<a></a>
-		<c></c>
-	</vitamins>
-	<minerals>
-		<ca></ca>
-		<fe></fe>
-	</minerals>
-</food>
--->
+<?xml version=\"1.0\"?>\n\
+<?xml-stylesheet type=\"text/css\" href=\"nutrition.css\"?>\n\
+<!DOCTYPE root [\n\
+\   <!ELEMENT root (stem)>\n\
+\   <!ELEMENT stem EMPTY>\n\
+]>\n\
+<!ELEMENT name (#PCDATA)>\n\
+<![CDATA[my\n\
+escaped text]]> \n\
+<nutrition>\n\
+<daily-values>\n\
+\t<total-fat units=\"g\">65</total-fat>\n\
+\t<saturated-fat units=\"g\">20</saturated-fat>\n\
+\t<cholesterol units=\"mg\">300</cholesterol>\n\
+\t<sodium units=\"mg\">2400</sodium>\n\
+\t<carb units=\"g\">300</carb>\n\
+\t<fiber units=\"g\">25</fiber>\n\
+\t<protein units=\"g\">50</protein>\n\
+</daily-values>\n\
+<food>\n\
+\t<name>Avocado Dip</name>\n\
+\t<mfr>Sunnydale</mfr>\n\
+\t<serving units=\"g\">29</serving>\n\
+\t<calories total=\"110\" fat=\"100\"/>\n\
+\t<total-fat>11</total-fat>\n\
+\t<saturated-fat>3</saturated-fat>\n\
+\t<cholesterol>5</cholesterol>\n\
+\t<sodium>210</sodium>\n\
+\t<carb>2</carb>\n\
+\t<fiber>0</fiber>\n\
+\t<protein>1</protein>\n\
+\t<vitamins>\n\
+\t\t<a>0</a>\n\
+\t\t<c>0</c>\n\
+\t</vitamins>\n\
+\t<minerals>\n\
+\t\t<ca>0</ca>\n\
+\t\t<fe>0</fe>\n\
+\t</minerals>\n\
+</food>\n\
+<!--\n\
+<food>\n\
+\t<name></name>\n\
+\t<mfr></mfr>\n\
+\t<serving units=\"g\"></serving>\n\
+\t<calories total=\"\" fat=\"\"/>\n\
+\t<total-fat></total-fat>\n\
+\t<saturated-fat></saturated-fat>\n\
+\t<cholesterol></cholesterol>\n\
+\t<sodium></sodium>\n\
+\t<carb></carb>\n\
+\t<fiber></fiber>\n\
+\t<protein></protein>\n\
+\t<vitamins>\n\
+\t\t<a></a>\n\
+\t\t<c></c>\n\
+\t</vitamins>\n\
+\t<minerals>\n\
+\t\t<ca></ca>\n\
+\t\t<fe></fe>\n\
+\t</minerals>\n\
+</food>\n\
+-->\n\
 " in
     let result = [
   "<?xml version=\"1.0\"?>";
@@ -974,7 +1013,29 @@ escaped text]]>
   "\n";
   "</food>";
   "\n";
-  "<!--\n<food>\n\t<name></name>\n\t<mfr></mfr>\n\t<serving units=\"g\"></serving>\n\t<calories total=\"\" fat=\"\"/>\n\t<total-fat></total-fat>\n\t<saturated-fat></saturated-fat>\n\t<cholesterol></cholesterol>\n\t<sodium></sodium>\n\t<carb></carb>\n\t<fiber></fiber>\n\t<protein></protein>\n\t<vitamins>\n\t\t<a></a>\n\t\t<c></c>\n\t</vitamins>\n\t<minerals>\n\t\t<ca></ca>\n\t\t<fe></fe>\n\t</minerals>\n</food>\n-->";
+  "<!--\n\
+   <food>\n\
+   \t<name></name>\n\
+   \t<mfr></mfr>\n\
+   \t<serving units=\"g\"></serving>\n\
+   \t<calories total=\"\" fat=\"\"/>\n\
+   \t<total-fat></total-fat>\n\
+   \t<saturated-fat></saturated-fat>\n\
+   \t<cholesterol></cholesterol>\n\
+   \t<sodium></sodium>\n\
+   \t<carb></carb>\n\
+   \t<fiber></fiber>\n\
+   \t<protein></protein>\n\
+   \t<vitamins>\n\
+   \t\t<a></a>\n\
+   \t\t<c></c>\n\
+   \t</vitamins>\n\
+   \t<minerals>\n\
+   \t\t<ca></ca>\n\
+   \t\t<fe></fe>\n\
+   \t</minerals>\n\
+   </food>\n\
+   -->";
   "\n"] in
     let re = Str.regexp _XML_SPE in
     let rec process i l =

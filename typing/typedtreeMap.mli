@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Fabrice Le Fessant, INRIA Saclay                   *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Fabrice Le Fessant, INRIA Saclay                     *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Typedtree
 
@@ -24,7 +27,8 @@ module type MapArgument = sig
   val enter_package_type : package_type -> package_type
   val enter_signature : signature -> signature
   val enter_signature_item : signature_item -> signature_item
-  val enter_module_type_declaration : module_type_declaration -> module_type_declaration
+  val enter_module_type_declaration :
+      module_type_declaration -> module_type_declaration
   val enter_module_type : module_type -> module_type
   val enter_module_expr : module_expr -> module_expr
   val enter_with_constraint : with_constraint -> with_constraint
@@ -52,7 +56,8 @@ module type MapArgument = sig
   val leave_package_type : package_type -> package_type
   val leave_signature : signature -> signature
   val leave_signature_item : signature_item -> signature_item
-  val leave_module_type_declaration : module_type_declaration -> module_type_declaration
+  val leave_module_type_declaration :
+      module_type_declaration -> module_type_declaration
   val leave_module_type : module_type -> module_type
   val leave_module_expr : module_expr -> module_expr
   val leave_with_constraint : with_constraint -> with_constraint

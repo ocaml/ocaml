@@ -18,6 +18,10 @@
 
 #include "mlvalues.h"
 
+#define CAML_EPHE_LINK_OFFSET 0
+#define CAML_EPHE_DATA_OFFSET 1
+#define CAML_EPHE_FIRST_KEY 2
+
 extern value caml_weak_list_head;
 extern value caml_weak_none;
 

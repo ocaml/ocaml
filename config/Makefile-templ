@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 ### Compile-time configuration
 
@@ -31,9 +33,9 @@ MANEXT=1
 ### Do #! scripts work on your system?
 ### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
-### In doubt, set SHARPBANGSCRIPTS to false.
-SHARPBANGSCRIPTS=true
-#SHARPBANGSCRIPTS=false
+### In doubt, set HASHBANGSCRIPTS to false.
+HASHBANGSCRIPTS=true
+#HASHBANGSCRIPTS=false
 
 ########## Configuration for the bytecode compiler
 
@@ -71,10 +73,6 @@ SHARPBANGSCRIPTS=true
 #CPP=/usr/ccs/lib/cpp -P
 # Under FreeBSD:
 #CPP=cpp -P
-
-### Magic declarations for ocamlbuild -- leave unchanged
-#ml let syslib x = "-l"^x;;
-#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
 
 ### How to invoke ranlib
 RANLIB=ranlib

@@ -18,6 +18,10 @@
 
 #include "mlvalues.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 CAMLextern uint32_t caml_hash_mix_uint32(uint32_t h, uint32_t d);
 CAMLextern uint32_t caml_hash_mix_intnat(uint32_t h, intnat d);
 CAMLextern uint32_t caml_hash_mix_int64(uint32_t h, int64_t d);

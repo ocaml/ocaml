@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The initially opened module.
 
@@ -183,21 +185,25 @@ external __LOC__ : string = "%loc_LOC"
     error format of OCaml: "File %S, line %d, characters %d-%d".
     @since 4.02.0
  *)
+
 external __FILE__ : string = "%loc_FILE"
 (** [__FILE__] returns the name of the file currently being
     parsed by the compiler.
     @since 4.02.0
 *)
+
 external __LINE__ : int = "%loc_LINE"
 (** [__LINE__] returns the line number at which this expression
     appears in the file currently being parsed by the compiler.
     @since 4.02.0
  *)
+
 external __MODULE__ : string = "%loc_MODULE"
 (** [__MODULE__] returns the module name of the file being
     parsed by the compiler.
     @since 4.02.0
  *)
+
 external __POS__ : string * int * int * int = "%loc_POS"
 (** [__POS__] returns a tuple [(file,lnum,cnum,enum)], corresponding
     to the location at which this expression appears in the file
@@ -214,12 +220,14 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
     %d, characters %d-%d".
     @since 4.02.0
  *)
+
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 (** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
     line number at which the expression [expr] appears in the file
     currently being parsed by the compiler.
     @since 4.02.0
  *)
+
 external __POS_OF__ : 'a -> (string * int * int * int) * 'a = "%loc_POS"
 (** [__POS_OF__ expr] returns a pair [(loc,expr)], where [loc] is a
     tuple [(file,lnum,cnum,enum)] corresponding to the location at
@@ -367,82 +375,97 @@ external ( *. ) : float -> float -> float = "%mulfloat"
 external ( /. ) : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
-external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
+external ( ** ) : float -> float -> float = "caml_power_float" "pow"
+  [@@unboxed] [@@noalloc]
 (** Exponentiation. *)
 
-external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
+external sqrt : float -> float = "caml_sqrt_float" "sqrt"
+  [@@unboxed] [@@noalloc]
 (** Square root. *)
 
-external exp : float -> float = "caml_exp_float" "exp" "float"
+external exp : float -> float = "caml_exp_float" "exp" [@@unboxed] [@@noalloc]
 (** Exponential. *)
 
-external log : float -> float = "caml_log_float" "log" "float"
+external log : float -> float = "caml_log_float" "log" [@@unboxed] [@@noalloc]
 (** Natural logarithm. *)
 
-external log10 : float -> float = "caml_log10_float" "log10" "float"
+external log10 : float -> float = "caml_log10_float" "log10"
+  [@@unboxed] [@@noalloc]
 (** Base 10 logarithm. *)
 
-external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
+  [@@unboxed] [@@noalloc]
 (** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
     even if [x] is close to [0.0].
     @since 3.12.0
 *)
 
-external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
+external log1p : float -> float = "caml_log1p_float" "caml_log1p"
+  [@@unboxed] [@@noalloc]
 (** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
     giving numerically-accurate results even if [x] is close to [0.0].
     @since 3.12.0
 *)
 
-external cos : float -> float = "caml_cos_float" "cos" "float"
+external cos : float -> float = "caml_cos_float" "cos" [@@unboxed] [@@noalloc]
 (** Cosine.  Argument is in radians. *)
 
-external sin : float -> float = "caml_sin_float" "sin" "float"
+external sin : float -> float = "caml_sin_float" "sin" [@@unboxed] [@@noalloc]
 (** Sine.  Argument is in radians. *)
 
-external tan : float -> float = "caml_tan_float" "tan" "float"
+external tan : float -> float = "caml_tan_float" "tan" [@@unboxed] [@@noalloc]
 (** Tangent.  Argument is in radians. *)
 
-external acos : float -> float = "caml_acos_float" "acos" "float"
+external acos : float -> float = "caml_acos_float" "acos"
+  [@@unboxed] [@@noalloc]
 (** Arc cosine.  The argument must fall within the range [[-1.0, 1.0]].
     Result is in radians and is between [0.0] and [pi]. *)
 
-external asin : float -> float = "caml_asin_float" "asin" "float"
+external asin : float -> float = "caml_asin_float" "asin"
+  [@@unboxed] [@@noalloc]
 (** Arc sine.  The argument must fall within the range [[-1.0, 1.0]].
     Result is in radians and is between [-pi/2] and [pi/2]. *)
 
-external atan : float -> float = "caml_atan_float" "atan" "float"
+external atan : float -> float = "caml_atan_float" "atan"
+  [@@unboxed] [@@noalloc]
 (** Arc tangent.
     Result is in radians and is between [-pi/2] and [pi/2]. *)
 
-external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
+external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
+  [@@unboxed] [@@noalloc]
 (** [atan2 y x] returns the arc tangent of [y /. x].  The signs of [x]
     and [y] are used to determine the quadrant of the result.
     Result is in radians and is between [-pi] and [pi]. *)
 
-external hypot : float -> float -> float
-               = "caml_hypot_float" "caml_hypot" "float"
+external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
+  [@@unboxed] [@@noalloc]
 (** [hypot x y] returns [sqrt(x *. x + y *. y)], that is, the length
   of the hypotenuse of a right-angled triangle with sides of length
   [x] and [y], or, equivalently, the distance of the point [(x,y)]
-  to origin.
+  to origin.  If one of [x] or [y] is infinite, returns [infinity]
+  even if the other is [nan].
   @since 4.00.0  *)
 
-external cosh : float -> float = "caml_cosh_float" "cosh" "float"
+external cosh : float -> float = "caml_cosh_float" "cosh"
+  [@@unboxed] [@@noalloc]
 (** Hyperbolic cosine.  Argument is in radians. *)
 
-external sinh : float -> float = "caml_sinh_float" "sinh" "float"
+external sinh : float -> float = "caml_sinh_float" "sinh"
+  [@@unboxed] [@@noalloc]
 (** Hyperbolic sine.  Argument is in radians. *)
 
-external tanh : float -> float = "caml_tanh_float" "tanh" "float"
+external tanh : float -> float = "caml_tanh_float" "tanh"
+  [@@unboxed] [@@noalloc]
 (** Hyperbolic tangent.  Argument is in radians. *)
 
-external ceil : float -> float = "caml_ceil_float" "ceil" "float"
+external ceil : float -> float = "caml_ceil_float" "ceil"
+  [@@unboxed] [@@noalloc]
 (** Round above to an integer value.
     [ceil f] returns the least integer value greater than or equal to [f].
     The result is returned as a float. *)
 
-external floor : float -> float = "caml_floor_float" "floor" "float"
+external floor : float -> float = "caml_floor_float" "floor"
+  [@@unboxed] [@@noalloc]
 (** Round below to an integer value.
     [floor f] returns the greatest integer value less than or
     equal to [f].
@@ -452,14 +475,16 @@ external abs_float : float -> float = "%absfloat"
 (** [abs_float f] returns the absolute value of [f]. *)
 
 external copysign : float -> float -> float
-                  = "caml_copysign_float" "caml_copysign" "float"
+                  = "caml_copysign_float" "caml_copysign"
+                  [@@unboxed] [@@noalloc]
 (** [copysign x y] returns a float whose absolute value is that of [x]
   and whose sign is that of [y].  If [x] is [nan], returns [nan].
   If [y] is [nan], returns either [x] or [-. x], but it is not
   specified which.
   @since 4.00.0  *)
 
-external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
+external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
+  [@@unboxed] [@@noalloc]
 (** [mod_float a b] returns the remainder of [a] with respect to
    [b].  The returned value is [a -. n *. b], where [n]
    is the quotient [a /. b] rounded towards zero to an integer. *)
@@ -471,7 +496,9 @@ external frexp : float -> float * int = "caml_frexp_float"
    zero.  When [f] is non-zero, they are defined by
    [f = x *. 2 ** n] and [0.5 <= x < 1.0]. *)
 
-external ldexp : float -> int -> float = "caml_ldexp_float"
+
+external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
+  "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]
 (** [ldexp x n] returns [x *. 2 ** n]. *)
 
 external modf : float -> float * float = "caml_modf_float"
@@ -525,7 +552,8 @@ type fpclass =
 (** The five classes of floating-point numbers, as determined by
    the {!Pervasives.classify_float} function. *)
 
-external classify_float : float -> fpclass = "caml_classify_float"
+external classify_float : (float [@unboxed]) -> fpclass =
+  "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
 (** Return the class of the given floating-point number:
    normal, subnormal, zero, infinite, or not a number. *)
 
@@ -581,9 +609,11 @@ val string_of_int : int -> string
 
 external int_of_string : string -> int = "caml_int_of_string"
 (** Convert the given string to an integer.
-   The string is read in decimal (by default) or in hexadecimal (if it
-   begins with [0x] or [0X]), octal (if it begins with [0o] or [0O]),
-   or binary (if it begins with [0b] or [0B]).
+   The string is read in decimal (by default), in hexadecimal (if it
+   begins with [0x] or [0X]), in octal (if it begins with [0o] or [0O]),
+   or in binary (if it begins with [0b] or [0B]).
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
    Raise [Failure "int_of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int]. *)
@@ -592,9 +622,21 @@ val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
 
 external float_of_string : string -> float = "caml_float_of_string"
-(** Convert the given string to a float.  Raise [Failure "float_of_string"]
-   if the given string is not a valid representation of a float. *)
-
+(** Convert the given string to a float.  The string is read in decimal
+   (by default) or in hexadecimal (marked by [0x] or [0X]).
+   The format of decimal floating-point numbers is
+   [ [-] dd.ddd (e|E) [+|-] dd ], where [d] stands for a decimal digit.
+   The format of hexadecimal floating-point numbers is
+   [ [-] 0(x|X) hh.hhh (p|P) [+|-] dd ], where [h] stands for an
+   hexadecimal digit and [d] for a decimal digit.
+   In both cases, at least one of the integer and fractional parts must be
+   given; the exponent part is optional.
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
+   Depending on the execution platforms, other representations of
+   floating-point numbers can be accepted, but should not be relied upon.
+   Raise [Failure "float_of_string"] if the given string is not a valid
+   representation of a float. *)
 
 (** {6 Pair operations} *)
 
@@ -611,7 +653,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
-(** List concatenation. *)
+(** List concatenation.  Not tail-recursive (length of the first argument). *)
 
 
 (** {6 Input/output}
@@ -725,7 +767,7 @@ type open_flag =
 
 val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
-   on that file, positionned at the beginning of the file. The
+   on that file, positioned at the beginning of the file. The
    file is truncated to zero length if it already exists. It
    is created if it does not already exists. *)
 
@@ -836,7 +878,7 @@ val set_binary_mode_out : out_channel -> bool -> unit
 
 val open_in : string -> in_channel
 (** Open the named file for reading, and return a new input channel
-   on that file, positionned at the beginning of the file. *)
+   on that file, positioned at the beginning of the file. *)
 
 val open_in_bin : string -> in_channel
 (** Same as {!Pervasives.open_in}, but the file is opened in binary mode,

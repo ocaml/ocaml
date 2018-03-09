@@ -1,17 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
-/* $Id$ */
+#define CAML_INTERNALS
 
 #include "caml/alloc.h"
 #include "caml/config.h"
@@ -123,7 +125,8 @@ CAMLprim value is_digit_zero(value nat, value ofs)
 CAMLprim value is_digit_normalized(value nat, value ofs)
 {
   return
-    Val_bool(Digit_val(nat, Long_val(ofs)) & ((bngdigit)1 << (BNG_BITS_PER_DIGIT-1)));
+    Val_bool(Digit_val(nat, Long_val(ofs))
+             & ((bngdigit)1 << (BNG_BITS_PER_DIGIT-1)));
 }
 
 CAMLprim value is_digit_odd(value nat, value ofs)

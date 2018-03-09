@@ -1,21 +1,23 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Obj
 
 (**** Object representation ****)
 
-external set_id: 'a -> 'a = "caml_set_oo_id" "noalloc"
+external set_id: 'a -> 'a = "caml_set_oo_id" [@@noalloc]
 
 (**** Object copy ****)
 
@@ -43,7 +45,6 @@ let params = {
 
 (**** Parameters ****)
 
-let step = Sys.word_size / 16
 let initial_object_size = 2
 
 (**** Items ****)
@@ -348,17 +349,17 @@ let dummy_class loc =
 (**** Objects ****)
 
 let create_object table =
-  (* XXX Appel de [obj_block] *)
+  (* XXX Appel de [obj_block] | Call to [obj_block]  *)
   let obj = Obj.new_block Obj.object_tag table.size in
-  (* XXX Appel de [caml_modify] *)
+  (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
   Obj.set_field obj 0 (Obj.repr table.methods);
   Obj.obj (set_id obj)
 
 let create_object_opt obj_0 table =
   if (Obj.magic obj_0 : bool) then obj_0 else begin
-    (* XXX Appel de [obj_block] *)
+    (* XXX Appel de [obj_block] | Call to [obj_block]  *)
     let obj = Obj.new_block Obj.object_tag table.size in
-    (* XXX Appel de [caml_modify] *)
+    (* XXX Appel de [caml_modify] | Call to [caml_modify] *)
     Obj.set_field obj 0 (Obj.repr table.methods);
     Obj.obj (set_id obj)
   end
@@ -395,62 +396,81 @@ external send : obj -> tag -> 'a = "%send"
 external sendcache : obj -> tag -> t -> int -> 'a = "%sendcache"
 external sendself : obj -> label -> 'a = "%sendself"
 external get_public_method : obj -> tag -> closure
-    = "caml_get_public_method" "noalloc"
+    = "caml_get_public_method" [@@noalloc]
 
 (**** table collection access ****)
 
-type tables = Empty | Cons of closure * tables * tables
-type mut_tables =
-    {key: closure; mutable data: tables; mutable next: tables}
-external mut : tables -> mut_tables = "%identity"
-external demut : mut_tables -> tables = "%identity"
+type tables =
+  | Empty
+  | Cons of {key : closure; mutable data: tables; mutable next: tables}
+
+let set_data tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.data <- v
+let set_next tables v = match tables with
+  | Empty -> assert false
+  | Cons tables -> tables.next <- v
+let get_key = function
+  | Empty -> assert false
+  | Cons tables -> tables.key
+let get_data = function
+  | Empty -> assert false
+  | Cons tables -> tables.data
+let get_next = function
+  | Empty -> assert false
+  | Cons tables -> tables.next
 
 let build_path n keys tables =
-  (* Be careful not to create a seemingly immutable block, otherwise it could
-     be statically allocated.  See #5779. *)
-  let res = demut {key = Obj.magic 0; data = Empty; next = Empty} in
+  let res = Cons {key = Obj.magic 0; data = Empty; next = Empty} in
   let r = ref res in
   for i = 0 to n do
-    r := Cons (keys.(i), !r, Empty)
+    r := Cons {key = keys.(i); data = !r; next = Empty}
   done;
-  tables.data <- !r;
+  set_data tables !r;
   res
 
 let rec lookup_keys i keys tables =
   if i < 0 then tables else
   let key = keys.(i) in
-  let rec lookup_key tables =
-    if tables.key == key then lookup_keys (i-1) keys tables.data else
-    if tables.next <> Empty then lookup_key (mut tables.next) else
-    let next = Cons (key, Empty, Empty) in
-    tables.next <- next;
-    build_path (i-1) keys (mut next)
+  let rec lookup_key (tables:tables) =
+    if get_key tables == key then
+      match get_data tables with
+      | Empty -> assert false
+      | Cons _ as tables_data ->
+          lookup_keys (i-1) keys tables_data
+    else
+      match get_next tables with
+      | Cons _ as next -> lookup_key next
+      | Empty ->
+          let next : tables = Cons {key; data = Empty; next = Empty} in
+          set_next tables next;
+          build_path (i-1) keys next
   in
-  lookup_key (mut tables)
+  lookup_key tables
 
 let lookup_tables root keys =
-  let root = mut root in
-  if root.data <> Empty then
-    lookup_keys (Array.length keys - 1) keys root.data
-  else
+  match get_data root with
+  | Cons _ as root_data ->
+    lookup_keys (Array.length keys - 1) keys root_data
+  | Empty ->
     build_path (Array.length keys - 1) keys root
 
 (**** builtin methods ****)
 
-let get_const x = ret (fun obj -> x)
+let get_const x = ret (fun _obj -> x)
 let get_var n   = ret (fun obj -> Array.unsafe_get obj n)
 let get_env e n =
   ret (fun obj ->
     Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) n)
 let get_meth n  = ret (fun obj -> sendself obj n)
 let set_var n   = ret (fun obj x -> Array.unsafe_set obj n x)
-let app_const f x = ret (fun obj -> f x)
+let app_const f x = ret (fun _obj -> f x)
 let app_var f n   = ret (fun obj -> f (Array.unsafe_get obj n))
 let app_env f e n =
   ret (fun obj ->
     f (Array.unsafe_get (Obj.magic (Array.unsafe_get obj e) : obj) n))
 let app_meth f n  = ret (fun obj -> f (sendself obj n))
-let app_const_const f x y = ret (fun obj -> f x y)
+let app_const_const f x y = ret (fun _obj -> f x y)
 let app_const_var f x n   = ret (fun obj -> f x (Array.unsafe_get obj n))
 let app_const_meth f x n = ret (fun obj -> f x (sendself obj n))
 let app_var_const f n x = ret (fun obj -> f (Array.unsafe_get obj n) x)
@@ -525,53 +545,60 @@ let method_impl table i arr =
   match next() with
     GetConst -> let x : t = next() in get_const x
   | GetVar   -> let n = next() in get_var n
-  | GetEnv   -> let e = next() and n = next() in get_env e n
+  | GetEnv   -> let e = next() in let n = next() in get_env e n
   | GetMeth  -> let n = next() in get_meth n
   | SetVar   -> let n = next() in set_var n
-  | AppConst -> let f = next() and x = next() in app_const f x
-  | AppVar   -> let f = next() and n = next () in app_var f n
+  | AppConst -> let f = next() in let x = next() in app_const f x
+  | AppVar   -> let f = next() in let n = next () in app_var f n
   | AppEnv   ->
-      let f = next() and e = next() and n = next() in app_env f e n
-  | AppMeth  -> let f = next() and n = next () in app_meth f n
+      let f = next() in  let e = next() in let n = next() in
+      app_env f e n
+  | AppMeth  -> let f = next() in let n = next () in app_meth f n
   | AppConstConst ->
-      let f = next() and x = next() and y = next() in app_const_const f x y
+      let f = next() in let x = next() in let y = next() in
+      app_const_const f x y
   | AppConstVar ->
-      let f = next() and x = next() and n = next() in app_const_var f x n
+      let f = next() in let x = next() in let n = next() in
+      app_const_var f x n
   | AppConstEnv ->
-      let f = next() and x = next() and e = next () and n = next() in
+      let f = next() in let x = next() in let e = next () in let n = next() in
       app_const_env f x e n
   | AppConstMeth ->
-      let f = next() and x = next() and n = next() in app_const_meth f x n
+      let f = next() in let x = next() in let n = next() in
+      app_const_meth f x n
   | AppVarConst ->
-      let f = next() and n = next() and x = next() in app_var_const f n x
+      let f = next() in let n = next() in let x = next() in
+      app_var_const f n x
   | AppEnvConst ->
-      let f = next() and e = next () and n = next() and x = next() in
+      let f = next() in let e = next () in let n = next() in let x = next() in
       app_env_const f e n x
   | AppMethConst ->
-      let f = next() and n = next() and x = next() in app_meth_const f n x
+      let f = next() in let n = next() in let x = next() in
+      app_meth_const f n x
   | MethAppConst ->
-      let n = next() and x = next() in meth_app_const n x
+      let n = next() in let x = next() in meth_app_const n x
   | MethAppVar ->
-      let n = next() and m = next() in meth_app_var n m
+      let n = next() in let m = next() in meth_app_var n m
   | MethAppEnv ->
-      let n = next() and e = next() and m = next() in meth_app_env n e m
+      let n = next() in let e = next() in let m = next() in
+      meth_app_env n e m
   | MethAppMeth ->
-      let n = next() and m = next() in meth_app_meth n m
+      let n = next() in let m = next() in meth_app_meth n m
   | SendConst ->
-      let m = next() and x = next() in send_const m x (new_cache table)
+      let m = next() in let x = next() in send_const m x (new_cache table)
   | SendVar ->
-      let m = next() and n = next () in send_var m n (new_cache table)
+      let m = next() in let n = next () in send_var m n (new_cache table)
   | SendEnv ->
-      let m = next() and e = next() and n = next() in
+      let m = next() in let e = next() in let n = next() in
       send_env m e n (new_cache table)
   | SendMeth ->
-      let m = next() and n = next () in send_meth m n (new_cache table)
+      let m = next() in let n = next () in send_meth m n (new_cache table)
   | Closure _ as clo -> magic clo
 
 let set_methods table methods =
-  let len = Array.length methods and i = ref 0 in
+  let len = Array.length methods in let i = ref 0 in
   while !i < len do
-    let label = methods.(!i) and clo = method_impl table i methods in
+    let label = methods.(!i) in let clo = method_impl table i methods in
     set_method table label clo;
     incr i
   done

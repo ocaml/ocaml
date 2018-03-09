@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
@@ -17,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 #include <limits.h>
 
 #include "caml/alloc.h"
@@ -29,8 +34,12 @@
 
 #ifdef _MSC_VER
 #include <float.h>
+#ifndef isnan
 #define isnan _isnan
+#endif
+#ifndef isfinite
 #define isfinite _finite
+#endif
 #endif
 
 #ifdef ARCH_ALIGN_DOUBLE
@@ -185,6 +194,7 @@ static int caml_float_of_hex(const char * s, double * res)
                                 /* -1 if no decimal point seen */
   int exp = 0;                  /* exponent */
   char * p;                     /* for converting the exponent */
+  double f;
 
   while (*s != 0) {
     char c = *s++;
@@ -229,10 +239,11 @@ static int caml_float_of_hex(const char * s, double * res)
     }
     }
   }
+  if (n_bits == 0) return -1;
   /* Convert mantissa to FP.  We use a signed conversion because we can
-     (m has 60 bits at most) and because it is faster 
+     (m has 60 bits at most) and because it is faster
      on several architectures. */
-  double f = (double) (int64_t) m;
+  f = (double) (int64_t) m;
   /* Adjust exponent to take decimal point and extra digits into account */
   if (dec_point >= 0) exp = exp + (dec_point - n_bits);
   exp = exp + x_bits;
@@ -255,7 +266,7 @@ CAMLprim value caml_float_of_string(value vs)
   src = String_val(vs);
   sign = 1;
   if (*src == '-') { sign = -1; src++; }
-  else if (*src == '+') { src++; }; 
+  else if (*src == '+') { src++; };
   if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X')) {
     if (caml_float_of_hex(src + 2, &d) == -1)
       caml_failwith("float_of_string");
@@ -350,6 +361,13 @@ CAMLprim value caml_frexp_float(value f)
   caml_initialize_field(res, 1, Val_int(exponent));
   CAMLreturn (res);
 }
+
+// Seems dumb but intnat could not correspond to int type.
+double caml_ldexp_float_unboxed(double f, intnat i)
+{
+  return ldexp(f, i);
+}
+
 
 CAMLprim value caml_ldexp_float(value f, value i)
 {
@@ -452,9 +470,11 @@ CAMLexport double caml_hypot(double x, double y)
   return hypot(x, y);
 #else
   double tmp, ratio;
-  if (x != x) return x;  /* NaN */
-  if (y != y) return y;  /* NaN */
   x = fabs(x); y = fabs(y);
+  if (x != x) /* x is NaN */
+    return y > DBL_MAX ? y : x;  /* PR#6321 */
+  if (y != y) /* y is NaN */
+    return x > DBL_MAX ? x : y;  /* PR#6321 */
   if (x < y) { tmp = x; x = y; y = tmp; }
   if (x == 0.0) return 0.0;
   ratio = y / x;
@@ -534,74 +554,91 @@ CAMLprim value caml_copysign_float(value f, value g)
   return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
 }
 
-CAMLprim value caml_eq_float(value f, value g)
+#ifdef LACKS_SANE_NAN
+
+CAMLprim value caml_neq_float(value vf, value vg)
 {
-  return Val_bool(Double_val(f) == Double_val(g));
+  double f = Double_val(vf);
+  double g = Double_val(vg);
+  return Val_bool(isnan(f) || isnan(g) || f != g);
 }
+
+#define DEFINE_NAN_CMP(op) (value vf, value vg) \
+{ \
+  double f = Double_val(vf); \
+  double g = Double_val(vg); \
+  return Val_bool(!isnan(f) && !isnan(g) && f op g); \
+}
+
+intnat caml_float_compare_unboxed(double f, double g)
+{
+  /* Insane => nan == everything && nan < everything && nan > everything */
+  if (isnan(f) && isnan(g)) return 0;
+  if (!isnan(g) && f < g) return -1;
+  if (f != g) return 1;
+  return 0;
+}
+
+#else
 
 CAMLprim value caml_neq_float(value f, value g)
 {
   return Val_bool(Double_val(f) != Double_val(g));
 }
 
-CAMLprim value caml_le_float(value f, value g)
-{
-  return Val_bool(Double_val(f) <= Double_val(g));
+#define DEFINE_NAN_CMP(op) (value f, value g) \
+{ \
+  return Val_bool(Double_val(f) op Double_val(g)); \
 }
 
-CAMLprim value caml_lt_float(value f, value g)
+intnat caml_float_compare_unboxed(double f, double g)
 {
-  return Val_bool(Double_val(f) < Double_val(g));
+  /* If one or both of f and g is NaN, order according to the convention
+     NaN = NaN and NaN < x for all other floats x. */
+  /* This branchless implementation is from GPR#164.
+     Note that [f == f] if and only if f is not NaN. */
+  return (f > g) - (f < g) + (f == f) - (g == g);
 }
 
-CAMLprim value caml_ge_float(value f, value g)
-{
-  return Val_bool(Double_val(f) >= Double_val(g));
-}
+#endif
 
-CAMLprim value caml_gt_float(value f, value g)
-{
-  return Val_bool(Double_val(f) > Double_val(g));
-}
+CAMLprim value caml_eq_float DEFINE_NAN_CMP(==)
+CAMLprim value caml_le_float DEFINE_NAN_CMP(<=)
+CAMLprim value caml_lt_float DEFINE_NAN_CMP(<)
+CAMLprim value caml_ge_float DEFINE_NAN_CMP(>=)
+CAMLprim value caml_gt_float DEFINE_NAN_CMP(>)
 
 CAMLprim value caml_float_compare(value vf, value vg)
 {
-  double f = Double_val(vf);
-  double g = Double_val(vg);
-  if (f == g) return Val_int(0);
-  if (f < g) return Val_int(-1);
-  if (f > g) return Val_int(1);
-  /* One or both of f and g is NaN.  Order according to the
-     convention NaN = NaN and NaN < x for all other floats x. */
-  if (f == f) return Val_int(1);  /* f is not NaN, g is NaN */
-  if (g == g) return Val_int(-1); /* g is not NaN, f is NaN */
-  return Val_int(0);              /* both f and g are NaN */
+  return Val_int(caml_float_compare_unboxed(Double_val(vf),Double_val(vg)));
 }
 
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
-CAMLprim value caml_classify_float(value vd)
+value caml_classify_float_unboxed(double vd)
 {
-  /* Cygwin 1.3 has problems with fpclassify (PR#1293), so don't use it */
-  /* FIXME Cygwin 1.3 is ancient! Revisit this decision. */
-#if defined(fpclassify) && !defined(__CYGWIN__) && !defined(__MINGW32__)
-  switch (fpclassify(Double_val(vd))) {
-  case FP_NAN:
-    return Val_int(FP_nan);
-  case FP_INFINITE:
+#ifdef ARCH_SIXTYFOUR
+  union { double d; uint64_t i; } u;
+  uint64_t n;
+  uint32_t e;
+
+  u.d = vd;
+  n = u.i << 1;                 /* shift sign bit off */
+  if (n == 0) return Val_int(FP_zero);
+  e = n >> 53;                  /* extract exponent */
+  if (e == 0) return Val_int(FP_subnormal);
+  if (e == 0x7FF) {
+    if (n << 11 == 0)           /* shift exponent off */
     return Val_int(FP_infinite);
-  case FP_ZERO:
-    return Val_int(FP_zero);
-  case FP_SUBNORMAL:
-    return Val_int(FP_subnormal);
-  default: /* case FP_NORMAL */
-    return Val_int(FP_normal);
+    else
+      return Val_int(FP_nan);
   }
+  return Val_int(FP_normal);
 #else
   union double_as_two_int32 u;
   uint32_t h, l;
 
-  u.d = Double_val(vd);
+  u.d = vd;
   h = u.i.h;  l = u.i.l;
   l = l | (h & 0xFFFFF);
   h = h & 0x7FF00000;
@@ -617,6 +654,11 @@ CAMLprim value caml_classify_float(value vd)
   }
   return Val_int(FP_normal);
 #endif
+}
+
+CAMLprim value caml_classify_float(value vd)
+{
+  return caml_classify_float_unboxed(Double_val(vd));
 }
 
 /* The [caml_init_ieee_float] function should initialize floating-point hardware

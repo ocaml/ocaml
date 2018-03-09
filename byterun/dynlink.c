@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 2000 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Dynamic loading of C primitives. */
 
@@ -77,8 +81,8 @@ static char * parse_ld_conf(void)
   struct stat st;
   int ldconf, nread;
 
-  stdlib = getenv("OCAMLLIB");
-  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
+  stdlib = caml_secure_getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = caml_secure_getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = caml_strconcat(3, stdlib, "/", LD_CONF_NAME);
   if (stat(ldconfname, &st) == -1) {
@@ -118,7 +122,7 @@ static void open_shared_lib(char * name)
   void * handle;
 
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
-  caml_gc_log("Loading shared library %s", realname);
+  caml_gc_message(0x100, "Loading shared library %s\n", realname);
   caml_enter_blocking_section();
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
@@ -145,7 +149,7 @@ void caml_build_primitive_table(char * lib_path,
      - directories specified in the executable
      - directories specified in the file <stdlib>/ld.conf */
   tofree1 = caml_decompose_path(&caml_shared_libs_path,
-                                getenv("CAML_LD_LIBRARY_PATH"));
+                                caml_secure_getenv("CAML_LD_LIBRARY_PATH"));
   if (lib_path != NULL)
     for (p = lib_path; *p != 0; p += strlen(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
@@ -206,13 +210,12 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
   value result;
   char * p;
 
-  caml_gc_log("Opening shared library %s", String_val(filename));
+  caml_gc_message(0x100, "Opening shared library %s\n", String_val(filename));
   p = caml_strdup(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, Int_val(mode), 1);
   caml_leave_blocking_section();
   caml_stat_free(p);
-
   if (handle == NULL) caml_failwith(caml_dlerror());
   result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = handle;

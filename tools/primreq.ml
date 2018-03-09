@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Determine the set of C primitives required by the given .cmo and .cma
    files *)
@@ -37,8 +40,7 @@ let scan_info cu =
 
 let scan_obj filename =
   let ic = open_in_bin filename in
-  let buffer = String.create (String.length cmo_magic_number) in
-  really_input ic buffer 0 (String.length cmo_magic_number);
+  let buffer = really_input_string ic (String.length cmo_magic_number) in
   if buffer = cmo_magic_number then begin
     let cu_pos = input_binary_int ic in
     seek_in ic cu_pos;

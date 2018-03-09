@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 
@@ -40,8 +43,22 @@ type directive_fun =
    | Directive_ident of (Longident.t -> unit)
    | Directive_bool of (bool -> unit)
 
+type directive_info = {
+  section: string;
+  doc: string;
+}
+
+val add_directive : string -> directive_fun -> directive_info -> unit
+        (* Add toplevel directive and its documentation.
+
+           @since 4.03 *)
+
 val directive_table : (string, directive_fun) Hashtbl.t
-        (* Table of known directives, with their execution function *)
+  (* Deprecated: please use [add_directive] instead of inserting
+     in this table directly. *)
+
+val directive_info_table : (string, directive_info) Hashtbl.t
+
 val toplevel_env : Env.t ref
         (* Typing environment for the toplevel *)
 val initialize_toplevel_env : unit -> unit
@@ -53,7 +70,8 @@ val execute_phrase : bool -> formatter -> Parsetree.toplevel_phrase -> bool
            phrase executed with no errors and [false] otherwise.
            First bool says whether the values and types of the results
            should be printed. Uncaught exceptions are always printed. *)
-val preprocess_phrase : formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
+val preprocess_phrase :
+    formatter -> Parsetree.toplevel_phrase ->  Parsetree.toplevel_phrase
         (* Preprocess the given toplevel phrase using regular and ppx
            preprocessors. Return the updated phrase. *)
 val use_file : formatter -> string -> bool
@@ -65,6 +83,7 @@ val mod_use_file : formatter -> string -> bool
            [mod_use_file] wrap the file contents into a module. *)
 val eval_path: Env.t -> Path.t -> Obj.t
         (* Return the toplevel object referred to by the given path *)
+val record_backtrace : unit -> unit
 
 (* Printing of values *)
 
@@ -126,3 +145,13 @@ val toplevel_startup_hook : (unit -> unit) ref
 (* Used by Trace module *)
 
 val may_trace : bool ref
+
+(* Misc *)
+
+val override_sys_argv : string array -> unit
+(* [override_sys_argv args] replaces the contents of [Sys.argv] by [args]
+   and reset [Arg.current] to [0].
+
+   This is called by [run_script] so that [Sys.argv] represents
+   "script.ml args..." instead of the full command line:
+   "ocamlrun unix.cma ... script.ml args...". *)

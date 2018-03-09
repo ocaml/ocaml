@@ -1,29 +1,34 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
 (*                                                                     *)
 (*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Weak array operations *)
 
-type 'a t;;
+type 'a t
 
-external create: int -> 'a t = "caml_weak_create";;
+external create : int -> 'a t = "caml_weak_create"
 
-let length x = Obj.size(Obj.repr x) - 1;;
+(** number of additional values in a weak pointer *)
+let additional_values = 2
 
-external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
-external get: 'a t -> int -> 'a option = "caml_weak_get";;
-external get_copy: 'a t -> int -> 'a option = "caml_weak_get_copy";;
-external check: 'a t -> int -> bool = "caml_weak_check";;
-external blit: 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit";;
+let length x = Obj.size(Obj.repr x) - additional_values
+
+external set : 'a t -> int -> 'a option -> unit = "caml_weak_set"
+external get : 'a t -> int -> 'a option = "caml_weak_get"
+external get_copy : 'a t -> int -> 'a option = "caml_weak_get_copy"
+external check : 'a t -> int -> bool = "caml_weak_check"
+external blit : 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit"
 (* blit: src srcoff dst dstoff len *)
 
 let fill ar ofs len x =
@@ -34,7 +39,7 @@ let fill ar ofs len x =
       set ar i x
     done
   end
-;;
+
 
 (** Weak hash tables *)
 
@@ -53,15 +58,15 @@ module type S = sig
   val fold : (data -> 'a -> 'a) -> t -> 'a -> 'a
   val count : t -> int
   val stats : t -> int * int * int * int * int * int
-end;;
+end
 
 module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
 
-  type 'a weak_t = 'a t;;
-  let weak_create = create;;
-  let emptybucket = weak_create 0;;
+  type 'a weak_t = 'a t
+  let weak_create = create
+  let emptybucket = weak_create 0
 
-  type data = H.t;;
+  type data = H.t
 
   type t = {
     mutable table : data weak_t array;
@@ -69,12 +74,12 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     mutable limit : int;               (* bucket size limit *)
     mutable oversize : int;            (* number of oversize buckets *)
     mutable rover : int;               (* for internal bookkeeping *)
-  };;
+  }
 
-  let get_index t h = (h land max_int) mod (Array.length t.table);;
+  let get_index t h = (h land max_int) mod (Array.length t.table)
 
-  let limit = 7;;
-  let over_limit = 2;;
+  let limit = 7
+  let over_limit = 2
 
   let create sz =
     let sz = if sz < 7 then 7 else sz in
@@ -85,7 +90,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       limit = limit;
       oversize = 0;
       rover = 0;
-    };;
+    }
 
   let clear t =
     for i = 0 to Array.length t.table - 1 do
@@ -93,8 +98,8 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       t.hashes.(i) <- [| |];
     done;
     t.limit <- limit;
-    t.oversize <- 0;
-  ;;
+    t.oversize <- 0
+
 
   let fold f t init =
     let rec fold_bucket i b accu =
@@ -104,7 +109,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | None -> fold_bucket (i+1) b accu
     in
     Array.fold_right (fold_bucket 0) t.table init
-  ;;
+
 
   let iter f t =
     let rec iter_bucket i b =
@@ -114,7 +119,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | None -> iter_bucket (i+1) b
     in
     Array.iter (iter_bucket 0) t.table
-  ;;
+
 
   let iter_weak f t =
     let rec iter_bucket i j b =
@@ -124,19 +129,19 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       | false -> iter_bucket (i+1) j b
     in
     Array.iteri (iter_bucket 0) t.table
-  ;;
+
 
   let rec count_bucket i b accu =
     if i >= length b then accu else
     count_bucket (i+1) b (accu + (if check b i then 1 else 0))
-  ;;
+
 
   let count t =
     Array.fold_right (count_bucket 0) t.table 0
-  ;;
 
-  let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length;;
-  let prev_sz n = ((n - 3) * 2 + 2) / 3;;
+
+  let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length
+  let prev_sz n = ((n - 3) * 2 + 2) / 3
 
   let test_shrink_bucket t =
     let bucket = t.table.(t.rover) in
@@ -160,13 +165,13 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         t.table.(t.rover) <- emptybucket;
         t.hashes.(t.rover) <- [| |];
       end else begin
-        Obj.truncate (Obj.repr bucket) (prev_len + 1);
+        Obj.truncate (Obj.repr bucket) (prev_len + additional_values);
         Obj.truncate (Obj.repr hbucket) prev_len;
       end;
       if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
     end;
-    t.rover <- (t.rover + 1) mod (Array.length t.table);
-  ;;
+    t.rover <- (t.rover + 1) mod (Array.length t.table)
+
 
   let rec resize t =
     let oldlen = Array.length t.table in
@@ -195,7 +200,9 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let sz = length bucket in
     let rec loop i =
       if i >= sz then begin
-        let newsz = min (3 * sz / 2 + 3) (Sys.max_array_length - 1) in
+        let newsz =
+          min (3 * sz / 2 + 3) (Sys.max_array_length - additional_values)
+        in
         if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
         let newbucket = weak_create newsz in
         let newhashes = Array.make newsz 0 in
@@ -217,13 +224,13 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         hashes.(i) <- h;
       end;
     in
-    loop 0;
-  ;;
+    loop 0
+
 
   let add t d =
     let h = H.hash d in
-    add_aux t set (Some d) h (get_index t h);
-  ;;
+    add_aux t set (Some d) h (get_index t h)
+
 
   let find_or t d ifnotfound =
     let h = H.hash d in
@@ -244,13 +251,14 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1)
     in
     loop 0
-  ;;
+
 
   let merge t d =
     find_or t d (fun h index -> add_aux t set (Some d) h index; d)
-  ;;
 
-  let find t d = find_or t d (fun h index -> raise Not_found);;
+
+  let find t d = find_or t d (fun _h _index -> raise Not_found)
+
 
   let find_shadow t d iffound ifnotfound =
     let h = H.hash d in
@@ -267,11 +275,13 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1)
     in
     loop 0
-  ;;
 
-  let remove t d = find_shadow t d (fun w i -> set w i None) ();;
 
-  let mem t d = find_shadow t d (fun w i -> true) false;;
+  let remove t d = find_shadow t d (fun w i -> set w i None) ()
+
+
+  let mem t d = find_shadow t d (fun _w _i -> true) false
+
 
   let find_all t d =
     let h = H.hash d in
@@ -292,7 +302,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       end else loop (i + 1) accu
     in
     loop 0 []
-  ;;
+
 
   let stats t =
     let len = Array.length t.table in
@@ -300,6 +310,6 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.sort compare lens;
     let totlen = Array.fold_left ( + ) 0 lens in
     (len, count t, totlen, lens.(0), lens.(len/2), lens.(len-1))
-  ;;
 
-end;;
+
+end

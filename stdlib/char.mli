@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Character operations. *)
 
@@ -42,11 +44,13 @@ val uppercase : char -> char
 
 val lowercase_ascii : char -> char
 (** Convert the given character to its equivalent lowercase character,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val uppercase_ascii : char -> char
 (** Convert the given character to its equivalent uppercase character,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = char
 (** An alias for the type of characters. *)
@@ -56,6 +60,10 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [Char] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for chars.
+    @since 4.03.0 *)
 
 (**/**)
 

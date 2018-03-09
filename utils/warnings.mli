@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
 (*                                                                     *)
 (*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 
@@ -18,7 +21,7 @@ type t =
   | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
-  | Labels_omitted                          (*  6 *)
+  | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
@@ -50,7 +53,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool (* 37 *)
-  | Unused_extension of string * bool * bool   (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool   (* 40 *)
   | Ambiguous_name of string list * string list * bool (* 41 *)
@@ -61,8 +64,19 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
-  | No_cmi_file of string                   (* 49 *)
+  | No_cmi_file of string * string option   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
+  | Fragile_literal_pattern                 (* 52 *)
+  | Misplaced_attribute of string           (* 53 *)
+  | Duplicated_attribute of string          (* 54 *)
+  | Inlining_impossible of string           (* 55 *)
+  | Unreachable_case                        (* 56 *)
+  | Ambiguous_pattern of string list        (* 57 *)
+  | No_cmx_file of string                   (* 58 *)
+  | Assignment_to_non_mutable_value         (* 59 *)
+  | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
 ;;
 
 val parse_options : bool -> string -> unit;;
@@ -78,6 +92,7 @@ val print : formatter -> t -> unit;;
 exception Errors of int;;
 
 val check_fatal : unit -> unit;;
+val reset_fatal: unit -> unit
 
 val help_warnings: unit -> unit
 

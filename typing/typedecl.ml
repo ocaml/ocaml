@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (**** Typing of type definitions ****)
 
@@ -18,6 +21,8 @@ open Parsetree
 open Primitive
 open Types
 open Typetexp
+
+type native_repr_kind = Unboxed | Untagged
 
 type error =
     Repeated_parameter
@@ -45,10 +50,31 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
+  | Val_in_structure
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
+  | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Bad_immediate_attribute
+  | Bad_unboxed_attribute of string
+  | Wrong_unboxed_type_float
+  | Boxed_and_unboxed
 
 open Typedtree
 
 exception Error of Location.t * error
+
+(* Note: do not factor the branches in the following pattern-matching:
+   the records must be constants for the compiler to do sharing on them.
+*)
+let get_unboxed_from_attributes sdecl =
+  let unboxed = Builtin_attributes.has_unboxed sdecl.ptype_attributes in
+  let boxed = Builtin_attributes.has_boxed sdecl.ptype_attributes in
+  match boxed, unboxed, !Clflags.unboxed_types with
+  | true, true, _ -> raise (Error(sdecl.ptype_loc, Boxed_and_unboxed))
+  | true, false, _ -> unboxed_false_default_false
+  | false, true, _ -> unboxed_true_default_false
+  | false, false, false -> unboxed_false_default_true
+  | false, false, true -> unboxed_true_default_true
 
 (* Enter all declared types in the environment as abstract types *)
 
@@ -66,6 +92,8 @@ let enter_type env sdecl id =
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
+      type_immediate = false;
+      type_unboxed = unboxed_false_default_false;
     }
   in
   Env.add_type ~check:true id decl env
@@ -80,12 +108,38 @@ let update_type temp_env env id loc =
       with Ctype.Unify trace ->
         raise (Error(loc, Type_clash (env, trace)))
 
-(* Determine if a type is (an abbreviation for) the type "float" *)
 (* We use the Ctype.expand_head_opt version of expand_head to get access
    to the manifest type of private abbreviations. *)
+let rec get_unboxed_type_representation env ty fuel =
+  if fuel < 0 then None else
+  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+  match ty.desc with
+  | Tconstr (p, args, _) ->
+    begin match Env.find_type p env with
+    | exception Not_found -> Some ty
+    | {type_unboxed = {unboxed = false}} -> Some ty
+    | {type_params; type_kind =
+         Type_record ([{ld_type = ty2; _}], _)
+       | Type_variant [{cd_args = Cstr_tuple [ty2]; _}]
+       | Type_variant [{cd_args = Cstr_record [{ld_type = ty2; _}]; _}]}
+
+         -> get_unboxed_type_representation env
+             (Ctype.apply env type_params ty2 args) (fuel - 1)
+    | {type_kind=Type_abstract} -> None
+          (* This case can occur when checking a recursive unboxed type
+             declaration. *)
+    | _ -> assert false (* only the above can be unboxed *)
+    end
+  | _ -> Some ty
+
+let get_unboxed_type_representation env ty =
+  get_unboxed_type_representation env ty 100000
+;;
+
+(* Determine if a type's values are represented by floats at run-time. *)
 let is_float env ty =
-  match Ctype.repr (Ctype.expand_head_opt env ty) with
-    {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
+  match get_unboxed_type_representation env ty with
+    Some {desc = Tconstr(p, _, _); _} -> Path.same p Predef.path_float
   | _ -> false
 
 (* Determine if a type definition defines a fixed type. (PW) *)
@@ -146,19 +200,63 @@ let make_params env params =
   in
     List.map make_param params
 
+let transl_labels env closed lbls =
+  assert (lbls <> []);
+  let all_labels = ref StringSet.empty in
+  List.iter
+    (fun {pld_name = {txt=name; loc}} ->
+       if StringSet.mem name !all_labels then
+         raise(Error(loc, Duplicate_label name));
+       all_labels := StringSet.add name !all_labels)
+    lbls;
+  let mk {pld_name=name;pld_mutable=mut;pld_type=arg;pld_loc=loc;
+          pld_attributes=attrs} =
+    let arg = Ast_helper.Typ.force_poly arg in
+    let cty = transl_simple_type env closed arg in
+    {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
+     ld_type = cty; ld_loc = loc; ld_attributes = attrs}
+  in
+  let lbls = List.map mk lbls in
+  let lbls' =
+    List.map
+      (fun ld ->
+         let ty = ld.ld_type.ctyp_type in
+         let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
+         {Types.ld_id = ld.ld_id;
+          ld_mutable = ld.ld_mutable;
+          ld_type = ty;
+          ld_loc = ld.ld_loc;
+          ld_attributes = ld.ld_attributes
+         }
+      )
+      lbls in
+  lbls, lbls'
+
+let transl_constructor_arguments env closed = function
+  | Pcstr_tuple l ->
+      let l = List.map (transl_simple_type env closed) l in
+      Types.Cstr_tuple (List.map (fun t -> t.ctyp_type) l),
+      Cstr_tuple l
+  | Pcstr_record l ->
+      let lbls, lbls' = transl_labels env closed l in
+      Types.Cstr_record lbls',
+      Cstr_record lbls
+
 let make_constructor env type_path type_params sargs sret_type =
   match sret_type with
   | None ->
-      let targs = List.map (transl_simple_type env true) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments env true sargs
+      in
         targs, None, args, None
   | Some sret_type ->
       (* if it's a generalized constructor we must first narrow and
          then widen so as to not introduce any new constraints *)
       let z = narrow () in
       reset_type_variables ();
-      let targs = List.map (transl_simple_type env false) sargs in
-      let args = List.map (fun cty -> cty.ctyp_type) targs in
+      let args, targs =
+        transl_constructor_arguments env false sargs
+      in
       let tret_type = transl_simple_type env false sret_type in
       let ret_type = tret_type.ctyp_type in
       begin
@@ -190,6 +288,31 @@ let make_effect_constructor env type_param sargs sret =
   widen z;
   targs, Some tret_type, args, Some ret_type
 
+(* Check that the argument to a GADT constructor is compatible with unboxing
+   the type, given the existential variables introduced by this constructor. *)
+let rec check_unboxed_gadt_arg loc ex env ty =
+  match get_unboxed_type_representation env ty with
+  | Some {desc = Tvar _; id} ->
+    let f t = (Btype.repr t).id = id in
+    if List.exists f ex then raise(Error(loc, Wrong_unboxed_type_float))
+  | Some {desc = Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil
+                 | Tvariant _; _} ->
+    ()
+    (* A comment in [Translcore.transl_exp0] claims the above cannot be
+       represented by floats. *)
+  | Some {desc = Tconstr (p, args, _); _} ->
+    let tydecl = Env.find_type p env in
+    assert (not tydecl.type_unboxed.unboxed);
+    if tydecl.type_kind = Type_abstract then
+      List.iter (check_unboxed_gadt_arg loc ex env) args
+  | Some {desc = Tfield _ | Tlink _ | Tsubst _; _} -> assert false
+  | Some {desc = Tunivar _; _} -> ()
+  | Some {desc = Tpoly (t2, _); _} -> check_unboxed_gadt_arg loc ex env t2
+  | None -> ()
+      (* This case is tricky: the argument is another (or the same) type
+         in the same recursive definition. In this case we don't have to
+         check because we will also check that other type for correctness. *)
+
 let transl_declaration env sdecl id =
   (* Bind type parameters *)
   reset_type_variables();
@@ -202,13 +325,56 @@ let transl_declaration env sdecl id =
       transl_simple_type env false sty', loc)
     sdecl.ptype_cstrs
   in
+  let raw_status = get_unboxed_from_attributes sdecl in
+  if raw_status.unboxed && not raw_status.default then begin
+    match sdecl.ptype_kind with
+    | Ptype_abstract ->
+        raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                      "it is abstract"))
+    | Ptype_variant [{pcd_args = Pcstr_tuple []; _}] ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "its constructor has no argument"))
+    | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}] -> ()
+    | Ptype_variant [{pcd_args = Pcstr_tuple _; _}] ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "its constructor has more than one argument"))
+    | Ptype_variant [{pcd_args = Pcstr_record
+                        [{pld_mutable=Immutable; _}]; _}] -> ()
+    | Ptype_variant [{pcd_args = Pcstr_record [{pld_mutable=Mutable; _}]; _}] ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute "it is mutable"))
+    | Ptype_variant [{pcd_args = Pcstr_record _; _}] ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "its constructor has more than one argument"))
+    | Ptype_variant _ ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "it has more than one constructor"))
+    | Ptype_record [{pld_mutable=Immutable; _}] -> ()
+    | Ptype_record [{pld_mutable=Mutable; _}] ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "it is mutable"))
+    | Ptype_record _ ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "it has more than one field"))
+    | Ptype_open ->
+      raise(Error(sdecl.ptype_loc, Bad_unboxed_attribute
+                    "extensible variant types cannot be unboxed"))
+  end;
+  let unboxed_status =
+    match sdecl.ptype_kind with
+    | Ptype_variant [{pcd_args = Pcstr_tuple [_]; _}]
+      | Ptype_variant [{pcd_args = Pcstr_record
+                          [{pld_mutable = Immutable; _}]; _}]
+      | Ptype_record [{pld_mutable = Immutable; _}] ->
+    raw_status
+    | _ -> (* The type is not unboxable, mark it as boxed *)
+      unboxed_false_default_false
+  in
+  let unbox = unboxed_status.unboxed in
   let (tkind, kind) =
     match sdecl.ptype_kind with
-        Ptype_abstract -> Ttype_abstract, Type_abstract
+      | Ptype_abstract -> Ttype_abstract, Type_abstract
       | Ptype_variant scstrs ->
-        if scstrs = [] then
-          Syntaxerr.ill_formed_ast sdecl.ptype_loc
-            "Variant types cannot be empty.";
+        assert (scstrs <> []);
         let all_constrs = ref StringSet.empty in
         List.iter
           (fun {pcd_name = {txt = name}} ->
@@ -217,8 +383,8 @@ let transl_declaration env sdecl id =
             all_constrs := StringSet.add name !all_constrs)
           scstrs;
         if List.length
-          (List.filter (fun cd -> cd.pcd_args <> []) scstrs)
-          > (Config.max_tag + 1) then
+            (List.filter (fun cd -> cd.pcd_args <> Pcstr_tuple []) scstrs)
+           > (Config.max_tag + 1) then
           raise(Error(sdecl.ptype_loc, Too_many_constructors));
         let make_cstr scstr =
           let name = Ident.create scstr.pcd_name.txt in
@@ -226,6 +392,20 @@ let transl_declaration env sdecl id =
             make_constructor env (Path.Pident id) params
                              scstr.pcd_args scstr.pcd_res
           in
+          if unbox then begin
+            (* Cannot unbox a type when the argument can be both float and
+               non-float because it interferes with the dynamic float array
+               optimization. This can only happen when the type is a GADT
+               and the argument is an existential type variable or an
+               unboxed (or abstract) type constructor applied to some
+               existential type variable. Of course we also have to rule
+               out any abstract type constructor applied to anything that
+               might be an existential type variable. *)
+            match Datarepr.constructor_existentials args ret_type with
+            | _, [] -> ()
+            | [argty], ex -> check_unboxed_gadt_arg sdecl.ptype_loc ex env argty
+            | _ -> assert false
+          end;
           let tcstr =
             { cd_id = name;
               cd_name = scstr.pcd_name;
@@ -246,43 +426,14 @@ let transl_declaration env sdecl id =
         let tcstrs, cstrs = List.split (List.map make_cstr scstrs) in
           Ttype_variant tcstrs, Type_variant cstrs
       | Ptype_record lbls ->
-        if lbls = [] then
-          Syntaxerr.ill_formed_ast sdecl.ptype_loc "Records cannot be empty.";
-        let all_labels = ref StringSet.empty in
-        List.iter
-          (fun {pld_name = {txt=name}} ->
-            if StringSet.mem name !all_labels then
-              raise(Error(sdecl.ptype_loc, Duplicate_label name));
-            all_labels := StringSet.add name !all_labels)
-          lbls;
-        let lbls = List.map (fun {pld_name=name;
-                                  pld_mutable=mut;
-                                  pld_type=arg;
-                                  pld_loc=loc;
-                                  pld_attributes=attrs} ->
-          let arg = Ast_helper.Typ.force_poly arg in
-          let cty = transl_simple_type env true arg in
-          {ld_id = Ident.create name.txt; ld_name = name; ld_mutable = mut;
-           ld_type = cty; ld_loc = loc; ld_attributes = attrs}
-          ) lbls in
-        let lbls' =
-          List.map
-            (fun ld ->
-              let ty = ld.ld_type.ctyp_type in
-              let ty = match ty.desc with Tpoly(t,[]) -> t | _ -> ty in
-              {Types.ld_id = ld.ld_id;
-               ld_mutable = ld.ld_mutable;
-               ld_type = ty;
-               ld_loc = ld.ld_loc;
-               ld_attributes = ld.ld_attributes
-              }
-            )
-            lbls in
-        let rep =
-          if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
-          then Record_float
-          else Record_regular in
-        Ttype_record lbls, Type_record(lbls', rep)
+          let lbls, lbls' = transl_labels env true lbls in
+          let rep =
+            if unbox then Record_unboxed false
+            else if List.for_all (fun l -> is_float env l.Types.ld_type) lbls'
+            then Record_float
+            else Record_regular
+          in
+          Ttype_record lbls, Type_record(lbls', rep)
       | Ptype_open -> Ttype_open, Type_open
       in
     let (tman, man) = match sdecl.ptype_manifest with
@@ -302,6 +453,8 @@ let transl_declaration env sdecl id =
         type_newtype_level = None;
         type_loc = sdecl.ptype_loc;
         type_attributes = sdecl.ptype_attributes;
+        type_immediate = false;
+        type_unboxed = unboxed_status;
       } in
 
   (* Check constraints *)
@@ -315,7 +468,7 @@ let transl_declaration env sdecl id =
     Ctype.end_def ();
   (* Add abstract row *)
     if is_fixed_type sdecl then begin
-      let (p, _) =
+      let p =
         try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
         with Not_found -> assert false in
       set_fixed_row env sdecl.ptype_loc p decl
@@ -343,20 +496,7 @@ let transl_declaration env sdecl id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract ->
-      ()
-  | Type_variant v ->
-      List.iter
-        (fun c ->
-          List.iter Ctype.generalize c.Types.cd_args;
-          may Ctype.generalize c.Types.cd_res)
-        v
-  | Type_record(r, rep) ->
-      List.iter (fun l -> Ctype.generalize l.Types.ld_type) r
-  | Type_open ->
-      ()
-  end;
+  Btype.iter_type_expr_kind Ctype.generalize decl.type_kind;
   begin match decl.type_manifest with
   | None    -> ()
   | Some ty -> Ctype.generalize ty
@@ -391,6 +531,18 @@ let rec check_constraints_rec env loc visited ty =
 
 module SMap = Map.Make(String)
 
+let check_constraints_labels env visited l pl =
+  let rec get_loc name = function
+      [] -> assert false
+    | pld :: tl ->
+        if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
+        else get_loc name tl
+  in
+  List.iter
+    (fun {Types.ld_id=name; ld_type=ty} ->
+       check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
+    l
+
 let check_constraints env sdecl (_, decl) =
   let visited = ref TypeSet.empty in
   begin match decl.type_kind with
@@ -408,15 +560,21 @@ let check_constraints env sdecl (_, decl) =
         List.fold_left foldf SMap.empty pl
       in
       List.iter
-        (fun {Types.cd_id=name; cd_args=tyl; cd_res=ret_type} ->
-          let {pcd_args = styl; pcd_res = sret_type; _} =
+        (fun {Types.cd_id=name; cd_args; cd_res} ->
+          let {pcd_args; pcd_res; _} =
             try SMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
-          List.iter2
-            (fun sty ty ->
-              check_constraints_rec env sty.ptyp_loc visited ty)
-            styl tyl;
-          match sret_type, ret_type with
+          begin match cd_args, pcd_args with
+          | Cstr_tuple tyl, Pcstr_tuple styl ->
+              List.iter2
+                (fun sty ty ->
+                   check_constraints_rec env sty.ptyp_loc visited ty)
+                styl tyl
+          | Cstr_record tyl, Pcstr_record styl ->
+              check_constraints_labels env visited tyl styl
+          | _ -> assert false
+          end;
+          match pcd_res, cd_res with
           | Some sr, Some r ->
               check_constraints_rec env sr.ptyp_loc visited r
           | _ ->
@@ -428,16 +586,7 @@ let check_constraints env sdecl (_, decl) =
         | Ptype_variant _ | Ptype_abstract | Ptype_open -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
-      let rec get_loc name = function
-          [] -> assert false
-        | pld :: tl ->
-            if name = pld.pld_name.txt then pld.pld_type.ptyp_loc
-            else get_loc name tl
-      in
-      List.iter
-        (fun {Types.ld_id=name; ld_type=ty} ->
-          check_constraints_rec env (get_loc (Ident.name name) pl) visited ty)
-        l
+      check_constraints_labels env visited l pl
   | Type_open -> ()
   end;
   begin match decl.type_manifest with
@@ -491,9 +640,9 @@ let check_abbrev env sdecl (id, decl) =
 
 let check_well_founded env loc path to_check ty =
   let visited = ref TypeMap.empty in
-  let rec check ty0 exp_nodes ty =
+  let rec check ty0 parents ty =
     let ty = Btype.repr ty in
-    if TypeSet.mem ty exp_nodes then begin
+    if TypeSet.mem ty parents then begin
       (*Format.eprintf "@[%a@]@." Printtyp.raw_type_expr ty;*)
       if match ty0.desc with
       | Tconstr (p, _, _) -> Path.same p path
@@ -501,37 +650,51 @@ let check_well_founded env loc path to_check ty =
       then raise (Error (loc, Recursive_abbrev (Path.name path)))
       else raise (Error (loc, Cycle_in_def (Path.name path, ty0)))
     end;
-    let (fini, exp_nodes) =
+    let (fini, parents) =
       try
         let prev = TypeMap.find ty !visited in
-        if TypeSet.subset exp_nodes prev then (true, exp_nodes) else
-        (false, TypeSet.union exp_nodes prev)
+        if TypeSet.subset parents prev then (true, parents) else
+        (false, TypeSet.union parents prev)
       with Not_found ->
-        (false, exp_nodes)
+        (false, parents)
     in
-    let snap = Btype.snapshot () in
-    if fini then () else try
-      visited := TypeMap.add ty exp_nodes !visited;
+    if fini then () else
+    let rec_ok =
       match ty.desc with
-      | Tconstr(p, args, _)
-        when not (TypeSet.is_empty exp_nodes) || to_check p ->
+        Tconstr(p,_,_) ->
+          !Clflags.recursive_types && Ctype.is_contractive env p
+      | Tobject _ | Tvariant _ -> true
+      | _ -> !Clflags.recursive_types
+    in
+    let visited' = TypeMap.add ty parents !visited in
+    let arg_exn =
+      try
+        visited := visited';
+        let parents =
+          if rec_ok then TypeSet.empty else TypeSet.add ty parents in
+        Btype.iter_type_expr (check ty0 parents) ty;
+        None
+      with e ->
+        visited := visited'; Some e
+    in
+    match ty.desc with
+    | Tconstr(p, _, _) when arg_exn <> None || to_check p ->
+        if to_check p then may raise arg_exn
+        else Btype.iter_type_expr (check ty0 TypeSet.empty) ty;
+        begin try
           let ty' = Ctype.try_expand_once_opt env ty in
-          let ty0 = if TypeSet.is_empty exp_nodes then ty else ty0 in
-          check ty0 (TypeSet.add ty exp_nodes) ty'
-      | _ -> raise Ctype.Cannot_expand
-    with
-    | Ctype.Cannot_expand ->
-        let nodes =
-          if !Clflags.recursive_types && Ctype.is_contractive env ty
-          || match ty.desc with Tobject _ | Tvariant _ -> true | _ -> false
-          then TypeSet.empty
-          else exp_nodes in
-        Btype.iter_type_expr (check ty0 nodes) ty
-    | Ctype.Unify _ ->
-        (* Will be detected by check_recursion *)
-        Btype.backtrack snap
+          let ty0 = if TypeSet.is_empty parents then ty else ty0 in
+          check ty0 (TypeSet.add ty parents) ty'
+        with
+          Ctype.Cannot_expand -> may raise arg_exn
+        end
+    | _ -> may raise arg_exn
   in
-  Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
+  let snap = Btype.snapshot () in
+  try Ctype.wrap_trace_gadt_instances env (check ty TypeSet.empty) ty
+  with Ctype.Unify _ ->
+    (* Will be detected by check_recursion *)
+    Btype.backtrack snap
 
 let check_well_founded_manifest env loc path decl =
   if decl.type_manifest = None then () else
@@ -683,6 +846,8 @@ let compute_variance env visited vari ty =
                     null [May_pos; May_neg; May_weak]
                 in
                 let v = inter vari upper in
+                (* cf PR#7269:
+                   if List.length tyl > 1 then upper else inter vari upper *)
                 List.iter (compute_variance_rec v) tyl
             | _ -> ())
           row.row_fields;
@@ -697,8 +862,6 @@ let compute_variance env visited vari ty =
         List.iter (compute_variance_rec v) tyl
   in
   compute_variance_rec vari ty
-
-let make_variance ty = (ty, ref Variance.null)
 
 let make p n i =
   let open Variance in
@@ -738,7 +901,7 @@ let compute_variance_type env check (required, loc) decl tyl =
     if fvl = [] then () else
     let tvl2 = ref TypeMap.empty in
     List.iter2
-      (fun ty (p,n,i) ->
+      (fun ty (p,n,_) ->
         if Btype.is_Tvar ty then () else
         let v =
           if p then if n then full else covariant else conjugate covariant in
@@ -794,37 +957,44 @@ let add_false = List.map (fun ty -> false, ty)
 
 (* A parameter is constrained if either is is instantiated,
    or it is a variable appearing in another parameter *)
-let constrained env vars ty =
+let constrained vars ty =
   match ty.desc with
   | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
+
+let for_constr = function
+  | Types.Cstr_tuple l -> add_false l
+  | Types.Cstr_record l ->
+      List.map
+        (fun {Types.ld_mutable; ld_type} -> (ld_mutable = Mutable, ld_type))
+        l
 
 let compute_variance_gadt env check (required, loc as rloc) decl
     (tl, ret_type_opt) =
   match ret_type_opt with
   | None ->
       compute_variance_type env check rloc {decl with type_private = Private}
-        (add_false tl)
+        (for_constr tl)
   | Some ret_type ->
       match Ctype.repr ret_type with
-      | {desc=Tconstr (path, tyl, _)} ->
+      | {desc=Tconstr (_, tyl, _)} ->
           (* let tyl = List.map (Ctype.expand_head env) tyl in *)
           let tyl = List.map Ctype.repr tyl in
           let fvl = List.map (Ctype.free_variables ?env:None) tyl in
           let _ =
             List.fold_left2
-              (fun (fv1,fv2) ty (c,n,i) ->
+              (fun (fv1,fv2) ty (c,n,_) ->
                 match fv2 with [] -> assert false
                 | fv :: fv2 ->
                     (* fv1 @ fv2 = free_variables of other parameters *)
-                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                    if (c||n) && constrained (fv1 @ fv2) ty then
                       raise (Error(loc, Varying_anonymous));
                     (fv :: fv1, fv2))
               ([], fvl) tyl required
           in
           compute_variance_type env check rloc
             {decl with type_params = tyl; type_private = Private}
-            (add_false tl)
+            (for_constr tl)
       | _ -> assert false
 
 let compute_variance_extension env check decl ext rloc =
@@ -832,7 +1002,7 @@ let compute_variance_extension env check decl ext rloc =
     {decl with type_params = ext.ext_type_params}
     (ext.ext_args, ext.ext_ret_type)
 
-let compute_variance_decl env check decl (required, loc as rloc) =
+let compute_variance_decl env check decl (required, _ as rloc) =
   if (decl.type_kind = Type_abstract || decl.type_kind = Type_open)
        && decl.type_manifest = None then
     List.map
@@ -851,11 +1021,11 @@ let compute_variance_decl env check decl (required, loc as rloc) =
   | Type_variant tll ->
       if List.for_all (fun c -> c.Types.cd_res = None) tll then
         compute_variance_type env check rloc decl
-          (mn @
-           add_false (List.flatten (List.map (fun c -> c.Types.cd_args) tll)))
+          (mn @ List.flatten (List.map (fun c -> for_constr c.Types.cd_args)
+                                tll))
       else begin
         let mn =
-          List.map (fun (_,ty) -> ([ty],None)) mn in
+          List.map (fun (_,ty) -> (Types.Cstr_tuple [ty],None)) mn in
         let tll =
           mn @ List.map (fun c -> c.Types.cd_args, c.Types.cd_res) tll in
         match List.map (compute_variance_gadt env check rloc decl) tll with
@@ -871,15 +1041,38 @@ let compute_variance_decl env check decl (required, loc as rloc) =
         (mn @ List.map (fun {Types.ld_mutable; ld_type} ->
              (ld_mutable = Mutable, ld_type)) ftl)
 
-let is_sharp id =
+let is_hash id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
-let rec compute_variance_fixpoint env decls required variances =
+let marked_as_immediate decl =
+  Builtin_attributes.immediate decl.type_attributes
+
+let compute_immediacy env tdecl =
+  match (tdecl.type_kind, tdecl.type_manifest) with
+  | (Type_variant [{cd_args = Cstr_tuple [arg]; _}], _)
+    | (Type_variant [{cd_args = Cstr_record [{ld_type = arg; _}]; _}], _)
+    | (Type_record ([{ld_type = arg; _}], _), _)
+  when tdecl.type_unboxed.unboxed ->
+    begin match get_unboxed_type_representation env arg with
+    | Some argrepr -> not (Ctype.maybe_pointer_type env argrepr)
+    | None -> false
+    end
+  | (Type_variant (_ :: _ as cstrs), _) ->
+    not (List.exists (fun c -> c.Types.cd_args <> Types.Cstr_tuple []) cstrs)
+  | (Type_abstract, Some(typ)) ->
+    not (Ctype.maybe_pointer_type env typ)
+  | (Type_abstract, None) -> marked_as_immediate tdecl
+  | _ -> false
+
+(* Computes the fixpoint for the variance and immediacy of type declarations *)
+
+let rec compute_properties_fixpoint env decls required variances immediacies =
   let new_decls =
     List.map2
-      (fun (id, decl) variance -> id, {decl with type_variance = variance})
-      decls variances
+      (fun (id, decl) (variance, immediacy) ->
+         id, {decl with type_variance = variance; type_immediate = immediacy})
+      decls (List.combine variances immediacies)
   in
   let new_env =
     List.fold_right
@@ -888,13 +1081,18 @@ let rec compute_variance_fixpoint env decls required variances =
   in
   let new_variances =
     List.map2
-      (fun (id, decl) -> compute_variance_decl new_env false decl)
+      (fun (_id, decl) -> compute_variance_decl new_env false decl)
       new_decls required
   in
   let new_variances =
     List.map2 (List.map2 Variance.union) new_variances variances in
-  if new_variances <> variances then
-    compute_variance_fixpoint env decls required new_variances
+  let new_immediacies =
+    List.map
+      (fun (_id, decl) -> compute_immediacy new_env decl)
+      new_decls
+  in
+  if new_variances <> variances || new_immediacies <> immediacies then
+    compute_properties_fixpoint env decls required new_variances new_immediacies
   else begin
     (* List.iter (fun (id, decl) ->
       Printf.eprintf "%s:" (Ident.name id);
@@ -903,14 +1101,19 @@ let rec compute_variance_fixpoint env decls required variances =
         decl.type_variance;
       prerr_endline "")
       new_decls; *)
+    List.iter (fun (_, decl) ->
+      if (marked_as_immediate decl) && (not decl.type_immediate) then
+        raise (Error (decl.type_loc, Bad_immediate_attribute))
+      else ())
+      new_decls;
     List.iter2
-      (fun (id, decl) req -> if not (is_sharp id) then
+      (fun (id, decl) req -> if not (is_hash id) then
         ignore (compute_variance_decl new_env true decl req))
       new_decls required;
     new_decls, new_env
   end
 
-let init_variance (id, decl) =
+let init_variance (_id, decl) =
   List.map (fun _ -> Variance.null) decl.type_params
 
 let add_injectivity =
@@ -925,14 +1128,17 @@ let add_injectivity =
 let compute_variance_decls env cldecls =
   let decls, required =
     List.fold_right
-      (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, ci) (decls, req) ->
+      (fun (obj_id, obj_abbr, _cl_abbr, _clty, _cltydef, ci) (decls, req) ->
         let variance = List.map snd ci.ci_params in
         (obj_id, obj_abbr) :: decls,
         (add_injectivity variance, ci.ci_loc) :: req)
       cldecls ([],[])
   in
-  let variances = List.map init_variance decls in
-  let (decls, _) = compute_variance_fixpoint env decls required variances in
+  let (decls, _) =
+    compute_properties_fixpoint env decls required
+      (List.map init_variance decls)
+      (List.map (fun _ -> false) decls)
+  in
   List.map2
     (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
       let variance = decl.type_variance in
@@ -1002,6 +1208,7 @@ let transl_type_decl env rec_flag sdecl_list =
       fixed_types
     @ sdecl_list
   in
+
   (* Create identifiers. *)
   let id_list =
     List.map (fun sdecl -> Ident.create sdecl.ptype_name.txt) sdecl_list
@@ -1112,14 +1319,16 @@ let transl_type_decl env rec_flag sdecl_list =
       sdecl_list
   in
   let final_decls, final_env =
-    compute_variance_fixpoint env decls required (List.map init_variance decls)
+    compute_properties_fixpoint env decls required
+      (List.map init_variance decls)
+      (List.map (fun _ -> false) decls)
   in
   (* Check re-exportation *)
   List.iter2 (check_abbrev final_env) sdecl_list final_decls;
   (* Keep original declaration *)
   let final_decls =
     List.map2
-      (fun tdecl (id2, decl) ->
+      (fun tdecl (_id2, decl) ->
         { tdecl with typ_type = decl }
       ) tdecls final_decls
   in
@@ -1203,12 +1412,98 @@ let transl_extension_constructor env type_path type_params
     match sext.pext_kind with
       Pext_decl(sargs, sret_type) ->
         let targs, tret_type, args, ret_type =
-          make_constructor env type_path typext_params sargs sret_type
+          make_constructor env type_path typext_params
+            sargs sret_type
         in
           args, ret_type, Text_decl(targs, tret_type)
     | Pext_rebind lid ->
-        transl_extension_rebind env type_path
-          type_params typext_params priv lid
+        let cdescr = Typetexp.find_constructor env sext.pext_loc lid.txt in
+        let usage =
+          if cdescr.cstr_private = Private || priv = Public
+          then Env.Positive else Env.Privatize
+        in
+        Env.mark_constructor usage env (Longident.last lid.txt) cdescr;
+        let (args, cstr_res) = Ctype.instance_constructor cdescr in
+        let res, ret_type =
+          if cdescr.cstr_generalized then
+            let params = Ctype.instance_list env type_params in
+            let res = Ctype.newconstr type_path params in
+            let ret_type = Some (Ctype.newconstr type_path params) in
+              res, ret_type
+          else (Ctype.newconstr type_path typext_params), None
+        in
+        begin
+          try
+            Ctype.unify env cstr_res res
+          with Ctype.Unify trace ->
+            raise (Error(lid.loc,
+                     Rebind_wrong_type(lid.txt, env, trace)))
+        end;
+        (* Remove "_" names from parameters used in the constructor *)
+        if not cdescr.cstr_generalized then begin
+          let vars =
+            Ctype.free_variables (Btype.newgenty (Ttuple args))
+          in
+            List.iter
+              (function {desc = Tvar (Some "_")} as ty ->
+                          if List.memq ty vars then ty.desc <- Tvar None
+                        | _ -> ())
+              typext_params
+        end;
+        (* Ensure that constructor's type matches the type being extended *)
+        let cstr_type_path, cstr_type_params =
+          match cdescr.cstr_res.desc with
+            Tconstr (p, _, _) ->
+              let decl = Env.find_type p env in
+                p, decl.type_params
+          | _ -> assert false
+        in
+        let cstr_types =
+          (Btype.newgenty
+             (Tconstr(cstr_type_path, cstr_type_params, ref Mnil)))
+          :: cstr_type_params
+        in
+        let ext_types =
+          (Btype.newgenty
+             (Tconstr(type_path, type_params, ref Mnil)))
+          :: type_params
+        in
+        if not (Ctype.equal env true cstr_types ext_types) then
+          raise (Error(lid.loc,
+                       Rebind_mismatch(lid.txt, cstr_type_path, type_path)));
+        (* Disallow rebinding private constructors to non-private *)
+        begin
+          match cdescr.cstr_private, priv with
+            Private, Public ->
+              raise (Error(lid.loc, Rebind_private lid.txt))
+          | _ -> ()
+        end;
+        let path =
+          match cdescr.cstr_tag with
+            Cstr_extension(path, _) -> path
+          | _ -> assert false
+        in
+        let args =
+          match cdescr.cstr_inlined with
+          | None ->
+              Types.Cstr_tuple args
+          | Some decl ->
+              let tl =
+                match args with
+                | [ {desc=Tconstr(_, tl, _)} ] -> tl
+                | _ -> assert false
+              in
+              let decl = Ctype.instance_declaration decl in
+              assert (List.length decl.type_params = List.length tl);
+              List.iter2 (Ctype.unify env) decl.type_params tl;
+              let lbls =
+                match decl.type_kind with
+                | Type_record (lbls, Record_extension) -> lbls
+                | _ -> assert false
+              in
+              Types.Cstr_record lbls
+        in
+        args, ret_type, Text_rebind(path, lid)
   in
   let ext =
     { ext_type_path = type_path;
@@ -1281,7 +1576,7 @@ let transl_type_extension check_open env loc styext =
   List.iter Ctype.generalize type_params;
   List.iter
     (fun ext ->
-       List.iter Ctype.generalize ext.ext_type.ext_args;
+       Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
        may Ctype.generalize ext.ext_type.ext_ret_type)
     constructors;
   (* Check that all type variable are closed *)
@@ -1325,7 +1620,7 @@ let transl_exception env sext =
   in
   Ctype.end_def();
   (* Generalize types *)
-  List.iter Ctype.generalize ext.ext_type.ext_args;
+  Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_type.ext_args;
   may Ctype.generalize ext.ext_type.ext_ret_type;
   (* Check that all type variable are closed *)
   begin match Ctype.closed_extension_constructor ext.ext_type with
@@ -1354,7 +1649,7 @@ let transl_effect env seff =
         let targs, tret_type, args, ret_type =
           make_effect_constructor env type_param sargs sret
         in
-          args, ret_type, Text_decl(targs, tret_type)
+          args, ret_type, Text_decl(Cstr_tuple targs, tret_type)
     | Peff_rebind lid ->
         transl_extension_rebind env Predef.path_eff
           type_decl.type_params [typext_param] Asttypes.Public lid
@@ -1362,7 +1657,7 @@ let transl_effect env seff =
   let ext =
     { ext_type_path = Predef.path_eff;
       ext_type_params = [typext_param];
-      ext_args = args;
+      ext_args = Cstr_tuple args;
       ext_ret_type = ret_type;
       ext_private = Asttypes.Public;
       Types.ext_loc = seff.peff_loc;
@@ -1378,7 +1673,7 @@ let transl_effect env seff =
   in
   Ctype.end_def();
   (* Generalize types *)
-  List.iter Ctype.generalize ext.ext_args;
+  Btype.iter_type_expr_cstr_args Ctype.generalize ext.ext_args;
   may Ctype.generalize ext.ext_ret_type;
   (* Check that all type variable are closed *)
   begin match Ctype.closed_extension_constructor ext with
@@ -1389,24 +1684,132 @@ let transl_effect env seff =
   let newenv = Env.add_extension ~check:true text.ext_id ext env in
     text, newenv
 
+type native_repr_attribute =
+  | Native_repr_attr_absent
+  | Native_repr_attr_present of native_repr_kind
+
+let get_native_repr_attribute attrs ~global_repr =
+  match
+    Attr_helper.get_no_payload_attribute ["unboxed"; "ocaml.unboxed"]  attrs,
+    Attr_helper.get_no_payload_attribute ["untagged"; "ocaml.untagged"] attrs,
+    global_repr
+  with
+  | None, None, None -> Native_repr_attr_absent
+  | None, None, Some repr -> Native_repr_attr_present repr
+  | Some _, None, None -> Native_repr_attr_present Unboxed
+  | None, Some _, None -> Native_repr_attr_present Untagged
+  | Some { Location.loc }, _, _
+  | _, Some { Location.loc }, _ ->
+    raise (Error (loc, Multiple_native_repr_attributes))
+
+let native_repr_of_type env kind ty =
+  match kind, (Ctype.expand_head_opt env ty).desc with
+  | Untagged, Tconstr (path, _, _) when Path.same path Predef.path_int ->
+    Some Untagged_int
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_float ->
+    Some Unboxed_float
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int32 ->
+    Some (Unboxed_integer Pint32)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_int64 ->
+    Some (Unboxed_integer Pint64)
+  | Unboxed, Tconstr (path, _, _) when Path.same path Predef.path_nativeint ->
+    Some (Unboxed_integer Pnativeint)
+  | _ ->
+    None
+
+(* Raises an error when [core_type] contains an [@unboxed] or [@untagged]
+   attribute in a strict sub-term. *)
+let error_if_has_deep_native_repr_attributes core_type =
+  let open Ast_iterator in
+  let this_iterator =
+    { default_iterator with typ = fun iterator core_type ->
+      begin
+        match
+          get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present kind ->
+           raise (Error (core_type.ptyp_loc,
+                         Deep_unbox_or_untag_attribute kind))
+        | Native_repr_attr_absent -> ()
+      end;
+      default_iterator.typ iterator core_type }
+  in
+  default_iterator.typ this_iterator core_type
+
+let make_native_repr env core_type ty ~global_repr =
+  error_if_has_deep_native_repr_attributes core_type;
+  match get_native_repr_attribute core_type.ptyp_attributes ~global_repr with
+  | Native_repr_attr_absent ->
+    Same_as_ocaml_repr
+  | Native_repr_attr_present kind ->
+    begin match native_repr_of_type env kind ty with
+    | None ->
+      raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+    | Some repr -> repr
+    end
+
+let rec parse_native_repr_attributes env core_type ty ~global_repr =
+  match core_type.ptyp_desc, (Ctype.repr ty).desc,
+    get_native_repr_attribute core_type.ptyp_attributes ~global_repr:None
+  with
+  | Ptyp_arrow _, Tarrow _, Native_repr_attr_present kind  ->
+    raise (Error (core_type.ptyp_loc, Cannot_unbox_or_untag_type kind))
+  | Ptyp_arrow (_, ct1, ct2), Tarrow (_, t1, t2, _), _ ->
+    let repr_arg = make_native_repr env ct1 t1 ~global_repr in
+    let repr_args, repr_res =
+      parse_native_repr_attributes env ct2 t2 ~global_repr
+    in
+    (repr_arg :: repr_args, repr_res)
+  | Ptyp_arrow _, _, _ | _, Tarrow _, _ -> assert false
+  | _ -> ([], make_native_repr env core_type ty ~global_repr)
+
+
+let check_unboxable env loc ty =
+  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
+  try match ty.desc with
+  | Tconstr (p, _, _) ->
+    let tydecl = Env.find_type p env in
+    if tydecl.type_unboxed.unboxed then
+      Location.prerr_warning loc
+        (Warnings.Unboxable_type_in_prim_decl (Path.name p))
+  | _ -> ()
+  with Not_found -> ()
+
 (* Translate a value declaration *)
 let transl_value_decl env loc valdecl =
   let cty = Typetexp.transl_type_scheme env valdecl.pval_type in
   let ty = cty.ctyp_type in
   let v =
   match valdecl.pval_prim with
-    [] ->
+    [] when Env.is_in_signature env ->
       { val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
-  | decl ->
-      let arity = Ctype.arity ty in
-      let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && prim.prim_name.[0] <> '%' then
+  | [] ->
+      raise (Error(valdecl.pval_loc, Val_in_structure))
+  | _ ->
+      let global_repr =
+        match
+          get_native_repr_attribute valdecl.pval_attributes ~global_repr:None
+        with
+        | Native_repr_attr_present repr -> Some repr
+        | Native_repr_attr_absent -> None
+      in
+      let native_repr_args, native_repr_res =
+        parse_native_repr_attributes env valdecl.pval_type ty ~global_repr
+      in
+      let prim =
+        Primitive.parse_declaration valdecl
+          ~native_repr_args
+          ~native_repr_res
+      in
+      if prim.prim_arity = 0 &&
+         (prim.prim_name = "" || prim.prim_name.[0] <> '%') then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+      Btype.iter_type_expr (check_unboxable env loc) ty;
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
   in
@@ -1467,17 +1870,24 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   && sdecl.ptype_private = Private then
     Location.prerr_warning sdecl.ptype_loc
       (Warnings.Deprecated "spurious use of private");
+  let type_kind, type_unboxed =
+    if arity_ok && man <> None then
+      orig_decl.type_kind, orig_decl.type_unboxed
+    else
+      Type_abstract, unboxed_false_default_false
+  in
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind =
-        if arity_ok && man <> None then orig_decl.type_kind else Type_abstract;
+      type_kind;
       type_private = priv;
       type_manifest = man;
       type_variance = [];
       type_newtype_level = None;
       type_loc = sdecl.ptype_loc;
       type_attributes = sdecl.ptype_attributes;
+      type_immediate = false;
+      type_unboxed;
     }
   in
   begin match row_path with None -> ()
@@ -1487,10 +1897,12 @@ let transl_with_constraint env id row_path orig_decl sdecl =
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
   let decl = name_recursion sdecl id decl in
-  let decl =
-    {decl with type_variance =
-     compute_variance_decl env false decl
-       (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)} in
+  let type_variance =
+    compute_variance_decl env true decl
+      (add_injectivity (List.map snd sdecl.ptype_params), sdecl.ptype_loc)
+  in
+  let type_immediate = compute_immediacy env decl in
+  let decl = {decl with type_variance; type_immediate} in
   Ctype.end_def();
   generalize_decl decl;
   {
@@ -1522,12 +1934,14 @@ let abstract_type_decl arity =
       type_newtype_level = None;
       type_loc = Location.none;
       type_attributes = [];
+      type_immediate = false;
+      type_unboxed = unboxed_false_default_false;
      } in
   Ctype.end_def();
   generalize_decl decl;
   decl
 
-let approx_type_decl env sdecl_list =
+let approx_type_decl sdecl_list =
   List.map
     (fun sdecl ->
       (Ident.create sdecl.ptype_name.txt,
@@ -1550,16 +1964,20 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
-let explain_unbound ppf tv tl typ kwd lab =
+let explain_unbound_gen ppf tv tl typ kwd pr =
   try
     let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
     let ty0 = (* Hack to force aliasing when needed *)
       Btype.newgenty (Tobject(tv, ref None)) in
     Printtyp.reset_and_mark_loops_list [typ ti; ty0];
     fprintf ppf
-      ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-      kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr tv
+      ".@.@[<hov2>In %s@ %a@;<1 -2>the variable %a is unbound@]"
+      kwd pr ti Printtyp.type_expr tv
   with Not_found -> ()
+
+let explain_unbound ppf tv tl typ kwd lab =
+  explain_unbound_gen ppf tv tl typ kwd
+    (fun ppf ti -> fprintf ppf "%s%a" (lab ti) Printtyp.type_expr (typ ti))
 
 let explain_unbound_single ppf tv ty =
   let trivial ty =
@@ -1574,13 +1992,18 @@ let explain_unbound_single ppf tv ty =
       let row = Btype.row_repr row in
       if row.row_more == tv then trivial ty else
       explain_unbound ppf tv row.row_fields
-        (fun (l,f) -> match Btype.row_field_repr f with
+        (fun (_l,f) -> match Btype.row_field_repr f with
           Rpresent (Some t) -> t
         | Reither (_,[t],_,_) -> t
         | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
         | _ -> Btype.newgenty (Ttuple[]))
         "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
   | _ -> trivial ty
+
+
+let tys_of_constr_args = function
+  | Types.Cstr_tuple tl -> tl
+  | Types.Cstr_record lbls -> List.map (fun l -> l.Types.ld_type) lbls
 
 let report_error ppf = function
   | Repeated_parameter ->
@@ -1640,9 +2063,14 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
       | Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun c ->
-            Btype.newgenty (Ttuple c.Types.cd_args))
-            "case" (fun c -> Ident.name c.Types.cd_id ^ " of ")
+          explain_unbound_gen ppf ty tl (fun c ->
+              let tl = tys_of_constr_args c.Types.cd_args in
+              Btype.newgenty (Ttuple tl)
+            )
+            "case" (fun ppf c ->
+                fprintf ppf
+                  "%s of %a" (Ident.name c.Types.cd_id)
+                  Printtyp.constructor_arguments c.Types.cd_args)
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun l -> l.Types.ld_type)
             "field" (fun l -> Ident.name l.Types.ld_id ^ ": ")
@@ -1652,7 +2080,8 @@ let report_error ppf = function
       end
   | Unbound_type_var_ext (ty, ext) ->
       fprintf ppf "A type variable is unbound in this extension constructor";
-      explain_unbound ppf ty ext.ext_args (fun c -> c) "type" (fun _ -> "")
+      let args = tys_of_constr_args ext.ext_args in
+      explain_unbound ppf ty args (fun c -> c) "type" (fun _ -> "")
   | Not_open_type path ->
       fprintf ppf "@[%s@ %a@]"
         "Cannot extend type definition"
@@ -1733,6 +2162,33 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %s@ %s@]"
         "In this GADT definition," "the variance of some parameter"
         "cannot be checked"
+  | Val_in_structure ->
+      fprintf ppf "Value declarations are only allowed in signatures"
+  | Multiple_native_repr_attributes ->
+      fprintf ppf "Too many [@@unboxed]/[@@untagged] attributes"
+  | Cannot_unbox_or_untag_type Unboxed ->
+      fprintf ppf "Don't know how to unbox this type. Only float, int32, \
+                   int64 and nativeint can be unboxed"
+  | Cannot_unbox_or_untag_type Untagged ->
+      fprintf ppf "Don't know how to untag this type. Only int \
+                   can be untagged"
+  | Deep_unbox_or_untag_attribute kind ->
+      fprintf ppf
+        "The attribute '%s' should be attached to a direct argument or \
+         result of the primitive, it should not occur deeply into its type"
+        (match kind with Unboxed -> "@unboxed" | Untagged -> "@untagged")
+  | Bad_immediate_attribute ->
+      fprintf ppf "@[%s@ %s@]"
+        "Types marked with the immediate attribute must be"
+        "non-pointer types like int or bool"
+  | Bad_unboxed_attribute msg ->
+      fprintf ppf "@[This type cannot be unboxed because@ %s.@]" msg
+  | Wrong_unboxed_type_float ->
+      fprintf ppf "@[This type cannot be unboxed because@ \
+                   it might contain both float and non-float values.@ \
+                   You should annotate it with [%@%@ocaml.boxed].@]"
+  | Boxed_and_unboxed ->
+      fprintf ppf "@[A type cannot be boxed and unboxed at the same time.@]"
 
 let () =
   Location.register_error_of_exn

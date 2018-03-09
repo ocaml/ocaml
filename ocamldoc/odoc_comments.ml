@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Analysis of comments. *)
 
@@ -28,7 +31,7 @@ module type Texter =
 module Info_retriever =
   functor (MyTexter : Texter) ->
   struct
-    let create_see s =
+    let create_see _file s =
       try
         let lexbuf = Lexing.from_string s in
         let (see_ref, s) = Odoc_parser.see_info Odoc_see_lexer.main lexbuf in
@@ -41,7 +44,7 @@ module Info_retriever =
 
     let retrieve_info fun_lex file (s : string) =
       try
-        let _ = Odoc_comments_global.init () in
+        Odoc_comments_global.init ();
         Odoc_lexer.comments_level := 0;
         let lexbuf = Lexing.from_string s in
         match Odoc_parser.main fun_lex lexbuf with
@@ -49,22 +52,21 @@ module Info_retriever =
             (0, None)
         | Some (desc, remain_opt) ->
             let mem_nb_chars = !Odoc_comments_global.nb_chars in
-            let _ =
-              match remain_opt with
+            begin match remain_opt with
                 None ->
                   ()
               | Some s ->
                   (*DEBUG*)print_string ("remain: "^s); print_newline();
                   let lexbuf2 = Lexing.from_string s in
                   Odoc_parser.info_part2 Odoc_lexer.elements lexbuf2
-            in
+            end;
             (mem_nb_chars,
              Some
                {
                  i_desc = (match desc with "" -> None | _ -> Some (MyTexter.text_of_string desc));
                  i_authors = !Odoc_comments_global.authors;
                  i_version = !Odoc_comments_global.version;
-                 i_sees = (List.map create_see !Odoc_comments_global.sees) ;
+                 i_sees = (List.map (create_see file) !Odoc_comments_global.sees) ;
                  i_since = !Odoc_comments_global.since;
                  i_before = Odoc_merge.merge_before_tags
                      (List.map (fun (n, s) ->
@@ -87,45 +89,17 @@ module Info_retriever =
                                !Odoc_comments_global.customs)
                }
             )
-               with
-                 Failure s ->
-                   incr Odoc_global.errors ;
-                    Printf.eprintf "File %S, line %d:\n%s\n%!" file (!Odoc_lexer.line_number + 1) s;
-                   (0, None)
-               | Odoc_text.Text_syntax (l, c, s) ->
-                   incr Odoc_global.errors ;
-                   prerr_endline (file^" : "^(Odoc_messages.text_parse_error l c s));
-                   (0, None)
-               | _ ->
-                   incr Odoc_global.errors ;
-                   prerr_endline (file^" : "^Odoc_messages.parse_error^"\n");
-                   (0, None)
+      with e ->
+        let (l, c, message) = match e with
+          | Failure s -> (!Odoc_lexer.line_number + 1, 0, s)
+          | Odoc_text.Text_syntax (l, c, s) -> (l, c, Odoc_messages.text_parse_error l c s)
+          | _other -> (0, 0, Odoc_messages.parse_error)
+        in begin
+          incr Odoc_global.errors;
+          prerr_endline (Odoc_messages.error_location file l c ^ message);
+          (0, None)
+        end
 
-    (** This function takes a string where a simple comment may has been found. It returns
-       false if there is a blank line or the first comment is a special one, or if there is
-       no comment if the string.*)
-    let nothing_before_simple_comment s =
-      (* get the position of the first "(*" *)
-      try
-        print_DEBUG ("comment_is_attached: "^s);
-        let pos = Str.search_forward (Str.regexp "(\\*") s 0 in
-        let next_char = if (String.length s) >= (pos + 1) then s.[pos + 2] else '_' in
-        (next_char <> '*') &&
-        (
-         (* there is no special comment between the constructor and the coment we got *)
-         let s2 = String.sub s 0 pos in
-         print_DEBUG ("s2="^s2);
-         try
-           let _ = Str.search_forward (Str.regexp ("['\n']"^simple_blank^"*['\n']")) s2 0 in
-           (* a blank line was before the comment *)
-           false
-         with
-           Not_found ->
-             true
-        )
-      with
-        Not_found ->
-          false
 
     (** Return true if the given string contains a blank line. *)
     let blank_line s =
@@ -140,14 +114,14 @@ module Info_retriever =
     let retrieve_info_special file (s : string) =
       retrieve_info Odoc_lexer.main file s
 
-    let retrieve_info_simple file (s : string) =
-      let _ = Odoc_comments_global.init () in
+    let retrieve_info_simple _file (s : string) =
+      Odoc_comments_global.init ();
       Odoc_lexer.comments_level := 0;
       let lexbuf = Lexing.from_string s in
       match Odoc_parser.main Odoc_lexer.simple lexbuf with
         None ->
           (0, None)
-      | Some (desc, remain_opt) ->
+      | Some _ ->
           (!Odoc_comments_global.nb_chars, Some Odoc_types.dummy_info)
 
     (** Return true if the given string contains a blank line outside a simple comment. *)
@@ -168,65 +142,6 @@ module Info_retriever =
                 false
       in
       iter s
-
-    (** This function returns the first simple comment in
-       the given string. If strict is [true] then no
-       comment is returned if a blank line or a special
-       comment is found before the simple comment. *)
-    let retrieve_first_info_simple ?(strict=true) file (s : string) =
-      match retrieve_info_simple file s with
-        (_, None) ->
-          (0, None)
-      | (len, Some d) ->
-          (* we check if the comment we got was really attached to the constructor,
-             i.e. that there was no blank line or any special comment "(**" before *)
-          if (not strict) || (nothing_before_simple_comment s) then
-            (* ok, we attach the comment to the constructor *)
-            (len, Some d)
-          else
-            (* a blank line or special comment was before the comment,
-               so we must not attach this comment to the constructor. *)
-            (0, None)
-
-    let retrieve_last_info_simple file (s : string) =
-      print_DEBUG ("retrieve_last_info_simple:"^s);
-      let rec f cur_len cur_d =
-        try
-          let s2 = String.sub s cur_len ((String.length s) - cur_len) in
-          print_DEBUG ("retrieve_last_info_simple.f:"^s2);
-          match retrieve_info_simple file s2 with
-            (len, None) ->
-              print_DEBUG "retrieve_last_info_simple: None";
-              (cur_len + len, cur_d)
-          | (len, Some d) ->
-              print_DEBUG "retrieve_last_info_simple: Some";
-              f (len + cur_len) (Some d)
-        with
-          _ ->
-            print_DEBUG "retrieve_last_info_simple : Erreur String.sub";
-            (cur_len, cur_d)
-      in
-      f 0 None
-
-    let retrieve_last_special_no_blank_after file (s : string) =
-      print_DEBUG ("retrieve_last_special_no_blank_after:"^s);
-      let rec f cur_len cur_d =
-        try
-          let s2 = String.sub s cur_len ((String.length s) - cur_len) in
-          print_DEBUG ("retrieve_last_special_no_blank_after.f:"^s2);
-          match retrieve_info_special file s2 with
-            (len, None) ->
-              print_DEBUG "retrieve_last_special_no_blank_after: None";
-              (cur_len + len, cur_d)
-          | (len, Some d) ->
-              print_DEBUG "retrieve_last_special_no_blank_after: Some";
-              f (len + cur_len) (Some d)
-        with
-          _ ->
-            print_DEBUG "retrieve_last_special_no_blank_after : Erreur String.sub";
-            (cur_len, cur_d)
-      in
-      f 0 None
 
     let all_special file s =
       print_DEBUG ("all_special: "^s);
@@ -271,7 +186,7 @@ module Info_retriever =
                    (* should not occur *)
                    (0, None)
               )
-          | (len2, Some d2) ->
+          | (_, Some _) ->
               (0, None)
       in
       print_DEBUG ("just_after_special:end");

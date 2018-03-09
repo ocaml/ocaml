@@ -1,19 +1,21 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
-(*                             OCamldoc                                *)
+(*                                 OCaml                                  *)
 (*                                                                     *)
 (*      Olivier Andrieu, base sur du code de Maxence Guesdon           *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Generation of Texinfo documentation. *)
 
 open Odoc_info
-open Parameter
 open Value
 open Type
 open Extension
@@ -270,7 +272,7 @@ class text =
 
     (** this method is not used here but is virtual
         in a class we will inherit later *)
-    method label ?(no_ : bool option) (_ : string) : string =
+    method label ?no_:(_ : bool option) (_ : string) : string =
       failwith "gni"
 
     (** Return the Texinfo code corresponding to the [text] parameter.*)
@@ -308,7 +310,7 @@ class text =
       | Odoc_info.Custom (s,t) -> self#texi_of_custom_text s t
       | Odoc_info.Target (target, code) -> self#texi_of_Target ~target ~code
 
-    method texi_of_custom_text s t = ""
+    method texi_of_custom_text _ _ = ""
 
     method texi_of_Target ~target ~code =
       if String.lowercase_ascii target = "texi" then code else ""
@@ -394,7 +396,7 @@ struct
     Texinfo documentation. *)
 class texi =
   object (self)
-    inherit text as to_texi
+    inherit text
     inherit Odoc_to_text.to_text as to_text
 
     (** {3 Small helper stuff.} *)
@@ -473,7 +475,7 @@ class texi =
                    Raw " " ; Raw s ] @ t @ [ Newline ])
            see_l)
 
-    method text_of_before l =
+    method! text_of_before l =
       List.flatten
       (List.map
         (fun x -> linebreak :: (to_text#text_of_before [x])) l)
@@ -638,12 +640,16 @@ class texi =
           Printf.sprintf "(%s) "
             (String.concat ", " (List.map f l))
 
-    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) =
+    method string_of_type_args (args:constructor_args) (ret:Types.type_expr option) =
+      let f = function
+        | Cstr_tuple l -> Odoc_info.string_of_type_list " * " l
+        | Cstr_record l -> Odoc_info.string_of_record l
+      in
       match args, ret with
-      | [], None -> ""
-      | args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
-      | [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
-      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^
+      | Cstr_tuple [], None -> ""
+      | args, None -> " of " ^ (f args)
+      | Cstr_tuple [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
+      | args, Some r -> " : " ^ (f args) ^
                                 " -> " ^ (Odoc_info.string_of_type_expr r)
 
     (** Return Texinfo code for a type. *)
@@ -879,7 +885,7 @@ class texi =
       self#texi_of_text t
 
     (** Return the Texinfo code for the given class element. *)
-    method texi_of_class_element class_name class_ele =
+    method texi_of_class_element _class_name class_ele =
       match class_ele with
       | Class_attribute att -> self#texi_of_attribute att
       | Class_method met -> self#texi_of_method met

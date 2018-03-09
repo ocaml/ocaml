@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -25,22 +27,15 @@ COMMONOBJS=\
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o finalise.o custom.o \
   dynlink.o addrmap.o domain.o platform.o eventlog.o \
-  params.o
+  params.o spacetime.o
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c fiber.c \
-  dynlink.c backtrace.c domain.c memory.c params.c
+  dynlink.c backtrace.c domain.c memory.c params.c spacetime.c
 
-PUBLIC_INCLUDES=\
-  address_class.h alloc.h callback.h config.h custom.h fail.h gc.h \
-  hash.h intext.h memory.h misc.h mlvalues.h printexc.h signals.h \
-  compatibility.h version.h byte_domain_state.tbl domain_state.tbl \
-	domain_state.h
-
-
-all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED)
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives
 .PHONY: all
 
 all-noruntimed:
@@ -48,6 +43,10 @@ all-noruntimed:
 
 all-runtimed: ocamlrund$(EXE) libcamlrund.$(A)
 .PHONY: all-runtimed
+
+ifeq "$(RUNTIMEI)" "true"
+all:: ocamlruni$(EXE) libcamlruni.$(A)
+endif
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > ld.conf
@@ -60,15 +59,16 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 
 install::
-	cp $(CAMLRUN)$(EXE) $(INSTALL_BINDIR)/ocamlrun$(EXE)
-	cp libcamlrun.$(A) $(INSTALL_LIBDIR)/libcamlrun.$(A)
-	cd $(INSTALL_LIBDIR); $(RANLIB) libcamlrun.$(A)
-	if test -d $(INSTALL_LIBDIR)/caml; then : ; \
-	  else mkdir $(INSTALL_LIBDIR)/caml; fi
-	for i in $(PUBLIC_INCLUDES); do \
-	  sed -f ../tools/cleanup-header caml/$$i > $(INSTALL_LIBDIR)/caml/$$i; \
+	cp $(CAMLRUN)$(EXE) "$(INSTALL_BINDIR)/ocamlrun$(EXE)"
+	cp libcamlrun.$(A) "$(INSTALL_LIBDIR)/libcamlrun.$(A)"
+	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
+	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
+	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
+	for i in caml/*.h; do \
+	  sed -f ../tools/cleanup-header $$i \
+	      > "$(INSTALL_LIBDIR)/$$i"; \
 	done
-	cp ld.conf $(INSTALL_LIBDIR)/ld.conf
+	cp ld.conf "$(INSTALL_LIBDIR)/ld.conf"
 .PHONY: install
 
 install:: install-$(RUNTIMED)
@@ -81,9 +81,15 @@ install-noruntimed:
 # because it's an executable for the target machine, while we're installing
 # binaries for the host.
 install-runtimed:
-	cp ocamlrund$(EXE) $(INSTALL_BINDIR)/ocamlrund$(EXE)
-	cp libcamlrund.$(A) $(INSTALL_LIBDIR)/libcamlrund.$(A)
+	cp ocamlrund$(EXE) "$(INSTALL_BINDIR)/ocamlrund$(EXE)"
+	cp libcamlrund.$(A) "$(INSTALL_LIBDIR)/libcamlrund.$(A)"
 .PHONY: install-runtimed
+
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp ocamlruni$(EXE) $(INSTALL_BINDIR)/ocamlruni$(EXE)
+	cp libcamlruni.$(A) $(INSTALL_LIBDIR)/libcamlruni.$(A)
+endif
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -111,7 +117,8 @@ maybe-update-primitives: primitives.new
 primitives: maybe-update-primitives
 
 prims.c : primitives
-	(echo '#include "caml/mlvalues.h"'; \
+	(echo '#define CAML_INTERNALS'; \
+         echo '#include "caml/mlvalues.h"'; \
 	 echo '#include "caml/prims.h"'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
 	 echo 'const c_primitive caml_builtin_cprim[] = {'; \
@@ -127,7 +134,8 @@ caml/opnames.h : caml/instruct.h
 	    -e '/END_OF_INSTRUCTIONS/d' \
 	    -e 's/enum /const char * const names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h > caml/opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h \
+	    > caml/opnames.h
 
 # caml/jumptbl.h is required only if you have GCC 2.0 or later
 caml/jumptbl.h : caml/instruct.h

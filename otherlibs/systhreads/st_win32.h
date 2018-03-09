@@ -1,18 +1,21 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2009 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2009 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Win32 implementation of the "st" interface */
 
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 #include <winerror.h>
@@ -84,11 +87,10 @@ static void st_thread_exit(void)
   ExitThread(0);
 }
 
-static void st_thread_kill(st_thread_id thr)
+static void st_thread_join(st_thread_id thr)
 {
-  TRACE1("st_thread_kill", thr);
-  TerminateThread(thr, 0);
-  CloseHandle(thr);
+  TRACE1("st_thread_join", h);
+  WaitForSingleObject(thr, INFINITE);
 }
 
 /* Scheduling hints */
@@ -383,18 +385,21 @@ static void st_check_error(DWORD retcode, char * msg)
   raise_sys_error(str);
 }
 
+/* Variable used to stop the "tick" thread */
+static volatile int caml_tick_thread_stop = 0;
+
 /* The tick thread: posts a SIGPREEMPTION signal periodically */
 
 static DWORD WINAPI caml_thread_tick(void * arg)
 {
-  while(1) {
+  while(! caml_tick_thread_stop) {
     Sleep(Thread_timeout);
     /* The preemption signal should never cause a callback, so don't
      go through caml_handle_signal(), just record signal delivery via
      caml_record_signal(). */
     caml_record_signal(SIGPREEMPTION);
   }
-  return 0;                     /* prevents compiler warning */
+  return 0;
 }
 
 /* "At fork" processing -- none under Win32 */

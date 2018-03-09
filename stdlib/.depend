@@ -309,3 +309,6 @@ sys.cmo : sys.cmi
 sys.p.cmx : sys.cmi
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.p.cmx : sys.p.cmx obj.p.cmx hashtbl.p.cmx array.p.cmx weak.cmi
+uchar.cmo : uchar.cmi
+ephemeron.cmo : ephemeron.cmi
+spacetime.cmo : spacetime.cmi

@@ -1,14 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Based on public-domain code from Berkeley Yacc */
 
@@ -99,7 +102,12 @@ void get_line(void)
             line = REALLOC(line, linesize);
             if (line ==  0) no_space();
         }
-        if (c == '\n') { line[i] = '\0'; cptr = line; return; }
+        if (c == '\n') {
+          if (i >= 2 && line[i-2] == '\r') {
+            line[i-2] = '\n'; i--;
+          }
+          line[i] = '\0'; cptr = line; return;
+        }
         c = getc(f);
         if (c ==  EOF) { saw_eof = 1; c = '\n'; }
     }
@@ -869,7 +877,6 @@ void declare_tokens(int assoc)
 {
     register int c;
     register bucket *bp;
-    int value;
     char *tag = 0;
 
     if (assoc != TOKEN) ++prec;
@@ -919,10 +926,9 @@ void declare_tokens(int assoc)
 
         c = nextc();
         if (c == EOF) unexpected_EOF();
-        value = UNDEFINED;
         if (isdigit(c))
         {
-            value = get_number();
+            int value = get_number();
             if (bp->value != UNDEFINED && value != bp->value)
                 revalued_warning(bp->name);
             bp->value = value;
@@ -1336,6 +1342,7 @@ loop:
         fprintf(f, " : '%s))\n", plhs[nrules]->name);
       if (sflag)
         fprintf(f, "\n");
+      FREE(a_line);
       return;
     }
     putc(c, f);

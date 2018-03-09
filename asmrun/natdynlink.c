@@ -1,20 +1,24 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Alain Frisch, projet Gallium, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 2007 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/memory.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/callback.h"
 #include "caml/alloc.h"
 #include "caml/intext.h"
@@ -22,6 +26,14 @@
 #include "caml/fail.h"
 #include "frame_descriptors.h"
 #include "caml/globroots.h"
+#include "caml/signals.h"
+#ifdef WITH_SPACETIME
+#include "spacetime.h"
+#endif
+
+#include "caml/hooks.h"
+
+CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
 
 #include <stdio.h>
 #include <string.h>
@@ -42,8 +54,6 @@ static void *getsym(void *handle, char *module, char *name){
   caml_stat_free(fullname);
   return sym;
 }
-
-extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
 {
@@ -67,7 +77,7 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
 
   p = caml_strdup(String_val(filename));
   caml_enter_blocking_section();
-  dlhandle = caml_dlopen(String_val(filename), 1, Int_val(global));
+  dlhandle = caml_dlopen(p, 1, Int_val(global));
   caml_leave_blocking_section();
   caml_stat_free(p);
 
@@ -103,7 +113,12 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   sym = optsym("__frametable");
   if (NULL != sym) caml_register_frametable(sym);
 
-  sym = optsym("");
+#ifdef WITH_SPACETIME
+  sym = optsym("__spacetime_shapes");
+  if (NULL != sym) caml_spacetime_register_shapes(sym);
+#endif
+
+  sym = optsym("__gc_roots");
   if (NULL != sym) caml_register_dyn_global(sym);
 
   sym = optsym("__code_begin");
@@ -115,6 +130,8 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
     cf->digest_computed = 0;
     caml_ext_table_add(&caml_code_fragments_table, cf);
   }
+
+  if( caml_natdynlink_hook != NULL ) caml_natdynlink_hook(handle,unit);
 
   entrypoint = optsym("__entry");
   if (NULL != entrypoint) result = caml_callback((value)(&entrypoint), 0);

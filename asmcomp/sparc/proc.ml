@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the Sparc processor *)
 
@@ -65,8 +68,7 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-    Int -> 0
-  | Addr -> 0
+  | Val | Int | Addr -> 0
   | Float -> 1
 
 let num_available_registers = [| 19; 15 |]
@@ -101,6 +103,8 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
 let calling_conventions first_int last_int first_float last_float make_stack
@@ -111,7 +115,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
-      Int | Addr as ty ->
+    | Val | Int | Addr as ty ->
         if !int <= last_int then begin
           loc.(i) <- phys_reg !int;
           incr int
@@ -132,48 +136,66 @@ let calling_conventions first_int last_int first_float last_float make_stack
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
+
+let max_arguments_for_tailcalls = 10
 
 let loc_arguments arg =
   calling_conventions 6 15 100 105 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 6 15 100 105 incoming arg in loc
+  let (loc, _ofs) = calling_conventions 6 15 100 105 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 5 100 105 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 5 100 105 not_supported res in loc
 
 (* On the Sparc, all arguments to C functions, even floating-point arguments,
    are passed in %o0..%o5, then on the stack *)
 
 let loc_external_arguments arg =
-  let loc = ref [] in
+  let loc = Array.make (Array.length arg) [| |] in
   let reg = ref 0 (* %o0 *) in
   let ofs = ref (-4) in              (* start at sp + 92 = sp + 96 - 4 *)
-  for i = 0 to Array.length arg - 1 do
+  let next_loc typ =
     if !reg <= 5 (* %o5 *) then begin
-      match arg.(i).typ with
-        Int | Addr ->
-          loc := phys_reg !reg :: !loc;
-          incr reg
-      | Float ->
-          if !reg = 5 then fatal_error "Proc_sparc: cannot call";
-          loc := phys_reg (!reg + 1) :: phys_reg !reg :: !loc;
-          reg := !reg + 2
+      assert (size_component typ = size_int);
+      let loc = phys_reg !reg in
+      incr reg;
+      loc
     end else begin
-      loc := stack_slot (outgoing !ofs) arg.(i).typ :: !loc;
-      ofs := !ofs + size_component arg.(i).typ
+      let loc = stack_slot (outgoing !ofs) typ in
+      ofs := !ofs + size_component typ;
+      loc
     end
+  in
+  for i = 0 to Array.length arg - 1 do
+    match arg.(i) with
+    | [| { typ = (Val | Int | Addr as typ) } |] ->
+      loc.(i) <- [| next_loc typ |]
+    | [| { typ = Float } |] ->
+      if !reg <= 5 then begin
+        let loc1 = next_loc Int in
+        let loc2 = next_loc Int in
+        loc.(i) <- [| loc1; loc2 |]
+      end else
+        loc.(i) <- [| next_loc Float |]
+    | [| { typ = Int }; { typ = Int } |] ->
+      (* int64 unboxed *)
+      let loc1 = next_loc Int in
+      let loc2 = next_loc Int in
+      loc.(i) <- [| loc1; loc2 |]
+    | _ ->
+      fatal_error "Proc.loc_external_arguments: cannot call"
   done;
   (* Keep stack 8-aligned *)
-  (Array.of_list(List.rev !loc), Misc.align (!ofs + 4) 8)
+  (loc, Misc.align (!ofs + 4) 8)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
+  let (loc, _ofs) = calling_conventions 0 1 100 100 not_supported res in loc
 
 let loc_exn_bucket = phys_reg 0         (* $o0 *)
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 
@@ -184,8 +206,9 @@ let destroyed_at_c_call = (* %l0-%l4, %i0-%i5 preserved *)
      108; 109; 110; 111; 112; 113; 114])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -193,20 +216,20 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 0
+    Iextcall _ -> 0
   | _ -> 15
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 11; 0 |]
+    Iextcall _ -> [| 11; 0 |]
   | _ -> [| 19; 15 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | _ -> true
 
 (* Layout of the stack *)

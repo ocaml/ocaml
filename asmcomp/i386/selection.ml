@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the Intel x86 *)
 
@@ -31,11 +34,11 @@ let rec select_addr exp =
   match exp with
     Cconst_symbol s ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Csubi | Csuba), [arg; Cconst_int m]) ->
+  | Cop(Csubi, [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)]) ->
       begin match select_addr arg with
@@ -52,7 +55,7 @@ let rec select_addr exp =
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Cadda | Caddv), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -85,7 +88,7 @@ let rec float_needs = function
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
       if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
-  | Cop(Cextcall(fn, ty_res, alloc, dbg), args)
+  | Cop(Cextcall(fn, _ty_res, _alloc, _dbg, _label), args)
     when !fast_math && List.mem fn inline_float_ops ->
       begin match args with
         [arg] -> float_needs arg
@@ -135,7 +138,7 @@ let pseudoregs_for_operation op arg res =
   (* For storing a byte, the argument must be in eax...edx.
      (But for a short, any reg will do!)
      Keep it simple, just force the argument to be in edx. *)
-  | Istore((Byte_unsigned | Byte_signed), addr, _) ->
+  | Istore((Byte_unsigned | Byte_signed), _, _) ->
       let newarg = Array.copy arg in
       newarg.(0) <- edx;
       (newarg, res, false)
@@ -154,18 +157,18 @@ class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
-method is_immediate (n : int) = true
+method is_immediate (_n : int) = true
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, alloc, _), args)
+  | Cop(Cextcall(fn, _, _, _, _), args)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
       super#is_simple_expr e
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   match select_addr exp with
     (Asymbol s, d) ->
       (Ibased(s, d), Ctuple [])
@@ -182,7 +185,7 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n | Cconst_blockheader n) ->
+  | (Cconst_natint n | Cblockheader (n, _)) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
@@ -196,9 +199,9 @@ method! select_store is_assign addr exp =
 method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
-    Caddi | Cadda | Csubi | Csuba ->
-      begin match self#select_addressing Word (Cop(op, args)) with
-        (Iindexed d, _) -> super#select_operation op args
+    Caddi | Caddv | Cadda | Csubi ->
+      begin match self#select_addressing Word_int (Cop(op, args)) with
+        (Iindexed _, _)
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
@@ -215,17 +218,17 @@ method! select_operation op args =
       self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev
                              args
   (* Recognize store instructions *)
-  | Cstore Word ->
+  | Cstore ((Word_int | Word_val) as chunk, _) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' ->
-          let (addr, arg) = self#select_addressing Word loc in
+          let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           super#select_operation op args
       end
   (* Recognize inlined floating point operations *)
-  | Cextcall(fn, ty_res, false, dbg)
+  | Cextcall(fn, _ty_res, false, _dbg, _label)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
   (* i386 does not support immediate operands for multiply high signed *)
@@ -280,8 +283,8 @@ method select_push exp =
   | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
-  | Cop(Cload Word, [loc]) ->
-      let (addr, arg) = self#select_addressing Word loc in
+  | Cop(Cload (Word_int | Word_val as chunk), [loc]) ->
+      let (addr, arg) = self#select_addressing chunk loc in
       (Ispecific(Ipush_load addr), arg)
   | Cop(Cload Double_u, [loc]) ->
       let (addr, arg) = self#select_addressing Double_u loc in

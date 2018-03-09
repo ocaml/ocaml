@@ -1,18 +1,24 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Environment handling *)
 
 open Types
+
+module PathMap : Map.S with type key = Path.t
+                        and type 'a t = 'a Map.Make(Path).t
 
 type summary =
     Env_empty
@@ -25,6 +31,7 @@ type summary =
   | Env_cltype of summary * Ident.t * class_type_declaration
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
+  | Env_constraints of summary * type_declaration PathMap.t
 
 type t
 
@@ -32,6 +39,7 @@ val empty: t
 val initial_safe_string: t
 val initial_unsafe_string: t
 val diff: t -> t -> Ident.t list
+val copy_local: from:t -> t -> t
 
 type type_descriptions =
     constructor_description list * label_description list
@@ -45,6 +53,9 @@ val run_iter_cont: iter_cont list -> (Path.t * iter_cont) list
 val same_types: t -> t -> bool
 val used_persistent: unit -> Concr.t
 val find_shadowed_types: Path.t -> t -> Path.t list
+val without_cmis: ('a -> 'b) -> 'a -> 'b
+        (* [without_cmis f arg] applies [f] to [arg], but does not
+           allow opening cmis during its execution *)
 
 (* Lookup by paths *)
 
@@ -63,12 +74,15 @@ val find_type_expansion_opt:
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> module_type
+val add_functor_arg: Ident.t -> t -> t
 val is_functor_arg: Path.t -> t -> bool
 val normalize_path: Location.t option -> t -> Path.t -> Path.t
 (* Normalize the path to a concrete value or module.
    If the option is None, allow returning dangling paths.
    Otherwise raise a Missing_module error, and may add forgotten
    head as required global. *)
+val normalize_path_prefix: Location.t option -> t -> Path.t -> Path.t
+(* Only normalize the prefix part of the path *)
 val reset_required_globals: unit -> unit
 val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
@@ -81,18 +95,37 @@ val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
-val lookup_value: Longident.t -> t -> Path.t * value_description
-val lookup_constructor: Longident.t -> t -> constructor_description
+(* ?loc is used to report 'deprecated module' warnings *)
+
+val lookup_value:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * value_description
+val lookup_constructor:
+  ?loc:Location.t -> Longident.t -> t -> constructor_description
 val lookup_all_constructors:
+  ?loc:Location.t ->
   Longident.t -> t -> (constructor_description * (unit -> unit)) list
-val lookup_label: Longident.t -> t -> label_description
+val lookup_label:
+  ?loc:Location.t -> Longident.t -> t -> label_description
 val lookup_all_labels:
+  ?loc:Location.t ->
   Longident.t -> t -> (label_description * (unit -> unit)) list
-val lookup_type: Longident.t -> t -> Path.t * type_declaration
-val lookup_module: load:bool -> Longident.t -> t -> Path.t
-val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
-val lookup_class: Longident.t -> t -> Path.t * class_declaration
-val lookup_cltype: Longident.t -> t -> Path.t * class_type_declaration
+val lookup_type:
+  ?loc:Location.t -> Longident.t -> t -> Path.t
+  (* Since 4.04, this function no longer returns [type_description].
+     To obtain it, you should either call [Env.find_type], or replace
+     it by [Typetexp.find_type] *)
+val lookup_module:
+  load:bool -> ?loc:Location.t -> Longident.t -> t -> Path.t
+val lookup_modtype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * modtype_declaration
+val lookup_class:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_declaration
+val lookup_cltype:
+  ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
+
+val update_value:
+  string -> (value_description -> value_description) -> t -> t
+  (* Used only in Typecore.duplicate_ident_types. *)
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers
@@ -106,11 +139,13 @@ val add_value:
 val add_type: check:bool -> Ident.t -> type_declaration -> t -> t
 val add_extension: check:bool -> Ident.t -> extension_constructor -> t -> t
 val add_module: ?arg:bool -> Ident.t -> module_type -> t -> t
-val add_module_declaration: ?arg:bool -> Ident.t -> module_declaration -> t -> t
+val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
+  module_declaration -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
+val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
+val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
@@ -134,7 +169,7 @@ val enter_type: string -> type_declaration -> t -> Ident.t * t
 val enter_extension: string -> extension_constructor -> t -> Ident.t * t
 val enter_module: ?arg:bool -> string -> module_type -> t -> Ident.t * t
 val enter_module_declaration:
-    ?arg:bool -> string -> module_declaration -> t -> Ident.t * t
+    ?arg:bool -> Ident.t -> module_declaration -> t -> t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> class_type_declaration -> t -> Ident.t * t
@@ -153,10 +188,13 @@ val get_unit_name: unit -> string
 
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
-val save_signature: signature -> string -> string -> signature
+val save_signature:
+  deprecated:string option -> signature -> string -> string -> signature
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
-    signature -> string -> string -> (string * Digest.t option) list -> signature
+  deprecated:string option ->
+  signature -> string -> string -> (string * Digest.t option) list
+  -> signature
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
@@ -167,6 +205,9 @@ val crc_of_unit: string -> Digest.t
 (* Return the set of compilation units imported, with their CRC *)
 
 val imports: unit -> (string * Digest.t option) list
+
+(* [is_imported_opaque md] returns true if [md] is an opaque imported module  *)
+val is_imported_opaque: string -> bool
 
 (* Direct access to the table of imported compilation units with their CRC *)
 
@@ -191,6 +232,7 @@ type error =
   | Illegal_renaming of string * string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Depend_on_unsafe_string_unit of string * string
   | Missing_module of Location.t * Path.t * Path.t
   | Illegal_value_name of Location.t * string
 
@@ -202,6 +244,7 @@ val report_error: formatter -> error -> unit
 
 
 val mark_value_used: t -> string -> value_description -> unit
+val mark_module_used: t -> string -> Location.t -> unit
 val mark_type_used: t -> string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
@@ -212,8 +255,10 @@ val mark_constructor:
 val mark_extension_used:
     constructor_usage -> t -> extension_constructor -> string -> unit
 
-val in_signature: t -> t
+val in_signature: bool -> t -> t
 val implicit_coercion: t -> t
+
+val is_in_signature: t -> bool
 
 val set_value_used_callback:
     string -> value_description -> (unit -> unit) -> unit
@@ -226,7 +271,10 @@ val check_modtype_inclusion:
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)
-val strengthen: (t -> module_type -> Path.t -> module_type) ref
+val strengthen:
+    (aliasable:bool -> t -> module_type -> Path.t -> module_type) ref
+(* Forward declaration to break mutual recursion with Ctype. *)
+val same_constr: (t -> type_expr -> type_expr -> bool) ref
 
 (** Folding over all identifiers (for analysis purpose) *)
 
@@ -261,3 +309,14 @@ val fold_cltypes:
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit
+
+module Persistent_signature : sig
+  type t =
+    { filename : string; (** Name of the file containing the signature. *)
+      cmi : Cmi_format.cmi_infos }
+
+  (** Function used to load a persistent signature. The default is to look for
+      the .cmi file in the load path. This function can be overridden to load
+      it from memory, for instance to build a self-contained toplevel. *)
+  val load : (unit_name:string -> t option) ref
+end

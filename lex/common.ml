@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Luc Maranget, projet Moscova,                            *)
-(*                         INRIA Rocquencourt                          *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Luc Maranget, projet Moscova,                              *)
+(*                          INRIA Rocquencourt                            *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Printf
 open Syntax
@@ -136,7 +139,7 @@ let output_env ic oc tr env =
           env in
 
       List.iter
-        (fun ((x,pos),v) ->
+        (fun ((_,pos),v) ->
           fprintf oc "%s\n" !pref ;
           copy_chunk ic oc tr pos false ;
           begin match v with

@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Memory management control and statistics; finalised values. *)
 
@@ -115,6 +117,7 @@ type control =
        - [0x080] Calling of finalisation functions.
        - [0x100] Bytecode executable and shared library search at start-up.
        - [0x200] Computation of compaction-triggering condition.
+       - [0x400] Output GC statistics at program exit.
        Default: 0. *)
 
     mutable max_overhead : int;
@@ -140,6 +143,12 @@ type control =
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
         Default: 0. @since 3.11.0 *)
+
+    window_size : int;
+    (** The size of the window used by the major GC for smoothing
+        out variations in its workload. This is an integer between
+        1 and 50.
+        Default: 1. @since 4.03.0 *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -161,6 +170,16 @@ external counters : unit -> float * float * float = "caml_gc_counters"
 (** Return [(minor_words, promoted_words, major_words)].  This function
     is as fast as [quick_stat]. *)
 
+external minor_words : unit -> (float [@unboxed])
+  = "caml_gc_minor_words" "caml_gc_minor_words_unboxed" [@@noalloc]
+(** Number of words allocated in the minor heap since the program was
+    started. This number is accurate in byte-code programs, but only an
+    approximation in programs compiled to native code.
+
+    In native code this function does not allocate.
+
+    @since 4.04 *)
+
 external get : unit -> control = "caml_gc_get"
 (** Return the current values of the GC parameters in a [control] record. *)
 
@@ -171,10 +190,13 @@ external set : control -> unit = "caml_gc_set"
 external minor : unit -> unit = "caml_gc_minor"
 (** Trigger a minor collection. *)
 
-external major_slice : int -> int = "caml_gc_major_slice";;
-(** Do a minor collection and a slice of major collection.  The argument
-    is the size of the slice, 0 to use the automatically-computed
-    slice size.  In all cases, the result is the computed slice size. *)
+external major_slice : int -> int = "caml_gc_major_slice"
+(** [major_slice n]
+    Do a minor collection and a slice of major collection. [n] is the
+    size of the slice: the GC will do enough work to free (on average)
+    [n] words of memory. If [n] = 0, the GC will try to do enough work
+    to ensure that the next automatic slice has no work to do.
+    This function returns an unspecified integer (currently: 0). *)
 
 external major : unit -> unit = "caml_gc_major"
 (** Do a minor collection and finish the current major collection cycle. *)
@@ -197,11 +219,37 @@ val allocated_bytes : unit -> float
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
 
+external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+(** Return the current size of the free space inside the minor heap.
+
+    @since 4.03.0 *)
+
+external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
+(** [get_bucket n] returns the current size of the [n]-th future bucket
+    of the GC smoothing system. The unit is one millionth of a full GC.
+    Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
+    than the smoothing window.
+
+    @since 4.03.0 *)
+
+external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
+(** [get_credit ()] returns the current size of the "work done in advance"
+    counter of the GC smoothing system. The unit is one millionth of a
+    full GC.
+
+    @since 4.03.0 *)
+
+external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+(** Return the number of times we tried to map huge pages and had to fall
+    back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
+    @since 4.03.0 *)
+
 val finalise : ('a -> unit) -> 'a -> unit
 (** [finalise f v] registers [f] as a finalisation function for [v].
    [v] must be heap-allocated.  [f] will be called with [v] as
    argument at some point between the first time [v] becomes unreachable
-   and the time [v] is collected by the GC.  Several functions can
+   (including through weak pointers) and the time [v] is collected by
+   the GC. Several functions can
    be registered for the same value, or even several instances of the
    same function.  Each instance will be called once (or never,
    if the program terminates before [v] becomes unreachable).
@@ -221,11 +269,11 @@ val finalise : ('a -> unit) -> 'a -> unit
    Anything reachable from the closure of finalisation functions
    is considered reachable, so the following code will not work
    as expected:
-   - [ let v = ... in Gc.finalise (fun x -> ... v ...) v ]
+   - [ let v = ... in Gc.finalise (fun _ -> ...v...) v ]
 
    Instead you should make sure that [v] is not in the closure of
    the finalisation function by writing:
-   - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
+   - [ let f = fun x -> ...  let v = ... in Gc.finalise f v ]
 
 
    The [f] function can use all features of OCaml, including
@@ -240,17 +288,21 @@ val finalise : ('a -> unit) -> 'a -> unit
 
 
    [finalise] will raise [Invalid_argument] if [v] is not
-   heap-allocated.  Some examples of values that are not
+   guaranteed to be heap-allocated.  Some examples of values that are not
    heap-allocated are integers, constant constructors, booleans,
    the empty array, the empty list, the unit value.  The exact list
    of what is heap-allocated or not is implementation-dependent.
    Some constant values can be heap-allocated but never deallocated
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
-   You should also be aware that compiler optimisations may duplicate
-   some immutable values, for example floating-point numbers when
-   stored into arrays, so they can be finalised and collected while
-   another copy is still in use by the program.
+   Note that values of types [float] are sometimes allocated and
+   sometimes not, so finalising them is unsafe, and [finalise] will
+   also raise [Invalid_argument] for them. Values of type ['a Lazy.t]
+   (for any ['a]) are like [float] in this respect, except that the
+   compiler sometimes optimizes them in a way that prevents [finalise]
+   from detecting them. In this case, it will not raise
+   [Invalid_argument], but you should still avoid calling [finalise]
+   on lazy values.
 
 
    The results of calling {!String.make}, {!Bytes.make}, {!Bytes.create},
@@ -258,7 +310,22 @@ val finalise : ('a -> unit) -> 'a -> unit
    heap-allocated and non-constant except when the length argument is [0].
 *)
 
-val finalise_release : unit -> unit;;
+val finalise_last : (unit -> unit) -> 'a -> unit
+(** same as {!finalise} except the value is not given as argument. So
+    you can't use the given value for the computation of the
+    finalisation function. The benefit is that the function is called
+    after the value is unreachable for the last time instead of the
+    first time. So contrary to {!finalise} the value will never be
+    reachable again or used again. In particular every weak pointer
+    and ephemeron that contained this value as key or data is unset
+    before running the finalisation function. Moreover the
+    finalisation function attached with `GC.finalise` are always
+    called before the finalisation function attached with `GC.finalise_last`.
+
+    @since 4.04
+*)
+
+val finalise_release : unit -> unit
 (** A finalisation function may call [finalise_release] to tell the
     GC that it can launch the next finalisation function without waiting
     for the current one to return. *)

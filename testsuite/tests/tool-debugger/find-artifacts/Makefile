@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Damien Doligez, EPI Gallium, INRIA Rocquencourt            #
-#                                                                       #
-#   Copyright 2013 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*            Damien Doligez, EPI Gallium, INRIA Rocquencourt             *
+#*                                                                        *
+#*   Copyright 2013 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../../..
 MAIN_MODULE=debuggee
@@ -50,7 +53,7 @@ run:
 	             program.byte$(EXE) >$(MAIN_MODULE).raw.result 2>&1 \
 	 && sed -e '/Debugger version/d' -e '/^Time:/d' \
 	        -e '/Breakpoint [0-9]* at [0-9]*:/d' -e '$$d' \
-	        $(MAIN_MODULE).raw.result >$(MAIN_MODULE).result \
+	        $(MAIN_MODULE).raw.result | tr -d '\r' >$(MAIN_MODULE).result \
 	 && $(DIFF) $(MAIN_MODULE).reference $(MAIN_MODULE).result >/dev/null \
 	 && echo " => passed" || echo " => failed"
 

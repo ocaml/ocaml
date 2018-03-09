@@ -5,8 +5,11 @@
 (*    Thomas Gazagnaire (OCamlPro), Fabrice Le Fessant (INRIA Saclay)     *)
 (*                                                                        *)
 (*   Copyright 2007 Institut National de Recherche en Informatique et     *)
-(*   en Automatique.  All rights reserved.  This file is distributed      *)
-(*   under the terms of the Q Public License version 1.0.                 *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
 
@@ -79,8 +82,7 @@ module type IteratorArgument = sig
       end
 
 module MakeIterator :
-  functor
-  (Iter : IteratorArgument) ->
+  functor (Iter : IteratorArgument) ->
            sig
              val iter_structure : structure -> unit
              val iter_signature : signature -> unit

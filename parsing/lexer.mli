@@ -1,20 +1,23 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* The lexical analyzer *)
 
 val init : unit -> unit
 val token: Lexing.lexbuf -> Parser.token
-val skip_sharp_bang: Lexing.lexbuf -> unit
+val skip_hash_bang: Lexing.lexbuf -> unit
 
 type error =
   | Illegal_character of char
@@ -23,8 +26,8 @@ type error =
   | Unterminated_string
   | Unterminated_string_in_comment of Location.t * Location.t
   | Keyword_as_label of string
-  | Literal_overflow of string
   | Invalid_literal of string
+  | Invalid_directive of string * string option
 ;;
 
 exception Error of error * Location.t
@@ -39,6 +42,7 @@ val in_string : unit -> bool;;
 
 
 val print_warnings : bool ref
+val handle_docstrings: bool ref
 val comments : unit -> (string * Location.t) list
 val token_with_comments : Lexing.lexbuf -> Parser.token
 

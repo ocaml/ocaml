@@ -1,16 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
+#include <string.h>
 #include "m.h"
 
 #ifndef ARCH_SIXTYFOUR
@@ -23,7 +26,7 @@ char * bigendian = "ABCDEFGH";
 char * littleendian = "HGFEDCBA";
 #endif
 
-main(void)
+int main(void)
 {
   long n[2];
   char * p;
@@ -32,8 +35,8 @@ main(void)
   n[1] = 0;
   p = (char *) n;
   if (strcmp(p, bigendian) == 0)
-    exit(0);
+    return 0;
   if (strcmp(p, littleendian) == 0)
-    exit(1);
-  exit(2);
+    return 1;
+  return 2;
 }

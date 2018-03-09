@@ -1,15 +1,18 @@
-
 {
-(***********************************************************************)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Generation of html code to display OCaml code. *)
 open Lexing
@@ -35,23 +38,30 @@ let base_escape_strings = [
     (">", "&gt;") ;
 ]
 
-let pre_escape_strings = [
+
+let prelike_escape_strings = [
   (" ", "&nbsp;") ;
-  ("\n", "<br>\n") ;
   ("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") ;
-  ]
+  ("\n", "<br>\n")
+]
 
 
 let pre = ref false
 let fmt = ref Format.str_formatter
 
 (** Escape the strings which would clash with html syntax,
-   and some other strings if we want to get a PRE style.*)
+   and some other strings if we want to get a PRE style outside of
+   <pre> </pre>.*)
 let escape s =
+  let escape_strings =
+    if !pre then
+      base_escape_strings
+    else
+      base_escape_strings @ prelike_escape_strings in
   List.fold_left
     (fun acc -> fun (s, s2) -> Str.global_replace (Str.regexp s) s2 acc)
     s
-    (if !pre then base_escape_strings @ pre_escape_strings else base_escape_strings)
+    escape_strings
 
 (** Escape the strings which would clash with html syntax. *)
 let escape_base s =
@@ -80,7 +90,7 @@ let create_hashtable size init =
 
 (** The function used to return html code for the given comment body. *)
 let html_of_comment = ref
-    (fun (s : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
+    (fun (_ : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
 
 let keyword_table =
   create_hashtable 149 [
@@ -199,8 +209,7 @@ let string_buffer = Buffer.create 32
 let reset_string_buffer () = Buffer.reset string_buffer
 let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
-  let s = Buffer.contents string_buffer in
-  s
+  Buffer.contents string_buffer
 
 (** To translate escape sequences *)
 
@@ -422,7 +431,7 @@ and comment = parse
   | "*)"
       { match !comment_start_pos with
         | [] -> assert false
-        | [x] -> comment_start_pos := []
+        | [_] -> comment_start_pos := []
         | _ :: l ->
             store_comment_char '*';
             store_comment_char ')';
@@ -518,7 +527,7 @@ let html_of_code b ?(with_pre=true) code =
      try
        print ~esc: false start ;
        let lexbuf = Lexing.from_string code in
-       let _ = token lexbuf  in
+       token lexbuf;
        print ~esc: false ending ;
        Format.pp_print_flush !fmt () ;
        Buffer.contents buf

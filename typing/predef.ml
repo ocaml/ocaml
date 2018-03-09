@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
@@ -28,7 +31,7 @@ let ident_create_predef_exn = wrap Ident.create_predef_exn
 
 let ident_int = ident_create "int"
 and ident_char = ident_create "char"
-and ident_string = ident_create "string"
+and ident_bytes = ident_create "bytes"
 and ident_float = ident_create "float"
 and ident_bool = ident_create "bool"
 and ident_unit = ident_create "unit"
@@ -42,11 +45,12 @@ and ident_nativeint = ident_create "nativeint"
 and ident_int32 = ident_create "int32"
 and ident_int64 = ident_create "int64"
 and ident_lazy_t = ident_create "lazy_t"
-and ident_bytes = ident_create "bytes"
+and ident_string = ident_create "string"
+and ident_extension_constructor = ident_create "extension_constructor"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
-and path_string = Pident ident_string
+and path_bytes = Pident ident_bytes
 and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
@@ -60,11 +64,12 @@ and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
-and path_bytes = Pident ident_bytes
+and path_string = Pident ident_string
+and path_extension_constructor = Pident ident_extension_constructor
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
-and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
+and type_bytes = newgenty (Tconstr(path_bytes, [], ref Mnil))
 and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
@@ -79,7 +84,9 @@ and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
-and type_bytes = newgenty (Tconstr(path_bytes, [], ref Mnil))
+and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
+and type_extension_constructor =
+      newgenty (Tconstr(path_extension_constructor, [], ref Mnil))
 
 let ident_match_failure = ident_create_predef_exn "Match_failure"
 and ident_out_of_memory = ident_create_predef_exn "Out_of_memory"
@@ -96,6 +103,21 @@ and ident_undefined_recursive_module =
         ident_create_predef_exn "Undefined_recursive_module"
 and ident_unhandled = ident_create_predef_exn "Unhandled"
 
+let all_predef_exns = [
+  ident_match_failure;
+  ident_out_of_memory;
+  ident_invalid_argument;
+  ident_failure;
+  ident_not_found;
+  ident_sys_error;
+  ident_end_of_file;
+  ident_division_by_zero;
+  ident_stack_overflow;
+  ident_sys_blocked_io;
+  ident_assert_failure;
+  ident_undefined_recursive_module;
+]
+
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
@@ -110,12 +132,16 @@ let decl_abstr =
    type_variance = [];
    type_newtype_level = None;
    type_attributes = [];
+   type_immediate = false;
+   type_unboxed = unboxed_false_default_false;
   }
+
+let decl_abstr_imm = {decl_abstr with type_immediate = true}
 
 let cstr id args =
   {
     cd_id = id;
-    cd_args = args;
+    cd_args = Cstr_tuple args;
     cd_res = None;
     cd_loc = Location.none;
     cd_attributes = [];
@@ -131,10 +157,12 @@ and ident_some = ident_create "Some"
 let common_initial_env add_type add_extension empty_env =
   let decl_bool =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_false []; cstr ident_true []])}
+     type_kind = Type_variant([cstr ident_false []; cstr ident_true []]);
+     type_immediate = true}
   and decl_unit =
     {decl_abstr with
-     type_kind = Type_variant([cstr ident_void []])}
+     type_kind = Type_variant([cstr ident_void []]);
+     type_immediate = true}
   and decl_exn =
     {decl_abstr with
      type_kind = Type_open}
@@ -185,11 +213,13 @@ let common_initial_env add_type add_extension empty_env =
     add_extension id
       { ext_type_path = path_exn;
         ext_type_params = [];
-        ext_args = l;
+        ext_args = Cstr_tuple l;
         ext_ret_type = None;
         ext_private = Asttypes.Public;
         ext_loc = Location.none;
-        ext_attributes = [] }
+        ext_attributes = [{Asttypes.txt="ocaml.warn_on_literal_pattern";
+                           loc=Location.none},
+                          Parsetree.PStr[]] }
   in
   add_extension ident_match_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
@@ -221,9 +251,10 @@ let common_initial_env add_type add_extension empty_env =
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
-  add_type ident_char decl_abstr (
-  add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))))))
+  add_type ident_char decl_abstr_imm (
+  add_type ident_int decl_abstr_imm (
+  add_type ident_extension_constructor decl_abstr (
+    empty_env))))))))))))))))))))))))))))))
 
 let build_initial_env add_type add_exception empty_env =
   let common = common_initial_env add_type add_exception empty_env in

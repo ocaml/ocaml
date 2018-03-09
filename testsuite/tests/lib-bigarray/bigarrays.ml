@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Bigarray
 open Printf
 open Complex
@@ -39,7 +27,11 @@ let test test_number answer correct_answer =
 
 (* One-dimensional arrays *)
 
-let _ =
+(* flambda can cause some of these values not to be reclaimed by the Gc, which
+ * can undermine the use of Gc.full_major for the Windows ports. All the tests
+ * are wrapped in a non-inlineable function to prevent this behaviour.
+ *)
+let tests () =
   testing_function "------ Array1 --------";
   testing_function "create/set/get";
   let test_setget kind vals =
@@ -162,6 +154,87 @@ let _ =
       | hd :: tl -> a.{i} <- hd; set (i+1) tl in
     set 1 vals;
     a in
+
+  (* Test indexing arrays.  This test has to be copy-pasted, otherwise
+     indexing may not use the optimizations in
+     Cmmgen.bigarray_indexing. *)
+  begin
+    let v = 123 in
+    let cb = Array1.create int8_signed c_layout 1000 in
+    let fb = Array1.create int8_signed fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 13 true !return
+  end;
+  begin
+    let v = 123 in
+    let cb = Array1.create int16_unsigned c_layout 1000 in
+    let fb = Array1.create int16_unsigned fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 14 true !return
+  end;
+  begin
+    let v = 123. in
+    let cb = Array1.create float32 c_layout 1000 in
+    let fb = Array1.create float32 fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 15 true !return
+  end;
+
+  begin
+    let v = 123. in
+    let cb = Array1.create float64 c_layout 1000 in
+    let fb = Array1.create float64 fortran_layout 1000 in
+    Array1.fill cb v;
+    Array1.fill fb v;
+    let return = ref true in
+    for i = 1 to 99 do
+      let i = i * 10 in
+      return := !return
+        && Array1.unsafe_get cb (i - 10) = v
+        && Array1.unsafe_get cb (i     ) = v
+        && Array1.unsafe_get cb (i +  9) = v
+        && Array1.unsafe_get fb (i -  9) = v
+        && Array1.unsafe_get fb (i     ) = v
+        && Array1.unsafe_get fb (i + 10) = v
+    done;
+    test 16 true !return
+  end;
 
   testing_function "set/get (specialized)";
   let a = Array1.create int c_layout 3 in
@@ -329,6 +402,14 @@ let _ =
   testing_function "dim";
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
+
+  testing_function "size_in_bytes_one";
+  test 1 (Array1.size_in_bytes (from_list int [1;2;3;4;5]))
+    (5 * (kind_size_in_bytes int));
+  test 2 (Array1.size_in_bytes (from_list int [])) 0;
+  let int64list = (from_list int64 (List.map Int64.of_int [1;2;3;4;5])) in
+  test 3 (Array1.size_in_bytes int64list) (5 * (kind_size_in_bytes int64));
+  test 4 (Array1.size_in_bytes (from_list int64 (List.map Int64.of_int []))) 0;
 
   testing_function "kind & layout";
   let a = from_list int [1;2;3] in
@@ -514,6 +595,10 @@ let _ =
   test 3 (Array2.dim1 b) 4;
   test 4 (Array2.dim2 b) 6;
 
+  testing_function "size_in_bytes_two";
+  let a = Array2.create int c_layout 4 6 in
+  test 1 (Array2.size_in_bytes a) (24 * (kind_size_in_bytes int));
+
   testing_function "sub";
   let a = make_array2 int c_layout 0 5 3 id in
   let b = Array2.sub_left a 2 2 in
@@ -665,6 +750,10 @@ let _ =
   test 5 (Array3.dim2 b) 5;
   test 6 (Array3.dim3 b) 6;
 
+  testing_function "size_in_bytes_three";
+  let a = Array3.create int c_layout 4 5 6 in
+  test 1 (Array3.size_in_bytes a) (120 * (kind_size_in_bytes int));
+
   testing_function "slice1";
   let a = make_array3 int c_layout 0 3 3 3 id in
   test 1 (Array3.slice_left_1 a 0 0) (from_list int [0;1;2]);
@@ -675,6 +764,39 @@ let _ =
   let a = make_array3 int fortran_layout 1 3 3 3 id in
   test 6 (Array3.slice_right_1 a 1 2) (from_list_fortran int [112;212;312]);
   test 7 (Array3.slice_right_1 a 3 1) (from_list_fortran int [131;231;331]);
+
+  testing_function "size_in_bytes_general";
+  let a = Genarray.create int c_layout [|2;2;2;2;2|] in
+  test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
+
+(* Kind size *)
+  testing_function "kind_size_in_bytes";
+  let arr1 = Array1.create Float32 c_layout 1 in
+  test 1 (kind_size_in_bytes Float32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Float64 c_layout 1 in
+  test 2 (kind_size_in_bytes Float64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int8_signed c_layout 1 in
+  test 3 (kind_size_in_bytes Int8_signed) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int8_unsigned c_layout 1 in
+  test 4 (kind_size_in_bytes Int8_unsigned) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int16_signed c_layout 1 in
+  test 5 (kind_size_in_bytes Int16_signed) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int16_unsigned c_layout 1 in
+  test 6 (kind_size_in_bytes Int16_unsigned) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int32 c_layout 1 in
+  test 7 (kind_size_in_bytes Int32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int64 c_layout 1 in
+  test 8 (kind_size_in_bytes Int64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Int c_layout 1 in
+  test 9 (kind_size_in_bytes Int) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Nativeint c_layout 1 in
+  test 10 (kind_size_in_bytes Nativeint) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Complex32 c_layout 1 in
+  test 11 (kind_size_in_bytes Complex32) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Complex64 c_layout 1 in
+  test 12 (kind_size_in_bytes Complex64) (Array1.size_in_bytes arr1);
+  let arr1 = Array1.create Char c_layout 1 in
+  test 13 (kind_size_in_bytes Char) (Array1.size_in_bytes arr1);
 
 (* Reshaping *)
   print_newline();
@@ -788,10 +910,12 @@ let _ =
   Sys.remove mapped_file;
 
   ()
+  [@@inline never]
 
 (********* End of test *********)
 
 let _ =
+  tests ();
   print_newline();
   if !error_occurred then begin
     prerr_endline "************* TEST FAILED ****************"; exit 2

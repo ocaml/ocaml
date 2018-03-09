@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Clflags
 
@@ -67,9 +70,84 @@ module Options = Main_args.Make_opttop_options (struct
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
   let _init s = init_file := Some s
-  let _inline n = inline_threshold := n * 8
+  let _noinit = set noinit
+  let _clambda_checks () = clambda_checks := true
+  let _inline spec =
+    Float_arg_helper.parse spec
+      "Syntax: -inline <n> | <round>=<n>[,...]"
+      inline_threshold
+  let _inline_indirect_cost spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-indirect-cost <n> | <round>=<n>[,...]"
+      inline_indirect_cost
+  let _inline_toplevel spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-toplevel <n> | <round>=<n>[,...]"
+      inline_toplevel_threshold
+  let _inlining_report () = inlining_report := true
+  let _dump_pass pass = set_dumped_pass pass true
+  let _rounds n = simplify_rounds := Some n
+  let _inline_max_unroll spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-max-unroll <n> | <round>=<n>[,...]"
+      inline_max_unroll
+  let _classic_inlining () = classic_inlining := true
+  let _inline_call_cost spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-call-cost <n> | <round>=<n>[,...]"
+       inline_call_cost
+  let _inline_alloc_cost spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-alloc-cost <n> | <round>=<n>[,...]"
+      inline_alloc_cost
+  let _inline_prim_cost spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-prim-cost <n> | <round>=<n>[,...]"
+       inline_prim_cost
+  let _inline_branch_cost spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-branch-cost <n> | <round>=<n>[,...]"
+      inline_branch_cost
+  let _inline_lifting_benefit spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-lifting-benefit <n> | <round>=<n>[,...]"
+      inline_lifting_benefit
+  let _inline_branch_factor spec =
+    Float_arg_helper.parse spec
+      "Syntax: -inline-branch-factor <n> | <round>=<n>[,...]"
+      inline_branch_factor
+  let _inline_max_depth spec =
+    Int_arg_helper.parse spec
+      "Syntax: -inline-max-depth <n> | <round>=<n>[,...]"
+      inline_max_depth
+  let _no_unbox_free_vars_of_closures = clear unbox_free_vars_of_closures
+  let _no_unbox_specialised_args = clear unbox_specialised_args
+  let _o s = output_name := Some s
+  let _o2 () =
+    default_simplify_rounds := 2;
+    use_inlining_arguments_set o2_arguments;
+    use_inlining_arguments_set ~round:0 o1_arguments
+  let _o3 () =
+    default_simplify_rounds := 3;
+    use_inlining_arguments_set o3_arguments;
+    use_inlining_arguments_set ~round:1 o2_arguments;
+    use_inlining_arguments_set ~round:0 o1_arguments
+  let _remove_unused_arguments = set remove_unused_arguments
+  let _unbox_closures = set unbox_closures
+  let _unbox_closures_factor f = unbox_closures_factor := f
+  let _drawclambda = set dump_rawclambda
+  let _dclambda = set dump_clambda
+  let _drawflambda = set dump_rawflambda
+  let _dflambda = set dump_flambda
+  let _dflambda_let stamp = dump_flambda_let := Some stamp
+  let _dflambda_verbose () =
+    set dump_flambda ();
+    set dump_flambda_verbose ()
+  let _dflambda_no_invariants = clear flambda_invariant_checks
   let _labels = clear classic
+  let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
@@ -78,16 +156,24 @@ module Options = Main_args.Make_opttop_options (struct
   let _nostdlib = set no_std_include
   let _ppx s = Compenv.first_ppx := s :: !Compenv.first_ppx
   let _principal = set principal
+  let _no_principal = clear principal
   let _real_paths = set real_paths
   let _rectypes = set recursive_types
+  let _no_rectypes = clear recursive_types
   let _strict_sequence = set strict_sequence
+  let _no_strict_sequence = clear strict_sequence
   let _strict_formats = set strict_formats
+  let _no_strict_formats = clear strict_formats
   let _S = set keep_asm_file
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = clear unboxed_types
   let _unsafe = set fast
+  let _verbose = set verbose
   let _version () = print_version ()
   let _vnum () = print_version_num ()
+  let _no_version = set noversion
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
@@ -97,10 +183,12 @@ module Options = Main_args.Make_opttop_options (struct
   let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
+  let _drawclambda = set dump_rawclambda
   let _dclambda = set dump_clambda
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
   let _dcombine = set dump_combine
+  let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split
@@ -111,11 +199,16 @@ module Options = Main_args.Make_opttop_options (struct
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
   let _dstartup = set keep_startup_file
+  let _safe_string = clear unsafe_string
+  let _unsafe_string = set unsafe_string
+  let _open s = open_modules := s :: !open_modules
+  let _plugin p = Compplugin.load p
 
   let anonymous = file_argument
 end);;
 
 let main () =
+  native_code := true;
   Arg.parse Options.list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter

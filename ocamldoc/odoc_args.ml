@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
-(*                             OCamldoc                                *)
+(*                                 OCaml                                  *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Command-line arguments. *)
 
@@ -197,7 +200,9 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _intf s = Odoc_global.files := !Odoc_global.files @ [Odoc_global.Intf_file s]
   let _intf_suffix s = Config.interface_suffix := s
   let _labels = unset Clflags.classic
+  let _alias_deps = unset Clflags.transparent_modules
   let _no_alias_deps = set Clflags.transparent_modules
+  let _app_funct = set Clflags.applicative_functors
   let _no_app_funct = unset Clflags.applicative_functors
   let _noassert = set Clflags.noassert
   let _nolabels = set Clflags.classic
@@ -206,13 +211,19 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _pp s = Clflags.preprocessor := Some s
   let _ppx s = Clflags.all_ppx := s :: !Clflags.all_ppx
   let _principal = set Clflags.principal
+  let _no_principal = unset Clflags.principal
   let _rectypes = set Clflags.recursive_types
+  let _no_rectypes = unset Clflags.recursive_types
   let _safe_string = unset Clflags.unsafe_string
   let _short_paths = unset Clflags.real_paths
   let _strict_sequence = set Clflags.strict_sequence
+  let _no_strict_sequence = unset Clflags.strict_sequence
   let _strict_formats = set Clflags.strict_formats
+  let _no_strict_formats = unset Clflags.strict_formats
   let _thread = set Clflags.use_threads
   let _vmthread = set Clflags.use_vmthreads
+  let _unboxed_types = set Clflags.unboxed_types
+  let _no_unboxed_types = unset Clflags.unboxed_types
   let _unsafe () = assert false
   let _unsafe_string = set Clflags.unsafe_string
   let _v () = Compenv.print_version_and_library "documentation generator"
@@ -229,6 +240,7 @@ module Options = Main_args.Make_ocamldoc_options(struct
   let _dtypedtree = set Clflags.dump_typedtree
   let _drawlambda = set Clflags.dump_rawlambda
   let _dlambda = set Clflags.dump_lambda
+  let _dflambda = set Clflags.dump_flambda
   let _dinstr = set Clflags.dump_instr
   let anonymous = anonymous
 end)
@@ -264,25 +276,40 @@ let default_options = Options.list @
   "\n\n *** choosing a generator ***\n";
 
 (* generators *)
-  "-html", Arg.Unit (fun () -> set_generator
+  "-html", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Html _) -> ()
+    | _ -> set_generator
        (Odoc_gen.Html (module Odoc_html.Generator : Odoc_html.Html_generator))),
     M.generate_html ;
-  "-latex", Arg.Unit (fun () -> set_generator
+  "-latex", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Latex _) -> ()
+    | _ -> set_generator
        (Odoc_gen.Latex (module Odoc_latex.Generator : Odoc_latex.Latex_generator))),
     M.generate_latex ;
-  "-texi", Arg.Unit (fun () -> set_generator
+  "-texi", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Texi _) -> ()
+    | _ -> set_generator
        (Odoc_gen.Texi (module Odoc_texi.Generator : Odoc_texi.Texi_generator))),
     M.generate_texinfo ;
-  "-man", Arg.Unit (fun () -> set_generator
+  "-man", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Man _) -> ()
+    | _ -> set_generator
        (Odoc_gen.Man (module Odoc_man.Generator : Odoc_man.Man_generator))),
     M.generate_man ;
-  "-dot", Arg.Unit (fun () -> set_generator
+  "-dot", Arg.Unit (fun () ->
+    match !current_generator with
+      Some (Odoc_gen.Dot _) -> ()
+    | _ -> set_generator
        (Odoc_gen.Dot (module Odoc_dot.Generator : Odoc_dot.Dot_generator))),
     M.generate_dot ;
   "-customdir", Arg.Unit (fun () -> Printf.printf "%s\n" Odoc_config.custom_generators_path; exit 0),
   M.display_custom_generators_dir ;
-  "-i", Arg.String (fun s -> ()), M.add_load_dir ;
-  "-g", Arg.String (fun s -> ()), M.load_file ^
+  "-i", Arg.String (fun _ -> ()), M.add_load_dir ;
+  "-g", Arg.String (fun _ -> ()), M.load_file ^
   "\n\n *** HTML options ***\n";
 
 (* html only options *)
@@ -384,10 +411,9 @@ let add_option o =
 let parse () =
   if modified_options () then append_last_doc "\n";
   let options = !options @ !help_options in
-  let _ = Arg.parse (Arg.align ~limit:13 options)
+  Arg.parse (Arg.align ~limit:13 options)
       anonymous
-      (M.usage^M.options_are)
-  in
+      (M.usage^M.options_are);
   (* we sort the hidden modules by name, to be sure that for example,
      A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)

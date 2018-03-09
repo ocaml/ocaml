@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the AMD64 *)
 
@@ -30,11 +33,11 @@ let rec select_addr exp =
   match exp with
     Cconst_symbol s when not !Clflags.dlcode ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Csubi | Csuba), [arg; Cconst_int m]) ->
+  | Cop(Csubi, [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n - m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
   | Cop(Clsl, [arg; Cconst_int(1|2|3 as shift)]) ->
       begin match select_addr arg with
@@ -51,7 +54,7 @@ let rec select_addr exp =
         (Alinear e, n) -> (Ascale(e, mult), n * mult)
       | _ -> (Alinear exp, 0)
       end
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -120,25 +123,27 @@ let inline_ops =
 
 class selector = object (self)
 
-inherit Selectgen.selector_generic as super
+inherit Spacetime_profiling.instruction_selection as super
 
-method is_immediate n = n <= 0x7FFFFFFF && n >= -0x80000000
+method is_immediate n = n <= 0x7FFF_FFFF && n >= (-1-0x7FFF_FFFF)
+  (* -1-.... : hack so that this can be compiled on 32-bit
+     (cf 'make check_all_arches') *)
 
 method is_immediate_natint n = n <= 0x7FFFFFFFn && n >= -0x80000000n
 
 method! is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, _, _), args)
+  | Cop(Cextcall (fn, _, _, _, _), args)
     when List.mem fn inline_ops ->
       (* inlined ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
   | _ ->
       super#is_simple_expr e
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   let (a, d) = select_addr exp in
   (* PR#4625: displacement must be a signed 32-bit immediate *)
-  if d < -0x8000_0000 || d > 0x7FFF_FFFF
+  if not (self # is_immediate d)
   then (Iindexed 0, exp)
   else match a with
     | Asymbol s ->
@@ -156,13 +161,16 @@ method! select_store is_assign addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | (Cconst_natint n | Cconst_blockheader n) when self#is_immediate_natint n ->
+  | (Cconst_natint n) when self#is_immediate_natint n ->
+      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
+  | (Cblockheader(n, _dbg))
+      when self#is_immediate_natint n && not Config.spacetime ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_pointer n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | Cconst_natpointer n when self#is_immediate_natint n ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_symbol s when not (!pic_code || !Clflags.dlcode) ->
+  | Cconst_symbol s when not (!Clflags.pic_code || !Clflags.dlcode) ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
       super#select_store is_assign addr exp
@@ -170,9 +178,9 @@ method! select_store is_assign addr exp =
 method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
-    Caddi | Cadda | Csubi | Csuba ->
-      begin match self#select_addressing Word (Cop(op, args)) with
-        (Iindexed d, _) -> super#select_operation op args
+    Caddi | Caddv | Cadda | Csubi ->
+      begin match self#select_addressing Word_int (Cop(op, args)) with
+        (Iindexed _, _)
       | (Iindexed2 0, _) -> super#select_operation op args
       | (addr, arg) -> (Ispecific(Ilea addr), [arg])
       end
@@ -185,7 +193,7 @@ method! select_operation op args =
       self#select_floatarith true Imulf Ifloatmul args
   | Cdivf ->
       self#select_floatarith false Idivf Ifloatdiv args
-  | Cextcall("sqrt", _, false, _) ->
+  | Cextcall("sqrt", _, false, _, _) ->
      begin match args with
        [Cop(Cload (Double|Double_u as chunk), [loc])] ->
          let (addr, arg) = self#select_addressing chunk loc in
@@ -196,21 +204,21 @@ method! select_operation op args =
          assert false
      end
   (* Recognize store instructions *)
-  | Cstore Word ->
+  | Cstore ((Word_int|Word_val as chunk), _init) ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
         when loc = loc' && self#is_immediate n ->
-          let (addr, arg) = self#select_addressing Word loc in
+          let (addr, arg) = self#select_addressing chunk loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
           super#select_operation op args
       end
-  | Cextcall("caml_bswap16_direct", _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
       (Ispecific (Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
       (Ispecific (Ibswap 32), args)
-  | Cextcall("caml_int64_direct_bswap", _, _, _)
-  | Cextcall("caml_nativeint_direct_bswap", _, _, _) ->
+  | Cextcall("caml_int64_direct_bswap", _, _, _, _)
+  | Cextcall("caml_nativeint_direct_bswap", _, _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* AMD64 does not support immediate operands for multiply high signed *)
   | Cmulhi ->

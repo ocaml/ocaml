@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the Power PC *)
 
@@ -42,22 +45,11 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-  if Config.system = "rhapsody" then
-    [| "r3"; "r4"; "r5"; "r6"; "r7"; "r8"; "r9"; "r10";
-       "r14"; "r15"; "r16"; "r17"; "r18"; "r19"; "r20"; "r21";
-       "r22"; "r23"; "r24"; "r25"; "r26"; "r27"; "r28" |]
-  else
     [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
        "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
        "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
 
 let float_reg_name =
-  if Config.system = "rhapsody" then
-    [| "f1"; "f2"; "f3"; "f4"; "f5"; "f6"; "f7"; "f8";
-       "f9"; "f10"; "f11"; "f12"; "f13"; "f14"; "f15"; "f16";
-       "f17"; "f18"; "f19"; "f20"; "f21"; "f22"; "f23"; "f24";
-       "f25"; "f26"; "f27"; "f28"; "f29"; "f30"; "f31" |]
-  else
     [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
        "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
        "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
@@ -67,8 +59,7 @@ let num_register_classes = 2
 
 let register_class r =
   match r.typ with
-    Int -> 0
-  | Addr -> 0
+  | Val | Int | Addr -> 0
   | Float -> 1
 
 let num_available_registers = [| 23; 31 |]
@@ -99,102 +90,168 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
 let calling_conventions
-    first_int last_int first_float last_float make_stack stack_ofs arg =
-  let loc = Array.make (Array.length arg) Reg.dummy in
+    first_int last_int first_float last_float
+    make_stack stack_ofs reg_use_stack arg =
+  let loc = Array.make (Array.length arg) [| Reg.dummy |] in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref stack_ofs in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-      Int | Addr as ty ->
+    match arg.(i) with
+    | [| arg |] ->
+      begin match arg.typ with
+      | Val | Int | Addr as ty ->
         if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int
+            loc.(i) <- [| phys_reg !int |];
+            incr int;
+            if reg_use_stack then ofs := !ofs + size_int
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) ty;
+            loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
           ofs := !ofs + size_int
         end
     | Float ->
         if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float
+            loc.(i) <- [| phys_reg !float |];
+            incr float;
+            (* On 64-bit platforms, passing a float in a float register
+               reserves a normal register as well *)
+            if size_int = 8 then incr int;
+            if reg_use_stack then ofs := !ofs + size_float
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
+            ofs := Misc.align !ofs size_float;
+            loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
           ofs := !ofs + size_float
         end
+      end
+    | [| arg1; arg2 |] ->
+      (* Passing of 64-bit quantities to external functions
+         on 32-bit platform. *)
+      assert (size_int = 4);
+      begin match arg1.typ, arg2.typ with
+      | Int, Int ->
+          (* 64-bit quantities split across two registers must either be in a
+             consecutive pair of registers where the lowest numbered is an
+             even-numbered register; or in a stack slot that is 8-byte
+             aligned. *)
+          int := Misc.align !int 2;
+          if !int <= last_int - 1 then begin
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (!int + 1) in
+            loc.(i) <- [| reg_lower; reg_upper |];
+            int := !int + 2
+          end else begin
+            let size_int64 = 8 in
+            ofs := Misc.align !ofs size_int64;
+            let ofs_lower = !ofs in
+            let ofs_upper = !ofs + size_int in
+            let stack_lower = stack_slot (make_stack ofs_lower) Int in
+            let stack_upper = stack_slot (make_stack ofs_upper) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
+            ofs := !ofs + size_int64
+          end
+      | _, _ ->
+        let f = function Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F" in
+        fatal_error (Printf.sprintf "Proc.calling_conventions: bad register \
+            type(s) for multi-register argument: %s, %s"
+          (f arg1.typ) (f arg2.typ))
+      end
+    | _ ->
+      fatal_error "Proc.calling_conventions: bad number of registers for \
+                   multi-register argument"
   done;
   (loc, Misc.align !ofs 16)
   (* Keep stack 16-aligned. *)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
+
+let single_regs arg = Array.map (fun arg -> [| arg |]) arg
+let ensure_single_regs res =
+  Array.map (function
+      | [| res |] -> res
+      | _ -> failwith "Proc.ensure_single_regs")
+    res
+
+let max_arguments_for_tailcalls = 8
 
 let loc_arguments arg =
-  calling_conventions 0 7 100 112 outgoing 0 arg
+  let (loc, ofs) =
+    calling_conventions 0 7 100 112 outgoing 0 false (single_regs arg)
+  in
+  (ensure_single_regs loc, ofs)
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 7 100 112 incoming 0 arg in loc
+  let (loc, _ofs) =
+    calling_conventions 0 7 100 112 incoming 0 false (single_regs arg)
+  in
+  ensure_single_regs loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 res in loc
+  let (loc, _ofs) =
+    calling_conventions 0 7 100 112 not_supported 0 false (single_regs res)
+  in
+  ensure_single_regs loc
 
-(* C calling conventions under PowerOpen:
-     use GPR 3-10 and FPR 1-13 just like ML calling
-     conventions, but always reserve stack space for all arguments.
-     Also, using a float register automatically reserves two int registers
-     (in 32-bit mode) or one int register (in 64-bit mode).
-     (If we were to call a non-prototyped C function, each float argument
-      would have to go both in a float reg and in the matching pair
-      of integer regs.)
-
-   C calling conventions under SVR4:
+(* C calling conventions for ELF32:
      use GPR 3-10 and FPR 1-8 just like ML calling conventions.
      Using a float register does not affect the int registers.
      Always reserve 8 bytes at bottom of stack, plus whatever is needed
-     to hold the overflow arguments. *)
-
-let poweropen_external_conventions first_int last_int
-                                   first_float last_float arg =
-  let loc = Array.make (Array.length arg) Reg.dummy in
-  let int = ref first_int in
-  let float = ref first_float in
-  let ofs = ref (14 * size_addr) in
-  for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-      Int | Addr as ty ->
-        if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int
-        end else begin
-          loc.(i) <- stack_slot (Outgoing !ofs) ty;
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float
-        end else begin
-          loc.(i) <- stack_slot (Outgoing !ofs) Float;
-          ofs := !ofs + size_float
-        end;
-        int := !int + (if ppc64 then 1 else 2)
-  done;
-  (loc, Misc.align !ofs 16) (* Keep stack 16-aligned *)
+     to hold the overflow arguments.
+   C calling conventions for ELF64v1:
+     Use GPR 3-10 for the first integer arguments.
+     Use FPR 1-13 for the first float arguments.
+     Always reserve stack space for all arguments, even when passed in
+     registers.
+     Always reserve at least 8 words (64 bytes) for the arguments.
+     Always reserve 48 bytes at bottom of stack, plus whatever is needed
+     to hold the arguments.
+     The reserved 48 bytes are automatically added in emit.mlp
+     and need not appear here.
+   C calling conventions for ELF64v2:
+     Use GPR 3-10 for the first integer arguments.
+     Use FPR 1-13 for the first float arguments.
+     If all arguments fit in registers, don't reserve stack space.
+     Otherwise, reserve stack space for all arguments.
+     Always reserve 32 bytes at bottom of stack, plus whatever is needed
+     to hold the arguments.
+     The reserved 32 bytes are automatically added in emit.mlp
+     and need not appear here.
+*)
 
 let loc_external_arguments =
-  match Config.system with
-  | "rhapsody" -> poweropen_external_conventions 0 7 100 112
-  | "elf" | "bsd" | "bsd_elf" -> calling_conventions 0 7 100 107 outgoing 8
-  | _ -> assert false
-
-let extcall_use_push = false
+  match abi with
+  | ELF32 ->
+      calling_conventions 0 7 100 107 outgoing 8 false
+  | ELF64v1 ->
+      fun args ->
+      let (loc, ofs) =
+        calling_conventions 0 7 100 112 outgoing 0 true args in
+      (loc, max ofs 64)
+  | ELF64v2 ->
+      fun args ->
+      let (loc, ofs) =
+        calling_conventions 0 7 100 112 outgoing 0 true args in
+      if Array.fold_left
+           (fun stk r ->
+              assert (Array.length r = 1);
+              match r.(0).loc with
+              | Stack _ -> true
+              | _ -> stk)
+           false loc
+      then (loc, ofs)
+      else (loc, 0)
 
 (* Results are in GPR 3 and FPR 1 *)
 
 let loc_external_results res =
-  let (loc, ofs) = calling_conventions 0 0 100 100 not_supported 0 res in loc
+  let (loc, _ofs) =
+    calling_conventions 0 1 100 100 not_supported 0 false (single_regs res)
+  in
+  ensure_single_regs loc
 
 (* Exceptions are in GPR 3 *)
 
@@ -202,7 +259,7 @@ let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 
@@ -212,8 +269,9 @@ let destroyed_at_c_call =
      100; 101; 102; 103; 104; 105; 106; 107; 108; 109; 110; 111; 112])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
-  | Iop(Iextcall(_, false)) -> destroyed_at_c_call
+    Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; _ }) ->
+    all_phys_regs
+  | Iop(Iextcall { alloc = false; _ }) -> destroyed_at_c_call
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -221,20 +279,20 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> 15
+    Iextcall _ -> 15
   | _ -> 23
 
 let max_register_pressure = function
-    Iextcall(_, _) -> [| 15; 18 |]
+    Iextcall _ -> [| 15; 18 |]
   | _ -> [| 23; 30 |]
 
 (* Pure operations (without any side effect besides updating their result
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _) -> false
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _) -> false
   | Ispecific(Imultaddf | Imultsubf) -> true
   | Ispecific _ -> false
   | _ -> true

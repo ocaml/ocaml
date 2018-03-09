@@ -1,4 +1,4 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
@@ -6,12 +6,14 @@
 (*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.   Modifications Copyright 2010 Mehdi Dogguy,       *)
-(*  used and distributed as part of OCaml by permission from           *)
-(*  the author.   This file is distributed under the terms of the      *)
-(*  Q Public License version 1.0.                                      *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2010 Mehdi Dogguy                                          *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Dump info on .cmi, .cmo, .cmx, .cma, .cmxa, .cmxs files
    and on bytecode executables. *)
@@ -47,10 +49,15 @@ let print_name_crc (name, crco) =
 let print_line name =
   printf "\t%s\n" name
 
+let print_required_global id =
+  printf "\t%s\n" (Ident.name id)
+
 let print_cmo_infos cu =
   printf "Unit name: %s\n" cu.cu_name;
   print_string "Interfaces imported:\n";
   List.iter print_name_crc cu.cu_imports;
+  print_string "Required globals:\n";
+  List.iter print_required_global cu.cu_required_globals;
   printf "Uses unsafe features: ";
   (match cu.cu_primitives with
     | [] -> printf "no\n"
@@ -113,8 +120,19 @@ open Cmx_format
 let print_cmx_infos (ui, crc) =
   print_general_infos
     ui.ui_name crc ui.ui_defines ui.ui_imports_cmi ui.ui_imports_cmx;
+  begin match ui.ui_export_info with
+  | Clambda approx ->
   printf "Approximation:\n";
-  Format.fprintf Format.std_formatter "  %a@." Printclambda.approx ui.ui_approx;
+    Format.fprintf Format.std_formatter "  %a@." Printclambda.approx approx
+  | Flambda export ->
+    printf "Flambda export information:\n";
+    let cu =
+      Compilation_unit.create (Ident.create_persistent ui.ui_name)
+        (Linkage_name.create "__dummy__")
+    in
+    Compilation_unit.set_current cu;
+    Format.printf " %a\n" Export_info.print_all export
+  end;
   let pr_funs _ fns =
     List.iter (fun arity -> printf " %d" arity) fns in
   printf "Currying functions:%a\n" pr_funs ui.ui_curry_fun;
@@ -199,13 +217,13 @@ let read_dyn_header filename ic =
                                 (Filename.quote filename)
                                 tempfile) in
         if rc <> 0 then failwith "cannot read";
-        let tc = open_in tempfile in
+        let tc = Scanf.Scanning.from_file tempfile in
         try_finally
           (fun () ->
-            let ofs = Scanf.fscanf tc "%Ld" (fun x -> x) in
+            let ofs = Scanf.bscanf tc "%Ld" (fun x -> x) in
             LargeFile.seek_in ic ofs;
             Some(input_value ic : dynheader))
-          (fun () -> close_in tc))
+          (fun () -> Scanf.Scanning.close_in tc))
       (fun () -> remove_file tempfile)
   with Failure _ | Sys_error _ -> None
 

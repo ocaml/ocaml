@@ -1,18 +1,19 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
 (*                  Benedikt Meurer, University of Siegen              *)
 (*                                                                     *)
-(*    Copyright 2013 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
+(*   Copyright 2013 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
 (*                                                                     *)
-(***********************************************************************)
-
-let command_line_options = []
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Specific operations for the ARM processor, 64-bit mode *)
 
@@ -33,13 +34,18 @@ type addressing_mode =
 
 (* Specific operations *)
 
+type cmm_label = int
+  (* Do not introduce a dependency to Cmm *)
+
 type specific_operation =
-  | Ifar_alloc of int
-  | Ifar_intop_checkbound
-  | Ifar_intop_imm_checkbound of int
+  | Ifar_alloc of { words : int; label_after_call_gc : cmm_label option; }
+  | Ifar_intop_checkbound of { label_after_error : cmm_label option; }
+  | Ifar_intop_imm_checkbound of
+      { bound : int; label_after_error : cmm_label option; }
   | Ishiftarith of arith_operation * int
-  | Ishiftcheckbound of int
-  | Ifar_shiftcheckbound of int
+  | Ishiftcheckbound of { shift : int; label_after_error : cmm_label option; }
+  | Ifar_shiftcheckbound of
+      { shift : int; label_after_error : cmm_label option; }
   | Imuladd       (* multiply and add *)
   | Imulsub       (* multiply and subtract *)
   | Inegmulf      (* floating-point negate and multiply *)
@@ -53,6 +59,12 @@ type specific_operation =
 and arith_operation =
     Ishiftadd
   | Ishiftsub
+
+let spacetime_node_hole_pointer_is_live_before = function
+  | Ifar_alloc _ | Ifar_intop_checkbound _ | Ifar_intop_imm_checkbound _
+  | Ishiftarith _ | Ishiftcheckbound _ | Ifar_shiftcheckbound _ -> false
+  | Imuladd | Imulsub | Inegmulf | Imuladdf | Inegmuladdf | Imulsubf
+  | Inegmulsubf | Isqrtf | Ibswap _ -> false
 
 (* Sizes, endianness *)
 
@@ -78,8 +90,8 @@ let offset_addressing addr delta =
   | Ibased(s, n) -> Ibased(s, n + delta)
 
 let num_args_addressing = function
-  | Iindexed n -> 1
-  | Ibased(s, n) -> 0
+  | Iindexed _ -> 1
+  | Ibased _ -> 0
 
 (* Printing operations and addressing modes *)
 
@@ -95,12 +107,12 @@ let print_addressing printreg addr ppf arg =
 
 let print_specific_operation printreg op ppf arg =
   match op with
-  | Ifar_alloc n ->
-    fprintf ppf "(far) alloc %i" n
-  | Ifar_intop_checkbound ->
+  | Ifar_alloc { words; label_after_call_gc = _; } ->
+    fprintf ppf "(far) alloc %i" words
+  | Ifar_intop_checkbound _ ->
     fprintf ppf "%a (far) check > %a" printreg arg.(0) printreg arg.(1)
-  | Ifar_intop_imm_checkbound n ->
-    fprintf ppf "%a (far) check > %i" printreg arg.(0) n
+  | Ifar_intop_imm_checkbound { bound; _ } ->
+    fprintf ppf "%a (far) check > %i" printreg arg.(0) bound
   | Ishiftarith(op, shift) ->
       let op_name = function
       | Ishiftadd -> "+"
@@ -111,11 +123,12 @@ let print_specific_operation printreg op ppf arg =
        else sprintf ">> %i" (-shift) in
       fprintf ppf "%a %s %a %s"
        printreg arg.(0) (op_name op) printreg arg.(1) shift_mark
-  | Ishiftcheckbound n ->
-      fprintf ppf "check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
-  | Ifar_shiftcheckbound n ->
+  | Ishiftcheckbound { shift; _ } ->
+      fprintf ppf "check %a >> %i > %a" printreg arg.(0) shift
+        printreg arg.(1)
+  | Ifar_shiftcheckbound { shift; _ } ->
       fprintf ppf
-        "(far) check %a >> %i > %a" printreg arg.(0) n printreg arg.(1)
+        "(far) check %a >> %i > %a" printreg arg.(0) shift printreg arg.(1)
   | Imuladd ->
       fprintf ppf "(%a * %a) + %a"
         printreg arg.(0)

@@ -34,14 +34,32 @@ typedef size_t asize_t;
 #define NULL 0
 #endif
 
-/* <private> */
+#ifdef CAML_INTERNALS
 typedef char * addr;
-/* </private> */
+#endif /* CAML_INTERNALS */
 
+/* Noreturn is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     foo Noreturn;
+   you should prefer
+     CAMLnoreturn_start foo CAMLnoreturn_end;
+   which supports both GCC/Clang and MSVC.
+
+   Note: CAMLnoreturn is a different macro defined in memory.h,
+   to be used in function bodies rather than  aprototype attribute.
+*/
 #ifdef __GNUC__
   /* Works only in GCC 2.5 and later */
+  #define CAMLnoreturn_start
+  #define CAMLnoreturn_end __attribute__ ((noreturn))
   #define Noreturn __attribute__ ((noreturn))
+#elif _MSC_VER >= 1500
+  #define CAMLnoreturn_start __declspec(noreturn)
+  #define CAMLnoreturn_end
+  #define Noreturn
 #else
+  #define CAMLnoreturn_start
+  #define CAMLnoreturn_end
   #define Noreturn
 #endif
 
@@ -91,7 +109,7 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 
 #ifndef CAML_AVOID_CONFLICTS
 #define Assert CAMLassert
-#endif  
+#endif
 
 #define CAML_STATIC_ASSERT_3(b, l) \
   typedef char static_assertion_failure_line_##l[(b) ? 1 : -1]
@@ -106,8 +124,6 @@ CAMLextern int caml_failed_assert (char *, char *, int);
 
 #define Is_power_of_2(x) (((x) & ((x) - 1)) == 0)
 
-/* <private> */
-
 CAMLextern void caml_fatal_error (const char *msg) Noreturn;
 CAMLextern void caml_fatal_error_arg (const char *fmt, const char *arg) Noreturn;
 CAMLextern void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
@@ -118,7 +134,103 @@ CAMLextern void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
 CAMLextern char * caml_strdup(const char * s);
 CAMLextern char * caml_strconcat(int n, ...); /* n args of const char * type */
 
-/* <private> */
+/* Use macros for some system calls being called from OCaml itself.
+  These calls can be either traced for security reasons, or changed to
+  virtualize the program. */
+
+
+#ifndef CAML_WITH_CPLUGINS
+
+#define CAML_SYS_EXIT(retcode) exit(retcode)
+#define CAML_SYS_OPEN(filename,flags,perm) open(filename,flags,perm)
+#define CAML_SYS_CLOSE(fd) close(fd)
+#define CAML_SYS_STAT(filename,st) stat(filename,st)
+#define CAML_SYS_UNLINK(filename) unlink(filename)
+#define CAML_SYS_RENAME(old_name,new_name) rename(old_name, new_name)
+#define CAML_SYS_CHDIR(dirname) chdir(dirname)
+#define CAML_SYS_GETENV(varname) getenv(varname)
+#define CAML_SYS_SYSTEM(command) system(command)
+#define CAML_SYS_READ_DIRECTORY(dirname,tbl) caml_read_directory(dirname,tbl)
+
+#else
+
+
+#define CAML_CPLUGINS_EXIT 0
+#define CAML_CPLUGINS_OPEN 1
+#define CAML_CPLUGINS_CLOSE 2
+#define CAML_CPLUGINS_STAT 3
+#define CAML_CPLUGINS_UNLINK 4
+#define CAML_CPLUGINS_RENAME 5
+#define CAML_CPLUGINS_CHDIR 6
+#define CAML_CPLUGINS_GETENV 7
+#define CAML_CPLUGINS_SYSTEM 8
+#define CAML_CPLUGINS_READ_DIRECTORY 9
+#define CAML_CPLUGINS_PRIMS_MAX 9
+
+#define CAML_CPLUGINS_PRIMS_BITMAP  ((1 << CAML_CPLUGINS_PRIMS_MAX)-1)
+
+extern intnat (*caml_cplugins_prim)(int,intnat,intnat,intnat);
+
+#define CAML_SYS_PRIM_1(code,prim,arg1)               \
+  (caml_cplugins_prim == NULL) ? prim(arg1) :    \
+  caml_cplugins_prim(code,(intnat) (arg1),0,0)
+#define CAML_SYS_STRING_PRIM_1(code,prim,arg1)               \
+  (caml_cplugins_prim == NULL) ? prim(arg1) :    \
+  (char*)caml_cplugins_prim(code,(intnat) (arg1),0,0)
+#define CAML_SYS_PRIM_2(code,prim,arg1,arg2)                         \
+  (caml_cplugins_prim == NULL) ? prim(arg1,arg2) :              \
+  caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),0)
+#define CAML_SYS_PRIM_3(code,prim,arg1,arg2,arg3)                            \
+  (caml_cplugins_prim == NULL) ? prim(arg1,arg2,arg3) :                 \
+  caml_cplugins_prim(code,(intnat) (arg1), (intnat) (arg2),(intnat) (arg3))
+
+#define CAML_SYS_EXIT(retcode) \
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_EXIT,exit,retcode)
+#define CAML_SYS_OPEN(filename,flags,perm)                      \
+  CAML_SYS_PRIM_3(CAML_CPLUGINS_OPEN,open,filename,flags,perm)
+#define CAML_SYS_CLOSE(fd)                      \
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_CLOSE,close,fd)
+#define CAML_SYS_STAT(filename,st)                      \
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_STAT,stat,filename,st)
+#define CAML_SYS_UNLINK(filename)                       \
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_UNLINK,unlink,filename)
+#define CAML_SYS_RENAME(old_name,new_name)                              \
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_RENAME,rename,old_name,new_name)
+#define CAML_SYS_CHDIR(dirname)                         \
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_CHDIR,chdir,dirname)
+#define CAML_SYS_GETENV(varname)                        \
+  CAML_SYS_STRING_PRIM_1(CAML_CPLUGINS_GETENV,getenv,varname)
+#define CAML_SYS_SYSTEM(command)                        \
+  CAML_SYS_PRIM_1(CAML_CPLUGINS_SYSTEM,system,command)
+#define CAML_SYS_READ_DIRECTORY(dirname,tbl)                            \
+  CAML_SYS_PRIM_2(CAML_CPLUGINS_READ_DIRECTORY,caml_read_directory,     \
+                  dirname,tbl)
+
+#define CAML_CPLUGIN_CONTEXT_API 0
+
+struct cplugin_context {
+  int api_version;
+  int prims_bitmap;
+  char *exe_name;
+  char** argv;
+  char *plugin; /* absolute filename of plugin, do a copy if you need it ! */
+  char *ocaml_version;
+/* end of CAML_CPLUGIN_CONTEXT_API version 0 */
+};
+
+extern void caml_cplugins_init(char * exe_name, char **argv);
+
+/* A plugin MUST define a symbol "caml_cplugin_init" with the prototype:
+
+void caml_cplugin_init(struct cplugin_context *ctx)
+*/
+
+/* to write plugins for CAML_SYS_READ_DIRECTORY, we will need the
+   definition of struct ext_table to be public. */
+
+#endif /* CAML_WITH_CPLUGINS */
+
+
 
 /* Data structures */
 
@@ -131,6 +243,10 @@ struct ext_table {
 extern void caml_ext_table_init(struct ext_table * tbl, int init_capa);
 extern int caml_ext_table_add(struct ext_table * tbl, void * data);
 extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
+extern void caml_ext_table_remove(struct ext_table * tbl, void * data);
+extern void caml_ext_table_clear(struct ext_table * tbl, int free_entries);
+
+#ifdef CAML_INTERNALS
 
 /* GC flags and messages */
 
@@ -139,6 +255,17 @@ void caml_gc_log (char *, ...)
   __attribute__ ((format (printf, 1, 2)))
 #endif
 ;
+
+void caml_gc_message (int, char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 2, 3)))
+#endif
+;
+
+/* Runtime warnings */
+extern uintnat caml_runtime_warnings;
+int caml_runtime_warnings_active(void);
+
 
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
@@ -186,7 +313,16 @@ extern int caml_snprintf(char * buf, size_t size, const char * format, ...);
 #define snprintf caml_snprintf
 #endif
 
-/* </private> */
+#define CAML_INSTR_DECLARE(t) /**/
+#define CAML_INSTR_ALLOC(t) /**/
+#define CAML_INSTR_START(t, name) /**/
+#define CAML_INSTR_SETUP(t, name) /**/
+#define CAML_INSTR_TIME(t, msg) /**/
+#define CAML_INSTR_INT(msg, c) /**/
+#define CAML_INSTR_INIT() /**/
+#define CAML_INSTR_ATEXIT() /**/
+
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

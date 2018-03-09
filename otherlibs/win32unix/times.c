@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*                 File contributed by Josh Berdine                    */
 /*                                                                     */
 /*  Copyright 2011 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -18,7 +20,15 @@
 
 
 double to_sec(FILETIME ft) {
+#if defined(_MSC_VER) && _MSC_VER < 1300
+  /* See gettimeofday.c - it is not possible for these values to be 64-bit, so
+     there's no worry about using a signed struct in order to work around the
+     lack of support for casting int64_t to double.
+   */
+  LARGE_INTEGER tmp;
+#else
   ULARGE_INTEGER tmp;
+#endif
 
   tmp.u.LowPart = ft.dwLowDateTime;
   tmp.u.HighPart = ft.dwHighDateTime;

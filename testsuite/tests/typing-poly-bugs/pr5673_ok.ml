@@ -1,7 +1,7 @@
 module Classdef = struct
   class virtual ['a, 'b, 'c] cl0 =
-    object 
-      constraint 'c = < m : 'a -> 'b -> int; .. > 
+    object
+      constraint 'c = < m : 'a -> 'b -> int; .. >
     end
 
   class virtual ['a, 'b] cl1 =

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Lightweight threads. *)
 
@@ -35,7 +37,7 @@ val create : ('a -> 'b) -> 'a -> t
 val self : unit -> t
 (** Return the thread currently executing. *)
 
-external id : t -> int = "thread_id"
+val id : t -> int
 (** Return the identifier of the given thread. A thread identifier
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
@@ -80,7 +82,7 @@ val select :
   Unix.file_descr list -> Unix.file_descr list -> Unix.file_descr list ->
     float ->
     Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
-(** Suspend the execution of the calling thead until input/output
+(** Suspend the execution of the calling thread until input/output
    becomes possible on the given Unix file descriptors.
    The arguments and results have the same meaning as for
    {!Unix.select}. *)
@@ -123,7 +125,7 @@ val critical_section : bool ref
    (the timer interrupt that transfers control from thread to thread),
    causing the current thread to run uninterrupted until
    [critical_section] is reset to [false] or the current thread
-   explicitely relinquishes control using [sleep], [delay],
+   explicitly relinquishes control using [sleep], [delay],
    [wait_inchan] or [wait_descr]. *)
 
 val sleep : unit -> unit

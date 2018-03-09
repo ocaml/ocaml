@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*     Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt        *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Module [Outcometree]: results displayed by the toplevel *)
 
@@ -23,6 +26,9 @@ type out_ident =
   | Oide_apply of out_ident * out_ident
   | Oide_dot of out_ident * string
   | Oide_ident of string
+
+type out_attribute =
+  { oattr_name: string }
 
 type out_value =
   | Oval_array of out_value list
@@ -60,6 +66,7 @@ type out_type =
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
   | Otyp_module of string * string list * out_type list
+  | Otyp_attribute of out_type * out_attribute
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list
@@ -91,12 +98,15 @@ and out_sig_item =
   | Osig_modtype of string * out_module_type
   | Osig_module of string * out_module_type * out_rec_status
   | Osig_type of out_type_decl * out_rec_status
-  | Osig_value of string * out_type * string list
+  | Osig_value of out_val_decl
+  | Osig_ellipsis
 and out_type_decl =
   { otype_name: string;
     otype_params: (string * (bool * bool)) list;
     otype_type: out_type;
     otype_private: Asttypes.private_flag;
+    otype_immediate: bool;
+    otype_unboxed: bool;
     otype_cstrs: (out_type * out_type) list }
 and out_extension_constructor =
   { oext_name: string;
@@ -110,6 +120,11 @@ and out_type_extension =
     otyext_params: string list;
     otyext_constructors: (string * out_type list * out_type option) list;
     otyext_private: Asttypes.private_flag }
+and out_val_decl =
+  { oval_name: string;
+    oval_type: out_type;
+    oval_prims: string list;
+    oval_attributes: out_attribute list }
 and out_rec_status =
   | Orec_not
   | Orec_first

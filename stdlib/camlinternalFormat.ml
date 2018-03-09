@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                          Benoit Vaugon, ENSTA                          *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 open CamlinternalFormatBasics
 
 (******************************************************************************)
@@ -108,15 +123,19 @@ type ('b, 'c) acc_formatting_gen =
 (* Reversed list of printing atoms. *)
 (* Used to accumulate printf arguments. *)
 and ('b, 'c) acc =
-  | Acc_formatting_lit of ('b, 'c) acc * formatting_lit (* Special fmtting (box)      *)
-  | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen (* Special fmtting (box) *)
+  | Acc_formatting_lit of ('b, 'c) acc * formatting_lit
+      (* Special fmtting (box) *)
+  | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen
+      (* Special fmtting (box) *)
   | Acc_string_literal of ('b, 'c) acc * string         (* Literal string             *)
   | Acc_char_literal   of ('b, 'c) acc * char           (* Literal char               *)
   | Acc_data_string    of ('b, 'c) acc * string         (* Generated string           *)
   | Acc_data_char      of ('b, 'c) acc * char           (* Generated char             *)
-  | Acc_delay          of ('b, 'c) acc * ('b -> 'c)     (* Delayed printing (%a, %t)  *)
+  | Acc_delay          of ('b, 'c) acc * ('b -> 'c)
+                                                (* Delayed printing (%a, %t) *)
   | Acc_flush          of ('b, 'c) acc                  (* Flush                      *)
-  | Acc_invalid_arg    of ('b, 'c) acc * string         (* Raise Invalid_argument msg *)
+  | Acc_invalid_arg    of ('b, 'c) acc * string
+      (* Raise Invalid_argument msg *)
   | End_of_acc
 
 (* List of heterogeneous values. *)
@@ -1069,7 +1088,9 @@ and type_format_gen :
     Format_subst_ty (sub_fmtty1, _sub_fmtty2, fmtty_rest) ->
     if Fmtty_EBB (erase_rel sub_fmtty) <> Fmtty_EBB (erase_rel sub_fmtty1) then
       raise Type_mismatch;
-    let Fmt_fmtty_EBB (fmt', fmtty') = type_format_gen fmt_rest (erase_rel fmtty_rest) in
+    let Fmt_fmtty_EBB (fmt', fmtty') =
+      type_format_gen fmt_rest (erase_rel fmtty_rest)
+    in
     Fmt_fmtty_EBB (Format_subst (pad_opt, sub_fmtty1, fmt'), fmtty')
   (* Printf and Format specific constructors: *)
   | Alpha fmt_rest, Alpha_ty fmtty_rest ->
@@ -1143,7 +1164,9 @@ fun ign fmt fmtty -> match ign with
   | Ignored_format_subst (pad_opt, sub_fmtty) ->
     let Fmtty_fmt_EBB (sub_fmtty', Fmt_fmtty_EBB (fmt', fmtty')) =
       type_ignored_format_substitution sub_fmtty fmt fmtty in
-    Fmt_fmtty_EBB (Ignored_param (Ignored_format_subst (pad_opt, sub_fmtty'), fmt'), fmtty')
+    Fmt_fmtty_EBB (Ignored_param (Ignored_format_subst (pad_opt, sub_fmtty'),
+                                  fmt'),
+                   fmtty')
   | Ignored_reader -> (
     match fmtty with
     | Ignored_reader_ty fmtty_rest ->
@@ -1225,15 +1248,20 @@ fun sub_fmtty fmt fmtty -> match sub_fmtty, fmtty with
   | Format_subst_ty (sub1_fmtty,  sub2_fmtty,  sub_fmtty_rest),
     Format_subst_ty (sub1_fmtty', sub2_fmtty', fmtty_rest) ->
     (* TODO define Fmtty_rel_EBB to remove those erase_rel *)
-    if Fmtty_EBB (erase_rel sub1_fmtty) <> Fmtty_EBB (erase_rel sub1_fmtty') then raise Type_mismatch;
-    if Fmtty_EBB (erase_rel sub2_fmtty) <> Fmtty_EBB (erase_rel sub2_fmtty') then raise Type_mismatch;
+    if Fmtty_EBB (erase_rel sub1_fmtty) <> Fmtty_EBB (erase_rel sub1_fmtty')
+    then raise Type_mismatch;
+    if Fmtty_EBB (erase_rel sub2_fmtty) <> Fmtty_EBB (erase_rel sub2_fmtty')
+    then raise Type_mismatch;
     let sub_fmtty' = trans (symm sub1_fmtty') sub2_fmtty' in
     let _, f2, _, f4 = fmtty_rel_det sub_fmtty' in
     let Refl = f2 Refl in
     let Refl = f4 Refl in
     let Fmtty_fmt_EBB (sub_fmtty_rest', fmt') =
-      type_ignored_format_substitution (erase_rel sub_fmtty_rest) fmt fmtty_rest in
-    Fmtty_fmt_EBB (Format_subst_ty (sub1_fmtty', sub2_fmtty', symm sub_fmtty_rest'), fmt')
+      type_ignored_format_substitution (erase_rel sub_fmtty_rest) fmt fmtty_rest
+    in
+    Fmtty_fmt_EBB (Format_subst_ty (sub1_fmtty', sub2_fmtty',
+                                    symm sub_fmtty_rest'),
+                   fmt')
   | End_of_fmtty, fmtty ->
     Fmtty_fmt_EBB (End_of_fmtty, type_format_gen fmt fmtty)
   | _ -> raise Type_mismatch
@@ -1331,10 +1359,15 @@ let fix_int_precision prec str =
 
 (* Escape a string according to the OCaml lexing convention. *)
 let string_to_caml_string str =
-  String.concat (String.escaped str) ["\""; "\""]
+  let str = String.escaped str in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\"' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
-(* Generate the format_int first argument from an int_conv. *)
-let format_of_iconv iconv = match iconv with
+(* Generate the format_int/int32/nativeint/int64 first argument
+   from an int_conv. *)
+let format_of_iconv = function
   | Int_d -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
   | Int_i -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
   | Int_x -> "%x" | Int_Cx -> "%#x"
@@ -1342,17 +1375,29 @@ let format_of_iconv iconv = match iconv with
   | Int_o -> "%o" | Int_Co -> "%#o"
   | Int_u -> "%u"
 
-(* Generate the format_int32, format_nativeint and format_int64 first
-   argument from an int_conv. *)
-let format_of_aconv iconv c =
-  let seps = match iconv with
-  | Int_d -> ["%";"d"] | Int_pd -> ["%+";"d"] | Int_sd -> ["% ";"d"]
-  | Int_i -> ["%";"i"] | Int_pi -> ["%+";"i"] | Int_si -> ["% ";"i"]
-  | Int_x -> ["%";"x"] | Int_Cx -> ["%#";"x"]
-  | Int_X -> ["%";"X"] | Int_CX -> ["%#";"X"]
-  | Int_o -> ["%";"o"] | Int_Co -> ["%#";"o"]
-  | Int_u -> ["%";"u"]
-  in String.concat (String.make 1 c) seps
+let format_of_iconvL = function
+  | Int_d -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
+  | Int_i -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
+  | Int_x -> "%Lx" | Int_Cx -> "%#Lx"
+  | Int_X -> "%LX" | Int_CX -> "%#LX"
+  | Int_o -> "%Lo" | Int_Co -> "%#Lo"
+  | Int_u -> "%Lu"
+
+let format_of_iconvl = function
+  | Int_d -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
+  | Int_i -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
+  | Int_x -> "%lx" | Int_Cx -> "%#lx"
+  | Int_X -> "%lX" | Int_CX -> "%#lX"
+  | Int_o -> "%lo" | Int_Co -> "%#lo"
+  | Int_u -> "%lu"
+
+let format_of_iconvn = function
+  | Int_d -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
+  | Int_i -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
+  | Int_x -> "%nx" | Int_Cx -> "%#nx"
+  | Int_X -> "%nX" | Int_CX -> "%#nX"
+  | Int_o -> "%no" | Int_Co -> "%#no"
+  | Int_u -> "%nu"
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
@@ -1369,9 +1414,9 @@ let format_of_fconv fconv prec =
 
 (* Convert an integer to a string according to a conversion. *)
 let convert_int iconv n = format_int (format_of_iconv iconv) n
-let convert_int32 iconv n = format_int32 (format_of_aconv iconv 'l') n
-let convert_nativeint iconv n = format_nativeint (format_of_aconv iconv 'n') n
-let convert_int64 iconv n = format_int64 (format_of_aconv iconv 'L') n
+let convert_int32 iconv n = format_int32 (format_of_iconvl iconv) n
+let convert_nativeint iconv n = format_nativeint (format_of_iconvn iconv) n
+let convert_int64 iconv n = format_int64 (format_of_iconvL iconv) n
 
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
@@ -1389,25 +1434,29 @@ let convert_float fconv prec x =
     | _ -> str
     end
   | _ ->
-    let str = format_float (format_of_fconv fconv prec) x in
-    if fconv <> Float_F then str else
-      let len = String.length str in
-      let rec is_valid i =
-        if i = len then false else
-          match str.[i] with
-          | '.' | 'e' | 'E' -> true
-          | _ -> is_valid (i + 1)
-      in
-      match classify_float x with
-      | FP_normal | FP_subnormal | FP_zero ->
-        if is_valid 0 then str else str ^ "."
-      | FP_infinite ->
-        if x < 0.0 then "neg_infinity" else "infinity"
-      | FP_nan -> "nan"
+  let str = format_float (format_of_fconv fconv prec) x in
+  if fconv <> Float_F then str else
+    let len = String.length str in
+    let rec is_valid i =
+      if i = len then false else
+        match str.[i] with
+        | '.' | 'e' | 'E' -> true
+        | _ -> is_valid (i + 1)
+    in
+    match classify_float x with
+    | FP_normal | FP_subnormal | FP_zero ->
+      if is_valid 0 then str else str ^ "."
+    | FP_infinite ->
+      if x < 0.0 then "neg_infinity" else "infinity"
+    | FP_nan -> "nan"
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
-  String.concat (Char.escaped c) ["'"; "'"]
+  let str = Char.escaped c in
+  let l = String.length str in
+  let res = Bytes.make (l + 2) '\'' in
+  String.unsafe_blit str 0 res 1 l;
+  Bytes.unsafe_to_string res
 
 (* Convert a format type to string *)
 let string_of_fmtty fmtty =
@@ -1695,6 +1744,108 @@ and make_custom : type x y a b c d e f .
     fun x ->
       make_custom k o acc rest arity (f x)
 
+let const x _ = x
+
+let rec make_iprintf : type a b c d e f.
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> a =
+  fun k o fmt -> match fmt with
+    | Char rest ->
+        const (make_iprintf k o rest)
+    | Caml_char rest ->
+        const (make_iprintf k o rest)
+    | String (No_padding, rest) ->
+        const (make_iprintf k o rest)
+    | String (Lit_padding _, rest) ->
+        const (make_iprintf k o rest)
+    | String (Arg_padding _, rest) ->
+        const (const (make_iprintf k o rest))
+    | Caml_string (No_padding, rest) ->
+        const (make_iprintf k o rest)
+    | Caml_string (Lit_padding _, rest) ->
+        const (make_iprintf k o rest)
+    | Caml_string (Arg_padding _, rest) ->
+        const (const (make_iprintf k o rest))
+    | Int (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Int32 (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Nativeint (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Int64 (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Float (_, pad, prec, rest) ->
+        fn_of_padding_precision k o rest pad prec
+    | Bool rest ->
+        const (make_iprintf k o rest)
+    | Alpha rest ->
+        const (const (make_iprintf k o rest))
+    | Theta rest ->
+        const (make_iprintf k o rest)
+    | Custom (arity, _, rest) ->
+        fn_of_custom_arity k o rest arity
+    | Reader _ ->
+        (* This case is impossible, by typing of formats.  See the
+           note in the corresponding case for make_printf. *)
+        assert false
+    | Flush rest ->
+        make_iprintf k o rest
+    | String_literal (_, rest) ->
+        make_iprintf k o rest
+    | Char_literal (_, rest) ->
+        make_iprintf k o rest
+    | Format_arg (_, _, rest) ->
+        const (make_iprintf k o rest)
+    | Format_subst (_, fmtty, rest) ->
+        fun (Format (fmt, _)) ->
+          make_iprintf k o
+            (concat_fmt (recast fmt fmtty) rest)
+    | Scan_char_set (_, _, rest) ->
+        const (make_iprintf k o rest)
+    | Scan_get_counter (_, rest) ->
+        const (make_iprintf k o rest)
+    | Scan_next_char rest ->
+        const (make_iprintf k o rest)
+    | Ignored_param (ign, rest) ->
+        make_ignored_param (fun x _ -> k x) o (End_of_acc) ign rest
+    | Formatting_lit (_, rest) ->
+        make_iprintf k o rest
+    | Formatting_gen (Open_tag (Format (fmt', _)), rest) ->
+        make_iprintf (fun koc -> make_iprintf k koc rest) o fmt'
+    | Formatting_gen (Open_box (Format (fmt', _)), rest) ->
+        make_iprintf (fun koc -> make_iprintf k koc rest) o fmt'
+    | End_of_format ->
+        k o
+and fn_of_padding_precision :
+  type x y z a b c d e f.
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt ->
+  (x, y) padding -> (y, z -> a) precision -> x =
+  fun k o fmt pad prec -> match pad, prec with
+    | No_padding   , No_precision    ->
+        const (make_iprintf k o fmt)
+    | No_padding   , Lit_precision _ ->
+        const (make_iprintf k o fmt)
+    | No_padding   , Arg_precision   ->
+        const (const (make_iprintf k o fmt))
+    | Lit_padding _, No_precision    ->
+        const (make_iprintf k o fmt)
+    | Lit_padding _, Lit_precision _ ->
+        const (make_iprintf k o fmt)
+    | Lit_padding _, Arg_precision   ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, No_precision    ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, Lit_precision _ ->
+        const (const (make_iprintf k o fmt))
+    | Arg_padding _, Arg_precision   ->
+        const (const (const (make_iprintf k o fmt)))
+and fn_of_custom_arity : type x y a b c d e f .
+  (b -> f) -> b -> (a, b, c, d, e, f) fmt -> (a, x, y) custom_arity -> y =
+  fun k o fmt -> function
+    | Custom_zero ->
+        make_iprintf k o fmt
+    | Custom_succ arity ->
+        const (fn_of_custom_arity k o fmt arity)
+
 (******************************************************************************)
                           (* Continuations for make_printf *)
 
@@ -1801,7 +1952,7 @@ let open_box_of_string str =
         try int_of_string (String.sub str nstart (nend - nstart))
         with Failure _ -> invalid_box () in
     let exp_end = parse_spaces nend in
-    let () = if exp_end <> len then invalid_box () in
+    if exp_end <> len then invalid_box ();
     let box_type = match box_name with
       | "" | "b" -> Pp_box
       | "h"      -> Pp_hbox
@@ -1862,7 +2013,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   (*   - zero:  is the '0' flag defined in the current micro-format.  *)
   (*   - minus: is the '-' flag defined in the current micro-format.  *)
   (*   - plus:  is the '+' flag defined in the current micro-format.  *)
-  (*   - sharp: is the '#' flag defined in the current micro-format.  *)
+  (*   - hash:  is the '#' flag defined in the current micro-format.  *)
   (*   - space: is the ' ' flag defined in the current micro-format.  *)
   (*   - ign:   is the '_' flag defined in the current micro-format.  *)
   (*   - pad: padding of the current micro-format.                    *)
@@ -1950,11 +2101,12 @@ let fmt_ebb_of_string ?legacy_behavior str =
       | '_' -> parse_flags pct_ind (str_ind+1) end_ind true
       | _ -> parse_flags pct_ind str_ind end_ind false
 
-  and parse_flags : type e f . int -> int -> int -> bool -> (_, _, e, f) fmt_ebb =
+  and parse_flags : type e f . int -> int -> int -> bool -> (_, _, e, f) fmt_ebb
+  =
   fun pct_ind str_ind end_ind ign ->
     let zero = ref false and minus = ref false
     and plus = ref false and space = ref false
-    and sharp = ref false in
+    and hash = ref false in
     let set_flag str_ind flag =
       (* in legacy mode, duplicate flags are accepted *)
       if !flag && not legacy_behavior then
@@ -1969,11 +2121,11 @@ let fmt_ebb_of_string ?legacy_behavior str =
       | '0' -> set_flag str_ind zero;  read_flags (str_ind + 1)
       | '-' -> set_flag str_ind minus; read_flags (str_ind + 1)
       | '+' -> set_flag str_ind plus;  read_flags (str_ind + 1)
-      | '#' -> set_flag str_ind sharp; read_flags (str_ind + 1)
+      | '#' -> set_flag str_ind hash; read_flags (str_ind + 1)
       | ' ' -> set_flag str_ind space; read_flags (str_ind + 1)
       | _ ->
         parse_padding pct_ind str_ind end_ind
-          !zero !minus !plus !sharp !space ign
+          !zero !minus !plus !hash !space ign
       end
     in
     read_flags str_ind
@@ -1982,7 +2134,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_padding : type e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool -> bool ->
         (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind zero minus plus sharp space ign ->
+  fun pct_ind str_ind end_ind zero minus plus hash space ign ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let padty = match zero, minus with
       | false, false -> Right
@@ -1994,26 +2146,26 @@ let fmt_ebb_of_string ?legacy_behavior str =
     match str.[str_ind] with
     | '0' .. '9' ->
       let new_ind, width = parse_positive str_ind end_ind 0 in
-      parse_after_padding pct_ind new_ind end_ind minus plus sharp space ign
+      parse_after_padding pct_ind new_ind end_ind minus plus hash space ign
         (Lit_padding (padty, width))
     | '*' ->
-      parse_after_padding pct_ind (str_ind + 1) end_ind minus plus sharp space
+      parse_after_padding pct_ind (str_ind + 1) end_ind minus plus hash space
         ign (Arg_padding padty)
     | _ ->
       begin match padty with
       | Left  ->
         if not legacy_behavior then
           invalid_format_without (str_ind - 1) '-' "padding";
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           No_padding
       | Zeros ->
          (* a '0' padding indication not followed by anything should
            be interpreted as a Right padding of width 0. This is used
            by scanning conversions %0s and %0c *)
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           (Lit_padding (Right, 0))
       | Right ->
-        parse_after_padding pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_padding pct_ind str_ind end_ind minus plus hash space ign
           No_padding
       end
 
@@ -2021,25 +2173,25 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_after_padding : type x e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, _) padding -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     match str.[str_ind] with
     | '.' ->
-      parse_precision pct_ind (str_ind + 1) end_ind minus plus sharp space ign
+      parse_precision pct_ind (str_ind + 1) end_ind minus plus hash space ign
         pad
     | symb ->
-      parse_conversion pct_ind (str_ind + 1) end_ind plus sharp space ign pad
+      parse_conversion pct_ind (str_ind + 1) end_ind plus hash space ign pad
         No_precision pad symb
 
   (* Read the digital or '*' precision. *)
   and parse_precision : type x e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, _) padding -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_literal minus str_ind =
       let new_ind, prec = parse_positive str_ind end_ind 0 in
-      parse_after_precision pct_ind new_ind end_ind minus plus sharp space ign
+      parse_after_precision pct_ind new_ind end_ind minus plus hash space ign
         pad (Lit_precision prec) in
     match str.[str_ind] with
     | '0' .. '9' -> parse_literal minus str_ind
@@ -2054,14 +2206,14 @@ let fmt_ebb_of_string ?legacy_behavior str =
          still blatantly wrong, as 123_456 or 0xFF are rejected. *)
       parse_literal (minus || symb = '-') (str_ind + 1)
     | '*' ->
-      parse_after_precision pct_ind (str_ind + 1) end_ind minus plus sharp space
+      parse_after_precision pct_ind (str_ind + 1) end_ind minus plus hash space
         ign pad Arg_precision
     | _ ->
       if legacy_behavior then
         (* note that legacy implementation did not ignore '.' without
            a number (as it does for padding indications), but
            interprets it as '.0' *)
-        parse_after_precision pct_ind str_ind end_ind minus plus sharp space ign
+        parse_after_precision pct_ind str_ind end_ind minus plus hash space ign
           pad (Lit_precision 0)
       else
         invalid_format_without (str_ind - 1) '.' "precision"
@@ -2070,10 +2222,10 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_after_precision : type x y z t e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> bool ->
         (x, y) padding -> (z, t) precision -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind minus plus sharp space ign pad prec ->
+  fun pct_ind str_ind end_ind minus plus hash space ign pad prec ->
     if str_ind = end_ind then unexpected_end_of_format end_ind;
     let parse_conv (type u) (type v) (padprec : (u, v) padding) =
-      parse_conversion pct_ind (str_ind + 1) end_ind plus sharp space ign pad
+      parse_conversion pct_ind (str_ind + 1) end_ind plus hash space ign pad
         prec padprec str.[str_ind] in
     (* in legacy mode, some formats (%s and %S) accept a weird mix of
        padding and precision, which is merged as a single padding
@@ -2096,20 +2248,44 @@ let fmt_ebb_of_string ?legacy_behavior str =
   and parse_conversion : type x y z t u v e f .
       int -> int -> int -> bool -> bool -> bool -> bool -> (x, y) padding ->
         (z, t) precision -> (u, v) padding -> char -> (_, _, e, f) fmt_ebb =
-  fun pct_ind str_ind end_ind plus sharp space ign pad prec padprec symb ->
+  fun pct_ind str_ind end_ind plus hash space ign pad prec padprec symb ->
     (* Flags used to check option usages/compatibilities. *)
-    let plus_used  = ref false and sharp_used = ref false
+    let plus_used  = ref false and hash_used = ref false
     and space_used = ref false and ign_used   = ref false
     and pad_used   = ref false and prec_used  = ref false in
 
     (* Access to options, update flags. *)
     let get_plus    () = plus_used  := true; plus
-    and get_sharp   () = sharp_used := true; sharp
+    and get_hash   () = hash_used := true; hash
     and get_space   () = space_used := true; space
     and get_ign     () = ign_used   := true; ign
     and get_pad     () = pad_used   := true; pad
     and get_prec    () = prec_used  := true; prec
     and get_padprec () = pad_used   := true; padprec in
+
+    let get_int_pad () =
+      (* %5.3d is accepted and meaningful: pad to length 5 with
+         spaces, but first pad with zeros upto length 3 (0-padding
+         is the interpretation of "precision" for integer formats).
+
+         %05.3d is redundant: pad to length 5 *with zeros*, but
+         first pad with zeros... To add insult to the injury, the
+         legacy implementation ignores the 0-padding indication and
+         does the 5 padding with spaces instead. We reuse this
+         interpretation for compatiblity, but statically reject this
+         format when the legacy mode is disabled, to protect strict
+         users from this corner case. *)
+       match get_pad (), get_prec () with
+         | pad, No_precision -> pad
+         | No_padding, _     -> No_padding
+         | Lit_padding (Zeros, n), _ ->
+           if legacy_behavior then Lit_padding (Right, n)
+           else incompatible_flag pct_ind str_ind '0' "precision"
+         | Arg_padding Zeros, _ ->
+           if legacy_behavior then Arg_padding Right
+           else incompatible_flag pct_ind str_ind '0' "precision"
+         | Lit_padding _ as pad, _ -> pad
+         | Arg_padding _ as pad, _ -> pad in
 
     (* Check that padty <> Zeros. *)
     let check_no_0 symb (type a) (type b) (pad : (a, b) padding) =
@@ -2199,38 +2375,15 @@ let fmt_ebb_of_string ?legacy_behavior str =
           make_padding_fmt_ebb pad fmt_rest in
         Fmt_EBB (Caml_string (pad', fmt_rest'))
     | 'd' | 'i' | 'x' | 'X' | 'o' | 'u' ->
-      let iconv = compute_int_conv pct_ind str_ind (get_plus ()) (get_sharp ())
+      let iconv = compute_int_conv pct_ind str_ind (get_plus ()) (get_hash ())
         (get_space ()) symb in
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       if get_ign () then
         let ignored = Ignored_int (iconv, get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
-	(* %5.3d is accepted and meaningful: pad to length 5 with
-	   spaces, but first pad with zeros upto length 3 (0-padding
-	   is the interpretation of "precision" for integer formats).
-
-           %05.3d is redundant: pad to length 5 *with zeros*, but
-           first pad with zeros... To add insult to the injury, the
-           legacy implementation ignores the 0-padding indication and
-           does the 5 padding with spaces instead. We reuse this
-           interpretation for compatiblity, but statically reject this
-           format when the legacy mode is disabled, to protect strict
-           users from this corner case.
-	 *)
-        let pad = match get_pad (), get_prec () with
-          | pad, No_precision -> pad
-          | No_padding, _     -> No_padding
-          | Lit_padding (Zeros, n), _ ->
-            if legacy_behavior then Lit_padding (Right, n)
-            else incompatible_flag pct_ind str_ind '0' "precision"
-          | Arg_padding Zeros, _ ->
-            if legacy_behavior then Arg_padding Right
-            else incompatible_flag pct_ind str_ind '0' "precision"
-          | Lit_padding _ as pad, _ -> pad
-          | Arg_padding _ as pad, _ -> pad in
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb pad (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int (iconv, pad', prec', fmt_rest'))
     | 'N' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
@@ -2250,7 +2403,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' ->
       let iconv =
-        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_sharp ())
+        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_hash ())
           (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
@@ -2258,23 +2411,23 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int32 (iconv, pad', prec', fmt_rest'))
     | 'n' ->
       let iconv =
         compute_int_conv pct_ind (str_ind + 1) (get_plus ())
-          (get_sharp ()) (get_space ()) str.[str_ind] in
+          (get_hash ()) (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
         let ignored = Ignored_nativeint (iconv, get_pad_opt '_') in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Nativeint (iconv, pad', prec', fmt_rest'))
     | 'L' ->
       let iconv =
-        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_sharp ())
+        compute_int_conv pct_ind (str_ind + 1) (get_plus ()) (get_hash ())
           (get_space ()) str.[str_ind] in
       let Fmt_EBB fmt_rest = parse (str_ind + 1) end_ind in
       if get_ign () then
@@ -2282,7 +2435,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
         let Padprec_fmt_EBB (pad', prec', fmt_rest') =
-          make_padprec_fmt_ebb (get_pad ()) (get_prec ()) fmt_rest in
+          make_padprec_fmt_ebb (get_int_pad ()) (get_prec ()) fmt_rest in
         Fmt_EBB (Int64 (iconv, pad', prec', fmt_rest'))
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' | 'h' | 'H' ->
       let fconv = compute_float_conv pct_ind str_ind (get_plus ())
@@ -2360,7 +2513,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
     if not legacy_behavior then begin
     if not !plus_used && plus then
       incompatible_flag pct_ind str_ind symb "'+'";
-    if not !sharp_used && sharp then
+    if not !hash_used && hash then
       incompatible_flag pct_ind str_ind symb "'#'";
     if not !space_used && space then
       incompatible_flag pct_ind str_ind symb "' '";
@@ -2571,8 +2724,9 @@ let fmt_ebb_of_string ?legacy_behavior str =
         parse_char_set_content (str_ind + 1) end_ind
       | c' ->
         if c = '%' then fail_single_percent str_ind;
-        (* note that '@' alone is accepted, as done by the legacy implementation;
-           the documentation specifically requires %@ so we could warn on that *)
+        (* note that '@' alone is accepted, as done by the legacy
+           implementation; the documentation specifically requires %@
+           so we could warn on that *)
         add_char c;
         parse_char_set_after_char (str_ind + 1) end_ind c'
 
@@ -2705,8 +2859,8 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | 'L' -> Token_counter | _ -> assert false
 
   (* Convert (plus, symb) to its associated int_conv. *)
-  and compute_int_conv pct_ind str_ind plus sharp space symb =
-    match plus, sharp, space, symb with
+  and compute_int_conv pct_ind str_ind plus hash space symb =
+    match plus, hash, space, symb with
     | false, false, false, 'd' -> Int_d  | false, false, false, 'i' -> Int_i
     | false, false,  true, 'd' -> Int_sd | false, false,  true, 'i' -> Int_si
     |  true, false, false, 'd' -> Int_pd |  true, false, false, 'i' -> Int_pi
@@ -2725,15 +2879,15 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | true, _, true, _ ->
       if legacy_behavior then
         (* plus and space: legacy implementation prefers plus *)
-        compute_int_conv pct_ind str_ind plus sharp false symb
+        compute_int_conv pct_ind str_ind plus hash false symb
       else incompatible_flag pct_ind str_ind ' ' "'+'"
     | false, _, true, _    ->
       if legacy_behavior then (* ignore *)
-        compute_int_conv pct_ind str_ind plus sharp false symb
+        compute_int_conv pct_ind str_ind plus hash false symb
       else incompatible_flag pct_ind str_ind symb "' '"
     | true, _, false, _    ->
       if legacy_behavior then (* ignore *)
-        compute_int_conv pct_ind str_ind false sharp space symb
+        compute_int_conv pct_ind str_ind false hash space symb
       else incompatible_flag pct_ind str_ind symb "'+'"
     | false, _, false, _ -> assert false
 

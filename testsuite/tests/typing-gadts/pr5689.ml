@@ -9,12 +9,22 @@ type _ inline_t =
 
 let uppercase seq =
    let rec process: type a. a inline_t -> a inline_t = function
-       | Text txt       -> Text (String.uppercase txt)
+       | Text txt       -> Text (String.uppercase_ascii txt)
        | Bold xs        -> Bold (List.map process xs)
        | Link lnk       -> Link lnk
        | Mref (lnk, xs) -> Mref (lnk, List.map process xs)
    in List.map process seq
 ;;
+[%%expect{|
+type inkind = [ `Link | `Nonlink ]
+type _ inline_t =
+    Text : string -> [< inkind > `Nonlink ] inline_t
+  | Bold : 'a inline_t list -> 'a inline_t
+  | Link : string -> [< inkind > `Link ] inline_t
+  | Mref : string *
+      [ `Nonlink ] inline_t list -> [< inkind > `Link ] inline_t
+val uppercase : 'a inline_t list -> 'a inline_t list = <fun>
+|}];;
 
 type ast_t =
    | Ast_Text of string
@@ -35,6 +45,14 @@ let inlineseq_from_astseq seq =
        | Ast_Mref (lnk, xs) -> Mref (lnk, List.map process_nonlink xs)
    in List.map process_any seq
 ;;
+[%%expect{|
+type ast_t =
+    Ast_Text of string
+  | Ast_Bold of ast_t list
+  | Ast_Link of string
+  | Ast_Mref of string * ast_t list
+val inlineseq_from_astseq : ast_t list -> inkind inline_t list = <fun>
+|}];;
 
 (* OK *)
 type _ linkp =
@@ -55,6 +73,10 @@ let inlineseq_from_astseq seq =
      | (Nonlink, Ast_Mref _)      -> assert false
    in List.map (process Maylink) seq
 ;;
+[%%expect{|
+type _ linkp = Nonlink : [ `Nonlink ] linkp | Maylink : inkind linkp
+val inlineseq_from_astseq : ast_t list -> inkind inline_t list = <fun>
+|}];;
 
 (* Bad *)
 type _ linkp2 = Kind : 'a linkp -> ([< inkind ] as 'a) linkp2
@@ -72,3 +94,12 @@ let rec process : type a. a linkp2 -> ast_t -> a inline_t =
     | (Kind Nonlink, Ast_Mref _)      -> assert false
   in List.map (process (Kind Maylink)) seq
 ;;
+[%%expect{|
+type _ linkp2 = Kind : 'a linkp -> ([< inkind ] as 'a) linkp2
+Line _, characters 35-43:
+Error: This expression has type ([< inkind > `Nonlink ] as 'a) inline_t
+       but an expression was expected of type a inline_t
+       Type 'a = [< `Link | `Nonlink > `Nonlink ] is not compatible with type
+         a = [< `Link | `Nonlink ]
+       Types for tag `Nonlink are incompatible
+|}];;

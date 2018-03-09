@@ -1,15 +1,20 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#ifndef CAML_UNIXSUPPORT_H
+#define CAML_UNIXSUPPORT_H
 
 #ifndef CAML_UNIXSUPPORT_H
 #define CAML_UNIXSUPPORT_H
@@ -57,9 +62,18 @@ extern int win_CRT_fd_of_filedescr(value handle);
 
 extern void win32_maperr(DWORD errcode);
 extern value unix_error_of_code (int errcode);
-extern void unix_error (int errcode, char * cmdname, value arg);
-extern void uerror (char * cmdname, value arg);
+
+CAMLnoreturn_start
+extern void unix_error (int errcode, char * cmdname, value arg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+extern void uerror (char * cmdname, value arg)
+CAMLnoreturn_end;
+
+extern void caml_unix_check_path(value path, char * cmdname);
 extern value unix_freeze_buffer (value);
+extern char ** cstringvect(value arg, char * cmdname);
 
 /* Information stored in flags_fd, describing more precisely the socket
  * and its status. The whole flags_fd is initialized to 0.
@@ -72,6 +86,45 @@ extern value unix_freeze_buffer (value);
 
 #ifdef __cplusplus
 }
+#endif
+
+/*
+ * This structure is defined inconsistently. mingw64 has it in ntdef.h (which
+ * doesn't look like a primary header) and technically it's part of ntifs.h in
+ * the WDK. Requiring the WDK is a bit extreme, so the definition is taken from
+ * ntdef.h. Both ntdef.h and ntifs.h define REPARSE_DATA_BUFFER_HEADER_SIZE
+ */
+#ifndef REPARSE_DATA_BUFFER_HEADER_SIZE
+typedef struct _REPARSE_DATA_BUFFER
+{
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union
+  {
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG  Flags;
+      WCHAR  PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct
+    {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR  PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct
+    {
+      UCHAR  DataBuffer[1];
+    } GenericReparseBuffer;
+  };
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
 #endif
 
 #endif /* CAML_UNIXSUPPORT_H */

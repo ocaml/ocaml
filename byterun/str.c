@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Operations on strings */
 
@@ -22,6 +26,7 @@
 #include "caml/mlvalues.h"
 #include "caml/misc.h"
 
+/* returns a number of bytes (chars) */
 CAMLexport mlsize_t caml_string_length(value s)
 {
   mlsize_t temp;
@@ -30,6 +35,7 @@ CAMLexport mlsize_t caml_string_length(value s)
   return temp - Byte (s, temp);
 }
 
+/* returns a value that represents a number of bytes (chars) */
 CAMLprim value caml_ml_string_length(value s)
 {
   mlsize_t temp;
@@ -38,6 +44,20 @@ CAMLprim value caml_ml_string_length(value s)
   return Val_long(temp - Byte (s, temp));
 }
 
+CAMLprim value caml_ml_bytes_length(value s)
+{
+  return caml_ml_string_length(s);
+}
+
+CAMLexport int caml_string_is_c_safe (value s)
+{
+  return strlen(String_val(s)) == caml_string_length(s);
+}
+
+/**
+ * [caml_create_string] is deprecated,
+ * use [caml_create_bytes] instead
+ */
 CAMLprim value caml_create_string(value len)
 {
   mlsize_t size = Long_val(len);
@@ -47,6 +67,18 @@ CAMLprim value caml_create_string(value len)
   return caml_alloc_string(size);
 }
 
+/* [len] is a value that represents a number of bytes (chars) */
+CAMLprim value caml_create_bytes(value len)
+{
+  mlsize_t size = Long_val(len);
+  if (size > Bsize_wsize (Max_wosize) - 1){
+    caml_invalid_argument("Bytes.create");
+  }
+  return caml_alloc_string(size);
+}
+
+
+
 CAMLprim value caml_string_get(value str, value index)
 {
   intnat idx = Long_val(index);
@@ -54,13 +86,28 @@ CAMLprim value caml_string_get(value str, value index)
   return Val_int(Byte_u(str, idx));
 }
 
-CAMLprim value caml_string_set(value str, value index, value newval)
+CAMLprim value caml_bytes_get(value str, value index)
+{
+  return caml_string_get(str, index);
+}
+
+CAMLprim value caml_bytes_set(value str, value index, value newval)
 {
   intnat idx = Long_val(index);
   if (idx < 0 || idx >= caml_string_length(str)) caml_array_bound_error();
   Byte_u(str, idx) = Int_val(newval);
   return Val_unit;
 }
+
+/**
+ * [caml_string_set] is deprecated,
+ * use [caml_bytes_set] instead
+ */
+CAMLprim value caml_string_set(value str, value index, value newval)
+{
+  return caml_bytes_set(str,index,newval);
+}
+
 
 CAMLprim value caml_string_get16(value str, value index)
 {
@@ -219,9 +266,19 @@ CAMLprim value caml_string_equal(value s1, value s2)
   return Val_true;
 }
 
+CAMLprim value caml_bytes_equal(value s1, value s2)
+{
+  return caml_string_equal(s1,s2);
+}
+
 CAMLprim value caml_string_notequal(value s1, value s2)
 {
   return Val_not(caml_string_equal(s1, s2));
+}
+
+CAMLprim value caml_bytes_notequal(value s1, value s2)
+{
+  return caml_string_notequal(s1,s2);
 }
 
 CAMLprim value caml_string_compare(value s1, value s2)
@@ -240,19 +297,41 @@ CAMLprim value caml_string_compare(value s1, value s2)
   return Val_int(0);
 }
 
+CAMLprim value caml_bytes_compare(value s1, value s2)
+{
+  return caml_string_compare(s1,s2);
+}
+
 CAMLprim value caml_string_lessthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
+
+CAMLprim value caml_bytes_lessthan(value s1, value s2)
+{
+  return caml_string_lessthan(s1,s2);
+}
+
 
 CAMLprim value caml_string_lessequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
 
+CAMLprim value caml_bytes_lessequal(value s1, value s2)
+{
+  return caml_string_lessequal(s1,s2);
+}
+
+
 CAMLprim value caml_string_greaterthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
+}
+
+CAMLprim value caml_bytes_greaterthan(value s1, value s2)
+{
+  return caml_string_greaterthan(s1,s2);
 }
 
 CAMLprim value caml_string_greaterequal(value s1, value s2)
@@ -260,22 +339,41 @@ CAMLprim value caml_string_greaterequal(value s1, value s2)
   return caml_string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
 }
 
-CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
+CAMLprim value caml_bytes_greaterequal(value s1, value s2)
+{
+  return caml_string_greaterequal(s1,s2);
+}
+
+CAMLprim value caml_blit_bytes(value s1, value ofs1, value s2, value ofs2,
                                 value n)
 {
-  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Int_val(n));
+  memmove(&Byte(s2, Long_val(ofs2)), &Byte(s1, Long_val(ofs1)), Long_val(n));
   return Val_unit;
 }
 
-CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
+                                value n)
+{
+  return caml_blit_bytes (s1, ofs1, s2, ofs2, n);
+}
+
+CAMLprim value caml_fill_bytes(value s, value offset, value len, value init)
 {
   memset(&Byte(s, Long_val(offset)), Int_val(init), Long_val(len));
   return Val_unit;
 }
 
+/**
+ * [caml_fill_string] is deprecated, use [caml_fill_bytes] instead
+ */
+CAMLprim value caml_fill_string(value s, value offset, value len, value init)
+{
+  return caml_fill_bytes (s, offset, len, init);
+}
+
 CAMLprim value caml_bitvect_test(value bv, value n)
 {
-  int pos = Int_val(n);
+  intnat pos = Long_val(n);
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
 }
 
@@ -286,7 +384,7 @@ CAMLexport value caml_alloc_sprintf(const char * format, ...)
   int n;
   value res;
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(_UCRT)
   /* C99-compliant implementation */
   va_start(args, format);
   /* "vsnprintf(dest, sz, format, args)" writes at most "sz" characters

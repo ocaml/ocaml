@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Wrapper macros around native 64-bit integer arithmetic,
    so that it has the same interface as the software emulation
@@ -17,6 +19,8 @@
 
 #ifndef CAML_INT64_NATIVE_H
 #define CAML_INT64_NATIVE_H
+
+#ifdef CAML_INTERNALS
 
 #define I64_literal(hi,lo) ((int64_t)(hi) << 32 | (lo))
 #define I64_split(x,hi,lo) (hi = (uint32_t)((x)>>32), lo = (uint32_t)(x))
@@ -57,5 +61,7 @@
                       (((x) & 0x0000FF0000000000ULL) >> 24) | \
                       (((x) & 0x00FF000000000000ULL) >> 40) | \
                       (((x) & 0xFF00000000000000ULL) >> 56))
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_INT64_NATIVE_H */

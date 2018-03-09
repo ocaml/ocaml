@@ -1,21 +1,24 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*             Damien Doligez, projet Para, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Classification of addresses for GC and runtime purposes. */
 
 #ifndef CAML_ADDRESS_CLASS_H
 #define CAML_ADDRESS_CLASS_H
 
+#include "config.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -43,7 +46,7 @@
 /***********************************************************************/
 /* The rest of this file is private and may change without notice. */
 
-extern char *caml_young_start, *caml_young_end;
+extern value *caml_young_start, *caml_young_end;
 extern char * caml_code_area_start, * caml_code_area_end;
 
 #define Not_in_heap 0

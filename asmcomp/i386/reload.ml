@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Cmm
 open Arch
@@ -37,7 +40,7 @@ method! makereg r =
 
 method! reload_operation op arg res =
   match op with
-    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
+    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound _) ->
       (* One of the two arguments can reside in the stack *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
@@ -68,7 +71,7 @@ method! reload_operation op arg res =
 
 method! reload_test tst arg =
   match tst with
-    Iinttest cmp ->
+    Iinttest _ ->
       (* One of the two arguments can reside on stack *)
       if stackp arg.(0) && stackp arg.(1)
       then [| self#makereg arg.(0); arg.(1) |]

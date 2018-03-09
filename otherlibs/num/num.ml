@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 open Nat
@@ -28,14 +30,6 @@ let num_of_big_int bi =
  if le_big_int bi biggest_INT && ge_big_int bi least_INT
  then Int (int_of_big_int bi)
  else Big_int bi
-
-let numerator_num = function
-  Ratio r -> ignore (normalize_ratio r); num_of_big_int (numerator_ratio r)
-| n -> n
-
-let denominator_num = function
-  Ratio r -> ignore (normalize_ratio r); num_of_big_int (denominator_ratio r)
-| n -> Int 1
 
 let normalize_num = function
   Int i -> Int i
@@ -156,8 +150,8 @@ let div_num n1 n2 =
 let ( // ) = div_num
 
 let floor_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (floor_ratio r)
 
 (* Coercion with ratio type *)
@@ -282,18 +276,18 @@ let is_integer_num = function
 
 (* integer_num, floor_num, round_num, ceiling_num rendent des nums *)
 let integer_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (integer_ratio r)
 
 and round_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (round_ratio r)
 
 and ceiling_num = function
-  Int i as n -> n
-| Big_int bi as n -> n
+  Int _ as n -> n
+| Big_int _ as n -> n
 | Ratio r -> num_of_big_int (ceiling_ratio r)
 
 (* Comparisons on nums *)
@@ -389,8 +383,6 @@ let string_of_big_int_for_num bi =
 
 (* Coercion with string type *)
 
-(* XL: suppression de sys_string_of_num *)
-
 let string_of_normalized_num = function
   Int i -> string_of_int i
 | Big_int bi -> string_of_big_int_for_num bi
@@ -414,8 +406,6 @@ let float_of_num = function
   Int i -> float i
 | Big_int bi -> float_of_big_int bi
 | Ratio r -> float_of_ratio r
-
-(* XL: suppression de num_of_float, float_num *)
 
 let succ_num = function
   Int i -> if i = biggest_int

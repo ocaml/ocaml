@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Disassembler for executable and .cmo object files *)
 
@@ -23,6 +26,7 @@ open Cmo_format
 open Printf
 
 let print_locations = ref true
+let print_reloc_info = ref false
 
 (* Read signed and unsigned integers *)
 
@@ -403,6 +407,8 @@ let op_shapes = [
   opSTOP, Nothing;
   opEVENT, Nothing;
   opBREAK, Nothing;
+  opRERAISE, Nothing;
+  opRAISE_NOTRACE, Nothing;
 ];;
 
 let print_event ev =
@@ -421,8 +427,10 @@ let print_instr ic =
   if op >= Array.length names_of_instructions || op < 0
   then (print_string "*** unknown opcode : "; print_int op)
   else print_string names_of_instructions.(op);
-  print_string " ";
-  begin try match List.assoc op op_shapes with
+  begin try
+    let shape = List.assoc op op_shapes in
+    if shape <> Nothing then print_string " ";
+    match shape with
   | Uint -> print_int (inputu ic)
   | Sint -> print_int (inputs ic)
   | Uint_Uint
@@ -499,6 +507,8 @@ let dump_obj ic =
   seek_in ic cu_pos;
   let cu = (input_value ic : compilation_unit) in
   reloc := cu.cu_reloc;
+  if !print_reloc_info then
+    List.iter print_reloc cu.cu_reloc;
   if cu.cu_debug > 0 then begin
     seek_in ic cu.cu_debug;
     let evl = (input_value ic : debug_event list) in
@@ -512,13 +522,7 @@ let dump_obj ic =
 
 let read_primitive_table ic len =
   let p = really_input_string ic len in
-  let rec split beg cur =
-    if cur >= len then []
-    else if p.[cur] = '\000' then
-      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-    else
-      split beg (cur + 1) in
-  Array.of_list(split 0 0)
+  String.split_on_char '\000' p |> List.filter ((<>) "") |> Array.of_list
 
 (* Print an executable file *)
 
@@ -551,6 +555,7 @@ let dump_exe ic =
 
 let arg_list = [
   "-noloc", Arg.Clear print_locations, " : don't print source information";
+  "-reloc", Arg.Set print_reloc_info, " : print relocation information";
 ]
 let arg_usage =
   Printf.sprintf "%s [OPTIONS] FILES : dump content of bytecode files"
