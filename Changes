@@ -128,6 +128,10 @@ Working version
 - GPR#1618: add the -dno-unique-ids and -dunique-ids compiler flags
   (Sébastien Hinderer, review by Leo White and Damien Doligez)
 
+- GPR#1649 change compilation order of toplevel definitions, so that some warnings
+  emitted by the bytecode compiler appear more in-order than before.
+  (Luc Maranget, advice and review by Damien Doligez)
+
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen

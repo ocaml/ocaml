@@ -1209,12 +1209,18 @@ and transl_function loc untuplify_fn repr partial param cases =
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
 
-and transl_let rec_flag pat_expr_list body =
+(*
+  Notice: transl_let consumes (ie compiles) its pat_expr_list argument,
+  and returns a function that will take the body of the lambda-let construct.
+  This complication allows choosing any compilation order for the
+  bindings and body of let constructs.
+*)
+and transl_let rec_flag pat_expr_list =
   match rec_flag with
     Nonrecursive ->
       let rec transl = function
         [] ->
-          body
+          fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
           let lam = transl_exp expr in
           let lam =
@@ -1223,7 +1229,8 @@ and transl_let rec_flag pat_expr_list body =
           let lam =
             Translattribute.add_specialise_attribute lam vb_loc attr
           in
-          Matching.for_let pat.pat_loc lam pat (transl rem)
+          let mk_body = transl rem in
+          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1244,7 +1251,8 @@ and transl_let rec_flag pat_expr_list body =
             vb_attributes
         in
         (id, lam) in
-      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+      let lam_bds = List.map2 transl_case pat_expr_list idlist in
+      fun body -> Lletrec(lam_bds, body)
 
 and transl_setinstvar loc self var expr =
   Lprim(Psetfield_computed (maybe_pointer expr, Assignment),
