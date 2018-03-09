@@ -93,8 +93,8 @@ struct caml_thread_struct {
   struct caml_exception_context *external_raise; /* Saved external_raise */
 #endif
   int backtrace_pos;            /* Saved backtrace_pos */
-  backtrace_slot * backtrace_buffer;    /* Saved backtrace_buffer */
-  caml_root backtrace_last_exn;     /* Saved backtrace_last_exn (root) */
+  code_t * backtrace_buffer;    /* Saved backtrace_buffer */
+  caml_root backtrace_last_exn; /* Saved backtrace_last_exn (root) */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -258,54 +258,6 @@ static int caml_thread_try_leave_blocking_section(void)
      recorded and processed at the next leave_blocking_section or
      polling. */
   return 0;
-}
-
-/* Hooks for I/O locking */
-
-static void caml_io_mutex_free(struct channel *chan)
-{
-  st_mutex mutex = chan->mutex;
-  if (mutex != NULL) {
-    st_mutex_destroy(mutex);
-    chan->mutex = NULL;
-  }
-}
-
-static void caml_io_mutex_lock(struct channel *chan)
-{
-  st_mutex mutex = chan->mutex;
-
-  if (mutex == NULL) {
-    st_check_error(st_mutex_create(&mutex), "channel locking"); /*PR#7038*/
-    chan->mutex = mutex;
-  }
-  /* PR#4351: first try to acquire mutex without releasing the master lock */
-  if (st_mutex_trylock(mutex) == PREVIOUSLY_UNLOCKED) {
-    st_tls_set(last_channel_locked_key, (void *) chan);
-    return;
-  }
-  /* If unsuccessful, block on mutex */
-  enter_blocking_section();
-  st_mutex_lock(mutex);
-  /* Problem: if a signal occurs at this point,
-     and the signal handler raises an exception, we will not
-     unlock the mutex.  The alternative (doing the setspecific
-     before locking the mutex is also incorrect, since we could
-     then unlock a mutex that is unlocked or locked by someone else. */
-  st_tls_set(last_channel_locked_key, (void *) chan);
-  leave_blocking_section();
-}
-
-static void caml_io_mutex_unlock(struct channel *chan)
-{
-  st_mutex_unlock(chan->mutex);
-  st_tls_set(last_channel_locked_key, NULL);
-}
-
-static void caml_io_mutex_unlock_exn(void)
-{
-  struct channel * chan = st_tls_get(last_channel_locked_key);
-  if (chan != NULL) caml_io_mutex_unlock(chan);
 }
 
 /* Hook for estimating stack usage */

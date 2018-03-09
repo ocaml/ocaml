@@ -310,17 +310,6 @@ type hook_info = {
   sourcefile : string;
 }
 
-type xyz =     {
-      error: exn;
-      hook_name: string;
-      hook_info: hook_info;
-    }
-
-exception HookExnWrapper of xyz
-    (** An exception raised by a hook will be wrapped into a
-        [HookExnWrapper] constructor by the hook machinery.  *)
-
-(*
 exception HookExnWrapper of
     {
       error: exn;
@@ -329,7 +318,6 @@ exception HookExnWrapper of
     }
     (** An exception raised by a hook will be wrapped into a
         [HookExnWrapper] constructor by the hook machinery.  *)
-*)
 
 val raise_direct_hook_exn: exn -> 'a
   (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will

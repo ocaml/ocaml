@@ -178,6 +178,8 @@ external minor_words : unit -> (float [@unboxed])
 
     In native code this function does not allocate.
 
+    XXX KC: Only for the current domain.
+
     @since 4.04 *)
 
 external get : unit -> control = "caml_gc_get"
@@ -219,12 +221,12 @@ val allocated_bytes : unit -> float
    started.  It is returned as a [float] to avoid overflow problems
    with [int] on 32-bit machines. *)
 
-external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc]
+(* external get_minor_free : unit -> int = "caml_get_minor_free" [@@noalloc] *)
 (** Return the current size of the free space inside the minor heap.
 
     @since 4.03.0 *)
 
-external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
+(* external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc] *)
 (** [get_bucket n] returns the current size of the [n]-th future bucket
     of the GC smoothing system. The unit is one millionth of a full GC.
     Raise [Invalid_argument] if [n] is negative, return 0 if n is larger
@@ -232,14 +234,14 @@ external get_bucket : int -> int = "caml_get_major_bucket" [@@noalloc]
 
     @since 4.03.0 *)
 
-external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc]
+(* external get_credit : unit -> int = "caml_get_major_credit" [@@noalloc] *)
 (** [get_credit ()] returns the current size of the "work done in advance"
     counter of the GC smoothing system. The unit is one millionth of a
     full GC.
 
     @since 4.03.0 *)
 
-external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count"
+(* external huge_fallback_count : unit -> int = "caml_gc_huge_fallback_count" *)
 (** Return the number of times we tried to map huge pages and had to fall
     back to small pages. This is always 0 if [OCAMLRUNPARAM] contains [H=1].
     @since 4.03.0 *)

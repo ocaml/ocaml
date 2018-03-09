@@ -632,17 +632,6 @@ class latex =
         in
 
         let defs =
-          let entry_comment = function
-          | None -> []
-          | Some t ->
-              let s =
-                ps fmt2 "\\begin{ocamldoccomment}\n";
-                self#latex_of_info fmt2 (Some t);
-                ps fmt2 "\n\\end{ocamldoccomment}\n";
-                flush2 ()
-              in
-              [ Latex s]
-        in
           match t.ty_kind with
           | Type_abstract ->
              begin match t.ty_manifest with

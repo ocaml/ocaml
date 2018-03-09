@@ -81,6 +81,18 @@ CAMLprim value caml_gc_quick_stat(value v)
   CAMLreturn (res);
 }
 
+double caml_gc_minor_words_unboxed()
+{
+  return (Caml_state->stat_minor_words
+          + (double) (Caml_state->young_end - Caml_state->young_ptr));
+}
+
+CAMLprim value caml_gc_minor_words(value v)
+{
+  CAMLparam0 ();   /* v is ignored */
+  CAMLreturn(caml_copy_double(caml_gc_minor_words_unboxed()));
+}
+
 CAMLprim value caml_gc_counters(value v)
 {
   CAMLparam0 ();   /* v is ignored */
@@ -257,6 +269,11 @@ CAMLprim value caml_gc_stat(value v)
 {
   caml_gc_major(Val_unit);
   return caml_gc_quick_stat(Val_unit);
+}
+
+CAMLprim value caml_get_minor_free (value v)
+{
+  return Val_int (Caml_state->young_ptr - Caml_state->young_start);
 }
 
 uintnat caml_normalize_heap_increment (uintnat i)
