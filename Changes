@@ -130,7 +130,7 @@ Working version
 
 - GPR#1649 change compilation order of toplevel definitions, so that some warnings
   emitted by the bytecode compiler appear more in-order than before.
-  (Luc Maranget, advice by Damien Doligez)
+  (Luc Maranget, advice and review by Damien Doligez)
 
 ### Code generation and optimizations:
 
