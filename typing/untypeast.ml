@@ -446,7 +446,7 @@ let expression sub exp =
           ))
     | Texp_variant (label, expo) ->
         Pexp_variant (label, map_opt (sub.expr sub) expo)
-    | Texp_record ( fields, _, extended_expression ) ->
+    | Texp_record { fields; extended_expression } ->
         let list = Array.fold_left (fun l -> function
             | _, Kept _ -> l
             | _, Overridden (lid, exp) -> (lid, sub.expr sub exp) :: l)

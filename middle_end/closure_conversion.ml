@@ -341,7 +341,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
           ~create_body:(fun args ->
               Send { kind; meth = meth_var; obj = obj_var; args; dbg; })))
   | Lprim ((Pdivint Safe | Pmodint Safe
-           | Pdivbint ( _, Safe ) | Pmodbint ( _, Safe )) as prim,
+           | Pdivbint { is_safe = Safe } | Pmodbint { is_safe = Safe }) as prim,
            [arg1; arg2], loc)
       when not !Clflags.fast -> (* not -unsafe *)
     let arg2 = close t env arg2 in
@@ -359,11 +359,11 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       match prim with
       | Pdivint _ | Pmodint _ ->
         Const (Int 0)
-      | Pdivbint ( Pint32, _ ) | Pmodbint ( Pint32, _ ) ->
+      | Pdivbint { size = Pint32 } | Pmodbint { size = Pint32 } ->
         Allocated_const (Int32 0l)
-      | Pdivbint ( Pint64, _ ) | Pmodbint ( Pint64, _ ) ->
+      | Pdivbint { size = Pint64 } | Pmodbint { size = Pint64 } ->
         Allocated_const (Int64 0L)
-      | Pdivbint ( Pnativeint, _ ) | Pmodbint ( Pnativeint, _ ) ->
+      | Pdivbint { size = Pnativeint } | Pmodbint { size = Pnativeint } ->
         Allocated_const (Nativeint 0n)
       | _ -> assert false
     in
@@ -371,14 +371,14 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       match prim with
       | Pdivint _ -> Pdivint Unsafe
       | Pmodint _ -> Pmodint Unsafe
-      | Pdivbint ( size, _ ) -> Pdivbint ( size, Unsafe )
-      | Pmodbint ( size, _ ) -> Pmodbint ( size, Unsafe )
+      | Pdivbint { size } -> Pdivbint { size; is_safe = Unsafe }
+      | Pmodbint { size } -> Pmodbint { size; is_safe = Unsafe }
       | _ -> assert false
     in
     let comparison : Lambda.primitive =
       match prim with
       | Pdivint _ | Pmodint _ -> Pintcomp Ceq
-      | Pdivbint ( size, _ ) | Pmodbint ( size, _ ) -> Pbintcomp (size,Ceq)
+      | Pdivbint { size } | Pmodbint { size } -> Pbintcomp (size,Ceq)
       | _ -> assert false
     in
     t.imported_symbols <- Symbol.Set.add exn_symbol t.imported_symbols;
@@ -401,7 +401,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
                   name_expr ~name:"result"
                     (Prim (prim, [numerator; denominator], dbg))))))))
   | Lprim ((Pdivint Safe | Pmodint Safe
-           | Pdivbint ( _, Safe ) | Pmodbint ( _, Safe )), _, _)
+           | Pdivbint { is_safe = Safe } | Pmodbint { is_safe = Safe }), _, _)
       when not !Clflags.fast ->
     Misc.fatal_error "Pdivint / Pmodint must have exactly two arguments"
   | Lprim (Psequor, [arg1; arg2], _) ->
@@ -709,7 +709,7 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
   in
   let program_body =
     List.fold_left
-      (fun program_body (symbol, constant) (* XXX KC : Flambda.program_body *) ->
+      (fun program_body (symbol, constant) : Flambda.program_body ->
          Flambda.Let_symbol (symbol, constant, program_body))
       module_initializer
       t.declared_symbols

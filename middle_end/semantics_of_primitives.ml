@@ -51,13 +51,13 @@ let for_primitive (prim : Lambda.primitive) =
   | Plsrint
   | Pasrint
   | Pintcomp _ -> No_effects, No_coeffects
-  | Pdivbint ( _, Unsafe )
-  | Pmodbint ( _, Unsafe )
+  | Pdivbint { is_safe = Unsafe }
+  | Pmodbint { is_safe = Unsafe }
   | Pdivint Unsafe
   | Pmodint Unsafe ->
     No_effects, No_coeffects  (* Will not raise [Division_by_zero]. *)
-  | Pdivbint ( _, Safe )
-  | Pmodbint ( _, Safe )
+  | Pdivbint { is_safe = Safe }
+  | Pmodbint { is_safe = Safe }
   | Pdivint Safe
   | Pmodint Safe ->
     Arbitrary_effects, No_coeffects

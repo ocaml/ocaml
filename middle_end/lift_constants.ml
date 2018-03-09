@@ -830,7 +830,7 @@ let replace_definitions_in_initialize_symbol_and_effects
     (effect_tbl : (Flambda.t * Symbol.t option) Symbol.Tbl.t) =
   let rewrite_expr expr =
     Flambda_iterators.map_all_immutable_let_and_let_rec_bindings expr
-      ~f:(fun var (named : Flambda.named) (* XXX KC : Flambda.named *) ->
+      ~f:(fun var (named : Flambda.named) : Flambda.named ->
         if Inconstant_idents.variable var inconstants then
           named
         else

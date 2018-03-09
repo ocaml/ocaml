@@ -325,7 +325,7 @@ and expression i ppf x =
   | Texp_variant (l, eo) ->
       line i ppf "Texp_variant \"%s\"\n" l;
       option i expression ppf eo;
-  | Texp_record ( fields, _, extended_expression) ->
+  | Texp_record { fields; extended_expression; _ } ->
       line i ppf "Texp_record\n";
       array i record_field ppf fields;
       option i expression ppf extended_expression;

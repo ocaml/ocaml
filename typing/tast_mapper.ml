@@ -258,17 +258,17 @@ let expr sub x =
         Texp_construct (lid, cd, List.map (sub.expr sub) args)
     | Texp_variant (l, expo) ->
         Texp_variant (l, opt (sub.expr sub) expo)
-    | Texp_record ( fields, representation, extended_expression ) ->
+    | Texp_record { fields; representation; extended_expression } ->
         let fields = Array.map (function
             | label, Kept t -> label, Kept t
             | label, Overridden (lid, exp) ->
                 label, Overridden (lid, sub.expr sub exp))
             fields
         in
-        Texp_record (
-          fields, representation,
-          opt (sub.expr sub) extended_expression
-        )
+        Texp_record {
+          fields; representation;
+          extended_expression = opt (sub.expr sub) extended_expression
+        }
     | Texp_field (exp, lid, ld) ->
         Texp_field (sub.expr sub exp, lid, ld)
     | Texp_setfield (exp1, lid, ld, exp2) ->
