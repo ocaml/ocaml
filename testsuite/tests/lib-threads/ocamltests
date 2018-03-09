@@ -12,7 +12,6 @@ prodcons2.ml
 sieve.ml
 signal.ml
 sockets.ml
-socketsbuf.ml
 swapchan.ml
 tls.ml
 torture.ml
