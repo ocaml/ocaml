@@ -197,7 +197,7 @@ Working version
   (Florian Angeletti, review by Gabriel Scherer)
 
 - GPR#1647: manual, subsection on record and variant disambiguation
-  (Florian Angeletti)
+  (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
 ### Compiler distribution build system
 
