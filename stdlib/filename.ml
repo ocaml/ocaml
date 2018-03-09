@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Xavier Leroy and Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 let generic_quote quotequote s =
   let l = String.length s in
@@ -72,7 +74,7 @@ module Unix = struct
   let parent_dir_name = ".."
   let dir_sep = "/"
   let is_dir_sep s i = s.[i] = '/'
-  let is_relative n = String.length n < 1 || n.[0] <> '/';;
+  let is_relative n = String.length n < 1 || n.[0] <> '/'
   let is_implicit n =
     is_relative n
     && (String.length n < 2 || String.sub n 0 2 <> "./")
@@ -128,7 +130,7 @@ module Win32 = struct
         match s.[i] with
         | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
         | '\\' -> loop_bs (n+1) (i+1);
-        | c    -> add_bs n; loop i
+        | _    -> add_bs n; loop i
       end
     and add_bs n = for _j = 1 to n do Buffer.add_char b '\\'; done
     in
@@ -149,7 +151,7 @@ module Win32 = struct
     let dir = generic_dirname is_dir_sep current_dir_name path in
     drive ^ dir
   let basename s =
-    let (drive, path) = drive_and_path s in
+    let (_drive, path) = drive_and_path s in
     generic_basename is_dir_sep current_dir_name path
 end
 
@@ -171,11 +173,6 @@ let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep,
      is_relative, is_implicit, check_suffix, temp_dir_name, quote, basename,
      dirname) =
   match Sys.os_type with
-    "Unix" ->
-      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
-       Unix.is_dir_sep,
-       Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
-       Unix.temp_dir_name, Unix.quote, Unix.basename, Unix.dirname)
   | "Win32" ->
       (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep,
        Win32.is_dir_sep,
@@ -186,7 +183,11 @@ let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep,
        Cygwin.is_dir_sep,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
        Cygwin.temp_dir_name, Cygwin.quote, Cygwin.basename, Cygwin.dirname)
-  | _ -> assert false
+  | _ -> (* normally "Unix" *)
+      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
+       Unix.is_dir_sep,
+       Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
+       Unix.temp_dir_name, Unix.quote, Unix.basename, Unix.dirname)
 
 let concat dirname filename =
   let l = String.length dirname in
@@ -227,12 +228,12 @@ let remove_extension name =
 external open_desc: string -> open_flag list -> int -> int = "caml_sys_open"
 external close_desc: int -> unit = "caml_sys_close"
 
-let prng = lazy(Random.State.make_self_init ());;
+let prng = lazy(Random.State.make_self_init ())
 
 let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-;;
+
 
 let current_temp_dir_name = ref temp_dir_name
 
@@ -249,13 +250,13 @@ let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
-let open_temp_file ?(mode = [Open_text]) ?(temp_dir = !current_temp_dir_name)
-                   prefix suffix =
+let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
+                   ?(temp_dir = !current_temp_dir_name) prefix suffix =
   let rec try_name counter =
     let name = temp_file_name temp_dir prefix suffix in
     try
       (name,
-       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
+       open_out_gen (Open_wronly::Open_creat::Open_excl::mode) perms name)
     with Sys_error _ as e ->
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Build libraries of .cmx files *)
 
@@ -22,6 +25,12 @@ type error =
 
 exception Error of error
 
+let default_ui_export_info =
+  if Config.flambda then
+    Cmx_format.Flambda Export_info.empty
+  else
+    Cmx_format.Clambda Clambda.Value_unknown
+
 let read_info name =
   let filename =
     try
@@ -34,7 +43,7 @@ let read_info name =
      since the compiler will go looking directly for .cmx files.
      The linker, which is the only one that reads .cmxa files, does not
      need the approximation. *)
-  info.ui_approx <- Clambda.Value_unknown;
+  info.ui_export_info <- default_ui_export_info;
   (Filename.chop_suffix filename ".cmx" ^ ext_obj, (info, crc))
 
 let create_archive file_list lib_name =

@@ -78,7 +78,7 @@ let c'' = new color_circle p;;
 let c'' = new color_circle p';;
 
 (c'' :> color_point circle);;
-(c'' :> point circle);;                 (* Echec *)
+(c'' :> point circle);;                 (* Fail *)
 fun x -> (x : color_point color_circle :> point circle);;
 
 class printable_point y = object (s)
@@ -204,7 +204,7 @@ let c = new int_comparable 10;;
 l#add c;;
 
 let c2 = new int_comparable2 15;;
-l#add (c2 :> int_comparable);;      (* Echec : 'a comp2 n'est un sous-type *)
+l#add (c2 :> int_comparable);;      (* Fail : 'a comp2 is not a subtype *)
 (new sorted_list ())#add c2;;
 
 class int_comparable3 (x : int) = object

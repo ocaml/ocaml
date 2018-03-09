@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <string.h>
 #include "caml/alloc.h"
@@ -33,18 +37,16 @@ CAMLprim value caml_md5_string(value str, value ofs, value len)
   return res;
 }
 
-CAMLprim value caml_md5_chan(value vchan, value len)
+CAMLexport value caml_md5_channel(struct channel *chan, intnat toread)
 {
-  CAMLparam2 (vchan, len);
-  struct channel * chan = Channel(vchan);
+  CAMLparam0();
   struct MD5Context ctx;
   value res;
-  intnat toread, read;
+  intnat read;
   char buffer[4096];
 
   With_mutex(&chan->mutex) {
     caml_MD5Init(&ctx);
-    toread = Long_val(len);
     if (toread < 0){
       while (1){
         read = caml_getblock (chan, buffer, sizeof(buffer));
@@ -64,6 +66,12 @@ CAMLprim value caml_md5_chan(value vchan, value len)
     caml_MD5Final(&Byte_u(res, 0), &ctx);
   }
   CAMLreturn (res);
+}
+
+CAMLprim value caml_md5_chan(value vchan, value len)
+{
+   CAMLparam2 (vchan, len);
+   CAMLreturn (caml_md5_channel(Channel(vchan), Long_val(len)));
 }
 
 CAMLexport void caml_md5_block(unsigned char digest[16],

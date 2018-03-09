@@ -1,3 +1,5 @@
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -618,7 +620,7 @@ void caml_print_stats () {
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   struct detailed_stats ds;
   caml_domain_state* st;
-  uint64 total;
+  uint64_t total;
   int i;
 #endif
 

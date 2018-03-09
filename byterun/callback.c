@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Callbacks from C to OCaml */
 
@@ -30,7 +34,6 @@ static __thread int callback_depth = 0;
 #include "caml/instruct.h"
 #include "caml/fix_code.h"
 #include "caml/fiber.h"
-
 
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
 
@@ -275,4 +278,15 @@ void caml_incr_callback_depth ()
 void caml_decr_callback_depth ()
 {
   callback_depth--;
+}
+
+CAMLexport void caml_iterate_named_values(caml_named_action f)
+{
+  int i;
+  for(i = 0; i < Named_value_size; i++){
+    struct named_value * nv;
+    for (nv = named_value_table[i]; nv != NULL; nv = nv->next) {
+      f( nv->val, nv->name );
+    }
+  }
 }

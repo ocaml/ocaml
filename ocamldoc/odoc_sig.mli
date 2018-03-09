@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
-(*                             OCamldoc                                *)
+(*                                 OCaml                                  *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The module for analysing a signature and source code and creating modules, classes, ..., elements.*)
 
@@ -153,6 +156,13 @@ module Analyser :
       val get_type_kind :
           Odoc_env.env -> (string * Odoc_types.info option) list ->
             Types.type_kind -> Odoc_type.type_kind
+
+      (** This function converts a [Types.constructor_arguments] into a
+          [Odoc_type.constructor_args], by associating the comment found
+          in the parsetree of each inner record field, if any.*)
+      val get_cstr_args:
+        Odoc_env.env -> int -> Typedtree.constructor_arguments ->
+        Odoc_type.constructor_args
 
       (** This function merge two optional info structures. *)
       val merge_infos :

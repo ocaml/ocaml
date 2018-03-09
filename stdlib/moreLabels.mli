@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*               Jacques Garrigue, Kyoto University RIMS               *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                Jacques Garrigue, Kyoto University RIMS                 *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Extra labeled libraries.
 
@@ -34,6 +36,8 @@ module Hashtbl : sig
   val remove : ('a, 'b) t -> 'a -> unit
   val replace : ('a, 'b) t -> key:'a -> data:'b -> unit
   val iter : f:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
+  val filter_map_inplace:
+    f:(key:'a -> data:'b -> 'b option) -> ('a, 'b) t -> unit
   val fold :
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
@@ -58,6 +62,8 @@ module Hashtbl : sig
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace:
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
@@ -79,6 +85,8 @@ module Hashtbl : sig
       val replace : 'a t -> key:key -> data:'a -> unit
       val mem : 'a t -> key -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val filter_map_inplace:
+        f:(key:key -> data:'a -> 'a option) -> 'a t -> unit
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
@@ -150,6 +158,7 @@ module Set : sig
       val equal : t -> t -> bool
       val subset : t -> t -> bool
       val iter : f:(elt -> unit) -> t -> unit
+      val map : f:(elt -> elt) -> t -> t
       val fold : f:(elt -> 'a -> 'a) -> t -> init:'a -> 'a
       val for_all : f:(elt -> bool) -> t -> bool
       val exists : f:(elt -> bool) -> t -> bool

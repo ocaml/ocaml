@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                           OCaml                                     *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Array operations *)
 
@@ -59,7 +61,7 @@ let append a1 a2 =
   else append_prim a1 a2
 
 let sub a ofs len =
-  if len < 0 || ofs > length a - len
+  if ofs < 0 || len < 0 || ofs > length a - len
   then invalid_arg "Array.sub"
   else unsafe_sub a ofs len
 
@@ -77,6 +79,12 @@ let blit a1 ofs1 a2 ofs2 len =
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
+let iter2 f a b =
+  if length a <> length b then
+    invalid_arg "Array.iter2: arrays must have the same length"
+  else
+    for i = 0 to length a - 1 do f (unsafe_get a i) (unsafe_get b i) done
+
 let map f a =
   let l = length a in
   if l = 0 then [||] else begin
@@ -90,7 +98,9 @@ let map f a =
 let map2 f a b =
   let la = length a in
   let lb = length b in
-  if la <> lb then raise (Invalid_argument "arrays must have the same length") else begin
+  if la <> lb then
+    invalid_arg "Array.map2: arrays must have the same length"
+  else begin
     if la = 0 then [||] else begin
       let r = create la (f (unsafe_get a 0) (unsafe_get b 0)) in
       for i = 1 to la - 1 do
@@ -121,8 +131,7 @@ let to_list a =
 (* Cannot use List.length here because the List module depends on Array. *)
 let rec list_length accu = function
   | [] -> accu
-  | h::t -> list_length (succ accu) t
-;;
+  | _::t -> list_length (succ accu) t
 
 let of_list = function
     [] -> [||]
@@ -148,20 +157,39 @@ let fold_right f a x =
   !r
 
 let exists p a =
-  let f = ref false in
-  for i = 0 to length a - 1 do
-    f := !f || p (unsafe_get a i)
-  done;
-  !f
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if p (unsafe_get a i) then true
+    else loop (succ i) in
+  loop 0
 
 let for_all p a =
-  let f = ref true in
-  for i = 0 to length a - 1 do
-    f := !f && p (unsafe_get a i)
-  done;
-  !f
+  let n = length a in
+  let rec loop i =
+    if i = n then true
+    else if p (unsafe_get a i) then loop (succ i)
+    else false in
+  loop 0
 
-exception Bottom of int;;
+let mem x a =
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if compare (unsafe_get a i) x = 0 then true
+    else loop (succ i) in
+  loop 0
+
+let memq x a =
+  let n = length a in
+  let rec loop i =
+    if i = n then false
+    else if x == (unsafe_get a i) then true
+    else loop (succ i) in
+  loop 0
+
+exception Bottom of int
+
 let sort cmp a =
   let maxson l i =
     let i31 = i+i+i+1 in
@@ -208,10 +236,10 @@ let sort cmp a =
     set a i (get a 0);
     trickleup (bubble i 0) e;
   done;
-  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e);
-;;
+  if l > 1 then (let e = (get a 1) in set a 1 (get a 0); set a 0 e)
 
-let cutoff = 5;;
+
+let cutoff = 5
 let stable_sort cmp a =
   let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
     let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
@@ -261,7 +289,7 @@ let stable_sort cmp a =
     sortto l1 t 0 l2;
     sortto 0 a l2 l1;
     merge l2 l1 t 0 l2 a 0;
-  end;
-;;
+  end
 
-let fast_sort = stable_sort;;
+
+let fast_sort = stable_sort

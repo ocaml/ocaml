@@ -1,4 +1,5 @@
 
+#   - : unit = ()
 #     type foo = ..
 #         type foo += A | B of int
 #           val is_a : foo -> bool = <fun>
@@ -84,13 +85,13 @@ type 'a foo = ..
 #         type +'a foo = ..
 #     type 'a foo += A of (int -> 'a)
 #     Characters 1-32:
-  type 'a foo += B of ('a -> int) (* ERROR: Parameter variances are not satisfied *)
+  type 'a foo += B of ('a -> int)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
        but it is injective contravariant.
 #     Characters 1-40:
-  type _ foo += C : ('a -> int) -> 'a foo (* ERROR: Parameter variances are not satisfied *)
+  type _ foo += C : ('a -> int) -> 'a foo
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
@@ -119,6 +120,8 @@ Error: This extension does not match the definition of type bar
 #     val y : exn * exn = (Foo (3, _), Bar (Some 5))
 #         type foo = ..
 #         type foo += Foo | Bar of int
+#   val extension_name : 'a -> string = <fun>
+# val extension_id : 'a -> int = <fun>
 #     val n1 : string = "Foo"
 #     val n2 : string = "Bar"
 #     val t : bool = true
@@ -126,6 +129,6 @@ Error: This extension does not match the definition of type bar
 #         val is_foo : 'a -> bool = <fun>
 type foo += Foo
 #     val f : bool = false
-#     Exception: Invalid_argument "Obj.extension_name".
-#     Exception: Invalid_argument "Obj.extension_id".
+#     Exception: Invalid_argument "Obj.extension_constructor".
+#     Exception: Invalid_argument "Obj.extension_constructor".
 # 

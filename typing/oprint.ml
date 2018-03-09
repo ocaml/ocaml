@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*                  Projet Cristal, INRIA Rocquencourt                 *)
 (*                                                                     *)
 (*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 open Outcometree
@@ -99,7 +102,7 @@ let print_out_value ppf tree =
     | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
         begin try fprintf ppf "%S" s with
-          Invalid_argument "String.create" -> fprintf ppf "<huge string>"
+          Invalid_argument _ (* "String.create" *)-> fprintf ppf "<huge string>"
         end
     | Oval_list tl ->
         fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
@@ -224,7 +227,8 @@ and print_simple_out_type ppf =
       pp_print_char ppf ')';
       pp_close_box ppf ()
   | Otyp_abstract | Otyp_open
-  | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_sum _ | Otyp_manifest (_, _) -> ()
+  | Otyp_record lbls -> print_record_decl ppf lbls
   | Otyp_module (p, n, tyl) ->
       fprintf ppf "@[<1>(module %s" p;
       let first = ref true in
@@ -235,6 +239,11 @@ and print_simple_out_type ppf =
         )
         n tyl;
       fprintf ppf ")@]"
+  | Otyp_attribute (t, attr) ->
+      fprintf ppf "@[<1>(%a [@@%s])@]" print_out_type t attr.oattr_name
+and print_record_decl ppf lbls =
+  fprintf ppf "{%a@;<1 -2>}"
+    (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
 and print_fields rest ppf =
   function
     [] ->
@@ -279,6 +288,9 @@ and print_typargs ppf =
       pp_print_char ppf ')';
       pp_close_box ppf ();
       pp_print_space ppf ()
+and print_out_label ppf (name, mut, arg) =
+  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
+    print_out_type arg
 
 let out_type = ref print_out_type
 
@@ -343,19 +355,35 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 let out_type_extension = ref (fun _ -> failwith "Oprint.out_type_extension")
 
-let rec print_out_functor ppf =
+let rec print_out_functor funct ppf =
   function
     Omty_functor (_, None, mty_res) ->
-      fprintf ppf "() %a" print_out_functor mty_res
-  | Omty_functor (name , Some mty_arg, mty_res) ->
+      if funct then fprintf ppf "() %a" (print_out_functor true) mty_res
+      else fprintf ppf "functor@ () %a" (print_out_functor true) mty_res
+  | Omty_functor (name, Some mty_arg, mty_res) -> begin
+      match name, funct with
+      | "_", true ->
+          fprintf ppf "->@ %a ->@ %a"
+            print_out_module_type mty_arg (print_out_functor false) mty_res
+      | "_", false ->
+          fprintf ppf "%a ->@ %a"
+            print_out_module_type mty_arg (print_out_functor false) mty_res
+      | name, true ->
       fprintf ppf "(%s : %a) %a" name
-        print_out_module_type mty_arg print_out_functor mty_res
-  | m -> fprintf ppf "->@ %a" print_out_module_type m
+            print_out_module_type mty_arg (print_out_functor true) mty_res
+      | name, false ->
+            fprintf ppf "functor@ (%s : %a) %a" name
+              print_out_module_type mty_arg (print_out_functor true) mty_res
+    end
+  | m ->
+      if funct then fprintf ppf "->@ %a" print_out_module_type m
+      else print_out_module_type ppf m
+
 and print_out_module_type ppf =
   function
     Omty_abstract -> ()
   | Omty_functor _ as t ->
-      fprintf ppf "@[<2>functor@ %a@]" print_out_functor t
+      fprintf ppf "@[<2>%a@]" (print_out_functor false) t
   | Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
       fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" !out_signature sg
@@ -407,7 +435,7 @@ and print_out_sig_item ppf =
                  Oext_effect) ->
       fprintf ppf "@[<2>effect %a@]"
         print_out_constr (ext.oext_name, ext.oext_args, Some ret)
-  | Osig_typext (ext, es) ->
+  | Osig_typext (ext, _es) ->
       print_out_extension_constructor ppf ext
   | Osig_modtype (name, Omty_abstract) ->
       fprintf ppf "@[<2>module type %s@]" name
@@ -428,8 +456,8 @@ and print_out_sig_item ppf =
            | Orec_first -> "type"
            | Orec_next  -> "and")
           ppf td
-  | Osig_value (name, ty, prims) ->
-      let kwd = if prims = [] then "val" else "external" in
+  | Osig_value vd ->
+      let kwd = if vd.oval_prims = [] then "val" else "external" in
       let pr_prims ppf =
         function
           [] -> ()
@@ -437,8 +465,12 @@ and print_out_sig_item ppf =
             fprintf ppf "@ = \"%s\"" s;
             List.iter (fun s -> fprintf ppf "@ \"%s\"" s) sl
       in
-      fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
-        ty pr_prims prims
+      fprintf ppf "@[<2>%s %a :@ %a%a%a@]" kwd value_ident vd.oval_name
+        !out_type vd.oval_type pr_prims vd.oval_prims
+        (fun ppf -> List.iter (fun a -> fprintf ppf "@ [@@@@%s]" a.oattr_name))
+        vd.oval_attributes
+  | Osig_ellipsis ->
+      fprintf ppf "..."
 
 and print_out_type_decl kwd ppf td =
   let print_constraints ppf =
@@ -475,12 +507,18 @@ and print_out_type_decl kwd ppf td =
     Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> ()
   in
+  let print_immediate ppf =
+    if td.otype_immediate then fprintf ppf " [%@%@immediate]" else ()
+  in
+  let print_unboxed ppf =
+    if td.otype_unboxed then fprintf ppf " [%@%@unboxed]" else ()
+  in
   let print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
-      fprintf ppf " =%a {%a@;<1 -2>}"
+      fprintf ppf " =%a %a"
         print_private td.otype_private
-        (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+        print_record_decl lbls
   | Otyp_sum constrs ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private td.otype_private
@@ -492,12 +530,19 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t@]"
+  fprintf ppf "@[<2>@[<hv 2>%t%a@]%t%t%t@]"
     print_name_params
     print_out_tkind ty
     print_constraints
+    print_immediate
+    print_unboxed
 
 and print_out_constr ppf (name, tyl,ret_type_opt) =
+  let name =
+    match name with
+    | "::" -> "(::)"   (* #7200 *)
+    | s -> s
+  in
   match ret_type_opt with
   | None ->
       begin match tyl with
@@ -516,11 +561,6 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
             (print_typlist print_simple_out_type " *")
             tyl print_simple_out_type ret_type
       end
-
-
-and print_out_label ppf (name, mut, arg) =
-  fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
-    !out_type arg
 
 and print_out_extension_constructor ppf ext =
   let print_extended_type ppf =

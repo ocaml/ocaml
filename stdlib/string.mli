@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** String operations.
 
@@ -249,19 +251,23 @@ val uncapitalize : string -> string
 
 val uppercase_ascii : string -> string
 (** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, using the US-ASCII character set. *)
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val lowercase_ascii : string -> string
 (** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, using the US-ASCII character set. *)
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val capitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to uppercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val uncapitalize_ascii : string -> string
 (** Return a copy of the argument, with the first character set to lowercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = string
 (** An alias for the type of strings. *)
@@ -277,7 +283,7 @@ val equal: t -> t -> bool
     @since 4.03.0 *)
 
 val split_on_char: char -> string -> string list
-(** [String.split sep s] returns the list of all (possibly empty)
+(** [String.split_on_char sep s] returns the list of all (possibly empty)
     substrings of [s] that are delimited by the [sep] character.
 
     The function's output is specified by the following invariants:
@@ -285,7 +291,7 @@ val split_on_char: char -> string -> string list
     - The list is not empty.
     - Concatenating its elements using [sep] as a separator returns a
       string equal to the input ([String.concat (String.make 1 sep)
-      (String.split sep s) = s]).
+      (String.split_on_char sep s) = s]).
     - No string in the result contains the [sep] character.
 
     @since 4.04.0
@@ -300,7 +306,7 @@ external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
   [@@ocaml.deprecated]
 external unsafe_blit :
   string -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" "noalloc"
+  = "caml_blit_string" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
+  bytes -> int -> int -> char -> unit = "caml_fill_string" [@@noalloc]
   [@@ocaml.deprecated]

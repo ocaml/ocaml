@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -18,45 +20,63 @@ TARGET_BINDIR ?= $(BINDIR)
 
 COMPILER=../ocamlc
 CAMLC=$(CAMLRUN) $(COMPILER)
-COMPFLAGS=-strict-sequence -w +33..39 -g -warn-error A -bin-annot -nostdlib \
-          -safe-string
+COMPFLAGS=-strict-sequence -absname -w +a-4-9-41-42-44-45-48 \
+          -g -warn-error A -bin-annot -nostdlib \
+          -safe-string -strict-formats
+ifeq "$(FLAMBDA)" "true"
+OPTCOMPFLAGS=-O3
+else
+OPTCOMPFLAGS=
+endif
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
 OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
-OTHERS=array.cmo list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
-  sort.cmo marshal.cmo obj.cmo \
+OTHERS=list.cmo char.cmo bytes.cmo string.cmo sys.cmo \
+  sort.cmo marshal.cmo obj.cmo array.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   camlinternalLazy.cmo lazy.cmo stream.cmo \
   buffer.cmo camlinternalFormat.cmo printf.cmo \
   arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo hashtbl.cmo format.cmo scanf.cmo callback.cmo \
+  digest.cmo random.cmo hashtbl.cmo weak.cmo \
+  format.cmo uchar.cmo scanf.cmo callback.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
-  genlex.cmo weak.cmo \
+  genlex.cmo ephemeron.cmo \
   filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
   stringLabels.cmo moreLabels.cmo stdLabels.cmo \
-  domain.cmo atomic.cmo
+  domain.cmo atomic.cmo spacetime.cmo
 
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
+ifeq "$(RUNTIMED)" "runtimed"
+all: camlheaderd
+endif
+
+ifeq "$(RUNTIMEI)" "true"
+all: camlheaderi
+endif
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-install: install-$(RUNTIMED)
+install::
 	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
 	  camlheader_ur \
-	  $(INSTALL_LIBDIR)
-	cp target_camlheader $(INSTALL_LIBDIR)/camlheader
+	  "$(INSTALL_LIBDIR)"
+	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
-install-noruntimed:
-.PHONY: install-noruntimed
+ifeq "$(RUNTIMED)" "runtimed"
+install::
+	cp target_camlheaderd $(INSTALL_LIBDIR)
+endif
 
-install-runtimed: target_camlheaderd
-	cp target_camlheaderd $(INSTALL_LIBDIR)/camlheaderd
-.PHONY: install-runtimed
+ifeq "$(RUNTIMEI)" "true"
+install::
+	cp target_camlheaderi $(INSTALL_LIBDIR)
+endif
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
@@ -65,13 +85,13 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION | tr -d '\r'`|" sys.mlp > $@
 
 clean::
 	rm -f sys.ml
 
 clean::
-	rm -f camlheader target_camlheader camlheader_ur target_camlheaderd
+	rm -f camlheader target_camlheader camlheader_ur target_camlheader[di]
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
@@ -82,14 +102,16 @@ clean::
 	$(CAMLC) $(COMPFLAGS) `./Compflags $@` -c $<
 
 .ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -c $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` -c $<
 
 .ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `./Compflags $@` \
+	           -p -c -o $*.p.cmx $<
 
 # Dependencies on the compiler
-$(OBJS) std_exit.cmo: $(COMPILER)
-$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
+$(OBJS) std_exit.cmo: $(COMPILER_DEPS)
+$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
@@ -104,9 +126,13 @@ $(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 clean::
 	rm -f *.cm* *.$(O) *.$(A)
 	rm -f *~
+	rm -f camlheader*
 
 include .depend
 
+# Note that .p.cmx targets do not depend (for compilation) upon other
+# .p.cmx files.  When the compiler imports another compilation unit,
+# it looks for the .cmx file (not .p.cmx).
 depend:
-	$(CAMLDEP) *.mli *.ml > .depend
-	$(CAMLDEP) *.ml | sed -e 's/\.cmx/.p.cmx/g' >>.depend
+	$(CAMLDEP) -slash *.mli *.ml > .depend
+	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend

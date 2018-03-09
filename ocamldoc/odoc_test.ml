@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
-(*                             OCamldoc                                *)
+(*                                 OCaml                                  *)
 (*                                                                     *)
 (*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 (*                                                                     *)
 (*  Copyright 2004 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Custom generator to perform test on ocamldoc. *)
 
@@ -114,7 +117,7 @@ struct
     object
       inherit G.generator as base
 
-      method generate l =
+      method! generate l =
         base#generate l;
         g#generate l
     end

@@ -1,15 +1,21 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(* In this module, [@ocaml.warnerror "-3"] is used in several places
+   that use deprecated functions to preserve legacy behavior.
+   It overrides -w @3 given on the command line. *)
 
 (** String utilities *)
 
@@ -158,16 +164,16 @@ let displ dest from = dest - from - 1
 (* Determine if a regexp can match the empty string *)
 
 let rec is_nullable = function
-    Char c -> false
+    Char _ -> false
   | String s -> s = ""
-  | CharClass(cl, cmpl) -> false
+  | CharClass _ -> false
   | Seq rl -> List.for_all is_nullable rl
   | Alt (r1, r2) -> is_nullable r1 || is_nullable r2
-  | Star r -> true
+  | Star _ -> true
   | Plus r -> is_nullable r
-  | Option r -> true
-  | Group(n, r) -> is_nullable r
-  | Refgroup n -> true
+  | Option _ -> true
+  | Group(_, r) -> is_nullable r
+  | Refgroup _ -> true
   | Bol -> true
   | Eol -> true
   | Wordboundary -> true
@@ -182,11 +188,11 @@ let rec first = function
   | CharClass(cl, cmpl) -> if cmpl then Charset.complement cl else cl
   | Seq rl -> first_seq rl
   | Alt (r1, r2) -> Charset.union (first r1) (first r2)
-  | Star r -> Charset.full
+  | Star _ -> Charset.full
   | Plus r -> first r
-  | Option r -> Charset.full
-  | Group(n, r) -> first r
-  | Refgroup n -> Charset.full
+  | Option _ -> Charset.full
+  | Group(_, r) -> first r
+  | Refgroup _ -> Charset.full
   | Bol -> Charset.full
   | Eol -> Charset.full
   | Wordboundary -> Charset.full
@@ -196,7 +202,7 @@ and first_seq = function
   | (Bol | Eol | Wordboundary) :: rl -> first_seq rl
   | Star r :: rl -> Charset.union (first r) (first_seq rl)
   | Option r :: rl -> Charset.union (first r) (first_seq rl)
-  | r :: rl -> first r
+  | r :: _ -> first r
 
 (* Transform a Char or CharClass regexp into a character class *)
 
@@ -243,7 +249,7 @@ let compile fold_case re =
     incr progpos in
   (* Reserve an instruction slot and return its position *)
   let emit_hole () =
-    let p = !progpos in incr progpos; p in
+    let p = !progpos in emit_instr op_CHAR 0; p in
   (* Fill a reserved instruction slot with a GOTO or PUSHBACK instruction *)
   let patch_instr pos opc dest =
     (!prog).(pos) <- (instr opc (displ dest pos)) in
@@ -373,13 +379,13 @@ let compile fold_case re =
       let lbl = !progpos in
       patch_instr pos_pushback op_PUSHBACK lbl
   | Group(n, r) ->
-      if n >= 32 then failwith "too many \\(...\\) groups";
       emit_instr op_BEGGROUP n;
       emit_code r;
       emit_instr op_ENDGROUP n;
       numgroups := max !numgroups (n+1)
   | Refgroup n ->
-      emit_instr op_REFGROUP n
+      emit_instr op_REFGROUP n;
+      numgroups := max !numgroups (n+1)
   | Bol ->
       emit_instr op_BOL 0
   | Eol ->
@@ -512,12 +518,10 @@ let parse s =
           assert false
       | '(' ->
           let group_no = !group_counter in
-          if group_no < 32 then incr group_counter;
+          incr group_counter;
           let (r, j) = regexp0 (i+1) in
           if j + 1 < len && s.[j] = '\\' && s.[j+1] = ')' then
-            if group_no < 32
-            then (Group(group_no, r), j + 2)
-            else (r, j + 2)
+            (Group(group_no, r), j + 2)
           else
             failwith "\\( group not closed by \\)"
       | '1' .. '9' as c ->

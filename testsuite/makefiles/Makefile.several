@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
@@ -16,34 +19,48 @@ CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
 CMA_FILES=$(LIBRARIES:=.cma)
 CMXA_FILES=$(LIBRARIES:=.cmxa)
-O_FILES=$(C_FILES:=.o)
+O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
 MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
-FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo '$(FORTRAN_LIBRARY)'; fi`
+FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
+
+C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
+
+GENERATED_SOURCES=
+
+SKIP=false
 
 .PHONY: check
 check:
 	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then \
 	  $(SET_LD_PATH) $(MAKE) run-all; \
+	else \
+	  $(MAKE) C_FILES= F_FILES= SKIP=true run-all; \
 	fi
 
 .PHONY: run-all
 run-all:
 	@for file in $(C_FILES); do \
-	  $(CC) -c -I$(PREFIX)/lib/ocaml/caml $$file.c; \
+	  $(OCAMLC) -c $(C_INCLUDES) -c $$file.c; \
 	done;
 	@for file in $(F_FILES); do \
-	  $(FORTRAN_COMPILER) -c -I$(PREFIX)/lib/ocaml/caml $$file.f; \
+	  $(FORTRAN_COMPILER) -c $$file.f; \
 	done;
 	@for file in *.ml; do \
-	  if [ -f `basename $$file ml`precheck ]; then \
-	    CANKILL=$(CANKILL) sh `basename $$file ml`precheck || continue; \
-	  fi; \
 	  printf " ... testing '$$file':"; \
+	  if $(SKIP) ; then \
+	    echo " => skipped"; continue; \
+	  fi; \
+	  if [ -f `basename $$file ml`precheck ]; then \
+	    if ! TOOLCHAIN=$(TOOLCHAIN) sh `basename $$file ml`precheck ; then \
+	      echo " => skipped"; \
+	      continue; \
+	    fi; \
+	  fi; \
 	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
 	          RUNTIME='$(MYRUNTIME)' \
 	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
@@ -80,10 +97,23 @@ run-all:
 	  && echo " => passed" || echo " => failed"; \
 	done
 
+# On Windows, nefarious software (specifically Windows Defender) can prevent
+# executable files being deleted while it scans them. Unfortunately, it does
+# this by allowing the delete system call (either via rm -f or cmd /c del) to
+# complete with success but the file can linger for seconds or even minutes
+# until it suddenly disappears. During this time, the file cannot be overwritten
+# but it can be renamed, hence the odd use of mktemp. Some tests compiled with
+# flambda seem to be consistently "interesting" to Windows Defender. Note that
+# the interference doesn't appear to affect the execution of the tests.
 .PHONY: run-file
 run-file:
 	@printf " $(DESC)"
-	@rm -f program program.exe
+	@test -e program.exe && { \
+	  T="`mktemp -p .`"; \
+	  mv -f program.exe "$$T"; \
+	  rm -f "$$T"; \
+	} || true
+	@rm -f program program$(EXE)
 	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
@@ -93,9 +123,15 @@ run-file:
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \
-	  DIFF="$(DIFF)" SORT="$(SORT)" sh $$F.checker; \
+	  DIFF="$(DIFF)" SORT="$(SORT)" sh $$F.checker || { \
+	    printf "  Error: output checker failed!\n"; \
+	    exit 1; \
+	  }; \
 	else \
-	  $(DIFF) $$F.reference $$F.result >/dev/null; \
+	  $(DIFF) $$F.reference $$F.result >/dev/null || { \
+	    printf "  Error: results don't match reference output!\n"; \
+	    exit 1; \
+	  }; \
 	fi
 
 .PHONY: promote
@@ -103,4 +139,4 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f *.result program program.exe
+	@rm -f *.result program program.exe $(GENERATED_SOURCES)

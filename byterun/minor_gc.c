@@ -11,6 +11,8 @@
 /*                                                                     */
 /***********************************************************************/
 
+#define CAML_INTERNALS
+
 #include <string.h>
 #include "caml/config.h"
 #include "caml/fail.h"
@@ -133,7 +135,8 @@ static void oldify_one (void* st_v, value v, value *p)
 
  tail_call:
   if (!Is_block(v)
-      || !(young_ptr <= Hp_val(v) && Hp_val(v) < young_end)) {
+      || !(young_ptr <= (char*)Hp_val(v)
+           && (char*)Hp_val(v) < young_end)) {
     /* not a minor block */
     *p = v;
     return;
@@ -278,15 +281,15 @@ static void oldify_mopup (struct oldify_state* st)
 
       f = Op_val (new_v)[0];
       Assert (!Is_debug_tag(f));
-      if (Is_block (f) && young_ptr <= Hp_val(v)
-          && Hp_val(v) < young_end) {
+      if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
+          && (char*)Hp_val(v) < young_end) {
         oldify_one (st, f, Op_val (new_v));
       }
       for (i = 1; i < Wosize_val (new_v); i++){
         f = Op_val (v)[i];
         Assert (!Is_debug_tag(f));
-        if (Is_block (f) && young_ptr <= Hp_val(v)
-            && Hp_val(v) < young_end) {
+        if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
+            && (char*)Hp_val(v) < young_end) {
           oldify_one (st, f, Op_val (new_v) + i);
         } else {
           Op_val (new_v)[i] = f;
@@ -310,7 +313,7 @@ void forward_pointer (void* state, value v, value *p) {
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
 
-  if (Is_block (v) && young_ptr <= Hp_val(v) && Hp_val(v) < young_end) {
+  if (Is_block (v) && young_ptr <= (char*)Hp_val(v) && (char*)Hp_val(v) < young_end) {
     hd = Hd_val(v);
     if (hd == 0) {
       // caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);
@@ -551,8 +554,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
       value v = **r;
       if (Is_block (v) &&
-          (char*)young_ptr <= Hp_val(v) &&
-          Hp_val(v) < (char*)young_end) {
+          young_ptr <= (value)Hp_val(v) &&
+          (value)Hp_val(v) < young_end) {
         Assert (Hp_val (v) >= domain_state->young_ptr);
         value vnew;
         header_t hd = Hd_val(v);

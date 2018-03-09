@@ -1,14 +1,18 @@
-(***********************************************************************)
+#2 "utils/config.mlp"
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (***********************************************************************)
 (**                                                                   **)
@@ -44,20 +48,46 @@ let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
 let ar = "%%ARCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
-let mkdll = "%%MKDLL%%"
-let mkexe = "%%MKEXE%%"
-let mkmaindll = "%%MKMAINDLL%%"
+let mkdll, mkexe, mkmaindll =
+  (* @@DRA Cygwin - but only if shared libraries are enabled, which we
+     should be able to detect? *)
+  if Sys.os_type = "Win32" then
+    try
+      let flexlink =
+        let flexlink = Sys.getenv "OCAML_FLEXLINK" in
+        let f i =
+          let c = flexlink.[i] in
+          if c = '/' then '\\' else c in
+        (String.init (String.length flexlink) f) ^ " %%FLEXLINK_FLAGS%%" in
+      flexlink,
+      flexlink ^ " -exe",
+      flexlink ^ " -maindll"
+    with Not_found ->
+      "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+  else
+    "%%MKDLL%%", "%%MKEXE%%", "%%MKMAINDLL%%"
+
+let flambda = %%FLAMBDA%%
+let safe_string = %%SAFE_STRING%%
 
 let exec_magic_number = "Caml1999X011"
-and cmi_magic_number = "Caml1999I017"
-and cmo_magic_number = "Caml1999O010"
-and cma_magic_number = "Caml1999A011"
-and cmx_magic_number = "Caml1999Y014"
-and cmxa_magic_number = "Caml1999Z013"
-and ast_impl_magic_number = "Caml1999M016"
-and ast_intf_magic_number = "Caml1999N015"
+and cmi_magic_number = "Caml1999I021"
+and cmo_magic_number = "Caml1999O011"
+and cma_magic_number = "Caml1999A012"
+and cmx_magic_number =
+  if flambda then
+    "Caml1999Y016"
+  else
+    "Caml1999Y015"
+and cmxa_magic_number =
+  if flambda then
+    "Caml1999Z015"
+  else
+    "Caml1999Z014"
+and ast_impl_magic_number = "Caml1999M020"
+and ast_intf_magic_number = "Caml1999N018"
 and cmxs_magic_number = "Caml2007D002"
-and cmt_magic_number = "Caml2012T004"
+and cmt_magic_number = "Caml2012T008"
 
 let load_path = ref ([] : string list)
 
@@ -72,6 +102,7 @@ let lazy_tag = 246
 let max_young_wosize = 256
 let stack_threshold = 16 (* see byterun/config.h *)
 let profile_slop = 128
+let stack_safety_margin = 60
 
 let architecture = "%%ARCH%%"
 let model = "%%MODEL%%"
@@ -80,6 +111,10 @@ let system = "%%SYSTEM%%"
 let asm = "%%ASM%%"
 let asm_cfi_supported = %%ASM_CFI_SUPPORTED%%
 let with_frame_pointers = %%WITH_FRAME_POINTERS%%
+let spacetime = %%WITH_SPACETIME%%
+let libunwind_available = %%LIBUNWIND_AVAILABLE%%
+let libunwind_link_flags = "%%LIBUNWIND_LINK_FLAGS%%"
+let profinfo_width = %%PROFINFO_WIDTH%%
 
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
@@ -98,6 +133,7 @@ let default_executable_name =
 let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
 
 let stats = %%STATS%%;;
+let flexdll_dirs = [%%FLEXDLL_DIR%%];;
 
 let print_config oc =
   let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
@@ -129,6 +165,9 @@ let print_config oc =
   p_bool "systhread_supported" systhread_supported;
   p "host" host;
   p "target" target;
+  p_bool "flambda" flambda;
+  p_bool "spacetime" spacetime;
+  p_bool "safe_string" safe_string;
 
   (* print the magic number *)
   p "exec_magic_number" exec_magic_number;

@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Types
@@ -17,7 +20,7 @@ open Lambda
 open Translobj
 open Translcore
 
-(* XXX Rajouter des evenements... *)
+(* XXX Rajouter des evenements... | Add more events... *)
 
 type error = Illegal_class_expr | Tags of label * label
 
@@ -26,24 +29,34 @@ exception Error of Location.t * error
 let lfunction params body =
   if params = [] then body else
   match body with
-    Lfunction (Curried, params', body') ->
-      Lfunction (Curried, params @ params', body')
+  | Lfunction {kind = Curried; params = params'; body = body'; attr; loc} ->
+      Lfunction {kind = Curried; params = params @ params'; body = body'; attr;
+                 loc}
   |  _ ->
-      Lfunction (Curried, params, body)
+      Lfunction {kind = Curried; params;
+                 body;
+                 attr = default_function_attribute;
+                 loc = Location.none}
 
-let lapply func args loc =
-  match func with
-    Lapply(func', args', _) ->
-      Lapply(func', args' @ args, loc)
+let lapply ap =
+  match ap.ap_func with
+    Lapply ap' ->
+      Lapply {ap with ap_func = ap'.ap_func; ap_args = ap'.ap_args @ ap.ap_args}
   | _ ->
-      Lapply(func, args, loc)
+      Lapply ap
 
-let mkappl (func, args) = Lapply (func, args, Location.none);;
+let mkappl (func, args) =
+  Lapply {ap_should_be_tailcall=false;
+          ap_loc=Location.none;
+          ap_func=func;
+          ap_args=args;
+          ap_inlined=Default_inline;
+          ap_specialised=Default_specialise};;
 
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
 
-let lfield v i = Lprim(Pfield(i, true, Mutable), [Lvar v])
+let lfield v i = Lprim(Pfield (i, Pointer, Mutable), [Lvar v], Location.none)
 
 let transl_label l = share (Const_immstring l)
 
@@ -53,18 +66,12 @@ let transl_meth_list lst =
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
-  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
-
-let copy_inst_var obj id expr templ offset =
-  let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
-  let id' = Ident.create (Ident.name id) in
-  Llet(Strict, id', Lprim (Pidentity, [Lvar id]),
-  Lprim(Parraysetu kind,
-        [Lvar obj; Lvar id';
-         Lprim(Parrayrefu kind, [Lvar templ; Lprim(Paddint,
-                                                   [Lvar id';
-                                                    Lvar offset])])]))
+  let kind =
+    match Typeopt.maybe_pointer expr with
+    | Pointer -> Paddrarray
+    | Immediate -> Pintarray
+  in
+  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr], Location.none)
 
 let transl_val tbl create name =
   mkappl (oo_prim (if create then "new_variable" else "get_variable"),
@@ -73,7 +80,7 @@ let transl_val tbl create name =
 let transl_vals tbl create strict vals rem =
   List.fold_right
     (fun (name, id) rem ->
-      Llet(strict, id, transl_val tbl create name, rem))
+      Llet(strict, Pgenval, id, transl_val tbl create name, rem))
     vals rem
 
 let meths_super tbl meths inh_meths =
@@ -88,7 +95,8 @@ let meths_super tbl meths inh_meths =
 
 let bind_super tbl (vals, meths) cl_init =
   transl_vals tbl false StrictOpt vals
-    (List.fold_right (fun (nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
+    (List.fold_right (fun (_nm, id, def) rem ->
+         Llet(StrictOpt, Pgenval, id, def, rem))
        meths cl_init)
 
 let create_object cl obj init =
@@ -101,7 +109,7 @@ let create_object cl obj init =
              [obj; Lvar cl]))
   else begin
    (inh_init,
-    Llet(Strict, obj',
+    Llet(Strict, Pgenval, obj',
             mkappl (oo_prim "create_object_opt", [obj; Lvar cl]),
          Lsequence(obj_init,
                    if not has_init then Lvar obj' else
@@ -112,7 +120,7 @@ let create_object cl obj init =
 let name_pattern default p =
   match p.pat_desc with
   | Tpat_var (id, _) -> id
-  | Tpat_alias(p, id, _) -> id
+  | Tpat_alias(_, id, _) -> id
   | _ -> Ident.create default
 
 let normalize_cl_path cl path =
@@ -126,8 +134,9 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       let env =
         match envs with None -> []
         | Some envs ->
-            [Lprim(Pfield(List.length inh_init + 1, true, Mutable),
-                   [Lvar envs])]
+            [Lprim(Pfield (List.length inh_init + 1, Pointer, Mutable),
+                   [Lvar envs],
+                   Location.none)]
       in
       ((envs, (obj_init, normalize_cl_path cl path)
         ::inh_init),
@@ -169,12 +178,14 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
       (inh_init,
        let build params rem =
          let param = name_pattern "param" pat in
-         Lfunction (Curried, param::params,
-                    Matching.for_function
-                      pat.pat_loc None (Lvar param) [pat, rem] partial)
+         Lfunction {kind = Curried; params = param::params;
+                    attr = default_function_attribute;
+                    loc = pat.pat_loc;
+                    body = Matching.for_function
+                             pat.pat_loc None (Lvar param) [pat, rem] partial}
        in
        begin match obj_init with
-         Lfunction (Curried, params, rem) -> build params rem
+         Lfunction {kind = Curried; params; body = rem} -> build params rem
        | rem                              -> build [] rem
        end)
   | Tcl_apply (cl, oexprs) ->
@@ -188,12 +199,12 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
         build_object_init cl_table obj (vals @ params) inh_init obj_init cl
       in
       (inh_init, Translcore.transl_let rec_flag defs obj_init)
-  | Tcl_constraint (cl, _, vals, pub_meths, concr_meths) ->
+  | Tcl_constraint (cl, _, _vals, _pub_meths, _concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
 let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl) ->
+    Tcl_let (_rec_flag, _defs, vals, cl) ->
       let vals = List.map (fun (id, _, e) -> id,e) vals in
       build_object_init_0 cl_table (vals@params) cl copy_env subst_env top ids
   | _ ->
@@ -202,14 +213,14 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
       let obj = if ids = [] then lambda_unit else Lvar self in
       let envs = if top then None else Some env in
       let ((_,inh_init), obj_init) =
-        build_object_init cl_table obj params (envs,[]) (copy_env env) cl in
+        build_object_init cl_table obj params (envs,[]) copy_env cl in
       let obj_init =
         if ids = [] then obj_init else lfunction [self] obj_init in
       (inh_init, lfunction [env] (subst_env env inh_init obj_init))
 
 
 let bind_method tbl lab id cl_init =
-  Llet(Strict, id, mkappl (oo_prim "get_method_label",
+  Llet(Strict, Pgenval, id, mkappl (oo_prim "get_method_label",
                            [Lvar tbl; transl_label lab]),
        cl_init)
 
@@ -224,11 +235,12 @@ let bind_methods tbl meths vals cl_init =
     if nvals = 0 then "get_method_labels", [] else
     "new_methods_variables", [transl_meth_list (List.map fst vals)]
   in
-  Llet(Strict, ids,
+  Llet(Strict, Pgenval, ids,
        mkappl (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
-         (fun (lab,id) lam -> decr i; Llet(StrictOpt, id, lfield ids !i, lam))
+         (fun (_lab,id) lam -> decr i; Llet(StrictOpt, Pgenval, id,
+                                           lfield ids !i, lam))
          (methl @ vals) cl_init)
 
 let output_methods tbl methods lam =
@@ -238,7 +250,8 @@ let output_methods tbl methods lam =
       lsequence (mkappl(oo_prim "set_method", [Lvar tbl; lab; code])) lam
   | _ ->
       lsequence (mkappl(oo_prim "set_methods",
-                        [Lvar tbl; Lprim(Pmakeblock(0,Immutable), methods)]))
+                        [Lvar tbl; Lprim(Pmakeblock(0,Immutable,None),
+                                         methods, Location.none)]))
         lam
 
 let rec ignore_cstrs cl =
@@ -258,12 +271,12 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tcl_ident ( path, _, _) ->
       begin match inh_init with
-        (obj_init, path')::inh_init ->
+        (obj_init, _path')::inh_init ->
           let lpath = transl_path ~loc:cl.cl_loc cl.cl_env path in
           (inh_init,
-           Llet (Strict, obj_init,
-                 mkappl(Lprim(Pfield(1, true, Mutable), [lpath]), Lvar cla ::
-                        if top then [Lprim(Pfield(3, true, Mutable), [lpath])]
+           Llet (Strict, Pgenval, obj_init,
+                 mkappl(Lprim(Pfield (1, Pointer, Mutable), [lpath], Location.none), Lvar cla ::
+                        if top then [Lprim(Pfield (3, Pointer, Mutable), [lpath], Location.none)]
                         else []),
                  bind_super cla super cl_init))
       | _ ->
@@ -297,7 +310,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                   if !Clflags.native_code && List.length met_code = 1 then
                     (* Force correct naming of method for profiles *)
                     let met = Ident.create ("method_" ^ name.txt) in
-                    [Llet(Strict, met, List.hd met_code, Lvar met)]
+                    [Llet(Strict, Pgenval, met, List.hd met_code, Lvar met)]
                   else met_code
                 in
                 (inh_init, cl_init,
@@ -316,15 +329,15 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       in
       let cl_init = output_methods cla methods cl_init in
       (inh_init, bind_methods cla str.cstr_meths values cl_init)
-  | Tcl_fun (_, pat, vals, cl, _) ->
+  | Tcl_fun (_, _pat, vals, cl, _) ->
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
-  | Tcl_apply (cl, exprs) ->
+  | Tcl_apply (cl, _exprs) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
-  | Tcl_let (rec_flag, defs, vals, cl) ->
+  | Tcl_let (_rec_flag, _defs, vals, cl) ->
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
@@ -350,19 +363,21 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           let cl_init =
             List.fold_left
               (fun init (nm, id, _) ->
-                Llet(StrictOpt, id, lfield inh (index nm concr_meths + ofs),
+                Llet(StrictOpt, Pgenval, id,
+                     lfield inh (index nm concr_meths + ofs),
                      init))
               cl_init methids in
           let cl_init =
             List.fold_left
               (fun init (nm, id) ->
-                Llet(StrictOpt, id, lfield inh (index nm vals + 1), init))
+                Llet(StrictOpt, Pgenval, id,
+                     lfield inh (index nm vals + 1), init))
               cl_init valids in
           (inh_init,
-           Llet (Strict, inh,
+           Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
                         [lpath; Lconst(Const_pointer(if top then 1 else 0))]),
-                 Llet(StrictOpt, obj_init, lfield inh 0, cl_init)))
+                 Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
             build_class_init cla true super inh_init cl_init msubst top cl
@@ -378,7 +393,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
 
 let rec build_class_lets cl ids =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl') ->
+    Tcl_let (rec_flag, defs, _vals, cl') ->
       let env, wrap = build_class_lets cl' [] in
       (env, fun x ->
         let lam = Translcore.transl_let rec_flag defs (wrap x) in
@@ -400,6 +415,7 @@ let rec get_class_meths cl =
 
 (*
    XXX Il devrait etre peu couteux d'ecrire des classes :
+   |   Writing classes should be cheap
      class c x y = d e f
 *)
 let rec transl_class_rebind obj_init cl vf =
@@ -414,18 +430,20 @@ let rec transl_class_rebind obj_init cl vf =
       let path, obj_init = transl_class_rebind obj_init cl vf in
       let build params rem =
         let param = name_pattern "param" pat in
-        Lfunction (Curried, param::params,
-                   Matching.for_function
-                     pat.pat_loc None (Lvar param) [pat, rem] partial)
+        Lfunction {kind = Curried; params = param::params;
+                   attr = default_function_attribute;
+                   loc = pat.pat_loc;
+                   body = Matching.for_function
+                            pat.pat_loc None (Lvar param) [pat, rem] partial}
       in
       (path,
        match obj_init with
-         Lfunction (Curried, params, rem) -> build params rem
+         Lfunction {kind = Curried; params; body} -> build params body
        | rem                              -> build [] rem)
   | Tcl_apply (cl, oexprs) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, transl_apply obj_init oexprs Location.none)
-  | Tcl_let (rec_flag, defs, vals, cl) ->
+  | Tcl_let (rec_flag, defs, _vals, cl) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | Tcl_structure _ -> raise Exit
@@ -441,7 +459,7 @@ let rec transl_class_rebind obj_init cl vf =
 
 let rec transl_class_rebind_0 self obj_init cl vf =
   match cl.cl_desc with
-    Tcl_let (rec_flag, defs, vals, cl) ->
+    Tcl_let (rec_flag, defs, _vals, cl) ->
       let path, obj_init = transl_class_rebind_0 self obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
@@ -452,7 +470,14 @@ let transl_class_rebind ids cl vf =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
-    let obj_init0 = lapply (Lvar obj_init) [Lvar self] Location.none in
+    let obj_init0 =
+      lapply {ap_should_be_tailcall=false;
+              ap_loc=Location.none;
+              ap_func=Lvar obj_init;
+              ap_args=[Lvar self];
+              ap_inlined=Default_inline;
+              ap_specialised=Default_specialise}
+    in
     let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then
       raise(Error(cl.cl_loc, Illegal_class_expr));
@@ -465,19 +490,20 @@ let transl_class_rebind ids cl vf =
     and table = Ident.create "table"
     and envs = Ident.create "envs" in
     Llet(
-    Strict, new_init, lfunction [obj_init] obj_init',
+    Strict, Pgenval, new_init, lfunction [obj_init] obj_init',
     Llet(
-    Alias, cla, transl_normal_path path,
-    Lprim(Pmakeblock(0, Immutable),
+    Alias, Pgenval, cla, transl_normal_path path,
+    Lprim(Pmakeblock(0, Immutable, None),
           [mkappl(Lvar new_init, [lfield cla 0]);
            lfunction [table]
-             (Llet(Strict, env_init,
+             (Llet(Strict, Pgenval, env_init,
                    mkappl(lfield cla 1, [Lvar table]),
                    lfunction [envs]
                      (mkappl(Lvar new_init,
                              [mkappl(Lvar env_init, [Lvar envs])]))));
            lfield cla 2;
-           lfield cla 3])))
+           lfield cla 3],
+          Location.none)))
   with Exit ->
     lambda_unit
 
@@ -486,14 +512,14 @@ let transl_class_rebind ids cl vf =
 let rec module_path = function
     Lvar id ->
       let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
-  | Lprim(Pfield _, [p])    -> module_path p
-  | Lprim(Pgetglobal _, []) -> true
+  | Lprim(Pfield _, [p], _)    -> module_path p
+  | Lprim(Pgetglobal _, [], _) -> true
   | _                       -> false
 
 let const_path local = function
     Lvar id -> not (List.mem id local)
   | Lconst _ -> true
-  | Lfunction (Curried, _, body) ->
+  | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
       List.for_all (fun x -> not (IdentSet.mem x fv)) local
   | p -> module_path p
@@ -503,23 +529,23 @@ let rec builtin_meths self env env2 body =
   let conv = function
     (* Lvar s when List.mem s self ->  "_self", [] *)
     | p when const_path p -> "const", [p]
-    | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
+    | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
-    | Lprim(Pfield(n, _, _), [Lvar e]) when Ident.same e env ->
+    | Lprim(Pfield(n, _, _), [Lvar e], _) when Ident.same e env ->
         "env", [Lvar env2; Lconst(Const_pointer n)]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
   in
   match body with
-  | Llet(_, s', Lvar s, body) when List.mem s self ->
+  | Llet(_str, _k, s', Lvar s, body) when List.mem s self ->
       builtin_meths (s'::self) env env2 body
-  | Lapply(f, [arg], _) when const_path f ->
+  | Lapply{ap_func = f; ap_args = [arg]} when const_path f ->
       let s, args = conv arg in ("app_"^s, f :: args)
-  | Lapply(f, [arg; p], _) when const_path f && const_path p ->
+  | Lapply{ap_func = f; ap_args = [arg; p]} when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_"^s^"_const", f :: args @ [p])
-  | Lapply(f, [p; arg], _) when const_path f && const_path p ->
+  | Lapply{ap_func = f; ap_args = [p; arg]} when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_const_"^s, f :: p :: args)
   | Lsend(Self, Lvar n, Lvar s, [arg], _) when List.mem s self ->
@@ -533,12 +559,12 @@ let rec builtin_meths self env env2 body =
   | Lsend(Cached, met, arg, [_;_], _) ->
       let s, args = conv arg in
       ("send_"^s, met :: args)
-  | Lfunction (Curried, [x], body) ->
+  | Lfunction {kind = Curried; params = [x]; body} ->
       let rec enter self = function
-        | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
+        | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'], _)
           when Ident.same x x' && List.mem s self ->
             ("set_var", [Lvar n])
-        | Llet(_, s', Lvar s, body) when List.mem s self ->
+        | Llet(_str, _k, s', Lvar s, body) when List.mem s self ->
             enter (s'::self) body
         | _ -> raise Not_found
       in enter self body
@@ -583,26 +609,29 @@ open M
 
 
 (*
-   Traduction d'une classe.
-   Plusieurs cas:
-    * reapplication d'une classe connue -> transl_class_rebind
-    * classe sans dependances locales -> traduction directe
-    * avec dependances locale -> creation d'un arbre de stubs,
-      avec un noeud pour chaque classe locale heritee
-   Une classe est un 4-uplet:
+   Class translation.
+   Three subcases:
+    * reapplication of a known class -> transl_class_rebind
+    * class without local dependencies -> direct translation
+    * with local dependencies -> generate a stubs tree,
+      with a node for every local classes inherited
+   A class is a 4-tuple:
     (obj_init, class_init, env_init, env)
-    obj_init: fonction de creation d'objet (unit -> obj)
-    class_init: fonction d'heritage (table -> env_init)
-      (une seule par code source)
-    env_init: parametrage par l'environnement local (env -> params -> obj_init)
-      (une par combinaison de class_init herites)
+    obj_init: creation function (unit -> obj)
+    class_init: inheritance function (table -> env_init)
+      (one by source code)
+    env_init: parameterisation by the local environment
+      (env -> params -> obj_init)
+      (one for each combination of inherited class_init )
     env: environnement local
-   Si ids=0 (objet immediat), alors on ne conserve que env_init.
+   If ids=0 (immediate object), then only env_init is conserved.
 *)
 
+(*
 let prerr_ids msg ids =
   let names = List.map Ident.unique_toplevel_name ids in
   prerr_endline (String.concat " " (msg :: names))
+*)
 
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
@@ -641,7 +670,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   in
   let new_ids_meths = ref [] in
   let msubst arr = function
-      Lfunction (Curried, self :: args, body) ->
+      Lfunction {kind = Curried; params = self :: args; body} ->
         let env = Ident.create "env" in
         let body' =
           if new_ids = [] then body else
@@ -654,24 +683,27 @@ let transl_class ids cl_id pub_meths cl vflag =
         with Not_found ->
           [lfunction (self :: args)
              (if not (IdentSet.mem env (free_variables body')) then body' else
-              Llet(Alias, env,
+              Llet(Alias, Pgenval, env,
                    Lprim(Parrayrefu Paddrarray,
-                         [Lvar self; Lvar env2]), body'))]
+                         [Lvar self; Lvar env2],
+                         Location.none),
+                   body'))]
         end
       | _ -> assert false
   in
   let new_ids_init = ref [] in
   let env1 = Ident.create "env" and env1' = Ident.create "env'" in
-  let copy_env envs self =
+  let copy_env self =
     if top then lambda_unit else
     Lifused(env2, Lprim(Parraysetu Paddrarray,
-                        [Lvar self; Lvar env2; Lvar env1']))
+                        [Lvar self; Lvar env2; Lvar env1'],
+                        Location.none))
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
     let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
-    Llet(Alias, env1, (if l = [] then Lvar envs else lfield envs 0),
-    Llet(Alias, env1',
+    Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
+    Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
          lam))
   in
@@ -701,10 +733,10 @@ let transl_class ids cl_id pub_meths cl vflag =
       if name' <> name then raise(Error(cl.cl_loc, Tags(name, name'))))
     tags pub_meths;
   let ltable table lam =
-    Llet(Strict, table,
+    Llet(Strict, Pgenval, table,
          mkappl (oo_prim "create_table", [transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
-    Llet(Strict, obj_init, cl_init,
+    Llet(Strict, Pgenval, obj_init, cl_init,
          Lsequence(mkappl (oo_prim "init_class", [Lvar cla]),
                    mkappl (Lvar obj_init, [lambda_unit])))
   in
@@ -713,8 +745,11 @@ let transl_class ids cl_id pub_meths cl vflag =
 
   let concrete = (vflag = Concrete)
   and lclass lam =
-    let cl_init = llets (Lfunction(Curried, [cla], cl_init)) in
-    Llet(Strict, class_init, cl_init, lam (free_variables cl_init))
+    let cl_init = llets (Lfunction{kind = Curried;
+                                   attr = default_function_attribute;
+                                   loc = Location.none;
+                                   params = [cla]; body = cl_init}) in
+    Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
     if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
       mkappl (oo_prim "make_class",[transl_meth_list pub_meths;
@@ -722,15 +757,21 @@ let transl_class ids cl_id pub_meths cl vflag =
     else
       ltable table (
       Llet(
-      Strict, env_init, mkappl (Lvar class_init, [Lvar table]),
+      Strict, Pgenval, env_init, mkappl (Lvar class_init, [Lvar table]),
       Lsequence(
       mkappl (oo_prim "init_class", [Lvar table]),
-      Lprim(Pmakeblock(0, Immutable),
+      Lprim(Pmakeblock(0, Immutable, None),
             [mkappl (Lvar env_init, [lambda_unit]);
-             Lvar class_init; Lvar env_init; lambda_unit]))))
+             Lvar class_init; Lvar env_init; lambda_unit],
+            Location.none))))
   and lbody_virt lenvs =
-    Lprim(Pmakeblock(0, Immutable),
-          [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
+    Lprim(Pmakeblock(0, Immutable, None),
+          [lambda_unit; Lfunction{kind = Curried;
+                                  attr = default_function_attribute;
+                                  loc = Location.none;
+                                  params = [cla]; body = cl_init};
+           lambda_unit; lenvs],
+         Location.none)
   in
   (* Still easy: a class defined at toplevel *)
   if top && concrete then lclass lbody else
@@ -746,53 +787,65 @@ let transl_class ids cl_id pub_meths cl vflag =
   let lenv =
     let menv =
       if !new_ids_meths = [] then lambda_unit else
-      Lprim(Pmakeblock(0, Immutable),
-            List.map (fun id -> Lvar id) !new_ids_meths) in
+      Lprim(Pmakeblock(0, Immutable, None),
+            List.map (fun id -> Lvar id) !new_ids_meths,
+            Location.none) in
     if !new_ids_init = [] then menv else
-    Lprim(Pmakeblock(0, Immutable),
-          menv :: List.map (fun id -> Lvar id) !new_ids_init)
+    Lprim(Pmakeblock(0, Immutable, None),
+          menv :: List.map (fun id -> Lvar id) !new_ids_init,
+          Location.none)
   and linh_envs =
     List.map
-      (fun (_, p) ->
-         Lprim(Pfield(3, true, Mutable), [transl_normal_path p]))
+      (fun (_, p) -> Lprim(Pfield (3, Pointer, Mutable),
+                       [transl_normal_path p], Location.none))
       (List.rev inh_init)
   in
   let make_envs lam =
-    Llet(StrictOpt, envs,
+    Llet(StrictOpt, Pgenval, envs,
          (if linh_envs = [] then lenv else
-         Lprim(Pmakeblock(0, Immutable), lenv :: linh_envs)),
+         Lprim(Pmakeblock(0, Immutable, None),
+               lenv :: linh_envs, Location.none)),
          lam)
   and def_ids cla lam =
-    Llet(StrictOpt, env2,
+    Llet(StrictOpt, Pgenval, env2,
          mkappl (oo_prim "new_variable", [Lvar cla; transl_label ""]),
          lam)
   in
   let inh_paths =
     List.filter
-      (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init in
+      (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init
+  in
   let inh_keys =
-    List.map
-      (fun (_,p) ->
-         Lprim(Pfield(1, true, Mutable), [transl_normal_path p])) inh_paths in
+    List.map (fun (_,p) -> Lprim(Pfield (1, Pointer, Mutable),
+        [transl_normal_path p], Location.none))
+      inh_paths
+  in
   let lclass lam =
-    Llet(Strict, class_init,
-         Lfunction(Curried, [cla], def_ids cla cl_init), lam)
+    Llet(Strict, Pgenval, class_init,
+         Lfunction{kind = Curried; params = [cla];
+                   attr = default_function_attribute;
+                   loc = Location.none;
+                   body = def_ids cla cl_init}, lam)
   and lcache lam =
-    if inh_keys = [] then Llet(Alias, cached, Lvar tables, lam) else
-    Llet(Strict, cached,
+    if inh_keys = [] then Llet(Alias, Pgenval, cached, Lvar tables, lam) else
+    Llet(Strict, Pgenval, cached,
          mkappl (oo_prim "lookup_tables",
-                [Lvar tables; Lprim(Pmakeblock(0, Immutable), inh_keys)]),
+                [Lvar tables; Lprim(Pmakeblock(0, Immutable, None),
+                                    inh_keys, Location.none)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, true, Mutable), [Lvar cached; lam])
+    Lprim(Psetfield(i, Pointer, Assignment),
+          [Lvar cached; lam], Location.none)
   in
   let ldirect () =
     ltable cla
-      (Llet(Strict, env_init, def_ids cla cl_init,
+      (Llet(Strict, Pgenval, env_init, def_ids cla cl_init,
             Lsequence(mkappl (oo_prim "init_class", [Lvar cla]),
                       lset cached 0 (Lvar env_init))))
   and lclass_virt () =
-    lset cached 0 (Lfunction(Curried, [cla], def_ids cla cl_init))
+    lset cached 0 (Lfunction{kind = Curried; attr = default_function_attribute;
+                             loc = Location.none;
+                             params = [cla]; body = def_ids cla cl_init})
   in
   llets (
   lcache (
@@ -806,13 +859,14 @@ let transl_class ids cl_id pub_meths cl vflag =
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then mkappl (lfield cached 0, [lenvs]) else
-  Lprim(Pmakeblock(0, Immutable),
-        if concrete then
+  Lprim(Pmakeblock(0, Immutable, None),
+        (if concrete then
           [mkappl (lfield cached 0, [lenvs]);
            lfield cached 1;
            lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]
+        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]),
+        Location.none
        )))))
 
 (* Wrapper for class compilation *)

@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 
@@ -20,28 +22,44 @@ external set_to_zero_nat: nat -> int -> int -> unit = "set_to_zero_nat"
 external blit_nat: nat -> int -> nat -> int -> int -> unit = "blit_nat"
 external set_digit_nat: nat -> int -> int -> unit = "set_digit_nat"
 external nth_digit_nat: nat -> int -> int = "nth_digit_nat"
-external set_digit_nat_native: nat -> int -> nativeint -> unit = "set_digit_nat_native"
+external set_digit_nat_native: nat -> int -> nativeint -> unit
+                             = "set_digit_nat_native"
 external nth_digit_nat_native: nat -> int -> nativeint = "nth_digit_nat_native"
 external num_digits_nat: nat -> int -> int -> int = "num_digits_nat"
-external num_leading_zero_bits_in_digit: nat -> int -> int = "num_leading_zero_bits_in_digit"
+external num_leading_zero_bits_in_digit: nat -> int -> int
+                                       = "num_leading_zero_bits_in_digit"
 external is_digit_int: nat -> int -> bool = "is_digit_int"
 external is_digit_zero: nat -> int -> bool = "is_digit_zero"
 external is_digit_normalized: nat -> int -> bool = "is_digit_normalized"
 external is_digit_odd: nat -> int -> bool = "is_digit_odd"
 external incr_nat: nat -> int -> int -> int -> int = "incr_nat"
-external add_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "add_nat" "add_nat_native"
+external add_nat: nat -> int -> int -> nat -> int -> int -> int -> int
+                = "add_nat" "add_nat_native"
 external complement_nat: nat -> int -> int -> unit = "complement_nat"
 external decr_nat: nat -> int -> int -> int -> int = "decr_nat"
-external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int = "sub_nat" "sub_nat_native"
-external mult_digit_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int = "mult_digit_nat" "mult_digit_nat_native"
-external mult_nat: nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int = "mult_nat" "mult_nat_native"
-external square_nat: nat -> int -> int -> nat -> int -> int -> int = "square_nat" "square_nat_native"
-external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_left_nat" "shift_left_nat_native"
-external div_digit_nat: nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit = "div_digit_nat" "div_digit_nat_native"
-external div_nat: nat -> int -> int -> nat -> int -> int -> unit = "div_nat" "div_nat_native"
-external shift_right_nat: nat -> int -> int -> nat -> int -> int -> unit = "shift_right_nat" "shift_right_nat_native"
-external compare_digits_nat: nat -> int -> nat -> int -> int = "compare_digits_nat"
-external compare_nat: nat -> int -> int -> nat -> int -> int -> int = "compare_nat" "compare_nat_native"
+external sub_nat: nat -> int -> int -> nat -> int -> int -> int -> int
+                = "sub_nat" "sub_nat_native"
+external mult_digit_nat:
+     nat -> int -> int -> nat -> int -> int -> nat -> int -> int
+   = "mult_digit_nat" "mult_digit_nat_native"
+external mult_nat:
+    nat -> int -> int -> nat -> int -> int -> nat -> int -> int -> int
+  = "mult_nat" "mult_nat_native"
+external square_nat: nat -> int -> int -> nat -> int -> int -> int
+                   = "square_nat" "square_nat_native"
+external shift_left_nat: nat -> int -> int -> nat -> int -> int -> unit
+                       = "shift_left_nat" "shift_left_nat_native"
+external div_digit_nat:
+    nat -> int -> nat -> int -> nat -> int -> int -> nat -> int -> unit
+  = "div_digit_nat" "div_digit_nat_native"
+external div_nat: nat -> int -> int -> nat -> int -> int -> unit
+                = "div_nat" "div_nat_native"
+external shift_right_nat: nat -> int -> int -> nat -> int -> int -> unit
+                        = "shift_right_nat" "shift_right_nat_native"
+external compare_digits_nat: nat -> int -> nat -> int -> int
+                           = "compare_digits_nat"
+external compare_nat: nat -> int -> int -> nat -> int -> int -> int
+                    = "compare_nat" "compare_nat_native"
 external land_digit_nat: nat -> int -> nat -> int -> unit = "land_digit_nat"
 external lor_digit_nat: nat -> int -> nat -> int -> unit = "lor_digit_nat"
 external lxor_digit_nat: nat -> int -> nat -> int -> unit = "lxor_digit_nat"
@@ -137,6 +155,7 @@ let square_nat nat1 off1 len1 nat2 off2 len2 =
   !c
 ***)
 
+(*
 let gcd_int_nat i nat off len =
   if i = 0 then 1 else
   if is_nat_int nat off len then begin
@@ -152,6 +171,7 @@ let gcd_int_nat i nat off len =
     set_digit_nat nat off (gcd_int (nth_digit_nat remainder 0) i);
     0
   end
+*)
 
 let exchange r1 r2 =
   let old1 = !r1 in r1 := !r2; r2 := old1
@@ -183,18 +203,18 @@ let gcd_nat nat1 off1 len1 nat2 off2 len2 =
       !real_len1
   end
 
-(* Racine carrée entière par la méthode de Newton (entière par défaut). *)
+(* Integer square root using newton method (nearest integer by default) *)
 
-(* Théorème: la suite xn+1 = (xn + a/xn) / 2 converge vers la racine *)
-(* carrée entière de a par défaut, si on part d'une valeur x0 *)
-(* strictement plus grande que la racine de a, sauf quand a est un *)
-(* carré - 1, cas auquel la suite alterne entre la racine par défaut *)
-(* et par excès. Dans tous les cas, le dernier terme de la partie *)
-(* strictement décroissante de la suite est le résultat cherché. *)
+(* Theorem: the sequence x_{n+1} = ( x_n + a/x_n )/2 converges toward
+   the integer square root (by default) of a for any starting value x_0
+   strictly greater than the square root of a except if a + 1 is a
+   perfect square. In this situation, the sequence alternates between
+   the excess and default integer square root. In any case, the last
+   strictly decreasing term is the expected result *)
 
 let sqrt_nat rad off len =
  let len = num_digits_nat rad off len in
- (* Copie de travail du radicande *)
+ (* Working copy of radicand *)
  let len_parity = len mod 2 in
  let rad_len = len + 1 + len_parity in
  let rad =
@@ -205,17 +225,18 @@ let sqrt_nat rad off len =
    res in
  let cand_len = (len + 1) / 2 in  (* ceiling len / 2 *)
  let cand_rest = rad_len - cand_len in
- (* Racine carrée supposée cand = "|FFFF .... |" *)
+ (* Candidate square root cand = "|FFFF .... |" *)
  let cand = make_nat cand_len in
- (* Amélioration de la racine de départ:
-    on calcule nbb le nombre de bits significatifs du premier digit du candidat
-    (la moitié du nombre de bits significatifs dans les deux premiers
-     digits du radicande étendu à une longueur paire).
-    shift_cand est word_size - nbb *)
+ (* Improve starting square root:
+    We compute nbb, the number of significant bits of the first digit of the
+    candidate
+    (half of the number of significant bits in the first two digits
+     of the radicand extended to an even length).
+    shift_cand is word_size - nbb *)
  let shift_cand =
    ((num_leading_zero_bits_in_digit rad (len-1)) +
      Sys.word_size * len_parity) / 2 in
- (* Tous les bits du radicande sont à 0, on rend 0. *)
+ (* All radicand bits are zeroed, we give back 0. *)
  if shift_cand = Sys.word_size then cand else
  begin
   complement_nat cand 0 cand_len;
@@ -227,7 +248,7 @@ let sqrt_nat rad off len =
    blit_nat next_cand 0 rad 0 rad_len;
            (* next_cand <- next_cand / cand *)
    div_nat next_cand 0 rad_len cand 0 cand_len;
-           (* next_cand (poids fort) <- next_cand (poids fort) + cand,
+           (* next_cand (strong weight) <- next_cand (strong weight) + cand,
               i.e. next_cand <- cand + rad / cand *)
    ignore (add_nat next_cand cand_len cand_rest cand 0 cand_len 0);
         (* next_cand <- next_cand / 2 *)
@@ -296,7 +317,13 @@ let raw_string_of_digit nat off =
 
 (* XL: suppression de string_of_digit et de sys_string_of_digit.
    La copie est de toute facon faite dans string_of_nat, qui est le
-   seul point d entree public dans ce code. *)
+   seul point d entree public dans ce code.
+
+   |   Deletion of string_of_digit and sys_string_of_digit.
+   The copy is already done in string_of_nat which is the only
+   public entry point in this code
+
+*)
 
 (******
 let sys_string_of_digit nat off =
@@ -309,8 +336,6 @@ let string_of_digit nat =
     sys_string_of_digit nat 0
 
 *******)
-
-let digits = "0123456789ABCDEF"
 
 (*
    make_power_base affecte power_base des puissances successives de base a
@@ -339,10 +364,13 @@ let make_power_base base power_base =
   (!i - 2, !j)
 
 (*
-   int_to_string place la representation de l entier int en base base
-   dans la chaine s en le rangeant de la fin indiquee par pos vers le
-   debut, sur times places et affecte a pos sa nouvelle valeur.
+(*
+   int_to_string places the representation of the integer int in base 'base'
+   in the string s by starting from the end position pos and going towards
+   the start, for 'times' places and updates the value of pos.
 *)
+let digits = "0123456789ABCDEF"
+
 let int_to_string int s pos_ref base times =
   let i = ref int
   and j = ref times in
@@ -352,8 +380,7 @@ let int_to_string int s pos_ref base times =
         decr j;
         i := !i / base
      done
-
-(* XL: suppression de adjust_string *)
+*)
 
 let power_base_int base i =
   if i = 0 || base = 1 then
@@ -364,7 +391,7 @@ let power_base_int base i =
     invalid_arg "power_base_int"
   else begin
          let power_base = make_nat (succ length_of_digit) in
-         let (pmax, pint) = make_power_base base power_base in
+         let (pmax, _pint) = make_power_base base power_base in
          let n = i / (succ pmax)
          and rem = i mod (succ pmax) in
            if n > 0 then begin
@@ -406,8 +433,9 @@ let power_base_int base i =
     --                               --
 *)
 
-(* XL: ai specialise le code d origine a length_of_digit = 32. *)
-(* Puis suppression (inutile?) *)
+(* XL: ai specialise le code d origine a length_of_digit = 32.
+  |    the original code have been specialized to a length_of_digit = 32. *)
+(* Now deleted (useless?) *)
 
 (******
 let num_digits_max_vector =
@@ -455,8 +483,6 @@ let num_digits_max_vector =
    | n -> failwith "num_digits_max_vector"
 ******)
 
-(* XL: suppression de string_list_of_nat *)
-
 let unadjusted_string_of_nat nat off len_nat =
   let len = num_digits_nat nat off len_nat in
   if len = 1 then
@@ -483,9 +509,6 @@ let unadjusted_string_of_nat nat off len_nat =
                       String.blit str 0
                                   s (!pos_ref - String.length str)
                                   (String.length str);
-                      (* XL: il y avait pmax a la place de String.length str
-                         mais ca ne marche pas avec le blit de Caml Light,
-                         qui ne verifie pas les debordements *)
                       pos_ref := !pos_ref - pmax;
                       len_copy := num_digits_nat copy2 0 !len_copy;
                       blit_nat copy1 0 copy2 0 !len_copy;
@@ -504,10 +527,6 @@ let string_of_nat nat =
     end;
     String.sub s !index (String.length s - !index)
 
-(* XL: suppression de sys_string_of_nat *)
-
-(* XL: suppression de debug_string_nat *)
-
 let base_digit_of_char c base =
   let n = Char.code c in
     if n >= 48 && n <= 47 + min base 10 then n - 48
@@ -516,8 +535,8 @@ let base_digit_of_char c base =
     else failwith "invalid digit"
 
 (*
-   La sous-chaine (s, off, len) represente un nat en base base que
-   on determine ici
+   The substring (s, off, len) represents a nat in base 'base' which is
+determined here
 *)
 let sys_nat_of_string base s off len =
   let power_base = make_nat (succ length_of_digit) in
@@ -535,8 +554,8 @@ let sys_nat_of_string base s off len =
 
   for i = off to bound do
     (*
-       on lit pint (au maximum) chiffres, on en fait un int
-       et on l integre au nombre
+       we read (at most) pint digits, we transform them in a int
+       and integrate it to the number
      *)
       let c = String.get s i  in
         begin match c with
@@ -564,7 +583,7 @@ let sys_nat_of_string base s off len =
            end
   done;
   (*
-     On recadre le nat
+     We reframe nat
   *)
   let nat = create_nat !current_len in
     blit_nat nat 0 nat1 0 !current_len;

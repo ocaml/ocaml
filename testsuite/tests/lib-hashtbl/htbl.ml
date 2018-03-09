@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2011 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 (* Hashtable operations, using maps as a reference *)
 
 open Printf
@@ -67,20 +55,43 @@ module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
 
 end
 
-module MS = Map.Make(struct type t = string
+module SS = struct
+  type t = string
                             let compare (x:t) (y:t) = Pervasives.compare x y
-                     end)
-module MI = Map.Make(struct type t = int
+  let equal (x:t) (y:t) = x=y
+  let hash = Hashtbl.hash
+end
+module SI = struct
+  type t = int
                             let compare (x:t) (y:t) = Pervasives.compare x y
-                     end)
+  let equal (x:t) (y:t) = x=y
+  let hash = Hashtbl.hash
+end
+module SSP = struct
+  type t = string*string
+                            let compare (x:t) (y:t) = Pervasives.compare x y
+  let equal (x:t) (y:t) = x=y
+  let hash = Hashtbl.hash
+end
+module SSL = struct
+  type t = string list
+  let compare (x:t) (y:t) = Pervasives.compare x y
+  let equal (x:t) (y:t) = x=y
+  let hash = Hashtbl.hash
+end
+module SSA = struct
+  type t = string array
+                            let compare (x:t) (y:t) = Pervasives.compare x y
+  let equal (x:t) (y:t) = x=y
+  let hash = Hashtbl.hash
+end
 
-module MSP = Map.Make(struct type t = string*string
-                            let compare (x:t) (y:t) = Pervasives.compare x y
-                     end)
+module MS = Map.Make(SS)
+module MI = Map.Make(SI)
+module MSP = Map.Make(SSP)
+module MSL = Map.Make(SSL)
+module MSA = Map.Make(SSA)
 
-module MSL = Map.Make(struct type t = string list
-                            let compare (x:t) (y:t) = Pervasives.compare x y
-                     end)
 
 (* Generic hash wrapped as a functorial hash *)
 
@@ -102,6 +113,7 @@ module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
     let fold = Hashtbl.fold
     let length = Hashtbl.length
     let stats = Hashtbl.stats
+    let filter_map_inplace = Hashtbl.filter_map_inplace
   end
 
 module HS1 = HofM(MS)
@@ -111,13 +123,16 @@ module HSL = HofM(MSL)
 
 (* Specific functorial hashes *)
 
-module HS2 = Hashtbl.Make(struct type t = string
-                                 let equal (x:t) (y:t) = x=y
-                                 let hash = Hashtbl.hash end)
+module HS2 = Hashtbl.Make(SS)
+module HI2 = Hashtbl.Make(SI)
 
-module HI2 = Hashtbl.Make(struct type t = int
-                                 let equal (x:t) (y:t) = x=y
-                                 let hash = Hashtbl.hash end)
+(* Specific weak functorial hashes *)
+module WS = Ephemeron.K1.Make(SS)
+module WSP1 = Ephemeron.K1.Make(SSP)
+module WSP2 = Ephemeron.K2.Make(SS)(SS)
+module WSL = Ephemeron.K1.Make(SSL)
+module WSA = Ephemeron.Kn.Make(SS)
+
 (* Instantiating the test *)
 
 module TS1 = Test(HS1)(MS)
@@ -126,6 +141,11 @@ module TI1 = Test(HI1)(MI)
 module TI2 = Test(HI2)(MI)
 module TSP = Test(HSP)(MSP)
 module TSL = Test(HSL)(MSL)
+module TWS  = Test(WS)(MS)
+module TWSP1 = Test(WSP1)(MSP)
+module TWSP2 = Test(WSP2)(MSP)
+module TWSL = Test(WSL)(MSL)
+module TWSA = Test(WSA)(MSA)
 
 (* Data set: strings from a file, associated with their line number *)
 
@@ -171,7 +191,7 @@ let pair_data data =
 (* Data set: lists *)
 
 let list_data data =
-  let d = Array.make (Array.length data / 10) ([], 0) in
+  let d = Array.make (Array.length data / 10) ([], "0") in
   let j = ref 0 in
   let rec mklist n =
     if n <= 0 || !j >= Array.length data then [] else begin
@@ -181,7 +201,7 @@ let list_data data =
       hd :: tl
     end in
   for i = 0 to Array.length d - 1 do
-    d.(i) <- (mklist (Random.int 16), i)
+    d.(i) <- (mklist (Random.int 16), string_of_int i)
   done;
   d
 
@@ -189,9 +209,9 @@ let list_data data =
 
 let _ =
   printf "-- Random integers, large range\n%!";
-  TI1.test (random_integers 100_000 1_000_000);
+  TI1.test (random_integers 20_000 1_000_000);
   printf "-- Random integers, narrow range\n%!";
-  TI2.test (random_integers 100_000 1_000);
+  TI2.test (random_integers 20_000 1_000);
   let d =
     try file_data "../../LICENSE" with Sys_error _ -> string_data in
   printf "-- Strings, generic interface\n%!";
@@ -201,4 +221,30 @@ let _ =
   printf "-- Pairs of strings\n%!";
   TSP.test (pair_data d);
   printf "-- Lists of strings\n%!";
-  TSL.test (list_data d)
+  TSL.test (list_data d);
+  (* weak *)
+  let d =
+    try file_data "../../LICENSE" with Sys_error _ -> string_data in
+  printf "-- Weak K1 -- Strings, functorial interface\n%!";
+  TWS.test d;
+  printf "-- Weak K1 -- Pairs of strings\n%!";
+  TWSP1.test (pair_data d);
+  printf "-- Weak K2 -- Pairs of strings\n%!";
+  TWSP2.test (pair_data d);
+  printf "-- Weak K1 -- Lists of strings\n%!";
+  TWSL.test (list_data d);
+  printf "-- Weak Kn -- Arrays of strings\n%!";
+  TWSA.test (Array.map (fun (l,i) -> (Array.of_list l,i)) (list_data d))
+
+
+let () =
+  let h = Hashtbl.create 16 in
+  for i = 1 to 1000 do Hashtbl.add h i (i * 2) done;
+  Printf.printf "%i elements\n" (Hashtbl.length h);
+  Hashtbl.filter_map_inplace (fun k v ->
+      if k mod 100 = 0 then ((*Hashtbl.add h v v;*) Some (v / 100)) else None)
+    h;
+  let l = Hashtbl.fold (fun k v acc -> (k, v) :: acc) h [] in
+  let l = List.sort compare l in
+  List.iter (fun (k, v) -> Printf.printf "%i,%i\n" k v) l;
+  Printf.printf "%i elements\n" (Hashtbl.length h)

@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction scheduling *)
 
@@ -132,7 +135,7 @@ let rec remove_instr node = function
 
 (* We treat Lreloadretaddr as a word-sized load *)
 
-let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
+let some_load = (Iload(Cmm.Word_int, Arch.identity_addressing))
 
 (* The generic scheduler *)
 
@@ -145,9 +148,9 @@ val mutable trywith_nesting = 0
    that terminate a basic block. *)
 
 method oper_in_basic_block = function
-    Icall_ind -> false
+    Icall_ind _ -> false
   | Icall_imm _ -> false
-  | Itailcall_ind -> false
+  | Itailcall_ind _ -> false
   | Itailcall_imm _ -> false
   | Iextcall _ -> false
   | Istackoffset _ -> false
@@ -182,8 +185,8 @@ method is_load = function
   | _ -> false
 
 method is_checkbound = function
-    Iintop Icheckbound -> true
-  | Iintop_imm(Icheckbound, _) -> true
+    Iintop (Icheckbound _) -> true
+  | Iintop_imm(Icheckbound _, _) -> true
   | _ -> false
 
 method private instr_is_store instr =
@@ -372,7 +375,7 @@ method schedule_fundecl f =
     else begin
       let critical_outputs =
         match i.desc with
-          Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
+          Lop(Icall_ind _ | Itailcall_ind _) -> [| i.arg.(0) |]
         | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall _) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
@@ -387,7 +390,9 @@ method schedule_fundecl f =
       fun_args = f.fun_args;
       fun_body = new_body;
       fun_fast = f.fun_fast;
-      fun_dbg  = f.fun_dbg }
+      fun_dbg  = f.fun_dbg;
+      fun_spacetime_shape = f.fun_spacetime_shape;
+    }
   end else
     f
 

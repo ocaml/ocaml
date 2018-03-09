@@ -1,16 +1,19 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Source code locations (ranges of positions), used in parsetree. *)
+(** Source code locations (ranges of positions), used in parsetree. *)
 
 open Format
 
@@ -20,7 +23,7 @@ type t = {
   loc_ghost: bool;
 }
 
-(* Note on the use of Lexing.position in this module.
+(** Note on the use of Lexing.position in this module.
    If [pos_fname = ""], then use [!input_name] instead.
    If [pos_lnum = -1], then [pos_bol = 0]. Use [pos_cnum] and
      re-parse the file to get the line and character numbers.
@@ -53,7 +56,7 @@ val input_lexbuf: Lexing.lexbuf option ref
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
-val print_error_cur_file: formatter -> unit
+val print_error_cur_file: formatter -> unit -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
 val formatter_for_warnings : formatter ref
 val prerr_warning: t -> Warnings.t -> unit
@@ -77,6 +80,7 @@ val mknoloc : 'a -> 'a loc
 val mkloc : 'a -> t -> 'a loc
 
 val print: formatter -> t -> unit
+val print_compact: formatter -> t -> unit
 val print_filename: formatter -> string -> unit
 
 val absolute_path: string -> string
@@ -87,7 +91,6 @@ val show_filename: string -> string
 
 
 val absname: bool ref
-
 
 (* Support for located errors *)
 
@@ -101,13 +104,16 @@ type error =
 
 exception Error of error
 
+val print_error_prefix: formatter -> unit -> unit
+  (* print the prefix "Error:" possibly with style *)
+
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, error) format4 -> 'a
+            -> ('a, Format.formatter, unit, error) format4 -> 'a
 
 val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, 'b) format4 -> 'a
+            -> ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 

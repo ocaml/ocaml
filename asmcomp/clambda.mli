@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* A variant of the "lambda" code with direct / indirect calls explicit
    and closures explicit too *)
@@ -26,20 +29,21 @@ type ustructured_constant =
   | Uconst_block of int * uconstant list
   | Uconst_float_array of float list
   | Uconst_string of string
+  | Uconst_closure of ufunction list * string * uconstant list
 
 and uconstant =
-  | Uconst_ref of string * ustructured_constant
+  | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
   | Uconst_ptr of int
 
-type ulambda =
+and ulambda =
     Uvar of Ident.t
   | Uconst of uconstant
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of ufunction list * ulambda list
   | Uoffset of ulambda * int
-  | Ulet of Ident.t * ulambda * ulambda
+  | Ulet of mutable_flag * value_kind * Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list * Debuginfo.t
   | Uswitch of ulambda * ulambda_switch
@@ -53,6 +57,7 @@ type ulambda =
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
   | Uassign of Ident.t * ulambda
   | Usend of meth_kind * ulambda * ulambda * ulambda list * Debuginfo.t
+  | Uunreachable
 
 and ufunction = {
   label  : function_label;
@@ -93,3 +98,16 @@ val compare_structured_constants:
         ustructured_constant -> ustructured_constant -> int
 val compare_constants:
         uconstant -> uconstant -> int
+
+type preallocated_block = {
+  symbol : string;
+  exported : bool;
+  tag : int;
+  size : int;
+}
+
+type preallocated_constant = {
+  symbol : string;
+  exported : bool;
+  definition : ustructured_constant;
+}

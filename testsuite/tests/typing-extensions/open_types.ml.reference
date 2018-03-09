@@ -75,11 +75,33 @@ Error: Signature mismatch:
   let f = function Foo -> ()
           ^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
-_
-Matching over values of extensible variant types must include
-a wild card pattern in order to be exhaustive.
+Here is an example of a case that is not matched:
+*extension*
+Matching over values of extensible variant types (the *extension* above)
+must include a wild card pattern in order to be exhaustive.
 type foo = ..
 type foo += Foo
 val f : foo -> unit = <fun>
+#               Characters 44-96:
+  ........function
+    | [Foo] -> 1
+    | _::_::_ -> 3
+    | [] -> 2
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+*extension*::[]
+Matching over values of extensible variant types (the *extension* above)
+must include a wild card pattern in order to be exhaustive.
+val f : foo list -> int = <fun>
+#           type t = ..
+type t += IPair : (int * int) -> t
+#   Characters 9-63:
+  let f = function IPair (i, j) -> Format.sprintf "(%d, %d)" i j ;; (* warn *)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+*extension*
+Matching over values of extensible variant types (the *extension* above)
+must include a wild card pattern in order to be exhaustive.
+val f : t -> string = <fun>
 # 

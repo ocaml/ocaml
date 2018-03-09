@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 2003 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Asm part of the runtime system, AMD64 processor */
 /* Must be preprocessed by cpp */
@@ -67,10 +69,14 @@
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_OFFSET(r, n) .cfi_offset r, n
+#define CFI_SAME_VALUE(r) .cfi_same_value r
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
+#define CFI_OFFSET(r, n)
+#define CFI_SAME_VALUE(r)
 #endif
 
 #ifdef WITH_FRAME_POINTERS
@@ -247,14 +253,15 @@
 /* Win64 API: callee-save regs are rbx, rbp, rsi, rdi, r12-r15, xmm6-xmm15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
-        pushq   %rbx; CFI_ADJUST (8); \
-        pushq   %rbp; CFI_ADJUST (8); \
-        pushq   %rsi; CFI_ADJUST (8); \
-        pushq   %rdi; CFI_ADJUST (8); \
-        pushq   %r12; CFI_ADJUST (8); \
-        pushq   %r13; CFI_ADJUST (8); \
-        pushq   %r14; CFI_ADJUST (8); \
-        pushq   %r15; CFI_ADJUST (8); \
+        pushq   %rbx; CFI_ADJUST (8); CFI_OFFSET(rbx, -16); \
+        pushq   %rbp; CFI_ADJUST (8); CFI_OFFSET(rbp, -24); \
+                      /* Allows debugger to walk the stack */ \
+        pushq   %rsi; CFI_ADJUST (8); CFI_OFFSET(rsi, -32); \
+        pushq   %rdi; CFI_ADJUST (8); CFI_OFFSET(rdi, -40); \
+        pushq   %r12; CFI_ADJUST (8); CFI_OFFSET(r12, -48); \
+        pushq   %r13; CFI_ADJUST (8); CFI_OFFSET(r13, -56); \
+        pushq   %r14; CFI_ADJUST (8); CFI_OFFSET(r14, -64); \
+        pushq   %r15; CFI_ADJUST (8); CFI_OFFSET(r15, -72); \
         subq    $(8+10*16), %rsp; CFI_ADJUST (8+10*16); \
         movupd  %xmm6, 0*16(%rsp); \
         movupd  %xmm7, 1*16(%rsp); \
@@ -279,36 +286,36 @@
         movupd  8*16(%rsp), %xmm14; \
         movupd  9*16(%rsp), %xmm15; \
         addq    $(8+10*16), %rsp; CFI_ADJUST (-8-10*16); \
-        popq    %r15; CFI_ADJUST(-8); \
-        popq    %r14; CFI_ADJUST(-8); \
-        popq    %r13; CFI_ADJUST(-8); \
-        popq    %r12; CFI_ADJUST(-8); \
-        popq    %rdi; CFI_ADJUST(-8); \
-        popq    %rsi; CFI_ADJUST(-8); \
-        popq    %rbp; CFI_ADJUST(-8); \
-        popq    %rbx; CFI_ADJUST(-8)
+        popq    %r15; CFI_ADJUST(-8); CFI_SAME_VALUE(r15); \
+        popq    %r14; CFI_ADJUST(-8); CFI_SAME_VALUE(r14); \
+        popq    %r13; CFI_ADJUST(-8); CFI_SAME_VALUE(r13); \
+        popq    %r12; CFI_ADJUST(-8); CFI_SAME_VALUE(r12); \
+        popq    %rdi; CFI_ADJUST(-8); CFI_SAME_VALUE(rdi); \
+        popq    %rsi; CFI_ADJUST(-8); CFI_SAME_VALUE(rsi); \
+        popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
+        popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
 
 #else
 
 /* Unix API: callee-save regs are rbx, rbp, r12-r15 */
 
 #define PUSH_CALLEE_SAVE_REGS \
-        pushq   %rbx; CFI_ADJUST(8); \
-        pushq   %rbp; CFI_ADJUST(8); \
-        pushq   %r12; CFI_ADJUST(8); \
-        pushq   %r13; CFI_ADJUST(8); \
-        pushq   %r14; CFI_ADJUST(8); \
-        pushq   %r15; CFI_ADJUST(8); \
+        pushq   %rbx; CFI_ADJUST(8); CFI_OFFSET(rbx, -16); \
+        pushq   %rbp; CFI_ADJUST(8); CFI_OFFSET(rbp, -24); \
+        pushq   %r12; CFI_ADJUST(8); CFI_OFFSET(r12, -32); \
+        pushq   %r13; CFI_ADJUST(8); CFI_OFFSET(r13, -40); \
+        pushq   %r14; CFI_ADJUST(8); CFI_OFFSET(r14, -48); \
+        pushq   %r15; CFI_ADJUST(8); CFI_OFFSET(r15, -56); \
         subq    $8, %rsp; CFI_ADJUST(8)
 
 #define POP_CALLEE_SAVE_REGS \
         addq    $8, %rsp; CFI_ADJUST(-8); \
-        popq    %r15; CFI_ADJUST(-8); \
-        popq    %r14; CFI_ADJUST(-8); \
-        popq    %r13; CFI_ADJUST(-8); \
-        popq    %r12; CFI_ADJUST(-8); \
-        popq    %rbp; CFI_ADJUST(-8); \
-        popq    %rbx; CFI_ADJUST(-8);
+        popq    %r15; CFI_ADJUST(-8); CFI_SAME_VALUE(r15); \
+        popq    %r14; CFI_ADJUST(-8); CFI_SAME_VALUE(r14); \
+        popq    %r13; CFI_ADJUST(-8); CFI_SAME_VALUE(r13); \
+        popq    %r12; CFI_ADJUST(-8); CFI_SAME_VALUE(r12); \
+        popq    %rbp; CFI_ADJUST(-8); CFI_SAME_VALUE(rbp); \
+        popq    %rbx; CFI_ADJUST(-8); CFI_SAME_VALUE(rbx)
 
 #endif
 

@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Parsing of command line arguments.
 
@@ -25,7 +27,8 @@
     [Unit], [Set] and [Clear] keywords take no argument. A [Rest]
     keyword takes the remaining of the command line as arguments.
     Every other keyword takes the following word on the command line
-    as argument.
+    as argument.  For compatibility with GNU getopt_long, [keyword=arg]
+    is also allowed.
     Arguments not preceded by a keyword are called anonymous arguments.
 
    Examples ([cmd] is assumed to be the command name):
@@ -140,7 +143,7 @@ val usage_string : (key * spec * doc) list -> usage_msg -> string
 (** Returns the message that would have been printed by {!Arg.usage},
     if provided with the same parameters. *)
 
-val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list;;
+val align: ?limit: int -> (key * spec * doc) list -> (key * spec * doc) list
 (** Align the documentation strings by inserting spaces at the first
     space, according to the length of the keyword.  Use a
     space as the first character in a doc string if you want to

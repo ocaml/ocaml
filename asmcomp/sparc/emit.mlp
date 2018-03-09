@@ -1,14 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+#2 "asmcomp/sparc/emit.mlp"
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Emission of Sparc assembly code *)
 
@@ -54,7 +58,7 @@ let slot_offset loc cl =
 (* Return the other register in a register pair *)
 
 let next_in_pair = function
-    {loc = Reg r; typ = (Int | Addr)} -> phys_reg (r + 1)
+    {loc = Reg r; typ = (Int | Addr | Val)} -> phys_reg (r + 1)
   | {loc = Reg r; typ = Float} -> phys_reg (r + 16)
   | _ -> fatal_error "Emit.next_in_pair"
 
@@ -94,9 +98,6 @@ let label_prefix =
 
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
-
-let emit_data_label lbl =
-  emit_string label_prefix; emit_string "d"; emit_int lbl
 
 (* Output a pseudo-register *)
 
@@ -160,16 +161,21 @@ type frame_descr =
 
 let frame_descriptors = ref([] : frame_descr list)
 
-let record_frame live =
-  let lbl = new_label() in
+let record_frame ?label live =
+  let lbl =
+    match label with
+    | None -> new_label()
+    | Some label -> label
+  in
   let live_offset = ref [] in
   Reg.Set.iter
     (function
-        {typ = Addr; loc = Reg r} ->
+      | {typ = Val; loc = Reg r} ->
           live_offset := ((r lsl 1) + 1) :: !live_offset
-      | {typ = Addr; loc = Stack s} as reg ->
-          live_offset :=
-            slot_offset s (register_class reg) :: !live_offset
+      | {typ = Val; loc = Stack s} as reg ->
+          live_offset := slot_offset s (register_class reg) :: !live_offset
+      | {typ = Addr} as r ->
+          Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
   frame_descriptors :=
@@ -274,35 +280,44 @@ let rec emit_instr i dslot =
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         begin match (src, dst) with
-            {loc = Reg rs; typ = (Int | Addr)}, {loc = Reg rd} ->
+            {loc = Reg _; typ = (Int | Addr | Val)}, {loc = Reg _} ->
               `	mov	{emit_reg src}, {emit_reg dst}\n`
-          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = Float} ->
+          | {loc = Reg _; typ = Float}, {loc = Reg _; typ = Float} ->
               if !arch_version = SPARC_V9 then
                 `	fmovd	{emit_reg src}, {emit_reg dst}\n`
               else begin
                 `	fmovs	{emit_reg src}, {emit_reg dst}\n`;
                 `	fmovs	{emit_reg(next_in_pair src)}, {emit_reg(next_in_pair dst)}\n`
               end
-          | {loc = Reg rs; typ = Float}, {loc = Reg rd; typ = (Int | Addr)} ->
+          | {loc = Reg _; typ = Float}, {loc = Reg _; typ = (Int | Addr | Val)} ->
               (* This happens when calling C functions and passing a float arg
                  in %o0...%o5 *)
               `	sub	%sp, 8, %sp\n`;
               `	std	{emit_reg src}, [%sp + 96]\n`;
               `	ld	[%sp + 96], {emit_reg dst}\n`;
-              `	ld	[%sp + 100], {emit_reg(next_in_pair dst)}\n`;
+              let dst2 = i.res.(1) in
+              begin match dst2 with
+                | {loc = Reg _; typ = Int} ->
+                    `	ld	[%sp + 100], {emit_reg dst2}\n`;
+                | {loc = Stack _; typ = Int} ->
+                    `	ld	[%sp + 100], %g1\n`;
+                    `	st	%g1, {emit_stack dst2}\n`;
+                | _ ->
+                    fatal_error "Emit: Imove Float [| _; _ |]"
+              end;
               `	add	%sp, 8, %sp\n`
-          | {loc = Reg rs; typ = (Int | Addr)}, {loc = Stack sd} ->
+          | {loc = Reg _; typ = (Int | Addr | Val)}, {loc = Stack _} ->
               `	st	{emit_reg src}, {emit_stack dst}\n`
-          | {loc = Reg rs; typ = Float}, {loc = Stack sd} ->
+          | {loc = Reg _; typ = Float}, {loc = Stack _} ->
               `	std	{emit_reg src}, {emit_stack dst}\n`
-          | {loc = Stack ss; typ = (Int | Addr)}, {loc = Reg rd} ->
+          | {loc = Stack _; typ = (Int | Addr | Val)}, {loc = Reg _} ->
               `	ld	{emit_stack src}, {emit_reg dst}\n`
-          | {loc = Stack ss; typ = Float}, {loc = Reg rd} ->
+          | {loc = Stack _; typ = Float}, {loc = Reg _} ->
               `	ldd	{emit_stack src}, {emit_reg dst}\n`
           | (_, _) ->
               fatal_error "Emit: Imove"
         end
-    | Lop(Iconst_int n | Iconst_blockheader n) ->
+    | Lop(Iconst_int n) ->
         if is_native_immediate n then
           `	mov	{emit_nativeint n}, {emit_reg i.res.(0)}\n`
         else begin
@@ -313,43 +328,43 @@ let rec emit_instr i dslot =
         (* On UltraSPARC, the fzero instruction could be used to set a
            floating point register pair to zero. *)
         let lbl = new_label() in
-        float_constants := (lbl, Int64.bits_of_float f) :: !float_constants;
+        float_constants := (lbl, f) :: !float_constants;
         `	sethi	%hi({emit_label lbl}), %g1\n`;
         `	ldd	[%g1 + %lo({emit_label lbl})], {emit_reg i.res.(0)}\n`
     | Lop(Iconst_symbol s) ->
         `	sethi	%hi({emit_symbol s}), %g1\n`;
         `	or	%g1, %lo({emit_symbol s}), {emit_reg i.res.(0)}\n`
-    | Lop(Icall_ind) ->
-        `{record_frame i.live}	call	{emit_reg i.arg.(0)}\n`;
+    | Lop(Icall_ind { label_after; }) ->
+        `{record_frame i.live ~label:label_after}	call	{emit_reg i.arg.(0)}\n`;
         fill_delay_slot dslot
-    | Lop(Icall_imm s) ->
-        `{record_frame i.live}	call	{emit_symbol s}\n`;
+    | Lop(Icall_imm { func; label_after; }) ->
+        `{record_frame i.live ~label:label_after}	call	{emit_symbol func}\n`;
         fill_delay_slot dslot
-    | Lop(Itailcall_ind) ->
+    | Lop(Itailcall_ind { label_after = _; }) ->
         let n = frame_size() in
         if !contains_calls then
           `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
         `	jmp	{emit_reg i.arg.(0)}\n`;
         `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
-    | Lop(Itailcall_imm s) ->
+    | Lop(Itailcall_imm { func; label_after = _; }) ->
         let n = frame_size() in
-        if s = !function_name then begin
+        if func = !function_name then begin
             `	b	{emit_label !tailrec_entry_point}\n`;
             fill_delay_slot dslot
         end else begin
           if !contains_calls then
             `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`;
-          `	sethi	%hi({emit_symbol s}), %g1\n`;
-          `	jmp	%g1 + %lo({emit_symbol s})\n`;
+          `	sethi	%hi({emit_symbol func}), %g1\n`;
+          `	jmp	%g1 + %lo({emit_symbol func})\n`;
           `	add	%sp, {emit_int n}, %sp\n` (* in delay slot *)
         end
-    | Lop(Iextcall(s, alloc)) ->
+    | Lop(Iextcall { func; alloc; label_after; }) ->
         if alloc then begin
-          `	sethi	%hi({emit_symbol s}), %g2\n`;
-          `{record_frame i.live}	call	{emit_symbol "caml_c_call"}\n`;
-          `	or	%g2, %lo({emit_symbol s}), %g2\n` (* in delay slot *)
+          `	sethi	%hi({emit_symbol func}), %g2\n`;
+          `{record_frame i.live ~label:label_after}	call	{emit_symbol "caml_c_call"}\n`;
+          `	or	%g2, %lo({emit_symbol func}), %g2\n` (* in delay slot *)
         end else begin
-          `	call	{emit_symbol s}\n`;
+          `	call	{emit_symbol func}\n`;
           fill_delay_slot dslot
         end
     | Lop(Istackoffset n) ->
@@ -393,7 +408,7 @@ let rec emit_instr i dslot =
               | _ -> "st" in
             emit_store storeinstr addr i.arg src
         end
-    | Lop(Ialloc n) ->
+    | Lop(Ialloc { words = n; label_after_call_gc; }) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
           if solaris then begin
@@ -406,7 +421,7 @@ let rec emit_instr i dslot =
           end;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
-          `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
+          `{record_frame i.live ?label:label_after_call_gc}	call	{emit_symbol "caml_call_gc"}\n`;
           `	mov	{emit_int n}, %g2\n`; (* in delay slot *)
           `	add	%l6, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
@@ -430,7 +445,7 @@ let rec emit_instr i dslot =
           `	mov	0, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl}:\n`
         end
-    | Lop(Iintop Icheckbound) ->
+    | Lop(Iintop (Icheckbound _)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
         if solaris then
           `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
@@ -466,7 +481,7 @@ let rec emit_instr i dslot =
           `	mov	0, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl}:\n`
         end
-    | Lop(Iintop_imm(Icheckbound, n)) ->
+    | Lop(Iintop_imm(Icheckbound _, n)) ->
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         if solaris then
           `	tleu	5\n`            (* 5 = ST_RANGE_CHECK *)
@@ -501,7 +516,7 @@ let rec emit_instr i dslot =
         `	st	%f30, [%sp + 96]\n`;
         `	ld	[%sp + 96], {emit_reg i.res.(0)}\n`;
         `	add	%sp, 8, %sp\n`
-    | Lop(Ispecific sop) ->
+    | Lop(Ispecific _) ->
 	assert false
     | Lreloadretaddr ->
         let n = frame_size() in
@@ -600,7 +615,7 @@ and fill_delay_slot = function
    that does not branch. *)
 
 let is_one_instr_op = function
-    Imulh | Idiv | Imod | Icomp _ | Icheckbound -> false
+    Imulh | Idiv | Imod | Icomp _ | Icheckbound _ -> false
   | _ -> true
 
 let is_one_instr i =
@@ -609,7 +624,7 @@ let is_one_instr i =
       begin match op with
         Imove | Ispill | Ireload ->
           i.arg.(0).typ <> Float && i.res.(0).typ <> Float
-      | Iconst_int n | Iconst_blockheader n -> is_native_immediate n
+      | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_immediate n
       | Istore(_, Iindexed n, _) -> i.arg.(0).typ <> Float && is_immediate n
@@ -637,15 +652,16 @@ let no_interference res arg =
 let rec emit_all i =
   match i with
     {desc = Lend} -> ()
-  | {next = {desc = Lop(Icall_imm _) | Lop(Iextcall(_, false)) | Lbranch _}}
+  | {next = {desc = Lop(Icall_imm _)
+  | Lop(Iextcall { alloc = false; }) | Lbranch _}}
     when is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
-  | {next = {desc = Lop(Itailcall_imm s)}}
-    when s = !function_name && is_one_instr i ->
+  | {next = {desc = Lop(Itailcall_imm { func; _ })}}
+    when func = !function_name && is_one_instr i ->
       emit_instr i.next (Some i);
       emit_all i.next.next
-  | {next = {desc = Lop(Icall_ind)}}
+  | {next = {desc = Lop(Icall_ind _)}}
     when is_one_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
@@ -695,8 +711,6 @@ let emit_item = function
       `	.global	{emit_symbol s}\n`;
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
-  | Cdefine_label lbl ->
-      `{emit_data_label lbl}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -711,8 +725,6 @@ let emit_item = function
       emit_float64_split_directive ".word" (Int64.bits_of_float f)
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
-  | Clabel_address lbl ->
-      `	.word	{emit_data_label lbl}\n`
   | Cstring s ->
       emit_string_directive "	.ascii	" s
   | Cskip n ->

@@ -11,6 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
+/* TODO: incorporate timings for instrumented runtime */
+
+#define CAML_INTERNALS
+
 #include "caml/alloc.h"
 #include "caml/custom.h"
 #include "caml/finalise.h"
@@ -299,4 +303,40 @@ void caml_init_gc ()
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
 */
+}
+
+/* FIXME After the startup_aux.c unification, move these functions there. */
+
+CAMLprim value caml_runtime_variant (value unit)
+{
+  CAMLassert (unit == Val_unit);
+#if defined (DEBUG)
+  return caml_copy_string ("d");
+#elif defined (CAML_INSTR)
+  return caml_copy_string ("i");
+#else
+  return caml_copy_string ("");
+#endif
+}
+
+extern int caml_parser_trace;
+
+CAMLprim value caml_runtime_parameters (value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return caml_alloc_sprintf ("caml_runtime_parameters not implemented: %d", 0);
+}
+
+/* Control runtime warnings */
+
+CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
+{
+  caml_runtime_warnings = Bool_val(vbool);
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return Val_bool(caml_runtime_warnings);
 }

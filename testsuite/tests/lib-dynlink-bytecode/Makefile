@@ -1,14 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
 
@@ -27,7 +30,7 @@ default:
 compile:
 	@$(OCAMLC) -c registry.ml
 	@for file in stub*.c; do \
-	  $(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun/caml -c $$file; \
+	  $(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun -c $$file; \
 	  $(OCAMLMKLIB) -o `echo $$file | sed -e 's/stub/plug/' -e 's/\.c//'` \
 	                `basename $$file c`$(O); \
 	done
@@ -39,7 +42,7 @@ compile:
 	@rm -f main static custom custom.exe
 	@$(OCAMLC) -o main dynlink.cma registry.cmo main.cmo
 	@$(OCAMLC) -o static -linkall registry.cmo plug1.cma plug2.cma \
-	           -use-runtime $(OTOPDIR)/boot/ocamlrun$(EXE)
+	           -use-runtime $(OTOPDIR)/byterun/ocamlrun$(USE_RUNTIME)$(EXE)
 	@$(OCAMLC) -o custom$(EXE) -custom -linkall registry.cmo plug2.cma \
 	           plug1.cma -I .
 
@@ -65,6 +68,6 @@ promote: defaultpromote
 
 .PHONY: clean
 clean: defaultclean
-	@rm -f main static custom custom.exe *.result marshal.data
+	@rm -f main static custom custom.exe *.result marshal.data dllplug*.dll
 
 include $(BASEDIR)/makefiles/Makefile.common

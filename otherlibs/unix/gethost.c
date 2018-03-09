@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <string.h>
 #include <caml/mlvalues.h>
@@ -123,6 +125,13 @@ CAMLprim value unix_gethostbyname(value name)
 {
   struct hostent * hp;
   char * hostname;
+#if HAS_GETHOSTBYNAME_R
+  struct hostent h;
+  char buffer[NETDB_BUFFER_SIZE];
+  int err;
+#endif
+
+  if (! caml_string_is_c_safe(name)) raise_not_found();
 
 #if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
   hostname = caml_strdup(String_val(name));
@@ -132,20 +141,15 @@ CAMLprim value unix_gethostbyname(value name)
 
 #if HAS_GETHOSTBYNAME_R == 5
   {
-    struct hostent h;
-    char buffer[NETDB_BUFFER_SIZE];
-    int h_errno;
     enter_blocking_section();
-    hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &h_errno);
+    hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &err);
     leave_blocking_section();
   }
 #elif HAS_GETHOSTBYNAME_R == 6
   {
-    struct hostent h;
-    char buffer[NETDB_BUFFER_SIZE];
-    int h_errno, rc;
+    int rc;
     enter_blocking_section();
-    rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &h_errno);
+    rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &err);
     leave_blocking_section();
     if (rc != 0) hp = NULL;
   }

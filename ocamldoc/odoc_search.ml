@@ -1,19 +1,20 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Research of elements through modules. *)
 
-module Name = Odoc_name
-open Odoc_parameter
 open Odoc_value
 open Odoc_type
 open Odoc_extension
@@ -90,7 +91,7 @@ module Search =
       | T.Module_list _
       | T.Index_list -> []
       | T.Target _ -> []
-      | T.Title (n, l_opt, t) ->
+      | T.Title (_, l_opt, t) ->
           (match l_opt with
             None -> []
           | Some s -> search_section t (Name.concat root s) v) @
@@ -157,8 +158,7 @@ module Search =
               []
               (Odoc_class.class_comments c)
           in
-          let l = res_att @ res_met @ res_sec in
-          l
+          res_att @ res_met @ res_sec
         else
           []
       in
@@ -189,8 +189,7 @@ module Search =
               []
               (Odoc_class.class_type_comments ct)
           in
-          let l = res_att @ res_met @ res_sec in
-          l
+          res_att @ res_met @ res_sec
         else
           []
       in
@@ -252,10 +251,8 @@ module Search =
               []
               (Odoc_module.module_type_comments mt)
           in
-          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
+          res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
-          in
-          l
         else
           []
       in
@@ -317,10 +314,8 @@ module Search =
               []
               (Odoc_module.module_comments m)
           in
-          let l = res_val @ res_typ @ res_ext @ res_exc @ res_mod @
+          res_val @ res_typ @ res_ext @ res_exc @ res_mod @
             res_modtyp @ res_cl @ res_cltyp @ res_sec
-          in
-          l
         else
           []
       in

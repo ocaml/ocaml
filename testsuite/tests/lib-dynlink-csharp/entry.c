@@ -1,14 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*                        Alain Frisch, LexiFi                         */
-/*                                                                     */
-/*  Copyright 2007 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                OCaml                                   */
+/*                                                                        */
+/*                         Alain Frisch, LexiFi                           */
+/*                                                                        */
+/*   Copyright 2007 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -17,7 +20,7 @@
 #include <caml/custom.h>
 #include <caml/fail.h>
 
-#if !defined(OPENSTEP) && (defined(__WIN32__) && !defined(__CYGWIN__))
+#if !defined(OPENSTEP) && (defined(_WIN32) && !defined(__CYGWIN__))
 #  if defined(_MSC_VER) || defined(__MINGW32__)
 #    define _DLLAPI __declspec(dllexport)
 #  else

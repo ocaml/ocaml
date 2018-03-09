@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Common functions for emitting assembly code *)
 
@@ -30,17 +33,23 @@ val emit_float32_directive: string -> int32 -> unit
 val reset : unit -> unit
 val reset_debug_info: unit -> unit
 val emit_debug_info: Debuginfo.t -> unit
+val emit_debug_info_gen :
+  Debuginfo.t ->
+  (file_num:int -> file_name:string -> unit) ->
+  (file_num:int -> line:int -> col:int -> unit) -> unit
 
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)
     fd_frame_size: int;                 (* Size of stack frame *)
     fd_live_offset: int list;           (* Offsets/regs of live addresses *)
+    fd_raise: bool;                     (* Is frame for a raise? *)
     fd_debuginfo: Debuginfo.t }         (* Location, if any *)
 
 val frame_descriptors : frame_descr list ref
 
 type emit_frame_actions =
-  { efa_label: int -> unit;
+  { efa_code_label: int -> unit;
+    efa_data_label: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;
@@ -57,9 +66,14 @@ val cfi_startproc : unit -> unit
 val cfi_endproc : unit -> unit
 val cfi_adjust_cfa_offset : int -> unit
 val cfi_offset : reg:int -> offset:int -> unit
+val cfi_def_cfa_offset : int -> unit
+val cfi_remember_state : unit -> unit
+val cfi_restore_state : unit -> unit
 
-val emit_block_header_for_closure
-   : word_directive:string
-  -> comment_string:string
-  -> function_entry_points_are_doubleword_aligned:bool
-  -> unit
+val binary_backend_available: bool ref
+    (** Is a binary backend available.  If yes, we don't need
+        to generate the textual assembly file (unless the user
+        request it with -S). *)
+
+val create_asm_file: bool ref
+    (** Are we actually generating the textual assembly file? *)

@@ -98,10 +98,10 @@ struct
 (* the internal representation is UCS4 with big endian*)
 (* The most significant digit appears first. *)
 let get_buf s i =
-  let n = Char.code s.[i] in
-  let n = (n lsl 8) lor (Char.code s.[i + 1]) in
-  let n = (n lsl 8) lor (Char.code s.[i + 2]) in
-  let n = (n lsl 8) lor (Char.code s.[i + 3]) in
+  let n = Bytes.get s i |> Char.code in
+  let n = (n lsl 8) lor (Bytes.get s (i + 1) |> Char.code) in
+  let n = (n lsl 8) lor (Bytes.get s (i + 2) |> Char.code) in
+  let n = (n lsl 8) lor (Bytes.get s (i + 3) |> Char.code) in
   UChar.chr_of_uint n
 
 let set_buf s i u =
@@ -130,16 +130,16 @@ class text_raw buf =
     inherit [cursor] ustorage_base
     val contents = buf
     method first = new cursor (self :> text_raw) 0
-    method len = (String.length contents) / 4
+    method len = (Bytes.length contents) / 4
     method get i = get_buf contents (4 * i)
     method nth i = new cursor (self :> text_raw) i
-    method copy = {< contents = String.copy contents >}
+    method copy = {< contents = Bytes.copy contents >}
     method sub pos len =
-      {< contents = String.sub contents (pos * 4) (len * 4) >}
+      {< contents = Bytes.sub contents (pos * 4) (len * 4) >}
     method concat (text : ustorage) =
-      let buf = String.create (String.length contents + 4 * text#len) in
-      String.blit contents 0 buf 0 (String.length contents);
-      init_buf buf (String.length contents) text;
+      let buf = Bytes.create (Bytes.length contents + 4 * text#len) in
+      Bytes.blit contents 0 buf 0 (Bytes.length contents);
+      init_buf buf (Bytes.length contents) text;
       {< contents = buf >}
   end
 and cursor text i =
@@ -161,7 +161,7 @@ class text init = text_raw (make_buf init)
 class string init = string_raw (make_buf init)
 
 let of_string s =
-  let buf = String.make (4 * String.length s) '\000' in
+  let buf = Bytes.make (4 * String.length s) '\000' in
   for i = 0 to String.length s - 1 do
     buf.[4 * i] <- s.[i]
   done;

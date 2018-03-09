@@ -5,6 +5,7 @@
 #include "mlvalues.h"
 #include "domain_state.h"
 #include "memory.h"
+#include "major_gc.h"
 
 struct domain {
   struct dom_internal* internals;

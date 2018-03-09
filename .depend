@@ -7,6 +7,16 @@ utils/misc.cmi :
 utils/tbl.cmi :
 utils/terminfo.cmi :
 utils/warnings.cmi :
+utils/identifiable.cmo : utils/identifiable.cmi
+utils/identifiable.cmx : utils/identifiable.cmi
+utils/numbers.cmo : utils/numbers.cmi
+utils/numbers.cmx : utils/numbers.cmi
+utils/timings.cmo : utils/timings.cmi
+utils/timings.cmx : utils/timings.cmi
+utils/arg_helper.cmo : utils/arg_helper.cmi
+utils/arg_helper.cmx : utils/arg_helper.cmi
+utils/strongly_connected_components.cmo : utils/strongly_connected_components.cmi
+utils/strongly_connected_components.cmx : utils/strongly_connected_components.cmi
 utils/ccomp.cmo : utils/misc.cmi utils/config.cmi utils/clflags.cmi \
     utils/ccomp.cmi
 utils/ccomp.cmx : utils/misc.cmx utils/config.cmx utils/clflags.cmx \
@@ -34,6 +44,11 @@ parsing/asttypes.cmi : parsing/location.cmi
 parsing/docstrings.cmi : parsing/parsetree.cmi parsing/location.cmi
 parsing/lexer.cmi : parsing/parser.cmi parsing/location.cmi
 parsing/location.cmi : utils/warnings.cmi
+parsing/ast_iterator.cmo : parsing/ast_iterator.cmi
+parsing/ast_invariants.cmo : parsing/ast_invariants.cmi
+parsing/attr_helper.cmo : parsing/attr_helper.cmi
+parsing/depend.cmo : parsing/depend.cmi
+parsing/builtin_attributes.cmo : parsing/builtin_attributes.cmi
 parsing/longident.cmi :
 parsing/parse.cmi : parsing/parsetree.cmi
 parsing/parser.cmi : parsing/parsetree.cmi parsing/location.cmi \
@@ -101,6 +116,8 @@ parsing/printast.cmx : parsing/parsetree.cmi utils/misc.cmx \
 parsing/syntaxerr.cmo : parsing/location.cmi parsing/syntaxerr.cmi
 parsing/syntaxerr.cmx : parsing/location.cmx parsing/syntaxerr.cmi
 typing/annot.cmi : parsing/location.cmi
+typing/tast_mapper.cmo : typing/tast_mapper.cmi
+typing/untypeast.cmo : typing/untypeast.cmi
 typing/btype.cmi : typing/types.cmi typing/path.cmi parsing/asttypes.cmi
 typing/cmi_format.cmi : typing/types.cmi
 typing/cmt_format.cmi : typing/types.cmi typing/typedtree.cmi \
@@ -129,7 +146,7 @@ typing/parmatch.cmi : typing/types.cmi typing/typedtree.cmi \
     typing/env.cmi parsing/asttypes.cmi
 typing/path.cmi : typing/ident.cmi
 typing/predef.cmi : typing/types.cmi typing/path.cmi typing/ident.cmi
-typing/primitive.cmi :
+typing/primitive.cmi : typing/outcometree.cmi
 typing/printtyp.cmi : typing/types.cmi typing/path.cmi \
     typing/outcometree.cmi parsing/longident.cmi typing/ident.cmi \
     typing/env.cmi
@@ -420,6 +437,8 @@ bytecomp/printlambda.cmi : bytecomp/lambda.cmi
 bytecomp/runtimedef.cmi :
 bytecomp/simplif.cmi : bytecomp/lambda.cmi
 bytecomp/switch.cmi :
+bytecomp/translattribute.cmi : bytecomp/lambda.cmi
+bytecomp/translattribute.cmo : bytecomp/translattribute.cmi
 bytecomp/symtable.cmi : utils/misc.cmi typing/ident.cmi \
     bytecomp/cmo_format.cmi
 bytecomp/translclass.cmi : typing/typedtree.cmi parsing/location.cmi \
@@ -510,6 +529,7 @@ bytecomp/matching.cmx : typing/types.cmx bytecomp/typeopt.cmx \
     parsing/location.cmx bytecomp/lambda.cmx typing/ident.cmx typing/env.cmx \
     utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
     bytecomp/matching.cmi
+bytecomp/meta.cmi : bytecomp/instruct.cmi
 bytecomp/meta.cmo : bytecomp/meta.cmi
 bytecomp/meta.cmx : bytecomp/meta.cmi
 bytecomp/opcodes.cmo :
@@ -604,12 +624,65 @@ asmcomp/asmpackager.cmi : typing/env.cmi
 asmcomp/branch_relaxation.cmi : asmcomp/linearize.cmi \
     asmcomp/branch_relaxation_intf.cmo
 asmcomp/clambda.cmi : bytecomp/lambda.cmi typing/ident.cmi \
-    asmcomp/debuginfo.cmi parsing/asttypes.cmi
+    asmcomp/debuginfo.cmi parsing/asttypes.cmi middle_end/debuginfo.cmi
 asmcomp/closure.cmi : bytecomp/lambda.cmi asmcomp/clambda.cmi
 asmcomp/cmm.cmi : bytecomp/lambda.cmi typing/ident.cmi asmcomp/debuginfo.cmi
 asmcomp/cmmgen.cmi : asmcomp/cmx_format.cmi asmcomp/cmm.cmi \
     asmcomp/clambda.cmi
-asmcomp/cmx_format.cmi : asmcomp/clambda.cmi
+middle_end/simple_value_approx.cmi : middle_end/base_types/set_of_closures_id.cmi \
+		middle_end/base_types/symbol.cmi middle_end/base_types/variable.cmi \
+		middle_end/base_types/export_id.cmi middle_end/base_types/closure_id.cmi \
+		middle_end/flambda.cmi middle_end/freshening.cmi
+middle_end/flambda.cmi : middle_end/base_types/mutable_variable.cmi \
+		middle_end/projection.cmi middle_end/base_types/static_exception.cmi \
+		middle_end/allocated_const.cmi  middle_end/base_types/set_of_closures_origin.cmi
+middle_end/projection.cmi : middle_end/base_types/var_within_closure.cmi
+middle_end/base_types/closure_id.cmi : middle_end/base_types/closure_element.cmi
+middle_end/base_types/id_types.cmo : middle_end/base_types/id_types.cmi
+middle_end/pass_wrapper.cmo : middle_end/pass_wrapper.cmi
+middle_end/semantics_of_primitives.cmo : middle_end/semantics_of_primitives.cmi
+middle_end/flambda_iterators.cmo : middle_end/flambda_iterators.cmi
+middle_end/inlining_cost.cmo : middle_end/inlining_cost.cmi
+middle_end/closure_conversion.cmo : middle_end/closure_conversion.cmi
+middle_end/initialize_symbol_to_let_symbol.cmo : middle_end/initialize_symbol_to_let_symbol.cmi
+middle_end/lift_let_to_initialize_symbol.cmo : middle_end/lift_let_to_initialize_symbol.cmi
+middle_end/find_recursive_functions.cmo : middle_end/find_recursive_functions.cmi
+middle_end/invariant_params.cmo : middle_end/invariant_params.cmi
+middle_end/inconstant_idents.cmo : middle_end/inconstant_idents.cmi
+middle_end/effect_analysis.cmo : middle_end/effect_analysis.cmi
+middle_end/alias_analysis.cmo : middle_end/alias_analysis.cmi
+middle_end/lift_constants.cmo : middle_end/lift_constants.cmi
+middle_end/share_constants.cmo : middle_end/share_constants.cmi
+middle_end/simplify_common.cmo : middle_end/simplify_common.cmi
+middle_end/remove_unused_arguments.cmo : middle_end/remove_unused_arguments.cmi
+middle_end/remove_unused_closure_vars.cmo : middle_end/remove_unused_closure_vars.cmi
+middle_end/remove_unused_program_constructs.cmo : middle_end/remove_unused_program_constructs.cmi
+middle_end/lift_code.cmo : middle_end/lift_code.cmi
+middle_end/simplify_boxed_integer_ops.cmo : middle_end/simplify_boxed_integer_ops_intf.cmi \
+  	middle_end/simplify_boxed_integer_ops.cmi
+middle_end/closure_conversion_aux.cmo : middle_end/closure_conversion_aux.cmi
+middle_end/simplify_primitives.cmo : middle_end/simplify_primitives.cmi
+middle_end/inlining_stats_types.cmo : middle_end/inlining_stats_types.cmi
+middle_end/inlining_stats.cmo : middle_end/inlining_stats.cmi
+middle_end/extract_projections.cmo : middle_end/extract_projections.cmi
+middle_end/augment_specialised_args.cmo : middle_end/augment_specialised_args.cmi
+middle_end/unbox_free_vars_of_closures.cmo : middle_end/unbox_free_vars_of_closures.cmi
+middle_end/unbox_specialised_args.cmo : middle_end/unbox_specialised_args.cmi
+middle_end/unbox_closures.cmo : middle_end/unbox_closures.cmi
+middle_end/inlining_transforms.cmo : middle_end/inlining_transforms.cmi
+middle_end/inlining_transforms.cmi : middle_end/inlining_decision_intf.cmi
+middle_end/inlining_decision.cmo : middle_end/inlining_decision.cmi
+middle_end/inline_and_simplify.cmo : middle_end/inline_and_simplify.cmi
+middle_end/ref_to_variables.cmo : middle_end/ref_to_variables.cmi
+middle_end/flambda_invariants.cmo : middle_end/flambda_invariants.cmi
+middle_end/middle_end.cmo : middle_end/middle_end.cmi
+middle_end/inline_and_simplify_aux.cmo : middle_end/inline_and_simplify_aux.cmi
+middle_end/remove_free_vars_equal_to_args.cmo : middle_end/remove_free_vars_equal_to_args.cmi
+middle_end/flambda_utils.cmo : middle_end/backend_intf.cmi middle_end/flambda_utils.cmi
+middle_end/base_types/compilation_unit.cmi : middle_end/base_types/linkage_name.cmi
+middle_end/base_types/set_of_closures_id.cmi : middle_end/base_types/compilation_unit.cmi
+asmcomp/export_info.cmi : middle_end/base_types/tag.cmi middle_end/simple_value_approx.cmi
+asmcomp/cmx_format.cmi : asmcomp/clambda.cmi asmcomp/export_info.cmi
 asmcomp/codegen.cmi : asmcomp/cmm.cmi
 asmcomp/coloring.cmi :
 asmcomp/comballoc.cmi : asmcomp/mach.cmi
@@ -875,6 +948,7 @@ asmcomp/strmatch.cmo : bytecomp/lambda.cmi typing/ident.cmi asmcomp/cmm.cmi \
     asmcomp/arch.cmo asmcomp/strmatch.cmi
 asmcomp/strmatch.cmx : bytecomp/lambda.cmx typing/ident.cmx asmcomp/cmm.cmx \
     asmcomp/arch.cmx asmcomp/strmatch.cmi
+driver/compplugin.cmo : driver/compplugin.cmi
 driver/compdynlink.cmi :
 driver/compenv.cmi :
 driver/compile.cmi :

@@ -11,6 +11,10 @@
 /*                                                                     */
 /***********************************************************************/
 
+/* TODO KC: Split into backtrace_prim.c */
+
+#define CAML_INTERNALS
+
 /* Stack backtrace for uncaught exceptions */
 
 #include <fcntl.h>
@@ -415,7 +419,8 @@ static void extract_location_info(code_t pc,
                                   /*out*/ struct loc_info * li)
 {
   intnat ev = event_for_location(pc);
-  li->loc_is_raise = caml_is_instruction(*pc, RAISE) ||
+  li->loc_is_raise =
+    caml_is_instruction(*pc, RAISE) ||
     caml_is_instruction(*pc, RERAISE);
   if (ev == -1) {
     li->loc_valid = 0;
@@ -557,4 +562,42 @@ CAMLprim value caml_get_exception_backtrace(value unit)
       res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
   }
   CAMLreturn(res);
+}
+
+CAMLprim value caml_add_debug_info(code_t start, value size,
+                                   value events)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_remove_debug_info(code_t start)
+{
+  return Val_unit;
+}
+
+CAMLprim value caml_raw_backtrace_length(value bt)
+{
+  return Val_int(Wosize_val(bt));
+}
+
+CAMLprim value caml_raw_backtrace_slot(value bt, value index)
+{
+  /* TODO KC */
+  caml_failwith ("caml_raw_backtrace_next_slot not implemented");
+  return Val_unit;
+}
+
+CAMLprim value caml_raw_backtrace_next_slot(value slot)
+{
+  /* TODO KC */
+  caml_failwith ("caml_raw_backtrace_next_slot not implemented");
+  return Val_unit;
+}
+
+/* Convert the raw backtrace to a data structure usable from OCaml */
+CAMLprim value caml_convert_raw_backtrace(value bt)
+{
+  /* TODO KC */
+  caml_failwith ("caml_raw_backtrace_next_slot not implemented");
+  return Val_unit;
 }

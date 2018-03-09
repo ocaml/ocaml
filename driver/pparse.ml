@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
 (*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Format
 
@@ -34,7 +37,9 @@ let call_external_preprocessor sourcefile pp =
 let preprocess sourcefile =
   match !Clflags.preprocessor with
     None -> sourcefile
-  | Some pp -> call_external_preprocessor sourcefile pp
+  | Some pp ->
+      Timings.(time (Preprocessing sourcefile))
+        (call_external_preprocessor sourcefile) pp
 
 
 let remove_preprocessed inputfile =
@@ -42,20 +47,26 @@ let remove_preprocessed inputfile =
     None -> ()
   | Some _ -> Misc.remove_file inputfile
 
+type 'a ast_kind =
+| Structure : Parsetree.structure ast_kind
+| Signature : Parsetree.signature ast_kind
+
+let magic_of_kind : type a . a ast_kind -> string = function
+  | Structure -> Config.ast_impl_magic_number
+  | Signature -> Config.ast_intf_magic_number
 
 (* Note: some of the functions here should go to Ast_mapper instead,
    which would encapsulate the "binary AST" protocol. *)
 
-let write_ast magic ast =
-  let fn = Filename.temp_file "camlppx" "" in
+let write_ast (type a) (kind : a ast_kind) fn (ast : a) =
   let oc = open_out_bin fn in
-  output_string oc magic;
-  output_value oc !Location.input_name;
-  output_value oc ast;
-  close_out oc;
-  fn
+  output_string oc (magic_of_kind kind);
+  output_value oc (!Location.input_name : string);
+  output_value oc (ast : a);
+  close_out oc
 
-let apply_rewriter magic fn_in ppx =
+let apply_rewriter kind fn_in ppx =
+  let magic = magic_of_kind kind in
   let fn_out = Filename.temp_file "camlppx" "" in
   let comm =
     Printf.sprintf "%s %s %s" ppx (Filename.quote fn_in) (Filename.quote fn_out)
@@ -79,13 +90,14 @@ let apply_rewriter magic fn_in ppx =
   end;
   fn_out
 
-let read_ast magic fn =
+let read_ast (type a) (kind : a ast_kind) fn : a =
   let ic = open_in_bin fn in
   try
+    let magic = magic_of_kind kind in
     let buffer = really_input_string ic (String.length magic) in
     assert(buffer = magic); (* already checked by apply_rewriter *)
-    Location.input_name := input_value ic;
-    let ast = input_value ic in
+    Location.input_name := (input_value ic : string);
+    let ast = (input_value ic : a) in
     close_in ic;
     Misc.remove_file fn;
     ast
@@ -94,34 +106,37 @@ let read_ast magic fn =
     Misc.remove_file fn;
     raise exn
 
-let rewrite magic ast ppxs =
-  read_ast magic
-    (List.fold_left (apply_rewriter magic) (write_ast magic ast)
-       (List.rev ppxs))
+let rewrite kind ppxs ast =
+  let fn = Filename.temp_file "camlppx" "" in
+  write_ast kind fn ast;
+  let fn = List.fold_left (apply_rewriter kind) fn (List.rev ppxs) in
+  read_ast kind fn
 
 let apply_rewriters_str ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      let ast = Ast_mapper.add_ppx_context_str ~tool_name ast in
-      let ast = rewrite Config.ast_impl_magic_number ast ppxs in
-      Ast_mapper.drop_ppx_context_str ~restore ast
+      ast
+      |> Ast_mapper.add_ppx_context_str ~tool_name
+      |> rewrite Structure ppxs
+      |> Ast_mapper.drop_ppx_context_str ~restore
 
 let apply_rewriters_sig ?(restore = true) ~tool_name ast =
   match !Clflags.all_ppx with
   | [] -> ast
   | ppxs ->
-      let ast = Ast_mapper.add_ppx_context_sig ~tool_name ast in
-      let ast = rewrite Config.ast_intf_magic_number ast ppxs in
-      Ast_mapper.drop_ppx_context_sig ~restore ast
+      ast
+      |> Ast_mapper.add_ppx_context_sig ~tool_name
+      |> rewrite Signature ppxs
+      |> Ast_mapper.drop_ppx_context_sig ~restore
 
-let apply_rewriters ?restore ~tool_name magic ast =
-  if magic = Config.ast_impl_magic_number then
-    Obj.magic (apply_rewriters_str ?restore ~tool_name (Obj.magic ast))
-  else if magic = Config.ast_intf_magic_number then
-    Obj.magic (apply_rewriters_sig ?restore ~tool_name (Obj.magic ast))
-  else
-    assert false
+let apply_rewriters ?restore ~tool_name
+    (type a) (kind : a ast_kind) (ast : a) : a =
+  match kind with
+  | Structure ->
+      apply_rewriters_str ?restore ~tool_name ast
+  | Signature ->
+      apply_rewriters_sig ?restore ~tool_name ast
 
 (* Parse a file or get a dumped syntax tree from it *)
 
@@ -143,7 +158,14 @@ let open_and_check_magic inputfile ast_magic =
   in
   (ic, is_ast_file)
 
-let file ppf ~tool_name inputfile parse_fun ast_magic =
+let parse (type a) (kind : a ast_kind) lexbuf : a =
+  match kind with
+  | Structure -> Parse.implementation lexbuf
+  | Signature -> Parse.interface lexbuf
+
+let file_aux ppf ~tool_name inputfile (type a) parse_fun invariant_fun
+             (kind : a ast_kind) =
+  let ast_magic = magic_of_kind kind in
   let (ic, is_ast_file) = open_and_check_magic inputfile ast_magic in
   let ast =
     try
@@ -152,8 +174,8 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
           (* FIXME make this a proper warning *)
           fprintf ppf "@[Warning: %s@]@."
             "option -unsafe used with a preprocessor returning a syntax tree";
-        Location.input_name := input_value ic;
-        input_value ic
+        Location.input_name := (input_value ic : string);
+        (input_value ic : a)
       end else begin
         seek_in ic 0;
         Location.input_name := inputfile;
@@ -164,8 +186,12 @@ let file ppf ~tool_name inputfile parse_fun ast_magic =
     with x -> close_in ic; raise x
   in
   close_in ic;
-  apply_rewriters ~restore:false ~tool_name ast_magic ast
+  let ast = apply_rewriters ~restore:false ~tool_name kind ast in
+  if is_ast_file || !Clflags.all_ppx <> [] then invariant_fun ast;
+  ast
 
+let file ppf ~tool_name inputfile parse_fun ast_kind =
+  file_aux ppf ~tool_name inputfile parse_fun ignore ast_kind
 
 let report_error ppf = function
   | CannotRun cmd ->
@@ -182,21 +208,30 @@ let () =
       | _ -> None
     )
 
-let parse_all ~tool_name parse_fun magic ppf sourcefile =
+let parse_file ~tool_name invariant_fun apply_hooks kind ppf sourcefile =
   Location.input_name := sourcefile;
   let inputfile = preprocess sourcefile in
   let ast =
-    try file ppf ~tool_name inputfile parse_fun magic
+    let parse_fun = Timings.(time (Parsing sourcefile)) (parse kind) in
+    try file_aux ppf ~tool_name inputfile parse_fun invariant_fun kind
     with exn ->
       remove_preprocessed inputfile;
       raise exn
   in
   remove_preprocessed inputfile;
+  let ast = apply_hooks { Misc.sourcefile } ast in
   ast
 
+module ImplementationHooks = Misc.MakeHooks(struct
+    type t = Parsetree.structure
+  end)
+module InterfaceHooks = Misc.MakeHooks(struct
+    type t = Parsetree.signature
+  end)
+
 let parse_implementation ppf ~tool_name sourcefile =
-  parse_all ~tool_name Parse.implementation
-    Config.ast_impl_magic_number ppf sourcefile
+  parse_file ~tool_name Ast_invariants.structure
+    ImplementationHooks.apply_hooks Structure ppf sourcefile
 let parse_interface ppf ~tool_name sourcefile =
-  parse_all ~tool_name Parse.interface
-    Config.ast_intf_magic_number ppf sourcefile
+  parse_file ~tool_name Ast_invariants.signature
+    InterfaceHooks.apply_hooks Signature ppf sourcefile

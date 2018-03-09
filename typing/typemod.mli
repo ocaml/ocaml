@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Type-checking of the module language *)
 
@@ -27,11 +30,11 @@ val type_implementation:
   string -> string -> string -> Env.t -> Parsetree.structure ->
   Typedtree.structure * Typedtree.module_coercion
 val type_interface:
-        Env.t -> Parsetree.signature -> Typedtree.signature
+        string -> Env.t -> Parsetree.signature -> Typedtree.signature
 val transl_signature:
         Env.t -> Parsetree.signature -> Typedtree.signature
 val check_nongen_schemes:
-        Env.t -> Typedtree.structure_item list -> unit
+        Env.t -> Types.signature -> unit
 val type_open_:
         ?toplevel:bool -> Asttypes.override_flag ->
         Env.t -> Location.t -> Longident.t Asttypes.loc -> Path.t * Env.t
@@ -70,8 +73,15 @@ type error =
   | Scoping_pack of Longident.t * type_expr
   | Recursive_module_require_explicit_type
   | Apply_generative
+  | Cannot_scrape_alias of Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 val report_error: Env.t -> formatter -> error -> unit
+
+
+module ImplementationHooks : Misc.HookSig
+  with type t = Typedtree.structure * Typedtree.module_coercion
+module InterfaceHooks : Misc.HookSig
+  with type t = Typedtree.signature

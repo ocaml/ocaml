@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 open Nat
@@ -546,7 +548,9 @@ let string_of_ratio r =
     else string_of_big_int r.numerator ^ "/" ^ string_of_big_int r.denominator
 
 (* XL: j'ai puissamment simplifie "ratio_of_string" en virant la notation
-   scientifique. *)
+   scientifique.
+  | I have strongly simplified "ratio_of_string" by deleting scientific notation
+*)
 
 let ratio_of_string s =
   try
@@ -561,9 +565,50 @@ let ratio_of_string s =
 (* Coercion with type float *)
 
 let float_of_ratio r =
-  float_of_string (float_of_rational_string r)
+  let p = r.numerator and q = r.denominator in
+  (* Special cases 0/0, 0/q and p/0 *)
+  if sign_big_int q = 0 then begin
+    match sign_big_int p with
+    | 0 -> nan
+    | 1 -> infinity
+    | -1 -> neg_infinity
+    | _ -> assert false
+    end
+  else if sign_big_int p = 0 then 0.0
+  else begin
+    let np = num_bits_big_int p and nq = num_bits_big_int q in
+    if np <= 53 && nq <= 53 then
+      (* p and q convert to floats exactly; use FP division to get the
+         correctly-rounded result. *)
+      Int64.to_float (int64_of_big_int p)
+         /. Int64.to_float (int64_of_big_int q)
+    else begin
+      let ap = abs_big_int p in
+      (* |p| is in [2^(np-1), 2^np)
+         q is in [2^(nq-1), 2^nq)
+         hence |p|/q is in (2^(np-nq-1), 2^(np-nq+1)).
+         We define n such that |p|/q*2^n is in [2^54, 2^56).
+         >= 2^54 so that the round to odd technique applies.
+         < 2^56 so that the integral part is representable as an int64. *)
+      let n = 55 - (np - nq) in
+      (* Scaling |p|/q by 2^n *)
+      let (p', q') =
+        if n >= 0
+        then (shift_left_big_int ap n, q)
+        else (ap, shift_left_big_int q (-n)) in
+      (* Euclidean division of p' by q' *)
+      let (quo, rem) = quomod_big_int p' q' in
+      (* quo is the integral part of |p|/q*2^n
+         rem/q' is the fractional part. *)
+      (* Round quo to float *)
+      let f = round_big_int_to_float quo (sign_big_int rem = 0) in
+      (* Apply exponent *)
+      let f = ldexp f (-n) in
+      (* Apply sign *)
+      if sign_big_int p < 0 then -. f else f
+    end
+  end
 
-(* XL: suppression de ratio_of_float *)
 
 let power_ratio_positive_int r n =
   create_ratio (power_big_int_positive_int (r.numerator) n)

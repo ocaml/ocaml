@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 2013 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Asm part of the runtime system, ARM processor, 64-bit mode */
 /* Must be preprocessed by cpp */
@@ -297,6 +299,14 @@ FUNCTION(caml_call_read_barrier)
 CFI_STARTPROC
         PROFILE
         SWITCH_OCAML_TO_C(TMP)
+=======
+    /* Record return address */
+        STOREGLOBAL(x30, caml_last_return_address)
+    /* Record lowest stack address */
+        mov     TMP, sp
+        STOREGLOBAL(TMP, caml_bottom_of_stack)
+.Lcaml_call_gc:
+>>>>>>> b4.04.2
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
         stp     x29, x30, [sp, -400]!
@@ -919,3 +929,6 @@ caml_system__frametable:
         .align  3
         .type   caml_system__frametable, %object
         .size   caml_system__frametable, .-caml_system__frametable
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

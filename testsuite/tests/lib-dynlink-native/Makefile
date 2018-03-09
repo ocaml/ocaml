@@ -1,28 +1,30 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
-BASEDIR=../..
+BASEDIR=$(shell pwd)/../..
 
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/$(UNIXLIBVAR)unix \
 	  -I $(OTOPDIR)/otherlibs/systhreads \
           -I $(OTOPDIR)/otherlibs/dynlink
-LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads:$(TOPDIR)/otherlibs/dynlink
+LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
+:$(TOPDIR)/otherlibs/dynlink
 
 .PHONY: default
 default:
-	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
-	  echo 'skipped (shared libraries not available)'; \
-	elif $(BYTECODE_ONLY); then \
-	  echo 'skipped (native compiler not available)' ; \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) ; then \
+	  echo " ... testing 'main' => skipped"; \
 	else \
 	   $(SET_LD_PATH) $(MAKE) all; \
 	fi
@@ -70,10 +72,13 @@ sub/api.so: sub/api.cmi sub/api.ml
 	@cd sub; $(OCAMLOPT) -c $(SHARED) api.ml
 
 sub/api.cmi: sub/api.mli
-	@cd sub; $(OCAMLOPT) -c api.mli
+	@cd sub; $(OCAMLOPT) -c -opaque api.mli
 
 sub/api.cmx: sub/api.cmi sub/api.ml
 	@cd sub; $(OCAMLOPT) -c api.ml
+
+plugin.cmi: plugin.mli
+	@$(OCAMLOPT) -c -opaque plugin.mli
 
 plugin.cmx: api.cmx plugin.cmi
 sub/plugin.cmx: api.cmx
@@ -104,12 +109,14 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 
 factorial.$(O): factorial.c
 	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" -ccopt -I \
-	             -ccopt $(TOPDIR)/byterun/caml \
+	             -ccopt $(CTOPDIR)/byterun \
 	             factorial.c
 
 .PHONY: promote
 promote:
 	@cp result reference
+
+.PRECIOUS: %.cmx
 
 .PHONY: clean
 clean: defaultclean

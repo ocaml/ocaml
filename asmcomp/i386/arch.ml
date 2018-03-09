@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Machine-specific command-line options *)
 
@@ -49,6 +52,8 @@ type specific_operation =
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatsubrev | Ifloatmul | Ifloatdiv | Ifloatdivrev
 
+let spacetime_node_hole_pointer_is_live_before _specific_op = false
+
 (* Sizes, endianness *)
 
 let big_endian = false
@@ -76,11 +81,11 @@ let offset_addressing addr delta =
   | Iindexed2scaled(scale, n) -> Iindexed2scaled(scale, n + delta)
 
 let num_args_addressing = function
-    Ibased(s, n) -> 0
-  | Iindexed n -> 1
-  | Iindexed2 n -> 2
-  | Iscaled(scale, n) -> 1
-  | Iindexed2scaled(scale, n) -> 2
+    Ibased _ -> 0
+  | Iindexed _ -> 1
+  | Iindexed2 _ -> 2
+  | Iscaled _ -> 1
+  | Iindexed2scaled _ -> 2
 
 (* Printing operations and addressing modes *)
 

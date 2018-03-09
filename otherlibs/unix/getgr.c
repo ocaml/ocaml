@@ -1,15 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/mlvalues.h>
 #include <caml/fail.h>
@@ -37,6 +39,7 @@ static value alloc_group_entry(struct group *entry)
 CAMLprim value unix_getgrnam(value name)
 {
   struct group * entry;
+  if (! caml_string_is_c_safe(name)) raise_not_found();
   entry = getgrnam(String_val(name));
   if (entry == NULL) raise_not_found();
   return alloc_group_entry(entry);

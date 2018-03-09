@@ -1,3 +1,0 @@
-ocamlbuild_config.ml
-lexers.ml
-glob_lexer.ml

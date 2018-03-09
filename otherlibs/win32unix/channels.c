@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -17,9 +21,12 @@
 #include <caml/memory.h>
 #include "unixsupport.h"
 #include <fcntl.h>
+#include <io.h>
 
-extern intptr_t _get_osfhandle(int);
-extern int _open_osfhandle(intptr_t, int);
+#if defined(_MSC_VER) && !defined(_INTPTR_T_DEFINED)
+typedef int intptr_t;
+#define _INTPTR_T_DEFINED
+#endif
 
 int win_CRT_fd_of_filedescr(value handle)
 {
@@ -39,6 +46,9 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLlocal1(vchan);
   struct channel * chan;
 
+#if defined(_MSC_VER) && _MSC_VER < 1400
+  fflush(stdin);
+#endif
   chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;

@@ -1,18 +1,19 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Common functions for emitting assembly code *)
-
-open Debuginfo
 
 let output_channel = ref stdout
 
@@ -108,12 +109,14 @@ type frame_descr =
   { fd_lbl: int;                        (* Return address *)
     fd_frame_size: int;                 (* Size of stack frame *)
     fd_live_offset: int list;           (* Offsets/regs of live addresses *)
+    fd_raise: bool;                     (* Is frame for a raise? *)
     fd_debuginfo: Debuginfo.t }         (* Location, if any *)
 
 let frame_descriptors = ref([] : frame_descr list)
 
 type emit_frame_actions =
-  { efa_label: int -> unit;
+  { efa_code_label: int -> unit;
+    efa_data_label: int -> unit;
     efa_16: int -> unit;
     efa_32: int32 -> unit;
     efa_word: int -> unit;
@@ -128,11 +131,41 @@ let emit_frames a =
     try
       Hashtbl.find filenames name
     with Not_found ->
-      let lbl = Linearize.new_label () in
+      let lbl = Cmm.new_label () in
       Hashtbl.add filenames name lbl;
-      lbl in
+      lbl
+  in
+  let module Label_table =
+    Hashtbl.Make (struct
+      type t = bool * Debuginfo.t
+
+      let equal ((rs1 : bool), dbg1) (rs2, dbg2) =
+        rs1 = rs2 && Debuginfo.compare dbg1 dbg2 = 0
+
+      let hash (rs, dbg) =
+        Hashtbl.hash (rs, Debuginfo.hash dbg)
+    end)
+  in
+  let debuginfos = Label_table.create 7 in
+  let rec label_debuginfos rs rdbg =
+    let key = (rs, rdbg) in
+    try fst (Label_table.find debuginfos key)
+    with Not_found ->
+      let lbl = Cmm.new_label () in
+      let next =
+        match rdbg with
+        | [] -> assert false
+        | _ :: [] -> None
+        | _ :: ((_ :: _) as rdbg') -> Some (label_debuginfos false rdbg')
+      in
+      Label_table.add debuginfos key (lbl, next);
+      lbl
+  in
+  let emit_debuginfo_label rs rdbg =
+    a.efa_data_label (label_debuginfos rs rdbg)
+  in
   let emit_frame fd =
-    a.efa_label fd.fd_lbl;
+    a.efa_code_label fd.fd_lbl;
     a.efa_16 (if Debuginfo.is_none fd.fd_debuginfo
               then fd.fd_frame_size
               else fd.fd_frame_size + 1);
@@ -142,28 +175,42 @@ let emit_frames a =
     a.efa_16 (List.length uniq_fd_live_offset);
     List.iter a.efa_16 uniq_fd_live_offset;
     a.efa_align Arch.size_addr;
-    if not (Debuginfo.is_none fd.fd_debuginfo) then begin
-      let d = fd.fd_debuginfo in
-      let line = min 0xFFFFF d.dinfo_line
-      and char_start = min 0xFF d.dinfo_char_start
-      and char_end = min 0x3FF d.dinfo_char_end
-      and kind = match d.dinfo_kind with Dinfo_call -> 0 | Dinfo_raise -> 1 in
-      let info =
-        Int64.add (Int64.shift_left (Int64.of_int line) 44) (
-        Int64.add (Int64.shift_left (Int64.of_int char_start) 36) (
-        Int64.add (Int64.shift_left (Int64.of_int char_end) 26)
-                  (Int64.of_int kind))) in
-      a.efa_label_rel
-        (label_filename d.dinfo_file)
-        (Int64.to_int32 info);
-      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32))
-    end in
+    match List.rev fd.fd_debuginfo with
+    | [] -> ()
+    | _ :: _ as rdbg -> emit_debuginfo_label fd.fd_raise rdbg
+  in
   let emit_filename name lbl =
     a.efa_def_label lbl;
     a.efa_string name;
-    a.efa_align Arch.size_addr in
+    a.efa_align Arch.size_addr
+  in
+  let pack_info fd_raise d =
+    let line = min 0xFFFFF d.Debuginfo.dinfo_line
+    and char_start = min 0xFF d.Debuginfo.dinfo_char_start
+    and char_end = min 0x3FF d.Debuginfo.dinfo_char_end
+    and kind = if fd_raise then 1 else 0 in
+    Int64.(add (shift_left (of_int line) 44)
+             (add (shift_left (of_int char_start) 36)
+                (add (shift_left (of_int char_end) 26)
+                   (of_int kind))))
+  in
+  let emit_debuginfo (rs, rdbg) (lbl,next) =
+    let d = List.hd rdbg in
+    a.efa_align Arch.size_addr;
+    a.efa_def_label lbl;
+    let info = pack_info rs d in
+    a.efa_label_rel
+      (label_filename d.Debuginfo.dinfo_file)
+      (Int64.to_int32 info);
+    a.efa_32 (Int64.to_int32 (Int64.shift_right info 32));
+    begin match next with
+    | Some next -> a.efa_data_label next
+    | None -> a.efa_word 0
+    end
+  in
   a.efa_word (List.length !frame_descriptors);
   List.iter emit_frame !frame_descriptors;
+  Label_table.iter emit_debuginfo debuginfos;
   Hashtbl.iter emit_filename filenames;
   frame_descriptors := []
 
@@ -192,10 +239,24 @@ let cfi_endproc () =
   if is_cfi_enabled () then
     emit_string "\t.cfi_endproc\n"
 
+let cfi_remember_state () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_remember_state\n"
+
+let cfi_restore_state () =
+  if is_cfi_enabled () then
+    emit_string "\t.cfi_restore_state\n"
+
 let cfi_adjust_cfa_offset n =
   if is_cfi_enabled () then
   begin
     emit_string "\t.cfi_adjust_cfa_offset\t"; emit_int n; emit_string "\n";
+  end
+
+let cfi_def_cfa_offset n =
+  if is_cfi_enabled () then
+  begin
+    emit_string "\t.cfi_def_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
 let cfi_offset ~reg ~offset =
@@ -223,27 +284,37 @@ let reset_debug_info () =
 
 (* We only diplay .file if the file has not been seen before. We
    display .loc for every instruction. *)
-let emit_debug_info dbg =
+let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&
-    (!Clflags.debug || Config.with_frame_pointers)
-     && dbg.Debuginfo.dinfo_line > 0 (* PR#6243 *)
-  then begin
-    let line = dbg.Debuginfo.dinfo_line in
-    let file_name = dbg.Debuginfo.dinfo_file in
+    (!Clflags.debug || Config.with_frame_pointers) then begin
+    match List.rev dbg with
+    | [] -> ()
+    | { Debuginfo.dinfo_line = line;
+        dinfo_char_start = col;
+        dinfo_file = file_name; } :: _ ->
+      if line > 0 then begin (* PR#6243 *)
     let file_num =
       try List.assoc file_name !file_pos_nums
       with Not_found ->
         let file_num = !file_pos_num_cnt in
         incr file_pos_num_cnt;
-        emit_string "\t.file\t";
-        emit_int file_num; emit_char '\t';
-        emit_string_literal file_name; emit_char '\n';
+            file_emitter ~file_num ~file_name;
         file_pos_nums := (file_name,file_num) :: !file_pos_nums;
         file_num in
+        loc_emitter ~file_num ~line ~col;
+      end
+  end
+
+let emit_debug_info dbg =
+  emit_debug_info_gen dbg (fun ~file_num ~file_name ->
+      emit_string "\t.file\t";
+      emit_int file_num; emit_char '\t';
+      emit_string_literal file_name; emit_char '\n';
+    )
+    (fun ~file_num ~line ~col:_ ->
     emit_string "\t.loc\t";
     emit_int file_num; emit_char '\t';
-    emit_int line; emit_char '\n'
-  end
+       emit_int line; emit_char '\n')
 
 (* Emission of block headers immediately prior to function entry points *)
 
@@ -285,3 +356,6 @@ let emit_block_header_for_closure ~word_directive ~comment_string
 let reset () =
   reset_debug_info ();
   frame_descriptors := []
+
+let binary_backend_available = ref false
+let create_asm_file = ref true

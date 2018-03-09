@@ -1,23 +1,25 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <stdio.h>
 #include <signal.h>
 #include <setjmp.h>
 
-double foo;
+volatile double foo;
 
-void access_double(double *p)
+void access_double(volatile double *p)
 {
   foo = *p;
 }
@@ -38,8 +40,8 @@ int main(void)
   signal(SIGBUS, sig_handler);
 #endif
   if(setjmp(failure) == 0) {
-    access_double((double *) n);
-    access_double((double *) (n+1));
+    access_double((volatile double *) n);
+    access_double((volatile double *) (n+1));
     res = 0;
   } else {
     res = 1;
@@ -48,5 +50,5 @@ int main(void)
 #ifdef SIGBUS
   signal(SIGBUS, SIG_DFL);
 #endif
-  exit(res);
+  return res;
 }

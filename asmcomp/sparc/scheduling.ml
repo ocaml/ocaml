@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Cmm
 open Mach
@@ -46,9 +49,9 @@ method oper_issue_cycles = function
   | Iconst_symbol _ -> 2
   | Ialloc _ -> 6
   | Iintop(Icomp _) -> 4
-  | Iintop(Icheckbound) -> 2
+  | Iintop(Icheckbound _) -> 2
   | Iintop_imm(Icomp _, _) -> 4
-  | Iintop_imm(Icheckbound, _) -> 2
+  | Iintop_imm(Icheckbound _, _) -> 2
   | Inegf -> 2
   | Iabsf -> 2
   | Ifloatofint -> 6

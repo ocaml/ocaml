@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Test;;
 open Nat;;
 
@@ -108,8 +96,7 @@ test 2 eq_string (string_of_nat n, "340282366920938463463374607431768211455");;
 testing_function "string_of_nat && nat_of_string";;
 
 for i = 1 to 20 do
-  let s = String.make i '0' in
-  String.set s 0 '1';
+  let s = String.init i (function 0 -> '1' | _ -> '0') in
   ignore (test i eq_string (string_of_nat (nat_of_string s), s))
 done;;
 

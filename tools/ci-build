@@ -1,36 +1,57 @@
 #!/bin/sh
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#          Damien Doligez, projet Gallium, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 2014 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Damien Doligez, projet Gallium, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2014 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # This script is run on our continuous-integration servers to recompile
 # from scratch and run the test suite.
 
 # arguments:
 # 1. architecture: bsd, macos, linux, cygwin, mingw, mingw64, msvc, msvc64
-# 2. for windows, directory in which to build (trunk, 4.02, etc)
+# 2. directory in which to build (trunk, 4.02, etc)
+#    for windows, this is relative to $HOME/jenkins-workspace
+#    for bsd, macos, linux, this is ignored and the build is always in .
 # 3. options:
-#    -conf configure-option
+#    -conf configure-option  add configure-option to configure cmd line
 #    -patch1 file-name       apply patch with -p1
+#    -newmakefiles           do not use Makefile.nt even for Windows
 
 error () {
   echo "$1" >&2
   exit 3
 }
 
+quote1 () {
+  printf "'%s'" "`printf %s "$1" | sed -e "s/'/'\\\\\\\\''/g"`";
+}
+
+#########################################################################
+# be verbose
+set -x
+
+#########################################################################
+# "Parse" mandatory command-line arguments.
+
+arch="$1"
+branch="$2"
+shift 2
+
 #########################################################################
 # If we are called from a Windows batch script, we must set up the
 # Unix environment variables (e.g. PATH).
 
-case "$1" in
+case "$arch" in
   bsd|macos|linux) ;;
   cygwin|mingw|mingw64)
     . /etc/profile
@@ -46,7 +67,7 @@ case "$1" in
     . "$HOME/.profile"
     . "$HOME/.msenv64"
   ;;
-  *) error "unknown architecture: $1";;
+  *) error "unknown architecture: $arch";;
 esac
 
 #########################################################################
@@ -54,37 +75,27 @@ esac
 # be verbose and stop on error
 set -ex
 
-# parse command line
-# Configure options are not allowed to have spaces or special characters
-# for the moment. We'll fix that when needed.
-arch="$1"
-branch="$2"
-confoptions=""
-shift 2
-while [ $# -gt 0 ]; do
-  case $1 in
-    -conf) confoptions="$confoptions $2"; shift 2;;
-    -patch1) patch -f -p1 <"$2"; shift 2;;
-    *) error "unknown option $1";;
-  esac
-done
-
 #########################################################################
 # set up variables
 
 # default values
 make=make
 instdir="$HOME/ocaml-tmp-install"
-workdir=.
 docheckout=false
-nt=
+makefile=Makefile
+configure=unix
 
 case "$arch" in
   bsd)
     make=gmake
+    workdir=.
   ;;
-  macos) ;;  # FIXME to be checked
-  linux) ;;
+  macos)
+    workdir=.
+  ;;
+  linux)
+    workdir=.
+  ;;
   cygwin)
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
@@ -93,42 +104,69 @@ case "$arch" in
     instdir=/cygdrive/c/ocamlmgw
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   mingw64)
     instdir=/cygdrive/c/ocamlmgw64
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   msvc)
     instdir=/cygdrive/c/ocamlms
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   msvc64)
     instdir=/cygdrive/c/ocamlms64
     workdir="$HOME/jenkins-workspace/$branch"
     docheckout=true
-    nt=.nt
+    makefile=Makefile.nt
+    configure=nt
   ;;
   *) error "unknown architecture: $arch";;
 esac
 
 #########################################################################
+# Go to the right directory
 
+pwd
 cd "$workdir"
 
-$make -f Makefile$nt distclean || :
+#########################################################################
+# parse optional command-line arguments (has to be done after the "cd")
+# Configure options are not allowed to have spaces or special characters
+# for the moment. We'll fix that when needed.
+confoptions=""
+while [ $# -gt 0 ]; do
+  case $1 in
+    -conf) confoptions="$confoptions `quote1 "$2"`"; shift;;
+    -patch1) patch -f -p1 <"$2"; shift;;
+    -newmakefiles) makefile=Makefile;;
+    *) error "unknown option $1";;
+  esac
+  shift
+done
+
+#########################################################################
+# Do the work
+
+# Tell gcc to use only ASCII in its diagnostic outputs.
+export LC_ALL=C
+
+$make -f $makefile distclean || :
 
 if $docheckout; then
-  svn update --accept theirs-full
+  git pull
 fi
 
-case $nt in
-  "") ./configure -prefix "$instdir" $confoptions;;
-  .nt)
+case $configure in
+  unix) eval "./configure -prefix '$instdir' $confoptions";;
+  nt)
     cp config/m-nt.h config/m.h
     cp config/s-nt.h config/s.h
     cp config/Makefile.$arch config/Makefile
@@ -136,8 +174,8 @@ case $nt in
   *) error "internal error";;
 esac
 
-$make -f Makefile$nt world.opt
-$make -f Makefile$nt install
+$make -f $makefile world.opt
+$make -f $makefile install
 
 rm -rf "$instdir"
 cd testsuite

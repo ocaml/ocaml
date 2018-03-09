@@ -44,6 +44,5 @@ let () =
   test "" "" 3 (Some 0);
   test "" "abc" 3 (Some 3);
   test "abcd" "" 3 None;
-  
-  ()
 
+  ()

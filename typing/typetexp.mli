@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Typechecking of type expressions for the core language *)
 
@@ -64,6 +67,8 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Apply_structure_as_functor of Longident.t
+  | Cannot_scrape_alias of Longident.t * Path.t
 
 exception Error of Location.t * Env.t * error
 
@@ -106,19 +111,3 @@ val find_class_type:
 
 val unbound_constructor_error: Env.t -> Longident.t Location.loc -> 'a
 val unbound_label_error: Env.t -> Longident.t Location.loc -> 'a
-
-type cd
-val spellcheck_simple:
-    Format.formatter ->
-    (('a -> cd -> cd) -> Longident.t option -> 'b -> cd -> cd) ->
-    ('a -> string) -> 'b -> Longident.t -> unit
-
-val check_deprecated: Location.t -> Parsetree.attributes -> string -> unit
-
-val warning_enter_scope: unit -> unit
-val warning_leave_scope: unit -> unit
-val warning_attribute: Parsetree.attributes -> unit
-
-val error_of_extension: Parsetree.extension -> Location.error
-
-val emit_external_warnings: Ast_mapper.mapper

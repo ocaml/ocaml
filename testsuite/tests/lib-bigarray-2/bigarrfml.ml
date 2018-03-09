@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Bigarray
 open Printf
 
@@ -39,7 +27,7 @@ let test test_number answer correct_answer =
 (* External C and Fortran functions *)
 
 external c_filltab :
-  unit -> (float, float64_elt, c_layout) Array2.t = "c_filltaab"
+  unit -> (float, float64_elt, c_layout) Array2.t = "c_filltab"
 external c_printtab :
   (float, float64_elt, c_layout) Array2.t -> unit = "c_printtab"
 external fortran_filltab :

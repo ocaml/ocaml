@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Start-up code */
 
@@ -138,7 +142,8 @@ void caml_read_section_descriptors(int fd, struct exec_trailer *trail)
    Return the length of the section data in bytes, or -1 if no section
    found with that name. */
 
-int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
+int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
+                                   char *name)
 {
   long ofs;
   int i;
@@ -213,12 +218,14 @@ extern void caml_init_ieee_floats (void);
 extern void caml_signal_thread(void * lpParam);
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler();
 
 #endif
+
+extern int ensure_spacetime_dot_o_is_included;
 
 /* Main entry point when loading code from a file */
 
@@ -235,10 +242,12 @@ CAMLexport void caml_main(char **argv)
   CAML_INIT_DOMAIN_STATE;
 
   caml_init_startup_params();
+  ensure_spacetime_dot_o_is_included++;
+
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -290,6 +299,9 @@ CAMLexport void caml_main(char **argv)
   /* Load the code */
   caml_code_size = caml_seek_section(fd, &trail, "CODE");
   caml_load_code(fd, caml_code_size);
+  /* XXX KC: Fix me.
+  caml_init_debug_info();
+  */
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
@@ -308,7 +320,7 @@ CAMLexport void caml_main(char **argv)
   caml_stat_free(trail.section);
 #ifdef _WIN32
   /* Start a thread to handle signals */
-  if (getenv("CAMLSIGPIPE"))
+  if (caml_secure_getenv("CAMLSIGPIPE"))
     _beginthread(caml_signal_thread, 4096, NULL);
 #endif
   /* Execute the program */
@@ -342,7 +354,7 @@ CAMLexport void caml_startup_code(
 
   caml_init_startup_params();
   caml_init_ieee_floats();
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
@@ -362,6 +374,9 @@ CAMLexport void caml_startup_code(
   caml_start_code = code;
   caml_code_size = code_size;
   caml_init_code_fragments();
+  /* XXX: Fix me.
+  caml_init_debug_info();
+  */
   if (caml_debugger_in_use) {
     int len, i;
     len = code_size / sizeof(opcode_t);

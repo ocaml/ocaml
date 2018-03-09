@@ -1,14 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Predefined type constructors (with special typing rules in typecore) *)
 
@@ -31,6 +34,7 @@ val type_nativeint: type_expr
 val type_int32: type_expr
 val type_int64: type_expr
 val type_lazy_t: type_expr -> type_expr
+val type_extension_constructor:type_expr
 
 val path_int: Path.t
 val path_char: Path.t
@@ -49,6 +53,7 @@ val path_nativeint: Path.t
 val path_int32: Path.t
 val path_int64: Path.t
 val path_lazy_t: Path.t
+val path_extension_constructor: Path.t
 
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
@@ -67,3 +72,10 @@ val build_initial_env:
 
 val builtin_values: (string * Ident.t) list
 val builtin_idents: (string * Ident.t) list
+
+(** All predefined exceptions, exposed as [Ident.t] for flambda (for
+    building value approximations).
+    The [Ident.t] for division by zero is also exported explicitly
+    so flambda can generate code to raise it. *)
+val ident_division_by_zero: Ident.t
+val all_predef_exns : Ident.t list

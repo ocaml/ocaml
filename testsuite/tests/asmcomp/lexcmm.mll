@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 {
 open Parsecmm
 
@@ -55,11 +43,11 @@ let keyword_table =
     "let", LET;
     "load", LOAD;
     "mod", MODI;
+    "mulh", MULH;
     "or", OR;
     "proj", PROJ;
-    "raise", RAISE Lambda.Raise_regular;
-    "reraise", RAISE Lambda.Raise_reraise;
-    "raise_notrace", RAISE Lambda.Raise_notrace;
+    "raise_withtrace", RAISE Cmm.Raise_withtrace;
+    "raise_notrace", RAISE Cmm.Raise_notrace;
     "seq", SEQ;
     "signed", SIGNED;
     "skip", SKIP;
@@ -68,6 +56,7 @@ let keyword_table =
     "try", TRY;
     "unit", UNIT;
     "unsigned", UNSIGNED;
+    "val", VAL;
     "while", WHILE;
     "with", WITH;
     "xor", XOR;
@@ -136,6 +125,7 @@ rule token = parse
     [' ' '\010' '\013' '\009' '\012'] +
       { token lexbuf }
   | "+a" { ADDA }
+  | "+v" { ADDV }
   | "+f" { ADDF }
   | "+" { ADDI }
   | ">>s" { ASR }
@@ -170,7 +160,6 @@ rule token = parse
   | "]" { RBRACKET }
   | ")" { RPAREN }
   | "*" { STAR }
-  | "-a" { SUBA }
   | "-f" { SUBF }
   | "-" { SUBI }
   | '-'? (['0'-'9']+ | "0x" ['0'-'9' 'a'-'f' 'A'-'F']+

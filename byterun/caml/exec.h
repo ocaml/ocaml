@@ -1,20 +1,24 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* exec.h : format of executable bytecode files */
 
 #ifndef CAML_EXEC_H
 #define CAML_EXEC_H
+
+#ifdef CAML_INTERNALS
 
 /* Executable bytecode files are composed of a number of sections,
    identified by 4-character names.  A table of contents at the
@@ -56,5 +60,6 @@ struct exec_trailer {
 
 #define EXEC_MAGIC "Caml1999X011"
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_EXEC_H */

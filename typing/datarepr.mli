@@ -1,33 +1,44 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
 
-open Asttypes
 open Types
 
-val constructor_descrs:
-  type_expr -> constructor_declaration list ->
-  private_flag -> (Ident.t * constructor_description) list
 val extension_descr:
   Path.t -> extension_constructor -> constructor_description
-val label_descrs:
-  type_expr -> label_declaration list ->
-    record_representation -> private_flag ->
-    (Ident.t * label_description) list
+
+val labels_of_type:
+  Path.t -> type_declaration ->
+  (Ident.t * label_description) list
+val constructors_of_type:
+  Path.t -> type_declaration ->
+  (Ident.t * constructor_description) list
+
 
 exception Constr_not_found
 
 val find_constr_by_tag:
   constructor_tag -> constructor_declaration list ->
     constructor_declaration
+
+val constructor_existentials :
+    constructor_arguments -> type_expr option -> type_expr list * type_expr list
+(** Takes [cd_args] and [cd_res] from a [constructor_declaration] and
+    returns:
+    - the types of the constructor's arguments
+    - the existential variables introduced by the constructor
+ *)

@@ -1,15 +1,19 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 2000 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <string.h>
 
@@ -19,6 +23,7 @@
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
 
+/* [size] is a number of bytes */
 CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
                                    uintnat size,
                                    mlsize_t mem,
@@ -32,6 +37,13 @@ CAMLexport value caml_alloc_custom(const struct custom_operations * ops,
   if (ops->finalize == NULL && wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
+#if 0
+    /* XXX KC: TODO */
+    if (ops->finalize != NULL || mem != 0) {
+      /* Remember that the block needs processing after minor GC. */
+      add_to_custom_table (&caml_custom_table, result, mem, max);
+    }
+#endif
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);
     Custom_ops_val(result) = ops;

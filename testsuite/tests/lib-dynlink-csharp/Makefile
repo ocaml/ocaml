@@ -1,47 +1,50 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#                 Xavier Clerc, SED, INRIA Rocquencourt                 #
-#                                                                       #
-#   Copyright 2010 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                OCaml                                   *
+#*                                                                        *
+#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*                                                                        *
+#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 BASEDIR=../..
-CSC=csc
+# Only run this test for TOOLCHAIN=msvc
+CSC_COMMAND=$(filter csc,$(subst msvc,csc,$(TOOLCHAIN)))
+CSC=$(CSC_COMMAND) $(CSC_FLAGS)
 
-COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray
-LD_PATH=$(TOPDIR)/otherlibs/bigarray
+COMPFLAGS=-I $(OTOPDIR)/otherlibs/bigarray -I $(OTOPDIR)/otherlibs/dynlink \
+          -I $(OTOPDIR)/byterun
+LD_PATH=$(TOPDIR)/otherlibs/bigarray:$(TOPDIR)/otherlibs/dynlink
 
-.PHONY: default
 default:
-	@if ! $(SUPPORTS_SHARED_LIBRARIES); then \
-	  echo 'skipped (shared libraries not available)'; \
-	elif $(BYTECODE_ONLY); then \
-	  echo 'skipped (native compiler not available)' ; \
-	else \
-	  $(SET_LD_PATH) $(MAKE) all; \
-	fi
+	@$(SET_LD_PATH) $(MAKE) all
 
 .PHONY: all
 all: prepare bytecode bytecode-dll native native-dll
 
 .PHONY: prepare
 prepare:
-	@$(OCAMLC) -c plugin.ml
-	@$(OCAMLOPT) -o plugin.cmxs -shared plugin.ml
+	@if $(SUPPORTS_SHARED_LIBRARIES); then \
+	   $(OCAMLC) -c plugin.ml && \
+	   $(OCAMLOPT) -o plugin.cmxs -shared plugin.ml; \
+	 fi
 
 .PHONY: bytecode
 bytecode:
 	@printf " ... testing 'bytecode':"
-	@if [ ! `which $(CSC) >/dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC_COMMAND) >/dev/null 2>&1; \
+	then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main.dll; \
 	  $(OCAMLC) -output-obj -o main.dll dynlink.cma main.ml entry.c; \
-	  $(CSC) /out:main.exe main.cs; \
+	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > bytecode.result; \
 	  $(DIFF) bytecode.reference bytecode.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
@@ -50,26 +53,30 @@ bytecode:
 .PHONY: bytecode-dll
 bytecode-dll:
 	@printf " ... testing 'bytecode-dll':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || ! which $(CSC_COMMAND) > /dev/null 2>&1; \
+	then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main_obj.$(O) main.dll; \
 	  $(OCAMLC) -output-obj -o main_obj.$(O) dynlink.cma entry.c main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
-	           ../../byterun/libcamlrun.$(A)  $(BYTECCLIBS) -v; \
-	  $(CSC) /out:main.exe main.cs; \
-	  ./main.exe >bytecode.result; \
-	  $(DIFF) bytecode.reference bytecode.result >/dev/null \
+	           $(CTOPDIR)/byterun/libcamlrun.$(A)  $(BYTECCLIBS); \
+	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
+	  ./main.exe >bytecode-dll.result; \
+	  $(DIFF) bytecode.reference bytecode-dll.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
 .PHONY: native
 native:
 	@printf " ... testing 'native':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
+	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main.dll; \
 	  $(OCAMLOPT) -output-obj -o main.dll dynlink.cmxa entry.c main.ml; \
-	  $(CSC) /out:main.exe main.cs; \
+	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
 	  ./main.exe > native.result; \
 	  $(DIFF) native.reference native.result > /dev/null \
 	  && echo " => passed" || echo " => failed"; \
@@ -78,16 +85,18 @@ native:
 .PHONY: native-dll
 native-dll:
 	@printf " ... testing 'native-dll':"
-	@if [ ! `which $(CSC) > /dev/null 2>&1` ]; then \
+	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) \
+	    || ! which $(CSC_COMMAND) > /dev/null 2>&1; then \
 	  echo " => skipped"; \
 	else \
+	  rm -f main.exe main_obj.$(O) main.dll; \
 	  $(OCAMLOPT) -output-obj -o main_obj.$(O) dynlink.cmxa entry.c \
 	              main.ml; \
 	  $(MKDLL) -maindll -o main.dll main_obj.$(O) entry.$(O) \
-	           ../../asmrun/libasmrun.lib -v; \
-	  $(CSC) /out:main.exe main.cs; \
-	  ./main.exe > native.result; \
-	  $(DIFF) native.reference native.result >/dev/null \
+		         $(CTOPDIR)/asmrun/libasmrun.lib $(NATIVECCLIBS); \
+	  $(CSC) /nologo /nowarn:1668 /out:main.exe main.cs; \
+	  ./main.exe > native-dll.result; \
+	  $(DIFF) native.reference native-dll.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	fi
 
@@ -99,3 +108,13 @@ clean: defaultclean
 	@rm -f *.result *.exe *.dll *.so *.obj *.o
 
 include $(BASEDIR)/makefiles/Makefile.common
+
+ifneq ($(FLEXLINK_PREFIX),)
+MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe $(FLEXLINK_FLAGS)
+endif
+
+ifeq ($(HOST),msvc)
+CSC_FLAGS=/platform:x86
+else
+CSC_FLAGS=
+endif

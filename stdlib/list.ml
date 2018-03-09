@@ -1,31 +1,35 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* List operations *)
 
 let rec length_aux len = function
     [] -> len
-  | a::l -> length_aux (len + 1) l
+  | _::l -> length_aux (len + 1) l
 
 let length l = length_aux 0 l
 
+let cons a l = a::l
+
 let hd = function
     [] -> failwith "hd"
-  | a::l -> a
+  | a::_ -> a
 
 let tl = function
     [] -> failwith "tl"
-  | a::l -> l
+  | _::l -> l
 
 let nth l n =
   if n < 0 then invalid_arg "List.nth" else
@@ -66,7 +70,7 @@ let rev_map f l =
     | a::l -> rmap_f (f a :: accu) l
   in
   rmap_f [] l
-;;
+
 
 let rec iter f = function
     [] -> ()
@@ -102,7 +106,7 @@ let rev_map2 f l1 l2 =
     | (_, _) -> invalid_arg "List.rev_map2"
   in
   rmap2_f [] l1 l2
-;;
+
 
 let rec iter2 f l1 l2 =
   match (l1, l2) with
@@ -160,20 +164,20 @@ let rec assq x = function
 
 let rec mem_assoc x = function
   | [] -> false
-  | (a, b) :: l -> compare a x = 0 || mem_assoc x l
+  | (a, _) :: l -> compare a x = 0 || mem_assoc x l
 
 let rec mem_assq x = function
   | [] -> false
-  | (a, b) :: l -> a == x || mem_assq x l
+  | (a, _) :: l -> a == x || mem_assq x l
 
 let rec remove_assoc x = function
   | [] -> []
-  | (a, b as pair) :: l ->
+  | (a, _ as pair) :: l ->
       if compare a x = 0 then l else pair :: remove_assoc x l
 
 let rec remove_assq x = function
   | [] -> []
-  | (a, b as pair) :: l -> if a == x then l else pair :: remove_assq x l
+  | (a, _ as pair) :: l -> if a == x then l else pair :: remove_assq x l
 
 let rec find p = function
   | [] -> raise Not_found
@@ -214,15 +218,15 @@ let rec merge cmp l1 l2 =
       if cmp h1 h2 <= 0
       then h1 :: merge cmp t1 l2
       else h2 :: merge cmp l1 t2
-;;
+
 
 let rec chop k l =
   if k = 0 then l else begin
     match l with
-    | x::t -> chop (k-1) t
+    | _::t -> chop (k-1) t
     | _ -> assert false
   end
-;;
+
 
 let stable_sort cmp l =
   let rec rev_merge l1 l2 accu =
@@ -288,10 +292,10 @@ let stable_sort cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
-;;
 
-let sort = stable_sort;;
-let fast_sort = stable_sort;;
+
+let sort = stable_sort
+let fast_sort = stable_sort
 
 (* Note: on a list of length between about 100000 (depending on the minor
    heap size and the type of the list) and Sys.max_array_size, it is
@@ -316,13 +320,13 @@ let array_to_list_in_place a =
     end
   in
   loop [] (l-1000) l
-;;
+
 
 let stable_sort cmp l =
   let a = Array.of_list l in
   Array.stable_sort cmp a;
   array_to_list_in_place a
-;;
+
 *)
 
 
@@ -426,4 +430,3 @@ let sort_uniq cmp l =
   in
   let len = length l in
   if len < 2 then l else sort len l
-;;

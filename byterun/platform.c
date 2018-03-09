@@ -1,3 +1,5 @@
+#define CAML_INTERNALS
+
 #define _GNU_SOURCE /* for PTHREAD_MUTEX_ERRORCHECK_NP */
 #include <sys/mman.h>
 #include <string.h>

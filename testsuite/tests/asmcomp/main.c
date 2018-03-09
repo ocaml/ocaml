@@ -1,14 +1,17 @@
-/***********************************************************************/
+/**************************************************************************/
 /*                                                                     */
 /*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
 /*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
+/*     en Automatique.                                                    */
 /*                                                                     */
-/***********************************************************************/
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <stddef.h>
 #include <stdio.h>
@@ -46,29 +49,26 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
   long arg3 = Long_val(varg3);
   if (arg1+arg2+arg3); /* squash unused var warnings */
 #ifdef UNIT_INT
-  { extern int FUN();
-    extern int call_gen_code();
-    printf("%d\n", call_gen_code(FUN));
+  { extern long FUN(void);
+    extern long call_gen_code(long (*)(void));
+    printf("%ld\n", call_gen_code(FUN));
   }
 #else
 #ifdef INT_INT
-  { extern int FUN();
-    extern int call_gen_code();
-    printf("%d\n", call_gen_code(FUN, arg1));
+  { extern long FUN(long);
+    extern long call_gen_code(long (*)(long), long);
+    printf("%ld\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef INT_FLOAT
-  { extern double FUN();
-#ifdef __mc68020__
-#define call_gen_code call_gen_code_float
-#endif
-    extern double call_gen_code();
-    printf("%f\n", call_gen_code(FUN, arg1));
+  { extern double FUN(long);
+    extern double call_gen_code(double (*)(long), long);
+    printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
   }
 #endif
 #ifdef SORT
-  { extern void FUN();
-    extern void call_gen_code();
+  { extern void FUN(long, long, long *);
+    extern void call_gen_code(void (*)(long, long, long *), long, long, long *);
     long n;
     long * a, * b;
     long i;
@@ -95,8 +95,8 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
 #endif
 #endif
 #ifdef CHECKBOUND
-  { extern void checkbound1(), checkbound2();
-    extern void call_gen_code();
+  { extern void checkbound1(long), checkbound2(long, long);
+    extern void call_gen_code(void *, ...);
     long x, y;
     x = arg1;
     if (arg2) {

@@ -16,6 +16,8 @@
 #ifndef CAML_GLOBROOTS_H
 #define CAML_GLOBROOTS_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 #include "roots.h"
 #include "memory.h"
@@ -26,6 +28,8 @@ void caml_cleanup_deleted_roots(void);
 
 #ifdef NATIVE_CODE
 void caml_register_dyn_global(void *v);
+#endif
+
 #endif
 
 #endif /* CAML_GLOBROOTS_H */

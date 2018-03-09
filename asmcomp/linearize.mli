@@ -1,19 +1,21 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Transformation of Mach code into a list of pseudo-instructions. *)
 
-type label = int
-val new_label: unit -> label
+type label = Cmm.label
 
 type instruction =
   { mutable desc: instruction_desc;
@@ -36,7 +38,7 @@ and instruction_desc =
   | Lsetuptrap of label
   | Lpushtrap
   | Lpoptrap
-  | Lraise of Lambda.raise_kind
+  | Lraise of Cmm.raise_kind
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction
@@ -49,7 +51,8 @@ type fundecl =
     fun_args: Reg.Set.t;
     fun_body: instruction;
     fun_fast: bool;
-    fun_dbg : Debuginfo.t }
+    fun_dbg : Debuginfo.t;
+    fun_spacetime_shape : Mach.spacetime_shape option;
+  }
 
-val reset : unit -> unit
 val fundecl: Mach.fundecl -> fundecl

@@ -1,15 +1,17 @@
-(***********************************************************************)
+(**************************************************************************)
 (*                                                                     *)
 (*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
+(*     en Automatique.                                                    *)
 (*                                                                     *)
-(***********************************************************************)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Byte sequence operations.
 
@@ -40,21 +42,21 @@
    @since 4.02.0
  *)
 
-external length : bytes -> int = "%string_length"
+external length : bytes -> int = "%bytes_length"
 (** Return the length (number of bytes) of the argument. *)
 
-external get : bytes -> int -> char = "%string_safe_get"
+external get : bytes -> int -> char = "%bytes_safe_get"
 (** [get s n] returns the byte at index [n] in argument [s].
 
-    Raise [Invalid_argument] if [n] not a valid index in [s]. *)
+    Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external set : bytes -> int -> char -> unit = "%string_safe_set"
+external set : bytes -> int -> char -> unit = "%bytes_safe_set"
 (** [set s n c] modifies [s] in place, replacing the byte at index [n]
     with [c].
 
     Raise [Invalid_argument] if [n] is not a valid index in [s]. *)
 
-external create : int -> bytes = "caml_create_string"
+external create : int -> bytes = "caml_create_bytes"
 (** [create n] returns a new byte sequence of length [n]. The
     sequence is uninitialized and contains arbitrary bytes.
 
@@ -233,14 +235,14 @@ val rcontains_from : bytes -> int -> char -> bool
 val uppercase : bytes -> bytes
   [@@ocaml.deprecated "Use Bytes.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, including accented letters of the ISO
+    translated to uppercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : bytes -> bytes
   [@@ocaml.deprecated "Use Bytes.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, including accented letters of the ISO
+    translated to lowercase, including accented letters of the ISO
    Latin-1 (8859-1) character set.
    @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
@@ -258,19 +260,23 @@ val uncapitalize : bytes -> bytes
 
 val uppercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all lowercase letters
-   translated to uppercase, using the US-ASCII character set. *)
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val lowercase_ascii : bytes -> bytes
 (** Return a copy of the argument, with all uppercase letters
-   translated to lowercase, using the US-ASCII character set. *)
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val capitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to uppercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 val uncapitalize_ascii : bytes -> bytes
 (** Return a copy of the argument, with the first character set to lowercase,
-   using the US-ASCII character set. *)
+   using the US-ASCII character set.
+   @since 4.03.0 *)
 
 type t = bytes
 (** An alias for the type of byte sequences. *)
@@ -281,6 +287,9 @@ val compare: t -> t -> int
     this function [compare] allows the module [Bytes] to be passed as
     argument to the functors {!Set.Make} and {!Map.Make}. *)
 
+val equal: t -> t -> bool
+(** The equality function for byte sequences.
+    @since 4.03.0 *)
 
 (** {4 Unsafe conversions (for advanced users)}
 
@@ -415,10 +424,10 @@ let s = Bytes.of_string "hello"
 
 (* The following is for system use only. Do not call directly. *)
 
-external unsafe_get : bytes -> int -> char = "%string_unsafe_get"
-external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
+external unsafe_get : bytes -> int -> char = "%bytes_unsafe_get"
+external unsafe_set : bytes -> int -> char -> unit = "%bytes_unsafe_set"
 external unsafe_blit :
   bytes -> int -> bytes -> int -> int -> unit
-  = "caml_blit_string" "noalloc"
+  = "caml_blit_bytes" [@@noalloc]
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"
+  bytes -> int -> int -> char -> unit = "caml_fill_bytes" [@@noalloc]

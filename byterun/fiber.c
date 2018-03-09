@@ -1,3 +1,5 @@
+#define CAML_INTERNALS
+
 #include <string.h>
 #include <unistd.h>
 #include "caml/misc.h"

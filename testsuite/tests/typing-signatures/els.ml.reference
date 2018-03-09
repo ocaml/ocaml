@@ -91,5 +91,5 @@
         USERCODE(TV).F
   end
 #   module type X = functor (X : CORE) -> BARECODE
-# module type X = functor (_ : CORE) -> BARECODE
+# module type X = CORE -> BARECODE
 # 
