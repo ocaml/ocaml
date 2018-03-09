@@ -95,15 +95,11 @@ module Options = Main_args.Make_bytetop_options (struct
   let _short_paths = clear real_paths
   let _stdin () = file_argument ""
   let _strict_sequence = set strict_sequence
-<<<<<<< HEAD
-  let _strict_formats = set strict_formats
-=======
   let _no_strict_sequence = clear strict_sequence
   let _strict_formats = set strict_formats
   let _no_strict_formats = clear strict_formats
   let _unboxed_types = set unboxed_types
   let _no_unboxed_types = clear unboxed_types
->>>>>>> b4.04.2
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _version () = print_version ()

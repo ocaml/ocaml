@@ -272,7 +272,7 @@ let destroyed_at_c_call =
        108;109;110;111;112;113;114;115])
 
 let destroyed_at_oper = function
-    Iop(Icall_ind _ | Icall_imm _ ->
+    Iop(Icall_ind _ | Icall_imm _) ->
       all_phys_regs
   | Iop(Iextcall {alloc; stack_ofs; }) ->
       assert (stack_ofs >= 0);

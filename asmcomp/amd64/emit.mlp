@@ -583,16 +583,16 @@ let emit_instr fallthrough i =
         end
         *)
         end
-    | Lop(Itailcall_imm s) ->
+    | Lop(Itailcall_imm { func; }) ->
         begin
-          if func = !function_name then
+          if func = !function_name then begin
             if Config.stats then begin
               I.movq r15 r11;
               locate_domain_state r11;
-              I.inc (domain_field Domainstate.DOmain_tailcall_imm r11);
+              I.inc (domain_field Domainstate.Domain_tailcall_imm r11);
             end;
             I.jmp (label !tailrec_entry_point)
-          else begin
+          end else begin
             output_epilogue begin fun () ->
               if Config.stats then begin
                 I.movq r15 r11;
@@ -1096,9 +1096,9 @@ let fundecl fundecl =
     if n <> 0
     then begin
       I.sub (int n) rsp;
-    cfi_adjust_cfa_offset n;
+      cfi_adjust_cfa_offset n
+    end
   end;
-<<<<<<< HEAD
 
   let preproc_res = preproc_fun fundecl.fun_body fundecl.fun_name in
   let s = !Clflags.stack_slop + preproc_res.max_stack_size in
