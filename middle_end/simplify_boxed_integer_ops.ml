@@ -67,8 +67,8 @@ end) : Simplify_boxed_integer_ops_intf.S with type t := I.t = struct
     | Paddbint kind when kind = I.kind -> eval I.add
     | Psubbint kind when kind = I.kind -> eval I.sub
     | Pmulbint kind when kind = I.kind -> eval I.mul
-    | Pdivbint (kind,_) when kind = I.kind && non_zero n2 -> eval I.div
-    | Pmodbint (kind,_) when kind = I.kind && non_zero n2 -> eval I.rem
+    | Pdivbint {size=kind} when kind = I.kind && non_zero n2 -> eval I.div
+    | Pmodbint {size=kind} when kind = I.kind && non_zero n2 -> eval I.rem
     | Pandbint kind when kind = I.kind -> eval I.logand
     | Porbint kind when kind = I.kind -> eval I.logor
     | Pxorbint kind when kind = I.kind -> eval I.logxor

@@ -1597,7 +1597,7 @@ let rec is_nonexpansive exp =
   | Texp_construct( _, _, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
-  | Texp_record ( fields, _, extended_expression ) ->
+  | Texp_record { fields; extended_expression } ->
       Array.for_all
         (fun (lbl, definition) ->
            match definition with
@@ -2403,10 +2403,10 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
           label_descriptions label_definitions
         in
       re {
-        exp_desc = Texp_record (
-            fields, representation,
-            opt_exp
-          );
+        exp_desc = Texp_record {
+            fields; representation;
+            extended_expression = opt_exp
+          };
         exp_loc = loc; exp_extra = [];
         exp_type = instance env ty_expected;
         exp_attributes = sexp.pexp_attributes;

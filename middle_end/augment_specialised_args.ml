@@ -562,7 +562,7 @@ module Make (T : S) = struct
       in
       let new_specialised_args =
         Variable.Map.mapi (fun new_inner_var (definition : Definition.t)
-                (* XXX KC : Flambda.specialised_to *) ->
+                : Flambda.specialised_to ->
             assert (not (Variable.Map.mem new_inner_var
               set_of_closures.specialised_args));
             match

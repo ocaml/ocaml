@@ -255,8 +255,8 @@ let primitives_table = create_hashtable 57 [
   "%nativeint_add", Paddbint Pnativeint;
   "%nativeint_sub", Psubbint Pnativeint;
   "%nativeint_mul", Pmulbint Pnativeint;
-  "%nativeint_div", Pdivbint ( Pnativeint, Safe );
-  "%nativeint_mod", Pmodbint ( Pnativeint, Safe );
+  "%nativeint_div", Pdivbint { size = Pnativeint; is_safe = Safe };
+  "%nativeint_mod", Pmodbint { size = Pnativeint; is_safe = Safe };
   "%nativeint_and", Pandbint Pnativeint;
   "%nativeint_or",  Porbint Pnativeint;
   "%nativeint_xor", Pxorbint Pnativeint;
@@ -269,8 +269,8 @@ let primitives_table = create_hashtable 57 [
   "%int32_add", Paddbint Pint32;
   "%int32_sub", Psubbint Pint32;
   "%int32_mul", Pmulbint Pint32;
-  "%int32_div", Pdivbint ( Pint32, Safe );
-  "%int32_mod", Pmodbint ( Pint32, Safe );
+  "%int32_div", Pdivbint { size = Pint32; is_safe = Safe };
+  "%int32_mod", Pmodbint { size = Pint32; is_safe = Safe };
   "%int32_and", Pandbint Pint32;
   "%int32_or",  Porbint Pint32;
   "%int32_xor", Pxorbint Pint32;
@@ -283,8 +283,8 @@ let primitives_table = create_hashtable 57 [
   "%int64_add", Paddbint Pint64;
   "%int64_sub", Psubbint Pint64;
   "%int64_mul", Pmulbint Pint64;
-  "%int64_div", Pdivbint ( Pint64, Safe );
-  "%int64_mod", Pmodbint ( Pint64, Safe );
+  "%int64_div", Pdivbint { size = Pint64; is_safe = Safe };
+  "%int64_mod", Pmodbint { size = Pint64; is_safe = Safe };
   "%int64_and", Pandbint Pint64;
   "%int64_or",  Porbint Pint64;
   "%int64_xor", Pxorbint Pint64;
@@ -905,7 +905,7 @@ and transl_exp0 e =
             Lprim(Pmakeblock(0, Immutable, None),
                   [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
-  | Texp_record (fields, representation, extended_expression) ->
+  | Texp_record { fields; representation; extended_expression } ->
       transl_record e.exp_loc e.exp_env fields representation
         extended_expression
   | Texp_field(arg, _, lbl) ->
