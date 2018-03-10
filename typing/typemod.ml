@@ -162,6 +162,7 @@ let type_open ?toplevel env sod =
       open_expr = tme;
       open_attributes = sod.popen_attributes;
       open_loc = sod.popen_loc;
+      open_env;
     }
   in
   inserted_md, open_env, od
