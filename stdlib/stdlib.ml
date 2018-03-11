@@ -466,6 +466,21 @@ let close_in_noerr ic = (try close_in ic with _ -> ())
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
 
+let with_in_gen mode perm name f =
+  let ic = open_in_gen mode perm name in
+  let result = try
+      f ic
+    with ex -> close_in ic; raise ex
+  in
+  close_in ic;
+  result
+
+let with_in name f =
+  with_in_gen [Open_rdonly; Open_text] 0 name f
+
+let with_in_bin name f =
+  with_in_gen [Open_rdonly; Open_binary] 0 name f
+
 (* Output functions on standard output *)
 
 let print_char c = output_char stdout c

@@ -1038,6 +1038,27 @@ val set_binary_mode_in : in_channel -> bool -> unit
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
 
+val with_in : string -> (in_channel -> 'a) -> 'a
+(** Open the named file for reading, and run a function on
+    a new input channel of that file, positioned at the
+    beginning of the file. After function is complete,
+    the channel is closed and result of the function is
+    returned. If function raises an exception, this exception
+    is intercepted, channel is closed, and exception is reraised. *)
+
+val with_in_bin : string -> (in_channel -> 'a) -> 'a
+(** Same as {!Pervasives.with_in}, but the file is opened in binary mode,
+   so that no translation takes place during reads. On operating
+   systems that do not distinguish between text mode and binary
+   mode, this function behaves like {!Pervasives.with_in}. *)
+
+val with_in_gen : open_flag list -> int -> string -> (in_channel -> 'a) -> 'a
+(** [with_in_gen mode perm filename] opens the named file for reading,
+   and closes after the reading is complete as described above.
+   The extra arguments [mode] and [perm] specify the opening mode
+   and file permissions. {!Pervasives.with_in} and {!Pervasives.with_in_bin}
+   are special cases of this function. *)
+
 
 (** {2 Operations on large files} *)
 
