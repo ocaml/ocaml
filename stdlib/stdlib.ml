@@ -381,6 +381,21 @@ let close_out_noerr oc =
 external set_binary_mode_out : out_channel -> bool -> unit
                              = "caml_ml_set_binary_mode"
 
+let with_out_gen mode perm name f =
+  let oc = open_out_gen mode perm name in
+  let result = try
+      f oc
+    with ex -> close_out oc; raise ex
+  in
+  close_out oc;
+  result
+
+let with_out name f =
+  with_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o666 name f
+
+let with_out_bin name f =
+  with_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name f
+
 (* General input functions *)
 
 external set_in_channel_name: in_channel -> string -> unit =
@@ -465,6 +480,21 @@ external close_in : in_channel -> unit = "caml_ml_close_channel"
 let close_in_noerr ic = (try close_in ic with _ -> ())
 external set_binary_mode_in : in_channel -> bool -> unit
                             = "caml_ml_set_binary_mode"
+
+let with_in_gen mode perm name f =
+  let ic = open_in_gen mode perm name in
+  let result = try
+      f ic
+    with ex -> close_in ic; raise ex
+  in
+  close_in ic;
+  result
+
+let with_in name f =
+  with_in_gen [Open_rdonly; Open_text] 0 name f
+
+let with_in_bin name f =
+  with_in_gen [Open_rdonly; Open_binary] 0 name f
 
 (* Output functions on standard output *)
 
