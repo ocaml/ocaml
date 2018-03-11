@@ -922,6 +922,29 @@ val set_binary_mode_out : out_channel -> bool -> unit
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
 
+val with_out : string -> (out_channel -> 'a) -> 'a
+(** Open the named file for writing, and run a function on
+    a new output channel of that file, positioned at the
+    beginning of the file. The file is truncated to zero
+    length if it already exists. It is created if it
+    does not already exists. After function is complete,
+    the channel is closed and result of the function is
+    returned. If function raises an exception, this exception
+    is intercepted, channel is closed, and exception is reraised. *)
+
+val with_out_bin : string -> (out_channel -> 'a) -> 'a
+(** Same as {!Pervasives.with_out}, but the file is opened in binary mode,
+   so that no translation takes place during writes. On operating
+   systems that do not distinguish between text mode and binary
+   mode, this function behaves like {!Pervasives.with_out}. *)
+
+val with_out_gen : open_flag list -> int -> string -> (out_channel -> 'a) -> 'a
+(** [with_out_gen mode perm filename] opens the named file for writing,
+   and closes after the writing is complete as described above.
+   The extra arguments [mode] and [perm] specify the opening mode
+   and file permissions. {!Pervasives.with_out} and {!Pervasives.with_out_bin}
+   are special cases of this function. *)
+
 
 (** {2 General input functions} *)
 
