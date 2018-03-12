@@ -203,7 +203,7 @@ exec-one:
 	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest" \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)" \
 	    OCAMLTESTFLAGS=""; \
 	fi
 
@@ -242,7 +242,7 @@ promote:
 	fi
 	@if [ -f $(DIR)/ocamltests ]; then \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(BASEDIR)/$(DIR)/_ocamltest" \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)" \
 	    OCAMLTESTFLAGS="-promote"; \
 	else \
 	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
