@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -61,10 +61,10 @@ CAMLprim value unix_sleep(value duration)
   /* Fallback implementation, resolution 1 second only.
      We cannot reliably iterate until sleep() returns 0, because the
      remaining time returned by sleep() is generally rounded up. */
-{
-  enter_blocking_section();
+  {
+    enter_blocking_section();
     sleep ((unsigned int) d);
-  leave_blocking_section();
+    leave_blocking_section();
   }
 #endif
   return Val_unit;

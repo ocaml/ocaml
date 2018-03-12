@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -227,7 +227,7 @@ let _ = add_directive "load" (Directive_string (dir_load std_out))
 let dir_load_rec ppf name = ignore (load_file true ppf name)
 
 let _ = add_directive "load_rec"
-                    (Directive_string (dir_load_rec std_out))
+    (Directive_string (dir_load_rec std_out))
     {
       section = section_run;
       doc = "As #load, but loads dependencies recursively.";
@@ -388,14 +388,14 @@ let dir_remove_printer ppf lid =
   with Exit -> ()
 
 let _ = add_directive "install_printer"
-             (Directive_ident (dir_install_printer std_out))
+    (Directive_ident (dir_install_printer std_out))
     {
       section = section_print;
       doc = "Registers a printer for values of a certain type.";
     }
 
 let _ = add_directive "remove_printer"
-             (Directive_ident (dir_remove_printer std_out))
+    (Directive_ident (dir_remove_printer std_out))
     {
       section = section_print;
       doc = "Remove the named function from the table of toplevel printers.";

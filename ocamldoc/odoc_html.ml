@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -1198,9 +1198,9 @@ class html =
             s_final
       in
       Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Take a string and return the string where fully qualified module idents
        have been replaced by links to the module referenced by the ident.*)
@@ -1220,9 +1220,9 @@ class html =
           s_final
       in
       Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\)\\(\\.[A-Z][a-zA-Z_'0-9]*\\)*")
-          f
-          s
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\)\\(\\.[A-Z][a-zA-Z_'0-9]*\\)*")
+        f
+        s
 
     (** Print html code to display a [Types.type_expr]. *)
     method html_of_type_expr b m_name t =
@@ -1238,12 +1238,12 @@ class html =
       match l with
       | Cstr_tuple l ->
           print_DEBUG "html#html_of_cstr_args: 1";
-      let s = Odoc_info.string_of_type_list ?par sep l in
-      let s2 = newline_to_indented_br s in
+          let s = Odoc_info.string_of_type_list ?par sep l in
+          let s2 = newline_to_indented_br s in
           print_DEBUG "html#html_of_cstr_args: 2";
-      bs b "<code class=\"type\">";
-      bs b (self#create_fully_qualified_idents_links m_name s2);
-      bs b "</code>"
+          bs b "<code class=\"type\">";
+          bs b (self#create_fully_qualified_idents_links m_name s2);
+          bs b "</code>"
       | Cstr_record l ->
           print_DEBUG "html#html_of_cstr_args: 1 bis";
           bs b "<code>";
@@ -1764,7 +1764,7 @@ class html =
           bs b "= ";
           if priv then bs b "private " ;
           let close_env = match t.ty_manifest with
-               None -> "</code></pre>"
+              None -> "</code></pre>"
             | Some _ -> "</pre>" in
           self#html_of_record ~father ~close_env (Naming.recfield_target t) b l
       | Type_open ->

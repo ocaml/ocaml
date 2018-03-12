@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -51,19 +51,19 @@ type box_type = CamlinternalFormatBasics.block_type =
    are either text to print or pretty printing
    elements that drive indentation and line splitting. *)
 type pp_token =
-| Pp_text of string            (* normal text *)
-| Pp_break of int * int        (* complete break *)
-| Pp_tbreak of int * int       (* go to next tabulation *)
-| Pp_stab                      (* set a tabulation *)
+  | Pp_text of string          (* normal text *)
+  | Pp_break of int * int      (* complete break *)
+  | Pp_tbreak of int * int     (* go to next tabulation *)
+  | Pp_stab                    (* set a tabulation *)
   | Pp_begin of int * box_type (* beginning of a box *)
   | Pp_end                     (* end of a box *)
   | Pp_tbegin of tbox          (* beginning of a tabulation box *)
   | Pp_tend                    (* end of a tabulation box *)
   | Pp_newline                 (* to force a newline inside a box *)
-| Pp_if_newline                (* to do something only if this very
+  | Pp_if_newline              (* to do something only if this very
                                   line has been broken *)
-| Pp_open_tag of tag           (* opening a tag name *)
-| Pp_close_tag                 (* closing the most recently opened tag *)
+  | Pp_open_tag of tag         (* opening a tag name *)
+  | Pp_close_tag               (* closing the most recently opened tag *)
 
 and tag = string
 
@@ -82,11 +82,11 @@ and tbox = Pp_tbox of int list ref  (* Tabulation box *)
 
 (* The pretty-printer queue: polymorphic queue definition. *)
 type 'a queue_elem =
-   | Nil
+  | Nil
   | Cons of {
       head : 'a;
-  mutable tail : 'a queue_elem;
-}
+      mutable tail : 'a queue_elem;
+    }
 
 
 type 'a queue = {
@@ -648,10 +648,10 @@ let pp_set_formatter_tag_functions state {
      print_open_tag = pot;
      print_close_tag = pct;
   } =
-   state.pp_mark_open_tag <- mot;
-   state.pp_mark_close_tag <- mct;
-   state.pp_print_open_tag <- pot;
-   state.pp_print_close_tag <- pct
+  state.pp_mark_open_tag <- mot;
+  state.pp_mark_close_tag <- mct;
+  state.pp_print_open_tag <- pot;
+  state.pp_print_close_tag <- pct
 
 
 (* Initialize pretty-printer. *)
@@ -840,8 +840,8 @@ let pp_set_min_space_left state n =
 
 
 (* Initially, we have :
-  pp_max_indent = pp_margin - pp_min_space_left, and
-  pp_space_left = pp_margin. *)
+   pp_max_indent = pp_margin - pp_min_space_left, and
+   pp_space_left = pp_margin. *)
 let pp_set_max_indent state n =
   pp_set_min_space_left state (state.pp_margin - n)
 
@@ -947,32 +947,32 @@ let pp_make_formatter f g h i =
   let pp_margin = 78
   and pp_min_space_left = 10 in
   {
-   pp_scan_stack = sys_scan_stack;
-   pp_format_stack = [];
-   pp_tbox_stack = [];
-   pp_tag_stack = [];
-   pp_mark_stack = [];
+    pp_scan_stack = sys_scan_stack;
+    pp_format_stack = [];
+    pp_tbox_stack = [];
+    pp_tag_stack = [];
+    pp_mark_stack = [];
     pp_margin = pp_margin;
     pp_min_space_left = pp_min_space_left;
     pp_max_indent = pp_margin - pp_min_space_left;
     pp_space_left = pp_margin;
-   pp_current_indent = 0;
-   pp_is_new_line = true;
-   pp_left_total = 1;
-   pp_right_total = 1;
-   pp_curr_depth = 1;
-   pp_max_boxes = max_int;
-   pp_ellipsis = ".";
-   pp_out_string = f;
-   pp_out_flush = g;
-   pp_out_newline = h;
-   pp_out_spaces = i;
-   pp_print_tags = false;
-   pp_mark_tags = false;
-   pp_mark_open_tag = default_pp_mark_open_tag;
-   pp_mark_close_tag = default_pp_mark_close_tag;
-   pp_print_open_tag = default_pp_print_open_tag;
-   pp_print_close_tag = default_pp_print_close_tag;
+    pp_current_indent = 0;
+    pp_is_new_line = true;
+    pp_left_total = 1;
+    pp_right_total = 1;
+    pp_curr_depth = 1;
+    pp_max_boxes = max_int;
+    pp_ellipsis = ".";
+    pp_out_string = f;
+    pp_out_flush = g;
+    pp_out_newline = h;
+    pp_out_spaces = i;
+    pp_print_tags = false;
+    pp_mark_tags = false;
+    pp_mark_open_tag = default_pp_mark_open_tag;
+    pp_mark_close_tag = default_pp_mark_close_tag;
+    pp_print_open_tag = default_pp_print_open_tag;
+    pp_print_close_tag = default_pp_print_close_tag;
     pp_queue = pp_queue;
   }
 
@@ -1020,7 +1020,6 @@ let flush_buffer_formatter buf ppf =
   let s = Buffer.contents buf in
   Buffer.reset buf;
   s
-;;
 
 
 (* Flush [str_formatter] and get the contents of [stdbuf]. *)
@@ -1142,8 +1141,8 @@ let pp_print_text ppf s =
 let compute_tag output tag_acc =
   let buf = Buffer.create 16 in
   let ppf = formatter_of_buffer buf in
-  let () = output ppf tag_acc in
-  let () = pp_print_flush ppf () in
+  output ppf tag_acc;
+  pp_print_flush ppf ();
   let len = Buffer.length buf in
   if len < 2 then Buffer.contents buf
   else Buffer.sub buf 1 (len - 2)
@@ -1265,15 +1264,17 @@ let ksprintf k (Format (fmt, _)) =
     k (flush_buffer_formatter b ppf) in
   make_printf k () End_of_acc fmt
 
+
 let sprintf fmt = ksprintf (fun s -> s) fmt
 
 let kasprintf k (Format (fmt, _)) =
   let b = pp_make_buffer () in
   let ppf = formatter_of_buffer b in
   let k ppf acc =
-      output_acc ppf acc;
+    output_acc ppf acc;
     k (flush_buffer_formatter b ppf) in
   make_printf k ppf End_of_acc fmt
+
 
 let asprintf fmt = kasprintf (fun s -> s) fmt
 

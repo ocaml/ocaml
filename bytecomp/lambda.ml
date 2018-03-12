@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -527,7 +527,8 @@ let rec transl_normal_path = function
       then Lprim(Pgetglobal id, [], Location.none)
       else Lvar id
   | Pdot(p, _s, pos) ->
-      Lprim(Pfield(pos, Pointer, Immutable), [transl_normal_path p], Location.none)
+      Lprim(Pfield(pos, Pointer, Immutable),
+            [transl_normal_path p], Location.none)
   | Papply _ ->
       fatal_error "Lambda.transl_path"
 
@@ -691,10 +692,9 @@ let lam_of_loc kind loc =
   | Loc_FILE -> Lconst (Const_immstring file)
   | Loc_MODULE ->
     let filename = Filename.basename file in
-    let module_name =
-      try String.capitalize_ascii (Filename.chop_extension filename)
-      with Invalid_argument _ -> "//"^filename^"//"
-    in Lconst (Const_immstring module_name)
+    let name = Env.get_unit_name () in
+    let module_name = if name = "" then "//"^filename^"//" else name in
+    Lconst (Const_immstring module_name)
   | Loc_LOC ->
     let loc = Printf.sprintf "File %S, line %d, characters %d-%d"
         file lnum cnum enum in

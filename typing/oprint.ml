@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Projet Cristal, INRIA Rocquencourt                 *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Projet Cristal, INRIA Rocquencourt                   *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -369,7 +369,7 @@ let rec print_out_functor funct ppf =
           fprintf ppf "%a ->@ %a"
             print_out_module_type mty_arg (print_out_functor false) mty_res
       | name, true ->
-      fprintf ppf "(%s : %a) %a" name
+          fprintf ppf "(%s : %a) %a" name
             print_out_module_type mty_arg (print_out_functor true) mty_res
       | name, false ->
             fprintf ppf "functor@ (%s : %a) %a" name

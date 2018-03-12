@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*           Xavier Leroy, projet Cristal, INRIA Rocquencourt          */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -156,10 +156,10 @@ static value re_alloc_groups(value re, unsigned char * starttxt,
    Return Caml array of matched groups on success, 0 on failure. */
 
 static value re_match(value re,
-                    unsigned char * starttxt,
-                    register unsigned char * txt,
-                    register unsigned char * endtxt,
-                    int accept_partial_match)
+                      unsigned char * starttxt,
+                      register unsigned char * txt,
+                      register unsigned char * endtxt,
+                      int accept_partial_match)
 {
   register value * pc;
   intnat instr;

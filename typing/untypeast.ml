@@ -250,7 +250,7 @@ let type_extension sub tyext =
     (List.map (sub.extension_constructor sub) tyext.tyext_constructors)
 
 let extension_constructor sub ext =
-  let loc = sub.location sub ext.ext_loc in
+  let loc = sub.location sub ext.ext_loc; in
   let attrs = sub.attributes sub ext.ext_attributes in
   Te.constructor ~loc ~attrs
     (map_loc sub ext.ext_name)
@@ -446,7 +446,7 @@ let expression sub exp =
           ))
     | Texp_variant (label, expo) ->
         Pexp_variant (label, map_opt (sub.expr sub) expo)
-    | Texp_record { fields; extended_expression } ->
+    | Texp_record { fields; extended_expression; _ } ->
         let list = Array.fold_left (fun l -> function
             | _, Kept _ -> l
             | _, Overridden (lid, exp) -> (lid, sub.expr sub exp) :: l)

@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -251,7 +251,7 @@ let pr_item =
     (fun env -> function
       | Sig_value(id, {val_kind = Val_reg; val_type}) ->
           Some (outval_of_value env (toplevel_value id) val_type)
-  | _ -> None
+      | _ -> None
     )
 
 (* The current typing environment for the toplevel *)
@@ -329,7 +329,7 @@ let execute_phrase print_outcome ppf phr =
                 (* CR-someday trefis: *)
                 ()
               else
-              Compilenv.record_global_approx_toplevel ();
+                Compilenv.record_global_approx_toplevel ();
               if print_outcome then
                 Printtyp.wrap_printing_env oldenv (fun () ->
                 match str.str_items with
@@ -371,8 +371,8 @@ let execute_phrase print_outcome ppf phr =
       in
       begin match d with
       | None ->
-        fprintf ppf "Unknown directive `%s'.@." dir_name;
-        false
+          fprintf ppf "Unknown directive `%s'.@." dir_name;
+          false
       | Some d ->
           match d, dir_arg with
           | Directive_none f, Pdir_none -> f (); true
@@ -546,7 +546,7 @@ exception PPerror
 let loop ppf =
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-  fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
+    fprintf ppf "        OCaml version %s - native toplevel@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.init lb "//toplevel//";

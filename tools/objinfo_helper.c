@@ -1,9 +1,9 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       */
-/*                                                                     */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*         Mehdi Dogguy, PPS laboratory, University Paris Diderot         */
+/*                                                                        */
 /*   Copyright 2010 Mehdi Dogguy                                          */
 /*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */

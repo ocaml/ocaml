@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -601,11 +601,11 @@ module Analyser =
                 Parsetree.Pcty_constr (longident, _) ->
                   (*of Longident.t * core_type list*)
                   let name = Name.from_longident longident.txt in
-                    {
-                      ic_name = Odoc_env.full_class_or_class_type_name env name ;
-                      ic_class = None ;
-                      ic_text = text_opt ;
-                    }
+                  {
+                    ic_name = Odoc_env.full_class_or_class_type_name env name ;
+                    ic_class = None ;
+                    ic_text = text_opt ;
+                  }
 
               | Parsetree.Pcty_signature _
               | Parsetree.Pcty_arrow _ ->
@@ -672,9 +672,9 @@ module Analyser =
                 ele.Parsetree.psig_desc
             in
             let new_pos = Loc.psig_end ele + maybe_more
-                   (* for the comments of constructors in types,
-                      which are after the constructor definition and can
-                      go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
+              (* for the comments of constructors in types,
+                 which are after the constructor definition and can
+                 go beyond ele.Parsetree.psig_loc.Location.loc_end.Lexing.pos_cnum *)
             in
             f (acc_eles @ (ele_comments @ elements))
               new_env
@@ -914,6 +914,7 @@ module Analyser =
                   let loc_start = Loc.start type_decl.Parsetree.ptype_loc in
                   let new_end = Loc.end_ type_decl.Parsetree.ptype_loc
                                 + maybe_more in
+                  (* associate the comments to each constructor and build the [Type.t_type] *)
                   let new_type =
                     {
                       ty_name = Name.concat current_module_name name.txt ;
@@ -1570,12 +1571,12 @@ module Analyser =
         (Parsetree.Pcty_constr (_, _) (*of Longident.t * core_type list *),
          Types.Cty_constr (p, typ_list, _) (*of Path.t * type_expr list * class_type*)) ->
           print_DEBUG "Cty_constr _";
-             Class_type
-               {
-                 cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
-                 cta_class = None ;
-                 cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
-               }
+          Class_type
+            {
+              cta_name = Odoc_env.full_class_or_class_type_name env (Name.from_path p) ;
+              cta_class = None ;
+              cta_type_parameters = List.map (Odoc_env.subst_type env) typ_list
+            }
 
         | (Parsetree.Pcty_signature {
               Parsetree.pcsig_fields = class_type_field_list;

@@ -1,13 +1,13 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
 (*   Copyright 1998 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*   Copyright 2012 Benedikt Meurer.                                      *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -67,9 +67,9 @@ let num_register_classes = 3
 let register_class r =
   match (r.typ, !fpu) with
   | (Val | Int | Addr), _  -> 0
-  | Float, VFPv2     -> 1
-  | Float, VFPv3_D16 -> 1
-  | Float, _         -> 2
+  | Float, VFPv2         -> 1
+  | Float, VFPv3_D16     -> 1
+  | Float, _             -> 2
 
 let num_available_registers =
   [| 9; 16; 32 |]
@@ -122,24 +122,24 @@ let calling_conventions first_int last_int first_float last_float make_stack
     | [| arg |] ->
       begin match arg.typ with
       | Val | Int | Addr as ty ->
-        if !int <= last_int then begin
+          if !int <= last_int then begin
             loc.(i) <- [| phys_reg !int |];
-          incr int
-        end else begin
+            incr int
+          end else begin
             loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        assert (abi = EABI_HF);
-        assert (!fpu >= VFPv2);
-        if !float <= last_float then begin
+            ofs := !ofs + size_int
+          end
+      | Float ->
+          assert (abi = EABI_HF);
+          assert (!fpu >= VFPv2);
+          if !float <= last_float then begin
             loc.(i) <- [| phys_reg !float |];
-          incr float
-        end else begin
-          ofs := Misc.align !ofs size_float;
+            incr float
+          end else begin
+            ofs := Misc.align !ofs size_float;
             loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
-          ofs := !ofs + size_float
-        end
+            ofs := !ofs + size_float
+          end
       end
     | [| arg1; arg2 |] ->
       (* Passing of 64-bit quantities to external functions. *)

@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -238,6 +238,7 @@ exception Scan_failure of string
 (** {6 The general formatted input function} *)
 
 val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
+
 (** [bscanf ic fmt r1 ... rN f] reads characters from the
     [!Scanning.in_channel] formatted input channel [ic] and converts them to
     values according to format string [fmt].
@@ -245,7 +246,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner
     gives the result of the [bscanf] call.
 
     For instance, if [f] is the function [fun s i -> i + 1], then
-    [Scanf.sscanf "x=  1" "%s = %i" f] returns [2].
+    [Scanf.sscanf "x= 1" "%s = %i" f] returns [2].
 
     Arguments [r1] to [rN] are user-defined input functions that read the
     argument corresponding to the [%r] conversions specified in the format

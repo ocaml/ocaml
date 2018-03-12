@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -590,12 +590,12 @@ let rec substitute loc fpc sb ulam =
       | Some u -> substitute loc fpc sb u
       | None ->
           Uswitch(sarg,
-              { sw with
-                us_actions_consts =
+                  { sw with
+                    us_actions_consts =
                       Array.map (substitute loc fpc sb) sw.us_actions_consts;
-                us_actions_blocks =
+                    us_actions_blocks =
                       Array.map (substitute loc fpc sb) sw.us_actions_blocks;
-               })
+                  })
       end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch

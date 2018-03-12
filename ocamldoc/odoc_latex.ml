@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -699,20 +699,20 @@ class latex =
              (List.map
                 (fun x ->
                    let father = Name.father x.xt_name in
-                     p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
+                   p fmt2 "@[<h 6>  | %s" (Name.simple x.xt_name);
                    let l = self#latex_of_cstr_args f father (x.xt_args, x.xt_ret) in
                    let c =
-                       match x.xt_alias with
+                     match x.xt_alias with
                      | None -> []
-                         | Some xa ->
-                             p fmt2 " = %s"
-                               (
-                                 match xa.xa_xt with
+                     | Some xa ->
+                         p fmt2 " = %s"
+                           (
+                             match xa.xa_xt with
                              | None -> xa.xa_name
-                                   | Some x -> x.xt_name
-                     );
+                             | Some x -> x.xt_name
+                           );
                          [CodePre (flush2 ())]
-                    in
+                   in
                     Latex (self#make_label (self#extension_label x.xt_name)) :: l @ c
                     @ (match x.xt_text with
                       None -> []
@@ -740,7 +740,7 @@ class latex =
     method latex_of_exception fmt e =
       let text =
         let (fmt2, flush2) as f = new_fmt() in
-      Odoc_info.reset_type_names () ;
+        Odoc_info.reset_type_names () ;
         let s_name = Name.simple e.ex_name in
         let father = Name.father e.ex_name in
         p fmt2 "@[<hov 2>exception %s" s_name;

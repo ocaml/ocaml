@@ -128,9 +128,6 @@ install::
 	cp libasmrun_shared.so $(INSTALL_LIBDIR)/libasmrun_shared.so
 endif
 
-power.pic.o: power-$(SYSTEM).pic.o
-	cp power-$(SYSTEM).pic.o power.pic.o
-
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
 startup_aux.c: ../byterun/startup_aux.c

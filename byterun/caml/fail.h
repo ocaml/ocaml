@@ -1,22 +1,24 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #ifndef CAML_FAIL_H
 #define CAML_FAIL_H
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #include <setjmp.h>
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
@@ -24,7 +26,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-/* <private> */
+#ifdef CAML_INTERNALS
 #define OUT_OF_MEMORY_EXN 0     /* "Out_of_memory" */
 #define SYS_ERROR_EXN 1         /* "Sys_error" */
 #define FAILURE_EXN 2           /* "Failure" */
@@ -58,7 +60,7 @@ struct caml_exception_context {
 
 int caml_is_special_exception(value exn);
 
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 extern "C" {

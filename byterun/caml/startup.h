@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -38,7 +38,7 @@ extern void caml_read_section_descriptors(int fd, struct exec_trailer *trail);
 extern int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,
                                         char *name);
 extern int32_t caml_seek_section(int fd, struct exec_trailer *trail,
-                                        char *name);
+                                 char *name);
 
 #endif /* CAML_INTERNALS */
 

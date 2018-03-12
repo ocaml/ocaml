@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -89,9 +89,9 @@ module Stdlib = struct
 
     let rec equal eq l1 l2 =
       match l1, l2 with
-  | ([], []) -> true
+      | ([], []) -> true
       | (hd1 :: tl1, hd2 :: tl2) -> eq hd1 hd2 && equal eq tl1 tl2
-  | (_, _) -> false
+      | (_, _) -> false
 
     let filter_map f l =
       let rec aux acc l =
@@ -147,11 +147,11 @@ module Stdlib = struct
 
     let iter f = function
       | Some x -> f x
-  | None -> ()
+      | None -> ()
 
     let map f = function
       | Some x -> Some (f x)
-  | None -> None
+      | None -> None
 
     let fold f a b =
       match a with
@@ -658,8 +658,6 @@ exception HookExnWrapper of
       hook_name: string;
       hook_info: hook_info;
     }
-    (** An exception raised by a hook will be wrapped into a
-        [HookExnWrapper] constructor by the hook machinery.  *)
 
 exception HookExn of exn
 

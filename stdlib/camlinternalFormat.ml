@@ -127,13 +127,13 @@ and ('b, 'c) acc =
       (* Special fmtting (box) *)
   | Acc_formatting_gen of ('b, 'c) acc * ('b, 'c) acc_formatting_gen
       (* Special fmtting (box) *)
-  | Acc_string_literal of ('b, 'c) acc * string         (* Literal string             *)
-  | Acc_char_literal   of ('b, 'c) acc * char           (* Literal char               *)
-  | Acc_data_string    of ('b, 'c) acc * string         (* Generated string           *)
-  | Acc_data_char      of ('b, 'c) acc * char           (* Generated char             *)
+  | Acc_string_literal of ('b, 'c) acc * string     (* Literal string *)
+  | Acc_char_literal   of ('b, 'c) acc * char       (* Literal char *)
+  | Acc_data_string    of ('b, 'c) acc * string     (* Generated string *)
+  | Acc_data_char      of ('b, 'c) acc * char       (* Generated char *)
   | Acc_delay          of ('b, 'c) acc * ('b -> 'c)
                                                 (* Delayed printing (%a, %t) *)
-  | Acc_flush          of ('b, 'c) acc                  (* Flush                      *)
+  | Acc_flush          of ('b, 'c) acc              (* Flush *)
   | Acc_invalid_arg    of ('b, 'c) acc * string
       (* Raise Invalid_argument msg *)
   | End_of_acc
@@ -1434,21 +1434,21 @@ let convert_float fconv prec x =
     | _ -> str
     end
   | _ ->
-  let str = format_float (format_of_fconv fconv prec) x in
-  if fconv <> Float_F then str else
-    let len = String.length str in
-    let rec is_valid i =
-      if i = len then false else
-        match str.[i] with
-        | '.' | 'e' | 'E' -> true
-        | _ -> is_valid (i + 1)
-    in
-    match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero ->
-      if is_valid 0 then str else str ^ "."
-    | FP_infinite ->
-      if x < 0.0 then "neg_infinity" else "infinity"
-    | FP_nan -> "nan"
+    let str = format_float (format_of_fconv fconv prec) x in
+    if fconv <> Float_F then str else
+      let len = String.length str in
+      let rec is_valid i =
+        if i = len then false else
+          match str.[i] with
+          | '.' | 'e' | 'E' -> true
+          | _ -> is_valid (i + 1)
+      in
+      match classify_float x with
+      | FP_normal | FP_subnormal | FP_zero ->
+        if is_valid 0 then str else str ^ "."
+      | FP_infinite ->
+        if x < 0.0 then "neg_infinity" else "infinity"
+      | FP_nan -> "nan"
 
 (* Convert a char to a string according to the OCaml lexical convention. *)
 let format_caml_char c =
@@ -1733,7 +1733,6 @@ and make_float_padding_precision : type x y a b c d e f .
     fun w p x ->
       let str = fix_padding padty w (convert_float fconv p x) in
       make_printf k o (Acc_data_string (acc, str)) fmt
-
 and make_custom : type x y a b c d e f .
   (b -> (b, c) acc -> f) -> b -> (b, c) acc ->
   (a, b, c, d, e, f) fmt ->
@@ -2346,9 +2345,9 @@ let fmt_ebb_of_string ?legacy_behavior str =
         | None -> char_format fmt_rest
         | Some 0 -> scan_format fmt_rest
         | Some _n ->
-	   if not legacy_behavior
-	   then invalid_nonnull_char_width str_ind
-	   else (* legacy ignores %c widths *) char_format fmt_rest
+           if not legacy_behavior
+           then invalid_nonnull_char_width str_ind
+           else (* legacy ignores %c widths *) char_format fmt_rest
       end
     | 'C' ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
@@ -2392,7 +2391,7 @@ let fmt_ebb_of_string ?legacy_behavior str =
         let ignored = Ignored_scan_get_counter counter in
         Fmt_EBB (Ignored_param (ignored, fmt_rest))
       else
-      Fmt_EBB (Scan_get_counter (counter, fmt_rest))
+        Fmt_EBB (Scan_get_counter (counter, fmt_rest))
     | 'l' | 'n' | 'L' when str_ind=end_ind || not (is_int_base str.[str_ind]) ->
       let Fmt_EBB fmt_rest = parse str_ind end_ind in
       let counter = counter_of_char symb in

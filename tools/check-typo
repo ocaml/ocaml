@@ -274,9 +274,9 @@ IGNORE_DIRS="
           }
           if (state != "OK"){
             if (NR >= 10){
-          NR = 1;
-          RSTART = 1;
-          RLENGTH = 0;
+              NR = 1;
+              RSTART = 1;
+              RLENGTH = 0;
               err("missing-header", sprintf("bad copyright header %s", state));
             }else{
               counts["missing-header"] = 1;

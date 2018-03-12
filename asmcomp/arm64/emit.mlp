@@ -1,15 +1,15 @@
 #2 "asmcomp/arm64/emit.mlp"
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
 (*   Copyright 2013 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*   Copyright 2012 Benedikt Meurer.                                      *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -935,14 +935,14 @@ let emit_instr i =
     | Lraise k ->
         begin match k with
         | Cmm.Raise_withtrace ->
-            `	bl	{emit_symbol "caml_raise_exn"}\n`;
-            `{record_frame Reg.Set.empty true i.dbg}\n`
+          `	bl	{emit_symbol "caml_raise_exn"}\n`;
+          `{record_frame Reg.Set.empty true i.dbg}\n`
         | Cmm.Raise_notrace ->
-            `{load_domain_field Domainstate.Domain_stack_high reg_tmp1}\n`;
-            `	sub sp, {emit_reg reg_tmp1}, {emit_reg reg_trap_off}\n`;
-            `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
-            `	ldr	{emit_reg reg_trap_off}, [sp], #16\n`;
-            `	br	{emit_reg reg_tmp1}\n`
+          `{load_domain_field Domainstate.Domain_stack_high reg_tmp1}\n`;
+          `	sub sp, {emit_reg reg_tmp1}, {emit_reg reg_trap_off}\n`;
+          `	ldr	{emit_reg reg_tmp1}, [sp, #8]\n`;
+          `	ldr	{emit_reg reg_trap_off}, [sp], #16\n`;
+          `	br	{emit_reg reg_tmp1}\n`
         end
 
 (* Emission of an instruction sequence *)

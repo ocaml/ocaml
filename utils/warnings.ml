@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis && Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -381,12 +381,12 @@ let message = function
        | false, false -> "unused " ^ name
        | true, _ ->
           name ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
        | false, true ->
           name ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
      end
   | Unused_rec_flag ->
       "unused rec flag."

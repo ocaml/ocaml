@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -981,14 +981,14 @@ val getgroups : unit -> int array
    On Windows, always return [[|1|]]. *)
 
 val setgroups : int array -> unit
-  (** [setgroups groups] sets the supplementary group IDs for the
+(** [setgroups groups] sets the supplementary group IDs for the
     calling process. Appropriate privileges are required.
     On Windows: not implemented. *)
 
 val initgroups : string -> int -> unit
-  (** [initgroups user group] initializes the group access list by
-      reading the group database /etc/group and using all groups of
-      which [user] is a member. The additional group [group] is also
+(** [initgroups user group] initializes the group access list by
+    reading the group database /etc/group and using all groups of
+    which [user] is a member. The additional group [group] is also
     added to the list.
     On Windows: not implemented. *)
 

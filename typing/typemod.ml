@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -698,7 +698,7 @@ and transl_signature env sg =
                 incl_loc = sincl.pincl_loc;
               }
             in
-            let (trem, rem, final_env) = transl_sig newenv srem in
+            let (trem, rem, final_env) = transl_sig newenv srem  in
             mksig (Tsig_include incl) env loc :: trem,
             sg @ rem,
             final_env
@@ -970,7 +970,7 @@ let check_recmodule_inclusion env bindings =
 
   let subst_and_strengthen env s id mty =
     Mtype.strengthen ~aliasable:false env (Subst.modtype s mty)
-                         (Subst.module_path s (Pident id)) in
+      (Subst.module_path s (Pident id)) in
 
   let rec check_incl first_time n env s =
     if n > 0 then begin
@@ -1325,7 +1325,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
         let modl =
           Builtin_attributes.with_warning_attribute attrs
             (fun () ->
-          type_module ~alias:true true funct_body
+               type_module ~alias:true true funct_body
                  (anchor_submodule name.txt anchor) env smodl
             )
         in

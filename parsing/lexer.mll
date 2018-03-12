@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -304,7 +304,7 @@ let int_literal =
 let float_literal =
   ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
-  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+  (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']* )?
 let hex_float_literal =
   '0' ['x' 'X']
   ['0'-'9' 'A'-'F' 'a'-'f'] ['0'-'9' 'A'-'F' 'a'-'f' '_']*
@@ -450,7 +450,7 @@ rule token = parse
               positive, but we have never guarded against this and it
               might have useful hackish uses. *)
             update_loc lexbuf name line_num true 0;
-        token lexbuf
+            token lexbuf
       }
   | "#"  { HASH }
   | "&"  { AMPERSAND }
@@ -488,7 +488,7 @@ rule token = parse
   | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
   | "[@" { LBRACKETAT }
-  | "[@@" { LBRACKETATAT }
+  | "[@@"  { LBRACKETATAT }
   | "[@@@" { LBRACKETATATAT }
   | "[%"   { LBRACKETPERCENT }
   | "[%%"  { LBRACKETPERCENTPERCENT }
@@ -640,7 +640,7 @@ and string = parse
           Location.prerr_warning loc Warnings.Illegal_backslash;
         end;
         store_lexeme lexbuf;
-          string lexbuf
+        string lexbuf
       }
   | newline
       { if not (in_comment ()) then
@@ -764,13 +764,13 @@ and skip_hash_bang = parse
               | After a -> Before (a, [doc], [])
               | Before(a, f, b) -> Before(a, doc :: b @ f, [])
             else
-            match docs, lines with
-            | Initial, (NoLine | NewLine) -> After [doc]
-            | Initial, BlankLine -> Before([], [], [doc])
-            | After a, (NoLine | NewLine) -> After (doc :: a)
-            | After a, BlankLine -> Before (a, [], [doc])
-            | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
-            | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
+              match docs, lines with
+              | Initial, (NoLine | NewLine) -> After [doc]
+              | Initial, BlankLine -> Before([], [], [doc])
+              | After a, (NoLine | NewLine) -> After (doc :: a)
+              | After a, BlankLine -> Before (a, [], [doc])
+              | Before(a, f, b), (NoLine | NewLine) -> Before(a, f, doc :: b)
+              | Before(a, f, b), BlankLine -> Before(a, b @ f, [doc])
           in
           loop NoLine docs' lexbuf
       | tok ->

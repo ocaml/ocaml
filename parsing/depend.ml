@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -146,10 +146,10 @@ let add_type_declaration bv td =
 
 let add_extension_constructor bv ext =
   match ext.pext_kind with
-      Pext_decl(args, rty) ->
+    Pext_decl(args, rty) ->
       add_constructor_arguments bv args;
       Misc.may (add_type bv) rty
-    | Pext_rebind lid -> add bv lid
+  | Pext_rebind lid -> add bv lid
 
 let add_effect_constructor bv eff =
   match eff.peff_kind with

@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -293,17 +293,17 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
         dinfo_char_start = col;
         dinfo_file = file_name; } :: _ ->
       if line > 0 then begin (* PR#6243 *)
-    let file_num =
-      try List.assoc file_name !file_pos_nums
-      with Not_found ->
-        let file_num = !file_pos_num_cnt in
-        incr file_pos_num_cnt;
-            file_emitter ~file_num ~file_name;
-        file_pos_nums := (file_name,file_num) :: !file_pos_nums;
-        file_num in
-        loc_emitter ~file_num ~line ~col;
-      end
-  end
+      let file_num =
+        try List.assoc file_name !file_pos_nums
+        with Not_found ->
+          let file_num = !file_pos_num_cnt in
+          incr file_pos_num_cnt;
+              file_emitter ~file_num ~file_name;
+          file_pos_nums := (file_name,file_num) :: !file_pos_nums;
+          file_num in
+          loc_emitter ~file_num ~line ~col;
+        end
+    end
 
 let emit_debug_info dbg =
   emit_debug_info_gen dbg (fun ~file_num ~file_name ->
@@ -352,6 +352,17 @@ let emit_block_header_for_closure ~word_directive ~comment_string
     emit_string comment_string;
     emit_string " GC block header\n"
   end
+
+let emit_debug_info dbg =
+  emit_debug_info_gen dbg (fun ~file_num ~file_name ->
+      emit_string "\t.file\t";
+      emit_int file_num; emit_char '\t';
+      emit_string_literal file_name; emit_char '\n';
+    )
+    (fun ~file_num ~line ~col:_ ->
+       emit_string "\t.loc\t";
+       emit_int file_num; emit_char '\t';
+       emit_int line; emit_char '\n')
 
 let reset () =
   reset_debug_info ();

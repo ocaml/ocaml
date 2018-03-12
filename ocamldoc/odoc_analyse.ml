@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -43,9 +43,9 @@ let initial_env () =
        Pervasives modules.
        Another option might be to add a -nopervasives option to ocamldoc and update
        stdlib documentation's build process. *)
-  try
-    Env.open_pers_signature "Pervasives" initial
-  with Not_found ->
+    try
+      Env.open_pers_signature "Pervasives" initial
+    with Not_found ->
       Misc.fatal_error @@ Printf.sprintf "cannot open pervasives.cmi" in
   let open_mod env m =
     let open Asttypes in

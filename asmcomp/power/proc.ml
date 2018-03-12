@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -45,15 +45,15 @@ let word_addressed = false
 *)
 
 let int_reg_name =
-    [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
-       "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
-       "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
+  [| "3"; "4"; "5"; "6"; "7"; "8"; "9"; "10";
+     "14"; "15"; "16"; "17"; "18"; "19"; "20"; "21";
+     "22"; "23"; "24"; "25"; "26"; "27"; "28" |]
 
 let float_reg_name =
-    [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
-       "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
-       "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
-       "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
+  [| "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8";
+     "9"; "10"; "11"; "12"; "13"; "14"; "15"; "16";
+     "17"; "18"; "19"; "20"; "21"; "22"; "23"; "24";
+     "25"; "26"; "27"; "28"; "29"; "30"; "31" |]
 
 let num_register_classes = 2
 
@@ -106,27 +106,27 @@ let calling_conventions
     | [| arg |] ->
       begin match arg.typ with
       | Val | Int | Addr as ty ->
-        if !int <= last_int then begin
+          if !int <= last_int then begin
             loc.(i) <- [| phys_reg !int |];
             incr int;
             if reg_use_stack then ofs := !ofs + size_int
-        end else begin
+          end else begin
             loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        if !float <= last_float then begin
+            ofs := !ofs + size_int
+          end
+      | Float ->
+          if !float <= last_float then begin
             loc.(i) <- [| phys_reg !float |];
             incr float;
             (* On 64-bit platforms, passing a float in a float register
                reserves a normal register as well *)
             if size_int = 8 then incr int;
             if reg_use_stack then ofs := !ofs + size_float
-        end else begin
+          end else begin
             ofs := Misc.align !ofs size_float;
             loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
-          ofs := !ofs + size_float
-        end
+            ofs := !ofs + size_float
+          end
       end
     | [| arg1; arg2 |] ->
       (* Passing of 64-bit quantities to external functions

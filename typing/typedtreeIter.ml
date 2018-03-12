@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*    Thomas Gazagnaire (OCamlPro), Fabrice Le Fessant (INRIA Saclay)     *)
 (*                                                                        *)
@@ -298,7 +298,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
                 None -> ()
               | Some exp -> iter_expression exp
             end
-        | Texp_record { fields; extended_expression } ->
+        | Texp_record { fields; extended_expression; _ } ->
             Array.iter (function
                 | _, Kept _ -> ()
                 | _, Overridden (_, exp) -> iter_expression exp)

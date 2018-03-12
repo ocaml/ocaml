@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -205,7 +205,7 @@ let pr_item =
       | Sig_value(id, {val_kind = Val_reg; val_type}) ->
           Some (outval_of_value env (getvalue (Translmod.toplevel_name id))
                   val_type)
-  | _ -> None
+      | _ -> None
     )
 
 (* The current typing environment for the toplevel *)
@@ -513,7 +513,7 @@ exception PPerror
 let loop ppf =
   Location.formatter_for_warnings := ppf;
   if not !Clflags.noversion then
-  fprintf ppf "        OCaml version %s@.@." Config.version;
+    fprintf ppf "        OCaml version %s@.@." Config.version;
   begin
     try initialize_toplevel_env ()
     with Env.Error _ | Typetexp.Error _ as exn ->

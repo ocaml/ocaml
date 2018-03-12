@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -184,7 +184,7 @@ external __LOC__ : string = "%loc_LOC"
     the file currently being parsed by the compiler, with the standard
     error format of OCaml: "File %S, line %d, characters %d-%d".
     @since 4.02.0
- *)
+*)
 
 external __FILE__ : string = "%loc_FILE"
 (** [__FILE__] returns the name of the file currently being
@@ -196,13 +196,13 @@ external __LINE__ : int = "%loc_LINE"
 (** [__LINE__] returns the line number at which this expression
     appears in the file currently being parsed by the compiler.
     @since 4.02.0
- *)
+*)
 
 external __MODULE__ : string = "%loc_MODULE"
 (** [__MODULE__] returns the module name of the file being
     parsed by the compiler.
     @since 4.02.0
- *)
+*)
 
 external __POS__ : string * int * int * int = "%loc_POS"
 (** [__POS__] returns a tuple [(file,lnum,cnum,enum)], corresponding
@@ -219,7 +219,7 @@ external __LOC_OF__ : 'a -> string * 'a = "%loc_LOC"
     compiler, with the standard error format of OCaml: "File %S, line
     %d, characters %d-%d".
     @since 4.02.0
- *)
+*)
 
 external __LINE_OF__ : 'a -> int * 'a = "%loc_LINE"
 (** [__LINE__ expr] returns a pair [(line, expr)], where [line] is the
@@ -1129,9 +1129,9 @@ external format_of_string :
 *)
 
 val ( ^^ ) :
-      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
-      ('a, 'b, 'c, 'd, 'g, 'h) format6
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+  ('a, 'b, 'c, 'd, 'g, 'h) format6
 (** [f1 ^^ f2] catenates format strings [f1] and [f2]. The result is a
   format string that behaves as the concatenation of format strings [f1] and
   [f2]: in case of formatted output, it accepts arguments from [f1], then

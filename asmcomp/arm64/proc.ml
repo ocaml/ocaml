@@ -1,14 +1,14 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
 (*   Copyright 2013 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
 (*   Copyright 2012 Benedikt Meurer.                                      *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -63,7 +63,7 @@ let num_register_classes = 2
 let register_class r =
   match r.typ with
   | Val | Int | Addr  -> 0
-  | Float         -> 1
+  | Float -> 1
 
 let num_available_registers =
   [| 23; 32 |] (* first 23 int regs allocatable; all float regs allocatable *)
@@ -146,6 +146,8 @@ let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
      first float args in d0...d15
      remaining args on stack.
    Return values in x0...x15 or d0...d15. *)
+
+let max_arguments_for_tailcalls = 16
 
 let max_arguments_for_tailcalls = 16
 

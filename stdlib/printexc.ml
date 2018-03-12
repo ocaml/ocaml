@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -130,7 +130,7 @@ let format_backtrace_slot pos slot =
       if l.is_raise then
         (* compiler-inserted re-raise, skipped *) None
       else
-      Some (sprintf "%s unknown location" (info false))
+        Some (sprintf "%s unknown location" (info false))
   | Known_location l ->
       Some (sprintf "%s file \"%s\"%s, line %d, characters %d-%d"
               (info l.is_raise) l.filename
