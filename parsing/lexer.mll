@@ -196,9 +196,9 @@ let uchar_for_uchar_escape lexbuf =
 
 (* recover the name from a LABEL or OPTLABEL token *)
 
-let get_label_name lexbuf =
+let get_label_name ?(offset=1) ?(drop_last=0) lexbuf =
   let s = Lexing.lexeme lexbuf in
-  let name = String.sub s 1 (String.length s - 2) in
+  let name = String.sub s offset (String.length s - 1 - offset - drop_last) in
   if Hashtbl.mem keyword_table name then
     raise (Error(Keyword_as_label name, Location.curr lexbuf));
   name
@@ -499,15 +499,23 @@ rule token = parse
             { PREFIXOP(Lexing.lexeme lexbuf) }
   | ['=' '<' '>' '|' '&' '$'] symbolchar *
             { INFIXOP0(Lexing.lexeme lexbuf) }
+  | '`' ['=' '<' '>' '|' '&' '$'] lowercase identchar * '`'
+            { INFIXIDENT0(get_label_name ~offset:2 ~drop_last:0 lexbuf) }
   | ['@' '^'] symbolchar *
             { INFIXOP1(Lexing.lexeme lexbuf) }
+  | '`' ['@' '^'] lowercase identchar * '`'
+            { INFIXIDENT1(get_label_name ~offset:2 ~drop_last:0 lexbuf) }
   | ['+' '-'] symbolchar *
             { INFIXOP2(Lexing.lexeme lexbuf) }
+  | '`' ['+' '-'] lowercase identchar * '`'
+            { INFIXIDENT2(get_label_name ~offset:2 ~drop_last:0 lexbuf) }
   | "**" symbolchar *
             { INFIXOP4(Lexing.lexeme lexbuf) }
   | '%'     { PERCENT }
   | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
+  | '`' ['*' '/' '%'] lowercase identchar * '`'
+            { INFIXIDENT3(get_label_name ~offset:2 ~drop_last:0 lexbuf) }
   | '#' (symbolchar | '#') +
             { HASHOP(Lexing.lexeme lexbuf) }
   | eof { EOF }

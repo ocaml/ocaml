@@ -461,9 +461,13 @@ let package_type_of_module_type pmty =
 %token IN
 %token INCLUDE
 %token <string> INFIXOP0
+%token <string> INFIXIDENT0
 %token <string> INFIXOP1
+%token <string> INFIXIDENT1
 %token <string> INFIXOP2
+%token <string> INFIXIDENT2
 %token <string> INFIXOP3
+%token <string> INFIXIDENT3
 %token <string> INFIXOP4
 %token <string> DOTOP
 %token INHERIT
@@ -582,14 +586,14 @@ The precedences must be listed from low to high.
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
-%left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
-%right    INFIXOP1                      /* expr (e OP e OP e) */
+%left     INFIXOP0 INFIXIDENT0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
+%right    INFIXOP1 INFIXIDENT1          /* expr (e OP e OP e) */
 %nonassoc below_LBRACKETAT
 %nonassoc LBRACKETAT
 %nonassoc LBRACKETATAT
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
-%left     PERCENT INFIXOP3 STAR                 /* expr (e OP e OP e) */
+%left     INFIXOP2 INFIXIDENT2 PLUS PLUSDOT MINUS MINUSDOT PLUSEQ /* expr (e OP e OP e) */
+%left     PERCENT INFIXOP3 INFIXIDENT3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus prec_unary_plus /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
@@ -1358,6 +1362,14 @@ expr:
       { mkexp_attrs(Pexp_for($3, $5, $7, $6, $9)) $2 }
   | expr COLONCOLON expr
       { mkexp_cons (rhs_loc 2) (ghexp(Pexp_tuple[$1;$3])) (symbol_rloc()) }
+  | expr INFIXIDENT0 expr
+      { mkinfix $1 $2 $3 }
+  | expr INFIXIDENT1 expr
+      { mkinfix $1 $2 $3 }
+  | expr INFIXIDENT2 expr
+      { mkinfix $1 $2 $3 }
+  | expr INFIXIDENT3 expr
+      { mkinfix $1 $2 $3 }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
