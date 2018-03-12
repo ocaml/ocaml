@@ -122,6 +122,7 @@ let generate_module generator ocamlsrcdir output_variable input log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:output_variable
       ~stderr_variable:output_variable
       ~append:true
@@ -210,6 +211,7 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:compiler#output_variable
       ~stderr_variable:compiler#output_variable
       ~append:true
@@ -242,6 +244,7 @@ let compile_module ocamlsrcdir compiler module_ log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:dumb_term
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:compiler#output_variable
       ~stderr_variable:compiler#output_variable
       ~append:true
@@ -602,6 +605,7 @@ let compile_module
     Printf.fprintf log "%s\n%!" what;
     let exit_status =
       Actions_helpers.run_cmd
+        ~stdin_variable: Ocaml_variables.compiler_stdin
         ~stdout_variable:compileroutput
         ~stderr_variable:compileroutput
         ~append:true log env commandline in
@@ -845,6 +849,7 @@ let compile_ocamldoc ocamlsrcdir (basename,filetype as module_) log env =
   let exit_status =
     Actions_helpers.run_cmd
       ~environment:(Environments.to_system_env env)
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
       ~append:true
@@ -932,6 +937,7 @@ let run_ocamldoc =
    ] in
   let exit_status =
     Actions_helpers.run_cmd ~environment:(Environments.to_system_env env)
+      ~stdin_variable: Ocaml_variables.compiler_stdin
       ~stdout_variable:ocamldoc#output_variable
       ~stderr_variable:ocamldoc#output_variable
       ~append:true
