@@ -297,9 +297,9 @@ Astute readers may have wondered what happens when two or more record
 fields or constructors share the same name
 
 \begin{caml_example*}{toplevel}
-type first  = { x:int; y:int; z:int }
-type middle = { x:int; z:int }
-type last   = { x:int };;
+type first_record  = { x:int; y:int; z:int }
+type middle_record = { x:int; z:int }
+type last_record   = { x:int };;
 type first_variant = A | B | C
 type last_variant  = A;;
 \end{caml_example*}
@@ -311,25 +311,25 @@ OCaml can pick unambiguously the corresponding field or constructor.
 For instance:
 
 \begin{caml_example}{toplevel}
-let look_at_x_then_y_then_z (r:first) =
+let look_at_x_then_y_then_z (r:first_record) =
   let x = r.x in
   x + r.z;;
 let rotate_abc_to_bac (x:first_variant) = match x with
   | A -> (B:first_variant)
   | B -> A
   | C -> C;;
-type wrapped = First of first
+type wrapped = First of first_record
 let f (First r) = r, r.x;;
 \end{caml_example}
 
-In the first example, "(r:first)" is an explicit annotation telling OCaml
-that the type of "r" is "first". With this annotation, Ocaml knows that
-"r.x" refers to the "x" field of the first type. Similarly, the type
-annotation in the second example makes it clear to OCaml that the
-constructors "A", "B" and "C" come from the first variant type.
-Contrarily, in the last example, OCaml has inferred by itself that the
-type of "r" can only be first and there are no needs for explicit type
-annotations.
+In the first example, "(r:first_record)" is an explicit annotation
+telling OCaml that the type of "r" is "first_record". With this
+annotation, Ocaml knows that "r.x" refers to the "x" field of the first
+record type. Similarly, the type annotation in the second example makes
+it clear to OCaml that the constructors "A", "B" and "C" come from the
+first variant type. Contrarily, in the last example, OCaml has inferred
+by itself that the type of "r" can only be "first_record" and there are
+no needs for explicit type annotations.
 
 Those explicit type annotations can in fact be used anywhere.
 Most of the time they are unnecessary, but they are useful to guide
@@ -342,8 +342,8 @@ looking at the whole set of fields used in a expression or pattern:
 let project_and_rotate {x;y; _ } = { x= - y; y = x ; z = 0} ;;
 \end{caml_example}
 Since the fields "x" and "y" can only appear simultaneously in the first
-type, OCaml infers that the type of "project_and_rotate" is
-"first -> first".
+record type, OCaml infers that the type of "project_and_rotate" is
+"first_record -> first_record".
 
 In last resort, if there is not enough information to disambiguate between
 different fields or constructors, Ocaml picks the last defined type
@@ -354,9 +354,9 @@ let look_at_xz {x;z} = x;;
 \end{caml_example}
 
 Here, OCaml has inferred that the possible choices for the type of
-"{x;z}" are "first" and "middle", since the type "last" has no field "z".
-Ocaml then picks the type "middle" as the last defined type between the
-two possibilities.
+"{x;z}" are "first_record" and "middle_record", since the type
+"last_record" has no field "z". Ocaml then picks the type "middle_record"
+as the last defined type between the two possibilities.
 
 Beware that this last resort disambiguation is local: once Ocaml has
 chosen a disambiguation, it sticks to this choice, even if it leads to
@@ -364,7 +364,7 @@ an ulterior type error:
 
 \begin{caml_example}{toplevel}[error]
 let look_at_x_then_y r =
-  let x = r.x in (* Ocaml deduces [r: last] *)
+  let x = r.x in (* Ocaml deduces [r: last_record] *)
   x + r.y;;
 let is_a_or_b x = match x with
   | A -> true (* OCaml infers [x: last_variant] *)
