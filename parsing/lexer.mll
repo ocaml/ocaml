@@ -17,7 +17,6 @@
 
 {
 open Lexing
-open Misc
 open Parser
 
 type error =
@@ -35,8 +34,8 @@ exception Error of error * Location.t;;
 
 (* The table of keywords *)
 
-let keyword_table =
-  create_hashtable 149 [
+let default_keywords =
+ [
     "and", AND;
     "as", AS;
     "assert", ASSERT;
@@ -97,6 +96,19 @@ let keyword_table =
     "asr", INFIXOP4("asr")
 ]
 
+
+let keyword_table = Hashtbl.create 149
+let keyword_revtable = Hashtbl.create 149
+let define_keywords keywords =
+  Hashtbl.clear keyword_table;
+  Hashtbl.clear keyword_revtable;
+  List.iter (fun (key, data) ->
+      Hashtbl.add keyword_table key data;
+      Hashtbl.add keyword_revtable data key;
+    ) keywords
+let () = define_keywords default_keywords
+let token_of_keyword = Hashtbl.find keyword_table
+let keyword_of_token = Hashtbl.find keyword_revtable
 (* To buffer string literals *)
 
 let string_buffer = Buffer.create 256
@@ -345,7 +357,7 @@ rule token = parse
       { warn_latin1 lexbuf; OPTLABEL (get_label_name lexbuf) }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
-        try Hashtbl.find keyword_table s
+        try token_of_keyword s
         with Not_found -> LIDENT s }
   | lowercase_latin1 identchar_latin1 *
       { warn_latin1 lexbuf; LIDENT (Lexing.lexeme lexbuf) }

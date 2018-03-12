@@ -22,19 +22,30 @@
 (* TODO more fine-grained precedence pretty-printing *)
 
 open Asttypes
+open Parser
 open Format
 open Location
 open Longident
 open Parsetree
 open Ast_helper
 
+let keyword token = Lexer.keyword_of_token token
+let token keyword = Lexer.token_of_keyword keyword
+
 let prefix_symbols  = [ '!'; '?'; '~' ] ;;
 let infix_symbols = [ '='; '<'; '>'; '@'; '^'; '|'; '&'; '+'; '-'; '*'; '/';
                       '$'; '%'; '#' ]
 
 (* type fixity = Infix| Prefix  *)
-let special_infix_strings =
-  ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"; ":="; "!="; "::" ]
+let is_special_infix_string s =
+  try
+    match token s with
+    | OR
+    | INFIXOP3 _
+    | INFIXOP4 _ -> true
+    | _ -> false
+  with Not_found ->
+    List.mem s [ ":="; "!="; "::" ]
 
 (* determines if the string is an infix string.
    checks backwards, first allowing a renaming postfix ("_102") which
@@ -42,7 +53,7 @@ let special_infix_strings =
    if all the characters in the beginning of the string are valid infix
    characters. *)
 let fixity_of_string  = function
-  | s when List.mem s special_infix_strings -> `Infix s
+  | s when is_special_infix_string s -> `Infix s
   | s when List.mem s.[0] infix_symbols -> `Infix s
   | s when List.mem s.[0] prefix_symbols -> `Prefix s
   | s when s.[0] = '.' -> `Mixfix s
@@ -205,26 +216,26 @@ let constant f = function
 (* trailing space*)
 let mutable_flag f = function
   | Immutable -> ()
-  | Mutable -> pp f "mutable@;"
+  | Mutable -> pp f "%s@;" (keyword MUTABLE)
 let virtual_flag f  = function
   | Concrete -> ()
-  | Virtual -> pp f "virtual@;"
+  | Virtual -> pp f "%s@;" (keyword VIRTUAL)
 
 (* trailing space added *)
 let rec_flag f rf =
   match rf with
   | Nonrecursive -> ()
-  | Recursive -> pp f "rec "
+  | Recursive -> pp f "%s " (keyword REC)
 let nonrec_flag f rf =
   match rf with
-  | Nonrecursive -> pp f "nonrec "
+  | Nonrecursive -> pp f "%s " (keyword NONREC)
   | Recursive -> ()
 let direction_flag f = function
-  | Upto -> pp f "to@ "
-  | Downto -> pp f "downto@ "
+  | Upto -> pp f "%s@ " (keyword TO)
+  | Downto -> pp f "%s@ " (keyword DOWNTO)
 let private_flag f = function
   | Public -> ()
-  | Private -> pp f "private@ "
+  | Private -> pp f "%s@ " (keyword PRIVATE)
 
 let constant_string f s = pp f "%S" s
 let tyvar f str = pp f "'%s" str
@@ -334,12 +345,15 @@ and core_type1 ctxt f x =
           longident_loc li
     | Ptyp_package (lid, cstrs) ->
         let aux f (s, ct) =
-          pp f "type %a@ =@ %a" longident_loc s (core_type ctxt) ct  in
+          pp f "%s %a@ =@ %a" (keyword TYPE) longident_loc s (core_type ctxt) ct  in
         (match cstrs with
-         |[] -> pp f "@[<hov2>(module@ %a)@]" longident_loc lid
+         |[] -> pp f "@[<hov2>(%s@ %a)@]" (keyword MODULE) longident_loc lid
          |_ ->
-             pp f "@[<hov2>(module@ %a@ with@ %a)@]" longident_loc lid
-               (list aux  ~sep:"@ and@ ")  cstrs)
+             pp f "@[<hov2>(%s@ %a@ %s@ %a)@]" (keyword MODULE)
+              longident_loc lid (keyword WITH)
+              (list aux  ~sep:(Scanf.format_from_string
+                                 (Printf.sprintf "@ %s@ " (keyword AND)) ""))
+              cstrs)
     | Ptyp_extension e -> extension ctxt f e
     | _ -> paren true (core_type ctxt) f x
 
@@ -399,7 +413,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_array l ->
         pp f "@[<2>[|%a|]@]"  (list (pattern1 ctxt) ~sep:";") l
     | Ppat_unpack (s) ->
-        pp f "(module@ %s)@ " s.txt
+        pp f "(%s@ %s)@ " (keyword MODULE) s.txt
     | Ppat_type li ->
         pp f "#%a" longident_loc li
     | Ppat_record (l, closed) ->
@@ -429,7 +443,7 @@ and simple_pattern ctxt (f:Format.formatter) (x:pattern) : unit =
     | Ppat_lazy p ->
         pp f "@[<2>(lazy@;%a)@]" (pattern1 ctxt) p
     | Ppat_exception p ->
-        pp f "@[<2>exception@;%a@]" (pattern1 ctxt) p
+        pp f "@[<2>%s@;%a@]" (keyword EXCEPTION) (pattern1 ctxt) p
     | Ppat_extension e -> extension ctxt f e
     | Ppat_open (lid, p) ->
         let with_paren =
@@ -550,26 +564,39 @@ and expression ctxt f x =
         when ctxt.semi ->
         paren true (expression reset_ctxt) f x
     | Pexp_fun (l, e0, p, e) ->
-        pp f "@[<2>fun@;%a->@;%a@]"
+        pp f "@[<2>%s@;%a->@;%a@]" (keyword FUN)
           (label_exp ctxt) (l, e0, p)
           (expression ctxt) e
     | Pexp_function l ->
-        pp f "@[<hv>function%a@]" (case_list ctxt) l
+        pp f "@[<hv>%s%a@]" (keyword FUNCTION) (case_list ctxt) l
     | Pexp_match (e, l) ->
-        pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
-          (expression reset_ctxt) e (case_list ctxt) l
+       pp f "@[<hv0>@[<hv0>@[<2>%s %a@]@ %s@]%a@]"
+          (keyword MATCH)
+          (expression reset_ctxt) e
+          (keyword WITH)
+          (case_list ctxt) l
 
     | Pexp_try (e, l) ->
-        pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
-             (* "try@;@[<2>%a@]@\nwith@\n%a"*)
-          (expression reset_ctxt) e  (case_list ctxt) l
+        pp f "@[<0>@[<hv2>%s@ %a@]@ @[<0>%s%a@]@]"
+           (* "try@;@[<2>%a@]@\nwith@\n%a"*)
+           (keyword TRY)
+           (expression reset_ctxt) e
+           (keyword WITH)
+           (case_list ctxt) l
     | Pexp_let (rf, l, e) ->
         (* pp f "@[<2>let %a%a in@;<1 -2>%a@]"
            (*no indentation here, a new line*) *)
         (*   rec_flag rf *)
-        pp f "@[<2>%a in@;<1 -2>%a@]"
-          (bindings reset_ctxt) (rf,l)
-          (expression ctxt) e
+        pp f "@[<2>%a %s@;<1 -2>%a@]"
+           (bindings reset_ctxt) (rf,l)
+           (keyword IN)
+           (expression ctxt) e
+
+
+
+ (*----------------------------------------*)
+
+
     | Pexp_apply (e, l) ->
         begin if not (sugar_expr ctxt f x) then
             match view_fixity_of_exp e with
@@ -624,12 +651,18 @@ and expression ctxt f x =
           (simple_expr ctxt) e1 longident_loc li (simple_expr ctxt) e2
     | Pexp_ifthenelse (e1, e2, eo) ->
         (* @;@[<2>else@ %a@]@] *)
-        let fmt:(_,_,_)format ="@[<hv0>@[<2>if@ %a@]@;@[<2>then@ %a@]%a@]" in
+       let fmt:(_,_,_)format =
+         Scanf.format_from_string
+           (Printf.sprintf "@[<hv0>@[<2>%s@ %%a@]@;@[<2>%s@ %%a@]%%a@]"
+                           (keyword IF)
+                           (keyword THEN)
+           ) "%a%a%a" in
         let expression_under_ifthenelse = expression (under_ifthenelse ctxt) in
         pp f fmt expression_under_ifthenelse e1 expression_under_ifthenelse e2
           (fun f eo -> match eo with
              | Some x ->
-                 pp f "@;@[<2>else@;%a@]" (expression (under_semi ctxt)) x
+                pp f "@;@[<2>%s@;%a@]"
+                   (keyword ELSE) (expression (under_semi ctxt)) x
              | None -> () (* pp f "()" *)) eo
     | Pexp_sequence _ ->
         let rec sequence_helper acc = function
@@ -640,7 +673,7 @@ and expression ctxt f x =
         pp f "@[<hv>%a@]"
           (list (expression (under_semi ctxt)) ~sep:";@;") lst
     | Pexp_new (li) ->
-        pp f "@[<hov2>new@ %a@]" longident_loc li;
+        pp f "@[<hov2>%s@ %a@]" (keyword NEW) longident_loc li;
     | Pexp_setinstvar (s, e) ->
         pp f "@[<hov2>%s@ <-@ %a@]" s.txt (expression ctxt) e
     | Pexp_override l -> (* FIXME *)
@@ -649,16 +682,22 @@ and expression ctxt f x =
         pp f "@[<hov2>{<%a>}@]"
           (list string_x_expression  ~sep:";"  )  l;
     | Pexp_letmodule (s, me, e) ->
-        pp f "@[<hov2>let@ module@ %s@ =@ %a@ in@ %a@]" s.txt
-          (module_expr reset_ctxt) me (expression ctxt) e
+       pp f "@[<hov2>%s@ %s@ %s@ =@ %a@ %s@ %a@]"
+          (keyword LET) (keyword MODULE)
+          s.txt
+          (module_expr reset_ctxt) me
+          (keyword IN)
+          (expression ctxt) e
     | Pexp_letexception (cd, e) ->
-        pp f "@[<hov2>let@ exception@ %a@ in@ %a@]"
+       pp f "@[<hov2>%s@ %s@ %a@ %s@ %a@]"
+          (keyword LET) (keyword EXCEPTION)
           (extension_constructor ctxt) cd
+          (keyword IN)
           (expression ctxt) e
     | Pexp_assert e ->
-        pp f "@[<hov2>assert@ %a@]" (simple_expr ctxt) e
+        pp f "@[<hov2>%s@ %a@]" (keyword ASSERT) (simple_expr ctxt) e
     | Pexp_lazy (e) ->
-        pp f "@[<hov2>lazy@ %a@]" (simple_expr ctxt) e
+        pp f "@[<hov2>%s@ %a@]" (keyword LAZY) (simple_expr ctxt) e
     (* Pexp_poly: impossible but we should print it anyway, rather than
        assert false *)
     | Pexp_poly (e, None) ->
@@ -667,7 +706,10 @@ and expression ctxt f x =
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
           (simple_expr ctxt) e (core_type ctxt) ct
     | Pexp_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+       pp f "@[<2>%s %s%s %a %s@;%a@]"
+          (keyword LET) (keyword OPEN) (override ovf)
+          longident_loc lid
+          (keyword IN)
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
@@ -710,9 +752,10 @@ and simple_expr ctxt f x =
     (* | `Prefix _ | `Infix _ -> pp f "( %a )" longident_loc li) *)
     | Pexp_constant c -> constant f c;
     | Pexp_pack me ->
-        pp f "(module@;%a)" (module_expr ctxt) me
+        pp f "(%s@;%a)" (keyword MODULE) (module_expr ctxt) me
     | Pexp_newtype (lid, e) ->
-        pp f "fun@;(type@;%s)@;->@;%a" lid.txt (expression ctxt) e
+       pp f "%s@;(%s@;%s)@;->@;%a" (keyword FUN) (keyword TYPE)
+          lid.txt (expression ctxt) e
     | Pexp_tuple l ->
         pp f "@[<hov2>(%a)@]" (list (simple_expr ctxt) ~sep:",@;") l
     | Pexp_constraint (e, ct) ->
@@ -738,14 +781,17 @@ and simple_expr ctxt f x =
         pp f "@[<0>@[<2>[|%a|]@]@]"
           (list (simple_expr (under_semi ctxt)) ~sep:";") l
     | Pexp_while (e1, e2) ->
-        let fmt : (_,_,_) format = "@[<2>while@;%a@;do@;%a@;done@]" in
-        pp f fmt (expression ctxt) e1 (expression ctxt) e2
+       pp f  "@[<2>%s@;%a@;%s@;%a@;%s@]"
+          (keyword WHILE) (expression ctxt) e1 (keyword DO)
+          (expression ctxt) e2
+          (keyword DONE)
     | Pexp_for (s, e1, e2, df, e3) ->
-        let fmt:(_,_,_)format =
-          "@[<hv0>@[<hv2>@[<2>for %a =@;%a@;%a%a@;do@]@;%a@]@;done@]" in
         let expression = expression ctxt in
-        pp f fmt (pattern ctxt) s expression e1 direction_flag
-          df expression e2 expression e3
+        pp f
+          "@[<hv0>@[<hv2>@[<2>%s %a =@;%a@;%a%a@;%s@]@;%a@]@;%s@]"
+          (keyword FOR) (pattern ctxt) s expression e1
+          direction_flag df expression e2
+          (keyword DO) expression e3 (keyword DONE)
     | _ ->  paren true (expression ctxt) f x
 
 and attributes ctxt f l =
@@ -779,24 +825,25 @@ and item_extension ctxt f (s, e) =
   pp f "@[<2>[%%%%%s@ %a]@]" s.txt (payload ctxt) e
 
 and exception_declaration ctxt f ext =
-  pp f "@[<hov2>exception@ %a@]" (extension_constructor ctxt) ext
+  pp f "@[<hov2>%s@ %a@]" (keyword EXCEPTION)
+     (extension_constructor ctxt) ext
 
 and class_signature ctxt f { pcsig_self = ct; pcsig_fields = l ;_} =
   let class_type_field f x =
     match x.pctf_desc with
     | Pctf_inherit (ct) ->
-        pp f "@[<2>inherit@ %a@]%a" (class_type ctxt) ct
+        pp f "@[<2>%s@ %a@]%a" (keyword INHERIT) (class_type ctxt) ct
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_val (s, mf, vf, ct) ->
-        pp f "@[<2>val @ %a%a%s@ :@ %a@]%a"
+        pp f "@[<2>%s @ %a%a%s@ :@ %a@]%a" (keyword VAL)
           mutable_flag mf virtual_flag vf s.txt (core_type ctxt) ct
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_method (s, pf, vf, ct) ->
-        pp f "@[<2>method %a %a%s :@;%a@]%a"
+        pp f "@[<2>%s %a %a%s :@;%a@]%a" (keyword METHOD)
           private_flag pf virtual_flag vf s.txt (core_type ctxt) ct
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_constraint (ct1, ct2) ->
-        pp f "@[<2>constraint@ %a@ =@ %a@]%a"
+        pp f "@[<2>%s@ %a@ =@ %a@]%a" (keyword CONSTRAINT)
           (core_type ctxt) ct1 (core_type ctxt) ct2
           (item_attributes ctxt) x.pctf_attributes
     | Pctf_attribute a -> floating_attribute ctxt f a
@@ -804,11 +851,12 @@ and class_signature ctxt f { pcsig_self = ct; pcsig_fields = l ;_} =
         item_extension ctxt f e;
         item_attributes ctxt f x.pctf_attributes
   in
-  pp f "@[<hv0>@[<hv2>object@[<1>%a@]@ %a@]@ end@]"
+  pp f "@[<hv0>@[<hv2>%s@[<1>%a@]@ %a@]@ %s@]" (keyword OBJECT)
     (fun f -> function
          {ptyp_desc=Ptyp_any; ptyp_attributes=[]; _} -> ()
        | ct -> pp f " (%a)" (core_type ctxt) ct) ct
     (list class_type_field ~sep:"@;") l
+    (keyword END)
 
 (* call [class_signature] called by [class_signature] *)
 and class_type ctxt f x =
@@ -831,7 +879,10 @@ and class_type ctxt f x =
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
   | Pcty_open (ovf, lid, e) ->
-      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+     pp f "@[<2>%s %s%s %a %s@;%a@]"
+        (keyword LET) (keyword OPEN) (override ovf)
+        longident_loc lid
+        (keyword IN)
         (class_type ctxt) e
 
 (* [class type a = object end] *)
@@ -846,33 +897,38 @@ and class_type_declaration_list ctxt f l =
   in
   match l with
   | [] -> ()
-  | [x] -> class_type_declaration "class type" f x
+  | [x] -> class_type_declaration
+             (Printf.sprintf "%s %s" (keyword CLASS) (keyword TYPE)) f x
   | x :: xs ->
       pp f "@[<v>%a@,%a@]"
-        (class_type_declaration "class type") x
-        (list ~sep:"@," (class_type_declaration "and")) xs
+         (class_type_declaration
+            (Printf.sprintf "%s %s" (keyword CLASS)
+                            (keyword TYPE))) x
+        (list ~sep:"@," (class_type_declaration (keyword AND))) xs
 
 and class_field ctxt f x =
   match x.pcf_desc with
   | Pcf_inherit (ovf, ce, so) ->
-      pp f "@[<2>inherit@ %s@ %a%a@]%a" (override ovf)
+      pp f "@[<2>%s@ %s@ %a%a@]%a" (keyword INHERIT) (override ovf)
         (class_expr ctxt) ce
         (fun f so -> match so with
            | None -> ();
            | Some (s) -> pp f "@ as %s" s.txt ) so
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_val (s, mf, Cfk_concrete (ovf, e)) ->
-      pp f "@[<2>val%s %a%s =@;%a@]%a" (override ovf)
+      pp f "@[<2>%s%s %a%s =@;%a@]%a" (keyword VAL) (override ovf)
         mutable_flag mf s.txt
         (expression ctxt) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_method (s, pf, Cfk_virtual ct) ->
-      pp f "@[<2>method virtual %a %s :@;%a@]%a"
+     pp f "@[<2>%s %s %a %s :@;%a@]%a"
+        (keyword METHOD) (keyword VIRTUAL)
         private_flag pf s.txt
         (core_type ctxt) ct
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_val (s, mf, Cfk_virtual ct) ->
-      pp f "@[<2>val virtual %a%s :@ %a@]%a"
+     pp f "@[<2>%s %s %a%s :@ %a@]%a"
+        (keyword VAL) (keyword VIRTUAL)
         mutable_flag mf s.txt
         (core_type ctxt) ct
         (item_attributes ctxt) x.pcf_attributes
@@ -886,7 +942,7 @@ and class_field ctxt f x =
            pvb_loc=Location.none;
           }
       in
-      pp f "@[<2>method%s %a%a@]%a"
+      pp f "@[<2>%s%s %a%a@]%a" (keyword METHOD)
         (override ovf)
         private_flag pf
         (fun f -> function
@@ -898,12 +954,12 @@ and class_field ctxt f x =
            | _ -> bind e) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_constraint (ct1, ct2) ->
-      pp f "@[<2>constraint %a =@;%a@]%a"
+      pp f "@[<2>%s %a =@;%a@]%a" (keyword CONSTRAINT)
         (core_type ctxt) ct1
         (core_type ctxt) ct2
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_initializer (e) ->
-      pp f "@[<2>initializer@ %a@]%a"
+      pp f "@[<2>%s@ %a@]%a" (keyword INITIALIZER)
         (expression ctxt) e
         (item_attributes ctxt) x.pcf_attributes
   | Pcf_attribute a -> floating_attribute ctxt f a
@@ -912,12 +968,14 @@ and class_field ctxt f x =
       item_attributes ctxt f x.pcf_attributes
 
 and class_structure ctxt f { pcstr_self = p; pcstr_fields =  l } =
-  pp f "@[<hv0>@[<hv2>object%a@;%a@]@;end@]"
+  pp f "@[<hv0>@[<hv2>%s%a@;%a@]@;%s@]"
+     (keyword OBJECT)
     (fun f p -> match p.ppat_desc with
        | Ppat_any -> ()
        | Ppat_constraint _ -> pp f " %a" (pattern ctxt) p
        | _ -> pp f " (%a)" (pattern ctxt) p) p
     (list (class_field ctxt)) l
+    (keyword END)
 
 and class_expr ctxt f x =
   if x.pcl_attributes <> [] then begin
@@ -927,12 +985,12 @@ and class_expr ctxt f x =
     match x.pcl_desc with
     | Pcl_structure (cs) -> class_structure ctxt f cs
     | Pcl_fun (l, eo, p, e) ->
-        pp f "fun@ %a@ ->@ %a"
+        pp f "%s@ %a@ ->@ %a" (keyword FUN)
           (label_exp ctxt) (l,eo,p)
           (class_expr ctxt) e
     | Pcl_let (rf, l, ce) ->
-        pp f "%a@ in@ %a"
-          (bindings ctxt) (rf,l)
+        pp f "%a@ %s@ %a"
+          (bindings ctxt) (rf,l) (keyword IN)
           (class_expr ctxt) ce
     | Pcl_apply (ce, l) ->
         pp f "((%a)@ %a)" (* Cf: #7200 *)
@@ -950,7 +1008,10 @@ and class_expr ctxt f x =
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
     | Pcl_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+       pp f "@[<2>%s %s%s %a %s@;%a@]"
+          (keyword LET) (keyword OPEN) (override ovf)
+          longident_loc lid
+          (keyword IN)
           (class_expr ctxt) e
 
 and module_type ctxt f x =
@@ -962,42 +1023,50 @@ and module_type ctxt f x =
     | Pmty_ident li ->
         pp f "%a" longident_loc li;
     | Pmty_alias li ->
-        pp f "(module %a)" longident_loc li;
+        pp f "(%s %a)" (keyword MODULE) longident_loc li;
     | Pmty_signature (s) ->
-        pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
+       pp f "@[<hv0>@[<hv2>%s@ %a@]@ %s@]" (* "@[<hov>sig@ %a@ end@]" *)
+          (keyword SIG)
           (list (signature_item ctxt)) s (* FIXME wrong indentation*)
+          (keyword END)
     | Pmty_functor (_, None, mt2) ->
-        pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
+       pp f "@[<hov2>%s () ->@ %a@]" (keyword FUNCTOR)
+          (module_type ctxt) mt2
     | Pmty_functor (s, Some mt1, mt2) ->
         if s.txt = "_" then
           pp f "@[<hov2>%a@ ->@ %a@]"
             (module_type ctxt) mt1 (module_type ctxt) mt2
         else
-          pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
+          pp f "@[<hov2>%s@ (%s@ :@ %a)@ ->@ %a@]" (keyword FUNCTOR) s.txt
             (module_type ctxt) mt1 (module_type ctxt) mt2
     | Pmty_with (mt, l) ->
         let with_constraint f = function
           | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
               let ls = List.map fst ls in
-              pp f "type@ %a %a =@ %a"
+              pp f "%s@ %a %a =@ %a" (keyword TYPE)
                 (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
                 ls longident_loc li (type_declaration ctxt) td
           | Pwith_module (li, li2) ->
-              pp f "module %a =@ %a" longident_loc li longident_loc li2;
+             pp f "%s %a =@ %a" (keyword MODULE) longident_loc li
+                longident_loc li2;
           | Pwith_typesubst (li, ({ptype_params=ls;_} as td)) ->
               let ls = List.map fst ls in
-              pp f "type@ %a %a :=@ %a"
+              pp f "%s@ %a %a :=@ %a" (keyword TYPE)
                 (list (core_type ctxt) ~sep:"," ~first:"(" ~last:")")
                 ls longident_loc li
                 (type_declaration ctxt) td
           | Pwith_modsubst (li, li2) ->
-             pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
+             pp f "%s %a :=@ %a" (keyword MODULE)
+                longident_loc li longident_loc li2 in
         (match l with
          | [] -> pp f "@[<hov2>%a@]" (module_type ctxt) mt
-         | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"
-                  (module_type ctxt) mt (list with_constraint ~sep:"@ and@ ") l)
+         | _ -> pp f "@[<hov2>(%a@ %s@ %a)@]"
+                   (module_type ctxt) mt
+                   (keyword WITH)
+                   (list with_constraint ~sep:"@ and@ ") l)
     | Pmty_typeof me ->
-        pp f "@[<hov2>module@ type@ of@ %a@]" (module_expr ctxt) me
+       pp f "@[<hov2>%s@ %s@ of@ %a@]"
+          (keyword MODULE) (keyword TYPE) (module_expr ctxt) me
     | Pmty_extension e -> extension ctxt f e
 
 and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x
@@ -1026,33 +1095,34 @@ and signature_item ctxt f x : unit =
       in begin
         match l with
         | [] -> ()
-        | [x] -> class_description "class" f x
+        | [x] -> class_description (keyword CLASS) f x
         | x :: xs ->
             pp f "@[<v>%a@,%a@]"
-              (class_description "class") x
-              (list ~sep:"@," (class_description "and")) xs
+              (class_description (keyword CLASS)) x
+              (list ~sep:"@," (class_description (keyword AND))) xs
       end
   | Psig_module ({pmd_type={pmty_desc=Pmty_alias alias;
                             pmty_attributes=[]; _};_} as pmd) ->
-      pp f "@[<hov>module@ %s@ =@ %a@]%a" pmd.pmd_name.txt
+      pp f "@[<hov>%s@ %s@ =@ %a@]%a" (keyword MODULE) pmd.pmd_name.txt
         longident_loc alias
         (item_attributes ctxt) pmd.pmd_attributes
   | Psig_module pmd ->
-      pp f "@[<hov>module@ %s@ :@ %a@]%a"
+      pp f "@[<hov>%s@ %s@ :@ %a@]%a" (keyword MODULE)
         pmd.pmd_name.txt
         (module_type ctxt) pmd.pmd_type
         (item_attributes ctxt) pmd.pmd_attributes
   | Psig_open od ->
-      pp f "@[<hov2>open%s@ %a@]%a"
+      pp f "@[<hov2>%s%s@ %a@]%a" (keyword OPEN)
         (override od.popen_override)
         longident_loc od.popen_lid
         (item_attributes ctxt) od.popen_attributes
   | Psig_include incl ->
-      pp f "@[<hov2>include@ %a@]%a"
+      pp f "@[<hov2>%s@ %a@]%a" (keyword INCLUDE)
         (module_type ctxt) incl.pincl_mod
         (item_attributes ctxt) incl.pincl_attributes
   | Psig_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
-      pp f "@[<hov2>module@ type@ %s%a@]%a"
+     pp f "@[<hov2>%s@ %s@ %s%a@]%a"
+        (keyword MODULE) (keyword TYPE)
         s.txt
         (fun f md -> match md with
            | None -> ()
@@ -1068,11 +1138,14 @@ and signature_item ctxt f x : unit =
         | [] -> () ;
         | pmd :: tl ->
             if not first then
-              pp f "@ @[<hov2>and@ %s:@ %a@]%a" pmd.pmd_name.txt
+              pp f "@ @[<hov2>%s@ %s:@ %a@]%a"
+                 (keyword AND) pmd.pmd_name.txt
                 (module_type ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes
             else
-              pp f "@[<hov2>module@ rec@ %s:@ %a@]%a" pmd.pmd_name.txt
+              pp f "@[<hov2>%s@ %s@ %s:@ %a@]%a"
+                 (keyword MODULE) (keyword REC)
+                 pmd.pmd_name.txt
                 (module_type ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes;
             string_x_module_type_list f ~first:false tl
@@ -1089,8 +1162,10 @@ and module_expr ctxt f x =
       (attributes ctxt) x.pmod_attributes
   else match x.pmod_desc with
     | Pmod_structure (s) ->
-        pp f "@[<hv2>struct@;@[<0>%a@]@;<1 -2>end@]"
-          (list (structure_item ctxt) ~sep:"@\n") s;
+       pp f "@[<hv2>%s@;@[<0>%a@]@;<1 -2>%s@]"
+          (keyword STRUCT)
+          (list (structure_item ctxt) ~sep:"@\n") s
+          (keyword END)
     | Pmod_constraint (me, mt) ->
         pp f "@[<hov2>(%a@ :@ %a)@]"
           (module_expr ctxt) me
@@ -1098,15 +1173,15 @@ and module_expr ctxt f x =
     | Pmod_ident (li) ->
         pp f "%a" longident_loc li;
     | Pmod_functor (_, None, me) ->
-        pp f "functor ()@;->@;%a" (module_expr ctxt) me
+        pp f "%s ()@;->@;%a" (keyword FUNCTOR) (module_expr ctxt) me
     | Pmod_functor (s, Some mt, me) ->
-        pp f "functor@ (%s@ :@ %a)@;->@;%a"
+        pp f "%s@ (%s@ :@ %a)@;->@;%a" (keyword FUNCTOR)
           s.txt (module_type ctxt) mt (module_expr ctxt) me
     | Pmod_apply (me1, me2) ->
         pp f "(%a)(%a)" (module_expr ctxt) me1 (module_expr ctxt) me2
         (* Cf: #7200 *)
     | Pmod_unpack e ->
-        pp f "(val@ %a)" (expression ctxt) e
+        pp f "(%s@ %a)" (keyword VAL) (expression ctxt) e
     | Pmod_extension e -> extension ctxt f e
 
 and structure ctxt f x = list ~sep:"@\n" (structure_item ctxt) f x
@@ -1122,7 +1197,7 @@ and payload ctxt f = function
   | PPat (x, None) -> pp f "?"; pattern ctxt f x
   | PPat (x, Some e) ->
       pp f "?"; pattern ctxt f x;
-      pp f " when "; expression ctxt f e
+      pp f " %s " (keyword WHEN); expression ctxt f e
 
 (* transform [f = fun g h -> ..] to [f g h = ... ] could be improved *)
 and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
@@ -1137,7 +1212,7 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
             pp f "%a@ %a"
               (label_exp ctxt) (label,eo,p) pp_print_pexp_function e
       | Pexp_newtype (str,e) ->
-          pp f "(type@ %s)@ %a" str.txt pp_print_pexp_function e
+          pp f "(%s@ %s)@ %a" (keyword TYPE) str.txt pp_print_pexp_function e
       | _ -> pp f "=@;%a" (expression ctxt) x
   in
   let tyvars_str tyvars = List.map (fun v -> v.txt) tyvars in
@@ -1171,8 +1246,8 @@ and binding ctxt f {pvb_pat=p; pvb_expr=x; _} =
       pp f "%a@;: %a@;=@;%a"
         (simple_pattern ctxt) p (core_type ctxt) ct (expression ctxt) e
   | Some (p, tyvars, ct, e) -> begin
-    pp f "%a@;: type@;%a.@;%a@;=@;%a"
-    (simple_pattern ctxt) p (list pp_print_string ~sep:"@;")
+    pp f "%a@;: %s@;%a.@;%a@;=@;%a"
+    (simple_pattern ctxt) p (keyword TYPE) (list pp_print_string ~sep:"@;")
     (tyvars_str tyvars) (core_type ctxt) ct (expression ctxt) e
     end
   | None -> begin
@@ -1201,10 +1276,10 @@ and bindings ctxt f (rf,l) =
   in
   match l with
   | [] -> ()
-  | [x] -> binding "let" rf f x
+  | [x] -> binding (keyword LET) rf f x
   | x::xs ->
       pp f "@[<v>%a@,%a@]"
-        (binding "let" rf) x
+        (binding (keyword LET) rf) x
         (list ~sep:"@," (binding "and" Nonrecursive)) xs
 
 and structure_item ctxt f x =
@@ -1228,7 +1303,7 @@ and structure_item ctxt f x =
             module_helper me'
         | me -> me
       in
-      pp f "@[<hov2>module %s%a@]%a"
+      pp f "@[<hov2>%s %s%a@]%a" (keyword MODULE)
         x.pmb_name.txt
         (fun f me ->
            let me = module_helper me in
@@ -1245,12 +1320,13 @@ and structure_item ctxt f x =
         ) x.pmb_expr
         (item_attributes ctxt) x.pmb_attributes
   | Pstr_open od ->
-      pp f "@[<2>open%s@;%a@]%a"
+      pp f "@[<2>%s%s@;%a@]%a" (keyword OPEN)
         (override od.popen_override)
         longident_loc od.popen_lid
         (item_attributes ctxt) od.popen_attributes
   | Pstr_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
-      pp f "@[<hov2>module@ type@ %s%a@]%a"
+     pp f "@[<hov2>%s@ %s@ %s%a@]%a"
+        (keyword MODULE) (keyword TYPE)
         s.txt
         (fun f md -> match md with
            | None -> ()
@@ -1289,26 +1365,26 @@ and structure_item ctxt f x =
       in begin
         match l with
         | [] -> ()
-        | [x] -> class_declaration "class" f x
+        | [x] -> class_declaration (keyword CLASS) f x
         | x :: xs ->
             pp f "@[<v>%a@,%a@]"
-              (class_declaration "class") x
-              (list ~sep:"@," (class_declaration "and")) xs
+              (class_declaration (keyword CLASS)) x
+              (list ~sep:"@," (class_declaration (keyword AND))) xs
       end
   | Pstr_class_type l -> class_type_declaration_list ctxt f l
   | Pstr_primitive vd ->
-      pp f "@[<hov2>external@ %a@ :@ %a@]%a"
+      pp f "@[<hov2>%s@ %a@ :@ %a@]%a" (keyword EXTERNAL)
         protect_ident vd.pval_name.txt
         (value_description ctxt) vd
         (item_attributes ctxt) vd.pval_attributes
   | Pstr_include incl ->
-      pp f "@[<hov2>include@ %a@]%a"
+      pp f "@[<hov2>%s@ %a@]%a" (keyword INCLUDE)
         (module_expr ctxt) incl.pincl_mod
         (item_attributes ctxt) incl.pincl_attributes
   | Pstr_recmodule decls -> (* 3.07 *)
       let aux f = function
         | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) ->
-            pp f "@[<hov2>@ and@ %s:%a@ =@ %a@]%a" pmb.pmb_name.txt
+            pp f "@[<hov2>@ %s@ %s:%a@ =@ %a@]%a" (keyword AND) pmb.pmb_name.txt
               (module_type ctxt) typ
               (module_expr ctxt) expr
               (item_attributes ctxt) pmb.pmb_attributes
@@ -1316,7 +1392,8 @@ and structure_item ctxt f x =
       in
       begin match decls with
       | ({pmb_expr={pmod_desc=Pmod_constraint (expr, typ)}} as pmb) :: l2 ->
-          pp f "@[<hv>@[<hov2>module@ rec@ %s:%a@ =@ %a@]%a@ %a@]"
+         pp f "@[<hv>@[<hov2>%s@ %s@ %s:%a@ =@ %a@]%a@ %a@]"
+            (keyword MODULE) (keyword REC)
             pmb.pmb_name.txt
             (module_type ctxt) typ
             (module_expr ctxt) expr
@@ -1352,10 +1429,10 @@ and type_def_list ctxt f (rf, l) =
   in
   match l with
   | [] -> assert false
-  | [x] -> type_decl "type" rf f x
+  | [x] -> type_decl (keyword TYPE) rf f x
   | x :: xs -> pp f "@[<v>%a@,%a@]"
-                 (type_decl "type" rf) x
-                 (list ~sep:"@," (type_decl "and" Recursive)) xs
+                 (type_decl (keyword TYPE) rf) x
+                 (list ~sep:"@," (type_decl (keyword AND) Recursive)) xs
 
 and record_declaration ctxt f lbls =
   let type_record_field f pld =
@@ -1374,7 +1451,7 @@ and type_declaration ctxt f x =
   let priv f =
     match x.ptype_private with
     | Public -> ()
-    | Private -> pp f "@;private"
+    | Private -> pp f "@;%s" (keyword PRIVATE)
   in
   let manifest f =
     match x.ptype_manifest with
@@ -1409,7 +1486,7 @@ and type_declaration ctxt f x =
   let constraints f =
     List.iter
       (fun (ct1,ct2,_) ->
-         pp f "@[<hov2>@ constraint@ %a@ =@ %a@]"
+         pp f "@[<hov2>@ %s@ %a@ =@ %a@]" (keyword CONSTRAINT)
            (core_type ctxt) ct1 (core_type ctxt) ct2)
       x.ptype_cstrs
   in
@@ -1419,7 +1496,7 @@ and type_extension ctxt f x =
   let extension_constructor f x =
     pp f "@\n|@;%a" (extension_constructor ctxt) x
   in
-  pp f "@[<2>type %a%a += %a@ %a@]%a"
+  pp f "@[<2>%s %a%a += %a@ %a@]%a" (keyword TYPE)
     (fun f -> function
        | [] -> ()
        | l ->
@@ -1442,8 +1519,10 @@ and constructor_declaration ctxt f (name, args, res, attrs) =
         (fun f -> function
            | Pcstr_tuple [] -> ()
            | Pcstr_tuple l ->
-             pp f "@;of@;%a" (list (core_type1 ctxt) ~sep:"@;*@;") l
-           | Pcstr_record l -> pp f "@;of@;%a" (record_declaration ctxt) l
+              pp f "@;%s@;%a" (keyword OF)
+                 (list (core_type1 ctxt) ~sep:"@;*@;") l
+           | Pcstr_record l -> pp f "@;%s@;%a"
+                                  (keyword OF) (record_declaration ctxt) l
         ) args
         (attributes ctxt) attrs
   | Some r ->
@@ -1472,7 +1551,9 @@ and extension_constructor ctxt f x =
 and case_list ctxt f l : unit =
   let aux f {pc_lhs; pc_guard; pc_rhs} =
     pp f "@;| @[<2>%a%a@;->@;%a@]"
-      (pattern ctxt) pc_lhs (option (expression ctxt) ~first:"@;when@;")
+       (pattern ctxt) pc_lhs (option (expression ctxt)
+           ~first:(Scanf.format_from_string (Printf.sprintf "@;%s@;"
+                                            (keyword WHEN)) ""))
       pc_guard (expression (under_pipe ctxt)) pc_rhs
   in
   list aux f l ~sep:""

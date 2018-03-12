@@ -61,3 +61,15 @@ val set_preprocessor :
   (unit -> unit) ->
   ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> Parser.token) ->
   unit
+
+(* Three functions to tune the lexer with a different set of keywords:
+  * [define_keywords table] defines a new table of keywords replacing the
+      default ones.
+  * [keyword_of_token token] returns the string corresponding to the token
+      of a keyword, or raises Not_found
+  * [token_of_keyword token] returns the token corresponding to a keyword,
+      or raises Not_found
+ *)
+val define_keywords : (string * Parser.token) list -> unit
+val keyword_of_token : Parser.token -> string
+val token_of_keyword : string -> Parser.token
