@@ -371,6 +371,9 @@ let is_a_or_b x = match x with
   | B -> true;;
 \end{caml_example}
 
+Moreover, being the last defined type is a quite unstable position that
+may change surreptitiously after adding or moving around a type
+definition, or after opening a module (see chapter \ref{c:moduleexamples}).
 Consequently, adding explicit type annotations to guide disambiguation is
 more robust than relying on the last defined type disambiguation.
 
