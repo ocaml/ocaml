@@ -311,10 +311,10 @@ OCaml can pick unambiguously the corresponding field or constructor.
 For instance:
 
 \begin{caml_example}{toplevel}
-let look_at_x_then_y_then_z (r:first_record) =
+let look_at_x_then_z (r:first_record) =
   let x = r.x in
   x + r.z;;
-let rotate_abc_to_bac (x:first_variant) = match x with
+let permute (x:first_variant) = match x with
   | A -> (B:first_variant)
   | B -> A
   | C -> C;;
