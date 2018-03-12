@@ -5,6 +5,9 @@ Working version
 
 ### Language features:
 
+- MPR#6023, GPR#1648: Allow type-based selection of GADT constructors
+  (Thomas Refis and Leo White, review by Jacques Garrigue and Gabriel Scherer)
+
 - GPR#1467: Allow expressions sequences inside extended indexing and bigarray
   indexing operators, e.g.: e1.![e2; e3; ...], etc.
   (Nicolás Ojeda Bär, review by Gabriel Radanne, Damien Doligez, Gabriel
