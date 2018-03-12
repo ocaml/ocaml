@@ -165,6 +165,7 @@ let _ = List.iter register_variable
   [
     all_modules;
     c_preprocessor;
+    caml_ld_library_path;
     compare_programs;
     compiler_directory_suffix;
     compiler_reference;
