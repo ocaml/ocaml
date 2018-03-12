@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -40,7 +40,7 @@ module type SCANNING = sig
 
   val stdin : in_channel
   (* The scanning buffer reading from [Pervasives.stdin].
-      [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
+     [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
 
   val stdib : in_channel
   (* An alias for [Scanf.stdin], the scanning buffer reading from
@@ -48,26 +48,26 @@ module type SCANNING = sig
 
   val next_char : scanbuf -> char
   (* [Scanning.next_char ib] advance the scanning buffer for
-      one character.
-      If no more character can be read, sets a end of file condition and
-      returns '\000'. *)
+     one character.
+     If no more character can be read, sets a end of file condition and
+     returns '\000'. *)
 
   val invalidate_current_char : scanbuf -> unit
   (* [Scanning.invalidate_current_char ib] mark the current_char as already
-      scanned. *)
+     scanned. *)
 
   val peek_char : scanbuf -> char
   (* [Scanning.peek_char ib] returns the current char available in
-      the buffer or reads one if necessary (when the current character is
-      already scanned).
-      If no character can be read, sets an end of file condition and
-      returns '\000'. *)
+     the buffer or reads one if necessary (when the current character is
+     already scanned).
+     If no character can be read, sets an end of file condition and
+     returns '\000'. *)
 
   val checked_peek_char : scanbuf -> char
   (* Same as [Scanning.peek_char] above but always returns a valid char or
      fails: instead of returning a null char when the reading method of the
-      input buffer has reached an end of file, the function raises exception
-      [End_of_file]. *)
+     input buffer has reached an end of file, the function raises exception
+     [End_of_file]. *)
 
   val store_char : int -> scanbuf -> char -> int
   (* [Scanning.store_char lim ib c] adds [c] to the token buffer
@@ -84,41 +84,41 @@ module type SCANNING = sig
 
   val token : scanbuf -> string
   (* [Scanning.token ib] returns the string stored into the token
-      buffer of the scanning buffer: it returns the token matched by the
-      format. *)
+     buffer of the scanning buffer: it returns the token matched by the
+     format. *)
 
   val reset_token : scanbuf -> unit
   (* [Scanning.reset_token ib] resets the token buffer of
-      the given scanning buffer. *)
+     the given scanning buffer. *)
 
   val char_count : scanbuf -> int
   (* [Scanning.char_count ib] returns the number of characters
-      read so far from the given buffer. *)
+     read so far from the given buffer. *)
 
   val line_count : scanbuf -> int
   (* [Scanning.line_count ib] returns the number of new line
-      characters read so far from the given buffer. *)
+     characters read so far from the given buffer. *)
 
   val token_count : scanbuf -> int
   (* [Scanning.token_count ib] returns the number of tokens read
-      so far from [ib]. *)
+     so far from [ib]. *)
 
   val eof : scanbuf -> bool
   (* [Scanning.eof ib] returns the end of input condition
-      of the given buffer. *)
+     of the given buffer. *)
 
   val end_of_input : scanbuf -> bool
   (* [Scanning.end_of_input ib] tests the end of input condition
-      of the given buffer (if no char has ever been read, an attempt to
-      read one is performed). *)
+     of the given buffer (if no char has ever been read, an attempt to
+     read one is performed). *)
 
   val beginning_of_input : scanbuf -> bool
   (* [Scanning.beginning_of_input ib] tests the beginning of input
-      condition of the given buffer. *)
+     condition of the given buffer. *)
 
   val name_of_input : scanbuf -> string
   (* [Scanning.name_of_input ib] returns the name of the character
-      source for input buffer [ib]. *)
+     source for input buffer [ib]. *)
 
   val open_in : file_name -> in_channel
   val open_in_bin : file_name -> in_channel
@@ -510,13 +510,13 @@ let rec check_char ib c =
   | c -> check_this_char ib c
 
 and check_this_char ib c =
-    let ci = Scanning.checked_peek_char ib in
-    if ci = c then Scanning.invalidate_current_char ib else
+  let ci = Scanning.checked_peek_char ib in
+  if ci = c then Scanning.invalidate_current_char ib else
   character_mismatch c ci
 
 and check_newline ib =
   let ci = Scanning.checked_peek_char ib in
-      match ci with
+  match ci with
   | '\n' -> Scanning.invalidate_current_char ib
   | '\r' -> Scanning.invalidate_current_char ib; check_this_char ib '\n'
   | _ -> character_mismatch '\n' ci
@@ -635,7 +635,7 @@ let scan_decimal_digit_plus width ib =
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 
 
-  (* To scan numbers from other bases, we use a predicate argument to
+(* To scan numbers from other bases, we use a predicate argument to
    scan digits. *)
 let scan_digit_star digitp width ib =
   let rec scan_digits width ib =
@@ -954,7 +954,7 @@ let scan_caml_float width precision ib =
    otherwise, stops when encountering the characters in the scanning
    indication [stp].
    It also stops at end of file or when the maximum number of characters has
-   been read.*)
+   been read. *)
 let scan_string stp width ib =
   let rec loop width =
     if width = 0 then width else
@@ -1143,7 +1143,7 @@ let scan_chars_in_char_set char_set scan_indic width ib =
     let c = Scanning.peek_char ib in
     if i > 0 && not (Scanning.eof ib) &&
        is_in_char_set char_set c &&
-      int_of_char c <> stp then
+       int_of_char c <> stp then
       let _ = Scanning.store_char max_int ib c in
       scan_chars (i - 1) stp in
   match scan_indic with
@@ -1177,6 +1177,7 @@ let get_counter ib counter =
 let width_of_pad_opt pad_opt = match pad_opt with
   | None -> max_int
   | Some width -> width
+
 
 let stopper_of_formatting_lit fmting =
   if fmting = Escaped_percent then '%', "" else
@@ -1298,7 +1299,7 @@ fun k ign fmt -> match ign with
    take_format_readers, and aggegate scanned values into an
    heterogeneous list. *)
 (* Return the heterogeneous list of scanned values. *)
-let rec make_scanf : type a c d e f .
+let rec make_scanf : type a c d e f.
     Scanning.in_channel -> (a, Scanning.in_channel, c, d, e, f) fmt ->
       (d, e) heter_list -> (a, f) heter_list =
 fun ib fmt readers -> match fmt with
@@ -1369,8 +1370,8 @@ fun ib fmt readers -> match fmt with
   | Reader fmt_rest ->
     begin match readers with
     | Cons (reader, readers_rest) ->
-    let x = reader ib in
-    Cons (x, make_scanf ib fmt_rest readers_rest)
+        let x = reader ib in
+        Cons (x, make_scanf ib fmt_rest readers_rest)
     | Nil ->
         invalid_arg "scanf: missing reader"
     end

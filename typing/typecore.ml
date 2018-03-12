@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -1073,16 +1073,16 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
   | Ppat_alias(sq, name) ->
       assert (constrs = None);
       type_pat sq expected_ty (fun q ->
-      begin_def ();
-      let ty_var = build_as_type !env q in
-      end_def ();
-      generalize ty_var;
-      let id = enter_variable ~is_as_variable:true loc name ty_var in
+        begin_def ();
+        let ty_var = build_as_type !env q in
+        end_def ();
+        generalize ty_var;
+        let id = enter_variable ~is_as_variable:true loc name ty_var in
         rp k {
-        pat_desc = Tpat_alias(q, id, name);
-        pat_loc = loc; pat_extra=[];
-        pat_type = q.pat_type;
-        pat_attributes = sp.ppat_attributes;
+          pat_desc = Tpat_alias(q, id, name);
+          pat_loc = loc; pat_extra=[];
+          pat_type = q.pat_type;
+          pat_attributes = sp.ppat_attributes;
           pat_env = !env })
   | Ppat_constant cst ->
       let cst = constant_or_raise !env loc cst in
@@ -1203,10 +1203,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       map_fold_cont (fun (p,t) -> type_pat p t) (List.combine sargs ty_args)
       (fun args ->
         rp k {
-        pat_desc=Tpat_construct(lid, constr, args);
-        pat_loc = loc; pat_extra=[];
-        pat_type = expected_ty;
-        pat_attributes = sp.ppat_attributes;
+          pat_desc=Tpat_construct(lid, constr, args);
+          pat_loc = loc; pat_extra=[];
+          pat_type = expected_ty;
+          pat_attributes = sp.ppat_attributes;
           pat_env = !env })
   | Ppat_variant(l, sarg) ->
       let arg_type = match sarg with None -> [] | Some _ -> [newvar()] in
@@ -1250,22 +1250,22 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
                       Label_mismatch(label_lid.txt, trace)))
         end;
         type_pat sarg ty_arg (fun arg ->
-        if vars <> [] then begin
-          end_def ();
-          generalize ty_arg;
-          List.iter generalize vars;
-          let instantiated tv =
-            let tv = expand_head !env tv in
-            not (is_Tvar tv) || tv.level <> generic_level in
-          if List.exists instantiated vars then
+          if vars <> [] then begin
+            end_def ();
+            generalize ty_arg;
+            List.iter generalize vars;
+            let instantiated tv =
+              let tv = expand_head !env tv in
+              not (is_Tvar tv) || tv.level <> generic_level in
+            if List.exists instantiated vars then
               raise
                 (Error(label_lid.loc, !env, Polymorphic_label label_lid.txt))
-        end;
+          end;
           k (label_lid, label, arg))
       in
       let k' k lbl_pat_list =
-      check_recordpat_labels loc lbl_pat_list closed;
-      unify_pat_types loc !env record_ty expected_ty;
+        check_recordpat_labels loc lbl_pat_list closed;
+        unify_pat_types loc !env record_ty expected_ty;
         rp k {
         pat_desc = Tpat_record (lbl_pat_list, closed);
         pat_loc = loc; pat_extra=[];
@@ -1298,32 +1298,32 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let state = save_state env in
       begin match
         if mode = Split_or || mode = Splitting_or then raise Need_backtrack;
-      let initial_pattern_variables = !pattern_variables in
+        let initial_pattern_variables = !pattern_variables in
         let initial_module_variables = !module_variables in
         let p1 =
           try Some (type_pat ~mode:Inside_or sp1 expected_ty (fun x -> x))
           with Need_backtrack -> None in
-      let p1_variables = !pattern_variables in
+        let p1_variables = !pattern_variables in
         let p1_module_variables = !module_variables in
-      pattern_variables := initial_pattern_variables;
+        pattern_variables := initial_pattern_variables;
         module_variables := initial_module_variables;
         let p2 =
           try Some (type_pat ~mode:Inside_or sp2 expected_ty (fun x -> x))
           with Need_backtrack -> None in
-      let p2_variables = !pattern_variables in
+        let p2_variables = !pattern_variables in
         match p1, p2 with
           None, None -> raise Need_backtrack
         | Some p, None | None, Some p -> p (* no variables in this case *)
         | Some p1, Some p2 ->
-      let alpha_env =
-        enter_orpat_variables loc !env p1_variables p2_variables in
-      pattern_variables := p1_variables;
+        let alpha_env =
+          enter_orpat_variables loc !env p1_variables p2_variables in
+        pattern_variables := p1_variables;
         module_variables := p1_module_variables;
         { pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
-        pat_loc = loc; pat_extra=[];
-        pat_type = expected_ty;
-        pat_attributes = sp.ppat_attributes;
-        pat_env = !env }
+          pat_loc = loc; pat_extra=[];
+          pat_type = expected_ty;
+          pat_attributes = sp.ppat_attributes;
+          pat_env = !env }
       with
         p -> rp k p
       | exception Need_backtrack when mode <> Inside_or ->
@@ -1361,22 +1361,22 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~explode ~env
       in
       unify_pat_types loc !env ty expected_ty;
       type_pat sp expected_ty' (fun p ->
-      (*Format.printf "%a@.%a@."
-        Printtyp.raw_type_expr ty
-        Printtyp.raw_type_expr p.pat_type;*)
-      pattern_force := force :: !pattern_force;
-      let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
+        (*Format.printf "%a@.%a@."
+          Printtyp.raw_type_expr ty
+          Printtyp.raw_type_expr p.pat_type;*)
+        pattern_force := force :: !pattern_force;
+        let extra = (Tpat_constraint cty, loc, sp.ppat_attributes) in
         let p =
           if not separate then p else
-        match p.pat_desc with
-          Tpat_var (id,s) ->
-            {p with pat_type = ty;
-             pat_desc = Tpat_alias
-               ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
-             pat_extra = [extra];
-            }
-        | _ -> {p with pat_type = ty;
-                pat_extra = extra :: p.pat_extra}
+          match p.pat_desc with
+            Tpat_var (id,s) ->
+              {p with pat_type = ty;
+               pat_desc = Tpat_alias
+                 ({p with pat_desc = Tpat_any; pat_attributes = []}, id,s);
+               pat_extra = [extra];
+             }
+          | _ -> {p with pat_type = ty;
+                  pat_extra = extra :: p.pat_extra}
         in k p)
   | Ppat_type lid ->
       let (path, p,ty) = build_or_pat !env loc lid.txt in
@@ -1702,7 +1702,7 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_fun (p,_,_, e) ->
+  | Pexp_fun (p, _, _, e) ->
       let ty = if is_optional p then type_option (newvar ()) else newvar () in
       newty (Tarrow(p, ty, type_approx env e, Cok))
   | Pexp_function ({pc_rhs=e}::_) ->
@@ -2374,13 +2374,13 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
               | lid, _lbl, lbl_exp ->
                   Overridden (lid, lbl_exp)
               | exception Not_found -> begin
-              (* do not connect overridden labels *)
-                let _, ty_arg1, ty_res1 = instance_label false lbl
-                and _, ty_arg2, ty_res2 = instance_label false lbl in
-                unify env ty_arg1 ty_arg2;
-                unify env (instance env ty_expected) ty_res2;
-                unify_exp_types exp.exp_loc env ty_exp ty_res1;
-                  Kept ty_arg1
+                (* do not connect overridden labels *)
+                  let _, ty_arg1, ty_res1 = instance_label false lbl
+                  and _, ty_arg2, ty_res2 = instance_label false lbl in
+                  unify env ty_arg1 ty_arg2;
+                  unify env (instance env ty_expected) ty_res2;
+                  unify_exp_types exp.exp_loc env ty_exp ty_res1;
+                  Kept (ty_arg1, lbl.lbl_mut)
                 end
             in
             let label_definitions = Array.map unify_kept lbl.lbl_all in
@@ -2401,7 +2401,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       let fields =
         Array.map2 (fun descr def -> descr, def)
           label_descriptions label_definitions
-        in
+      in
       re {
         exp_desc = Texp_record {
             fields; representation;
@@ -3802,17 +3802,17 @@ and type_statement env sexp =
     unify_exp env exp expected_ty;
     exp
   else begin
-  begin match ty.desc with
-  | Tarrow _ ->
-      Location.prerr_warning loc Warnings.Partial_application
-  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
-  | Tvar _ ->
-      add_delayed_check (fun () -> check_application_result env true exp)
-  | _ ->
-      Location.prerr_warning loc Warnings.Statement_type
-  end;
-  unify_var env tv ty;
-  exp
+    begin match ty.desc with
+    | Tarrow _ ->
+        Location.prerr_warning loc Warnings.Partial_application
+    | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
+    | Tvar _ ->
+        add_delayed_check (fun () -> check_application_result env true exp)
+    | _ ->
+        Location.prerr_warning loc Warnings.Statement_type
+    end;
+    unify_var env tv ty;
+    exp
   end
 
 (* Typing of match cases *)
@@ -3844,12 +3844,12 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
     | _ -> true
   in
   let init_env () =
-      (* raise level for existentials *)
-      begin_def ();
-      Ident.set_current_time (get_current_level ());
-      let lev = Ident.current_time () in
-      Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
-      (lev, Env.add_gadt_instance_level lev env)
+    (* raise level for existentials *)
+    begin_def ();
+    Ident.set_current_time (get_current_level ());
+    let lev = Ident.current_time () in
+    Ctype.init_def (lev+1000);                 (* up to 1000 existentials *)
+    (lev, Env.add_gadt_instance_level lev env)
   in
   let lev, env =
     if has_gadts then init_env () else (get_current_level (), env)
@@ -3911,8 +3911,8 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
     List.iter
       (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
     unify_pats (instance env ty_arg);
-  end_def ();
-  List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
+    end_def ();
+    List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
   end
   else if erase_either then unify_pats (instance env ty_arg);
   (* type bodies *)
@@ -3988,8 +3988,8 @@ and type_cases ?in_function env ty_arg ty_res ?conts partial_flag loc caselist =
       Partial
   in
   let unused_check () =
-      List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
-        pat_env_list;
+    List.iter (fun (pat, (env, _)) -> check_absent_variant env pat)
+      pat_env_list;
     check_unused ~lev env (instance env ty_arg_check) cases ;
     Parmatch.check_ambiguous_bindings cases
   in
@@ -4437,8 +4437,8 @@ let report_error env ppf = function
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
         | Nolabel -> "but its first argument is not labelled"
-        |  l -> sprintf "but its first argument is labelled %s"
-          (prefixed_label_name l) in
+        | l -> sprintf "but its first argument is labelled %s"
+                       (prefixed_label_name l) in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)

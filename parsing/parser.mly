@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -268,8 +268,8 @@ let varify_constructors var_names t =
   loop t
 
 let mk_newtypes newtypes exp =
-    List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
-      newtypes exp
+  List.fold_right (fun newtype exp -> mkexp (Pexp_newtype (newtype, exp)))
+    newtypes exp
 
 let wrap_type_annotation newtypes core_type body =
   let exp = mkexp(Pexp_constraint(body,core_type)) in
@@ -420,7 +420,6 @@ let class_of_let_bindings lbs body =
     if lbs.lbs_extension <> None then
       raise Syntaxerr.(Error(Not_expecting(lbs.lbs_loc, "extension")));
     mkclass(Pcl_let (lbs.lbs_rec, List.rev bindings, body))
-
 
 (* Alternatively, we could keep the generic module type in the Parsetree
    and extract the package type during type-checking. In that case,
@@ -1429,7 +1428,7 @@ expr:
   | expr EQUAL expr
       { mkinfix $1 "=" $3 }
   | expr LESS expr
-      { mkinfix $1 "<" $3 }
+    { mkinfix $1 "<" $3 }
   | expr GREATER expr
       { mkinfix $1 ">" $3 }
   | expr OR expr
@@ -1850,19 +1849,19 @@ simple_pattern_not_ident:
 
 simple_delimited_pattern:
   | LBRACE lbl_pattern_list RBRACE
-      { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
+    { let (fields, closed) = $2 in mkpat(Ppat_record(fields, closed)) }
   | LBRACE lbl_pattern_list error
-      { unclosed "{" 1 "}" 3 }
+    { unclosed "{" 1 "}" 3 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { reloc_pat (mktailpat (rhs_loc 4) (List.rev $2)) }
+    { reloc_pat (mktailpat (rhs_loc 4) (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
-      { unclosed "[" 1 "]" 4 }
+    { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
-      { mkpat(Ppat_array(List.rev $2)) }
+    { mkpat(Ppat_array(List.rev $2)) }
   | LBRACKETBAR BARRBRACKET
-      { mkpat(Ppat_array []) }
+    { mkpat(Ppat_array []) }
   | LBRACKETBAR pattern_semi_list opt_semi error
-      { unclosed "[|" 1 "|]" 4 }
+    { unclosed "[|" 1 "|]" 4 }
 
 pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
@@ -2388,7 +2387,7 @@ constant:
   | FLOAT        { let (f, m) = $1 in Pconst_float (f, m) }
 ;
 signed_constant:
-    constant                               { $1 }
+    constant     { $1 }
   | MINUS INT    { let (n, m) = $2 in Pconst_integer("-" ^ n, m) }
   | MINUS FLOAT  { let (f, m) = $2 in Pconst_float("-" ^ f, m) }
   | PLUS INT     { let (n, m) = $2 in Pconst_integer (n, m) }

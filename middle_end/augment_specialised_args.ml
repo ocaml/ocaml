@@ -573,7 +573,7 @@ module Make (T : S) = struct
             | new_outer_var ->
               match definition with
               | Existing_inner_free_var _ ->
-                Flambda.{ var = new_outer_var;
+                { var = new_outer_var;
                   projection = None;
                 }
               | Projection_from_existing_specialised_arg projection ->
@@ -582,7 +582,7 @@ module Make (T : S) = struct
                   set_of_closures.specialised_args);
                 assert (Variable.Set.mem projecting_from
                   (Variable.Set.of_list function_decl.params));
-                Flambda.{ var = new_outer_var;
+                { var = new_outer_var;
                   projection = Some projection;
                 })
           for_one_function.new_definitions_indexed_by_new_inner_vars

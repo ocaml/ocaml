@@ -139,20 +139,20 @@ type call ident")
 (defun caml-types-show-type (arg)
   "Show the type of expression or pattern at point.
 
-   The smallest expression or pattern that contains point is
-   temporarily highlighted.  Its type is highlighted in the .annot
+The smallest expression or pattern that contains point is
+temporarily highlighted.  Its type is highlighted in the .annot
 file and the mark is set to the beginning of the type.  The type
 is also displayed in the mini-buffer.
 
-   Hints on using the type display:
-   . If you want the type of an identifier, put point within any
-     occurrence of this identifier.
+Hints on using the type display:
+. If you want the type of an identifier, put point within any
+occurrence of this identifier.
 . If you want the result type of a function application, put
 point at the first space after the function name.  . If you want
 the type of a list, put point on a bracket, on a semicolon, or on
 the :: constructor.
-   . Even if type checking fails, you can still look at the types
-     in the file, up to where the type checker failed.
+. Even if type checking fails, you can still look at the types
+in the file, up to where the type checker failed.
 
 Types are also displayed in the buffer *caml-types*, which is
 displayed when the command is called with Prefix argument 4.

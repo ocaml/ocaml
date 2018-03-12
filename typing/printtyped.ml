@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Fabrice Le Fessant, INRIA Saclay                   *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Fabrice Le Fessant, INRIA Saclay                     *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -847,8 +847,8 @@ and string_x_expression i ppf (s, _, e) =
 
 and record_field i ppf = function
   | _, Overridden (li, e) ->
-  line i ppf "%a\n" fmt_longident li;
-  expression (i+1) ppf e;
+      line i ppf "%a\n" fmt_longident li;
+      expression (i+1) ppf e;
   | _, Kept _ ->
       line i ppf "<kept>"
 

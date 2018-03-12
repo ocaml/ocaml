@@ -1,6 +1,6 @@
 (**************************************************************************)
 (*                                                                        *)
-(*                                OCaml                                   *)
+(*                                 OCaml                                  *)
 (*                                                                        *)
 (*    Thomas Gazagnaire (OCamlPro), Fabrice Le Fessant (INRIA Saclay)     *)
 (*                                                                        *)
@@ -79,19 +79,19 @@ module type IteratorArgument = sig
     val leave_type_declaration : type_declaration -> unit
     val leave_type_declarations : rec_flag -> unit
 
-      end
+end
 
 module MakeIterator :
   functor (Iter : IteratorArgument) ->
-           sig
-             val iter_structure : structure -> unit
-             val iter_signature : signature -> unit
-    val iter_structure_item : structure_item -> unit
-    val iter_signature_item : signature_item -> unit
-    val iter_expression : expression -> unit
-    val iter_module_type : module_type -> unit
-    val iter_pattern : pattern -> unit
-    val iter_class_expr : class_expr -> unit
-           end
+    sig
+      val iter_structure : structure -> unit
+      val iter_signature : signature -> unit
+      val iter_structure_item : structure_item -> unit
+      val iter_signature_item : signature_item -> unit
+      val iter_expression : expression -> unit
+      val iter_module_type : module_type -> unit
+      val iter_pattern : pattern -> unit
+      val iter_class_expr : class_expr -> unit
+    end
 
 module DefaultIteratorArgument : IteratorArgument

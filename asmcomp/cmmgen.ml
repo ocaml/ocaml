@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -508,6 +508,7 @@ let field_address ptr n =
   then ptr
   else Cop(Cadda, [ptr; Cconst_int(n * size_addr)])
 
+
 let get_field ptr n =
   Cop(Cload Word_val, [field_address ptr n])
 
@@ -864,7 +865,7 @@ let rec unbox_int bi arg =
         split_int64_for_32bit_target arg
       else
         Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word_int),
-          [Cop(Cadda, [arg; Cconst_int size_addr])])
+            [Cop(Cadda, [arg; Cconst_int size_addr])])
 
 let make_unsigned_int bi arg =
   if bi = Pint32 && size_int = 8
@@ -2183,11 +2184,9 @@ and transl_prim_2 env p arg1 arg2 dbg =
       tag_int (Cop(Ccmpi(transl_comparison cmp),
                      [transl_unbox_int env bi arg1;
                       transl_unbox_int env bi arg2]))
-
   | Patomic_store ->
      Cop (Cextcall ("caml_atomic_store", typ_int, true, Debuginfo.none),
           [transl env arg1; transl env arg2])
-
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
 
@@ -2394,7 +2393,7 @@ and transl_let env str kind id exp body =
          the body *)
       transl env exp
   | Boxed (boxed_number, _false) ->
-  let unboxed_id = Ident.create (Ident.name id) in
+      let unboxed_id = Ident.create (Ident.name id) in
       Clet(unboxed_id, transl_unbox_number env boxed_number exp,
            transl (add_unboxed_id id unboxed_id boxed_number env) body)
 
@@ -2912,7 +2911,8 @@ let send_function arity =
                 cache_public_method (Cvar meths) tag cache,
                 cached_pos),
     get_mut_field (Cvar meths)
-                  (Cop(Casr, [Cop (Cadda, [Cvar real; Cconst_int(2*size_addr - 1)]);
+                  (Cop(Casr, [Cop (Cadda, [Cvar real;
+                                           Cconst_int(2*size_addr - 1)]);
                               Cconst_int log2_size_addr])))))
   in
   let body = Clet(clos', clos, body) in

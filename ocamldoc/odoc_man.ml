@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -358,9 +358,9 @@ class man =
           (Name.get_relative m_name match_s)
       in
       Str.global_substitute
-          (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
-          f
-          s
+        (Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)")
+        f
+        s
 
     (** Print groff string to display a [Types.type_expr].*)
     method man_of_type_expr b m_name t =
@@ -386,11 +386,11 @@ class man =
     method man_of_cstr_args ?par b m_name sep l =
         match l with
         | Cstr_tuple l ->
-      let s = Odoc_str.string_of_type_list ?par sep l in
-      let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
-      bs b "\n.B ";
-      bs b (self#relative_idents m_name s2);
-      bs b "\n"
+            let s = Odoc_str.string_of_type_list ?par sep l in
+            let s2 = Str.global_replace (Str.regexp "\n") "\n.B " s in
+            bs b "\n.B ";
+            bs b (self#relative_idents m_name s2);
+            bs b "\n"
         | Cstr_record l ->
             self#man_of_record m_name b l
 

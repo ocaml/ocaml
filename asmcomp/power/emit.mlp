@@ -1,13 +1,13 @@
 #2 "asmcomp/power/emit.mlp"
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -212,10 +212,10 @@ let emit_tocload emit_dest dest entry =
 (* Output a "upper 16 bits" or "lower 16 bits" operator. *)
 
 let emit_upper emit_fun arg =
-      emit_fun arg; emit_string "@ha"
+  emit_fun arg; emit_string "@ha"
 
 let emit_lower emit_fun arg =
-      emit_fun arg; emit_string "@l"
+  emit_fun arg; emit_string "@l"
 
 (* Output a load or store operation *)
 
@@ -556,7 +556,7 @@ let emit_instr i =
     | Lop(Iconst_float f) ->
         begin match abi with
         | ELF32 ->
-        let lbl = new_label() in
+          let lbl = new_label() in
           float_literals := (f, lbl) :: !float_literals;
           `	addis	11, 0, {emit_upper emit_label lbl}\n`;
           `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}(11)\n`
@@ -573,16 +573,16 @@ let emit_instr i =
     | Lop(Iconst_symbol s) ->
         begin match abi with
         | ELF32 ->
-        `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
-        `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
+          `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
+          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
         | ELF64v1 | ELF64v2 ->
           emit_tocload emit_reg i.res.(0) (TocSym s)
         end
     | Lop(Icall_ind { label_after; }) ->
         begin match abi with
         | ELF32 ->
-        `	mtctr	{emit_reg i.arg.(0)}\n`;
-        `	bctrl\n`;
+          `	mtctr	{emit_reg i.arg.(0)}\n`;
+          `	bctrl\n`;
           record_frame i.live false i.dbg ~label:label_after
         | ELF64v1 ->
           `	ld	0, 0({emit_reg i.arg.(0)})\n`;  (* code pointer *)
@@ -635,7 +635,7 @@ let emit_instr i =
           `	mtctr	0\n`;
           `	ld	2, 8({emit_reg i.arg.(0)})\n`   (* TOC for callee *)
         | ELF64v2 ->
-        `	mtctr	{emit_reg i.arg.(0)}\n`;
+          `	mtctr	{emit_reg i.arg.(0)}\n`;
           `	mr	12, {emit_reg i.arg.(0)}\n`   (* addr of fn in r12 *)
         end;
         if !contains_calls then begin
@@ -670,7 +670,7 @@ let emit_instr i =
             `	b	{emit_symbol func}\n`
           | ELF64v1 | ELF64v2 ->
             `	bctr\n`
-        end
+          end
         end
     | Lop(Iextcall { func; alloc; }) ->
         if not alloc then begin
@@ -909,12 +909,12 @@ let emit_instr i =
         if ppc64 then begin
           jumptables := List.rev_append (Array.to_list jumptbl) !jumptables
         end else begin
-        emit_string rodata_space;
-        `{emit_label lbl}:`;
-        for i = 0 to Array.length jumptbl - 1 do
-          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
-        done;
-        emit_string code_space
+          emit_string rodata_space;
+          `{emit_label lbl}:`;
+          for i = 0 to Array.length jumptbl - 1 do
+            `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+          done;
+          emit_string code_space
         end
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`;
@@ -954,7 +954,7 @@ let emit_instr i =
             `	mtctr   0\n`;
             `	{emit_string lg}	29, {emit_int trap_previous_offset}(1)\n`;
             `	addi	1, 1, {emit_int trap_size}\n`;
-          `	bctr\n`
+            `	bctr\n`
         end
 
 (* Emit a sequence of instructions *)
@@ -998,7 +998,7 @@ let fundecl fundecl =
   begin match abi with
   | ELF32 ->
     emit_string code_space;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+    `	.globl	{emit_symbol fundecl.fun_name}\n`;
     `	.type	{emit_symbol fundecl.fun_name}, @function\n`;
     `	.align	2\n`;
     `{emit_symbol fundecl.fun_name}:\n`
@@ -1051,7 +1051,7 @@ let fundecl fundecl =
     `{emit_label !call_gc_label}:\n`;
     match abi with
     | ELF32 ->
-    `	b	{emit_symbol "caml_call_gc"}\n`
+      `	b	{emit_symbol "caml_call_gc"}\n`
     | ELF64v1 ->
       `	std	2, 40(1)\n`;
              (* save our TOC, will be restored by caml_call_gc *)
@@ -1099,7 +1099,7 @@ let fundecl fundecl =
 
 let declare_global_data s =
   `	.globl	{emit_symbol s}\n`;
-    `	.type	{emit_symbol s}, @object\n`
+  `	.type	{emit_symbol s}, @object\n`
 
 let emit_item = function
     Cglobal_symbol s ->

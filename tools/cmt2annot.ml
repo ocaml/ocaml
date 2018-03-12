@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Fabrice Le Fessant, INRIA Saclay                   *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Fabrice Le Fessant, INRIA Saclay                     *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -23,11 +23,11 @@ let bind_variables scope =
   let super = Tast_mapper.default in
   let pat sub p =
     begin match p.pat_desc with
-      | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
+    | Tpat_var (id, _) | Tpat_alias (_, id, _) ->
         Stypes.record (Stypes.An_ident (p.pat_loc,
-                                          Ident.name id,
-                                          Annot.Idef scope))
-      | _ -> ()
+                                        Ident.name id,
+                                        Annot.Idef scope))
+    | _ -> ()
     end;
     super.pat sub p;
   in
@@ -57,54 +57,54 @@ let bind_cases l =
 let rec iterator ~scope rebuild_env =
   let super = Tast_mapper.default in
   let class_expr sub node =
-      Stypes.record (Stypes.Ti_class node);
+    Stypes.record (Stypes.Ti_class node);
     super.class_expr sub node
 
   and module_expr _sub node =
-      Stypes.record (Stypes.Ti_mod node);
+    Stypes.record (Stypes.Ti_mod node);
     super.module_expr (iterator ~scope:node.mod_loc rebuild_env) node
 
   and expr sub exp =
-      begin match exp.exp_desc with
-      | Texp_ident (path, _, _) ->
-          let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
-          let env =
-            if rebuild_env then
-              try
-                Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
-              with Envaux.Error err ->
-                Format.eprintf "%a@." Envaux.report_error err;
-                exit 2
-            else
-              exp.exp_env
-          in
-          let annot =
+    begin match exp.exp_desc with
+    | Texp_ident (path, _, _) ->
+        let full_name = Path.name ~paren:Oprint.parenthesized_ident path in
+        let env =
+          if rebuild_env then
             try
-              let desc = Env.find_value path env in
-              let dloc = desc.Types.val_loc in
-              if dloc.Location.loc_ghost then Annot.Iref_external
-              else Annot.Iref_internal dloc
-            with Not_found ->
-              Annot.Iref_external
-          in
-          Stypes.record
-            (Stypes.An_ident (exp.exp_loc, full_name , annot))
-      | Texp_let (Recursive, bindings, _) ->
-          bind_bindings exp.exp_loc bindings
-      | Texp_let (Nonrecursive, bindings, body) ->
-          bind_bindings body.exp_loc bindings
-      | Texp_match (_, f1, f2, f3, _) ->
+              Env.env_of_only_summary Envaux.env_from_summary exp.exp_env
+            with Envaux.Error err ->
+              Format.eprintf "%a@." Envaux.report_error err;
+              exit 2
+          else
+            exp.exp_env
+        in
+        let annot =
+          try
+            let desc = Env.find_value path env in
+            let dloc = desc.Types.val_loc in
+            if dloc.Location.loc_ghost then Annot.Iref_external
+            else Annot.Iref_internal dloc
+          with Not_found ->
+            Annot.Iref_external
+        in
+        Stypes.record
+          (Stypes.An_ident (exp.exp_loc, full_name , annot))
+    | Texp_let (Recursive, bindings, _) ->
+        bind_bindings exp.exp_loc bindings
+    | Texp_let (Nonrecursive, bindings, body) ->
+        bind_bindings body.exp_loc bindings
+    | Texp_match (_, f1, f2, f3, _) ->
         bind_cases f1;
         bind_cases f2;
         bind_cases f3
-      | Texp_try (_, f1, f2) ->
-          bind_cases f1;
-          bind_cases f2
-      | Texp_function (_, f, _) ->
-          bind_cases f
-      | _ -> ()
-      end;
-      Stypes.record (Stypes.Ti_expr exp);
+    | Texp_try (_, f1, f2) ->
+        bind_cases f1;
+        bind_cases f2
+    | Texp_function (_, f, _) ->
+        bind_cases f
+    | _ -> ()
+    end;
+    Stypes.record (Stypes.Ti_expr exp);
     super.expr sub exp
 
   and pat sub p =
@@ -113,32 +113,32 @@ let rec iterator ~scope rebuild_env =
   in
 
   let structure_item_rem sub s rem =
-      begin match s with
-      | {str_desc = Tstr_value (rec_flag, bindings); str_loc = loc} ->
-          let open Location in
-          let doit loc_start = bind_bindings {scope with loc_start} bindings in
-          begin match rec_flag, rem with
-          | Recursive, _ -> doit loc.loc_start
-          | Nonrecursive, [] -> doit loc.loc_end
-          | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start
-          end
-      | _ ->
-          ()
-      end;
-      Stypes.record_phrase s.str_loc;
+    begin match s with
+    | {str_desc = Tstr_value (rec_flag, bindings); str_loc = loc} ->
+        let open Location in
+        let doit loc_start = bind_bindings {scope with loc_start} bindings in
+        begin match rec_flag, rem with
+        | Recursive, _ -> doit loc.loc_start
+        | Nonrecursive, [] -> doit loc.loc_end
+        | Nonrecursive,  {str_loc = loc2} :: _ -> doit loc2.loc_start
+        end
+    | _ ->
+        ()
+    end;
+    Stypes.record_phrase s.str_loc;
     super.structure_item sub s
   in
   let structure_item sub s =
-      (* This will be used for Partial_structure_item.
-         We don't have here the location of the "next" item,
-         this will give a slightly different scope for the non-recursive
-         binding case. *)
+    (* This will be used for Partial_structure_item.
+       We don't have here the location of the "next" item,
+       this will give a slightly different scope for the non-recursive
+       binding case. *)
     structure_item_rem sub s []
   and structure sub l =
-      let rec loop = function
+    let rec loop = function
       | str :: rem -> structure_item_rem sub str rem :: loop rem
       | [] -> []
-      in
+    in
     {l with str_items = loop l.str_items}
   in
   {super with class_expr; module_expr; expr; pat; structure_item; structure}

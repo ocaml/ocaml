@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -383,7 +383,7 @@ let check_consistency ps =
           | Some crc ->
               add_import name;
               Consistbl.check crc_units name crc ps.ps_filename)
-      ps.ps_crcs
+      ps.ps_crcs;
   with Consistbl.Inconsistency(name, source, auth) ->
     error (Inconsistent_import(name, auth, source))
 
@@ -442,7 +442,7 @@ let acknowledge_pers_struct check modname
   List.iter
     (function
         | Rectypes ->
-      if not !Clflags.recursive_types then
+            if not !Clflags.recursive_types then
               error (Need_recursive_types(ps.ps_name, !current_unit))
         | Unsafe_string ->
             if Config.safe_string then
@@ -1297,7 +1297,7 @@ let rec scrape_alias env ?path mty =
         scrape_alias env (find_module path env).md_type ~path
       with Not_found ->
         (*Location.prerr_warning Location.none
-	  (Warnings.No_cmi_file (Path.name path));*)
+          (Warnings.No_cmi_file (Path.name path));*)
         mty
       end
   | mty, Some path ->
@@ -1649,7 +1649,7 @@ and store_module ~check slot id path md env renv =
       EnvTbl.add slot (fun x -> `Component x) id
         (path, components_of_module ~deprecated ~loc:md.md_loc
            env Subst.identity path md.md_type)
-                   env.components renv.components;
+        env.components renv.components;
     summary = Env_module(env.summary, id, md) }
 
 and store_modtype slot id path info env renv =
@@ -1833,14 +1833,14 @@ let open_signature ?(loc = Location.none) ?(toplevel = false) ovf root sg env =
     let slot s b =
       begin match check_shadowing env b with
       | Some kind when not (List.mem (kind, s) !shadowed) ->
-        shadowed := (kind, s) :: !shadowed;
-        let w =
-          match kind with
-          | "label" | "constructor" ->
-              Warnings.Open_shadow_label_constructor (kind, s)
-          | _ -> Warnings.Open_shadow_identifier (kind, s)
-        in
-        Location.prerr_warning loc w
+          shadowed := (kind, s) :: !shadowed;
+          let w =
+            match kind with
+            | "label" | "constructor" ->
+                Warnings.Open_shadow_label_constructor (kind, s)
+            | _ -> Warnings.Open_shadow_identifier (kind, s)
+          in
+          Location.prerr_warning loc w
       | _ -> ()
       end;
       used := true
@@ -1871,7 +1871,7 @@ let crc_of_unit name =
 
 (* Return the list of imported interfaces with their CRCs *)
 
-let imports() =
+let imports () =
   Consistbl.extract (StringSet.elements !imported_units) crc_units
 
 (* Returns true if [s] is an opaque imported module  *)

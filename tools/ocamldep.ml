@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -209,9 +209,9 @@ let print_raw_dependencies source_file deps =
               | 'A'..'Z' | '\128'..'\255' -> true
               | _ -> false) then
         begin
-            print_char ' ';
-            print_string dep
-          end)
+          print_char ' ';
+          print_string dep
+        end)
     deps;
   print_char '\n'
 
@@ -311,35 +311,35 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   end
 
 let print_ml_dependencies source_file extracted_deps =
-      let basename = Filename.chop_extension source_file in
-      let byte_targets = [ basename ^ ".cmo" ] in
-      let native_targets =
-        if !all_dependencies
-        then [ basename ^ ".cmx"; basename ^ ".o" ]
-        else [ basename ^ ".cmx" ] in
-      let init_deps = if !all_dependencies then [source_file] else [] in
-      let cmi_name = basename ^ ".cmi" in
-      let init_deps, extra_targets =
-        if List.exists (fun ext -> Sys.file_exists (basename ^ ext))
-                       !mli_synonyms
-        then (cmi_name :: init_deps, cmi_name :: init_deps), []
-        else (init_deps, init_deps),
-             (if !all_dependencies then [cmi_name] else [])
-      in
-      let (byt_deps, native_deps) =
-        Depend.StringSet.fold (find_dependency ML)
-          extracted_deps init_deps in
+  let basename = Filename.chop_extension source_file in
+  let byte_targets = [ basename ^ ".cmo" ] in
+  let native_targets =
+    if !all_dependencies
+    then [ basename ^ ".cmx"; basename ^ ".o" ]
+    else [ basename ^ ".cmx" ] in
+  let init_deps = if !all_dependencies then [source_file] else [] in
+  let cmi_name = basename ^ ".cmi" in
+  let init_deps, extra_targets =
+    if List.exists (fun ext -> Sys.file_exists (basename ^ ext))
+        !mli_synonyms
+    then (cmi_name :: init_deps, cmi_name :: init_deps), []
+    else (init_deps, init_deps),
+         (if !all_dependencies then [cmi_name] else [])
+  in
+  let (byt_deps, native_deps) =
+    Depend.StringSet.fold (find_dependency ML)
+      extracted_deps init_deps in
   if not !native_only then
-      print_dependencies (byte_targets @ extra_targets) byt_deps;
+    print_dependencies (byte_targets @ extra_targets) byt_deps;
   if not !bytecode_only then
     print_dependencies (native_targets @ extra_targets) native_deps
 
 let print_mli_dependencies source_file extracted_deps =
-      let basename = Filename.chop_extension source_file in
-      let (byt_deps, _opt_deps) =
-        Depend.StringSet.fold (find_dependency MLI)
-          extracted_deps ([], []) in
-      print_dependencies [basename ^ ".cmi"] byt_deps
+  let basename = Filename.chop_extension source_file in
+  let (byt_deps, _opt_deps) =
+    Depend.StringSet.fold (find_dependency MLI)
+      extracted_deps ([], []) in
+  print_dependencies [basename ^ ".cmi"] byt_deps
 
 let print_file_dependencies (source_file, kind, extracted_deps) =
   if !raw_dependencies then begin

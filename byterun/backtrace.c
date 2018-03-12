@@ -546,20 +546,20 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   if (events == NULL) {
       res = Val_int(0); /* None */
   } else {
-      arr = caml_alloc(Caml_state->backtrace_pos, 0);
-      if(Caml_state->backtrace_buffer == NULL) {
-          Assert(Caml_state->backtrace_pos == 0);
-      } else {
-          intnat i;
-          for(i = 0; i < Caml_state->backtrace_pos; i++) {
-              raw_slot = Val_Codet(Caml_state->backtrace_buffer[i]);
-              /* caml_convert_raw_backtrace_slot will not fail with
-               caml_failwith as we checked (events != NULL) already */
-              slot = caml_convert_raw_backtrace_slot(raw_slot);
-              caml_modify_field(arr, i, slot);
-          }
-      }
-      res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
+    arr = caml_alloc(Caml_state->backtrace_pos, 0);
+    if(Caml_state->backtrace_buffer == NULL) {
+        Assert(Caml_state->backtrace_pos == 0);
+    } else {
+        intnat i;
+        for(i = 0; i < Caml_state->backtrace_pos; i++) {
+            raw_slot = Val_Codet(Caml_state->backtrace_buffer[i]);
+            /* caml_convert_raw_backtrace_slot will not fail with
+              caml_failwith as we checked (events != NULL) already */
+            slot = caml_convert_raw_backtrace_slot(raw_slot);
+            caml_modify_field(arr, i, slot);
+        }
+    }
+    res = caml_alloc_small(1, 0); caml_initialize_field(res, 0, arr); /* Some */
   }
   CAMLreturn(res);
 }

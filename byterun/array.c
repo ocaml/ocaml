@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                           OCaml                                     */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -285,7 +285,9 @@ static value caml_array_gather(intnat num_arrays,
     caml_invalid_argument("Array.concat");
   }
   else {
-    res = caml_alloc(size, 0);
+    /* Array of values, small enough to fit in young generation.
+       We can use memcpy directly. */
+    res = caml_alloc_small(size, 0);
     for (i = 0, pos = 0; i < num_arrays; i++) {
       caml_blit_fields(arrays[i], offsets[i], res, pos, lengths[i]);
       pos += lengths[i];

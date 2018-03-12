@@ -710,7 +710,7 @@ let lambda_to_flambda ~backend ~module_ident ~size ~filename lam
   let program_body =
     List.fold_left
       (fun program_body (symbol, constant) : Flambda.program_body ->
-         Flambda.Let_symbol (symbol, constant, program_body))
+         Let_symbol (symbol, constant, program_body))
       module_initializer
       t.declared_symbols
   in

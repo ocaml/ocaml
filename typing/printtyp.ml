@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -809,7 +809,7 @@ let rec tree_of_type_decl id decl =
       List.iter
         (fun c ->
            mark_loops_constructor_arguments c.cd_args;
-          may mark_loops c.cd_res)
+           may mark_loops c.cd_res)
         cstrs
   | Type_record(l, _rep) ->
       List.iter (fun l -> mark_loops l.ld_type) l
@@ -1230,26 +1230,26 @@ and tree_of_signature_rec env' in_type_group = function
       trees @ tree_of_signature_rec env' in_type_group rem
 
 and trees_of_sigitem = function
-        | Sig_value(id, decl) ->
-            [tree_of_value_description id decl]
-        | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
-            []
-        | Sig_type(id, decl, rs) ->
+  | Sig_value(id, decl) ->
+      [tree_of_value_description id decl]
+  | Sig_type(id, _, _) when is_row_name (Ident.name id) ->
+      []
+  | Sig_type(id, decl, rs) ->
       [tree_of_type_declaration id decl rs]
-        | Sig_typext(id, ext, es) ->
-            [tree_of_extension_constructor id ext es]
-        | Sig_module(id, md, rs) ->
+  | Sig_typext(id, ext, es) ->
+      [tree_of_extension_constructor id ext es]
+  | Sig_module(id, md, rs) ->
       let ellipsis =
         List.exists (function ({txt="..."}, Parsetree.PStr []) -> true
                             | _ -> false)
           md.md_attributes in
       [tree_of_module id md.md_type rs ~ellipsis]
-        | Sig_modtype(id, decl) ->
-            [tree_of_modtype_declaration id decl]
-        | Sig_class(id, decl, rs) ->
-            [tree_of_class_declaration id decl rs]
-        | Sig_class_type(id, decl, rs) ->
-            [tree_of_cltype_declaration id decl rs]
+  | Sig_modtype(id, decl) ->
+      [tree_of_modtype_declaration id decl]
+  | Sig_class(id, decl, rs) ->
+      [tree_of_class_declaration id decl rs]
+  | Sig_class_type(id, decl, rs) ->
+      [tree_of_cltype_declaration id decl rs]
 
 and tree_of_modtype_declaration id decl =
   let mty =

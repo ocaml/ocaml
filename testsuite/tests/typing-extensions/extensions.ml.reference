@@ -24,7 +24,7 @@ Error: Type foo is not extensible
   sig
     type foo += A of int | B of string
     type foo += C of int | D of float
-    
+
   end
 #                     module type S =
   sig
@@ -84,13 +84,13 @@ type 'a foo = ..
 #           type 'a foo2 += D of int | E of 'a | F : int foo2
 #         type +'a foo = ..
 #     type 'a foo += A of (int -> 'a)
-#     Characters 1-32:
+#       Characters 1-32:
   type 'a foo += B of ('a -> int)
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
        The 1st type parameter was expected to be covariant,
        but it is injective contravariant.
-#     Characters 1-40:
+#       Characters 1-40:
   type _ foo += C : ('a -> int) -> 'a foo
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: In this definition, expected parameter variances are not satisfied.
@@ -131,4 +131,4 @@ type foo += Foo
 #     val f : bool = false
 #     Exception: Invalid_argument "Obj.extension_constructor".
 #     Exception: Invalid_argument "Obj.extension_constructor".
-# 
+#

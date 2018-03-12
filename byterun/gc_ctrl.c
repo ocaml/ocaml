@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* TODO: incorporate timings for instrumented runtime */
 
@@ -37,6 +39,7 @@
 #include "caml/startup.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
+#include "caml/fail.h"
 
 uintnat caml_max_stack_size;
 uintnat caml_fiber_wsz;
@@ -142,6 +145,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 5, Val_long (0));
 #endif
   Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
+  Store_field (res, 7, Val_long (caml_major_window));                   /* w */
   CAMLreturn (res);
 #endif
 }
@@ -164,8 +168,9 @@ CAMLprim value caml_gc_set(value v)
 #if 0
   uintnat newpf, newpm;
   asize_t newheapincr;
-  asize_t newminsize;
+  asize_t newminwsz;
   uintnat oldpolicy;
+  CAML_INSTR_SETUP (tmr, "");
 
   caml_params->verb_gc = Long_field (v, 3);
 
@@ -203,6 +208,16 @@ CAMLprim value caml_gc_set(value v)
                      caml_allocation_policy);
   }
 
+  /* This field was added in 4.03.0. */
+  if (Wosize_val (v) >= 8){
+    int old_window = caml_major_window;
+    caml_set_major_window (norm_window (Long_val (Field (v, 7))));
+    if (old_window != caml_major_window){
+      caml_gc_message (0x20, "New smoothing window size: %d\n",
+                       caml_major_window);
+    }
+  }
+
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
@@ -211,13 +226,19 @@ CAMLprim value caml_gc_set(value v)
                      newminsize/1024);
     caml_set_minor_heap_size (newminsize);
   }
+  CAML_INSTR_TIME (tmr, "explicit/gc_set");
   return Val_unit;
 #endif
 }
 
 CAMLprim value caml_gc_minor(value v)
-{                                                    Assert (v == Val_unit);
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
+  caml_request_minor_gc ();
   caml_minor_collection ();
+  /* caml_gc_dispatch (); */
+  CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
 
@@ -341,6 +362,7 @@ extern int caml_parser_trace;
 CAMLprim value caml_runtime_parameters (value unit)
 {
   CAMLassert (unit == Val_unit);
+  /* TODO KC */
   return caml_alloc_sprintf ("caml_runtime_parameters not implemented: %d", 0);
 }
 

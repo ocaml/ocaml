@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                        Alain Frisch, LexiFi                         *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                         Alain Frisch, LexiFi                           *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -875,11 +875,11 @@ let apply_lazy ~source ~target mapper =
     let ast = input_value ic in
     close_in ic;
     let ast = transform ast in
-  let oc = open_out_bin target in
-  output_string oc magic;
-  output_value oc !Location.input_name;
-  output_value oc ast;
-  close_out oc
+    let oc = open_out_bin target in
+    output_string oc magic;
+    output_value oc !Location.input_name;
+    output_value oc ast;
+    close_out oc
   and fail () =
     close_in ic;
     failwith "Ast_mapper: OCaml version mismatch or malformed input";
@@ -912,6 +912,7 @@ let add_ppx_context_str ~tool_name ast =
 
 let add_ppx_context_sig ~tool_name ast =
   Ast_helper.Sig.attribute (ppx_context ~tool_name ()) :: ast
+
 
 let apply ~source ~target mapper =
   apply_lazy ~source ~target (fun () -> mapper)

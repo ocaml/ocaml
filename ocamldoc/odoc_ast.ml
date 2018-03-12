@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
+(*                                                                        *)
 (*                                 OCaml                                  *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -855,16 +855,16 @@ module Analyser =
           tt_class_exp
           table
       in
-        {
-          cl_name = complete_name ;
-          cl_info = comment_opt ;
-          cl_type = cltype ;
-          cl_virtual = virt ;
-          cl_type_parameters = type_parameters ;
-          cl_kind = kind ;
-          cl_parameters = parameters ;
-          cl_loc = { loc_impl = Some loc ; loc_inter = None } ;
-        }
+      {
+        cl_name = complete_name ;
+        cl_info = comment_opt ;
+        cl_type = cltype ;
+        cl_virtual = virt ;
+        cl_type_parameters = type_parameters ;
+        cl_kind = kind ;
+        cl_parameters = parameters ;
+        cl_loc = { loc_impl = Some loc ; loc_inter = None } ;
+      }
 
     (** Get a name from a module expression, or "struct ... end" if the module expression
        is not an ident of a constraint on an ident. *)
@@ -1028,15 +1028,15 @@ module Analyser =
           [] ->
             let s = get_string_of_file last_pos pos_limit in
             let (_, ele_coms) = My_ir.all_special !file_name s in
-              List.fold_left
-                (fun acc -> fun sc ->
-                  match sc.Odoc_types.i_desc with
-                    None ->
-                      acc
-                  | Some t ->
-                      acc @ [Element_module_comment t])
-                []
-                ele_coms
+            List.fold_left
+              (fun acc -> fun sc ->
+                 match sc.Odoc_types.i_desc with
+                   None ->
+                     acc
+                 | Some t ->
+                     acc @ [Element_module_comment t])
+              []
+              ele_coms
         | item :: q ->
             let (comment_opt, ele_comments) =
               get_comments_in_module last_pos item.Parsetree.pstr_loc.Location.loc_start.Lexing.pos_cnum

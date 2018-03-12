@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -244,10 +244,10 @@ val stats : ('a, 'b) t -> statistics
 module type HashedType =
   sig
     type t
-      (** The type of the hashtable keys. *)
+    (** The type of the hashtable keys. *)
 
     val equal : t -> t -> bool
-      (** The equality predicate used to compare keys. *)
+    (** The equality predicate used to compare keys. *)
 
     val hash : t -> int
       (** A hashing function on keys. It must be such that if two keys are
@@ -302,10 +302,10 @@ module Make (H : HashedType) : S with type key = H.t
 module type SeededHashedType =
   sig
     type t
-      (** The type of the hashtable keys. *)
+    (** The type of the hashtable keys. *)
 
     val equal: t -> t -> bool
-      (** The equality predicate used to compare keys. *)
+    (** The equality predicate used to compare keys. *)
 
     val hash: int -> t -> int
       (** A seeded hashing function on keys.  The first argument is

@@ -566,10 +566,10 @@ let descrs approxs = List.map (fun v -> v.descr) approxs
 let equal_boxed_int (type t1) (type t2)
     (bi1:t1 boxed_int) (i1:t1)
     (bi2:t2 boxed_int) (i2:t2) =
-  match bi1, bi2 with (* XXX KC *)
-  | Int32, Int32 -> (* Int32.equal *) i1 = i2
-  | Int64, Int64 -> (* Int64.equal *) i1 = i2
-  | Nativeint, Nativeint -> (* Nativeint.equal *) i1 = i2
+  match bi1, bi2 with
+  | Int32, Int32 -> Int32.equal i1 i2
+  | Int64, Int64 -> Int64.equal i1 i2
+  | Nativeint, Nativeint -> Nativeint.equal i1 i2
   | _ -> false
 
 (* Closures and set of closures descriptions cannot be merged.

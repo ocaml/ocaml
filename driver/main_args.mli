@@ -1,20 +1,17 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
 (*                                                                        *)
 (**************************************************************************)
-
-(* ATTENTION ! When you add or modify a parsing or typing option, do not forget
-  to update ocamldoc options too, in odoc_args.ml. *)
 
 (* ATTENTION ! When you add or modify a parsing or typing option, do not forget
   to update ocamldoc options too, in odoc_args.ml. *)
@@ -61,7 +58,7 @@ module type Common_options = sig
   val anonymous : string -> unit
 end;;
 
-module type Compiler_options =  sig
+module type Compiler_options = sig
   val _a : unit -> unit
   val _annot : unit -> unit
   val _binannot : unit -> unit
@@ -210,7 +207,7 @@ module type Opttop_options = sig
   val _S : unit -> unit
 end;;
 
-module type Ocamldoc_options =  sig
+module type Ocamldoc_options = sig
   include Common_options
   val _impl : string -> unit
   val _intf : string -> unit

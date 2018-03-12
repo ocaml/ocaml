@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Fabrice Le Fessant, INRIA Saclay                   *)
-(*                                                                     *)
-(*  Copyright 2012 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                   Fabrice Le Fessant, INRIA Saclay                     *)
+(*                                                                        *)
+(*   Copyright 2012 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -314,7 +314,7 @@ module MakeMap(Map : MapArgument) = struct
         | Texp_record { fields; representation; extended_expression } ->
           let fields =
             Array.map (function
-                | label, Kept t -> label, Kept t
+                | label, Kept (t, mut) -> label, Kept (t, mut)
                 | label, Overridden (lid, exp) ->
                     label, Overridden (lid, map_expression exp))
               fields
@@ -437,27 +437,27 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_type (rf, list) ->
             Tsig_type (rf, List.map map_type_declaration list)
         | Tsig_typext tyext ->
-          Tsig_typext (map_type_extension tyext)
+            Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
-          Tsig_exception (map_extension_constructor ext)
+            Tsig_exception (map_extension_constructor ext)
         | Tsig_effect ext ->
-          Tsig_effect (map_extension_constructor ext)
+            Tsig_effect (map_extension_constructor ext)
         | Tsig_module md ->
-          Tsig_module {md with md_type = map_module_type md.md_type}
+            Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
-          Tsig_recmodule
-              (List.map
-                 (fun md -> {md with md_type = map_module_type md.md_type})
-                 list
-              )
+            Tsig_recmodule
+                (List.map
+                   (fun md -> {md with md_type = map_module_type md.md_type})
+                   list
+                )
         | Tsig_modtype mtd ->
-          Tsig_modtype (map_module_type_declaration mtd)
+            Tsig_modtype (map_module_type_declaration mtd)
         | Tsig_open _ -> item.sig_desc
         | Tsig_include incl ->
-          Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
+            Tsig_include {incl with incl_mod = map_module_type incl.incl_mod}
         | Tsig_class list -> Tsig_class (List.map map_class_description list)
         | Tsig_class_type list ->
-          Tsig_class_type (List.map map_class_type_declaration list)
+            Tsig_class_type (List.map map_class_type_declaration list)
         | Tsig_attribute _ as x -> x
     in
     Map.leave_signature_item { item with sig_desc = sig_desc }

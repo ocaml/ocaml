@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -76,19 +76,19 @@ let compile_file name =
     else
       ("", "") in
   let exit =
-  command
-    (Printf.sprintf
+    command
+      (Printf.sprintf
          "%s -c %s %s %s %s %s%s"
-       (match !Clflags.c_compiler with
-        | Some cc -> cc
-        | None ->
-            if !Clflags.native_code
-            then Config.native_c_compiler
-            else Config.bytecomp_c_compiler)
+         (match !Clflags.c_compiler with
+          | Some cc -> cc
+          | None ->
+              if !Clflags.native_code
+              then Config.native_c_compiler
+              else Config.bytecomp_c_compiler)
          (if !Clflags.debug && Config.ccomp_type <> "msvc" then "-g" else "")
-       (String.concat " " (List.rev !Clflags.all_ccopts))
-       (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
-       (Clflags.std_include_flag "-I")
+         (String.concat " " (List.rev !Clflags.all_ccopts))
+         (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
+         (Clflags.std_include_flag "-I")
          (Filename.quote name)
          (* cl tediously includes the name of the C file as the first thing it
             outputs (in fairness, the tedious thing is that there's no switch to

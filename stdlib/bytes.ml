@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -134,7 +134,8 @@ let cat s1 s2 =
   let r = create (l1 + l2) in
   unsafe_blit s1 0 r 0 l1;
   unsafe_blit s2 0 r l1 l2;
-      r
+  r
+
 
 external char_code: char -> int = "%identity"
 external char_chr: int -> char = "%identity"
@@ -256,6 +257,7 @@ let rindex_from s i c =
   else
     rindex_rec s i c
 
+
 (* duplicated in string.ml *)
 let contains_from s i c =
   let l = length s in
@@ -263,6 +265,7 @@ let contains_from s i c =
     invalid_arg "String.contains_from / Bytes.contains_from"
   else
     try ignore (index_rec s l i c); true with Not_found -> false
+
 
 (* duplicated in string.ml *)
 let contains s c = contains_from s 0 c
@@ -273,6 +276,7 @@ let rcontains_from s i c =
     invalid_arg "String.rcontains_from / Bytes.rcontains_from"
   else
     try ignore (rindex_rec s i c); true with Not_found -> false
+
 
 type t = bytes
 

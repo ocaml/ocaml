@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -132,7 +132,8 @@ let transl_label_init_flambda f =
 let transl_store_label_init glob size f arg =
   assert(not Config.flambda);
   assert(!Clflags.native_code);
-  method_cache := Lprim(Pfield (size, Pointer, Mutable), (* XXX KC: conservative *)
+  method_cache := Lprim(Pfield (size, Pointer, Mutable),
+                        (* XXX KC: conservative *)
                         [Lprim(Pgetglobal glob, [], Location.none)],
                         Location.none);
   let expr = f arg in

@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -195,8 +195,8 @@ let rec pretty_val ppf v =
       fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
   | Tpat_record (lvs,_) ->
       let filtered_lvs = List.filter
-           (function
-             | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
+          (function
+            | (_,_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
             | _ -> true) lvs in
       fprintf ppf "@[{%a%a}@]"
         pretty_lvals filtered_lvs
@@ -689,9 +689,9 @@ let complete_tags nconsts nconstrs tags =
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
- {ex_pat with pat_desc =
-  Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
-                  cstr,omegas cstr.cstr_arity)}
+  {ex_pat with pat_desc =
+   Tpat_construct (mknoloc (Longident.Lident "?pat_of_constr?"),
+                   cstr, omegas cstr.cstr_arity)}
 
 let orify x y = make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env
 
@@ -747,8 +747,8 @@ let rec get_variant_constructors env ty =
 let complete_constrs p all_tags =
   let c =
     match p.pat_desc with Tpat_construct (_, c, _) -> c | _ -> assert false in
-      let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-      let constrs = get_variant_constructors p.pat_env c.cstr_res in
+  let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+  let constrs = get_variant_constructors p.pat_env c.cstr_res in
   let others =
     List.filter (fun cnstr -> List.mem cnstr.cstr_tag not_tags) constrs in
   let const, nonconst =
@@ -780,7 +780,7 @@ let build_other_constant proj make first next p env =
   in the first column of env
 *)
 
-let build_other ext env =  match env with
+let build_other ext env = match env with
 | ({pat_desc = Tpat_construct (lid, {cstr_tag=Cstr_extension _},_)},_) :: _ ->
         (* let c = {c with cstr_name = "*extension*"} in *) (* PR#7330 *)
         make_pat (Tpat_var (Ident.create "*extension*",
@@ -1707,16 +1707,16 @@ module Conv = struct
       | Tpat_alias (p,_,_) -> loop p
       | Tpat_tuple lst ->
           mkpat (Ppat_tuple (List.map loop lst))
-      | Tpat_construct (cstr_lid, cstr,lst) ->
+      | Tpat_construct (cstr_lid, cstr, lst) ->
           let id = fresh cstr.cstr_name in
           let lid = { cstr_lid with txt = Longident.Lident id } in
           Hashtbl.add constrs id cstr;
-                  let arg =
+          let arg =
             match List.map loop lst with
             | []  -> None
             | [p] -> Some p
             | lst -> Some (mkpat (Ppat_tuple lst))
-                  in
+          in
           mkpat (Ppat_construct(lid, arg))
       | Tpat_variant(label,p_opt,_row_desc) ->
           let arg = Misc.may_map loop p_opt in
@@ -1811,7 +1811,7 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
                        is a pain in the top-level *)
                     Buffer.add_string buf
                       "\n(However, some guarded clause may match this value.)"
-                end ;
+                end;
                 if contains_extension v then
                   Buffer.add_string buf
                     "\nMatching over values of extensible variant types \
@@ -2037,8 +2037,8 @@ let check_partial_param do_check_partial do_check_fragile loc casel =
       do_check_fragile_normal*)
 
 let check_partial_gadt pred loc casel =
-      check_partial_param (do_check_partial_gadt pred)
-        do_check_fragile_gadt loc casel
+  check_partial_param (do_check_partial_gadt pred)
+    do_check_fragile_gadt loc casel
 
 
 (*************************************)

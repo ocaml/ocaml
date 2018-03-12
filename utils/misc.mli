@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -224,7 +224,7 @@ val did_you_mean : Format.formatter -> (unit -> string list) -> unit
     printed. You should print an understandable error message before
     calling [did_you_mean], so that users get a clear notification of
     the failure even if producing the hint is slow.
- *)
+*)
 
 val cut_at : string -> char -> string * string
 (** [String.cut_at s c] returns a pair containing the sub-string before
@@ -318,6 +318,7 @@ exception HookExnWrapper of
     }
     (** An exception raised by a hook will be wrapped into a
         [HookExnWrapper] constructor by the hook machinery.  *)
+
 
 val raise_direct_hook_exn: exn -> 'a
   (** A hook can use [raise_unwrapped_hook_exn] to raise an exception that will

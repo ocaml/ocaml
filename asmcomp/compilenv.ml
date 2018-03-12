@@ -1,16 +1,16 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
 (*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
 (*                       Pierre Chambart, OCamlPro                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
-(*                                                                     *)
+(*                                                                        *)
 (*   Copyright 2010 Institut National de Recherche en Informatique et     *)
 (*     en Automatique                                                     *)
 (*   Copyright 2013--2016 OCamlPro SAS                                    *)
 (*   Copyright 2014--2016 Jane Street Group LLC                           *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -207,14 +207,14 @@ let get_global_info global_ident = (
       let (infos, crc) =
         if Env.is_imported_opaque modname then (None, None)
         else begin
-        try
-          let filename =
-            find_in_path_uncap !load_path (modname ^ ".cmx") in
-          let (ui, crc) = read_unit_info filename in
-          if ui.ui_name <> modname then
-            raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
-          (Some ui, Some crc)
-        with Not_found ->
+          try
+            let filename =
+              find_in_path_uncap !load_path (modname ^ ".cmx") in
+            let (ui, crc) = read_unit_info filename in
+            if ui.ui_name <> modname then
+              raise(Error(Illegal_renaming(modname, ui.ui_name, filename)));
+            (Some ui, Some crc)
+          with Not_found ->
             let warn = Warnings.No_cmx_file modname in
               Location.prerr_warning Location.none warn;
               (None, None)

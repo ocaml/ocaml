@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -386,14 +386,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     begin
                       match cd_args with
                       | Cstr_tuple l ->
-                    let ty_args =
-                      List.map
-                        (function ty ->
-                           try Ctype.apply env type_params ty ty_list with
-                             Ctype.Cannot_apply -> abstract_type)
+                          let ty_args =
+                            List.map
+                              (function ty ->
+                                try Ctype.apply env type_params ty ty_list with
+                                  Ctype.Cannot_apply -> abstract_type)
                               l
                           in
-                    tree_of_constr_with_args (tree_of_constr env path)
+                          tree_of_constr_with_args (tree_of_constr env path)
                             (Ident.name cd_id) false 0 depth obj
                             ty_args unbx
                       | Cstr_record lbls ->
@@ -414,7 +414,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           match rep with
                           | Record_extension -> 1
                           | _ -> 0
-                              in
+                        in
                         let unbx =
                           match rep with Record_unboxed _ -> true | _ -> false
                         in

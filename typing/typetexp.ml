@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -107,7 +107,7 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
       | Mty_alias(_, p) ->
           raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ ->
-      raise (Error (loc, env, Ill_typed_functor_application lid))
+          raise (Error (loc, env, Ill_typed_functor_application lid))
       end
   end;
   raise (Error (loc, env, make_error lid))
@@ -160,7 +160,7 @@ let find_value env loc lid =
 
 let lookup_module ?(load=false) env loc lid =
   find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
-      (fun lid -> Unbound_module lid) env loc lid
+    (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in

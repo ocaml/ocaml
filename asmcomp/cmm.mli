@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -100,8 +100,8 @@ type memory_chunk =
   | Word_int                           (* integer or pointer outside heap *)
   | Word_val                           (* pointer inside heap or encoded int *)
   | Single
-  | Double                              (* 64-bit-aligned 64-bit float *)
-  | Double_u                            (* word-aligned 64-bit float *)
+  | Double                             (* 64-bit-aligned 64-bit float *)
+  | Double_u                           (* word-aligned 64-bit float *)
 
 and operation =
     Capply of machtype * Debuginfo.t

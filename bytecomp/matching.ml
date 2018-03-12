@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -1410,7 +1410,8 @@ let make_variant_matching_nonconst p lab def ctx = function
       and ctx = filter_ctx p ctx in
       {pm=
         {cases = [];
-         args = (Lprim(Pfield(1, Pointer, Immutable), [arg], p.pat_loc), Alias) :: argl;
+         args = (Lprim(Pfield(1, Pointer, Immutable), [arg], p.pat_loc), Alias)
+              :: argl;
          default = def };
        ctx = ctx;
        pat = normalize_pat p}
@@ -1548,7 +1549,8 @@ let inline_lazy_force_switch arg loc =
              { sw_numconsts = 0; sw_consts = [];
                sw_numblocks = 256;  (* PR#6033 - tag ranges from 0 to 255 *)
                sw_blocks =
-                 [ (Obj.forward_tag, Lprim(Pfield(0, Pointer, Mutable), [varg], loc));
+                 [ (Obj.forward_tag, Lprim(Pfield(0, Pointer, Mutable),
+                                           [varg], loc));
                    (Obj.lazy_tag,
                     Lapply{ap_should_be_tailcall=false;
                            ap_loc=loc;
@@ -2212,10 +2214,10 @@ let mk_failaction_pos partial seen ctx defs  =
   let fail_pats = complete_pats_constrs seen in
   if List.length fail_pats < 32 then begin
     let fail,jmps =
-  scan_def
-    []
-    (List.map
-       (fun pat -> pat, ctx_lub pat ctx)
+      scan_def
+        []
+        (List.map
+           (fun pat -> pat, ctx_lub pat ctx)
            fail_pats)
         defs in
     if dbg then begin

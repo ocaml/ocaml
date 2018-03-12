@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -187,6 +187,7 @@ val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 
 (** {6 Array scanning} *)
 
+
 val for_all : ('a -> bool) -> 'a array -> bool
 (** [Array.for_all p [|a1; ...; an|]] checks if all elements of the array
    satisfy the predicate [p]. That is, it returns
@@ -208,6 +209,7 @@ val memq : 'a -> 'a array -> bool
 (** Same as {!Array.mem}, but uses physical equality instead of structural
    equality to compare array elements.
    @since 4.03.0 *)
+
 
 (** {6 Sorting} *)
 

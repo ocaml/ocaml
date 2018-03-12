@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -194,7 +194,7 @@ and compare_variants env params1 params2 n cstrs1 cstrs2 =
           | Some r1, Some r2 ->
               if Ctype.equal env true [r1] [r2] then
                 compare_constructor_arguments env cstr1 [r1] [r2] arg1 arg2
-          else [Field_type cstr1]
+              else [Field_type cstr1]
           | Some _, None | None, Some _ ->
               [Field_type cstr1]
           | _ ->

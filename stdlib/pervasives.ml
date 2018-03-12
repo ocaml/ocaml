@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -338,7 +338,7 @@ let flush_all () =
 external unsafe_output : out_channel -> bytes -> int -> int -> unit
                        = "caml_ml_output_bytes"
 external unsafe_output_string : out_channel -> string -> int -> int -> unit
-                       = "caml_ml_output"
+                              = "caml_ml_output"
 
 external output_char : out_channel -> char -> unit = "caml_ml_output_char"
 
@@ -519,7 +519,7 @@ external format_of_string :
  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let (^^) (Format (fmt1, str1)) (Format (fmt2, str2)) =
+let ( ^^ ) (Format (fmt1, str1)) (Format (fmt2, str2)) =
   Format (CamlinternalFormatBasics.concat_fmt fmt1 fmt2,
           str1 ^ "%," ^ str2)
 

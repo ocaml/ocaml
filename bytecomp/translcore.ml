@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -174,6 +174,7 @@ let primitives_table = create_hashtable 57 [
   "%loc_LINE", Ploc Loc_LINE;
   "%loc_POS", Ploc Loc_POS;
   "%loc_MODULE", Ploc Loc_MODULE;
+  (* XXX KC: Conservative *)
   "%field0", Pfield(0, Pointer, Mutable);
   "%field1", Pfield(1, Pointer, Mutable);
   "%setfield0", Psetfield(0, Pointer, Assignment);
@@ -417,18 +418,18 @@ let specialize_primitive p env ty ~has_constant_constructor =
     | (Parraysetu Pgenarray, p1 :: _) -> Parraysetu(array_type_kind env p1)
     | (Parrayrefs Pgenarray, p1 :: _) -> Parrayrefs(array_type_kind env p1)
     | (Parraysets Pgenarray, p1 :: _) -> Parraysets(array_type_kind env p1)
-      | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+    | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in
-            Pbigarrayref(unsafe, n, k, l)
-      | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+        Pbigarrayref(unsafe, n, k, l)
+    | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
        p1 :: _) ->
         let (k, l) = bigarray_type_kind_and_layout env p1 in
-            Pbigarrayset(unsafe, n, k, l)
+        Pbigarrayset(unsafe, n, k, l)
     | (Pmakeblock(tag, mut, None), fields) ->
         let shape = List.map (Typeopt.value_kind env) fields in
         Pmakeblock(tag, mut, Some shape)
-      | _ -> p
+    | _ -> p
 
 (* Eta-expand a primitive *)
 
@@ -607,15 +608,15 @@ let rec push_defaults loc bindings cases partial =
              exp_desc = Texp_let
                (Nonrecursive, binds, ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (Bind_value binds :: bindings)
-                    [{c_lhs=pat; c_cont=None; c_guard=None; c_rhs=e2}]
+                   [{c_lhs=pat; c_cont=None; c_guard=None; c_rhs=e2}]
                    partial
   | [{c_lhs=pat; c_guard=None;
       c_rhs={exp_attributes=[{txt="#modulepat"},_];
              exp_desc = Texp_letmodule
                (id, name, mexpr, ({exp_desc = Texp_function _} as e2))}}] ->
       push_defaults loc (Bind_module (id, name, mexpr) :: bindings)
-                    [{c_lhs=pat;c_cont=None;c_guard=None;c_rhs=e2}]
-                    partial
+                   [{c_lhs=pat;c_cont=None;c_guard=None;c_rhs=e2}]
+                   partial
   | [case] ->
       let exp =
         List.fold_left
@@ -964,12 +965,12 @@ and transl_exp0 e =
             Lprim (Pduparray (kind, Mutable), [imm_array], e.exp_loc)
         | cl ->
             let imm_array =
-          match kind with
-          | Paddrarray | Pintarray ->
-              Lconst(Const_block(0, cl))
-          | Pfloatarray ->
-              Lconst(Const_float_array(List.map extract_float cl))
-          | Pgenarray ->
+              match kind with
+              | Paddrarray | Pintarray ->
+                  Lconst(Const_block(0, cl))
+              | Pfloatarray ->
+                  Lconst(Const_float_array(List.map extract_float cl))
+              | Pgenarray ->
                   raise Not_constant    (* can this really happen? *)
             in
             Lprim (Pduparray (kind, Mutable), [imm_array], e.exp_loc)
@@ -1112,10 +1113,10 @@ and transl_list_with_shape expr_list =
 
 and transl_guard guard rhs =
   let expr = event_before rhs (transl_exp rhs) in
-    match guard with
-    | None -> expr
-    | Some cond ->
-        event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
+  match guard with
+  | None -> expr
+  | Some cond ->
+      event_before cond (Lifthenelse(transl_exp cond, expr, staticfail))
 
 and transl_cont cont c_cont body =
   match cont, c_cont with
@@ -1311,16 +1312,18 @@ and transl_record loc env fields repres opt_init_expr =
     let init_id = Ident.create "init" in
     let lv =
       Array.mapi
-        (fun i (lbl, definition) ->
+        (fun i (_, definition) ->
            match definition with
-           | Kept typ ->
+           | Kept (typ, mut) ->
                let field_kind = value_kind env typ in
                let access =
                  match repres with
-                   Record_regular | Record_inlined _ -> Pfield (i, maybe_pointer_type env typ, lbl.lbl_mut)
+                   Record_regular | Record_inlined _ ->
+                     Pfield (i, maybe_pointer_type env typ, mut)
                  | Record_unboxed _ -> assert false
-                 | Record_extension -> Pfield (i + 1, maybe_pointer_type env typ, lbl.lbl_mut)
-            | Record_float -> Pfloatfield i in
+                 | Record_extension ->
+                     Pfield (i + 1, maybe_pointer_type env typ, mut)
+                 | Record_float -> Pfloatfield i in
                Lprim(access, [Lvar init_id], loc), field_kind
            | Overridden (_lid, expr) ->
                let field_kind = value_kind expr.exp_env expr.exp_type in
@@ -1376,9 +1379,9 @@ and transl_record loc env fields repres opt_init_expr =
     let copy_id = Ident.create "newrecord" in
     let update_field cont (lbl, definition) =
       match definition with
-      | Kept _type -> cont
+      | Kept _ -> cont
       | Overridden (_lid, expr) ->
-      let upd =
+          let upd =
             match repres with
               Record_regular
             | Record_inlined _ ->
@@ -1514,7 +1517,7 @@ let report_error ppf = function
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
   | Unknown_builtin_primitive prim_name ->
-    fprintf ppf  "Unknown builtin primitive \"%s\"" prim_name
+      fprintf ppf "Unknown builtin primitive \"%s\"" prim_name
   | Unreachable_reached ->
       fprintf ppf "Unreachable expression was reached"
 

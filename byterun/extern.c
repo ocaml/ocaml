@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -260,7 +260,7 @@ static inline void write(int c)
   *extern_ptr++ = c;
 }
 
-static void writeblock(char *data, intnat len)
+static void writeblock(char * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memcpy(extern_ptr, data, len);
@@ -570,7 +570,7 @@ static intnat extern_value(value v, value flags,
     /* The object is too big for the small header format.
        Fail if we are in compat32 mode, or use big header. */
     if (extern_flags & COMPAT_32) {
-    free_extern_output();
+      free_extern_output();
       caml_failwith("output_value: object too big to be read back on "
                     "32-bit platform");
     }

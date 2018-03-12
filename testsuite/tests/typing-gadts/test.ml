@@ -259,12 +259,6 @@ module PR6801 :
   end
 |}];;
 
-module PR6862 = struct
-  class c (Some x) = object method x : int = x end
-  type _ opt = Just : 'a -> 'a opt | Nothing : 'a opt
-  class d (Just x) = object method x : int = x end
-end;;
-
 module Existential_escape =
   struct
     type _ t = C : int -> int t
@@ -292,7 +286,7 @@ module Rectype :
 |}];;
 
 module Or_patterns =
-struct
+  struct
       type _ t =
       | IntLit : int -> int t
       | BoolLit : bool -> bool t
@@ -384,13 +378,6 @@ Line _, characters 6-9:
 Error: This pattern matches values of type 'a t
        but a pattern was expected which matches values of type int
 |}];;
-
-module PR6849 = struct
-  type 'a t = Foo : int t
-
-  let f : int -> int = function
-      Foo -> 5
-end;;
 
 type _ t = Int : int t ;;
 

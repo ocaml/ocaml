@@ -57,7 +57,7 @@ compile: $(ML_FILES)
 	  rm -f program.byte program.byte.exe; \
 	  $(MAKE) $(CMO_FILES) $(MAIN_MODULE).cmo; \
 	  $(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte$(EXE) \
-	           $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
+	            $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) \
 	            $(MAIN_MODULE).cmo; \
 	fi
 	@if $(BYTECODE_ONLY); then : ; else \

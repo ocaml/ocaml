@@ -191,14 +191,14 @@ END {
             if (reran != 0){
                 printf("  %3d test dir re-runs\n", reran);
             }
-        if (failed != 0){
-            printf("\nList of failed tests:\n");
-            for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
-        }
-        if (unexped != 0){
-            printf("\nList of unexpected errors:\n");
-            for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
-        }
+            if (failed != 0){
+                printf("\nList of failed tests:\n");
+                for (i=0; i < failed; i++) printf("    %s\n", fail[i]);
+            }
+            if (unexped != 0){
+                printf("\nList of unexpected errors:\n");
+                for (i=0; i < unexped; i++) printf("    %s\n", unexp[i]);
+            }
             if (skipped != 0){
                 printf("\nList of skipped tests:\n");
                 for (i=0; i < skipidx; i++) printf("    %s\n", skips[i]);
@@ -207,23 +207,23 @@ END {
                 printf("\nList of directories returning no results:\n");
                 for (i=0; i < empty; i++) printf("    %s\n", blanks[i]);
             }
-        printf("\n");
-        if (failed || unexped){
-                printf("#### Something failed. Exiting with error status.\n\n");
-            exit 4;
-        }
-        }else{
-            for (key in RESULTS){
-                if (RESULTS[key] == "f" || RESULTS[key] == "e"){
-                    key = DIRS[key];
-                    if (!(key in RERUNS)){
-                        RERUNS[key] = 1;
-                        if (RERAN[key] < max_retries){
-                            printf("%s\n", key);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+						printf("\n");
+						if (failed || unexped){
+										printf("#### Something failed. Exiting with error status.\n\n");
+								exit 4;
+						}
+						}else{
+								for (key in RESULTS){
+										if (RESULTS[key] == "f" || RESULTS[key] == "e"){
+												key = DIRS[key];
+												if (!(key in RERUNS)){
+														RERUNS[key] = 1;
+														if (RERAN[key] < max_retries){
+																printf("%s\n", key);
+                        		}
+                    		}
+                		}
+            		}
+        		}
+    		}
+		}

@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy   */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -354,8 +354,7 @@ CAMLprim value caml_gr_sigio_handler(value unit)
 void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
-  caml_root graphic_failure_exn =
-    caml_named_root("Graphics.Graphic_failure");
+  caml_root graphic_failure_exn = caml_named_root("Graphics.Graphic_failure");
   if (!graphic_failure_exn)
       invalid_argument("Exception Graphics.Graphic_failure not initialized, "
                        "must link graphics.cma");

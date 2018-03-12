@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -250,7 +250,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
-#include "caml/jumptbl.h"
+#    include "caml/jumptbl.h"
   };
 #endif
 

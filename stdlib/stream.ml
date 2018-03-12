@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*         Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -174,6 +174,7 @@ let of_string s =
     then (incr count; Some s.[c])
     else None)
 
+
 let of_bytes s =
   let count = ref 0 in
   from (fun _ ->
@@ -182,9 +183,10 @@ let of_bytes s =
     then (incr count; Some (Bytes.get s c))
     else None)
 
+
 let of_channel ic =
   Some {count = 0;
-   data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
+        data = Sbuffio {ic = ic; buff = Bytes.create 4096; len = 0; ind = 0}}
 
 
 (* Stream expressions builders *)

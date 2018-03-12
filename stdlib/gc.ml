@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt            *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -90,12 +90,12 @@ let allocated_bytes () =
   let (mi, pro, ma) = counters () in
   (mi +. ma -. pro) *. float_of_int (Sys.word_size / 8)
 
-
-external promote_to : 'a -> 'b -> 'a = "caml_obj_promote_to"
 external finalise : ('a -> unit) -> 'a -> unit = "caml_final_register"
 external finalise_last : (unit -> unit) -> 'a -> unit =
   "caml_final_register_called_without_value"
 external finalise_release : unit -> unit = "caml_final_release"
+
+external promote_to : 'a -> 'b -> 'a = "caml_obj_promote_to"
 
 type alarm = bool ref
 type alarm_rec = {active : alarm; f : unit -> unit}

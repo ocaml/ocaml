@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy   */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -513,11 +513,11 @@ CAMLprim value caml_gr_draw_image(value i, value x, value y)
                         oldBmp = SelectObject(grwindow.tempDC,Mask(i));
                         BitBlt(grwindow.gcBitmap,xdst, ydst, Width(i),
                                Height(i),
-                                grwindow.tempDC, 0, 0, SRCAND);
+                               grwindow.tempDC, 0, 0, SRCAND);
                         SelectObject(grwindow.tempDC,Data(i));
                         BitBlt(grwindow.gcBitmap,xdst, ydst, Width(i),
                                Height(i),
-                                grwindow.tempDC, 0, 0, SRCPAINT);
+                               grwindow.tempDC, 0, 0, SRCPAINT);
                         SelectObject(grwindow.tempDC,oldBmp);
                 }
                 if (grdisplay_mode) {
@@ -581,15 +581,10 @@ CAMLprim value caml_gr_make_image(value matrix)
                 oldBmp = SelectObject(grwindow.tempDC,Mask(img));
                 for (i = 0; i < height; i++) {
                         for (j = 0; j < width; j++) {
-<<<<<<< HEAD
                                 caml_read_field (matrix, i, &row);
                                 int col = Long_field (row, j);
-                                SetPixel(grwindow.tempDC,j, i, col == -1 ? 0xFFFFFF : 0);
-=======
-                                int col = Long_val (Field (Field (matrix,i),j));
                                 SetPixel(grwindow.tempDC,j, i,
                                          col == -1 ? 0xFFFFFF : 0);
->>>>>>> b4.04.2
                         }
                 }
                 SelectObject(grwindow.tempDC,oldBmp);

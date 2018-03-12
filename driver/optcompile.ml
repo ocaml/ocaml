@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -80,7 +80,7 @@ let implementation ~backend ppf sourcefile outputprefix =
       ++ Timings.(time (Typing sourcefile))
           (Typemod.type_implementation sourcefile outputprefix modulename env)
       ++ print_if ppf Clflags.dump_typedtree
-        Printtyped.implementation_with_coercion
+          Printtyped.implementation_with_coercion
     in
     if not !Clflags.print_types then begin
       if Config.flambda then begin
@@ -97,9 +97,9 @@ let implementation ~backend ppf sourcefile outputprefix =
           (fun { Lambda.module_ident; main_module_block_size;
                  required_globals; code } ->
           ((module_ident, main_module_block_size), code)
-      +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+          +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
           +++ Simplif.simplify_lambda sourcefile
-      +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+          +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
           ++ (fun ((module_ident, size), lam) ->
               Middle_end.middle_end ppf ~source_provenance
                 ~prefixname:outputprefix

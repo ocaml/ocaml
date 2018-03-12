@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -56,7 +56,8 @@ let mkappl (func, args) =
 let lsequence l1 l2 =
   if l2 = lambda_unit then l1 else Lsequence(l1, l2)
 
-let lfield v i = Lprim(Pfield (i, Pointer, Mutable), [Lvar v], Location.none)
+let lfield v i = Lprim(Pfield (i, Pointer, Mutable),
+                       [Lvar v], Location.none)
 
 let transl_label l = share (Const_immstring l)
 
@@ -186,7 +187,7 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
        in
        begin match obj_init with
          Lfunction {kind = Curried; params; body = rem} -> build params rem
-       | rem                              -> build [] rem
+       | rem                                            -> build [] rem
        end)
   | Tcl_apply (cl, oexprs) ->
       let (inh_init, obj_init) =
@@ -275,8 +276,10 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           let lpath = transl_path ~loc:cl.cl_loc cl.cl_env path in
           (inh_init,
            Llet (Strict, Pgenval, obj_init,
-                 mkappl(Lprim(Pfield (1, Pointer, Mutable), [lpath], Location.none), Lvar cla ::
-                        if top then [Lprim(Pfield (3, Pointer, Mutable), [lpath], Location.none)]
+                 mkappl(Lprim(Pfield (1, Pointer, Mutable),
+                              [lpath], Location.none), Lvar cla ::
+                        if top then [Lprim(Pfield (3, Pointer, Mutable),
+                                     [lpath], Location.none)]
                         else []),
                  bind_super cla super cl_init))
       | _ ->
@@ -439,7 +442,7 @@ let rec transl_class_rebind obj_init cl vf =
       (path,
        match obj_init with
          Lfunction {kind = Curried; params; body} -> build params body
-       | rem                              -> build [] rem)
+       | rem                                      -> build [] rem)
   | Tcl_apply (cl, oexprs) ->
       let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, transl_apply obj_init oexprs Location.none)
@@ -514,7 +517,7 @@ let rec module_path = function
       let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
   | Lprim(Pfield _, [p], _)    -> module_path p
   | Lprim(Pgetglobal _, [], _) -> true
-  | _                       -> false
+  | _                          -> false
 
 let const_path local = function
     Lvar id -> not (List.mem id local)

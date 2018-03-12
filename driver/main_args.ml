@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*              Damien Doligez, projet Para, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -499,7 +499,7 @@ let mk_unsafe_string f =
     in
     "-unsafe-string", Arg.Unit err, " (option not available)"
   else
-  "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
+    "-unsafe-string", Arg.Unit f, " Make strings mutable (default)"
 ;;
 
 let mk_use_runtime f =

@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -37,10 +37,10 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
   if (at == 0.0 && mt == 0.0) {
     t = (struct timeval *) NULL;
   } else {
-  tv[0].tv_sec = at;
-  tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
-  tv[1].tv_sec = mt;
-  tv[1].tv_usec = (mt - tv[1].tv_sec) * 1000000;
+    tv[0].tv_sec = at;
+    tv[0].tv_usec = (at - tv[0].tv_sec) * 1000000;
+    tv[1].tv_sec = mt;
+    tv[1].tv_usec = (mt - tv[1].tv_sec) * 1000000;
     t = tv;
   }
   p = caml_strdup(String_val(path));

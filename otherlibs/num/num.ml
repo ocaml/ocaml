@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -173,7 +173,7 @@ A correct but slow implementation is:
         if b >= 0 then floor_num (div_num a b)
                   else minus_num (floor_num (div_num a (minus_num b)))
 
-      mod_num a b = 
+      mod_num a b =
         sub_num a (mult_num b (quo_num a b))
 
   However, this definition is vastly inefficient (cf PR #3473):
@@ -191,7 +191,7 @@ let quo_num n1 n2 =
       Int (if r >= 0 then q else if i2 > 0 then q - 1 else q + 1)
   | Int i1, Big_int bi2 ->
       num_of_big_int (div_big_int (big_int_of_int i1) bi2)
-  | Int i1, Ratio r2 -> 
+  | Int i1, Ratio r2 ->
       num_of_big_int (report_sign_ratio r2
                          (floor_ratio (div_int_ratio i1 (abs_ratio r2))))
   | Big_int bi1, Int i2 ->

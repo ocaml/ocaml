@@ -89,7 +89,7 @@ native:
 	  rm -f program program.exe; \
 	  $(OCAMLOPT) -g -o $(EXECNAME) $$file; \
 	  for arg in a b c d ''; do \
-	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':"; \
+	    printf " ... testing '$$file' with ocamlopt and argument '$$arg':";\
 	    F="`basename $$file .ml`"; \
 	    (OCAMLRUNPARAM=$$OCAMLRUNPARAM,b=1 \
               ./$(EXECNAME) $$arg || true) \
@@ -141,16 +141,6 @@ native:
 	  ./$(EXECNAME) $$arg 2>&1 || true) \
 		 	| $(LOCATIONFILTER) >$$F.O3.result; \
 	  $(DIFF) $$F.native.reference $$F.O3.result >/dev/null \
-	  && echo " => passed" || echo " => failed"; \
-	done;
-	@for file in $(OTHERFILESNOINLINING); do \
-	  rm -f program program.exe; \
-	  $(OCAMLOPT) -inline 0 -g -o $(EXECNAME) $$file; \
-	  printf " ... testing '$$file' with ocamlopt:"; \
-	  F="`basename $$file .ml`"; \
-	  (OCAMLRUNPARAM=b=1 ./$(EXECNAME) $$arg || true) \
-	       >$$F.native.result 2>&1; \
-	  $(DIFF) $$F.reference $$F.native.result >/dev/null \
 	  && echo " => passed" || echo " => failed"; \
 	done
 

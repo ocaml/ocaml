@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -181,7 +181,7 @@ let rec linear i n =
     Iend -> n
   | Iop(Itailcall_ind _ | Itailcall_imm _ as op) ->
       if not Config.spacetime then
-      copy_instr (Lop op) i (discard_dead_code n)
+        copy_instr (Lop op) i (discard_dead_code n)
       else
         copy_instr (Lop op) i (linear i.Mach.next n)
   | Iop(Imove | Ireload | Ispill)

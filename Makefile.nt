@@ -496,9 +496,9 @@ ocamlopt.opt: compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
               compilerlibs/ocamlbytecomp.cmxa \
               $(OPTSTART:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt \
-           compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
+          compilerlibs/ocamlcommon.cmxa compilerlibs/ocamloptcomp.cmxa \
 	  compilerlibs/ocamlbytecomp.cmxa \
-           $(OPTSTART:.cmo=.cmx)
+          $(OPTSTART:.cmo=.cmx)
 
 partialclean::
 	rm -f ocamlopt.opt

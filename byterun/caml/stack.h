@@ -1,20 +1,24 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Machine-dependent interface with the asm code */
 
 #ifndef CAML_STACK_H
 #define CAML_STACK_H
+
+#ifdef CAML_INTERNALS
 
 /* Macros to access the stack frame */
 
@@ -84,5 +88,9 @@ struct caml_context {
 extern value caml_globals[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
+
+CAMLextern frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_STACK_H */

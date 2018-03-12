@@ -1,12 +1,12 @@
 /**************************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
 /*     en Automatique.                                                    */
-/*                                                                     */
+/*                                                                        */
 /*   All rights reserved.  This file is distributed under the terms of    */
 /*   the GNU Lesser General Public License version 2.1, with the          */
 /*   special exception on linking described in the file LICENSE.          */
@@ -28,7 +28,6 @@
 #include "minor_gc.h"
 #endif /* CAML_INTERNALS */
 #include "domain.h"
-/* </private> */
 #include "misc.h"
 #include "mlvalues.h"
 #include "alloc.h"
@@ -133,7 +132,6 @@ extern uintnat caml_use_huge_pages;
 
 #endif /* CAML_INTERNALS */
 
-/* </private> */
 struct caml__mutex_unwind;
 struct caml__roots_block {
   struct caml__roots_block *next;

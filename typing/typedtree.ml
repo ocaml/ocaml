@@ -1,12 +1,12 @@
 (**************************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
 (*     en Automatique.                                                    *)
-(*                                                                     *)
+(*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
 (*   special exception on linking described in the file LICENSE.          *)
@@ -127,7 +127,7 @@ and case =
     }
 
 and record_label_definition =
-  | Kept of Types.type_expr
+  | Kept of Types.type_expr * mutable_flag
   | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
@@ -457,9 +457,9 @@ and extension_constructor =
   {
     ext_id: Ident.t;
     ext_name: string loc;
-    ext_type : Types.extension_constructor;
-    ext_kind : extension_constructor_kind;
-    ext_loc : Location.t;
+    ext_type: Types.extension_constructor;
+    ext_kind: extension_constructor_kind;
+    ext_loc: Location.t;
     ext_attributes: attribute list;
   }
 
@@ -482,9 +482,9 @@ and class_type_desc =
   | Tcty_arrow of arg_label * core_type * class_type
 
 and class_signature = {
-    csig_self : core_type;
-    csig_fields : class_type_field list;
-    csig_type : Types.class_signature;
+    csig_self: core_type;
+    csig_fields: class_type_field list;
+    csig_type: Types.class_signature;
   }
 
 and class_type_field = {
@@ -512,14 +512,14 @@ and class_type_declaration =
 and 'a class_infos =
   { ci_virt: virtual_flag;
     ci_params: (core_type * variance) list;
-    ci_id_name : string loc;
+    ci_id_name: string loc;
     ci_id_class: Ident.t;
-    ci_id_class_type : Ident.t;
-    ci_id_object : Ident.t;
+    ci_id_class_type: Ident.t;
+    ci_id_object: Ident.t;
     ci_id_typehash: Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
-    ci_type_decl : Types.class_type_declaration;
+    ci_type_decl: Types.class_type_declaration;
     ci_loc: Location.t;
     ci_attributes: attribute list;
    }

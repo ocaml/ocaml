@@ -331,7 +331,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-  | Any_ty :                                                  (* Used for custom formats *)
+  | Any_ty :                                    (* Used for custom formats *)
       ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
        'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
       ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
