@@ -422,11 +422,6 @@ module type S =
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
-  end
-
-module type FULL =
-  sig
-    include S
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_keys : _ t -> key Seq.t
     val to_seq_values : 'a t -> 'a Seq.t
@@ -455,11 +450,6 @@ module type SeededS =
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats: 'a t -> statistics
-  end
-
-module type SeededSFull =
-  sig
-    include SeededS
     val to_seq : 'a t -> (key * 'a) Seq.t
     val to_seq_keys : _ t -> key Seq.t
     val to_seq_values : 'a t -> 'a Seq.t
@@ -468,7 +458,7 @@ module type SeededSFull =
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
 
-module MakeSeeded(H: SeededHashedType): (SeededSFull with type key = H.t) =
+module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
   struct
     type key = H.t
     type 'a hashtbl = (key, 'a) t
@@ -593,7 +583,7 @@ module MakeSeeded(H: SeededHashedType): (SeededSFull with type key = H.t) =
     let of_seq = of_seq
   end
 
-module Make(H: HashedType): (FULL with type key = H.t) =
+module Make(H: HashedType): (S with type key = H.t) =
   struct
     include MakeSeeded(struct
         type t = H.t

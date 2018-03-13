@@ -78,10 +78,6 @@ module Hashtbl : sig
           'a t -> init:'b -> 'b
       val length : 'a t -> int
       val stats: 'a t -> statistics
-    end
-  module type FULL =
-    sig
-      include S
       val to_seq : 'a t -> (key * 'a) Seq.t
       val to_seq_keys : _ t -> key Seq.t
       val to_seq_values : 'a t -> 'a Seq.t
@@ -112,10 +108,6 @@ module Hashtbl : sig
           'a t -> init:'b -> 'b
       val length : 'a t -> int
       val stats: 'a t -> statistics
-    end
-  module type SeededSFull =
-    sig
-      include SeededS
       val to_seq : 'a t -> (key * 'a) Seq.t
       val to_seq_keys : _ t -> key Seq.t
       val to_seq_values : 'a t -> 'a Seq.t
@@ -123,10 +115,10 @@ module Hashtbl : sig
       val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
       val of_seq : (key * 'a) Seq.t -> 'a t
     end
-  module Make : functor (H : HashedType) -> FULL
+  module Make : functor (H : HashedType) -> S
     with type key = H.t
      and type 'a t = 'a Hashtbl.Make(H).t
-  module MakeSeeded (H : SeededHashedType) : SeededSFull
+  module MakeSeeded (H : SeededHashedType) : SeededS
     with type key = H.t
      and type 'a t = 'a Hashtbl.MakeSeeded(H).t
   val hash : 'a -> int
