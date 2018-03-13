@@ -674,7 +674,7 @@ let context ppf cxt =
     fprintf ppf "@[<hv 2>At position@ %a@]@ " context cxt
 
 let include_err ppf (cxt, env, err) =
-  Printtyp.wrap_printing_env env (fun () ->
+  Printtyp.wrap_printing_env ~error:true env (fun () ->
     fprintf ppf "@[<v>%a%a@]" context (List.rev cxt) include_err err)
 
 let buffer = ref Bytes.empty
