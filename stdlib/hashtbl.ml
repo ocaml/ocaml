@@ -357,12 +357,15 @@ let stats h =
 (** {6 Seq.iterators} *)
 
 let to_seq tbl =
+  (* capture current array, so that even if the table is resized we
+     keep iterating on the same array *)
+  let tbl_data = tbl.data in
   (* state: index * next bucket to traverse *)
   let rec aux i buck () = match buck with
     | Empty ->
-        if i = Array.length tbl.data
+        if i = Array.length tbl_data
         then Seq.Nil
-        else aux(i+1) tbl.data.(i) ()
+        else aux(i+1) tbl_data.(i) ()
     | Cons {key; data; next} ->
         Seq.Cons ((key, data), aux i next)
   in
