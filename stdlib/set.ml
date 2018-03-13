@@ -60,7 +60,7 @@ module type S =
     val find_last: (elt -> bool) -> t -> elt
     val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
-    val to_seq_at : elt -> t -> elt Seq.t
+    val to_seq_from : elt -> t -> elt Seq.t
     val to_seq : t -> elt Seq.t
     val add_seq : elt Seq.t -> t -> t
     val of_seq : elt Seq.t -> t
@@ -539,7 +539,7 @@ module Make(Ord: OrderedType) =
 
     let to_seq c = seq_of_enum_ (cons_enum c End)
 
-    let to_seq_at low s =
+    let to_seq_from low s =
       let rec aux low s c = match s with
         | Empty -> c
         | Node {l; r; v; _} ->

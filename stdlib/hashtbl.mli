@@ -216,10 +216,10 @@ val stats : ('a, 'b) t -> statistics
    buckets by size.
    @since 4.00.0 *)
 
-(** {6 Seq iterators} *)
+(** {6 Iterators} *)
 
 val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
-(** Seq.te on the whole table, in unspecified order.
+(** Iterate on the whole table, in unspecified order.
 
     The behavior is not defined if the hash table is modified
     during the iteration.
@@ -227,11 +227,11 @@ val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
     @since NEXT_RELEASE *)
 
 val to_seq_keys : ('a,_) t -> 'a Seq.t
-(** Seq.te on 'as, in ascending order
+(** Iterate on 'as, in ascending order
     @since NEXT_RELEASE *)
 
 val to_seq_values : (_,'b) t -> 'b Seq.t
-(** Seq.te on values, in ascending order of their corresponding 'a
+(** Iterate on values, in ascending order of their corresponding 'a
     @since NEXT_RELEASE *)
 
 val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit

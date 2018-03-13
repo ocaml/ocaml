@@ -179,8 +179,8 @@ let test x s1 s2 =
   checkbool "to_seq_of_seq"
     (S.equal s1 (S.of_seq @@ S.to_seq s1));
 
-  checkbool "to_seq_at"
-    (let seq = S.to_seq_at x s1 in
+  checkbool "to_seq_from"
+    (let seq = S.to_seq_from x s1 in
      let ok1 = List.of_seq seq |> List.for_all (fun y -> y >= x) in
      let ok2 =
        (S.elements s1 |> List.filter (fun y -> y >= x))

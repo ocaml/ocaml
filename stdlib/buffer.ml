@@ -277,7 +277,7 @@ let truncate b len =
 
 let to_seq b =
   let rec aux i () =
-    if i = b.position then Seq.Nil
+    if i >= b.position then Seq.Nil
     else
       let x = Bytes.get b.buffer i in
       Seq.Cons (x, aux (i+1))
@@ -286,7 +286,7 @@ let to_seq b =
 
 let to_seqi b =
   let rec aux i () =
-    if i = b.position then Seq.Nil
+    if i >= b.position then Seq.Nil
     else
       let x = Bytes.get b.buffer i in
       Seq.Cons ((i,x), aux (i+1))

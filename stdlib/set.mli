@@ -261,8 +261,8 @@ module type S =
 
     (** {6 Iterators} *)
 
-    val to_seq_at : elt -> t -> elt Seq.t
-    (** [to_seq_at x s] iterates on a subset of the elements of [s]
+    val to_seq_from : elt -> t -> elt Seq.t
+    (** [to_seq_from x s] iterates on a subset of the elements of [s]
         in ascending order, from [x] or above.
         @since NEXT_RELEASE *)
 

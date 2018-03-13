@@ -59,7 +59,7 @@ module type S =
     val map: ('a -> 'b) -> 'a t -> 'b t
     val mapi: (key -> 'a -> 'b) -> 'a t -> 'b t
     val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_at : key -> 'a t -> (key * 'a) Seq.t
+    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     val of_seq : (key * 'a) Seq.t -> 'a t
   end
@@ -493,7 +493,7 @@ module Make(Ord: OrderedType) = struct
     let to_seq m =
       seq_of_enum_ (cons_enum m End)
 
-    let to_seq_at low m =
+    let to_seq_from low m =
       let rec aux low m c = match m with
         | Empty -> c
         | Node {l; v; d; r; _} ->
