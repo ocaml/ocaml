@@ -5,7 +5,27 @@
 
 open Printf
 
-module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
+module type TABLE = sig
+  type key
+  type 'a t
+  val create : int -> 'a t
+  val clear : 'a t -> unit
+  val reset : 'a t -> unit
+  val copy : 'a t -> 'a t
+  val add : 'a t -> key -> 'a -> unit
+  val remove : 'a t -> key -> unit
+  val find : 'a t -> key -> 'a
+  val find_opt : 'a t -> key -> 'a option
+  val find_all : 'a t -> key -> 'a list
+  val replace : 'a t -> key -> 'a -> unit
+  val mem : 'a t -> key -> bool
+  val iter : (key -> 'a -> unit) -> 'a t -> unit
+  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
+  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val length : 'a t -> int
+end
+
+module Test(H: TABLE) (M: Map.S with type key = H.key) = struct
 
   let incl_mh m h =
     try
@@ -98,7 +118,7 @@ module MSA = Map.Make(SSA)
 
 (* Generic hash wrapped as a functorial hash *)
 
-module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
+module HofM (M: Map.S) : TABLE with type key = M.key =
   struct
     type key = M.key
     type 'a t = (key, 'a) Hashtbl.t
