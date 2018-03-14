@@ -2005,9 +2005,9 @@ and the "alloc_final" function is still available to allocate a custom
 block with a given finalization function, but default comparison,
 hashing and serialization functions.  "caml_alloc_final("\var{n}",
 "\var{f}", "\var{used}", "\var{max}")" returns a fresh custom block of
-size \var{n} words, with finalization function \var{f}.  The first
+size \var{n}+1 words, with finalization function \var{f}.  The first
 word is reserved for storing the custom operations; the other
-\var{n}-1 words are available for your data.  The two parameters
+\var{n} words are available for your data.  The two parameters
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
 
