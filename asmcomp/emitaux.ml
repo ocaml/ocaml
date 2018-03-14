@@ -254,8 +254,7 @@ let cfi_adjust_cfa_offset n =
   end
 
 let cfi_def_cfa_offset n =
-  if is_cfi_enabled () then
-  begin
+  if is_cfi_enabled () then begin
     emit_string "\t.cfi_def_cfa_offset\t"; emit_int n; emit_string "\n";
   end
 
@@ -304,17 +303,6 @@ let emit_debug_info_gen dbg file_emitter loc_emitter =
           loc_emitter ~file_num ~line ~col;
         end
     end
-
-let emit_debug_info dbg =
-  emit_debug_info_gen dbg (fun ~file_num ~file_name ->
-      emit_string "\t.file\t";
-      emit_int file_num; emit_char '\t';
-      emit_string_literal file_name; emit_char '\n';
-    )
-    (fun ~file_num ~line ~col:_ ->
-    emit_string "\t.loc\t";
-    emit_int file_num; emit_char '\t';
-       emit_int line; emit_char '\n')
 
 (* Emission of block headers immediately prior to function entry points *)
 

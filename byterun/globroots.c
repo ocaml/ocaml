@@ -27,7 +27,7 @@
 #include "caml/alloc.h"
 #include "caml/shared_heap.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #endif
 
 /* A caml_root is in fact a value. We don't expose that fact outside

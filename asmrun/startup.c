@@ -32,7 +32,7 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/sys.h"
 #include "caml/params.h"
 #include "caml/fiber.h"
@@ -116,7 +116,6 @@ void caml_main(char **argv)
 
   init_segments();
   caml_init_signals();
-  caml_init_backtrace();
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = "";

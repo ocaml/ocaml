@@ -30,6 +30,8 @@
 #include "compatibility.h"
 #endif
 
+#ifndef CAML_CONFIG_H_NO_TYPEDEFS
+
 #ifdef HAS_STDINT_H
 #include <stdint.h>
 #endif
@@ -53,7 +55,7 @@
 #else
 #error "No 32-bit integer type available"
 #endif
-#endif
+#endif /* ARCH_INT32_TYPE */
 
 #ifndef ARCH_INT64_TYPE
 #if SIZEOF_LONGLONG == 8
@@ -102,6 +104,7 @@ typedef uint64_t uintnat;
 #error "No integer type available to represent pointers"
 #endif
 
+#endif /* CAML_CONFIG_H_NO_TYPEDEFS */
 /* Endianness of floats */
 
 /* ARCH_FLOAT_ENDIANNESS encodes the byte order of doubles as follows:

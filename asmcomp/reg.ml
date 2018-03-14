@@ -130,6 +130,7 @@ let to_string r =
     | Addr -> "A"
     | Int -> "I"
     | Float -> "F"
+    | Val -> "V"
   in "("^loc_str^","^typ_str^")"
 
 let first_virtual_reg_stamp = ref (-1)

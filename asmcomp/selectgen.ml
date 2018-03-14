@@ -34,7 +34,7 @@ let oper_result_type = function
       | Single | Double | Double_u -> typ_float
       | _ -> typ_int
       end
-  | Cloadmut -> typ_addr
+  | Cloadmut -> typ_val
   | Calloc _ -> typ_val
   | Cstore (_c, _) -> typ_void
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi |
@@ -287,7 +287,7 @@ method select_operation op args =
       | None -> Cmm.new_label ()
       | Some label_after -> label_after
     in
-    Iextcall { func; alloc; label_after; stack_args = -1}, args
+    Iextcall { func; alloc; label_after; stack_ofs = -1}, args
   | (Cload chunk, [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
       (Iload(chunk, addr), [eloc])

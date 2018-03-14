@@ -91,7 +91,7 @@ static void caml_execute_signal(int signal_number)
 {
   CAMLparam0 ();
   CAMLlocal2 (res, handler);
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   void* saved_spacetime_trie_node_ptr;
 #endif
 #ifdef POSIX_SIGNALS
@@ -102,7 +102,7 @@ static void caml_execute_signal(int signal_number)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   /* We record the signal handler's execution separately, in the same
      trie used for finalisers. */
   saved_spacetime_trie_node_ptr
@@ -110,7 +110,7 @@ static void caml_execute_signal(int signal_number)
   caml_spacetime_trie_node_ptr
     = caml_spacetime_finaliser_trie_root;
 #endif
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
   /* Handled action may have no associated handler, which we interpret
      as meaning the signal should be handled by a call to exit.  This is
      is used to allow spacetime profiles to be completed on interrupt */
@@ -127,7 +127,7 @@ static void caml_execute_signal(int signal_number)
   res = caml_callback_exn(
            handler,
            Val_int(caml_rev_convert_signal_number(signal_number)));
-#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#if 0 && defined(NATIVE_CODE) && defined(WITH_SPACETIME)
     }
   }
   caml_spacetime_trie_node_ptr = saved_spacetime_trie_node_ptr;
@@ -138,36 +138,6 @@ static void caml_execute_signal(int signal_number)
 #endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
   CAMLreturn0;
-}
-
-/* Arrange for a garbage collection to be performed as soon as possible */
-
-int volatile caml_requested_major_slice = 0;
-int volatile caml_requested_minor_gc = 0;
-
-void caml_request_major_slice (void)
-{
-  caml_requested_major_slice = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_alloc_end;
-  /* This is only moderately effective on ports that cache [caml_young_limit]
-     in a register, since [caml_modify] is called directly, not through
-     [caml_c_call], so it may take a while before the register is reloaded
-     from [caml_young_limit]. */
-#endif
-}
-
-void caml_request_minor_gc (void)
-{
-  caml_requested_minor_gc = 1;
-#ifndef NATIVE_CODE
-  caml_something_to_do = 1;
-#else
-  caml_young_limit = caml_young_alloc_end;
-  /* Same remark as above in [caml_request_major_slice]. */
-#endif
 }
 
 /* OS-independent numbering of signals */

@@ -77,3 +77,9 @@ val binary_backend_available: bool ref
 
 val create_asm_file: bool ref
     (** Are we actually generating the textual assembly file? *)
+
+val emit_block_header_for_closure
+   : word_directive:string
+  -> comment_string:string
+  -> function_entry_points_are_doubleword_aligned:bool
+  -> unit

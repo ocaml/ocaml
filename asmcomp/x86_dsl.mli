@@ -37,8 +37,10 @@ val ah: arg
 val cl: arg
 val ax: arg
 val rax: arg
+val rdx: arg
 val r10: arg
 val r11: arg
+val r12: arg
 val r13: arg
 val r14: arg
 val r15: arg
@@ -74,6 +76,9 @@ module D : sig
   val cfi_adjust_cfa_offset: int -> unit
   val cfi_endproc: unit -> unit
   val cfi_startproc: unit -> unit
+  val cfi_remember_state: unit -> unit
+  val cfi_restore_state: unit -> unit
+  val cfi_def_cfa_offset: int -> unit
   val comment: string -> unit
   val data: unit -> unit
   val extrn: string -> data_type -> unit

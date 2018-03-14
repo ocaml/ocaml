@@ -30,7 +30,7 @@
 #include "caml/fiber.h"
 
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 /* The global roots.

@@ -364,7 +364,8 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
         Flambda.print_named named
     end
   | Read_symbol_field (symbol, field) ->
-    Uprim (Pfield field, [to_clambda_symbol env symbol], Debuginfo.none)
+    Uprim (Pfield (field, Pointer, Mutable),
+           [to_clambda_symbol env symbol], Debuginfo.none)
   | Set_of_closures set_of_closures ->
     to_clambda_set_of_closures t env set_of_closures
   | Project_closure { set_of_closures; closure_id } ->
@@ -389,11 +390,12 @@ and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
     let fun_offset = get_fun_offset t closure_id in
     let var_offset = get_fv_offset t var in
     let pos = var_offset - fun_offset in
-    Uprim (Pfield pos,
+    Uprim (Pfield (pos, Pointer, Mutable),
       [check_field (check_closure ulam (Expr (Var closure))) pos (Some named)],
       Debuginfo.none)
-  | Prim (Pfield index, [block], dbg) ->
-    Uprim (Pfield index, [check_field (subst_var env block) index None], dbg)
+  | Prim (Pfield (index, ptr, mut), [block], dbg) ->
+    Uprim (Pfield (index, ptr, mut),
+           [check_field (subst_var env block) index None], dbg)
   | Prim (Psetfield (index, maybe_ptr, init), [block; new_value], dbg) ->
     Uprim (Psetfield (index, maybe_ptr, init), [
         check_field (subst_var env block) index None;
@@ -491,7 +493,8 @@ and to_clambda_set_of_closures t env
         in
         let pos = var_offset - fun_offset in
         Env.add_subst env id
-          (Uprim (Pfield pos, [Clambda.Uvar env_var], Debuginfo.none))
+          (Uprim (Pfield (pos, Pointer, Mutable),
+                  [Clambda.Uvar env_var], Debuginfo.none))
       in
       let env = Variable.Map.fold add_env_free_variable free_vars env in
       (* Add the Clambda expressions for all functions defined in the current

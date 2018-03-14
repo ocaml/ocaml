@@ -26,14 +26,14 @@ IFLAGS=$(FLAGS) -DCAML_INSTR
 PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCPROFOPTS) $(NATIVECCCOMPOPTS)
 PICFLAGS=$(FLAGS) $(SHAREDCCCOMPOPTS) $(NATIVECCCOMPOPTS)
 
-COBJS=startup_aux.o startup.o \
+COBJS=startup.o \
   main.o fail.o roots.o globroots.o signals.o signals_asm.o \
-  freelist.o misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
+  misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o \
+  finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o \
   debugger.o meta.o dynlink.o clambda_checks.o addrmap.o domain.o platform.o \
-  params.o eventlog.o frame_descriptors.o fiber.o \
+  params.o eventlog.o frame_descriptors.o fiber.o shared_heap.o \
   spacetime.o spacetime_snapshot.o spacetime_offline.o
 
 ASMOBJS=$(ARCH).o
@@ -130,10 +130,6 @@ endif
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
-startup_aux.c: ../byterun/startup_aux.c
-	ln -s ../byterun/startup_aux.c startup_aux.c
-backtrace.c: ../byterun/backtrace.c
-	ln -s ../byterun/backtrace.c backtrace.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
 major_gc.c: ../byterun/major_gc.c

@@ -331,12 +331,12 @@ CAMLprim value caml_array_concat(value al)
     lengths = static_lengths;
   } else {
     arrays = caml_stat_alloc(n * sizeof(value));
-    offsets = malloc(n * sizeof(intnat));
+    offsets = caml_stat_alloc(n * sizeof(intnat));
     if (offsets == NULL) {
       caml_stat_free(arrays);
       caml_raise_out_of_memory();
     }
-    lengths = malloc(n * sizeof(value));
+    lengths = caml_stat_alloc(n * sizeof(value));
     if (lengths == NULL) {
       caml_stat_free(offsets);
       caml_stat_free(arrays);

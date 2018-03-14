@@ -52,9 +52,7 @@ extern caml_generated_constant
 
 /* Exception raising */
 
-CAMLnoreturn_start
-  extern void caml_raise_exception (value bucket)
-CAMLnoreturn_end;
+extern void caml_raise_exception (char* young_ptr, value bucket) Noreturn;
 
 void caml_raise(value v)
 {

@@ -28,7 +28,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #include "frame_descriptors.h"
 #else
 #include "caml/fiber.h"
@@ -235,9 +235,7 @@ CAMLprim value caml_gc_minor(value v)
 {
   CAML_INSTR_SETUP (tmr, "");
   Assert (v == Val_unit);
-  caml_request_minor_gc ();
   caml_minor_collection ();
-  /* caml_gc_dispatch (); */
   CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }

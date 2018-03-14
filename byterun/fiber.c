@@ -16,7 +16,7 @@
 #include "caml/memory.h"
 #include "caml/params.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #include "frame_descriptors.h"
 #endif
 

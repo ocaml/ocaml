@@ -60,6 +60,15 @@ let cfi_endproc () =
 let cfi_adjust_cfa_offset n =
   if Config.asm_cfi_supported then D.cfi_adjust_cfa_offset n
 
+let cfi_remember_state () =
+  if Config.asm_cfi_supported then D.cfi_remember_state ()
+
+let cfi_restore_state () =
+  if Config.asm_cfi_supported then D.cfi_restore_state ()
+
+let cfi_def_cfa_offset n =
+  if Config.asm_cfi_supported then D.cfi_def_cfa_offset n
+
 let emit_debug_info dbg =
   emit_debug_info_gen dbg D.file D.loc
 
@@ -376,13 +385,13 @@ type read_barrier_call =
 let read_barrier_call_sites = ref ([] : read_barrier_call list)
 
 let emit_call_read_barrier rb =
-  `{emit_label rb.rb_lbl}:\n`;
-  `	movq	{emit_reg rb.rb_base}, %rax\n`;
-  `	movq  {emit_reg rb.rb_off}, %rdx\n`;
-  `	{emit_call "caml_call_read_barrier"}\n`;
-  `{emit_label rb.rb_frame}:\n`;
-  `	movq	%rax, {emit_reg rb.rb_dest}\n`;
-  `	jmp	{emit_label rb.rb_return_lbl}\n`
+  def_label rb.rb_lbl;
+  I.mov (reg rb.rb_base) rax;
+  I.mov (reg rb.rb_off) rdx;
+  emit_call "caml_call_read_barrier";
+  def_label rb.rb_frame;
+  I.mov rax (reg rb.rb_dest);
+  I.jmp (label rb.rb_return_lbl)
 
 (* Names for instructions *)
 
@@ -547,32 +556,32 @@ let emit_instr fallthrough i =
   | Lop(Iconst_symbol s) ->
       add_used_symbol s;
       load_symbol_addr s (res i 0)
-  | Lop(Icall_ind) ->
+  | Lop(Icall_ind { label_after; }) ->
       if Config.stats then begin
         I.push r11;
         I.mov r15 r11;
         locate_domain_state r11;
-        I.inc (domain_field Domainstate.Domain_call_ind r11);
+        I.inc (domain_field Domainstate.Domain_call_ind R11);
         I.pop r11;
       end;
         I.call (arg i 0);
         record_frame i.live false i.dbg ~label:label_after
-  | Lop(Icall_imm(s)) ->
+  | Lop(Icall_imm { func; label_after; }) ->
       if Config.stats then begin
         I.mov r15 r11;
         locate_domain_state r11;
-        I.inc (domain_field Domainstate.Domain_call_imm r11);
+        I.inc (domain_field Domainstate.Domain_call_imm R11);
       end;
       add_used_symbol func;
       emit_call func;
       record_frame i.live false i.dbg ~label:label_after
-  | Lop(Itailcall_ind) ->
+  | Lop(Itailcall_ind { label_after = _; }) ->
       output_epilogue begin fun () ->
       if Config.stats then begin
         I.push r11;
         I.mov r15 r11;
         locate_domain_state r11;
-        I.inc (domain_field Domainstate.Domain_tailcall_ind r11);
+        I.inc (domain_field Domainstate.Domain_tailcall_ind R11);
         I.pop r11;
       end;
       I.jmp (arg i 0);
@@ -586,17 +595,17 @@ let emit_instr fallthrough i =
       begin
         if func = !function_name then begin
           if Config.stats then begin
-            I.movq r15 r11;
+            I.mov r15 r11;
             locate_domain_state r11;
-            I.inc (domain_field Domainstate.Domain_tailcall_imm r11);
+            I.inc (domain_field Domainstate.Domain_tailcall_imm R11);
           end;
           I.jmp (label !tailrec_entry_point)
         end else begin
           output_epilogue begin fun () ->
             if Config.stats then begin
-              I.movq r15 r11;
+              I.mov r15 r11;
               locate_domain_state r11;
-              I.inc (domain_field Domainstate.Domain_tailcall_imm r11)
+              I.inc (domain_field Domainstate.Domain_tailcall_imm R11)
           end;
           add_used_symbol func;
           emit_jump func
@@ -608,11 +617,11 @@ let emit_instr fallthrough i =
           record_frame Reg.Set.empty false i.dbg ~label:label_after
         end
         *)
-  | Lop(Iextcall {func; alloc; stack_off; label_after}) ->
+  | Lop(Iextcall {func; alloc; stack_ofs; label_after}) ->
       add_used_symbol func;
-      if stack_off > 0 then begin
-        I.lea (mem64 QWORD 0 rsp) r13;
-        I.lea (mem64 QWORD stack_off rsp) r12;
+      if stack_ofs > 0 then begin
+        I.lea (mem64 QWORD 0 RSP) r13;
+        I.lea (mem64 QWORD stack_ofs RSP) r12;
         load_symbol_addr func rax;
         emit_call "caml_c_call_stack_args";
         record_frame i.live false i.dbg ~label:label_after;
@@ -620,9 +629,9 @@ let emit_instr fallthrough i =
            be the correct minor heap pointer, so we reload young_ptr *)
         locate_domain_state r15;
         if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_alloc_stackargs r15)
+          I.inc (domain_field Domainstate.Domain_extcall_alloc_stackargs R15)
         end;
-        I.mov (domain_field Domainstate.Domain_young_ptr r15) r15;
+        I.mov (domain_field Domainstate.Domain_young_ptr R15) r15;
       end else if alloc then begin
         load_symbol_addr func rax;
         emit_call "caml_c_call";
@@ -631,18 +640,18 @@ let emit_instr fallthrough i =
            be the correct minor heap pointer, so we reload young_ptr *)
         locate_domain_state r15;
         if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_alloc r15)
+          I.inc (domain_field Domainstate.Domain_extcall_alloc R15)
         end;
-        I.mov (domain_field Domainstate.Domain_young_ptr r15) r15;
+        I.mov (domain_field Domainstate.Domain_young_ptr R15) r15;
       end else begin
         I.mov rsp r10;
         I.mov r15 r11;
         locate_domain_state r11;
         if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_extcall_noalloc r15);
+          I.inc (domain_field Domainstate.Domain_extcall_noalloc R15);
         end;
         cfi_remember_state ();
-        I.mov (domain_field Domainstate.Domain_system_sp r11) rsp;
+        I.mov (domain_field Domainstate.Domain_system_sp R11) rsp;
         cfi_def_cfa_offset 8;
         I.push r10;
         cfi_adjust_cfa_offset 8;
@@ -670,7 +679,7 @@ let emit_instr fallthrough i =
       if Config.stats then begin
         I.push r15;
         locate_domain_state r15;
-        I.inc (domain_field Domainstate.Domain_immutable_loads r15);
+        I.inc (domain_field Domainstate.Domain_immutable_loads R15);
         I.pop r15;
       end;
       begin match chunk with
@@ -697,22 +706,22 @@ let emit_instr fallthrough i =
       if Config.stats then begin
         I.mov r15 rax;
         locate_domain_state rax;
-        I.inc (domain_field Domainstate.Domain_mutable_loads rax);
+        I.inc (domain_field Domainstate.Domain_mutable_loads RAX);
       end;
-      `	movq	({emit_reg i.arg.(0)},{emit_reg i.arg.(1)},8), {emit_reg i.res.(0)}\n`;
-      `	movq	{emit_reg i.res.(0)}, %rax\n`;
-      `	xorq	%r15, %rax\n`;
+      I.mov (mem64 QWORD 0 ~base:(arg64 i 0) (arg64 i 1) ~scale:8) (reg i.res.(0));
+      I.mov (arg i 0) rax;
+      I.xor r15 rax;
       let s = Nativeint.(shift_left one Domainstate.minor_heap_align_bits) in
-      `	subq	${emit_nativeint s}, %rax\n`;
+      I.sub (nat s) rax;
       let bits = Domainstate.minor_heap_align_bits + Domainstate.minor_heap_sel_bits in
       let minor_val_bitmask = Nativeint.(logor one (shift_left minus_one bits)) in
-      `	movabsq	${emit_nativeint minor_val_bitmask}, %rdx\n`;
-      `	testq	%rdx, %rax\n`;
+      I.mov (nat minor_val_bitmask) rdx;
+      I.test rdx rax;
       let lbl_call_read_barrier = new_label () in
       let lbl_return = new_label () in
-      let lbl_frame = record_frame_label i.live Debuginfo.none in
-      `	jz	{emit_label lbl_call_read_barrier}\n`;
-      `{emit_label lbl_return}:\n`;
+      let lbl_frame = record_frame_label i.live false Debuginfo.none in
+      I.jmp (label lbl_call_read_barrier);
+      def_label lbl_return;
       read_barrier_call_sites :=
         { rb_base = i.arg.(0);
           rb_off = i.arg.(1);
@@ -724,7 +733,7 @@ let emit_instr fallthrough i =
       if Config.stats && is_assignment then begin
         I.push r15;
         locate_domain_state r15;
-        I.inc (domain_field Domainstate.Domain_immutable_stores r15);
+        I.inc (domain_field Domainstate.Domain_immutable_stores R15);
         I.pop r15;
       end;
       begin match chunk with
@@ -751,9 +760,9 @@ let emit_instr fallthrough i =
         I.sub (int n) r15;
         locate_domain_state rax;
         if Config.stats then begin
-          I.inc (domain_field Domainstate.Domain_allocations rax);
+          I.inc (domain_field Domainstate.Domain_allocations RAX);
         end;
-        I.cmpq (domain_field Domainstate.Domain_young_limit rax) r15;
+        I.cmp (domain_field Domainstate.Domain_young_limit RAX) r15;
         let lbl_call_gc = new_label() in
         let dbg =
           if not Config.spacetime then Debuginfo.none
@@ -776,9 +785,9 @@ let emit_instr fallthrough i =
             gc_spacetime; } :: !call_gc_sites
       end else begin
         if Config.stats then begin
-          I.mov r15 rax
+          I.mov r15 rax;
           locate_domain_state rax;
-          I.inc (domain_field Domainstate.Domain_allocations rax);
+          I.inc (domain_field Domainstate.Domain_allocations RAX);
         end;
         if Config.spacetime then begin
           (* spacetime_before_uninstrumented_call ~node_ptr:(arg i 0)
@@ -969,7 +978,7 @@ let emit_instr fallthrough i =
       cfi_adjust_cfa_offset 8;
       I.mov r15 r14;
       locate_domain_state r14;
-      I.mov (domain_field Domainstate.Domain_stack_high r14) r14;
+      I.mov (domain_field Domainstate.Domain_stack_high R14) r14;
       I.sub rsp r14;
       stack_offset := !stack_offset + 16
   | Lpoptrap ->
@@ -987,9 +996,9 @@ let emit_instr fallthrough i =
           emit_call "caml_raise_exn";
           record_frame Reg.Set.empty true i.dbg
       | Cmm.Raise_notrace ->
-          I.movq r15 rsp;
+          I.mov r15 rsp;
           locate_domain_state rsp;
-          I.mov (domain_field Domainstate.Domain_stack_high rsp) rsp;
+          I.mov (domain_field Domainstate.Domain_stack_high RSP) rsp;
           I.sub r14 rsp;
           I.pop r14;
           I.ret ()
@@ -1027,7 +1036,7 @@ type preproc_fun_result =
    contains_nontail_calls : bool;
    contains_external_calls : bool}
 
-let preproc_fun fun_body fun_name =
+let preproc_fun fun_body _fun_name =
   let rec proc_instr r a i =
     if i.desc = Lend then r else
         let upd_size r delta =
@@ -1037,10 +1046,10 @@ let preproc_fun fun_body fun_name =
           | Lop (Istackoffset n) -> (upd_size r n, a+n)
           | Lpushtrap -> (upd_size r 16, a+16)
           | Lpoptrap -> (r, a-16)
-          | Lop (Iextcall _ | Ialloc _ | Iintop Icheckbound
-                 | Iintop_imm (Icheckbound, _)) ->
+          | Lop (Iextcall _ | Ialloc _ | Iintop (Icheckbound _)
+                 | Iintop_imm (Icheckbound _, _)) ->
               ({r with contains_external_calls = true}, a)
-          | Lop (Icall_ind | Icall_imm _ ) ->
+          | Lop (Icall_ind _ | Icall_imm _ ) ->
               ({r with contains_nontail_calls = true}, a)
           | _ -> (r, a)
         in
@@ -1123,23 +1132,19 @@ let fundecl fundecl =
   else begin
     (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
     the function properly. *)
-    let live_initially =
-      Reg.Set.(fold (fun r s -> add {r with typ = Addr} s)
-        fundecl.fun_args empty)
-    in
+    let live_initially = fundecl.fun_args in
     let handle_overflow = new_label() in
-    let after_overflow = record_frame_label live_initially Debuginfo.none in
+    let after_overflow = record_frame_label live_initially false Debuginfo.none in
 
     I.mov r15 r11;
     locate_domain_state r11;
     if Config.stats then begin
-      I.inc (domain_field Domainstate.Domain_stackoverflow_checks r11);
+      I.inc (domain_field Domainstate.Domain_stackoverflow_checks R11);
     end;
-    I.mov (domain_field Domainstate.Domain_stack_threshold r11) r11;
+    I.mov (domain_field Domainstate.Domain_stack_threshold R11) r11;
     I.add (int s) r11;
     I.cmp r11 rsp;
     I.jb (label handle_overflow);
-    ` jb {emit_label handle_overflow}\n`;
     def_label !tailrec_entry_point;
     emit_all true fundecl.fun_body;
     List.iter emit_call_gc !call_gc_sites;

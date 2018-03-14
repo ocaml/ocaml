@@ -172,7 +172,7 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Ispecific specific_op ->
       Arch.spacetime_node_hole_pointer_is_live_before specific_op
     | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
-    | Iconst_symbol _ | Istackoffset _ | Iload _ | Istore _
+    | Iconst_symbol _ | Istackoffset _ | Iload _ | Iloadmut | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
     | Ifloatofint | Iintoffloat -> false
     end
