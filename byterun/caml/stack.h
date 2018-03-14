@@ -89,7 +89,9 @@ extern value caml_globals[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
 
+/* XXX KC
 CAMLextern frame_descr * caml_next_frame_descriptor(uintnat * pc, char ** sp);
+ */
 
 #endif /* CAML_INTERNALS */
 

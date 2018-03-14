@@ -43,7 +43,7 @@ let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
       Tbl.add id
-        (Uprim(Pfield(pos, true, Immutable), [Uvar env_param], Debuginfo.none))
+        (Uprim(Pfield(pos, Pointer, Immutable), [Uvar env_param], Debuginfo.none))
         (build_closure_env env_param (pos+1) rem)
 
 (* Auxiliary for accessing globals.  We change the name of the global
@@ -107,7 +107,11 @@ let prim_size prim args =
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
-  | Pfield(_, isptr, Mutable) -> if isptr then 2 else 1
+  | Pfield(_, isptr, Mutable) ->
+      begin match isptr with
+      | Pointer -> 2
+      | Immediate -> 1
+      end
   | Pfield(_, _, Immutable) -> 1
   | Psetfield(_f, isptr, init) ->
     begin match init with
@@ -749,7 +753,7 @@ let check_constant_result lam ulam approx =
           let glb =
             Uprim(Pgetglobal (Ident.create_persistent id), [], Debuginfo.none)
           in
-          Uprim(Pfield(i, true, Immutable), [glb], Debuginfo.none), approx
+          Uprim(Pfield(i, Pointer, Immutable), [glb], Debuginfo.none), approx
       end
   | _ -> (ulam, approx)
 
@@ -769,9 +773,7 @@ let function_nesting_depth = ref 0
 let excessive_function_nesting_depth = 5
 
 let prim_promote =
-  Pccall { Primitive.prim_name = "caml_obj_promote_to"; prim_arity = 2;
-           prim_alloc = true; prim_native_name = "";
-           prim_native_float = false }
+  Pccall (Primitive.simple ~name:"caml_obj_promote_to" ~arity:2 ~alloc:true)
 
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
@@ -981,11 +983,11 @@ let rec close fenv cenv = function
       let dbg = Debuginfo.from_location loc in
       (Uprim(Praise k, [ulam], dbg),
        Value_unknown)
-  | Lprim(Pperform _, args, loc) ->
+  | Lprim(Pperform, args, loc) ->
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_perform", args, dbg), Value_unknown)
-  | Lprim(Presume _, args, loc) ->
+  | Lprim(Presume, args, loc) ->
       let args = close_list fenv cenv args in
       let dbg = Debuginfo.from_location loc in
       (Udirect_apply ("caml_resume", args, dbg), Value_unknown)

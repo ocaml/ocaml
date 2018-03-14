@@ -29,7 +29,8 @@
 #endif
 
 #include "caml/alloc.h"
-#include "caml/backtrace_prim.h"
+/* XXX KC */
+/* #include "caml/backtrace_prim.h" */
 #include "caml/fail.h"
 #include "caml/gc.h"
 #include "caml/intext.h"

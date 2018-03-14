@@ -321,10 +321,7 @@ let validate d m p =
 *)
 
 let raise_regular dbg exc =
-  Csequence(
-    Cop(Cstore (Thirtytwo_signed, Assignment),
-        [(Cconst_symbol "caml_backtrace_pos"); Cconst_int 0]),
-      Cop(Craise (Raise_withtrace, dbg),[exc]))
+  Cop(Craise (Raise_withtrace, dbg),[exc])
 
 let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
@@ -516,15 +513,18 @@ let get_mut_field base n =
   Cop(Cloadmut, [base; n])
 
 let set_addr_field base n newval =
-  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none),
+  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none, None),
       [base; Cconst_int n; newval])
 
 let set_int_field init base n newval =
   Cop(Cstore (Word_val, init), [field_address base n; newval])
 
+let init_float_field base n newval =
+  Cop(Cstore (Double_u, Initialization), [field_address base n; newval])
+
 let init_field base n newval =
-  let promoted = Cop (Cextcall("caml_obj_promote_to", typ_addr,
-                               true, Debuginfo.none),
+  let promoted = Cop (Cextcall("caml_obj_promote_to", typ_val,
+                               true, Debuginfo.none, None),
                       [newval; base]) in
   set_int_field Initialization base n promoted
 
@@ -613,7 +613,7 @@ let float_array_ref dbg arr ofs =
   box_float dbg (unboxed_float_array_ref arr ofs)
 
 let addr_array_set arr ofs newval =
-  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none),
+  Cop(Cextcall("caml_modify_field", typ_void, false, Debuginfo.none, None),
       [arr; untag_int ofs; newval])
 let int_array_set arr ofs newval =
   Cop(Cstore (Word_int, Assignment),
@@ -685,11 +685,12 @@ let make_addr_array_alloc dbg args =
   make_alloc_generic set_addr_field dbg 0 (List.length args) args
 
 let make_int_array_alloc dbg args =
-  make_alloc_generic set_int_field dbg 0 (List.length args) args
+  make_alloc_generic (set_int_field Initialization) dbg 0 (List.length args)
+    args
 
 let make_float_array_alloc dbg tag args =
-  make_alloc_generic float_array_set dbg tag
-                     (List.length args * size_float / size_addr) args
+  make_alloc_generic init_float_field dbg tag
+    (List.length args * size_float / size_addr) args
 
 (* Bounds checking *)
 
@@ -1750,14 +1751,15 @@ let rec transl env e =
 and transl_make_array dbg env kind args =
   match kind with
     Pgenarray ->
-      Cop(Cextcall("caml_make_array", typ_addr, true, Debuginfo.none),
+      Cop(Cextcall("caml_make_array", typ_val, true, Debuginfo.none, None),
           [make_addr_array_alloc dbg (List.map (transl env) args)])
   | Paddrarray ->
       make_addr_array_alloc dbg (List.map (transl env) args)
   | Pintarray ->
       make_int_array_alloc dbg (List.map (transl env) args)
   | Pfloatarray ->
-      make_float_array_alloc dbg (List.map transl_unbox_float args)
+      make_float_array_alloc dbg Obj.double_array_tag
+        (List.map (transl_unbox_float env) args)
 
 and transl_ccall env prim args dbg =
   let transl_arg native_repr arg =
@@ -1799,10 +1801,10 @@ and transl_prim_1 env p arg dbg =
   | Pignore ->
       return_unit(remove_unit (transl env arg))
   (* Heap operations *)
-  | Pfield(n, is_ptr, mut) ->
-      if is_ptr && (mut = Mutable)
-      then get_mut_field (transl env arg) (Cconst_int n)
-      else get_field (transl env arg) n
+  | Pfield(n, Pointer, Mutable) ->
+      get_mut_field (transl env arg) (Cconst_int n)
+  | Pfield(n, _, _) ->
+      get_field (transl env arg) n
   | Pfloatfield n ->
       let ptr = transl env arg in
       box_float dbg (
@@ -1908,7 +1910,7 @@ and transl_prim_1 env p arg dbg =
                             Debuginfo.none, None),
                    [untag_int (transl env arg)]))
   | Patomic_load ->
-     Cop (Cextcall("caml_atomic_load", typ_addr, true, Debuginfo.none),
+     Cop (Cextcall("caml_atomic_load", typ_val, true, Debuginfo.none, None),
           [transl env arg])
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_1: %a" Printlambda.primitive prim
@@ -1923,7 +1925,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
       | Assignment, Pointer ->
           return_unit (set_addr_field (transl env arg1) n (transl env arg2))
       | Initialization, Pointer ->
-          return_unit (init_field (transl env arg1) n (transl env arg2) init)
+          return_unit (init_field (transl env arg1) n (transl env arg2))
       end
   | Psetfloatfield (n, init) ->
       let ptr = transl env arg1 in
@@ -2185,7 +2187,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                      [transl_unbox_int env bi arg1;
                       transl_unbox_int env bi arg2]))
   | Patomic_store ->
-     Cop (Cextcall ("caml_atomic_store", typ_int, true, Debuginfo.none),
+     Cop (Cextcall ("caml_atomic_store", typ_int, true, Debuginfo.none, None),
           [transl env arg1; transl env arg2])
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_2: %a" Printlambda.primitive prim
@@ -2325,7 +2327,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (unaligned_set_64 ba_data idx newval))))))
 
   | Patomic_cas ->
-     return_unit(Cop (Cextcall ("caml_atomic_cas", typ_int, true, Debuginfo.none),
+     return_unit(Cop (Cextcall ("caml_atomic_cas", typ_int, true, Debuginfo.none, None),
           [transl env arg1; transl env arg2; transl env arg3]))
 
   | prim ->

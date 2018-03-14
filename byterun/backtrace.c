@@ -583,7 +583,7 @@ CAMLprim value caml_raw_backtrace_length(value bt)
 CAMLprim value caml_raw_backtrace_slot(value bt, value index)
 {
   /* TODO KC */
-  caml_failwith ("caml_raw_backtrace_next_slot not implemented");
+  caml_failwith ("caml_raw_backtrace_slot not implemented");
   return Val_unit;
 }
 
@@ -598,6 +598,6 @@ CAMLprim value caml_raw_backtrace_next_slot(value slot)
 CAMLprim value caml_convert_raw_backtrace(value bt)
 {
   /* TODO KC */
-  caml_failwith ("caml_raw_backtrace_next_slot not implemented");
+  caml_failwith ("caml_convert_raw_backtrace not implemented");
   return Val_unit;
 }

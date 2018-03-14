@@ -257,7 +257,7 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
       Value_block (Tag.create_exn tag, Array.of_list approxs)
     in
     Value_id (Env.new_descr env descr)
-  | Prim (Pfield i, [arg], _) ->
+  | Prim (Pfield (i, _, _), [arg], _) ->
     begin match Env.get_descr env (Env.find_approx env arg) with
     | Some (Value_block (_, fields)) when Array.length fields > i -> fields.(i)
     | _ -> Value_unknown

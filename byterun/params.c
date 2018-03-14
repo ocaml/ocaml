@@ -106,7 +106,10 @@ void caml_init_startup_params(void)
 
 int caml_parse_command_line(char **argv)
 {
-  int i, j;
+  int i;
+#ifndef NATIVE_CODE
+  int j;
+#endif
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     switch(argv[i][1]) {

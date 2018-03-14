@@ -65,14 +65,6 @@ int caml_failed_assert (char * expr, char * file, int line)
   exit (100);
 }
 
-void caml_set_fields (value v, unsigned long start, unsigned long filler)
-{
-  mlsize_t i;
-  for (i = start; i < Wosize_val (v); i++){
-    Field (v, i) = (value) filler;
-  }
-}
-
 #endif /* DEBUG */
 
 void caml_gc_log (char *msg, ...)

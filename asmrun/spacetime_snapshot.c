@@ -21,7 +21,7 @@
 #include <math.h>
 
 #include "caml/alloc.h"
-#include "caml/backtrace_prim.h"
+/* #include "caml/backtrace_prim.h" */
 #include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"

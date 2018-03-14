@@ -103,7 +103,7 @@ let build_graph fundecl =
         interf i.next
     | Iop(Itailcall_ind _) -> ()
     | Iop(Itailcall_imm _) -> ()
-    | Iop _ ->
+    | Iop op ->
         begin match op with
         | Iloadmut ->
             add_interf_arr i.arg i.res;

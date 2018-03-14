@@ -558,7 +558,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       if (Is_block (v) &&
           young_ptr <= (value)Hp_val(v) &&
           (value)Hp_val(v) < young_end) {
-        Assert (Hp_val (v) >= domain_state->young_ptr);
         value vnew;
         header_t hd = Hd_val(v);
         int offset = 0;
