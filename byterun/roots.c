@@ -56,11 +56,12 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata, struct doma
      FIXME: These should be promoted, and not scanned here.
      FIXME: caml_globals_inited makes assumptions about store ordering.
   */
-  value glob;
+  value *glob;
   for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++){
-      f(fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
     }
   }
 #endif

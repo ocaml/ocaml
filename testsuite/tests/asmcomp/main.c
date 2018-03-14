@@ -57,13 +57,13 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
 #ifdef INT_INT
   { extern long FUN(long);
     extern long call_gen_code(long (*)(long), long);
-    printf("%ld\n", call_gen_code(FUN, atoi(argv[1])));
+    printf("%ld\n", call_gen_code(FUN, arg1));
   }
 #endif
 #ifdef INT_FLOAT
   { extern double FUN(long);
     extern double call_gen_code(double (*)(long), long);
-    printf("%f\n", call_gen_code(FUN, atoi(argv[1])));
+    printf("%f\n", call_gen_code(FUN, arg1));
   }
 #endif
 #ifdef SORT

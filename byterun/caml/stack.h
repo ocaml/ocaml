@@ -85,7 +85,7 @@ struct caml_context {
 };
 
 /* Declaration of variables used in the asm code */
-extern value caml_globals[];
+extern value * caml_globals[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
 
