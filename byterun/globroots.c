@@ -163,7 +163,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
 {
   int i, j;
   static link* dyn_globals;
-  value glob;
+  value* glob;
   link* lnk;
 
   caml_plat_lock(&roots_mutex);
@@ -171,17 +171,20 @@ static void scan_native_globals(scanning_action f, void* fdata)
   caml_plat_unlock(&roots_mutex);
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++)
-      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
+    }
   }
 
   /* Dynamic (natdynlink) global roots */
   iter_list(dyn_globals, lnk) {
-    glob = (value) lnk->data;
-    for (j = 0; j < Wosize_val(glob); j++){
-      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
     }
   }
 }
