@@ -25,6 +25,7 @@ default:
 	@echo "Available targets:"
 	@echo "  all             launch all tests"
 	@echo "  all-foo         launch all tests beginning with foo"
+	@echo "  all-enabled     launch all enabled tests
 	@echo "  parallel        launch all tests using GNU parallel"
 	@echo "  parallel-foo    launch all tests beginning with foo using \
 	GNU parallel"

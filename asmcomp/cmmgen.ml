@@ -2327,8 +2327,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (unaligned_set_64 ba_data idx newval))))))
 
   | Patomic_cas ->
-     return_unit(Cop (Cextcall ("caml_atomic_cas", typ_int, true, Debuginfo.none, None),
-          [transl env arg1; transl env arg2; transl env arg3]))
+     Cop (Cextcall ("caml_atomic_cas", typ_int, true, Debuginfo.none, None),
+          [transl env arg1; transl env arg2; transl env arg3])
 
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
