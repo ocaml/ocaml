@@ -23,7 +23,7 @@
     them in a lazy fashion rather than upfront.
 *)
 
-(** @since NEXT_RELEASE *)
+(** @since 4.07 *)
 
 type 'a t = unit -> 'a node
 (** The type of delayed lists containing elements of type ['a].

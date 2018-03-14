@@ -452,15 +452,15 @@ let s = Bytes.of_string "hello"
 val to_seq : t -> char Seq.t
 (** Iterate on the string , in increasing index order. Modifications of the
     string during iteration will be reflected in the iterator.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t
 (** Iterate on the string, in increasing order, yielding indices along chars
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : char Seq.t -> t
 (** Create a string from the generator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 (**/**)
 

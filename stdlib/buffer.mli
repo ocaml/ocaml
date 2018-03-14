@@ -163,18 +163,18 @@ val truncate : t -> int -> unit
 val to_seq : t -> char Seq.t
 (** Iterate on the buffer, in increasing order.
     Modification of the buffer during iteration is undefined behavior.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val to_seqi : t -> (int * char) Seq.t
 (** Iterate on the buffer, in increasing order, yielding indices along chars.
     Modification of the buffer during iteration is undefined behavior.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val add_seq : t -> char Seq.t -> unit
 (** Add chars to the buffer
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : char Seq.t -> t
 (** Create a buffer from the generator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 

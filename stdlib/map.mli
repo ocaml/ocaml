@@ -310,20 +310,20 @@ module type S =
 
     val to_seq : 'a t -> (key * 'a) Seq.t
     (** Iterate on the whole map, in ascending order
-        @since NEXT_RELEASE *)
+        @since 4.07 *)
 
     val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
     (** [to_seq_from k m] iterates on a subset of the bindings of [m],
         in ascending order, from key [k] or above.
-        @since NEXT_RELEASE *)
+        @since 4.07 *)
 
     val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
     (** Add the given bindings to the map, in order.
-        @since NEXT_RELEASE *)
+        @since 4.07 *)
 
     val of_seq : (key * 'a) Seq.t -> 'a t
     (** Build a map from the given bindings
-        @since NEXT_RELEASE *)
+        @since 4.07 *)
   end
 (** Output signature of the functor {!Map.Make}. *)
 

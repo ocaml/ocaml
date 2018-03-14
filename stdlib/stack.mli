@@ -67,13 +67,13 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the stack, top to bottom.
     It is safe to modify the stack during iteration.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val add_seq : 'a t -> 'a Seq.t -> unit
 (** Add the elements from the iterator on the top of the stack.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a t
 (** Create a stack from the iterator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 

@@ -260,15 +260,15 @@ val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 
 val to_seq : 'a array -> 'a Seq.t
 (** Iterate on the array, in increasing order
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val to_seqi : 'a array -> (int * 'a) Seq.t
 (** Iterate on the array, in increasing order, yielding indices along elements
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a array
 (** Create an array from the generator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 (**/**)
 

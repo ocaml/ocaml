@@ -50,7 +50,7 @@ Working version
 
 ### Standard library:
 
-- GPR #1002: add a new `Seq` module defining a list-of-thunks style iterator.
+- GPR#1002: add a new `Seq` module defining a list-of-thunks style iterator.
   Also add `{to,of}_seq` to several standard modules.
   (Simon Cruanes)
 

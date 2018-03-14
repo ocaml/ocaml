@@ -356,8 +356,8 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 
 val to_seq : 'a list -> 'a Seq.t
 (** Iterate on the list
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a list
 (** Create a list from the iterator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)

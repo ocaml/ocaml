@@ -87,13 +87,13 @@ val to_seq : 'a t -> 'a Seq.t
 (** Iterate on the queue, in front-to-back order.
     The behavior is not defined if the queue is modified
     during the iteration.
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val add_seq : 'a t -> 'a Seq.t -> unit
 (** Add the elements from the generator to the end of the queue
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : 'a Seq.t -> 'a t
 (** Create an array from the generator
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 

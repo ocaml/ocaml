@@ -224,27 +224,27 @@ val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
     The behavior is not defined if the hash table is modified
     during the iteration.
 
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val to_seq_keys : ('a,_) t -> 'a Seq.t
 (** Iterate on 'as, in ascending order
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val to_seq_values : (_,'b) t -> 'b Seq.t
 (** Iterate on values, in ascending order of their corresponding 'a
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
 (** Add the given bindings to the table, using {!add}
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
 (** Add the given bindings to the table, using {!replace}
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
 (** Build a table from the given bindings
-    @since NEXT_RELEASE *)
+    @since 4.07 *)
 
 (** {1 Functorial interface} *)
 
@@ -328,24 +328,24 @@ module type S =
     val stats: 'a t -> statistics (** @since 4.00.0 *)
 
     val to_seq : 'a t -> (key * 'a) Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val to_seq_keys : _ t -> key Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val to_seq_values : 'a t -> 'a Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val of_seq : (key * 'a) Seq.t -> 'a t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
   end
-(** The core output signature of the functor {!Hashtbl.Make}. *)
+(** The output signature of the functor {!Hashtbl.Make}. *)
 
 module Make (H : HashedType) : S with type key = H.t
 (** Functor building an implementation of the hashtable structure.
@@ -402,24 +402,24 @@ module type SeededS =
     val stats: 'a t -> statistics
 
     val to_seq : 'a t -> (key * 'a) Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val to_seq_keys : _ t -> key Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val to_seq_values : 'a t -> 'a Seq.t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
 
     val of_seq : (key * 'a) Seq.t -> 'a t
-    (** @since NEXT_RELEASE *)
+    (** @since 4.07 *)
   end
-(** The core output signature of the functor {!Hashtbl.MakeSeeded}.
+(** The output signature of the functor {!Hashtbl.MakeSeeded}.
     @since 4.00.0 *)
 
 module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
