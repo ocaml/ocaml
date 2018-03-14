@@ -24,3 +24,7 @@ File "w32.ml", line 46, characters 22-23:
 Warning 32: unused value k.
 File "w32.ml", line 39, characters 0-174:
 Warning 60: unused module M.
+File "w32.ml", line 50, characters 18-29:
+Warning 32: unused value x.
+File "w32.ml", line 52, characters 18-29:
+Warning 32: unused value x.

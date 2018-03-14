@@ -86,6 +86,9 @@ Working version
   first character (instead of comma) in the set ":|; ,"
   (Fabrice Le Fessant)
 
+- GPR#1358: Fix usage warnings with no mli file
+  (Leo White, review by Alain Frisch)
+
 - GPR#1428: give a non dummy location for warning 49 (no cmi found)
   (Valentin Gatien-Baron)
 

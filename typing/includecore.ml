@@ -249,7 +249,7 @@ and compare_records ~loc env params1 params2 n
           [Field_type ld1.ld_id]
       end
 
-let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
+let type_declarations ?(equality = false) ~loc env ~mark name decl1 id decl2 =
   Builtin_attributes.check_deprecated_inclusion
     ~def:decl1.type_loc
     ~use:decl2.type_loc
@@ -288,23 +288,28 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
-        let mark cstrs usage name decl =
-          List.iter
-            (fun c ->
-              Env.mark_constructor_used usage env name decl
-                                        (Ident.name c.Types.cd_id))
-            cstrs
-        in
-        let usage =
-          if decl1.type_private = Private || decl2.type_private = Public
-          then Env.Positive else Env.Privatize
-        in
-        mark cstrs1 usage name decl1;
-        if equality then mark cstrs2 Env.Positive (Ident.name id) decl2;
-        compare_variants ~loc env decl1.type_params decl2.type_params 1 cstrs1 cstrs2
+        if mark then begin
+          let mark cstrs usage name decl =
+            List.iter
+              (fun c ->
+                 Env.mark_constructor_used usage name decl
+                   (Ident.name c.Types.cd_id))
+              cstrs
+          in
+          let usage =
+            if decl1.type_private = Private || decl2.type_private = Public
+            then Env.Positive else Env.Privatize
+          in
+          mark cstrs1 usage name decl1;
+          if equality then mark cstrs2 Env.Positive (Ident.name id) decl2
+        end;
+        compare_variants ~loc env decl1.type_params
+          decl2.type_params 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        let err = compare_records ~loc env decl1.type_params decl2.type_params
-            1 labels1 labels2 in
+        let err =
+          compare_records ~loc env decl1.type_params
+            decl2.type_params 1 labels1 labels2
+        in
         if err <> [] || rep1 = rep2 then err else
         [Record_representation (rep2 = Record_float)]
     | (Type_open, Type_open) -> []
@@ -343,12 +348,14 @@ let type_declarations ?(equality = false) ~loc env name decl1 id decl2 =
 
 (* Inclusion between extension constructors *)
 
-let extension_constructors ~loc env id ext1 ext2 =
-  let usage =
-    if ext1.ext_private = Private || ext2.ext_private = Public
-    then Env.Positive else Env.Privatize
-  in
-  Env.mark_extension_used usage env ext1 (Ident.name id);
+let extension_constructors ~loc env ~mark id ext1 ext2 =
+  if mark then begin
+    let usage =
+      if ext1.ext_private = Private || ext2.ext_private = Public
+      then Env.Positive else Env.Privatize
+    in
+    Env.mark_extension_used usage ext1 (Ident.name id)
+  end;
   let ty1 =
     Btype.newgenty (Tconstr(ext1.ext_type_path, ext1.ext_type_params, ref Mnil))
   in
