@@ -243,7 +243,10 @@ val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
     @since 4.07 *)
 
 val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
-(** Build a table from the given bindings
+(** Build a table from the given bindings. The bindings are added
+    in the same order they appear in the sequence, using {!replace_seq},
+    which means that if two pairs have the same key, only the latest one
+    will appear in the table.
     @since 4.07 *)
 
 (** {1 Functorial interface} *)
