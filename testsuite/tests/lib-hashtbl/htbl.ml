@@ -5,27 +5,7 @@
 
 open Printf
 
-module type TABLE = sig
-  type key
-  type 'a t
-  val create : int -> 'a t
-  val clear : 'a t -> unit
-  val reset : 'a t -> unit
-  val copy : 'a t -> 'a t
-  val add : 'a t -> key -> 'a -> unit
-  val remove : 'a t -> key -> unit
-  val find : 'a t -> key -> 'a
-  val find_opt : 'a t -> key -> 'a option
-  val find_all : 'a t -> key -> 'a list
-  val replace : 'a t -> key -> 'a -> unit
-  val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val length : 'a t -> int
-end
-
-module Test(H: TABLE) (M: Map.S with type key = H.key) = struct
+module Test(H: Hashtbl.S) (M: Map.S with type key = H.key) = struct
 
   let incl_mh m h =
     try
@@ -53,6 +33,21 @@ module Test(H: TABLE) (M: Map.S with type key = H.key) = struct
       true
     with Exit | Not_found -> false
 
+  let to_list_ h : _ list =
+    H.fold (fun k v acc -> (k,v) :: acc) h []
+    |> List.sort Pervasives.compare
+
+  let check_to_seq h =
+    let l = to_list_ h in
+    let l2 = List.of_seq (H.to_seq h) in
+    assert (l = List.sort Pervasives.compare l2)
+
+  let check_to_seq_of_seq h =
+    let h' = H.create (H.length h) in
+    H.add_seq h' (H.to_seq h);
+    (*printf "h.len=%d, h'.len=%d\n" (List.length @@ to_list_ h) (List.length @@ to_list_ h');*)
+    assert (to_list_ h = to_list_ h')
+
   let test data =
     let n = Array.length data in
     let h = H.create 51 and m = ref M.empty in
@@ -62,6 +57,8 @@ module Test(H: TABLE) (M: Map.S with type key = H.key) = struct
       data;
     printf "Insertion: %s\n"
            (if incl_mh !m h && domain_hm h !m then "passed" else "FAILED");
+    check_to_seq_of_seq h;
+    check_to_seq h;
     (* Insert all data with H.replace *)
     H.clear h; m := M.empty;
     Array.iter
@@ -69,12 +66,17 @@ module Test(H: TABLE) (M: Map.S with type key = H.key) = struct
       data;
     printf "Insertion: %s\n"
            (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
+    check_to_seq_of_seq h;
+    check_to_seq h;
     (* Remove some of the data *)
     for i = 0 to n/3 - 1 do
       let (k, _) = data.(i) in H.remove h k; m := M.remove k !m
     done;
     printf "Removal: %s\n"
-           (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED")
+      (if incl_mh !m h && incl_hm h !m then "passed" else "FAILED");
+    check_to_seq_of_seq h;
+    check_to_seq h;
+    ()
 
 end
 
@@ -118,7 +120,7 @@ module MSA = Map.Make(SSA)
 
 (* Generic hash wrapped as a functorial hash *)
 
-module HofM (M: Map.S) : TABLE with type key = M.key =
+module HofM (M: Map.S) : Hashtbl.S with type key = M.key =
   struct
     type key = M.key
     type 'a t = (key, 'a) Hashtbl.t
@@ -138,6 +140,12 @@ module HofM (M: Map.S) : TABLE with type key = M.key =
     let length = Hashtbl.length
     let stats = Hashtbl.stats
     let filter_map_inplace = Hashtbl.filter_map_inplace
+    let to_seq = Hashtbl.to_seq
+    let to_seq_keys = Hashtbl.to_seq_keys
+    let to_seq_values = Hashtbl.to_seq_values
+    let of_seq = Hashtbl.of_seq
+    let add_seq = Hashtbl.add_seq
+    let replace_seq = Hashtbl.replace_seq
   end
 
 module HS1 = HofM(MS)
