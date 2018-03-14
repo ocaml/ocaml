@@ -545,15 +545,25 @@ let loop ppf =
 
 (* Execute a script.  If [name] is "", read the script from stdin. *)
 
-let override_sys_argv args =
-  let len = Array.length args in
-  if Array.length Sys.argv < len then invalid_arg "Toploop.override_sys_argv";
-  Array.blit args 0 Sys.argv 0 len;
-  Obj.truncate (Obj.repr Sys.argv) len;
+(* The script must see a different value for the "constant" Sys.argv.
+   So, rewrite the module to claim it was always that way *)
+module type SYS = module type of Sys
+
+let hack_argv new_argv =
+  let new_argv = Obj.repr new_argv in
+  let old_argv = Obj.repr Sys.argv in
+  let sys_mod = Obj.repr (module Sys : SYS) in
+  for i = 0 to Obj.size sys_mod - 1 do
+    if Obj.field sys_mod i == old_argv then
+      Obj.set_field sys_mod i new_argv
+  done;
   Arg.current := 0
 
+let override_sys_argv = hack_argv
+
 let run_script ppf name args =
-  override_sys_argv args;
+(*   override_sys_argv args; *)
+  hack_argv args;
   Compmisc.init_path ~dir:(Filename.dirname name) true;
                    (* Note: would use [Filename.abspath] here, if we had it. *)
   begin

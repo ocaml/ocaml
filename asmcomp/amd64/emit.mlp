@@ -1063,6 +1063,15 @@ let preproc_fun fun_body _fun_name =
   in
   proc_instr r fs fun_body
 
+let emit_block_header_for_closure () =
+  let not_markable = Nativeint.shift_left (Nativeint.of_int 3) 8 in
+  let header =
+    Nativeint.logor not_markable (Nativeint.of_int Obj.abstract_tag)
+  in
+  let open D in
+  qword (const_nat Nativeint.zero);
+  qword (const_nat header)
+
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -1078,9 +1087,7 @@ let fundecl fundecl =
   D.text ();
   D.align 16;
   add_def_symbol fundecl.fun_name;
-  Emitaux.emit_block_header_for_closure ~word_directive:".quad"
-    ~comment_string:"#"
-    ~function_entry_points_are_doubleword_aligned:true;
+  emit_block_header_for_closure ();
   if system = S_macosx
   && not !Clflags.output_c_object
   && is_generic_function fundecl.fun_name

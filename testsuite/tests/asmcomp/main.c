@@ -47,7 +47,7 @@ CAMLprim value run_prog(value varg1, value varg2, value varg3)
   long arg1 = Long_val(varg1);
   long arg2 = Long_val(varg2);
   long arg3 = Long_val(varg3);
-  if (arg1+arg2+arg3); /* squash unused var warnings */
+  if (arg1+arg2+arg3) {}; /* squash unused var warnings */
 #ifdef UNIT_INT
   { extern long FUN(void);
     extern long call_gen_code(long (*)(void));
