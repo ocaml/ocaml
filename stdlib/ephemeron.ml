@@ -14,48 +14,14 @@
 (**************************************************************************)
 
 module type SeededS = sig
-  type key
-  type 'a t
-  val create : ?random:bool -> int -> 'a t
-  val clear : 'a t -> unit
-  val reset : 'a t -> unit
-  val copy : 'a t -> 'a t
-  val add : 'a t -> key -> 'a -> unit
-  val remove : 'a t -> key -> unit
-  val find : 'a t -> key -> 'a
-  val find_opt : 'a t -> key -> 'a option
-  val find_all : 'a t -> key -> 'a list
-  val replace : 'a t -> key -> 'a -> unit
-  val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val length : 'a t -> int
-  val stats: 'a t -> Hashtbl.statistics
+  include Hashtbl.SeededS
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
 end
 
 module type S = sig
-  type key
-  type 'a t
-  val create : int -> 'a t
-  val clear : 'a t -> unit
-  val reset : 'a t -> unit
-  val copy : 'a t -> 'a t
-  val add : 'a t -> key -> 'a -> unit
-  val remove : 'a t -> key -> unit
-  val find : 'a t -> key -> 'a
-  val find_opt : 'a t -> key -> 'a option
-  val find_all : 'a t -> key -> 'a list
-  val replace : 'a t -> key -> 'a -> unit
-  val mem : 'a t -> key -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-  val filter_map_inplace: (key -> 'a -> 'a option) -> 'a t -> unit
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val length : 'a t -> int
-  val stats: 'a t -> Hashtbl.statistics
+  include Hashtbl.S
   val clean: 'a t -> unit
   val stats_alive: 'a t -> Hashtbl.statistics
     (** same as {!stats} but only count the alive bindings *)
@@ -413,6 +379,39 @@ module GenHashTable = struct
         max_bucket_length = mbl;
         bucket_histogram = histo }
 
+    let to_seq tbl =
+      (* capture current array, so that even if the table is resized we
+         keep iterating on the same array *)
+      let tbl_data = tbl.data in
+      (* state: index * next bucket to traverse *)
+      let rec aux i buck () = match buck with
+        | Empty ->
+            if i = Array.length tbl_data
+            then Seq.Nil
+            else aux(i+1) tbl_data.(i) ()
+        | Cons (_, c, next) ->
+            begin match H.get_key c, H.get_data c with
+              | None, _ | _, None -> Seq.Nil
+              | Some key, Some data ->
+                  Seq.Cons ((key, data), aux i next)
+            end
+      in
+      aux 0 Empty
+
+    let to_seq_keys m = Seq.map fst (to_seq m)
+
+    let to_seq_values m = Seq.map snd (to_seq m)
+
+    let add_seq tbl i =
+      Seq.iter (fun (k,v) -> add tbl k v) i
+
+    let replace_seq tbl i =
+      Seq.iter (fun (k,v) -> replace tbl k v) i
+
+    let of_seq i =
+      let tbl = create 16 in
+      replace_seq tbl i;
+      tbl
 
   end
 end
