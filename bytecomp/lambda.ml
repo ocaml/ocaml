@@ -286,7 +286,7 @@ type program =
     required_globals : Ident.Set.t;
     code : lambda }
 
-let const_unit = Const_pointer 0
+let const_unit = Const_base (Const_int 0)
 
 let lambda_unit = Lconst const_unit
 

@@ -73,11 +73,8 @@ let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
   match c1, c2 with
   | Int v1, Int v2 -> compare v1 v2
   | Char v1, Char v2 -> compare v1 v2
-  | Const_pointer v1, Const_pointer v2 -> compare v1 v2
   | Int _, _ -> -1
   | _, Int _ -> 1
-  | Char _, _ -> -1
-  | _, Char _ -> 1
 
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,

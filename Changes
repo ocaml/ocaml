@@ -158,6 +158,10 @@ Working version
 - GPR#1487: Treat negated float comparisons more directly
   (Leo White, review by Xavier Leroy)
 
+- GPR#1580: Replace constant pointers by regular integers
+  (Vincent Laviron, on a suggestion by Mark Shinwell,
+  reviews by Pierre Chambart and Xavier Leroy)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,

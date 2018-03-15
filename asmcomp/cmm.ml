@@ -154,8 +154,6 @@ type expression =
   | Cconst_natint of nativeint
   | Cconst_float of float
   | Cconst_symbol of string
-  | Cconst_pointer of int
-  | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
