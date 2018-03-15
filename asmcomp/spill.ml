@@ -198,39 +198,19 @@ let rec reload i before =
                    (instr_cons (Iswitch(index, new_cases))
                                i.arg i.res new_next),
        finally)
-  | Iloop(body) ->
-      let date_start = !current_date in
-      let destroyed_at_fork_start = !destroyed_at_fork in
-      let at_head = ref before in
-      let final_body = ref body in
-      begin try
-        while true do
-          current_date := date_start;
-          destroyed_at_fork := destroyed_at_fork_start;
-          let (new_body, new_at_head) = reload body !at_head in
-          let merged_at_head = Reg.Set.union !at_head new_at_head in
-          if Reg.Set.equal merged_at_head !at_head then begin
-            final_body := new_body;
-            raise Exit
-          end;
-          at_head := merged_at_head
-        done
-      with Exit -> ()
-      end;
-      let (new_next, finally) = reload i.next Reg.Set.empty in
-      (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
-       finally)
   | Icatch(rec_flag, handlers, body) ->
       let new_sets = List.map
           (fun (nfail, _) -> nfail, ref Reg.Set.empty) handlers in
       let previous_reload_at_exit = !reload_at_exit in
       reload_at_exit := new_sets @ !reload_at_exit ;
       let (new_body, after_body) = reload body before in
+      let date_start = !current_date in
       let rec fixpoint () =
         let at_exits = List.map (fun (nfail, set) -> (nfail, !set)) new_sets in
         let res =
           List.map2 (fun (nfail', handler) (nfail, at_exit) ->
               assert(nfail = nfail');
+              current_date := date_start;
               reload handler at_exit) handlers at_exits in
         match rec_flag with
         | Cmm.Nonrecursive ->
@@ -375,26 +355,6 @@ let rec spill i finally =
       inside_arm := saved_inside_arm ;
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
-  | Iloop(body) ->
-      let (new_next, _) = spill i.next finally in
-      let saved_inside_loop = !inside_loop in
-      inside_loop := true;
-      let at_head = ref Reg.Set.empty in
-      let final_body = ref body in
-      begin try
-        while true do
-          let (new_body, before_body) = spill body !at_head in
-          let new_at_head = Reg.Set.union !at_head before_body in
-          if Reg.Set.equal new_at_head !at_head then begin
-            final_body := new_body; raise Exit
-          end;
-          at_head := new_at_head
-        done
-      with Exit -> ()
-      end;
-      inside_loop := saved_inside_loop;
-      (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
-       !at_head)
   | Icatch(rec_flag, handlers, body) ->
       let (new_next, at_join) = spill i.next finally in
       let saved_inside_catch = !inside_catch in

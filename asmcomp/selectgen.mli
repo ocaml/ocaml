@@ -127,6 +127,15 @@ class virtual selector_generic : object
      (except by [Spacetime_profiling]). *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
+  method emit_let :
+       environment
+    -> nothing:'a
+    -> emit_body:(environment -> Cmm.expression -> 'a)
+    -> Ident.t
+    -> defining_expr:Cmm.expression
+    -> body:Cmm.expression
+    -> 'a
+
   (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
@@ -139,8 +148,6 @@ class virtual selector_generic : object
   method insert_move_args : Reg.t array -> Reg.t array -> int -> unit
   method insert_move_results : Reg.t array -> Reg.t array -> int -> unit
   method insert_moves : Reg.t array -> Reg.t array -> unit
-  method adjust_type : Reg.t -> Reg.t -> unit
-  method adjust_types : Reg.t array -> Reg.t array -> unit
   method emit_expr :
     environment -> Cmm.expression -> Reg.t array option
   method emit_tail : environment -> Cmm.expression -> unit

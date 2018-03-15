@@ -223,22 +223,6 @@ let rec available_regs (instr : M.instruction)
         Some (ok avail_across), ok avail_after
       | Iifthenelse (_, ifso, ifnot) -> join [ifso; ifnot] ~avail_before
       | Iswitch (_, cases) -> join (Array.to_list cases) ~avail_before
-      | Iloop body ->
-        let avail_after = ref (ok avail_before) in
-        begin try
-          while true do
-            let avail_after' =
-              RAS.inter !avail_after
-                (available_regs body ~avail_before:!avail_after)
-            in
-            if RAS.equal !avail_after avail_after' then begin
-              raise Exit
-              end;
-            avail_after := avail_after'
-          done
-        with Exit -> ()
-        end;
-        None, unreachable
       | Icatch (recursive, handlers, body) ->
         List.iter (fun (nfail, _handler) ->
             (* In case there are nested [Icatch] expressions with the same

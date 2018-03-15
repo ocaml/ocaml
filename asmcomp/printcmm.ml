@@ -175,8 +175,6 @@ let rec expr ppf = function
         fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
        done in
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
-  | Cloop e ->
-      fprintf ppf "@[<2>(loop@ %a)@]" sequence e
   | Ccatch(flag, handlers, e1) ->
       let print_handler ppf (i, ids, e2) =
         fprintf ppf "(%d%a)@ %a"

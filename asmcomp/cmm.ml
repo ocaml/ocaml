@@ -27,6 +27,14 @@ let typ_addr = [|Addr|]
 let typ_int = [|Int|]
 let typ_float = [|Float|]
 
+let equal_component comp1 comp2 =
+  match comp1, comp2 with
+  | Val, Val
+  | Addr, Addr
+  | Int, Int
+  | Float, Float -> true
+  | (Val | Addr | Int | Float), _ -> false
+
 let size_component = function
   | Val | Addr -> Arch.size_addr
   | Int -> Arch.size_int
@@ -88,6 +96,20 @@ let size_machtype mty =
     size := !size + size_component mty.(i)
   done;
   !size
+
+let equal_machtype ty1 ty2 =
+  Array.length ty1 = Array.length ty2
+    && List.for_all2 equal_component (Array.to_list ty1) (Array.to_list ty2)
+
+let lub_machtype ty1 ty2 =
+  match ty1, ty2 with
+  | [| |], _ -> ty2
+  | _, [| |] -> ty1
+  | _, _ -> Array.map2 lub_component ty1 ty2
+
+let ge_machtype ty1 ty2 =
+  Array.length ty1 = Array.length ty2
+    && List.for_all2 ge_component (Array.to_list ty1) (Array.to_list ty2)
 
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
@@ -163,7 +185,6 @@ type expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
-  | Cloop of expression
   | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression

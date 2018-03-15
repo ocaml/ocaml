@@ -55,6 +55,8 @@ val typ_addr: machtype
 val typ_int: machtype
 val typ_float: machtype
 
+val equal_component : machtype_component -> machtype_component -> bool
+
 val size_component: machtype_component -> int
 
 (** Least upper bound of two [machtype_component]s. *)
@@ -71,6 +73,12 @@ val ge_component
   -> bool
 
 val size_machtype: machtype -> int
+
+val equal_machtype : machtype -> machtype -> bool
+
+val lub_machtype : machtype -> machtype -> machtype
+
+val ge_machtype : machtype -> machtype -> bool
 
 type integer_comparison = Lambda.integer_comparison =
   | Ceq | Cne | Clt | Cgt | Cle | Cge
@@ -143,7 +151,6 @@ and expression =
   | Csequence of expression * expression
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array * Debuginfo.t
-  | Cloop of expression
   | Ccatch of rec_flag * (int * Ident.t list * expression) list * expression
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression

@@ -42,7 +42,6 @@ type descr =
   | Value_mutable_block of Tag.t * int
   | Value_int of int
   | Value_char of char
-  | Value_constptr of int
   | Value_float of float
   | Value_float_array of value_float_array
   | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr

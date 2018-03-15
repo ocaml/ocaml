@@ -47,7 +47,6 @@ and descr =
   | Value_block of Tag.t * t array
   | Value_int of int
   | Value_char of char
-  | Value_constptr of int
   | Value_float of float option
   | Value_boxed_int : 'a boxed_int * 'a -> descr
   | Value_set_of_closures of value_set_of_closures
@@ -104,7 +103,6 @@ let print_unresolved_value ppf = function
 let rec print_descr ppf = function
   | Value_int i -> Format.pp_print_int ppf i
   | Value_char c -> Format.fprintf ppf "%c" c
-  | Value_constptr i -> Format.fprintf ppf "%ia" i
   | Value_block (tag,fields) ->
     let p ppf fields =
       Array.iter (fun v -> Format.fprintf ppf "%a@ " print v) fields in
@@ -186,7 +184,6 @@ let augment_with_kind t (kind:Lambda.value_kind) =
     | Value_block _
     | Value_int _
     | Value_char _
-    | Value_constptr _
     | Value_boxed_int _
     | Value_set_of_closures _
     | Value_closure _
@@ -213,7 +210,6 @@ let augment_kind_with_approx t (kind:Lambda.value_kind) : Lambda.value_kind =
 let value_unknown reason = approx (Value_unknown reason)
 let value_int i = approx (Value_int i)
 let value_char i = approx (Value_char i)
-let value_constptr i = approx (Value_constptr i)
 let value_float f = approx (Value_float (Some f))
 let value_any_float = approx (Value_float None)
 let value_boxed_int bi i = approx (Value_boxed_int (bi,i))
@@ -316,19 +312,8 @@ let make_const_char_named n : Flambda.named * t =
 let make_const_char n =
   name_expr_fst (make_const_char_named n) ~name:"const_char"
 
-let make_const_ptr_named n : Flambda.named * t =
-  Const (Int n), value_constptr n
-let make_const_ptr (n : int) =
-  let name =
-    match n with
-    | 0 -> "const_ptr_zero"
-    | 1 -> "const_ptr_one"
-    | _ -> "const_ptr"
-  in
-  name_expr_fst (make_const_ptr_named n) ~name
-
 let make_const_bool_named b : Flambda.named * t =
-  make_const_ptr_named (if b then 1 else 0)
+  make_const_int_named (if b then 1 else 0)
 let make_const_bool b =
   name_expr_fst (make_const_bool_named b) ~name:"const_bool"
 
@@ -365,9 +350,6 @@ let simplify t (lam : Flambda.t) : simplification_result =
     | Value_char n ->
       let const, approx = make_const_char n in
       const, Replaced_term, approx
-    | Value_constptr n ->
-      let const, approx = make_const_ptr n in
-      const, Replaced_term, approx
     | Value_float (Some f) ->
       let const, approx = make_const_float f in
       const, Replaced_term, approx
@@ -392,9 +374,6 @@ let simplify_named t (named : Flambda.named) : simplification_result_named =
     | Value_char n ->
       let const, approx = make_const_char_named n in
       const, Replaced_term, approx
-    | Value_constptr n ->
-      let const, approx = make_const_ptr_named n in
-      const, Replaced_term, approx
     | Value_float (Some f) ->
       let const, approx = make_const_float_named f in
       const, Replaced_term, approx
@@ -416,7 +395,6 @@ let simplify_var t : (Flambda.named * t) option =
   match t.descr with
   | Value_int n -> Some (make_const_int_named n)
   | Value_char n -> Some (make_const_char_named n)
-  | Value_constptr n -> Some (make_const_ptr_named n)
   | Value_float (Some f) -> Some (make_const_float_named f)
   | Value_boxed_int (t, i) -> Some (make_const_boxed_int_named t i)
   | Value_symbol sym -> Some (Symbol sym, t)
@@ -477,14 +455,14 @@ let known t =
   | Value_unknown _ -> false
   | Value_string _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_float _ | Value_boxed_int _ | Value_symbol _ -> true
 
 let useful t =
   match t.descr with
   | Value_unresolved _ | Value_unknown _ | Value_bottom -> false
   | Value_string _ | Value_float_array _ | Value_block _ | Value_int _
-  | Value_char _ | Value_constptr _ | Value_set_of_closures _
+  | Value_char _ | Value_set_of_closures _
   | Value_float _ | Value_boxed_int _ | Value_closure _ | Value_extern _
   | Value_symbol _ -> true
 
@@ -494,7 +472,7 @@ let warn_on_mutation t =
   match t.descr with
   | Value_block(_, fields) -> Array.length fields > 0
   | Value_string { contents = Some _ }
-  | Value_int _ | Value_char _ | Value_constptr _
+  | Value_int _ | Value_char _
   | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
   | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _
@@ -519,7 +497,7 @@ let get_field t ~field_index:i : get_field_result =
   (* CR-someday mshinwell: This should probably return Unreachable in more
      cases.  I added a couple more. *)
   | Value_bottom
-  | Value_int _ | Value_char _ | Value_constptr _ ->
+  | Value_int _ | Value_char _ ->
     (* Something seriously wrong is happening: either the user is doing
        something exceptionally unsafe, or it is an unreachable branch.
        We consider this as unreachable and mark the result accordingly. *)
@@ -555,7 +533,7 @@ let check_approx_for_block t =
   | Value_block (tag, fields) ->
     Ok (tag, fields)
   | Value_bottom
-  | Value_int _ | Value_char _ | Value_constptr _
+  | Value_int _ | Value_char _
   | Value_float_array _
   | Value_string _ | Value_float _ | Value_boxed_int _
   | Value_set_of_closures _ | Value_closure _
@@ -598,8 +576,6 @@ let equal_boxed_int (type t1) (type t2)
 *)
 let rec meet_descr ~really_import_approx d1 d2 = match d1, d2 with
   | Value_int i, Value_int j when i = j ->
-      d1
-  | Value_constptr i, Value_constptr j when i = j ->
       d1
   | Value_symbol s1, Value_symbol s2 when Symbol.equal s1 s2 ->
       d1
@@ -690,7 +666,7 @@ let check_approx_for_set_of_closures t : checked_approx_for_set_of_closures =
        to the set now out of scope. *)
     Ok (t.var, value_set_of_closures)
   | Value_closure _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
+  | Value_float _ | Value_boxed_int _ | Value_unknown _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
@@ -728,7 +704,7 @@ let check_approx_for_closure_allowing_unresolved t
           symbol, value_set_of_closures)
     | Value_unresolved _
     | Value_closure _ | Value_block _ | Value_int _ | Value_char _
-    | Value_constptr _ | Value_float _ | Value_boxed_int _ | Value_unknown _
+    | Value_float _ | Value_boxed_int _ | Value_unknown _
     | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
     | Value_symbol _ ->
       Wrong
@@ -737,7 +713,7 @@ let check_approx_for_closure_allowing_unresolved t
     Unknown_because_of_unresolved_value value
   | Value_unresolved symbol -> Unresolved symbol
   | Value_set_of_closures _ | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_float _ | Value_boxed_int _
+  | Value_float _ | Value_boxed_int _
   | Value_bottom | Value_extern _ | Value_string _ | Value_float_array _
   | Value_symbol _ ->
     Wrong
@@ -776,7 +752,7 @@ let check_approx_for_float t : float option =
   | Value_unresolved _
   | Value_unknown _ | Value_string _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
 
@@ -793,7 +769,7 @@ let float_array_as_constant (t:value_float_array) : float list option =
         (Value_float None | Value_unresolved _
         | Value_unknown _ | Value_string _ | Value_float_array _
         | Value_bottom | Value_block _ | Value_int _ | Value_char _
-        | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+        | Value_set_of_closures _ | Value_closure _
         | Value_extern _ | Value_boxed_int _ | Value_symbol _)
         -> None)
       contents (Some [])
@@ -805,7 +781,7 @@ let check_approx_for_string t : string option =
   | Value_unresolved _
   | Value_unknown _ | Value_float_array _
   | Value_bottom | Value_block _ | Value_int _ | Value_char _
-  | Value_constptr _ | Value_set_of_closures _ | Value_closure _
+  | Value_set_of_closures _ | Value_closure _
   | Value_extern _ | Value_boxed_int _ | Value_symbol _ ->
       None
 
@@ -823,11 +799,11 @@ let potentially_taken_const_switch_branch t branch =
     (* In theory symbol cannot contain integers but this shouldn't
        matter as this will always be an imported approximation *)
     Can_be_taken
-  | Value_constptr i | Value_int i when i = branch ->
+  | Value_int i when i = branch ->
     Must_be_taken
   | Value_char c when Char.code c = branch ->
     Must_be_taken
-  | Value_constptr _ | Value_int _ | Value_char _ ->
+  | Value_int _ | Value_char _ ->
     Cannot_be_taken
   | Value_block _ | Value_float _ | Value_float_array _
   | Value_string _ | Value_closure _ | Value_set_of_closures _
@@ -841,7 +817,7 @@ let potentially_taken_block_switch_branch t tag =
     | Value_extern _
     | Value_symbol _) ->
     Can_be_taken
-  | (Value_constptr _ | Value_int _| Value_char _) ->
+  | (Value_int _| Value_char _) ->
     Cannot_be_taken
   | Value_block (block_tag, _) when Tag.to_int block_tag = tag ->
     Must_be_taken

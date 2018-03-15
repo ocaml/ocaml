@@ -141,7 +141,7 @@ end = struct
     id
 
   let new_unit_descr t =
-    new_descr t (Value_constptr 0)
+    new_descr t (Value_int 0)
 
   let add_approx t var approx =
     if Variable.Map.mem var t.var then begin
@@ -166,9 +166,6 @@ end
 
 let descr_of_constant (c : Flambda.const) : Export_info.descr =
   match c with
-  (* [Const_pointer] is an immediate value of a type whose values may be
-     boxed (typically a variant type with both constant and non-constant
-     constructors). *)
   | Int i -> Value_int i
   | Char c -> Value_char c
 

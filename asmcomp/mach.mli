@@ -97,7 +97,6 @@ and instruction_desc =
   | Ireturn
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
-  | Iloop of instruction
   | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction

@@ -39,7 +39,7 @@ let phys_equal (approxs:A.t list) =
 
 let is_known_to_be_some_kind_of_int (arg:A.descr) =
   match arg with
-  | Value_int _ | Value_char _ | Value_constptr _ -> true
+  | Value_int _ | Value_char _ -> true
   | Value_block (_, _) | Value_float _ | Value_set_of_closures _
   | Value_closure _ | Value_string _ | Value_float_array _
   | A.Value_boxed_int _ | Value_unknown _ | Value_extern _
@@ -49,13 +49,13 @@ let is_known_to_be_some_kind_of_block (arg:A.descr) =
   match arg with
   | Value_block _ | Value_float _ | Value_float_array _ | A.Value_boxed_int _
   | Value_closure _ | Value_string _ -> true
-  | Value_set_of_closures _ | Value_int _ | Value_char _ | Value_constptr _
+  | Value_set_of_closures _ | Value_int _ | Value_char _
   | Value_unknown _ | Value_extern _ | Value_symbol _
   | Value_unresolved _ | Value_bottom -> false
 
 let rec structurally_different (arg1:A.t) (arg2:A.t) =
   match arg1.descr, arg2.descr with
-  | (Value_int n1 | Value_constptr n1), (Value_int n2 | Value_constptr n2)
+  | Value_int n1, Value_int n2
     when n1 <> n2 ->
     true
   | Value_block (tag1, fields1), Value_block (tag2, fields2) ->
@@ -96,9 +96,9 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     expr, A.value_bottom, C.Benefit.zero
   | Pignore -> begin
       match args, A.descrs approxs with
-      | [arg], [(Value_int 0 | Value_constptr 0)] ->
-        S.const_ptr_expr (Flambda.Expr (Var arg)) 0
-      | _ -> S.const_ptr_expr expr 0
+      | [arg], [Value_int 0] ->
+        S.const_int_expr (Flambda.Expr (Var arg)) 0
+      | _ -> S.const_int_expr expr 0
     end
   | Pmakearray(_, _) when approxs = [] ->
     Prim (Pmakeblock(0, Asttypes.Immutable, Some []), [], dbg),
@@ -152,15 +152,30 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       | Pnot -> S.const_bool_expr expr (x = 0)
       | Pnegint -> S.const_int_expr expr (-x)
       | Pbswap16 -> S.const_int_expr expr (S.swap16 x)
+      | Pisint -> S.const_bool_expr expr true
       | Poffsetint y -> S.const_int_expr expr (x + y)
       | Pfloatofint when fpc -> S.const_float_expr expr (float_of_int x)
       | Pbintofint Pnativeint ->
         S.const_boxed_int_expr expr Nativeint (Nativeint.of_int x)
       | Pbintofint Pint32 -> S.const_boxed_int_expr expr Int32 (Int32.of_int x)
       | Pbintofint Pint64 -> S.const_boxed_int_expr expr Int64 (Int64.of_int x)
+      | Pctconst c ->
+        begin match c with
+        | Big_endian -> S.const_bool_expr expr big_endian
+        | Word_size -> S.const_int_expr expr (8*size_int)
+        | Int_size -> S.const_int_expr expr (8*size_int - 1)
+        | Max_wosize ->
+          (* CR-someday mshinwell: this function should maybe not live here. *)
+          S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
+        | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
+        | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
+        | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
+        | Backend_type ->
+          S.const_int_expr expr 0 (* tag 0 is the same as Native *)
+        end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
-    | [(Value_int x | Value_constptr x); (Value_int y | Value_constptr y)] ->
+    | [Value_int x; Value_int y] ->
       let shift_precond = 0 <= y && y < 8 * size_int in
       begin match p with
       | Paddint -> S.const_int_expr expr (x + y)
@@ -181,30 +196,6 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
     | [Value_char x; Value_char y] ->
       begin match p with
       | Pintcomp cmp -> S.const_integer_comparison_expr expr cmp x y
-      | _ -> expr, A.value_unknown Other, C.Benefit.zero
-      end
-    | [Value_constptr x] ->
-      begin match p with
-      (* [Pidentity] should probably never appear, but is here for
-         completeness. *)
-      | Pidentity -> S.const_ptr_expr expr x
-      | Pnot -> S.const_bool_expr expr (x = 0)
-      | Pisint -> S.const_bool_expr expr true
-      | Poffsetint y -> S.const_ptr_expr expr (x + y)
-      | Pctconst c ->
-        begin match c with
-        | Big_endian -> S.const_bool_expr expr big_endian
-        | Word_size -> S.const_int_expr expr (8*size_int)
-        | Int_size -> S.const_int_expr expr (8*size_int - 1)
-        | Max_wosize ->
-          (* CR-someday mshinwell: this function should maybe not live here. *)
-          S.const_int_expr expr ((1 lsl ((8*size_int) - 10)) - 1)
-        | Ostype_unix -> S.const_bool_expr expr (Sys.os_type = "Unix")
-        | Ostype_win32 -> S.const_bool_expr expr (Sys.os_type = "Win32")
-        | Ostype_cygwin -> S.const_bool_expr expr (Sys.os_type = "Cygwin")
-        | Backend_type ->
-          S.const_ptr_expr expr 0 (* tag 0 is the same as Native *)
-        end
       | _ -> expr, A.value_unknown Other, C.Benefit.zero
       end
     | [Value_float (Some x)] when fpc ->
@@ -251,7 +242,7 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
       when (p = Lambda.Pstringlength || p = Lambda.Pbyteslength) ->
       S.const_int_expr expr size
     | [Value_string { size; contents = Some s };
-       (Value_int x | Value_constptr x)] when x >= 0 && x < size ->
+       Value_int x] when x >= 0 && x < size ->
         begin match p with
         | Pstringrefu
         | Pstringrefs
@@ -261,14 +252,14 @@ let primitive (p : Lambda.primitive) (args, approxs) expr dbg ~size_int
         | _ -> expr, A.value_unknown Other, C.Benefit.zero
         end
     | [Value_string { size; contents = None };
-       (Value_int x | Value_constptr x)]
+       Value_int x]
       when x >= 0 && x < size && p = Lambda.Pstringrefs ->
         Flambda.Prim (Pstringrefu, args, dbg),
           A.value_unknown Other,
           (* we improved it, but there is no way to account for that: *)
           C.Benefit.zero
     | [Value_string { size; contents = None };
-       (Value_int x | Value_constptr x)]
+       Value_int x]
       when x >= 0 && x < size && p = Lambda.Pbytesrefs ->
         Flambda.Prim (Pbytesrefu, args, dbg),
           A.value_unknown Other,

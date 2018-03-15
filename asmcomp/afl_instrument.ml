@@ -55,8 +55,6 @@ and instrument = function
   (* these cases add logging, as they may be targets of conditional branches *)
   | Cifthenelse (cond, t, f) ->
      Cifthenelse (instrument cond, with_afl_logging t, with_afl_logging f)
-  | Cloop e ->
-     Cloop (with_afl_logging e)
   | Ctrywith (e, ex, handler) ->
      Ctrywith (instrument e, ex, with_afl_logging handler)
   | Cswitch (e, cases, handlers, dbg) ->

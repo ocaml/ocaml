@@ -199,6 +199,11 @@ Working version
 * GPR#1617: Make string/bytes distinguishable in the bytecode.
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
 
+- GPR#1660: Continuation of GPR#1580: removal of Const_pointer remnants
+  from Flambda, fixes to instruction selection for mutable variables, removal
+  of [Cloop] and [Iloop] constructs in favour of recursive "catch"es.
+  (Pierre Chambart, Xavier Clerc and Mark Shinwell)
+
 - GPR#1686: Turn off by default flambda invariants checks.
   (Pierre Chambart)
 

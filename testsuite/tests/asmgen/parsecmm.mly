@@ -205,7 +205,9 @@ expr:
           match $3 with
             Cconst_int x when x <> 0 -> $4
           | _ -> Cifthenelse($3, $4, (Cexit(0,[]))) in
-        Ccatch(Recursive, [0, [], Cloop body], Ctuple []) }
+        Ccatch(Nonrecursive, [0, [],
+          Ccatch(Recursive, [1, [], Csequence (body, Cexit (1, []))],
+            Cexit (1, []))], Ctuple []) }
   | LPAREN EXIT IDENT exprlist RPAREN
     { Cexit(find_label $3, List.rev $4) }
   | LPAREN CATCH sequence WITH catch_handlers RPAREN
