@@ -40,6 +40,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- GPR#1490: use 32-bit and/mov/xor instructions when the operand fits, do not
+  emit inc/dec instructions when producing fast code (amd64 back-end)
+  (Mark shinwell and Xavier Clerc, review by Xavier Leroy)
+
 ### Runtime system:
 
 ### Tools:
