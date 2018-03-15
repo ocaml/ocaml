@@ -292,9 +292,9 @@ let output_stringlist oc l =
 (* Transform a file name into an absolute file name *)
 
 let make_absolute file =
-  if Filename.is_relative file
-  then Filename.concat (Sys.getcwd()) file
-  else file
+  if not (Filename.is_relative file) then file
+  else Location.rewrite_absolute_path
+         (Filename.concat (Sys.getcwd()) file)
 
 (* Create a bytecode executable file *)
 

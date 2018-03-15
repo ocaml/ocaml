@@ -1,3 +1,10 @@
+(* TEST
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+      flags = "-dlambda -dno-unique-ids"
+   *** check-ocamlc.byte-output
+*)
+
 external cmp : 'a -> 'a -> int = "%compare";;
 external eq : 'a -> 'a -> bool = "%equal";;
 external ne : 'a -> 'a -> bool = "%notequal";;

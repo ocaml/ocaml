@@ -1,3 +1,9 @@
+(* TEST
+   modules = "is_in_static_data.c is_static_flambda_dep.ml"
+   * flambda
+   ** native
+*)
+
 (* Data that should be statically allocated by the compiler (flambda only) *)
 
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
@@ -185,7 +191,7 @@ module Int = struct
   type t = int
   let compare (a:int) b = compare a b
 end
-module IntMap = (Map.Make [@inlined])(Int)
+module IntMap = Map.Make (Int)
 
 let () =
   let f () =

@@ -196,10 +196,6 @@ method! select_store is_assign addr exp =
       (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
   | (Cconst_natint n | Cblockheader (n, _)) ->
       (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
-  | Cconst_pointer n ->
-      (Ispecific(Istore_int(Nativeint.of_int n, addr, is_assign)), Ctuple [])
-  | Cconst_natpointer n ->
-      (Ispecific(Istore_int(n, addr, is_assign)), Ctuple [])
   | Cconst_symbol s ->
       (Ispecific(Istore_symbol(s, addr, is_assign)), Ctuple [])
   | _ ->
@@ -289,8 +285,6 @@ method select_push exp =
   match exp with
     Cconst_int n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
   | Cconst_natint n -> (Ispecific(Ipush_int n), Ctuple [])
-  | Cconst_pointer n -> (Ispecific(Ipush_int(Nativeint.of_int n)), Ctuple [])
-  | Cconst_natpointer n -> (Ispecific(Ipush_int n), Ctuple [])
   | Cconst_symbol s -> (Ispecific(Ipush_symbol s), Ctuple [])
   | Cop(Cload ((Word_int | Word_val as chunk), _), [loc], _) ->
       let (addr, arg) = self#select_addressing chunk loc in

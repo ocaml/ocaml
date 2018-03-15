@@ -36,13 +36,25 @@ let machtype ppf mty =
            fprintf ppf "*%a" machtype_component mty.(i)
          done
 
-let comparison = function
+let integer_comparison = function
   | Ceq -> "=="
   | Cne -> "!="
   | Clt -> "<"
   | Cle -> "<="
   | Cgt -> ">"
   | Cge -> ">="
+
+let float_comparison = function
+  | CFeq -> "=="
+  | CFneq -> "!="
+  | CFlt -> "<"
+  | CFnlt -> "!<"
+  | CFle -> "<="
+  | CFnle -> "!<="
+  | CFgt -> ">"
+  | CFngt -> "!>"
+  | CFge -> ">="
+  | CFnge -> "!>="
 
 let chunk = function
   | Byte_unsigned -> "unsigned int8"
@@ -88,10 +100,10 @@ let operation d = function
   | Clsl -> "<<"
   | Clsr -> ">>u"
   | Casr -> ">>s"
-  | Ccmpi c -> comparison c
+  | Ccmpi c -> integer_comparison c
   | Caddv -> "+v"
   | Cadda -> "+a"
-  | Ccmpa c -> Printf.sprintf "%sa" (comparison c)
+  | Ccmpa c -> Printf.sprintf "%sa" (integer_comparison c)
   | Cnegf -> "~f"
   | Cabsf -> "absf"
   | Caddf -> "+f"
@@ -100,7 +112,7 @@ let operation d = function
   | Cdivf -> "/f"
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
-  | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
+  | Ccmpf c -> Printf.sprintf "%sf" (float_comparison c)
   | Craise k -> Format.asprintf "%a%s" raise_kind k (Debuginfo.to_string d)
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
 
@@ -113,8 +125,6 @@ let rec expr ppf = function
       (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Cconst_pointer n -> fprintf ppf "%ia" n
-  | Cconst_natpointer n -> fprintf ppf "%sa" (Nativeint.to_string n)
   | Cvar id -> Ident.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =

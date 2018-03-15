@@ -85,7 +85,7 @@ module Make(I:I) = struct
   let mk_cmp_gen cmp_op id nat ifso ifnot =
     let dbg = Debuginfo.none in
     let test =
-      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natpointer nat ], dbg)
+      Cop (Ccmpi cmp_op, [ Cvar id; Cconst_natint nat ], dbg)
     in
     Cifthenelse (test, ifso, ifnot)
 

@@ -21,6 +21,8 @@ val all_modules : Variables.t
 
 val c_preprocessor : Variables.t
 
+val caml_ld_library_path : Variables.t
+
 val compare_programs : Variables.t
 
 val compiler_directory_suffix : Variables.t
@@ -35,6 +37,8 @@ val compiler_output : Variables.t
 
 val compiler_output2 : Variables.t
 
+val compile_only : Variables.t
+
 val directories : Variables.t
 
 val flags : Variables.t
@@ -48,8 +52,12 @@ val modules : Variables.t
 val ocamlc_flags : Variables.t
 val ocamlc_default_flags : Variables.t
 
+val ocamllex_flags : Variables.t
+
 val ocamlopt_flags : Variables.t
 val ocamlopt_default_flags : Variables.t
+
+val ocamlyacc_flags : Variables.t
 
 val ocaml_exit_status : Variables.t
 
@@ -63,6 +71,16 @@ val ocamlc_opt_exit_status : Variables.t
 
 val ocamlopt_opt_exit_status : Variables.t
 
+val ocamlrunparam : Variables.t
+
 val ocamlsrcdir : Variables.t
 
 val os_type : Variables.t
+
+val ocamldoc_flags : Variables.t
+val ocamldoc_backend : Variables.t
+val ocamldoc_exit_status : Variables.t
+val ocamldoc_output : Variables.t
+val ocamldoc_reference : Variables.t
+
+val plugins: Variables.t

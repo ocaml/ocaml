@@ -242,9 +242,9 @@ external ( @@ ) : ('a -> 'b) -> 'a -> 'b = "%apply"
 
 (** {1 Integer arithmetic} *)
 
-(** Integers are 31 bits wide (or 63 bits on 64-bit processors).
-   All operations are taken modulo 2{^31} (or 2{^63}).
-   They do not fail on overflow. *)
+(** Integers are [Sys.int_size] bits wide.
+    All operations are taken modulo 2{^[Sys.int_size]}.
+    They do not fail on overflow. *)
 
 external ( ~- ) : int -> int = "%negint"
 (** Unary negation. You can also write [- e] instead of [~- e].
@@ -325,23 +325,21 @@ val lnot : int -> int
 
 external ( lsl ) : int -> int -> int = "%lslint"
 (** [n lsl m] shifts [n] to the left by [m] bits.
-   The result is unspecified if [m < 0] or [m >= bitsize],
-   where [bitsize] is [32] on a 32-bit platform and
-   [64] on a 64-bit platform.
-   Right-associative operator at precedence level 8/11. *)
+    The result is unspecified if [m < 0] or [m > Sys.int_size].
+    Right-associative operator at precedence level 8/11. *)
 
 external ( lsr ) : int -> int -> int = "%lsrint"
 (** [n lsr m] shifts [n] to the right by [m] bits.
-   This is a logical shift: zeroes are inserted regardless of
-   the sign of [n].
-   The result is unspecified if [m < 0] or [m >= bitsize].
-   Right-associative operator at precedence level 8/11. *)
+    This is a logical shift: zeroes are inserted regardless of
+    the sign of [n].
+    The result is unspecified if [m < 0] or [m > Sys.int_size].
+    Right-associative operator at precedence level 8/11. *)
 
 external ( asr ) : int -> int -> int = "%asrint"
 (** [n asr m] shifts [n] to the right by [m] bits.
-   This is an arithmetic shift: the sign bit of [n] is replicated.
-   The result is unspecified if [m < 0] or [m >= bitsize].
-   Right-associative operator at precedence level 8/11. *)
+    This is an arithmetic shift: the sign bit of [n] is replicated.
+    The result is unspecified if [m < 0] or [m > Sys.int_size].
+    Right-associative operator at precedence level 8/11. *)
 
 
 (** {1 Floating-point arithmetic}

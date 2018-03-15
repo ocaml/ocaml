@@ -592,9 +592,12 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         print_record_decl lbls
   | Otyp_sum constrs ->
+      let variants fmt constrs =
+        if constrs = [] then fprintf fmt "|" else
+        fprintf fmt "%a" (print_list print_out_constr
+          (fun ppf -> fprintf ppf "@ | ")) constrs in
       fprintf ppf " =%a@;<1 2>%a"
-        print_private td.otype_private
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+        print_private td.otype_private variants constrs
   | Otyp_open ->
       fprintf ppf " =%a .."
         print_private td.otype_private

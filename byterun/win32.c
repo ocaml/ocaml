@@ -299,8 +299,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
-  int saved_mode;
-
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
   /* Default behavior is to exit, which we get by not handling the event */
@@ -385,7 +383,7 @@ static void expand_pattern(wchar_t * pat)
   /* We need to stop at the first directory or drive boundary, because the
    * _findata_t structure contains the filename, not the leading directory. */
   for (i = wcslen(prefix); i > 0; i--) {
-    char c = prefix[i - 1];
+    wchar_t c = prefix[i - 1];
     if (c == L'\\' || c == L'/' || c == L':') { prefix[i] = 0; break; }
   }
   /* No separator was found, it's a filename pattern without a leading directory. */

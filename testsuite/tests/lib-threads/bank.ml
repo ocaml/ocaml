@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* The bank account example, using events and channels *)
 
 open Printf

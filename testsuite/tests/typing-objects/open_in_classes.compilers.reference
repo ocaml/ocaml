@@ -1,4 +1,0 @@
-module M : sig type t = int val x : int end
-class c : object method f : M.t end
-class type ct = object method f : M.t end
-

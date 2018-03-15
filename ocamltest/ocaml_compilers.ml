@@ -13,106 +13,89 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Descriptions of the OCaml compilers and toplevels *)
+(* Description of the OCaml compilers *)
 
 open Ocamltest_stdlib
 
-type t = {
-  name : string -> string;
-  flags : string;
-  directory : string;
-  backend : Ocaml_backends.t;
-  exit_status_variabe : Variables.t;
-  reference_variable : Variables.t;
-  output_variable : Variables.t
-}
+class compiler
+  ~(name : string -> string)
+  ~(flags : string)
+  ~(directory : string)
+  ~(exit_status_variable : Variables.t)
+  ~(reference_variable : Variables.t)
+  ~(output_variable : Variables.t)
+  ~(host : Ocaml_backends.t)
+  ~(target : Ocaml_backends.t)
+= object (self) inherit Ocaml_tools.tool
+  ~name:name
+  ~family:"compiler"
+  ~flags:flags
+  ~directory:directory
+  ~exit_status_variable:exit_status_variable
+  ~reference_variable:reference_variable
+  ~output_variable:output_variable
+  as tool
 
-(* Compilers compiling byte-code programs *)
+  method host = host
+  method target = target
 
-let ocamlc_byte =
-{
-  name = Ocaml_commands.ocamlrun_ocamlc;
-  flags = "";
-  directory = "ocamlc.byte";
-  backend = Ocaml_backends.Bytecode;
-  exit_status_variabe = Ocaml_variables.ocamlc_byte_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference;
-  output_variable = Ocaml_variables.compiler_output;
-}
+  method program_variable =
+    if Ocaml_backends.is_native host
+    then Builtin_variables.program2
+    else Builtin_variables.program
 
-let ocamlc_opt =
-{
-  name = Ocaml_files.ocamlc_dot_opt;
-  flags = "";
-  directory = "ocamlc.opt";
-  backend = Ocaml_backends.Bytecode;
-  exit_status_variabe = Ocaml_variables.ocamlc_opt_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference2;
-  output_variable = Ocaml_variables.compiler_output2;
-}
+  method program_output_variable =
+    if Ocaml_backends.is_native host
+    then None
+    else Some Builtin_variables.output
 
-(* Compilers compiling native-code programs *)
+  method ! reference_file env prefix =
+    let default = tool#reference_file env prefix in
+    if Sys.file_exists default then default else
+    let suffix = self#reference_filename_suffix env in
+    let mk s = (Filename.make_filename prefix s) ^ suffix in
+    let filename = mk
+      (Ocaml_backends.string_of_backend target) in
+    if Sys.file_exists filename then filename else
+    mk "compilers"
+end
 
-let ocamlopt_byte =
-{
-  name = Ocaml_commands.ocamlrun_ocamlopt;
-  flags = "";
-  directory = "ocamlopt.byte";
-  backend = Ocaml_backends.Native;
-  exit_status_variabe = Ocaml_variables.ocamlopt_byte_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference;
-  output_variable = Ocaml_variables.compiler_output;
-}
+let ocamlc_byte = new compiler
+  ~name: Ocaml_commands.ocamlrun_ocamlc
+  ~flags: ""
+  ~directory: "ocamlc.byte"
+  ~exit_status_variable: Ocaml_variables.ocamlc_byte_exit_status
+  ~reference_variable: Ocaml_variables.compiler_reference
+  ~output_variable: Ocaml_variables.compiler_output
+  ~host: Ocaml_backends.Bytecode
+  ~target: Ocaml_backends.Bytecode
 
-let ocamlopt_opt =
-{
-  name = Ocaml_files.ocamlopt_dot_opt;
-  flags = "";
-  directory = "ocamlopt.opt";
-  backend = Ocaml_backends.Native;
-  exit_status_variabe = Ocaml_variables.ocamlopt_opt_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference2;
-  output_variable = Ocaml_variables.compiler_output2;
-}
+let ocamlc_opt = new compiler
+  ~name: Ocaml_files.ocamlc_dot_opt
+  ~flags: ""
+  ~directory: "ocamlc.opt"
+  ~exit_status_variable: Ocaml_variables.ocamlc_opt_exit_status
+  ~reference_variable: Ocaml_variables.compiler_reference2
+  ~output_variable: Ocaml_variables.compiler_output2
+  ~host: Ocaml_backends.Native
+  ~target: Ocaml_backends.Bytecode
 
-(* Top-levels *)
+let ocamlopt_byte = new compiler
+  ~name: Ocaml_commands.ocamlrun_ocamlopt
+  ~flags: ""
+  ~directory: "ocamlopt.byte"
+  ~exit_status_variable: Ocaml_variables.ocamlopt_byte_exit_status
+  ~reference_variable: Ocaml_variables.compiler_reference
+  ~output_variable: Ocaml_variables.compiler_output
+  ~host: Ocaml_backends.Bytecode
+  ~target: Ocaml_backends.Native
 
-let ocaml = {
-  name = Ocaml_commands.ocamlrun_ocaml;
-  flags = "";
-  directory = "ocaml";
-  backend = Ocaml_backends.Bytecode;
-  exit_status_variabe = Ocaml_variables.ocaml_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference;
-  output_variable = Ocaml_variables.compiler_output;
-}
-
-let ocamlnat = {
-  name = Ocaml_files.ocamlnat;
-  flags = "-S"; (* Keep intermediate assembly files *)
-  directory = "ocamlnat";
-  backend = Ocaml_backends.Native;
-  exit_status_variabe = Ocaml_variables.ocamlnat_exit_status;
-  reference_variable = Ocaml_variables.compiler_reference2;
-  output_variable = Ocaml_variables.compiler_output2;
-}
-
-let expected_exit_status env compiler =
-  try int_of_string
-    (Environments.safe_lookup compiler.exit_status_variabe env)
-  with _ -> 0
-
-let reference_filename env prefix compiler =
-  let compiler_reference_suffix =
-    Environments.safe_lookup Ocaml_variables.compiler_reference_suffix env in
-  let suffix =
-    if compiler_reference_suffix<>""
-    then compiler_reference_suffix ^ ".reference"
-    else ".reference" in
-  let mk s = (Filename.make_filename prefix s) ^ suffix in
-  let filename = mk compiler.directory in
-  if Sys.file_exists filename then filename else
-  let filename = mk
-    (Ocaml_backends.string_of_backend compiler.backend) in
-  if Sys.file_exists filename then filename else
-  mk "compilers"
+let ocamlopt_opt = new compiler
+  ~name: Ocaml_files.ocamlopt_dot_opt
+  ~flags: ""
+  ~directory: "ocamlopt.opt"
+  ~exit_status_variable: Ocaml_variables.ocamlopt_opt_exit_status
+  ~reference_variable: Ocaml_variables.compiler_reference2
+  ~output_variable: Ocaml_variables.compiler_output2
+  ~host: Ocaml_backends.Native
+  ~target: Ocaml_backends.Native

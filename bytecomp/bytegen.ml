@@ -355,12 +355,6 @@ let comp_primitive p args =
   | Psubfloat -> Kccall("caml_sub_float", 2)
   | Pmulfloat -> Kccall("caml_mul_float", 2)
   | Pdivfloat -> Kccall("caml_div_float", 2)
-  | Pfloatcomp Ceq -> Kccall("caml_eq_float", 2)
-  | Pfloatcomp Cneq -> Kccall("caml_neq_float", 2)
-  | Pfloatcomp Clt -> Kccall("caml_lt_float", 2)
-  | Pfloatcomp Cgt -> Kccall("caml_gt_float", 2)
-  | Pfloatcomp Cle -> Kccall("caml_le_float", 2)
-  | Pfloatcomp Cge -> Kccall("caml_ge_float", 2)
   | Pstringlength -> Kccall("caml_ml_string_length", 1)
   | Pbyteslength -> Kccall("caml_ml_bytes_length", 1)
   | Pstringrefs -> Kccall("caml_string_get", 2)
@@ -422,7 +416,7 @@ let comp_primitive p args =
   | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
   | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
   | Pbintcomp(_, Ceq) -> Kccall("caml_equal", 2)
-  | Pbintcomp(_, Cneq) -> Kccall("caml_notequal", 2)
+  | Pbintcomp(_, Cne) -> Kccall("caml_notequal", 2)
   | Pbintcomp(_, Clt) -> Kccall("caml_lessthan", 2)
   | Pbintcomp(_, Cgt) -> Kccall("caml_greaterthan", 2)
   | Pbintcomp(_, Cle) -> Kccall("caml_lessequal", 2)
@@ -684,9 +678,24 @@ let rec comp_expr env exp sz cont =
       Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
 (* Integer first for enabling further optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
-      let p = Pintcomp (commute_comparison c)
+      let p = Pintcomp (swap_integer_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  | Lprim (Pfloatcomp cmp, args, _) ->
+      let cont =
+        match cmp with
+        | CFeq -> Kccall("caml_eq_float", 2) :: cont
+        | CFneq -> Kccall("caml_neq_float", 2) :: cont
+        | CFlt -> Kccall("caml_lt_float", 2) :: cont
+        | CFnlt -> Kccall("caml_lt_float", 2) :: Kboolnot :: cont
+        | CFgt -> Kccall("caml_gt_float", 2) :: cont
+        | CFngt -> Kccall("caml_gt_float", 2) :: Kboolnot :: cont
+        | CFle -> Kccall("caml_le_float", 2) :: cont
+        | CFnle -> Kccall("caml_le_float", 2) :: Kboolnot :: cont
+        | CFge -> Kccall("caml_ge_float", 2) :: cont
+        | CFnge -> Kccall("caml_ge_float", 2) :: Kboolnot :: cont
+      in
+      comp_args env args sz cont
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
@@ -765,7 +774,7 @@ let rec comp_expr env exp sz cont =
            Klabel lbl_loop :: Kcheck_signals ::
            comp_expr (add_var param (sz+1) env) body (sz+2)
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
-              Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
+              Kacc 1 :: Kintcomp Cne :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, sw, _loc) ->
       let (branch, cont1) = make_branch cont in

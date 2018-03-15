@@ -1,3 +1,9 @@
+(* TEST
+  include config
+  * native
+    flags = "config.cmx"
+*)
+
 (* Check the effectiveness of structured constant propagation and
    static allocation.
 
