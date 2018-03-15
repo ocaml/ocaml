@@ -1783,6 +1783,8 @@ if test "$x11_include" = "not found"; then
                               \
     /usr/lib/i386-linux-gnu   \
     /usr/lib/x86_64-linux-gnu \
+                              \
+    /usr/lib/`echo $target | sed -e "s/-[^-]*//"` \
     ; \
     do
     if test -f $dir/libX11.a || \
@@ -1805,7 +1807,7 @@ if test "$x11_include" = "not found"; then
   done
 fi
 
-if test "x11_include" != "not found"; then
+if test "$x11_include" != "not found"; then
   if test "$x11_include" = "-I/usr/include"; then
     x11_include=""
   fi
