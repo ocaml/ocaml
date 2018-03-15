@@ -362,6 +362,10 @@ method private cse n i =
               next = self#cse empty_numbering i.next}
 
 method fundecl f =
-  {f with fun_body = self#cse empty_numbering f.fun_body}
+  (* CSE can trigger bad register allocation behaviors, see MPR#7630 *)
+  if List.mem Cmm.No_CSE f.fun_codegen_options then
+    f
+  else
+    {f with fun_body = self#cse empty_numbering f.fun_body }
 
 end

@@ -98,7 +98,7 @@ type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
-    fun_fast: bool;
+    fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
   }

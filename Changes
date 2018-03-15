@@ -149,6 +149,10 @@ Working version
   Pierre-Marie Pédrot and Paul Steckler, review by Gabriel Scherer
   and Leo White)
 
+- MPR#7630, GPR#1455: Disable CSE for the initialization function
+  (Pierre Chambart, report by Emilio Jesús Gallego Arias,
+   review by Gabriel Scherer and Xavier Leroy)
+
 - GPR#1486: ARM 32-bit port: add support for ARMv8 in 32-bit mode,
   a.k.a. AArch32.
   For this platform, avoid ITE conditional instruction blocks and use

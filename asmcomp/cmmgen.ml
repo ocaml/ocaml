@@ -2815,10 +2815,16 @@ let transl_function f =
       Afl_instrument.instrument_function (transl env body)
     else
       transl env body in
+  let fun_codegen_options =
+    if !Clflags.optimize_for_speed then
+      []
+    else
+      [ Reduce_code_size ]
+  in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
              fun_body = cmm_body;
-             fun_fast = !Clflags.optimize_for_speed;
+             fun_codegen_options;
              fun_dbg  = f.dbg}
 
 (* Translate all function definitions *)
@@ -3077,7 +3083,16 @@ let compunit (ulam, preallocated_blocks, constants) =
       transl empty_env ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
-                       fun_body = init_code; fun_fast = false;
+                       fun_body = init_code;
+                       (* This function is often large and run only once.
+                          Compilation time matter more than runtime.
+                          See MPR#7630 *)
+                       fun_codegen_options =
+                         if Config.flambda then [
+                           Reduce_code_size;
+                           No_CSE;
+                         ]
+                         else [ Reduce_code_size ];
                        fun_dbg  = Debuginfo.none }] in
   let c2 = emit_constants c1 constants in
   let c3 = transl_all_functions_and_emit_all_constants c2 in
@@ -3218,7 +3233,7 @@ let send_function arity =
    {fun_name;
     fun_args = fun_args;
     fun_body = body;
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
 
 let apply_function arity =
@@ -3229,7 +3244,7 @@ let apply_function arity =
    {fun_name;
     fun_args = List.map (fun id -> (id, typ_val)) all_args;
     fun_body = body;
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
    }
 
@@ -3254,7 +3269,7 @@ let tuplify_function arity =
       Cop(Capply typ_val,
           get_field env (Cvar clos) 2 dbg :: access_components 0 @ [Cvar clos],
           dbg);
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
    }
 
@@ -3317,7 +3332,7 @@ let final_curry_function arity =
                "_" ^ string_of_int (arity-1);
     fun_args = [last_arg, typ_val; last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
 
 let rec intermediate_curry_functions arity num =
@@ -3347,7 +3362,7 @@ let rec intermediate_curry_functions arity num =
                  Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
-      fun_fast = true;
+      fun_codegen_options = [];
       fun_dbg  = Debuginfo.none }
     ::
       (if arity <= max_arity_optimized && arity - num > 2 then
@@ -3375,7 +3390,7 @@ let rec intermediate_curry_functions arity num =
                fun_args = direct_args @ [clos, typ_val];
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
-               fun_fast = true;
+               fun_codegen_options = [];
                fun_dbg = Debuginfo.none }
           in
           cf :: intermediate_curry_functions arity (num+1)
@@ -3438,7 +3453,7 @@ let entry_point namelist =
   Cfunction {fun_name = "caml_program";
              fun_args = [];
              fun_body = body;
-             fun_fast = false;
+             fun_codegen_options = [Reduce_code_size];
              fun_dbg  = Debuginfo.none }
 
 (* Generate the table of globals *)

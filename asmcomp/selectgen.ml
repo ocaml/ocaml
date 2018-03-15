@@ -1188,7 +1188,7 @@ method emit_fundecl f =
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body;
-    fun_fast = f.Cmm.fun_fast;
+    fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
   }
