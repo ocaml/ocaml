@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* Test a file copy function *)
 
 let test msg producer consumer src dst =

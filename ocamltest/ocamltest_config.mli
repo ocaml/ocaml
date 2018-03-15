@@ -18,7 +18,7 @@
 val arch : string
 (** Architecture for the native compiler, "none" if it is disabled *)
 
-val afl_support : bool
+val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
 
 val shared_libraries : bool
@@ -53,3 +53,6 @@ val safe_string : bool
 
 val flat_float_array : bool
 (* Whether the compiler was configured with -flat-float-array *)
+
+val ocamldoc: bool
+(** Whether ocamldoc has been enabled at configure time *)

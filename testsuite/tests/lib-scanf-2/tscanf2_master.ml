@@ -1,3 +1,60 @@
+(* TEST
+
+include unix
+modules = "tscanf2_io.ml"
+files = "tscanf2_slave.ml"
+reference = "${test_source_directory}/reference"
+
+(* The bytcode test *)
+
+* setup-ocamlc.byte-build-env
+
+program = "${test_build_directory}/master.byte"
+
+** ocamlc.byte (* Compiles the master *)
+
+*** ocamlc.byte (* Compiles the slave *)
+
+all_modules = "tscanf2_io.cmo tscanf2_slave.ml"
+
+program = "${test_build_directory}/slave.byte"
+
+**** check-ocamlc.byte-output
+
+***** run
+
+program = "${test_build_directory}/master.byte"
+
+arguments = "${test_build_directory}/slave.byte"
+
+****** check-program-output
+
+(* The native test *)
+
+* setup-ocamlopt.byte-build-env
+
+program = "${test_build_directory}/master.opt"
+
+** ocamlopt.byte (* Compiles the master *)
+
+*** ocamlopt.byte (* Compiles the slave *)
+
+all_modules = "tscanf2_io.cmx tscanf2_slave.ml"
+
+program = "${test_build_directory}/slave.opt"
+
+**** check-ocamlopt.byte-output
+
+***** run
+
+program = "${test_build_directory}/master.opt"
+
+arguments = "${test_build_directory}/slave.opt"
+
+****** check-program-output
+
+*)
+
 (* A very simple master:
    - first launch a slave process,
    - then repeat a random number of times:

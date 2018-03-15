@@ -146,7 +146,6 @@ type error =
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
-  | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
@@ -162,6 +161,7 @@ type error =
   | Illegal_letrec_expr
   | Illegal_class_expr
   | Unbound_value_missing_rec of Longident.t * Location.t
+  | Empty_pattern
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

@@ -228,7 +228,6 @@ let to_clambda_const env (const : Flambda.constant_defining_value_block_field)
   | Symbol symbol -> to_clambda_symbol' env symbol
   | Const (Int i) -> Uconst_int i
   | Const (Char c) -> Uconst_int (Char.code c)
-  | Const (Const_pointer i) -> Uconst_ptr i
 
 let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
   match flam with
@@ -349,7 +348,6 @@ let rec to_clambda t env (flam : Flambda.t) : Clambda.ulambda =
 and to_clambda_named t env var (named : Flambda.named) : Clambda.ulambda =
   match named with
   | Symbol sym -> to_clambda_symbol env sym
-  | Const (Const_pointer n) -> Uconst (Uconst_ptr n)
   | Const (Int n) -> Uconst (Uconst_int n)
   | Const (Char c) -> Uconst (Uconst_int (Char.code c))
   | Allocated_const _ ->
@@ -594,7 +592,7 @@ let to_clambda_initialize_symbol t env symbol fields : Clambda.ulambda =
       Debuginfo.none)
   in
   match fields with
-  | [] -> Uconst (Uconst_ptr 0)
+  | [] -> Uconst (Uconst_int 0)
   | h :: t ->
     List.fold_left (fun acc (p, field) ->
         Clambda.Usequence (build_setfield (p, field), acc))
@@ -663,7 +661,6 @@ let to_clambda_program t env constants (program : Flambda.program) =
                   match const with
                   | Int i -> i
                   | Char c -> Char.code c
-                  | Const_pointer i -> i
                 in
                 Some (Clambda.Uconst_field_int n)
             | Some (Flambda.Symbol sym) ->
@@ -686,7 +683,7 @@ let to_clambda_program t env constants (program : Flambda.program) =
       let e2, constants, preallocated_blocks = loop env constants program in
       Usequence (e1, e2), constants, preallocated_blocks
     | End _ ->
-      Uconst (Uconst_ptr 0), constants, []
+      Uconst (Uconst_int 0), constants, []
   in
   loop env constants program.program_body
 

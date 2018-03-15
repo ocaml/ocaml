@@ -45,3 +45,10 @@ module M = struct
   let j x = x
   and[@warning "+32"] k x = x
 end
+
+(* unused values in functor argument *)
+module F (X : sig val x : int end) = struct end
+
+module G (X : sig val x : int end) = X
+
+module H (X : sig val x : int end) = X

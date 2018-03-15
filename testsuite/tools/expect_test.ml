@@ -253,8 +253,15 @@ let eval_expect_file _fname ~file_contents =
         try
           exec_phrase ppf phrase
         with exn ->
-          Location.report_exception ppf exn;
-          false)
+          let bt = Printexc.get_raw_backtrace () in
+          begin try Location.report_exception ppf exn
+          with _ ->
+            Format.fprintf ppf "Uncaught exception: %s\n%s\n"
+              (Printexc.to_string exn)
+              (Printexc.raw_backtrace_to_string bt)
+          end;
+          false
+      )
     in
     Format.pp_print_flush ppf ();
     let len = Buffer.length buf in
@@ -321,7 +328,7 @@ let process_expect_file fname =
   let correction = eval_expect_file fname ~file_contents in
   write_corrected ~file:corrected_fname ~file_contents correction
 
-let repo_root = ref ""
+let repo_root = ref None
 
 let main fname =
   Toploop.override_sys_argv
@@ -329,8 +336,18 @@ let main fname =
        ~len:(Array.length Sys.argv - !Arg.current));
   (* Ignore OCAMLRUNPARAM=b to be reproducible *)
   Printexc.record_backtrace false;
-  List.iter [ "stdlib" ] ~f:(fun s ->
-    Topdirs.dir_directory (Filename.concat !repo_root s));
+  if not !Clflags.no_std_include then begin
+    match !repo_root with
+    | None -> ()
+    | Some dir ->
+        (* If we pass [-repo-root], use the stdlib from inside the
+           compiler, not the installed one. We use
+           [Compenv.last_include_dirs] to make sure that the stdlib
+           directory is the last one. *)
+        Clflags.no_std_include := true;
+        Compenv.last_include_dirs := [Filename.concat dir "stdlib"]
+  end;
+  Compmisc.init_path false;
   Toploop.initialize_toplevel_env ();
   Sys.interactive := false;
   process_expect_file fname;
@@ -381,6 +398,8 @@ module Options = Main_args.Make_bytetop_options (struct
   let _warn_help = Warnings.help_warnings
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
@@ -397,8 +416,9 @@ end);;
 
 let args =
   Arg.align
-    ( [ "-repo-root", Arg.Set_string repo_root,
-        "<dir> root of the OCaml repository"
+    ( [ "-repo-root", Arg.String (fun s -> repo_root := Some s),
+        "<dir> root of the OCaml repository. This causes the tool to use \
+         the stdlib from the current source tree rather than the installed one."
       ] @ Options.list
     )
 

@@ -343,11 +343,6 @@ _ocamltest
 /testsuite/tests/typing-unboxed-types/true.flat-float
 /testsuite/tests/typing-unboxed-types/test.ml.reference
 
-/testsuite/tests/translprim/false.flat-float
-/testsuite/tests/translprim/true.flat-float
-/testsuite/tests/translprim/array_spec.ml.reference
-/testsuite/tests/translprim/module_coercion.ml.reference
-
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 

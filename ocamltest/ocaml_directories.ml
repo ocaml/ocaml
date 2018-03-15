@@ -18,8 +18,7 @@
 open Ocamltest_stdlib
 
 let srcdir () =
-  try Sys.getenv "OCAMLSRCDIR"
-  with Not_found -> Ocamltest_config.ocamlsrcdir
+  Sys.getenv_with_default_value "OCAMLSRCDIR" Ocamltest_config.ocamlsrcdir
 
 let stdlib ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "stdlib"]
@@ -29,3 +28,9 @@ let toplevel ocamlsrcdir =
 
 let runtime ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "byterun"]
+
+let runtime_library backend ocamlsrcdir =
+  let backend_lib_dir = match backend with
+    | Ocaml_backends.Native -> "asmrun"
+    | Ocaml_backends.Bytecode -> "byterun" in
+  Filename.make_path [ocamlsrcdir; backend_lib_dir]

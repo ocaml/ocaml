@@ -23,7 +23,8 @@ type result =
 
 type tool
 
-val make_cmp_tool : int -> tool
+type ignore = {bytes: int; lines: int}
+val make_cmp_tool : ignore:ignore -> tool
 
 val make_comparison_tool :
   ?result_of_exitcode:(string -> int -> result) -> string -> string -> tool

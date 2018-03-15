@@ -1,3 +1,8 @@
+(* TEST
+
+include systhreads
+
+*)
 
 let () = Printexc.record_backtrace true
 

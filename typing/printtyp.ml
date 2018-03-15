@@ -1283,7 +1283,8 @@ let filter_rem_sig item rem =
 let dummy =
   { type_params = []; type_arity = 0; type_kind = Type_abstract;
     type_private = Public; type_manifest = None; type_variance = [];
-    type_newtype_level = None; type_loc = Location.none;
+    type_is_newtype = false; type_expansion_scope = None;
+    type_loc = Location.none;
     type_attributes = [];
     type_immediate = false;
     type_unboxed = unboxed_false_default_false;

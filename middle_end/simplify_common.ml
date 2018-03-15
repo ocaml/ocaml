@@ -52,15 +52,32 @@ let const_boxed_int_expr expr t i =
     new_expr, approx, C.Benefit.remove_code_named expr C.Benefit.zero
   else expr, A.value_boxed_int t i, C.Benefit.zero
 
-let const_comparison_expr expr (cmp : Lambda.comparison) x y =
+let const_integer_comparison_expr expr (cmp : Lambda.integer_comparison) x y =
   (* Using the [Pervasives] comparison functions here in the compiler
      coincides with the definitions of such functions in the code
      compiled by the user, and is thus correct. *)
   const_bool_expr expr
     (match cmp with
      | Ceq -> x = y
-     | Cneq -> x <> y
+     | Cne -> x <> y
      | Clt -> x < y
      | Cgt -> x > y
      | Cle -> x <= y
      | Cge -> x >= y)
+
+let const_float_comparison_expr expr (cmp : Lambda.float_comparison) x y =
+  (* Using the [Pervasives] comparison functions here in the compiler
+     coincides with the definitions of such functions in the code
+     compiled by the user, and is thus correct. *)
+  const_bool_expr expr
+    (match cmp with
+     | CFeq -> x = y
+     | CFneq -> not (x = y)
+     | CFlt -> x < y
+     | CFnlt -> not (x < y)
+     | CFgt -> x > y
+     | CFngt -> not (x > y)
+     | CFle -> x <= y
+     | CFnle -> not (x <= y)
+     | CFge -> x >= y
+     | CFnge -> not (x >= y))

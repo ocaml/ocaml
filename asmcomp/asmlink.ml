@@ -119,7 +119,7 @@ let object_file_name name =
     try
       find_in_path !load_path name
     with Not_found ->
-      fatal_error "Asmlink.object_file_name: not found" in
+      fatal_errorf "Asmlink.object_file_name: %s not found" name in
   if Filename.check_suffix file_name ".cmx" then
     Filename.chop_suffix file_name ".cmx" ^ ext_obj
   else if Filename.check_suffix file_name ".cmxa" then
@@ -422,4 +422,6 @@ let reset () =
   implementations_defined := [];
   cmx_required := [];
   interfaces := [];
-  implementations := []
+  implementations := [];
+  lib_ccobjs := [];
+  lib_ccopts := []

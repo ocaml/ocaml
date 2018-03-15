@@ -91,10 +91,6 @@ val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
-val add_gadt_instance_level: int -> t -> t
-val gadt_instance_level: t -> type_expr -> int option
-val add_gadt_instances: t -> int -> type_expr list -> unit
-val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
@@ -151,7 +147,6 @@ val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
@@ -270,20 +265,19 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: t -> string -> value_description -> unit
-val mark_module_used: t -> string -> Location.t -> unit
-val mark_type_used: t -> string -> type_declaration -> unit
+val mark_value_used: string -> value_description -> unit
+val mark_module_used: string -> Location.t -> unit
+val mark_type_used: string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> t -> string -> type_declaration -> string -> unit
+    constructor_usage -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
 val mark_extension_used:
-    constructor_usage -> t -> extension_constructor -> string -> unit
+    constructor_usage -> extension_constructor -> string -> unit
 
 val in_signature: bool -> t -> t
-val implicit_coercion: t -> t
 
 val is_in_signature: t -> bool
 

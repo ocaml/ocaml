@@ -436,7 +436,6 @@ type type_descriptions =
     constructor_description list * label_description list
 
 let in_signature_flag = 0x01
-let implicit_coercion_flag = 0x02
 
 type t = {
   values: value_description IdTbl.t;
@@ -451,7 +450,6 @@ type t = {
   functor_args: unit Ident.tbl;
   summary: summary;
   local_constraints: type_declaration PathMap.t;
-  gadt_instances: (int * TypeSet.t ref) list;
   flags: int;
 }
 
@@ -494,7 +492,6 @@ and functor_components = {
 let copy_local ~from env =
   { env with
     local_constraints = from.local_constraints;
-    gadt_instances = from.gadt_instances;
     flags = from.flags }
 
 let same_constr = ref (fun _ _ _ -> assert false)
@@ -534,7 +531,7 @@ let empty = {
   modules = IdTbl.empty; modtypes = IdTbl.empty;
   components = IdTbl.empty; classes = IdTbl.empty;
   cltypes = IdTbl.empty;
-  summary = Env_empty; local_constraints = PathMap.empty; gadt_instances = [];
+  summary = Env_empty; local_constraints = PathMap.empty;
   flags = 0;
   functor_args = Ident.empty;
  }
@@ -546,11 +543,7 @@ let in_signature b env =
   in
   {env with flags}
 
-let implicit_coercion env =
-  {env with flags = env.flags lor implicit_coercion_flag}
-
 let is_in_signature env = env.flags land in_signature_flag <> 0
-let is_implicit_coercion env = env.flags land implicit_coercion_flag <> 0
 
 let is_ident = function
     Pident _ -> true
@@ -1058,7 +1051,7 @@ let find_type_expansion path env =
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
               || Btype.has_constr_row body ->
-                  (decl.type_params, body, may_map snd decl.type_newtype_level)
+      (decl.type_params, body, decl.type_expansion_scope)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles
@@ -1074,7 +1067,8 @@ let find_type_expansion_opt path env =
   match decl.type_manifest with
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
+  | Some body ->
+      (decl.type_params, body, decl.type_expansion_scope)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
@@ -1102,10 +1096,9 @@ let report_deprecated ?loc p deprecated =
       Location.deprecated loc (Printf.sprintf "module %s%s" (Path.name p) txt)
   | _ -> ()
 
-let mark_module_used env name loc =
-  if not (is_implicit_coercion env) then
-    try Hashtbl.find module_declarations (name, loc) ()
-    with Not_found -> ()
+let mark_module_used name loc =
+  try Hashtbl.find module_declarations (name, loc) ()
+  with Not_found -> ()
 
 let rec lookup_module_descr_aux ?loc ~mark lid env =
   match lid with
@@ -1143,7 +1136,7 @@ let rec lookup_module_descr_aux ?loc ~mark lid env =
 
 and lookup_module_descr ?loc ~mark lid env =
   let (p, comps) as res = lookup_module_descr_aux ?loc ~mark lid env in
-  if mark then mark_module_used env (Path.last p) comps.loc;
+  if mark then mark_module_used (Path.last p) comps.loc;
 (*
   Format.printf "USE module %s at %a@." (Path.last p)
     Location.print comps.loc;
@@ -1159,7 +1152,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
         let {md_loc; md_attributes; md_type} =
           EnvLazy.force subst_modtype_maker data
         in
-        if mark then mark_module_used env s md_loc;
+        if mark then mark_module_used s md_loc;
         begin match md_type with
         | Mty_ident (Path.Pident id) when Ident.name id = "#recmod#" ->
           (* see #5965 *)
@@ -1188,7 +1181,7 @@ and lookup_module ~load ?loc ~mark lid env : Path.t =
         Structure_comps c ->
           let (_data, pos) = Tbl.find_str s c.comp_modules in
           let (comps, _) = Tbl.find_str s c.comp_components in
-          if mark then mark_module_used env s comps.loc;
+          if mark then mark_module_used s comps.loc;
           let p = Pdot(p, s, pos) in
           report_deprecated ?loc p comps.deprecated;
           p
@@ -1286,26 +1279,22 @@ let copy_types l env =
   let values = List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
   {env with values; summary = Env_copy_types (env.summary, l)}
 
-let mark_value_used env name vd =
-  if not (is_implicit_coercion env) then
-    try Hashtbl.find value_declarations (name, vd.val_loc) ()
-    with Not_found -> ()
+let mark_value_used name vd =
+  try Hashtbl.find value_declarations (name, vd.val_loc) ()
+  with Not_found -> ()
 
-let mark_type_used env name vd =
-  if not (is_implicit_coercion env) then
-    try Hashtbl.find type_declarations (name, vd.type_loc) ()
-    with Not_found -> ()
+let mark_type_used name vd =
+  try Hashtbl.find type_declarations (name, vd.type_loc) ()
+  with Not_found -> ()
 
-let mark_constructor_used usage env name vd constr =
-  if not (is_implicit_coercion env) then
-    try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
-    with Not_found -> ()
+let mark_constructor_used usage name vd constr =
+  try Hashtbl.find used_constructors (name, vd.type_loc, constr) usage
+  with Not_found -> ()
 
-let mark_extension_used usage env ext name =
-  if not (is_implicit_coercion env) then
-    let ty_name = Path.last ext.ext_type_path in
-    try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
-    with Not_found -> ()
+let mark_extension_used usage ext name =
+  let ty_name = Path.last ext.ext_type_path in
+  try Hashtbl.find used_constructors (ty_name, ext.ext_loc, name) usage
+  with Not_found -> ()
 
 let set_value_used_callback name vd callback =
   let key = (name, vd.val_loc) in
@@ -1331,18 +1320,18 @@ let set_type_used_callback name td callback =
 
 let lookup_value ?loc ?(mark = true) lid env =
   let (_, desc) as r = lookup_value ?loc ~mark lid env in
-  if mark then mark_value_used env (Longident.last lid) desc;
+  if mark then mark_value_used (Longident.last lid) desc;
   r
 
 let lookup_type ?loc ?(mark = true) lid env =
   let (path, (decl, _)) = lookup_type ?loc ~mark lid env in
-  if mark then mark_type_used env (Longident.last lid) decl;
+  if mark then mark_type_used (Longident.last lid) decl;
   path
 
 let mark_type_path env path =
   try
     let decl = find_type path env in
-    mark_type_used env (Path.last path) decl
+    mark_type_used (Path.last path) decl
   with Not_found -> ()
 
 let ty_path t =
@@ -1378,8 +1367,7 @@ let lookup_all_constructors ?loc ?(mark = true) lid env =
     Not_found when is_lident lid -> []
 
 let mark_constructor usage env name desc =
-  if not (is_implicit_coercion env)
-  then match desc.cstr_tag with
+  match desc.cstr_tag with
   | Cstr_extension _ ->
       begin
         let ty_path = ty_path desc.cstr_res in
@@ -1391,7 +1379,7 @@ let mark_constructor usage env name desc =
       let ty_path = ty_path desc.cstr_res in
       let ty_decl = try find_type ty_path env with Not_found -> assert false in
       let ty_name = Path.last ty_path in
-      mark_constructor_used usage env ty_name ty_decl name
+      mark_constructor_used usage ty_name ty_decl name
 
 let lookup_label ?loc ?(mark = true) lid env =
   match lookup_all_labels ?loc ~mark lid env with
@@ -1536,52 +1524,6 @@ let find_shadowed_types path env =
   List.map fst
     (find_shadowed
        (fun env -> env.types) (fun comps -> comps.comp_types) path env)
-
-
-(* GADT instance tracking *)
-
-let add_gadt_instance_level lv env =
-  {env with
-   gadt_instances = (lv, ref TypeSet.empty) :: env.gadt_instances}
-
-let is_Tlink = function {desc = Tlink _} -> true | _ -> false
-
-let gadt_instance_level env t =
-  let rec find_instance = function
-      [] -> None
-    | (lv, r) :: rem ->
-        if TypeSet.exists is_Tlink !r then
-          (* Should we use set_typeset ? *)
-          r := TypeSet.fold (fun ty -> TypeSet.add (repr ty)) !r TypeSet.empty;
-        if TypeSet.mem t !r then Some lv else find_instance rem
-  in find_instance env.gadt_instances
-
-let add_gadt_instances env lv tl =
-  let r =
-    try List.assoc lv env.gadt_instances with Not_found -> assert false in
-  (* Format.eprintf "Added";
-  List.iter (fun ty -> Format.eprintf "@ %a" !Btype.print_raw ty) tl;
-  Format.eprintf "@."; *)
-  set_typeset r (List.fold_right TypeSet.add tl !r)
-
-(* Only use this after expand_head! *)
-let add_gadt_instance_chain env lv t =
-  let r =
-    try List.assoc lv env.gadt_instances with Not_found -> assert false in
-  let rec add_instance t =
-    let t = repr t in
-    if not (TypeSet.mem t !r) then begin
-      (* Format.eprintf "@ %a" !Btype.print_raw t; *)
-      set_typeset r (TypeSet.add t !r);
-      match t.desc with
-        Tconstr (p, _, memo) ->
-          may add_instance (find_expans Private p !memo)
-      | _ -> ()
-    end
-  in
-  (* Format.eprintf "Added chain"; *)
-  add_instance t
-  (* Format.eprintf "@." *)
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -1983,14 +1925,6 @@ let add_module ?arg id mty env =
 let add_local_type path info env =
   { env with
     local_constraints = PathMap.add path info env.local_constraints }
-
-let add_local_constraint path info elv env =
-  match info with
-    {type_manifest = Some _; type_newtype_level = Some (lv, _)} ->
-      (* elv is the expansion level, lv is the definition level *)
-      let info = {info with type_newtype_level = Some (lv, elv)} in
-      add_local_type path info env
-  | _ -> assert false
 
 
 (* Insertion of bindings by name *)

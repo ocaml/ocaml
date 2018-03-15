@@ -13,30 +13,28 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* Descriptions of the OCaml compilers and toplevels *)
+(* Descriptions of the OCaml compilers *)
 
-type t = {
-  name : string -> string;
-  flags : string;
-  directory : string;
-  backend : Ocaml_backends.t;
-  exit_status_variabe : Variables.t;
-  reference_variable : Variables.t;
-  output_variable : Variables.t
-}
+class compiler :
+  name : (string -> string) ->
+  flags : string ->
+  directory : string ->
+  exit_status_variable : Variables.t ->
+  reference_variable : Variables.t ->
+  output_variable : Variables.t ->
+  host : Ocaml_backends.t ->
+  target : Ocaml_backends.t ->
+object inherit Ocaml_tools.tool
+  method host : Ocaml_backends.t
+  method target : Ocaml_backends.t
+  method program_variable : Variables.t
+  method program_output_variable : Variables.t option
+end
 
-val ocamlc_byte : t
+val ocamlc_byte : compiler
 
-val ocamlc_opt : t
+val ocamlc_opt : compiler
 
-val ocamlopt_byte : t
+val ocamlopt_byte : compiler
 
-val ocamlopt_opt : t
-
-val ocaml : t
-
-val ocamlnat : t
-
-val expected_exit_status : Environments.t -> t -> int
-
-val reference_filename : Environments.t -> string -> t -> string
+val ocamlopt_opt : compiler

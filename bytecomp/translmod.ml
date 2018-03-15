@@ -202,7 +202,7 @@ let init_shape modl =
       Mty_ident _ ->
         raise Not_found
     | Mty_alias _ ->
-        Const_block (1, [Const_pointer 0])
+        Const_block (1, [Const_base (Const_int 0)])
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
@@ -214,9 +214,9 @@ let init_shape modl =
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_pointer 0 (* camlinternalMod.Function *)
+              Const_base (Const_int 0) (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_pointer 1 (* camlinternalMod.Lazy *)
+              Const_base (Const_int 1) (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
         init_v :: init_shape_struct env rem
     | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
@@ -234,7 +234,7 @@ let init_shape modl =
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
-        Const_pointer 2 (* camlinternalMod.Class *)
+        Const_base (Const_int 2) (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type _ :: rem ->
         init_shape_struct env rem
@@ -456,6 +456,9 @@ and transl_module cc rootpath mexp =
 and transl_struct loc fields cc rootpath str =
   transl_structure loc fields cc rootpath str.str_final_env str.str_items
 
+(* The function  transl_structure is called by  the bytecode compiler.
+   Some effort is made to compile in top to bottom order, in order to display
+   warning by increasing locations. *)
 and transl_structure loc fields cc rootpath final_env = function
     [] ->
       let body, size =
@@ -512,11 +515,14 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           Lsequence(transl_exp expr, body), size
       | Tstr_value(rec_flag, pat_expr_list) ->
+          (* Translate bindings first *)
+          let mk_lam_let =  transl_let rec_flag pat_expr_list in
           let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+          (* Then, translate remainder of struct *)
           let body, size =
             transl_structure loc ext_fields cc rootpath final_env rem
           in
-          transl_let rec_flag pat_expr_list body, size
+          mk_lam_let body, size
       | Tstr_primitive descr ->
           record_primitive descr.val_val;
           transl_structure loc fields cc rootpath final_env rem
@@ -540,15 +546,17 @@ and transl_structure loc fields cc rootpath final_env = function
           size
       | Tstr_module mb ->
           let id = mb.mb_id in
-          let body, size =
-            transl_structure loc (id :: fields) cc rootpath final_env rem
-          in
+          (* Translate module first *)
           let module_body =
             transl_module Tcoerce_none (field_path rootpath id) mb.mb_expr
           in
           let module_body =
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
+          in
+          (* Translate remainder second *)
+          let body, size =
+            transl_structure loc (id :: fields) cc rootpath final_env rem
           in
           let module_body =
             Levent (module_body, {

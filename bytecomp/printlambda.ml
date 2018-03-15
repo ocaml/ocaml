@@ -29,7 +29,6 @@ let rec struct_const ppf = function
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
@@ -128,6 +127,26 @@ let block_shape ppf shape = match shape with
         t;
       Format.fprintf ppf ")"
 
+let integer_comparison ppf = function
+  | Ceq -> fprintf ppf "=="
+  | Cne -> fprintf ppf "!="
+  | Clt -> fprintf ppf "<"
+  | Cle -> fprintf ppf "<="
+  | Cgt -> fprintf ppf ">"
+  | Cge -> fprintf ppf ">="
+
+let float_comparison ppf = function
+  | CFeq -> fprintf ppf "==."
+  | CFneq -> fprintf ppf "!=."
+  | CFlt -> fprintf ppf "<."
+  | CFnlt -> fprintf ppf "!<."
+  | CFle -> fprintf ppf "<=."
+  | CFnle -> fprintf ppf "!<=."
+  | CFgt -> fprintf ppf ">."
+  | CFngt -> fprintf ppf "!>."
+  | CFge -> fprintf ppf ">=."
+  | CFnge -> fprintf ppf "!>=."
+
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pbytes_to_string -> fprintf ppf "bytes_to_string"
@@ -200,12 +219,7 @@ let primitive ppf = function
   | Plslint -> fprintf ppf "lsl"
   | Plsrint -> fprintf ppf "lsr"
   | Pasrint -> fprintf ppf "asr"
-  | Pintcomp(Ceq) -> fprintf ppf "=="
-  | Pintcomp(Cneq) -> fprintf ppf "!="
-  | Pintcomp(Clt) -> fprintf ppf "<"
-  | Pintcomp(Cle) -> fprintf ppf "<="
-  | Pintcomp(Cgt) -> fprintf ppf ">"
-  | Pintcomp(Cge) -> fprintf ppf ">="
+  | Pintcomp(cmp) -> integer_comparison ppf cmp
   | Poffsetint n -> fprintf ppf "%i+" n
   | Poffsetref n -> fprintf ppf "+:=%i"n
   | Pintoffloat -> fprintf ppf "int_of_float"
@@ -216,12 +230,7 @@ let primitive ppf = function
   | Psubfloat -> fprintf ppf "-."
   | Pmulfloat -> fprintf ppf "*."
   | Pdivfloat -> fprintf ppf "/."
-  | Pfloatcomp(Ceq) -> fprintf ppf "==."
-  | Pfloatcomp(Cneq) -> fprintf ppf "!=."
-  | Pfloatcomp(Clt) -> fprintf ppf "<."
-  | Pfloatcomp(Cle) -> fprintf ppf "<=."
-  | Pfloatcomp(Cgt) -> fprintf ppf ">."
-  | Pfloatcomp(Cge) -> fprintf ppf ">=."
+  | Pfloatcomp(cmp) -> float_comparison ppf cmp
   | Pstringlength -> fprintf ppf "string.length"
   | Pstringrefu -> fprintf ppf "string.unsafe_get"
   | Pstringrefs -> fprintf ppf "string.get"
@@ -276,7 +285,7 @@ let primitive ppf = function
   | Plsrbint bi -> print_boxed_integer "lsr" ppf bi
   | Pasrbint bi -> print_boxed_integer "asr" ppf bi
   | Pbintcomp(bi, Ceq) -> print_boxed_integer "==" ppf bi
-  | Pbintcomp(bi, Cneq) -> print_boxed_integer "!=" ppf bi
+  | Pbintcomp(bi, Cne) -> print_boxed_integer "!=" ppf bi
   | Pbintcomp(bi, Clt) -> print_boxed_integer "<" ppf bi
   | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" ppf bi
   | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" ppf bi
