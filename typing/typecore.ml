@@ -3827,7 +3827,7 @@ and type_label_access env srecord lid =
   let opath =
     try
       let (p0, p,_) = extract_concrete_record env ty_exp in
-      Some(p0, p, ty_exp.level = generic_level || not !Clflags.principal)
+      Some(p0, p, (repr ty_exp).level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let labels = Typetexp.find_all_labels env lid.loc lid.txt in

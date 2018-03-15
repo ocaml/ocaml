@@ -62,12 +62,6 @@ let c =
 ;;
 [%%expect{|
 val c : int = 3
-|}, Principal{|
-Line _, characters 5-8:
-    !x.lbl
-       ^^^
-Warning 18: this type-based field disambiguation is not principal.
-val c : int = 3
 |}]
 
 let d =
@@ -94,12 +88,6 @@ let f =
   x.contents.lbl
 ;;
 [%%expect{|
-val f : int = 3
-|}, Principal{|
-Line _, characters 13-16:
-    x.contents.lbl
-               ^^^
-Warning 18: this type-based field disambiguation is not principal.
 val f : int = 3
 |}]
 
@@ -248,12 +236,6 @@ let r arg =
     !x.lbl
 ;;
 [%%expect{|
-val r : M.r ref -> int = <fun>
-|}, Principal{|
-Line _, characters 7-10:
-      !x.lbl
-         ^^^
-Warning 18: this type-based field disambiguation is not principal.
 val r : M.r ref -> int = <fun>
 |}]
 
