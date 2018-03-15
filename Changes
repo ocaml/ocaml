@@ -343,6 +343,10 @@ Working version
   which could result in some elements of Sys.argv being truncated in some cases.
   (Nicolás Ojeda Bär, review by Sébastien Hinderer)
 
+- GPR#1661: more precise principality warning regarding record fields
+  disambiguation
+  (Thomas Refis, review by Leo White)
+
 4.06 maintenance branch
 -----------------------
 
