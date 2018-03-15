@@ -147,36 +147,31 @@ let run
     begin if arguments="" then "without any argument"
     else "with arguments " ^ arguments
     end in
-    let output = program ^ ".output" in
-    let execution_env =
-      if redirect_output then begin
-        let bindings =
-        [
-          Builtin_variables.stdout, output;
-          Builtin_variables.stderr, output
-        ] in
-        Environments.add_bindings bindings env
-      end else env in
+    let env =
+      if redirect_output
+      then begin
+        let output = Environments.safe_lookup Builtin_variables.output env in
+        let env =
+          Environments.add_if_undefined Builtin_variables.stdout output env
+        in
+        Environments.add_if_undefined Builtin_variables.stderr output env
+      end else env
+    in
     let systemenv =
-      Environments.to_system_env execution_env in
+      Environments.to_system_env env in
     let expected_exit_status =
       exit_status_of_variable env Builtin_variables.exit_status
     in
     let exit_status =
-      run_cmd ~environment:systemenv log execution_env commandline
+      run_cmd ~environment:systemenv log env commandline
     in
     if exit_status=expected_exit_status
-    then begin
-      let newenv =
-        if redirect_output
-        then Environments.add Builtin_variables.output output env
-        else env in
-      (Result.pass, newenv)
-    end else begin
+    then (Result.pass, env)
+    else begin
       let reason = mkreason what (String.concat " " commandline) exit_status in
       if exit_status = 125 && can_skip
-      then (Result.skip_with_reason reason, execution_env)
-      else (Result.fail_with_reason reason, execution_env)
+      then (Result.skip_with_reason reason, env)
+      else (Result.fail_with_reason reason, env)
     end
 
 let run_program =
