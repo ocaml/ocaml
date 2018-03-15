@@ -259,7 +259,8 @@ let emit_instr = function
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
   | Kgetstringchar -> out opGETSTRINGCHAR
-  | Ksetstringchar -> out opSETSTRINGCHAR
+  | Kgetbyteschar -> out opGETBYTESCHAR
+  | Ksetbyteschar -> out opSETBYTESCHAR
   | Kbranch lbl -> out opBRANCH; out_label lbl
   | Kbranchif lbl -> out opBRANCHIF; out_label lbl
   | Kbranchifnot lbl -> out opBRANCHIFNOT; out_label lbl

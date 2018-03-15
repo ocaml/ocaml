@@ -360,14 +360,18 @@ let comp_primitive p args =
   | Pstringrefs -> Kccall("caml_string_get", 2)
   | Pbytesrefs -> Kccall("caml_bytes_get", 2)
   | Pbytessets -> Kccall("caml_bytes_set", 3)
-  | Pstringrefu | Pbytesrefu -> Kgetstringchar
-  | Pbytessetu -> Ksetstringchar
+  | Pstringrefu -> Kgetstringchar
+  | Pbytesrefu -> Kgetbyteschar
+  | Pbytessetu -> Ksetbyteschar
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
   | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
   | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)
-  | Pstring_set_16(_) -> Kccall("caml_string_set16", 3)
-  | Pstring_set_32(_) -> Kccall("caml_string_set32", 3)
-  | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
+  | Pbytes_set_16(_) -> Kccall("caml_bytes_set16", 3)
+  | Pbytes_set_32(_) -> Kccall("caml_bytes_set32", 3)
+  | Pbytes_set_64(_) -> Kccall("caml_bytes_set64", 3)
+  | Pbytes_load_16(_) -> Kccall("caml_bytes_get16", 2)
+  | Pbytes_load_32(_) -> Kccall("caml_bytes_get32", 2)
+  | Pbytes_load_64(_) -> Kccall("caml_bytes_get64", 2)
   | Parraylength _ -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2)
@@ -433,6 +437,8 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
+  | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
@@ -589,8 +595,7 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _)
-    ->
+  | Lprim((Pidentity | Popaque), [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)

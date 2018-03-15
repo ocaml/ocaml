@@ -21,7 +21,9 @@ type coeffects = No_coeffects | Has_coeffects
 
 let for_primitive (prim : Lambda.primitive) =
   match prim with
-  | Pignore | Pidentity | Pbytes_to_string | Pbytes_of_string ->
+  | Pignore | Pidentity ->
+      No_effects, No_coeffects
+  | Pbytes_to_string | Pbytes_of_string ->
       No_effects, No_coeffects
   | Pmakeblock _
   | Pmakearray (_, Mutable) -> Only_generative_effects, No_coeffects
@@ -103,6 +105,9 @@ let for_primitive (prim : Lambda.primitive) =
   | Pstring_load_16 true
   | Pstring_load_32 true
   | Pstring_load_64 true
+  | Pbytes_load_16 true
+  | Pbytes_load_32 true
+  | Pbytes_load_64 true
   | Pbigarrayref (true, _, _, _)
   | Pbigstring_load_16 true
   | Pbigstring_load_32 true
@@ -114,6 +119,9 @@ let for_primitive (prim : Lambda.primitive) =
   | Pstring_load_16 false
   | Pstring_load_32 false
   | Pstring_load_64 false
+  | Pbytes_load_16 false
+  | Pbytes_load_32 false
+  | Pbytes_load_64 false
   | Pbigarrayref (false, _, _, _)
   | Pbigstring_load_16 false
   | Pbigstring_load_32 false
@@ -128,9 +136,9 @@ let for_primitive (prim : Lambda.primitive) =
   | Parraysets _
   | Pbytessetu
   | Pbytessets
-  | Pstring_set_16 _
-  | Pstring_set_32 _
-  | Pstring_set_64 _
+  | Pbytes_set_16 _
+  | Pbytes_set_32 _
+  | Pbytes_set_64 _
   | Pbigarrayset _
   | Pbigstring_set_16 _
   | Pbigstring_set_32 _

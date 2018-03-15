@@ -582,7 +582,9 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim (Pidentity, [arg], _) ->
+      emit_tail_infos is_tail arg
+  | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       emit_tail_infos is_tail arg
   | Lprim (Psequand, [arg1; arg2], _)
   | Lprim (Psequor, [arg1; arg2], _) ->

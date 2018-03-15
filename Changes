@@ -170,6 +170,9 @@ Working version
   including some API changes in bytecomp/lambda.mli
   (Pierre Chambart, review by Gabriel Scherer)
 
+* GPR#1617: Make string/bytes distinguishable in the bytecode.
+  (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
