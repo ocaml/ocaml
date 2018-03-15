@@ -324,9 +324,12 @@ val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 
-val iter: (lambda -> unit) -> lambda -> unit
+val iter_head_constructor: (lambda -> unit) -> lambda -> unit
+(** [iter_head_constructor f lam] apply [f] to only the first level of
+    sub expressions of [lam]. It does not recursively traverse the
+    expression. *)
+
 val free_variables: lambda -> Ident.Set.t
-val free_methods: lambda -> Ident.Set.t
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
@@ -339,7 +342,11 @@ val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
-val subst_lambda: lambda Ident.tbl -> lambda -> lambda
+val subst: lambda Ident.Map.t -> lambda -> lambda
+(** Apply a substitution to a lambda-term.
+    Assumes that the image of the substitution is out of reach
+    of the bound variables of the lambda-term (no capture). *)
+
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 

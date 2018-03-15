@@ -166,6 +166,10 @@ Working version
   (Vincent Laviron, on a suggestion by Mark Shinwell,
   reviews by Pierre Chambart and Xavier Leroy)
 
+- GPR#1606: Simplify the semantics of Lambda.free_variables and Lambda.subst,
+  including some API changes in bytecomp/lambda.mli
+  (Pierre Chambart, review by Gabriel Scherer)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,

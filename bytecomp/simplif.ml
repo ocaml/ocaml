@@ -266,11 +266,11 @@ let simplify_exits lam =
         let ys = List.map Ident.rename xs in
         let env =
           List.fold_right2
-            (fun x y t -> Ident.add x (Lvar y) t)
-            xs ys Ident.empty in
+            (fun x y t -> Ident.Map.add x (Lvar y) t)
+            xs ys Ident.Map.empty in
         List.fold_right2
           (fun y l r -> Llet (Alias, Pgenval, y, l, r))
-          ys ls (Lambda.subst_lambda env handler)
+          ys ls (Lambda.subst env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
       end
@@ -680,10 +680,10 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         let new_ids = List.map Ident.rename inner_params in
         let subst = List.fold_left2
             (fun s id new_id ->
-               Ident.add id (Lvar new_id) s)
-            Ident.empty inner_params new_ids
+               Ident.Map.add id (Lvar new_id) s)
+            Ident.Map.empty inner_params new_ids
         in
-        let body = Lambda.subst_lambda subst body in
+        let body = Lambda.subst subst body in
         let inner_fun =
           Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
         in
