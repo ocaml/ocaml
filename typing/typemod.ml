@@ -51,7 +51,7 @@ exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
 module ImplementationHooks = Misc.MakeHooks(struct
-    type t = Typedtree.structure * Typedtree.module_coercion
+    type t = Typedtree.structure * Types.signature * Typedtree.module_coercion
   end)
 module InterfaceHooks = Misc.MakeHooks(struct
     type t = Typedtree.signature
@@ -1711,8 +1711,8 @@ let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   let (str, sg, env) =
     type_structure ~toplevel:true false None env s Location.none in
-  let (str, _coerce) = ImplementationHooks.apply_hooks
-      { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
+  let (str, sg, _coerce) = ImplementationHooks.apply_hooks
+      { Misc.sourcefile = "//toplevel//" } (str, sg, Tcoerce_none)
   in
   (str, sg, env)
 
@@ -1827,8 +1827,34 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Typecore.force_delayed_checks ();
     Printtyp.wrap_printing_env initial_env
       (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
-    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
+    (str, simple_sg, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
+   (* if we comment next let we will stop getting an error during compilation of compiler:
+		mkdir -p stdlib_man
+		../boot/ocamlrun -I ../otherlibs/unix -I ../otherlibs/str ./ocamldoc -man -d stdlib_man -I ../parsing -I ../utils -I ../typing -I ../driver -I ../bytecomp -I ../toplevel -I ../stdlib -I ../compilerlibs -I ../otherlibs/str -I ../otherlibs/dynlink -I ../otherlibs/unix -I ../otherlibs/graph \
+		-t "OCaml library" -man-mini ../stdlib/*.mli ../parsing/*.mli ../otherlibs/unix/unix.mli ../otherlibs/str/str.mli ../otherlibs/bigarray/bigarray.mli
+		Segmentation fault (core dumped)
+
+     or
+
+	make[4]: вход в каталог «/home/kakadu/asp/ocaml-trunk/stdlib»
+	../boot/ocamlrun ../ocamlc -strict-sequence -absname -w +a-4-9-41-42-44-45-48 -g -warn-error A -bin-annot -nostdlib -safe-string -strict-formats `sh ./Compflags camlinternalFormatBasics.cmi` -c camlinternalFormatBasics.mli
+	Segmentation fault (core dumped)
+
+ *)
+
+    (* but this let should be harmless, I don't know why it creates crashes *) 
+    let (str, sg) = 
+      if ImplementationHooks.count_hooks () > 0 
+      then 
+        let (str,sg,_) = ImplementationHooks.apply_hooks { Misc.sourcefile } 
+            (str, simple_sg, Tcoerce_none) 
+        in
+        (str,sg)
+      else (str, simple_sg)
+    in
+
+    let simple_sg = simplify_signature sg in
     let sourceintf =
       Filename.remove_extension sourcefile ^ !Config.interface_suffix in
     if Sys.file_exists sourceintf then begin
@@ -1849,7 +1875,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
          are not reported as being unused. *)
       Cmt_format.save_cmt (outputprefix ^ ".cmt") modulename
         (Cmt_format.Implementation str) (Some sourcefile) initial_env None;
-      (str, coercion)
+      (str, simple_sg, coercion)
     end else begin
       let coercion =
         Includemod.compunit initial_env ~mark:Includemod.Mark_positive
@@ -1872,7 +1898,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           (Cmt_format.Implementation str)
           (Some sourcefile) initial_env (Some cmi);
       end;
-      (str, coercion)
+      (str, simple_sg, coercion)
     end
     end
   with e ->
@@ -1882,9 +1908,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (Some sourcefile) initial_env None;
     raise e
 
+(*
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   ImplementationHooks.apply_hooks { Misc.sourcefile }
     (type_implementation sourcefile outputprefix modulename initial_env ast)
+*)
 
 let save_signature modname tsg outputprefix source_file initial_env cmi =
   Cmt_format.save_cmt  (outputprefix ^ ".cmti") modname

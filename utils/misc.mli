@@ -344,6 +344,7 @@ module type HookSig = sig
   type t
   val add_hook : string -> (hook_info -> t -> t) -> unit
   val apply_hooks : hook_info -> t -> t
+  val count_hooks : unit -> int 
 end
 
 module MakeHooks : functor (M : sig type t end) -> HookSig with type t = M.t

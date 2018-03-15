@@ -718,6 +718,8 @@ module type HookSig = sig
 
   val add_hook : string -> (hook_info -> t -> t) -> unit
   val apply_hooks : hook_info -> t -> t
+
+  val count_hooks : unit -> int
 end
 
 module MakeHooks(M: sig
@@ -728,6 +730,7 @@ module MakeHooks(M: sig
   type t = M.t
 
   let hooks = ref []
+  let count_hooks () = List.length !hooks
   let add_hook name f = hooks := (name, f) :: !hooks
   let apply_hooks sourcefile intf =
     fold_hooks !hooks sourcefile intf
