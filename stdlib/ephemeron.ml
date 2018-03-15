@@ -391,7 +391,7 @@ module GenHashTable = struct
             else aux(i+1) tbl_data.(i) ()
         | Cons (_, c, next) ->
             begin match H.get_key c, H.get_data c with
-              | None, _ | _, None -> Seq.Nil
+              | None, _ | _, None -> aux i next ()
               | Some key, Some data ->
                   Seq.Cons ((key, data), aux i next)
             end
