@@ -236,8 +236,22 @@ struct caml_loc_info {
   int loc_lnum;
   int loc_startchr;
   int loc_endchr;
+  int loc_is_inlined;
 };
 
+typedef void* debuginfo;
+
+debuginfo caml_debuginfo_next(debuginfo dbg)
+{
+  uint32_t * infoptr;
+
+  if (dbg == NULL)
+    return NULL;
+
+  infoptr = dbg;
+  infoptr += 2; /* Two packed info fields */
+  return *((debuginfo*)infoptr);
+}
 
 CAMLexport void extract_location_info(frame_descr * d,
                                   /*out*/ struct caml_loc_info * li)
@@ -251,6 +265,7 @@ CAMLexport void extract_location_info(frame_descr * d,
   if ((d->frame_size & 1) == 0) {
     li->loc_valid = 0;
     li->loc_is_raise = 1;
+    li->loc_is_inlined = 0;
     return;
   }
 
@@ -260,6 +275,7 @@ CAMLexport void extract_location_info(frame_descr * d,
      * re-raise operations (above)? The backtrace ignores them currently. */
     li->loc_valid = 0;
     li->loc_is_raise = 1;
+    li->loc_is_inlined = 0;
     return;
   }
 
@@ -281,6 +297,8 @@ CAMLexport void extract_location_info(frame_descr * d,
      b (10 bits): end of character range */
   li->loc_valid = 1;
   li->loc_is_raise = (info1 & 3) != 0;
+  //li->loc_is_inlined = caml_debuginfo_next((debuginfo)infoptr) != NULL;
+  li->loc_is_inlined = 0;
   li->loc_filename = (char *) infoptr + (info1 & 0x3FFFFFC);
   li->loc_lnum = info2 >> 12;
   li->loc_startchr = (info2 >> 4) & 0xFF;
@@ -348,12 +366,13 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(5, 0);
+    p = caml_alloc_small(6, 0);
     caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
     caml_initialize_field(p, 1, fname);
     caml_initialize_field(p, 2, Val_int(li.loc_lnum));
     caml_initialize_field(p, 3, Val_int(li.loc_startchr));
     caml_initialize_field(p, 4, Val_int(li.loc_endchr));
+    caml_initialize_field(p, 5, Val_int(li.loc_is_inlined));
   } else {
     p = caml_alloc_small(1, 1);
     caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
