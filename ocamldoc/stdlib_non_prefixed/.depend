@@ -1,7 +1,7 @@
 annot.cmi : location.cmi
 arg.cmi :
 arg_helper.cmi : map.cmi
-array.cmi :
+array.cmi : seq.cmi
 arrayLabels.cmi :
 ast_helper.cmi : parsetree.cmi longident.cmi location.cmi docstrings.cmi \
     asttypes.cmi
@@ -13,13 +13,13 @@ attr_helper.cmi : parsetree.cmi location.cmi format.cmi asttypes.cmi
 bigarray.cmi : unix.cmi complex.cmi camlinternalBigarray.cmi
 btype.cmi : types.cmi set.cmi path.cmi map.cmi hashtbl.cmi format.cmi \
     asttypes.cmi
-buffer.cmi : uchar.cmi
+buffer.cmi : uchar.cmi seq.cmi
 builtin_attributes.cmi : parsetree.cmi location.cmi
 bytegen.cmi : lambda.cmi instruct.cmi
 bytelibrarian.cmi : format.cmi
 bytelink.cmi : symtable.cmi format.cmi digest.cmi cmo_format.cmi
 bytepackager.cmi : ident.cmi format.cmi env.cmi
-bytes.cmi :
+bytes.cmi : seq.cmi
 bytesLabels.cmi :
 bytesections.cmi :
 callback.cmi :
@@ -61,7 +61,7 @@ gc.cmi :
 genlex.cmi : stream.cmi
 graphics.cmi :
 graphicsX11.cmi :
-hashtbl.cmi :
+hashtbl.cmi : seq.cmi
 ident.cmi : identifiable.cmi
 identifiable.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
 includeclass.cmi : types.cmi location.cmi format.cmi env.cmi ctype.cmi
@@ -77,16 +77,16 @@ lambda.cmi : types.cmi primitive.cmi path.cmi location.cmi ident.cmi env.cmi \
 lazy.cmi :
 lexer.cmi : parser.cmi location.cmi lexing.cmi format.cmi
 lexing.cmi :
-list.cmi :
+list.cmi : seq.cmi
 listLabels.cmi :
 location.cmi : warnings.cmi lexing.cmi format.cmi
 longident.cmi :
-map.cmi :
+map.cmi : seq.cmi
 marshal.cmi :
 matching.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi
 meta.cmi : obj.cmi instruct.cmi
 misc.cmi : set.cmi map.cmi hashtbl.cmi format.cmi
-moreLabels.cmi : set.cmi map.cmi hashtbl.cmi
+moreLabels.cmi : set.cmi seq.cmi map.cmi hashtbl.cmi
 mtype.cmi : types.cmi path.cmi ident.cmi env.cmi
 mutex.cmi :
 nativeint.cmi :
@@ -117,21 +117,22 @@ printtyp.cmi : types.cmi path.cmi outcometree.cmi longident.cmi ident.cmi \
     format.cmi env.cmi asttypes.cmi
 printtyped.cmi : typedtree.cmi format.cmi
 profile.cmi : format.cmi
-queue.cmi :
+queue.cmi : seq.cmi
 random.cmi : nativeint.cmi int64.cmi int32.cmi
 runtimedef.cmi :
 scanf.cmi : pervasives.cmi
 semantics_of_primitives.cmi : lambda.cmi
-set.cmi :
+seq.cmi :
+set.cmi : seq.cmi
 simplif.cmi : misc.cmi location.cmi lambda.cmi ident.cmi
 sort.cmi :
 spacetime.cmi :
-stack.cmi :
+stack.cmi : seq.cmi
 stdLabels.cmi : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
     arrayLabels.cmi
 str.cmi :
 stream.cmi :
-string.cmi :
+string.cmi : seq.cmi
 stringLabels.cmi :
 strongly_connected_components.cmi : identifiable.cmi
 stypes.cmi : typedtree.cmi location.cmi annot.cmi

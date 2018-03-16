@@ -483,3 +483,24 @@ let rec compare_length_with l n =
     if n <= 0 then 1 else
       compare_length_with l (n-1)
 ;;
+
+(** {6 Iterators} *)
+
+let to_seq l =
+  let rec aux l () = match l with
+    | [] -> Seq.Nil
+    | x :: tail -> Seq.Cons (x, aux tail)
+  in
+  aux l
+
+let of_seq seq =
+  let rec direct depth seq : _ list =
+    if depth=0
+    then
+      Seq.fold_left (fun acc x -> x::acc) [] seq
+      |> rev (* tailrec *)
+    else match seq() with
+      | Seq.Nil -> []
+      | Seq.Cons (x, next) -> x :: direct (depth-1) next
+  in
+  direct 500 seq

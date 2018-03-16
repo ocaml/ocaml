@@ -36,8 +36,9 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 P=stdlib__
 
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
-OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
-  $(P)sys.cmo $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
+OTHERS=$(P)seq.cmo $(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo \
+  $(P)bytes.cmo $(P)string.cmo \
+  $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
   $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \

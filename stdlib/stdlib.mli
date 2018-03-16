@@ -1263,6 +1263,7 @@ module Printf       = Printf
 module Queue        = Queue
 module Random       = Random
 module Scanf        = Scanf
+module Seq          = Seq
 module Set          = Set
 module Sort         = Sort
 module Spacetime    = Spacetime

@@ -292,6 +292,21 @@ val equal: t -> t -> bool
 (** The equality function for byte sequences.
     @since 4.05.0 *)
 
+(** {6 Iterators} *)
+
+val to_seq : t -> char Seq.t
+(** Iterate on the string , in increasing index order. Modifications of the
+    string during iteration will be reflected in the iterator.
+    @since 4.07 *)
+
+val to_seqi : t -> (int * char) Seq.t
+(** Iterate on the string, in increasing order, yielding indices along chars
+    @since 4.07 *)
+
+val of_seq : char Seq.t -> t
+(** Create a string from the generator
+    @since 4.07 *)
+
 (**/**)
 
 (* The following is for system use only. Do not call directly. *)
