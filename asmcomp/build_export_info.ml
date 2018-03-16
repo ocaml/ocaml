@@ -171,7 +171,6 @@ let descr_of_constant (c : Flambda.const) : Export_info.descr =
      constructors). *)
   | Int i -> Value_int i
   | Char c -> Value_char c
-  | Const_pointer i -> Value_constptr i
 
 let descr_of_allocated_constant (c : Allocated_const.t) : Export_info.descr =
   match c with

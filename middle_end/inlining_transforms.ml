@@ -71,6 +71,36 @@ let fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
       function_decls)
     init
 
+let fold_over_projections_of_vars_bound_by_closures
+      ~closure_id_being_applied
+      ~lhs_of_application
+      ~(function_decls : Flambda.function_declarations)
+      ~init
+      ~f =
+  let function_names = Variable.Map.keys function_decls.funs in
+  Variable.Map.fold
+    (fun _function_var (function_decl : Flambda.function_declaration) acc ->
+       let (--) = Variable.Set.diff in
+       let function_free_vars = function_decl.free_variables in
+       let function_params = Parameter.Set.vars function_decl.params in
+       let bound_variables =
+         (function_free_vars -- function_params) -- function_names
+       in
+       Variable.Set.fold
+         (fun var acc ->
+            let expr : Flambda.named =
+              Project_var {
+                closure = lhs_of_application;
+                closure_id = closure_id_being_applied;
+                var = Var_within_closure.wrap var;
+              }
+            in
+            f ~acc ~var ~expr)
+         bound_variables
+         acc)
+    function_decls.funs
+    init
+
 let set_inline_attribute_on_all_apply body inline specialise =
   Flambda_iterators.map_toplevel_expr (function
       | Apply apply -> Apply { apply with inline; specialise }
@@ -266,14 +296,28 @@ let inline_by_copying_function_declaration ~env ~r
     None
   else
     let set_of_closures_var = new_var "dup_set_of_closures" in
+    let required_functions =
+      Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)
+        ~entry_point:closure_id_being_applied
+        function_decls
+    in
     (* The free variable map for the duplicated declaration(s) maps the
        "internal" names used within the function bodies to fresh names,
        which in turn are bound to projections from the set of closures being
        copied.  We add these bindings using [Let] around the new
        set-of-closures declaration. *)
     let free_vars, free_vars_for_lets =
-      fold_over_projections_of_vars_bound_by_closure ~closure_id_being_applied
-        ~lhs_of_application ~function_decls ~init:(Variable.Map.empty, [])
+      let function_decls =
+        Flambda.create_function_declarations
+          ~funs:(Variable.Map.filter
+                   (fun var _ -> Variable.Set.mem var required_functions)
+                   function_decls.funs)
+      in
+      fold_over_projections_of_vars_bound_by_closures
+        ~closure_id_being_applied
+        ~lhs_of_application
+        ~function_decls
+        ~init:(Variable.Map.empty, [])
         ~f:(fun ~acc:(map, for_lets) ~var:internal_var ~expr ->
           let from_closure : Flambda.specialised_to =
             { var = new_var "from_closure";
@@ -282,11 +326,6 @@ let inline_by_copying_function_declaration ~env ~r
           in
           Variable.Map.add internal_var from_closure map,
             (from_closure.var, expr)::for_lets)
-    in
-    let required_functions =
-      Flambda_utils.closures_required_by_entry_point ~backend:(E.backend env)
-        ~entry_point:closure_id_being_applied
-        function_decls
     in
     let funs =
       Variable.Map.filter (fun func _ ->

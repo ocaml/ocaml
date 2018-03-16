@@ -55,6 +55,7 @@ envaux.cmi : subst.cmi path.cmi format.cmi env.cmi
 ephemeron.cmi : hashtbl.cmi
 event.cmi :
 filename.cmi :
+float.cmi : pervasives.cmi
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmi :
 genlex.cmi : stream.cmi

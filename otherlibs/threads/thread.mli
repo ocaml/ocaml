@@ -65,7 +65,7 @@ val wait_read : Unix.file_descr -> unit
 
 val wait_write : Unix.file_descr -> unit
 (** Suspend the execution of the calling thread until at least
-   one character is available for reading ({!Thread.wait_read}) or
+   one character or EOF is available for reading ({!Thread.wait_read}) or
    one character can be written without blocking ([wait_write])
    on the given Unix file descriptor. *)
 

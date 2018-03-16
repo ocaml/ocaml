@@ -161,7 +161,7 @@ esac
 # On Windows, cleanup processes that may remain from previous run
 
 if $cleanup; then
-  tasks="tee ocamlrun program ocamltest.byte ocamltest.opt"
+  tasks="tee ocamlrun program ocamltest ocamltest.opt"
   for task in ${tasks}; do kill_task ${task}.exe; done
 fi
 

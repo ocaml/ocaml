@@ -339,12 +339,24 @@ let primitives_table = create_hashtable 57 [
   "%caml_string_get32u", Pstring_load_32(true);
   "%caml_string_get64", Pstring_load_64(false);
   "%caml_string_get64u", Pstring_load_64(true);
-  "%caml_string_set16", Pstring_set_16(false);
-  "%caml_string_set16u", Pstring_set_16(true);
-  "%caml_string_set32", Pstring_set_32(false);
-  "%caml_string_set32u", Pstring_set_32(true);
-  "%caml_string_set64", Pstring_set_64(false);
-  "%caml_string_set64u", Pstring_set_64(true);
+  "%caml_string_set16", Pbytes_set_16(false);
+  "%caml_string_set16u", Pbytes_set_16(true);
+  "%caml_string_set32", Pbytes_set_32(false);
+  "%caml_string_set32u", Pbytes_set_32(true);
+  "%caml_string_set64", Pbytes_set_64(false);
+  "%caml_string_set64u", Pbytes_set_64(true);
+  "%caml_bytes_get16", Pbytes_load_16(false);
+  "%caml_bytes_get16u", Pbytes_load_16(true);
+  "%caml_bytes_get32", Pbytes_load_32(false);
+  "%caml_bytes_get32u", Pbytes_load_32(true);
+  "%caml_bytes_get64", Pbytes_load_64(false);
+  "%caml_bytes_get64u", Pbytes_load_64(true);
+  "%caml_bytes_set16", Pbytes_set_16(false);
+  "%caml_bytes_set16u", Pbytes_set_16(true);
+  "%caml_bytes_set32", Pbytes_set_32(false);
+  "%caml_bytes_set32u", Pbytes_set_32(true);
+  "%caml_bytes_set64", Pbytes_set_64(false);
+  "%caml_bytes_set64u", Pbytes_set_64(true);
   "%caml_bigstring_get16", Pbigstring_load_16(false);
   "%caml_bigstring_get16u", Pbigstring_load_16(true);
   "%caml_bigstring_get32", Pbigstring_load_32(false);
@@ -839,7 +851,7 @@ and transl_exp0 e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(Const_base (Const_int n))
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
@@ -860,7 +872,7 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(Const_base (Const_int tag))
       | Some arg ->
           let lam = transl_exp arg in
           try

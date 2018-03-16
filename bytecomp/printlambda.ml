@@ -29,7 +29,6 @@ let rec struct_const ppf = function
   | Const_base(Const_int32 n) -> fprintf ppf "%lil" n
   | Const_base(Const_int64 n) -> fprintf ppf "%LiL" n
   | Const_base(Const_nativeint n) -> fprintf ppf "%nin" n
-  | Const_pointer n -> fprintf ppf "%ia" n
   | Const_block(tag, []) ->
       fprintf ppf "[%i]" tag
   | Const_block(tag, sc1::scl) ->
@@ -305,15 +304,24 @@ let primitive ppf = function
   | Pstring_load_64(unsafe) ->
      if unsafe then fprintf ppf "string.unsafe_get64"
      else fprintf ppf "string.get64"
-  | Pstring_set_16(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set16"
-     else fprintf ppf "string.set16"
-  | Pstring_set_32(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set32"
-     else fprintf ppf "string.set32"
-  | Pstring_set_64(unsafe) ->
-     if unsafe then fprintf ppf "string.unsafe_set64"
-     else fprintf ppf "string.set64"
+  | Pbytes_load_16(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get16"
+     else fprintf ppf "bytes.get16"
+  | Pbytes_load_32(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get32"
+     else fprintf ppf "bytes.get32"
+  | Pbytes_load_64(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_get64"
+     else fprintf ppf "bytes.get64"
+  | Pbytes_set_16(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set16"
+     else fprintf ppf "bytes.set16"
+  | Pbytes_set_32(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set32"
+     else fprintf ppf "bytes.set32"
+  | Pbytes_set_64(unsafe) ->
+     if unsafe then fprintf ppf "bytes.unsafe_set64"
+     else fprintf ppf "bytes.set64"
   | Pbigstring_load_16(unsafe) ->
      if unsafe then fprintf ppf "bigarray.array1.unsafe_get16"
      else fprintf ppf "bigarray.array1.get16"
@@ -426,9 +434,12 @@ let name_of_primitive = function
   | Pstring_load_16 _ -> "Pstring_load_16"
   | Pstring_load_32 _ -> "Pstring_load_32"
   | Pstring_load_64 _ -> "Pstring_load_64"
-  | Pstring_set_16 _ -> "Pstring_set_16"
-  | Pstring_set_32 _ -> "Pstring_set_32"
-  | Pstring_set_64 _ -> "Pstring_set_64"
+  | Pbytes_load_16 _ -> "Pbytes_load_16"
+  | Pbytes_load_32 _ -> "Pbytes_load_32"
+  | Pbytes_load_64 _ -> "Pbytes_load_64"
+  | Pbytes_set_16 _ -> "Pbytes_set_16"
+  | Pbytes_set_32 _ -> "Pbytes_set_32"
+  | Pbytes_set_64 _ -> "Pbytes_set_64"
   | Pbigstring_load_16 _ -> "Pbigstring_load_16"
   | Pbigstring_load_32 _ -> "Pbigstring_load_32"
   | Pbigstring_load_64 _ -> "Pbigstring_load_64"

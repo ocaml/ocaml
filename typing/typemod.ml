@@ -1265,10 +1265,11 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
-let wrap_constraint env arg mty explicit =
+let wrap_constraint env mark arg mty explicit =
+  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =
     try
-      Includemod.modtypes ~loc:arg.mod_loc env arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mty
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
@@ -1326,7 +1327,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       let sg' = simplify_signature sg in
       if List.length sg' = List.length sg then md else
-      wrap_constraint (Env.implicit_coercion env) md (Mty_signature sg')
+      wrap_constraint env false md (Mty_signature sg')
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
@@ -1389,7 +1390,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with
+      let md =
+        wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
+      in
+      rm { md with
           mod_loc = smod.pmod_loc;
           mod_attributes = smod.pmod_attributes;
          }
@@ -1787,7 +1791,7 @@ let type_package env m p nl =
   (* go back to original level *)
   Ctype.end_def ();
   if nl = [] then
-    (wrap_constraint env modl (Mty_ident p) Tmodtype_implicit, [])
+    (wrap_constraint env true modl (Mty_ident p) Tmodtype_implicit, [])
   else let mty = modtype_of_package env modl.mod_loc p nl tl' in
   List.iter2
     (fun n ty ->
@@ -1795,7 +1799,7 @@ let type_package env m p nl =
       with Ctype.Unify _ ->
         raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
     nl tl';
-  (wrap_constraint env modl mty Tmodtype_implicit, tl')
+  (wrap_constraint env true modl mty Tmodtype_implicit, tl')
 
 (* Fill in the forward declarations *)
 let () =
@@ -1836,7 +1840,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                       Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion =
-        Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+          sourcefile sg intf_file dclsig
+      in
       Typecore.force_delayed_checks ();
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
@@ -1846,8 +1852,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (str, coercion)
     end else begin
       let coercion =
-        Includemod.compunit initial_env sourcefile sg
-                            "(inferred signature)" simple_sg in
+        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+          sourcefile sg "(inferred signature)" simple_sg
+      in
       check_nongen_schemes finalenv simple_sg;
       normalize_signature finalenv simple_sg;
       Typecore.force_delayed_checks ();

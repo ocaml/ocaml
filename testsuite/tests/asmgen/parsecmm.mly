@@ -146,7 +146,13 @@ phrase:
 fundecl:
     LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
-        {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
+        {fun_name = $3; fun_args = $5; fun_body = $7;
+         fun_codegen_options =
+           if Config.flambda then [
+             Reduce_code_size;
+             No_CSE;
+           ]
+           else [ Reduce_code_size ];
          fun_dbg = debuginfo ()} }
 ;
 fun_name:
@@ -177,7 +183,7 @@ expr:
     INTCONST    { Cconst_int $1 }
   | FLOATCONST  { Cconst_float (float_of_string $1) }
   | STRING      { Cconst_symbol $1 }
-  | POINTER     { Cconst_pointer $1 }
+  | POINTER     { Cconst_int $1 }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }

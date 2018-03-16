@@ -96,6 +96,12 @@ let arch64 = make
     "64-bit architecture"
     "non-64-bit architecture")
 
+let has_symlink = make
+  "has_symlink"
+  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+    "symlinks available"
+    "symlinks not available")
+
 let setup_build_env = make
   "setup-build-env"
   (Actions_helpers.setup_build_env true [])
@@ -143,6 +149,7 @@ let _ =
     not_bsd;
     arch32;
     arch64;
+    has_symlink;
     setup_build_env;
     run;
     script;

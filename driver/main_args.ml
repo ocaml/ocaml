@@ -457,7 +457,7 @@ let mk_strict_sequence f =
 
 let mk_thread f =
   "-thread", Arg.Unit f,
-  " Generate code that supports the system threads library"
+  " (deprecated) same as -I +threads"
 ;;
 
 let mk_dtimings f =
