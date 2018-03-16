@@ -413,6 +413,7 @@ struct loc_info {
   int loc_lnum;
   int loc_startchr;
   int loc_endchr;
+  int loc_is_inlined;
 };
 
 static void extract_location_info(code_t pc,
@@ -431,6 +432,7 @@ static void extract_location_info(code_t pc,
   li->loc_lnum = events[ev].ev_lnum;
   li->loc_startchr = events[ev].ev_startchr;
   li->loc_endchr = events[ev].ev_endchr;
+  li->loc_is_inlined = 0;
 }
 
 /* Print location information -- same behavior as in Printexc */
@@ -497,12 +499,13 @@ CAMLprim value caml_convert_raw_backtrace_slot(value backtrace_slot) {
 
   if (li.loc_valid) {
     fname = caml_copy_string(li.loc_filename);
-    p = caml_alloc_small(5, 0);
+    p = caml_alloc_small(6, 0);
     caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
     caml_initialize_field(p, 1, fname);
     caml_initialize_field(p, 2, Val_int(li.loc_lnum));
     caml_initialize_field(p, 3, Val_int(li.loc_startchr));
     caml_initialize_field(p, 4, Val_int(li.loc_endchr));
+    caml_initialize_field(p, 5, Val_int(li.loc_is_inlined));
   } else {
     p = caml_alloc_small(1, 1);
     caml_initialize_field(p, 0, Val_bool(li.loc_is_raise));
