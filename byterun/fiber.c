@@ -206,8 +206,7 @@ next_chunk:
       /* XXX KC: disabled already scanned optimization. */
     } else {
       /* This marks the top of an ML stack chunk. Move sp to the previous stack
-       * chunk. This includes skipping over the trap frame (2 words) + fixed
-       * offset. */
+       * chunk. This includes skipping over the trap frame (2 words). */
 #ifndef Stack_grows_upwards
       sp += 2 * sizeof(value);
 #else
@@ -551,7 +550,7 @@ CAMLprim value caml_clone_continuation (value cont)
 
   bvar_stat = caml_bvar_status(cont);
   if (bvar_stat & BVAR_EMPTY)
-    caml_invalid_argument ("continuation already taken");
+    caml_invalid_argument ("Obj.clone: continuation already taken");
 
   prev_target = Val_unit;
   caml_read_field(cont, 0, &source);

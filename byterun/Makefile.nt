@@ -58,7 +58,7 @@ libcamlrund.$(A): $(DOBJS)
 	  >> .depend.win32
 	echo " caml/mlvalues.h caml/memory.h caml/gc.h caml/major_gc.h \\"\
 	  >> .depend.win32
-	echo " caml/freelist.h caml/minor_gc.h caml/osdeps.h caml/signals.h"\
+	echo " caml/minor_gc.h caml/osdeps.h caml/signals.h"\
 	  >> .depend.win32
 	cat .depend >> .depend.win32
 	sed -ne '/\.pic\.o/q' \

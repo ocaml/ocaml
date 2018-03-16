@@ -31,7 +31,8 @@ COBJS=startup.o \
   misc.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  finalise.o custom.o $(UNIX_OR_WIN32).o backtrace.o natdynlink.o \
+  finalise.o custom.o $(UNIX_OR_WIN32).o natdynlink.o \
+	backtrace.o backtrace_prim.o \
   debugger.o meta.o dynlink.o clambda_checks.o addrmap.o domain.o platform.o \
   params.o eventlog.o frame_descriptors.o fiber.o shared_heap.o \
   spacetime.o spacetime_snapshot.o spacetime_offline.o
@@ -130,6 +131,8 @@ endif
 
 main.c: ../byterun/main.c
 	ln -s ../byterun/main.c main.c
+backtrace.c: ../byterun/backtrace.c
+	ln -s ../byterun/backtrace.c backtrace.c
 misc.c: ../byterun/misc.c
 	ln -s ../byterun/misc.c misc.c
 major_gc.c: ../byterun/major_gc.c
@@ -216,7 +219,7 @@ LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c finalise.c meta.c custom.c main.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
-  domain.c platform.c eventlog.c
+  domain.c platform.c eventlog.c backtrace.c
 
 clean::
 	rm -f $(LINKEDFILES)
