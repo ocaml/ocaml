@@ -299,9 +299,7 @@ CAMLexport void caml_main(char **argv)
   /* Load the code */
   caml_code_size = caml_seek_section(fd, &trail, "CODE");
   caml_load_code(fd, caml_code_size);
-  /* XXX KC: Fix me.
   caml_init_debug_info();
-  */
   /* Build the table of primitives */
   shared_lib_path = read_section(fd, &trail, "DLPT");
   shared_libs = read_section(fd, &trail, "DLLS");
@@ -374,9 +372,7 @@ CAMLexport void caml_startup_code(
   caml_start_code = code;
   caml_code_size = code_size;
   caml_init_code_fragments();
-  /* XXX: Fix me.
   caml_init_debug_info();
-  */
   if (caml_debugger_in_use) {
     int len, i;
     len = code_size / sizeof(opcode_t);

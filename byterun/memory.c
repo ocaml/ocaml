@@ -373,7 +373,8 @@ CAMLprim value caml_bvar_take(value bv)
 {
   CAMLparam1(bv);
   intnat stat = caml_bvar_status(bv);
-  if (stat & BVAR_EMPTY) caml_raise_not_found();
+  if (stat & BVAR_EMPTY)
+    caml_invalid_argument("continuation already taken");
   CAMLassert(stat == Caml_state->id);
 
   value v = Op_val(bv)[0];

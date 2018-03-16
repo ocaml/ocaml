@@ -111,17 +111,11 @@ let _ = [Known_location { is_raise = false; filename = "";
 external convert_raw_backtrace_slot:
   raw_backtrace_slot -> backtrace_slot = "caml_convert_raw_backtrace_slot"
 
-(* TODO KC:
 external convert_raw_backtrace:
   raw_backtrace -> backtrace_slot array = "caml_convert_raw_backtrace"
 
 let convert_raw_backtrace bt =
   try Some (convert_raw_backtrace bt)
-  with Failure _ -> None
-*)
-
-let convert_raw_backtrace bt =
-  try Some (Array.map convert_raw_backtrace_slot bt)
   with Failure _ -> None
 
 let format_backtrace_slot pos slot =
