@@ -62,6 +62,7 @@ from being garbage-collected \\
 \subsubsection*{Arithmetic:}
 \begin{tabular}{lll}
 "Complex" & p.~\pageref{Complex} & Complex numbers \\
+"Float" & p.~\pageref{Float} & Floating-point numbers \\
 "Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
 "Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\
 "Nativeint" & p.~\pageref{Nativeint} & operations on platform-native
@@ -110,6 +111,7 @@ be called from C \\
 \item \ahref{libref/Digest.html}{Module \texttt{Digest}: MD5 message digest}
 \item \ahref{libref/Ephemeron.html}{Module \texttt{Ephemeron}: Ephemerons and weak hash table}
 \item \ahref{libref/Filename.html}{Module \texttt{Filename}: operations on file names}
+\item \ahref{libref/Float.html}{Module \texttt{Float}: Floating-point numbers}
 \item \ahref{libref/Format.html}{Module \texttt{Format}: pretty printing}
 \item \ahref{libref/Gc.html}{Module \texttt{Gc}: memory management control and statistics; finalized values}
 \item \ahref{libref/Genlex.html}{Module \texttt{Genlex}: a generic lexical analyzer}
@@ -156,6 +158,7 @@ be called from C \\
 \input{Digest.tex}
 \input{Ephemeron.tex}
 \input{Filename.tex}
+\input{Float.tex}
 \input{Format.tex}
 \input{Gc.tex}
 \input{Genlex.tex}

@@ -58,6 +58,9 @@ Working version
   string that does not contain any characters needing to be escaped.
   (Alain Frisch, review by Xavier Leroy and Gabriel Scherer)
 
+- GPR#1638: add Float module.
+  (Nicolás Ojeda Bär, review by Alain Frisch and Jeremy Yallop)
+
 ### Other libraries:
 
 - MPR#7745, GPR#1629: Graphics.open_graph displays the correct window title on

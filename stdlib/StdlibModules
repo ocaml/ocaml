@@ -40,6 +40,7 @@ STDLIB_MODULES=\
   $(P)digest \
   $(P)ephemeron \
   $(P)filename \
+  $(P)float \
   $(P)format \
   $(P)gc \
   $(P)genlex \

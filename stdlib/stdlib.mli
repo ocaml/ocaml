@@ -1240,6 +1240,7 @@ module Complex      = Complex
 module Digest       = Digest
 module Ephemeron    = Ephemeron
 module Filename     = Filename
+module Float        = Float
 module Format       = Format
 module Gc           = Gc
 module Genlex       = Genlex
