@@ -47,3 +47,7 @@ let runtime_flags ocamlsrcdir backend c_files =
   rt_flags ^ " " ^ runtime_library_flags
 
 let toplevel_default_flags = "-noinit -no-version -noprompt"
+
+let ocamldebug_default_flags ocamlsrcdir =
+  "-no-version -no-prompt -no-time -no-breakpoint-message " ^
+  ("-topdirs-path " ^ (Ocaml_directories.toplevel ocamlsrcdir))

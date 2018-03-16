@@ -45,3 +45,4 @@ val ocamllex : string -> string
 val ocamlyacc : string -> string
 
 val ocamldoc : string -> string
+val ocamldebug : string -> string

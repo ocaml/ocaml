@@ -426,6 +426,51 @@ let ocamlopt_opt =
       "ocamlopt.opt"
       (compile Ocaml_compilers.ocamlopt_opt))
 
+let env_with_lib_unix ocamlsrcdir env =
+  let libunixdir = Ocaml_directories.libunix ocamlsrcdir in
+  let newlibs =
+    match Environments.lookup Ocaml_variables.caml_ld_library_path env with
+    | None -> libunixdir
+    | Some libs -> libunixdir ^ " " ^ libs
+  in
+  Environments.add Ocaml_variables.caml_ld_library_path newlibs env
+
+let debug log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Debugging program %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_ocamldebug ocamlsrcdir;
+    Ocaml_flags.ocamldebug_default_flags ocamlsrcdir;
+    program
+  ] in
+  let systemenv =
+    Array.append
+      dumb_term
+      (Environments.to_system_env (env_with_lib_unix ocamlsrcdir env))
+  in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:systemenv
+      ~stdin_variable: Ocaml_variables.ocamldebug_script
+      ~stdout_variable:Builtin_variables.output
+      ~stderr_variable:Builtin_variables.output
+      ~append:true
+      log (env_with_lib_unix ocamlsrcdir env) commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamldebug = Actions.make "ocamldebug" debug
+
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
@@ -988,5 +1033,6 @@ let _ =
     no_afl_instrument;
     setup_ocamldoc_build_env;
     run_ocamldoc;
-    check_ocamldoc_output
+    check_ocamldoc_output;
+    ocamldebug
   ]

@@ -42,6 +42,12 @@ else
 WITH_OCAMLDOC := false
 endif
 
+ifeq "$(WITH_DEBUGGER)" "ocamldebugger"
+WITH_OCAMLDEBUG := true
+else
+WITH_OCAMLDEBUG := false
+endif
+
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
@@ -194,6 +200,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
+	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
 	  $< > $@
 
 .PHONY: clean
