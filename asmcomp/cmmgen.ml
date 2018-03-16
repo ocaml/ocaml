@@ -321,7 +321,7 @@ let validate d m p =
 *)
 
 let raise_regular dbg exc =
-  Cop(Craise (Raise_withtrace, dbg),[exc])
+  Cop(Craise (Lambda.Raise_regular, dbg),[exc])
 
 let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
@@ -1816,11 +1816,11 @@ and transl_prim_1 env p arg dbg =
      (* always a pointer outside the heap *)
   (* Exceptions *)
   | Praise _ when not (!Clflags.debug) ->
-      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+      Cop(Craise (Lambda.Raise_notrace, dbg), [transl env arg])
   | Praise Lambda.Raise_notrace ->
-      Cop(Craise (Cmm.Raise_notrace, dbg), [transl env arg])
+      Cop(Craise (Lambda.Raise_notrace, dbg), [transl env arg])
   | Praise Lambda.Raise_reraise ->
-      Cop(Craise (Cmm.Raise_withtrace, dbg), [transl env arg])
+      Cop(Craise (Lambda.Raise_reraise, dbg), [transl env arg])
   | Praise Lambda.Raise_regular ->
       raise_regular dbg (transl env arg)
   (* Integer operations *)

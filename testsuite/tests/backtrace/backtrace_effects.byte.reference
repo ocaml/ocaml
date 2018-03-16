@@ -3,7 +3,7 @@ Raised by primitive operation at file "backtrace_effects.ml", line 9, characters
 Called from file "backtrace_effects.ml", line 16, characters 12-17
 Called from file "backtrace_effects.ml", line 28, characters 8-14
 (** get_continuation_callstack **)
-Raised by primitive operation at file "backtrace_effects.ml", line 11, characters 12-13
+Raised by primitive operation at file "backtrace_effects.ml", line 11, characters 4-13
 Called from file "backtrace_effects.ml", line 16, characters 12-17
 (** raise **)
 Fatal error: exception Pervasives.Exit

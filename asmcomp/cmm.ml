@@ -113,10 +113,6 @@ let label_counter = ref 99
 
 let new_label() = incr label_counter; !label_counter
 
-type raise_kind =
-  | Raise_withtrace
-  | Raise_notrace
-
 type memory_chunk =
     Byte_unsigned
   | Byte_signed
@@ -148,7 +144,7 @@ and operation =
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison
-  | Craise of raise_kind * Debuginfo.t
+  | Craise of Lambda.raise_kind * Debuginfo.t
   | Ccheckbound of Debuginfo.t
 
 type expression =

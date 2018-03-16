@@ -38,7 +38,7 @@ and instruction_desc =
   | Lsetuptrap of label
   | Lpushtrap
   | Lpoptrap
-  | Lraise of Cmm.raise_kind
+  | Lraise of Lambda.raise_kind
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction

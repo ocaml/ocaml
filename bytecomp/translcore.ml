@@ -358,6 +358,8 @@ let primitives_table = create_hashtable 57 [
   "%atomic_store", Patomic_store;
   "%atomic_cas", Patomic_cas;
   "%opaque", Popaque;
+  "%perform", Pperform;
+  "%resume", Presume;
 ]
 
 let specialize_comparison table env ty =
@@ -376,17 +378,7 @@ let specialize_comparison table env ty =
   | () -> gencomp
 
 let find_primitive prim_name =
-  match prim_name with
-      "%revapply" -> Prevapply
-    | "%apply" -> Pdirapply
-    | "%loc_LOC" -> Ploc Loc_LOC
-    | "%loc_FILE" -> Ploc Loc_FILE
-    | "%loc_LINE" -> Ploc Loc_LINE
-    | "%loc_POS" -> Ploc Loc_POS
-    | "%loc_MODULE" -> Ploc Loc_MODULE
-    | "%perform" -> Pperform
-    | "%resume"-> Presume
-    | name -> Hashtbl.find primitives_table name
+  Hashtbl.find primitives_table prim_name
 
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
@@ -687,7 +679,7 @@ let primitive_is_ccall = function
      a C function call that may raise an exception *)
   | Pccall _ | Pstringrefs  | Pbytesrefs | Pbytessets | Parrayrefs _ |
     Parraysets _ | Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ | Pdirapply |
-    Prevapply -> true
+    Prevapply | Pperform | Presume -> true
   | _ -> false
 
 (* Assertions *)

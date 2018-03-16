@@ -252,8 +252,8 @@ method mark_instr = function
       self#mark_c_tailcall (* caml_ml_array_bound_error *)
   | Iraise raise_kind ->
     begin match raise_kind with
-      | Cmm.Raise_notrace -> ()
-      | Cmm.Raise_withtrace ->
+      | Lambda.Raise_notrace -> ()
+      | Lambda.Raise_regular | Lambda.Raise_reraise ->
           (* PR#6239 *)
         (* caml_stash_backtrace; we #mark_call rather than
            #mark_c_tailcall to get a good stack backtrace *)
