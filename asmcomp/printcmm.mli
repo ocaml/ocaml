@@ -26,4 +26,3 @@ val expression : formatter -> Cmm.expression -> unit
 val fundecl : formatter -> Cmm.fundecl -> unit
 val data : formatter -> Cmm.data_item list -> unit
 val phrase : formatter -> Cmm.phrase -> unit
-val raise_kind: formatter -> Cmm.raise_kind -> unit

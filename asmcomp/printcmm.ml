@@ -53,10 +53,6 @@ let chunk = function
   | Double -> "float64"
   | Double_u -> "float64u"
 
-let raise_kind fmt = function
-  | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
-  | Raise_notrace -> Format.fprintf fmt "raise_notrace"
-
 let operation = function
   | Capply(_ty, d) -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, d, _) ->
@@ -96,7 +92,7 @@ let operation = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise (k, d) -> Format.asprintf "%a%s" raise_kind k (Debuginfo.to_string d)
+  | Craise (k, d) -> Format.asprintf "%s%s" (Lambda.raise_kind k) (Debuginfo.to_string d)
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function

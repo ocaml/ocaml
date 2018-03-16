@@ -90,7 +90,7 @@ and instruction_desc =
   | Icatch of int * instruction * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
-  | Iraise of Cmm.raise_kind
+  | Iraise of Lambda.raise_kind
 
 type spacetime_part_of_shape =
   | Direct_call_point of { callee : string; (* the symbol *) }
