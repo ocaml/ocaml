@@ -36,6 +36,12 @@ ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
 endif
 
+ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
+WITH_OCAMLDOC := true
+else
+WITH_OCAMLDOC := false
+endif
+
 CPPFLAGS += -I../byterun -DCAML_INTERNALS
 
 run := run_$(UNIX_OR_WIN32)
@@ -171,13 +177,6 @@ ocamltest.opt$(EXE): $(native_modules)
 
 %.$(O): %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
-
-ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
-WITH_OCAMLDOC := true
-else
-WITH_OCAMLDOC := false
-endif
-
 
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
