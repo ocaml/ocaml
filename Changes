@@ -225,6 +225,10 @@ Working version
 - MPR#7687: deprecate -thread option, which is equivalent to -I +threads.
   (Nicolás Ojeda Bär, report by Daniel Bünzli)
 
+- GPR#1667: add command-line options -no-propt, -no-version, -no-time,
+  -no-breakpoint and -topdirs-path to ocamldebug
+  (Sébastien Hinderer, review by Damien Doligez)
+
 ### Manual and documentation:
 
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
