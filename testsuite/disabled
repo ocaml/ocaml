@@ -24,9 +24,13 @@ tests/effects/test6.ml
 # These depend on weak references and finalisers (#88, #92)
 tests/misc/weaklifetime.ml
 tests/misc/weaktest.ml
+tests/misc/ephetest3.ml
+tests/misc/ephetest.ml
+tests/misc/ephetest2.ml
 tests/regression/pr5233/
 tests/tool-ocaml/t340-weak.ml
 tests/tool-ocaml/t350-heapcheck.ml
+tests/misc/finaliser.ml
 
 # ocamldebug is broken (#34)
 tool-debugger

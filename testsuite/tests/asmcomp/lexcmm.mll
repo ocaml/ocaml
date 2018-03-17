@@ -46,8 +46,9 @@ let keyword_table =
     "mulh", MULH;
     "or", OR;
     "proj", PROJ;
-    "raise_withtrace", RAISE Cmm.Raise_withtrace;
-    "raise_notrace", RAISE Cmm.Raise_notrace;
+    "raise_regular", RAISE Lambda.Raise_regular;
+    "raise_notrace", RAISE Lambda.Raise_notrace;
+    "raise_reraise", RAISE Lambda.Raise_reraise;
     "seq", SEQ;
     "signed", SIGNED;
     "skip", SKIP;
