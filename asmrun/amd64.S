@@ -1162,6 +1162,15 @@ CFI_STARTPROC
         LEA_VAR(caml_apply2, %rsi)
         jmp     *%rsi
 LBL(113):
+    /* Rewind parent pointers to find the performer */
+        movq    %rbx, %rdi
+        movq    Stack_parent(%rdi), %rbx
+        movq    %rax, Stack_parent(%rdi)
+        cmpq    $1, %rbx
+        movq    %rdi, %rax
+        jne     LBL(113)
+    /* %rdi now has the desired head of stack list */
+        SWITCH_OCAML_STACKS
     /* No parent stack. Raise Unhandled. */
         LEA_VAR(caml_exn_Unhandled, %rax)
         jmp LBL(caml_raise_exn)

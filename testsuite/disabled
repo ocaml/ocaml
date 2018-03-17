@@ -18,9 +18,6 @@ tests/lib-dynlink-native/main
 # Effect backtraces are buggy (#108)
 tests/backtrace/backtrace_effects.ml
 
-# Unhandled effect semantics are wrong (#105)
-tests/effects/test6.ml
-
 # These depend on weak references and finalisers (#88, #92)
 tests/misc/weaklifetime.ml
 tests/misc/weaktest.ml
