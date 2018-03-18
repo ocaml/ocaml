@@ -63,6 +63,7 @@ type mapper =
       (rec_flag * value_binding list);
     value_description: mapper -> value_description -> value_description;
     with_constraint: mapper -> with_constraint -> with_constraint;
+    open_description: mapper -> open_description -> open_description
   }
 
 let id x = x
@@ -125,8 +126,7 @@ let structure_item sub {str_desc; str_loc; str_env} =
           (List.map (tuple3 id id (sub.class_type_declaration sub)) list)
     | Tstr_include incl ->
         Tstr_include (include_infos (sub.module_expr sub) incl)
-    | Tstr_open od ->
-        Tstr_open {od with open_expr = sub.module_expr sub od.open_expr}
+    | Tstr_open od -> Tstr_open (sub.open_description sub od)
     | Tstr_attribute _ as d -> d
   in
   {str_desc; str_env; str_loc}
@@ -218,10 +218,7 @@ let expr sub x =
         Texp_constraint (sub.typ sub cty)
     | Texp_coerce (cty1, cty2) ->
         Texp_coerce (opt (sub.typ sub) cty1, sub.typ sub cty2)
-    | Texp_open od ->
-        Texp_open {od with
-                   open_expr = sub.module_expr sub od.open_expr;
-                   open_env = sub.env sub od.open_env}
+    | Texp_open od -> Texp_open (sub.open_description sub od)
     | Texp_newtype _ as d -> d
     | Texp_poly cto -> Texp_poly (opt (sub.typ sub) cto)
   in
@@ -391,8 +388,7 @@ let signature_item sub x =
     | Tsig_class_type list ->
         Tsig_class_type
           (List.map (sub.class_type_declaration sub) list)
-    | Tsig_open od ->
-        Tsig_open {od with open_expr = sub.module_expr sub od.open_expr}
+    | Tsig_open od -> Tsig_open (sub.open_description sub od)
     | Tsig_attribute _ as d -> d
   in
   {x with sig_desc; sig_env}
@@ -429,6 +425,11 @@ let with_constraint sub = function
   | Twith_typesubst decl -> Twith_typesubst (sub.type_declaration sub decl)
   | Twith_module _
   | Twith_modsubst _ as d -> d
+
+let open_description sub od =
+  {od with
+   open_expr = sub.module_expr sub od.open_expr;
+   open_env = sub.env sub od.open_env}
 
 let module_coercion sub = function
   | Tcoerce_none -> Tcoerce_none
@@ -527,10 +528,7 @@ let class_expr sub x =
     | Tcl_ident (path, lid, tyl) ->
         Tcl_ident (path, lid, List.map (sub.typ sub) tyl)
     | Tcl_open (od, e) ->
-        Tcl_open (
-          {od with
-           open_expr = sub.module_expr sub od.open_expr;
-           open_env = sub.env sub od.open_env}, sub.class_expr sub e)
+        Tcl_open (sub.open_description sub od, sub.class_expr sub e)
   in
   {x with cl_desc; cl_env}
 
@@ -552,9 +550,7 @@ let class_type sub x =
            sub.class_type sub cl
           )
     | Tcty_open (od, e) ->
-        Tcty_open ({od with
-                    open_expr = sub.module_expr sub od.open_expr;
-                    open_env = sub.env sub od.open_env}, sub.class_type sub e)
+        Tcty_open (sub.open_description sub od, sub.class_type sub e)
   in
   {x with cltyp_desc; cltyp_env}
 
@@ -706,4 +702,5 @@ let default =
     value_bindings;
     value_description;
     with_constraint;
+    open_description;
   }
