@@ -175,8 +175,9 @@ let initial_env ~loc ~safe_string ~initially_opened_module
   in
   let open_implicit_module env m =
     let open Asttypes in
-    let lid = {loc; txt = Longident.parse m } in
-    snd (type_open_ Override env lid.loc lid)
+    let me = Parsetree.({pmod_desc=Pmod_ident {loc; txt = Longident.parse m };
+                         pmod_loc=loc; pmod_attributes=[]}) in
+    let _, _, env = type_open_ Override env lid.loc lid in env
   in
   List.fold_left open_implicit_module env open_implicit_modules
 
