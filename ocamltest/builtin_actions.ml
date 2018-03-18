@@ -20,44 +20,87 @@ open Actions
 
 let pass = make
   "pass"
-  (fun log env ->
-    Printf.fprintf log "The pass action always succeeds.\n%!";
-    Pass env)
+  (fun _log env ->
+    let result =
+      Result.pass_with_reason "The pass action always succeeds." in
+    (result, env))
 
 let skip = make
   "skip"
-  (fun _log _env -> Skip "The skip action always skips.")
+  (fun _log env ->
+    let result = Result.skip_with_reason "The skip action always skips." in
+    (result, env))
 
 let fail = make
   "fail"
-  (fun _log _env -> Fail "The fail action always fails.")
+  (fun _log env ->
+    let result = Result.fail_with_reason "The fail action always fails." in
+    (result, env))
 
 let dumpenv = make
   "dumpenv"
   (fun log env ->
-    Environments.dump log env; Pass env)
+    Environments.dump log env; (Result.pass, env))
 
-let unix = make
-  "unix"
-  (fun log env ->
-    if Ocamltest_config.unix then
-    begin
-      Printf.fprintf log
-        "The unix action succeeds because we are on a Unix system.\n%!";
-      Pass env
-    end else
-      Skip "The unix action skips because we are on a Windows system.")
+let libunix = make
+  "libunix"
+  (Actions_helpers.pass_or_skip Ocamltest_config.libunix
+    "libunix available"
+    "libunix not available")
+
+let libwin32unix = make
+  "libwin32unix"
+  (Actions_helpers.pass_or_skip (not Ocamltest_config.libunix)
+    "libwin32unix available"
+    "libwin32unix not available")
+
+let windows_OS = "Windows_NT"
+
+let get_OS () = Sys.safe_getenv "OS"
 
 let windows = make
   "windows"
-  (fun log env ->
-    if not Ocamltest_config.unix then
-    begin
-      Printf.fprintf log
-        "The windows action succeeds because we are on a Windows system.\n%!";
-      Pass env
-    end else
-      Skip "The windows action skips because we are on a Unix system.")
+  (Actions_helpers.pass_or_skip (get_OS () = windows_OS)
+    "running on Windows"
+    "not running on Windows")
+
+let not_windows = make
+  "not-windows"
+  (Actions_helpers.pass_or_skip (get_OS () <> windows_OS)
+    "not running on Windows"
+    "running on Windows")
+
+let bsd_system = "bsd_elf"
+
+let bsd = make
+  "bsd"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system = bsd_system)
+    "on a BSD system"
+    "not on a BSD system")
+
+let not_bsd = make
+  "not-bsd"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.system <> bsd_system)
+    "not on a BSD system"
+    "on a BSD system")
+
+let arch32 = make
+  "arch32"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 32)
+    "32-bit architecture"
+    "non-32-bit architecture")
+
+let arch64 = make
+  "arch64"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 64)
+    "64-bit architecture"
+    "non-64-bit architecture")
+
+let has_symlink = make
+  "has_symlink"
+  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+    "symlinks available"
+    "symlinks not available")
 
 let setup_build_env = make
   "setup-build-env"
@@ -98,8 +141,15 @@ let _ =
     skip;
     fail;
     dumpenv;
-    unix;
+    libunix;
+    libwin32unix;
     windows;
+    not_windows;
+    bsd;
+    not_bsd;
+    arch32;
+    arch64;
+    has_symlink;
     setup_build_env;
     run;
     script;

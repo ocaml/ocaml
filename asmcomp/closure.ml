@@ -224,17 +224,32 @@ let make_const_ref c =
   make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
     Some c))
 let make_const_int n = make_const (Uconst_int n)
-let make_const_ptr n = make_const (Uconst_ptr n)
-let make_const_bool b = make_const_ptr(if b then 1 else 0)
-let make_comparison cmp x y =
+let make_const_bool b = make_const_int(if b then 1 else 0)
+
+let make_integer_comparison cmp x y =
   make_const_bool
     (match cmp with
        Ceq -> x = y
-     | Cneq -> x <> y
+     | Cne -> x <> y
      | Clt -> x < y
      | Cgt -> x > y
      | Cle -> x <= y
      | Cge -> x >= y)
+
+let make_float_comparison cmp x y =
+  make_const_bool
+    (match cmp with
+     | CFeq -> x = y
+     | CFneq -> not (x = y)
+     | CFlt -> x < y
+     | CFnlt -> not (x < y)
+     | CFgt -> x > y
+     | CFngt -> not (x > y)
+     | CFle -> x <= y
+     | CFnle -> not (x <= y)
+     | CFge -> x >= y
+     | CFnge -> not (x >= y))
+
 let make_const_float n = make_const_ref (Uconst_float n)
 let make_const_natint n = make_const_ref (Uconst_nativeint n)
 let make_const_int32 n = make_const_ref (Uconst_int32 n)
@@ -247,7 +262,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1 | Uconst_ptr n1) ] ->
+  | [ Value_const(Uconst_int n1) ] ->
       begin match p with
       | Pnot -> make_const_bool (n1 = 0)
       | Pnegint -> make_const_int (- n1)
@@ -261,8 +276,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int (or enumerated type), int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1 | Uconst_ptr n1);
-      Value_const(Uconst_int n2 | Uconst_ptr n2) ] ->
+  | [ Value_const(Uconst_int n1);
+      Value_const(Uconst_int n2) ] ->
       begin match p with
       | Psequand -> make_const_bool (n1 <> 0 && n2 <> 0)
       | Psequor -> make_const_bool (n1 <> 0 || n2 <> 0)
@@ -280,7 +295,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
           make_const_int (n1 lsr n2)
       | Pasrint when 0 <= n2 && n2 < 8 * Arch.size_int ->
           make_const_int (n1 asr n2)
-      | Pintcomp c -> make_comparison c n1 n2
+      | Pintcomp c -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* float *)
@@ -299,7 +314,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Psubfloat -> make_const_float (n1 -. n2)
       | Pmulfloat -> make_const_float (n1 *. n2)
       | Pdivfloat -> make_const_float (n1 /. n2)
-      | Pfloatcomp c  -> make_comparison c n1 n2
+      | Pfloatcomp c  -> make_float_comparison c n1 n2
       | _ -> default
       end
   (* nativeint *)
@@ -325,7 +340,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pnativeint -> make_const_natint (Nativeint.logand n1 n2)
       | Porbint Pnativeint ->  make_const_natint (Nativeint.logor n1 n2)
       | Pxorbint Pnativeint -> make_const_natint (Nativeint.logxor n1 n2)
-      | Pbintcomp(Pnativeint, c)  -> make_comparison c n1 n2
+      | Pbintcomp(Pnativeint, c)  -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* nativeint, int *)
@@ -363,7 +378,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pint32 -> make_const_int32 (Int32.logand n1 n2)
       | Porbint Pint32 -> make_const_int32 (Int32.logor n1 n2)
       | Pxorbint Pint32 -> make_const_int32 (Int32.logxor n1 n2)
-      | Pbintcomp(Pint32, c) -> make_comparison c n1 n2
+      | Pbintcomp(Pint32, c) -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* int32, int *)
@@ -401,7 +416,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | Pandbint Pint64 -> make_const_int64 (Int64.logand n1 n2)
       | Porbint Pint64 -> make_const_int64 (Int64.logor n1 n2)
       | Pxorbint Pint64 -> make_const_int64 (Int64.logxor n1 n2)
-      | Pbintcomp(Pint64, c) -> make_comparison c n1 n2
+      | Pbintcomp(Pint64, c) -> make_integer_comparison c n1 n2
       | _ -> default
       end
   (* int64, int *)
@@ -463,7 +478,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
-      | Value_const(Uconst_int _ | Uconst_ptr _) -> make_const_bool true
+      | Value_const(Uconst_int _) -> make_const_bool true
       | Value_const(Uconst_ref _) -> make_const_bool false
       | Value_closure _ | Value_tuple _ -> make_const_bool false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
@@ -479,7 +494,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
-            make_const_ptr 0 (* tag 0 is the same as Native here *)
+            make_const_int 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -585,7 +600,7 @@ let rec substitute loc fpc sb rn ulam =
         match sarg with
         | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _)))) ->
             find_action sw.us_index_blocks sw.us_actions_blocks tag
-        | Uconst (Uconst_ptr tag) ->
+        | Uconst (Uconst_int tag) ->
             find_action sw.us_index_consts sw.us_actions_consts tag
         | _ -> None
       in
@@ -637,7 +652,7 @@ let rec substitute loc fpc sb rn ulam =
                substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc fpc sb rn u1 with
-        Uconst (Uconst_ptr n) ->
+        Uconst (Uconst_int n) ->
           if n <> 0 then substitute loc fpc sb rn u2 else substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
@@ -817,7 +832,6 @@ let rec close fenv cenv = function
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
         | Const_base(Const_char c) -> Uconst_int (Char.code c)
-        | Const_pointer n -> Uconst_ptr n
         | Const_block (tag, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
@@ -1069,7 +1083,7 @@ let rec close fenv cenv = function
       (Utrywith(ubody, id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
-        (uarg, Value_const (Uconst_ptr n)) ->
+        (uarg, Value_const (Uconst_int n)) ->
           sequence_constant_expr arg uarg
             (close fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
@@ -1141,7 +1155,7 @@ and close_functions fenv cenv fun_defs =
     !function_nesting_depth < excessive_function_nesting_depth in
   (* Determine the free variables of the functions *)
   let fv =
-    IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+    Ident.Set.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
   (* Build the function descriptors for the functions.
      Initially all functions are assumed not to need their environment
      parameter. *)
@@ -1333,7 +1347,7 @@ let collect_exported_structured_constants a =
         Compilenv.add_exported_constant s;
         structured_constant c
     | Uconst_ref (_s, None) -> assert false (* Cannot be generated *)
-    | Uconst_int _ | Uconst_ptr _ -> ()
+    | Uconst_int _ -> ()
   and structured_constant = function
     | Uconst_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _

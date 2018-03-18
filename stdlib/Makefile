@@ -32,33 +32,39 @@ OPTCOMPILER=../ocamlopt
 CAMLOPT=$(CAMLRUN) $(OPTCOMPILER)
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 
-OBJS=camlinternalFormatBasics.cmo pervasives.cmo $(OTHERS)
-OTHERS=list.cmo char.cmo uchar.cmo bytes.cmo string.cmo sys.cmo \
-  sort.cmo marshal.cmo obj.cmo array.cmo \
-  int32.cmo int64.cmo nativeint.cmo \
-  lexing.cmo parsing.cmo \
-  set.cmo map.cmo stack.cmo queue.cmo \
-  camlinternalLazy.cmo lazy.cmo stream.cmo \
-  buffer.cmo camlinternalFormat.cmo printf.cmo \
-  arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo hashtbl.cmo weak.cmo \
-  format.cmo scanf.cmo callback.cmo \
-  camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
-  genlex.cmo ephemeron.cmo \
-  filename.cmo complex.cmo \
-  arrayLabels.cmo listLabels.cmo bytesLabels.cmo \
-  stringLabels.cmo moreLabels.cmo stdLabels.cmo \
-  spacetime.cmo camlinternalBigarray.cmo
+# Object file prefix
+P=stdlib__
+
+OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
+OTHERS=$(P)seq.cmo $(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo \
+  $(P)bytes.cmo $(P)string.cmo \
+  $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
+  $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
+  $(P)lexing.cmo $(P)parsing.cmo \
+  $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
+  camlinternalLazy.cmo $(P)lazy.cmo $(P)stream.cmo \
+  $(P)buffer.cmo camlinternalFormat.cmo $(P)printf.cmo \
+  $(P)arg.cmo $(P)printexc.cmo $(P)gc.cmo \
+  $(P)digest.cmo $(P)random.cmo $(P)hashtbl.cmo $(P)weak.cmo \
+  $(P)format.cmo $(P)scanf.cmo $(P)callback.cmo \
+  camlinternalOO.cmo $(P)oo.cmo camlinternalMod.cmo \
+  $(P)genlex.cmo $(P)ephemeron.cmo \
+  $(P)filename.cmo $(P)complex.cmo \
+  $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
+  $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
+  $(P)spacetime.cmo camlinternalBigarray.cmo
+
+PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
 
 ifeq "$(RUNTIMED)" "true"
-all: camlheaderd
+all: camlheaderd target_camlheaderd
 endif
 
 ifeq "$(RUNTIMEI)" "true"
-all: camlheaderi
+all: camlheaderi target_camlheaderi
 endif
 
 ifeq "$(PROFILING)" "true"
@@ -156,27 +162,36 @@ else # Windows
 # TODO: see whether there is a way to further merge the rules below
 # with those above
 
-camlheader target_camlheader camlheader_ur: headernt.c
+camlheader: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
 	          -DRUNTIME_NAME='"ocamlrun"' $(OUTPUTOBJ)headernt.$(O) $<
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
+
+target_camlheader: camlheader
 	cp camlheader target_camlheader
+
+camlheader_ur: camlheader
 	cp camlheader camlheader_ur
 
-camlheaderd target_camlheaderd: headernt.c
+camlheaderd: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headernt.$(O) $<
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderd
+	          -DRUNTIME_NAME='"ocamlrund"' $(OUTPUTOBJ)headerntd.$(O) $<
+	$(MKEXE) -o tmpheaderd.exe headerntd.$(O) $(EXTRALIBS)
+	mv tmpheaderd.exe camlheaderd
+
+target_camlheaderd: camlheaderd
 	cp camlheaderd target_camlheaderd
 
 camlheaderi: headernt.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun \
-	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernt.$(O)
-	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
-	mv tmpheader.exe camlheaderi
+	          -DRUNTIME_NAME='"ocamlruni"' $(OUTPUTOBJ)headernti.$(O) $<
+	$(MKEXE) -o tmpheaderi.exe headernti.$(O) $(EXTRALIBS)
+	mv tmpheaderi.exe camlheaderi
+
+target_camlheaderi: camlheaderi
+	cp camlheaderi target_camlheaderi
 
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)
@@ -206,18 +221,34 @@ clean::
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
-.mli.cmi:
-	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
+export AWK
 
-.ml.cmo:
-	$(CAMLC) $(COMPFLAGS) `sh ./Compflags $@` -c $<
+%.cmi: %.mli
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
 
-.ml.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` -c $<
+stdlib__%.cmi: %.mli
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
 
-.ml.p.cmx:
-	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) `sh ./Compflags $@` \
-	           -p -c -o $*.p.cmx $<
+%.cmo: %.ml
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -c $<
+
+stdlib__%.cmo: %.ml
+	$(CAMLC) $(COMPFLAGS) $(shell ./Compflags $@) -o $@ -c $<
+
+%.cmx: %.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) -c $<
+
+stdlib__%.cmx: %.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	           -o $@ -c $<
+
+%.p.cmx: %.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	           -p -c -o $@ $<
+
+stdlib__%.p.cmx: %.ml
+	$(CAMLOPT) $(COMPFLAGS) $(OPTCOMPFLAGS) $(shell ./Compflags $@) \
+	           -p -c -o $@ $<
 
 # Dependencies on the compiler
 COMPILER_DEPS=$(filter-out -use-prims, $(COMPILER))
@@ -226,25 +257,38 @@ $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER_DEPS)
 $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
-# Dependencies on Pervasives (not tracked by ocamldep)
-$(OTHERS) std_exit.cmo: pervasives.cmi
-$(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
-$(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
-$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
+# Dependencies on Stdlib (not tracked by ocamldep)
+$(OTHERS) std_exit.cmo: stdlib.cmi
+$(OTHERS:.cmo=.cmi) std_exit.cmi: stdlib.cmi
+$(OBJS:.cmo=.cmx) std_exit.cmx: stdlib.cmi
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmi
+$(OTHERS:.cmo=.cmx) std_exit.cmx: stdlib.cmx
+$(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: stdlib.cmx
 
 clean::
-	rm -f *.cm* *.$(O) *.$(A)
+	rm -f *.cm* *.$(O) *.$(A) *.odoc
 	rm -f *~
 	rm -f camlheader*
 
 include .depend
+
+EMPTY :=
+SPACE := $(EMPTY) $(EMPTY)
 
 # Note that .p.cmx targets do not depend (for compilation) upon other
 # .p.cmx files.  When the compiler imports another compilation unit,
 # it looks for the .cmx file (not .p.cmx).
 .PHONY: depend
 depend:
-	$(CAMLDEP) -slash *.mli *.ml > .depend
-	$(CAMLDEP) -slash *.ml | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend
+	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.mli *.ml)) \
+	  > .depend.tmp
+	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" \
+	  stdlib.ml stdlib.mli >> .depend.tmp
+	$(CAMLDEP) -slash $(filter-out stdlib.%,$(wildcard *.ml)) \
+	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
+	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
+	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
+	sed -re \
+	  's#(^| )(${subst ${SPACE},|,${PREFIXED_OBJS:stdlib__%.cmo=%}})[.]#\1stdlib__\2.#g' \
+	  .depend.tmp > .depend
+	rm -f .depend.tmp

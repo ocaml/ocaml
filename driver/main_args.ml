@@ -457,7 +457,7 @@ let mk_strict_sequence f =
 
 let mk_thread f =
   "-thread", Arg.Unit f,
-  " Generate code that supports the system threads library"
+  " (deprecated) same as -I +threads"
 ;;
 
 let mk_dtimings f =
@@ -611,6 +611,14 @@ let mk_dtypedtree f =
 
 let mk_drawlambda f =
   "-drawlambda", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dno_unique_ids f =
+  "-dno-unique-ids", Arg.Unit f, " (undocumented)"
+;;
+
+let mk_dunique_ids f =
+  "-dunique-ids", Arg.Unit f, " (undocumented)"
 ;;
 
 let mk_dsource f =
@@ -809,6 +817,8 @@ module type Common_options = sig
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
 
+  val _dno_unique_ids : unit -> unit
+  val _dunique_ids : unit -> unit
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
@@ -1082,6 +1092,8 @@ struct
 
     mk_nopervasives F._nopervasives;
     mk_use_prims F._use_prims;
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1139,6 +1151,8 @@ struct
     mk_warn_help F._warn_help;
     mk__ F.anonymous;
 
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;
@@ -1254,6 +1268,8 @@ struct
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
+    mk_dno_unique_ids F._dno_unique_ids;
+    mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
     mk_dparsetree F._dparsetree;
     mk_dtypedtree F._dtypedtree;

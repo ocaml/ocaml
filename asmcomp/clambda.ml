@@ -34,7 +34,6 @@ type ustructured_constant =
 and uconstant =
   | Uconst_ref of string * ustructured_constant option
   | Uconst_int of int
-  | Uconst_ptr of int
 
 and ulambda =
     Uvar of Ident.t
@@ -95,11 +94,15 @@ type value_approximation =
 
 (* Preallocated globals *)
 
+type uconstant_block_field =
+  | Uconst_field_ref of string
+  | Uconst_field_int of int
+
 type preallocated_block = {
   symbol : string;
   exported : bool;
   tag : int;
-  size : int;
+  fields : uconstant_block_field option list;
 }
 
 type preallocated_constant = {
@@ -131,11 +134,8 @@ let compare_constants c1 c2 =
            match, because of string constants that must not be
            reshared. *)
   | Uconst_int n1, Uconst_int n2 -> Pervasives.compare n1 n2
-  | Uconst_ptr n1, Uconst_ptr n2 -> Pervasives.compare n1 n2
   | Uconst_ref _, _ -> -1
   | Uconst_int _, Uconst_ref _ -> 1
-  | Uconst_int _, Uconst_ptr _ -> -1
-  | Uconst_ptr _, _ -> 1
 
 let rec compare_constant_lists l1 l2 =
   match l1, l2 with

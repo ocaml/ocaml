@@ -1783,6 +1783,8 @@ if test "$x11_include" = "not found"; then
                               \
     /usr/lib/i386-linux-gnu   \
     /usr/lib/x86_64-linux-gnu \
+                              \
+    /usr/lib/`echo $target | sed -e "s/-[^-]*//"` \
     ; \
     do
     if test -f $dir/libX11.a || \
@@ -1805,7 +1807,7 @@ if test "$x11_include" = "not found"; then
   done
 fi
 
-if test "x11_include" != "not found"; then
+if test "$x11_include" != "not found"; then
   if test "$x11_include" = "-I/usr/include"; then
     x11_include=""
   fi
@@ -2136,6 +2138,7 @@ config WINDOWS_UNICODE "0"
 config AFL_INSTRUMENT "$afl_instrument"
 config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
 config FLAT_FLOAT_ARRAY "$flat_float_array"
+config AWK "awk"
 
 
 rm -f tst hasgot.c

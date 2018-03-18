@@ -155,6 +155,11 @@ module Sys = struct
       end
     end
 
+  let force_remove file =
+    if file_exists file then remove file
+
+  external has_symlink : unit -> bool = "caml_has_symlink"
+
   let with_chdir path f =
     let oldcwd = Sys.getcwd () in
     Sys.chdir path;
@@ -165,6 +170,10 @@ module Sys = struct
     | exception e ->
         Sys.chdir oldcwd;
         raise e
+
+  let getenv_with_default_value variable default_value =
+    try Sys.getenv variable with Not_found -> default_value
+  let safe_getenv variable = getenv_with_default_value variable ""
 end
 
 module StringSet = struct

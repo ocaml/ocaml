@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 open Event
 
 type 'a buffer_channel = {

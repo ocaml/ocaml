@@ -238,10 +238,11 @@ let int_literals = ref ([] : (nativeint * int) list)
 
 (* Masks for conditional branches after comparisons *)
 
+(* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = overflow*)
 let branch_for_comparison = function
-    Ceq -> 8  | Cne -> 7
-  | Cle -> 12 | Cgt -> 2
-  | Cge -> 10 | Clt -> 4
+  | Ceq -> 0b1000 | Cne -> 0b0111 (* BRNEL is 0111 rather than 0110 *)
+  | Cle -> 0b1100 | Cgt -> 0b0010
+  | Cge -> 0b1010 | Clt -> 0b0100
 
 let name_for_int_comparison = function
     Isigned cmp -> ("cgr", branch_for_comparison cmp)
@@ -252,14 +253,21 @@ let name_for_int_comparison_imm = function
   | Iunsigned cmp -> ("clgfi", branch_for_comparison cmp)
 
 (* bit 0 = eq, bit 1 = lt, bit 2 = gt, bit 3 = unordered*)
-let branch_for_float_comparison cmp neg =
-   match cmp with
-     Ceq -> if neg then 7  else 8
-   | Cne -> if neg then 8  else 7
-   | Cle -> if neg then 3  else 12
-   | Cgt -> if neg then 13 else 2
-   | Cge -> if neg then 5  else 10
-   | Clt -> if neg then 11 else 4
+let branch_for_float_comparison = function
+  | CFeq  -> 0b1000
+  | CFneq -> 0b0111
+
+  | CFle  -> 0b1100
+  | CFnle -> 0b0011
+
+  | CFgt  -> 0b0010
+  | CFngt -> 0b1101
+
+  | CFge  -> 0b1010
+  | CFnge -> 0b0101
+
+  | CFlt  -> 0b0100
+  | CFnlt -> 0b1011
 
 (* Names for various instructions *)
 
@@ -554,9 +562,9 @@ let emit_instr i =
             let (comp, mask) = name_for_int_comparison_imm cmp in
             `	{emit_string comp}	{emit_reg i.arg.(0)}, {emit_int n}\n`;
             `	brcl	{emit_int mask}, {emit_label lbl}\n`
-        | Ifloattest(cmp, neg) ->
+        | Ifloattest cmp ->
             `	cdbr	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
-            let mask = branch_for_float_comparison cmp neg in
+            let mask = branch_for_float_comparison cmp in
             `	brcl	{emit_int mask}, {emit_label lbl}\n`
         | Ioddtest ->
             `	tmll	{emit_reg i.arg.(0)}, 1\n`;

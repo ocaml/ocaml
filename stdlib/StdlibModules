@@ -18,55 +18,60 @@
 # This file lists all standard library modules.
 # It is used in particular to know what to expunge in toplevels.
 
+P ?= stdlib__
+
 STDLIB_MODULES=\
-  spacetime \
-  arg \
-  array \
-  arrayLabels \
-  buffer \
-  bytes \
-  bytesLabels \
-  callback \
+  $(P)spacetime \
+  $(P)arg \
+  $(P)array \
+  $(P)arrayLabels \
+  $(P)buffer \
+  $(P)bytes \
+  $(P)bytesLabels \
+  $(P)callback \
+  camlinternalBigarray \
   camlinternalFormat \
   camlinternalFormatBasics \
   camlinternalLazy \
   camlinternalMod \
   camlinternalOO \
-  char \
-  complex \
-  digest \
-  ephemeron \
-  filename \
-  format \
-  gc \
-  genlex \
-  hashtbl \
-  int32 \
-  int64 \
-  lazy \
-  lexing \
-  list \
-  listLabels \
-  map \
-  marshal \
-  moreLabels \
-  nativeint \
-  obj \
-  oo \
-  parsing \
-  pervasives \
-  printexc \
-  printf \
-  queue \
-  random \
-  scanf \
-  set \
-  sort \
-  stack \
-  stdLabels \
-  stream \
-  string \
-  stringLabels \
-  sys \
-  uchar \
-  weak
+  $(P)char \
+  $(P)complex \
+  $(P)digest \
+  $(P)ephemeron \
+  $(P)filename \
+  $(P)float \
+  $(P)format \
+  $(P)gc \
+  $(P)genlex \
+  $(P)hashtbl \
+  $(P)int32 \
+  $(P)int64 \
+  $(P)lazy \
+  $(P)lexing \
+  $(P)list \
+  $(P)listLabels \
+  $(P)map \
+  $(P)marshal \
+  $(P)moreLabels \
+  $(P)nativeint \
+  $(P)obj \
+  $(P)oo \
+  $(P)parsing \
+  $(P)printexc \
+  $(P)printf \
+  $(P)queue \
+  $(P)random \
+  $(P)scanf \
+  $(P)seq \
+  $(P)set \
+  $(P)sort \
+  $(P)stack \
+  $(P)stdLabels \
+  stdlib \
+  $(P)stream \
+  $(P)string \
+  $(P)stringLabels \
+  $(P)sys \
+  $(P)uchar \
+  $(P)weak

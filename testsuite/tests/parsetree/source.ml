@@ -7406,3 +7406,4 @@ end
 module type T = sig type s = int end
 module F(X:S) : T = X
 module G(X:T) : S = X
+type t = |

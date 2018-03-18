@@ -27,21 +27,7 @@ let to_bindings env =
   let f variable value lst = (variable, value) :: lst in
   VariableMap.fold f env []
 
-let string_of_binding variable value =
-  let name = (Variables.name_of_variable variable) in
-  Printf.sprintf "%s=%s" name value
-
-let to_system_env ?(f= string_of_binding) env =
-  let system_env = Array.make (VariableMap.cardinal env) "" in
-  let i = ref 0 in
-  let store variable value =
-    system_env.(!i) <- f variable value;
-    incr i in
-  VariableMap.iter store env;
-  system_env
-
 let expand env value =
-
   let bindings = to_bindings env in
   let f (variable, value) = ((Variables.name_of_variable variable), value) in
   let simple_bindings = List.map f bindings in
@@ -49,8 +35,28 @@ let expand env value =
   let b = Buffer.create 100 in
   try Buffer.add_substitute b subst value; Buffer.contents b with _ -> value
 
+let to_system_env env =
+  let system_env = Array.make (VariableMap.cardinal env) "" in
+  let i = ref 0 in
+  let store variable value =
+    system_env.(!i) <-
+      Variables.string_of_binding variable (expand env value);
+    incr i in
+  VariableMap.iter store env;
+  system_env
+
 let lookup variable env =
   try Some (expand env (VariableMap.find variable env)) with Not_found -> None
+
+let lookup_nonempty variable env = match lookup variable env with
+  | None -> None
+  | Some x as t -> if String.words x = [] then None else t
+
+let lookup_as_bool variable env =
+  match lookup variable env with
+  | None -> None
+  | Some "true" -> Some true
+  | Some _ -> Some false
 
 let safe_lookup variable env = match lookup variable env with
   | None -> ""
@@ -60,6 +66,9 @@ let is_variable_defined variable env =
   VariableMap.mem variable env
 
 let add variable value env = VariableMap.add variable value env
+
+let add_if_undefined variable value env =
+  if VariableMap.mem variable env then env else add variable value env
 
 let append variable appened_value environment =
   let previous_value = safe_lookup variable environment in

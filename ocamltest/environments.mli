@@ -21,15 +21,20 @@ val empty : t
 
 val from_bindings : (Variables.t * string) list -> t
 val to_bindings : t -> (Variables.t * string) list
-val string_of_binding : Variables.t -> string -> string
-val to_system_env :
-  ?f : (Variables.t -> string -> string) -> t -> string array
+val to_system_env : t -> string array
 
 val lookup : Variables.t -> t -> string option
+val lookup_nonempty : Variables.t -> t -> string option
 val safe_lookup : Variables.t -> t -> string
 val is_variable_defined : Variables.t -> t -> bool
 
+val lookup_as_bool : Variables.t -> t -> bool option
+(** returns [Some true] if the variable is set to ["true"],
+    [Some false] if it is set to another string, and
+    [None] if not set. *)
+
 val add : Variables.t -> string -> t -> t
+val add_if_undefined : Variables.t -> string -> t -> t
 val add_bindings : (Variables.t * string) list -> t -> t
 
 val append : Variables.t -> string -> t -> t

@@ -29,7 +29,9 @@ type summary =
   | Env_modtype of summary * Ident.t * modtype_declaration
   | Env_class of summary * Ident.t * class_declaration
   | Env_cltype of summary * Ident.t * class_type_declaration
-  | Env_open of summary * Path.t
+  | Env_open of summary * Misc.StringSet.t * Path.t
+  (** The string set argument of [Env_open] represents a list of module names
+      to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
   | Env_copy_types of summary * string list
@@ -89,10 +91,6 @@ val get_required_globals: unit -> Ident.t list
 val add_required_global: Ident.t -> unit
 
 val has_local_constraints: t -> bool
-val add_gadt_instance_level: int -> t -> t
-val gadt_instance_level: t -> type_expr -> int option
-val add_gadt_instances: t -> int -> type_expr list -> unit
-val add_gadt_instance_chain: t -> int -> type_expr -> unit
 
 (* Lookup by long identifiers *)
 
@@ -149,7 +147,6 @@ val add_module_declaration: ?arg:bool -> check:bool -> Ident.t ->
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> class_type_declaration -> t -> t
-val add_local_constraint: Path.t -> type_declaration -> int -> t -> t
 val add_local_type: Path.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
@@ -162,8 +159,26 @@ val add_signature: signature -> t -> t
    not a structure. *)
 val open_signature:
     ?used_slot:bool ref ->
-    ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
+    ?loc:Location.t -> ?toplevel:bool ->
+    Asttypes.override_flag -> Path.t ->
       t -> t option
+
+(* Similar to [open_signature], except that modules from the load path
+   have precedence over sub-modules of the opened module.
+
+   For instance, if opening a module [M] with a sub-module [X]:
+   - if the load path contains a [x.cmi] file, then resolving [X] in the
+     new environment yields the same result as resolving [X] in the
+     old environment
+   - otherwise, in the new environment [X] resolves to [M.X]
+*)
+val open_signature_of_initially_opened_module:
+    Path.t -> t -> t option
+
+(* Similar to [open_signature] except that sub-modules of the opened modules
+   that are in [hidden_submodules] are not added to the environment. *)
+val open_signature_from_env_summary:
+    Path.t -> t -> hidden_submodules:Misc.StringSet.t -> t option
 
 val open_pers_signature: string -> t -> t
 
@@ -250,20 +265,19 @@ open Format
 val report_error: formatter -> error -> unit
 
 
-val mark_value_used: t -> string -> value_description -> unit
-val mark_module_used: t -> string -> Location.t -> unit
-val mark_type_used: t -> string -> type_declaration -> unit
+val mark_value_used: string -> value_description -> unit
+val mark_module_used: string -> Location.t -> unit
+val mark_type_used: string -> type_declaration -> unit
 
 type constructor_usage = Positive | Pattern | Privatize
 val mark_constructor_used:
-    constructor_usage -> t -> string -> type_declaration -> string -> unit
+    constructor_usage -> string -> type_declaration -> string -> unit
 val mark_constructor:
     constructor_usage -> t -> string -> constructor_description -> unit
 val mark_extension_used:
-    constructor_usage -> t -> extension_constructor -> string -> unit
+    constructor_usage -> extension_constructor -> string -> unit
 
 val in_signature: bool -> t -> t
-val implicit_coercion: t -> t
 
 val is_in_signature: t -> bool
 

@@ -61,7 +61,7 @@ let lfield v i = Lprim(Pfield i, [Lvar v], Location.none)
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
-  if lst = [] then Lconst (Const_pointer 0) else
+  if lst = [] then Lconst (Const_base (Const_int 0)) else
   share (Const_block
             (0, List.map (fun lab -> Const_immstring lab) lst))
 
@@ -373,7 +373,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           (inh_init,
            Llet (Strict, Pgenval, inh,
                  mkappl(oo_prim "inherits", narrow_args @
-                        [lpath; Lconst(Const_pointer(if top then 1 else 0))]),
+                        [lpath; Lconst(Const_base (Const_int (if top then 1 else 0)))]),
                  Llet(StrictOpt, Pgenval, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
@@ -402,8 +402,8 @@ let rec build_class_lets cl =
 let rec get_class_meths cl =
   match cl.cl_desc with
     Tcl_structure cl ->
-      Meths.fold (fun _ -> IdentSet.add) cl.cstr_meths IdentSet.empty
-  | Tcl_ident _ -> IdentSet.empty
+      Meths.fold (fun _ -> Ident.Set.add) cl.cstr_meths Ident.Set.empty
+  | Tcl_ident _ -> Ident.Set.empty
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_let (_, _, _, cl)
   | Tcl_apply (cl, _)
@@ -518,7 +518,7 @@ let const_path local = function
   | Lconst _ -> true
   | Lfunction {kind = Curried; body} ->
       let fv = free_variables body in
-      List.for_all (fun x -> not (IdentSet.mem x fv)) local
+      List.for_all (fun x -> not (Ident.Set.mem x fv)) local
   | p -> module_path p
 
 let rec builtin_meths self env env2 body =
@@ -529,7 +529,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e], _) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(Const_pointer n)]
+        "env", [Lvar env2; Lconst(Const_base (Const_int n))]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
@@ -600,7 +600,7 @@ module M = struct
     | "send_env"   -> SendEnv
     | "send_meth"  -> SendMeth
     | _ -> assert false
-    in Lconst(Const_pointer(Obj.magic tag)) :: args
+    in Lconst(Const_base (Const_int (Obj.magic tag))) :: args
 end
 open M
 
@@ -630,6 +630,33 @@ let prerr_ids msg ids =
   prerr_endline (String.concat " " (msg :: names))
 *)
 
+let free_methods l =
+  let fv = ref Ident.Set.empty in
+  let rec free l =
+    Lambda.iter_head_constructor free l;
+    match l with
+    | Lsend(Self, Lvar meth, _, _, _) ->
+        fv := Ident.Set.add meth !fv
+    | Lsend _ -> ()
+    | Lfunction{params} ->
+        List.iter (fun param -> fv := Ident.Set.remove param !fv) params
+    | Llet(_str, _k, id, _arg, _body) ->
+        fv := Ident.Set.remove id !fv
+    | Lletrec(decl, _body) ->
+        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
+    | Lstaticcatch(_e1, (_,vars), _e2) ->
+        List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
+    | Ltrywith(_e1, exn, _e2) ->
+        fv := Ident.Set.remove exn !fv
+    | Lfor(v, _e1, _e2, _dir, _e3) ->
+        fv := Ident.Set.remove v !fv
+    | Lassign _
+    | Lvar _ | Lconst _ | Lapply _
+    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
+    | Lifthenelse _ | Lsequence _ | Lwhile _
+    | Levent _ | Lifused _ -> ()
+  in free l; !fv
+
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
   let rebind = transl_class_rebind cl vflag in
@@ -645,25 +672,25 @@ let transl_class ids cl_id pub_meths cl vflag =
   let meth_ids = get_class_meths cl in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
-    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (IdentSet.elements fv); *)
-    let fv = List.fold_right IdentSet.remove !new_ids' fv in
+    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (Ident.Set.elements fv); *)
+    let fv = List.fold_right Ident.Set.remove !new_ids' fv in
     (* We need to handle method ids specially, as they do not appear
        in the typing environment (PR#3576, PR#4560) *)
     (* very hacky: we add and remove free method ids on the fly,
        depending on the visit order... *)
     method_ids :=
-      IdentSet.diff (IdentSet.union (free_methods lam) !method_ids) meth_ids;
-    (* prerr_ids "meth_ids =" (IdentSet.elements meth_ids);
-       prerr_ids "method_ids =" (IdentSet.elements !method_ids); *)
-    let new_ids = List.fold_right IdentSet.add new_ids !method_ids in
-    let fv = IdentSet.inter fv new_ids in
-    new_ids' := !new_ids' @ IdentSet.elements fv;
+      Ident.Set.diff (Ident.Set.union (free_methods lam) !method_ids) meth_ids;
+    (* prerr_ids "meth_ids =" (Ident.Set.elements meth_ids);
+       prerr_ids "method_ids =" (Ident.Set.elements !method_ids); *)
+    let new_ids = List.fold_right Ident.Set.add new_ids !method_ids in
+    let fv = Ident.Set.inter fv new_ids in
+    new_ids' := !new_ids' @ Ident.Set.elements fv;
     (* prerr_ids "new_ids' =" !new_ids'; *)
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (lfield env !i)  subst)
-      Ident.empty !new_ids'
+        incr i; Ident.Map.add id (lfield env !i)  subst)
+      Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
   let msubst arr = function
@@ -671,7 +698,7 @@ let transl_class ids cl_id pub_meths cl vflag =
         let env = Ident.create "env" in
         let body' =
           if new_ids = [] then body else
-          subst_lambda (subst env body 0 new_ids_meths) body in
+          Lambda.subst (subst env body 0 new_ids_meths) body in
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
@@ -679,7 +706,7 @@ let transl_class ids cl_id pub_meths cl vflag =
           builtin_meths [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
-             (if not (IdentSet.mem env (free_variables body')) then body' else
+             (if not (Ident.Set.mem env (free_variables body')) then body' else
               Llet(Alias, Pgenval, env,
                    Lprim(Pfield_computed,
                          [Lvar self; Lvar env2],
@@ -698,7 +725,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
-    let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
+    let lam = Lambda.subst (subst env1 lam 1 new_ids_init) lam in
     Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
     Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),
@@ -748,7 +775,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                                    params = [cla]; body = cl_init}) in
     Llet(Strict, Pgenval, class_init, cl_init, lam (free_variables cl_init))
   and lbody fv =
-    if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
+    if List.for_all (fun id -> not (Ident.Set.mem id fv)) ids then
       mkappl (oo_prim "make_class",[transl_meth_list pub_meths;
                                     Lvar class_init])
     else

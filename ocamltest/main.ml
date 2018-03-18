@@ -38,6 +38,13 @@ let is_test filename =
     | _ -> false
 *)
 
+(* this primitive announce should be used for tests
+   that were aborted on system error before ocamltest
+   could parse them *)
+let announce_test_error test_filename error =
+  Printf.printf " ... testing '%s' => unexpected error (%s)\n%!"
+    (Filename.basename test_filename) error
+
 let tsl_block_of_file test_filename =
   let input_channel = open_in test_filename in
   let lexbuf = Lexing.from_channel input_channel in
@@ -49,10 +56,12 @@ let tsl_block_of_file test_filename =
 let tsl_block_of_file_safe test_filename =
   try tsl_block_of_file test_filename with
   | Sys_error message ->
-    Printf.eprintf "%s\n" message;
+    Printf.eprintf "%s\n%!" message;
+    announce_test_error test_filename message;
     exit 1
   | Parsing.Parse_error ->
-    Printf.eprintf "Could not read test block in %s\n" test_filename;
+    Printf.eprintf "Could not read test block in %s\n%!" test_filename;
+    announce_test_error test_filename "could not read test block";
     exit 1
 
 let print_usage () =
@@ -66,11 +75,10 @@ let rec run_test log common_prefix path behavior = function
     | Run env ->
       let testenv0 = interprete_environment_statements env testenvspec in
       let testenv = List.fold_left apply_modifiers testenv0 env_modifiers in
-      let t = Tests.run log testenv test in
-      (match t with
-      | Actions.Pass env -> "passed", Run env
-      | Actions.Skip _ -> "skipped", Skip_all_tests
-      | Actions.Fail _ -> "failed", Skip_all_tests) in
+      let (result, newenv) = Tests.run log testenv test in
+      let s = Result.string_of_result result in
+      if Result.is_pass result then (s, Run newenv)
+      else (s, Skip_all_tests) in
   Printf.printf "%s\n%!" msg;
   List.iteri (run_test_i log common_prefix path b) subtrees
 and run_test_i log common_prefix path behavior i test_tree =
@@ -85,8 +93,10 @@ let get_test_source_directory test_dirname =
 
 let get_test_build_directory_prefix test_dirname =
   let ocamltestdir_variable = "OCAMLTESTDIR" in
-  let root = try Sys.getenv ocamltestdir_variable with
-    | Not_found -> (Filename.concat (Sys.getcwd ()) "_ocamltest") in
+  let root =
+    Sys.getenv_with_default_value ocamltestdir_variable
+      (Filename.concat (Sys.getcwd ()) "_ocamltest")
+  in
   if test_dirname = "." then root
   else Filename.concat root test_dirname
 
@@ -125,6 +135,7 @@ let test_file test_filename =
            let log_filename = test_prefix ^ ".log" in
            open_out log_filename
          end in
+       let promote = string_of_bool !Options.promote in
        let install_hook name =
          let hook_name = Filename.make_filename hookname_prefix name in
          if Sys.file_exists hook_name then begin
@@ -142,6 +153,7 @@ let test_file test_filename =
              Builtin_variables.test_source_directory, test_source_directory;
              Builtin_variables.test_build_directory_prefix,
                test_build_directory_prefix;
+             Builtin_variables.promote, promote;
            ] in
        let root_environment =
          interprete_environment_statements

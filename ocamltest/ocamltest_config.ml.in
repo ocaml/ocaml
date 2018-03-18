@@ -17,7 +17,13 @@
 
 let arch = "@@ARCH@@"
 
-let unix = @@UNIX@@
+let afl_instrument = @@AFL_INSTRUMENT@@
+
+let shared_libraries = @@SHARED_LIBRARIES@@
+
+let libunix = @@UNIX@@
+
+let system = "@@SYSTEM@@"
 
 let c_preprocessor = "@@CPP@@"
 
@@ -25,9 +31,13 @@ let ocamlsrcdir = "@@OCAMLSRCDIR@@"
 
 let flambda = @@FLAMBDA@@
 
+let spacetime = @@SPACETIME@@
+
 let ocamlc_default_flags = "@@OCAMLCDEFAULTFLAGS@@"
 let ocamlopt_default_flags = "@@OCAMLOPTDEFAULTFLAGS@@"
 
 let safe_string = @@FORCE_SAFE_STRING@@
 
 let flat_float_array = @@FLAT_FLOAT_ARRAY@@
+
+let ocamldoc = @@OCAMLDOC@@

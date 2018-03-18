@@ -75,7 +75,7 @@ let oper_result_type = function
 let size_expr (env:environment) exp =
   let rec size localenv = function
       Cconst_int _ | Cconst_natint _ -> Arch.size_int
-    | Cconst_symbol _ | Cconst_pointer _ | Cconst_natpointer _ ->
+    | Cconst_symbol _ ->
         Arch.size_addr
     | Cconst_float _ -> Arch.size_float
     | Cblockheader _ -> Arch.size_int
@@ -105,8 +105,8 @@ let size_expr (env:environment) exp =
 (* Swap the two arguments of an integer comparison *)
 
 let swap_intcomp = function
-    Isigned cmp -> Isigned(swap_comparison cmp)
-  | Iunsigned cmp -> Iunsigned(swap_comparison cmp)
+    Isigned cmp -> Isigned(swap_integer_comparison cmp)
+  | Iunsigned cmp -> Iunsigned(swap_integer_comparison cmp)
 
 (* Naming of registers *)
 
@@ -284,8 +284,6 @@ method is_simple_expr = function
   | Cconst_natint _ -> true
   | Cconst_float _ -> true
   | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
   | Cblockheader _ -> true
   | Cvar _ -> true
   | Ctuple el -> List.for_all self#is_simple_expr el
@@ -320,8 +318,7 @@ method effects_of exp =
   let module EC = Effect_and_coeffect in
   match exp with
   | Cconst_int _ | Cconst_natint _ | Cconst_float _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _ | Cblockheader _
-  | Cvar _ -> EC.none
+  | Cblockheader _ | Cvar _ -> EC.none
   | Ctuple el -> EC.join_list_map el self#effects_of
   | Clet (_id, arg, body) ->
     EC.join (self#effects_of arg) (self#effects_of body)
@@ -470,19 +467,13 @@ method select_operation op args _dbg =
 method private select_arith_comm op = function
     [arg; Cconst_int n] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
   | [Cconst_int n; arg] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
 method private select_arith op = function
     [arg; Cconst_int n] when self#is_immediate n ->
-      (Iintop_imm(op, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
@@ -496,11 +487,7 @@ method private select_shift op = function
 method private select_arith_comp cmp = function
     [arg; Cconst_int n] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
-  | [arg; Cconst_pointer n] when self#is_immediate n ->
-      (Iintop_imm(Icomp cmp, n), [arg])
   | [Cconst_int n; arg] when self#is_immediate n ->
-      (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
-  | [Cconst_pointer n; arg] when self#is_immediate n ->
       (Iintop_imm(Icomp(swap_intcomp cmp), n), [arg])
   | args ->
       (Iintop(Icomp cmp), args)
@@ -511,25 +498,17 @@ method select_condition = function
     Cop(Ccmpi cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Isigned cmp, n), arg1)
   | Cop(Ccmpi cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
-  | Cop(Ccmpi cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned cmp, n), arg1)
-  | Cop(Ccmpi cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Isigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Isigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpi cmp, args, _) ->
       (Iinttest(Isigned cmp), Ctuple args)
-  | Cop(Ccmpa cmp, [arg1; Cconst_pointer n], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned cmp, n), arg1)
   | Cop(Ccmpa cmp, [arg1; Cconst_int n], _) when self#is_immediate n ->
       (Iinttest_imm(Iunsigned cmp, n), arg1)
-  | Cop(Ccmpa cmp, [Cconst_pointer n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, [Cconst_int n; arg2], _) when self#is_immediate n ->
-      (Iinttest_imm(Iunsigned(swap_comparison cmp), n), arg2)
+      (Iinttest_imm(Iunsigned(swap_integer_comparison cmp), n), arg2)
   | Cop(Ccmpa cmp, args, _) ->
       (Iinttest(Iunsigned cmp), Ctuple args)
   | Cop(Ccmpf cmp, args, _) ->
-      (Ifloattest(cmp, false), Ctuple args)
+      (Ifloattest cmp, Ctuple args)
   | Cop(Cand, [arg; Cconst_int 1], _) ->
       (Ioddtest, arg)
   | arg ->
@@ -643,12 +622,6 @@ method emit_expr (env:environment) exp =
   | Cconst_symbol n ->
       let r = self#regs_for typ_val in
       Some(self#insert_op (Iconst_symbol n) [||] r)
-  | Cconst_pointer n ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
-  | Cconst_natpointer n ->
-      let r = self#regs_for typ_val in  (* integer as Caml value *)
-      Some(self#insert_op (Iconst_int n) [||] r)
   | Cblockheader(n, dbg) ->
       self#emit_blockheader env n dbg
   | Cvar v ->
@@ -1215,7 +1188,7 @@ method emit_fundecl f =
   { fun_name = f.Cmm.fun_name;
     fun_args = loc_arg;
     fun_body = body;
-    fun_fast = f.Cmm.fun_fast;
+    fun_codegen_options = f.Cmm.fun_codegen_options;
     fun_dbg  = f.Cmm.fun_dbg;
     fun_spacetime_shape;
   }

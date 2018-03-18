@@ -100,6 +100,10 @@ let access_array base numelt size =
 %token NEA
 %token NEF
 %token NEI
+%token NGEF
+%token NGTF
+%token NLEF
+%token NLTF
 %token OR
 %token <int> POINTER
 %token PROJ
@@ -142,7 +146,13 @@ phrase:
 fundecl:
     LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
-        {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
+        {fun_name = $3; fun_args = $5; fun_body = $7;
+         fun_codegen_options =
+           if Config.flambda then [
+             Reduce_code_size;
+             No_CSE;
+           ]
+           else [ Reduce_code_size ];
          fun_dbg = debuginfo ()} }
 ;
 fun_name:
@@ -173,7 +183,7 @@ expr:
     INTCONST    { Cconst_int $1 }
   | FLOATCONST  { Cconst_float (float_of_string $1) }
   | STRING      { Cconst_symbol $1 }
-  | POINTER     { Cconst_pointer $1 }
+  | POINTER     { Cconst_int $1 }
   | IDENT       { Cvar(find_ident $1) }
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
@@ -293,12 +303,16 @@ binaryop:
   | ADDF                        { Caddf }
   | MULF                        { Cmulf }
   | DIVF                        { Cdivf }
-  | EQF                         { Ccmpf Ceq }
-  | NEF                         { Ccmpf Cne }
-  | LTF                         { Ccmpf Clt }
-  | LEF                         { Ccmpf Cle }
-  | GTF                         { Ccmpf Cgt }
-  | GEF                         { Ccmpf Cge }
+  | EQF                         { Ccmpf CFeq }
+  | NEF                         { Ccmpf CFneq }
+  | LTF                         { Ccmpf CFlt }
+  | NLTF                        { Ccmpf CFnlt }
+  | LEF                         { Ccmpf CFle }
+  | NLEF                        { Ccmpf CFnle }
+  | GTF                         { Ccmpf CFgt }
+  | NGTF                        { Ccmpf CFngt }
+  | GEF                         { Ccmpf CFge }
+  | NGEF                        { Ccmpf CFnge }
   | CHECKBOUND                  { Ccheckbound }
   | MULH                        { Cmulhi }
 ;

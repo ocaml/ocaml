@@ -679,9 +679,9 @@ let default_compat p def =
 
 (* Or-pattern expansion, variables are a complication w.r.t. the article *)
 let rec extract_vars r p = match p.pat_desc with
-| Tpat_var (id, _) -> IdentSet.add id r
+| Tpat_var (id, _) -> Ident.Set.add id r
 | Tpat_alias (p, id,_ ) ->
-    extract_vars (IdentSet.add id r) p
+    extract_vars (Ident.Set.add id r) p
 | Tpat_tuple pats ->
     List.fold_left extract_vars r pats
 | Tpat_record (lpats,_) ->
@@ -727,8 +727,8 @@ let rec explode_or_pat arg patl mk_action rem vars aliases = function
 
 let pm_free_variables {cases=cases} =
   List.fold_right
-    (fun (_,act) r -> IdentSet.union (free_variables act) r)
-    cases IdentSet.empty
+    (fun (_,act) r -> Ident.Set.union (free_variables act) r)
+    cases Ident.Set.empty
 
 
 (* Basic grouping predicates *)
@@ -817,8 +817,8 @@ let insert_or_append p ps act ors no =
         if is_or q then begin
           if may_compat p q then
             if
-              IdentSet.is_empty (extract_vars IdentSet.empty p) &&
-              IdentSet.is_empty (extract_vars IdentSet.empty q) &&
+              Ident.Set.is_empty (extract_vars Ident.Set.empty p) &&
+              Ident.Set.is_empty (extract_vars Ident.Set.empty q) &&
               equiv_pat p q
             then (* attempt insert, for equivalent orpats with no variables *)
               let _, not_e = get_equiv q rem in
@@ -1114,9 +1114,9 @@ and precompile_or argo cls ors args def k = match ors with
               args = (match args with _::r -> r | _ -> assert false) ;
               default = default_compat orp def} in
           let vars =
-            IdentSet.elements
-              (IdentSet.inter
-                 (extract_vars IdentSet.empty orp)
+            Ident.Set.elements
+              (Ident.Set.inter
+                 (extract_vars Ident.Set.empty orp)
                  (pm_free_variables orpm)) in
           let or_num = next_raise_count () in
           let new_patl = Parmatch.omega_list patl in
@@ -1901,7 +1901,7 @@ module SArg = struct
   type primitive = Lambda.primitive
 
   let eqint = Pintcomp Ceq
-  let neint = Pintcomp Cneq
+  let neint = Pintcomp Cne
   let leint = Pintcomp Cle
   let ltint = Pintcomp Clt
   let geint = Pintcomp Cge
@@ -2254,22 +2254,22 @@ let combine_constant loc arg cst partial ctx def
     | Const_float _ ->
         make_test_sequence loc
           fail
-          (Pfloatcomp Cneq) (Pfloatcomp Clt)
+          (Pfloatcomp CFneq) (Pfloatcomp CFlt)
           arg const_lambda_list
     | Const_int32 _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pint32, Cneq)) (Pbintcomp(Pint32, Clt))
+          (Pbintcomp(Pint32, Cne)) (Pbintcomp(Pint32, Clt))
           arg const_lambda_list
     | Const_int64 _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pint64, Cneq)) (Pbintcomp(Pint64, Clt))
+          (Pbintcomp(Pint64, Cne)) (Pbintcomp(Pint64, Clt))
           arg const_lambda_list
     | Const_nativeint _ ->
         make_test_sequence loc
           fail
-          (Pbintcomp(Pnativeint, Cneq)) (Pbintcomp(Pnativeint, Clt))
+          (Pbintcomp(Pnativeint, Cne)) (Pbintcomp(Pnativeint, Clt))
           arg const_lambda_list
   in lambda1,jumps_union local_jumps total
 

@@ -2,6 +2,7 @@ ambiguous_guarded_disjunction.ml
 application.ml
 coercions.ml
 exhaustiveness.ml
+inside_out.ml
 pr5892.ml
 pr6587.ml
 pr6872.ml

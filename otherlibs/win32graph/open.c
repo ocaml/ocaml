@@ -107,7 +107,7 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);
-        return DefWindowProc(hwnd, msg, wParam, lParam);
+        return DefWindowProcA(hwnd, msg, wParam, lParam);
 }
 
 int DoRegisterClass(void)

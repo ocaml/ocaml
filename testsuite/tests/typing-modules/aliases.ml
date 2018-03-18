@@ -314,6 +314,10 @@ module StringSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 module SSet :
   sig
@@ -354,6 +358,10 @@ module SSet :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 val f : StringSet.t -> SSet.t = <fun>
 |}];;
@@ -426,6 +434,10 @@ module A :
         val find_last : (elt -> bool) -> t -> elt
         val find_last_opt : (elt -> bool) -> t -> elt option
         val of_list : elt list -> t
+        val to_seq_from : elt -> t -> elt Seq.t
+        val to_seq : t -> elt Seq.t
+        val add_seq : elt Seq.t -> t -> t
+        val of_seq : elt Seq.t -> t
       end
     val empty : S.t
   end
@@ -538,6 +550,10 @@ module SInt :
     val find_last : (elt -> bool) -> t -> elt
     val find_last_opt : (elt -> bool) -> t -> elt option
     val of_list : elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 type (_, _) eq = Eq : ('a, 'a) eq
 type wrap = W of (SInt.t, SInt.t) eq
@@ -757,4 +773,13 @@ R.M.f 3;;
 [%%expect{|
 module rec R : sig module M = M end
 - : int = 3
+|}];;
+
+module M = struct type t end
+module type S = sig module N = M val x : N.t end
+module type T = S with module N := M;;
+[%%expect{|
+module M : sig type t end
+module type S = sig module N = M val x : N.t end
+module type T = sig val x : M.t end
 |}];;

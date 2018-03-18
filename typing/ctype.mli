@@ -109,16 +109,21 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
-val instance: ?partial:bool -> Env.t -> type_expr -> type_expr
+val check_scope_escape : int -> type_expr -> unit
+        (* [check_scope_escape lvl ty] ensures that [ty] could be raised
+           to the level [lvl] without any scope escape.
+           Raises [Unify] otherwise *)
+
+val instance: ?partial:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
         (* partial=None  -> normal
            partial=false -> newvar() for non generic subterms
            partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_def: type_expr -> type_expr
         (* use defaults *)
-val generic_instance: Env.t -> type_expr -> type_expr
+val generic_instance: type_expr -> type_expr
         (* Same as instance, but new nodes at generic_level *)
-val instance_list: Env.t -> type_expr list -> type_expr list
+val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
         ?in_pattern:Env.t ref * int ->
@@ -164,7 +169,7 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+val unify_gadt: equations_level:int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the
            local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
@@ -193,6 +198,9 @@ val all_distinct_vars: Env.t -> type_expr list -> bool
 val matches: Env.t -> type_expr -> type_expr -> bool
         (* Same as [moregeneral false], implemented using the two above
            functions and backtracking. Ignore levels *)
+
+val reify_univars : Types.type_expr -> Types.type_expr
+        (* Replaces all the variables of a type by a univar. *)
 
 type class_match_failure =
     CM_Virtual_class
@@ -290,3 +298,5 @@ val maybe_pointer_type : Env.t -> type_expr -> bool
 val package_subtype :
     (Env.t -> Path.t -> Longident.t list -> type_expr list ->
       Path.t -> Longident.t list -> type_expr list -> bool) ref
+
+val mcomp : Env.t -> type_expr -> type_expr -> unit

@@ -347,24 +347,11 @@ let clean_copy ty =
   if ty.level = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
 
-(* As reported in PR#6394 it is possible for recursive modules to add incoherent
-   equations into the environment.
-   So assuming we're working on the same example as in PR#6394, when looking at
-   constructor [A] we end up calling [expand_head] on [t] (the type of [A]) and
-   get [int * bool].
-   This will result in a proper error later on during type checking, meanwhile
-   we need to "survive" and be somewhat aware that we're working on bogus input
-*)
-
-type constructor_type_path =
-  | Ok of Path.t
-  | Inconsistent_environment
-
 let get_constructor_type_path ty tenv =
   let ty = Ctype.repr (Ctype.expand_head tenv (clean_copy ty)) in
   match ty.desc with
-  | Tconstr (path,_,_) -> Ok path
-  | _ -> Inconsistent_environment
+  | Tconstr (path,_,_) -> path
+  | _ -> assert false
 
 (****************************)
 (* Utilities for matching   *)
@@ -614,17 +601,21 @@ and set_args_erase_mutable q r = do_set_args true q r
      (Some x, r4)
      (None, r4)
  *)
-let rec simplify_head_pat p ps k =
-  match p.pat_desc with
-  | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
-  | Tpat_var (_,_) -> (omega, ps) :: k
-  | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
-  | _ -> (p, ps) :: k
+let simplify_head_pat ~add_column p ps k =
+  let rec simplify_head_pat p ps k =
+    match p.pat_desc with
+    | Tpat_alias (p,_,_) -> simplify_head_pat p ps k
+    | Tpat_var (_,_) -> add_column omega ps k
+    | Tpat_or (p1,p2,_) -> simplify_head_pat p1 ps (simplify_head_pat p2 ps k)
+    | _ -> add_column p ps k
+  in simplify_head_pat p ps k
 
 let rec simplify_first_col = function
   | [] -> []
   | [] :: _ -> assert false (* the rows are non-empty! *)
-  | (p::ps) :: rows -> simplify_head_pat p ps (simplify_first_col rows)
+  | (p::ps) :: rows ->
+      let add_column p ps k = (p, ps) :: k in
+      simplify_head_pat ~add_column p ps (simplify_first_col rows)
 
 
 (* Builds the specialized matrix of [pss] according to pattern [q].
@@ -838,13 +829,8 @@ let should_extend ext env = match ext with
       begin match p.pat_desc with
       | Tpat_construct
           (_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},_) ->
-            (match get_constructor_type_path p.pat_type p.pat_env with
-             | Ok path -> Path.same path ext
-             | Inconsistent_environment ->
-               (* returning [true] here could result in more computations being
-                  done to check exhaustivity. Which is clearly not necessary
-                  since the code doesn't typecheck anyway. *)
-               false)
+            let path = get_constructor_type_path p.pat_type p.pat_env in
+            Path.same path ext
       | Tpat_construct
           (_, {cstr_tag=(Cstr_extension _)},_) -> false
       | Tpat_constant _|Tpat_tuple _|Tpat_variant _
@@ -990,9 +976,10 @@ let build_other ext env = match env with
 | ({pat_desc = Tpat_construct _} as p,_) :: _ ->
     begin match ext with
     | Some ext ->
-        (match get_constructor_type_path p.pat_type p.pat_env with
-         | Ok path when Path.same ext path -> extra_pat
-         | _ -> build_other_constrs env p)
+        if Path.same ext (get_constructor_type_path p.pat_type p.pat_env) then
+          extra_pat
+        else
+          build_other_constrs env p
     | _ ->
         build_other_constrs env p
     end
@@ -1566,7 +1553,9 @@ let rec simplify_first_usefulness_col = function
     match row.active with
     | [] -> assert false (* the rows are non-empty! *)
     | p :: ps ->
-      simplify_head_pat p { row with active = ps }
+      let add_column p ps k =
+        (p, { row with active = ps }) :: k in
+      simplify_head_pat ~add_column p ps
         (simplify_first_usefulness_col rows)
 
 (* Back to normal matrices *)
@@ -1931,7 +1920,8 @@ let contains_extension pat =
 (* Build an untyped or-pattern from its expected type *)
 let ppat_of_type env ty =
   match pats_of_type env ty with
-    [{pat_desc = Tpat_any}] ->
+  | [] -> raise Empty
+  | [{pat_desc = Tpat_any}] ->
       (Conv.mkpat Parsetree.Ppat_any, Hashtbl.create 0, Hashtbl.create 0)
   | pats ->
       Conv.conv (orify_many pats)
@@ -2019,17 +2009,11 @@ let extendable_path path =
 let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_construct(_, {cstr_tag=(Cstr_constant _|Cstr_block _|Cstr_unboxed)},ps)
   ->
-    (match get_constructor_type_path p.pat_type p.pat_env with
-     | Ok path ->
-         List.fold_left
-           collect_paths_from_pat
-           (if extendable_path path then add_path path r else r)
-           ps
-     | Inconsistent_environment ->
-       (* no need to recurse on the constructor arguments: since we know the
-          code won't typecheck anyway, whatever we might compute would be
-          useless anyway. *)
-       r)
+    let path = get_constructor_type_path p.pat_type p.pat_env in
+    List.fold_left
+      collect_paths_from_pat
+      (if extendable_path path then add_path path r else r)
+      ps
 | Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
 | Tpat_tuple ps | Tpat_array ps
 | Tpat_construct (_, {cstr_tag=Cstr_extension _}, ps)->
@@ -2251,9 +2235,7 @@ let check_partial pred loc casel =
    to a specific guard.
 *)
 
-module IdSet = Set.Make(Ident)
-
-let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
+let pattern_vars p = Ident.Set.of_list (Typedtree.pat_bound_idents p)
 
 (* Row for ambiguous variable search,
    row is the traditional pattern row,
@@ -2283,7 +2265,24 @@ let pattern_vars p = IdSet.of_list (Typedtree.pat_bound_idents p)
      (Some x, { row = r4; varsets = {} :: s4 })
      (None, { row = r4; varsets = {x} :: s4 })
 *)
-type amb_row = { row : pattern list ; varsets : IdSet.t list; }
+type amb_row = { row : pattern list ; varsets : Ident.Set.t list; }
+
+let simplify_head_amb_pat head_bound_variables varsets ~add_column p ps k =
+  let rec simpl head_bound_variables varsets p ps k =
+    match p.pat_desc with
+    | Tpat_alias (p,x,_) ->
+      simpl (Ident.Set.add x head_bound_variables) varsets p ps k
+    | Tpat_var (x,_) ->
+      let rest_of_the_row =
+        { row = ps; varsets = Ident.Set.add x head_bound_variables :: varsets; }
+      in
+      add_column omega rest_of_the_row k
+    | Tpat_or (p1,p2,_) ->
+      simpl head_bound_variables varsets p1 ps
+        (simpl head_bound_variables varsets p2 ps k)
+    | _ ->
+      add_column p { row = ps; varsets = head_bound_variables :: varsets; } k
+  in simpl head_bound_variables varsets p ps k
 
 (*
    To accurately report ambiguous variables, one must consider
@@ -2314,40 +2313,24 @@ let rec simplify_first_amb_col = function
   | [] -> []
   | (Negative [] | Positive { row = []; _ }) :: _  -> assert false
   | Negative (n :: ns) :: rem ->
-      simplify_head_amb_pat_neg n ns
-        (simplify_first_amb_col rem)
+      let add_column n ns k = (n, Negative ns) :: k in
+      simplify_head_pat
+        ~add_column n ns (simplify_first_amb_col rem)
   | Positive { row = p::ps; varsets; }::rem ->
-      simplify_head_amb_pat_pos IdSet.empty p ps varsets
-        (simplify_first_amb_col rem)
-
-and simplify_head_amb_pat_neg p ps k =
-  Misc.map_end (fun (n, ns) -> (n, Negative ns))
-    (simplify_head_pat p ps []) k
-
-and simplify_head_amb_pat_pos head_bound_variables p ps varsets k =
-  match p.pat_desc with
-  | Tpat_alias (p,x,_) ->
-    simplify_head_amb_pat_pos (IdSet.add x head_bound_variables) p ps varsets k
-  | Tpat_var (x,_) ->
-    let rest_of_the_row =
-      { row = ps; varsets = IdSet.add x head_bound_variables :: varsets; }
-    in
-    (omega, Positive rest_of_the_row) :: k
-  | Tpat_or (p1,p2,_) ->
-    simplify_head_amb_pat_pos head_bound_variables p1 ps varsets
-      (simplify_head_amb_pat_pos head_bound_variables p2 ps varsets k)
-  | _ ->
-    (p, Positive { row = ps; varsets = head_bound_variables :: varsets; }) :: k
+      let add_column p ps k = (p, Positive ps) :: k in
+      simplify_head_amb_pat
+        Ident.Set.empty varsets
+        ~add_column p ps (simplify_first_amb_col rem)
 
 (* Compute stable bindings *)
 
 type stable_vars =
   | All
-  | Vars of IdSet.t
+  | Vars of Ident.Set.t
 
 let stable_inter sv1 sv2 = match sv1, sv2 with
   | All, sv | sv, All -> sv
-  | Vars s1, Vars s2 -> Vars (IdSet.inter s1 s2)
+  | Vars s1, Vars s2 -> Vars (Ident.Set.inter s1 s2)
 
 let reduce f = function
 | [] -> invalid_arg "reduce"
@@ -2371,9 +2354,10 @@ let rec matrix_stable_vars m = match m with
       | exception Negative_empty_row -> All
       | rows_varsets ->
           let stables_in_varsets =
-            reduce (List.map2 IdSet.inter) rows_varsets in
+            reduce (List.map2 Ident.Set.inter) rows_varsets in
           (* The stable variables are those stable at any position *)
-          Vars (List.fold_left IdSet.union IdSet.empty stables_in_varsets)
+          Vars
+            (List.fold_left Ident.Set.union Ident.Set.empty stables_in_varsets)
       end
   | m ->
       let is_negative = function
@@ -2435,13 +2419,13 @@ let pattern_stable_vars ns p =
 *)
 
 let all_rhs_idents exp =
-  let ids = ref IdSet.empty in
+  let ids = ref Ident.Set.empty in
   let module Iterator = TypedtreeIter.MakeIterator(struct
     include TypedtreeIter.DefaultIteratorArgument
     let enter_expression exp = match exp.exp_desc with
       | Texp_ident (path, _lid, _descr) ->
           List.iter
-            (fun id -> ids := IdSet.add id !ids)
+            (fun id -> ids := Ident.Set.add id !ids)
             (Path.heads path)
       | _ -> ()
 
@@ -2458,9 +2442,9 @@ let all_rhs_idents exp =
            {mod_desc=
             Tmod_unpack ({exp_desc=Texp_ident (Path.Pident id_exp,_,_)},_)},
            _) ->
-             assert (IdSet.mem id_exp !ids) ;
-             if not (IdSet.mem id_mod !ids) then begin
-               ids := IdSet.remove id_exp !ids
+             assert (Ident.Set.mem id_exp !ids) ;
+             if not (Ident.Set.mem id_mod !ids) then begin
+               ids := Ident.Set.remove id_exp !ids
              end
       | _ -> assert false
       end
@@ -2477,14 +2461,15 @@ let check_ambiguous_bindings =
         | { c_lhs = p; c_guard=None ; _} -> [p]::ns
         | { c_lhs=p; c_guard=Some g; _} ->
             let all =
-              IdSet.inter (pattern_vars p) (all_rhs_idents g) in
-            if not (IdSet.is_empty all) then begin
+              Ident.Set.inter (pattern_vars p) (all_rhs_idents g) in
+            if not (Ident.Set.is_empty all) then begin
               match pattern_stable_vars ns p with
               | All -> ()
               | Vars stable ->
-                  let ambiguous = IdSet.diff all stable in
-                  if not (IdSet.is_empty ambiguous) then begin
-                    let pps = IdSet.elements ambiguous |> List.map Ident.name in
+                  let ambiguous = Ident.Set.diff all stable in
+                  if not (Ident.Set.is_empty ambiguous) then begin
+                    let pps =
+                      Ident.Set.elements ambiguous |> List.map Ident.name in
                     let warn = Ambiguous_pattern pps in
                     Location.prerr_warning p.pat_loc warn
                   end

@@ -543,6 +543,8 @@ let constant_dependencies ~backend:_
   | Project_closure (s, _) ->
     Symbol.Set.singleton s
 
+module Symbol_SCC = Strongly_connected_components.Make (Symbol)
+
 let program_graph ~backend imported_symbols symbol_to_constant
     (initialize_symbol_tbl :
       (Tag.t * Flambda.t list * Symbol.t option) Symbol.Tbl.t)
@@ -584,7 +586,6 @@ let program_graph ~backend imported_symbols symbol_to_constant
       )
       effect_tbl graph_with_initialisation
   in
-  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   let components =
     Symbol_SCC.connected_components_sorted_from_roots_to_leaf
       graph
@@ -605,7 +606,6 @@ let add_definition_of_symbol constant_definitions
     assert(not (Symbol.Tbl.mem initialize_symbol_tbl sym));
     (sym, Symbol.Map.find sym constant_definitions)
   in
-  let module Symbol_SCC = Strongly_connected_components.Make (Symbol) in
   match component with
   | Symbol_SCC.Has_loop l ->
     let l = List.map symbol_declaration l in

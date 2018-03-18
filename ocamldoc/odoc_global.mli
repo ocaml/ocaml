@@ -102,3 +102,6 @@ val with_header : bool ref
 
 (** The flag which indicates if we must generate a trailer.*)
 val with_trailer : bool ref
+
+(** Name of the module that is initially opened. *)
+val initially_opened_module : string ref

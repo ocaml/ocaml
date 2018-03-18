@@ -1,5 +1,7 @@
-val sort : (module Set.S with type elt = 'a) -> 'a list -> 'a list = <fun>
-val make_set : ('a -> 'a -> int) -> (module Set.S with type elt = 'a) = <fun>
+val sort : (module Stdlib.Set.S with type elt = 'a) -> 'a list -> 'a list =
+  <fun>
+val make_set : ('a -> 'a -> int) -> (module Stdlib.Set.S with type elt = 'a) =
+  <fun>
 val sort_cmp : ('a -> 'a -> int) -> 'a list -> 'a list = <fun>
 module type S = sig type t val x : t end
 val f : (module S with type t = int) -> int = <fun>
@@ -112,6 +114,10 @@ module type MapT =
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+    val of_seq : (key * 'a) Seq.t -> 'a t
     type data
     type map
     val of_t : data t -> map
@@ -159,6 +165,10 @@ module SSMap :
     val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
     val map : ('a -> 'b) -> 'a t -> 'b t
     val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+    val to_seq : 'a t -> (key * 'a) Seq.t
+    val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+    val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+    val of_seq : (key * 'a) Seq.t -> 'a t
     type data = string
     type map = data t
     val of_t : 'a -> 'a

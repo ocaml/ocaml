@@ -146,7 +146,7 @@ let rec size_of_lambda env = function
   | Lvar id ->
       begin try Ident.find_same id env with Not_found -> RHS_nonrec end
   | Lfunction{params} as funct ->
-      RHS_function (1 + IdentSet.cardinal(free_variables funct),
+      RHS_function (1 + Ident.Set.cardinal(free_variables funct),
                     List.length params)
   | Llet (Strict, _k, id, Lprim (Pduprecord (kind, size), _, _), body)
     when check_recordwith_updates id body ->
@@ -355,25 +355,23 @@ let comp_primitive p args =
   | Psubfloat -> Kccall("caml_sub_float", 2)
   | Pmulfloat -> Kccall("caml_mul_float", 2)
   | Pdivfloat -> Kccall("caml_div_float", 2)
-  | Pfloatcomp Ceq -> Kccall("caml_eq_float", 2)
-  | Pfloatcomp Cneq -> Kccall("caml_neq_float", 2)
-  | Pfloatcomp Clt -> Kccall("caml_lt_float", 2)
-  | Pfloatcomp Cgt -> Kccall("caml_gt_float", 2)
-  | Pfloatcomp Cle -> Kccall("caml_le_float", 2)
-  | Pfloatcomp Cge -> Kccall("caml_ge_float", 2)
   | Pstringlength -> Kccall("caml_ml_string_length", 1)
   | Pbyteslength -> Kccall("caml_ml_bytes_length", 1)
   | Pstringrefs -> Kccall("caml_string_get", 2)
   | Pbytesrefs -> Kccall("caml_bytes_get", 2)
   | Pbytessets -> Kccall("caml_bytes_set", 3)
-  | Pstringrefu | Pbytesrefu -> Kgetstringchar
-  | Pbytessetu -> Ksetstringchar
+  | Pstringrefu -> Kgetstringchar
+  | Pbytesrefu -> Kgetbyteschar
+  | Pbytessetu -> Ksetbyteschar
   | Pstring_load_16(_) -> Kccall("caml_string_get16", 2)
   | Pstring_load_32(_) -> Kccall("caml_string_get32", 2)
   | Pstring_load_64(_) -> Kccall("caml_string_get64", 2)
-  | Pstring_set_16(_) -> Kccall("caml_string_set16", 3)
-  | Pstring_set_32(_) -> Kccall("caml_string_set32", 3)
-  | Pstring_set_64(_) -> Kccall("caml_string_set64", 3)
+  | Pbytes_set_16(_) -> Kccall("caml_bytes_set16", 3)
+  | Pbytes_set_32(_) -> Kccall("caml_bytes_set32", 3)
+  | Pbytes_set_64(_) -> Kccall("caml_bytes_set64", 3)
+  | Pbytes_load_16(_) -> Kccall("caml_bytes_get16", 2)
+  | Pbytes_load_32(_) -> Kccall("caml_bytes_get32", 2)
+  | Pbytes_load_64(_) -> Kccall("caml_bytes_get64", 2)
   | Parraylength _ -> Kvectlength
   | Parrayrefs Pgenarray -> Kccall("caml_array_get", 2)
   | Parrayrefs Pfloatarray -> Kccall("caml_floatarray_get", 2)
@@ -422,7 +420,7 @@ let comp_primitive p args =
   | Plsrbint bi -> comp_bint_primitive bi "shift_right_unsigned" args
   | Pasrbint bi -> comp_bint_primitive bi "shift_right" args
   | Pbintcomp(_, Ceq) -> Kccall("caml_equal", 2)
-  | Pbintcomp(_, Cneq) -> Kccall("caml_notequal", 2)
+  | Pbintcomp(_, Cne) -> Kccall("caml_notequal", 2)
   | Pbintcomp(_, Clt) -> Kccall("caml_lessthan", 2)
   | Pbintcomp(_, Cgt) -> Kccall("caml_greaterthan", 2)
   | Pbintcomp(_, Cle) -> Kccall("caml_lessequal", 2)
@@ -439,6 +437,8 @@ let comp_primitive p args =
   | Pbswap16 -> Kccall("caml_bswap16", 1)
   | Pbbswap(bi) -> comp_bint_primitive bi "bswap" args
   | Pint_as_pointer -> Kccall("caml_int_as_pointer", 1)
+  | Pbytes_to_string -> Kccall("caml_string_of_bytes", 1)
+  | Pbytes_of_string -> Kccall("caml_bytes_of_string", 1)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 let is_immed n = immed_min <= n && n <= immed_max
@@ -519,7 +519,7 @@ let rec comp_expr env exp sz cont =
         end
   | Lfunction{params; body} -> (* assume kind = Curried *)
       let lbl = new_label() in
-      let fv = IdentSet.elements(free_variables exp) in
+      let fv = Ident.Set.elements(free_variables exp) in
       let to_compile =
         { params = params; body = body; label = lbl;
           free_vars = fv; num_defs = 1; rec_vars = []; rec_pos = 0 } in
@@ -536,7 +536,7 @@ let rec comp_expr env exp sz cont =
                       decl then begin
         (* let rec of functions *)
         let fv =
-          IdentSet.elements (free_variables (Lletrec(decl, lambda_unit))) in
+          Ident.Set.elements (free_variables (Lletrec(decl, lambda_unit))) in
         let rec_idents = List.map (fun (id, _lam) -> id) decl in
         let rec comp_fun pos = function
             [] -> []
@@ -595,8 +595,7 @@ let rec comp_expr env exp sz cont =
         in
         comp_init env sz decl_size
       end
-  | Lprim((Pidentity | Popaque | Pbytes_to_string | Pbytes_of_string), [arg], _)
-    ->
+  | Lprim((Pidentity | Popaque), [arg], _) ->
       comp_expr env arg sz cont
   | Lprim(Pignore, [arg], _) ->
       comp_expr env arg sz (add_const_unit cont)
@@ -684,9 +683,24 @@ let rec comp_expr env exp sz cont =
       Misc.fatal_error "Bytegen.comp_expr: Pduparray takes exactly one arg"
 (* Integer first for enabling further optimization (cf. emitcode.ml)  *)
   | Lprim (Pintcomp c, [arg ; (Lconst _ as k)], _) ->
-      let p = Pintcomp (commute_comparison c)
+      let p = Pintcomp (swap_integer_comparison c)
       and args = [k ; arg] in
       comp_args env args sz (comp_primitive p args :: cont)
+  | Lprim (Pfloatcomp cmp, args, _) ->
+      let cont =
+        match cmp with
+        | CFeq -> Kccall("caml_eq_float", 2) :: cont
+        | CFneq -> Kccall("caml_neq_float", 2) :: cont
+        | CFlt -> Kccall("caml_lt_float", 2) :: cont
+        | CFnlt -> Kccall("caml_lt_float", 2) :: Kboolnot :: cont
+        | CFgt -> Kccall("caml_gt_float", 2) :: cont
+        | CFngt -> Kccall("caml_gt_float", 2) :: Kboolnot :: cont
+        | CFle -> Kccall("caml_le_float", 2) :: cont
+        | CFnle -> Kccall("caml_le_float", 2) :: Kboolnot :: cont
+        | CFge -> Kccall("caml_ge_float", 2) :: cont
+        | CFnge -> Kccall("caml_ge_float", 2) :: Kboolnot :: cont
+      in
+      comp_args env args sz cont
   | Lprim(p, args, _) ->
       comp_args env args sz (comp_primitive p args :: cont)
   | Lstaticcatch (body, (i, vars) , handler) ->
@@ -765,7 +779,7 @@ let rec comp_expr env exp sz cont =
            Klabel lbl_loop :: Kcheck_signals ::
            comp_expr (add_var param (sz+1) env) body (sz+2)
              (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
-              Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
+              Kacc 1 :: Kintcomp Cne :: Kbranchif lbl_loop ::
               Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, sw, _loc) ->
       let (branch, cont1) = make_branch cont in

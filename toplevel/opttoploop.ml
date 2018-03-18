@@ -82,7 +82,7 @@ let toplevel_value id =
 
 let close_phrase lam =
   let open Lambda in
-  IdentSet.fold (fun id l ->
+  Ident.Set.fold (fun id l ->
     let glb, pos = toplevel_value id in
     let glob =
       Lprim (Pfield pos,

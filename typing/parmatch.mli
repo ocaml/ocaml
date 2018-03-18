@@ -81,6 +81,9 @@ val set_args_erase_mutable : pattern -> pattern list -> pattern list
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
     pattern -> constructor_tag list -> constructor_description  list
+
+(** [ppat_of_type] builds an untyped or-pattern from its expected type.
+     May raise [Empty] when [type_expr] is an empty variant *)
 val ppat_of_type :
     Env.t -> type_expr ->
     Parsetree.pattern *

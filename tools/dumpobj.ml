@@ -92,7 +92,6 @@ let rec print_struct_const = function
   | Const_base(Const_int32 i) -> printf "%ldl" i
   | Const_base(Const_nativeint i) -> printf "%ndn" i
   | Const_base(Const_int64 i) -> printf "%LdL" i
-  | Const_pointer n -> printf "%da" n
   | Const_block(tag, args) ->
       printf "<%d>" tag;
       begin match args with
@@ -335,7 +334,8 @@ let op_shapes = [
   opGETVECTITEM, Nothing;
   opSETVECTITEM, Nothing;
   opGETSTRINGCHAR, Nothing;
-  opSETSTRINGCHAR, Nothing;
+  opGETBYTESCHAR, Nothing;
+  opSETBYTESCHAR, Nothing;
   opBRANCH, Disp;
   opBRANCHIF, Disp;
   opBRANCHIFNOT, Disp;

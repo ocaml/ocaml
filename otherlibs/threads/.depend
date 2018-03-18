@@ -18,15 +18,14 @@ condition.cmi : mutex.cmi
 event.cmo : mutex.cmi condition.cmi event.cmi
 event.cmx : mutex.cmx condition.cmx event.cmi
 event.cmi :
-marshal.cmo : marshal.cmi
-marshal.cmx : marshal.cmi
-marshal.cmi :
+marshal.cmo :
+marshal.cmx :
 mutex.cmo : thread.cmi mutex.cmi
 mutex.cmx : thread.cmx mutex.cmi
 mutex.cmi :
-pervasives.cmo : unix.cmi pervasives.cmi
-pervasives.cmx : unix.cmx pervasives.cmi
-pervasives.cmi :
+stdlib.cmo : unix.cmi marshal.cmo stdlib.cmi
+stdlib.cmx : unix.cmx marshal.cmx stdlib.cmi
+stdlib.cmi : marshal.cmo
 thread.cmo : unix.cmi thread.cmi
 thread.cmx : unix.cmx thread.cmi
 thread.cmi : unix.cmi

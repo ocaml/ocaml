@@ -630,7 +630,7 @@ Alternatively, the selection can be performed within a function:
 \begin{verbatim}
         let draw_using_device device_name picture =
           let module Device =
-            (val (Hashtbl.find_devices device_name) : DEVICE)
+            (val (Hashtbl.find devices device_name) : DEVICE)
           in
             Device.draw picture
 \end{verbatim}
@@ -935,13 +935,13 @@ physically @'A'@ and @'B'@ as submodules, and with no dependencies on
 their respective compilation units.
 Here is a concrete example of a possible alternative approach:
 \begin{enumerate}
-\item Rename the files containing @'A'@ and @'B'@ to @'Mylib_A'@ and
-  @'Mylib_B'@.
+\item Rename the files containing @'A'@ and @'B'@ to @'Mylib__A'@ and
+  @'Mylib__B'@.
 \item Create a packing interface @'Mylib.ml'@, containing the
   following lines.
 \begin{verbatim}
-    module A = Mylib_A
-    module B = Mylib_B
+    module A = Mylib__A
+    module B = Mylib__B
 \end{verbatim}
 \item Compile @'Mylib.ml'@ using @'-no-alias-deps'@, and the other
   files using @'-no-alias-deps'@ and @'-open' 'Mylib'@ (the last one is
@@ -949,7 +949,7 @@ Here is a concrete example of a possible alternative approach:
   file).
 \begin{verbatim}
     ocamlc -c -no-alias-deps Mylib.ml
-    ocamlc -c -no-alias-deps -open Mylib Mylib_*.mli Mylib_*.ml
+    ocamlc -c -no-alias-deps -open Mylib Mylib__*.mli Mylib__*.ml
 \end{verbatim}
 \item Finally, create a library containing all the compilation units,
   and export all the compiled interfaces.
@@ -960,11 +960,20 @@ Here is a concrete example of a possible alternative approach:
 This approach lets you access @'A'@ and @'B'@ directly inside the
 library, and as @'Mylib.A'@ and @'Mylib.B'@ from outside.
 It also has the advantage that @'Mylib'@ is no longer monolithic: if
-you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
-@'Mylib_B'@.
+you use @'Mylib.A'@, only @'Mylib__A'@ will be linked in, not
+@'Mylib__B'@.
 %Note that in the above @'Mylib.cmo'@ is actually empty, and one could
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
+
+Note the use of double underscores in @'Mylib__A'@ and
+@'Mylib__B'@. These were chosen on purpose; the compiler uses the
+following heuristic when printing paths: given a path @'Lib__fooBar'@,
+if @'Lib.FooBar'@ exists and is an alias for @'Lib__fooBar'@, then the
+compiler will always display @'Lib.FooBar'@ instead of
+@'Lib__fooBar'@. This way the long @'Mylib__'@ names stay hidden and
+all the user sees is the nicer dot names. This is how the OCaml
+standard library is compiled.
 
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}
@@ -1767,7 +1776,7 @@ When this form is used together with the infix syntax for attributes,
 the attributes are considered to apply to the payload:
 
 \begin{verbatim}
-fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@foo ] ];
+fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
 \subsection{Built-in extension nodes}
@@ -2354,3 +2363,18 @@ let dict =
 dict.Dict.%{"one"};;
 let open Dict in dict.%{"two"};;
 \end{caml_example}
+
+\section{Empty variant types\label{s:empty-variants} }
+(Introduced in 4.07.0)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' '|'
+\end{syntax}
+This extension allows user to define empty variants.
+Empty variant type can be eliminated by refutation case of pattern matching.
+\begin{caml_example*}{verbatim}
+type t = |
+let f (x: t) = match x with _ -> .
+\end{caml_example*}

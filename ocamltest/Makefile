@@ -21,9 +21,15 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   unix := false
   ocamlsrcdir := $(shell echo "$(abspath $(shell pwd)/..)"|cygpath -w -f - \
     | sed 's/\\/\\\\\\\\/g')
+  ifeq "$(wildcard ../flexdll/Makefile)" ""
+    FLEXLINK_ENV=
+  else
+    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
+  endif
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
+  FLEXLINK_ENV=
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -43,13 +49,14 @@ run := run_$(UNIX_OR_WIN32)
 core := \
   $(run).c \
   run_stubs.c \
+  ocamltest_stdlib_stubs.c \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
-  filetype.mli filetype.ml \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
+  result.mli result.ml \
   actions.mli actions.ml \
   tests.mli tests.ml \
   tsl_ast.mli tsl_ast.ml \
@@ -62,8 +69,16 @@ core := \
 
 ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \
+  ocaml_filetypes.mli ocaml_filetypes.ml \
   ocaml_variables.mli ocaml_variables.ml \
   ocaml_modifiers.mli ocaml_modifiers.ml \
+  ocaml_directories.mli ocaml_directories.ml \
+  ocaml_files.mli ocaml_files.ml \
+  ocaml_flags.mli ocaml_flags.ml \
+  ocaml_commands.mli ocaml_commands.ml \
+  ocaml_tools.mli ocaml_tools.ml \
+  ocaml_compilers.mli ocaml_compilers.ml \
+  ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 
@@ -111,23 +126,13 @@ bytecode_modules := $(o_files) $(cmo_files)
 
 native_modules := $(o_files) $(cmx_files)
 
-directories = ../utils ../parsing ../stdlib ../compilerlibs
+directories := ../utils ../parsing ../stdlib ../compilerlibs
 
-include_directories = $(addprefix -I , $(directories))
+include_directories := $(addprefix -I , $(directories))
 
-flags = -g -nostdlib $(include_directories) \
+flags := -g -nostdlib $(include_directories) \
   -strict-sequence -safe-string -strict-formats \
   -w +a-4-9-41-42-44-45-48 -warn-error A
-
-ifeq "$(UNIX_OR_WIN32)" "unix"
-FLEXLINK_ENV=
-else # Windows
-  ifeq "$(wildcard ../flexdll/Makefile)" ""
-    FLEXLINK_ENV=
-  else
-    FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
-  endif
-endif
 
 ocamlc := $(FLEXLINK_ENV) ../byterun/ocamlrun ../ocamlc $(flags)
 
@@ -167,17 +172,29 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
 
+ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
+WITH_OCAMLDOC := true
+else
+WITH_OCAMLDOC := false
+endif
+
+
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
+	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
+	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
+	  -e 's|@@SYSTEM@@|$(SYSTEM)|' \
 	  -e 's|@@CPP@@|$(CPP)|' \
 	  -e 's|@@OCAMLCDEFAULTFLAGS@@|$(ocamlcdefaultflags)|' \
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
+	  -e 's|@@SPACETIME@@|$(WITH_SPACETIME)|' \
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
+	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  $< > $@
 
 .PHONY: clean

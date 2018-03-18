@@ -48,6 +48,9 @@ let prim_fresh_oo_id =
   Pccall (Primitive.simple ~name:"caml_fresh_oo_id" ~arity:1 ~alloc:false)
 
 let transl_extension_constructor env path ext =
+  let path =
+    Stdlib.Option.map (Printtyp.rewrite_double_underscore_paths env) path
+  in
   let name =
     match path, !Clflags.for_package with
       None, _ -> Ident.name ext.ext_id
@@ -70,7 +73,7 @@ let comparisons_table = create_hashtable 11 [
   "%equal",
       (Pccall(Primitive.simple ~name:"caml_equal" ~arity:2 ~alloc:true),
        Pintcomp Ceq,
-       Pfloatcomp Ceq,
+       Pfloatcomp CFeq,
        Pccall(Primitive.simple ~name:"caml_string_equal" ~arity:2
                 ~alloc:false),
        Pccall(Primitive.simple ~name:"caml_bytes_equal" ~arity:2
@@ -81,20 +84,20 @@ let comparisons_table = create_hashtable 11 [
        true);
   "%notequal",
       (Pccall(Primitive.simple ~name:"caml_notequal" ~arity:2 ~alloc:true),
-       Pintcomp Cneq,
-       Pfloatcomp Cneq,
+       Pintcomp Cne,
+       Pfloatcomp CFneq,
        Pccall(Primitive.simple ~name:"caml_string_notequal" ~arity:2
                 ~alloc:false),
        Pccall(Primitive.simple ~name:"caml_bytes_notequal" ~arity:2
                 ~alloc:false),
-       Pbintcomp(Pnativeint, Cneq),
-       Pbintcomp(Pint32, Cneq),
-       Pbintcomp(Pint64, Cneq),
+       Pbintcomp(Pnativeint, Cne),
+       Pbintcomp(Pint32, Cne),
+       Pbintcomp(Pint64, Cne),
        true);
   "%lessthan",
       (Pccall(Primitive.simple ~name:"caml_lessthan" ~arity:2 ~alloc:true),
        Pintcomp Clt,
-       Pfloatcomp Clt,
+       Pfloatcomp CFlt,
        Pccall(Primitive.simple ~name:"caml_string_lessthan" ~arity:2
                 ~alloc:false),
        Pccall(Primitive.simple ~name:"caml_bytes_lessthan" ~arity:2
@@ -106,7 +109,7 @@ let comparisons_table = create_hashtable 11 [
   "%greaterthan",
       (Pccall(Primitive.simple ~name:"caml_greaterthan" ~arity:2 ~alloc:true),
        Pintcomp Cgt,
-       Pfloatcomp Cgt,
+       Pfloatcomp CFgt,
        Pccall(Primitive.simple ~name:"caml_string_greaterthan" ~arity:2
                 ~alloc: false),
        Pccall(Primitive.simple ~name:"caml_bytes_greaterthan" ~arity:2
@@ -118,7 +121,7 @@ let comparisons_table = create_hashtable 11 [
   "%lessequal",
       (Pccall(Primitive.simple ~name:"caml_lessequal" ~arity:2 ~alloc:true),
        Pintcomp Cle,
-       Pfloatcomp Cle,
+       Pfloatcomp CFle,
        Pccall(Primitive.simple ~name:"caml_string_lessequal" ~arity:2
                 ~alloc:false),
        Pccall(Primitive.simple ~name:"caml_bytes_lessequal" ~arity:2
@@ -130,7 +133,7 @@ let comparisons_table = create_hashtable 11 [
   "%greaterequal",
       (Pccall(Primitive.simple ~name:"caml_greaterequal" ~arity:2 ~alloc:true),
        Pintcomp Cge,
-       Pfloatcomp Cge,
+       Pfloatcomp CFge,
        Pccall(Primitive.simple ~name:"caml_string_greaterequal" ~arity:2
                 ~alloc:false),
        Pccall(Primitive.simple ~name:"caml_bytes_greaterequal" ~arity:2
@@ -209,7 +212,7 @@ let primitives_table = create_hashtable 57 [
   "%lsrint", Plsrint;
   "%asrint", Pasrint;
   "%eq", Pintcomp Ceq;
-  "%noteq", Pintcomp Cneq;
+  "%noteq", Pintcomp Cne;
   "%ltint", Pintcomp Clt;
   "%leint", Pintcomp Cle;
   "%gtint", Pintcomp Cgt;
@@ -224,12 +227,12 @@ let primitives_table = create_hashtable 57 [
   "%subfloat", Psubfloat;
   "%mulfloat", Pmulfloat;
   "%divfloat", Pdivfloat;
-  "%eqfloat", Pfloatcomp Ceq;
-  "%noteqfloat", Pfloatcomp Cneq;
-  "%ltfloat", Pfloatcomp Clt;
-  "%lefloat", Pfloatcomp Cle;
-  "%gtfloat", Pfloatcomp Cgt;
-  "%gefloat", Pfloatcomp Cge;
+  "%eqfloat", Pfloatcomp CFeq;
+  "%noteqfloat", Pfloatcomp CFneq;
+  "%ltfloat", Pfloatcomp CFlt;
+  "%lefloat", Pfloatcomp CFle;
+  "%gtfloat", Pfloatcomp CFgt;
+  "%gefloat", Pfloatcomp CFge;
   "%string_length", Pstringlength;
   "%string_safe_get", Pstringrefs;
   "%string_safe_set", Pbytessets;
@@ -336,12 +339,24 @@ let primitives_table = create_hashtable 57 [
   "%caml_string_get32u", Pstring_load_32(true);
   "%caml_string_get64", Pstring_load_64(false);
   "%caml_string_get64u", Pstring_load_64(true);
-  "%caml_string_set16", Pstring_set_16(false);
-  "%caml_string_set16u", Pstring_set_16(true);
-  "%caml_string_set32", Pstring_set_32(false);
-  "%caml_string_set32u", Pstring_set_32(true);
-  "%caml_string_set64", Pstring_set_64(false);
-  "%caml_string_set64u", Pstring_set_64(true);
+  "%caml_string_set16", Pbytes_set_16(false);
+  "%caml_string_set16u", Pbytes_set_16(true);
+  "%caml_string_set32", Pbytes_set_32(false);
+  "%caml_string_set32u", Pbytes_set_32(true);
+  "%caml_string_set64", Pbytes_set_64(false);
+  "%caml_string_set64u", Pbytes_set_64(true);
+  "%caml_bytes_get16", Pbytes_load_16(false);
+  "%caml_bytes_get16u", Pbytes_load_16(true);
+  "%caml_bytes_get32", Pbytes_load_32(false);
+  "%caml_bytes_get32u", Pbytes_load_32(true);
+  "%caml_bytes_get64", Pbytes_load_64(false);
+  "%caml_bytes_get64u", Pbytes_load_64(true);
+  "%caml_bytes_set16", Pbytes_set_16(false);
+  "%caml_bytes_set16u", Pbytes_set_16(true);
+  "%caml_bytes_set32", Pbytes_set_32(false);
+  "%caml_bytes_set32u", Pbytes_set_32(true);
+  "%caml_bytes_set64", Pbytes_set_64(false);
+  "%caml_bytes_set64u", Pbytes_set_64(true);
   "%caml_bigstring_get16", Pbigstring_load_16(false);
   "%caml_bigstring_get16u", Pbigstring_load_16(true);
   "%caml_bigstring_get32", Pbigstring_load_32(false);
@@ -836,7 +851,7 @@ and transl_exp0 e =
         | _ -> assert false
       end else begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(Const_base (Const_int n))
       | Cstr_unboxed ->
           (match ll with [v] -> v | _ -> assert false)
       | Cstr_block n ->
@@ -857,7 +872,7 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(Const_base (Const_int tag))
       | Some arg ->
           let lam = transl_exp arg in
           try
@@ -1086,15 +1101,18 @@ and transl_cases cases =
   List.map transl_case cases
 
 and transl_case_try {c_lhs; c_guard; c_rhs} =
-  match c_lhs.pat_desc with
-  | Tpat_var (id, _)
-  | Tpat_alias (_, id, _) ->
-      Hashtbl.replace try_ids id ();
-      Misc.try_finally
-        (fun () -> c_lhs, transl_guard c_guard c_rhs)
-        (fun () -> Hashtbl.remove try_ids id)
-  | _ ->
-      c_lhs, transl_guard c_guard c_rhs
+  let rec iter_exn_names f pat =
+    match pat.pat_desc with
+    | Tpat_var (id, _) -> f id
+    | Tpat_alias (p, id, _) ->
+        f id;
+        iter_exn_names f p
+    | _ -> ()
+  in
+  iter_exn_names (fun id -> Hashtbl.replace try_ids id ()) c_lhs;
+  Misc.try_finally
+    (fun () -> c_lhs, transl_guard c_guard c_rhs)
+    (fun () -> iter_exn_names (Hashtbl.remove try_ids) c_lhs)
 
 and transl_cases_try cases =
   let cases =
@@ -1203,12 +1221,18 @@ and transl_function loc untuplify_fn repr partial param cases =
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
 
-and transl_let rec_flag pat_expr_list body =
+(*
+  Notice: transl_let consumes (ie compiles) its pat_expr_list argument,
+  and returns a function that will take the body of the lambda-let construct.
+  This complication allows choosing any compilation order for the
+  bindings and body of let constructs.
+*)
+and transl_let rec_flag pat_expr_list =
   match rec_flag with
     Nonrecursive ->
       let rec transl = function
         [] ->
-          body
+          fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
           let lam = transl_exp expr in
           let lam =
@@ -1217,7 +1241,8 @@ and transl_let rec_flag pat_expr_list body =
           let lam =
             Translattribute.add_specialise_attribute lam vb_loc attr
           in
-          Matching.for_let pat.pat_loc lam pat (transl rem)
+          let mk_body = transl rem in
+          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1238,7 +1263,8 @@ and transl_let rec_flag pat_expr_list body =
             vb_attributes
         in
         (id, lam) in
-      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+      let lam_bds = List.map2 transl_case pat_expr_list idlist in
+      fun body -> Lletrec(lam_bds, body)
 
 and transl_setinstvar loc self var expr =
   Lprim(Psetfield_computed (maybe_pointer expr, Assignment),

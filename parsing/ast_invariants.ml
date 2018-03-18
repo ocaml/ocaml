@@ -19,7 +19,6 @@ open Ast_iterator
 let err = Syntaxerr.ill_formed_ast
 
 let empty_record loc = err loc "Records cannot be empty."
-let empty_variant loc = err loc "Variant types cannot be empty."
 let invalid_tuple loc = err loc "Tuples must have at least 2 components."
 let no_args loc = err loc "Function application with no argument."
 let empty_let loc = err loc "Let with no bindings."
@@ -41,7 +40,6 @@ let iterator =
     let loc = td.ptype_loc in
     match td.ptype_kind with
     | Ptype_record [] -> empty_record loc
-    | Ptype_variant [] -> empty_variant loc
     | _ -> ()
   in
   let typ self ty =

@@ -56,16 +56,8 @@ ocaml299to3.cmo :
 ocaml299to3.cmx :
 ocamlcp.cmo : ../driver/main_args.cmi
 ocamlcp.cmx : ../driver/main_args.cmx
-ocamldep.cmo : ../driver/pparse.cmi ../parsing/parsetree.cmi \
-    ../parsing/parser.cmi ../parsing/parse.cmi ../utils/misc.cmi \
-    ../parsing/longident.cmi ../parsing/location.cmi ../parsing/lexer.cmi \
-    ../parsing/depend.cmi ../utils/config.cmi ../driver/compplugin.cmi \
-    ../driver/compenv.cmi ../utils/clflags.cmi
-ocamldep.cmx : ../driver/pparse.cmx ../parsing/parsetree.cmi \
-    ../parsing/parser.cmx ../parsing/parse.cmx ../utils/misc.cmx \
-    ../parsing/longident.cmx ../parsing/location.cmx ../parsing/lexer.cmx \
-    ../parsing/depend.cmx ../utils/config.cmx ../driver/compplugin.cmx \
-    ../driver/compenv.cmx ../utils/clflags.cmx
+ocamldep.cmo : ../driver/makedepend.cmi
+ocamldep.cmx : ../driver/makedepend.cmx
 ocamlmklib.cmo : ocamlmklibconfig.cmo ../utils/misc.cmi ../utils/config.cmi
 ocamlmklib.cmx : ocamlmklibconfig.cmx ../utils/misc.cmx ../utils/config.cmx
 ocamlmklibconfig.cmo :
@@ -85,8 +77,10 @@ primreq.cmx : ../utils/config.cmx ../bytecomp/cmo_format.cmi
 profiling.cmo : profiling.cmi
 profiling.cmx : profiling.cmi
 profiling.cmi :
-read_cmt.cmo : ../typing/cmt_format.cmi cmt2annot.cmo ../utils/clflags.cmi
-read_cmt.cmx : ../typing/cmt_format.cmx cmt2annot.cmx ../utils/clflags.cmx
+read_cmt.cmo : ../parsing/location.cmi ../driver/compmisc.cmi \
+    ../typing/cmt_format.cmi cmt2annot.cmo ../utils/clflags.cmi
+read_cmt.cmx : ../parsing/location.cmx ../driver/compmisc.cmx \
+    ../typing/cmt_format.cmx cmt2annot.cmx ../utils/clflags.cmx
 scrapelabels.cmo :
 scrapelabels.cmx :
 stripdebug.cmo : ../utils/misc.cmi ../bytecomp/bytesections.cmi

@@ -148,6 +148,38 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       | None -> assert false (* not possible to open a Mty_functor *)
       | Some opened_env -> Some (ident, md, newenv), tme, opened_env
 
+let type_initially_opened_module env module_name =
+  let loc = Location.in_file "compiler internals" in
+  let lid = { Asttypes.loc; txt = Longident.Lident module_name } in
+  let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
+  match Env.open_signature_of_initially_opened_module path env with
+  | Some env -> path, env
+  | None ->
+      let md = Env.find_module path env in
+      ignore (extract_sig_open env lid.loc md.md_type);
+      assert false
+
+let initial_env ~loc ~safe_string ~initially_opened_module
+      ~open_implicit_modules =
+  let env =
+    if safe_string then
+      Env.initial_safe_string
+    else
+      Env.initial_unsafe_string
+  in
+  let env =
+    match initially_opened_module with
+    | None -> env
+    | Some name ->
+      snd (type_initially_opened_module env name)
+  in
+  let open_implicit_module env m =
+    let open Asttypes in
+    let lid = {loc; txt = Longident.parse m } in
+    snd (type_open_ Override env lid.loc lid)
+  in
+  List.fold_left open_implicit_module env open_implicit_modules
+
 let type_open ?toplevel env sod =
   let (inserted_md, tme, open_env) =
     Builtin_attributes.warning_scope sod.popen_attributes
@@ -381,7 +413,8 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
@@ -429,7 +462,8 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
-        let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
+        let aliasable = not (Env.is_functor_arg path env) in
+        let newmd = Mtype.strengthen_decl ~aliasable env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
@@ -1169,7 +1203,7 @@ let enrich_type_decls anchor decls oldenv newenv =
           let id = info.typ_id in
           let info' =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
-              info.typ_type
+              id info.typ_type
           in
             Env.add_type ~check:true id info' e)
         oldenv decls
@@ -1320,10 +1354,11 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
-let wrap_constraint env arg mty explicit =
+let wrap_constraint env mark arg mty explicit =
+  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =
     try
-      Includemod.modtypes ~loc:arg.mod_loc env arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mty
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
@@ -1381,7 +1416,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       let sg' = simplify_signature sg in
       if List.length sg' = List.length sg then md else
-      wrap_constraint (Env.implicit_coercion env) md (Mty_signature sg')
+      wrap_constraint env false md (Mty_signature sg')
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
@@ -1444,7 +1479,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with
+      let md =
+        wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
+      in
+      rm { md with
           mod_loc = smod.pmod_loc;
           mod_attributes = smod.pmod_attributes;
          }
@@ -1879,7 +1917,7 @@ let type_package env m p nl =
   (* go back to original level *)
   Ctype.end_def ();
   if nl = [] then
-    (wrap_constraint env modl (Mty_ident p) Tmodtype_implicit, [])
+    (wrap_constraint env true modl (Mty_ident p) Tmodtype_implicit, [])
   else let mty = modtype_of_package env modl.mod_loc p nl tl' in
   List.iter2
     (fun n ty ->
@@ -1887,7 +1925,7 @@ let type_package env m p nl =
       with Ctype.Unify _ ->
         raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
     nl tl';
-  (wrap_constraint env modl mty Tmodtype_implicit, tl')
+  (wrap_constraint env true modl mty Tmodtype_implicit, tl')
 
 (* Fill in the forward declarations *)
 
@@ -1954,7 +1992,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                         Interface_not_compiled sourceintf)) in
         let dclsig = Env.read_signature modulename intf_file in
         let coercion =
-          Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+          Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+            sourcefile sg intf_file dclsig
+        in
         Typecore.force_delayed_checks ();
         (* It is important to run these checks after the inclusion test above,
            so that value declarations which are not used internally but exported
@@ -1964,8 +2004,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
         (str, coercion)
       end else begin
         let coercion =
-          Includemod.compunit initial_env sourcefile sg
-                              "(inferred signature)" simple_sg in
+          Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+            sourcefile sg "(inferred signature)" simple_sg
+        in
         check_nongen_schemes finalenv simple_sg;
         normalize_signature finalenv simple_sg;
         Typecore.force_delayed_checks ();

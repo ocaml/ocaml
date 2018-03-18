@@ -1,3 +1,7 @@
+(* TEST
+   modules = "intextaux.c"
+*)
+
 (* Test for output_value / input_value *)
 
 let max_data_depth = 500000

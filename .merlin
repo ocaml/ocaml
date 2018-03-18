@@ -40,8 +40,8 @@ B ./otherlibs/unix
 S ./parsing
 B ./parsing
 
-S ./stdlib
-B ./stdlib
+STDLIB ./stdlib
+FLG -open Stdlib -nopervasives
 
 S ./toplevel
 B ./toplevel

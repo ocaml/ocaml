@@ -85,25 +85,23 @@ let add_ccobjs origin l =
 
 (* First pass: determine which units are needed *)
 
-module IdentSet = Lambda.IdentSet
-
-let missing_globals = ref IdentSet.empty
+let missing_globals = ref Ident.Set.empty
 
 let is_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      IdentSet.mem id !missing_globals
+      Ident.Set.mem id !missing_globals
   | _ -> false
 
 let add_required compunit =
   let add_required_by_reloc (rel, _pos) =
     match rel with
       Reloc_getglobal id ->
-        missing_globals := IdentSet.add id !missing_globals
+        missing_globals := Ident.Set.add id !missing_globals
     | _ -> ()
   in
   let add_required_for_effects id =
-    missing_globals := IdentSet.add id !missing_globals
+    missing_globals := Ident.Set.add id !missing_globals
   in
   List.iter add_required_by_reloc compunit.cu_reloc;
   List.iter add_required_for_effects compunit.cu_required_globals
@@ -111,7 +109,7 @@ let add_required compunit =
 let remove_required (rel, _pos) =
   match rel with
     Reloc_setglobal id ->
-      missing_globals := IdentSet.remove id !missing_globals
+      missing_globals := Ident.Set.remove id !missing_globals
   | _ -> ()
 
 let scan_file obj_name tolink =
@@ -294,9 +292,9 @@ let output_stringlist oc l =
 (* Transform a file name into an absolute file name *)
 
 let make_absolute file =
-  if Filename.is_relative file
-  then Filename.concat (Sys.getcwd()) file
-  else file
+  if not (Filename.is_relative file) then file
+  else Location.rewrite_absolute_path
+         (Filename.concat (Sys.getcwd()) file)
 
 (* Create a bytecode executable file *)
 
@@ -569,10 +567,10 @@ let link ppf objfiles output_name =
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   let missing_modules =
-    IdentSet.filter (fun id -> not (Ident.is_predef_exn id)) !missing_globals
+    Ident.Set.filter (fun id -> not (Ident.is_predef_exn id)) !missing_globals
   in
   begin
-    match IdentSet.elements missing_modules with
+    match Ident.Set.elements missing_modules with
     | [] -> ()
     | id :: _ -> raise (Error (Required_module_unavailable (Ident.name id)))
   end;
@@ -707,7 +705,7 @@ let reset () =
   lib_ccobjs := [];
   lib_ccopts := [];
   lib_dllibs := [];
-  missing_globals := IdentSet.empty;
+  missing_globals := Ident.Set.empty;
   Consistbl.clear crc_interfaces;
   implementations_defined := [];
   debug_info := [];

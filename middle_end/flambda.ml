@@ -23,7 +23,6 @@ type call_kind =
 type const =
   | Int of int
   | Char of char
-  | Const_pointer of int
 
 type apply = {
   func : Variable.t;
@@ -422,7 +421,6 @@ and print_const ppf (c : const) =
   match c with
   | Int n -> fprintf ppf "%i" n
   | Char c -> fprintf ppf "%C" c
-  | Const_pointer n -> fprintf ppf "%ia" n
 
 let print_function_declarations ppf (fd : function_declarations) =
   let funs ppf =
@@ -1114,12 +1112,9 @@ let compare_const (c1:const) (c2:const) =
   match c1, c2 with
   | Int i1, Int i2 -> compare i1 i2
   | Char i1, Char i2 -> compare i1 i2
-  | Const_pointer i1, Const_pointer i2 -> compare i1 i2
-  | Int _, (Char _ | Const_pointer _) -> -1
-  | (Char _ | Const_pointer _), Int _ -> 1
-  | Char _, Const_pointer _ -> -1
-  | Const_pointer _, Char _ -> 1
-
+  | Int _, Char _ -> -1
+  | Char _ , Int _ -> 1
+ 
 let compare_constant_defining_value_block_field
     (c1:constant_defining_value_block_field)
     (c2:constant_defining_value_block_field) =

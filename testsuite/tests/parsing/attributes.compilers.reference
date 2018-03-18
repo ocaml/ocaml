@@ -1,0 +1,153 @@
+[
+  structure_item (attributes.ml[8,120+0]..[8,120+8])
+    Pstr_attribute "foo"
+    []
+  structure_item (attributes.ml[10,130+0]..[11,169+9])
+    Pstr_value Nonrec
+    [
+      <def>
+          attribute "foo"
+            []
+        pattern (attributes.ml[10,130+4]..[10,130+38]) ghost
+          Ppat_constraint
+          pattern (attributes.ml[10,130+4]..[10,130+13])
+            attribute "foo"
+              []
+            Ppat_var "x" (attributes.ml[10,130+5]..[10,130+6])
+          core_type (attributes.ml[10,130+16]..[10,130+20])
+            attribute "foo"
+              []
+            Ptyp_constr "unit" (attributes.ml[10,130+16]..[10,130+20])
+            []
+        expression (attributes.ml[10,130+30]..[10,130+32])
+          attribute "foo"
+            []
+          Pexp_construct "()" (attributes.ml[10,130+30]..[10,130+32])
+          None
+    ]
+  structure_item (attributes.ml[13,180+0]..[15,217+7])
+    Pstr_type Rec
+    [
+      type_declaration "t" (attributes.ml[13,180+5]..[13,180+6]) (attributes.ml[13,180+0]..[15,217+7])
+        attribute "foo"
+          []
+        ptype_params =
+          []
+        ptype_cstrs =
+          []
+        ptype_kind =
+          Ptype_variant
+            [
+              (attributes.ml[14,189+2]..[14,189+27])
+                "Foo" (attributes.ml[14,189+4]..[14,189+7])
+                attribute "foo"
+                  []
+                [
+                  core_type (attributes.ml[14,189+12]..[14,189+13])
+                    attribute "foo"
+                      []
+                    Ptyp_constr "t" (attributes.ml[14,189+12]..[14,189+13])
+                    []
+                ]
+                None
+            ]
+        ptype_private = Public
+        ptype_manifest =
+          None
+    ]
+  structure_item (attributes.ml[17,226+0]..[17,226+8])
+    Pstr_attribute "foo"
+    []
+  structure_item (attributes.ml[20,237+0]..[29,344+7])
+    Pstr_module
+    "M" (attributes.ml[20,237+7]..[20,237+8])
+      attribute "foo"
+        []
+      module_expr (attributes.ml[20,237+11]..[28,334+3])
+        attribute "foo"
+          []
+        Pmod_structure
+        [
+          structure_item (attributes.ml[21,255+2]..[25,310+11])
+            Pstr_type Rec
+            [
+              type_declaration "t" (attributes.ml[21,255+7]..[21,255+8]) (attributes.ml[21,255+2]..[25,310+11])
+                attribute "foo"
+                  []
+                attribute "foo"
+                  []
+                ptype_params =
+                  []
+                ptype_cstrs =
+                  []
+                ptype_kind =
+                  Ptype_record
+                    [
+                      (attributes.ml[22,268+4]..[22,268+25])
+                        attribute "foo"
+                          []
+                        Immutable
+                        "l" (attributes.ml[22,268+4]..[22,268+5])                        core_type (attributes.ml[22,268+9]..[22,268+10])
+                          attribute "foo"
+                            []
+                          Ptyp_constr "t" (attributes.ml[22,268+9]..[22,268+10])
+                          []
+                    ]
+                ptype_private = Public
+                ptype_manifest =
+                  None
+            ]
+          structure_item (attributes.ml[27,323+2]..[27,323+10])
+            Pstr_attribute "foo"
+            []
+        ]
+  structure_item (attributes.ml[31,353+0]..[39,477+7])
+    Pstr_modtype "S" (attributes.ml[31,353+12]..[31,353+13])
+      attribute "foo"
+        []
+      module_type (attributes.ml[31,353+16]..[38,467+3])
+        attribute "foo"
+          []
+        Pmty_signature
+        [
+          signature_item (attributes.ml[33,374+2]..[34,442+11])
+            Psig_include
+            module_type (attributes.ml[33,374+10]..[33,374+61])
+              attribute "foo"
+                []
+              Pmty_with
+              module_type (attributes.ml[33,374+11]..[33,374+35])
+                attribute "foo"
+                  []
+                Pmty_typeof
+                module_expr (attributes.ml[33,374+27]..[33,374+28])
+                  attribute "foo"
+                    []
+                  Pmod_ident "M" (attributes.ml[33,374+27]..[33,374+28])
+              [
+                Pwith_typesubst "t" (attributes.ml[33,374+53]..[33,374+54])
+                  type_declaration "t" (attributes.ml[33,374+53]..[33,374+54]) (attributes.ml[33,374+48]..[33,374+61])
+                    ptype_params =
+                      []
+                    ptype_cstrs =
+                      []
+                    ptype_kind =
+                      Ptype_abstract
+                    ptype_private = Public
+                    ptype_manifest =
+                      Some
+                        core_type (attributes.ml[33,374+58]..[33,374+61])
+                          Ptyp_constr "M.t" (attributes.ml[33,374+58]..[33,374+61])
+                          []
+              ]
+              attribute "foo"
+                []
+          signature_item (attributes.ml[36,455+2]..[36,455+10])
+            Psig_attribute "foo"
+            []
+        ]
+  structure_item (attributes.ml[41,486+0]..[41,486+8])
+    Pstr_attribute "foo"
+    []
+]
+

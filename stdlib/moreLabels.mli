@@ -47,6 +47,12 @@ module Hashtbl : sig
   val is_randomized : unit -> bool
   type statistics = Hashtbl.statistics
   val stats : ('a, 'b) t -> statistics
+  val to_seq : ('a,'b) t -> ('a * 'b) Seq.t
+  val to_seq_keys : ('a,_) t -> 'a Seq.t
+  val to_seq_values : (_,'b) t -> 'b Seq.t
+  val add_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+  val replace_seq : ('a,'b) t -> ('a * 'b) Seq.t -> unit
+  val of_seq : ('a * 'b) Seq.t -> ('a, 'b) t
   module type HashedType = Hashtbl.HashedType
   module type SeededHashedType = Hashtbl.SeededHashedType
   module type S =
@@ -72,6 +78,12 @@ module Hashtbl : sig
           'a t -> init:'b -> 'b
       val length : 'a t -> int
       val stats: 'a t -> statistics
+      val to_seq : 'a t -> (key * 'a) Seq.t
+      val to_seq_keys : _ t -> key Seq.t
+      val to_seq_values : 'a t -> 'a Seq.t
+      val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+      val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+      val of_seq : (key * 'a) Seq.t -> 'a t
     end
   module type SeededS =
     sig
@@ -96,9 +108,19 @@ module Hashtbl : sig
           'a t -> init:'b -> 'b
       val length : 'a t -> int
       val stats: 'a t -> statistics
+      val to_seq : 'a t -> (key * 'a) Seq.t
+      val to_seq_keys : _ t -> key Seq.t
+      val to_seq_values : 'a t -> 'a Seq.t
+      val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+      val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+      val of_seq : (key * 'a) Seq.t -> 'a t
     end
-  module Make : functor (H : HashedType) -> S with type key = H.t
-  module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
+  module Make : functor (H : HashedType) -> S
+    with type key = H.t
+     and type 'a t = 'a Hashtbl.Make(H).t
+  module MakeSeeded (H : SeededHashedType) : SeededS
+    with type key = H.t
+     and type 'a t = 'a Hashtbl.MakeSeeded(H).t
   val hash : 'a -> int
   val seeded_hash : int -> 'a -> int
   val hash_param : int -> int -> 'a -> int
@@ -148,8 +170,14 @@ module Map : sig
       val find_last_opt : f:(key -> bool) -> 'a t -> (key * 'a) option
       val map : f:('a -> 'b) -> 'a t -> 'b t
       val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
+      val to_seq : 'a t -> (key * 'a) Seq.t
+      val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+      val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+      val of_seq : (key * 'a) Seq.t -> 'a t
   end
-  module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
+  module Make : functor (Ord : OrderedType) -> S
+    with type key = Ord.t
+     and type 'a t = 'a Map.Make(Ord).t
 end
 
 module Set : sig
@@ -193,6 +221,12 @@ module Set : sig
       val find_last: f:(elt -> bool) -> t -> elt
       val find_last_opt: f:(elt -> bool) -> t -> elt option
       val of_list: elt list -> t
+      val to_seq_from : elt -> t -> elt Seq.t
+      val to_seq : t -> elt Seq.t
+      val add_seq : elt Seq.t -> t -> t
+      val of_seq : elt Seq.t -> t
     end
-  module Make : functor (Ord : OrderedType) -> S with type elt = Ord.t
+  module Make : functor (Ord : OrderedType) -> S
+    with type elt = Ord.t
+     and type t = Set.Make(Ord).t
 end

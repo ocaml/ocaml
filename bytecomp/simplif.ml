@@ -31,7 +31,7 @@ let rec eliminate_ref id = function
       Lapply{ap with ap_func = eliminate_ref id ap.ap_func;
                      ap_args = List.map (eliminate_ref id) ap.ap_args}
   | Lfunction _ as lam ->
-      if IdentSet.mem id (free_variables lam)
+      if Ident.Set.mem id (free_variables lam)
       then raise Real_reference
       else lam
   | Llet(str, kind, v, e1, e2) ->
@@ -266,11 +266,11 @@ let simplify_exits lam =
         let ys = List.map Ident.rename xs in
         let env =
           List.fold_right2
-            (fun x y t -> Ident.add x (Lvar y) t)
-            xs ys Ident.empty in
+            (fun x y t -> Ident.Map.add x (Lvar y) t)
+            xs ys Ident.Map.empty in
         List.fold_right2
           (fun y l r -> Llet (Alias, Pgenval, y, l, r))
-          ys ls (Lambda.subst_lambda env handler)
+          ys ls (Lambda.subst env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
       end
@@ -582,7 +582,9 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
+  | Lprim (Pidentity, [arg], _) ->
+      emit_tail_infos is_tail arg
+  | Lprim ((Pbytes_to_string | Pbytes_of_string), [arg], _) ->
       emit_tail_infos is_tail arg
   | Lprim (Psequand, [arg1; arg2], _)
   | Lprim (Psequor, [arg1; arg2], _) ->
@@ -661,7 +663,7 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         (* Check that those *opt* identifiers don't appear in the remaining
            body. This should not appear, but let's be on the safe side. *)
         let fv = Lambda.free_variables body in
-        List.iter (fun (id, _) -> if IdentSet.mem id fv then raise Exit) map;
+        List.iter (fun (id, _) -> if Ident.Set.mem id fv then raise Exit) map;
 
         let inner_id = Ident.create (Ident.name fun_id ^ "_inner") in
         let map_param p = try List.assoc p map with Not_found -> p in
@@ -680,10 +682,10 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         let new_ids = List.map Ident.rename inner_params in
         let subst = List.fold_left2
             (fun s id new_id ->
-               Ident.add id (Lvar new_id) s)
-            Ident.empty inner_params new_ids
+               Ident.Map.add id (Lvar new_id) s)
+            Ident.Map.empty inner_params new_ids
         in
-        let body = Lambda.subst_lambda subst body in
+        let body = Lambda.subst subst body in
         let inner_fun =
           Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
         in

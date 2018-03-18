@@ -230,7 +230,7 @@ let lambda_gen_implementation ?toplevel ppf
       symbol = Compilenv.make_symbol None;
       exported = true;
       tag = 0;
-      size = lambda.main_module_block_size;
+      fields = List.init lambda.main_module_block_size (fun _ -> None);
     }
   in
   let clambda_and_constants =

@@ -1,3 +1,10 @@
+(* TEST
+   flags = "-dparsetree"
+   * setup-ocamlc.byte-build-env
+   ** ocamlc.byte
+   *** check-ocamlc.byte-output
+*)
+
 let (.?[]) = Hashtbl.find_opt
 let (.@[]) = Hashtbl.find
 let ( .@[]<- ) = Hashtbl.add

@@ -50,7 +50,7 @@ arch_error() {
 kill_task()
 {
   task=$1
-  taskkill /f /im ${task} || true
+  taskkill /f /im ${task} /t || true
 }
 
 quote1 () {
@@ -161,7 +161,7 @@ esac
 # On Windows, cleanup processes that may remain from previous run
 
 if $cleanup; then
-  tasks="tee ocamlrun program"
+  tasks="tee ocamlrun program ocamltest ocamltest.opt"
   for task in ${tasks}; do kill_task ${task}.exe; done
 fi
 

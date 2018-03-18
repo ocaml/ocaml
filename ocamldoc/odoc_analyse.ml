@@ -28,33 +28,23 @@ open Typedtree
    then the standard library directory. *)
 let init_path () =
   Config.load_path :=
-    "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
+    "" :: List.rev ( Clflags.std_include_dir () @ !Clflags.include_dirs);
   Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
-  let initial =
-    if Config.safe_string then Env.initial_safe_string
-    else if !Clflags.unsafe_string then Env.initial_unsafe_string
-    else Env.initial_safe_string
+  let initially_opened_module =
+    let m = !Odoc_global.initially_opened_module in
+    if m = Env.get_unit_name () then
+      None
+    else
+      Some m
   in
-  let open_mod env m =
-    let open Asttypes in
-    let loc = Location.in_file "ocamldoc command line" in
-    let lid = {loc; txt = Longident.parse m } in
-    let me = Parsetree.({pmod_desc=Pmod_ident lid;
-                         pmod_loc=loc; pmod_attributes=[]}) in
-    let _, _, env = (Typemod.type_open_ ?toplevel:None Override env lid.loc me) in
-    env in
-  (* Open the list of modules given as arguments of the "-open" flag
-     The list is reversed to open the modules in the left-to-right order *)
-  let to_open = List.rev !Clflags.open_modules in
-  let to_open =
-    if Env.get_unit_name () = "Pervasives"
-    then to_open
-    else "Pervasives" :: to_open
-  in
-  List.fold_left open_mod initial to_open
+  Typemod.initial_env
+    ~loc:(Location.in_file "ocamldoc command line")
+    ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
+    ~initially_opened_module
+    ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)
 let preprocess sourcefile =
