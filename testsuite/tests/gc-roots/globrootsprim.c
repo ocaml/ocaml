@@ -67,15 +67,3 @@ value gb_generational_remove(value vblock)
 {
   return gb_classic_remove(vblock);
 }
-
-value root;
-
-value gb_young2old(value _dummy) {
-  root = caml_alloc_small(1, 0);
-  caml_register_generational_global_root(&root);
-  caml_modify_generational_global_root(&root, caml_alloc_shr(10, String_tag));
-  Field(root, 0) = 0xFFFFFFFF;
-  caml_remove_generational_global_root(&root);
-  root += sizeof(value);
-  return Val_unit;
-}

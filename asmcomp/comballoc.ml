@@ -34,25 +34,22 @@ let rec combine i allocstate =
       (i, allocated_size allocstate)
   | Iop(Ialloc { words = sz; _ }) ->
       begin match allocstate with
-        No_alloc ->
-          let (newnext, newsz) =
-            combine i.next (Pending_alloc(i.res.(0), sz)) in
-          (instr_cons_debug (Iop(Ialloc {words = newsz; spacetime_index = 0;
-              label_after_call_gc = None; }))
-            i.arg i.res i.dbg newnext, 0)
-      | Pending_alloc(reg, ofs) ->
-          if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
-            let (newnext, newsz) =
-              combine i.next (Pending_alloc(reg, ofs + sz)) in
-            (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,
+      | Pending_alloc(reg, totalsz)
+          when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
+         let (newnext, newsz) =
+              combine i.next (Pending_alloc(i.res.(0), totalsz + sz)) in
+            (instr_cons (Iop(Iintop_imm(Iadd, -sz))) [| reg |] i.res newnext,
              newsz)
-          end else begin
-            let (newnext, newsz) =
-              combine i.next (Pending_alloc(i.res.(0), sz)) in
-            (instr_cons_debug (Iop(Ialloc { words = newsz; spacetime_index = 0;
-                label_after_call_gc = None; }))
-              i.arg i.res i.dbg newnext, ofs)
-          end
+      | _ ->
+         let (newnext, newsz) = combine i.next (Pending_alloc(i.res.(0), sz)) in
+         let newnext =
+           if newsz = sz then newnext
+           else instr_cons (Iop(Iintop_imm(Iadd, newsz - sz))) i.res
+                i.res newnext
+         in
+         (instr_cons_debug (Iop(Ialloc {words = newsz; spacetime_index = 0;
+                                        label_after_call_gc = None; }))
+          i.arg i.res i.dbg newnext, allocated_size allocstate)
       end
   | Iop(Icall_ind _ | Icall_imm _ | Iextcall _ |
         Itailcall_ind _ | Itailcall_imm _) ->
