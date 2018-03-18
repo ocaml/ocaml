@@ -69,9 +69,6 @@ end
 module TestClassic = Test(Classic)
 module TestGenerational = Test(Generational)
 
-external young2old : unit -> unit = "gb_young2old"
-let _ = young2old (); Gc.full_major ()
-
 let _ =
   let n =
     if Array.length Sys.argv < 2 then 10000 else int_of_string Sys.argv.(1) in
