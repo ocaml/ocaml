@@ -241,6 +241,9 @@ Working version
   the compiler source code.
   (Florian Angeletti, review by Gabriel Scherer)
 
+- GPR#1647: manual, subsection on record and variant disambiguation
+  (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
+
 ### Compiler distribution build system
 
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
