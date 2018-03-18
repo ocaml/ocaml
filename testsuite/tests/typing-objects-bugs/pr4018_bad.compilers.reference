@@ -1,0 +1,41 @@
+File "pr4018_bad.ml", line 42, characters 11-17:
+Error: This type entity = < destroy_subject : id subject; entity_id : id >
+       should be an instance of type
+         < destroy_subject : < add_observer : 'a entity_container -> 'c; .. >
+                             as 'b;
+           .. >
+         as 'a
+       Type
+         id subject =
+           < add_observer : (id subject, id) observer -> unit;
+             notify_observers : id -> unit >
+       is not compatible with type
+         < add_observer : 'a entity_container -> 'c; .. > as 'b 
+       Type (id subject, id) observer = < notify : id subject -> id -> unit >
+       is not compatible with type
+         'a entity_container =
+           < add_entity : (< destroy_subject : < add_observer : 'a
+                                                                entity_container ->
+                                                                'e;
+                                                 .. >;
+                             .. >
+                           as 'd) ->
+                          'e;
+             notify : 'd -> id -> unit > 
+       Type < destroy_subject : id subject; entity_id : id >
+       is not compatible with type
+         entity = < destroy_subject : id subject; entity_id : id > 
+       Type
+         < add_observer : (id subject, id) observer -> unit;
+           notify_observers : id -> unit >
+       is not compatible with type
+         id subject =
+           < add_observer : (id subject, id) observer -> unit;
+             notify_observers : id -> unit > 
+       Type < add_entity : 'd -> 'e; notify : 'd -> id -> unit >
+       is not compatible with type
+         'a entity_container =
+           < add_entity : 'd -> 'e; notify : 'd -> id -> unit > 
+       Type < notify : id subject -> id -> unit > is not compatible with type
+         (id subject, id) observer = < notify : id subject -> id -> unit > 
+       Types for method add_entity are incompatible
