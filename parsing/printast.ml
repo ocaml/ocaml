@@ -371,7 +371,7 @@ and expression i ppf x =
       line i ppf "Pexp_pack\n";
       module_expr i ppf me
   | Pexp_open (ovf, m, e) ->
-      line i ppf "Pexp_open %a \"%a\"\n" fmt_override_flag ovf
+      line i ppf "Pexp_open %a\n%a\n" fmt_override_flag ovf
         (module_expr i) m;
       expression i ppf e
   | Pexp_extension (s, arg) ->
