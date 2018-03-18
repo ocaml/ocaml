@@ -98,7 +98,7 @@ let access_array base numelt size =
 %token OR
 %token <int> POINTER
 %token PROJ
-%token <Cmm.raise_kind> RAISE
+%token <Lambda.raise_kind> RAISE
 %token RBRACKET
 %token RPAREN
 %token SEQ

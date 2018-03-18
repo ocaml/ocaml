@@ -50,7 +50,7 @@ all: lib tools
 	@$(MAKE) report
 
 .PHONY: all-enabled
-all-enabled: lib
+all-enabled: lib tools
 	@sed -n 's/#.*//; /\//d; /./p' disabled > disabled-dirs
 	@ls tests | fgrep -v -f disabled-dirs | \
 	  while read LINE; do \
