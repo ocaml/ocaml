@@ -1,0 +1,2 @@
+File "t07bad.ml", line 10, characters 15-51:
+Error: In the definition of A.t, type 'a list A.t should be 'a A.t
