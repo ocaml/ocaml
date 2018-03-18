@@ -2959,7 +2959,7 @@ and type_expect_ ?in_function ?(recarg=Rejected) env sexp ty_expected =
       }
       in
       Ident.set_current_time ty.level;
-      let (id, new_env) = Env.enter_type name decl env in
+      let (id, new_env) = Env.enter_type ~check:true name decl env in
       Ctype.init_def(Ident.current_time());
 
       let body = type_exp new_env sbody in
@@ -4027,7 +4027,7 @@ and type_effect_cases env ty_res loc caselist conts =
   in
   Ident.set_current_time ty.level;
   let name = Ctype.get_new_abstract_name "effect" in
-  let (id, new_env) = Env.enter_type name decl env in
+  let (id, new_env) = Env.enter_type ~check:false name decl env in
   Ctype.init_def(Ident.current_time());
   let ty_eff = newgenty (Tconstr (Path.Pident id,[],ref Mnil)) in
   let ty_arg = Predef.type_eff ty_eff in
