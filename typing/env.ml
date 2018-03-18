@@ -1543,7 +1543,7 @@ let enter store_fun name data env =
   let id = Ident.create name in (id, store_fun None id (Pident id) data env env)
 
 let enter_value ?check = enter (store_value ?check)
-and enter_type = enter (store_type ~check:true)
+and enter_type ~check = enter (store_type ~check)
 and enter_extension = enter (store_extension ~check:true)
 and enter_module_declaration ?arg name md env =
   let id = Ident.create name in
