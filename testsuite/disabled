@@ -15,9 +15,6 @@ tests/typing-objects/Tests.ml.reference
 tests/lib-dynlink-bytecode/main
 tests/lib-dynlink-native/main
 
-# Effect backtraces are buggy (#108)
-tests/backtrace/backtrace_effects.ml
-
 # These depend on weak references and finalisers (#88, #92)
 tests/misc/weaklifetime.ml
 tests/misc/weaktest.ml
