@@ -229,11 +229,12 @@
          (let
            (uncurry =
               (function f param
-                (apply f (field 0 param) (field 1 param)))
+                (apply f (field_imm 0 param)
+                  (field_imm 1 param)))
             map =
               (function f l
-                (apply (field 12 (global List!)) (apply uncurry f)
-                  l)))
+                (apply (field_imm 12 (global List!))
+                  (apply uncurry f) l)))
            (makeblock 0
              (makeblock 0 (apply map gen_cmp vec)
                (apply map cmp vec))
@@ -277,10 +278,11 @@
              (let
                (uncurry =
                   (function f param
-                    (apply f (field 0 param) (field 1 param)))
+                    (apply f (field_imm 0 param)
+                      (field_imm 1 param)))
                 map =
                   (function f l
-                    (apply (field 12 (global List!))
+                    (apply (field_imm 12 (global List!))
                       (apply uncurry f) l)))
                (makeblock 0
                  (makeblock 0 (apply map eta_gen_cmp vec)
