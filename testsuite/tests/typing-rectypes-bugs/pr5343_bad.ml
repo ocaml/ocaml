@@ -1,3 +1,11 @@
+(* TEST
+flags = " -w a -rectypes "
+ocamlc_byte_exit_status = "2"
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 module M : sig
   type 'a t
   type u = u t and v = v t
