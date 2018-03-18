@@ -315,6 +315,7 @@ let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
   def_label gc.gc_lbl;
+  I.add (int gc.gc_size) r15;
   (* TODO KC:
   begin match gc.gc_spacetime with
   | None -> assert (not Config.spacetime)
