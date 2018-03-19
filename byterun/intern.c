@@ -341,7 +341,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
   int curr_field;
   unsigned int code;
   tag_t tag;
-  mlsize_t size, len;
+  mlsize_t size, len, i;
   asize_t ofs;
   header_t header;
   unsigned char digest[16];
