@@ -40,3 +40,6 @@ tests/lib-obj/
 
 # Uses caml_page_table_lookup() (<- Is_in_static_data ()) which is not available on multicore
 tests/asmcomp/is_static
+
+# Unwind using libunwind doesn't work due to fibers
+tests/unwind/unwind_test
