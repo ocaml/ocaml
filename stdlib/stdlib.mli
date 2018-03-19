@@ -610,22 +610,21 @@ val string_of_bool : bool -> string
    may be shared, the user should not modify them directly.
 *)
 
-val bool_of_string : string -> bool
-(** Convert the given string to a boolean.
-   Raise [Invalid_argument "bool_of_string"] if the string is not
-   ["true"] or ["false"]. *)
-
 val bool_of_string_opt: string -> bool option
 (** Convert the given string to a boolean.
-    Return [None] if the string is not
-    ["true"] or ["false"].
-    @since 4.05
+
+   Return [None] if the string is not ["true"] or ["false"].
+   @since 4.05
 *)
+
+val bool_of_string : string -> bool
+(** Same as {!Pervasives.bool_of_string_opt}, but raise
+   [Invalid_argument "bool_of_string"] instead of returning [None]. *)
 
 val string_of_int : int -> string
 (** Return the string representation of an integer, in decimal. *)
 
-external int_of_string : string -> int = "caml_int_of_string"
+val int_of_string_opt: string -> int option
 (** Convert the given string to an integer.
    The string is read in decimal (by default, or if the string
    begins with [0u]), in hexadecimal (if it begins with [0x] or
@@ -639,40 +638,47 @@ external int_of_string : string -> int = "caml_int_of_string"
 
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
-   Raise [Failure "int_of_string"] if the given string is not
-   a valid representation of an integer, or if the integer represented
-   exceeds the range of integers representable in type [int]. *)
 
-
-val int_of_string_opt: string -> int option
-(** Same as [int_of_string], but returns [None] instead of raising.
-    @since 4.05
+   Return [None] if the given string is not a valid representation of an
+   integer, or if the integer represented exceeds the range of integers
+   representable in type [int].
+   @since 4.05
 *)
+
+external int_of_string : string -> int = "caml_int_of_string"
+(** Same as {!Pervasives.int_of_string_opt}, but raise
+   [Failure "int_of_string"] instead of returning [None]. *)
 
 val string_of_float : float -> string
 (** Return the string representation of a floating-point number. *)
 
-external float_of_string : string -> float = "caml_float_of_string"
+val float_of_string_opt: string -> float option
 (** Convert the given string to a float.  The string is read in decimal
    (by default) or in hexadecimal (marked by [0x] or [0X]).
+
    The format of decimal floating-point numbers is
    [ [-] dd.ddd (e|E) [+|-] dd ], where [d] stands for a decimal digit.
+
    The format of hexadecimal floating-point numbers is
    [ [-] 0(x|X) hh.hhh (p|P) [+|-] dd ], where [h] stands for an
    hexadecimal digit and [d] for a decimal digit.
+
    In both cases, at least one of the integer and fractional parts must be
    given; the exponent part is optional.
+
    The [_] (underscore) character can appear anywhere in the string
    and is ignored.
+
    Depending on the execution platforms, other representations of
    floating-point numbers can be accepted, but should not be relied upon.
-   Raise [Failure "float_of_string"] if the given string is not a valid
-   representation of a float. *)
 
-val float_of_string_opt: string -> float option
-(** Same as [float_of_string], but returns [None] instead of raising.
-    @since 4.05
+   Return [None] if the given string is not a valid representation of a float.
+   @since 4.05
 *)
+
+external float_of_string : string -> float = "caml_float_of_string"
+(** Same as {!Pervasives.float_of_string_opt}, but raise
+   [Failure "float_of_string"] instead of returning [None]. *)
 
 (** {1 Pair operations} *)
 
@@ -775,28 +781,30 @@ val read_line : unit -> string
    until a newline character is encountered. Return the string of
    all characters read, without the newline character at the end. *)
 
-val read_int : unit -> int
-(** Flush standard output, then read one line from standard input
-   and convert it to an integer. Raise [Failure "int_of_string"]
-   if the line read is not a valid representation of an integer. *)
-
 val read_int_opt: unit -> int option
-(** Same as [read_int_opt], but returns [None] instead of raising.
-    @since 4.05
+(** Flush standard output, then read one line from standard input
+   and convert it to an integer.
+
+   Return [None] if the line read is not a valid representation of an integer.
+   @since 4.05
 *)
 
-val read_float : unit -> float
-(** Flush standard output, then read one line from standard input
-   and convert it to a floating-point number.
-   The result is unspecified if the line read is not a valid
-   representation of a floating-point number. *)
+val read_int : unit -> int
+(** Same as {!Pervasives.read_int_opt}, but raise [Failure "int_of_string"]
+   instead of returning [None]. *)
 
 val read_float_opt: unit -> float option
 (** Flush standard output, then read one line from standard input
-    and convert it to a floating-point number.
-    Returns [None] if the line read is not a valid
-    representation of a floating-point number.
-    @since 4.05.0 *)
+   and convert it to a floating-point number.
+
+   Return [None] if the line read is not a valid representation of a
+   floating-point number.
+   @since 4.05.0
+*)
+
+val read_float : unit -> float
+(** Same as {!Pervasives.read_float_opt}, but return an unspecified result
+   instead of returning [None]. *)
 
 
 (** {2 General output functions} *)
