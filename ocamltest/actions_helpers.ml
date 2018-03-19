@@ -112,10 +112,15 @@ let run_cmd
   log_redirection "stdin" stdin_filename;
   log_redirection "stdout" stdout_filename;
   log_redirection "stderr" stderr_filename;
+  let systemenv =
+    Array.append
+      environment
+      (Environments.to_system_env env)
+  in
   Run_command.run {
     Run_command.progname = progname;
     Run_command.argv = arguments;
-    Run_command.envp = environment;
+    Run_command.envp = systemenv;
     Run_command.stdin_filename = stdin_filename;
     Run_command.stdout_filename = stdout_filename;
     Run_command.stderr_filename = stderr_filename;
@@ -157,14 +162,10 @@ let run
         Environments.add_if_undefined Builtin_variables.stderr output env
       end else env
     in
-    let systemenv =
-      Environments.to_system_env env in
     let expected_exit_status =
       exit_status_of_variable env Builtin_variables.exit_status
     in
-    let exit_status =
-      run_cmd ~environment:systemenv log env commandline
-    in
+    let exit_status = run_cmd log env commandline in
     if exit_status=expected_exit_status
     then (Result.pass, env)
     else begin
