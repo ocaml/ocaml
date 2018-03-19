@@ -229,7 +229,7 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
          dbg != NULL;
          dbg = caml_debuginfo_next(dbg))
     {
-      caml_modify_field(array, index, caml_convert_debuginfo(dbg));
+      Store_field(array, index, caml_convert_debuginfo(dbg));
       index++;
     }
   }
@@ -299,7 +299,7 @@ CAMLprim value caml_get_exception_backtrace(value unit)
     for (i = 0; i < Wosize_val(backtrace); i++) {
       backtrace_slot slot = Backtrace_slot_val(Field(backtrace, i));
       debuginfo dbg = caml_debuginfo_extract(slot);
-      caml_modify_field(arr, i, caml_convert_debuginfo(dbg));
+      Store_field(arr, i, caml_convert_debuginfo(dbg));
     }
 
     res = caml_alloc_small(1, 0);
