@@ -38,3 +38,4 @@ eventlog.c
 params.c
 shared_heap.c
 fiber.c
+backtrace.c
