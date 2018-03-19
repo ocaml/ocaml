@@ -315,7 +315,8 @@ let toplevel_substitution_named sb named =
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
 
-let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
+let make_closure_declaration
+      ~is_classic_mode ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -360,6 +361,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let set_of_closures =
     let function_decls =
       Flambda.create_function_declarations
+        ~is_classic_mode
         ~funs:(Variable.Map.singleton id function_declaration)
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
@@ -463,23 +465,13 @@ let make_closure_map program =
     { function_decls } ->
     Variable.Map.iter (fun var _ ->
         let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
+        let set_of_closures_id = function_decls.set_of_closures_id in
+        map := Closure_id.Map.add closure_id set_of_closures_id !map)
       function_decls.funs
   in
   Flambda_iterators.iter_on_set_of_closures_of_program
     program
     ~f:add_set_of_closures;
-  !map
-
-let make_closure_map' input =
-  let map = ref Closure_id.Map.empty in
-  let add_set_of_closures _ (function_decls : Flambda.function_declarations) =
-    Variable.Map.iter (fun var _ ->
-        let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
-      function_decls.funs
-  in
-  Set_of_closures_id.Map.iter add_set_of_closures input;
   !map
 
 let all_lifted_constant_sets_of_closures program =

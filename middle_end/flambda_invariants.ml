@@ -265,9 +265,11 @@ let variable_and_symbol_invariants (program : Flambda.program) =
       ({ Flambda.function_decls; free_vars; specialised_args;
           direct_call_surrogates = _; } as set_of_closures) =
       (* CR-soon mshinwell: check [direct_call_surrogates] *)
-      let { Flambda.set_of_closures_id; set_of_closures_origin; funs; } =
+    let { Flambda. is_classic_mode;
+          set_of_closures_id; set_of_closures_origin; funs; } =
         function_decls
       in
+      ignore (is_classic_mode : bool);
       ignore_set_of_closures_id set_of_closures_id;
       ignore_set_of_closures_origin set_of_closures_origin;
       let functions_in_closure = Variable.Map.keys funs in

@@ -599,31 +599,10 @@ and simplify_set_of_closures original_env r
         ~dbg:function_decl.dbg
         ~f:(fun body_env -> simplify body_env r function_decl.body)
     in
-    let inline : Lambda.inline_attribute =
-      match function_decl.inline with
-      | Default_inline ->
-        if !Clflags.classic_inlining && not function_decl.stub then
-          (* In classic-inlining mode, the inlining decision is taken at
-             definition site (here). If the function is small enough
-             (below the -inline threshold) it will always be inlined. *)
-          let inlining_threshold =
-            Inline_and_simplify_aux.initial_inlining_threshold
-              ~round:(E.round env)
-          in
-          if Inlining_cost.can_inline body inlining_threshold ~bonus:0
-          then
-            Always_inline
-          else
-            Default_inline
-        else
-          Default_inline
-      | inline ->
-        inline
-    in
     let function_decl =
       Flambda.create_function_declaration ~params:function_decl.params
         ~body ~stub:function_decl.stub ~dbg:function_decl.dbg
-        ~inline ~specialise:function_decl.specialise
+        ~inline:function_decl.inline ~specialise:function_decl.specialise
         ~is_a_functor:function_decl.is_a_functor
     in
     let used_params' = Flambda.used_params function_decl in
@@ -641,10 +620,23 @@ and simplify_set_of_closures original_env r
     lazy (Invariant_params.invariant_params_in_recursion function_decls
       ~backend:(E.backend env))
   in
+  let recursive =
+    lazy (Find_recursive_functions.in_function_declarations function_decls
+      ~backend:(E.backend env))
+  in
+  let keep_body =
+    Inline_and_simplify_aux.keep_body_check
+      ~is_classic_mode:function_decls.is_classic_mode ~recursive
+  in
+  let function_decls_approx =
+    A.function_declarations_approx ~keep_body function_decls
+  in
   let value_set_of_closures =
-    A.create_value_set_of_closures ~function_decls
+    A.create_value_set_of_closures
+      ~function_decls:function_decls_approx
       ~bound_vars:internal_value_set_of_closures.bound_vars
       ~invariant_params
+      ~recursive
       ~specialised_args:internal_value_set_of_closures.specialised_args
       ~free_vars:internal_value_set_of_closures.free_vars
       ~freshening:internal_value_set_of_closures.freshening
@@ -727,8 +719,9 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
           let function_decls = value_set_of_closures.function_decls in
           let function_decl =
             try
-              Flambda_utils.find_declaration closure_id_being_applied
-                function_decls
+              Variable.Map.find
+                (Closure_id.unwrap closure_id_being_applied)
+                function_decls.funs
             with
             | Not_found ->
               Misc.fatal_errorf "When handling application expression, \
@@ -742,7 +735,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
             | Direct _ -> r
           in
           let nargs = List.length args in
-          let arity = Flambda_utils.function_arity function_decl in
+          let arity = A.function_arity function_decl in
           let result, r =
             if nargs = arity then
               simplify_full_application env r ~function_decls
@@ -780,7 +773,7 @@ and simplify_full_application env r ~function_decls ~lhs_of_application
 and simplify_partial_application env r ~lhs_of_application
       ~closure_id_being_applied ~function_decl ~args ~dbg
       ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = A.function_arity function_decl in
   assert (arity > List.length args);
   (* For simplicity, we disallow [@inline] attributes on partial
      applications.  The user may always write an explicit wrapper instead
@@ -807,7 +800,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.A.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -830,6 +823,7 @@ and simplify_partial_application env r ~lhs_of_application
         (Closure_id.unwrap closure_id_being_applied)
     in
     Flambda_utils.make_closure_declaration ~id:closure_variable
+      ~is_classic_mode:false
       ~body
       ~params:remaining_args
       ~stub:true
@@ -845,7 +839,7 @@ and simplify_partial_application env r ~lhs_of_application
 and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~lhs_of_application ~closure_id_being_applied ~function_decl
       ~value_set_of_closures ~dbg ~inline_requested ~specialise_requested =
-  let arity = Flambda_utils.function_arity function_decl in
+  let arity = A.function_arity function_decl in
   assert (arity < List.length args);
   assert (List.length args = List.length args_approxs);
   let full_app_args, remaining_args =
@@ -1455,10 +1449,22 @@ let constant_defining_value_approx
       lazy (Invariant_params.invariant_params_in_recursion function_decls
         ~backend:(E.backend env))
     in
+    let recursive =
+      lazy (Find_recursive_functions.in_function_declarations function_decls
+        ~backend:(E.backend env))
+    in
     let value_set_of_closures =
+      let keep_body =
+        Inline_and_simplify_aux.keep_body_check
+          ~is_classic_mode:function_decls.is_classic_mode ~recursive
+      in
+      let function_decls =
+        A.function_declarations_approx ~keep_body function_decls
+      in
       A.create_value_set_of_closures ~function_decls
         ~bound_vars:Var_within_closure.Map.empty
         ~invariant_params
+        ~recursive
         ~specialised_args:Variable.Map.empty
         ~free_vars:Variable.Map.empty
         ~freshening:Freshening.Project_var.empty

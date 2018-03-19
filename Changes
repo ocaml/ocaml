@@ -295,8 +295,9 @@ Working version
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
-- GPR#????: refactor flambda specialise/inlining handling
-  (Xavier Clerc and Leo White, review by ???)
+- GPR#????: reduce the size of cmx files in classic mode by droping the
+  bodies of functions that will not be inlined
+  (Fuyong Quah, review by Leo White)
 
 ### Bug fixes
 

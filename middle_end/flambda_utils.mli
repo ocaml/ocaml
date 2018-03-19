@@ -63,7 +63,8 @@ val description_of_toplevel_node : Flambda.t -> string
    lwhite: the params restriction seems odd, perhaps give a reason
    in the comment. *)
 val make_closure_declaration
-   : id:Variable.t
+   : is_classic_mode:bool
+  -> id:Variable.t
   -> body:Flambda.t
   -> params:Parameter.t list
   -> stub:bool
@@ -107,17 +108,11 @@ val root_symbol : Flambda.program -> Symbol.t
     exception. *)
 val might_raise_static_exn : Flambda.named -> Static_exception.t -> bool
 
-(** Creates a map from closure IDs to function declarations by iterating over
+(** Creates a map from closure IDs to set_of_closure IDs by iterating over
     all sets of closures in the given program. *)
 val make_closure_map
    : Flambda.program
-  -> Flambda.function_declarations Closure_id.Map.t
-
-(** Like [make_closure_map], but takes a mapping from set of closures IDs to
-    function declarations, instead of a [program]. *)
-val make_closure_map'
-   : Flambda.function_declarations Set_of_closures_id.Map.t
-  -> Flambda.function_declarations Closure_id.Map.t
+  -> Set_of_closures_id.t Closure_id.Map.t
 
 (** The definitions of all constants that have been lifted out to [Let_symbol]
     or [Let_rec_symbol] constructions. *)

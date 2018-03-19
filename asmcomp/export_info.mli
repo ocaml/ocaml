@@ -19,6 +19,8 @@
 (** Exported information (that is to say, information written into a .cmx
     file) about a compilation unit. *)
 
+module A = Simple_value_approx
+
 type value_string_contents =
   | Contents of string
   | Unknown_or_mutable
@@ -45,7 +47,7 @@ type descr =
   | Value_constptr of int
   | Value_float of float
   | Value_float_array of value_float_array
-  | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
+  | Value_boxed_int : 'a A.boxed_int * 'a -> descr
   | Value_string of value_string
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
@@ -77,9 +79,9 @@ and approx =
 
 (** A structure that describes what a single compilation unit exports. *)
 type t = private {
-  sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
+  sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
   (** Code of exported functions indexed by set of closures IDs. *)
-  closures : Flambda.function_declarations Closure_id.Map.t;
+  closures : A.function_declarations Closure_id.Map.t;
   (** Code of exported functions indexed by closure IDs. *)
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   (** Structure of exported values. *)
@@ -94,6 +96,7 @@ type t = private {
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
   (* Function parameters known to be invariant (see [Invariant_params])
      indexed by set of closures ID. *)
+  recursive : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 (** Export information for a compilation unit that exports nothing. *)
@@ -101,14 +104,15 @@ val empty : t
 
 (** Create a new export information structure. *)
 val create
-   : sets_of_closures:Flambda.function_declarations Set_of_closures_id.Map.t
-  -> closures:Flambda.function_declarations Closure_id.Map.t
+   : sets_of_closures:(A.function_declarations Set_of_closures_id.Map.t)
+  -> closures:A.function_declarations Closure_id.Map.t
   -> values:descr Export_id.Map.t Compilation_unit.Map.t
   -> symbol_id:Export_id.t Symbol.Map.t
   -> offset_fun:int Closure_id.Map.t
   -> offset_fv:int Var_within_closure.Map.t
   -> constant_sets_of_closures:Set_of_closures_id.Set.t
   -> invariant_params:Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t
+  -> recursive:Variable.Set.t Set_of_closures_id.Map.t
   -> t
 
 (* CR-someday pchambart: Should we separate [t] in 2 types: one created by the

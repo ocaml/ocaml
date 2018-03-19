@@ -590,10 +590,12 @@ and close_functions t external_env function_declarations : Flambda.named =
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let function_decls =
-    Flambda.create_function_declarations
-      ~funs:
-        (List.fold_left close_one_function Variable.Map.empty
-          (Function_decls.to_list function_declarations))
+    let is_classic_mode = !Clflags.classic_inlining in
+    let funs =
+      List.fold_left close_one_function Variable.Map.empty
+        (Function_decls.to_list function_declarations)
+    in
+    Flambda.create_function_declarations ~is_classic_mode ~funs
   in
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is
