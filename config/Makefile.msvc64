@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../LICENSE.      #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # Configuration for Windows, Visual C++ compiler
 
@@ -54,7 +56,7 @@ EXT_OBJ=.$(O)
 EXT_LIB=.$(A)
 EXT_ASM=.$(S)
 MANEXT=1
-SHARPBANGSCRIPTS=false
+HASHBANGSCRIPTS=false
 PTHREAD_LINK=
 X11_INCLUDES=
 X11_LINK=
@@ -76,6 +78,12 @@ RUNTIMED=noruntimed
 ASM_CFI_SUPPORTED=false
 UNIXLIB=win32unix
 GRAPHLIB=win32graph
+FLAMBDA=false
+WITH_SPACETIME=false
+LIBUNWIND_AVAILABLE=false
+LIBUNWIND_LINK_FLAGS=
+PROFINFO_WIDTH=26
+SAFE_STRING=false
 
 ########## Configuration for the bytecode compiler
 
@@ -83,16 +91,19 @@ GRAPHLIB=win32graph
 BYTECC=cl -nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=-Ox -MD
+BYTECCCOMPOPTS=-O2 -Gy- -MD
 
 ### Additional compile-time options for $(BYTECC).  (For debug version.)
-BYTECCDBGCOMPOPTS=-DDEBUG -Zi -W3 -Wp64
+BYTECCDBGCOMPOPTS=-Zi
+
+### Flag to use to rename object files.  (for debug version.)
+NAME_OBJ_FLAG=-Fo
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
 BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=-Ox -MD
+DLLCCCOMPOPTS=-O2 -Gy- -MD
 
 ### Libraries needed
 #EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
@@ -104,16 +115,37 @@ NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 CPP=cl -nologo -EP
 
 ### Flexlink
-FLEXLINK=flexlink -x64 -merge-manifest -stack 33554432
-FLEXDIR:=$(shell $(FLEXLINK) -where)
+FLEXLINK_CMD=flexlink
+FLEXDLL_CHAIN=msvc64
+# FLEXLINK_FLAGS must be safe to insert in an OCaml string
+#   (see ocamlmklibconfig.ml in tools/Makefile.nt)
+FLEXLINK_FLAGS=-x64 -merge-manifest -stack 33554432
+FLEXLINK=$(FLEXLINK_CMD) $(FLEXLINK_FLAGS)
+FLEXDIR:=$(shell $(FLEXLINK) -where 2>/dev/null)
+ifeq ($(FLEXDIR),)
+IFLEXDIR=-I"../flexdll"
+else
 IFLEXDIR=-I"$(FLEXDIR)"
+endif
+# MKDLL, MKEXE and MKMAINDLL must ultimately be equivalent to
+#   $(FLEXLINK_CMD) $(FLEXLINK_FLAGS) [-exe|-maindll]
+# or OCAML_FLEXLINK overriding will not work (see utils/config.mlp)
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
 MKMAINDLL=$(FLEXLINK) -maindll
 
+### Native command to build ocamlrun.exe without flexlink
+MERGEMANIFESTEXE=test ! -f $(1).manifest \
+	         || mt -nologo -outputresource:$(1) -manifest $(1).manifest \
+	            && rm -f $(1).manifest
+MKEXE_BOOT=$(BYTECC) /Fe$(1) $(2) /link /subsystem:console \
+           && ($(MERGEMANIFESTEXE))
+
 ### How to build a static library
 MKLIB=link -lib -nologo -machine:AMD64 /out:$(1) $(2)
-#ml let mklib out files opts = Printf.sprintf "link -lib -nologo -machine:AMD64 -out:%s %s %s" out opts files;;
+#ml let mklib out files opts =
+#ml   Printf.sprintf "link -lib -nologo -machine:AMD64 -out:%s %s %s"
+#ml                  out opts files;;
 MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library
@@ -142,7 +174,7 @@ SYSTEM=win64
 NATIVECC=cl -nologo
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=-Ox -MD
+NATIVECCCOMPOPTS=-O2 -Gy- -MD
 
 ### Additional link-time options for $(NATIVECC)
 NATIVECCLINKOPTS=
@@ -152,9 +184,6 @@ PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'
 
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
-
-### Clear this to disable compiling ocamlbuild
-WITH_OCAMLBUILD=ocamlbuild
 
 ### Clear this to disable compiling ocamldoc
 WITH_OCAMLDOC=ocamldoc
@@ -178,7 +207,7 @@ OTOPDIR=$(WINTOPDIR)
 CTOPDIR=$(WINTOPDIR)
 CYGPATH=cygpath -m
 DIFF=diff -q --strip-trailing-cr
-CANKILL=false
 FIND=/usr/bin/find
 SORT=/usr/bin/sort
 SET_LD_PATH=PATH="$(PATH):$(LD_PATH)"
+MAX_TESTSUITE_DIR_RETRIES=1

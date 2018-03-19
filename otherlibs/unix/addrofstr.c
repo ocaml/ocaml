@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -22,8 +24,10 @@
 
 CAMLprim value unix_inet_addr_of_string(value s)
 {
+  if (! caml_string_is_c_safe(s)) failwith("inet_addr_of_string");
 #if defined(HAS_IPV6)
 #ifdef _WIN32
+ {
   CAMLparam1(s);
   CAMLlocal1(vres);
   struct addrinfo hints;
@@ -55,7 +59,9 @@ CAMLprim value unix_inet_addr_of_string(value s)
   }
   freeaddrinfo(res);
   CAMLreturn (vres);
+ }
 #else
+ {
   struct in_addr address;
   struct in6_addr address6;
   if (inet_pton(AF_INET, String_val(s), &address) > 0)
@@ -64,17 +70,22 @@ CAMLprim value unix_inet_addr_of_string(value s)
     return alloc_inet6_addr(&address6);
   else
     failwith("inet_addr_of_string");
+ }
 #endif
 #elif defined(HAS_INET_ATON)
+ {
   struct in_addr address;
   if (inet_aton(String_val(s), &address) == 0)
     failwith("inet_addr_of_string");
   return alloc_inet_addr(&address);
+ }
 #else
+ {
   struct in_addr address;
   address.s_addr = inet_addr(String_val(s));
-  if (address.s_addr == (uint32) -1) failwith("inet_addr_of_string");
+  if (address.s_addr == (uint32_t) -1) failwith("inet_addr_of_string");
   return alloc_inet_addr(&address);
+ }
 #endif
 }
 

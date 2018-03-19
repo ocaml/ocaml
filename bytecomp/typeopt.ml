@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Auxiliaries for type-based optimizations, e.g. array kinds *)
 
@@ -17,80 +20,100 @@ open Types
 open Typedtree
 open Lambda
 
-let scrape env ty =
-  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
+let scrape_ty env ty =
+  let ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
+  match ty.desc with
+  | Tconstr (p, _, _) ->
+      begin match Env.find_type p env with
+      | {type_unboxed = {unboxed = true; _}; _} ->
+        begin match Typedecl.get_unboxed_type_representation env ty with
+        | None -> ty
+        | Some ty2 -> ty2
+        end
+      | _ -> ty
+      | exception Not_found -> ty
+      end
+  | _ -> ty
 
-let has_base_type exp base_ty_path =
-  match scrape exp.exp_env exp.exp_type with
+let scrape env ty =
+  (scrape_ty env ty).desc
+
+let is_function_type env ty =
+  match scrape env ty with
+  | Tarrow (_, lhs, rhs, _) -> Some (lhs, rhs)
+  | _ -> None
+
+let is_base_type env ty base_ty_path =
+  match scrape env ty with
   | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
 let maybe_pointer_type env ty =
-  match scrape env ty with
-  | Tconstr(p, args, abbrev) ->
-      not (Path.same p Predef.path_int) &&
-      not (Path.same p Predef.path_char) &&
-      begin try
-        match Env.find_type p env with
-        | {type_kind = Type_variant []} -> true (* type exn *)
-        | {type_kind = Type_variant cstrs} ->
-            List.exists (fun c -> c.Types.cd_args <> []) cstrs
-        | _ -> true
-      with Not_found -> true
-        (* This can happen due to e.g. missing -I options,
-           causing some .cmi files to be unavailable.
-           Maybe we should emit a warning. *)
-      end
-  | _ -> true
+  if Ctype.maybe_pointer_type env ty then
+    Pointer
+  else
+    Immediate
 
 let maybe_pointer exp = maybe_pointer_type exp.exp_env exp.exp_type
 
-let array_element_kind env ty =
-  match scrape env ty with
+type classification =
+  | Int
+  | Float
+  | Lazy
+  | Addr  (* anything except a float or a lazy *)
+  | Any
+
+let classify env ty =
+  let ty = scrape_ty env ty in
+  if maybe_pointer_type env ty = Immediate then Int
+  else match ty.desc with
   | Tvar _ | Tunivar _ ->
-      Pgenarray
-  | Tconstr(p, args, abbrev) ->
-      if Path.same p Predef.path_int || Path.same p Predef.path_char then
-        Pintarray
-      else if Path.same p Predef.path_float then
-        Pfloatarray
+      Any
+  | Tconstr (p, _args, _abbrev) ->
+      if Path.same p Predef.path_float then Float
+      else if Path.same p Predef.path_lazy_t then Lazy
       else if Path.same p Predef.path_string
+           || Path.same p Predef.path_bytes
            || Path.same p Predef.path_array
            || Path.same p Predef.path_nativeint
            || Path.same p Predef.path_int32
-           || Path.same p Predef.path_int64 then
-        Paddrarray
+           || Path.same p Predef.path_int64 then Addr
       else begin
         try
-          match Env.find_type p env with
-            {type_kind = Type_abstract} ->
-              Pgenarray
-          | {type_kind = Type_variant cstrs}
-            when List.for_all (fun c -> c.Types.cd_args = []) cstrs ->
-              Pintarray
-          | {type_kind = _} ->
-              Paddrarray
+          match (Env.find_type p env).type_kind with
+          | Type_abstract ->
+              Any
+          | Type_record _ | Type_variant _ | Type_open ->
+              Addr
         with Not_found ->
           (* This can happen due to e.g. missing -I options,
              causing some .cmi files to be unavailable.
              Maybe we should emit a warning. *)
-          Pgenarray
+          Any
       end
-  | _ ->
-      Paddrarray
+  | Tarrow _ | Ttuple _ | Tpackage _ | Tobject _ | Tnil | Tvariant _ ->
+      Addr
+  | Tlink _ | Tsubst _ | Tpoly _ | Tfield _ ->
+      assert false
 
-let array_kind_gen ty env =
+let array_type_kind env ty =
   match scrape env ty with
   | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
-      array_element_kind env elt_ty
+      begin match classify env elt_ty with
+      | Any -> Pgenarray
+      | Float -> Pfloatarray
+      | Addr | Lazy -> Paddrarray
+      | Int -> Pintarray
+      end
+
   | _ ->
       (* This can happen with e.g. Obj.field *)
       Pgenarray
 
-let array_kind exp = array_kind_gen exp.exp_type exp.exp_env
+let array_kind exp = array_type_kind exp.exp_env exp.exp_type
 
-let array_pattern_kind pat = array_kind_gen pat.pat_type pat.pat_env
+let array_pattern_kind pat = array_type_kind pat.pat_env pat.pat_type
 
 let bigarray_decode_type env ty tbl dfl =
   match scrape env ty with
@@ -118,11 +141,34 @@ let layout_table =
   ["c_layout", Pbigarray_c_layout;
    "fortran_layout", Pbigarray_fortran_layout]
 
-let bigarray_kind_and_layout exp =
-  match scrape exp.exp_env exp.exp_type with
-  | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
-      (bigarray_decode_type exp.exp_env elt_type kind_table Pbigarray_unknown,
-       bigarray_decode_type exp.exp_env layout_type layout_table
+let bigarray_type_kind_and_layout env typ =
+  match scrape env typ with
+  | Tconstr(_p, [_caml_type; elt_type; layout_type], _abbrev) ->
+      (bigarray_decode_type env elt_type kind_table Pbigarray_unknown,
+       bigarray_decode_type env layout_type layout_table
                             Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
+
+let value_kind env ty =
+  match scrape env ty with
+  | Tconstr(p, _, _) when Path.same p Predef.path_int ->
+      Pintval
+  | Tconstr(p, _, _) when Path.same p Predef.path_char ->
+      Pintval
+  | Tconstr(p, _, _) when Path.same p Predef.path_float ->
+      Pfloatval
+  | Tconstr(p, _, _) when Path.same p Predef.path_int32 ->
+      Pboxedintval Pint32
+  | Tconstr(p, _, _) when Path.same p Predef.path_int64 ->
+      Pboxedintval Pint64
+  | Tconstr(p, _, _) when Path.same p Predef.path_nativeint ->
+      Pboxedintval Pnativeint
+  | _ ->
+      Pgenval
+
+
+let lazy_val_requires_forward env ty =
+  match classify env ty with
+  | Any | Float | Lazy -> true
+  | Addr | Int -> false

@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The messages of the application. *)
 
@@ -233,6 +236,9 @@ let help = " Display this list of options"
 
 let warning = "Warning"
 
+let error_location file l c =
+  Printf.sprintf "File \"%s\", line %d, character %d:\n" file l c
+
 let bad_magic_number =
   "Bad magic number for this ocamldoc dump!\n"^
   "This dump was not created by this version of OCamldoc."
@@ -244,10 +250,7 @@ let errors_occured n = (string_of_int n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
-  "Syntax error in text:\n"^s^"\n"^
-  "line "^(string_of_int l)^", character "^(string_of_int c)^":\n"^
-  (List.nth lines l)^"\n"^
-  (String.make c ' ')^"^"
+  (List.nth lines l) ^ "\n" ^ (String.make c ' ') ^ "^"
 
 let file_not_found_in_paths paths name =
   Printf.sprintf "No file %s found in the load paths: \n%s"
@@ -255,7 +258,8 @@ let file_not_found_in_paths paths name =
     (String.concat "\n" paths)
 
 let tag_not_handled tag = "Tag @"^tag^" not handled by this generator"
-let should_escape_at_sign = "The character @ has a special meaning in ocamldoc comments, for commands such as @raise or @since. If you want to write a single @, you must escape it as \\@."
+let should_escape_at_sign = "The character @ has a special meaning in ocamldoc comments, for commands such as @raise or @since. \
+If you want to write a single @, you must escape it as \\@."
 let bad_tree = "Incorrect tree structure."
 let not_a_valid_tag s = s^" is not a valid tag."
 let fun_without_param f = "Function "^f^" has no parameter.";;
@@ -293,7 +297,8 @@ let module_type_not_found_in_typedtree mt = "Module type "^mt^" was not found in
 let module_not_found_in_typedtree m = "Module "^m^" was not found in typed tree."
 let class_not_found_in_typedtree c = "Class "^c^" was not found in typed tree."
 let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in typed tree."
-let inherit_classexp_not_found_in_typedtree n = "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
+let inherit_classexp_not_found_in_typedtree n =
+  "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
 let misplaced_comment file pos =

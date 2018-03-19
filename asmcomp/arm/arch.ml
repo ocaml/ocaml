@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
-(*    Copyright 1998 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Specific operations for the ARM processor *)
 
@@ -22,7 +25,7 @@ type fpu = Soft | VFPv2 | VFPv3_D16 | VFPv3
 let abi =
   match Config.system with
     "linux_eabi" | "freebsd" -> EABI
-  | "linux_eabihf" -> EABI_HF
+  | "linux_eabihf" | "netbsd" -> EABI_HF
   | _ -> assert false
 
 let string_of_arch = function
@@ -56,25 +59,25 @@ let (arch, fpu, thumb) =
     end in
   (ref def_arch, ref def_fpu, ref def_thumb)
 
-let pic_code = ref false
-
 let farch spec =
-  arch := (match spec with
+  arch := begin match spec with
              "armv4" when abi <> EABI_HF   -> ARMv4
            | "armv5" when abi <> EABI_HF   -> ARMv5
            | "armv5te" when abi <> EABI_HF -> ARMv5TE
            | "armv6"                       -> ARMv6
            | "armv6t2"                     -> ARMv6T2
            | "armv7"                       -> ARMv7
-           | spec -> raise (Arg.Bad spec))
+           | spec -> raise (Arg.Bad ("wrong '-farch' option: " ^ spec))
+  end
 
 let ffpu spec =
-  fpu := (match spec with
+  fpu := begin match spec with
             "soft" when abi <> EABI_HF     -> Soft
           | "vfpv2" when abi = EABI_HF     -> VFPv2
           | "vfpv3-d16" when abi = EABI_HF -> VFPv3_D16
           | "vfpv3" when abi = EABI_HF     -> VFPv3
-          | spec -> raise (Arg.Bad spec))
+          | spec -> raise (Arg.Bad ("wrong '-ffpu' option: " ^ spec))
+  end
 
 let command_line_options =
   [ "-farch", Arg.String farch,
@@ -83,9 +86,9 @@ let command_line_options =
     "-ffpu", Arg.String ffpu,
       "<fpu>  Select the floating-point hardware"
       ^ " (default: " ^ (string_of_fpu !fpu) ^ ")";
-    "-fPIC", Arg.Set pic_code,
+    "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code";
-    "-fno-PIC", Arg.Clear pic_code,
+    "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code";
     "-fthumb", Arg.Set thumb,
       " Enable Thumb/Thumb-2 code generation"
@@ -134,6 +137,8 @@ and shift_operation =
   | Ishiftlogicalright
   | Ishiftarithmeticright
 
+let spacetime_node_hole_pointer_is_live_before _specific_op = false
+
 (* Sizes, endianness *)
 
 let big_endian = false
@@ -154,7 +159,7 @@ let identity_addressing = Iindexed 0
 
 let offset_addressing (Iindexed n) delta = Iindexed(n + delta)
 
-let num_args_addressing (Iindexed n) = 1
+let num_args_addressing (Iindexed _) = 1
 
 (* Printing operations and addressing modes *)
 

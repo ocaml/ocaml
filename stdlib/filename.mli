@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Operations on file names. *)
 
@@ -47,13 +49,37 @@ val chop_suffix : string -> string -> string
    the filename [name]. The behavior is undefined if [name] does not
    end with the suffix [suff]. *)
 
-val chop_extension : string -> string
-(** Return the given file name without its extension. The extension
-   is the shortest suffix starting with a period and not including
-   a directory separator, [.xyz] for instance.
+val extension : string -> string
+(** [extension name] is the shortest suffix [ext] of [name0] where:
 
-   Raise [Invalid_argument] if the given name does not contain
-   an extension. *)
+    - [name0] is the longest suffix of [name] that does not
+      contain a directory separator;
+    - [ext] starts with a period;
+    - [ext] is preceded by at least one non-period character
+      in [name0].
+
+    If such a suffix does not exist, [extension name] is the empty
+    string.
+
+    @since 4.04
+*)
+
+val remove_extension : string -> string
+(** Return the given file name without its extension, as defined
+    in {!Filename.extension}. If the extension is empty, the function
+    returns the given file name.
+
+    The following invariant holds for any file name [s]:
+
+    [remove_extension s ^ extension s = s]
+
+    @since 4.04
+*)
+
+val chop_extension : string -> string
+(** Same as {!Filename.remove_extension}, but raise [Invalid_argument]
+    if the given name has an empty extension. *)
+
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
@@ -87,8 +113,8 @@ val temp_file : ?temp_dir: string -> string -> string -> string
 *)
 
 val open_temp_file :
-      ?mode: open_flag list -> ?temp_dir: string -> string -> string ->
-      string * out_channel
+      ?mode: open_flag list -> ?perms: int -> ?temp_dir: string -> string ->
+      string -> string * out_channel
 (** Same as {!Filename.temp_file}, but returns both the name of a fresh
    temporary file, and an output channel opened (atomically) on
    this file.  This function is more secure than [temp_file]: there
@@ -96,8 +122,12 @@ val open_temp_file :
    by a symbolic link) before the program opens it.  The optional argument
    [mode] is a list of additional flags to control the opening of the file.
    It can contain one or several of [Open_append], [Open_binary],
-   and [Open_text].  The default is [[Open_text]] (open in text mode).
-   Raise [Sys_error] if the file could not be opened.
+   and [Open_text].  The default is [[Open_text]] (open in text mode). The
+   file is created with permissions [perms] (defaults to readable and
+   writable only by the file owner, [0o600]).
+
+   @raise Sys_error if the file could not be opened.
+   @before 4.03.0 no ?perms optional argument
    @before 3.11.2 no ?temp_dir optional argument
 *)
 

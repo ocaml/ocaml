@@ -1,3 +1,20 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
+
 #include <stdlib.h>
 
 #include "caml/config.h"
@@ -152,7 +169,7 @@ static int steal_mark_work () {
 
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
       if (pl.result == Shared) {
-        caml_gc_log("Stolen mark work (size=%llu) from domain %d",
+        caml_gc_log("Stolen mark work (size=%lu) from domain %d",
                     domain_self->state->mark_stack_count, i);
         Caml_state->stealing = 0;
         return i;
@@ -197,7 +214,7 @@ static intnat do_some_marking(intnat budget) {
   status UNMARKED = global.UNMARKED;
   status MARKED = global.MARKED;
   value* stack = Caml_state->mark_stack;
-  uint64 stack_count = Caml_state->mark_stack_count;
+  uint64_t stack_count = Caml_state->mark_stack_count;
   uintnat blocks_marked = 0;
 
   while (budget > 0 && stack_count > 0) {
@@ -482,7 +499,7 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
       caml_ev_end_gc();
       caml_ev_msg("Start stealing");
       steal_result = steal_mark_work();
-      caml_ev_msg("Finish stealing from domain %d size=%llu",
+      caml_ev_msg("Finish stealing from domain %d size=%lu",
                   steal_result, domain_state->mark_stack_count);
       caml_ev_start_gc();
       if (steal_result == -1) break;

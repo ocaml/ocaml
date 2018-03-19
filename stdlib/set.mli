@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Sets over ordered types.
 
@@ -46,6 +48,7 @@ module type OrderedType =
   sig
     type t
       (** The type of the set elements. *)
+
     val compare : t -> t -> int
       (** A total ordering function over the set elements.
           This is a two-argument function [f] such that
@@ -76,14 +79,18 @@ module type S =
 
     val add: elt -> t -> t
     (** [add x s] returns a set containing all elements of [s],
-       plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
+       plus [x]. If [x] was already in [s], [s] is returned unchanged
+       (the result of the function is then physically equal to [s]).
+       @before 4.03 Physical equality was not ensured. *)
 
     val singleton: elt -> t
     (** [singleton x] returns the one-element set containing only [x]. *)
 
     val remove: elt -> t -> t
     (** [remove x s] returns a set containing all elements of [s],
-       except [x]. If [x] was not in [s], [s] is returned unchanged. *)
+       except [x]. If [x] was not in [s], [s] is returned unchanged
+       (the result of the function is then physically equal to [s]).
+       @before 4.03 Physical equality was not ensured. *)
 
     val union: t -> t -> t
     (** Set union. *)
@@ -111,6 +118,17 @@ module type S =
        The elements of [s] are presented to [f] in increasing order
        with respect to the ordering over the type of the elements. *)
 
+    val map: (elt -> elt) -> t -> t
+    (** [map f s] is the set whose elements are [f a0],[f a1]... [f
+        aN], where [a0],[a1]...[aN] are the elements of [s].
+
+       The elements are passed to [f] in increasing order
+       with respect to the ordering over the type of the elements.
+
+       If no element of [s] is changed by [f], [s] is returned
+       unchanged. (If each output of [f] is physically equal to its
+       input, the returned set is physically equal to [s].) *)
+
     val fold: (elt -> 'a -> 'a) -> t -> 'a -> 'a
     (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
        where [x1 ... xN] are the elements of [s], in increasing order. *)
@@ -125,7 +143,10 @@ module type S =
 
     val filter: (elt -> bool) -> t -> t
     (** [filter p s] returns the set of all elements in [s]
-       that satisfy predicate [p]. *)
+       that satisfy predicate [p]. If [p] satisfies every element in [s],
+       [s] is returned unchanged (the result of the function is then
+       physically equal to [s]).
+       @before 4.03 Physical equality was not ensured.*)
 
     val partition: (elt -> bool) -> t -> t * t
     (** [partition p s] returns a pair of sets [(s1, s2)], where

@@ -1,20 +1,23 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
-(*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Pierre Weis && Damien Doligez, INRIA Rocquencourt          *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* When you change this, you need to update the documentation:
-   - man/ocamlc.m   in ocaml
-   - man/ocamlopt.m in ocaml
-   - manual/cmds/comp.etex   in the doc sources
-   - manual/cmds/native.etex in the doc sources
+   - man/ocamlc.m
+   - man/ocamlopt.m
+   - manual/manual/cmds/comp.etex
+   - manual/manual/cmds/native.etex
 *)
 
 type t =
@@ -23,7 +26,7 @@ type t =
   | Deprecated of string                    (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
-  | Labels_omitted                          (*  6 *)
+  | Labels_omitted of string list           (*  6 *)
   | Method_override of string list          (*  7 *)
   | Partial_match of string                 (*  8 *)
   | Non_closed_record_pattern of string     (*  9 *)
@@ -42,7 +45,7 @@ type t =
   | Preprocessor of string                  (* 22 *)
   | Useless_record_with                     (* 23 *)
   | Bad_module_name of string               (* 24 *)
-  | All_clauses_guarded                     (* 25 *)
+  | All_clauses_guarded                     (* 8, used to be 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -55,7 +58,7 @@ type t =
   | Unused_for_index of string              (* 35 *)
   | Unused_ancestor of string               (* 36 *)
   | Unused_constructor of string * bool * bool  (* 37 *)
-  | Unused_extension of string * bool * bool    (* 38 *)
+  | Unused_extension of string * bool * bool * bool (* 38 *)
   | Unused_rec_flag                         (* 39 *)
   | Name_out_of_scope of string * string list * bool (* 40 *)
   | Ambiguous_name of string list * string list *  bool    (* 41 *)
@@ -66,8 +69,19 @@ type t =
   | Bad_env_variable of string * string     (* 46 *)
   | Attribute_payload of string * string    (* 47 *)
   | Eliminated_optional_arguments of string list (* 48 *)
-  | No_cmi_file of string                   (* 49 *)
+  | No_cmi_file of string * string option   (* 49 *)
   | Bad_docstring of bool                   (* 50 *)
+  | Expect_tailcall                         (* 51 *)
+  | Fragile_literal_pattern                 (* 52 *)
+  | Misplaced_attribute of string           (* 53 *)
+  | Duplicated_attribute of string          (* 54 *)
+  | Inlining_impossible of string           (* 55 *)
+  | Unreachable_case                        (* 56 *)
+  | Ambiguous_pattern of string list        (* 57 *)
+  | No_cmx_file of string                   (* 58 *)
+  | Assignment_to_non_mutable_value         (* 59 *)
+  | Unused_module of string                 (* 60 *)
+  | Unboxable_type_in_prim_decl of string   (* 61 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -82,7 +96,7 @@ let number = function
   | Deprecated _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
-  | Labels_omitted -> 6
+  | Labels_omitted _ -> 6
   | Method_override _ -> 7
   | Partial_match _ -> 8
   | Non_closed_record_pattern _ -> 9
@@ -101,7 +115,7 @@ let number = function
   | Preprocessor _ -> 22
   | Useless_record_with -> 23
   | Bad_module_name _ -> 24
-  | All_clauses_guarded -> 25
+  | All_clauses_guarded -> 8 (* used to be 25 *)
   | Unused_var _ -> 26
   | Unused_var_strict _ -> 27
   | Wildcard_arg_to_constant_constr -> 28
@@ -127,9 +141,22 @@ let number = function
   | Eliminated_optional_arguments _ -> 48
   | No_cmi_file _ -> 49
   | Bad_docstring _ -> 50
+  | Expect_tailcall -> 51
+  | Fragile_literal_pattern -> 52
+  | Misplaced_attribute _ -> 53
+  | Duplicated_attribute _ -> 54
+  | Inlining_impossible _ -> 55
+  | Unreachable_case -> 56
+  | Ambiguous_pattern _ -> 57
+  | No_cmx_file _ -> 58
+  | Assignment_to_non_mutable_value -> 59
+  | Unused_module _ -> 60
+  | Unboxable_type_in_prim_decl _ -> 61
 ;;
 
-let last_warning_number = 50
+let last_warning_number = 61
+;;
+
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -158,7 +185,7 @@ let letter = function
   | 'u' -> [11; 12]
   | 'v' -> [13]
   | 'w' -> []
-  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 30]
+  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 30]
   | 'y' -> [26]
   | 'z' -> [27]
   | _ -> assert false
@@ -208,7 +235,7 @@ let parse_opt error active flags s =
     if i >= String.length s then () else
     match s.[i] with
     | 'A' .. 'Z' ->
-       List.iter set (letter (Char.lowercase s.[i]));
+       List.iter set (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter clear (letter s.[i]);
@@ -216,7 +243,7 @@ let parse_opt error active flags s =
     | '+' -> loop_letter_num set (i+1)
     | '-' -> loop_letter_num clear (i+1)
     | '@' -> loop_letter_num set_all (i+1)
-    | c -> error ()
+    | _ -> error ()
   and loop_letter_num myset i =
     if i >= String.length s then error () else
     match s.[i] with
@@ -225,7 +252,7 @@ let parse_opt error active flags s =
         for n = n1 to min n2 last_warning_number do myset n done;
         loop i
     | 'A' .. 'Z' ->
-       List.iter myset (letter (Char.lowercase s.[i]));
+       List.iter myset (letter (Char.lowercase_ascii s.[i]));
        loop (i+1)
     | 'a' .. 'z' ->
        List.iter myset (letter s.[i]);
@@ -242,8 +269,8 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50";;
-let defaults_warn_error = "-a";;
+let defaults_w = "+a-4-6-7-9-27-29-32..39-41..42-44-45-48-50-60";;
+let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
@@ -251,7 +278,14 @@ let () = parse_options true defaults_warn_error;;
 let message = function
   | Comment_start -> "this is the start of a comment."
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated s -> "deprecated: " ^ s
+  | Deprecated s ->
+      (* Reduce \r\n to \n:
+           - Prevents any \r characters being printed on Unix when processing
+             Windows sources
+           - Prevents \r\r\n being generated on Windows, which affects the
+             testsuite
+       *)
+       "deprecated: " ^ Misc.normalise_eol s
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -260,8 +294,12 @@ let message = function
   | Partial_application ->
       "this function application is partial,\n\
        maybe some arguments are missing."
-  | Labels_omitted ->
-      "labels were omitted in the application of this function."
+  | Labels_omitted [] -> assert false
+  | Labels_omitted [l] ->
+     "label " ^ l ^ " was omitted in the application of this function."
+  | Labels_omitted ls ->
+     "labels " ^ String.concat ", " ls ^
+       " were omitted in the application of this function."
   | Method_override [lab] ->
       "the method " ^ lab ^ " is overridden."
   | Method_override (cname :: slist) ->
@@ -272,7 +310,7 @@ let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
   | Partial_match s ->
       "this pattern-matching is not exhaustive.\n\
-       Here is an example of a value that is not matched:\n" ^ s
+       Here is an example of a case that is not matched:\n" ^ s
   | Non_closed_record_pattern s ->
       "the following labels are not bound in this record pattern:\n" ^ s ^
       "\nEither bind these labels explicitly or add '; _' to the pattern."
@@ -307,7 +345,8 @@ let message = function
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | All_clauses_guarded ->
-      "bad style, all clauses in this pattern-matching are guarded."
+      "this pattern-matching is not exhaustive.\n\
+       All clauses in this pattern-matching are guarded."
   | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
@@ -334,16 +373,21 @@ let message = function
       "constructor " ^ s ^
       " is never used to build values.\n\
         Its type is exported as a private type."
-  | Unused_extension (s, false, false) ->
-      "unused extension constructor " ^ s ^ "."
-  | Unused_extension (s, true, _) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        (However, this constructor appears in patterns.)"
-  | Unused_extension (s, false, true) ->
-      "extension constructor " ^ s ^
-      " is never used to build values.\n\
-        It is exported or rebound as a private extension."
+  | Unused_extension (s, is_exception, cu_pattern, cu_privatize) ->
+     let kind =
+       if is_exception then "exception" else "extension constructor" in
+     let name = kind ^ " " ^ s in
+     begin match cu_pattern, cu_privatize with
+       | false, false -> "unused " ^ name
+       | true, _ ->
+          name ^
+          " is never used to build values.\n\
+           (However, this constructor appears in patterns.)"
+       | false, true ->
+          name ^
+          " is never used to build values.\n\
+            It is exported or rebound as a private extension."
+     end
   | Unused_rec_flag ->
       "unused rec flag."
   | Name_out_of_scope (ty, [nm], false) ->
@@ -360,12 +404,13 @@ let message = function
       s ^ " belongs to several types: " ^ String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Ambiguous_name (_, _, false) -> assert false
-  | Ambiguous_name (slist, tl, true) ->
+  | Ambiguous_name (_slist, tl, true) ->
       "these field labels belong to several types: " ^
       String.concat " " tl ^
       "\nThe first one was selected. Please disambiguate if this is wrong."
   | Disambiguated_name s ->
-      "this use of " ^ s ^ " required disambiguation."
+      "this use of " ^ s ^ " relies on type-directed disambiguation,\n\
+       it will not compile with OCaml 4.00 or earlier."
   | Nonoptional_label s ->
       "the label " ^ s ^ " is not optional."
   | Open_shadow_identifier (kind, s) ->
@@ -384,11 +429,60 @@ let message = function
       Printf.sprintf "implicit elimination of optional argument%s %s"
         (if List.length sl = 1 then "" else "s")
         (String.concat ", " sl)
-  | No_cmi_file s ->
-      "no cmi file was found in path for module " ^ s
+  | No_cmi_file(name, None) ->
+      "no cmi file was found in path for module " ^ name
+  | No_cmi_file(name, Some msg) ->
+      Printf.sprintf
+        "no valid cmi file was found in path for module %s. %s"
+        name msg
   | Bad_docstring unattached ->
       if unattached then "unattached documentation comment (ignored)"
       else "ambiguous documentation comment"
+  | Expect_tailcall ->
+      Printf.sprintf "expected tailcall"
+  | Fragile_literal_pattern ->
+      Printf.sprintf
+        "Code should not depend on the actual values of\n\
+         this constructor's arguments. They are only for information\n\
+         and may change in future versions. (See manual section 8.5)"
+  | Unreachable_case ->
+      "this match case is unreachable.\n\
+       Consider replacing it with a refutation case '<pat> -> .'"
+  | Misplaced_attribute attr_name ->
+      Printf.sprintf "the %S attribute cannot appear in this context" attr_name
+  | Duplicated_attribute attr_name ->
+      Printf.sprintf "the %S attribute is used more than once on this \
+          expression"
+        attr_name
+  | Inlining_impossible reason ->
+      Printf.sprintf "Cannot inline: %s" reason
+  | Ambiguous_pattern vars ->
+      let msg =
+        let vars = List.sort String.compare vars in
+        match vars with
+        | [] -> assert false
+        | [x] -> "variable " ^ x
+        | _::_ ->
+            "variables " ^ String.concat "," vars in
+      Printf.sprintf
+        "Ambiguous or-pattern variables under guard;\n\
+         %s may match different arguments. (See manual section 8.5)"
+        msg
+  | No_cmx_file name ->
+      Printf.sprintf
+        "no cmx file was found in path for module %s, \
+         and its interface was not compiled with -opaque" name
+  | Assignment_to_non_mutable_value ->
+      "A potential assignment to a non-mutable value was detected \n\
+        in this source file.  Such assignments may generate incorrect code \n\
+        when using Flambda."
+  | Unused_module s -> "unused module " ^ s ^ "."
+  | Unboxable_type_in_prim_decl t ->
+      Printf.sprintf
+        "This primitive declaration uses type %s, which is unannotated and\n\
+         unboxable. The representation of such types may change in future\n\
+         versions. You should annotate the declaration of %s with [@@boxed]\n\
+         or [@@unboxed]." t t
 ;;
 
 let nerrors = ref 0;;
@@ -402,6 +496,9 @@ let print ppf w =
 ;;
 
 exception Errors of int;;
+
+let reset_fatal () =
+  nerrors := 0
 
 let check_fatal () =
   if !nerrors > 0 then begin
@@ -425,7 +522,8 @@ let descriptions =
     7, "Method overridden.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
-   10, "Expression on the left-hand side of a sequence that doesn't have type\n\
+   10, "Expression on the left-hand side of a sequence that doesn't have \
+      type\n\
    \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
@@ -438,12 +536,13 @@ let descriptions =
    19, "Type without principality.";
    20, "Unused function argument.";
    21, "Non-returning statement.";
-   22, "Proprocessor warning.";
+   22, "Preprocessor warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module \
         name.";
-   25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
-   \    checked.";
+   (* 25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot \
+      be\n\
+   \    checked.";  (* Now part of warning 8 *) *)
    26, "Suspicious unused variable: unused variable that is bound\n\
    \    with \"let\" or \"as\", and doesn't start with an underscore (\"_\")\n\
    \    character.";
@@ -465,15 +564,25 @@ let descriptions =
    39, "Unused rec flag.";
    40, "Constructor or label name used out of scope.";
    41, "Ambiguous constructor or label name.";
-   42, "Disambiguated constructor or label name.";
+   42, "Disambiguated constructor or label name (compatibility warning).";
    43, "Nonoptional label applied as optional.";
    44, "Open statement shadows an already defined identifier.";
    45, "Open statement shadows an already defined label or constructor.";
    46, "Error in environment variable.";
    47, "Illegal attribute payload.";
    48, "Implicit elimination of optional arguments.";
-   49, "Missing cmi file when looking up module alias.";
+   49, "Absent cmi file when looking up module alias.";
    50, "Unexpected documentation comment.";
+   51, "Warning on non-tail calls if @tailcall present.";
+   52, "Fragile constant pattern.";
+   53, "Attribute cannot appear in this context";
+   54, "Attribute used more than once on an expression";
+   55, "Inlining impossible";
+   56, "Unreachable case in a pattern-matching (based on type information).";
+   57, "Ambiguous or-pattern variables under guard";
+   58, "Missing cmx file";
+   59, "Assignment to non-mutable value";
+   60, "Unused module declaration";
   ]
 ;;
 
@@ -485,10 +594,10 @@ let help_warnings () =
     match letter c with
     | [] -> ()
     | [n] ->
-        Printf.printf "  %c warning %i\n" (Char.uppercase c) n
+        Printf.printf "  %c Alias for warning %i.\n" (Char.uppercase_ascii c) n
     | l ->
         Printf.printf "  %c warnings %s.\n"
-          (Char.uppercase c)
+          (Char.uppercase_ascii c)
           (String.concat ", " (List.map string_of_int l))
   done;
   exit 0

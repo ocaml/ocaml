@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Allocation macros and functions */
 
@@ -20,12 +22,12 @@
 #include "compatibility.h"
 #endif
 #include "config.h"
-/* <private> */
+#ifdef CAML_INTERNALS
 #include "gc.h"
 #include "major_gc.h"
 #include "minor_gc.h"
+#endif /* CAML_INTERNALS */
 #include "domain.h"
-/* </private> */
 #include "misc.h"
 #include "mlvalues.h"
 #include "alloc.h"
@@ -37,7 +39,18 @@ extern "C" {
 #define BVAR_EMPTY      0x10000
 #define BVAR_OWNER_MASK 0x0ffff
 
-CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
+CAMLextern value caml_alloc_shr (mlsize_t wosize, tag_t);
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+CAMLextern value caml_alloc_shr_with_profinfo (mlsize_t, tag_t, intnat);
+CAMLextern value caml_alloc_shr_preserving_profinfo (mlsize_t, tag_t,
+  header_t);
+#else
+#define caml_alloc_shr_with_profinfo(size, tag, profinfo) \
+  caml_alloc_shr(size, tag)
+#define caml_alloc_shr_preserving_profinfo(size, tag, header) \
+  caml_alloc_shr(size, tag)
+#endif
+CAMLextern value caml_alloc_shr_no_raise (mlsize_t wosize, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_alloc_dependent_memory (mlsize_t);
 CAMLextern void caml_free_dependent_memory (mlsize_t);
@@ -50,13 +63,15 @@ CAMLextern value caml_check_urgent_gc (value);
 CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
 CAMLextern void caml_stat_free (void *);
 CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
-char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
-void caml_free_for_heap (char *mem);
-int caml_add_to_heap (char *mem);
+CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
+CAMLextern void caml_free_for_heap (char *mem);
+CAMLextern int caml_add_to_heap (char *mem);
+
+CAMLextern int caml_huge_fallback_count; /* FIXME KC: Make per domain */
 
 /* void caml_shrink_heap (char *);        Only used in compact.c */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 
 /* FIXME */
 /* There are two GC bits in the object header, with the following
@@ -66,6 +81,15 @@ int caml_add_to_heap (char *mem);
 
 #define Is_promoted_hd(hd)  (((hd) & (3 << 8)) == (3 << 8))
 #define Promotedhd_hd(hd)  ((hd) | (3 << 8))
+
+extern uintnat caml_use_huge_pages;
+
+#ifdef HAS_HUGE_PAGES
+#include <sys/mman.h>
+#define Heap_page_size HUGE_PAGE_SIZE
+#define Round_mmap_size(x)                                      \
+    (((x) + (Heap_page_size - 1)) & ~ (Heap_page_size - 1))
+#endif
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
@@ -84,23 +108,30 @@ int caml_add_to_heap (char *mem);
 #define Count_alloc
 #endif
 
-#define Alloc_small(result, wosize, tag, GC) do{CAMLassert ((wosize) >= 1); \
+#define Alloc_small_with_profinfo(result, wosize, tag, GC, profinfo) do{    \
+                                                CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state* dom_st = Caml_state;                     \
+  caml_domain_state* dom_st = Caml_state;                                   \
   dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
   if (Caml_check_gc_interrupt(dom_st)){                                     \
     dom_st->young_ptr += Bhsize_wosize (wosize);                            \
     { GC }                                                                  \
     dom_st->young_ptr -= Bhsize_wosize (wosize);                            \
   }                                                                         \
-  Hd_hp (dom_st->young_ptr) = Make_header ((wosize), (tag), 0);             \
+  Hd_hp (dom_st->young_ptr) =                                               \
+    Make_header_with_profinfo ((wosize), (tag), 0, profinfo);               \
+  /* FIXME: Spacetime */ if (profinfo == 0);                                \
   (result) = Val_hp (dom_st->young_ptr);                                    \
   DEBUG_clear ((result), (wosize));                                         \
   Count_alloc;                                                              \
 }while(0)
 
-/* </private> */
+#define Alloc_small(result, wosize, tag, GC) \
+  Alloc_small_with_profinfo(result, wosize, tag, GC, (uintnat)0)
+
+#endif /* CAML_INTERNALS */
+
 struct caml__mutex_unwind;
 struct caml__roots_block {
   struct caml__roots_block *next;
@@ -134,7 +165,9 @@ struct caml__roots_block {
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
-   keyword.  If your function returns void, use [CAMLreturn0].
+   keyword.  If your function returns void, use [CAMLreturn0]. If you
+   un-register the local roots (i.e. undo the effects of the [CAMLparam*]
+   and [CAMLlocal] macros) without returning immediately, use [CAMLdrop].
 
    All the identifiers beginning with "caml__" are reserved by OCaml.
    Do not use them for anything (local or global variables, struct or
@@ -168,10 +201,25 @@ struct caml__roots_block {
   CAMLparam0 (); \
   CAMLxparamN (x, (size))
 
-
+/* CAMLunused is preserved for compatibility reasons.
+   Instead of the legacy GCC/Clang-only
+     CAMLunused foo;
+   you should prefer
+     CAMLunused_start foo CAMLunused_end;
+   which supports both GCC/Clang and MSVC.
+*/
 #if defined(__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
+  #define CAMLunused_start __attribute__ ((unused))
+  #define CAMLunused_end
   #define CAMLunused __attribute__ ((unused))
+#elif _MSC_VER >= 1500
+  #define CAMLunused_start  __pragma( warning (push) )           \
+    __pragma( warning (disable:4189 ) )
+  #define CAMLunused_end __pragma( warning (pop))
+  #define CAMLunused
 #else
+  #define CAMLunused_start
+  #define CAMLunused_end
   #define CAMLunused
 #endif
 
@@ -185,7 +233,8 @@ struct caml__roots_block {
     (caml__roots_##x.nitems = 1), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables [0] = &x), \
-    0)
+    0) \
+   CAMLunused_end
 
 #define CAMLxparam2(x, y) \
   struct caml__roots_block caml__roots_##x; \
@@ -198,7 +247,8 @@ struct caml__roots_block {
     (caml__roots_##x.ntables = 2), \
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
-    0)
+    0) \
+   CAMLunused_end
 
 #define CAMLxparam3(x, y, z) \
   struct caml__roots_block caml__roots_##x; \
@@ -212,7 +262,8 @@ struct caml__roots_block {
     (caml__roots_##x.tables [0] = &x), \
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparam4(x, y, z, t) \
   struct caml__roots_block caml__roots_##x; \
@@ -227,7 +278,8 @@ struct caml__roots_block {
     (caml__roots_##x.tables [1] = &y), \
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparam5(x, y, z, t, u) \
   struct caml__roots_block caml__roots_##x; \
@@ -243,7 +295,8 @@ struct caml__roots_block {
     (caml__roots_##x.tables [2] = &z), \
     (caml__roots_##x.tables [3] = &t), \
     (caml__roots_##x.tables [4] = &u), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLxparamN(x, size) \
   struct caml__roots_block caml__roots_##x; \
@@ -255,7 +308,8 @@ struct caml__roots_block {
     (caml__roots_##x.nitems = (size)), \
     (caml__roots_##x.ntables = 1), \
     (caml__roots_##x.tables[0] = &(x[0])), \
-    0)
+    0) \
+  CAMLunused_end
 
 #define CAMLlocal1(x) \
   value x = Val_unit; \

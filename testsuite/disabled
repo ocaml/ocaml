@@ -15,18 +15,18 @@ tests/typing-objects/Tests.ml.reference
 tests/lib-dynlink-bytecode/main
 tests/lib-dynlink-native/main
 
-# Effect backtraces are buggy (#108)
-tests/backtrace/backtrace_effects.ml
-
-# Unhandled effect semantics are wrong (#105)
-tests/effects/test6.ml
-
 # These depend on weak references and finalisers (#88, #92)
 tests/misc/weaklifetime.ml
 tests/misc/weaktest.ml
+tests/misc/ephetest3.ml
+tests/misc/ephetest.ml
+tests/misc/ephetest2.ml
 tests/regression/pr5233/
 tests/tool-ocaml/t340-weak.ml
 tests/tool-ocaml/t350-heapcheck.ml
+tests/misc/finaliser.ml
+tests/regression/pr3612/
+tests/lib-hashtbl/htbl.ml
 
 # ocamldebug is broken (#34)
 tool-debugger
@@ -34,3 +34,12 @@ tool-debugger
 # the pre-multicore threads library is broken (#100)
 lib-systhreads
 lib-threads
+
+# Uses obj.reachable_words whose definition in multicore isn't clear (think racy programs)
+tests/lib-obj/
+
+# Uses caml_page_table_lookup() (<- Is_in_static_data ()) which is not available on multicore
+tests/asmcomp/is_static
+
+# Unwind using libunwind doesn't work due to fibers
+tests/unwind/unwind_test

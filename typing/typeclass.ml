@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Parsetree
 open Asttypes
@@ -18,12 +21,38 @@ open Typecore
 open Typetexp
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
-  | Apply_wrong_label of label
+  | Apply_wrong_label of arg_label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t
@@ -53,7 +82,8 @@ exception Error_forward of Location.error
 open Typedtree
 
 let ctyp desc typ env loc =
-  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env; ctyp_attributes = [] }
+  { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env;
+    ctyp_attributes = [] }
 
                        (**********************)
                        (*  Useful constants  *)
@@ -70,7 +100,7 @@ let dummy_method = Btype.dummy_method
    Path associated to the temporary class type of a class being typed
    (its constructor is not available).
 *)
-let unbound_class = Path.Pident (Ident.create "")
+let unbound_class = Path.Pident (Ident.create "*undef*")
 
 
                 (************************************)
@@ -119,18 +149,18 @@ let rec constructor_type constr cty =
   match cty with
     Cty_constr (_, _, cty) ->
       constructor_type constr cty
-  | Cty_signature sign ->
+  | Cty_signature _ ->
       constr
   | Cty_arrow (l, ty, cty) ->
       Ctype.newty (Tarrow (l, ty, constructor_type constr cty, Cok))
 
 let rec class_body cty =
   match cty with
-    Cty_constr (_, _, cty') ->
+    Cty_constr _ ->
       cty (* Only class bodies can be abbreviated *)
-  | Cty_signature sign ->
+  | Cty_signature _ ->
       cty
-  | Cty_arrow (_, ty, cty) ->
+  | Cty_arrow (_, _, cty) ->
       class_body cty
 
 let extract_constraints cty =
@@ -153,29 +183,32 @@ let rec abbreviate_class_type path params cty =
   | Cty_arrow (l, ty, cty) ->
       Cty_arrow (l, ty, abbreviate_class_type path params cty)
 
+(* Check that all type variables are generalizable *)
+(* Use Env.empty to prevent expansion of recursively defined object types;
+   cf. typing-poly/poly.ml *)
 let rec closed_class_type =
   function
     Cty_constr (_, params, _) ->
-      List.for_all Ctype.closed_schema params
+      List.for_all (Ctype.closed_schema Env.empty) params
   | Cty_signature sign ->
-      Ctype.closed_schema sign.csig_self
+      Ctype.closed_schema Env.empty sign.csig_self
         &&
-      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema ty && cc)
+      Vars.fold (fun _ (_, _, ty) cc -> Ctype.closed_schema Env.empty ty && cc)
         sign.csig_vars
         true
   | Cty_arrow (_, ty, cty) ->
-      Ctype.closed_schema ty
+      Ctype.closed_schema Env.empty ty
         &&
       closed_class_type cty
 
 let closed_class cty =
-  List.for_all Ctype.closed_schema cty.cty_params
+  List.for_all (Ctype.closed_schema Env.empty) cty.cty_params
     &&
   closed_class_type cty.cty_type
 
 let rec limited_generalize rv =
   function
-    Cty_constr (path, params, cty) ->
+    Cty_constr (_path, params, cty) ->
       List.iter (Ctype.limited_generalize rv) params;
       limited_generalize rv cty
   | Cty_signature sign ->
@@ -352,16 +385,16 @@ let type_constraint val_env sty sty' loc =
 let make_method loc cl_num expr =
   let open Ast_helper in
   let mkid s = mkloc s loc in
-  Exp.fun_ ~loc:expr.pexp_loc "" None
+  Exp.fun_ ~loc:expr.pexp_loc Nolabel None
     (Pat.alias ~loc (Pat.var ~loc (mkid "self-*")) (mkid ("self-" ^ cl_num)))
     expr
 
 (*******************************)
 
-let add_val env loc lab (mut, virt, ty) val_sig =
+let add_val lab (mut, virt, ty) val_sig =
   let virt =
     try
-      let (mut', virt', ty') = Vars.find lab val_sig in
+      let (_mut', virt', _ty') = Vars.find lab val_sig in
       if virt' = Concrete then virt' else virt
     with Not_found -> virt
   in
@@ -370,7 +403,9 @@ let add_val env loc lab (mut, virt, ty) val_sig =
 let rec class_type_field env self_type meths
     (fields, val_sig, concr_meths, inher) ctf =
   let loc = ctf.pctf_loc in
-  let mkctf desc = { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes } in
+  let mkctf desc =
+    { ctf_desc = desc; ctf_loc = loc; ctf_attributes = ctf.pctf_attributes }
+  in
   match ctf.pctf_desc with
     Pctf_inherit sparent ->
       let parent = class_type env sparent in
@@ -384,7 +419,7 @@ let rec class_type_field env self_type meths
           parent.cltyp_type
       in
       let val_sig =
-        Vars.fold (add_val env sparent.pcty_loc) cl_sig.csig_vars val_sig in
+        Vars.fold add_val cl_sig.csig_vars val_sig in
       (mkctf (Tctf_inherit parent) :: fields,
        val_sig, concr_meths, inher)
 
@@ -392,7 +427,7 @@ let rec class_type_field env self_type meths
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
       (mkctf (Tctf_val (lab, mut, virt, cty)) :: fields,
-      add_val env ctf.pctf_loc lab (mut, virt, ty) val_sig, concr_meths, inher)
+      add_val lab (mut, virt, ty) val_sig, concr_meths, inher)
 
   | Pctf_method (lab, priv, virt, sty)  ->
       let cty =
@@ -411,12 +446,12 @@ let rec class_type_field env self_type meths
         val_sig, concr_meths, inher)
 
   | Pctf_attribute x ->
-      Typetexp.warning_attribute [x];
+      Builtin_attributes.warning_attribute [x];
       (mkctf (Tctf_attribute x) :: fields,
         val_sig, concr_meths, inher)
 
   | Pctf_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   let meths = ref Meths.empty in
@@ -437,13 +472,13 @@ and class_signature env {pcsig_self=sty; pcsig_fields=sign} =
   end;
 
   (* Class type fields *)
-  Typetexp.warning_enter_scope ();
+  Builtin_attributes.warning_enter_scope ();
   let (rev_fields, val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       ([], Vars.empty, Concr.empty, [])
       sign
   in
-  Typetexp.warning_leave_scope ();
+  Builtin_attributes.warning_leave_scope ();
   let cty =   {csig_self = self_type;
    csig_vars = val_sig;
    csig_concr = concr_meths;
@@ -498,11 +533,15 @@ and class_type env scty =
   | Pcty_arrow (l, sty, scty) ->
       let cty = transl_simple_type env false sty in
       let ty = cty.ctyp_type in
+      let ty =
+        if Btype.is_optional l
+        then Ctype.newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+        else ty in
       let clty = class_type env scty in
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
   | Pcty_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 let class_type env scty =
   delayed_meth_specs := [];
@@ -518,7 +557,9 @@ let rec class_field self_loc cl_num self_type meths vars
      local_meths, local_vals)
   cf =
   let loc = cf.pcf_loc in
-  let mkcf desc = { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes } in
+  let mkcf desc =
+    { cf_desc = desc; cf_loc = loc; cf_attributes = cf.pcf_attributes }
+  in
   match cf.pcf_desc with
     Pcf_inherit (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
@@ -554,7 +595,7 @@ let rec class_field self_loc cl_num self_type meths vars
           None ->
             (val_env, met_env, par_env)
         | Some name ->
-            let (id, val_env, met_env, par_env) =
+            let (_id, val_env, met_env, par_env) =
               enter_met_env ~check:(fun s -> Warnings.Unused_ancestor s)
                 sparent.pcl_loc name (Val_anc (inh_meths, cl_num)) self_type
                 val_env met_env par_env
@@ -672,8 +713,10 @@ let rec class_field self_loc cl_num self_type meths vars
 
       let field =
         lazy begin
+          (* Read the generalized type *)
+          let (_, ty) = Meths.find lab.txt !meths in
           let meth_type =
-            Btype.newgenty (Tarrow("", self_type, ty, Cok)) in
+            Btype.newgenty (Tarrow(Nolabel, self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
@@ -698,7 +741,7 @@ let rec class_field self_loc cl_num self_type meths vars
           Ctype.raise_nongen_level ();
           let meth_type =
             Ctype.newty
-              (Tarrow ("", self_type,
+              (Tarrow (Nolabel, self_type,
                        Ctype.instance_def Predef.type_unit, Cok)) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
@@ -708,12 +751,12 @@ let rec class_field self_loc cl_num self_type meths vars
       (val_env, met_env, par_env, field::fields, concr_meths, warn_vals,
        inher, local_meths, local_vals)
   | Pcf_attribute x ->
-      Typetexp.warning_attribute [x];
+      Builtin_attributes.warning_attribute [x];
       (val_env, met_env, par_env,
         lazy (mkcf (Tcf_attribute x)) :: fields,
         concr_meths, warn_vals, inher, local_meths, local_vals)
   | Pcf_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and class_structure cl_num final val_env met_env loc
   { pcstr_self = spat; pcstr_fields = str } =
@@ -762,18 +805,18 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of class fields *)
-  Typetexp.warning_enter_scope ();
+  Builtin_attributes.warning_enter_scope ();
   let (_, _, _, fields, concr_meths, _, inher, _local_meths, _local_vals) =
     List.fold_left (class_field self_loc cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [],
        Concr.empty, Concr.empty)
       str
   in
-  Typetexp.warning_leave_scope ();
+  Builtin_attributes.warning_leave_scope ();
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {csig_self = public_self;
-     csig_vars = Vars.map (fun (id, mut, vr, ty) -> (mut, vr, ty)) !vars;
+     csig_vars = Vars.map (fun (_id, mut, vr, ty) -> (mut, vr, ty)) !vars;
      csig_concr = concr_meths;
       csig_inher = inher} in
   let methods = get_methods self_type in
@@ -787,7 +830,7 @@ and class_structure cl_num final val_env met_env loc
     let mets = virtual_methods {sign with csig_self = self_type} in
     let vals =
       Vars.fold
-        (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
+        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> [] || vals <> [] then
       raise(Error(loc, val_env, Virtual_class(true, final, mets, vals)));
@@ -811,13 +854,17 @@ and class_structure cl_num final val_env met_env loc
   end;
 
   (* Typing of method bodies *)
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.generalize_spine ty) methods;
+  (* if !Clflags.principal then *) begin
+    let ms = !meths in
+    (* Generalize the spine of methods accessed through self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.generalize_spine ty) ms;
+    meths :=
+      Meths.map (fun (id,ty) -> (id, Ctype.generic_instance val_env ty)) ms;
+    (* But keep levels correct on the type of self *)
+    Meths.iter (fun _ (_,ty) -> Ctype.unify val_env ty (Ctype.newvar ())) ms
+  end;
   let fields = List.map Lazy.force (List.rev fields) in
-  if !Clflags.principal then
-    List.iter (fun (_,_,ty) -> Ctype.unify val_env ty (Ctype.newvar ()))
-      methods;
-  let meths = Meths.map (function (id, ty) -> id) !meths in
+  let meths = Meths.map (function (id, _ty) -> id) !meths in
 
   (* Check for private methods made public *)
   let pub_meths' =
@@ -829,7 +876,7 @@ and class_structure cl_num final val_env met_env loc
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
   let sign = if final then sign else
-      {sign with csig_self = Ctype.expand_head val_env public_self} in
+      {sign with Types.csig_self = Ctype.expand_head val_env public_self} in
   {
     cstr_self = pat;
     cstr_fields = fields;
@@ -925,7 +972,7 @@ and class_expr cl_num val_env met_env scl =
       end;
       let pv =
         List.map
-          begin fun (id, id_loc, id', ty) ->
+          begin fun (id, id_loc, id', _ty) ->
             let path = Pident id' in
             (* do not mark the value as being used *)
             let vd = Env.find_value path val_env' in
@@ -944,16 +991,9 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
+        let dummy = type_exp val_env (Ast_helper.Exp.unreachable ()) in
         Typecore.check_partial val_env pat.pat_type pat.pat_loc
-          [{c_lhs=pat;
-            c_cont=None;
-            c_guard=None;
-            c_rhs = (* Dummy expression *)
-            {exp_desc = Texp_constant (Asttypes.Const_int 1);
-             exp_loc = Location.none; exp_extra = [];
-             exp_type = Ctype.none;
-             exp_attributes = [];
-             exp_env = Env.empty }}]
+          [{c_lhs = pat; c_cont = None; c_guard = None; c_rhs = dummy}]
       in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
@@ -969,9 +1009,7 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_apply (scl', sargs) ->
-      if sargs = [] then
-        Syntaxerr.ill_formed_ast scl.pcl_loc
-          "Function application with no argument.";
+      assert (sargs <> []);
       if !Clflags.principal then Ctype.begin_def ();
       let cl = class_expr cl_num val_env met_env scl' in
       if !Clflags.principal then begin
@@ -989,10 +1027,14 @@ and class_expr cl_num val_env met_env scl =
         !Clflags.classic ||
         let labels = nonopt_labels [] cl.cl_type in
         List.length labels = List.length sargs &&
-        List.for_all (fun (l,_) -> l = "") sargs &&
-        List.exists (fun l -> l <> "") labels &&
+        List.for_all (fun (l,_) -> l = Nolabel) sargs &&
+        List.exists (fun l -> l <> Nolabel) labels &&
         begin
-          Location.prerr_warning cl.cl_loc Warnings.Labels_omitted;
+          Location.prerr_warning
+            cl.cl_loc
+            (Warnings.Labels_omitted
+               (List.map Printtyp.string_of_label
+                         (List.filter ((<>) Nolabel) labels)));
           true
         end
       in
@@ -1001,15 +1043,14 @@ and class_expr cl_num val_env met_env scl =
         | Cty_arrow (l, ty, ty_fun), Cty_arrow (_, ty0, ty_fun0)
           when sargs <> [] || more_sargs <> [] ->
             let name = Btype.label_name l
-            and optional =
-              if Btype.is_optional l then Optional else Required in
+            and optional = Btype.is_optional l in
             let sargs, more_sargs, arg =
               if ignore_labels && not (Btype.is_optional l) then begin
                 match sargs, more_sargs with
                   (l', sarg0)::_, _ ->
                     raise(Error(sarg0.pexp_loc, val_env, Apply_wrong_label l'))
                 | _, (l', sarg0)::more_sargs ->
-                    if l <> l' && l' <> "" then
+                    if l <> l' && l' <> Nolabel then
                       raise(Error(sarg0.pexp_loc, val_env,
                                   Apply_wrong_label l'))
                     else ([], more_sargs,
@@ -1027,11 +1068,11 @@ and class_expr cl_num val_env met_env scl =
                       Btype.extract_label name more_sargs
                     in (l', sarg0, sargs @ sargs1, sargs2)
                 in
-                if optional = Required && Btype.is_optional l' then
+                if not optional && Btype.is_optional l' then
                   Location.prerr_warning sarg0.pexp_loc
-                    (Warnings.Nonoptional_label l);
+                    (Warnings.Nonoptional_label (Printtyp.string_of_label l));
                 sargs, more_sargs,
-                if optional = Required || Btype.is_optional l' then
+                if not optional || Btype.is_optional l' then
                   Some (type_argument val_env sarg0 ty ty0)
                 else
                   let ty' = extract_option_type val_env ty
@@ -1040,14 +1081,15 @@ and class_expr cl_num val_env met_env scl =
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
-                if Btype.is_optional l &&
-                  (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+                if Btype.is_optional l
+                   && (List.mem_assoc Nolabel sargs
+                       || List.mem_assoc Nolabel more_sargs)
                 then
                   Some (option_none ty0 Location.none)
                 else None
             in
             let omitted = if arg = None then (l,ty0) :: omitted else omitted in
-            type_args ((l,arg,optional)::args) omitted ty_fun ty_fun0
+            type_args ((l,arg)::args) omitted ty_fun ty_fun0
               sargs more_sargs
         | _ ->
             match sargs @ more_sargs with
@@ -1150,7 +1192,7 @@ and class_expr cl_num val_env met_env scl =
           cl_attributes = scl.pcl_attributes;
          }
   | Pcl_extension ext ->
-      raise (Error_forward (Typetexp.error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 (*******************************)
 
@@ -1200,6 +1242,8 @@ let temp_abbrev loc env id arity =
        type_newtype_level = None;
        type_loc = loc;
        type_attributes = []; (* or keep attrs from the class decl? *)
+       type_immediate = false;
+       type_unboxed = unboxed_false_default_false;
       }
       env
   in
@@ -1398,10 +1442,11 @@ let class_infos define_class kind
     let mets = virtual_methods sign in
     let vals =
       Vars.fold
-        (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
+        (fun name (_mut, vr, _ty) l -> if vr = Virtual then name :: l else l)
         sign.csig_vars [] in
     if mets <> []  || vals <> [] then
-      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets, vals)));
+      raise(Error(cl.pci_loc, env, Virtual_class(define_class, false, mets,
+                                                 vals)));
   end;
 
   (* Misc. *)
@@ -1445,6 +1490,8 @@ let class_infos define_class kind
      type_newtype_level = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
+     type_immediate = false;
+     type_unboxed = unboxed_false_default_false;
     }
   in
   let (cl_params, cl_ty) =
@@ -1462,6 +1509,8 @@ let class_infos define_class kind
      type_newtype_level = None;
      type_loc = cl.pci_loc;
      type_attributes = []; (* or keep attrs from cl? *)
+     type_immediate = false;
+     type_unboxed = unboxed_false_default_false;
     }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci_params,
@@ -1512,7 +1561,7 @@ let final_decl env define_class
      ci_id_class = id;
      ci_id_class_type = ty_id;
      ci_id_object = obj_id;
-     ci_id_typesharp = cl_id;
+     ci_id_typehash = cl_id;
      ci_expr = expr;
      ci_decl = clty;
      ci_type_decl = cltydef;
@@ -1521,8 +1570,8 @@ let final_decl env define_class
 (*   (cl.pci_variance, cl.pci_loc)) *)
 
 let extract_type_decls
-    (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coe, expr, required) decls =
+    (_id, _id_loc, clty, _ty_id, cltydef, obj_id, obj_abbr, _cl_id, cl_abbr,
+     _arity, _pub_meths, _coe, _expr, required) decls =
   (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) :: decls
 
 let merge_type_decls
@@ -1532,8 +1581,8 @@ let merge_type_decls
    arity, pub_meths, coe, expr, req)
 
 let final_env define_class env
-    (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coe, expr, req) =
+    (id, _id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
+     _arity, _pub_meths, _coe, _expr, _req) =
   (* Add definitions after cleaning them *)
   Env.add_type ~check:true obj_id
     (Subst.type_declaration Subst.identity obj_abbr) (
@@ -1547,7 +1596,7 @@ let final_env define_class env
 (* Check that #c is coercible to c if there is a self-coercion *)
 let check_coercions env
     (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-     arity, pub_meths, coercion_locs, expr, req) =
+     arity, pub_meths, coercion_locs, _expr, req) =
   begin match coercion_locs with [] -> ()
   | loc :: _ ->
       let cl_ty, obj_ty =
@@ -1569,8 +1618,18 @@ let check_coercions env
       if not (Ctype.opened_object cl_ty) then
         raise(Error(loc, env, Cannot_coerce_self obj_ty))
   end;
-  (id, id_loc, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-   arity, pub_meths, req)
+  {cls_id = id;
+   cls_id_loc = id_loc;
+   cls_decl = clty;
+   cls_ty_id = ty_id;
+   cls_ty_decl = cltydef;
+   cls_obj_id = obj_id;
+   cls_obj_abbr = obj_abbr;
+   cls_typesharp_id = cl_id;
+   cls_abbr = cl_abbr;
+   cls_arity = arity;
+   cls_pub_methods = pub_meths;
+   cls_info=req}
 
 (*******************************)
 
@@ -1617,15 +1676,20 @@ let class_descriptions env cls =
   type_classes true approx_description class_description env cls
 
 let class_type_declarations env cls =
-  let (decl, env) =
+  let (decls, env) =
     type_classes false approx_description class_description env cls
   in
   (List.map
-     (function
-       (_, id_loc, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
-        _, _, ci) ->
-       (ty_id, id_loc, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, ci))
-     decl,
+     (fun decl ->
+        {clsty_ty_id = decl.cls_ty_id;
+         clsty_id_loc = decl.cls_id_loc;
+         clsty_ty_decl = decl.cls_ty_decl;
+         clsty_obj_id = decl.cls_obj_id;
+         clsty_obj_abbr = decl.cls_obj_abbr;
+         clsty_typesharp_id = decl.cls_typesharp_id;
+         clsty_abbr = decl.cls_abbr;
+         clsty_info = decl.cls_info})
+     decls,
    env)
 
 let rec unify_parents env ty cl =
@@ -1637,7 +1701,7 @@ let rec unify_parents env ty cl =
         Ctype.unify env ty (Ctype.instance env body)
       with
         Not_found -> ()
-      | exn -> assert false
+      | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
   | Tcl_fun (_, _, _, cl, _)
@@ -1646,7 +1710,9 @@ let rec unify_parents env ty cl =
   | Tcl_constraint (cl, _, _, _, _) -> unify_parents env ty cl
 and unify_parents_struct env ty st =
   List.iter
-    (function {cf_desc = Tcf_inherit (_, cl, _, _, _)} -> unify_parents env ty cl
+    (function
+      | {cf_desc = Tcf_inherit (_, cl, _, _, _)} ->
+          unify_parents env ty cl
       | _ -> ())
     st.cstr_fields
 
@@ -1700,17 +1766,17 @@ let report_error env ppf = function
       fprintf ppf
         "@[This class expression is not a class structure; it has type@ %a@]"
         Printtyp.class_type clty
-  | Cannot_apply clty ->
+  | Cannot_apply _ ->
       fprintf ppf
         "This class expression is not a class function, it cannot be applied"
   | Apply_wrong_label l ->
       let mark_label = function
-        | "" -> "out label"
-        |  l -> sprintf " label ~%s" l in
+        | Nolabel -> "out label"
+        |  l -> sprintf " label %s" (Btype.prefixed_label_name l) in
       fprintf ppf "This argument cannot be applied with%s" (mark_label l)
   | Pattern_type_clash ty ->
       (* XXX Trace *)
-      (* XXX Revoir message d'erreur *)
+      (* XXX Revoir message d'erreur | Improve error message *)
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
@@ -1722,7 +1788,7 @@ let report_error env ppf = function
       fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
-      (* XXX Afficher une trace ? *)
+      (* XXX Afficher une trace ? | Print a trace? *)
       Printtyp.reset_and_mark_loops_list [abbrev; actual; expected];
       fprintf ppf "@[The abbreviation@ %a@ expands to type@ %a@ \
        but is used with type@ %a@]"
@@ -1767,7 +1833,7 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops_list [params; cstrs];
       fprintf ppf
         "@[The abbreviation %a@ is used with parameters@ %a@ \
-           wich are incompatible with constraints@ %a@]"
+           which are incompatible with constraints@ %a@]"
         Printtyp.ident id Printtyp.type_expr params Printtyp.type_expr cstrs
   | Class_match_failure error ->
       Includeclass.report_error ppf error
@@ -1777,7 +1843,7 @@ let report_error env ppf = function
       let print_common ppf kind ty0 real lab ty =
         let ty1 =
           if real then ty0 else Btype.newgenty(Tobject(ty0, ref None)) in
-        Printtyp.mark_loops ty1;
+        List.iter Printtyp.mark_loops [ty; ty1];
         fprintf ppf
           "The %s %s@ has type@;<1 2>%a@ where@ %a@ is unbound"
             kind lab Printtyp.type_expr ty Printtyp.type_expr ty0
@@ -1824,7 +1890,7 @@ let report_error env ppf = function
            fprintf ppf "This object is expected to have type")
         (function ppf ->
            fprintf ppf "but actually has type")
-  | Mutability_mismatch (lab, mut) ->
+  | Mutability_mismatch (_lab, mut) ->
       let mut1, mut2 =
         if mut = Immutable then "mutable", "immutable"
         else "immutable", "mutable" in

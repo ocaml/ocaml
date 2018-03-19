@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1995 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1995 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include "caml/alloc.h"
 #include "caml/backtrace.h"
@@ -26,12 +30,16 @@
 #include "caml/roots.h"
 #include "caml/signals.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #else
 #include "caml/fiber.h"
 #endif
 #include "caml/sys.h"
 #include "threads.h"
+
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+#include "../../asmrun/spacetime.h"
+#endif
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
@@ -73,6 +81,12 @@ struct caml_thread_struct {
   char *system_stack_high;
   uintnat system_exnptr_offset;
   struct longjmp_buffer *exit_buf; /* For thread exit */
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  value internal_spacetime_trie_root;
+  value internal_spacetime_finaliser_trie_root;
+  value* spacetime_trie_node_ptr;
+  value* spacetime_finaliser_trie_root;
+#endif
 #else
   intnat trap_sp_off;
   intnat trap_barrier_off;
@@ -80,7 +94,7 @@ struct caml_thread_struct {
 #endif
   int backtrace_pos;            /* Saved backtrace_pos */
   code_t * backtrace_buffer;    /* Saved backtrace_buffer */
-  caml_root backtrace_last_exn;     /* Saved backtrace_last_exn (root) */
+  caml_root backtrace_last_exn; /* Saved backtrace_last_exn (root) */
 };
 
 typedef struct caml_thread_struct * caml_thread_t;
@@ -155,9 +169,9 @@ static void caml_thread_scan_roots(scanning_action action, void* fdata, struct d
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata, domain);
 }
 
-/* Hooks for enter_blocking_section and leave_blocking_section */
+/* Saving and restoring runtime state in curr_thread */
 
-static void caml_thread_enter_blocking_section(void)
+static inline void caml_thread_save_runtime_state(void)
 {
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
@@ -167,6 +181,12 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->system_sp = Caml_state->system_sp;
   curr_thread->system_stack_high = Caml_state->system_stack_high;
   curr_thread->system_exnptr_offset = Caml_state->system_exnptr_offset;
+#ifdef WITH_SPACETIME
+  curr_thread->spacetime_trie_node_ptr
+    = caml_spacetime_trie_node_ptr;
+  curr_thread->spacetime_finaliser_trie_root
+    = caml_spacetime_finaliser_trie_root;
+#endif
 #else
   Stack_sp(Caml_state->current_stack) =
     Caml_state->extern_sp - Caml_state->stack_high;
@@ -177,14 +197,10 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->backtrace_pos = Caml_state->backtrace_pos;
   curr_thread->backtrace_buffer = Caml_state->backtrace_buffer;
   curr_thread->backtrace_last_exn = Caml_state->backtrace_last_exn;
-  /* Tell other threads that the runtime is free */
-  st_masterlock_release(&caml_master_lock);
 }
 
-static void caml_thread_leave_blocking_section(void)
+static inline void caml_thread_restore_runtime_state(void)
 {
-  /* Wait until the runtime is free */
-  st_masterlock_acquire(&caml_master_lock);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = st_tls_get(thread_descriptor_key);
@@ -196,6 +212,12 @@ static void caml_thread_leave_blocking_section(void)
   Caml_state->system_sp = curr_thread->system_sp;
   Caml_state->system_stack_high = curr_thread->system_stack_high;
   Caml_state->system_exnptr_offset = curr_thread->system_exnptr_offset;
+#ifdef WITH_SPACETIME
+  caml_spacetime_trie_node_ptr
+    = curr_thread->spacetime_trie_node_ptr;
+  caml_spacetime_finaliser_trie_root
+    = curr_thread->spacetime_finaliser_trie_root;
+#endif
 #else
   Caml_state->trap_sp_off = curr_thread->trap_sp_off;
   Caml_state->trap_barrier_off = curr_thread->trap_barrier_off;
@@ -204,6 +226,47 @@ static void caml_thread_leave_blocking_section(void)
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
+}
+
+/* Hooks for enter_blocking_section and leave_blocking_section */
+
+
+static void caml_thread_enter_blocking_section(void)
+{
+  /* Save the current runtime state in the thread descriptor
+     of the current thread */
+  caml_thread_save_runtime_state();
+  /* Tell other threads that the runtime is free */
+  st_masterlock_release(&caml_master_lock);
+}
+
+static void caml_thread_leave_blocking_section(void)
+{
+  /* Wait until the runtime is free */
+  st_masterlock_acquire(&caml_master_lock);
+  /* Update curr_thread to point to the thread descriptor corresponding
+     to the thread currently executing */
+  curr_thread = st_tls_get(thread_descriptor_key);
+  /* Restore the runtime state from the curr_thread descriptor */
+  caml_thread_restore_runtime_state();
+}
+
+static int caml_thread_try_leave_blocking_section(void)
+{
+  /* Disable immediate processing of signals (PR#3659).
+     try_leave_blocking_section always fails, forcing the signal to be
+     recorded and processed at the next leave_blocking_section or
+     polling. */
+  return 0;
+}
+
+/* Hook for estimating stack usage */
+
+static uintnat (*prev_stack_usage_hook)(void);
+
+static uintnat caml_thread_stack_usage(void)
+{
+  return 0;
 }
 
 /* Create and setup a new thread info block.
@@ -227,6 +290,20 @@ static caml_thread_t caml_thread_new_info(void)
   th->system_stack_high = NULL;
   th->system_exnptr_offset = 0;
   th->exit_buf = NULL;
+#ifdef WITH_SPACETIME
+  /* CR-someday mshinwell: The commented-out changes here are for multicore,
+     where we think we should have one trie per domain. */
+  th->internal_spacetime_trie_root = Val_unit;
+  th->spacetime_trie_node_ptr =
+    &caml_spacetime_trie_root; /* &th->internal_spacetime_trie_root; */
+  th->internal_spacetime_finaliser_trie_root = Val_unit;
+  th->spacetime_finaliser_trie_root
+    = caml_spacetime_finaliser_trie_root;
+    /* &th->internal_spacetime_finaliser_trie_root; */
+  caml_spacetime_register_thread(
+    th->spacetime_trie_node_ptr,
+    th->spacetime_finaliser_trie_root);
+#endif
 #else
   stack = caml_alloc_shr(Thread_stack_size, Stack_tag);
   Stack_sp(stack) = 0;
@@ -277,7 +354,13 @@ static void caml_thread_remove_info(caml_thread_t th)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   if (th->backtrace_buffer != NULL) free(th->backtrace_buffer);
+#ifndef WITH_SPACETIME
   stat_free(th);
+  /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
+     perhaps have a hook to save a snapshot on thread termination.
+     For the moment we can't even free [th], since it contains the trie
+     roots. */
+#endif
 }
 
 /* Reinitialize the thread machinery after a fork() (PR#4577) */
@@ -351,7 +434,12 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
 
 CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 {
-  if (caml_tick_thread_running) st_thread_kill(caml_tick_thread_id);
+  if (caml_tick_thread_running){
+    caml_tick_thread_stop = 1;
+    st_thread_join(caml_tick_thread_id);
+    caml_tick_thread_stop = 0;
+    caml_tick_thread_running = 0;
+  }
   return Val_unit;
 }
 
@@ -359,6 +447,11 @@ CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 
 static void caml_thread_stop(void)
 {
+  /* PR#5188, PR#7220: some of the global runtime state may have
+     changed as the thread was running, so we save it in the
+     curr_thread data to make sure that the cleanup logic
+     below uses accurate information. */
+  caml_thread_save_runtime_state();
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */

@@ -1,10 +1,13 @@
 #ifndef CAML_DOMAIN_H
 #define CAML_DOMAIN_H
 
+#ifdef CAML_INTERNALS
+
 #include "config.h"
 #include "mlvalues.h"
 #include "domain_state.h"
 #include "memory.h"
+#include "major_gc.h"
 
 struct domain {
   struct dom_internal* internals;
@@ -91,5 +94,6 @@ int caml_global_barrier_is_final(barrier_status);
 void caml_global_barrier_end(barrier_status);
 int caml_global_barrier_num_domains();
 
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_DOMAIN_H */

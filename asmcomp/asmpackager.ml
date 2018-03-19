@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* "Package" a set of .cmx/.o files into one .cmx/.o file having the
    original compilation units as sub-modules. *)
@@ -38,7 +41,7 @@ type pack_member =
 
 let read_member_info pack_path file = (
   let name =
-    String.capitalize(Filename.basename(chop_extensions file)) in
+    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmx" then begin
       let (info, crc) = Compilenv.read_unit_info file in
@@ -75,10 +78,11 @@ let check_units members =
 
 (* Make the .o file for the package *)
 
-let make_package_object ppf members targetobj targetname coercion =
+let make_package_object ppf members targetobj targetname coercion
+      ~backend =
   let objtemp =
     if !Clflags.keep_asm_file
-    then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
+    then Filename.remove_extension targetobj ^ ".pack" ^ Config.ext_obj
     else
       (* Put the full name of the module in the temporary file name
          to avoid collisions with MSVC's link /lib in case of successive
@@ -91,13 +95,34 @@ let make_package_object ppf members targetobj targetname coercion =
         | PM_intf -> None
         | PM_impl _ -> Some(Ident.create_persistent m.pm_name))
       members in
-  Asmgen.compile_implementation
-    (chop_extension_if_any objtemp) ppf
-    (Translmod.transl_store_package
-       components (Ident.create_persistent targetname) coercion);
+  let module_ident = Ident.create_persistent targetname in
+  let source_provenance = Timings.Pack targetname in
+  let prefixname = Filename.remove_extension objtemp in
+  if Config.flambda then begin
+    let size, lam = Translmod.transl_package_flambda components coercion in
+    let flam =
+      Middle_end.middle_end ppf
+        ~source_provenance
+        ~prefixname
+        ~backend
+        ~size
+        ~filename:targetname
+        ~module_ident
+        ~module_initializer:lam
+    in
+    Asmgen.compile_implementation_flambda ~source_provenance
+      prefixname ~backend ~required_globals:Ident.Set.empty ppf flam;
+  end else begin
+    let main_module_block_size, code =
+      Translmod.transl_store_package
+        components (Ident.create_persistent targetname) coercion in
+    Asmgen.compile_implementation_clambda ~source_provenance
+      prefixname ppf { Lambda.code; main_module_block_size;
+                       module_ident; required_globals = Ident.Set.empty }
+  end;
   let objfiles =
     List.map
-      (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
+      (fun m -> Filename.remove_extension m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ok =
     Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
@@ -107,11 +132,23 @@ let make_package_object ppf members targetobj targetname coercion =
 
 (* Make the .cmx file for the package *)
 
+let get_export_info ui =
+  assert(Config.flambda);
+  match ui.ui_export_info with
+  | Clambda _ -> assert false
+  | Flambda info -> info
+
+let get_approx ui =
+  assert(not Config.flambda);
+  match ui.ui_export_info with
+  | Flambda _ -> assert false
+  | Clambda info -> info
+
 let build_package_cmx members cmxfile =
   let unit_names =
     List.map (fun m -> m.pm_name) members in
   let filter lst =
-    List.filter (fun (name, crc) -> not (List.mem name unit_names)) lst in
+    List.filter (fun (name, _crc) -> not (List.mem name unit_names)) lst in
   let union lst =
     List.fold_left
       (List.fold_left
@@ -122,7 +159,42 @@ let build_package_cmx members cmxfile =
       (fun m accu ->
         match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
       members [] in
+  let pack_units =
+    List.fold_left
+      (fun set info ->
+         let unit_id = Compilenv.unit_id_from_name info.ui_name in
+         Compilation_unit.Set.add
+           (Compilenv.unit_for_global unit_id) set)
+      Compilation_unit.Set.empty units in
+  let units =
+    if Config.flambda then
+      List.map (fun info ->
+          { info with
+            ui_export_info =
+              Flambda
+                (Export_info_for_pack.import_for_pack ~pack_units
+                   ~pack:(Compilenv.current_unit ())
+                   (get_export_info info)) })
+        units
+    else
+      units
+  in
   let ui = Compilenv.current_unit_infos() in
+  let ui_export_info =
+    if Config.flambda then
+      let ui_export_info =
+        List.fold_left (fun acc info ->
+            Export_info.merge acc (get_export_info info))
+          (Export_info_for_pack.import_for_pack ~pack_units
+             ~pack:(Compilenv.current_unit ())
+             (get_export_info ui))
+          units
+      in
+      Flambda ui_export_info
+    else
+      Clambda (get_approx ui)
+  in
+  Export_info_for_pack.clear_import_state ();
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;
@@ -134,7 +206,6 @@ let build_package_cmx members cmxfile =
           filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx =
           filter(Asmlink.extract_crc_implementations());
-      ui_approx = ui.ui_approx;
       ui_curry_fun =
           union(List.map (fun info -> info.ui_curry_fun) units);
       ui_apply_fun =
@@ -143,25 +214,26 @@ let build_package_cmx members cmxfile =
           union(List.map (fun info -> info.ui_send_fun) units);
       ui_force_link =
           List.exists (fun info -> info.ui_force_link) units;
+      ui_export_info;
     } in
   Compilenv.write_unit_info pkg_infos cmxfile
 
 (* Make the .cmx and the .o for the package *)
 
 let package_object_files ppf files targetcmx
-                         targetobj targetname coercion =
+                         targetobj targetname coercion ~backend =
   let pack_path =
     match !Clflags.for_package with
     | None -> targetname
     | Some p -> p ^ "." ^ targetname in
   let members = map_left_right (read_member_info pack_path) files in
   check_units members;
-  make_package_object ppf members targetobj targetname coercion;
+  make_package_object ppf members targetobj targetname coercion ~backend;
   build_package_cmx members targetcmx
 
 (* The entry point *)
 
-let package_files ppf initial_env files targetcmx =
+let package_files ppf initial_env files targetcmx ~backend =
   let files =
     List.map
       (fun f ->
@@ -170,16 +242,18 @@ let package_files ppf initial_env files targetcmx =
       files in
   let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
-  let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
-  let targetname = String.capitalize(Filename.basename prefix) in
+  let targetobj = Filename.remove_extension targetcmx ^ Config.ext_obj in
+  let targetname = String.capitalize_ascii(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
   (* Set the name of the current compunit *)
-  Compilenv.reset ?packname:!Clflags.for_package targetname;
+  Compilenv.reset ~source_provenance:(Timings.Pack targetname)
+    ?packname:!Clflags.for_package targetname;
   try
     let coercion =
       Typemod.package_units initial_env files targetcmi targetname in
     package_object_files ppf files targetcmx targetobj targetname coercion
+      ~backend
   with x ->
     remove_file targetcmx; remove_file targetobj;
     raise x

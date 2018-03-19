@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* The bytecode interpreter */
 #include <stdio.h>
@@ -32,6 +36,7 @@
 #include "caml/domain.h"
 #include "caml/globroots.h"
 #include "caml/startup.h"
+#include "caml/params.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -245,7 +250,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
-#include "caml/jumptbl.h"
+#    include "caml/jumptbl.h"
   };
 #endif
 
@@ -876,7 +881,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       if (accu == Val_false) pc += *pc; else pc++;
       Next;
     Instruct(SWITCH): {
-      uint32 sizes = *pc++;
+      uint32_t sizes = *pc++;
       if (Is_block(accu)) {
         intnat index = Tag_val(accu);
         Assert ((uintnat) index < (sizes >> 16));
@@ -1331,9 +1336,13 @@ do_resume:
       Stack_parent(self) = performer;
 
       domain_state->extern_sp = sp;
+#ifdef DEBUG
       value old_stack = caml_switch_stack(parent);
-      sp = domain_state->extern_sp;
       Assert(old_stack == self);
+#else
+      caml_switch_stack(parent);
+#endif
+      sp = domain_state->extern_sp;
 
       domain_state->trap_sp_off = Long_val(sp[0]);
       extra_args = Long_val(sp[1]);

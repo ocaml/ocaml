@@ -1,5 +1,5 @@
-(**** file testinterp/t301-object.ml 
-   suggested by Jacques Garrigue to Basile Starynkevitch 
+(**** file testinterp/t301-object.ml
+   suggested by Jacques Garrigue to Basile Starynkevitch
 
    compilable with
 ocamlc -nostdlib -I ../../stdlib \

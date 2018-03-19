@@ -1,68 +1,25 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-open Config
 open Clflags
 open Compenv
 
-let process_interface_file ppf name =
-  Compile.interface ppf name (output_prefix name)
-
-let process_implementation_file ppf name =
-  let opref = output_prefix name in
-  Compile.implementation ppf name opref;
-  objfiles := (opref ^ ".cmo") :: !objfiles
-
-let process_file ppf name =
-  if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then begin
-    let opref = output_prefix name in
-    Compile.implementation ppf name opref;
-    objfiles := (opref ^ ".cmo") :: !objfiles
-  end
-  else if Filename.check_suffix name !Config.interface_suffix then begin
-    let opref = output_prefix name in
-    Compile.interface ppf name opref;
-    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
-  end
-  else if Filename.check_suffix name ".cmo"
-       || Filename.check_suffix name ".cma" then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ".cmi" && !make_package then
-    objfiles := name :: !objfiles
-  else if Filename.check_suffix name ext_obj
-       || Filename.check_suffix name ext_lib then
-    ccobjs := name :: !ccobjs
-  else if Filename.check_suffix name ext_dll then
-    dllibs := name :: !dllibs
-  else if Filename.check_suffix name ".c" then begin
-    Compile.c_file name;
-    ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-              :: !ccobjs
-  end
-  else
-    raise(Arg.Bad("don't know what to do with " ^ name))
-
 let usage = "Usage: ocamlc <options> <files>\nOptions are:"
 
-let ppf = Format.err_formatter
-
 (* Error messages to standard error formatter *)
-let anonymous filename =
-  readenv ppf Before_compile; process_file ppf filename;;
-let impl filename =
-  readenv ppf Before_compile; process_implementation_file ppf filename;;
-let intf filename =
-  readenv ppf Before_compile; process_interface_file ppf filename;;
+let ppf = Format.err_formatter
 
 let show_config () =
   Config.print_config stdout;
@@ -78,13 +35,13 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _binannot = set binary_annotations
   let _c = set compile_only
   let _cc s = c_compiler := Some s
-  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
+  let _cclib s = Compenv.defer (ProcessObjects (Misc.rev_split_words s))
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _compat_32 = set bytecode_compatible_32
   let _config = show_config
   let _custom = set custom_runtime
   let _no_check_prims = set no_check_prims
-  let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
+  let _dllib s = defer (ProcessDLLs (Misc.rev_split_words s))
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _for_pack s = for_package := Some s
   let _g = set debug
@@ -94,34 +51,48 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
+  let _no_keep_docs = unset keep_docs
   let _keep_locs = set keep_locs
+  let _no_keep_locs = unset keep_locs
   let _labels = unset classic
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _alias_deps = unset transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _app_funct = set applicative_functors
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
   let _o s = output_name := Some s
+  let _opaque = set opaque
   let _open s = open_modules := s :: !open_modules
   let _output_obj () = output_c_object := true; custom_runtime := true
   let _output_complete_obj () =
-    output_c_object := true; output_complete_object := true; custom_runtime := true
+    output_c_object := true;
+    output_complete_object := true;
+    custom_runtime := true
   let _pack = set make_package
   let _pp s = preprocessor := Some s
   let _ppx s = first_ppx := s :: !first_ppx
+  let _plugin p = Compplugin.load p
   let _principal = set principal
+  let _no_principal = unset principal
   let _rectypes = set recursive_types
+  let _no_rectypes = unset recursive_types
   let _runtime_variant s = runtime_variant := s
   let _safe_string = unset unsafe_string
   let _short_paths = unset real_paths
   let _strict_sequence = set strict_sequence
+  let _no_strict_sequence = unset strict_sequence
   let _strict_formats = set strict_formats
+  let _no_strict_formats = unset strict_formats
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
+  let _unboxed_types = set unboxed_types
+  let _no_unboxed_types = unset unboxed_types
   let _unsafe = set fast
   let _unsafe_string = set unsafe_string
   let _use_prims s = use_prims := s
@@ -132,6 +103,11 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
+  let _color option =
+    begin match Clflags.parse_color_setting option with
+          | None -> ()
+          | Some setting -> Clflags.color := setting
+    end
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
@@ -141,6 +117,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _dtimings = set print_timings
   let anonymous = anonymous
 end)
 
@@ -148,6 +125,20 @@ let main () =
   try
     readenv ppf Before_args;
     Arg.parse Options.list anonymous usage;
+    begin try
+      Compenv.process_deferred_actions
+        (ppf,
+         Compile.implementation,
+         Compile.interface,
+         ".cmo",
+         ".cma");
+    with Arg.Bad msg ->
+      begin
+        prerr_endline msg;
+        Arg.usage Options.list usage;
+        exit 2
+      end
+    end;
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
@@ -161,14 +152,15 @@ let main () =
     if !make_archive then begin
       Compmisc.init_path false;
 
-      Bytelibrarian.create_archive ppf  (Compenv.get_objfiles ())
+      Bytelibrarian.create_archive ppf
+                                   (Compenv.get_objfiles ~with_ocamlparam:false)
                                    (extract_output !output_name);
       Warnings.check_fatal ();
     end
     else if !make_package then begin
       Compmisc.init_path false;
       let extracted_output = extract_output !output_name in
-      let revd = get_objfiles () in
+      let revd = get_objfiles ~with_ocamlparam:false in
       Bytepackager.package_files ppf (Compmisc.initial_env ())
         revd (extracted_output);
       Warnings.check_fatal ();
@@ -191,16 +183,14 @@ let main () =
           default_output !output_name
       in
       Compmisc.init_path false;
-      Bytelink.link ppf (get_objfiles ()) target;
+      Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
-    exit 0
   with x ->
     Location.report_exception ppf x;
     exit 2
 
-let _ = main ()
-
-
-
-
+let _ =
+  Timings.(time All) main ();
+  if !Clflags.print_timings then Timings.print Format.std_formatter;
+  exit 0

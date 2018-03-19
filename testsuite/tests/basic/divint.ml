@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Printf
 
 (* Test integer division and modulus, esp. ocamlopt's optimization
@@ -87,30 +75,63 @@ let _ =
   printf "12 int\n"; WithInt.do_test 12 (fun x -> x / 12)(fun x -> x mod 12);
   printf "25 int\n"; WithInt.do_test 25 (fun x -> x / 25)(fun x -> x mod 25);
   printf "55 int\n"; WithInt.do_test 55 (fun x -> x / 55)(fun x -> x mod 55);
-  printf "125 int\n"; WithInt.do_test 125 (fun x -> x / 125)(fun x -> x mod 125);
-  printf "625 int\n"; WithInt.do_test 625 (fun x -> x / 625)(fun x -> x mod 625);
-  printf "-1 int\n"; WithInt.do_test (-1) (fun x -> x / (-1))(fun x -> x mod (-1));
-  printf "-2 int\n"; WithInt.do_test (-2) (fun x -> x / (-2))(fun x -> x mod (-2));
-  printf "-3 int\n"; WithInt.do_test (-3) (fun x -> x / (-3))(fun x -> x mod (-3));
+  printf "125 int\n";
+  WithInt.do_test 125 (fun x -> x / 125)(fun x -> x mod 125);
+  printf "625 int\n";
+  WithInt.do_test 625 (fun x -> x / 625)(fun x -> x mod 625);
+  printf "-1 int\n";
+  WithInt.do_test (-1) (fun x -> x / (-1))(fun x -> x mod (-1));
+  printf "-2 int\n";
+  WithInt.do_test (-2) (fun x -> x / (-2))(fun x -> x mod (-2));
+  printf "-3 int\n";
+  WithInt.do_test (-3) (fun x -> x / (-3))(fun x -> x mod (-3));
 
-  printf "1 nat\n"; WithNat.do_test 1 (fun x -> Nativeint.div x 1n)(fun x -> Nativeint.rem x 1n);
-  printf "2 nat\n"; WithNat.do_test 2 (fun x -> Nativeint.div x 2n)(fun x -> Nativeint.rem x 2n);
-  printf "3 nat\n"; WithNat.do_test 3 (fun x -> Nativeint.div x 3n)(fun x -> Nativeint.rem x 3n);
-  printf "4 nat\n"; WithNat.do_test 4 (fun x -> Nativeint.div x 4n)(fun x -> Nativeint.rem x 4n);
-  printf "5 nat\n"; WithNat.do_test 5 (fun x -> Nativeint.div x 5n)(fun x -> Nativeint.rem x 5n);
-  printf "6 nat\n"; WithNat.do_test 6 (fun x -> Nativeint.div x 6n)(fun x -> Nativeint.rem x 6n);
-  printf "7 nat\n"; WithNat.do_test 7 (fun x -> Nativeint.div x 7n)(fun x -> Nativeint.rem x 7n);
-  printf "9 nat\n"; WithNat.do_test 9 (fun x -> Nativeint.div x 9n)(fun x -> Nativeint.rem x 9n);
-  printf "10 nat\n"; WithNat.do_test 10 (fun x -> Nativeint.div x 10n)(fun x -> Nativeint.rem x 10n);
-  printf "11 nat\n"; WithNat.do_test 11 (fun x -> Nativeint.div x 11n)(fun x -> Nativeint.rem x 11n);
-  printf "12 nat\n"; WithNat.do_test 12 (fun x -> Nativeint.div x 12n)(fun x -> Nativeint.rem x 12n);
-  printf "25 nat\n"; WithNat.do_test 25 (fun x -> Nativeint.div x 25n)(fun x -> Nativeint.rem x 25n);
-  printf "55 nat\n"; WithNat.do_test 55 (fun x -> Nativeint.div x 55n)(fun x -> Nativeint.rem x 55n);
-  printf "125 nat\n"; WithNat.do_test 125 (fun x -> Nativeint.div x 125n)(fun x -> Nativeint.rem x 125n);
-  printf "625 nat\n"; WithNat.do_test 625 (fun x -> Nativeint.div x 625n)(fun x -> Nativeint.rem x 625n);
-  printf "-1 nat\n"; WithNat.do_test (-1) (fun x -> Nativeint.div x (-1n))(fun x -> Nativeint.rem x (-1n));
-  printf "-2 nat\n"; WithNat.do_test (-2) (fun x -> Nativeint.div x (-2n))(fun x -> Nativeint.rem x (-2n));
-  printf "-3 nat\n"; WithNat.do_test (-3) (fun x -> Nativeint.div x (-3n))(fun x -> Nativeint.rem x (-3n));
+  printf "1 nat\n";
+  WithNat.do_test 1 (fun x -> Nativeint.div x 1n)(fun x -> Nativeint.rem x 1n);
+  printf "2 nat\n";
+  WithNat.do_test 2 (fun x -> Nativeint.div x 2n)(fun x -> Nativeint.rem x 2n);
+  printf "3 nat\n";
+  WithNat.do_test 3 (fun x -> Nativeint.div x 3n)(fun x -> Nativeint.rem x 3n);
+  printf "4 nat\n";
+  WithNat.do_test 4 (fun x -> Nativeint.div x 4n)(fun x -> Nativeint.rem x 4n);
+  printf "5 nat\n";
+  WithNat.do_test 5 (fun x -> Nativeint.div x 5n)(fun x -> Nativeint.rem x 5n);
+  printf "6 nat\n";
+  WithNat.do_test 6 (fun x -> Nativeint.div x 6n)(fun x -> Nativeint.rem x 6n);
+  printf "7 nat\n";
+  WithNat.do_test 7 (fun x -> Nativeint.div x 7n)(fun x -> Nativeint.rem x 7n);
+  printf "9 nat\n";
+  WithNat.do_test 9 (fun x -> Nativeint.div x 9n)(fun x -> Nativeint.rem x 9n);
+  printf "10 nat\n";
+  WithNat.do_test 10 (fun x -> Nativeint.div x 10n)
+                     (fun x -> Nativeint.rem x 10n);
+  printf "11 nat\n";
+  WithNat.do_test 11 (fun x -> Nativeint.div x 11n)
+                     (fun x -> Nativeint.rem x 11n);
+  printf "12 nat\n";
+  WithNat.do_test 12 (fun x -> Nativeint.div x 12n)
+                     (fun x -> Nativeint.rem x 12n);
+  printf "25 nat\n";
+  WithNat.do_test 25 (fun x -> Nativeint.div x 25n)
+                     (fun x -> Nativeint.rem x 25n);
+  printf "55 nat\n";
+  WithNat.do_test 55 (fun x -> Nativeint.div x 55n)
+                     (fun x -> Nativeint.rem x 55n);
+  printf "125 nat\n";
+  WithNat.do_test 125 (fun x -> Nativeint.div x 125n)
+                      (fun x -> Nativeint.rem x 125n);
+  printf "625 nat\n";
+  WithNat.do_test 625 (fun x -> Nativeint.div x 625n)
+                      (fun x -> Nativeint.rem x 625n);
+  printf "-1 nat\n";
+  WithNat.do_test (-1) (fun x -> Nativeint.div x (-1n))
+                       (fun x -> Nativeint.rem x (-1n));
+  printf "-2 nat\n";
+  WithNat.do_test (-2) (fun x -> Nativeint.div x (-2n))
+                       (fun x -> Nativeint.rem x (-2n));
+  printf "-3 nat\n";
+  WithNat.do_test (-3) (fun x -> Nativeint.div x (-3n))
+                       (fun x -> Nativeint.rem x (-3n));
 
   if !error then printf "TEST FAILED.\n" else printf "Test passed.\n"
 

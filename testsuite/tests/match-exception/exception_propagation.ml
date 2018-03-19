@@ -3,7 +3,7 @@
 *)
 let () =
   try
-    match 
+    match
       (let _ = raise Not_found in
        assert false)
     with

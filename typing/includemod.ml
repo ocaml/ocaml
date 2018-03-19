@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Inclusion checks for the module language *)
 
@@ -179,8 +182,9 @@ let rec print_coercion ppf c =
       pr "@[<2>functor@ (%a)@ (%a)@]"
         print_coercion inp
         print_coercion out
-  | Tcoerce_primitive pd ->
-      pr "prim %s" pd.Primitive.prim_name
+  | Tcoerce_primitive {pc_desc; pc_env = _; pc_type}  ->
+      pr "prim %s@ (%a)" pc_desc.Primitive.prim_name
+        Printtyp.raw_type_expr pc_type
   | Tcoerce_alias (p, c) ->
       pr "@[<2>alias %a@ (%a)@]"
         Printtyp.path p
@@ -223,29 +227,50 @@ let rec modtypes env cxt subst mty1 mty2 =
 
 and try_modtypes env cxt subst mty1 mty2 =
   match (mty1, mty2) with
-  | (Mty_alias p1, Mty_alias p2) ->
+  | (Mty_alias(pres1, p1), Mty_alias(pres2, p2)) -> begin
       if Env.is_functor_arg p2 env then
         raise (Error[cxt, env, Invalid_module_alias p2]);
-      if Path.same p1 p2 then Tcoerce_none else
-      let p1 = Env.normalize_path None env p1
-      and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
-      (* Should actually be Tcoerce_ignore, if it existed *)
-      if Path.same p1 p2 then Tcoerce_none else raise Dont_match
-  | (Mty_alias p1, _) ->
+      if not (Path.same p1 p2) then begin
+        let p1 = Env.normalize_path None env p1
+        and p2 = Env.normalize_path None env (Subst.module_path subst p2) in
+        if not (Path.same p1 p2) then raise Dont_match
+      end;
+      match pres1, pres2 with
+      | Mta_present, Mta_present -> Tcoerce_none
+        (* Should really be Tcoerce_ignore if it existed *)
+      | Mta_absent, Mta_absent -> Tcoerce_none
+        (* Should really be Tcoerce_empty if it existed *)
+      | Mta_present, Mta_absent -> Tcoerce_none
+      | Mta_absent, Mta_present ->
+        let p1 = try
+            Env.normalize_path (Some Location.none) env p1
+          with Env.Error (Env.Missing_module (_, _, path)) ->
+            raise (Error[cxt, env, Unbound_module_path path])
+        in
+        Tcoerce_alias (p1, Tcoerce_none)
+    end
+  | (Mty_alias(pres1, p1), _) -> begin
       let p1 = try
         Env.normalize_path (Some Location.none) env p1
       with Env.Error (Env.Missing_module (_, _, path)) ->
         raise (Error[cxt, env, Unbound_module_path path])
       in
-      let mty1 = Mtype.strengthen env (expand_module_alias env cxt p1) p1 in
-      Tcoerce_alias (p1, modtypes env cxt subst mty1 mty2)
+      let mty1 =
+        Mtype.strengthen ~aliasable:true env
+          (expand_module_alias env cxt p1) p1
+      in
+      let cc = modtypes env cxt subst mty1 mty2 in
+      match pres1 with
+      | Mta_present -> cc
+      | Mta_absent -> Tcoerce_alias (p1, cc)
+    end
   | (Mty_ident p1, _) when may_expand_module_path env p1 ->
       try_modtypes env cxt subst (expand_module_path env cxt p1) mty2
-  | (_, Mty_ident p2) ->
+  | (_, Mty_ident _) ->
       try_modtypes2 env cxt mty1 (Subst.modtype subst mty2)
   | (Mty_signature sig1, Mty_signature sig2) ->
       signatures env cxt subst sig1 sig2
-  | (Mty_functor(param1, None, res1), Mty_functor(param2, None, res2)) ->
+  | (Mty_functor(param1, None, res1), Mty_functor(_param2, None, res2)) ->
       begin match modtypes env (Body param1::cxt) subst res1 res2 with
         Tcoerce_none -> Tcoerce_none
       | cc -> Tcoerce_functor (Tcoerce_none, cc)
@@ -267,19 +292,21 @@ and try_modtypes env cxt subst mty1 mty2 =
 and try_modtypes2 env cxt mty1 mty2 =
   (* mty2 is an identifier *)
   match (mty1, mty2) with
-    (Mty_ident p1, Mty_ident p2) when Path.same p1 p2 ->
+    (Mty_ident p1, Mty_ident p2)
+    when Path.same (Env.normalize_path_prefix None env p1)
+                   (Env.normalize_path_prefix None env p2) ->
       Tcoerce_none
-  | (_, Mty_ident p2) ->
+  | (_, Mty_ident p2) when may_expand_module_path env p2 ->
       try_modtypes env cxt Subst.identity mty1 (expand_module_path env cxt p2)
   | (_, _) ->
-      assert false
+      raise Dont_match
 
 (* Inclusion between signatures *)
 
 and signatures env cxt subst sig1 sig2 =
   (* Environment used to check inclusion of components *)
   let new_env =
-    Env.add_signature sig1 (Env.in_signature env) in
+    Env.add_signature sig1 (Env.in_signature true env) in
   (* Keep ids for module aliases *)
   let (id_pos_list,_) =
     List.fold_left
@@ -368,32 +395,35 @@ and signature_components old_env env cxt subst paired =
   let comps_rec rem = signature_components old_env env cxt subst rem in
   match paired with
     [] -> []
-  | (Sig_value(id1, valdecl1), Sig_value(id2, valdecl2), pos) :: rem ->
+  | (Sig_value(id1, valdecl1), Sig_value(_id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env cxt subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
-        Val_prim p -> comps_rec rem
+        Val_prim _ -> comps_rec rem
       | _ -> (pos, cc) :: comps_rec rem
       end
-  | (Sig_type(id1, tydecl1, _), Sig_type(id2, tydecl2, _), pos) :: rem ->
+  | (Sig_type(id1, tydecl1, _), Sig_type(_id2, tydecl2, _), _pos) :: rem ->
       type_declarations ~old_env env cxt subst id1 tydecl1 tydecl2;
       comps_rec rem
-  | (Sig_typext(id1, ext1, _), Sig_typext(id2, ext2, _), pos)
+  | (Sig_typext(id1, ext1, _), Sig_typext(_id2, ext2, _), pos)
     :: rem ->
       extension_constructors env cxt subst id1 ext1 ext2;
       (pos, Tcoerce_none) :: comps_rec rem
-  | (Sig_module(id1, mty1, _), Sig_module(id2, mty2, _), pos) :: rem ->
+  | (Sig_module(id1, mty1, _), Sig_module(_id2, mty2, _), pos) :: rem ->
+      let p1 = Pident id1 in
+      Env.mark_module_used env (Ident.name id1) mty1.md_loc;
       let cc =
         modtypes env (Module id1::cxt) subst
-          (Mtype.strengthen env mty1.md_type (Pident id1)) mty2.md_type in
+          (Mtype.strengthen ~aliasable:true env mty1.md_type p1) mty2.md_type
+      in
       (pos, cc) :: comps_rec rem
-  | (Sig_modtype(id1, info1), Sig_modtype(id2, info2), pos) :: rem ->
+  | (Sig_modtype(id1, info1), Sig_modtype(_id2, info2), _pos) :: rem ->
       modtype_infos env cxt subst id1 info1 info2;
       comps_rec rem
-  | (Sig_class(id1, decl1, _), Sig_class(id2, decl2, _), pos) :: rem ->
+  | (Sig_class(id1, decl1, _), Sig_class(_id2, decl2, _), pos) :: rem ->
       class_declarations ~old_env env cxt subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: comps_rec rem
   | (Sig_class_type(id1, info1, _),
-     Sig_class_type(id2, info2, _), pos) :: rem ->
+     Sig_class_type(_id2, info2, _), _pos) :: rem ->
       class_type_declarations ~old_env env cxt subst id1 info1 info2;
       comps_rec rem
   | _ ->
@@ -407,7 +437,7 @@ and modtype_infos env cxt subst id info1 info2 =
   try
     match (info1.mtd_type, info2.mtd_type) with
       (None, None) -> ()
-    | (Some mty1, None) -> ()
+    | (Some _, None) -> ()
     | (Some mty1, Some mty2) ->
         check_modtype_equiv env cxt' mty1 mty2
     | (None, Some mty2) ->
@@ -421,15 +451,27 @@ and check_modtype_equiv env cxt mty1 mty2 =
      modtypes env cxt Subst.identity mty2 mty1)
   with
     (Tcoerce_none, Tcoerce_none) -> ()
-  | (_, _) -> raise(Error [cxt, env, Modtype_permutation])
+  | (_c1, _c2) ->
+      (* Format.eprintf "@[c1 = %a@ c2 = %a@]@."
+        print_coercion _c1 print_coercion _c2; *)
+      raise(Error [cxt, env, Modtype_permutation])
 
 (* Simplified inclusion check between module types (for Env) *)
 
+let can_alias env path =
+  let rec no_apply = function
+    | Pident _ -> true
+    | Pdot(p, _, _) -> no_apply p
+    | Papply _ -> false
+  in
+  no_apply path && not (Env.is_functor_arg path env)
+
 let check_modtype_inclusion env mty1 path1 mty2 =
   try
+    let aliasable = can_alias env path1 in
     ignore(modtypes env [] Subst.identity
-                    (Mtype.strengthen env mty1 path1) mty2)
-  with Error reasons ->
+                    (Mtype.strengthen ~aliasable env mty1 path1) mty2)
+  with Error _ ->
     raise Not_found
 
 let _ = Env.check_modtype_inclusion := check_modtype_inclusion

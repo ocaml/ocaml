@@ -1,20 +1,25 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*           Xavier Leroy, projet Cristal, INRIA Rocquencourt          */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Unix-specific stuff */
 
 #define _GNU_SOURCE
            /* Helps finding RTLD_DEFAULT in glibc */
+           /* also secure_getenv */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -24,6 +29,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <time.h>
+#include <errno.h>
 #include "caml/config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef __CYGWIN__
@@ -40,13 +46,70 @@
 #else
 #include <sys/dir.h>
 #endif
+#include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/osdeps.h"
+#include "caml/signals.h"
+#include "caml/sys.h"
+#include "caml/io.h"
 
 #ifndef S_ISREG
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
+
+#ifndef EINTR
+#define EINTR (-1)
+#endif
+#ifndef EAGAIN
+#define EAGAIN (-1)
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK (-1)
+#endif
+
+int caml_read_fd(int fd, int flags, void * buf, int n)
+{
+  int retcode;
+  do {
+    caml_enter_blocking_section();
+    retcode = read(fd, buf, n);
+    caml_leave_blocking_section();
+  } while (retcode == -1 && errno == EINTR);
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  return retcode;
+}
+
+int caml_write_fd(int fd, int flags, void * buf, int n)
+{
+  int retcode;
+ again:
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  if (flags & CHANNEL_FLAG_BLOCKING_WRITE) {
+    retcode = write(fd, buf, n);
+  } else {
+#endif
+  caml_enter_blocking_section();
+  retcode = write(fd, buf, n);
+  caml_leave_blocking_section();
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  }
+#endif
+  if (retcode == -1) {
+    if (errno == EINTR) goto again;
+    if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
+      /* We couldn't do a partial write here, probably because
+         n <= PIPE_BUF and POSIX says that writes of less than
+         PIPE_BUF characters must be atomic.
+         We first try again with a partial write of 1 character.
+         If that fails too, we'll return an error code. */
+      n = 1; goto again;
+    }
+  }
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
+  CAMLassert (retcode > 0);
+  return retcode;
+}
 
 char * caml_decompose_path(struct ext_table * tbl, const char * path)
 {
@@ -274,7 +337,7 @@ char * caml_dlerror(void)
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */
 
-int caml_read_directory(char * dirname, struct ext_table * contents)
+CAMLexport int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   DIR * d;
 #ifdef HAS_DIRENT
@@ -323,21 +386,38 @@ int caml_executable_name(char * name, int name_len)
 
 #endif
 
-int64 caml_time_counter(void)
+int64_t caml_time_counter(void)
 {
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK != (-1)
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return
-    (int64)t.tv_sec  * (int64)1000000000 +
-    (int64)t.tv_nsec;
+    (int64_t)t.tv_sec  * (int64_t)1000000000 +
+    (int64_t)t.tv_nsec;
 #elif defined(HAS_GETTIMEOFDAY)
   struct timeval t;
   gettimeofday(&t, 0);
   return
-    (int64)t.tv_sec  * (int64)1000000000 +
-    (int64)t.tv_usec * (int64)1000;
+    (int64_t)t.tv_sec  * (int64_t)1000000000 +
+    (int64_t)t.tv_usec * (int64_t)1000;
 #else
 # error "No timesource available"
+#endif
+}
+
+char *caml_secure_getenv (char const *var)
+{
+#ifdef HAS_SECURE_GETENV
+  return secure_getenv (var);
+#elif defined(HAS_ISSETUGID)
+  if (!issetugid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
+#else
+  if (geteuid () == getuid () && getegid () == getgid ())
+    return CAML_SYS_GETENV (var);
+  else
+    return NULL;
 #endif
 }

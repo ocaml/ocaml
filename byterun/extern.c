@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Structured output */
 
@@ -17,6 +21,7 @@
 
 #include <string.h>
 #include "caml/alloc.h"
+#include "caml/config.h"
 #include "caml/custom.h"
 #include "caml/fail.h"
 #include "caml/gc.h"
@@ -61,10 +66,22 @@ static struct extern_item * extern_stack_limit = extern_stack_init
 
 /* Forward declarations */
 
-static void extern_out_of_memory(void);
-static void extern_invalid_argument(char *msg);
-static void extern_failwith(char *msg);
-static void extern_stack_overflow(void);
+CAMLnoreturn_start
+static void extern_out_of_memory(void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+static void extern_invalid_argument(char *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+static void extern_failwith(char *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+static void extern_stack_overflow(void)
+CAMLnoreturn_end;
+
 static void free_extern_output(void);
 
 /* Free the extern stack if needed */
@@ -217,26 +234,47 @@ static void extern_stack_overflow(void)
   caml_raise_out_of_memory();
 }
 
+/* Conversion to big-endian */
+
+static inline void store16(char * dst, int n)
+{
+  dst[0] = n >> 8;  dst[1] = n;
+}
+
+static inline void store32(char * dst, intnat n)
+{
+  dst[0] = n >> 24;  dst[1] = n >> 16;  dst[2] = n >> 8;  dst[3] = n;
+}
+
+static inline void store64(char * dst, int64_t n)
+{
+  dst[0] = n >> 56;  dst[1] = n >> 48;  dst[2] = n >> 40;  dst[3] = n >> 32;
+  dst[4] = n >> 24;  dst[5] = n >> 16;  dst[6] = n >> 8;   dst[7] = n;
+}
+
 /* Write characters, integers, and blocks in the output buffer */
 
-#define Write(c) \
-  if (extern_ptr >= extern_limit) grow_extern_output(1); \
-  *extern_ptr++ = (c)
+static inline void write(int c)
+{
+  if (extern_ptr >= extern_limit) grow_extern_output(1);
+  *extern_ptr++ = c;
+}
 
-static void writeblock(char *data, intnat len)
+static void writeblock(char * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
-  memmove(extern_ptr, data, len);
+  memcpy(extern_ptr, data, len);
   extern_ptr += len;
 }
 
+static inline void writeblock_float8(double * data, intnat ndoubles)
+{
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567 || ARCH_FLOAT_ENDIANNESS == 0x76543210
-#define writeblock_float8(data,ndoubles) \
-  writeblock((char *)(data), (ndoubles) * 8)
+  writeblock((char *) data, ndoubles * 8);
 #else
-#define writeblock_float8(data,ndoubles) \
-  caml_serialize_block_float_8((data), (ndoubles))
+  caml_serialize_block_float_8(data, ndoubles);
 #endif
+}
 
 static void writecode8(int code, intnat val)
 {
@@ -250,43 +288,31 @@ static void writecode16(int code, intnat val)
 {
   if (extern_ptr + 3 > extern_limit) grow_extern_output(3);
   extern_ptr[0] = code;
-  extern_ptr[1] = val >> 8;
-  extern_ptr[2] = val;
+  store16(extern_ptr + 1, val);
   extern_ptr += 3;
-}
-
-static void write32(intnat val)
-{
-  if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
-  extern_ptr[0] = val >> 24;
-  extern_ptr[1] = val >> 16;
-  extern_ptr[2] = val >> 8;
-  extern_ptr[3] = val;
-  extern_ptr += 4;
 }
 
 static void writecode32(int code, intnat val)
 {
   if (extern_ptr + 5 > extern_limit) grow_extern_output(5);
   extern_ptr[0] = code;
-  extern_ptr[1] = val >> 24;
-  extern_ptr[2] = val >> 16;
-  extern_ptr[3] = val >> 8;
-  extern_ptr[4] = val;
+  store32(extern_ptr + 1, val);
   extern_ptr += 5;
 }
 
 #ifdef ARCH_SIXTYFOUR
 static void writecode64(int code, intnat val)
 {
-  int i;
   if (extern_ptr + 9 > extern_limit) grow_extern_output(9);
-  *extern_ptr ++ = code;
-  for (i = 64 - 8; i >= 0; i -= 8) *extern_ptr++ = val >> i;
+  extern_ptr[0] = code;
+  store64(extern_ptr + 1, val);
+  extern_ptr += 9;
 }
 #endif
 
 /* Marshal the given value in the output buffer */
+
+int caml_extern_allow_out_of_heap = 0;
 
 static void extern_rec(value v)
 {
@@ -297,7 +323,7 @@ static void extern_rec(value v)
   if (Is_long(v)) {
     intnat n = Long_val(v);
     if (n >= 0 && n < 0x40) {
-      Write(PREFIX_SMALL_INT + n);
+      write(PREFIX_SMALL_INT + n);
     } else if (n >= -(1 << 7) && n < (1 << 7)) {
       writecode8(CODE_INT8, n);
     } else if (n >= -(1 << 15) && n < (1 << 15)) {
@@ -333,9 +359,13 @@ static void extern_rec(value v)
        in the externed block, and they are automatically shared. */
     if (sz == 0) {
       if (tag < 16) {
-        Write(PREFIX_SMALL_BLOCK + tag);
+        write(PREFIX_SMALL_BLOCK + tag);
       } else {
+#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
         writecode32(CODE_BLOCK32, hd);
+#else
+        writecode32(CODE_BLOCK32, Hd_no_profinfo(hd));
+#endif
       }
       goto next_item;
     }
@@ -351,6 +381,10 @@ static void extern_rec(value v)
         writecode8(CODE_SHARED8, d);
       } else if (d < 0x10000) {
         writecode16(CODE_SHARED16, d);
+#ifdef ARCH_SIXTYFOUR
+      } else if (d >= (uintnat)1 << 32) {
+        writecode64(CODE_SHARED64, d);
+#endif
       } else {
         writecode32(CODE_SHARED32, d);
       }
@@ -362,7 +396,7 @@ static void extern_rec(value v)
     case String_tag: {
       mlsize_t len = caml_string_length(v);
       if (len < 0x20) {
-        Write(PREFIX_SMALL_STRING + len);
+        write(PREFIX_SMALL_STRING + len);
       } else if (len < 0x100) {
         writecode8(CODE_STRING8, len);
       } else {
@@ -370,8 +404,13 @@ static void extern_rec(value v)
         if (len > 0xFFFFFB && (extern_flags & COMPAT_32))
           extern_failwith("output_value: string cannot be read back on "
                           "32-bit platform");
-#endif
+        if (len < (uintnat)1 << 32)
+          writecode32(CODE_STRING32, len);
+        else
+          writecode64(CODE_STRING64, len);
+#else
         writecode32(CODE_STRING32, len);
+#endif
       }
       writeblock(String_val(v), len);
       size_32 += 1 + (len + 4) / 4;
@@ -382,7 +421,7 @@ static void extern_rec(value v)
     case Double_tag: {
       if (sizeof(double) != 8)
         extern_invalid_argument("output_value: non-standard floats");
-      Write(CODE_DOUBLE_NATIVE);
+      write(CODE_DOUBLE_NATIVE);
       writeblock_float8((double *) v, 1);
       size_32 += 1 + 2;
       size_64 += 1 + 1;
@@ -401,8 +440,13 @@ static void extern_rec(value v)
         if (nfloats > 0x1FFFFF && (extern_flags & COMPAT_32))
           extern_failwith("output_value: float array cannot be read back on "
                           "32-bit platform");
-#endif
+        if (nfloats < (uintnat) 1 << 32)
+          writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+        else
+          writecode64(CODE_DOUBLE_ARRAY64_NATIVE, nfloats);
+#else
         writecode32(CODE_DOUBLE_ARRAY32_NATIVE, nfloats);
+#endif
       }
       writeblock_float8((double *) v, nfloats);
       size_32 += 1 + nfloats * 2;
@@ -433,12 +477,12 @@ static void extern_rec(value v)
     case Custom_tag: {
       uintnat sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, uintnat * wsize_32,
-                        uintnat * wsize_64)
+      void (*serialize)(value v, uintnat * bsize_32,
+                        uintnat * bsize_64)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");
-      Write(CODE_CUSTOM);
+      write(CODE_CUSTOM);
       writeblock(ident, strlen(ident) + 1);
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */
@@ -449,19 +493,24 @@ static void extern_rec(value v)
     default: {
       value field0;
       if (tag < 16 && sz < 8) {
-        Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
-#ifdef ARCH_SIXTYFOUR
-      } else if (hd >= ((uintnat)1 << 32)) {
-        /* Is this case useful?  The overflow check in extern_value will fail.*/
-        writecode64(CODE_BLOCK64, Whitehd_hd (hd));
-#endif
+        write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
       } else {
 #ifdef ARCH_SIXTYFOUR
+#if !(defined(NATIVE_CODE) && defined(WITH_SPACETIME))
+        header_t hd_erased = hd;
+#else
+        header_t hd_erased = Hd_no_profinfo(hd);
+#endif
         if (sz > 0x3FFFFF && (extern_flags & COMPAT_32))
           extern_failwith("output_value: array cannot be read back on "
                           "32-bit platform");
-#endif
+        if (hd_erased < (uintnat)1 << 32)
+          writecode32(CODE_BLOCK32, Whitehd_hd (hd_erased));
+        else
+          writecode64(CODE_BLOCK64, Whitehd_hd (hd_erased));
+#else
         writecode32(CODE_BLOCK32, Whitehd_hd (hd));
+#endif
       }
       size_32 += 1 + sz;
       size_64 += 1 + sz;
@@ -495,7 +544,9 @@ static void extern_rec(value v)
 
 static int extern_flag_values[] = { NO_SHARING, CLOSURES, COMPAT_32 };
 
-static intnat extern_value(value v, value flags)
+static intnat extern_value(value v, value flags,
+                           /*out*/ char header[32],
+                           /*out*/ int * header_len)
 {
   intnat res_len;
   /* Parse flag list */
@@ -505,10 +556,6 @@ static intnat extern_value(value v, value flags)
   obj_counter = 0;
   size_32 = 0;
   size_64 = 0;
-  /* Write magic number */
-  write32(Intext_magic_number);
-  /* Set aside space for the sizes */
-  extern_ptr += 4*4;
   /* Marshal the object */
   extern_rec(v);
   /* Record end of output */
@@ -520,38 +567,47 @@ static intnat extern_value(value v, value flags)
 #ifdef ARCH_SIXTYFOUR
   if (res_len >= ((intnat)1 << 32) ||
       size_32 >= ((intnat)1 << 32) || size_64 >= ((intnat)1 << 32)) {
-    /* The object is so big its size cannot be written in the header.
-       Besides, some of the array lengths or string lengths or shared offsets
-       it contains may have overflowed the 32 bits used to write them. */
-    free_extern_output();
-    caml_failwith("output_value: object too big");
+    /* The object is too big for the small header format.
+       Fail if we are in compat32 mode, or use big header. */
+    if (extern_flags & COMPAT_32) {
+      free_extern_output();
+      caml_failwith("output_value: object too big to be read back on "
+                    "32-bit platform");
+    }
+    store32(header, Intext_magic_number_big);
+    store32(header + 4, 0);
+    store64(header + 8, res_len);
+    store64(header + 16, obj_counter);
+    store64(header + 24, size_64);
+    *header_len = 32;
+    return res_len;
   }
 #endif
-  if (extern_userprovided_output != NULL)
-    extern_ptr = extern_userprovided_output + 4;
-  else {
-    extern_ptr = extern_output_first->data + 4;
-    extern_limit = extern_output_first->data + SIZE_EXTERN_OUTPUT_BLOCK;
-  }
-  write32(res_len - 5*4);
-  write32(obj_counter);
-  write32(size_32);
-  write32(size_64);
+  /* Use the small header format */
+  store32(header, Intext_magic_number_small);
+  store32(header + 4, res_len);
+  store32(header + 8, obj_counter);
+  store32(header + 12, size_32);
+  store32(header + 16, size_64);
+  *header_len = 20;
   return res_len;
 }
 
 void caml_output_val(struct channel *chan, value v, value flags)
 {
+  char header[32];
+  int header_len;
   struct output_block * blk, * nextblk;
 
   if (! caml_channel_binary_mode(chan))
     caml_failwith("output_value: not a binary channel");
   init_extern_output();
-  extern_value(v, flags);
+  extern_value(v, flags, header, &header_len);
   /* During [caml_really_putblock], concurrent [caml_output_val] operations
      can take place (via signal handlers or context switching in systhreads),
      and [extern_output_first] may change. So, save it in a local variable. */
   blk = extern_output_first;
+  caml_really_putblock(chan, header, header_len);
   while (blk != NULL) {
     caml_really_putblock(chan, blk->data, blk->end - blk->data);
     nextblk = blk->next;
@@ -573,20 +629,24 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
 
 CAMLprim value caml_output_value_to_string(value v, value flags)
 {
-  intnat len, ofs;
+  char header[32];
+  int header_len;
+  intnat data_len, ofs;
   value res;
   struct output_block * blk, * nextblk;
 
   init_extern_output();
-  len = extern_value(v, flags);
+  data_len = extern_value(v, flags, header, &header_len);
   /* PR#4030: it is prudent to save extern_output_first before allocating
      the result, as in caml_output_val */
   blk = extern_output_first;
-  res = caml_alloc_string(len);
+  res = caml_alloc_string(header_len + data_len);
   ofs = 0;
+  memcpy(&Byte(res, ofs), header, header_len);
+  ofs += header_len;
   while (blk != NULL) {
     int n = blk->end - blk->data;
-    memmove(&Byte(res, ofs), blk->data, n);
+    memcpy(&Byte(res, ofs), blk->data, n);
     ofs += n;
     nextblk = blk->next;
     free(blk);
@@ -595,48 +655,62 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
   return res;
 }
 
+CAMLexport intnat caml_output_value_to_block(value v, value flags,
+                                             char * buf, intnat len)
+{
+  char header[32];
+  int header_len;
+  intnat data_len;
+  /* At this point we don't know the size of the header.
+     Guess that it is small, and fix up later if not. */
+  extern_userprovided_output = buf + 20;
+  extern_ptr = extern_userprovided_output;
+  extern_limit = buf + len;
+  data_len = extern_value(v, flags, header, &header_len);
+  if (header_len != 20) {
+    /* Bad guess!  Need to shift the output to make room for big header.
+       Make sure there is room. */
+    if (header_len + data_len > len)
+      caml_failwith("Marshal.to_buffer: buffer overflow");
+    memmove(buf + header_len, buf + 20, data_len);
+  }
+  memcpy(buf, header, header_len);
+  return header_len + data_len;
+}
+
 CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
                                            value v, value flags)
 {
-  intnat len_res;
-  extern_userprovided_output = &Byte(buf, Long_val(ofs));
-  extern_ptr = extern_userprovided_output;
-  extern_limit = extern_userprovided_output + Long_val(len);
-  len_res = extern_value(v, flags);
-  return Val_long(len_res);
+  intnat l =
+    caml_output_value_to_block(v, flags,
+                               &Byte(buf, Long_val(ofs)), Long_val(len));
+  return Val_long(l);
 }
 
 CAMLexport void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
                                             /*out*/ intnat * len)
 {
-  intnat len_res;
+  char header[32];
+  int header_len;
+  intnat data_len;
   char * res;
   struct output_block * blk;
 
   init_extern_output();
-  len_res = extern_value(v, flags);
-  res = malloc(len_res);
+  data_len = extern_value(v, flags, header, &header_len);
+  res = malloc(header_len + data_len);
   if (res == NULL) extern_out_of_memory();
   *buf = res;
-  *len = len_res;
+  *len = header_len + data_len;
+  memcpy(res, header, header_len);
+  res += header_len;
   for (blk = extern_output_first; blk != NULL; blk = blk->next) {
     int n = blk->end - blk->data;
-    memmove(res, blk->data, n);
+    memcpy(res, blk->data, n);
     res += n;
   }
   free_extern_output();
-}
-
-CAMLexport intnat caml_output_value_to_block(value v, value flags,
-                                             char * buf, intnat len)
-{
-  intnat len_res;
-  extern_userprovided_output = buf;
-  extern_ptr = extern_userprovided_output;
-  extern_limit = extern_userprovided_output + len;
-  len_res = extern_value(v, flags);
-  return len_res;
 }
 
 /* Functions for writing user-defined marshallers */
@@ -651,24 +725,22 @@ CAMLexport void caml_serialize_int_1(int i)
 CAMLexport void caml_serialize_int_2(int i)
 {
   if (extern_ptr + 2 > extern_limit) grow_extern_output(2);
-  extern_ptr[0] = i >> 8;
-  extern_ptr[1] = i;
+  store16(extern_ptr, i);
   extern_ptr += 2;
 }
 
-CAMLexport void caml_serialize_int_4(int32 i)
+CAMLexport void caml_serialize_int_4(int32_t i)
 {
   if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
-  extern_ptr[0] = i >> 24;
-  extern_ptr[1] = i >> 16;
-  extern_ptr[2] = i >> 8;
-  extern_ptr[3] = i;
+  store32(extern_ptr, i);
   extern_ptr += 4;
 }
 
-CAMLexport void caml_serialize_int_8(int64 i)
+CAMLexport void caml_serialize_int_8(int64_t i)
 {
-  caml_serialize_block_8(&i, 1);
+  if (extern_ptr + 8 > extern_limit) grow_extern_output(8);
+  store64(extern_ptr, i);
+  extern_ptr += 8;
 }
 
 CAMLexport void caml_serialize_float_4(float f)
@@ -684,7 +756,7 @@ CAMLexport void caml_serialize_float_8(double f)
 CAMLexport void caml_serialize_block_1(void * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
-  memmove(extern_ptr, data, len);
+  memcpy(extern_ptr, data, len);
   extern_ptr += len;
 }
 
@@ -700,7 +772,7 @@ CAMLexport void caml_serialize_block_2(void * data, intnat len)
     extern_ptr = q;
   }
 #else
-  memmove(extern_ptr, data, len * 2);
+  memcpy(extern_ptr, data, len * 2);
   extern_ptr += len * 2;
 #endif
 }
@@ -717,7 +789,7 @@ CAMLexport void caml_serialize_block_4(void * data, intnat len)
     extern_ptr = q;
   }
 #else
-  memmove(extern_ptr, data, len * 4);
+  memcpy(extern_ptr, data, len * 4);
   extern_ptr += len * 4;
 #endif
 }
@@ -734,7 +806,7 @@ CAMLexport void caml_serialize_block_8(void * data, intnat len)
     extern_ptr = q;
   }
 #else
-  memmove(extern_ptr, data, len * 8);
+  memcpy(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #endif
 }
@@ -743,7 +815,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
-  memmove(extern_ptr, data, len * 8);
+  memcpy(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
   {

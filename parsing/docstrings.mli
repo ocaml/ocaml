@@ -1,14 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                              Leo White                              *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                               Leo White                                *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
+(** Documentation comments *)
 
 (** (Re)Initialise all docstring state *)
 val init : unit -> unit
@@ -23,6 +28,9 @@ type docstring
 
 (** Create a docstring *)
 val docstring : string -> Location.t -> docstring
+
+(** Register a docstring *)
+val register : docstring -> unit
 
 (** Get the text of a docstring *)
 val docstring_body : docstring -> string
@@ -114,6 +122,7 @@ val rhs_info : int -> info
 type text = docstring list
 
 val empty_text : text
+val empty_text_lazy : text Lazy.t
 
 val text_attr : docstring -> Parsetree.attribute
 

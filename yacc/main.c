@@ -1,14 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Based on public-domain code from Berkeley Yacc */
 
@@ -27,6 +30,7 @@ char rflag;
 char tflag;
 char vflag;
 char qflag;
+char eflag;
 char sflag;
 char big_endian;
 
@@ -157,7 +161,7 @@ void set_signals(void)
 
 void usage(void)
 {
-    fprintf(stderr, "usage: %s [-v] [-q] [-b file_prefix] filename\n",
+    fprintf(stderr, "usage: %s [-v] [--strict] [-q] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
@@ -181,6 +185,10 @@ void getargs(int argc, char **argv)
             return;
 
         case '-':
+            if (!strcmp (argv[i], "--strict")){
+              eflag = 1;
+              goto end_of_option;
+            }
             ++i;
             goto no_more_options;
 
@@ -454,6 +462,7 @@ int main(int argc, char **argv)
     lalr();
     make_parser();
     verbose();
+    if (eflag && SRtotal + RRtotal > 0) forbidden_conflicts();
     output();
     done(0);
     /*NOTREACHED*/

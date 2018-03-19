@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*  Pierre Weis and Xavier Leroy, projet Cristal, INRIA Rocquencourt   *)
-(*                                                                     *)
-(*  Copyright 1999 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*   Pierre Weis and Xavier Leroy, projet Cristal, INRIA Rocquencourt     *)
+(*                                                                        *)
+(*   Copyright 1999 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Extensible buffers.
 
@@ -46,10 +48,11 @@ val to_bytes : t -> bytes
     @since 4.02 *)
 
 val sub : t -> int -> int -> string
-(** [Buffer.sub b off len] returns (a copy of) the bytes from the
-    current contents of the buffer [b] starting at offset [off] of
-    length [len] bytes. May raise [Invalid_argument] if out of bounds
-    request. The buffer itself is unaffected. *)
+(** [Buffer.sub b off len] returns a copy of [len] bytes from the
+    current contents of the buffer [b], starting at offset [off].
+
+    Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+    range of [b]. *)
 
 val blit : t -> int -> bytes -> int -> int -> unit
 (** [Buffer.blit src srcoff dst dstoff len] copies [len] characters from
@@ -63,7 +66,7 @@ val blit : t -> int -> bytes -> int -> int -> unit
 *)
 
 val nth : t -> int -> char
-(** get the n-th character of the buffer. Raise [Invalid_argument] if
+(** Get the n-th character of the buffer. Raise [Invalid_argument] if
     index out of bounds *)
 
 val length : t -> int
@@ -80,27 +83,27 @@ val reset : t -> unit
    faster reclamation of the space used by the buffer. *)
 
 val add_char : t -> char -> unit
-(** [add_char b c] appends the character [c] at the end of the buffer [b]. *)
+(** [add_char b c] appends the character [c] at the end of buffer [b]. *)
 
 val add_string : t -> string -> unit
-(** [add_string b s] appends the string [s] at the end of the buffer [b]. *)
+(** [add_string b s] appends the string [s] at the end of buffer [b]. *)
 
 val add_bytes : t -> bytes -> unit
-(** [add_string b s] appends the string [s] at the end of the buffer [b].
+(** [add_bytes b s] appends the byte sequence [s] at the end of buffer [b].
     @since 4.02 *)
 
 val add_substring : t -> string -> int -> int -> unit
 (** [add_substring b s ofs len] takes [len] characters from offset
-   [ofs] in string [s] and appends them at the end of the buffer [b]. *)
+   [ofs] in string [s] and appends them at the end of buffer [b]. *)
 
 val add_subbytes : t -> bytes -> int -> int -> unit
-(** [add_substring b s ofs len] takes [len] characters from offset
-    [ofs] in byte sequence [s] and appends them at the end of the buffer [b].
+(** [add_subbytes b s ofs len] takes [len] characters from offset
+    [ofs] in byte sequence [s] and appends them at the end of buffer [b].
     @since 4.02 *)
 
 val add_substitute : t -> (string -> string) -> string -> unit
 (** [add_substitute b f s] appends the string pattern [s] at the end
-   of the buffer [b] with substitution.
+   of buffer [b] with substitution.
    The substitution process looks for variables into
    the pattern and substitutes each variable name by its value, as
    obtained by applying the mapping [f] to the variable name. Inside the
@@ -119,10 +122,11 @@ val add_buffer : t -> t -> unit
    at the end of buffer [b1].  [b2] is not modified. *)
 
 val add_channel : t -> in_channel -> int -> unit
-(** [add_channel b ic n] reads exactly [n] character from the
+(** [add_channel b ic n] reads at most [n] characters from the
    input channel [ic] and stores them at the end of buffer [b].
    Raise [End_of_file] if the channel contains fewer than [n]
-   characters. *)
+   characters. In this case, the characters are still added to
+   the buffer, so as to avoid loss of data. *)
 
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]

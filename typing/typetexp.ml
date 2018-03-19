@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* typetexp.ml,v 1.34.4.9 2002/01/07 08:39:16 garrigue Exp *)
 
@@ -52,122 +55,12 @@ type error =
   | Ill_typed_functor_application of Longident.t
   | Illegal_reference_to_recursive_module
   | Access_functor_as_structure of Longident.t
+  | Apply_structure_as_functor of Longident.t
+  | Cannot_scrape_alias of Longident.t * Path.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
 
-let string_of_cst = function
-  | Const_string(s, _) -> Some s
-  | _ -> None
-
-let string_of_payload = function
-  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant c},_)}] ->
-      string_of_cst c
-  | _ -> None
-
-let rec error_of_extension ext =
-  match ext with
-  | ({txt = ("ocaml.error"|"error") as txt; loc}, p) ->
-    let rec sub_from inner =
-      match inner with
-      | {pstr_desc=Pstr_extension (ext, _)} :: rest ->
-          error_of_extension ext :: sub_from rest
-      | {pstr_loc} :: rest ->
-          (Location.errorf ~loc
-             "Invalid syntax for sub-error of extension '%s'." txt) ::
-            sub_from rest
-      | [] -> []
-    in
-    begin match p with
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::
-           {pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(if_highlight,_))}, _)}::
-           inner) ->
-        Location.error ~loc ~if_highlight ~sub:(sub_from inner) msg
-    | PStr({pstr_desc=Pstr_eval
-              ({pexp_desc=Pexp_constant(Const_string(msg,_))}, _)}::inner) ->
-        Location.error ~loc ~sub:(sub_from inner) msg
-    | _ -> Location.errorf ~loc "Invalid syntax for extension '%s'." txt
-    end
-  | ({txt; loc}, _) ->
-      Location.errorf ~loc "Uninterpreted extension '%s'." txt
-
-let check_deprecated loc attrs s =
-  List.iter
-    (function
-    | ({txt = "ocaml.deprecated"|"deprecated"; _}, p) ->
-      begin match string_of_payload p with
-      | Some txt ->
-          Location.prerr_warning loc (Warnings.Deprecated (s ^ "\n" ^ txt))
-      | None ->
-          Location.prerr_warning loc (Warnings.Deprecated s)
-      end
-    | _ ->  ())
-    attrs
-
-let emit_external_warnings =
-  (* Note: this is run as a preliminary pass when type-checking an
-     interface or implementation.  This allows to cover all kinds of
-     attributes, but the drawback is that it doesn't take local
-     configuration of warnings (with '@@warning'/'@@warnerror'
-     attributes) into account.  We should rather check for
-     'ppwarning' attributes during the actual type-checking, making
-     sure to cover all contexts (easier and more ugly alternative:
-     duplicate here the logic which control warnings locally). *)
-  let open Ast_mapper in
-  {
-    default_mapper with
-    attribute = (fun _ a ->
-        begin match a with
-        | {txt="ocaml.ppwarning"|"ppwarning"},
-          PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_constant
-                                         (Const_string (s, _))},_);
-                pstr_loc}] ->
-            Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
-        | _ -> ()
-        end;
-        a
-      )
-  }
-
-
-let warning_scope = ref []
-
-let warning_enter_scope () =
-  warning_scope := (Warnings.backup ()) :: !warning_scope
-let warning_leave_scope () =
-  match !warning_scope with
-  | [] -> assert false
-  | hd :: tl ->
-      Warnings.restore hd;
-      warning_scope := tl
-
-let warning_attribute attrs =
-  let process loc txt errflag payload =
-    match string_of_payload payload with
-    | Some s ->
-        begin try Warnings.parse_options errflag s
-        with Arg.Bad _ ->
-          Location.prerr_warning loc
-            (Warnings.Attribute_payload
-               (txt, "Ill-formed list of warnings"))
-        end
-    | None ->
-        Location.prerr_warning loc
-          (Warnings.Attribute_payload
-             (txt, "A single string literal is expected"))
-  in
-  List.iter
-    (function
-      | ({txt = ("ocaml.warning"|"warning") as txt; loc}, payload) ->
-          process loc txt false payload
-      | ({txt = ("ocaml.warnerror"|"warnerror") as txt; loc}, payload) ->
-          process loc txt true payload
-      | _ ->
-          ()
-    )
-    attrs
 
 type variable_context = int * (string, type_expr) Tbl.t
 
@@ -180,7 +73,7 @@ let instance_list = Ctype.instance_list Env.empty
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   fun env loc lid make_error ->
   let check_module mlid =
-    try ignore (Env.lookup_module true mlid env) with
+    try ignore (Env.lookup_module ~load:true mlid env) with
     | Not_found ->
         narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid)
     | Env.Recmodule ->
@@ -190,37 +83,55 @@ let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
   | Longident.Lident _ -> ()
   | Longident.Ldot (mlid, _) ->
       check_module mlid;
-      let md = Env.find_module (Env.lookup_module true mlid env) env in
+      let md = Env.find_module (Env.lookup_module ~load:true mlid env) env in
       begin match Env.scrape_alias env md.md_type with
-        Mty_functor _ ->
+      | Mty_functor _ ->
           raise (Error (loc, env, Access_functor_as_structure mlid))
+      | Mty_alias(_, p) ->
+          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
       | _ -> ()
       end
   | Longident.Lapply (flid, mlid) ->
       check_module flid;
+      let fmd = Env.find_module (Env.lookup_module ~load:true flid env) env in
+      begin match Env.scrape_alias env fmd.md_type with
+      | Mty_signature _ ->
+          raise (Error (loc, env, Apply_structure_as_functor flid))
+      | Mty_alias(_, p) ->
+          raise (Error (loc, env, Cannot_scrape_alias(flid, p)))
+      | _ -> ()
+      end;
       check_module mlid;
-      raise (Error (loc, env, Ill_typed_functor_application lid))
+      let mmd = Env.find_module (Env.lookup_module ~load:true mlid env) env in
+      begin match Env.scrape_alias env mmd.md_type with
+      | Mty_alias(_, p) ->
+          raise (Error (loc, env, Cannot_scrape_alias(mlid, p)))
+      | _ ->
+          raise (Error (loc, env, Ill_typed_functor_application lid))
+      end
   end;
   raise (Error (loc, env, make_error lid))
 
-let find_component lookup make_error env loc lid =
+let find_component (lookup : ?loc:_ -> _) make_error env loc lid =
   try
     match lid with
     | Longident.Ldot (Longident.Lident "*predef*", s) ->
-        lookup (Longident.Lident s) Env.initial_safe_string
-    | _ -> lookup lid env
+        lookup ~loc (Longident.Lident s) Env.initial_safe_string
+    | _ ->
+        lookup ~loc lid env
   with Not_found ->
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
 
 let find_type env loc lid =
-  let (path, decl) as r =
+  let path =
     find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
       env loc lid
   in
-  check_deprecated loc decl.type_attributes (Path.name path);
-  r
+  let decl = Env.find_type path env in
+  Builtin_attributes.check_deprecated loc decl.type_attributes (Path.name path);
+  (path, decl)
 
 let find_constructor =
   find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
@@ -236,7 +147,7 @@ let find_class env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_class (fun lid -> Unbound_class lid) env loc lid
   in
-  check_deprecated loc decl.cty_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.cty_attributes (Path.name path);
   r
 
 let find_value env loc lid =
@@ -244,19 +155,17 @@ let find_value env loc lid =
   let (path, decl) as r =
     find_component Env.lookup_value (fun lid -> Unbound_value lid) env loc lid
   in
-  check_deprecated loc decl.val_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.val_attributes (Path.name path);
   r
 
 let lookup_module ?(load=false) env loc lid =
-  let (path, decl) as r =
-    find_component (fun lid env -> (Env.lookup_module ~load lid env, ()))
-      (fun lid -> Unbound_module lid) env loc lid
-  in path
+  find_component (fun ?loc lid env -> (Env.lookup_module ~load ?loc lid env))
+    (fun lid -> Unbound_module lid) env loc lid
 
 let find_module env loc lid =
   let path = lookup_module ~load:true env loc lid in
   let decl = Env.find_module path env in
-  check_deprecated loc decl.md_attributes (Path.name path);
+  (* No need to check for deprecated here, this is done in Env. *)
   (path, decl)
 
 let find_modtype env loc lid =
@@ -264,7 +173,7 @@ let find_modtype env loc lid =
     find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
       env loc lid
   in
-  check_deprecated loc decl.mtd_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.mtd_attributes (Path.name path);
   r
 
 let find_class_type env loc lid =
@@ -272,7 +181,7 @@ let find_class_type env loc lid =
     find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
       env loc lid
   in
-  check_deprecated loc decl.clty_attributes (Path.name path);
+  Builtin_attributes.check_deprecated loc decl.clty_attributes (Path.name path);
   r
 
 let unbound_constructor_error env lid =
@@ -291,7 +200,7 @@ let transl_modtype = ref (fun _ -> assert false)
 let create_package_mty fake loc env (p, l) =
   let l =
     List.sort
-      (fun (s1, t1) (s2, t2) ->
+      (fun (s1, _t1) (s2, _t2) ->
          if s1.txt = s2.txt then
            raise (Error (loc, env, Multiple_constraints_on_type s1.txt));
          compare s1.txt s2.txt)
@@ -323,6 +232,7 @@ let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
 
 let reset_type_variables () =
   reset_global_level ();
+  Ctype.reset_reified_var_counter ();
   type_variables := Tbl.empty
 
 let narrow () =
@@ -332,12 +242,12 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
-let strict_lowercase c = (c = '_' || c >= 'a' && c <= 'z')
+let strict_ident c = (c = '_' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z')
 
 let validate_name = function
     None -> None
   | Some name as s ->
-      if name <> "" && strict_lowercase name.[0] then s else None
+      if name <> "" && strict_ident name.[0] then s else None
 
 let new_global_var ?name () =
   new_global_var ?name:(validate_name name) ()
@@ -372,11 +282,6 @@ let transl_type_param env styp =
         { ctyp_desc = Ttyp_var name; ctyp_type = ty; ctyp_env = env;
           ctyp_loc = loc; ctyp_attributes = styp.ptyp_attributes; }
   | _ -> assert false
-
-let wrap_method ty =
-  match (Ctype.repr ty).desc with
-    Tpoly _ -> ty
-  | _ -> Ctype.newty (Tpoly (ty, []))
 
 let new_pre_univar ?name () =
   let v = newvar ?name () in pre_univars := v :: !pre_univars; v
@@ -422,11 +327,15 @@ let rec transl_type env policy styp =
   | Ptyp_arrow(l, st1, st2) ->
     let cty1 = transl_type env policy st1 in
     let cty2 = transl_type env policy st2 in
-    let ty = newty (Tarrow(l, cty1.ctyp_type, cty2.ctyp_type, Cok)) in
+    let ty1 = cty1.ctyp_type in
+    let ty1 =
+      if Btype.is_optional l
+      then newty (Tconstr(Predef.path_option,[ty1], ref Mnil))
+      else ty1 in
+    let ty = newty (Tarrow(l, ty1, cty2.ctyp_type, Cok)) in
     ctyp (Ttyp_arrow (l, cty1, cty2)) ty
   | Ptyp_tuple stl ->
-    if List.length stl < 2 then
-      Syntaxerr.ill_formed_ast loc "Tuples must have at least 2 components.";
+    assert (List.length stl >= 2);
     let ctys = List.map (transl_type env policy) stl in
     let ty = newty (Ttuple (List.map (fun ctyp -> ctyp.ctyp_type) ctys)) in
     ctyp (Ttyp_tuple ctys) ty
@@ -471,9 +380,10 @@ let rec transl_type env policy styp =
       let ty = newobj (transl_fields loc env policy [] o fields) in
       ctyp (Ttyp_object (fields, o)) ty
   | Ptyp_class(lid, stl) ->
-      let (path, decl, is_variant) =
+      let (path, decl, _is_variant) =
         try
-          let (path, decl) = Env.lookup_type lid.txt env in
+          let path = Env.lookup_type lid.txt env in
+          let decl = Env.find_type path env in
           let rec check decl =
             match decl.type_manifest with
               None -> raise Not_found
@@ -494,7 +404,8 @@ let rec transl_type env policy styp =
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
-          let (path, decl) = Env.lookup_type lid2 env in
+          let path = Env.lookup_type lid2 env in
+          let decl = Env.find_type path env in
           (path, decl, false)
         with Not_found ->
           ignore (find_class env styp.ptyp_loc lid.txt); assert false
@@ -601,7 +512,7 @@ let rec transl_type env policy styp =
           let ty = mkfield l f and ty' = mkfield l f' in
           if equal env false [ty] [ty'] then () else
           try unify env ty ty'
-          with Unify trace ->
+          with Unify _trace ->
             raise(Error(loc, env, Constructor_mismatch (ty,ty')))
         with Not_found ->
           Hashtbl.add hfields h (l,f)
@@ -724,7 +635,7 @@ let rec transl_type env policy styp =
                           ) l in
       let path = !transl_modtype_longident styp.ptyp_loc env p.txt in
       let ty = newty (Tpackage (path,
-                       List.map (fun (s, pty) -> s.txt) l,
+                       List.map (fun (s, _pty) -> s.txt) l,
                        List.map (fun (_,cty) -> cty.ctyp_type) ptys))
       in
       ctyp (Ttyp_package {
@@ -734,7 +645,7 @@ let rec transl_type env policy styp =
             pack_txt = p;
            }) ty
   | Ptyp_extension ext ->
-      raise (Error_forward (error_of_extension ext))
+      raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
 and transl_poly_type env policy t =
   transl_type env policy (Ast_helper.Typ.force_poly t)
@@ -765,7 +676,7 @@ let rec make_fixed_univars ty =
               {row with row_fixed=true;
                row_fields = List.map
                  (fun (s,f as p) -> match Btype.row_field_repr f with
-                   Reither (c, tl, m, r) -> s, Reither (c, tl, true, r)
+                   Reither (c, tl, _m, r) -> s, Reither (c, tl, true, r)
                  | _ -> p)
                  row.row_fields};
         Btype.iter_row make_fixed_univars row
@@ -860,60 +771,37 @@ open Format
 open Printtyp
 
 let spellcheck ppf fold env lid =
-  let cutoff =
-    match String.length (Longident.last lid) with
-      | 1 | 2 -> 0
-      | 3 | 4 -> 1
-      | 5 | 6 -> 2
-      | _ -> 3
-  in
-  let compare target head acc =
-    let (best_choice, best_dist) = acc in
-    match Misc.edit_distance target head cutoff with
-      | None -> (best_choice, best_dist)
-      | Some dist ->
-        let choice =
-          if dist < best_dist then [head]
-          else if dist = best_dist then head :: best_choice
-          else best_choice in
-        (choice, min dist best_dist)
-  in
-  let init = ([], max_int) in
-  let handle (choice, _dist) =
-    match List.rev choice with
-      | [] -> ()
-      | last :: rev_rest ->
-        fprintf ppf "@\nHint: Did you mean %s%s%s?"
-          (String.concat ", " (List.rev rev_rest))
-          (if rev_rest = [] then "" else " or ")
-          last
-  in
-  (* flush now to get the error report early, in the (unheard of) case
-     where the linear search would take a bit of time; in the worst
-     case, the user has seen the error, she can interrupt the process
-     before the spell-checking terminates. *)
-  fprintf ppf "@?";
+  let choices ~path name =
+    let env = fold (fun x xs -> x::xs) path env [] in
+    Misc.spellcheck env name in
   match lid with
     | Longident.Lapply _ -> ()
     | Longident.Lident s ->
-      handle (fold (compare s) None env init)
+       Misc.did_you_mean ppf (fun () -> choices ~path:None s)
     | Longident.Ldot (r, s) ->
-      handle (fold (compare s) (Some r) env init)
+       Misc.did_you_mean ppf (fun () -> choices ~path:(Some r) s)
 
-let spellcheck_simple ppf fold extr =
-  spellcheck ppf (fun f -> fold (fun decl x -> f (extr decl) x))
+let fold_descr fold get_name f = fold (fun descr acc -> f (get_name descr) acc)
+let fold_simple fold4 f = fold4 (fun name _path _descr acc -> f name acc)
 
-let spellcheck ppf fold =
-  spellcheck ppf (fun f -> fold (fun s _ _ x -> f s x))
-
-type cd = string list * int
+let fold_values = fold_simple Env.fold_values
+let fold_types = fold_simple Env.fold_types
+let fold_modules = fold_simple Env.fold_modules
+let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
+let fold_labels = fold_descr Env.fold_labels (fun d -> d.lbl_name)
+let fold_classs = fold_simple Env.fold_classs
+let fold_modtypes = fold_simple Env.fold_modtypes
+let fold_cltypes = fold_simple Env.fold_cltypes
 
 let report_error env ppf = function
   | Unbound_type_variable name ->
+     (* we don't use "spellcheck" here: the function that raises this
+        error seems not to be called anywhere, so it's unclear how it
+        should be handled *)
     fprintf ppf "Unbound type parameter %s@." name
   | Unbound_type_constructor lid ->
     fprintf ppf "Unbound type constructor %a" longident lid;
-    spellcheck ppf Env.fold_types env lid;
+    spellcheck ppf fold_types env lid;
   | Unbound_type_constructor_2 p ->
     fprintf ppf "The type constructor@ %a@ is not yet completely defined"
       path p
@@ -957,7 +845,13 @@ let report_error env ppf = function
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
-        Printtyp.type_expr ty
+        Printtyp.type_expr ty;
+      begin match ty.desc with
+        | Tvar (Some s) ->
+           (* PR#7012: help the user that wrote 'Foo instead of `Foo *)
+           Misc.did_you_mean ppf (fun () -> ["`" ^ s])
+        | _ -> ()
+      end
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
@@ -975,35 +869,40 @@ let report_error env ppf = function
       fprintf ppf "Multiple constraints for type %a" longident s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
-        s "Multiple occurences are not allowed."
+        s "Multiple occurrences are not allowed."
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid;
-      spellcheck ppf Env.fold_values env lid;
+      spellcheck ppf fold_values env lid;
   | Unbound_module lid ->
       fprintf ppf "Unbound module %a" longident lid;
-      spellcheck ppf Env.fold_modules env lid;
+      spellcheck ppf fold_modules env lid;
   | Unbound_constructor lid ->
       fprintf ppf "Unbound constructor %a" longident lid;
-      spellcheck_simple ppf Env.fold_constructors (fun d -> d.cstr_name)
-        env lid;
+      spellcheck ppf fold_constructors env lid;
   | Unbound_label lid ->
       fprintf ppf "Unbound record field %a" longident lid;
-      spellcheck_simple ppf Env.fold_labels (fun d -> d.lbl_name) env lid;
+      spellcheck ppf fold_labels env lid;
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid;
-      spellcheck ppf Env.fold_classs env lid;
+      spellcheck ppf fold_classs env lid;
   | Unbound_modtype lid ->
       fprintf ppf "Unbound module type %a" longident lid;
-      spellcheck ppf Env.fold_modtypes env lid;
+      spellcheck ppf fold_modtypes env lid;
   | Unbound_cltype lid ->
       fprintf ppf "Unbound class type %a" longident lid;
-      spellcheck ppf Env.fold_cltypes env lid;
+      spellcheck ppf fold_cltypes env lid;
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
   | Illegal_reference_to_recursive_module ->
       fprintf ppf "Illegal recursive module reference"
   | Access_functor_as_structure lid ->
       fprintf ppf "The module %a is a functor, not a structure" longident lid
+  | Apply_structure_as_functor lid ->
+      fprintf ppf "The module %a is a structure, not a functor" longident lid
+  | Cannot_scrape_alias(lid, p) ->
+      fprintf ppf
+        "The module %a is an alias for module %a, which is missing"
+        longident lid path p
 
 let () =
   Location.register_error_of_exn

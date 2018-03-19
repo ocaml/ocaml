@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2007 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2007 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Signal handling, code specific to the native-code compiler */
 
@@ -26,7 +30,8 @@
 #include "caml/signals.h"
 #include "caml/signals_machdep.h"
 #include "signals_osdep.h"
-#include "stack.h"
+#include "caml/stack.h"
+#include "spacetime.h"
 
 #ifdef HAS_STACK_OVERFLOW_DETECTION
 #include <sys/time.h>
@@ -69,6 +74,13 @@ extern char caml_system__code_begin, caml_system__code_end;
 void caml_garbage_collection()
 {
   caml_handle_gc_interrupt();
+
+#ifdef WITH_SPACETIME
+  if (caml_young_ptr == caml_young_alloc_end) {
+    caml_spacetime_automatic_snapshot();
+  }
+#endif
+
   caml_process_pending_signals();
 }
 
@@ -130,7 +142,9 @@ int caml_set_signal_action(int signo, int action)
 
 /* Machine- and OS-dependent handling of bound check trap */
 
-#if defined(TARGET_power) || (defined(TARGET_sparc) && defined(SYS_solaris))
+#if defined(TARGET_power) \
+  || defined(TARGET_s390x) \
+  || (defined(TARGET_sparc) && defined(SYS_solaris))
 #error "Power and Sparc unsupported on multicore"
 DECLARE_SIGNAL_HANDLER(trap_handler)
 {
@@ -254,6 +268,14 @@ void caml_init_signals(void)
     act.sa_flags |= SA_NODEFER;
 #endif
     sigaction(SIGTRAP, &act, NULL);
+  }
+#endif
+
+#if defined(TARGET_s390x)
+  { struct sigaction act;
+    sigemptyset(&act.sa_mask);
+    SET_SIGACT(act, trap_handler);
+    sigaction(SIGFPE, &act, NULL);
   }
 #endif
 

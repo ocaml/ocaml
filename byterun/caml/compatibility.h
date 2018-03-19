@@ -1,20 +1,26 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*          Damien Doligez, projet Moscova, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2003 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*           Damien Doligez, projet Moscova, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2003 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* definitions for compatibility with old identifiers */
 
 #ifndef CAML_COMPATIBILITY_H
 #define CAML_COMPATIBILITY_H
+
+/* internal global variables renamed between 4.02.1 and 4.03.0 */
+#define caml_stat_top_heap_size Bsize_wsize(caml_stat_top_heap_wsz)
+#define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
 
 #ifndef CAML_NAME_SPACE
 

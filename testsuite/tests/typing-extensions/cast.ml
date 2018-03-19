@@ -1,7 +1,10 @@
+(* Ignore OCAMLRUNPARAM=b to be reproducible *)
+Printexc.record_backtrace false;;
 
 (* By using two types we can have a recursive constraint *)
 type 'a class_name = .. constraint 'a = < cast: 'a. 'a name -> 'a; ..>
-and 'a name = Class : 'a class_name -> (< cast: 'a. 'a name -> 'a; ..> as 'a) name
+and 'a name =
+  Class : 'a class_name -> (< cast: 'a. 'a name -> 'a; ..> as 'a) name
 ;;
 
 exception Bad_cast
@@ -29,7 +32,7 @@ class foo: foo_t =
 object(self)
   method cast: type a. a name -> a =
     function
-	Class Foo -> (self :> foo_t)
+        Class Foo -> (self :> foo_t)
       | _ -> ((raise Bad_cast) : a)
   method foo = "foo"
 end

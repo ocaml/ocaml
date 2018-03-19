@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* To walk the memory roots for garbage collection */
 
@@ -21,13 +25,12 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/roots.h"
-#include "caml/fiber.h"
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/fiber.h"
 
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 /* The global roots.
@@ -53,11 +56,12 @@ CAMLexport void caml_do_local_roots (scanning_action f, void* fdata, struct doma
      FIXME: These should be promoted, and not scanned here.
      FIXME: caml_globals_inited makes assumptions about store ordering.
   */
-  value glob;
+  value *glob;
   for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++){
-      f(fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
     }
   }
 #endif

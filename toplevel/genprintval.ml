@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*  Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* To print values *)
 
@@ -74,7 +77,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         let hash x =
           try
             Hashtbl.hash x
-          with exn -> 0
+          with _exn -> 0
       end)
 
 
@@ -156,7 +159,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let install_printer path ty fn =
       let print_val ppf obj =
-        try fn ppf obj with exn -> exn_printer ppf path in
+        try fn ppf obj with _exn -> exn_printer ppf path in
       let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
       printers := (path, Simple (ty, printer)) :: !printers
 
@@ -193,9 +196,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
 
     let tree_of_qualified lookup_fun env ty_path name =
       match ty_path with
-      | Pident id ->
+      | Pident _ ->
           Oide_ident name
-      | Pdot(p, s, pos) ->
+      | Pdot(p, _s, _pos) ->
           if try
                match (lookup_fun (Lident name) env).desc with
                | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
@@ -203,7 +206,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
              with Not_found -> false
           then Oide_ident name
           else Oide_dot (Printtyp.tree_of_path p, name)
-      | Papply(p1, p2) ->
+      | Papply _ ->
           Printtyp.tree_of_path ty_path
 
     let tree_of_constr =
@@ -252,7 +255,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           match (Ctype.repr ty).desc with
           | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
-          | Tarrow(_, ty1, ty2, _) ->
+          | Tarrow _ ->
               Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
               Oval_tuple (tree_of_val_list 0 depth obj ty_list)
@@ -362,9 +365,11 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list} ->
+                | {type_kind = Type_variant constr_list; type_unboxed} ->
+                    let unbx = type_unboxed.unboxed in
                     let tag =
-                      if O.is_block obj
+                      if unbx then Cstr_unboxed
+                      else if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
                     let {cd_id;cd_args;cd_res} =
@@ -378,40 +383,44 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
                           | _ -> assert false end
                       | None -> decl.type_params
                     in
-                    let ty_args =
-                      List.map
-                        (function ty ->
-                           try Ctype.apply env type_params ty ty_list with
-                             Ctype.Cannot_apply -> abstract_type)
-                        cd_args in
-                    tree_of_constr_with_args (tree_of_constr env path)
-                                 (Ident.name cd_id) 0 depth obj ty_args
+                    begin
+                      match cd_args with
+                      | Cstr_tuple l ->
+                          let ty_args =
+                            List.map
+                              (function ty ->
+                                try Ctype.apply env type_params ty ty_list with
+                                  Ctype.Cannot_apply -> abstract_type)
+                              l
+                          in
+                          tree_of_constr_with_args (tree_of_constr env path)
+                            (Ident.name cd_id) false 0 depth obj
+                            ty_args unbx
+                      | Cstr_record lbls ->
+                          let r =
+                            tree_of_record_fields depth
+                              env path type_params ty_list
+                              lbls 0 obj unbx
+                          in
+                          Oval_constr(tree_of_constr env path
+                                        (Ident.name cd_id),
+                                      [ r ])
+                    end
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
-                        let rec tree_of_fields pos = function
-                          | [] -> []
-                          | {ld_id; ld_type} :: remainder ->
-                              let ty_arg =
-                                try
-                                  Ctype.apply env decl.type_params ld_type
-                                    ty_list
-                                with
-                                  Ctype.Cannot_apply -> abstract_type in
-                              let name = Ident.name ld_id in
-                              (* PR#5722: print full module path only
-                                 for first record field *)
-                              let lid =
-                                if pos = 0 then tree_of_label env path name
-                                else Oide_ident name
-                              and v =
-                                nest tree_of_val (depth - 1) (O.field obj pos)
-                                  ty_arg
-                              in
-                              (lid, v) :: tree_of_fields (pos + 1) remainder
+                        let pos =
+                          match rep with
+                          | Record_extension -> 1
+                          | _ -> 0
                         in
-                        Oval_record (tree_of_fields 0 lbl_list)
+                        let unbx =
+                          match rep with Record_unboxed _ -> true | _ -> false
+                        in
+                        tree_of_record_fields depth
+                          env path decl.type_params ty_list
+                          lbl_list pos obj unbx
                     end
                 | {type_kind = Type_open} ->
                     tree_of_extension path depth obj
@@ -459,6 +468,32 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
               Oval_stuff "<module>"
         end
 
+      and tree_of_record_fields depth env path type_params ty_list
+          lbl_list pos obj unboxed =
+        let rec tree_of_fields pos = function
+          | [] -> []
+          | {ld_id; ld_type} :: remainder ->
+              let ty_arg =
+                try
+                  Ctype.apply env type_params ld_type
+                    ty_list
+                with
+                  Ctype.Cannot_apply -> abstract_type in
+              let name = Ident.name ld_id in
+              (* PR#5722: print full module path only
+                 for first record field *)
+              let lid =
+                if pos = 0 then tree_of_label env path name
+                else Oide_ident name
+              and v =
+                if unboxed
+                then tree_of_val (depth - 1) obj ty_arg
+                else nest tree_of_val (depth - 1) (O.field obj pos) ty_arg
+              in
+              (lid, v) :: tree_of_fields (pos + 1) remainder
+        in
+        Oval_record (tree_of_fields pos lbl_list)
+
       and tree_of_val_list start depth obj ty_list =
         let rec tree_list i = function
           | [] -> []
@@ -468,9 +503,16 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
       tree_list start ty_list
 
       and tree_of_constr_with_args
-             tree_of_cstr cstr_name start depth obj ty_args =
+             tree_of_cstr cstr_name inlined start depth obj ty_args unboxed =
         let lid = tree_of_cstr cstr_name in
-        let args = tree_of_val_list start depth obj ty_args in
+        let args =
+          if inlined || unboxed then
+            match ty_args with
+            | [ty] -> [ tree_of_val (depth - 1) obj ty ]
+            | _ -> assert false
+          else
+            tree_of_val_list start depth obj ty_args
+        in
         Oval_constr (lid, args)
 
     and tree_of_extension type_path depth bucket =
@@ -495,7 +537,9 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
         if not (EVP.same_value slot (EVP.eval_path env path))
         then raise Not_found;
         tree_of_constr_with_args
-           (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args
+           (fun x -> Oide_ident x) name (cstr.cstr_inlined <> None)
+           1 depth bucket
+           cstr.cstr_args false
       with Not_found | EVP.Error ->
         match check_depth depth bucket ty with
           Some x -> x
@@ -507,15 +551,15 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
     and find_printer depth env ty =
       let rec find = function
       | [] -> raise Not_found
-      | (name, Simple (sch, printer)) :: remainder ->
+      | (_name, Simple (sch, printer)) :: remainder ->
           if Ctype.moregeneral env false sch ty
           then printer
           else find remainder
-      | (name, Generic (path, fn)) :: remainder ->
+      | (_name, Generic (path, fn)) :: remainder ->
           begin match (Ctype.expand_head env ty).desc with
           | Tconstr (p, args, _) when Path.same p path ->
               begin try apply_generic_printer path (fn depth) args
-              with _ -> (fun obj -> out_exn path) end
+              with _ -> (fun _obj -> out_exn path) end
           | _ -> find remainder end in
       find !printers
 
@@ -526,7 +570,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type valu = O.t) = struct
           let printer = fn (fun depth obj -> tree_of_val depth obj arg) in
           apply_generic_printer path printer args
       | _ ->
-          (fun obj ->
+          (fun _obj ->
             let printer ppf =
               fprintf ppf "<internal error: incorrect arity for '%a'>"
                 Printtyp.path path in

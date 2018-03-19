@@ -84,7 +84,7 @@ Error: This expression has type point but an expression was expected of type
 # val c'' : color_point color_circle = <obj>
 #   - : color_point circle = <obj>
 # Characters 0-21:
-  (c'' :> point circle);;                 (* Echec *)
+  (c'' :> point circle);;                 (* Fail *)
   ^^^^^^^^^^^^^^^^^^^^^
 Error: Type
          color_point color_circle =
@@ -208,7 +208,7 @@ and ['a] cons :
 # - : unit = ()
 #   val c2 : int_comparable2 = <obj>
 # Characters 6-28:
-  l#add (c2 :> int_comparable);;      (* Echec : 'a comp2 n'est un sous-type *)
+  l#add (c2 :> int_comparable);;      (* Fail : 'a comp2 is not a subtype *)
         ^^^^^^^^^^^^^^^^^^^^^^
 Error: Type
          int_comparable2 =

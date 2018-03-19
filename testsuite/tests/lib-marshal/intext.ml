@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 (* Test for output_value / input_value *)
 
 let max_data_depth = 500000
@@ -268,7 +256,7 @@ let test_buffer () =
   test 208 (Marshal.from_bytes s 0 = longstring);
   test 209
     (try marshal_to_buffer s 0 512 verylongstring []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true);
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true);
   marshal_to_buffer s 0 512 3.141592654 [];
   test 210 (Marshal.from_bytes s 0 = 3.141592654);
   marshal_to_buffer s 0 512 () [];
@@ -323,11 +311,11 @@ let test_buffer () =
   let rec big n = if n <= 0 then A else H(n, big(n-1)) in
   test 223
     (try marshal_to_buffer s 0 512 (big 1000) []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true)
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true)
 
 let test_size() =
-  let s = Marshal.to_string (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
-  test 300 (Marshal.header_size + Marshal.data_size s 0 = String.length s)
+  let s = Marshal.to_bytes (G(A, G(B 2, G(C 3.14, G(D "glop", E 'e'))))) [] in
+  test 300 (Marshal.header_size + Marshal.data_size s 0 = Bytes.length s)
 
 external marshal_to_block
    : string -> int -> 'a -> Marshal.extern_flags list -> unit
@@ -355,7 +343,7 @@ let test_block () =
   test 408 (marshal_from_block s 512 = longstring);
   test 409
     (try marshal_to_block s 512 verylongstring []; false
-     with Failure "Marshal.to_buffer: buffer overflow" -> true);
+     with Failure s when s = "Marshal.to_buffer: buffer overflow" -> true);
   marshal_to_block s 512 3.141592654 [];
   test 410 (marshal_from_block s 512 = 3.141592654);
   marshal_to_block s 512 () [];
@@ -549,11 +537,48 @@ let test_mutual_rec_regression () =
   test 700 (try ignore (Marshal.to_string f [Marshal.Closures]); true
             with _ -> false)
 
+let test_end_of_file_regression () =
+  (* See PR#7142 *)
+  let write oc n =
+    for k = 0 to n - 1 do
+      Marshal.to_channel oc k []
+    done
+  in
+  let read ic n =
+    let k = ref 0 in
+    try
+      while true do
+        if Marshal.from_channel ic != !k then
+          failwith "unexpected integer";
+        incr k
+      done
+    with
+      | End_of_file when !k != n -> failwith "missing integer"
+      | End_of_file -> ()
+  in
+  test 800 (
+    try
+      let n = 100 in
+      let oc = open_out_bin "intext.data" in
+      write oc n;
+      close_out oc;
+
+      let ic = open_in_bin "intext.data" in
+      try
+        read ic n;
+        close_in ic;
+        true
+      with _ ->
+        close_in ic;
+        false
+    with _ -> false
+  )
+
+
 let main() =
   if Array.length Sys.argv <= 2 then begin
     test_out "intext.data"; test_in "intext.data";
     test_out "intext.data"; test_in "intext.data";
-    Sys.remove "intext.data";
     test_string();
     test_buffer();
     test_size();
@@ -562,6 +587,8 @@ let main() =
     test_objects();
     test_infix ();
     test_mutual_rec_regression ();
+    test_end_of_file_regression ();
+    Sys.remove "intext.data";
   end else
   if Sys.argv.(1) = "make" then begin
     let n = int_of_string Sys.argv.(2) in

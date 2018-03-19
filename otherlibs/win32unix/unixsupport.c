@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <stddef.h>
 #include <caml/mlvalues.h>
@@ -170,44 +172,80 @@ void win32_maperr(DWORD errcode)
 }
 
 /* Windows socket errors */
-
+#undef EWOULDBLOCK
 #define EWOULDBLOCK             -WSAEWOULDBLOCK
+#undef EINPROGRESS
 #define EINPROGRESS             -WSAEINPROGRESS
+#undef EALREADY
 #define EALREADY                -WSAEALREADY
+#undef ENOTSOCK
 #define ENOTSOCK                -WSAENOTSOCK
+#undef EDESTADDRREQ
 #define EDESTADDRREQ            -WSAEDESTADDRREQ
+#undef EMSGSIZE
 #define EMSGSIZE                -WSAEMSGSIZE
+#undef EPROTOTYPE
 #define EPROTOTYPE              -WSAEPROTOTYPE
+#undef ENOPROTOOPT
 #define ENOPROTOOPT             -WSAENOPROTOOPT
+#undef EPROTONOSUPPORT
 #define EPROTONOSUPPORT         -WSAEPROTONOSUPPORT
+#undef ESOCKTNOSUPPORT
 #define ESOCKTNOSUPPORT         -WSAESOCKTNOSUPPORT
+#undef EOPNOTSUPP
 #define EOPNOTSUPP              -WSAEOPNOTSUPP
+#undef EPFNOSUPPORT
 #define EPFNOSUPPORT            -WSAEPFNOSUPPORT
+#undef EAFNOSUPPORT
 #define EAFNOSUPPORT            -WSAEAFNOSUPPORT
+#undef EADDRINUSE
 #define EADDRINUSE              -WSAEADDRINUSE
+#undef EADDRNOTAVAIL
 #define EADDRNOTAVAIL           -WSAEADDRNOTAVAIL
+#undef ENETDOWN
 #define ENETDOWN                -WSAENETDOWN
+#undef ENETUNREACH
 #define ENETUNREACH             -WSAENETUNREACH
+#undef ENETRESET
 #define ENETRESET               -WSAENETRESET
+#undef ECONNABORTED
 #define ECONNABORTED            -WSAECONNABORTED
+#undef ECONNRESET
 #define ECONNRESET              -WSAECONNRESET
+#undef ENOBUFS
 #define ENOBUFS                 -WSAENOBUFS
+#undef EISCONN
 #define EISCONN                 -WSAEISCONN
+#undef ENOTCONN
 #define ENOTCONN                -WSAENOTCONN
+#undef ESHUTDOWN
 #define ESHUTDOWN               -WSAESHUTDOWN
+#undef ETOOMANYREFS
 #define ETOOMANYREFS            -WSAETOOMANYREFS
+#undef ETIMEDOUT
 #define ETIMEDOUT               -WSAETIMEDOUT
+#undef ECONNREFUSED
 #define ECONNREFUSED            -WSAECONNREFUSED
+#undef ELOOP
 #define ELOOP                   -WSAELOOP
+#undef EHOSTDOWN
 #define EHOSTDOWN               -WSAEHOSTDOWN
+#undef EHOSTUNREACH
 #define EHOSTUNREACH            -WSAEHOSTUNREACH
+#undef EPROCLIM
 #define EPROCLIM                -WSAEPROCLIM
+#undef EUSERS
 #define EUSERS                  -WSAEUSERS
+#undef EDQUOT
 #define EDQUOT                  -WSAEDQUOT
+#undef ESTALE
 #define ESTALE                  -WSAESTALE
+#undef EREMOTE
 #define EREMOTE                 -WSAEREMOTE
 
+#undef EOVERFLOW
 #define EOVERFLOW -ERROR_ARITHMETIC_OVERFLOW
+#undef EACCESS
 #define EACCESS EACCES
 
 int error_table[] = {
@@ -266,9 +304,12 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
   mlraise(res);
 }
 
-void uerror(cmdname, cmdarg)
-     char * cmdname;
-     value cmdarg;
+void uerror(char * cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
+}
+
+void caml_unix_check_path(value path, char * cmdname)
+{
+  if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
 }

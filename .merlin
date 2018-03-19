@@ -1,6 +1,12 @@
 S ./asmcomp
 B ./asmcomp
 
+S ./middle_end
+B ./middle_end
+
+S ./middle_end/base_types
+B ./middle_end/base_types
+
 S ./bytecomp
 B ./bytecomp
 
@@ -48,4 +54,3 @@ B ./typing
 
 S ./utils
 B ./utils
-

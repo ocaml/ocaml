@@ -1,14 +1,16 @@
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*                   Xavier Leroy and Jacques Garrigue                 *)
-;(*                                                                     *)
-;(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*                    Xavier Leroy and Jacques Garrigue                   *
+;*                                                                        *
+;*   Copyright 1997 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ;;; inf-caml.el --- run the OCaml toplevel in an Emacs buffer
 

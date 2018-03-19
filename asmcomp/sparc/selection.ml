@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the Sparc processor *)
 
@@ -23,17 +26,20 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 4095) && (n >= -4096)
 
-method select_addressing chunk = function
+method select_addressing _chunk = function
     Cconst_symbol s ->
       (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n]) ->
       (Ibased(s, n), Ctuple [])
-  | Cop(Cadda, [arg; Cconst_int n]) ->
+  | Cop((Caddv | Cadda), [arg; Cconst_int n]) ->
       (Iindexed n, arg)
-  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
-      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
+      (Iindexed n, Cop(op, [arg1; arg2]))
   | arg ->
       (Iindexed 0, arg)
+
+method private iextcall (func, alloc) =
+  Iextcall { func; alloc; label_after = Cmm.new_label (); }
 
 method! select_operation op args =
   match (op, args) with
@@ -42,11 +48,11 @@ method! select_operation op args =
      For SPARC V8 and V9, use hardware multiplication and division,
      but C library routine for modulus. *)
     (Cmuli, _) when !arch_version = SPARC_V7 ->
-      (Iextcall(".umul", false), args)
+      (self#iextcall(".umul", false), args)
   | (Cdivi, _) when !arch_version = SPARC_V7 ->
-      (Iextcall(".div", false), args)
+      (self#iextcall(".div", false), args)
   | (Cmodi, _) ->
-      (Iextcall(".rem", false), args)
+      (self#iextcall(".rem", false), args)
   | _ ->
       super#select_operation op args
 

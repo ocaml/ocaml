@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 module type OrderedType =
   sig
@@ -29,6 +31,7 @@ module type S =
     val remove: key -> 'a t -> 'a t
     val merge:
           (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+    val union: (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
     val iter: (key -> 'a -> unit) -> 'a t -> unit
@@ -103,14 +106,16 @@ module Make(Ord: OrderedType) = struct
     let rec add x data = function
         Empty ->
           Node(Empty, x, data, Empty, 1)
-      | Node(l, v, d, r, h) ->
+      | Node(l, v, d, r, h) as m ->
           let c = Ord.compare x v in
           if c = 0 then
-            Node(l, x, data, r, h)
+            if d == data then m else Node(l, x, data, r, h)
           else if c < 0 then
-            bal (add x data l) v d r
+            let ll = add x data l in
+            if l == ll then m else bal ll v d r
           else
-            bal l v d (add x data r)
+            let rr = add x data r in
+            if r == rr then m else bal l v d rr
 
     let rec find x = function
         Empty ->
@@ -123,23 +128,23 @@ module Make(Ord: OrderedType) = struct
     let rec mem x = function
         Empty ->
           false
-      | Node(l, v, d, r, _) ->
+      | Node(l, v, _, r, _) ->
           let c = Ord.compare x v in
           c = 0 || mem x (if c < 0 then l else r)
 
     let rec min_binding = function
         Empty -> raise Not_found
-      | Node(Empty, x, d, r, _) -> (x, d)
-      | Node(l, x, d, r, _) -> min_binding l
+      | Node(Empty, x, d, _, _) -> (x, d)
+      | Node(l, _, _, _, _) -> min_binding l
 
     let rec max_binding = function
         Empty -> raise Not_found
-      | Node(l, x, d, Empty, _) -> (x, d)
-      | Node(l, x, d, r, _) -> max_binding r
+      | Node(_, x, d, Empty, _) -> (x, d)
+      | Node(_, _, _, r, _) -> max_binding r
 
     let rec remove_min_binding = function
         Empty -> invalid_arg "Map.remove_min_elt"
-      | Node(Empty, x, d, r, _) -> r
+      | Node(Empty, _, _, r, _) -> r
       | Node(l, x, d, r, _) -> bal (remove_min_binding l) x d r
 
     let merge t1 t2 =
@@ -153,14 +158,13 @@ module Make(Ord: OrderedType) = struct
     let rec remove x = function
         Empty ->
           Empty
-      | Node(l, v, d, r, h) ->
+      | (Node(l, v, d, r, _) as t) ->
           let c = Ord.compare x v in
-          if c = 0 then
-            merge l r
+          if c = 0 then merge l r
           else if c < 0 then
-            bal (remove x l) v d r
+            let ll = remove x l in if l == ll then t else bal ll v d r
           else
-            bal l v d (remove x r)
+            let rr = remove x r in if r == rr then t else bal l v d rr
 
     let rec iter f = function
         Empty -> ()
@@ -209,12 +213,12 @@ module Make(Ord: OrderedType) = struct
 
     let rec add_min_binding k v = function
       | Empty -> singleton k v
-      | Node (l, x, d, r, h) ->
+      | Node (l, x, d, r, _) ->
         bal (add_min_binding k v l) x d r
 
     let rec add_max_binding k v = function
       | Empty -> singleton k v
-      | Node (l, x, d, r, h) ->
+      | Node (l, x, d, r, _) ->
         bal l x d (add_max_binding k v r)
 
     (* Same as create and bal, but no assumptions are made on the
@@ -263,20 +267,38 @@ module Make(Ord: OrderedType) = struct
       | (Node (l1, v1, d1, r1, h1), _) when h1 >= height s2 ->
           let (l2, d2, r2) = split v1 s2 in
           concat_or_join (merge f l1 l2) v1 (f v1 (Some d1) d2) (merge f r1 r2)
-      | (_, Node (l2, v2, d2, r2, h2)) ->
+      | (_, Node (l2, v2, d2, r2, _)) ->
           let (l1, d1, r1) = split v2 s1 in
           concat_or_join (merge f l1 l2) v2 (f v2 d1 (Some d2)) (merge f r1 r2)
       | _ ->
           assert false
 
+    let rec union f s1 s2 =
+      match (s1, s2) with
+      | (Empty, s) | (s, Empty) -> s
+      | (Node (l1, v1, d1, r1, h1), Node (l2, v2, d2, r2, h2)) ->
+          if h1 >= h2 then
+            let (l2, d2, r2) = split v1 s2 in
+            let l = union f l1 l2 and r = union f r1 r2 in
+            match d2 with
+            | None -> join l v1 d1 r
+            | Some d2 -> concat_or_join l v1 (f v1 d1 d2) r
+          else
+            let (l1, d1, r1) = split v2 s1 in
+            let l = union f l1 l2 and r = union f r1 r2 in
+            match d1 with
+            | None -> join l v2 d2 r
+            | Some d1 -> concat_or_join l v2 (f v2 d1 d2) r
+
     let rec filter p = function
         Empty -> Empty
-      | Node(l, v, d, r, _) ->
+      | Node(l, v, d, r, _) as t ->
           (* call [p] in the expected left-to-right order *)
           let l' = filter p l in
           let pvd = p v d in
           let r' = filter p r in
-          if pvd then join l' v d r' else concat l' r'
+          if pvd then if l==l' && r==r' then t else join l' v d r'
+          else concat l' r'
 
     let rec partition p = function
         Empty -> (Empty, Empty)

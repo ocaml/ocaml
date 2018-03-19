@@ -1,18 +1,22 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Top modules dependencies. *)
 
 module StrS = Depend.StringSet
+module StrM = Depend.StringMap
 module Module = Odoc_module
 module Type = Odoc_type
 
@@ -23,12 +27,12 @@ let set_to_list s =
 
 let impl_dependencies ast =
   Depend.free_structure_names := StrS.empty;
-  Depend.add_use_file StrS.empty [Parsetree.Ptop_def ast];
+  Depend.add_use_file StrM.empty [Parsetree.Ptop_def ast];
   set_to_list !Depend.free_structure_names
 
 let intf_dependencies ast =
   Depend.free_structure_names := StrS.empty;
-  Depend.add_signature StrS.empty ast;
+  Depend.add_signature StrM.empty ast;
   set_to_list !Depend.free_structure_names
 
 
@@ -48,8 +52,8 @@ module Dep =
 
     type node = {
         id : id ;
-        mutable near : S.t ; (** fils directs *)
-        mutable far : (id * S.t) list ; (** fils indirects, par quel fils *)
+        mutable near : S.t ; (** direct children *)
+        mutable far : (id * S.t) list ; (** indirect children, from which children path *)
         reflex : bool ; (** reflexive or not, we keep
                            information here to remove the node itself from its direct children *)
       }
@@ -77,7 +81,7 @@ module Dep =
       if S.mem n.id acc then
         acc
       else
-        (* optimisation plus tard : utiliser le champ far si non vide ? *)
+        (* potential optimisation: use far field if nonempty? *)
         S.fold
           (fun child -> fun acc2 ->
             trans_closure graph acc2 (get_node graph child))
@@ -147,41 +151,31 @@ let type_deps t =
     l := s2 :: !l ;
     s2
   in
+  let ty t =
+    let s = Odoc_print.string_of_type_expr t in
+    ignore (Str.global_substitute re f s)
+  in
   (match t.T.ty_kind with
     T.Type_abstract -> ()
   | T.Type_variant cl ->
       List.iter
         (fun c ->
-          List.iter
-            (fun e ->
-              let s = Odoc_print.string_of_type_expr e in
-              ignore (Str.global_substitute re f s)
-            )
-            c.T.vc_args
+           match c.T.vc_args with
+           | T.Cstr_tuple l -> List.iter ty l
+           | T.Cstr_record l -> List.iter (fun r -> ty r.T.rf_type) l
         )
         cl
   | T.Type_record rl ->
-      List.iter
-        (fun r ->
-          let s = Odoc_print.string_of_type_expr r.T.rf_type in
-          ignore (Str.global_substitute re f s)
-        )
-        rl
+      List.iter (fun r -> ty r.T.rf_type) rl
   | T.Type_open -> ()
   );
 
   (match t.T.ty_manifest with
     None -> ()
   | Some (T.Object_type fields) ->
-      List.iter
-        (fun r ->
-          let s = Odoc_print.string_of_type_expr r.T.of_type in
-          ignore (Str.global_substitute re f s)
-          )
-        fields
+      List.iter (fun r -> ty r.T.of_type) fields
   | Some (T.Other e) ->
-      let s = Odoc_print.string_of_type_expr e in
-      ignore (Str.global_substitute re f s)
+      ty e
   );
 
   !l
@@ -208,22 +202,19 @@ let kernel_deps_of_modules modules =
 *)
 let deps_of_types ?(kernel=false) types =
   let deps_pre = List.map (fun t -> (t, type_deps t)) types in
-  let deps =
-    if kernel then
-      (
-       let graph = List.map
-           (fun (t, names) -> Dep.make_node t.Type.ty_name names)
-           deps_pre
-       in
-       let k = Dep.kernel graph in
-       List.map
-         (fun t ->
+  if kernel then
+    (
+      let graph = List.map
+          (fun (t, names) -> Dep.make_node t.Type.ty_name names)
+          deps_pre
+      in
+      let k = Dep.kernel graph in
+      List.map
+        (fun t ->
            let node = Dep.get_node k t.Type.ty_name in
            (t, Dep.set_to_list node.Dep.near)
-         )
-         types
-      )
-    else
-      deps_pre
-  in
-  deps
+        )
+        types
+    )
+  else
+    deps_pre

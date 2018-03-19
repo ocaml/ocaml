@@ -1,19 +1,20 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt     */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/mlvalues.h>
 #include "unixsupport.h"
-#include <mswsock.h>   // for SO_OPENTYPE and SO_SYNCHRONOUS_NONALERT
 
 int socket_domain_table[] = {
   PF_UNIX, PF_INET,
@@ -32,7 +33,6 @@ CAMLprim value unix_socket(domain, type, proto)
      value domain, type, proto;
 {
   SOCKET s;
-  int oldvalue, oldvaluelen, newvalue, retcode;
 
   #ifndef HAS_IPV6
   /* IPv6 requires WinSock2, we must raise an error on PF_INET6 */
@@ -42,23 +42,9 @@ CAMLprim value unix_socket(domain, type, proto)
   }
   #endif
 
-  oldvaluelen = sizeof(oldvalue);
-  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-                       (char *) &oldvalue, &oldvaluelen);
-  if (retcode == 0) {
-    /* Set sockets to synchronous mode */
-    newvalue = SO_SYNCHRONOUS_NONALERT;
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-               (char *) &newvalue, sizeof(newvalue));
-  }
   s = socket(socket_domain_table[Int_val(domain)],
                    socket_type_table[Int_val(type)],
                    Int_val(proto));
-  if (retcode == 0) {
-    /* Restore initial mode */
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-               (char *) &oldvalue, oldvaluelen);
-  }
   if (s == INVALID_SOCKET) {
     win32_maperr(WSAGetLastError());
     uerror("socket", Nothing);

@@ -1,16 +1,25 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* Abstract syntax tree after typing *)
+(** Abstract syntax tree after typing *)
+
+
+(** By comparison with {!Parsetree}:
+    - Every {!Longindent.t} is accompanied by a resolved {!Path.t}.
+
+*)
 
 open Asttypes
 open Types
@@ -18,10 +27,13 @@ open Types
 (* Value expressions for the core language *)
 
 type partial = Partial | Total
-type optional = Required | Optional
+
+(** {2 Extension points} *)
 
 type attribute = Parsetree.attribute
 type attributes = attribute list
+
+(** {2 Core language} *)
 
 type pattern =
   { pat_desc: pattern_desc;
@@ -34,24 +46,66 @@ type pattern =
 
 and pat_extra =
   | Tpat_constraint of core_type
+        (** P : T          { pat_desc = P
+                           ; pat_extra = (Tpat_constraint T, _, _) :: ... }
+         *)
   | Tpat_type of Path.t * Longident.t loc
+        (** #tconst        { pat_desc = disjunction
+                           ; pat_extra = (Tpat_type (P, "tconst"), _, _) :: ...}
+
+                           where [disjunction] is a [Tpat_or _] representing the
+                           branches of [tconst].
+         *)
+  | Tpat_open of Path.t * Longident.t loc * Env.t
   | Tpat_unpack
+        (** (module P)     { pat_desc  = Tpat_var "P"
+                           ; pat_extra = (Tpat_unpack, _, _) :: ... }
+         *)
 
 and pattern_desc =
     Tpat_any
+        (** _ *)
   | Tpat_var of Ident.t * string loc
+        (** x *)
   | Tpat_alias of pattern * Ident.t * string loc
+        (** P as a *)
   | Tpat_constant of constant
+        (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Tpat_tuple of pattern list
+        (** (P1, ..., Pn)
+
+            Invariant: n >= 2
+         *)
   | Tpat_construct of
       Longident.t loc * constructor_description * pattern list
+        (** C                []
+            C P              [P]
+            C (P1, ..., Pn)  [P1; ...; Pn]
+          *)
   | Tpat_variant of label * pattern option * row_desc ref
+        (** `A             (None)
+            `A P           (Some P)
+
+            See {!Types.row_desc} for an explanation of the last parameter.
+         *)
   | Tpat_record of
       (Longident.t loc * label_description * pattern) list *
         closed_flag
+        (** { l1=P1; ...; ln=Pn }     (flag = Closed)
+            { l1=P1; ...; ln=Pn; _}   (flag = Open)
+
+            Invariant: n > 0
+         *)
   | Tpat_array of pattern list
+        (** [| P1; ...; Pn |] *)
   | Tpat_or of pattern * pattern * row_desc option
+        (** P1 | P2
+
+            [row_desc] = [Some _] when translating [Ppat_type _],
+                         [None] otherwise.
+         *)
   | Tpat_lazy of pattern
+        (** lazy P *)
 
 and expression =
   { exp_desc: expression_desc;
@@ -64,27 +118,96 @@ and expression =
 
 and exp_extra =
   | Texp_constraint of core_type
+        (** E : T *)
   | Texp_coerce of core_type option * core_type
+        (** E :> T           [Texp_coerce (None, T)]
+            E : T0 :> T      [Texp_coerce (Some T0, T)]
+         *)
   | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
+        (** let open[!] M in    [Texp_open (!, P, M, env)]
+                                where [env] is the environment after opening [P]
+         *)
   | Texp_poly of core_type option
+        (** Used for method bodies. *)
   | Texp_newtype of string
+        (** fun (type t) ->  *)
 
 and expression_desc =
     Texp_ident of Path.t * Longident.t loc * Types.value_description
+        (** x
+            M.x
+         *)
   | Texp_constant of constant
+        (** 1, 'a', "true", 1.0, 1l, 1L, 1n *)
   | Texp_let of rec_flag * value_binding list * expression
-  | Texp_function of label * case list * partial
-  | Texp_apply of expression * (label * expression option * optional) list
-  | Texp_match of
-      expression * case list * case list * case list * partial
+        (** let P1 = E1 and ... and Pn = EN in E       (flag = Nonrecursive)
+            let rec P1 = E1 and ... and Pn = EN in E   (flag = Recursive)
+         *)
+  | Texp_function of arg_label * case list * partial
+        (** [Pexp_fun] and [Pexp_function] both translate to [Texp_function].
+            See {!Parsetree} for more details.
+
+            partial =
+              [Partial] if the pattern match is partial
+              [Total] otherwise.
+         *)
+  | Texp_apply of expression * (arg_label * expression option) list
+        (** E0 ~l1:E1 ... ~ln:En
+
+            The expression can be None if the expression is abstracted over
+            this argument. It currently appears when a label is applied.
+
+            For example:
+            let f x ~y = x + y in
+            f ~y:3
+
+            The resulting typedtree for the application is:
+            Texp_apply (Texp_ident "f/1037",
+                        [(Nolabel, None);
+                         (Labelled "y", Some (Texp_constant Const_int 3))
+                        ])
+         *)
+  | Texp_match of expression * case list * case list * case list * partial
+        (** match E0 with
+            | P1 -> E1
+            | P2 -> E2
+            | exception P3 -> E3
+            | effect P4 k -> E4
+
+            [Texp_match (E0, [(P1, E1); (P2, E2)], [(P3, E3)], [(P4, E4)], _)]
+         *)
   | Texp_try of expression * case list * case list
+        (** try E with
+            | P1 -> E1
+            | effect P2 k -> E2
+
+            [Texp_try (E, [(P1, E1)], [(P2, E2)])]
+          *)
   | Texp_tuple of expression list
+        (** (E1, ..., EN) *)
   | Texp_construct of
       Longident.t loc * constructor_description * expression list
+        (** C                []
+            C E              [E]
+            C (E1, ..., En)  [E1;...;En]
+         *)
   | Texp_variant of label * expression option
-  | Texp_record of
-      (Longident.t loc * label_description * expression) list *
-        expression option
+  | Texp_record of {
+      fields : ( Types.label_description * record_label_definition ) array;
+      representation : Types.record_representation;
+      extended_expression : expression option;
+    }
+        (** { l1=P1; ...; ln=Pn }           (extended_expression = None)
+            { E0 with l1=P1; ...; ln=Pn }   (extended_expression = Some E0)
+
+            Invariant: n > 0
+
+            If the type is { l1: t1; l2: t2 }, the expression
+            { E0 with t2=P2 } is represented as
+            Texp_record
+              { fields = [| l1, Kept t1; l2 Override P2 |]; representation;
+                extended_expression = Some E0 }
+        *)
   | Texp_field of expression * Longident.t loc * label_description
   | Texp_setfield of
       expression * Longident.t loc * label_description * expression
@@ -101,10 +224,13 @@ and expression_desc =
   | Texp_setinstvar of Path.t * Path.t * string loc * expression
   | Texp_override of Path.t * (Path.t * string loc * expression) list
   | Texp_letmodule of Ident.t * string loc * module_expr * expression
+  | Texp_letexception of extension_constructor * expression
   | Texp_assert of expression
   | Texp_lazy of expression
   | Texp_object of class_structure * string list
   | Texp_pack of module_expr
+  | Texp_unreachable
+  | Texp_extension_constructor of Longident.t loc * Path.t
 
 and meth =
     Tmeth_name of string
@@ -117,6 +243,10 @@ and case =
      c_guard: expression option;
      c_rhs: expression;
     }
+
+and record_label_definition =
+  | Kept of Types.type_expr * mutable_flag
+  | Overridden of Longident.t loc * expression
 
 (* Value expressions for the class language *)
 
@@ -133,9 +263,9 @@ and class_expr_desc =
     Tcl_ident of Path.t * Longident.t loc * core_type list
   | Tcl_structure of class_structure
   | Tcl_fun of
-      label * pattern * (Ident.t * string loc * expression) list * class_expr *
-        partial
-  | Tcl_apply of class_expr * (label * expression option * optional) list
+      arg_label * pattern * (Ident.t * string loc * expression) list
+      * class_expr * partial
+  | Tcl_apply of class_expr * (arg_label * expression option) list
   | Tcl_let of rec_flag * value_binding list *
                   (Ident.t * string loc * expression) list * class_expr
   | Tcl_constraint of
@@ -182,9 +312,12 @@ and module_expr =
     mod_attributes: attributes;
    }
 
+(** Annotations for [Tmod_constraint]. *)
 and module_type_constraint =
-  Tmodtype_implicit
-| Tmodtype_explicit of module_type
+  | Tmodtype_implicit
+  (** The module type constraint has been synthesized during typecheking. *)
+  | Tmodtype_explicit of module_type
+  (** The module type was in the source file. *)
 
 and module_expr_desc =
     Tmod_ident of Path.t * Longident.t loc
@@ -193,6 +326,9 @@ and module_expr_desc =
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of
       module_expr * Types.module_type * module_type_constraint * module_coercion
+    (** ME          (constraint = Tmodtype_implicit)
+        (ME : MT)   (constraint = Tmodtype_explicit MT)
+     *)
   | Tmod_unpack of expression * Types.module_type
 
 and structure = {
@@ -211,7 +347,7 @@ and structure_item_desc =
     Tstr_eval of expression * attributes
   | Tstr_value of rec_flag * value_binding list
   | Tstr_primitive of value_description
-  | Tstr_type of type_declaration list
+  | Tstr_type of rec_flag * type_declaration list
   | Tstr_typext of type_extension
   | Tstr_exception of extension_constructor
   | Tstr_effect of extension_constructor
@@ -219,7 +355,7 @@ and structure_item_desc =
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
   | Tstr_open of open_description
-  | Tstr_class of (class_declaration * string list * virtual_flag) list
+  | Tstr_class of (class_declaration * string list) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of include_declaration
   | Tstr_attribute of attribute
@@ -246,7 +382,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list *
                          (Ident.t * int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
-  | Tcoerce_primitive of Primitive.description
+  | Tcoerce_primitive of primitive_coercion
   | Tcoerce_alias of Path.t * module_coercion
 
 and module_type =
@@ -265,6 +401,14 @@ and module_type_desc =
   | Tmty_typeof of module_expr
   | Tmty_alias of Path.t * Longident.t loc
 
+and primitive_coercion =
+  {
+    pc_desc: Primitive.description;
+    pc_type: type_expr;
+    pc_env: Env.t;
+    pc_loc : Location.t;
+  }
+
 and signature = {
   sig_items : signature_item list;
   sig_type : Types.signature;
@@ -278,7 +422,7 @@ and signature_item =
 
 and signature_item_desc =
     Tsig_value of value_description
-  | Tsig_type of type_declaration list
+  | Tsig_type of rec_flag * type_declaration list
   | Tsig_typext of type_extension
   | Tsig_exception of extension_constructor
   | Tsig_effect of extension_constructor
@@ -337,9 +481,10 @@ and with_constraint =
   | Twith_modsubst of Path.t * Longident.t loc
 
 and core_type =
-(* mutable because of [Typeclass.declare_method] *)
   { mutable ctyp_desc : core_type_desc;
+      (** mutable because of [Typeclass.declare_method] *)
     mutable ctyp_type : type_expr;
+      (** mutable because of [Typeclass.declare_method] *)
     ctyp_env : Env.t; (* BINANNOT ADDED *)
     ctyp_loc : Location.t;
     ctyp_attributes: attributes;
@@ -348,7 +493,7 @@ and core_type =
 and core_type_desc =
     Ttyp_any
   | Ttyp_var of string
-  | Ttyp_arrow of label * core_type * core_type
+  | Ttyp_arrow of arg_label * core_type * core_type
   | Ttyp_tuple of core_type list
   | Ttyp_constr of Path.t * Longident.t loc * core_type list
   | Ttyp_object of (string * attributes * core_type) list * closed_flag
@@ -413,11 +558,15 @@ and constructor_declaration =
     {
      cd_id: Ident.t;
      cd_name: string loc;
-     cd_args: core_type list;
+     cd_args: constructor_arguments;
      cd_res: core_type option;
      cd_loc: Location.t;
      cd_attributes: attributes;
     }
+
+and constructor_arguments =
+  | Cstr_tuple of core_type list
+  | Cstr_record of label_declaration list
 
 and type_extension =
   {
@@ -440,7 +589,7 @@ and extension_constructor =
   }
 
 and extension_constructor_kind =
-    Text_decl of core_type list * core_type option
+    Text_decl of constructor_arguments * core_type option
   | Text_rebind of Path.t * Longident.t loc
 
 and class_type =
@@ -455,7 +604,7 @@ and class_type =
 and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
-  | Tcty_arrow of label * core_type * class_type
+  | Tcty_arrow of arg_label * core_type * class_type
 
 and class_signature = {
     csig_self : core_type;
@@ -492,7 +641,7 @@ and 'a class_infos =
     ci_id_class: Ident.t;
     ci_id_class_type : Ident.t;
     ci_id_object : Ident.t;
-    ci_id_typesharp : Ident.t;
+    ci_id_typehash : Ident.t;
     ci_expr: 'a;
     ci_decl: Types.class_declaration;
     ci_type_decl : Types.class_type_declaration;
@@ -511,10 +660,10 @@ val rev_let_bound_idents: value_binding list -> Ident.t list
 val let_bound_idents_with_loc:
     value_binding list -> (Ident.t * string loc) list
 
-(* Alpha conversion of patterns *)
+(** Alpha conversion of patterns *)
 val alpha_pat: (Ident.t * Ident.t) list -> pattern -> pattern
 
 val mknoloc: 'a -> 'a Asttypes.loc
 val mkloc: 'a -> Location.t -> 'a Asttypes.loc
 
-val pat_bound_idents: pattern -> (Ident.t * string Asttypes.loc) list
+val pat_bound_idents: pattern -> Ident.t list

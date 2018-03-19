@@ -3,7 +3,7 @@
 type (_, _) eq = Refl : ('a, 'a) eq
 
 let magic : 'a 'b. 'a -> 'b =
-  fun (type a) (type b) (x : a) ->
+  fun (type a b) (x : a) ->
     let module M =
       (functor (T : sig type 'a t end) ->
        struct
@@ -12,6 +12,11 @@ let magic : 'a 'b. 'a -> 'b =
         (struct type 'a t = unit end)
     in M.f Refl
 ;;
+[%%expect{|
+type (_, _) eq = Refl : ('a, 'a) eq
+Line _, characters 44-52:
+Error: Type a is not a subtype of b
+|}];;
 
 (* Variance and subtyping *)
 
@@ -25,6 +30,11 @@ let magic : 'a 'b. 'a -> 'b =
       fun (type a) (Refl : (a, < >) eq) (s : < >) -> (s :> a) in
     (downcast bad_proof ((object method m = x end) :> < >)) # m
 ;;
+[%%expect{|
+Line _, characters 0-36:
+Error: In this GADT definition, the variance of some parameter
+       cannot be checked
+|}];;
 
 (* Record patterns *)
 
@@ -36,6 +46,14 @@ let check : type s . s t * s -> bool = function
   | BoolLit, false -> false
   | IntLit , 6 -> false
 ;;
+[%%expect{|
+type _ t = IntLit : int t | BoolLit : bool t
+Line _, characters 39-99:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(IntLit, 0)
+val check : 's t * 's -> bool = <fun>
+|}];;
 
 type ('a, 'b) pair = { fst : 'a; snd : 'b }
 
@@ -43,3 +61,11 @@ let check : type s . (s t, s) pair -> bool = function
   | {fst = BoolLit; snd = false} -> false
   | {fst = IntLit ; snd =  6} -> false
 ;;
+[%%expect{|
+type ('a, 'b) pair = { fst : 'a; snd : 'b; }
+Line _, characters 45-134:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{fst=IntLit; snd=0}
+val check : ('s t, 's) pair -> bool = <fun>
+|}];;

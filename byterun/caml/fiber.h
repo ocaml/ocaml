@@ -1,6 +1,8 @@
 #ifndef CAML_FIBER_H
 #define CAML_FIBER_H
 
+#ifdef CAML_INTERNALS
+
 #include "misc.h"
 #include "mlvalues.h"
 #include "memory.h"
@@ -111,5 +113,7 @@ value caml_reverse_fiber_stack(value stack);
 #ifdef NATIVE_CODE
 void caml_get_stack_sp_pc (value stack, char** sp /* out */, uintnat* pc /* out */);
 #endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_FIBER_H */

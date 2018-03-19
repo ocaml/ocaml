@@ -1,14 +1,4 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
 
 external mycallback1 : ('a -> 'b) -> 'a -> 'b = "mycallback1"
 external mycallback2 : ('a -> 'b -> 'c) -> 'a -> 'b -> 'c = "mycallback2"
@@ -54,8 +44,8 @@ let sighandler signo =
   (* Thoroughly wipe the minor heap *)
   ignore (tak (18, 12, 6))
 
-external unix_getpid : unit -> int = "unix_getpid" "noalloc"
-external unix_kill : int -> int -> unit = "unix_kill" "noalloc"
+external unix_getpid : unit -> int = "unix_getpid" [@@noalloc]
+external unix_kill : int -> int -> unit = "unix_kill" [@@noalloc]
 
 let callbacksig () =
   let pid = unix_getpid() in
@@ -63,7 +53,7 @@ let callbacksig () =
   let s = String.make 5 'b' in
   (* Send a signal to self.  We want s to remain in a register and
      not be spilled on the stack, hence we declare unix_kill
-     "noalloc". *)
+     [@@noalloc]. *)
   unix_kill pid Sys.sigusr1;
   (* Allocate some more so that the signal will be tested *)
   let u = (s, s) in

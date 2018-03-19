@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Xavier Leroy, projet Cristal, INRIA Rocquencourt            *)
-(*                                                                     *)
-(*  Copyright 2004 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Xavier Leroy, projet Cristal, INRIA Rocquencourt              *)
+(*                                                                        *)
+(*   Copyright 2004 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 type shape =
   | Function
@@ -18,15 +20,23 @@ type shape =
   | Module of shape array
   | Value of Obj.t
 
+let overwrite o n =
+  assert (Obj.size o >= Obj.size n);
+  for i = 0 to Obj.size n - 1 do
+    Obj.set_field o i (Obj.field n i)
+  done
+
 let rec init_mod loc shape =
   match shape with
   | Function ->
-      let pad1 = 1 and pad2 = 2 and pad3 = 3 and pad4 = 4
-      and pad5 = 5 and pad6 = 6 and pad7 = 7 and pad8 = 8 in
-      Obj.repr(fun _ ->
-        ignore pad1; ignore pad2; ignore pad3; ignore pad4;
-        ignore pad5; ignore pad6; ignore pad7; ignore pad8;
-        raise (Undefined_recursive_module loc))
+      (* Two code pointer words (curried and full application), arity
+         and eight environment entries makes 11 words. *)
+      let closure = Obj.new_block Obj.closure_tag 11 in
+      let template =
+        Obj.repr (fun _ -> raise (Undefined_recursive_module loc))
+      in
+      overwrite closure template;
+      closure
   | Lazy ->
       Obj.repr (lazy (raise (Undefined_recursive_module loc)))
   | Class ->
@@ -35,12 +45,6 @@ let rec init_mod loc shape =
       Obj.repr (Array.map (init_mod loc) comps)
   | Value v ->
       v
-
-let overwrite o n =
-  assert (Obj.size o >= Obj.size n);
-  for i = 0 to Obj.size n - 1 do
-    Obj.set_field o i (Obj.field n i)
-  done
 
 let rec update_mod shape o n =
   match shape with
@@ -66,4 +70,4 @@ let rec update_mod shape o n =
       for i = 0 to Array.length comps - 1 do
         update_mod comps.(i) (Obj.field o i) (Obj.field n i)
       done
-  | Value v -> () (* the value is already there *)
+  | Value _ -> () (* the value is already there *)

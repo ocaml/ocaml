@@ -1,14 +1,21 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2010 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                       Pierre Chambart, OCamlPro                        *)
+(*           Mark Shinwell and Leo White, Jane Street Europe              *)
+(*                                                                        *)
+(*   Copyright 2010 Institut National de Recherche en Informatique et     *)
+(*     en Automatique                                                     *)
+(*   Copyright 2013--2016 OCamlPro SAS                                    *)
+(*   Copyright 2014--2016 Jane Street Group LLC                           *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Format of .cmx, .cmxa and .cmxs files *)
 
@@ -22,6 +29,10 @@
    The .cmx file contains these infos (as an externed record) plus a MD5
    of these infos *)
 
+type export_info =
+  | Clambda of Clambda.value_approximation
+  | Flambda of Export_info.t
+
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
     mutable ui_symbol: string;            (* Prefix for symbols *)
@@ -29,10 +40,10 @@ type unit_infos =
     mutable ui_imports_cmi:
               (string * Digest.t option) list; (* Interfaces imported *)
     mutable ui_imports_cmx:(string * Digest.t option) list; (* Infos imported *)
-    mutable ui_approx: Clambda.value_approximation; (* Approx of the structure*)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_send_fun: int list;              (* Send functions needed *)
+    mutable ui_export_info: export_info;
     mutable ui_force_link: bool }               (* Always linked *)
 
 (* Each .a library has a matching .cmxa file that provides the following

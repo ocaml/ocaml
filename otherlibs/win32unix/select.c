@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Contributed by Sylvain Le Gall for Lexifi                          */
-/*                                                                     */
-/*  Copyright 2008 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Contributed by Sylvain Le Gall for Lexifi                            */
+/*                                                                        */
+/*   Copyright 2008 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
@@ -152,7 +154,8 @@ typedef SELECTQUERY *LPSELECTQUERY;
 typedef struct _SELECTDATA {
   LIST             lst;
   SELECTTYPE       EType;
-  /* Sockets may generate a result for all three lists from one single query object
+  /* Sockets may generate a result for all three lists from one single
+     query object
    */
   SELECTRESULT     aResults[MAXIMUM_SELECT_OBJECTS * 3];
   DWORD            nResultsCount;
@@ -231,7 +234,8 @@ void select_data_free (LPSELECTDATA lpSelectData)
 }
 
 /* Add a result to select data, return zero if something goes wrong. */
-DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, int lpOrigIdx)
+DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode,
+                              int lpOrigIdx)
 {
   DWORD res;
   DWORD i;
@@ -278,7 +282,8 @@ DWORD select_data_query_add (LPSELECTDATA lpSelectData,
  * If none is found, create a new one. Return the corresponding SELECTDATA, and
  * update provided SELECTDATA head, if required.
  */
-LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData, SELECTTYPE EType)
+LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
+                                     SELECTTYPE EType)
 {
   LPSELECTDATA res;
 
@@ -335,13 +340,16 @@ void read_console_poll(HANDLE hStop, void *_data)
   while (lpSelectData->EState == SELECT_STATE_NONE)
   {
     waitRes = WaitForMultipleObjects(2, events, FALSE, INFINITE);
-    if (waitRes == WAIT_OBJECT_0 || check_error(lpSelectData, waitRes == WAIT_FAILED))
+    if (waitRes == WAIT_OBJECT_0
+        || check_error(lpSelectData, waitRes == WAIT_FAILED))
     {
       /* stop worker event or error */
       break;
     }
     /* console event */
-    if (check_error(lpSelectData, PeekConsoleInput(lpQuery->hFileDescr, &record, 1, &n) == 0))
+    if (check_error(lpSelectData, PeekConsoleInput(lpQuery->hFileDescr,
+                                                   &record, 1, &n)
+                    == 0))
     {
       break;
     }
@@ -357,7 +365,9 @@ void read_console_poll(HANDLE hStop, void *_data)
     else
     {
       /* discard everything else and try again */
-      if (check_error(lpSelectData, ReadConsoleInput(lpQuery->hFileDescr, &record, 1, &n) == 0))
+      if (check_error(lpSelectData, ReadConsoleInput(lpQuery->hFileDescr,
+                                                     &record, 1, &n)
+                      == 0))
       {
         break;
       }
@@ -425,7 +435,8 @@ void read_pipe_poll (HANDLE hStop, void *_data)
       if ((n > 0) || (res == 0))
       {
         lpSelectData->EState = SELECT_STATE_SIGNALED;
-        select_data_result_add(lpSelectData, iterQuery->EMode, iterQuery->lpOrigIdx);
+        select_data_result_add(lpSelectData, iterQuery->EMode,
+                               iterQuery->lpOrigIdx);
       };
     };
 
@@ -445,7 +456,8 @@ void read_pipe_poll (HANDLE hStop, void *_data)
       {
         wait = 10;
       };
-      if (event == WAIT_OBJECT_0 || check_error(lpSelectData, event == WAIT_FAILED))
+      if (event == WAIT_OBJECT_0
+          || check_error(lpSelectData, event == WAIT_FAILED))
       {
         break;
       }
@@ -554,19 +566,28 @@ void socket_poll (HANDLE hStop, void *_data)
         {
           /* Find out what kind of events were raised
            */
-          if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr), aEvents[i], &events) == 0)
+          if (WSAEnumNetworkEvents((SOCKET)(iterQuery->hFileDescr),
+                                   aEvents[i], &events) == 0)
           {
-            if ((iterQuery->EMode & SELECT_MODE_READ) != 0 && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE)) != 0)
+            if ((iterQuery->EMode & SELECT_MODE_READ) != 0
+                && (events.lNetworkEvents & (FD_READ | FD_ACCEPT | FD_CLOSE))
+                   != 0)
             {
-              select_data_result_add(lpSelectData, SELECT_MODE_READ, iterQuery->lpOrigIdx);
+              select_data_result_add(lpSelectData, SELECT_MODE_READ,
+                                     iterQuery->lpOrigIdx);
             }
-            if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0 && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE)) != 0)
+            if ((iterQuery->EMode & SELECT_MODE_WRITE) != 0
+                && (events.lNetworkEvents & (FD_WRITE | FD_CONNECT | FD_CLOSE))
+                   != 0)
             {
-              select_data_result_add(lpSelectData, SELECT_MODE_WRITE, iterQuery->lpOrigIdx);
+              select_data_result_add(lpSelectData, SELECT_MODE_WRITE,
+                                     iterQuery->lpOrigIdx);
             }
-            if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0 && (events.lNetworkEvents & FD_OOB) != 0)
+            if ((iterQuery->EMode & SELECT_MODE_EXCEPT) != 0
+                && (events.lNetworkEvents & FD_OOB) != 0)
             {
-              select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT, iterQuery->lpOrigIdx);
+              select_data_result_add(lpSelectData, SELECT_MODE_EXCEPT,
+                                     iterQuery->lpOrigIdx);
             }
           }
         }
@@ -612,13 +633,15 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
   /* Polling socket can be done mulitple handle at the same time. You just
      need one worker to use it. Try to find if there is already a worker
      handling this kind of request.
-     Only one event can be associated with a given socket which means that if a socket
-     is in more than one of the fd_sets then we have to find that particular query and update
-     EMode with the additional flag.
+     Only one event can be associated with a given socket which means
+     that if a socket is in more than one of the fd_sets then we have
+     to find that particular query and update EMode with the
+     additional flag.
      */
   DEBUG_PRINT("Scanning list of worker to find one that already handle socket");
   /* Search for job */
-  DEBUG_PRINT("Searching for an available job for type %d for descriptor %d", SELECT_TYPE_SOCKET, hFileDescr);
+  DEBUG_PRINT("Searching for an available job for type %d for descriptor %d",
+              SELECT_TYPE_SOCKET, hFileDescr);
   while (res != NULL)
   {
     if (res->EType == SELECT_TYPE_SOCKET)
@@ -629,7 +652,8 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData,
       {
         i--;
       }
-      /* If we didn't find the socket but this worker has available slots, store it
+      /* If we didn't find the socket but this worker has available
+         slots, store it
        */
       if (i < 0)
       {
@@ -748,7 +772,8 @@ static SELECTHANDLETYPE get_handle_type(value fd)
         };
         break;
 
-      case FILE_TYPE_PIPE: /* a named or an anonymous pipe (socket already handled) */
+      case FILE_TYPE_PIPE: /* a named or an anonymous pipe (socket
+                              already handled) */
         res = SELECT_HANDLE_PIPE;
         break;
     };
@@ -758,7 +783,8 @@ static SELECTHANDLETYPE get_handle_type(value fd)
 }
 
 /* Choose what to do with given data */
-LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode, value fd, int lpOrigIdx)
+LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode,
+                                   value fd, int lpOrigIdx)
 {
   LPSELECTDATA    res;
   HANDLE          hFileDescr;
@@ -799,7 +825,8 @@ LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode, 
       /* Console is always ready in write operation, need to check for read. */
       if (EMode == SELECT_MODE_READ)
       {
-        res = read_console_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
+        res = read_console_poll_add(res, EMode, hFileDescr, lpOrigIdx,
+                                    uFlagsFd);
       }
       else if (EMode == SELECT_MODE_WRITE)
       {
@@ -817,7 +844,8 @@ LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode, 
       }
       else if (EMode == SELECT_MODE_WRITE)
       {
-        DEBUG_PRINT("No need to check availability of data on pipe, write operation always possible");
+        DEBUG_PRINT("No need to check availability of data on pipe, "
+                    "write operation always possible");
         res = static_poll_add(res, EMode, hFileDescr, lpOrigIdx, uFlagsFd);
       };
       break;
@@ -868,7 +896,8 @@ static DWORD caml_list_length (value lst)
   CAMLreturnT(DWORD, res);
 }
 
-static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefds, value exceptfds)
+static value find_handle(LPSELECTRESULT iterResult, value readfds,
+                         value writefds, value exceptfds)
 {
   CAMLparam3(readfds, writefds, exceptfds);
   CAMLlocal2(result, list);
@@ -885,6 +914,8 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefd
     case SELECT_MODE_EXCEPT:
       list = exceptfds;
       break;
+    case SELECT_MODE_NONE:
+      CAMLassert(0);
   };
 
   for(i=0; list != Val_unit && i < iterResult->lpOrigIdx; ++i )
@@ -902,15 +933,21 @@ static value find_handle(LPSELECTRESULT iterResult, value readfds, value writefd
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
-/* Convert fdlist to an fd_set if all the handles in fdlist are sockets and return 0.
- * Returns 1 if a non-socket value is encountered.
+/* Convert fdlist to an fd_set if all the handles in fdlist are
+ * sockets and return 1.  Returns 0 if a non-socket value is
+ * encountered, or if there are more than FD_SETSIZE sockets.
  */
 static int fdlist_to_fdset(value fdlist, fd_set *fdset)
 {
   value l, c;
+  int n = 0;
   FD_ZERO(fdset);
-  for (l = fdlist; l != Val_int(0); l = Field_imm(l, 1)) {
-    c = Field_imm(l, 0);
+  for (l = fdlist; l != Val_int(0); l = Field(l, 1)) {
+    if (++n > FD_SETSIZE) {
+      DEBUG_PRINT("More than FD_SETSIZE sockets");
+      return 0;
+    }
+    c = Field(l, 0);
     if (Descr_kind_val(c) == KIND_SOCKET) {
       FD_SET(Socket_val(c), fdset);
     } else {
@@ -935,7 +972,8 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
   return res;
 }
 
-CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value timeout)
+CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
+                           value timeout)
 {
   /* Event associated to handle */
   DWORD   nEventsCount;
@@ -987,7 +1025,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
 
   err = 0;
   tm = Double_val(timeout);
-  if (readfds == Val_int(0) && writefds == Val_int(0) && exceptfds == Val_int(0)) {
+  if (readfds == Val_int(0)
+      && writefds == Val_int(0)
+      && exceptfds == Val_int(0)) {
     DEBUG_PRINT("nothing to do");
     if ( tm > 0.0 ) {
       enter_blocking_section();
@@ -996,7 +1036,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
     }
     read_list = write_list = except_list = Val_int(0);
   } else {
-    if (fdlist_to_fdset(readfds, &read) && fdlist_to_fdset(writefds, &write) && fdlist_to_fdset(exceptfds, &except)) {
+    if (fdlist_to_fdset(readfds, &read)
+        && fdlist_to_fdset(writefds, &write)
+        && fdlist_to_fdset(exceptfds, &except)) {
       DEBUG_PRINT("only sockets to select on, using classic select");
       if (tm < 0.0) {
         tvp = (struct timeval *) NULL;
@@ -1046,7 +1088,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
         }
 
 
-      /* Create list of select data, based on the different list of fd to watch */
+      /* Create list of select data, based on the different list of fd
+         to watch */
       DEBUG_PRINT("Dispatch read fd");
       handle_set_init(&hds, hdsData, hdsMax);
       i=0;
@@ -1056,11 +1099,13 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
-              lpSelectData = select_data_dispatch(lpSelectData, SELECT_MODE_READ, fd, i++);
+              lpSelectData = select_data_dispatch(lpSelectData,
+                                                  SELECT_MODE_READ, fd, i++);
             }
           else
             {
-              DEBUG_PRINT("Discarding handle %x which is already monitor for read", Handle_val(fd));
+              DEBUG_PRINT("Discarding handle %x which is already monitor "
+                          "for read", Handle_val(fd));
             }
         }
       handle_set_reset(&hds);
@@ -1074,11 +1119,13 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
-              lpSelectData = select_data_dispatch(lpSelectData, SELECT_MODE_WRITE, fd, i++);
+              lpSelectData = select_data_dispatch(lpSelectData,
+                                                  SELECT_MODE_WRITE, fd, i++);
             }
           else
             {
-              DEBUG_PRINT("Discarding handle %x which is already monitor for write", Handle_val(fd));
+              DEBUG_PRINT("Discarding handle %x which is already monitor "
+                          "for write", Handle_val(fd));
             }
         }
       handle_set_reset(&hds);
@@ -1092,11 +1139,13 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           if (!handle_set_mem(&hds, Handle_val(fd)))
             {
               handle_set_add(&hds, Handle_val(fd));
-              lpSelectData = select_data_dispatch(lpSelectData, SELECT_MODE_EXCEPT, fd, i++);
+              lpSelectData = select_data_dispatch(lpSelectData,
+                                                  SELECT_MODE_EXCEPT, fd, i++);
             }
           else
             {
-              DEBUG_PRINT("Discarding handle %x which is already monitor for exceptional", Handle_val(fd));
+              DEBUG_PRINT("Discarding handle %x which is already monitor "
+                          "for exceptional", Handle_val(fd));
             }
         }
       handle_set_reset(&hds);
@@ -1127,8 +1176,10 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
                 worker_job_submit(
                                   iterSelectData->funcWorker,
                                   (void *)iterSelectData);
-              DEBUG_PRINT("Job submitted to worker %x", iterSelectData->lpWorker);
-              lpEventsDone[nEventsCount] = worker_job_event_done(iterSelectData->lpWorker);
+              DEBUG_PRINT("Job submitted to worker %x",
+                          iterSelectData->lpWorker);
+              lpEventsDone[nEventsCount]
+                = worker_job_event_done(iterSelectData->lpWorker);
               nEventsCount++;
             };
           iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
@@ -1145,7 +1196,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
           if (err == 0 && !hasStaticData)
             {
               DEBUG_PRINT("Waiting for one select worker to be done");
-              switch (WaitForMultipleObjects(nEventsCount, lpEventsDone, FALSE, milliseconds))
+              switch (WaitForMultipleObjects(nEventsCount, lpEventsDone, FALSE,
+                                             milliseconds))
                 {
                 case WAIT_FAILED:
                   err = GetLastError();
@@ -1174,7 +1226,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
             };
 
           DEBUG_PRINT("Waiting for every select worker to be done");
-          switch (WaitForMultipleObjects(nEventsCount, lpEventsDone, TRUE, INFINITE))
+          switch (WaitForMultipleObjects(nEventsCount, lpEventsDone, TRUE,
+                                         INFINITE))
             {
             case WAIT_FAILED:
               err = GetLastError();
@@ -1207,8 +1260,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
               for (i = 0; i < iterSelectData->nResultsCount; i++)
                 {
                   iterResult = &(iterSelectData->aResults[i]);
-                  l = caml_alloc(2, 0);
-                  Store_field(l, 0, find_handle(iterResult, readfds, writefds, exceptfds));
+                  l = alloc_small(2, 0);
+                  Store_field(l, 0, find_handle(iterResult, readfds, writefds,
+                                                exceptfds));
                   switch (iterResult->EMode)
                     {
                     case SELECT_MODE_READ:
@@ -1223,6 +1277,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
                       Store_field(l, 1, except_list);
                       except_list = l;
                       break;
+                    case SELECT_MODE_NONE:
+                      CAMLassert(0);
                     }
                 }
               /* We try to only process the first error, bypass other errors */

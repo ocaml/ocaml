@@ -14,6 +14,6 @@ external mypushroot : 'a -> ('b -> 'c) -> 'b -> 'a = "mypushroot"
 external mycamlparam : 'a -> ('b -> 'c) -> 'b -> 'a = "mycamlparam"
 val tripwire : (string -> (unit -> int) -> unit -> 'a) -> 'a
 val sighandler : 'a -> unit
-external unix_getpid : unit -> int = "unix_getpid" "noalloc"
-external unix_kill : int -> int -> unit = "unix_kill" "noalloc"
+external unix_getpid : unit -> int = "unix_getpid" [@@noalloc]
+external unix_kill : int -> int -> unit = "unix_kill" [@@noalloc]
 val callbacksig : unit -> string

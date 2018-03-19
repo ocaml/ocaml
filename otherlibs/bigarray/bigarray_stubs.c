@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2000 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Manuel Serrano and Xavier Leroy, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2000 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -22,6 +26,7 @@
 #include "caml/hash.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 #define int8 caml_ba_int8
 #define uint8 caml_ba_uint8
@@ -279,9 +284,9 @@ value caml_ba_get_N(value vb, value * vind, int nind)
   case CAML_BA_UINT16:
     return Val_int(((uint16 *) b->data)[offset]);
   case CAML_BA_INT32:
-    return caml_copy_int32(((int32 *) b->data)[offset]);
+    return caml_copy_int32(((int32_t *) b->data)[offset]);
   case CAML_BA_INT64:
-    return caml_copy_int64(((int64 *) b->data)[offset]);
+    return caml_copy_int64(((int64_t *) b->data)[offset]);
   case CAML_BA_NATIVE_INT:
     return caml_copy_nativeint(((intnat *) b->data)[offset]);
   case CAML_BA_CAML_INT:
@@ -388,7 +393,7 @@ CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 
 CAMLprim value caml_ba_uint8_get64(value vb, value vind)
 {
-  uint64 res;
+  uint64_t res;
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
@@ -402,15 +407,15 @@ CAMLprim value caml_ba_uint8_get64(value vb, value vind)
   b7 = ((unsigned char*) b->data)[idx+6];
   b8 = ((unsigned char*) b->data)[idx+7];
 #ifdef ARCH_BIG_ENDIAN
-  res = (uint64) b1 << 56 | (uint64) b2 << 48
-        | (uint64) b3 << 40 | (uint64) b4 << 32
-        | (uint64) b5 << 24 | (uint64) b6 << 16
-        | (uint64) b7 << 8 | (uint64) b8;
+  res = (uint64_t) b1 << 56 | (uint64_t) b2 << 48
+        | (uint64_t) b3 << 40 | (uint64_t) b4 << 32
+        | (uint64_t) b5 << 24 | (uint64_t) b6 << 16
+        | (uint64_t) b7 << 8 | (uint64_t) b8;
 #else
-  res = (uint64) b8 << 56 | (uint64) b7 << 48
-        | (uint64) b6 << 40 | (uint64) b5 << 32
-        | (uint64) b4 << 24 | (uint64) b3 << 16
-        | (uint64) b2 << 8 | (uint64) b1;
+  res = (uint64_t) b8 << 56 | (uint64_t) b7 << 48
+        | (uint64_t) b6 << 40 | (uint64_t) b5 << 32
+        | (uint64_t) b4 << 24 | (uint64_t) b3 << 16
+        | (uint64_t) b2 << 8 | (uint64_t) b1;
 #endif
   return caml_copy_int64(res);
 }
@@ -447,9 +452,9 @@ static value caml_ba_set_aux(value vb, value * vind, intnat nind, value newval)
   case CAML_BA_UINT16:
     ((int16 *) b->data)[offset] = Int_val(newval); break;
   case CAML_BA_INT32:
-    ((int32 *) b->data)[offset] = Int32_val(newval); break;
+    ((int32_t *) b->data)[offset] = Int32_val(newval); break;
   case CAML_BA_INT64:
-    ((int64 *) b->data)[offset] = Int64_val(newval); break;
+    ((int64_t *) b->data)[offset] = Int64_val(newval); break;
   case CAML_BA_NATIVE_INT:
     ((intnat *) b->data)[offset] = Nativeint_val(newval); break;
   case CAML_BA_CAML_INT:
@@ -577,7 +582,7 @@ CAMLprim value caml_ba_uint8_set64(value vb, value vind, value newval)
 {
   unsigned char b1, b2, b3, b4, b5, b6, b7, b8;
   intnat idx = Long_val(vind);
-  int64 val;
+  int64_t val;
   struct caml_ba_array * b = Caml_ba_array_val(vb);
   if (idx < 0 || idx >= b->dim[0] - 7) caml_array_bound_error();
   val = Int64_val(newval);
@@ -760,9 +765,9 @@ static int caml_ba_compare(value v1, value v2)
   case CAML_BA_UINT16:
     DO_INTEGER_COMPARISON(uint16);
   case CAML_BA_INT32:
-    DO_INTEGER_COMPARISON(int32);
+    DO_INTEGER_COMPARISON(int32_t);
   case CAML_BA_INT64:
-    DO_INTEGER_COMPARISON(int64);
+    DO_INTEGER_COMPARISON(int64_t);
   case CAML_BA_CAML_INT:
   case CAML_BA_NATIVE_INT:
     DO_INTEGER_COMPARISON(intnat);
@@ -780,7 +785,7 @@ static intnat caml_ba_hash(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
   intnat num_elts, n;
-  uint32 h, w;
+  uint32_t h, w;
   int i;
 
   num_elts = 1;
@@ -820,7 +825,7 @@ static intnat caml_ba_hash(value v)
   }
   case CAML_BA_INT32:
   {
-    uint32 * p = b->data;
+    uint32_t * p = b->data;
     if (num_elts > 64) num_elts = 64;
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_uint32(h, *p);
     break;
@@ -835,7 +840,7 @@ static intnat caml_ba_hash(value v)
   }
   case CAML_BA_INT64:
   {
-    int64 * p = b->data;
+    int64_t * p = b->data;
     if (num_elts > 32) num_elts = 32;
     for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
     break;
@@ -878,7 +883,7 @@ static void caml_ba_serialize_longarray(void * data,
   } else {
     caml_serialize_int_1(0);
     for (n = 0, p = data; n < num_elts; n++, p++)
-      caml_serialize_int_4((int32) *p);
+      caml_serialize_int_4((int32_t) *p);
   }
 #else
   caml_serialize_int_1(0);
@@ -1075,6 +1080,33 @@ CAMLprim value caml_ba_slice(value vb, value vind)
   #undef b
 }
 
+/* Changing the layout of an array (memory is shared) */
+
+CAMLprim value caml_ba_change_layout(value vb, value vlayout)
+{
+  CAMLparam2 (vb, vlayout);
+  CAMLlocal1 (res);
+  #define b ((struct caml_ba_array *) Caml_ba_array_val(vb))
+  /* if the layout is different, change the flags and reverse the dimensions */
+  if (Caml_ba_layout_val(vlayout) != (b->flags & CAML_BA_LAYOUT_MASK)) {
+    /* change the flags to reflect the new layout */
+    int flags = (b->flags & (CAML_BA_KIND_MASK | CAML_BA_MANAGED_MASK))
+                 | Caml_ba_layout_val(vlayout);
+    /* reverse the dimensions */
+    intnat new_dim[CAML_BA_MAX_NUM_DIMS];
+    unsigned int i;
+    for(i = 0; i < b->num_dims; i++) new_dim[i] = b->dim[b->num_dims - i - 1];
+    res = caml_ba_alloc(flags, b->num_dims, b->data, new_dim);
+    caml_ba_update_proxy(b, Caml_ba_array_val(res));
+    CAMLreturn(res);
+  } else {
+    /* otherwise, do nothing */
+    CAMLreturn(vb);
+  }
+  #undef b
+}
+
+
 /* Extracting a sub-array of same number of dimensions */
 
 CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
@@ -1120,12 +1152,19 @@ CAMLprim value caml_ba_sub(value vb, value vofs, value vlen)
 
 /* Copying a big array into another one */
 
+#define LEAVE_RUNTIME_OP_CUTOFF 4096
+#define is_mmapped(ba) ((ba)->flags & CAML_BA_MAPPED_FILE)
+
 CAMLprim value caml_ba_blit(value vsrc, value vdst)
 {
+  CAMLparam2(vsrc, vdst);
   struct caml_ba_array * src = Caml_ba_array_val(vsrc);
   struct caml_ba_array * dst = Caml_ba_array_val(vdst);
+  void *src_data = src->data;
+  void *dst_data = dst->data;
   int i;
   intnat num_bytes;
+  int leave_runtime;
 
   /* Check same numbers of dimensions and same dimensions */
   if (src->num_dims != dst->num_dims) goto blit_error;
@@ -1135,19 +1174,44 @@ CAMLprim value caml_ba_blit(value vsrc, value vdst)
   num_bytes =
     caml_ba_num_elts(src)
     * caml_ba_element_size[src->flags & CAML_BA_KIND_MASK];
+  leave_runtime =
+    (
+      (num_bytes >= LEAVE_RUNTIME_OP_CUTOFF*sizeof(long))
+      || is_mmapped(src)
+      || is_mmapped(dst)
+    );
   /* Do the copying */
-  memmove (dst->data, src->data, num_bytes);
-  return Val_unit;
+  if (leave_runtime) caml_enter_blocking_section();
+  memmove (dst_data, src_data, num_bytes);
+  if (leave_runtime) caml_leave_blocking_section();
+  CAMLreturn (Val_unit);
  blit_error:
   caml_invalid_argument("Bigarray.blit: dimension mismatch");
-  return Val_unit;              /* not reached */
+  CAMLreturn (Val_unit);              /* not reached */
 }
 
 /* Filling a big array with a given value */
 
+#define FILL_GEN_LOOP(n_ops, loop) do{                                       \
+  int leave_runtime = ((n_ops >= LEAVE_RUNTIME_OP_CUTOFF) || is_mmapped(b)); \
+  if (leave_runtime) caml_enter_blocking_section();                          \
+  loop;                                                                      \
+  if (leave_runtime) caml_leave_blocking_section();                          \
+}while(0)
+
+#define FILL_SCALAR_LOOP                                        \
+  FILL_GEN_LOOP(num_elts,                                       \
+    for (p = data; num_elts > 0; p++, num_elts--) *p = init)
+
+#define FILL_COMPLEX_LOOP                                                    \
+  FILL_GEN_LOOP(num_elts + num_elts,                                         \
+    for (p = data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; })
+
 CAMLprim value caml_ba_fill(value vb, value vinit)
 {
+  CAMLparam1(vb);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
+  void *data = b->data;
   intnat num_elts = caml_ba_num_elts(b);
 
   switch (b->flags & CAML_BA_KIND_MASK) {
@@ -1156,13 +1220,13 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_FLOAT64: {
     double init = Double_val(vinit);
     double * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_CHAR:
@@ -1170,56 +1234,56 @@ CAMLprim value caml_ba_fill(value vb, value vinit)
   case CAML_BA_UINT8: {
     int init = Int_val(vinit);
     unsigned char * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
     int init = Int_val(vinit);
     int16 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_INT32: {
-    int32 init = Int32_val(vinit);
-    int32 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    int32_t init = Int32_val(vinit);
+    int32_t * p;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_INT64: {
-    int64 init = Int64_val(vinit);
-    int64 * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    int64_t init = Int64_val(vinit);
+    int64_t * p;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_NATIVE_INT: {
     intnat init = Nativeint_val(vinit);
     intnat * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_CAML_INT: {
     intnat init = Long_val(vinit);
     intnat * p;
-    for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
+    FILL_SCALAR_LOOP;
     break;
   }
   case CAML_BA_COMPLEX32: {
     float init0 = Double_field(vinit, 0);
     float init1 = Double_field(vinit, 1);
     float * p;
-    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    FILL_COMPLEX_LOOP;
     break;
   }
   case CAML_BA_COMPLEX64: {
     double init0 = Double_field(vinit, 0);
     double init1 = Double_field(vinit, 1);
     double * p;
-    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    FILL_COMPLEX_LOOP;
     break;
   }
   }
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 /* Reshape an array: change dimensions and number of dimensions, preserving

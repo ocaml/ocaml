@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*     Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt       *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Int_misc
 open Nat
@@ -40,6 +42,15 @@ let unit_big_int =
 (* Number of digits in a big_int *)
 let num_digits_big_int bi =
  num_digits_nat (bi.abs_value) 0 (length_nat bi.abs_value)
+
+(* Number of bits in a big_int *)
+let num_bits_big_int bi =
+  let nd = num_digits_nat (bi.abs_value) 0 (length_nat bi.abs_value) in
+  (* nd = 1 if bi = 0 *)
+  let lz = num_leading_zero_bits_in_digit bi.abs_value (nd - 1) in
+  (* lz = length_of_digit if bi = 0 *)
+  nd * length_of_digit - lz
+  (* = 0 if bi = 0 *)
 
 (* Opposite of a big_int *)
 let minus_big_int bi =
@@ -201,7 +212,7 @@ let mult_big_int bi1 bi2 =
            else (ignore (mult_nat res 0 size_res (bi1.abs_value) 0 size_bi1
                            (bi2.abs_value) 0 size_bi2);res) }
 
-(* (quotient, rest) of the euclidian division of 2 big_int *)
+(* (quotient, remainder ) of the euclidian division of 2 big_int *)
 let quomod_big_int bi1 bi2 =
  if bi2.sign = 0 then raise Division_by_zero
  else
@@ -209,8 +220,8 @@ let quomod_big_int bi1 bi2 =
   and size_bi2 = num_digits_big_int bi2 in
    match compare_nat (bi1.abs_value) 0 size_bi1
                      (bi2.abs_value) 0 size_bi2 with
-      -1 -> (* 1/2  -> 0, reste 1, -1/2  -> -1, reste 1 *)
-            (* 1/-2 -> 0, reste 1, -1/-2 -> 1, reste 1 *)
+      -1 -> (* 1/2  -> 0, remains 1, -1/2  -> -1, remains 1 *)
+            (* 1/-2 -> 0, remains 1, -1/-2 -> 1, remains 1 *)
              if bi1.sign >= 0 then
                (big_int_of_int 0, bi1)
              else if bi2.sign >= 0 then
@@ -429,9 +440,12 @@ let sys_big_int_of_string_base s ofs len sgn =
   if len < 2 then sys_big_int_of_string_aux s ofs len sgn 10
   else
     match (s.[ofs], s.[ofs+1]) with
-    | ('0', 'x') | ('0', 'X') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
-    | ('0', 'o') | ('0', 'O') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
-    | ('0', 'b') | ('0', 'B') -> sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
+    | ('0', 'x') | ('0', 'X') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 16
+    | ('0', 'o') | ('0', 'O') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 8
+    | ('0', 'b') | ('0', 'B') ->
+        sys_big_int_of_string_aux s (ofs+2) (len-2) sgn 2
     | _ -> sys_big_int_of_string_aux s ofs len sgn 10
 ;;
 
@@ -450,7 +464,7 @@ let power_base_nat base nat off len =
   if base = 0 then nat_of_int 0 else
   if is_zero_nat nat off len || base = 1 then nat_of_int 1 else
   let power_base = make_nat (succ length_of_digit) in
-  let (pmax, pint) = make_power_base base power_base in
+  let (pmax, _pint) = make_power_base base power_base in
   let (n, rem) =
       let (x, y) = quomod_big_int (sys_big_int_of_nat nat off len)
                                   (big_int_of_int (succ pmax)) in
@@ -593,13 +607,6 @@ let base_power_big_int base n bi =
                then zero_big_int
                else create_big_int (bi.sign) res
 
-(* Coercion with float type *)
-
-let float_of_big_int bi =
-  float_of_string (string_of_big_int bi)
-
-(* XL: suppression de big_int_of_float et nat_of_float. *)
-
 (* Other functions needed *)
 
 (* Integer part of the square root of a big_int *)
@@ -655,10 +662,10 @@ let approx_big_int prec bi =
     Bytes.unsafe_of_string
       (string_of_big_int (div_big_int bi (power_int_positive_int 10 n)))
   in
-  let (sign, off, len) =
+  let (sign, off) =
     if Bytes.get s 0 = '-'
-       then ("-", 1, succ prec)
-       else ("", 0, prec) in
+       then ("-", 1)
+       else ("", 0) in
   if (round_futur_last_digit s off (succ prec))
        then (sign^"1."^(String.make prec '0')^"e"^
              (string_of_int (n + 1 - off + Bytes.length s)))
@@ -717,10 +724,11 @@ let two_power_m1_big_int n =
   if n < 0 then invalid_arg "two_power_m1_big_int"
   else if n = 0 then zero_big_int
   else begin
-    let size_res = (n + length_of_digit - 1) / length_of_digit in
+    let idx = n / length_of_digit in
+    let size_res = idx + 1 in
     let res = make_nat size_res in
-    set_digit_nat_native res (n / length_of_digit)
-                             (Nativeint.shift_left 1n (n mod length_of_digit));
+    set_digit_nat_native res idx
+                         (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
   end
@@ -730,7 +738,8 @@ let two_power_m1_big_int n =
 let shift_right_big_int bi n =
   if n < 0 then invalid_arg "shift_right_big_int"
   else if bi.sign >= 0 then shift_right_towards_zero_big_int bi n
-  else shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
+  else
+    shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
 
 (* Extract N bits starting at ofs.
    Treats bi in two's complement.
@@ -835,4 +844,40 @@ let xor_big_int a b =
     if is_zero_nat res 0 size_res
     then zero_big_int
     else { sign = 1; abs_value = res }
+  end
+
+(* Coercion with float type *)
+
+(* Consider a real number [r] such that
+   - the integral part of [r] is the bigint [x]
+   - 2^54 <= |x| < 2^63
+   - the fractional part of [r] is 0 if [exact = true],
+     nonzero if [exact = false].
+   Then, the following function returns [r] correctly rounded to
+   the nearest double-precision floating-point number.
+   This is an instance of the "round to odd" technique formalized in
+   "When double rounding is odd" by S. Boldo and G. Melquiond.
+   The claim above is lemma Fappli_IEEE_extra.round_odd_fix
+   from the CompCert Coq development. *)
+
+let round_big_int_to_float x exact =
+  assert (let n = num_bits_big_int x in 55 <= n && n <= 63);
+  let m = int64_of_big_int x in
+  (* Unless the fractional part is exactly 0, round m to an odd integer *)
+  let m = if exact then m else Int64.logor m 1L in
+  (* Then convert m to float, with the normal rounding mode. *)
+  Int64.to_float m
+
+let float_of_big_int x =
+  let n = num_bits_big_int x in
+  if n <= 63 then
+    Int64.to_float (int64_of_big_int x)
+  else begin
+    let n = n - 55 in
+    (* Extract top 55 bits of x *)
+    let top = shift_right_big_int x n in
+    (* Check if the other bits are all zero *)
+    let exact = eq_big_int x (shift_left_big_int top n) in
+    (* Round to float and apply exponent *)
+    ldexp (round_big_int_to_float top exact) n
   end

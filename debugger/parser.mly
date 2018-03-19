@@ -1,15 +1,18 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        */
-/*          OCaml port by John Malecki and Xavier Leroy                */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the Q Public License version 1.0.               */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          */
+/*           OCaml port by John Malecki and Xavier Leroy                  */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 %{
 
@@ -28,7 +31,7 @@ open Parser_aux
 %token          STAR                    /* *  */
 %token          MINUS                   /* -  */
 %token          DOT                     /* . */
-%token          SHARP                   /* #  */
+%token          HASH                    /* #  */
 %token          AT                      /* @  */
 %token          DOLLAR                  /* $ */
 %token          BANG                    /* ! */
@@ -235,7 +238,7 @@ break_argument_eol :
   | integer_eol                                 { BA_pc $1 }
   | expression end_of_line                      { BA_function $1 }
   | AT opt_longident INTEGER opt_integer_eol    { BA_pos1 ($2, (to_int $3), $4)}
-  | AT opt_longident SHARP integer_eol          { BA_pos2 ($2, $4) }
+  | AT opt_longident HASH integer_eol           { BA_pos2 ($2, $4) }
 ;
 
 /* Arguments for list */

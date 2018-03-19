@@ -1,13 +1,16 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       */
-/*                                                                     */
-/*  Copyright 2010 Mehdi Dogguy.  Used and distributed as part of      */
-/*  OCaml by permission from the author.   This file is                */
-/*  distributed under the terms of the Q Public License version 1.0.   */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*         Mehdi Dogguy, PPS laboratory, University Paris Diderot         */
+/*                                                                        */
+/*   Copyright 2010 Mehdi Dogguy                                          */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include "../config/s.h"
 #include "../byterun/caml/mlvalues.h"
@@ -24,11 +27,7 @@
 #include <bfd.h>
 #undef PACKAGE
 
-#ifdef __APPLE__
-#define plugin_header_sym "_caml_plugin_header"
-#else
-#define plugin_header_sym "caml_plugin_header"
-#endif
+#define plugin_header_sym (symbol_prefix "caml_plugin_header")
 
 int main(int argc, char ** argv)
 {

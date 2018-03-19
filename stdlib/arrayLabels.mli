@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Array operations. *)
 
@@ -154,6 +156,34 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
 (** [ArrayLabels.fold_right f a x] computes
    [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
    where [n] is the length of the array [a]. *)
+
+val exists : f:('a -> bool) -> 'a array -> bool
+(** [ArrayLabels.exists p [|a1; ...; an|]] checks if at least one element of
+    the array satisfies the predicate [p]. That is, it returns
+    [(p a1) || (p a2) || ... || (p an)]. *)
+
+val for_all : f:('a -> bool) -> 'a array -> bool
+(** [ArrayLabels.for_all p [|a1; ...; an|]] checks if all elements of the array
+   satisfy the predicate [p]. That is, it returns
+   [(p a1) && (p a2) && ... && (p an)]. *)
+
+val mem : 'a -> set:'a array -> bool
+(** [mem x a] is true if and only if [x] is equal
+   to an element of [a]. *)
+
+val memq : 'a -> set:'a array -> bool
+(** Same as {!ArrayLabels.mem}, but uses physical equality instead of structural
+   equality to compare list elements. *)
+
+external create_float: int -> float array = "caml_make_float_vect"
+(** [ArrayLabels.create_float n] returns a fresh float array of length [n],
+    with uninitialized data.
+    @since 4.03 *)
+
+val make_float: int -> float array
+  [@@ocaml.deprecated "Use ArrayLabels.create_float instead."]
+(** @deprecated [ArrayLabels.make_float] is an alias for
+    {!ArrayLabels.create_float}. *)
 
 
 (** {6 Sorting} *)

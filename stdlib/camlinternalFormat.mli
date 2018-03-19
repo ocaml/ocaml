@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                          Benoit Vaugon, ENSTA                          *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 (* No comments, OCaml stdlib internal use only. *)
 
 open CamlinternalFormatBasics
@@ -46,6 +61,8 @@ val make_printf :
   ('b -> ('b, 'c) acc -> 'd) -> 'b -> ('b, 'c) acc ->
   ('a, 'b, 'c, 'c, 'c, 'd) CamlinternalFormatBasics.fmt -> 'a
 
+val make_iprintf : ('b -> 'f) -> 'b -> ('a, 'b, 'c, 'd, 'e, 'f) fmt -> 'a
+
 val output_acc : out_channel -> (out_channel, unit) acc -> unit
 val bufput_acc : Buffer.t -> (Buffer.t, unit) acc -> unit
 val strput_acc : Buffer.t -> (unit, string) acc -> unit
@@ -55,7 +72,8 @@ val type_format :
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmtty ->
   ('a, 'b, 'c, 'd, 'e, 'f) CamlinternalFormatBasics.fmt
 
-val fmt_ebb_of_string : ?legacy_behavior:bool -> string -> ('b, 'c, 'e, 'f) fmt_ebb
+val fmt_ebb_of_string :
+  ?legacy_behavior:bool -> string -> ('b, 'c, 'e, 'f) fmt_ebb
 (* warning: the optional flag legacy_behavior is EXPERIMENTAL and will
    be removed in the next version. You must not set it explicitly. It
    is only used by the type-checker implementation.
