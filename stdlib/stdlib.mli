@@ -803,7 +803,7 @@ val read_float_opt: unit -> float option
 *)
 
 val read_float : unit -> float
-(** Same as {!Pervasives.read_float_opt}, but return an unspecified result
+(** Same as {!Pervasives.read_float_opt}, but raise [Failure "float_of_string"]
    instead of returning [None]. *)
 
 
