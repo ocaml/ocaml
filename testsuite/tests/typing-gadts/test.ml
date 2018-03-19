@@ -317,12 +317,11 @@ module Or_patterns =
 end
 ;;
 [%%expect{|
-Line _, characters 11-19:
-          | (IntLit _ | BoolLit _) -> ()
-             ^^^^^^^^
-Error: This pattern matches values of type int t
-       but a pattern was expected which matches values of type s t
-       Type int is not compatible with type s
+module Or_patterns :
+  sig
+    type _ t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val eval : 's t -> unit
+  end
 |}];;
 
 module Polymorphic_variants =
