@@ -45,7 +45,7 @@ let out fd txt =
 let refl =
   Filename.concat Filename.current_dir_name "reflector.exe"
 
-let test_createprocess () =
+let test_createprocess ocamlrunparam =
   let f_out =
     Unix.(openfile "./tmpout.txt" [O_WRONLY;O_TRUNC;O_CREAT;O_CLOEXEC] 0o600) in
   let f_err =
@@ -56,7 +56,7 @@ let test_createprocess () =
     Unix.create_process_env
        refl
        [| refl; "-i2o"; "-i2e"; "-o"; "123"; "-e"; "456"; "-i2o"; "-v"; "XVAR" |]
-       [| "XVAR=xvar" |]
+       (Array.append [| "XVAR=xvar" |] ocamlrunparam)
        p_exit f_out f_err in
   out p_entrance "aaaa\n";
   out p_entrance "bbbb\n";
@@ -109,11 +109,11 @@ let test_open_process_out () =
   if status <> Unix.WEXITED 0 then
     out Unix.stdout "!!! reflector exited with an error\n"
 
-let test_open_process_full () =
+let test_open_process_full ocamlrunparam =
   let ((o, i, e) as res) =
     Unix.open_process_full
       (refl ^ " -o 123 -i2o -e 456 -i2e -v XVAR")
-      [|"XVAR=xvar"|] in
+      (Array.append [|"XVAR=xvar"|] ocamlrunparam) in
   output_string i "aa\nbbbb\n"; close_out i;
   for _i = 1 to 3 do 
     out Unix.stdout (input_line o ^ "\n")
@@ -126,12 +126,17 @@ let test_open_process_full () =
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let _ =
+  let ocamlrunparam =
+    match Sys.getenv_opt "OCAMLRUNPARAM" with
+    | None -> [||]
+    | Some v -> [|"OCAMLRUNPARAM=" ^ v|]
+  in
   (* The following 'close' makes things more difficult.
      Under Unix it works fine, but under Win32 create_process 
      gives an error if one of the standard handles is closed. *)
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";
-  test_createprocess();
+  test_createprocess ocamlrunparam;
   out Unix.stdout "** create_process 2>&1 redirection\n";
   test_2ampsup1();
   out Unix.stdout "** create_process swap 1-2\n";
@@ -141,6 +146,4 @@ let _ =
   out Unix.stdout "** open_process_out\n";
   test_open_process_out();
   out Unix.stdout "** open_process_full\n";
-  test_open_process_full()
-
-
+  test_open_process_full ocamlrunparam
