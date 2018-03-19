@@ -6,4 +6,4 @@ end
 
 module T = Fix(functor (X:sig type t end) -> struct type t = X.t option end)
 
-module T = Fix(functor (X:sig type t end) -> struct type t = X.t end)
+(* module T = Fix(functor (X:sig type t end) -> struct type t = X.t end) *)
