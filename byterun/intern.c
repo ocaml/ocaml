@@ -410,6 +410,7 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             Assert(tag != Closure_tag);
             Assert(tag != Infix_tag);
             v = caml_alloc(size, tag);
+            for (i = 0; i < size; i++) Op_val(v)[i] = Val_unit;
             if (use_intern_table) caml_modify_field(intern_obj_table, obj_counter++, v);
             /* For objects, we need to freshen the oid */
             if (tag == Object_tag) {

@@ -220,6 +220,8 @@ CAMLprim value caml_convert_raw_backtrace(value bt)
 
   array = caml_alloc(index, 0);
 
+  for (i = 0; i < index; i++) Op_val(array)[i] = Val_unit;
+
   for (i = 0, index = 0; i < Wosize_val(bt); ++i)
   {
     debuginfo dbg;
@@ -249,7 +251,7 @@ CAMLprim value caml_raw_backtrace_slot(value bt, value index)
   if (i >= Wosize_val(bt))
     caml_invalid_argument("Printexc.get_raw_backtrace_slot: "
                           "index out of bounds");
-  dbg = caml_debuginfo_extract(Backtrace_slot_val(Field(bt, i)));
+  dbg = caml_debuginfo_extract(Backtrace_slot_val(Field_imm(bt, i)));
   return Val_debuginfo(dbg);
 }
 
