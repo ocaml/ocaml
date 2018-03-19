@@ -295,6 +295,9 @@ Working version
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
+- GPR#????: refactor flambda specialise/inlining handling
+  (Xavier Clerc and Leo White, review by ???)
+
 ### Bug fixes
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
