@@ -112,7 +112,7 @@ extern uintnat caml_use_huge_pages;
                                                 CAMLassert ((wosize) >= 1); \
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
-  caml_domain_state* dom_st = Caml_state;                     \
+  caml_domain_state* dom_st = Caml_state;                                   \
   dom_st->young_ptr -= Bhsize_wosize (wosize);                              \
   if (Caml_check_gc_interrupt(dom_st)){                                     \
     dom_st->young_ptr += Bhsize_wosize (wosize);                            \
