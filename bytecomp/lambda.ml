@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Misc
 open Path
@@ -17,9 +20,12 @@ open Asttypes
 type compile_time_constant =
   | Big_endian
   | Word_size
+  | Int_size
+  | Max_wosize
   | Ostype_unix
   | Ostype_win32
   | Ostype_cygwin
+  | Backend_type
 
 type loc_kind =
   | Loc_FILE
@@ -28,27 +34,41 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type immediate_or_pointer =
+  | Immediate
+  | Pointer
+
+type initialization_or_assignment =
+  | Initialization
+  | Assignment
+
+type is_safe =
+  | Safe
+  | Unsafe
+
 type primitive =
-    Pidentity
+  | Pidentity
+  | Pbytes_to_string
+  | Pbytes_of_string
   | Pignore
-  | Prevapply of Location.t
-  | Pdirapply of Location.t
+  | Prevapply
+  | Pdirapply
   | Ploc of loc_kind
     (* Globals *)
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
-  | Pfield of int * bool * mutable_flag
-  | Psetfield of int * bool * mutable_flag
+  | Pmakeblock of int * mutable_flag * block_shape
+  | Pfield of int * immediate_or_pointer * mutable_flag
+  | Psetfield of int * immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
-  | Psetfloatfield of int
+  | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce
   (* Context switches *)
-  | Pperform of Location.t
-  | Presume of Location.t
+  | Pperform
+  | Presume
   | Preperform
   (* External call *)
   | Pccall of Primitive.description
@@ -57,7 +77,8 @@ type primitive =
   (* Boolean operations *)
   | Psequand | Psequor | Pnot
   (* Integer operations *)
-  | Pnegint | Paddint | Psubint | Pmulint | Pdivint | Pmodint
+  | Pnegint | Paddint | Psubint | Pmulint
+  | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
   | Pintcomp of comparison
@@ -69,9 +90,11 @@ type primitive =
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   (* String operations *)
-  | Pstringlength | Pstringrefu | Pstringsetu | Pstringrefs | Pstringsets
+  | Pstringlength | Pstringrefu  | Pstringrefs
+  | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
   (* Array operations *)
-  | Pmakearray of array_kind
+  | Pmakearray of array_kind * mutable_flag
+  | Pduparray of array_kind * mutable_flag
   | Parraylength of array_kind
   | Parrayrefu of array_kind
   | Parraysetu of array_kind
@@ -91,8 +114,8 @@ type primitive =
   | Paddbint of boxed_integer
   | Psubbint of boxed_integer
   | Pmulbint of boxed_integer
-  | Pdivbint of boxed_integer
-  | Pmodbint of boxed_integer
+  | Pdivbint of { size : boxed_integer; is_safe : is_safe }
+  | Pmodbint of { size : boxed_integer; is_safe : is_safe }
   | Pandbint of boxed_integer
   | Porbint of boxed_integer
   | Pxorbint of boxed_integer
@@ -131,14 +154,22 @@ type primitive =
   | Patomic_load
   | Patomic_store
   | Patomic_cas
+  (* Inhibition of optimisation *)
+  | Popaque
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
 
+and value_kind =
+    Pgenval | Pfloatval | Pboxedintval of boxed_integer | Pintval
+
+and block_shape =
+  value_kind list option
+
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
 
-and boxed_integer =
+and boxed_integer = Primitive.boxed_integer =
     Pnativeint | Pint32 | Pint64
 
 and bigarray_kind =
@@ -167,6 +198,17 @@ type structured_constant =
   | Const_float_array of string list
   | Const_immstring of string
 
+type inline_attribute =
+  | Always_inline (* [@inline] or [@inline always] *)
+  | Never_inline (* [@inline never] *)
+  | Unroll of int (* [@unroll x] *)
+  | Default_inline (* no [@inline] attribute *)
+
+type specialise_attribute =
+  | Always_specialise (* [@specialise] or [@specialise always] *)
+  | Never_specialise (* [@specialise never] *)
+  | Default_specialise (* no [@specialise] attribute *)
+
 type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
@@ -175,16 +217,23 @@ type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 
+type function_attribute = {
+  inline : inline_attribute;
+  specialise : specialise_attribute;
+  is_a_functor: bool;
+}
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list * Location.t
-  | Lfunction of function_kind * Ident.t list * lambda
-  | Llet of let_kind * Ident.t * lambda * lambda
+  | Lapply of lambda_apply
+  | Lfunction of lfunction
+  | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
-  | Lprim of primitive * lambda list
+  | Lprim of primitive * lambda list * Location.t
   | Lswitch of lambda * lambda_switch
-  | Lstringswitch of lambda * (string * lambda) list * lambda option
+  | Lstringswitch of
+      lambda * (string * lambda) list * lambda option * Location.t
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -196,6 +245,21 @@ type lambda =
   | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
+
+and lfunction =
+  { kind: function_kind;
+    params: Ident.t list;
+    body: lambda;
+    attr: function_attribute; (* specified with [@inline] attribute *)
+    loc: Location.t; }
+
+and lambda_apply =
+  { ap_func : lambda;
+    ap_args : lambda list;
+    ap_loc : Location.t;
+    ap_should_be_tailcall : bool;
+    ap_inlined : inline_attribute;
+    ap_specialised : specialise_attribute; }
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -214,10 +278,23 @@ and lambda_event_kind =
     Lev_before
   | Lev_after of Types.type_expr
   | Lev_function
+  | Lev_pseudo
+
+type program =
+  { module_ident : Ident.t;
+    main_module_block_size : int;
+    required_globals : Ident.Set.t;
+    code : lambda }
 
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
+
+let default_function_attribute = {
+  inline = Default_inline;
+  specialise = Default_specialise;
+  is_a_functor = false;
+}
 
 (* Build sharing keys *)
 (*
@@ -242,29 +319,34 @@ let make_key e =
         try Ident.find_same id env
         with Not_found -> e
       end
-    | Lconst  (Const_base (Const_string _)|Const_float_array _) ->
+    | Lconst  (Const_base (Const_string _)) ->
         (* Mutable constants are not shared *)
         raise Not_simple
     | Lconst _ -> e
-    | Lapply (e,es,loc) ->
-        Lapply (tr_rec env e,tr_recs env es,Location.none)
-    | Llet (Alias,x,ex,e) -> (* Ignore aliases -> substitute *)
+    | Lapply ap ->
+        Lapply {ap with ap_func = tr_rec env ap.ap_func;
+                        ap_args = tr_recs env ap.ap_args;
+                        ap_loc = Location.none}
+    | Llet (Alias,_k,x,ex,e) -> (* Ignore aliases -> substitute *)
         let ex = tr_rec env ex in
         tr_rec (Ident.add x ex env) e
-    | Llet (str,x,ex,e) ->
+    | Llet ((Strict | StrictOpt),_k,x,ex,Lvar v) when Ident.same v x ->
+        tr_rec env ex
+    | Llet (str,k,x,ex,e) ->
      (* Because of side effects, keep other lets with normalized names *)
         let ex = tr_rec env ex in
         let y = make_key x in
-        Llet (str,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
-    | Lprim (p,es) ->
-        Lprim (p,tr_recs env es)
+        Llet (str,k,y,ex,tr_rec (Ident.add x (Lvar y) env) e)
+    | Lprim (p,es,_) ->
+        Lprim (p,tr_recs env es, Location.none)
     | Lswitch (e,sw) ->
         Lswitch (tr_rec env e,tr_sw env sw)
-    | Lstringswitch (e,sw,d) ->
+    | Lstringswitch (e,sw,d,_) ->
         Lstringswitch
           (tr_rec env e,
            List.map (fun (s,e) -> s,tr_rec env e) sw,
-           tr_opt env d)
+           tr_opt env d,
+          Location.none)
     | Lstaticraise (i,es) ->
         Lstaticraise (i,tr_recs env es)
     | Lstaticcatch (e1,xs,e2) ->
@@ -277,7 +359,7 @@ let make_key e =
         Lsequence (tr_rec env e1,tr_rec env e2)
     | Lassign (x,e) ->
         Lassign (x,tr_rec env e)
-    | Lsend (m,e1,e2,es,loc) ->
+    | Lsend (m,e1,e2,es,_loc) ->
         Lsend (m,tr_rec env e1,tr_rec env e2,tr_recs env es,Location.none)
     | Lifused (id,e) -> Lifused (id,tr_rec env e)
     | Lletrec _|Lfunction _
@@ -308,16 +390,16 @@ let make_key e =
 let name_lambda strict arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.create "let" in Llet(strict, id, arg, fn id)
+  | _ -> let id = Ident.create "let" in Llet(strict, Pgenval, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
     [] -> fn (List.rev names)
-  | (Lvar id as arg) :: rem ->
+  | (Lvar _ as arg) :: rem ->
       name_list (arg :: names) rem
   | arg :: rem ->
       let id = Ident.create "let" in
-      Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
+      Llet(Strict, Pgenval, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
 
@@ -328,31 +410,31 @@ let iter_opt f = function
 let iter f = function
     Lvar _
   | Lconst _ -> ()
-  | Lapply(fn, args, _) ->
+  | Lapply{ap_func = fn; ap_args = args} ->
       f fn; List.iter f args
-  | Lfunction(kind, params, body) ->
+  | Lfunction{body} ->
       f body
-  | Llet(str, id, arg, body) ->
+  | Llet(_str, _k, _id, arg, body) ->
       f arg; f body
   | Lletrec(decl, body) ->
       f body;
-      List.iter (fun (id, exp) -> f exp) decl
-  | Lprim(p, args) ->
+      List.iter (fun (_id, exp) -> f exp) decl
+  | Lprim(_p, args, _loc) ->
       List.iter f args
   | Lswitch(arg, sw) ->
       f arg;
-      List.iter (fun (key, case) -> f case) sw.sw_consts;
-      List.iter (fun (key, case) -> f case) sw.sw_blocks;
+      List.iter (fun (_key, case) -> f case) sw.sw_consts;
+      List.iter (fun (_key, case) -> f case) sw.sw_blocks;
       iter_opt f sw.sw_failaction
-  | Lstringswitch (arg,cases,default) ->
+  | Lstringswitch (arg,cases,default,_) ->
       f arg ;
       List.iter (fun (_,act) -> f act) cases ;
       iter_opt f default
   | Lstaticraise (_,args) ->
       List.iter f args
-  | Lstaticcatch(e1, (_,vars), e2) ->
+  | Lstaticcatch(e1, _, e2) ->
       f e1; f e2
-  | Ltrywith(e1, exn, e2) ->
+  | Ltrywith(e1, _, e2) ->
       f e1; f e2
   | Lifthenelse(e1, e2, e3) ->
       f e1; f e2; f e3
@@ -360,23 +442,19 @@ let iter f = function
       f e1; f e2
   | Lwhile(e1, e2) ->
       f e1; f e2
-  | Lfor(v, e1, e2, dir, e3) ->
+  | Lfor(_v, e1, e2, _dir, e3) ->
       f e1; f e2; f e3
-  | Lassign(id, e) ->
+  | Lassign(_, e) ->
       f e
-  | Lsend (k, met, obj, args, _) ->
+  | Lsend (_k, met, obj, args, _) ->
       List.iter f (met::obj::args)
-  | Levent (lam, evt) ->
+  | Levent (lam, _evt) ->
       f lam
-  | Lifused (v, e) ->
+  | Lifused (_v, e) ->
       f e
 
 
-module IdentSet =
-  Set.Make(struct
-    type t = Ident.t
-    let compare = compare
-  end)
+module IdentSet = Set.Make(Ident)
 
 let free_ids get l =
   let fv = ref IdentSet.empty in
@@ -384,19 +462,19 @@ let free_ids get l =
     iter free l;
     fv := List.fold_right IdentSet.add (get l) !fv;
     match l with
-      Lfunction(kind, params, body) ->
+      Lfunction{params} ->
         List.iter (fun param -> fv := IdentSet.remove param !fv) params
-    | Llet(str, id, arg, body) ->
+    | Llet(_str, _k, id, _arg, _body) ->
         fv := IdentSet.remove id !fv
-    | Lletrec(decl, body) ->
-        List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
-    | Lstaticcatch(e1, (_,vars), e2) ->
+    | Lletrec(decl, _body) ->
+        List.iter (fun (id, _exp) -> fv := IdentSet.remove id !fv) decl
+    | Lstaticcatch(_e1, (_,vars), _e2) ->
         List.iter (fun id -> fv := IdentSet.remove id !fv) vars
-    | Ltrywith(e1, exn, e2) ->
+    | Ltrywith(_e1, exn, _e2) ->
         fv := IdentSet.remove exn !fv
-    | Lfor(v, e1, e2, dir, e3) ->
+    | Lfor(v, _e1, _e2, _dir, _e3) ->
         fv := IdentSet.remove v !fv
-    | Lassign(id, e) ->
+    | Lassign(id, _e) ->
         fv := IdentSet.add id !fv
     | Lvar _ | Lconst _ | Lapply _
     | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
@@ -408,7 +486,7 @@ let free_variables l =
   free_ids (function Lvar id -> [id] | _ -> []) l
 
 let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
+  free_ids (function Lsend(Self, Lvar meth, _, _, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -427,16 +505,16 @@ let next_negative_raise_count () =
 let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
-  | Llet(str, id, lam, body) -> is_guarded body
-  | Levent(lam, ev) -> is_guarded lam
+  | Lifthenelse(_cond, _body, Lstaticraise (0,[])) -> true
+  | Llet(_str, _k, _id, _lam, body) -> is_guarded body
+  | Levent(lam, _ev) -> is_guarded lam
   | _ -> false
 
 let rec patch_guarded patch = function
   | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
       Lifthenelse (cond, body, patch)
-  | Llet(str, id, lam, body) ->
-      Llet (str, id, lam, patch_guarded patch body)
+  | Llet(str, k, id, lam, body) ->
+      Llet (str, k, id, lam, patch_guarded patch body)
   | Levent(lam, ev) ->
       Levent (patch_guarded patch lam, ev)
   | _ -> fatal_error "Lambda.patch_guarded"
@@ -445,10 +523,13 @@ let rec patch_guarded patch = function
 
 let rec transl_normal_path = function
     Pident id ->
-      if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
-  | Pdot(p, s, pos) ->
-      Lprim(Pfield(pos, true, Immutable), [transl_normal_path p])
-  | Papply(p1, p2) ->
+      if Ident.global id
+      then Lprim(Pgetglobal id, [], Location.none)
+      else Lvar id
+  | Pdot(p, _s, pos) ->
+      Lprim(Pfield(pos, Pointer, Immutable),
+            [transl_normal_path p], Location.none)
+  | Papply _ ->
       fatal_error "Lambda.transl_path"
 
 (* Translation of value identifiers *)
@@ -474,20 +555,23 @@ let subst_lambda s lam =
   let rec subst = function
     Lvar id as l ->
       begin try Ident.find_same id s with Not_found -> l end
-  | Lconst sc as l -> l
-  | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
-  | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
-  | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
+  | Lconst _ as l -> l
+  | Lapply ap ->
+      Lapply{ap with ap_func = subst ap.ap_func;
+                     ap_args = List.map subst ap.ap_args}
+  | Lfunction{kind; params; body; attr; loc} ->
+      Lfunction{kind; params; body = subst body; attr; loc}
+  | Llet(str, k, id, arg, body) -> Llet(str, k, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
-  | Lprim(p, args) -> Lprim(p, List.map subst args)
+  | Lprim(p, args, loc) -> Lprim(p, List.map subst args, loc)
   | Lswitch(arg, sw) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
                        sw_blocks = List.map subst_case sw.sw_blocks;
                        sw_failaction = subst_opt  sw.sw_failaction; })
-  | Lstringswitch (arg,cases,default) ->
+  | Lstringswitch (arg,cases,default,loc) ->
       Lstringswitch
-        (subst arg,List.map subst_strcase cases,subst_opt default)
+        (subst arg,List.map subst_strcase cases,subst_opt default,loc)
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
@@ -508,13 +592,74 @@ let subst_lambda s lam =
     | Some e -> Some (subst e)
   in subst lam
 
+let rec map f lam =
+  let lam =
+    match lam with
+    | Lvar _ -> lam
+    | Lconst _ -> lam
+    | Lapply { ap_func; ap_args; ap_loc; ap_should_be_tailcall;
+          ap_inlined; ap_specialised } ->
+        Lapply {
+          ap_func = map f ap_func;
+          ap_args = List.map (map f) ap_args;
+          ap_loc;
+          ap_should_be_tailcall;
+          ap_inlined;
+          ap_specialised;
+        }
+    | Lfunction { kind; params; body; attr; loc; } ->
+        Lfunction { kind; params; body = map f body; attr; loc; }
+    | Llet (str, k, v, e1, e2) ->
+        Llet (str, k, v, map f e1, map f e2)
+    | Lletrec (idel, e2) ->
+        Lletrec (List.map (fun (v, e) -> (v, map f e)) idel, map f e2)
+    | Lprim (p, el, loc) ->
+        Lprim (p, List.map (map f) el, loc)
+    | Lswitch (e, sw) ->
+        Lswitch (map f e,
+          { sw_numconsts = sw.sw_numconsts;
+            sw_consts = List.map (fun (n, e) -> (n, map f e)) sw.sw_consts;
+            sw_numblocks = sw.sw_numblocks;
+            sw_blocks = List.map (fun (n, e) -> (n, map f e)) sw.sw_blocks;
+            sw_failaction = Misc.may_map (map f) sw.sw_failaction;
+          })
+    | Lstringswitch (e, sw, default, loc) ->
+        Lstringswitch (
+          map f e,
+          List.map (fun (s, e) -> (s, map f e)) sw,
+          Misc.may_map (map f) default,
+          loc)
+    | Lstaticraise (i, args) ->
+        Lstaticraise (i, List.map (map f) args)
+    | Lstaticcatch (body, id, handler) ->
+        Lstaticcatch (map f body, id, map f handler)
+    | Ltrywith (e1, v, e2) ->
+        Ltrywith (map f e1, v, map f e2)
+    | Lifthenelse (e1, e2, e3) ->
+        Lifthenelse (map f e1, map f e2, map f e3)
+    | Lsequence (e1, e2) ->
+        Lsequence (map f e1, map f e2)
+    | Lwhile (e1, e2) ->
+        Lwhile (map f e1, map f e2)
+    | Lfor (v, e1, e2, dir, e3) ->
+        Lfor (v, map f e1, map f e2, dir, map f e3)
+    | Lassign (v, e) ->
+        Lassign (v, map f e)
+    | Lsend (k, m, o, el, loc) ->
+        Lsend (k, map f m, map f o, List.map (map f) el, loc)
+    | Levent (l, ev) ->
+        Levent (map f l, ev)
+    | Lifused (v, e) ->
+        Lifused (v, map f e)
+  in
+  f lam
 
 (* To let-bind expressions to variables *)
 
 let bind str var exp body =
   match exp with
     Lvar var' when Ident.same var var' -> body
-  | _ -> Llet(str, var, exp, body)
+  | _ -> Llet(str, Pgenval, var, exp, body)
 
 and commute_comparison = function
 | Ceq -> Ceq| Cneq -> Cneq

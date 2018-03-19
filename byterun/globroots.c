@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*           Xavier Leroy, projet Cristal, INRIA Rocquencourt          */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Registration of global memory roots */
 
@@ -23,7 +27,7 @@
 #include "caml/alloc.h"
 #include "caml/shared_heap.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #endif
 
 /* A caml_root is in fact a value. We don't expose that fact outside
@@ -159,7 +163,7 @@ static void scan_native_globals(scanning_action f, void* fdata)
 {
   int i, j;
   static link* dyn_globals;
-  value glob;
+  value* glob;
   link* lnk;
 
   caml_plat_lock(&roots_mutex);
@@ -167,17 +171,20 @@ static void scan_native_globals(scanning_action f, void* fdata)
   caml_plat_unlock(&roots_mutex);
 
   /* The global roots */
-  for (i = 0; caml_globals[i] != 0; i++) {
-    glob = caml_globals[i];
-    for (j = 0; j < Wosize_val(glob); j++)
-      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+  for (i = 0; i <= caml_globals_inited && caml_globals[i] != 0; i++) {
+    for(glob = caml_globals[i]; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
+    }
   }
 
   /* Dynamic (natdynlink) global roots */
   iter_list(dyn_globals, lnk) {
-    glob = (value) lnk->data;
-    for (j = 0; j < Wosize_val(glob); j++){
-      f (fdata, Op_val(glob)[j], &Op_val(glob)[j]);
+    for(glob = (value *) lnk->data; *glob != 0; glob++) {
+      for (j = 0; j < Wosize_val(*glob); j++){
+        f(fdata, Op_val(*glob)[j], &Op_val(*glob)[j]);
+      }
     }
   }
 }

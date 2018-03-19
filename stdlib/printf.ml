@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*  Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt   *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*   Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt     *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open CamlinternalFormatBasics
 open CamlinternalFormat
@@ -19,7 +21,7 @@ let kfprintf k o (Format (fmt, _)) =
 let kbprintf k b (Format (fmt, _)) =
   make_printf (fun b acc -> bufput_acc b acc; k b) b End_of_acc fmt
 let ikfprintf k oc (Format (fmt, _)) =
-  make_printf (fun oc _ -> k oc) oc End_of_acc fmt
+  make_iprintf k oc fmt
 
 let fprintf oc fmt = kfprintf ignore oc fmt
 let bprintf b fmt = kbprintf ignore b fmt

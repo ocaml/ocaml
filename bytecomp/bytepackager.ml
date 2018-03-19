@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* "Package" a set of .cmo files into one .cmo file having the
    original compilation units as sub-modules. *)
@@ -96,7 +99,7 @@ type pack_member =
 
 let read_member_info file = (
   let name =
-    String.capitalize(Filename.basename(chop_extensions file)) in
+    String.capitalize_ascii(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmo" then begin
     let ic = open_in_bin file in
@@ -183,7 +186,7 @@ let rec rename_append_bytecode_list ppf packagename oc mapping defined ofs
 let build_global_target oc target_name members mapping pos coercion =
   let components =
     List.map2
-      (fun m (id1, id2) ->
+      (fun m (_id1, id2) ->
         match m.pm_kind with
         | PM_intf -> None
         | PM_impl _ -> Some id2)
@@ -204,6 +207,24 @@ let build_global_target oc target_name members mapping pos coercion =
 let package_object_files ppf files targetfile targetname coercion =
   let members =
     map_left_right read_member_info files in
+  let required_globals =
+    List.fold_right (fun compunit required_globals -> match compunit with
+        | { pm_kind = PM_intf } ->
+            required_globals
+        | { pm_kind = PM_impl { cu_required_globals; cu_reloc } } ->
+            let remove_required (rel, _pos) required_globals =
+              match rel with
+                Reloc_setglobal id ->
+                  Ident.Set.remove id required_globals
+              | _ ->
+                  required_globals
+            in
+            let required_globals =
+              List.fold_right remove_required cu_reloc required_globals
+            in
+            List.fold_right Ident.Set.add cu_required_globals required_globals)
+      members Ident.Set.empty
+  in
   let unit_names =
     List.map (fun m -> m.pm_name) members in
   let mapping =
@@ -229,7 +250,7 @@ let package_object_files ppf files targetfile targetname coercion =
     let pos_final = pos_out oc in
     let imports =
       List.filter
-        (fun (name, crc) -> not (List.mem name unit_names))
+        (fun (name, _crc) -> not (List.mem name unit_names))
         (Bytelink.extract_crc_interfaces()) in
     let compunit =
       { cu_name = targetname;
@@ -239,6 +260,7 @@ let package_object_files ppf files targetfile targetname coercion =
         cu_imports =
           (targetname, Some (Env.crc_of_unit targetname)) :: imports;
         cu_primitives = !primitives;
+        cu_required_globals = Ident.Set.elements required_globals;
         cu_force_link = !force_link;
         cu_debug = if pos_final > pos_debug then pos_debug else 0;
         cu_debugsize = pos_final - pos_debug } in
@@ -261,12 +283,11 @@ let package_files ppf initial_env files targetfile =
         files in
     let prefix = chop_extensions targetfile in
     let targetcmi = prefix ^ ".cmi" in
-    let targetname = String.capitalize(Filename.basename prefix) in
+    let targetname = String.capitalize_ascii(Filename.basename prefix) in
     try
       let coercion =
         Typemod.package_units initial_env files targetcmi targetname in
-      let ret = package_object_files ppf files targetfile targetname coercion in
-      ret
+      package_object_files ppf files targetfile targetname coercion
     with x ->
       remove_file targetfile; raise x
 

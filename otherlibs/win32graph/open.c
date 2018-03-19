@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy */
-/*                                                                     */
-/*  Copyright 2001 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Developed by Jacob Navia, based on code by J-M Geffroy and X Leroy   */
+/*                                                                        */
+/*   Copyright 2001 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <fcntl.h>
 #include <signal.h>
@@ -74,7 +76,8 @@ void ResetForClose(HWND hwnd)
 
 
 
-static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,
+                                        LPARAM lParam)
 {
         PAINTSTRUCT ps;
         HDC hdc;
@@ -91,7 +94,8 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
                 break;
                 // Move the child windows
         case WM_SIZE:
-                // Position the MDI client window between the tool and status bars
+                // Position the MDI client window between the tool and
+                // status bars
                 if (wParam != SIZE_MINIMIZED) {
                         SetCoordinates(hwnd);
                 }
@@ -100,7 +104,6 @@ static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM 
                 // End application
         case WM_DESTROY:
                 ResetForClose(hwnd);
-                gr_check_open();
                 break;
         }
         caml_gr_handle_event(msg, wParam, lParam);
@@ -135,7 +138,8 @@ static value gr_reset(void)
         grwindow.width = rc.right;
         grwindow.height = rc.bottom;
         if (grwindow.gcBitmap == (HDC)0) {
-                grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
+                grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,
+                                                          screeny);
                 grwindow.gcBitmap = CreateCompatibleDC(grwindow.gc);
                 grwindow.tempDC = CreateCompatibleDC(grwindow.gc);
                 SelectObject(grwindow.gcBitmap,grwindow.hBitmap);
@@ -149,10 +153,12 @@ static value gr_reset(void)
         grwindow.CurrentColor = GetSysColor(COLOR_WINDOWTEXT);
         grwindow.grx = 0;
         grwindow.gry = 0;
-        grwindow.CurrentPen = SelectObject(grwindow.gc,GetStockObject(WHITE_PEN));
+        grwindow.CurrentPen = SelectObject(grwindow.gc,
+                                           GetStockObject(WHITE_PEN));
         SelectObject(grwindow.gc,grwindow.CurrentPen);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
-        grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
+        grwindow.CurrentBrush = SelectObject(grwindow.gc,
+                                             GetStockObject(WHITE_BRUSH));
         SelectObject(grwindow.gc,grwindow.CurrentBrush);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
         caml_gr_set_color(Val_long(0));
@@ -254,7 +260,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
 
 CAMLprim value caml_gr_open_graph(value arg)
 {
-  long tid;
+  DWORD tid;
   if (gr_initialized) return Val_unit;
   open_graph_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   threadHandle =
@@ -348,10 +354,10 @@ CAMLprim value caml_gr_sigio_handler(value unit)
 void gr_fail(char *fmt, char *arg)
 {
   char buffer[1024];
-  caml_root graphic_failure_exn =
-    caml_named_root("Graphics.Graphic_failure");
+  caml_root graphic_failure_exn = caml_named_root("Graphics.Graphic_failure");
   if (!graphic_failure_exn)
-      invalid_argument("Exception Graphics.Graphic_failure not initialized, must link graphics.cma");
+      invalid_argument("Exception Graphics.Graphic_failure not initialized, "
+                       "must link graphics.cma");
   sprintf(buffer, fmt, arg);
   raise_with_string(caml_read_root(graphic_failure_exn), buffer);
 }

@@ -1,20 +1,26 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt     */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <caml/mlvalues.h>
+#include <caml/memory.h>
 #include "unixsupport.h"
 #include <windows.h>
 #include <caml/osdeps.h>
+#include <errno.h>
 
 static int win_has_console(void);
 
@@ -25,6 +31,11 @@ value win_create_process_native(value cmd, value cmdline, value env,
   STARTUPINFO si;
   char * exefile, * envp;
   int flags;
+
+  caml_unix_check_path(cmd, "create_process");
+  if (! caml_string_is_c_safe(cmdline))
+    unix_error(EINVAL, "create_process", cmdline);
+  /* [env] is checked for null bytes at construction time, see unix.ml */
 
   exefile = search_exe_in_path(String_val(cmd));
   if (env != Val_int(0)) {
@@ -53,9 +64,11 @@ value win_create_process_native(value cmd, value cmdline, value env,
   /* Create the process */
   if (! CreateProcess(exefile, String_val(cmdline), NULL, NULL,
                       TRUE, flags, envp, NULL, &si, &pi)) {
+    caml_stat_free(exefile);
     win32_maperr(GetLastError());
     uerror("create_process", cmd);
   }
+  caml_stat_free(exefile);
   CloseHandle(pi.hThread);
   /* Return the process handle as pseudo-PID
      (this is consistent with the wait() emulation in the MSVC C library */

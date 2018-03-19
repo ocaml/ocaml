@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Handling of blocks of bytecode (endianness switch, threading). */
 
@@ -17,6 +21,8 @@
 
 #ifdef HAS_UNISTD
 #include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #include "caml/debugger.h"
@@ -35,7 +41,7 @@ unsigned char * caml_saved_code;
 
 /* Read the main bytecode block from a file */
 
-void caml_init_code_fragments() {
+void caml_init_code_fragments(void) {
   struct code_fragment * cf;
   /* Register the code in the table of code fragments */
   cf = caml_stat_alloc(sizeof(struct code_fragment));
@@ -96,7 +102,7 @@ char ** caml_instr_table;
 char * caml_instr_base;
 
 static int* opcode_nargs = NULL;
-int* caml_init_opcode_nargs()
+int* caml_init_opcode_nargs(void)
 {
   if( opcode_nargs == NULL ){
     int* l = (int*)caml_stat_alloc(sizeof(int) * FIRST_UNIMPLEMENTED_OP);
@@ -146,12 +152,12 @@ void caml_thread_code (code_t code, asize_t len)
     }
     *p++ = (opcode_t)(caml_instr_table[instr] - caml_instr_base);
     if (instr == SWITCH) {
-      uint32 sizes = *p++;
-      uint32 const_size = sizes & 0xFFFF;
-      uint32 block_size = sizes >> 16;
+      uint32_t sizes = *p++;
+      uint32_t const_size = sizes & 0xFFFF;
+      uint32_t block_size = sizes >> 16;
       p += const_size + block_size;
     } else if (instr == CLOSUREREC) {
-      uint32 nfuncs = *p++;
+      uint32_t nfuncs = *p++;
       p++;                      /* skip nvars */
       p += nfuncs;
     } else {

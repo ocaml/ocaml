@@ -1,20 +1,24 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Buffered input/output */
 
 #ifndef CAML_IO_H
 #define CAML_IO_H
+
+#ifdef CAML_INTERNALS
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -46,10 +50,14 @@ struct channel {
   int refcount;                 /* For flush_all and for Cash */
   int flags;                    /* Bitfield */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
+  char * name;                  /* Optional name (to report fd leaks) */
 };
 
 enum {
-  CHANNEL_FLAG_FROM_SOCKET = 1  /* For Windows */
+  CHANNEL_FLAG_FROM_SOCKET = 1,  /* For Windows */
+#if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
+  CHANNEL_FLAG_BLOCKING_WRITE = 2,
+#endif
 };
 
 /* For an output channel:
@@ -61,12 +69,12 @@ enum {
 /* Functions and macros that can be called from C.  Take arguments of
    type struct channel *.  No locking is performed. */
 
-#define putch(channel, ch) do{                                            \
+#define caml_putch(channel, ch) do{                                       \
   if ((channel)->curr >= (channel)->end) caml_flush_partial(channel);     \
   *((channel)->curr)++ = (ch);                                            \
 }while(0)
 
-#define getch(channel)                                                      \
+#define caml_getch(channel)                                                 \
   ((channel)->curr >= (channel)->max                                        \
    ? caml_refill(channel)                                                   \
    : (unsigned char) *((channel)->curr)++)
@@ -79,14 +87,14 @@ CAMLextern value caml_alloc_channel(struct channel *chan);
 
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
-CAMLextern void caml_putword (struct channel *, uint32);
+CAMLextern void caml_putword (struct channel *, uint32_t);
 CAMLextern int caml_putblock (struct channel *, char *, intnat);
 CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
-CAMLextern uint32 caml_getword (struct channel *);
+CAMLextern uint32_t caml_getword (struct channel *);
 CAMLextern int caml_getblock (struct channel *, char *, intnat);
-CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
+CAMLextern intnat caml_really_getblock (struct channel *, char *, intnat);
 
 /* Extract a struct channel * from the heap object representing it */
 
@@ -94,9 +102,10 @@ CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
 CAMLextern struct channel * caml_all_opened_channels;
 
-/* Conversion between file_offset and int64 */
-
+/* Conversion between file_offset and int64_t */
 #define Val_file_offset(fofs) caml_copy_int64(fofs)
 #define File_offset_val(v) ((file_offset) Int64_val(v))
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_IO_H */

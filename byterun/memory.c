@@ -1,3 +1,20 @@
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -356,7 +373,8 @@ CAMLprim value caml_bvar_take(value bv)
 {
   CAMLparam1(bv);
   intnat stat = caml_bvar_status(bv);
-  if (stat & BVAR_EMPTY) caml_raise_not_found();
+  if (stat & BVAR_EMPTY)
+    caml_invalid_argument("continuation already taken");
   CAMLassert(stat == Caml_state->id);
 
   value v = Op_val(bv)[0];

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** List operations.
 
@@ -112,14 +114,14 @@ val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
 val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
 (** [ListLabels.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
    [f a1 b1; ...; f an bn].
-   Raise [Invalid_argument] if the two lists have
-   different lengths. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths. *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [ListLabels.map2 f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
-   Raise [Invalid_argument] if the two lists have
-   different lengths.  Not tail-recursive. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths.  Not tail-recursive. *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [ListLabels.rev_map2 f l1 l2] gives the same result as
@@ -130,15 +132,15 @@ val fold_left2 :
   f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
 (** [ListLabels.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
    [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
-   Raise [Invalid_argument] if the two lists have
-   different lengths. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths. *)
 
 val fold_right2 :
   f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
 (** [ListLabels.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
    [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
-   Raise [Invalid_argument] if the two lists have
-   different lengths.  Not tail-recursive. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths.  Not tail-recursive. *)
 
 
 (** {6 List scanning} *)
@@ -156,13 +158,13 @@ val exists : f:('a -> bool) -> 'a list -> bool
 
 val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** Same as {!ListLabels.for_all}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two lists have
-   different lengths. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths. *)
 
 val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 (** Same as {!ListLabels.exists}, but for a two-argument predicate.
-   Raise [Invalid_argument] if the two lists have
-   different lengths. *)
+   Raise [Invalid_argument] if the two lists are determined
+   to have different lengths. *)
 
 val mem : 'a -> set:'a list -> bool
 (** [mem a l] is true if and only if [a] is equal
@@ -279,6 +281,10 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!ListLabels.sort} or {!ListLabels.stable_sort}, whichever is
     faster on typical input. *)
+
+val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** Same as {!ListLabels.sort}, but also remove duplicates.
+    @since 4.02.0 *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:

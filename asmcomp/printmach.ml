@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Pretty-printing of pseudo machine code *)
 
@@ -21,7 +24,8 @@ let reg ppf r =
   if not (Reg.anonymous r) then
     fprintf ppf "%s" (Reg.name r)
   else
-    fprintf ppf "%s" (match r.typ with Addr -> "A" | Int -> "I" | Float -> "F");
+    fprintf ppf "%s"
+      (match r.typ with Val -> "V" | Addr -> "A" | Int -> "I" | Float -> "F");
   fprintf ppf "/%i" r.stamp;
   begin match r.loc with
   | Unknown -> ()
@@ -56,7 +60,10 @@ let regsetaddr ppf s =
     (fun r ->
       if !first then begin first := false; fprintf ppf "%a" reg r end
       else fprintf ppf "@ %a" reg r;
-      match r.typ with Addr -> fprintf ppf "*" | _ -> ())
+      match r.typ with
+      | Val -> fprintf ppf "*"
+      | Addr -> fprintf ppf "!"
+      | _ -> ())
     s
 
 let intcomp = function
@@ -80,7 +87,16 @@ let intop = function
   | Ilsr -> " >>u "
   | Iasr -> " >>s "
   | Icomp cmp -> intcomp cmp
-  | Icheckbound -> " check > "
+  | Icheckbound { label_after_error; spacetime_index; } ->
+    if not Config.spacetime then " check > "
+    else
+      Printf.sprintf "check[lbl=%s,index=%d] > "
+        begin
+          match label_after_error with
+          | None -> ""
+          | Some lbl -> string_of_int lbl
+        end
+        spacetime_index
 
 let test tst ppf arg =
   match tst with
@@ -103,17 +119,16 @@ let operation op arg ppf res =
   | Imove -> regs ppf arg
   | Ispill -> fprintf ppf "%a (spill)" regs arg
   | Ireload -> fprintf ppf "%a (reload)" regs arg
-  | Iconst_int n
-  | Iconst_blockheader n -> fprintf ppf "%s" (Nativeint.to_string n)
-  | Iconst_float f -> fprintf ppf "%F" f
+  | Iconst_int n -> fprintf ppf "%s" (Nativeint.to_string n)
+  | Iconst_float f -> fprintf ppf "%F" (Int64.float_of_bits f)
   | Iconst_symbol s -> fprintf ppf "\"%s\"" s
-  | Icall_ind -> fprintf ppf "call %a" regs arg
-  | Icall_imm lbl -> fprintf ppf "call \"%s\" %a" lbl regs arg
-  | Itailcall_ind -> fprintf ppf "tailcall %a" regs arg
-  | Itailcall_imm lbl -> fprintf ppf "tailcall \"%s\" %a" lbl regs arg
-  | Iextcall(lbl, alloc, stack_args) ->
-      fprintf ppf "extcall \"%s\" %a%s (stackargs=%d)" lbl regs arg
-      (if alloc then "" else " (noalloc)") stack_args
+  | Icall_ind _ -> fprintf ppf "call %a" regs arg
+  | Icall_imm { func; _ } -> fprintf ppf "call \"%s\" %a" func regs arg
+  | Itailcall_ind _ -> fprintf ppf "tailcall %a" regs arg
+  | Itailcall_imm { func; } -> fprintf ppf "tailcall \"%s\" %a" func regs arg
+  | Iextcall { func; alloc; _ } ->
+      fprintf ppf "extcall \"%s\" %a%s" func regs arg
+      (if alloc then "" else " (noalloc)")
   | Istackoffset n ->
       fprintf ppf "offset stack %i" n
   | Iload(chunk, addr) ->
@@ -128,7 +143,11 @@ let operation op arg ppf res =
        (Array.sub arg 1 (Array.length arg - 1))
        reg arg.(0)
        (if is_assign then "(assign)" else "(init)")
-  | Ialloc n -> fprintf ppf "alloc %i" n
+  | Ialloc { words = n; _ } ->
+    fprintf ppf "alloc %i" n;
+    if Config.spacetime then begin
+      fprintf ppf "(spacetime node = %a)" reg arg.(0)
+    end
   | Iintop(op) -> fprintf ppf "%a%s%a" reg arg.(0) (intop op) reg arg.(1)
   | Iintop_imm(op, n) -> fprintf ppf "%a%s%i" reg arg.(0) (intop op) n
   | Inegf -> fprintf ppf "-f %a" reg arg.(0)

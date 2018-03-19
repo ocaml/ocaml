@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          OCaml port by John Malecki and Xavier Leroy                *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
+(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Low-level communication with the debuggee *)
 
@@ -279,7 +282,7 @@ module Remote_value =
       Remote(input_remote_value !conn.io_in)
 
     let closure_code = function
-    | Local obj -> assert false
+    | Local _ -> assert false
     | Remote v ->
         output_char !conn.io_out 'C';
         output_remote_value !conn.io_out v;
@@ -292,5 +295,15 @@ module Remote_value =
       | (Remote v1, Remote v2) -> v1 = v2
            (* string equality -> equality of remote pointers *)
       | (_, _) -> false
+
+    let pointer rv =
+      match rv with
+      | Remote v ->
+        let bytes = ref [] in
+        String.iter (fun c -> bytes := c :: !bytes) v;
+        let obytes = if Sys.big_endian then List.rev !bytes else !bytes in
+        let to_hex c = Printf.sprintf "%02x" (Char.code c) in
+        String.concat "" (List.map to_hex obytes)
+      | Local _ -> ""
 
   end

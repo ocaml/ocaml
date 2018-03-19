@@ -42,13 +42,15 @@ CAMLextern value caml_alloc_8(tag_t, value, value, value, value,
 CAMLextern value caml_alloc_9(tag_t, value, value, value, value,
                               value, value, value, value, value);
 CAMLextern value caml_alloc_small (mlsize_t, tag_t);
+CAMLextern value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
+  tag_t tag, uintnat profinfo);
 CAMLextern value caml_alloc_tuple (mlsize_t);
 CAMLextern value caml_alloc_string (mlsize_t);  /* size in bytes */
 CAMLextern value caml_copy_string (char const *);
 CAMLextern value caml_copy_string_array (char const * const*);
 CAMLextern value caml_copy_double (double);
-CAMLextern value caml_copy_int32 (int32);       /* defined in [ints.c] */
-CAMLextern value caml_copy_int64 (int64);       /* defined in [ints.c] */
+CAMLextern value caml_copy_int32 (int32_t);       /* defined in [ints.c] */
+CAMLextern value caml_copy_int64 (int64_t);       /* defined in [ints.c] */
 CAMLextern value caml_copy_nativeint (intnat);  /* defined in [ints.c] */
 CAMLextern value caml_alloc_array (value (*funct) (char const *),
                                    char const * const* array);

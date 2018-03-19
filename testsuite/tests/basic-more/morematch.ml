@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 (**************************************************************)
 (*  This suite tests the pattern-matching compiler            *)
 (*  it should just compile and run.                           *)
@@ -493,28 +481,28 @@ test "xyz" xyz (YB,YC,X) 6 ; ()
 ;;
 
 
-(* Ce test est pour le compilo lui-meme *)
+(* This test is for the compiler itself *)
 let eq (x,y) = x=y
 ;;
 
 test "eq" eq ("coucou", "coucou") true ; ()
 ;;
 
-(* Test des gardes, non trivial *)
+(* Test guards, non trivial *)
 
 let is_none = function
   | None -> true
   | _ -> false
 
-let garde x = match x with
+let guard x = match x with
 | (Some _, _) when is_none (snd x) -> 1
 | (Some (pc, _), Some pc') when pc = pc' -> 2
 | _ -> 3
 ;;
 
-test "garde" garde (Some (1,1),None) 1 ;
-test "garde" garde (Some (1,1),Some 1) 2 ;
-test "garde" garde (Some (2,1),Some 1) 3 ; ()
+test "guard" guard (Some (1,1),None) 1 ;
+test "guard" guard (Some (1,1),Some 1) 2 ;
+test "guard" guard (Some (2,1),Some 1) 3 ; ()
 ;;
 
 let orstring = function
@@ -545,7 +533,7 @@ test "crash" crash (`Variant (`Some "coucou")) "coucou" ;
 test "crash" crash (`Variant (`Foo)) "foo" ; ()
 ;;
 
-let flatgarde c =
+let flatguard c =
 let x,y = c in
 match x,y with
 | (1,2)|(2,3) when y=2 -> 1
@@ -553,14 +541,14 @@ match x,y with
 | _ -> 3
 ;;
 
-test "flatgarde" flatgarde (1,2) 1 ;
-test "flatgarde" flatgarde (1,3) 2 ;
-test "flatgarde" flatgarde (2,3) 2 ;
-test "flatgarde" flatgarde (2,4) 3 ; ()
+test "flatguard" flatguard (1,2) 1 ;
+test "flatguard" flatguard (1,3) 2 ;
+test "flatguard" flatguard (2,3) 2 ;
+test "flatguard" flatguard (2,4) 3 ; ()
 ;;
 
 
-(* Les bugs de jerome *)
+(* Jerome's bugs *)
 type f =
   | ABSENT
   | FILE
@@ -748,14 +736,14 @@ test "eber" eber {x=1 ; y=0 ; z=false} 0 ; ()
 ;;
 
 
-(* Enchainement des test d'intervalle *)
+(* Chaining interval tests *)
 
 let escaped = function
-  | '"' | '\\' | '\n' | '\t' -> 2
+  | '\"' | '\\' | '\n' | '\t' -> 2
   | c -> 1
 ;;
 
-test "escaped" escaped '"' 2 ;
+test "escaped" escaped '\"' 2 ;
 test "escaped" escaped '\\' 2 ;
 test "escaped" escaped '\n' 2 ;
 test "escaped" escaped '\t' 2 ;

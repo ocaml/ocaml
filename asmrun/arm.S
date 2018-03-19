@@ -1,16 +1,18 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*                  Benedikt Meurer, University of Siegen              */
-/*                                                                     */
-/*    Copyright 1998 Institut National de Recherche en Informatique    */
-/*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    */
-/*    reserved. This file is distributed under the terms of the GNU    */
-/*    Library General Public License, with the special exception on    */
-/*    linking described in file ../LICENSE.                            */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*                 Benedikt Meurer, University of Siegen                  */
+/*                                                                        */
+/*   Copyright 1998 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*   Copyright 2012 Benedikt Meurer.                                      */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
@@ -44,6 +46,26 @@
         cmp     \reg, #0
         beq     \lbl
         .endm
+#elif defined(SYS_netbsd)
+
+  #if defined(MODEL_armv6)
+        .arch   armv6
+        .fpu    vfpv2
+        .arm
+
+    /* Compatibility macros */
+        .macro  cbz reg, lbl
+        cmp     \reg, #0
+        beq     \lbl
+        .endm
+  #elif defined(MODEL_armv7)
+        .arch   armv7-a
+        .fpu    vfpv3-d16
+        .thumb
+  #else
+    #error "Only NetBSD eabihf supported"
+  #endif
+
 #elif defined(SYS_freebsd)
         .arch   armv6
         .arm
@@ -73,7 +95,9 @@ alloc_limit     .req    r11
 
 /* Support for profiling with gprof */
 
-#if defined(PROFILING) && (defined(SYS_linux_eabihf) || defined(SYS_linux_eabi))
+#if defined(PROFILING) && (defined(SYS_linux_eabihf) \
+        || defined(SYS_linux_eabi) \
+        || defined(SYS_netbsd))
 #define PROFILE \
         push    {lr}; CFI_ADJUST(4); \
         bl      __gnu_mcount_nc; CFI_ADJUST(-4)
@@ -98,7 +122,7 @@ caml_call_gc:
     /* Record lowest stack address */
         ldr     r12, =caml_bottom_of_stack
         str     sp, [r12]
-#if defined(SYS_linux_eabihf)
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
     /* Save caller floating-point registers on the stack */
         vpush   {d0-d7}; CFI_ADJUST(64)
 #endif
@@ -117,7 +141,7 @@ caml_call_gc:
         bl      caml_garbage_collection
     /* Restore integer registers and return address from the stack */
         pop     {r0-r7,r12,lr}; CFI_ADJUST(-40)
-#if defined(SYS_linux_eabihf)
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
     /* Restore floating-point registers from the stack */
         vpop    {d0-d7}; CFI_ADJUST(-64)
 #endif
@@ -272,7 +296,7 @@ caml_start_program:
 /* Arguments to the OCaml code are in r0...r3 */
 
 .Ljump_to_caml:
-#if defined(SYS_linux_eabihf)
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
     /* Save callee-save floating-point registers */
         vpush   {d8-d15}; CFI_ADJUST(64)
 #endif
@@ -327,7 +351,7 @@ caml_start_program:
         str     alloc_ptr, [r4]
     /* Reload callee-save registers and return address */
         pop     {r4-r8,r10,r11,lr}; CFI_ADJUST(-32)
-#if defined(SYS_linux_eabihf)
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
     /* Reload callee-save floating-point registers */
         vpop    {d8-d15}; CFI_ADJUST(-64)
 #endif
@@ -498,3 +522,6 @@ caml_system__frametable:
         .align  2
         .type   caml_system__frametable, %object
         .size   caml_system__frametable, .-caml_system__frametable
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

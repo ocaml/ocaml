@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Representation and manipulation of modules and module types. *)
 
@@ -243,9 +246,9 @@ let rec module_elements ?(trans=true) m =
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc ;
           }
-    | Module_constraint (k, tk) ->
+    | Module_constraint (k, _tk) ->
         print_DEBUG "Odoc_module.module_element: Module_constraint";
-      (* A VOIR : utiliser k ou tk ? *)
+      (* FIXME : use k or tk ? *)
         module_elements ~trans: trans
           { m_name = "" ;
             m_info = None ;
@@ -413,7 +416,7 @@ and module_parameters ?(trans=true) m =
           | Some (Modtype mt) -> module_type_parameters ~trans mt
         else
           []
-    | Module_constraint (k, tk) ->
+    | Module_constraint (_k, tk) ->
         module_type_parameters ~trans: trans
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;

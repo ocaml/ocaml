@@ -7,8 +7,8 @@ let test_multiple_handlers =
   let collect v = trace := v :: !trace in
   let _ =
     match
-      begin 
-        match 
+      begin
+        match
           begin
             collect "one";
             failwith "two"
@@ -17,14 +17,14 @@ let test_multiple_handlers =
           () -> collect "failure one"
         | exception (Failure x) ->
           collect x;
-          failwith "three" 
+          failwith "three"
       end
     with
-      () -> 
+      () ->
         collect "failure two";
     | exception (Failure x) ->
       collect x;
-      match 
+      match
         begin
           collect "four";
           failwith "five"

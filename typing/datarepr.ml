@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Compute constructor and label descriptions from type declarations,
    determining their representation. *)
@@ -18,7 +21,7 @@ open Types
 open Btype
 
 (* Simplified version of Ctype.free_vars *)
-let free_vars ty =
+let free_vars ?(param=false) ty =
   let ret = ref TypeSet.empty in
   let rec loop ty =
     let ty = repr ty in
@@ -30,7 +33,12 @@ let free_vars ty =
       | Tvariant row ->
           let row = row_repr row in
           iter_row loop row;
-          if not (static_row row) then loop row.row_more
+          if not (static_row row) then begin
+            match row.row_more.desc with
+            | Tvar _ when param -> ret := TypeSet.add ty !ret
+            | _ -> loop row.row_more
+          end
+      (* XXX: What about Tobject ? *)
       | _ ->
           iter_type_expr loop ty
     end
@@ -39,11 +47,61 @@ let free_vars ty =
   unmark_type ty;
   !ret
 
-let constructor_descrs ty_res cstrs priv =
+let newgenconstr path tyl = newgenty (Tconstr (path, tyl, ref Mnil))
+
+let constructor_existentials cd_args cd_res =
+  let tyl =
+    match cd_args with
+    | Cstr_tuple l -> l
+    | Cstr_record l -> List.map (fun l -> l.ld_type) l
+  in
+  let existentials =
+    match cd_res with
+    | None -> []
+    | Some type_ret ->
+        let arg_vars_set = free_vars (newgenty (Ttuple tyl)) in
+        let res_vars = free_vars type_ret in
+        TypeSet.elements (TypeSet.diff arg_vars_set res_vars)
+  in
+  (tyl, existentials)
+
+let constructor_args priv cd_args cd_res path rep =
+  let tyl, existentials = constructor_existentials cd_args cd_res in
+  match cd_args with
+  | Cstr_tuple l -> existentials, l, None
+  | Cstr_record lbls ->
+      let arg_vars_set = free_vars ~param:true (newgenty (Ttuple tyl)) in
+      let type_params = TypeSet.elements arg_vars_set in
+      let type_unboxed =
+        match rep with
+        | Record_unboxed _ -> unboxed_true_default_false
+        | _ -> unboxed_false_default_false
+      in
+      let tdecl =
+        {
+          type_params;
+          type_arity = List.length type_params;
+          type_kind = Type_record (lbls, rep);
+          type_private = priv;
+          type_manifest = None;
+          type_variance = List.map (fun _ -> Variance.full) type_params;
+          type_newtype_level = None;
+          type_loc = Location.none;
+          type_attributes = [];
+          type_immediate = false;
+          type_unboxed;
+        }
+      in
+      existentials,
+      [ newgenconstr path type_params ],
+      Some tdecl
+
+let constructor_descrs ty_path decl cstrs =
+  let ty_res = newgenconstr ty_path decl.type_params in
   let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
     (fun {cd_args; cd_res; _} ->
-      if cd_args = [] then incr num_consts else incr num_nonconsts;
+      if cd_args = Cstr_tuple [] then incr num_consts else incr num_nonconsts;
       if cd_res = None then incr num_normal)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
@@ -56,32 +114,38 @@ let constructor_descrs ty_res cstrs priv =
         in
         let (tag, descr_rem) =
           match cd_args with
-            [] -> (Cstr_constant idx_const,
+          | _ when decl.type_unboxed.unboxed ->
+            assert (rem = []);
+            (Cstr_unboxed, [])
+          | Cstr_tuple [] -> (Cstr_constant idx_const,
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-        let existentials =
-          match cd_res with
-          | None -> []
-          | Some type_ret ->
-              let res_vars = free_vars type_ret in
-              let arg_vars = free_vars (newgenty (Ttuple cd_args)) in
-              TypeSet.elements (TypeSet.diff arg_vars res_vars)
+        let cstr_name = Ident.name cd_id in
+        let existentials, cstr_args, cstr_inlined =
+          let representation =
+            if decl.type_unboxed.unboxed
+            then Record_unboxed true
+            else Record_inlined idx_nonconst
+          in
+          constructor_args decl.type_private cd_args cd_res
+            (Path.Pdot (ty_path, cstr_name, Path.nopos)) representation
         in
         let cstr =
-          { cstr_name = Ident.name cd_id;
+          { cstr_name;
             cstr_res = ty_res;
             cstr_existentials = existentials;
-            cstr_args = cd_args;
-            cstr_arity = List.length cd_args;
+            cstr_args;
+            cstr_arity = List.length cstr_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
             cstr_normal = !num_normal;
-            cstr_private = priv;
+            cstr_private = decl.type_private;
             cstr_generalized = cd_res <> None;
             cstr_loc = cd_loc;
             cstr_attributes = cd_attributes;
+            cstr_inlined;
           } in
         (cd_id, cstr) :: descr_rem in
   describe_constructors 0 0 cstrs
@@ -90,24 +154,18 @@ let extension_descr path_ext ext =
   let ty_res =
     match ext.ext_ret_type with
         Some type_ret -> type_ret
-      | None ->
-          newgenty (Tconstr(ext.ext_type_path, ext.ext_type_params, ref Mnil))
+      | None -> newgenconstr ext.ext_type_path ext.ext_type_params
   in
-  let tag = Cstr_extension(path_ext, ext.ext_args = []) in
-  let existentials =
-    match ext.ext_ret_type with
-      | None -> []
-      | Some type_ret ->
-          let ret_vars = free_vars type_ret in
-          let arg_vars = free_vars (newgenty (Ttuple ext.ext_args)) in
-            TypeSet.elements (TypeSet.diff arg_vars ret_vars)
+  let existentials, cstr_args, cstr_inlined =
+    constructor_args ext.ext_private ext.ext_args ext.ext_ret_type
+      path_ext Record_extension
   in
     { cstr_name = Path.last path_ext;
       cstr_res = ty_res;
       cstr_existentials = existentials;
-      cstr_args = ext.ext_args;
-      cstr_arity = List.length ext.ext_args;
-      cstr_tag = tag;
+      cstr_args;
+      cstr_arity = List.length cstr_args;
+      cstr_tag = Cstr_extension(path_ext, cstr_args = []);
       cstr_consts = -1;
       cstr_nonconsts = -1;
       cstr_private = ext.ext_private;
@@ -115,6 +173,7 @@ let extension_descr path_ext ext =
       cstr_generalized = ext.ext_ret_type <> None;
       cstr_loc = ext.ext_loc;
       cstr_attributes = ext.ext_attributes;
+      cstr_inlined;
     }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
@@ -153,14 +212,26 @@ exception Constr_not_found
 let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
-  | {cd_args = []; _} as c  :: rem ->
+  | {cd_args = Cstr_tuple []; _} as c  :: rem ->
       if tag = Cstr_constant num_const
       then c
       else find_constr tag (num_const + 1) num_nonconst rem
   | c :: rem ->
-      if tag = Cstr_block num_nonconst
+      if tag = Cstr_block num_nonconst || tag = Cstr_unboxed
       then c
       else find_constr tag num_const (num_nonconst + 1) rem
 
 let find_constr_by_tag tag cstrlist =
   find_constr tag 0 0 cstrlist
+
+let constructors_of_type ty_path decl =
+  match decl.type_kind with
+  | Type_variant cstrs -> constructor_descrs ty_path decl cstrs
+  | Type_record _ | Type_abstract | Type_open -> []
+
+let labels_of_type ty_path decl =
+  match decl.type_kind with
+  | Type_record(labels, rep) ->
+      label_descrs (newgenconstr ty_path decl.type_params)
+        labels rep decl.type_private
+  | Type_variant _ | Type_abstract | Type_open -> []

@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* User-level threads *)
 
@@ -64,11 +66,10 @@ external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
 external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
 external thread_wakeup : t -> unit = "thread_wakeup"
-external thread_self : unit -> t = "thread_self"
+external thread_self : unit -> t = "thread_self" [@@noalloc]
 external thread_kill : t -> unit = "thread_kill"
 external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
-
-external id : t -> int = "thread_id"
+external thread_id : t -> int = "thread_id" [@@noalloc]
 
 (* In sleep() below, we rely on the fact that signals are detected
    only at function applications and beginning of loops,
@@ -82,6 +83,7 @@ let wakeup pid = thread_wakeup pid
 let self () = thread_self()
 let kill pid = thread_kill pid
 let exit () = thread_kill(thread_self())
+let id t = thread_id t
 
 let select_aux arg = thread_select arg
 

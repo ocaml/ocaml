@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2014 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* CSE for the i386 *)
 
@@ -17,7 +20,7 @@ open Arch
 open Mach
 open CSEgen
 
-class cse = object (self)
+class cse = object
 
 inherit cse_generic as super
 
@@ -37,7 +40,7 @@ method! class_of_operation op =
 
 method! is_cheap_operation op =
   match op with
-  | Iconst_int _ | Iconst_blockheader _ -> true
+  | Iconst_int _ -> true
   | Iconst_symbol _ -> true
   | _ -> false
 

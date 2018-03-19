@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Manuel Serrano and Xavier Leroy, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2000 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Manuel Serrano and Xavier Leroy, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2000 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #ifndef CAML_CUSTOM_H
 #define CAML_CUSTOM_H
@@ -26,8 +28,8 @@ struct custom_operations {
   int (*compare)(value v1, value v2);
   intnat (*hash)(value v);
   void (*serialize)(value v,
-                    /*out*/ uintnat * wsize_32 /*size in bytes*/,
-                    /*out*/ uintnat * wsize_64 /*size in bytes*/);
+                    /*out*/ uintnat * bsize_32 /*size in bytes*/,
+                    /*out*/ uintnat * bsize_64 /*size in bytes*/);
   value (*deserialize)(void);
   int (*compare_ext)(value v1, value v2);
 };
@@ -56,13 +58,13 @@ CAMLextern void caml_register_custom_operations(const struct custom_operations *
 /* In domain_state.tbl: intnat compare_unordered; */
 /* Used by custom comparison to report unordered NaN-like cases. */
 
-/* <private> */
+#ifdef CAML_INTERNALS
 extern struct custom_operations * caml_find_custom_operations(char * ident);
 extern struct custom_operations *
           caml_final_custom_operations(void (*fn)(value));
 
 extern void caml_init_custom_operations(void);
-/* </private> */
+#endif /* CAML_INTERNALS */
 
 #ifdef __cplusplus
 }

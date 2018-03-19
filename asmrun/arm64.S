@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Gallium, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2013 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Gallium, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2013 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Asm part of the runtime system, ARM processor, 64-bit mode */
 /* Must be preprocessed by cpp */
@@ -919,3 +921,6 @@ caml_system__frametable:
         .align  3
         .type   caml_system__frametable, %object
         .size   caml_system__frametable, .-caml_system__frametable
+
+/* Mark stack as non-executable */
+        .section .note.GNU-stack,"",%progbits

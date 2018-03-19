@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 #include <string.h>
 #include <stdlib.h>
@@ -18,6 +22,10 @@
 #include "caml/memory.h"
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
+
+#if defined(LACKS_SANE_NAN) && !defined(isnan)
+#define isnan _isnan
+#endif
 
 /* Structural comparison on trees. */
 
@@ -135,7 +143,7 @@ static intnat do_compare_val(struct compare_stack* stk,
       }
       default: /*fallthrough*/;
       }
-      
+
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
@@ -178,8 +186,19 @@ static intnat do_compare_val(struct compare_stack* stk,
     case Double_tag: {
       double d1 = Double_val(v1);
       double d2 = Double_val(v2);
+#ifdef LACKS_SANE_NAN
+      if (isnan(d2)) {
+        if (! total) return UNORDERED;
+        if (isnan(d1)) break;
+        return GREATER;
+      } else if (isnan(d1)) {
+        if (! total) return UNORDERED;
+        return LESS;
+      }
+#endif
       if (d1 < d2) return LESS;
       if (d1 > d2) return GREATER;
+#ifndef LACKS_SANE_NAN
       if (d1 != d2) {
         if (! total) return UNORDERED;
         /* One or both of d1 and d2 is NaN.  Order according to the
@@ -188,6 +207,7 @@ static intnat do_compare_val(struct compare_stack* stk,
         if (d2 == d2) return LESS;    /* d2 is not NaN, d1 is NaN */
         /* d1 and d2 are both NaN, thus equal: continue comparison */
       }
+#endif
       break;
     }
     case Double_array_tag: {
@@ -198,14 +218,26 @@ static intnat do_compare_val(struct compare_stack* stk,
       for (i = 0; i < sz1; i++) {
         double d1 = Double_field(v1, i);
         double d2 = Double_field(v2, i);
+#ifdef LACKS_SANE_NAN
+        if (isnan(d2)) {
+          if (! total) return UNORDERED;
+          if (isnan(d1)) break;
+          return GREATER;
+        } else if (isnan(d1)) {
+          if (! total) return UNORDERED;
+          return LESS;
+        }
+#endif
         if (d1 < d2) return LESS;
         if (d1 > d2) return GREATER;
+#ifndef LACKS_SANE_NAN
         if (d1 != d2) {
           if (! total) return UNORDERED;
           /* See comment for Double_tag case */
           if (d1 == d1) return GREATER;
           if (d2 == d2) return LESS;
         }
+#endif
       }
       break;
     }

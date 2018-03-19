@@ -1,15 +1,17 @@
 ;;; caml-help.el --- Contextual completion and help to caml-mode
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                                OCaml                                *)
-;(*                                                                     *)
-;(*            Didier Remy, projet Cristal, INRIA Rocquencourt          *)
-;(*                                                                     *)
-;(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;**************************************************************************
+;*                                                                        *
+;*                                 OCaml                                  *
+;*                                                                        *
+;*             Didier Remy, projet Cristal, INRIA Rocquencourt            *
+;*                                                                        *
+;*   Copyright 2001 Institut National de Recherche en Informatique et     *
+;*     en Automatique.                                                    *
+;*                                                                        *
+;*   All rights reserved.  This file is distributed under the terms of    *
+;*   the GNU General Public License.                                      *
+;*                                                                        *
+;**************************************************************************
 
 ;; Author: Didier Remy, November 2001.
 
@@ -197,7 +199,8 @@
               (insert-file-contents file))
           (message "Module %s not found" module))
         (while (re-search-forward
-                "\\([ \t]*val\\|let\\|exception\\|external\\|  [|]\\) \\([a-zA-Z_0-9'][a-zA-Z_0-9']*\\)\\|^  *[{]* \\([a-z_][A-Za-z_0-9]*\\) : [^;\n][^;\n]*;"
+                (concat "\\([ \t]*val\\|let\\|exception\\|external\\|  [|]\\) \\([a-zA-Z_0-9'][a-zA-Z_0-9']*\\)"
+                        "\\|^  *[{]* \\([a-z_][A-Za-z_0-9]*\\) : [^;\n][^;\n]*;")
                 (point-max) 'move)
           (pop-to-buffer (current-buffer))
           (setq alist (cons (or (match-string 2) (match-string 3)) alist)))

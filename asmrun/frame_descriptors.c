@@ -1,5 +1,7 @@
+#define CAML_INTERNALS
+
 #include "frame_descriptors.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/platform.h"
 
 typedef struct link {

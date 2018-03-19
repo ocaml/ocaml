@@ -1,14 +1,18 @@
 {
-(***********************************************************************)
-(*                             OCamldoc                                *)
-(*                                                                     *)
-(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2001 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** The lexer for special comments. *)
 
@@ -20,16 +24,16 @@ let line_number = ref 0
 
 let string_buffer = Buffer.create 32
 
-(** Fonction de remise a zero de la chaine de caracteres tampon *)
+(** Reset the buffer *)
 let reset_string_buffer () = Buffer.reset string_buffer
 
-(** Fonction d'ajout d'un caractere dans la chaine de caracteres tampon *)
-let ajout_char_string = Buffer.add_char string_buffer
+(** Add a character to the buffer *)
+let add_char_string = Buffer.add_char string_buffer
 
 (** Add a string to the buffer. *)
-let ajout_string = Buffer.add_string string_buffer
+let add_string = Buffer.add_string string_buffer
 
-let lecture_string () = Buffer.contents string_buffer
+let read_string () = Buffer.contents string_buffer
 
 (** The variable which will contain the description string.
    Is initialized when we encounter the start of a special comment. *)
@@ -87,8 +91,7 @@ let remove_blanks s =
 
 (** Remove first blank characters of each line of a string, until the first '*' *)
 let remove_stars s =
-  let s2 = Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s in
-  s2
+  Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s
 }
 
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
@@ -173,7 +176,7 @@ and special_comment = parse
         if !comments_level = 1 then
           (
            (* there is just a description *)
-           let s2 = lecture_string () in
+           let s2 = read_string () in
            let s3 = remove_blanks s2 in
            let s4 =
              if !Odoc_global.remove_stars then
@@ -185,7 +188,7 @@ and special_comment = parse
           )
         else
           (
-           ajout_string s;
+           add_string s;
            decr comments_level;
            special_comment lexbuf
           )
@@ -196,7 +199,7 @@ and special_comment = parse
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         incr comments_level ;
-        ajout_string s;
+        add_string s;
         special_comment lexbuf
       }
 
@@ -204,7 +207,7 @@ and special_comment = parse
       {
         let s = Lexing.lexeme lexbuf in
         let c = (Lexing.lexeme_char lexbuf 1) in
-        ajout_char_string c;
+        add_char_string c;
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         special_comment lexbuf
       }
@@ -212,7 +215,7 @@ and special_comment = parse
   | "@"lowercase+
       {
         (* we keep the description before we go further *)
-        let s = lecture_string () in
+        let s = read_string () in
         description := remove_blanks s;
         reset_string_buffer ();
         let len = String.length (Lexing.lexeme lexbuf) in
@@ -228,7 +231,7 @@ and special_comment = parse
   | _
       {
         let c = (Lexing.lexeme_char lexbuf 0) in
-        ajout_char_string c;
+        add_char_string c;
         if c = '\010' then incr line_number;
         incr Odoc_comments_global.nb_chars;
         special_comment lexbuf
@@ -247,7 +250,7 @@ and special_comment_part2 = parse
              else
               !description
           in
-          let remain = lecture_string () in
+          let remain = read_string () in
           let remain2 =
             if !Odoc_global.remove_stars then
               remove_stars remain
@@ -257,7 +260,7 @@ and special_comment_part2 = parse
           Description (desc, Some remain2)
         else
           (
-           ajout_string s ;
+           add_string s ;
            decr comments_level ;
            special_comment_part2 lexbuf
           )
@@ -267,7 +270,7 @@ and special_comment_part2 = parse
       {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
-        ajout_string s;
+        add_string s;
         incr comments_level ;
         special_comment_part2 lexbuf
       }
@@ -275,7 +278,7 @@ and special_comment_part2 = parse
   | _
       {
         let c = (Lexing.lexeme_char lexbuf 0) in
-        ajout_char_string c;
+        add_char_string c;
         if c = '\010' then incr line_number;
         incr Odoc_comments_global.nb_chars;
         special_comment_part2 lexbuf
@@ -396,7 +399,7 @@ and simple = parse
           )
         else
           (
-           ajout_string s;
+           add_string s;
            simple lexbuf
           )
       }

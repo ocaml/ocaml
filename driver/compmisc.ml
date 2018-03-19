@@ -1,36 +1,40 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*      Fabrice Le Fessant, EPI Gallium, INRIA Paris-Rocquencourt      *)
-(*                                                                     *)
-(*  Copyright 2013 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*       Fabrice Le Fessant, EPI Gallium, INRIA Paris-Rocquencourt        *)
+(*                                                                        *)
+(*   Copyright 2013 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Compenv
 
 (* Initialize the search path.
-   The current directory is always searched first,
+   [dir] is always searched first (default: the current directory),
    then the directories specified with the -I option (in command-line order),
    then the standard library directory (unless the -nostdlib option is given).
  *)
 
-let init_path native =
+let init_path ?(dir="") native =
   let dirs =
     if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else if !Clflags.use_vmthreads && not native then
       "+vmthreads" :: !Clflags.include_dirs
     else
-      !last_include_dirs @
-      !Clflags.include_dirs @
-      !first_include_dirs
+      !Clflags.include_dirs
+  in
+  let dirs =
+    !last_include_dirs @ dirs @ Config.flexdll_dirs @ !first_include_dirs
   in
   let exp_dirs =
     List.map (Misc.expand_directory Config.standard_library) dirs in
-  Config.load_path := "" ::
+  Config.load_path := dir ::
       List.rev_append exp_dirs (Clflags.std_include_dir ());
   Env.reset_cache ()
 

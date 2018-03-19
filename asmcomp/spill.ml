@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Insertion of moves to suggest possible spilling / reloading points
    before register allocation. *)
@@ -69,7 +72,7 @@ let add_superpressure_regs op live_regs res_regs spilled =
     (fun r ->
       if Reg.Set.mem r spilled then () else begin
         match r.loc with
-          Stack s -> ()
+          Stack _ -> ()
         | _ -> let c = Proc.register_class r in
                pressure.(c) <- pressure.(c) + 1
       end)
@@ -129,8 +132,6 @@ let find_reload_at_exit k =
   with
   | Not_found -> Misc.fatal_error "Spill.find_reload_at_exit"
 
-let reload_at_break = ref Reg.Set.empty
-
 let rec reload i before =
   incr current_date;
   record_use i.arg;
@@ -138,10 +139,10 @@ let rec reload i before =
   match i.desc with
     Iend ->
       (i, before)
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       (add_reloads (Reg.inter_set_array before i.arg) i,
        Reg.Set.empty)
-  | Iop(Icall_ind | Icall_imm _ | Iextcall(_, true,_)) ->
+  | Iop(Icall_ind _ | Icall_imm _ | Iextcall { alloc = true; }) ->
       (* All regs live across must be spilled *)
       let (new_next, finally) = reload i.next i.live in
       (add_reloads (Reg.inter_set_array before i.arg)
@@ -198,11 +199,13 @@ let rec reload i before =
        finally)
   | Iloop(body) ->
       let date_start = !current_date in
+      let destroyed_at_fork_start = !destroyed_at_fork in
       let at_head = ref before in
       let final_body = ref body in
       begin try
         while true do
           current_date := date_start;
+          destroyed_at_fork := destroyed_at_fork_start;
           let (new_body, new_at_head) = reload body !at_head in
           let merged_at_head = Reg.Set.union !at_head new_at_head in
           if Reg.Set.equal merged_at_head !at_head then begin
@@ -283,7 +286,7 @@ let rec spill i finally =
   match i.desc with
     Iend ->
       (i, finally)
-  | Ireturn | Iop(Itailcall_ind) | Iop(Itailcall_imm _) ->
+  | Ireturn | Iop(Itailcall_ind _) | Iop(Itailcall_imm _) ->
       (i, Reg.Set.empty)
   | Iop Ireload ->
       let (new_next, after) = spill i.next finally in
@@ -295,8 +298,8 @@ let rec spill i finally =
       let before1 = Reg.diff_set_array after i.res in
       let before =
         match i.desc with
-          Iop Icall_ind | Iop(Icall_imm _) | Iop(Iextcall _)
-        | Iop(Iintop Icheckbound) | Iop(Iintop_imm(Icheckbound, _)) ->
+          Iop Icall_ind _ | Iop(Icall_imm _) | Iop(Iextcall _)
+        | Iop(Iintop (Icheckbound _)) | Iop(Iintop_imm((Icheckbound _), _)) ->
             Reg.Set.union before1 !spill_at_raise
         | _ ->
             before1 in
@@ -392,7 +395,8 @@ let rec spill i finally =
 let reset () =
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
-  current_date := 0
+  current_date := 0;
+  destroyed_at_fork := []
 
 let fundecl f =
   reset ();
@@ -403,8 +407,11 @@ let fundecl f =
     add_spills (Reg.inter_set_array tospill_at_entry f.fun_args) body2 in
   spill_env := Reg.Map.empty;
   use_date := Reg.Map.empty;
+  destroyed_at_fork := [];
   { fun_name = f.fun_name;
     fun_args = f.fun_args;
     fun_body = new_body;
     fun_fast = f.fun_fast;
-    fun_dbg  = f.fun_dbg }
+    fun_dbg  = f.fun_dbg;
+    fun_spacetime_shape = f.fun_spacetime_shape;
+  }

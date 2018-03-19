@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Toplevel directives *)
 
@@ -34,6 +37,15 @@ let dir_directory s =
   Config.load_path := d :: !Config.load_path
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
+(* To remove a directory from the load path *)
+let dir_remove_directory s =
+  let d = expand_directory Config.standard_library s in
+  Config.load_path := List.filter (fun d' -> d' <> d) !Config.load_path
+
+let _ =
+  Hashtbl.add directive_table "remove_directory"
+    (Directive_string dir_remove_directory)
+
 let _ = Hashtbl.add directive_table "show_dirs"
   (Directive_none
      (fun () ->
@@ -51,35 +63,36 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 let load_file ppf name0 =
   let name =
     try Some (find_in_path !Config.load_path name0)
-    with Not_found -> None in
-  match name with
-    | None -> fprintf ppf "File not found: %s@." name0; false
-    | Some name ->
-  let fn,tmp =
-    if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
-    then
-      let cmxs = Filename.temp_file "caml" ".cmxs" in
-      Asmlink.link_shared ppf [name] cmxs;
-      cmxs,true
-    else
-      name,false in
-
-  let success =
-    (* The Dynlink interface does not allow us to distinguish between
-       a Dynlink.Error exceptions raised in the loaded modules
-       or a genuine error during dynlink... *)
-    try Dynlink.loadfile fn; true
-    with
-      | Dynlink.Error err ->
-          fprintf ppf "Error while loading %s: %s.@."
-            name (Dynlink.error_message err);
-          false
-      | exn ->
-          print_exception_outcome ppf exn;
-          false
+    with Not_found -> None
   in
-  if tmp then (try Sys.remove fn with Sys_error _ -> ());
-  success
+  match name with
+  | None -> fprintf ppf "File not found: %s@." name0; false
+  | Some name ->
+    let fn,tmp =
+      if Filename.check_suffix name ".cmx" || Filename.check_suffix name ".cmxa"
+      then
+        let cmxs = Filename.temp_file "caml" ".cmxs" in
+        Asmlink.link_shared ppf [name] cmxs;
+        cmxs,true
+      else
+        name,false
+    in
+    let success =
+      (* The Dynlink interface does not allow us to distinguish between
+          a Dynlink.Error exceptions raised in the loaded modules
+          or a genuine error during dynlink... *)
+      try Compdynlink.loadfile fn; true
+      with
+      | Compdynlink.Error err ->
+        fprintf ppf "Error while loading %s: %s.@."
+          name (Compdynlink.error_message err);
+        false
+      | exn ->
+        print_exception_outcome ppf exn;
+        false
+    in
+    if tmp then (try Sys.remove fn with Sys_error _ -> ());
+    success
 
 
 let dir_load ppf name = ignore (load_file ppf name)
@@ -98,9 +111,9 @@ type 'a printer_type_new = Format.formatter -> 'a -> unit
 type 'a printer_type_old = 'a -> unit
 
 let match_printer_type ppf desc typename =
-  let (printer_type, _) =
+  let printer_type =
     try
-      Env.lookup_type (Ldot(Lident "Topdirs", typename)) !toplevel_env
+      Env.lookup_type (Ldot(Lident "Opttopdirs", typename)) !toplevel_env
     with Not_found ->
       fprintf ppf "Cannot find type Topdirs.%s.@." typename;
       raise Exit in
@@ -135,10 +148,10 @@ let find_printer_type ppf lid =
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
-    let v = eval_path path in
+    let v = eval_path !toplevel_env path in
     let print_function =
       if is_old_style then
-        (fun formatter repr -> Obj.obj v (Obj.obj repr))
+        (fun _formatter repr -> Obj.obj v (Obj.obj repr))
       else
         (fun formatter repr -> Obj.obj v formatter (Obj.obj repr)) in
     install_printer path ty_arg print_function
@@ -146,7 +159,7 @@ let dir_install_printer ppf lid =
 
 let dir_remove_printer ppf lid =
   try
-    let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
+    let (_ty_arg, path, _is_old_style) = find_printer_type ppf lid in
     begin try
       remove_printer path
     with Not_found ->

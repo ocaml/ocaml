@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*                  Benedikt Meurer, University of Siegen              *)
-(*                                                                     *)
-(*    Copyright 1998 Institut National de Recherche en Informatique    *)
-(*    et en Automatique. Copyright 2012 Benedikt Meurer. All rights    *)
-(*    reserved.  This file is distributed  under the terms of the Q    *)
-(*    Public License version 1.0.                                      *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                 Benedikt Meurer, University of Siegen                  *)
+(*                                                                        *)
+(*   Copyright 1998 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*   Copyright 2012 Benedikt Meurer.                                      *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Description of the ARM processor *)
 
@@ -63,10 +66,10 @@ let num_register_classes = 3
 
 let register_class r =
   match (r.typ, !fpu) with
-    (Int | Addr), _  -> 0
-  | Float, VFPv2     -> 1
-  | Float, VFPv3_D16 -> 1
-  | Float, _         -> 2
+  | (Val | Int | Addr), _  -> 0
+  | Float, VFPv2         -> 1
+  | Float, VFPv3_D16     -> 1
+  | Float, _             -> 2
 
 let num_available_registers =
   [| 9; 16; 32 |]
@@ -104,41 +107,77 @@ let phys_reg n =
 let stack_slot slot ty =
   Reg.at_location ty (Stack slot)
 
+let loc_spacetime_node_hole = Reg.dummy  (* Spacetime unsupported *)
+
 (* Calling conventions *)
 
-let calling_conventions
-    first_int last_int first_float last_float make_stack arg =
-  let loc = Array.make (Array.length arg) Reg.dummy in
+let calling_conventions first_int last_int first_float last_float make_stack
+      arg =
+  let loc = Array.make (Array.length arg) [| Reg.dummy |] in
   let int = ref first_int in
   let float = ref first_float in
   let ofs = ref 0 in
   for i = 0 to Array.length arg - 1 do
-    match arg.(i).typ with
-      Int | Addr as ty ->
-        if !int <= last_int then begin
-          loc.(i) <- phys_reg !int;
-          incr int
-        end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) ty;
-          ofs := !ofs + size_int
-        end
-    | Float ->
-        assert (abi = EABI_HF);
-        assert (!fpu >= VFPv2);
-        if !float <= last_float then begin
-          loc.(i) <- phys_reg !float;
-          incr float
-        end else begin
-          ofs := Misc.align !ofs size_float;
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
-          ofs := !ofs + size_float
-        end
+    match arg.(i) with
+    | [| arg |] ->
+      begin match arg.typ with
+      | Val | Int | Addr as ty ->
+          if !int <= last_int then begin
+            loc.(i) <- [| phys_reg !int |];
+            incr int
+          end else begin
+            loc.(i) <- [| stack_slot (make_stack !ofs) ty |];
+            ofs := !ofs + size_int
+          end
+      | Float ->
+          assert (abi = EABI_HF);
+          assert (!fpu >= VFPv2);
+          if !float <= last_float then begin
+            loc.(i) <- [| phys_reg !float |];
+            incr float
+          end else begin
+            ofs := Misc.align !ofs size_float;
+            loc.(i) <- [| stack_slot (make_stack !ofs) Float |];
+            ofs := !ofs + size_float
+          end
+      end
+    | [| arg1; arg2 |] ->
+      (* Passing of 64-bit quantities to external functions. *)
+      begin match arg1.typ, arg2.typ with
+      | Int, Int ->
+          (* 64-bit quantities split across two registers must either be in a
+             consecutive pair of registers where the lowest numbered is an
+             even-numbered register; or in a stack slot that is 8-byte
+             aligned. *)
+          int := Misc.align !int 2;
+          if !int <= last_int - 1 then begin
+            let reg_lower = phys_reg !int in
+            let reg_upper = phys_reg (1 + !int) in
+            loc.(i) <- [| reg_lower; reg_upper |];
+            int := !int + 2
+          end else begin
+            let size_int64 = size_int * 2 in
+            ofs := Misc.align !ofs size_int64;
+            let stack_lower = stack_slot (make_stack !ofs) Int in
+            let stack_upper = stack_slot (make_stack (size_int + !ofs)) Int in
+            loc.(i) <- [| stack_lower; stack_upper |];
+            ofs := !ofs + size_int64
+          end
+      | _, _ ->
+        let f = function Int -> "I" | Addr -> "A" | Val -> "V" | Float -> "F" in
+        fatal_error (Printf.sprintf "Proc.calling_conventions: bad register \
+            type(s) for multi-register argument: %s, %s"
+          (f arg1.typ) (f arg2.typ))
+      end
+    | _ ->
+      fatal_error "Proc.calling_conventions: bad number of registers for \
+        multi-register argument"
   done;
   (loc, Misc.align !ofs 8)  (* keep stack 8-aligned *)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs
-let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
+let not_supported _ofs = fatal_error "Proc.loc_results: cannot call"
 
 (* OCaml calling convention:
      first integer args in r0...r7
@@ -146,12 +185,28 @@ let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
      remaining args on stack.
    Return values in r0...r7 or d0...d15. *)
 
+let max_arguments_for_tailcalls = 8
+
+let single_regs arg = Array.map (fun arg -> [| arg |]) arg
+let ensure_single_regs res =
+  Array.map (function
+      | [| res |] -> res
+      | _ -> failwith "Proc.ensure_single_regs")
+    res
+
 let loc_arguments arg =
-  calling_conventions 0 7 100 115 outgoing arg
+  let (loc, alignment) =
+    calling_conventions 0 7 100 115 outgoing (single_regs arg)
+  in
+  ensure_single_regs loc, alignment
 let loc_parameters arg =
-  let (loc, _) = calling_conventions 0 7 100 115 incoming arg in loc
+  let (loc, _) = calling_conventions 0 7 100 115 incoming (single_regs arg) in
+  ensure_single_regs loc
 let loc_results res =
-  let (loc, _) = calling_conventions 0 7 100 115 not_supported res in loc
+  let (loc, _) =
+    calling_conventions 0 7 100 115 not_supported (single_regs res)
+  in
+  ensure_single_regs loc
 
 (* C calling convention:
      first integer args in r0...r3
@@ -162,13 +217,16 @@ let loc_results res =
 let loc_external_arguments arg =
   calling_conventions 0 3 100 107 outgoing arg
 let loc_external_results res =
-  let (loc, _) = calling_conventions 0 1 100 100 not_supported res in loc
+  let (loc, _) =
+    calling_conventions 0 1 100 100 not_supported (single_regs res)
+  in
+  ensure_single_regs loc
 
 let loc_exn_bucket = phys_reg 0
 
 (* Volatile registers: none *)
 
-let regs_are_volatile rs = false
+let regs_are_volatile _rs = false
 
 (* Registers destroyed by operations *)
 
@@ -196,14 +254,14 @@ let destroyed_at_c_call =
                          124;125;126;127;128;129;130;131]))
 
 let destroyed_at_oper = function
-    Iop(Icall_ind | Icall_imm _)
-  | Iop(Iextcall(_, true)) ->
+    Iop(Icall_ind _ | Icall_imm _)
+  | Iop(Iextcall { alloc = true; _ }) ->
       all_phys_regs
-  | Iop(Iextcall(_, false)) ->
+  | Iop(Iextcall { alloc = false; _}) ->
       destroyed_at_c_call
   | Iop(Ialloc _) ->
       destroyed_at_alloc
-  | Iop(Iconst_symbol _) when !pic_code ->
+  | Iop(Iconst_symbol _) when !Clflags.pic_code ->
       [| phys_reg 3; phys_reg 8 |]  (* r3 and r12 destroyed *)
   | Iop(Iintop Imulh) when !arch < ARMv6 ->
       [| phys_reg 8 |]              (* r12 destroyed *)
@@ -216,16 +274,16 @@ let destroyed_at_raise = all_phys_regs
 (* Maximal register pressure *)
 
 let safe_register_pressure = function
-    Iextcall(_, _) -> if abi = EABI then 0 else 4
+    Iextcall _ -> if abi = EABI then 0 else 4
   | Ialloc _ -> if abi = EABI then 0 else 7
-  | Iconst_symbol _ when !pic_code -> 7
+  | Iconst_symbol _ when !Clflags.pic_code -> 7
   | Iintop Imulh when !arch < ARMv6 -> 8
   | _ -> 9
 
 let max_register_pressure = function
-    Iextcall(_, _) -> if abi = EABI then [| 4; 0; 0 |] else [| 4; 8; 8 |]
+    Iextcall _ -> if abi = EABI then [| 4; 0; 0 |] else [| 4; 8; 8 |]
   | Ialloc _ -> if abi = EABI then [| 7; 0; 0 |] else [| 7; 8; 8 |]
-  | Iconst_symbol _ when !pic_code -> [| 7; 16; 32 |]
+  | Iconst_symbol _ when !Clflags.pic_code -> [| 7; 16; 32 |]
   | Iintoffloat | Ifloatofint
   | Iload(Single, _) | Istore(Single, _, _) -> [| 9; 15; 31 |]
   | Iintop Imulh when !arch < ARMv6 -> [| 8; 16; 32 |]
@@ -235,9 +293,9 @@ let max_register_pressure = function
    registers). *)
 
 let op_is_pure = function
-  | Icall_ind | Icall_imm _ | Itailcall_ind | Itailcall_imm _
+  | Icall_ind _ | Icall_imm _ | Itailcall_ind _ | Itailcall_imm _
   | Iextcall _ | Istackoffset _ | Istore _ | Ialloc _
-  | Iintop(Icheckbound) | Iintop_imm(Icheckbound, _)
+  | Iintop(Icheckbound _) | Iintop_imm(Icheckbound _, _)
   | Ispecific(Ishiftcheckbound _) -> false
   | _ -> true
 

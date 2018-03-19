@@ -4,7 +4,8 @@
 #                 Characters 49-50:
     let f1 (r:t) = r.x (* ok *)
                      ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 89-90:
     let f2 r = ignore (r:t); r.x (* non principal *)
                                ^
@@ -12,15 +13,18 @@ Warning 18: this type-based field disambiguation is not principal.
 Characters 89-90:
     let f2 r = ignore (r:t); r.x (* non principal *)
                                ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 148-149:
       match r with {x; y} -> y + y (* ok *)
                     ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 151-152:
       match r with {x; y} -> y + y (* ok *)
                        ^
-Warning 42: this use of y required disambiguation.
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 148-149:
       match r with {x; y} -> y + y (* ok *)
                     ^
@@ -51,7 +55,8 @@ Error: This pattern matches values of type M1.u
 # Characters 18-21:
   let f (r:M.t) = r.M.x;; (* ok *)
                     ^^^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 val f : M.t -> int = <fun>
 # Characters 18-19:
   let f (r:M.t) = r.x;; (* warning *)
@@ -62,12 +67,14 @@ be selected if the type becomes unknown.
 Characters 18-19:
   let f (r:M.t) = r.x;; (* warning *)
                     ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 val f : M.t -> int = <fun>
 # Characters 8-9:
   let f ({x}:M.t) = x;; (* warning *)
           ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 7-10:
   let f ({x}:M.t) = x;; (* warning *)
          ^^^
@@ -80,7 +87,8 @@ val f : M.t -> int = <fun>
 #         Characters 57-58:
     let f (r:M.t) = r.x
                       ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 30-36:
     open N
     ^^^^^^
@@ -101,7 +109,8 @@ module OK : sig val f : M.t -> int end
 #       Characters 37-38:
     let f {x;z} = x,z
            ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 36-41:
     let f {x;z} = x,z
           ^^^^^
@@ -116,11 +125,13 @@ Error: Some record fields are undefined: y
 #           Characters 90-91:
     let r = {x=3; y=true}
              ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 95-96:
     let r = {x=3; y=true}
                   ^
-Warning 42: this use of y required disambiguation.
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 module OK :
   sig
     type u = { x : int; y : bool; }
@@ -172,7 +183,8 @@ Error: The record field NM.y belongs to the type NM.foo = M.foo
 #       Characters 65-66:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
                                        ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 72-73:
     let f r = ignore (r: foo); {r with x = 2; z = 3}
                                               ^
@@ -187,7 +199,8 @@ Error: This record expression is expected to have type M.foo
 #       Characters 66-67:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                         ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 73-74:
     let f r = ignore (r: foo); { r with x = 3; a = 4 }
                                                ^
@@ -196,11 +209,13 @@ Error: This record expression is expected to have type M.foo
 #         Characters 39-40:
     let r = {x=1; y=2}
              ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 44-45:
     let r = {x=1; y=2}
                   ^
-Warning 42: this use of y required disambiguation.
+Warning 42: this use of y relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 67-68:
     let r: other = {x=1; y=2}
                     ^
@@ -225,13 +240,15 @@ class f : t -> object  end
 # Characters 12-13:
   class g = f A;; (* ok *)
               ^
-Warning 42: this use of A required disambiguation.
+Warning 42: this use of A relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 class g : f
 #   class f : 'a -> 'a -> object  end
 # Characters 13-14:
   class g = f (A : t) A;; (* warn with -principal *)
                ^
-Warning 42: this use of A required disambiguation.
+Warning 42: this use of A relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 20-21:
   class g = f (A : t) A;; (* warn with -principal *)
                       ^
@@ -239,12 +256,14 @@ Warning 18: this type-based constructor disambiguation is not principal.
 Characters 20-21:
   class g = f (A : t) A;; (* warn with -principal *)
                       ^
-Warning 42: this use of A required disambiguation.
+Warning 42: this use of A relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 class g : f
 #                       Characters 199-200:
     let y : t = {x = 0}
                  ^
-Warning 42: this use of x required disambiguation.
+Warning 42: this use of x relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 Characters 114-120:
     open M  (* this open is unused, it isn't reported as shadowing 'x' *)
     ^^^^^^
@@ -273,7 +292,8 @@ module Shadow2 :
 #                 Characters 167-170:
     let f (u : u) = match u with `Key {loc} -> loc
                                        ^^^
-Warning 42: this use of loc required disambiguation.
+Warning 42: this use of loc relies on type-directed disambiguation,
+it will not compile with OCaml 4.00 or earlier.
 module P6235 :
   sig
     type t = { loc : string; }

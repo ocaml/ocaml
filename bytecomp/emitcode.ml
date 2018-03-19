@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Generation of bytecode + relocation information *)
 
@@ -143,7 +146,8 @@ let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
+  if Filename.is_relative path then
+    debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -367,7 +371,7 @@ let rec emit = function
 
 (* Emission to a file *)
 
-let to_file outchan unit_name objfile code =
+let to_file outchan unit_name objfile ~required_globals code =
   init();
   output_string outchan cmo_magic_number;
   let pos_depl = pos_out outchan in
@@ -394,6 +398,7 @@ let to_file outchan unit_name objfile code =
       cu_imports = Env.imports();
       cu_primitives = List.map Primitive.byte_name
                                !Translmod.primitive_declarations;
+      cu_required_globals = Ident.Set.elements required_globals;
       cu_force_link = false;
       cu_debug = pos_debug;
       cu_debugsize = size_debug } in
@@ -415,8 +420,9 @@ let to_memory init_code fun_code =
   LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
   let reloc = List.rev !reloc_info
   and code_size = !out_position in
+  let events = !events in
   init();
-  (code, code_size, reloc)
+  (code, code_size, reloc, events)
 
 (* Emission to a file for a packed library *)
 

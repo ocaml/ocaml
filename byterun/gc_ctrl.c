@@ -1,15 +1,21 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*              Damien Doligez, projet Para, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+/* TODO: incorporate timings for instrumented runtime */
+
+#define CAML_INTERNALS
 
 #include "caml/alloc.h"
 #include "caml/custom.h"
@@ -22,7 +28,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #ifdef NATIVE_CODE
-#include "stack.h"
+#include "caml/stack.h"
 #include "frame_descriptors.h"
 #else
 #include "caml/fiber.h"
@@ -33,6 +39,7 @@
 #include "caml/startup.h"
 #include "caml/domain.h"
 #include "caml/eventlog.h"
+#include "caml/fail.h"
 
 uintnat caml_max_stack_size;
 uintnat caml_fiber_wsz;
@@ -75,6 +82,18 @@ CAMLprim value caml_gc_quick_stat(value v)
     s.major_heap.pool_max_words + s.major_heap.large_max_words));
   Store_field (res, 15, Val_long (0));
   CAMLreturn (res);
+}
+
+double caml_gc_minor_words_unboxed()
+{
+  return (Caml_state->stat_minor_words
+          + (double) (Caml_state->young_end - Caml_state->young_ptr));
+}
+
+CAMLprim value caml_gc_minor_words(value v)
+{
+  CAMLparam0 ();   /* v is ignored */
+  CAMLreturn(caml_copy_double(caml_gc_minor_words_unboxed()));
 }
 
 CAMLprim value caml_gc_counters(value v)
@@ -126,6 +145,7 @@ CAMLprim value caml_gc_get(value v)
   Store_field (res, 5, Val_long (0));
 #endif
   Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
+  Store_field (res, 7, Val_long (caml_major_window));                   /* w */
   CAMLreturn (res);
 #endif
 }
@@ -148,8 +168,9 @@ CAMLprim value caml_gc_set(value v)
 #if 0
   uintnat newpf, newpm;
   asize_t newheapincr;
-  asize_t newminsize;
+  asize_t newminwsz;
   uintnat oldpolicy;
+  CAML_INSTR_SETUP (tmr, "");
 
   caml_params->verb_gc = Long_field (v, 3);
 
@@ -187,6 +208,16 @@ CAMLprim value caml_gc_set(value v)
                      caml_allocation_policy);
   }
 
+  /* This field was added in 4.03.0. */
+  if (Wosize_val (v) >= 8){
+    int old_window = caml_major_window;
+    caml_set_major_window (norm_window (Long_val (Field (v, 7))));
+    if (old_window != caml_major_window){
+      caml_gc_message (0x20, "New smoothing window size: %d\n",
+                       caml_major_window);
+    }
+  }
+
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = caml_norm_minor_heap_size (Long_field (v, 0));
@@ -195,13 +226,17 @@ CAMLprim value caml_gc_set(value v)
                      newminsize/1024);
     caml_set_minor_heap_size (newminsize);
   }
+  CAML_INSTR_TIME (tmr, "explicit/gc_set");
   return Val_unit;
 #endif
 }
 
 CAMLprim value caml_gc_minor(value v)
-{                                                    Assert (v == Val_unit);
+{
+  CAML_INSTR_SETUP (tmr, "");
+  Assert (v == Val_unit);
   caml_minor_collection ();
+  CAML_INSTR_TIME (tmr, "explicit/gc_minor");
   return Val_unit;
 }
 
@@ -255,6 +290,11 @@ CAMLprim value caml_gc_stat(value v)
   return caml_gc_quick_stat(Val_unit);
 }
 
+CAMLprim value caml_get_minor_free (value v)
+{
+  return Val_int (Caml_state->young_ptr - Caml_state->young_start);
+}
+
 uintnat caml_normalize_heap_increment (uintnat i)
 {
   if (i < Bsize_wsize (Heap_chunk_min)){
@@ -299,4 +339,41 @@ void caml_init_gc ()
   caml_gc_message (0x20, "Initial allocation policy: %d\n",
                    caml_allocation_policy);
 */
+}
+
+/* FIXME After the startup_aux.c unification, move these functions there. */
+
+CAMLprim value caml_runtime_variant (value unit)
+{
+  CAMLassert (unit == Val_unit);
+#if defined (DEBUG)
+  return caml_copy_string ("d");
+#elif defined (CAML_INSTR)
+  return caml_copy_string ("i");
+#else
+  return caml_copy_string ("");
+#endif
+}
+
+extern int caml_parser_trace;
+
+CAMLprim value caml_runtime_parameters (value unit)
+{
+  CAMLassert (unit == Val_unit);
+  /* TODO KC */
+  return caml_alloc_sprintf ("caml_runtime_parameters not implemented: %d", 0);
+}
+
+/* Control runtime warnings */
+
+CAMLprim value caml_ml_enable_runtime_warnings(value vbool)
+{
+  caml_runtime_warnings = Bool_val(vbool);
+  return Val_unit;
+}
+
+CAMLprim value caml_ml_runtime_warnings_enabled(value unit)
+{
+  CAMLassert (unit == Val_unit);
+  return Val_bool(caml_runtime_warnings);
 }

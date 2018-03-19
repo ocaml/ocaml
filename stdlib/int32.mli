@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** 32-bit integers.
 
@@ -111,13 +113,17 @@ external to_int : int32 -> int = "%int32_to_int"
    during the conversion.  On 64-bit platforms, the conversion
    is exact. *)
 
-external of_float : float -> int32 = "caml_int32_of_float"
+external of_float : float -> int32
+  = "caml_int32_of_float" "caml_int32_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
 (** Convert the given floating-point number to a 32-bit integer,
    discarding the fractional part (truncate towards 0).
    The result of the conversion is undefined if, after truncation,
    the number is outside the range \[{!Int32.min_int}, {!Int32.max_int}\]. *)
 
-external to_float : int32 -> float = "caml_int32_to_float"
+external to_float : int32 -> float
+  = "caml_int32_to_float" "caml_int32_to_float_unboxed"
+  [@@unboxed] [@@noalloc]
 (** Convert the given 32-bit integer to a floating-point number. *)
 
 external of_string : string -> int32 = "caml_int32_of_string"
@@ -132,14 +138,18 @@ external of_string : string -> int32 = "caml_int32_of_string"
 val to_string : int32 -> string
 (** Return the string representation of its argument, in signed decimal. *)
 
-external bits_of_float : float -> int32 = "caml_int32_bits_of_float"
+external bits_of_float : float -> int32
+  = "caml_int32_bits_of_float" "caml_int32_bits_of_float_unboxed"
+  [@@unboxed] [@@noalloc]
 (** Return the internal representation of the given float according
    to the IEEE 754 floating-point 'single format' bit layout.
    Bit 31 of the result represents the sign of the float;
    bits 30 to 23 represent the (biased) exponent; bits 22 to 0
    represent the mantissa. *)
 
-external float_of_bits : int32 -> float = "caml_int32_float_of_bits"
+external float_of_bits : int32 -> float
+  = "caml_int32_float_of_bits" "caml_int32_float_of_bits_unboxed"
+  [@@unboxed] [@@noalloc]
 (** Return the floating-point number whose internal representation,
    according to the IEEE 754 floating-point 'single format' bit layout,
    is the given [int32]. *)
@@ -152,6 +162,10 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [Int32] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for int32s.
+    @since 4.03.0 *)
 
 (**/**)
 

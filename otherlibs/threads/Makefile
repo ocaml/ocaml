@@ -1,15 +1,17 @@
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 1999 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file ../../LICENSE.   #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*            Xavier Leroy, projet Cristal, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 1999 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 # FIXME reduce redundancy by including ../Makefile
 
@@ -33,7 +35,7 @@ LIB=../../stdlib
 
 LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/bytes.cmo	\
-  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo $(LIB)/marshal.cmo	\
+  $(LIB)/string.cmo $(LIB)/sys.cmo $(LIB)/sort.cmo marshal.cmo		\
   $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo			\
   $(LIB)/nativeint.cmo $(LIB)/lexing.cmo $(LIB)/parsing.cmo		\
   $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo	\
@@ -43,10 +45,10 @@ LIB_OBJS=$(LIB)/camlinternalFormatBasics.cmo pervasives.cmo		\
   $(LIB)/random.cmo $(LIB)/hashtbl.cmo $(LIB)/format.cmo		\
   $(LIB)/scanf.cmo $(LIB)/callback.cmo $(LIB)/camlinternalOO.cmo	\
   $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo $(LIB)/genlex.cmo		\
-  $(LIB)/weak.cmo $(LIB)/filename.cmo $(LIB)/complex.cmo		\
-  $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/bytesLabels.cmo	\
-  $(LIB)/stringLabels.cmo $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo    \
-  $(LIB)/domain.cmo
+  $(LIB)/weak.cmo $(LIB)/ephemeron.cmo $(LIB)/filename.cmo		\
+  $(LIB)/complex.cmo $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo	\
+  $(LIB)/bytesLabels.cmo $(LIB)/stringLabels.cmo			\
+  $(LIB)/moreLabels.cmo $(LIB)/stdLabels.cmo $(LIB)/domain.cmo
 
 UNIXLIB=../unix
 
@@ -106,7 +108,9 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
-	if test -f dllvmthreads.so; then cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; fi
+	if test -f dllvmthreads.so; then \
+	  cp dllvmthreads.so $(INSTALL_STUBLIBDIR)/.; \
+	fi
 	mkdir -p $(INSTALL_LIBDIR)/vmthreads
 	cp libvmthreads.a $(INSTALL_LIBDIR)/vmthreads/libvmthreads.a
 	cd $(INSTALL_LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
@@ -127,6 +131,6 @@ installopt:
 
 depend:
 	$(CC) -MM $(CFLAGS) *.c > .depend
-	$(CAMLRUN) ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) ../../tools/ocamldep -slash *.mli *.ml >> .depend
 
 include .depend

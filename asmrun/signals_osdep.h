@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2004 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2004 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Processor- and OS-dependent signal interface */
 
@@ -133,6 +135,23 @@
  #define CONTEXT_PC (context->sc_rip)
  #define CONTEXT_EXCEPTION_POINTER (context->sc_r14)
  #define CONTEXT_YOUNG_PTR (context->sc_r15)
+ #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** AMD64, NetBSD */
+
+#elif defined(TARGET_amd64) && defined (SYS_netbsd)
+
+ #include <ucontext.h>
+ #define DECLARE_SIGNAL_HANDLER(name) \
+ static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+ #define SET_SIGACT(sigact,name) \
+ sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+ sigact.sa_flags = SA_SIGINFO
+
+ #define CONTEXT_PC (_UC_MACHINE_PC(context))
+ #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
+ #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** I386, Linux */
@@ -284,9 +303,27 @@
   #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
   #define CONTEXT_SP (context->regs->gpr[1])
 
+/****************** s390x, ELF (Linux) */
+#elif defined(TARGET_s390x) && defined(SYS_elf)
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, struct sigcontext * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_handler = (void (*)(int)) (name); \
+     sigact.sa_flags = 0
+
+  typedef unsigned long context_reg;
+  #define CONTEXT_PC (context->sregs->regs.psw.addr)
+  #define CONTEXT_EXCEPTION_POINTER (context->sregs->regs.gprs[13])
+  #define CONTEXT_YOUNG_LIMIT (context->sregs->regs.gprs[10])
+  #define CONTEXT_YOUNG_PTR (context->sregs->regs.gprs[11])
+  #define CONTEXT_SP (context->sregs->regs.gprs[15])
+
 /****************** PowerPC, BSD */
 
-#elif defined(TARGET_power) && (defined(SYS_bsd) || defined(SYS_bsd_elf))
+#elif defined(TARGET_power) && \
+    (defined(SYS_bsd) || defined(SYS_bsd_elf) || defined(SYS_netbsd))
 
   #define DECLARE_SIGNAL_HANDLER(name) \
     static void name(int sig, int code, struct sigcontext * context)

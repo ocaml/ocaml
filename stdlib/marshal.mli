@@ -1,15 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../LICENSE.     *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (** Marshaling of data structures.
 
@@ -88,7 +90,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    digest of the code transmitted along with the code position.)
 
    The exact definition of which free variables are captured in a
-   closure is not specified and can very between bytecode and native
+   closure is not specified and can vary between bytecode and native
    code (and according to optimization flags).  In particular, a
    function value accessing a global reference may or may not include
    the reference in its closure.  If it does, unmarshaling the
@@ -135,7 +137,12 @@ val from_channel : in_channel -> 'a
 (** [Marshal.from_channel chan] reads from channel [chan] the
    byte representation of a structured value, as produced by
    one of the [Marshal.to_*] functions, and reconstructs and
-   returns the corresponding value.*)
+   returns the corresponding value.
+
+   It raises [End_of_file] if the function has already reached the
+   end of file when starting to read from the channel, and raises
+   [Failure "input_value: truncated object"] if it reaches the end
+   of file later during the unmarshalling. *)
 
 val from_bytes : bytes -> int -> 'a
 (** [Marshal.from_bytes buff ofs] unmarshals a structured value

@@ -1,17 +1,19 @@
 #!/bin/sh
 
-#########################################################################
-#                                                                       #
-#                                 OCaml                                 #
-#                                                                       #
-#          Damien Doligez, projet Gallium, INRIA Rocquencourt           #
-#                                                                       #
-#   Copyright 2003 Institut National de Recherche en Informatique et    #
-#   en Automatique.  All rights reserved.  As an exception to the       #
-#   licensing rules of OCaml, this file is freely redistributable,      #
-#   modified or not, without constraints.                               #
-#                                                                       #
-#########################################################################
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*          Damien Doligez, projet Gallium, INRIA Rocquencourt            *
+#*                                                                        *
+#*   Copyright 2003 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  As an exception to the licensing rules of      *
+#*   OCaml, this file is freely redistributable, modified or not,         *
+#*   without constraints.                                                 *
+#*                                                                        *
+#**************************************************************************
 
 # This script extracts the components from an OCaml version number
 # and provides them as C defines:
@@ -30,8 +32,8 @@
 # be used.
 
 case $# in
-  0) version="`ocamlc -v | sed -n -e 's/.*version //p'`";;
-  1) version="`sed -e 1q $1`";;
+  0) version="`ocamlc -v | tr -d '\r' | sed -n -e 's/.*version //p'`";;
+  1) version="`sed -e 1q $1 | tr -d '\r'`";;
   *) echo "usage: make-version-header.sh [version-file]" >&2
      exit 2;;
 esac

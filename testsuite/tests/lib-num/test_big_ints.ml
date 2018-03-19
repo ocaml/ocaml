@@ -1,15 +1,3 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
-
 open Test;;
 open Nat;;
 open Big_int;;
@@ -382,13 +370,13 @@ failwith_test 5 big_int_of_string "sdjdkfighdgf"
 test 6
 eq_big_int (big_int_of_string "123", big_int_of_int 123);;
 test 7
-eq_big_int (big_int_of_string "3456", big_int_of_int 3456);;
+eq_big_int (big_int_of_string "+3456", big_int_of_int 3456);;
 
 test 9
 eq_big_int (big_int_of_string "-3456", big_int_of_int (-3456));;
 
 
-let implode = List.fold_left (^) "";; (* Au diable l'efficacite *)
+let implode = List.fold_left (^) "";; (* To hell with efficiency *)
 
 let l = rev [
 "174679877494298468451661416292903906557638850173895426081611831060970135303";
@@ -770,30 +758,38 @@ testing_function "big_int_of_int64";;
 test 1 eq_big_int
   (big_int_of_int64 0L, zero_big_int);;
 test 2 eq_big_int
-  (big_int_of_int64 9223372036854775807L, big_int_of_string "9223372036854775807");;
+  (big_int_of_int64 9223372036854775807L,
+   big_int_of_string "9223372036854775807");;
 test 3 eq_big_int
-  (big_int_of_int64 (-9223372036854775808L), big_int_of_string "-9223372036854775808");;
+  (big_int_of_int64 (-9223372036854775808L),
+   big_int_of_string "-9223372036854775808");;
 test 4 eq_big_int (*PR#4792*)
-  (big_int_of_int64 (Int64.of_int32 Int32.min_int), big_int_of_string "-2147483648");;
+  (big_int_of_int64 (Int64.of_int32 Int32.min_int),
+   big_int_of_string "-2147483648");;
 test 5 eq_big_int
   (big_int_of_int64 1234L, big_int_of_string "1234");;
 test 6 eq_big_int
-  (big_int_of_int64 0x1234567890ABCDEFL, big_int_of_string "1311768467294899695");;
+  (big_int_of_int64 0x1234567890ABCDEFL,
+   big_int_of_string "1311768467294899695");;
 test 7 eq_big_int
   (big_int_of_int64 (-1234L), big_int_of_string "-1234");;
 test 8 eq_big_int
-  (big_int_of_int64 (-0x1234567890ABCDEFL), big_int_of_string "-1311768467294899695");;
+  (big_int_of_int64 (-0x1234567890ABCDEFL),
+   big_int_of_string "-1311768467294899695");;
 
 testing_function "int64_of_big_int";;
 
 test 1 eq_int64
   (int64_of_big_int zero_big_int, 0L);;
 test 2 eq_int64
-  (int64_of_big_int (big_int_of_string "9223372036854775807"), 9223372036854775807L);;
+  (int64_of_big_int (big_int_of_string "9223372036854775807"),
+   9223372036854775807L);;
 test 3 eq_int64
-  (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
+  (int64_of_big_int (big_int_of_string "-9223372036854775808"),
+   -9223372036854775808L);;
 test 4 eq_int64
-  (int64_of_big_int (big_int_of_string "-9223372036854775"), -9223372036854775L);;
+  (int64_of_big_int (big_int_of_string "-9223372036854775"),
+   -9223372036854775L);;
 test 5 eq_int64 (* PR#4804 *)
   (int64_of_big_int (big_int_of_string "2147483648"), 2147483648L);;
 let should_fail s =
@@ -908,7 +904,9 @@ test 3 eq_big_int
   (shift_right_big_int (big_int_of_string "5299989648942") 32,
    big_int_of_int 1234);;
 test 4 eq_big_int
-  (shift_right_big_int (big_int_of_string "5846006549323611672814739330865132078623730171904") 67,
+  (shift_right_big_int (big_int_of_string
+                          "5846006549323611672814739330865132078623730171904")
+                       67,
    big_int_of_string "39614081257132168796771975168");;
 test 5 eq_big_int
   (shift_right_big_int (big_int_of_string "-5299989648942") 32,
@@ -923,7 +921,9 @@ test 1 eq_big_int
   (shift_right_towards_zero_big_int (big_int_of_string "-5299989648942") 32,
    big_int_of_int (-1234));;
 test 2 eq_big_int
-  (shift_right_towards_zero_big_int (big_int_of_string "-16570089876543209725755392") 27,
+  (shift_right_towards_zero_big_int (big_int_of_string
+                                       "-16570089876543209725755392")
+                                    27,
    big_int_of_string "-123456790123456789");;
 
 testing_function "extract_big_int";;
@@ -956,7 +956,8 @@ test 9 eq_big_int
   (extract_big_int (minus_big_int (power_int_positive_int 2 64)) 64 20,
    big_int_of_int 0xFFFFF);;
 test 10 eq_big_int
-  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64))) 64 20,
+  (extract_big_int (pred_big_int (minus_big_int (power_int_positive_int 2 64)))
+                   64 20,
    big_int_of_int 0xFFFFE);;
 
 testing_function "hashing of big integers";;
@@ -977,3 +978,53 @@ test 6 eq_int (Hashtbl.hash (sub_big_int
                                (big_int_of_string "123456789123456789")
                                (big_int_of_string "123456789123456788")),
               992063522);;
+
+testing_function "float_of_big_int";;
+
+test 1 eq_float (float_of_big_int zero_big_int, 0.0);;
+test 2 eq_float (float_of_big_int unit_big_int, 1.0);;
+test 3 eq_float (float_of_big_int (minus_big_int unit_big_int), -1.0);;
+test 4 eq_float (float_of_big_int (shift_left_big_int unit_big_int 1024),
+                 infinity);;
+test 5 eq_float (float_of_big_int (shift_left_big_int unit_big_int 1023),
+                 ldexp 1.0 1023);;
+(* Some random int64 values *)
+let ok = ref true in
+for i = 1 to 100 do
+  let n = Random.int64 Int64.max_int in
+  if not (eq_float (float_of_big_int (big_int_of_int64 n)) (Int64.to_float n))
+  then ok := false;
+  let n = Int64.neg n in
+  if not (eq_float (float_of_big_int (big_int_of_int64 n)) (Int64.to_float n))
+  then ok := false
+done;
+test 6 eq (!ok, true);;
+(* Some random int64 values scaled by some random power of 2 *)
+let ok = ref true in
+for i = 1 to 1000 do
+  let n = Random.int64 Int64.max_int in
+  let exp = Random.int 1200 in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) exp))
+             (ldexp (Int64.to_float n) exp))
+  then ok := false;
+  let n = Int64.neg n in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) exp))
+             (ldexp (Int64.to_float n) exp))
+  then ok := false
+done;
+test 7 eq (!ok, true);;
+(* Round to nearest even *)
+let ok = ref true in
+for i = 0 to 15 do
+  let n = Int64.(add 0xfffffffffffff0L (of_int i)) in
+  if not (eq_float
+             (float_of_big_int
+                 (shift_left_big_int (big_int_of_int64 n) 32))
+             (ldexp (Int64.to_float n) 32))
+  then ok := false
+done;
+test 8 eq (!ok, true);;

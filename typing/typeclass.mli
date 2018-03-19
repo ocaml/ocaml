@@ -1,26 +1,51 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 open Asttypes
 open Types
 open Format
 
+type 'a class_info = {
+  cls_id : Ident.t;
+  cls_id_loc : string loc;
+  cls_decl : class_declaration;
+  cls_ty_id : Ident.t;
+  cls_ty_decl : class_type_declaration;
+  cls_obj_id : Ident.t;
+  cls_obj_abbr : type_declaration;
+  cls_typesharp_id : Ident.t;
+  cls_abbr : type_declaration;
+  cls_arity : int;
+  cls_pub_methods : string list;
+  cls_info : 'a;
+}
+
+type class_type_info = {
+  clsty_ty_id : Ident.t;
+  clsty_id_loc : string loc;
+  clsty_ty_decl : class_type_declaration;
+  clsty_obj_id : Ident.t;
+  clsty_obj_abbr : type_declaration;
+  clsty_typesharp_id : Ident.t;
+  clsty_abbr : type_declaration;
+  clsty_info : Typedtree.class_type_declaration;
+}
+
 val class_declarations:
   Env.t -> Parsetree.class_declaration list ->
-  (Ident.t * string loc * class_declaration *
-   Ident.t * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-   int * string list * Typedtree.class_declaration) list * Env.t
+  Typedtree.class_declaration class_info list * Env.t
 
 (*
 and class_declaration =
@@ -29,11 +54,7 @@ and class_declaration =
 
 val class_descriptions:
   Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_declaration *
-   Ident.t * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-   int * string list * Typedtree.class_description) list * Env.t
+  Typedtree.class_description class_info list * Env.t
 
 (*
 and class_description =
@@ -41,11 +62,7 @@ and class_description =
 *)
 
 val class_type_declarations:
-  Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-  Typedtree.class_type_declaration) list * Env.t
+  Env.t -> Parsetree.class_description list -> class_type_info list * Env.t
 
 (*
 and class_type_declaration =
@@ -53,11 +70,7 @@ and class_type_declaration =
 *)
 
 val approx_class_declarations:
-  Env.t -> Parsetree.class_description list ->
-  (Ident.t * string loc * class_type_declaration *
-   Ident.t * type_declaration *
-   Ident.t * type_declaration *
-  Typedtree.class_type_declaration) list
+  Env.t -> Parsetree.class_description list -> class_type_info list
 
 val virtual_methods: Types.class_signature -> label list
 
@@ -81,7 +94,7 @@ type error =
   | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
-  | Apply_wrong_label of label
+  | Apply_wrong_label of arg_label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t

@@ -1,14 +1,17 @@
-.\"***********************************************************************
-.\"*                                                                     *
-.\"*                                OCaml                                *
-.\"*                                                                     *
-.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
-.\"*                                                                     *
-.\"*  Copyright 2001 Institut National de Recherche en Informatique et   *
-.\"*  en Automatique.  All rights reserved.  This file is distributed    *
-.\"*  under the terms of the Q Public License version 1.0.               *
-.\"*                                                                     *
-.\"***********************************************************************
+.\"**************************************************************************
+.\"*                                                                        *
+.\"*                                 OCaml                                  *
+.\"*                                                                        *
+.\"*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *
+.\"*                                                                        *
+.\"*   Copyright 2001 Institut National de Recherche en Informatique et     *
+.\"*     en Automatique.                                                    *
+.\"*                                                                        *
+.\"*   All rights reserved.  This file is distributed under the terms of    *
+.\"*   the GNU Lesser General Public License version 2.1, with the          *
+.\"*   special exception on linking described in the file LICENSE.          *
+.\"*                                                                        *
+.\"**************************************************************************
 .\"
 .TH OCAMLDEBUG 1
 
@@ -95,6 +98,22 @@ Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
+
+.SH INITIALIZATION FILE
+
+When
+.BR ocamldebug (1)
+is invoked, it will read commands from an initialization file before
+giving control to the user. The default file is
+.B .ocamldebug
+in the current directory if it exists, otherwise
+.B .ocamldebug
+in the user's home directory.
+
+Note that you can also use the
+.B source file
+command to read commands from a file.
+
 .SH SEE ALSO
 .BR ocamlc (1)
 .br

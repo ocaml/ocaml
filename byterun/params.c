@@ -1,8 +1,11 @@
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <string.h>
 #include "caml/misc.h"
 #include "caml/params.h"
 #include "caml/version.h"
+#include "caml/osdeps.h"
 #include "caml/prims.h"
 #include "caml/dynlink.h"
 #include "caml/domain.h"
@@ -70,9 +73,9 @@ void caml_init_startup_params(void)
 
   init_startup_params();
 
-  opt = getenv ("OCAMLRUNPARAM");
+  opt = caml_secure_getenv ("OCAMLRUNPARAM");
 
-  if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
+  if (opt == NULL) opt = caml_secure_getenv ("CAMLRUNPARAM");
 
   if (opt != NULL){
     while (*opt != '\0'){
@@ -84,11 +87,9 @@ void caml_init_startup_params(void)
       case 'o': scanmult (opt, &params.percent_free_init); break;
       case 'O': scanmult (opt, &params.max_percent_free_init); break;
       case 'p': params.parser_trace = 1; break;
-      /* case 'R': see stdlib/hashtbl.mli */
+      case 'R': break; /* case 'R': see stdlib/hashtbl.mli */
       case 's': scanmult (opt, &params.minor_heap_init); break;
-#ifdef DEBUG
       case 't': params.trace_flag = 1; break;
-#endif
       case 'v': scanmult (opt, &params.verb_gc); break;
       case 'V': params.verify_heap = 1; break;
       case 'f': scanmult (opt, &params.fiber_wsz_init); break;
@@ -105,7 +106,10 @@ void caml_init_startup_params(void)
 
 int caml_parse_command_line(char **argv)
 {
-  int i, j;
+  int i;
+#ifndef NATIVE_CODE
+  int j;
+#endif
 
   for(i = 1; argv[i] != NULL && argv[i][0] == '-'; i++) {
     switch(argv[i][1]) {

@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Start-up code */
 
@@ -28,10 +32,13 @@
 #include "caml/mlvalues.h"
 #include "caml/osdeps.h"
 #include "caml/printexc.h"
-#include "stack.h"
+#include "caml/stack.h"
 #include "caml/sys.h"
 #include "caml/params.h"
 #include "caml/fiber.h"
+#ifdef WITH_SPACETIME
+#include "spacetime.h"
+#endif
 #ifdef HAS_UI
 #include "caml/ui.h"
 #endif
@@ -74,13 +81,12 @@ extern value caml_start_program (char*);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
 /* PR 4887: avoid crash box of windows runtime on some system calls */
 extern void caml_install_invalid_parameter_handler();
 
 #endif
-
 
 void caml_main(char **argv)
 {
@@ -92,8 +98,11 @@ void caml_main(char **argv)
   CAML_INIT_DOMAIN_STATE;
 
   caml_init_startup_params();
+#ifdef WITH_SPACETIME
+  caml_spacetime_initialize();
+#endif
   caml_init_ieee_floats();
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();

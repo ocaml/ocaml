@@ -1,6 +1,8 @@
 #ifndef CAML_SHARED_HEAP_H
 #define CAML_SHARED_HEAP_H
 
+#ifdef CAML_INTERNALS
+
 #include "config.h"
 #include "roots.h"
 #include "domain.h"
@@ -70,5 +72,7 @@ void caml_verify_heap(struct heap_verify_state*); /* deallocates arg */
 /* [is_garbage(v)] returns true if [v] is a garbage value */
 int is_garbage (value);
 #endif
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_SHARED_HEAP_H */

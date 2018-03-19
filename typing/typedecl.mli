@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Typing of type definitions and primitive definitions *)
 
@@ -41,7 +44,7 @@ val transl_with_constraint:
 
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
-    Env.t -> Parsetree.type_declaration list ->
+    Parsetree.type_declaration list ->
                                   (Ident.t * type_declaration) list
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
@@ -59,6 +62,12 @@ val compute_variance_decls:
      'a Typedtree.class_infos) list ->
     (Types.type_declaration * Types.type_declaration *
      Types.class_declaration * Types.class_type_declaration) list
+
+(* for typeopt.ml *)
+val get_unboxed_type_representation: Env.t -> type_expr -> type_expr option
+
+
+type native_repr_kind = Unboxed | Untagged
 
 type error =
     Repeated_parameter
@@ -86,6 +95,14 @@ type error =
   | Bad_fixed_type of string
   | Unbound_type_var_ext of type_expr * extension_constructor
   | Varying_anonymous
+  | Val_in_structure
+  | Multiple_native_repr_attributes
+  | Cannot_unbox_or_untag_type of native_repr_kind
+  | Deep_unbox_or_untag_attribute of native_repr_kind
+  | Bad_immediate_attribute
+  | Bad_unboxed_attribute of string
+  | Wrong_unboxed_type_float
+  | Boxed_and_unboxed
 
 exception Error of Location.t * error
 

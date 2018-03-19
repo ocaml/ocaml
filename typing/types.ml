@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Representation of types and declarations *)
 
@@ -19,11 +22,11 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc;
     mutable level: int;
-    mutable id: int }
+    id: int }
 
 and type_desc =
     Tvar of string option
-  | Tarrow of label * type_expr * type_expr * commutable
+  | Tarrow of arg_label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
@@ -103,49 +106,6 @@ and value_kind =
                                         (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
 
-(* Constructor descriptions *)
-
-type constructor_description =
-  { cstr_name: string;                  (* Constructor name *)
-    cstr_res: type_expr;                (* Type of the result *)
-    cstr_existentials: type_expr list;  (* list of existentials *)
-    cstr_args: type_expr list;          (* Type of the arguments *)
-    cstr_arity: int;                    (* Number of arguments *)
-    cstr_tag: constructor_tag;          (* Tag for heap blocks *)
-    cstr_consts: int;                   (* Number of constant constructors *)
-    cstr_nonconsts: int;                (* Number of non-const constructors *)
-    cstr_normal: int;                   (* Number of non generalized constrs *)
-    cstr_generalized: bool;             (* Constrained return type? *)
-    cstr_private: private_flag;         (* Read-only constructor? *)
-    cstr_loc: Location.t;
-    cstr_attributes: Parsetree.attributes;
-   }
-
-and constructor_tag =
-    Cstr_constant of int                (* Constant constructor (an int) *)
-  | Cstr_block of int                   (* Regular constructor (a block) *)
-  | Cstr_extension of Path.t * bool     (* Extension constructor
-                                           true if a constant false if a block*)
-
-(* Record label descriptions *)
-
-type label_description =
-  { lbl_name: string;                   (* Short name *)
-    lbl_res: type_expr;                 (* Type of the result *)
-    lbl_arg: type_expr;                 (* Type of the argument *)
-    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
-    lbl_pos: int;                       (* Position in block *)
-    lbl_all: label_description array;   (* All the labels in this type *)
-    lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag;          (* Read-only field? *)
-    lbl_loc: Location.t;
-    lbl_attributes: Parsetree.attributes;
-   }
-
-and record_representation =
-    Record_regular                      (* All fields are boxed / tagged *)
-  | Record_float                        (* All fields are floats *)
-
 (* Variance *)
 
 module Variance = struct
@@ -189,6 +149,8 @@ type type_declaration =
     type_newtype_level: (int * int) option;
     type_loc: Location.t;
     type_attributes: Parsetree.attributes;
+    type_immediate: bool;
+    type_unboxed: unboxed_status;
  }
 
 and type_kind =
@@ -196,6 +158,13 @@ and type_kind =
   | Type_record of label_declaration list  * record_representation
   | Type_variant of constructor_declaration list
   | Type_open
+
+and record_representation =
+    Record_regular                      (* All fields are boxed / tagged *)
+  | Record_float                        (* All fields are floats *)
+  | Record_unboxed of bool    (* Unboxed single-field record, inlined or not *)
+  | Record_inlined of int               (* Inlined record *)
+  | Record_extension                    (* Inlined record under extension *)
 
 and label_declaration =
   {
@@ -209,16 +178,31 @@ and label_declaration =
 and constructor_declaration =
   {
     cd_id: Ident.t;
-    cd_args: type_expr list;
+    cd_args: constructor_arguments;
     cd_res: type_expr option;
     cd_loc: Location.t;
     cd_attributes: Parsetree.attributes;
   }
 
+and constructor_arguments =
+  | Cstr_tuple of type_expr list
+  | Cstr_record of label_declaration list
+
+and unboxed_status =
+  {
+    unboxed: bool;
+    default: bool; (* False if the unboxed field was set from an attribute. *)
+  }
+
+let unboxed_false_default_false = {unboxed = false; default = false}
+let unboxed_false_default_true = {unboxed = false; default = true}
+let unboxed_true_default_false = {unboxed = true; default = false}
+let unboxed_true_default_true = {unboxed = true; default = true}
+
 type extension_constructor =
     { ext_type_path: Path.t;
       ext_type_params: type_expr list;
-      ext_args: type_expr list;
+      ext_args: constructor_arguments;
       ext_ret_type: type_expr option;
       ext_private: private_flag;
       ext_loc: Location.t;
@@ -236,7 +220,7 @@ module Concr = Set.Make(OrderedString)
 type class_type =
     Cty_constr of Path.t * type_expr list * class_type
   | Cty_signature of class_signature
-  | Cty_arrow of label * type_expr * class_type
+  | Cty_arrow of arg_label * type_expr * class_type
 
 and class_signature =
   { csig_self: type_expr;
@@ -270,7 +254,11 @@ type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
   | Mty_functor of Ident.t * module_type option * module_type
-  | Mty_alias of Path.t
+  | Mty_alias of alias_presence * Path.t
+
+and alias_presence =
+  | Mta_present
+  | Mta_absent
 
 and signature = signature_item list
 
@@ -298,12 +286,52 @@ and modtype_declaration =
   }
 
 and rec_status =
-    Trec_not                            (* first in a nonrecursive group *)
-  | Trec_first                          (* first in a recursive group *)
-  | Trec_next                           (* not first in a recursive/nonrecursive group *)
+    Trec_not                   (* first in a nonrecursive group *)
+  | Trec_first                 (* first in a recursive group *)
+  | Trec_next                  (* not first in a recursive/nonrecursive group *)
 
 and ext_status =
     Text_first                     (* first constructor of an extension *)
   | Text_next                      (* not first constructor of an extension *)
   | Text_exception                 (* an exception *)
   | Text_effect                    (* an effect *)
+
+(* Constructor and record label descriptions inserted held in typing
+   environments *)
+
+type constructor_description =
+  { cstr_name: string;                  (* Constructor name *)
+    cstr_res: type_expr;                (* Type of the result *)
+    cstr_existentials: type_expr list;  (* list of existentials *)
+    cstr_args: type_expr list;          (* Type of the arguments *)
+    cstr_arity: int;                    (* Number of arguments *)
+    cstr_tag: constructor_tag;          (* Tag for heap blocks *)
+    cstr_consts: int;                   (* Number of constant constructors *)
+    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_normal: int;                   (* Number of non generalized constrs *)
+    cstr_generalized: bool;             (* Constrained return type? *)
+    cstr_private: private_flag;         (* Read-only constructor? *)
+    cstr_loc: Location.t;
+    cstr_attributes: Parsetree.attributes;
+    cstr_inlined: type_declaration option;
+   }
+
+and constructor_tag =
+    Cstr_constant of int                (* Constant constructor (an int) *)
+  | Cstr_block of int                   (* Regular constructor (a block) *)
+  | Cstr_unboxed                        (* Constructor of an unboxed type *)
+  | Cstr_extension of Path.t * bool     (* Extension constructor
+                                           true if a constant false if a block*)
+
+type label_description =
+  { lbl_name: string;                   (* Short name *)
+    lbl_res: type_expr;                 (* Type of the result *)
+    lbl_arg: type_expr;                 (* Type of the argument *)
+    lbl_mut: mutable_flag;              (* Is this a mutable field? *)
+    lbl_pos: int;                       (* Position in block *)
+    lbl_all: label_description array;   (* All the labels in this type *)
+    lbl_repres: record_representation;  (* Representation for this record *)
+    lbl_private: private_flag;          (* Read-only field? *)
+    lbl_loc: Location.t;
+    lbl_attributes: Parsetree.attributes;
+   }

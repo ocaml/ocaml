@@ -1,3 +1,18 @@
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*                          Benoit Vaugon, ENSTA                          *)
+(*                                                                        *)
+(*   Copyright 2014 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
+
 (* No comments, OCaml stdlib internal use only. *)
 
 type padty = Left | Right | Zeros
@@ -10,6 +25,7 @@ type float_conv =
   | Float_f | Float_pf | Float_sf | Float_e | Float_pe | Float_se
   | Float_E | Float_pE | Float_sE | Float_g | Float_pg | Float_sg
   | Float_G | Float_pG | Float_sG | Float_F
+  | Float_h | Float_ph | Float_sh | Float_H | Float_pH | Float_sH
 
 type char_set = string
 
@@ -126,7 +142,7 @@ and ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     (('b1 -> 'c1) -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      ('b2 -> 'c2) -> 'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel
-| Any_ty :                                                  (* Used for custom formats *)
+| Any_ty :                                         (* Used for custom formats *)
     ('a1, 'b1, 'c1, 'd1, 'e1, 'f1,
      'a2, 'b2, 'c2, 'd2, 'e2, 'f2) fmtty_rel ->
     ('x -> 'a1, 'b1, 'c1, 'd1, 'e1, 'f1,

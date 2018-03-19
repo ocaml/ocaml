@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Pretty-printing of C-- code *)
 
@@ -16,6 +19,7 @@ open Format
 open Cmm
 
 let machtype_component ppf = function
+  | Val -> fprintf ppf "val"
   | Addr -> fprintf ppf "addr"
   | Int -> fprintf ppf "int"
   | Float -> fprintf ppf "float"
@@ -43,21 +47,26 @@ let chunk = function
   | Sixteen_signed -> "signed int16"
   | Thirtytwo_unsigned -> "unsigned int32"
   | Thirtytwo_signed -> "signed int32"
-  | Word -> ""
+  | Word_int -> "int"
+  | Word_val -> "val"
   | Single -> "float32"
   | Double -> "float64"
   | Double_u -> "float64u"
 
 let operation = function
-  | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
-  | Cextcall(lbl, ty, alloc, d) ->
+  | Capply(_ty, d) -> "app" ^ Debuginfo.to_string d
+  | Cextcall(lbl, _ty, _alloc, d, _) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
-  | Cload Word -> "load"
-  | Cloadmut -> "load_mut"
   | Cload c -> Printf.sprintf "load %s" (chunk c)
-  | Calloc -> "alloc"
-  | Cstore Word -> "store"
-  | Cstore c -> Printf.sprintf "store %s" (chunk c)
+  | Cloadmut -> "load_mut"
+  | Calloc d -> "alloc" ^ Debuginfo.to_string d
+  | Cstore (c, init) ->
+    let init =
+      match init with
+      | Lambda.Initialization -> "(init)"
+      | Lambda.Assignment -> ""
+    in
+    Printf.sprintf "store %s%s" (chunk c) init
   | Caddi -> "+"
   | Csubi -> "-"
   | Cmuli -> "*"
@@ -71,8 +80,8 @@ let operation = function
   | Clsr -> ">>u"
   | Casr -> ">>s"
   | Ccmpi c -> comparison c
+  | Caddv -> "+v"
   | Cadda -> "+a"
-  | Csuba -> "-a"
   | Ccmpa c -> Printf.sprintf "%sa" (comparison c)
   | Cnegf -> "~f"
   | Cabsf -> "absf"
@@ -83,13 +92,16 @@ let operation = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise (k, d) -> Lambda.raise_kind k ^ Debuginfo.to_string d
+  | Craise (k, d) -> Format.asprintf "%s%s" (Lambda.raise_kind k) (Debuginfo.to_string d)
   | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
-  | Cconst_natint n | Cconst_blockheader n ->
+  | Cconst_natint n ->
     fprintf ppf "%s" (Nativeint.to_string n)
+  | Cblockheader(n, d) ->
+    fprintf ppf "block-hdr(%s)%s"
+      (Nativeint.to_string n) (Debuginfo.to_string d)
   | Cconst_float n -> fprintf ppf "%F" n
   | Cconst_symbol s -> fprintf ppf "\"%s\"" s
   | Cconst_pointer n -> fprintf ppf "%ia" n
@@ -126,7 +138,7 @@ let rec expr ppf = function
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
       | Capply (mty, _) -> fprintf ppf "@ %a" machtype mty
-      | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
+      | Cextcall(_, mty, _, _, _) -> fprintf ppf "@ %a" machtype mty
       | _ -> ()
       end;
       fprintf ppf ")@]"
@@ -183,7 +195,6 @@ let fundecl ppf f =
 
 let data_item ppf = function
   | Cdefine_symbol s -> fprintf ppf "\"%s\":" s
-  | Cdefine_label l -> fprintf ppf "L%i:" l
   | Cglobal_symbol s -> fprintf ppf "global \"%s\"" s
   | Cint8 n -> fprintf ppf "byte %i" n
   | Cint16 n -> fprintf ppf "int16 %i" n
@@ -192,7 +203,6 @@ let data_item ppf = function
   | Csingle f -> fprintf ppf "single %F" f
   | Cdouble f -> fprintf ppf "double %F" f
   | Csymbol_address s -> fprintf ppf "addr \"%s\"" s
-  | Clabel_address l -> fprintf ppf "addr L%i" l
   | Cstring s -> fprintf ppf "string \"%s\"" s
   | Cskip n -> fprintf ppf "skip %i" n
   | Calign n -> fprintf ppf "align %i" n

@@ -1,14 +1,17 @@
-#(***********************************************************************)
-#(*                                                                     *)
-#(*                             OCamldoc                                *)
-#(*                                                                     *)
-#(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
-#(*                                                                     *)
-#(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
-#(*  en Automatique.  All rights reserved.  This file is distributed    *)
-#(*  under the terms of the Q Public License version 1.0.               *)
-#(*                                                                     *)
-#(***********************************************************************)
+#**************************************************************************
+#*                                                                        *
+#*                                 OCaml                                  *
+#*                                                                        *
+#*             Maxence Guesdon, projet Cristal, INRIA Rocquencourt        *
+#*                                                                        *
+#*   Copyright 2001 Institut National de Recherche en Informatique et     *
+#*     en Automatique.                                                    *
+#*                                                                        *
+#*   All rights reserved.  This file is distributed under the terms of    *
+#*   the GNU Lesser General Public License version 2.1, with the          *
+#*   special exception on linking described in the file LICENSE.          *
+#*                                                                        *
+#**************************************************************************
 
 include ../config/Makefile
 CAMLRUN ?= ../boot/ocamlrun
@@ -30,8 +33,16 @@ OCAMLPP=-pp './remove_DEBUG'
 ##############
 MKDIR=mkdir -p
 CP=cp -f
-OCAMLDOC=ocamldoc
-OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+OCAMLDOC=./ocamldoc
+ifeq "$(TARGET)" "$(HOST)"
+  ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
+    OCAMLDOC_RUN=$(CAMLRUN) -I ../otherlibs/unix -I ../otherlibs/str $(OCAMLDOC)
+  else
+    OCAMLDOC_RUN=$(OCAMLDOC)
+  endif
+else
+  OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
+endif
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -64,7 +75,6 @@ INCLUDES_DEP=-I $(OCAMLSRCDIR)/parsing \
 	-I $(OCAMLSRCDIR)/typing \
 	-I $(OCAMLSRCDIR)/driver \
 	-I $(OCAMLSRCDIR)/bytecomp \
-	-I $(OCAMLSRCDIR)/tools \
 	-I $(OCAMLSRCDIR)/toplevel/
 
 INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
@@ -76,7 +86,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A -safe-string
+COMPFLAGS=$(INCLUDES) -absname -w +a-4-9-41-42-44-45-48 -warn-error A -safe-string -strict-sequence -strict-formats
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
@@ -140,13 +150,6 @@ LIBCMOFILES=$(CMOFILES)
 LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
-# Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES= \
-	$(OCAMLSRCDIR)/tools/depend.cmo
-
-OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
-
-
 STDLIB_MLIS=../stdlib/*.mli \
   ../parsing/*.mli \
 	../otherlibs/$(UNIXLIB)/unix.mli \
@@ -164,7 +167,11 @@ exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 generators: $(GENERATORS_CMOS)
 
-opt.opt: exeopt libopt generatorsopt
+opt.opt:
+	$(MAKE) exeopt
+	$(MAKE) libopt
+	$(MAKE) generatorsopt
+
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 generatorsopt: $(GENERATORS_CMXS)
@@ -175,17 +182,17 @@ debug:
 $(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma \
 	          $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cma \
-	          $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+	          $(LINKFLAGS) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
 	$(OCAMLOPT) -o $@ -linkall unix.cmxa str.cmxa dynlink.cmxa \
 	            $(OCAMLSRCDIR)/compilerlibs/ocamlcommon.cmxa \
-	            $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	            $(LINKFLAGS) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
-	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmo \
+	$(OCAMLC) -a -o $@ $(LINKFLAGS) \
 	          $(LIBCMOFILES)
 $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
-	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLSRCDIR)/tools/depend.cmx \
+	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) \
 	            $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
@@ -241,24 +248,24 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # Installation targets
 ######################
 install: dummy
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
-	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
-	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
+	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
+	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
+	if test -d "$(INSTALL_CUSTOMDIR)"; then : ; else $(MKDIR) "$(INSTALL_CUSTOMDIR)"; fi
+	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
+	if test -d "$(INSTALL_MANODIR)"; then : ; else $(MKDIR) "$(INSTALL_MANODIR)"; fi
+	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
 
 installopt:
 	if test -f $(OCAMLDOC_OPT); then $(MAKE) installopt_really ; fi
 
 installopt_really:
-	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
-	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
-	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
+	if test -d "$(INSTALL_BINDIR)"; then : ; else $(MKDIR) "$(INSTALL_BINDIR)"; fi
+	if test -d "$(INSTALL_LIBDIR)"; then : ; else $(MKDIR) "$(INSTALL_LIBDIR)"; fi
+	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) "$(INSTALL_LIBDIR)"
+	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) "$(INSTALL_LIBDIR)"
 
 # Testing :
 ###########
@@ -290,7 +297,8 @@ test_framed: dummy
 
 test_latex: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml \
+	        odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_latex_simple: dummy
 	$(MKDIR) $@

@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the GNU Library General Public License, with    *)
-(*  the special exception on linking described in file ../../LICENSE.  *)
-(*                                                                     *)
-(***********************************************************************)
+#2 "otherlibs/dynlink/dynlink.ml"
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Dynamic loading of .cmo files *)
 
@@ -90,7 +93,7 @@ let check_consistency file_name cu =
              else
                Consistbl.check_noadd !crc_interfaces name crc file_name)
       cu.cu_imports
-  with Consistbl.Inconsistency(name, user, auth) ->
+  with Consistbl.Inconsistency(name, _user, _auth) ->
          raise(Error(Inconsistent_import name))
      | Consistbl.Not_available(name) ->
          raise(Error(Unavailable_unit name))
@@ -139,6 +142,9 @@ let inited = ref false
 
 let init () =
   if not !inited then begin
+    if !Sys.interactive then (* PR#6802 *)
+      invalid_arg "The dynlink.cma library cannot be used \
+                   inside the OCaml toplevel";
     default_crcs := Symtable.init_toplevel();
     default_available_units ();
     inited := true;
@@ -237,6 +243,13 @@ let load_compunit ic file_name file_digest compunit =
      Unit name is needed for .cma files, which produce several code fragments.*)
   let digest = Digest.string (file_digest ^ compunit.cu_name) in
   register_code_fragment code code_size digest;
+  let events =
+    if compunit.cu_debug = 0 then [| |]
+    else begin
+      seek_in ic compunit.cu_debug;
+      [| input_value ic |]
+    end in
+  Meta.add_debug_info code code_size events;
   begin try
     ignore((Meta.reify_bytecode code code_size) ())
   with exn ->

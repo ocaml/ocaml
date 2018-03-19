@@ -1,23 +1,24 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Machine-specific command-line options *)
 
-let pic_code = ref true
-
 let command_line_options =
-  [ "-fPIC", Arg.Set pic_code,
+  [ "-fPIC", Arg.Set Clflags.pic_code,
       " Generate position-independent machine code (default)";
-    "-fno-PIC", Arg.Clear pic_code,
+    "-fno-PIC", Arg.Clear Clflags.pic_code,
       " Generate position-dependent machine code" ]
 
 (* Specific operations for the AMD64 processor *)
@@ -44,6 +45,8 @@ type specific_operation =
   | Ifloatsqrtf of addressing_mode     (* Float square root from memory *)
 and float_operation =
     Ifloatadd | Ifloatsub | Ifloatmul | Ifloatdiv
+
+let spacetime_node_hole_pointer_is_live_before _specific_op = false
 
 (* Sizes, endianness *)
 
@@ -72,11 +75,11 @@ let offset_addressing addr delta =
   | Iindexed2scaled(scale, n) -> Iindexed2scaled(scale, n + delta)
 
 let num_args_addressing = function
-    Ibased(s, n) -> 0
-  | Iindexed n -> 1
-  | Iindexed2 n -> 2
-  | Iscaled(scale, n) -> 1
-  | Iindexed2scaled(scale, n) -> 2
+    Ibased _ -> 0
+  | Iindexed _ -> 1
+  | Iindexed2 _ -> 2
+  | Iscaled _ -> 1
+  | Iindexed2scaled _ -> 2
 
 (* Printing operations and addressing modes *)
 

@@ -1,16 +1,19 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
-(* "Expunge" a toplevel by removing compiler modules from the global List.map.
+(* "Expunge" a toplevel by removing compiler modules from the global map.
    Usage: expunge <source file> <dest file> <names of modules to keep> *)
 
 open Misc
@@ -38,13 +41,13 @@ let expunge_map tbl =
   Symtable.filter_global_map (fun id -> keep (Ident.name id)) tbl
 
 let expunge_crcs tbl =
-  List.filter (fun (unit, crc) -> keep unit) tbl
+  List.filter (fun (unit, _crc) -> keep unit) tbl
 
 let main () =
   let input_name = Sys.argv.(1) in
   let output_name = Sys.argv.(2) in
   for i = (if negate then 4 else 3) to Array.length Sys.argv - 1 do
-    to_keep := StringSet.add (String.capitalize Sys.argv.(i)) !to_keep
+    to_keep := StringSet.add (String.capitalize_ascii Sys.argv.(i)) !to_keep
   done;
   let ic = open_in_bin input_name in
   Bytesections.read_toc ic;

@@ -1,21 +1,20 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 2000 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Luc Maranget, projet Moscova, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 2000 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 
 type 'a shared = Shared of 'a | Single of 'a
-
-let share_out = function
-  | Shared act|Single act -> act
-
 
 type 'a t_store =
     {act_get : unit -> 'a array ;
@@ -143,6 +142,7 @@ type 'a t_ctx =  {off : int ; arg : 'a}
 let cut = ref 8
 and more_cut = ref 16
 
+(*
 let pint chan i =
   if i = min_int then Printf.fprintf chan "-oo"
   else if i=max_int then Printf.fprintf chan "oo"
@@ -157,8 +157,9 @@ let pcases chan cases =
       Printf.fprintf chan "%a..%a:%d " pint l pint h act
   done
 
-    let prerr_inter i = Printf.fprintf stderr
+let prerr_inter i = Printf.fprintf stderr
         "cases=%a" pcases i.cases
+*)
 
 let get_act cases i =
   let _,_,r = cases.(i) in
@@ -174,6 +175,7 @@ type ctests = {
 
 let too_much = {n=max_int ; ni=max_int}
 
+(*
 let ptests chan {n=n ; ni=ni} =
   Printf.fprintf chan "{n=%d ; ni=%d}" n ni
 
@@ -181,23 +183,7 @@ let pta chan t =
   for i =0 to Array.length t-1 do
     Printf.fprintf chan "%d: %a\n" i ptests t.(i)
   done
-
-let count_tests s =
-  let r =
-    Array.init
-      (Array.length s.actions)
-      (fun _ -> {n=0 ; ni=0 }) in
-  let c = s.cases in
-  let imax = Array.length c-1 in
-  for i=0 to imax do
-    let l,h,act = c.(i) in
-    let x = r.(act) in
-    x.n <- x.n+1 ;
-    if l < h && i<> 0 && i<>imax then
-      x.ni <- x.ni+1 ;
-  done ;
-  r
-
+*)
 
 let less_tests c1 c2 =
   if c1.n < c2.n then
@@ -212,8 +198,6 @@ let less_tests c1 c2 =
 
 and eq_tests c1 c2 = c1.n = c2.n && c1.ni=c2.ni
 
-let min_tests c1 c2 = if less_tests c1 c2 then c1 else c2
-
 let less2tests (c1,d1) (c2,d2) =
   if eq_tests c1 c2 then
     less_tests d1 d2
@@ -226,10 +210,12 @@ let add_test t1 t2 =
 
 type t_ret = Inter of int * int  | Sep of int | No
 
+(*
 let pret chan = function
   | Inter (i,j)-> Printf.fprintf chan "Inter %d %d" i j
   | Sep i -> Printf.fprintf chan "Sep %d" i
   | No -> Printf.fprintf chan "No"
+*)
 
 let coupe cases i =
   let l,_,_ = cases.(i) in
@@ -310,6 +296,7 @@ let coupe_inter i j cases =
 
 type kind = Kvalue of int | Kinter of int | Kempty
 
+(*
 let pkind chan = function
   | Kvalue i ->Printf.fprintf chan "V%d" i
   | Kinter i -> Printf.fprintf chan "I%d" i
@@ -320,6 +307,7 @@ let rec pkey chan  = function
   | [k] -> pkind chan k
   | k::rem ->
       Printf.fprintf chan "%a %a" pkey rem pkind k
+*)
 
 let t = Hashtbl.create 17
 
@@ -390,8 +378,7 @@ let ok_inter = ref false
 let rec opt_count top cases =
   let key = make_key cases in
   try
-    let r = Hashtbl.find t key in
-    r
+    Hashtbl.find t key
   with
   | Not_found ->
       let r =
@@ -403,13 +390,13 @@ let rec opt_count top cases =
             if lcases < !cut then
               enum top cases
             else if lcases < !more_cut then
-              heuristic top cases
+              heuristic cases
             else
-              divide top cases in
+              divide cases in
       Hashtbl.add t key r ;
       r
 
-and divide top cases =
+and divide cases =
   let lcases = Array.length cases in
   let m = lcases/2 in
   let _,left,right = coupe cases m in
@@ -425,10 +412,10 @@ and divide top cases =
     add_test cm cml ;
   Sep m,(cm, ci)
 
-and heuristic top cases =
+and heuristic cases =
   let lcases = Array.length cases in
 
-  let sep,csep = divide false cases
+  let sep,csep = divide cases
 
   and inter,cinter =
     if !ok_inter then begin
@@ -552,18 +539,6 @@ and enum top cases =
     | _ ->
         make_if_test Arg.ltint arg i ifso ifnot
 
-    and make_if_le arg i ifso ifnot = match i with
-    | -1 ->
-        make_if_test Arg.ltint arg 0 ifso ifnot
-    | _ ->
-        make_if_test Arg.leint arg i ifso ifnot
-
-    and make_if_gt arg i  ifso ifnot = match i with
-    | -1 ->
-        make_if_test Arg.geint arg 0 ifso ifnot
-    | _ ->
-        make_if_test Arg.gtint arg i ifso ifnot
-
     and make_if_ge arg i  ifso ifnot = match i with
     | 1 ->
         make_if_test Arg.gtint arg 0 ifso ifnot
@@ -614,7 +589,7 @@ and enum top cases =
 
       else begin
 
-        let w,c = opt_count false cases in
+        let w,_c = opt_count false cases in
 (*
   Printf.fprintf stderr
   "off=%d tactic=%a for %a\n"
@@ -689,13 +664,13 @@ let switch_min = ref 3
 (* Particular case 0, 1, 2 *)
 let particular_case cases i j =
   j-i = 2 &&
-  (let l1,h1,act1 = cases.(i)
-  and  l2,h2,act2 = cases.(i+1)
+  (let l1,_h1,act1 = cases.(i)
+  and  l2,_h2,_act2 = cases.(i+1)
   and  l3,h3,act3 = cases.(i+2) in
   l1+1=l2 && l2+1=l3 && l3=h3 &&
   act1 <> act3)
 
-let approx_count cases i j n_actions =
+let approx_count cases i j =
   let l = j-i+1 in
   if l < !cut then
      let _,(_,{n=ntests}) = opt_count false (Array.sub cases i l) in
@@ -705,12 +680,12 @@ let approx_count cases i j n_actions =
 
 (* Sends back a boolean that says whether is switch is worth or not *)
 
-let dense {cases=cases ; actions=actions} i j =
+let dense {cases} i j =
   if i=j then true
   else
     let l,_,_ = cases.(i)
     and _,h,_ = cases.(j) in
-    let ntests =  approx_count cases i j (Array.length actions) in
+    let ntests =  approx_count cases i j in
 (*
   (ntests+1) >= theta * (h-l+1)
 *)
@@ -726,8 +701,8 @@ let dense {cases=cases ; actions=actions} i j =
    Software Practice and Exprience Vol. 24(2) 233 (Feb 1994)
 *)
 
-let comp_clusters ({cases=cases ; actions=actions} as s) =
-  let len = Array.length cases in
+let comp_clusters s =
+  let len = Array.length s.cases in
   let min_clusters = Array.make len max_int
   and k = Array.make len 0 in
   let get_min i = if i < 0 then 0 else min_clusters.(i) in
@@ -832,15 +807,15 @@ let do_zyva (low,high) arg cases actions =
   if !ok_inter <> old_ok then Hashtbl.clear t ;
 
   let s = {cases=cases ; actions=actions} in
+
 (*
-  Printf.eprintf "ZYVA: %b\n" !ok_inter ;
+  Printf.eprintf "ZYVA: %b [low=%i,high=%i]\n" !ok_inter low high ;
   pcases stderr cases ;
   prerr_endline "" ;
 *)
   let n_clusters,k = comp_clusters s in
   let clusters = make_clusters s n_clusters k in
-  let r = c_test {arg=arg ; off=0} clusters in
-  r
+  c_test {arg=arg ; off=0} clusters
 
 let abstract_shared actions =
   let handlers = ref (fun x -> x) in
@@ -857,11 +832,13 @@ let abstract_shared actions =
   !handlers,actions
 
 let zyva lh arg cases actions =
+  assert (Array.length cases > 0) ;
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   hs (do_zyva lh arg cases actions)
 
 and test_sequence arg cases actions =
+  assert (Array.length cases > 0) ;
   let actions = actions.act_get_shared () in
   let hs,actions = abstract_shared actions in
   let old_ok = !ok_inter in

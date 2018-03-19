@@ -1,15 +1,19 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 2007 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*          Xavier Leroy and Damien Doligez, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 2007 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
+
+#define CAML_INTERNALS
 
 /* Signal handling, code specific to the bytecode interpreter */
 
@@ -30,6 +34,22 @@ typedef void (*sighandler)(int sig);
 extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
+
+CAMLexport int volatile caml_something_to_do = 0;
+CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
+
+void caml_process_event(void)
+{
+  void (*async_action)(void);
+
+  caml_check_urgent_gc (Val_unit);
+  caml_process_pending_signals();
+  async_action = caml_async_action_hook;
+  if (async_action != NULL) {
+    caml_async_action_hook = NULL;
+    (*async_action)();
+  }
+}
 
 static void handle_signal(int signal_number)
 {

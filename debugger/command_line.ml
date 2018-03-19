@@ -1,15 +1,18 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          OCaml port by John Malecki and Xavier Leroy                *)
-(*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*           Jerome Vouillon, projet Cristal, INRIA Rocquencourt          *)
+(*           OCaml port by John Malecki and Xavier Leroy                  *)
+(*                                                                        *)
+(*   Copyright 1996 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (************************ Reading and executing commands ***************)
 
@@ -77,7 +80,7 @@ let error text =
 let check_not_windows feature =
   match Sys.os_type with
   | "Win32" ->
-      error ("'"^feature^"' feature not supported on Windows")
+      error ("\'"^feature^"\' feature not supported on Windows")
   | _ ->
       ()
 
@@ -124,7 +127,7 @@ let add_breakpoint_at_pc pc =
     new_breakpoint (any_event_at_pc pc)
   with
   | Not_found ->
-    eprintf "Can't add breakpoint at pc %i: no event there.@." pc;
+    eprintf "Can\'t add breakpoint at pc %i: no event there.@." pc;
     raise Toplevel
 
 let add_breakpoint_after_pc pc =
@@ -137,7 +140,7 @@ let add_breakpoint_after_pc pc =
         try_add (n+1)
     end else begin
       error
-        "Can't add breakpoint at beginning of function: no event there"
+        "Can\'t add breakpoint at beginning of function: no event there"
     end
   in try_add 0
 
@@ -150,9 +153,9 @@ let convert_module mdle =
   match mdle with
   | Some m ->
       (* Strip .ml extension if any, and capitalize *)
-      String.capitalize(if Filename.check_suffix m ".ml"
-                        then Filename.chop_suffix m ".ml"
-                        else m)
+      String.capitalize_ascii(if Filename.check_suffix m ".ml"
+                              then Filename.chop_suffix m ".ml"
+                              else m)
   | None ->
       try
         (get_current_event ()).ev_module
@@ -176,7 +179,7 @@ let interprete_line ppf line =
               i.instr_action ppf lexbuf;
               resume_user_input ();
               i.instr_repeat
-          | l ->
+          | _ ->
               error "Ambiguous command."
           end
       | None ->
@@ -185,7 +188,7 @@ let interprete_line ppf line =
     with
     | Parsing.Parse_error ->
         error "Syntax error."
-    | Failure "int_of_string" ->
+    | Lexer.Int_overflow ->
       error "Integer overflow"
 
 let line_loop ppf line_buffer =
@@ -213,7 +216,7 @@ let line_loop ppf line_buffer =
         error ("System error: " ^ s) *)
 
 (** Instructions. **)
-let instr_cd ppf lexbuf =
+let instr_cd _ppf lexbuf =
   let dir = argument_eol argument lexbuf in
     if ask_kill_program () then
       try
@@ -222,7 +225,7 @@ let instr_cd ppf lexbuf =
       | Sys_error s ->
           error s
 
-let instr_shell ppf lexbuf =
+let instr_shell _ppf lexbuf =
   let cmdarg = argument_list_eol argument lexbuf in
   let cmd = String.concat " " cmdarg in
   (* perhaps we should use $SHELL -c ? *)
@@ -230,7 +233,7 @@ let instr_shell ppf lexbuf =
   if (err != 0) then
     eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
-let instr_env ppf lexbuf =
+let instr_env _ppf lexbuf =
   let cmdarg = argument_list_eol argument lexbuf in
   let cmdarg = string_trim (String.concat " " cmdarg) in
   if cmdarg <> "" then
@@ -270,7 +273,7 @@ let instr_dir ppf lexbuf =
       let new_directory' = List.rev new_directory in
       match new_directory' with
       | mdl :: for_keyw :: tl
-        when (String.lowercase for_keyw) = "for" && (List.length tl) > 0 ->
+        when String.lowercase_ascii for_keyw = "for" && List.length tl > 0 ->
           List.iter (function x -> add_path_for mdl (expand_path x)) tl
       | _ ->
           List.iter (function x -> add_path (expand_path x)) new_directory'
@@ -283,13 +286,18 @@ let instr_dir ppf lexbuf =
                  dirs)
       Debugger_config.load_path_for
 
-let instr_kill ppf lexbuf =
+let instr_kill _ppf lexbuf =
   eol lexbuf;
   if not !loaded then error "The program is not being run.";
   if (yes_or_no "Kill the program being debugged") then begin
     kill_program ();
     show_no_point()
   end
+
+let instr_pid ppf lexbuf =
+  eol lexbuf;
+  if not !loaded then error "The program is not being run.";
+  fprintf ppf "@[%d@]@." !current_checkpoint.c_pid
 
 let instr_run ppf lexbuf =
   eol lexbuf;
@@ -385,7 +393,7 @@ let print_info_list ppf =
   let pr_infos ppf = List.iter (fun i -> fprintf ppf "%s@ " i.info_name)  in
   fprintf ppf "List of info commands: %a@." pr_infos !info_list
 
-let instr_complete ppf lexbuf =
+let instr_complete _ppf lexbuf =
   let ppf = Format.err_formatter in
   let rec print_list l =
     try
@@ -457,7 +465,7 @@ let instr_help ppf lexbuf =
           find_variable
             (fun v _ _ ->
                print_help ("show " ^ v.var_name) ("show " ^ v.var_help))
-            (fun v ->
+            (fun _v ->
                print_help "show" "display debugger variable.";
                print_variable_list ppf)
             ppf
@@ -514,13 +522,37 @@ let instr_print ppf lexbuf = print_command !max_printer_depth ppf lexbuf
 
 let instr_display ppf lexbuf = print_command 1 ppf lexbuf
 
+let instr_address ppf lexbuf =
+  let exprs = expression_list_eol Lexer.lexeme lexbuf in
+  ensure_loaded ();
+  let env =
+    try
+      env_of_event !selected_event
+    with
+    | Envaux.Error msg ->
+        Envaux.report_error ppf msg;
+        raise Toplevel
+  in
+  let print_addr expr =
+    let (v, _ty) =
+      try Eval.expression !selected_event env expr
+      with Eval.Error msg ->
+        Eval.report_error ppf msg;
+        raise Toplevel
+    in
+    match Remote_value.pointer v with
+    | "" -> fprintf ppf "[not a remote value]@."
+    | s -> fprintf ppf "0x%s@." s
+  in
+  List.iter print_addr exprs
+
 (* Loading of command files *)
 
 let extract_filename arg =
   (* Allow enclosing filename in quotes *)
   let l = String.length arg in
-  let pos1 = if l > 0 && arg.[0] = '"' then 1 else 0 in
-  let pos2 = if l > 0 && arg.[l-1] = '"' then l-1 else l in
+  let pos1 = if l > 0 && arg.[0] = '\"' then 1 else 0 in
+  let pos2 = if l > 0 && arg.[l-1] = '\"' then l-1 else l in
   String.sub arg pos1 (pos2 - pos1)
 
 let instr_source ppf lexbuf =
@@ -553,8 +585,8 @@ let instr_source ppf lexbuf =
 
 let instr_set =
   find_variable
-    (fun {var_action = (funct, _)} ppf lexbuf -> funct lexbuf)
-    (function ppf -> error "Argument required.")
+    (fun {var_action = (funct, _)} _ppf lexbuf -> funct lexbuf)
+    (function _ppf -> error "Argument required.")
 
 let instr_show =
   find_variable
@@ -568,8 +600,8 @@ let instr_show =
 
 let instr_info =
   find_info
-    (fun i ppf lexbuf -> i.info_action lexbuf)
-    (function ppf ->
+    (fun i _ppf lexbuf -> i.info_action lexbuf)
+    (function _ppf ->
        error "\"info\" must be followed by the name of an info command.")
 
 let instr_break ppf lexbuf =
@@ -581,7 +613,7 @@ let instr_break ppf lexbuf =
          | Some ev ->
              new_breakpoint ev
          | None ->
-             error "Can't add breakpoint at this point.")
+             error "Can\'t add breakpoint at this point.")
     | BA_pc pc ->                               (* break PC *)
         add_breakpoint_at_pc pc
     | BA_function expr ->                       (* break FUNCTION *)
@@ -627,7 +659,7 @@ let instr_break ppf lexbuf =
                  event_near_pos module_name (point_of_coord buffer line col)
            with
            | Not_found -> (* event_at_pos / event_near pos *)
-               eprintf "Can't find any event there.@.";
+               eprintf "Can\'t find any event there.@.";
                raise Toplevel
            | Out_of_range -> (* pos_of_line / point_of_coord *)
                eprintf "Position out of range.@.";
@@ -639,9 +671,9 @@ let instr_break ppf lexbuf =
                             position)
         with
         | Not_found ->
-            eprintf "Can't find any event there.@."
+            eprintf "Can\'t find any event there.@."
 
-let instr_delete ppf lexbuf =
+let instr_delete _ppf lexbuf =
   match integer_list_eol Lexer.lexeme lexbuf with
   | [] ->
       if breakpoints_count () <> 0 && yes_or_no "Delete all breakpoints"
@@ -739,7 +771,7 @@ let instr_last ppf lexbuf =
     go_to (History.previous_time count);
     show_current_event ppf
 
-let instr_list ppf lexbuf =
+let instr_list _ppf lexbuf =
   let (mo, beg, e) = list_arguments_eol Lexer.lexeme lexbuf in
     let (curr_mod, line, column) =
       try
@@ -748,7 +780,11 @@ let instr_list ppf lexbuf =
       | Not_found ->
           ("", -1, -1)
     in
-      let mdle = convert_module (module_of_longident mo) in
+      let mdle =
+        match mo with
+        | None -> curr_mod
+        | _ -> convert_module (module_of_longident mo)
+      in
       let pos = Lexing.dummy_pos in
       let buffer =
         try get_buffer pos mdle with
@@ -830,9 +866,9 @@ let loading_mode_variable ppf =
   (find_ident
      "loading mode"
      (matching_elements (ref loading_modes) fst)
-     (fun (_, mode) ppf lexbuf ->
+     (fun (_, mode) _ppf lexbuf ->
         eol lexbuf; set_launching_function mode)
-     (function ppf -> error "Syntax error.")
+     (function _ppf -> error "Syntax error.")
      ppf),
   function ppf ->
     let rec find = function
@@ -910,7 +946,7 @@ let info_breakpoints ppf lexbuf =
   end
 ;;
 
-let info_events ppf lexbuf =
+let info_events _ppf lexbuf =
   ensure_loaded ();
   let mdle =
     convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf))
@@ -991,6 +1027,12 @@ With no argument, reset the search path." };
      { instr_name = "kill"; instr_prio = false;
        instr_action = instr_kill; instr_repeat = true; instr_help =
 "kill the program being debugged." };
+     { instr_name = "pid"; instr_prio = false;
+       instr_action = instr_pid; instr_repeat = true; instr_help =
+"print the process ID of the current active process." };
+     { instr_name = "address"; instr_prio = false;
+       instr_action = instr_address; instr_repeat = true; instr_help =
+"print the raw address of a value." };
      { instr_name = "help"; instr_prio = false;
        instr_action = instr_help; instr_repeat = true; instr_help =
 "print list of commands." };
@@ -1124,7 +1166,7 @@ using \"load_printer\"." };
 "mode of loading.\n\
 It can be either:\n\
   direct: the program is directly called by the debugger.\n\
-  runtime: the debugger execute `ocamlrun programname arguments'.\n\
+  runtime: the debugger execute `ocamlrun programname arguments\'.\n\
   manual: the program is not launched by the debugger,\n\
     but manually by the user." };
      { var_name = "processcount";
@@ -1168,7 +1210,7 @@ It can be either:\n\
        var_action = follow_fork_variable;
        var_help =
 "process to follow after forking.\n\
-It can be either :
+It can be either :\n\
   child: the newly created process.\n\
   parent: the process that called fork.\n" }];
 

@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
-/*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../LICENSE.     */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           */
+/*                                                                        */
+/*   Copyright 1996 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 /* Machine configuration, Intel x86 processors, Win32,
    Visual C++ or Mingw compiler */
@@ -40,4 +42,17 @@
 #endif
 #define ARCH_INT64_PRINTF_FORMAT "I64"
 
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#define inline __inline
+#endif
+
 #undef NONSTANDARD_DIV_MOD
+
+#define PROFINFO_WIDTH 26
+
+/* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
+#if defined(_MSC_VER) && _MSC_VER < 1400
+#define INT64_LITERAL(s) s ## i64
+#else
+#define INT64_LITERAL(s) s ## LL
+#endif

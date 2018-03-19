@@ -1,14 +1,17 @@
-(***********************************************************************)
-(*                                                                     *)
-(*                                OCaml                                *)
-(*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-(*                                                                     *)
-(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed    *)
-(*  under the terms of the Q Public License version 1.0.               *)
-(*                                                                     *)
-(***********************************************************************)
+(**************************************************************************)
+(*                                                                        *)
+(*                                 OCaml                                  *)
+(*                                                                        *)
+(*             Xavier Leroy, projet Cristal, INRIA Rocquencourt           *)
+(*                                                                        *)
+(*   Copyright 1997 Institut National de Recherche en Informatique et     *)
+(*     en Automatique.                                                    *)
+(*                                                                        *)
+(*   All rights reserved.  This file is distributed under the terms of    *)
+(*   the GNU Lesser General Public License version 2.1, with the          *)
+(*   special exception on linking described in the file LICENSE.          *)
+(*                                                                        *)
+(**************************************************************************)
 
 (* Instruction selection for the Power PC processor *)
 
@@ -26,11 +29,11 @@ type addressing_expr =
 let rec select_addr = function
     Cconst_symbol s ->
       (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
+  | Cop((Caddi | Caddv | Cadda), [Cconst_int m; arg]) ->
       let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
+  | Cop((Caddi | Caddv | Cadda), [arg1; arg2]) ->
       begin match (select_addr arg1, select_addr arg2) with
           ((Alinear e1, n1), (Alinear e2, n2)) ->
               (Aadd(e1, e2), n1 + n2)
@@ -48,7 +51,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 32767) && (n >= -32768)
 
-method select_addressing chunk exp =
+method select_addressing _chunk exp =
   match select_addr exp with
     (Asymbol s, d) ->
       (Ibased(s, d), Ctuple [])

@@ -15,7 +15,7 @@ x
 
 (**
        0 CONSTINT 42
-       2 PUSHACC0 
+       2 PUSHACC0
        3 MAKEBLOCK1 0
        5 POP 1
        7 SETGLOBAL Lib
@@ -26,19 +26,19 @@ x
       17 PUSHCONSTINT 7
       19 MAKEBLOCK 5, 0
       22 PUSHCONSTINT 11
-      24 PUSHACC1 
+      24 PUSHACC1
       25 SETFIELD 4
       27 CONSTINT 11
-      29 PUSHACC1 
+      29 PUSHACC1
       30 GETFIELD 4
-      32 NEQ 
+      32 NEQ
       33 BRANCHIFNOT 40
       35 GETGLOBAL Not_found
       37 MAKEBLOCK1 0
-      39 RAISE 
-      40 ACC0 
+      39 RAISE
+      40 ACC0
       41 POP 1
-      43 ATOM0 
+      43 ATOM0
       44 SETGLOBAL T211-setfield
-      46 STOP 
+      46 STOP
 **)

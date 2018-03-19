@@ -1,15 +1,17 @@
-/***********************************************************************/
-/*                                                                     */
-/*                                OCaml                                */
-/*                                                                     */
-/*  Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>   */
-/*                                                                     */
-/*  Copyright 2002 Institut National de Recherche en Informatique et   */
-/*  en Automatique.  All rights reserved.  This file is distributed    */
-/*  under the terms of the GNU Library General Public License, with    */
-/*  the special exception on linking described in file ../../LICENSE.  */
-/*                                                                     */
-/***********************************************************************/
+/**************************************************************************/
+/*                                                                        */
+/*                                 OCaml                                  */
+/*                                                                        */
+/*   Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>     */
+/*                                                                        */
+/*   Copyright 2002 Institut National de Recherche en Informatique et     */
+/*     en Automatique.                                                    */
+/*                                                                        */
+/*   All rights reserved.  This file is distributed under the terms of    */
+/*   the GNU Lesser General Public License version 2.1, with the          */
+/*   special exception on linking described in the file LICENSE.          */
+/*                                                                        */
+/**************************************************************************/
 
 #include <stdio.h>
 #include <caml/mlvalues.h>
@@ -20,6 +22,8 @@ CAMLprim value unix_rename(value path1, value path2)
   static int supports_MoveFileEx = -1; /* don't know yet */
   BOOL ok;
 
+  caml_unix_check_path(path1, "rename");
+  caml_unix_check_path(path2, "rename");
   if (supports_MoveFileEx < 0) {
     OSVERSIONINFO VersionInfo;
     VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
