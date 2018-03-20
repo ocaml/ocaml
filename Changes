@@ -254,6 +254,10 @@ Working version
   leftover .a files from an earlier compilation may contain unwanted modules
   (Xavier Leroy)
 
+- GPR#1571: do not perform architecture tests on 32-bit platforms, allowing
+  64-bit back-ends to use 64-bit specific constructs
+  (Xavier Clerc, review by Damien Doligez)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1488, GPR#1560: Refreshing parmatch
