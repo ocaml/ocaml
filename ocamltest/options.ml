@@ -40,6 +40,8 @@ let log_to_stderr = ref false
 
 let promote = ref false
 
+let colors = ref true
+
 let commandline_options =
 [
   ("-e", Arg.Set log_to_stderr, "Log to stderr instead of a file.");
@@ -47,6 +49,7 @@ let commandline_options =
    "Overwrite reference files with the test output (experimental, unstable)");
   ("-show-actions", Arg.Unit show_actions, "Show available actions.");
   ("-show-tests", Arg.Unit show_tests, "Show available tests.");
+  ("-no-color", Arg.Clear colors, "Disable colors");
 ]
 
 let files_to_test = ref []
