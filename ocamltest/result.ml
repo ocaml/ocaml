@@ -38,17 +38,28 @@ let skip_with_reason r = result_with_reason Skip r
 
 let fail_with_reason r = result_with_reason Fail r
 
-let string_of_status = function
-  | Pass -> "passed"
-  | Skip -> "skipped"
-  | Fail -> "failed"
+let style_of_status s msg =
+  let pre = match s with
+    | Pass -> "2" (* green *)
+    | Fail -> "1" (* red *)
+    | Skip -> "4" (* blue *)
+  in
+  "\x1b[1;3" ^ pre ^ "m" ^ msg ^ "\x1b[0m"
+
+let string_of_status ?(color=true) s =
+  let r = match s with
+    | Pass -> "passed"
+    | Skip -> "skipped"
+    | Fail -> "failed"
+  in
+  if color then style_of_status s r else r
 
 let string_of_reason = function
   | None -> ""
   | Some reason -> (" (" ^ reason ^ ")")
 
-let string_of_result r =
-  (string_of_status r.status) ^ (string_of_reason r.reason)
+let string_of_result ?color r =
+  (string_of_status ?color r.status) ^ (string_of_reason r.reason)
 
 let is_pass r = r.status = Pass
 

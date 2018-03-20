@@ -34,7 +34,7 @@ val skip_with_reason : string -> t
 
 val fail_with_reason : string -> t
 
-val string_of_result : t -> string
+val string_of_result : ?color:bool -> t -> string
 
 val is_pass : t -> bool
 

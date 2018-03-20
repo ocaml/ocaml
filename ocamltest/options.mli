@@ -22,3 +22,5 @@ val files_to_test : string list ref
 val promote : bool ref
 
 val usage : string
+
+val colors : bool ref
