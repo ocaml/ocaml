@@ -554,7 +554,7 @@ and class_type_aux env scty =
       cltyp (Tcty_arrow (l, cty, clty)) typ
 
   | Pcty_open (ovf, me, e) ->
-      let (tme, newenv) = !Typecore.type_open ovf env scty.pcty_loc me in
+      let (_id, tme, newenv) = !Typecore.type_open ovf env scty.pcty_loc me in
       let clty = class_type newenv e in
       let od = {
         open_expr=tme; open_override=ovf; open_loc=scty.pcty_loc;
@@ -1239,8 +1239,10 @@ and class_expr_aux cl_num val_env met_env scl =
          }
   | Pcl_open (ovf, me, e) ->
       let used_slot = ref false in
-      let (_, new_val_env) = !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc me in
-      let (tme, new_met_env) = !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
+      let (_, _, new_val_env) =
+        !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc me in
+      let (_id, tme, new_met_env) =
+        !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
       (* TODO(objmagic): what env to use here? *)
       let cl = class_expr cl_num new_val_env new_met_env e in
       let od = {

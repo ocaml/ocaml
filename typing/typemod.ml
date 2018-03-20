@@ -198,7 +198,7 @@ let type_open ?toplevel env sod =
       open_env;
     }
   in
-  inserted_md, open_env, od
+  inserted_md, od
 
 (* Record a module type *)
 let rm node =
@@ -650,8 +650,8 @@ and approx_sig env ssg =
           let (id, newenv) = Env.enter_modtype d.pmtd_name.txt info env in
           Sig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open sod ->
-          let (_id, mty, _od) = type_open env sod in
-          approx_sig mty srem
+          let (_id, od) = type_open env sod in
+          approx_sig od.open_env srem
       | Psig_include sincl ->
           let smty = sincl.pincl_mod in
           let mty = approx_modtype env smty in
@@ -957,7 +957,8 @@ and transl_signature env sg =
             sg :: rem,
             final_env
         | Psig_open sod -> begin
-            let (id, open_env, od) = type_open env sod in
+            let id, od = type_open env sod in
+            let open_env = od.open_env in
             let (trem, rem, final_env) = transl_sig open_env srem in
             match id with
             | None -> mksig (Tsig_open od) env loc :: trem, rem, final_env
@@ -1706,7 +1707,8 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             mkstr (Tstr_modtype mtd) newenv loc :: str_rem, sg :: sig_rem,
             final_env
         | Pstr_open sod -> begin
-            let (inserted_md, open_env, od) = type_open ~toplevel env sod in
+            let (inserted_md, od) = type_open ~toplevel env sod in
+            let open_env = od.open_env in
             let str_rem, sig_rem, final_env = type_struct open_env srem in
             match inserted_md with
             | None -> mkstr (Tstr_open od) open_env loc :: str_rem,
@@ -1931,10 +1933,13 @@ let type_package env m p nl =
 (* Fill in the forward declarations *)
 
 let type_open ?used_slot ovf env loc me =
-  let md, tme, env = type_open_ ?used_slot ?toplevel:None ovf env loc me in
-  match md with
-  | None -> tme, env
-  | Some _ -> assert false
+  type_open_ ?used_slot ?toplevel:None ovf env loc me
+
+let gen_mod_ident me =
+  match me.pmod_desc with
+  | Pmod_functor _ | Pmod_extension _ -> assert false
+  | Pmod_ident _ -> None
+  | _ -> Some((gen_mod_ident ()).Ident.name)
 
 let () =
   Typecore.type_module := type_module_alias;
@@ -1942,6 +1947,7 @@ let () =
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open;
   Typecore.type_package := type_package;
+  Typecore.gen_mod_ident := gen_mod_ident;
   type_module_fwd := type_module;
   type_module_type_of_fwd := type_module_type_of
 

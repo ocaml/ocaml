@@ -107,11 +107,15 @@ let type_module =
   ref ((fun _env _md -> assert false) :
        Env.t -> Parsetree.module_expr -> Typedtree.module_expr)
 
+let gen_mod_ident : (Parsetree.module_expr -> string option) ref = ref (fun _ -> assert false)
+
 (* Forward declaration, to be filled in by Typemod.type_open *)
 
 let type_open :
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
-   Parsetree.module_expr -> Typedtree.module_expr * Env.t)
+   Parsetree.module_expr -> 
+   (Ident.t * Types.module_declaration * Env.t) option *
+   Typedtree.module_expr * Env.t)
     ref =
   ref (fun ?used_slot:_ _ -> assert false)
 
@@ -1412,14 +1416,18 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_open (lid,p) ->
       let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc; pmod_attributes=[]} in
-      let _tme, new_env =
-        !type_open Asttypes.Fresh !env sp.ppat_loc me in
-      let new_env = ref new_env in
-      type_pat ~env:new_env p expected_ty ( fun p ->
-        env := Env.copy_local !env ~from:!new_env;
-        k { p with pat_extra =( Tpat_open (lid,!new_env),
-                            loc, sp.ppat_attributes) :: p.pat_extra }
-      )
+      let id, _tme, new_env =
+        !type_open Asttypes.Fresh !env sp.ppat_loc me in begin
+      match id with
+      | Some _ -> assert false
+      | None ->
+        let new_env = ref new_env in
+        type_pat ~env:new_env p expected_ty ( fun p ->
+          env := Env.copy_local !env ~from:!new_env;
+          k { p with pat_extra =( Tpat_open (lid,!new_env),
+                              loc, sp.ppat_attributes) :: p.pat_extra }
+        )
+    end
   | Ppat_exception _ ->
       raise (Error (loc, !env, Exception_pattern_below_toplevel))
   | Ppat_extension ext ->
@@ -3724,18 +3732,25 @@ and type_expect_
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (ovf, me, e) ->
-      let (tme, newenv) = !type_open ovf env sexp.pexp_loc me in
-      let exp = type_expect newenv e ty_expected_explained in
-      let od = { open_expr=tme; open_override=ovf;
-                 open_loc=loc; open_env=newenv; (*TODO*)
-                 open_attributes=sexp.pexp_attributes } in
-      { exp with
-        exp_extra = (Texp_open od, loc,
-                     sexp.pexp_attributes) ::
-                      exp.exp_extra;
-      }
-
+  | Pexp_open (ovf, me, e) -> begin
+      match !gen_mod_ident me with
+      | None ->
+        let (_id, tme, newenv) = !type_open ovf env sexp.pexp_loc me in
+        let exp = type_expect newenv e ty_expected_explained in
+        let od = { open_expr=tme; open_override=ovf;
+                   open_loc=loc; open_env=newenv; (*TODO*)
+                   open_attributes=sexp.pexp_attributes } in
+        { exp with
+          exp_extra = (Texp_open od, loc,
+                       sexp.pexp_attributes) ::
+                        exp.exp_extra;
+        }
+      | Some id ->
+        let pmod = Pmod_ident ({txt=Longident.Lident id; loc}) in
+        let popen = Pexp_open (ovf, {me with pmod_desc = pmod}, e) in
+        let e = Pexp_letmodule ({txt=id;loc}, me, {sexp with pexp_desc=popen}) in
+        type_expect env {pexp_desc=e; pexp_loc=loc; pexp_attributes=[]} ty_expected_explained
+    end
   | Pexp_extension ({ txt = ("ocaml.extension_constructor"
                              |"extension_constructor"); _ },
                     payload) ->

@@ -174,7 +174,10 @@ val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 (* Forward declaration, to be filled in by Typemod.type_open *)
 val type_open:
   (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
-   Parsetree.module_expr -> Typedtree.module_expr * Env.t) ref
+   Parsetree.module_expr -> 
+   (Ident.t * Types.module_declaration * Env.t) option *
+   Typedtree.module_expr * Env.t)
+    ref 
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
@@ -182,6 +185,7 @@ val type_object:
 val type_package:
   (Env.t -> Parsetree.module_expr -> Path.t -> Longident.t list ->
   Typedtree.module_expr * type_expr list) ref
+val gen_mod_ident : (Parsetree.module_expr -> string option) ref
 
 val create_package_type : Location.t -> Env.t ->
   Longident.t * (Longident.t * Parsetree.core_type) list ->
