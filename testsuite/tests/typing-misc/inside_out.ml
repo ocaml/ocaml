@@ -68,8 +68,6 @@ val f3' : unit -> unit = <fun>
 |}]
 
 
-(* no warning *)
-
 let (Left () : (unit, empty) t) = Left ();;
 [%%expect {|
 |}]
@@ -82,8 +80,6 @@ let f () =
 val f : unit -> unit = <fun>
 |}]
 
-(* warning *)
-
 let f () =
   let (Left () : (unit, empty) t) = Left () in
   ()
@@ -91,8 +87,6 @@ let f () =
 [%%expect{|
 val f : unit -> unit = <fun>
 |}]
-
-(* no warning *)
 
 let f () =
   match (Left () : (unit, empty) t) with
@@ -111,8 +105,6 @@ let f () =
 val f : unit -> unit = <fun>
 |}]
 
-(* warning *)
-
 let f () =
   match Left () with
   | (Left () : (unit, empty) t) -> ()
@@ -120,8 +112,6 @@ let f () =
 [%%expect {|
 val f : unit -> unit = <fun>
 |}]
-
-(* error *)
 
 let f () =
   match Left () with
