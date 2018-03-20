@@ -1166,14 +1166,14 @@ check_arch:
 
 .PHONY: check_all_arches
 check_all_arches:
-ifneq ($(shell grep '\#define ARCH_SIXTYFOUR' byterun/caml/m.h 2> /dev/null),)
+ifneq ($(shell grep -E '^\#define ARCH_SIXTYFOUR$$' byterun/caml/m.h 2> /dev/null),)
 	@STATUS=0; \
 	 for i in $(ARCHES); do \
 	   $(MAKE) --no-print-directory check_arch ARCH=$$i || STATUS=1; \
 	 done; \
 	 exit $$STATUS
 else
-	 @echo "Architecture tests are disable on 32-bit platforms."
+	 @echo "Architecture tests are disabled on 32-bit platforms."
 endif
 
 # Compiler Plugins
