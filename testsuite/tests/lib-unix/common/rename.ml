@@ -1,3 +1,7 @@
+(* TEST
+include unix
+*)
+
 (* Test the Unix.rename function *)
 
 let writefile filename contents =

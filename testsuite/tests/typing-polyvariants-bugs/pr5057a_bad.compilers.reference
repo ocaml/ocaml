@@ -1,0 +1,4 @@
+File "pr5057a_bad.ml", line 14, characters 48-49:
+Error: This expression has type 'a but an expression was expected of type
+         int -> T.t -> bool
+       The type constructor T.t would escape its scope

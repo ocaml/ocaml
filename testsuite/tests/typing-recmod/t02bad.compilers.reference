@@ -1,0 +1,3 @@
+File "t02bad.ml", line 10, characters 15-35:
+Error: The definition of A.t contains a cycle:
+       B.t
