@@ -1289,6 +1289,6 @@ distclean: clean
 	rm -f config/Makefile byterun/caml/m.h byterun/caml/s.h
 	rm -f tools/*.bak
 	rm -f ocaml ocamlc
-	rm -f testsuite/_log
+	rm -f testsuite/_log*
 
 include .depend
