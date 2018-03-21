@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+_ocamltestd
 *.odoc
 
 # local to root directory
@@ -242,7 +243,7 @@ _ocamltest
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
-/testsuite/**/_log
+/testsuite/**/_log*
 /testsuite/failure.stamp
 
 /testsuite/_retries
