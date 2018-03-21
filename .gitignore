@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+_ocamltestd
 *.odoc
 
 # local to root directory
