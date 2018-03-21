@@ -185,7 +185,7 @@ val type_object:
 val type_package:
   (Env.t -> Parsetree.module_expr -> Path.t -> Longident.t list ->
   Typedtree.module_expr * type_expr list) ref
-val gen_mod_ident : (Parsetree.module_expr -> string option) ref
+val gen_mod_ident : (Parsetree.module_expr -> Ident.t option) ref
 
 val create_package_type : Location.t -> Env.t ->
   Longident.t * (Longident.t * Parsetree.core_type) list ->

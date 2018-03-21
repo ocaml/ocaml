@@ -1,3 +1,7 @@
+(* TEST
+   * expect
+*)
+
 type t = A
 [%%expect{|
 type t = A
@@ -79,6 +83,8 @@ let () =
 include struct open struct type t = T end let x = T end
 [%%expect{|
 Line _, characters 15-41:
+  include struct open struct type t = T end let x = T end
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The module identifier M#7 cannot be eliminated from val x : M#7.t
 |}];;
 
@@ -106,6 +112,12 @@ module A = struct
 end
 [%%expect{|
 Line _, characters 2-74:
+  ..open struct
+      open struct
+        type t = T
+      end
+      let y = T
+    end
 Error: The module identifier M#10 cannot be eliminated from val g :
                                                               M#10.M#11.t
 |}]
@@ -113,6 +125,8 @@ Error: The module identifier M#10 cannot be eliminated from val g :
 module type S = sig open struct type t = T end val x : t end
 [%%expect{|
 Line _, characters 20-46:
+  module type S = sig open struct type t = T end val x : t end
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The module identifier M#12 cannot be eliminated from val x : M#12.t
 |}];;
 
@@ -253,5 +267,32 @@ module N = struct
 end
 [%%expect{|
 Line _, characters 24-50:
+      module type S = sig open struct type t = T end val x : t end
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The module identifier M#31 cannot be eliminated from val x : M#31.t
+|}]
+
+let x = let open struct open struct let y = 1 end let x = y + 1 end in x
+[%%expect{|
+val x : int = 2
+|}]
+
+let y =
+  let
+    open ((functor (X: sig val x : int end) -> struct X.x end)(struct let x = 1 end))
+  in x
+
+[%%expect{|
+val y : int = 2
+|}]
+
+let x = let open struct type t = T end in T
+
+[%%expect{|
+Line _, characters 42-43:
+  let x = let open struct type t = T end in T
+                                            ^
+Error: This expression has type M#35.t but an expression was expected of type
+         'a
+       The type constructor M#35.t would escape its scope
 |}]

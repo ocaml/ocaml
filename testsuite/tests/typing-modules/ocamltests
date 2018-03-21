@@ -2,6 +2,7 @@ aliases.ml
 applicative_functor_type.ml
 firstclass.ml
 generative.ml
+open_struct.ml
 pr5911.ml
 pr6394.ml
 pr7207.ml

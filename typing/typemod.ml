@@ -1939,7 +1939,7 @@ let gen_mod_ident me =
   match me.pmod_desc with
   | Pmod_functor _ | Pmod_extension _ -> assert false
   | Pmod_ident _ -> None
-  | _ -> Some((gen_mod_ident ()).Ident.name)
+  | _ -> Some(gen_mod_ident ())
 
 let () =
   Typecore.type_module := type_module_alias;
