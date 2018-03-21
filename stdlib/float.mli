@@ -66,6 +66,9 @@ val nan : float
     [=], [<], [<=], [>] and [>=] return [false] and [<>] returns [true]
     if one or both of their arguments is [nan]. *)
 
+val pi : float
+(** The constant pi. *)
+
 val max_float : float
 (** The largest positive finite value of type [float]. *)
 
