@@ -401,12 +401,7 @@ let merge_constraint initial_env remove_aliases loc sg constr =
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
         let mty = md'.md_type in
-        let mty =
-          if remove_aliases then
-            Mtype.remove_aliases env mty
-          else
-            Mtype.scrape_for_type_of env mty
-        in
+        let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
         let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
@@ -1769,13 +1764,7 @@ let type_module_type_of env smod =
     | _ -> type_module env smod
   in
   let mty = tmty.mod_type in
-  let mty =
-    if remove_aliases then
-      (* PR#6307: expand aliases at root and submodules *)
-      Mtype.remove_aliases env mty
-    else
-      Mtype.scrape_for_type_of env mty
-  in
+  let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
