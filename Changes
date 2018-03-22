@@ -5,6 +5,9 @@ Working version
 
 ### Language features:
 
+- GPR#1675: Allow GADT constructors to introduce equations under or-patterns
+  (Thomas Refis and Leo White, review by ...)
+
 - GRP#1705: Allow @@attributes on exceptions
   (Hugo Heuzard, review by Gabriel Radanne and Thomas Refis)
 
