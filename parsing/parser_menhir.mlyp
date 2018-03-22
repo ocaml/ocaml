@@ -773,14 +773,27 @@ The precedences must be listed from low to high.
 %type <Parsetree.pattern> parse_pattern
 %%
 
-/* Entry points */
-
+/* macros */
 %inline extra_str(symb): symb { extra_str $startpos $endpos $1 };
 %inline extra_sig(symb): symb { extra_sig $startpos $endpos $1 };
 %inline extra_cstr(symb): symb { extra_cstr $startpos $endpos $1 };
 %inline extra_csig(symb): symb { extra_csig $startpos $endpos $1 };
 %inline extra_def(symb): symb { extra_def $startpos $endpos $1 };
 %inline extra_text(symb): symb { extra_text $startpos $endpos $1 };
+
+%inline mkrhs(symb): symb
+    {
+      (* Semantically we could use $symbolstartpos instead of $startpos
+         here, but the code comes from calls to (Parsing.rhs_loc p) for
+         some position p, which rather corresponds to
+         $startpos, so we kept it for compatibility.
+
+         I do not know if mkrhs is ever used in a situation where $startpos
+         and $symbolpos do not coincide.  *)
+      mkrhs $1 (make_loc $startpos $endpos) }
+;
+
+/* Entry points */
 
 implementation:
     extra_str(structure) EOF                        { $1 }
@@ -837,8 +850,8 @@ parse_pattern:
 functor_arg:
     LPAREN RPAREN
       { _mkrhs2("*", 1, 2), None }
-  | LPAREN functor_arg_name COLON module_type RPAREN
-      { _mkrhs($2, 2), Some $4 }
+  | LPAREN mkrhs(functor_arg_name) COLON module_type RPAREN
+      { $2, Some $4 }
 ;
 
 functor_arg_name:
@@ -854,8 +867,8 @@ functor_args:
 ;
 
 module_expr:
-    mod_longident
-      { _mkmod(Pmod_ident (_mkrhs($1, 1))) }
+    mkrhs(mod_longident)
+      { _mkmod(Pmod_ident $1) }
   | STRUCT attributes extra_str(structure) END
       { _mkmod ~attrs:$2 (Pmod_structure($3)) }
   | STRUCT attributes structure error
@@ -972,10 +985,10 @@ module_binding_body:
       { _mkmod(Pmod_functor(fst $1, snd $1, $2)) }
 ;
 module_binding:
-    MODULE ext_attributes UIDENT module_binding_body post_item_attributes
+    MODULE ext_attributes mkrhs(UIDENT) module_binding_body post_item_attributes
       { let (ext, attrs) = $2 in
-        Mb.mk (_mkrhs($3, 3)) $4 ~attrs:(attrs@$5)
-            ~loc:(_symbol_rloc()) ~docs:(_symbol_docs())
+        Mb.mk $3 $4 ~attrs:(attrs@$5)
+            ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext }
 ;
 rec_module_bindings:
@@ -984,23 +997,23 @@ rec_module_bindings:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_binding:
-    MODULE ext_attributes REC UIDENT module_binding_body post_item_attributes
+    MODULE ext_attributes REC mkrhs(UIDENT) module_binding_body post_item_attributes
       { let (ext, attrs) = $2 in
-        Mb.mk (_mkrhs($4, 4)) $5 ~attrs:(attrs@$6)
-            ~loc:(_symbol_rloc()) ~docs:(_symbol_docs())
+        Mb.mk $4 $5 ~attrs:(attrs@$6)
+            ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext }
 ;
 and_module_binding:
-    AND attributes UIDENT module_binding_body post_item_attributes
-      { Mb.mk (_mkrhs($3, 3)) $4 ~attrs:($2@$5) ~loc:(_symbol_rloc())
+    AND attributes mkrhs(UIDENT) module_binding_body post_item_attributes
+      { Mb.mk $3 $4 ~attrs:($2@$5) ~loc:(_symbol_rloc())
                ~text:(_symbol_text()) ~docs:(_symbol_docs()) }
 ;
 
 /* Module types */
 
 module_type:
-    mty_longident
-      { _mkmty(Pmty_ident (_mkrhs($1, 1))) }
+    mkrhs(mty_longident)
+      { _mkmty(Pmty_ident $1) }
   | SIG attributes extra_sig(signature) END
       { _mkmty ~attrs:$2 (Pmty_signature ($3)) }
   | SIG attributes signature error
@@ -1019,8 +1032,8 @@ module_type:
       { _mkmty(Pmty_with($1, List.rev $3)) }
   | MODULE TYPE OF attributes module_expr %prec below_LBRACKETAT
       { _mkmty ~attrs:$4 (Pmty_typeof $5) }
-/*  | LPAREN MODULE mod_longident RPAREN
-      { _mkmty (Pmty_alias (_mkrhs($3, 3))) } */
+/*  | LPAREN MODULE mkrhs(mod_longident) RPAREN
+      { _mkmty (Pmty_alias $3) } */
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error
@@ -1068,9 +1081,9 @@ signature_item:
       { _mksig(Psig_attribute $1) }
 ;
 open_statement:
-  | OPEN override_flag ext_attributes mod_longident post_item_attributes
+  | OPEN override_flag ext_attributes mkrhs(mod_longident) post_item_attributes
       { let (ext, attrs) = $3 in
-        Opn.mk (_mkrhs($4, 4)) ~override:$2 ~attrs:(attrs@$5)
+        Opn.mk $4 ~override:$2 ~attrs:(attrs@$5)
           ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext}
 ;
@@ -1089,17 +1102,17 @@ module_declaration_body:
         _mkmty(Pmty_functor(name, typ, $2)) }
 ;
 module_declaration:
-    MODULE ext_attributes UIDENT module_declaration_body post_item_attributes
+    MODULE ext_attributes mkrhs(UIDENT) module_declaration_body post_item_attributes
       { let (ext, attrs) = $2 in
-        Md.mk (_mkrhs($3, 3)) $4 ~attrs:(attrs@$5)
+        Md.mk $3 $4 ~attrs:(attrs@$5)
           ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext }
 ;
 module_alias:
-    MODULE ext_attributes UIDENT EQUAL mod_longident post_item_attributes
+    MODULE ext_attributes mkrhs(UIDENT) EQUAL mkrhs(mod_longident) post_item_attributes
       { let (ext, attrs) = $2 in
-        Md.mk (_mkrhs($3, 3))
-          (Mty.alias ~loc:(_rhs_loc(5)) (_mkrhs($5, 5))) ~attrs:(attrs@$6)
+        Md.mk $3
+          (Mty.alias ~loc:(_rhs_loc(5)) $5) ~attrs:(attrs@$6)
              ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext }
 ;
@@ -1110,15 +1123,15 @@ rec_module_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 rec_module_declaration:
-    MODULE ext_attributes REC UIDENT COLON module_type post_item_attributes
+    MODULE ext_attributes REC mkrhs(UIDENT) COLON module_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Md.mk (_mkrhs($4, 4)) $6 ~attrs:(attrs@$7)
+        Md.mk $4 $6 ~attrs:(attrs@$7)
             ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext}
 ;
 and_module_declaration:
-    AND attributes UIDENT COLON module_type post_item_attributes
-      { Md.mk (_mkrhs($3, 3)) $5 ~attrs:($2@$6) ~loc:(_symbol_rloc())
+    AND attributes mkrhs(UIDENT) COLON module_type post_item_attributes
+      { Md.mk $3 $5 ~attrs:($2@$6) ~loc:(_symbol_rloc())
               ~text:(_symbol_text()) ~docs:(_symbol_docs()) }
 ;
 module_type_declaration_body:
@@ -1126,10 +1139,10 @@ module_type_declaration_body:
   | EQUAL module_type         { Some $2 }
 ;
 module_type_declaration:
-    MODULE TYPE ext_attributes ident module_type_declaration_body
+    MODULE TYPE ext_attributes mkrhs(ident) module_type_declaration_body
     post_item_attributes
       { let (ext, attrs) = $3 in
-        Mtd.mk (_mkrhs($4, 4)) ?typ:$5 ~attrs:(attrs@$6)
+        Mtd.mk $4 ?typ:$5 ~attrs:(attrs@$6)
           ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext }
 ;
@@ -1142,17 +1155,17 @@ class_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_declaration:
-    CLASS ext_attributes virtual_flag class_type_parameters LIDENT
+    CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT)
     class_fun_binding post_item_attributes
       { let (ext, attrs) = $2 in
-        Ci.mk (_mkrhs($5, 5)) $6 ~virt:$3 ~params:$4 ~attrs:(attrs@$7)
+        Ci.mk $5 $6 ~virt:$3 ~params:$4 ~attrs:(attrs@$7)
             ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext }
 ;
 and_class_declaration:
-    AND attributes virtual_flag class_type_parameters LIDENT class_fun_binding
+    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT) class_fun_binding
     post_item_attributes
-      { Ci.mk (_mkrhs($5, 5)) $6 ~virt:$3 ~params:$4
+      { Ci.mk $5 $6 ~virt:$3 ~params:$4
          ~attrs:($2@$7) ~loc:(_symbol_rloc ())
          ~text:(_symbol_text ()) ~docs:(_symbol_docs ()) }
 ;
@@ -1183,18 +1196,18 @@ class_expr:
       { _mkclass(Pcl_apply($1, List.rev $2)) }
   | let_bindings IN class_expr
       { _class_of_let_bindings $1 $3 }
-  | LET OPEN override_flag attributes mod_longident IN class_expr
-      { _wrap_class_attrs (_mkclass(Pcl_open($3, _mkrhs($5, 5), $7))) $4 }
+  | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_expr
+      { _wrap_class_attrs (_mkclass(Pcl_open($3, $5, $7))) $4 }
   | class_expr attribute
       { Cl.attr $1 $2 }
   | extension
       { _mkclass(Pcl_extension $1) }
 ;
 class_simple_expr:
-    LBRACKET core_type_comma_list RBRACKET class_longident
-      { _mkclass(Pcl_constr(_mkrhs($4, 4), List.rev $2)) }
-  | class_longident
-      { _mkclass(Pcl_constr(_mkrhs($1, 1), [])) }
+    LBRACKET core_type_comma_list RBRACKET mkrhs(class_longident)
+      { _mkclass(Pcl_constr($4, List.rev $2)) }
+  | mkrhs(class_longident)
+      { _mkclass(Pcl_constr($1, [])) }
   | OBJECT attributes class_structure END
       { _mkclass ~attrs:$2 (Pcl_structure $3) }
   | OBJECT attributes class_structure error
@@ -1246,25 +1259,25 @@ class_field:
       { _mkcf (Pcf_attribute $1) }
 ;
 parent_binder:
-    AS LIDENT
-          { Some (_mkrhs($2, 2)) }
+    AS mkrhs(LIDENT)
+          { Some $2 }
   | /* empty */
           { None }
 ;
 value:
 /* TODO: factorize these rules (also with method): */
-    override_flag attributes MUTABLE VIRTUAL label COLON core_type
+    override_flag attributes MUTABLE VIRTUAL mkrhs(label) COLON core_type
       { if $1 = Override then syntax_error ();
-        (_mkrhs($5, 5), Mutable, Cfk_virtual $7), $2 }
-  | override_flag attributes VIRTUAL mutable_flag label COLON core_type
+        ($5, Mutable, Cfk_virtual $7), $2 }
+  | override_flag attributes VIRTUAL mutable_flag mkrhs(label) COLON core_type
       { if $1 = Override then syntax_error ();
-        (_mkrhs($5, 5), $4, Cfk_virtual $7), $2 }
-  | override_flag attributes mutable_flag label EQUAL seq_expr
-      { (_mkrhs($4, 4), $3, Cfk_concrete ($1, $6)), $2 }
-  | override_flag attributes mutable_flag label type_constraint EQUAL seq_expr
+        ($5, $4, Cfk_virtual $7), $2 }
+  | override_flag attributes mutable_flag mkrhs(label) EQUAL seq_expr
+      { ($4, $3, Cfk_concrete ($1, $6)), $2 }
+  | override_flag attributes mutable_flag mkrhs(label) type_constraint EQUAL seq_expr
       {
        let e = _mkexp_constraint $7 $5 in
-       (_mkrhs($4, 4), $3, Cfk_concrete ($1, e)), $2
+       ($4, $3, Cfk_concrete ($1, e)), $2
       }
 ;
 method_:
@@ -1307,10 +1320,10 @@ class_type:
       { _mkcty(Pcty_arrow(Nolabel, $1, $3)) }
  ;
 class_signature:
-    LBRACKET core_type_comma_list RBRACKET clty_longident
-      { _mkcty(Pcty_constr (_mkrhs($4, 4), List.rev $2)) }
-  | clty_longident
-      { _mkcty(Pcty_constr (_mkrhs($1, 1), [])) }
+    LBRACKET core_type_comma_list RBRACKET mkrhs(clty_longident)
+      { _mkcty(Pcty_constr ($4, List.rev $2)) }
+  | mkrhs(clty_longident)
+      { _mkcty(Pcty_constr ($1, [])) }
   | OBJECT attributes class_sig_body END
       { _mkcty ~attrs:$2 (Pcty_signature $3) }
   | OBJECT attributes class_sig_body error
@@ -1319,8 +1332,8 @@ class_signature:
       { Cty.attr $1 $2 }
   | extension
       { _mkcty(Pcty_extension $1) }
-  | LET OPEN override_flag attributes mod_longident IN class_signature
-      { _wrap_class_type_attrs (_mkcty(Pcty_open($3, _mkrhs($5, 5), $7))) $4 }
+  | LET OPEN override_flag attributes mkrhs(mod_longident) IN class_signature
+      { _wrap_class_type_attrs (_mkcty(Pcty_open($3, $5, $7))) $4 }
 ;
 class_sig_body:
     class_self_type extra_csig(class_sig_fields)
@@ -1341,12 +1354,12 @@ class_sig_field:
       { _mkctf (Pctf_inherit $3) ~attrs:($2@$4) ~docs:(_symbol_docs ()) }
   | VAL attributes value_type post_item_attributes
       { _mkctf (Pctf_val $3) ~attrs:($2@$4) ~docs:(_symbol_docs ()) }
-  | METHOD attributes private_virtual_flags label COLON poly_type
+  | METHOD attributes private_virtual_flags mkrhs(label) COLON poly_type
     post_item_attributes
       {
        let (p, v) = $3 in
-       _mkctf (Pctf_method (_mkrhs($4, 4), p, v, $6))
-             ~attrs:($2@$7) ~docs:(_symbol_docs ())
+       _mkctf (Pctf_method ($4, p, v, $6))
+         ~attrs:($2@$7) ~docs:(_symbol_docs ())
       }
   | CONSTRAINT attributes constrain_field post_item_attributes
       { _mkctf (Pctf_constraint $3) ~attrs:($2@$4) ~docs:(_symbol_docs ()) }
@@ -1356,12 +1369,12 @@ class_sig_field:
       { _mkctf(Pctf_attribute $1) }
 ;
 value_type:
-    VIRTUAL mutable_flag label COLON core_type
-      { _mkrhs($3, 3), $2, Virtual, $5 }
-  | MUTABLE virtual_flag label COLON core_type
-      { _mkrhs($3, 3), Mutable, $2, $5 }
-  | label COLON core_type
-      { _mkrhs($1, 1), Immutable, Concrete, $3 }
+    VIRTUAL mutable_flag mkrhs(label) COLON core_type
+      { $3, $2, Virtual, $5 }
+  | MUTABLE virtual_flag mkrhs(label) COLON core_type
+      { $3, Mutable, $2, $5 }
+  | mkrhs(label) COLON core_type
+      { $1, Immutable, Concrete, $3 }
 ;
 constrain:
         core_type EQUAL core_type          { $1, $3, _symbol_rloc() }
@@ -1376,17 +1389,17 @@ class_descriptions:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_description:
-    CLASS ext_attributes virtual_flag class_type_parameters LIDENT COLON
+    CLASS ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT) COLON
     class_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Ci.mk (_mkrhs($5, 5)) $7 ~virt:$3 ~params:$4 ~attrs:(attrs @ $8)
+        Ci.mk $5 $7 ~virt:$3 ~params:$4 ~attrs:(attrs @ $8)
             ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext }
 ;
 and_class_description:
-    AND attributes virtual_flag class_type_parameters LIDENT COLON class_type
+    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT) COLON class_type
     post_item_attributes
-      { Ci.mk (_mkrhs($5, 5)) $7 ~virt:$3 ~params:$4
+      { Ci.mk $5 $7 ~virt:$3 ~params:$4
               ~attrs:($2@$8) ~loc:(_symbol_rloc ())
               ~text:(_symbol_text ()) ~docs:(_symbol_docs ()) }
 ;
@@ -1397,17 +1410,17 @@ class_type_declarations:
       { let (l, ext) = $1 in ($2 :: l, ext) }
 ;
 class_type_declaration:
-    CLASS TYPE ext_attributes virtual_flag class_type_parameters LIDENT EQUAL
+    CLASS TYPE ext_attributes virtual_flag class_type_parameters mkrhs(LIDENT) EQUAL
     class_signature post_item_attributes
       { let (ext, attrs) = $3 in
-        Ci.mk (_mkrhs($6, 6)) $8 ~virt:$4 ~params:$5 ~attrs:(attrs@$9)
+        Ci.mk $6 $8 ~virt:$4 ~params:$5 ~attrs:(attrs@$9)
             ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext}
 ;
 and_class_type_declaration:
-    AND attributes virtual_flag class_type_parameters LIDENT EQUAL
+    AND attributes virtual_flag class_type_parameters mkrhs(LIDENT) EQUAL
     class_signature post_item_attributes
-      { Ci.mk (_mkrhs($5, 5)) $7 ~virt:$3 ~params:$4
+      { Ci.mk $5 $7 ~virt:$3 ~params:$4
          ~attrs:($2@$8) ~loc:(_symbol_rloc ())
          ~text:(_symbol_text ()) ~docs:(_symbol_docs ()) }
 ;
@@ -1442,7 +1455,7 @@ labeled_simple_pattern:
       { (Nolabel, None, $1) }
 ;
 pattern_var:
-    LIDENT            { _mkpat(Ppat_var (_mkrhs($1, 1))) }
+    mkrhs(LIDENT)            { _mkpat(Ppat_var $1) }
   | UNDERSCORE        { _mkpat Ppat_any }
 ;
 opt_default:
@@ -1456,7 +1469,7 @@ label_let_pattern:
       { let (lab, pat) = $1 in (lab, _mkpat(Ppat_constraint(pat, $3))) }
 ;
 label_var:
-    LIDENT    { ($1, _mkpat(Ppat_var (_mkrhs($1, 1)))) }
+    mkrhs(LIDENT)    { ($1.Location.txt, _mkpat(Ppat_var $1)) }
 ;
 let_pattern:
     pattern
@@ -1471,12 +1484,12 @@ expr:
       { _mkexp(Pexp_apply($1, List.rev $2)) }
   | let_bindings IN seq_expr
       { _expr_of_let_bindings $1 $3 }
-  | LET MODULE ext_attributes UIDENT module_binding_body IN seq_expr
-      { _mkexp_attrs (Pexp_letmodule(_mkrhs($4, 4), $5, $7)) $3 }
+  | LET MODULE ext_attributes mkrhs(UIDENT) module_binding_body IN seq_expr
+      { _mkexp_attrs (Pexp_letmodule($4, $5, $7)) $3 }
   | LET EXCEPTION ext_attributes let_exception_declaration IN seq_expr
       { _mkexp_attrs (Pexp_letexception($4, $6)) $3 }
-  | LET OPEN override_flag ext_attributes mod_longident IN seq_expr
-      { _mkexp_attrs (Pexp_open($3, _mkrhs($5, 5), $7)) $4 }
+  | LET OPEN override_flag ext_attributes mkrhs(mod_longident) IN seq_expr
+      { _mkexp_attrs (Pexp_open($3, $5, $7)) $4 }
   | FUNCTION ext_attributes opt_bar match_cases
       { _mkexp_attrs (Pexp_function(List.rev $4)) $2 }
   | FUN ext_attributes labeled_simple_pattern fun_def
@@ -1492,8 +1505,8 @@ expr:
       { syntax_error() }
   | expr_comma_list %prec below_COMMA
       { _mkexp(Pexp_tuple(List.rev $1)) }
-  | constr_longident simple_expr %prec below_HASH
-      { _mkexp(Pexp_construct(_mkrhs($1, 1), Some $2)) }
+  | mkrhs(constr_longident) simple_expr %prec below_HASH
+      { _mkexp(Pexp_construct($1, Some $2)) }
   | name_tag simple_expr %prec below_HASH
       { _mkexp(Pexp_variant($1, Some $2)) }
   | IF ext_attributes seq_expr THEN expr ELSE expr
@@ -1551,8 +1564,8 @@ expr:
       { _mkuminus $1 $2 }
   | additive expr %prec prec_unary_plus
       { _mkuplus $1 $2 }
-  | simple_expr DOT label_longident LESSMINUS expr
-      { _mkexp(Pexp_setfield($1, _mkrhs($3, 3), $5)) }
+  | simple_expr DOT mkrhs(label_longident) LESSMINUS expr
+      { _mkexp(Pexp_setfield($1, $3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
       { _mkexp(Pexp_apply(_ghexp(Pexp_ident(_array_function "Array" "set")),
                          [Nolabel,$1; Nolabel,$4; Nolabel,$7])) }
@@ -1579,8 +1592,8 @@ expr:
   | simple_expr DOT mod_longident DOTOP LBRACE expr RBRACE LESSMINUS expr
       { let id = _mkexp @@ Pexp_ident(_ghloc @@ Ldot($3, "." ^ $4 ^ "{}<-")) in
         _mkexp @@ Pexp_apply(id , [Nolabel, $1; Nolabel, $6; Nolabel, $9]) }
-  | label LESSMINUS expr
-      { _mkexp(Pexp_setinstvar(_mkrhs($1, 1), $3)) }
+  | mkrhs(label) LESSMINUS expr
+      { _mkexp(Pexp_setinstvar($1, $3)) }
   | ASSERT ext_attributes simple_expr %prec below_HASH
       { _mkexp_attrs (Pexp_assert $3) $2 }
   | LAZY ext_attributes simple_expr %prec below_HASH
@@ -1595,12 +1608,12 @@ expr:
      { _not_expecting(1, "wildcard \"_\"") }
 ;
 simple_expr:
-    val_longident
-      { _mkexp(Pexp_ident (_mkrhs($1, 1))) }
+    mkrhs(val_longident)
+      { _mkexp(Pexp_ident ($1)) }
   | constant
       { _mkexp(Pexp_constant $1) }
-  | constr_longident %prec prec_constant_constructor
-      { _mkexp(Pexp_construct(_mkrhs($1, 1), None)) }
+  | mkrhs(constr_longident) %prec prec_constant_constructor
+      { _mkexp(Pexp_construct($1, None)) }
   | name_tag %prec prec_constant_constructor
       { _mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
@@ -1616,12 +1629,12 @@ simple_expr:
       { _unclosed("begin", 1, "end", 4) }
   | LPAREN seq_expr type_constraint RPAREN
       { _mkexp_constraint $2 $3 }
-  | simple_expr DOT label_longident
-      { _mkexp(Pexp_field($1, _mkrhs($3, 3))) }
-  | mod_longident DOT LPAREN seq_expr RPAREN
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), $4)) }
-  | mod_longident DOT LPAREN RPAREN
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1),
+  | simple_expr DOT mkrhs(label_longident)
+      { _mkexp(Pexp_field($1, $3)) }
+  | mkrhs(mod_longident) DOT LPAREN seq_expr RPAREN
+      { _mkexp(Pexp_open(Fresh, $1, $4)) }
+  | mkrhs(mod_longident) DOT LPAREN RPAREN
+      { _mkexp(Pexp_open(Fresh, $1,
                         _mkexp(Pexp_construct(_mkrhs2((Lident "()"), 3, 4),
                                               None)))) }
   | mod_longident DOT LPAREN seq_expr error
@@ -1674,10 +1687,10 @@ simple_expr:
       { let (exten, fields) = $2 in _mkexp (Pexp_record(fields, exten)) }
   | LBRACE record_expr error
       { _unclosed("{", 1, "}", 3) }
-  | mod_longident DOT LBRACE record_expr RBRACE
+  | mkrhs(mod_longident) DOT LBRACE record_expr RBRACE
       { let (exten, fields) = $4 in
         let rec_exp = _mkexp(Pexp_record(fields, exten)) in
-        _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), rec_exp)) }
+        _mkexp(Pexp_open(Fresh, $1, rec_exp)) }
   | mod_longident DOT LBRACE record_expr error
       { _unclosed("{", 3, "}", 5) }
   | LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
@@ -1686,21 +1699,21 @@ simple_expr:
       { _unclosed("[|", 1, "|]", 4) }
   | LBRACKETBAR BARRBRACKET
       { _mkexp (Pexp_array []) }
-  | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), _mkexp(Pexp_array(List.rev $4)))) }
- | mod_longident DOT LBRACKETBAR BARRBRACKET
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), _mkexp(Pexp_array []))) }
+  | mkrhs(mod_longident) DOT LBRACKETBAR expr_semi_list opt_semi BARRBRACKET
+      { _mkexp(Pexp_open(Fresh, $1, _mkexp(Pexp_array(List.rev $4)))) }
+  | mkrhs(mod_longident) DOT LBRACKETBAR BARRBRACKET
+      { _mkexp(Pexp_open(Fresh, $1, _mkexp(Pexp_array []))) }
   | mod_longident DOT LBRACKETBAR expr_semi_list opt_semi error
       { _unclosed("[|", 3, "|]", 6) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
       { _reloc_exp (mktailexp (_rhs_loc(4)) (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { _unclosed("[", 1, "]", 4) }
-  | mod_longident DOT LBRACKET expr_semi_list opt_semi RBRACKET
+  | mkrhs(mod_longident) DOT LBRACKET expr_semi_list opt_semi RBRACKET
       { let list_exp = _reloc_exp (mktailexp (_rhs_loc(6)) (List.rev $4)) in
-        _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), list_exp)) }
-  | mod_longident DOT LBRACKET RBRACKET
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1),
+        _mkexp(Pexp_open(Fresh, $1, list_exp)) }
+  | mkrhs(mod_longident) DOT LBRACKET RBRACKET
+      { _mkexp(Pexp_open(Fresh, $1,
                         _mkexp(Pexp_construct(_mkrhs2((Lident "[]"), 3, 4),
                                               None)))) }
   | mod_longident DOT LBRACKET expr_semi_list opt_semi error
@@ -1709,20 +1722,20 @@ simple_expr:
       { _mkexp(Pexp_apply(_mkoperator($1, 1), [Nolabel,$2])) }
   | BANG simple_expr
       { _mkexp(Pexp_apply(_mkoperator("!", 1), [Nolabel,$2])) }
-  | NEW ext_attributes class_longident
-      { _mkexp_attrs (Pexp_new(_mkrhs($3, 3))) $2 }
+  | NEW ext_attributes mkrhs(class_longident)
+      { _mkexp_attrs (Pexp_new($3)) $2 }
   | LBRACELESS field_expr_list GREATERRBRACE
       { _mkexp (Pexp_override $2) }
   | LBRACELESS field_expr_list error
       { _unclosed("{<", 1, ">}", 3) }
   | LBRACELESS GREATERRBRACE
       { _mkexp (Pexp_override [])}
-  | mod_longident DOT LBRACELESS field_expr_list GREATERRBRACE
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1), _mkexp (Pexp_override $4)))}
+  | mkrhs(mod_longident) DOT LBRACELESS field_expr_list GREATERRBRACE
+      { _mkexp(Pexp_open(Fresh, $1, _mkexp (Pexp_override $4)))}
   | mod_longident DOT LBRACELESS field_expr_list error
       { _unclosed("{<", 3, ">}", 5) }
-  | simple_expr HASH label
-      { _mkexp(Pexp_send($1, _mkrhs($3, 3))) }
+  | simple_expr HASH mkrhs(label)
+      { _mkexp(Pexp_send($1, $3)) }
   | simple_expr HASHOP simple_expr
       { _mkinfix $1 $2 $3 }
   | LPAREN MODULE ext_attributes module_expr RPAREN
@@ -1732,9 +1745,9 @@ simple_expr:
                     $3 }
   | LPAREN MODULE ext_attributes module_expr COLON error
       { _unclosed("(", 1, ")", 6) }
-  | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON
+  | mkrhs(mod_longident) DOT LPAREN MODULE ext_attributes module_expr COLON
     package_type RPAREN
-      { _mkexp(Pexp_open(Fresh, _mkrhs($1, 1),
+      { _mkexp(Pexp_open(Fresh, $1,
         _mkexp_attrs(Pexp_constraint (_ghexp(Pexp_pack $6), $8))
                     $5 )) }
   | mod_longident DOT LPAREN MODULE ext_attributes module_expr COLON error
@@ -1768,8 +1781,8 @@ label_ident:
     LIDENT   { ($1, _mkexp(Pexp_ident(_mkrhs((Lident $1), 1)))) }
 ;
 lident_list:
-    LIDENT                            { [_mkrhs($1, 1)] }
-  | LIDENT lident_list                { _mkrhs($1, 1) :: $2 }
+    mkrhs(LIDENT)                     { [$1] }
+  | mkrhs(LIDENT) lident_list         { $1 :: $2 }
 ;
 let_binding_body:
     val_ident strict_binding
@@ -1870,20 +1883,20 @@ lbl_expr_list:
   |  lbl_expr SEMI { [$1] }
 ;
 lbl_expr:
-    label_longident opt_type_constraint EQUAL expr
-      { (_mkrhs($1, 1), _mkexp_opt_constraint $4 $2) }
-  | label_longident opt_type_constraint
-      { (_mkrhs($1, 1), _mkexp_opt_constraint (_exp_of_label($1, 1)) $2) }
+    mkrhs(label_longident) opt_type_constraint EQUAL expr
+      { ($1, _mkexp_opt_constraint $4 $2) }
+  | mkrhs(label_longident) opt_type_constraint
+      { ($1, _mkexp_opt_constraint (_exp_of_label($1.Location.txt, 1)) $2) }
 ;
 field_expr_list:
     field_expr opt_semi { [$1] }
   | field_expr SEMI field_expr_list { $1 :: $3 }
 ;
 field_expr:
-    label EQUAL expr
-      { (_mkrhs($1, 1), $3) }
-  | label
-      { (_mkrhs($1, 1), _exp_of_label((Lident $1), 1)) }
+    mkrhs(label) EQUAL expr
+      { ($1, $3) }
+  | mkrhs(label)
+      { ($1, _exp_of_label((Lident $1.Location.txt), 1)) }
 ;
 expr_semi_list:
     expr                                        { [$1] }
@@ -1904,8 +1917,8 @@ opt_type_constraint:
 /* Patterns */
 
 pattern:
-  | pattern AS val_ident
-      { _mkpat(Ppat_alias($1, _mkrhs($3, 3))) }
+  | pattern AS mkrhs(val_ident)
+      { _mkpat(Ppat_alias($1, $3)) }
   | pattern AS error
       { _expecting(3, "identifier") }
   | pattern_comma_list  %prec below_COMMA
@@ -1925,8 +1938,8 @@ pattern:
   | pattern_gen { $1 }
 ;
 pattern_no_exn:
-  | pattern_no_exn AS val_ident
-      { _mkpat(Ppat_alias($1, _mkrhs($3, 3))) }
+  | pattern_no_exn AS mkrhs(val_ident)
+      { _mkpat(Ppat_alias($1, $3)) }
   | pattern_no_exn AS error
       { _expecting(3, "identifier") }
   | pattern_no_exn_comma_list  %prec below_COMMA
@@ -1946,16 +1959,16 @@ pattern_no_exn:
 pattern_gen:
     simple_pattern
       { $1 }
-  | constr_longident pattern %prec prec_constr_appl
-      { _mkpat(Ppat_construct(_mkrhs($1, 1), Some $2)) }
+  | mkrhs(constr_longident) pattern %prec prec_constr_appl
+      { _mkpat(Ppat_construct($1, Some $2)) }
   | name_tag pattern %prec prec_constr_appl
       { _mkpat(Ppat_variant($1, Some $2)) }
   | LAZY ext_attributes simple_pattern
       { _mkpat_attrs (Ppat_lazy $3) $2}
 ;
 simple_pattern:
-    val_ident %prec below_EQUAL
-      { _mkpat(Ppat_var (_mkrhs($1, 1))) }
+    mkrhs(val_ident) %prec below_EQUAL
+      { _mkpat(Ppat_var ($1)) }
   | simple_pattern_not_ident { $1 }
 ;
 simple_pattern_not_ident:
@@ -1965,24 +1978,24 @@ simple_pattern_not_ident:
       { _mkpat(Ppat_constant $1) }
   | signed_constant DOTDOT signed_constant
       { _mkpat(Ppat_interval ($1, $3)) }
-  | constr_longident
-      { _mkpat(Ppat_construct(_mkrhs($1, 1), None)) }
+  | mkrhs(constr_longident)
+      { _mkpat(Ppat_construct($1, None)) }
   | name_tag
       { _mkpat(Ppat_variant($1, None)) }
-  | HASH type_longident
-      { _mkpat(Ppat_type (_mkrhs($2, 2))) }
+  | HASH mkrhs(type_longident)
+      { _mkpat(Ppat_type ($2)) }
   | simple_delimited_pattern
       { $1 }
-  | mod_longident DOT simple_delimited_pattern
-      { _mkpat @@ Ppat_open(_mkrhs($1, 1), $3) }
-  | mod_longident DOT LBRACKET RBRACKET
-    { _mkpat @@ Ppat_open(_mkrhs($1, 1), _mkpat @@
+  | mkrhs(mod_longident) DOT simple_delimited_pattern
+      { _mkpat @@ Ppat_open($1, $3) }
+  | mkrhs(mod_longident) DOT LBRACKET RBRACKET
+    { _mkpat @@ Ppat_open($1, _mkpat @@
                Ppat_construct ( _mkrhs2((Lident "[]"), 3, 4), None)) }
-  | mod_longident DOT LPAREN RPAREN
-      { _mkpat @@ Ppat_open( _mkrhs($1, 1), _mkpat @@
+  | mkrhs(mod_longident) DOT LPAREN RPAREN
+      { _mkpat @@ Ppat_open($1, _mkpat @@
                  Ppat_construct ( _mkrhs2((Lident "()"), 3, 4), None) ) }
-  | mod_longident DOT LPAREN pattern RPAREN
-      { _mkpat @@ Ppat_open (_mkrhs($1, 1), $4) }
+  | mkrhs(mod_longident) DOT LPAREN pattern RPAREN
+      { _mkpat @@ Ppat_open ($1, $4) }
   | mod_longident DOT LPAREN pattern error
       { _unclosed("(", 3, ")", 5)  }
   | mod_longident DOT LPAREN error
@@ -1997,11 +2010,11 @@ simple_pattern_not_ident:
       { _unclosed("(", 1, ")", 5) }
   | LPAREN pattern COLON error
       { _expecting(4, "type") }
-  | LPAREN MODULE ext_attributes UIDENT RPAREN
-      { _mkpat_attrs (Ppat_unpack (_mkrhs($4, 4))) $3 }
-  | LPAREN MODULE ext_attributes UIDENT COLON package_type RPAREN
+  | LPAREN MODULE ext_attributes mkrhs(UIDENT) RPAREN
+      { _mkpat_attrs (Ppat_unpack $4) $3 }
+  | LPAREN MODULE ext_attributes mkrhs(UIDENT) COLON package_type RPAREN
       { _mkpat_attrs
-          (Ppat_constraint(_mkpat(Ppat_unpack (_mkrhs($4, 4))), $6))
+          (Ppat_constraint(_mkpat(Ppat_unpack $4), $6))
           $3 }
   | LPAREN MODULE ext_attributes UIDENT COLON package_type error
       { _unclosed("(", 1, ")", 7) }
@@ -2047,10 +2060,10 @@ lbl_pattern_list:
       { let (fields, closed) = $3 in $1 :: fields, closed }
 ;
 lbl_pattern:
-    label_longident opt_pattern_type_constraint EQUAL pattern
-     { (_mkrhs($1, 1), _mkpat_opt_constraint $4 $2) }
-  | label_longident opt_pattern_type_constraint
-     { (_mkrhs($1, 1), _mkpat_opt_constraint (_pat_of_label($1, 1)) $2) }
+    mkrhs(label_longident) opt_pattern_type_constraint EQUAL pattern
+     { ($1, _mkpat_opt_constraint $4 $2) }
+  | mkrhs(label_longident) opt_pattern_type_constraint
+     { ($1, _mkpat_opt_constraint (_pat_of_label($1.Location.txt, 1)) $2) }
 ;
 opt_pattern_type_constraint:
     COLON core_type { Some $2 }
@@ -2060,9 +2073,9 @@ opt_pattern_type_constraint:
 /* Value descriptions */
 
 value_description:
-    VAL ext_attributes val_ident COLON core_type post_item_attributes
+    VAL ext_attributes mkrhs(val_ident) COLON core_type post_item_attributes
       { let (ext, attrs) = $2 in
-        Val.mk (_mkrhs($3, 3)) $5 ~attrs:(attrs@$6)
+        Val.mk $3 $5 ~attrs:(attrs@$6)
               ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ())
       , ext }
 ;
@@ -2074,10 +2087,10 @@ primitive_declaration_body:
   | STRING primitive_declaration_body           { fst $1 :: $2 }
 ;
 primitive_declaration:
-    EXTERNAL ext_attributes val_ident COLON core_type EQUAL
+    EXTERNAL ext_attributes mkrhs(val_ident) COLON core_type EQUAL
     primitive_declaration_body post_item_attributes
       { let (ext, attrs) = $2 in
-        Val.mk (_mkrhs($3, 3)) $5 ~prim:$7 ~attrs:(attrs@$8)
+        Val.mk $3 $5 ~prim:$7 ~attrs:(attrs@$8)
               ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
       , ext }
 ;
@@ -2092,22 +2105,22 @@ type_declarations:
 ;
 
 type_declaration:
-    TYPE ext_attributes nonrec_flag optional_type_parameters LIDENT
+    TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(LIDENT)
     type_kind constraints post_item_attributes
       { let (kind, priv, manifest) = $6 in
         let (ext, attrs) = $2 in
         let ty =
-          Type.mk (_mkrhs($5, 5)) ~params:$4 ~cstrs:(List.rev $7) ~kind
+          Type.mk $5 ~params:$4 ~cstrs:(List.rev $7) ~kind
             ~priv ?manifest ~attrs:(attrs@$8)
             ~loc:(_symbol_rloc ()) ~docs:(_symbol_docs ())
         in
           ($3, ty, ext) }
 ;
 and_type_declaration:
-    AND attributes optional_type_parameters LIDENT type_kind constraints
+    AND attributes optional_type_parameters mkrhs(LIDENT) type_kind constraints
     post_item_attributes
       { let (kind, priv, manifest) = $5 in
-          Type.mk (_mkrhs($4, 4)) ~params:$3 ~cstrs:(List.rev $6)
+          Type.mk $4 ~params:$3 ~cstrs:(List.rev $6)
             ~kind ~priv ?manifest ~attrs:($2@$7) ~loc:(_symbol_rloc ())
             ~text:(_symbol_text ()) ~docs:(_symbol_docs ()) }
 ;
@@ -2179,45 +2192,45 @@ constructor_declarations:
   | constructor_declarations bar_constructor_declaration { $2 :: $1 }
 ;
 constructor_declaration:
-  | constr_ident generalized_constructor_arguments attributes
+  | mkrhs(constr_ident) generalized_constructor_arguments attributes
       {
        let args,res = $2 in
-       Type.constructor (_mkrhs($1, 1)) ~args ?res ~attrs:$3
+       Type.constructor $1 ~args ?res ~attrs:$3
          ~loc:(_symbol_rloc()) ~info:(_symbol_info ())
       }
 ;
 bar_constructor_declaration:
-  | BAR constr_ident generalized_constructor_arguments attributes
+  | BAR mkrhs(constr_ident) generalized_constructor_arguments attributes
       {
        let args,res = $3 in
-       Type.constructor (_mkrhs($2, 2)) ~args ?res ~attrs:$4
+       Type.constructor $2 ~args ?res ~attrs:$4
          ~loc:(_symbol_rloc()) ~info:(_symbol_info ())
       }
 ;
 str_exception_declaration:
   | sig_exception_declaration                    { $1 }
-  | EXCEPTION ext_attributes constr_ident EQUAL constr_longident attributes
+  | EXCEPTION ext_attributes mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
     post_item_attributes
     { let (ext,attrs) = $2 in
       Te.mk_exception ~attrs:$7
-        (Te.rebind (_mkrhs($3, 3)) (_mkrhs($5, 5)) ~attrs:(attrs @ $6)
+        (Te.rebind $3 $5 ~attrs:(attrs @ $6)
            ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ()))
     , ext }
 ;
 sig_exception_declaration:
-  | EXCEPTION ext_attributes constr_ident generalized_constructor_arguments
+  | EXCEPTION ext_attributes mkrhs(constr_ident) generalized_constructor_arguments
     attributes post_item_attributes
       { let args, res = $4 in
         let (ext,attrs) = $2 in
         Te.mk_exception ~attrs:$6
-          (Te.decl (_mkrhs($3, 3)) ~args ?res ~attrs:(attrs @ $5)
+          (Te.decl $3 ~args ?res ~attrs:(attrs @ $5)
              ~loc:(_symbol_rloc()) ~docs:(_symbol_docs ()))
         , ext }
 ;
 let_exception_declaration:
-    constr_ident generalized_constructor_arguments attributes
+    mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $2 in
-        Te.decl (_mkrhs($1, 1)) ~args ?res ~attrs:$3 ~loc:(_symbol_rloc()) }
+        Te.decl $1 ~args ?res ~attrs:$3 ~loc:(_symbol_rloc()) }
 ;
 generalized_constructor_arguments:
     /*empty*/                     { (Pcstr_tuple [],None) }
@@ -2238,21 +2251,21 @@ label_declarations:
   | label_declaration_semi label_declarations   { $1 :: $2 }
 ;
 label_declaration:
-    mutable_flag label COLON poly_type_no_attr attributes
+    mutable_flag mkrhs(label) COLON poly_type_no_attr attributes
       {
-       Type.field (_mkrhs($2, 2)) $4 ~mut:$1 ~attrs:$5
+       Type.field $2 $4 ~mut:$1 ~attrs:$5
          ~loc:(_symbol_rloc()) ~info:(_symbol_info ())
       }
 ;
 label_declaration_semi:
-    mutable_flag label COLON poly_type_no_attr attributes SEMI attributes
+    mutable_flag mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
       {
        let info =
          match _rhs_info(5) with
          | Some _ as info_before_semi -> info_before_semi
          | None -> _symbol_info()
        in
-       Type.field (_mkrhs($2, 2)) $4 ~mut:$1 ~attrs:($5 @ $7)
+       Type.field $2 $4 ~mut:$1 ~attrs:($5 @ $7)
          ~loc:(_symbol_rloc()) ~info
       }
 ;
@@ -2260,20 +2273,20 @@ label_declaration_semi:
 /* Type Extensions */
 
 str_type_extension:
-  TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
+  TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag str_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         if $3 <> Recursive then _not_expecting(3, "nonrec flag");
-        Te.mk (_mkrhs($5, 5)) (List.rev $8) ~params:$4 ~priv:$7
+        Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7
           ~attrs:(attrs@$9) ~docs:(_symbol_docs ())
         , ext }
 ;
 sig_type_extension:
-  TYPE ext_attributes nonrec_flag optional_type_parameters type_longident
+  TYPE ext_attributes nonrec_flag optional_type_parameters mkrhs(type_longident)
   PLUSEQ private_flag sig_extension_constructors post_item_attributes
       { let (ext, attrs) = $2 in
         if $3 <> Recursive then _not_expecting(3, "nonrec flag");
-        Te.mk (_mkrhs($5, 5)) (List.rev $8) ~params:$4 ~priv:$7
+        Te.mk $5 (List.rev $8) ~params:$4 ~priv:$7
           ~attrs:(attrs @ $9) ~docs:(_symbol_docs ())
         , ext }
 ;
@@ -2294,25 +2307,25 @@ sig_extension_constructors:
       { $2 :: $1 }
 ;
 extension_constructor_declaration:
-  | constr_ident generalized_constructor_arguments attributes
+  | mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $2 in
-        Te.decl (_mkrhs($1, 1)) ~args ?res ~attrs:$3
+        Te.decl $1 ~args ?res ~attrs:$3
           ~loc:(_symbol_rloc()) ~info:(_symbol_info ()) }
 ;
 bar_extension_constructor_declaration:
-  | BAR constr_ident generalized_constructor_arguments attributes
+  | BAR mkrhs(constr_ident) generalized_constructor_arguments attributes
       { let args, res = $3 in
-        Te.decl (_mkrhs($2, 2)) ~args ?res ~attrs:$4
+        Te.decl $2 ~args ?res ~attrs:$4
            ~loc:(_symbol_rloc()) ~info:(_symbol_info ()) }
 ;
 extension_constructor_rebind:
-  | constr_ident EQUAL constr_longident attributes
-      { Te.rebind (_mkrhs($1, 1)) (_mkrhs($3, 3)) ~attrs:$4
+  | mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
+      { Te.rebind $1 $3 ~attrs:$4
           ~loc:(_symbol_rloc()) ~info:(_symbol_info ()) }
 ;
 bar_extension_constructor_rebind:
-  | BAR constr_ident EQUAL constr_longident attributes
-      { Te.rebind (_mkrhs($2, 2)) (_mkrhs($4, 4)) ~attrs:$5
+  | BAR mkrhs(constr_ident) EQUAL mkrhs(constr_longident) attributes
+      { Te.rebind $2 $4 ~attrs:$5
           ~loc:(_symbol_rloc()) ~info:(_symbol_info ()) }
 ;
 
@@ -2338,14 +2351,14 @@ with_constraint:
   | TYPE optional_type_parameters label_longident COLONEQUAL core_type_no_attr
       { Pwith_typesubst
          (_mkrhs($3, 3),
-           (Type.mk (_mkrhs(Longident.last $3, 3))
-             ~params:$2
-             ~manifest:$5
-             ~loc:(_symbol_rloc()))) }
-  | MODULE mod_longident EQUAL mod_ext_longident
-      { Pwith_module (_mkrhs($2, 2), _mkrhs($4, 4)) }
-  | MODULE mod_longident COLONEQUAL mod_ext_longident
-      { Pwith_modsubst (_mkrhs($2, 2), _mkrhs($4, 4)) }
+           (Type.mk (_mkrhs((Longident.last $3), 3))
+              ~params:$2
+              ~manifest:$5
+              ~loc:(_symbol_rloc()))) }
+  | MODULE mkrhs(mod_longident) EQUAL mkrhs(mod_ext_longident)
+      { Pwith_module ($2, $4) }
+  | MODULE mkrhs(mod_longident) COLONEQUAL mkrhs(mod_ext_longident)
+      { Pwith_modsubst ($2, $4) }
 ;
 with_type_binder:
     EQUAL          { Public }
@@ -2355,8 +2368,8 @@ with_type_binder:
 /* Polymorphic types */
 
 typevar_list:
-        QUOTE ident                             { [_mkrhs($2, 2)] }
-      | typevar_list QUOTE ident                { _mkrhs($3, 3) :: $1 }
+        QUOTE mkrhs(ident)                      { [$2] }
+      | typevar_list QUOTE mkrhs(ident)         { $3 :: $1 }
 ;
 poly_type:
         core_type
@@ -2415,22 +2428,22 @@ simple_core_type2:
       { _mktyp(Ptyp_var $2) }
   | UNDERSCORE
       { _mktyp(Ptyp_any) }
-  | type_longident
-      { _mktyp(Ptyp_constr(_mkrhs($1, 1), [])) }
-  | simple_core_type2 type_longident
-      { _mktyp(Ptyp_constr(_mkrhs($2, 2), [$1])) }
-  | LPAREN core_type_comma_list RPAREN type_longident
-      { _mktyp(Ptyp_constr(_mkrhs($4, 4), List.rev $2)) }
+  | mkrhs(type_longident)
+      { _mktyp(Ptyp_constr($1, [])) }
+  | simple_core_type2 mkrhs(type_longident)
+      { _mktyp(Ptyp_constr($2, [$1])) }
+  | LPAREN core_type_comma_list RPAREN mkrhs(type_longident)
+      { _mktyp(Ptyp_constr($4, List.rev $2)) }
   | LESS meth_list GREATER
       { let (f, c) = $2 in _mktyp(Ptyp_object (f, c)) }
   | LESS GREATER
       { _mktyp(Ptyp_object ([], Closed)) }
-  | HASH class_longident
-      { _mktyp(Ptyp_class(_mkrhs($2, 2), [])) }
-  | simple_core_type2 HASH class_longident
-      { _mktyp(Ptyp_class(_mkrhs($3, 3), [$1])) }
-  | LPAREN core_type_comma_list RPAREN HASH class_longident
-      { _mktyp(Ptyp_class(_mkrhs($5, 5), List.rev $2)) }
+  | HASH mkrhs(class_longident)
+      { _mktyp(Ptyp_class($2, [])) }
+  | simple_core_type2 HASH mkrhs(class_longident)
+      { _mktyp(Ptyp_class($3, [$1])) }
+  | LPAREN core_type_comma_list RPAREN HASH mkrhs(class_longident)
+      { _mktyp(Ptyp_class($5, List.rev $2)) }
   | LBRACKET tag_field RBRACKET
       { _mktyp(Ptyp_variant([$2], Closed, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
@@ -2466,14 +2479,14 @@ row_field:
   | simple_core_type                   { Rf.inherit_ ~loc:(_symbol_rloc ()) $1 }
 ;
 tag_field:
-    name_tag OF opt_ampersand amper_type_list attributes
+    mkrhs(name_tag) OF opt_ampersand amper_type_list attributes
       { let loc = _symbol_rloc () in
         let attrs = add_info_attrs (_symbol_info ()) $5 in
-        Rf.tag ~loc ~attrs (_mkrhs($1, 1)) $3 (List.rev $4) }
-  | name_tag attributes
+        Rf.tag ~loc ~attrs $1 $3 (List.rev $4) }
+  | mkrhs(name_tag) attributes
       { let loc = _symbol_rloc () in
         let attrs = add_info_attrs (_symbol_info ()) $2 in
-        Rf.tag ~loc ~attrs (_mkrhs($1, 1)) true [] }
+        Rf.tag ~loc ~attrs $1 true [] }
 ;
 opt_ampersand:
     AMPERSAND                                   { true }
@@ -2513,14 +2526,14 @@ meth_list:
   | DOTDOT                                 { [], Open }
 ;
 field:
-  label COLON poly_type_no_attr attributes
+  mkrhs(label) COLON poly_type_no_attr attributes
     { let loc = _symbol_rloc () in
       let attrs = add_info_attrs (_symbol_info ()) $4 in
-      Of.tag ~loc ~attrs (_mkrhs($1, 1)) $3 }
+      Of.tag ~loc ~attrs $1 $3 }
 ;
 
 field_semi:
-  label COLON poly_type_no_attr attributes SEMI attributes
+  mkrhs(label) COLON poly_type_no_attr attributes SEMI attributes
     { let loc = _symbol_rloc () in
       let info =
         match _rhs_info(4) with
@@ -2528,7 +2541,7 @@ field_semi:
         | None -> _symbol_info()
       in
       let attrs = add_info_attrs info ($4 @ $6) in
-      Of.tag ~loc ~attrs (_mkrhs($1, 1)) $3 }
+      Of.tag ~loc ~attrs $1 $3 }
 ;
 
 inherit_field_semi:
@@ -2653,10 +2666,10 @@ class_longident:
 /* Toplevel directives */
 
 toplevel_directive:
-    HASH ident
-    { mk_directive ~loc:$loc (_mkrhs($2, 2)) None }
-  | HASH ident toplevel_directive_argument
-    { mk_directive ~loc:$loc (_mkrhs($2, 2)) (Some $3) }
+    HASH mkrhs(ident)
+    { mk_directive ~loc:$loc $2 None }
+  | HASH mkrhs(ident) toplevel_directive_argument
+    { mk_directive ~loc:$loc $2 (Some $3) }
 ;
 
 toplevel_directive_argument:
