@@ -87,6 +87,7 @@ extern caml_root caml_global_data;
 #define Trap_pc(tp) ((tp)[0])
 #define Trap_link(tp) ((tp)[1])
 
+void caml_init_stack(value stack);
 value caml_alloc_main_stack (uintnat init_size);
 void caml_init_main_stack(void);
 void caml_scan_dirty_stack_domain(scanning_action f, void*, value stack,

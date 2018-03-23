@@ -1053,9 +1053,12 @@ let fundecl fundecl =
   end
   else begin
     (* XXX KC: fundecl.fun_body.live does not capture liveness at the start of
-    the function properly. *)
+    the function properly. Hence, consider all argument registers as live.
+    Stragely, all arguments are typed as Int regs (see regs.mli). These are
+    ignored by record_frame_label. Hence, consider all of them to be type Val.
+    *)
     let live_initially =
-      Reg.Set.(fold (fun r s -> add {r with typ = Addr} s)
+      Reg.Set.(fold (fun r s -> add {r with typ = Val} s)
         fundecl.fun_args empty)
     in
     let handle_overflow = new_label() in
