@@ -37,6 +37,19 @@ let fail = make
     let result = Result.fail_with_reason "The fail action always fails." in
     (result, env))
 
+let cd = make
+  "cd"
+  (fun _log env ->
+    let cwd = Environments.safe_lookup Builtin_variables.cwd env in
+    begin
+      try
+        Sys.chdir cwd; (Result.pass, env)
+      with _ ->
+        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+        let result = Result.fail_with_reason reason in
+        (result, env)
+    end)    
+
 let dumpenv = make
   "dumpenv"
   (fun log env ->
@@ -140,6 +153,7 @@ let _ =
     pass;
     skip;
     fail;
+    cd;
     dumpenv;
     libunix;
     libwin32unix;
