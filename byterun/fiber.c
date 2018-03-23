@@ -514,6 +514,16 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
   CAMLreturn0;
 }
 
+void caml_init_stack (value stack)
+{
+  Stack_sp(stack) = 0;
+  Stack_dirty_domain(stack) = FIBER_CLEAN;
+  Stack_handle_value(stack) = Val_long(0);
+  Stack_handle_exception(stack) = Val_long(0);
+  Stack_handle_effect(stack) = Val_long(0);
+  Stack_parent(stack) = Val_unit;
+}
+
 value caml_alloc_main_stack (uintnat init_size)
 {
   CAMLparam0();
@@ -523,12 +533,7 @@ value caml_alloc_main_stack (uintnat init_size)
      The GC is not initialised yet, so we use caml_alloc_shr
      which cannot trigger it */
   stack = caml_alloc_shr(init_size, Stack_tag);
-  Stack_sp(stack) = 0;
-  Stack_dirty_domain(stack) = FIBER_CLEAN;
-  Stack_handle_value(stack) = Val_long(0);
-  Stack_handle_exception(stack) = Val_long(0);
-  Stack_handle_effect(stack) = Val_long(0);
-  Stack_parent(stack) = Val_unit;
+  caml_init_stack (stack);
 
   CAMLreturn(stack);
 }
