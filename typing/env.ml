@@ -506,6 +506,8 @@ let copy_local ~from env =
 
 let same_constr = ref (fun _ _ _ -> assert false)
 
+let check_well_formed_module = ref (fun _ -> assert false)
+
 (* Helper to decide whether to report an identifier shadowing
    by some 'open'. For labels and constructors, we do not report
    if the two elements are from the same re-exported declaration.
@@ -1899,6 +1901,8 @@ let components_of_functor_appl f env p1 p2 =
     let p = Papply(p1, p2) in
     let sub = Subst.add_module f.fcomp_param p2 Subst.identity in
     let mty = Subst.modtype sub f.fcomp_res in
+    !check_well_formed_module env Location.(in_file !input_name)
+      ("the signature of " ^ Path.name p) mty;
     let comps = components_of_module ~deprecated:None ~loc:Location.none
         (*???*)
         env Subst.identity p mty in

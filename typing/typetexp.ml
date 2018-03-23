@@ -72,6 +72,10 @@ exception Error_forward of Location.error
 
 type variable_context = int * (string, type_expr) Tbl.t
 
+(* To update locations from Typemod.check_well_founded_module. *)
+
+let typemod_update_location = ref (fun _ -> assert false)
+
 (* Narrowing unbound identifier errors. *)
 
 let rec narrow_unbound_lid_error : 'a. _ -> _ -> _ -> _ -> 'a =
@@ -139,6 +143,8 @@ let find_component (lookup : ?loc:_ -> ?mark:_ -> _) make_error env loc lid =
     narrow_unbound_lid_error env loc lid make_error
   | Env.Recmodule ->
     raise (Error (loc, env, Illegal_reference_to_recursive_module))
+  | err ->
+    raise (!typemod_update_location loc err)
 
 let find_type env loc lid =
   let path =
