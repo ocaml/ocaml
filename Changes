@@ -48,6 +48,10 @@ Working version
 - GPR#1628: Treat reraise and raise_notrace as nonexpansive.
   (Leo White, review by Alain Frisch)
 
+* GPR#1652: Don't remove module aliases in `module type of` and `with module`.
+  The old behaviour can be obtained using the `[@remove_aliases]` attribute.
+  (Leo White, review by Jacques Garrigue)
+
 ### Standard library:
 
 - GPR#1002: add a new `Seq` module defining a list-of-thunks style iterator.
