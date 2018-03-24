@@ -227,6 +227,9 @@ Working version
 
 ### Manual and documentation:
 
+- MPR#7613: minor reword of the "refutation cases" paragraph
+  (Florian Angeletti)
+
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
   (Yawar Amin, review by Gabriel Scherer)
 

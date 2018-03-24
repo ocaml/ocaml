@@ -1154,7 +1154,7 @@ exhaustive (the "Add" case cannot happen).
 \end{verbatim}
 
 
-\paragraph{Refutation cases and redundancy} (Introduced in OCaml 4.03)
+\paragraph{Refutation cases} (Introduced in OCaml 4.03)
 
 Usually, the exhaustiveness check only tries to check whether the
 cases omitted from the pattern matching are typable or not.
@@ -1172,7 +1172,7 @@ Wild cards in the generated patterns are handled in a special way: if
 their type is a variant type with only GADT constructors, then the
 pattern is split into the different constructors, in order to check whether
 any of them is possible (this splitting is not done for arguments of these
-constructors, to avoid non-termination.) We also split tuples and
+constructors, to avoid non-termination). We also split tuples and
 variant types with only one case, since they may contain GADTs inside.
 For instance, the following code is deemed exhaustive:
 
@@ -1187,7 +1187,8 @@ For instance, the following code is deemed exhaustive:
 \end{verbatim}
 
 Namely, the inferred remaining case is "Some _", which is split into
-"Some (Int, _)" and "Some (Bool, _)", which are both untypable.
+"Some (Int, _)" and "Some (Bool, _)", which are both untypable because
+"deep" expects a non-existing "char t" as the first element of the tuple.
 Note that the refutation case could be omitted here, because it is
 automatically added when there is only one case in the pattern
 matching.
