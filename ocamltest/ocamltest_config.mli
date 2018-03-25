@@ -54,5 +54,8 @@ val safe_string : bool
 val flat_float_array : bool
 (* Whether the compiler was configured with -flat-float-array *)
 
-val ocamldoc: bool
+val ocamldoc : bool
 (** Whether ocamldoc has been enabled at configure time *)
+
+val ocamldebug : bool
+(** Whether ocamldebug has been enabled at configure time *)

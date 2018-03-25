@@ -140,6 +140,12 @@ let ocamlrunparam =
 let ocamlsrcdir = make ("ocamlsrcdir",
   "Where OCaml sources are")
 
+let ocamldebug_flags = make ("ocamldebug_flags",
+  "Flags for ocamldebug")
+
+let ocamldebug_script = make ("ocamldebug_script",
+  "Where ocamldebug should read its commands")
+
 let os_type = make ("os_type",
   "The OS we are running on")
 
@@ -202,5 +208,7 @@ let _ = List.iter register_variable
     ocamldoc_output;
     ocamldoc_reference;
     ocamldoc_exit_status;
+    ocamldebug_flags;
+    ocamldebug_script;
     plugins
   ]

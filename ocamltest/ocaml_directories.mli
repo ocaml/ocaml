@@ -19,6 +19,8 @@ val srcdir : unit -> string
 
 val stdlib : string -> string
 
+val libunix : string -> string
+
 val toplevel : string -> string
 
 val runtime : string -> string

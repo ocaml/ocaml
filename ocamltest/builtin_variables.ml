@@ -27,6 +27,9 @@ open Variables (* Should not be necessary with a ppx *)
 let arguments = make ("arguments",
   "Arguments passed to executed programs and scripts")
 
+let cwd = make ("cwd",
+  "Used to change current working directory, but not updated")
+
 let exit_status = make ("exit_status",
   "Expected program exit status")
 
@@ -96,6 +99,7 @@ let test_fail = make ("TEST_FAIL",
 let _ = List.iter register_variable
   [
     arguments;
+    cwd;
     exit_status;
     files;
     ocamltest_response;

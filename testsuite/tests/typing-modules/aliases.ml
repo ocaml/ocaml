@@ -478,7 +478,7 @@ module A2 = struct end
 module L1 = struct module X = A1 end
 module L2 = struct module X = A2 end;;
 
-module F (L : (module type of L1)) = struct end;;
+module F (L : (module type of L1 [@remove_aliases])) = struct end;;
 
 module F1 = F(L1);; (* ok *)
 module F2 = F(L2);; (* should succeed too *)
@@ -502,7 +502,7 @@ module M = struct
   module I = Int
   type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(I).t) eq
 end;;
-module type S = module type of M;; (* keep alias *)
+module type S = module type of M [@remove_aliases];; (* keep alias *)
 
 module Int2 = struct type t = int let compare x y = compare y x end;;
 module type S' = sig
@@ -597,7 +597,7 @@ module M = struct
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(P.I).t) eq
   end
 end;;
-module type S = module type of M ;;
+module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig
@@ -622,7 +622,7 @@ module M = struct
     type wrap' = wrap = W of (Set.Make(Int).t, Set.Make(N.I).t) eq
   end
 end;;
-module type S = module type of M ;;
+module type S = module type of M [@remove_aliases];;
 [%%expect{|
 module M :
   sig

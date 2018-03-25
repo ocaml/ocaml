@@ -42,6 +42,8 @@ endif
 
 failstamp := failure.stamp
 
+TESTLOG ?= _log
+
 ocamltest_directory := ../ocamltest
 
 ocamltest_program := $(or \
@@ -74,14 +76,14 @@ default:
 
 .PHONY: all
 all:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
 .PHONY: legacy
 legacy:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) legacy-without-report
 	@$(MAKE) $(NO_PRINT) report
 
@@ -89,12 +91,12 @@ legacy:
 legacy-without-report: lib tools
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir LEGACY=y; \
-	done 2>&1 | tee -a _log
+	done 2>&1 | tee -a $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 
 .PHONY: new
 new:
-	@rm -f _log
+	@rm -f $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) new-without-report
 	@$(MAKE) $(NO_PRINT) report
 
@@ -106,14 +108,14 @@ new-without-report: lib tools
 	  echo Running tests from \'$$dir\' ... ; \
 	  $(MAKE) exec-ocamltest DIR=$$dir \
 	    OCAMLTESTENV="" OCAMLTESTFLAGS=""; \
-	done || touch $(failstamp)) 2>&1 | tee -a _log
+	done || touch $(failstamp)) 2>&1 | tee -a $(TESTLOG)
 	@if [ -f $(failstamp) ]; then rm $(failstamp); exit 1; fi
 
 .PHONY: all-%
 all-%: lib tools
 	@for dir in tests/$**; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
-	done 2>&1 | tee _log
+	done 2>&1 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -154,7 +156,7 @@ parallel-%: lib tools
 	@for dir in tests/$**; do echo $$dir; done \
 	 | parallel --gnu --no-notice --keep-order \
 	     "$(MAKE) $(NO_PRINT) exec-one DIR={} 2>&1" \
-	 | tee _log
+	 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -169,7 +171,7 @@ list: lib tools
 	fi
 	@while read LINE; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
-	done <$(FILE) 2>&1 | tee _log
+	done <$(FILE) 2>&1 | tee $(TESTLOG)
 	@$(MAKE) $(NO_PRINT) retries
 	@$(MAKE) report
 
@@ -266,16 +268,16 @@ clean:
 
 .PHONY: report
 report:
-	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
-	@awk -f makefiles/summarize.awk <_log
+	@if [ ! -f $$(TESTLOG) ]; then echo "No $$(TESTLOG) file."; exit 1; fi
+	@awk -f makefiles/summarize.awk < $(TESTLOG)
 
 .PHONY: retry-list
 retry-list:
 	@while read LINE; do \
 	  if [ -n "$$LINE" ] ; then \
-	    echo re-ran $$LINE>>_log; \
+	    echo re-ran $$LINE>> $(TESTLOG); \
 	    $(MAKE) $(NO_PRINT) clean-one DIR=$$LINE; \
-	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a _log ; \
+	    $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE 2>&1 | tee -a $(TESTLOG) ; \
 	  fi \
 	done <_retries;
 	@$(MAKE) $(NO_PRINT) retries
@@ -283,7 +285,7 @@ retry-list:
 .PHONY: retries
 retries:
 	@awk -v retries=1 -v max_retries=$(MAX_TESTSUITE_DIR_RETRIES) \
-	     -f makefiles/summarize.awk <_log >_retries
+	     -f makefiles/summarize.awk < $(TESTLOG) > _retries
 	@test `cat _retries | wc -l` -eq 0 || $(MAKE) $(NO_PRINT) retry-list
 	@rm -f _retries
 

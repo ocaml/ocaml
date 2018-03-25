@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+_ocamltestd
 *.odoc
 
 # local to root directory
@@ -242,7 +243,7 @@ _ocamltest
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
-/testsuite/**/_log
+/testsuite/**/_log*
 /testsuite/failure.stamp
 
 /testsuite/_retries
@@ -284,11 +285,6 @@ _ocamltest
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml
-
-/testsuite/tests/tool-debugger/**/compiler-libs
-/testsuite/tests/tool-debugger/find-artifacts/out
-/testsuite/tests/tool-debugger/no_debug_event/out
-/testsuite/tests/tool-debugger/no_debug_event/c
 
 /testsuite/tests/tool-ocamldep-modalias/*.byt*
 /testsuite/tests/tool-ocamldep-modalias/*.opt*
