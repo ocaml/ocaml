@@ -296,3 +296,25 @@ Error: This expression has type M#35.t but an expression was expected of type
          'a
        The type constructor M#35.t would escape its scope
 |}]
+
+module type Print = sig
+  type t
+  val print: t -> unit
+end
+
+module Print_int: Print with type t = int = struct
+  type t = int let print = print_int
+end
+module Print_list(P: Print): Print with type t = P.t list = struct
+  type t = P.t list
+  let print = List.iter P.print
+end
+let print_list_of_int = let open Print_list(Print_int) in print
+
+[%%expect{|
+module type Print = sig type t val print : t -> unit end
+module Print_int : sig type t = int val print : t -> unit end
+module Print_list :
+  functor (P : Print) -> sig type t = P.t list val print : t -> unit end
+val print_list_of_int : Print_int.t list -> unit = <fun>
+|}]
