@@ -264,7 +264,7 @@ and value_kind =
 
 and value_unbound_reason =
   | Val_unbound_instance_variable
-  | Val_unbound_ghost_recursive
+  | Val_unbound_ghost_recursive of bool
 
 (* Variance *)
 

@@ -1,5 +1,6 @@
 example_let_missing_rec_loc.ml
 example_let_missing_rec.ml
 example_let_missing_rec_mutual.ml
+example_let_missing_rec_value.ml
 unit_fun_hints.ml
 type_expected_explanation.ml
