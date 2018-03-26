@@ -110,8 +110,9 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
   match me.pmod_desc with
   | Pmod_functor _ | Pmod_extension _ ->
       raise(Error(me.pmod_loc, env, Invalid_open me))
-  | Pmod_ident lid -> begin
+  | Pmod_ident lid ->
       let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
+      begin
       match Env.open_signature ~loc ?used_slot ?toplevel ovf path env with
       | Some env ->
           let tme =
@@ -124,10 +125,11 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
             } in
           None, tme, env
       | None ->
+          (* use [extract_sig_open] to provide better error message *)
           let md = Env.find_module path env in
           ignore (extract_sig_open env lid.loc md.md_type);
           assert false
-    end
+      end
   | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ ->
       enter_struct ();
       let ident = gen_mod_ident () in
@@ -135,8 +137,8 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       leave_struct ();
       (match tme.mod_type with
        | Mty_signature _ | Mty_ident _ -> ()
-       | Mty_functor _ | Mty_alias _ ->
-           raise(Error(me.pmod_loc, env, Invalid_open me)));
+       | Mty_functor _ -> raise(Error(me.pmod_loc, env, Invalid_open me))
+       | Mty_alias _ -> assert false);
       let md = {
         md_type = tme.mod_type;
         md_loc = me.pmod_loc;
@@ -145,7 +147,7 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       let newenv = Env.enter_module_declaration ident md env in
       let root = Pident ident in
       match Env.open_signature ~loc ?used_slot ?toplevel ovf root newenv with
-      | None -> assert false (* not possible to open a Mty_functor *)
+      | None -> assert false (* not possible to illegal module_expr *)
       | Some opened_env -> Some (ident, md, newenv), tme, opened_env
 
 let type_initially_opened_module env module_name =

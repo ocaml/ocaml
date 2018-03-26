@@ -1414,7 +1414,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       k { p with pat_extra =
         (Tpat_type (path, lid), loc, sp.ppat_attributes) :: p.pat_extra }
   | Ppat_open (lid,p) ->
-      let me = {pmod_desc=Pmod_ident lid; pmod_loc=lid.loc; pmod_attributes=[]} in
+      let me = Ast_helper.Mod.ident ~loc:lid.loc ~attrs:[] lid in
       let id, _tme, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc me in begin
       match id with
@@ -2214,6 +2214,7 @@ struct
       | Tstr_modtype _ ->
           Env.empty, Use.empty
       | Tstr_open _ ->
+          (* TODO(objmagic) adapt to GPR#556 *)
           Env.empty, Use.empty
       | Tstr_class classes ->
           (* Any occurrence in a class definition is counted as a use,
@@ -2249,7 +2250,6 @@ struct
       | Tcl_constraint (ce, _, _, _, _) ->
           class_expr env ce
       | Tcl_open (_, ce) ->
-          (* TODO DEP *)
           class_expr env ce
   and case : Env.env -> Typedtree.case -> scrutinee:Use.t -> Use.t =
     fun env { Typedtree.c_lhs; c_guard; c_rhs } ~scrutinee:ty ->
