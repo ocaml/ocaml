@@ -367,6 +367,9 @@ Working version
 - MPR#7747: Type checker can loop infinitly and consumes all computer memory
   (Jacques Garrigue, report by kantian)
 
+- MPR#7751, GPR#1657: The toplevel prints some concrete types as abstract
+  (Jacques Garrigue, report by Matej Kosik)
+
 - GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
   to work on ocamltest-based tests.
   (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)

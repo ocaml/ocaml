@@ -1839,7 +1839,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env initial_env
+    Printtyp.wrap_printing_env ~error:false initial_env
       (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
@@ -2075,7 +2075,7 @@ let report_error ppf = function
         path p
 
 let report_error env ppf err =
-  Printtyp.wrap_printing_env env (fun () -> report_error ppf err)
+  Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)
 
 let () =
   Location.register_error_of_exn

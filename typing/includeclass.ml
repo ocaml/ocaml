@@ -63,7 +63,7 @@ let include_err ppf =
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Class_type_mismatch (env, cty1, cty2) ->
-      Printtyp.wrap_printing_env env (fun () ->
+      Printtyp.wrap_printing_env ~error:true env (fun () ->
         fprintf ppf
           "@[The class type@;<1 2>%a@ %s@;<1 2>%a@]"
           Printtyp.class_type cty1
