@@ -314,15 +314,6 @@ _ocamltestd
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
-/testsuite/tests/typing-multifile/a.ml
-/testsuite/tests/typing-multifile/b.ml
-/testsuite/tests/typing-multifile/c.ml
-/testsuite/tests/typing-multifile/d.mli
-/testsuite/tests/typing-multifile/e.ml
-/testsuite/tests/typing-multifile/f.ml
-/testsuite/tests/typing-multifile/g.ml
-/testsuite/tests/typing-multifile/test
-
 /testsuite/tests/typing-unboxed-types/false.flat-float
 /testsuite/tests/typing-unboxed-types/true.flat-float
 /testsuite/tests/typing-unboxed-types/test.ml.reference
