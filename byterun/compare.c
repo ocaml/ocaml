@@ -34,6 +34,7 @@ struct compare_item { value * v1, * v2; mlsize_t count; };
 #define COMPARE_STACK_INIT_SIZE 8
 #define COMPARE_STACK_MIN_ALLOC_SIZE 32
 #define COMPARE_STACK_MAX_SIZE (1024*1024)
+CAMLexport int caml_compare_unordered;
 
 struct compare_stack {
   struct compare_item init_stack[COMPARE_STACK_INIT_SIZE];
@@ -45,15 +46,15 @@ struct compare_stack {
 static void compare_free_stack(struct compare_stack* stk)
 {
   if (stk->stack != stk->init_stack) {
-    free(stk->stack);
-    stk->stack = 0;
+    caml_stat_free(stk->stack);
+    stk->stack = NULL;
   }
 }
 
 /* Same, then raise Out_of_memory */
 static void compare_stack_overflow(struct compare_stack* stk)
 {
-  caml_gc_log ("Stack overflow in structural comparison");
+  caml_gc_message (0x04, "Stack overflow in structural comparison\n");
   compare_free_stack(stk);
   caml_raise_out_of_memory();
 }
@@ -68,15 +69,15 @@ static struct compare_item * compare_resize_stack(struct compare_stack* stk,
 
   if (stk->stack == stk->init_stack) {
     newsize = COMPARE_STACK_MIN_ALLOC_SIZE;
-    newstack = malloc(sizeof(struct compare_item) * newsize);
+    newstack = caml_stat_alloc_noexc(sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
     memcpy(newstack, stk->init_stack,
            sizeof(struct compare_item) * COMPARE_STACK_INIT_SIZE);
   } else {
     newsize = 2 * (stk->limit - stk->stack);
     if (newsize >= COMPARE_STACK_MAX_SIZE) compare_stack_overflow(stk);
-    newstack =
-      realloc(stk->stack, sizeof(struct compare_item) * newsize);
+    newstack = caml_stat_resize_noexc(stk->stack,
+                                      sizeof(struct compare_item) * newsize);
     if (newstack == NULL) compare_stack_overflow(stk);
   }
   stk->stack = newstack;
@@ -216,9 +217,9 @@ static intnat do_compare_val(struct compare_stack* stk,
       mlsize_t i;
       if (sz1 != sz2) return sz1 - sz2;
       for (i = 0; i < sz1; i++) {
-        double d1 = Double_field(v1, i);
-        double d2 = Double_field(v2, i);
-#ifdef LACKS_SANE_NAN
+        double d1 = Double_flat_field(v1, i);
+        double d2 = Double_flat_field(v2, i);
+  #ifdef LACKS_SANE_NAN
         if (isnan(d2)) {
           if (! total) return UNORDERED;
           if (isnan(d1)) break;
@@ -227,17 +228,17 @@ static intnat do_compare_val(struct compare_stack* stk,
           if (! total) return UNORDERED;
           return LESS;
         }
-#endif
+  #endif
         if (d1 < d2) return LESS;
         if (d1 > d2) return GREATER;
-#ifndef LACKS_SANE_NAN
+  #ifndef LACKS_SANE_NAN
         if (d1 != d2) {
           if (! total) return UNORDERED;
           /* See comment for Double_tag case */
           if (d1 == d1) return GREATER;
           if (d2 == d2) return LESS;
         }
-#endif
+  #endif
       }
       break;
     }

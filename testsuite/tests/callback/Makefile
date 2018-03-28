@@ -15,7 +15,6 @@
 
 BASEDIR=../..
 
-CC=$(NATIVECC) -I $(CTOPDIR)/byterun
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
 LD_PATH=$(TOPDIR)/otherlibs/unix
 
@@ -26,6 +25,10 @@ default:
 	              $(SET_LD_PATH) $(MAKE) run-opt;; \
 	  *) $(MAKE) skip;; \
 	esac
+
+.PHONY: common
+common:
+	@$(CC) -c $(CFLAGS) $(CPPFLAGS)  -I$(CTOPDIR)/byterun callbackprim.c
 
 .PHONY: skip
 skip:

@@ -16,6 +16,8 @@
 #ifndef CAML_WEAK_H
 #define CAML_WEAK_H
 
+#ifdef CAML_INTERNALS
+
 #include "mlvalues.h"
 
 #define CAML_EPHE_LINK_OFFSET 0
@@ -24,5 +26,7 @@
 
 extern value caml_weak_list_head;
 extern value caml_weak_none;
+
+#endif /* CAML_INTERNALS */
 
 #endif /* CAML_WEAK_H */

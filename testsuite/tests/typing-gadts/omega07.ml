@@ -898,11 +898,11 @@ val _0 : ((zero, int, 'a) rcons, int) lam = Var Zero
 val suc :
   (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam ->
   (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam = <fun>
-val _1 : ((zero, int, (suc, int -> int, '_a) rcons) rcons, int) lam =
+val _1 : ((zero, int, (suc, int -> int, '_weak1) rcons) rcons, int) lam =
   App (Shift (Var Suc), Var Zero)
-val _2 : ((zero, int, (suc, int -> int, '_a) rcons) rcons, int) lam =
+val _2 : ((zero, int, (suc, int -> int, '_weak2) rcons) rcons, int) lam =
   App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))
-val _3 : ((zero, int, (suc, int -> int, '_a) rcons) rcons, int) lam =
+val _3 : ((zero, int, (suc, int -> int, '_weak3) rcons) rcons, int) lam =
   App (Shift (Var Suc),
    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
 val add :
@@ -916,7 +916,8 @@ val double :
   Abs (<poly>,
    App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
 val ex3 :
-  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+  ((zero, int,
+    (suc, int -> int, (add, int -> int -> int, '_weak4) rcons) rcons)
    rcons, int)
   lam =
   App

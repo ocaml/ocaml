@@ -16,7 +16,7 @@
 open Asttypes
 open Typedtree
 
-(** {2 A generic Typedtree mapper} *)
+(** {1 A generic Typedtree mapper} *)
 
 type mapper =
   {
@@ -46,6 +46,7 @@ type mapper =
     package_type: mapper -> package_type -> package_type;
     pat: mapper -> pattern -> pattern;
     row_field: mapper -> row_field -> row_field;
+    object_field: mapper -> object_field -> object_field;
     signature: mapper -> signature -> signature;
     signature_item: mapper -> signature_item -> signature_item;
     structure: mapper -> structure -> structure;

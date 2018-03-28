@@ -50,6 +50,7 @@ let char_hex n =
   Char.unsafe_chr (n + if n < 10 then Char.code '0' else (Char.code 'a' - 10))
 
 let to_hex d =
+  if String.length d <> 16 then invalid_arg "Digest.to_hex";
   let result = Bytes.create 32 in
   for i = 0 to 15 do
     let x = Char.code d.[i] in
@@ -59,7 +60,7 @@ let to_hex d =
   Bytes.unsafe_to_string result
 
 let from_hex s =
-  if String.length s <> 32 then raise (Invalid_argument "Digest.from_hex");
+  if String.length s <> 32 then invalid_arg "Digest.from_hex";
   let digit c =
     match c with
     | '0'..'9' -> Char.code c - Char.code '0'

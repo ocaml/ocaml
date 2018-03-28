@@ -93,7 +93,7 @@ let remove_unused_closure_variables ~remove_direct_call_surrogates program =
         (* Remove specialised args that are used by removed functions *)
         let all_remaining_arguments =
           Variable.Map.fold (fun _ { Flambda.params } set ->
-              Variable.Set.union set (Variable.Set.of_list params))
+              Variable.Set.union set (Parameter.Set.vars params))
             funs Variable.Set.empty
         in
         Variable.Map.filter (fun arg _ ->

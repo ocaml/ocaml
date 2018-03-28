@@ -37,7 +37,7 @@ type parameter = param_info
 
 (** Functions *)
 
-(** acces to the name as a string. For tuples, parenthesis and commas are added. *)
+(** access to the name as a string. For tuples, parentheses and commas are added. *)
 let complete_name p =
   let rec iter pi =
     match pi with
@@ -82,7 +82,7 @@ let desc_by_name pi name =
   List.assoc name l
 
 
-(** acces to the list of names ; only one for a simple parameter, or
+(** access to the list of names ; only one for a simple parameter, or
    a list for tuples. *)
 let names pi =
   let rec iter acc pi =

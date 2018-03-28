@@ -39,11 +39,14 @@ type immediate_or_pointer =
   | Pointer
 
 type initialization_or_assignment =
-  (* CR-someday mshinwell: For multicore, perhaps it might be necessary to
-     split [Initialization] into two cases, depending on whether the place
-     being initialized is in the heap or not. *)
-  | Initialization
   | Assignment
+  (* Initialization of in heap values, like [caml_initialize] C primitive.  The
+     field should not have been read before and initialization should happen
+     only once. *)
+  | Heap_initialization
+  (* Initialization of roots only. Compiles to a simple store.
+     No checks are done to preserve GC invariants.  *)
+  | Root_initialization
 
 type is_safe =
   | Safe
@@ -63,7 +66,9 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * mutable_flag * block_shape
   | Pfield of int * immediate_or_pointer * mutable_flag
+  | Pfield_computed
   | Psetfield of int * immediate_or_pointer * initialization_or_assignment
+  | Psetfield_computed of immediate_or_pointer * initialization_or_assignment
   | Pfloatfield of int
   | Psetfloatfield of int * initialization_or_assignment
   | Pduprecord of Types.record_representation * int
@@ -219,7 +224,7 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 (* Meaning of kinds for let x = e in e':
-    Strict: e may have side-effets; always evaluate e first
+    Strict: e may have side-effects; always evaluate e first
       (If e is a simple expression, e.g. a variable or constant,
        we may still substitute e'[x/e].)
     Alias: e is pure, we can substitute e'[x/e] if x has 0 or 1 occurrences
@@ -237,6 +242,7 @@ type function_attribute = {
   inline : inline_attribute;
   specialise : specialise_attribute;
   is_a_functor: bool;
+  stub: bool;
 }
 
 type lambda =
@@ -247,7 +253,7 @@ type lambda =
   | Llet of let_kind * value_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list * Location.t
-  | Lswitch of lambda * lambda_switch
+  | Lswitch of lambda * lambda_switch * Location.t
 (* switch on strings, clauses are sorted by string order,
    strings are pairwise distinct *)
   | Lstringswitch of
@@ -296,6 +302,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
   | Lev_pseudo
+  | Lev_module_definition of Ident.t
 
 type program =
   { module_ident : Ident.t;
@@ -330,6 +337,13 @@ val free_methods: lambda -> IdentSet.t
 
 val transl_normal_path: Path.t -> lambda   (* Path.t is already normal *)
 val transl_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+[@@ocaml.deprecated "use transl_{module,value,extension,class}_path instead"]
+
+val transl_module_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_value_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_extension_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
+
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
@@ -340,6 +354,7 @@ val commute_comparison : comparison -> comparison
 val negate_comparison : comparison -> comparison
 
 val default_function_attribute : function_attribute
+val default_stub_attribute : function_attribute
 
 (***********************)
 (* For static failures *)
@@ -361,5 +376,10 @@ val patch_guarded : lambda -> lambda -> lambda
 
 val raise_kind: raise_kind -> string
 val lam_of_loc : loc_kind -> Location.t -> lambda
+
+val merge_inline_attributes
+   : inline_attribute
+  -> inline_attribute
+  -> inline_attribute option
 
 val reset: unit -> unit

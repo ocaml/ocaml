@@ -704,11 +704,13 @@ $\hbox{"string_length"}(v)-1$.
 or byte sequence \var{v}, with type "unsigned char". Bytes are
 numbered from 0 to $\hbox{"string_length"}(v)-1$.
 \item "String_val("\var{v}")" returns a pointer to the first byte of the string
-or byte sequence \var{v}, with type "char *". This pointer is a valid C
-string: there is a
-null byte after the last byte in the string. However, OCaml
-strings and byte sequences can contain embedded null bytes, which will confuse
-the usual C functions over strings.
+\var{v}, with type "char *" or, when OCaml is configured with
+"-force-safe-string", with type "const char *".
+This pointer is a valid C string: there is a null byte after the last
+byte in the string. However, OCaml strings can contain embedded null bytes,
+which will confuse the usual C functions over strings.
+\item "Bytes_val("\var{v}")" returns a pointer to the first byte of the
+byte sequence \var{v}, with type "unsigned char *".
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
 \item "Double_field("\var{v}", "\var{n}")" returns
@@ -764,6 +766,10 @@ satisfy the GC constraints.
 \item
 "caml_alloc_string("\var{n}")" returns a byte sequence (or string) value of
 length \var{n} bytes. The sequence initially contains uninitialized bytes.
+\item
+"caml_alloc_initialized_string("\var{n}", "\var{p}")" returns a byte sequence
+(or string) value of length \var{n} bytes.  The value is initialized from the
+\var{n} bytes starting at address \var{p}.
 \item
 "caml_copy_string("\var{s}")" returns a string or byte sequence value
 containing a copy of the null-terminated C string \var{s} (a "char *").
@@ -1543,6 +1549,13 @@ parameter containing the command-line parameters. Unlike "caml_main",
 this "argv" parameter is used only to initialize "Sys.argv", but not
 for finding the name of the executable file.
 
+The "caml_startup" function calls the uncaught exception handler (or
+enters the debugger, if running under ocamldebug) if an exception escapes
+from a top-level module initialiser.  Such exceptions may be caught in the
+C code by instead using the "caml_startup_exn" function and testing the result
+using {\tt Is_exception_result} (followed by {\tt Extract_exception} if
+appropriate).
+
 The "-output-obj" option can also be used to obtain the C source file.
 More interestingly, the same option can also produce directly a shared
 library (".so" file, ".dll" under Windows) that contains the OCaml
@@ -1558,7 +1571,8 @@ The native-code compiler "ocamlopt" also supports the "-output-obj"
 option, causing it to output a C object file or a shared library
 containing the native code for all OCaml modules on the command-line,
 as well as the OCaml startup code. Initialization is performed by
-calling "caml_startup" as in the case of the bytecode compiler.
+calling "caml_startup" (or "caml_startup_exn") as in the case of the
+bytecode compiler.
 
 For the final linking phase, in addition to the object file produced
 by "-output-obj", you will have to provide the OCaml runtime
@@ -1587,10 +1601,7 @@ With "ocamlopt", you should do:
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
 are shown in the configuration file "config/Makefile" generated during
-compilation of OCaml, as the variables "BYTECCLINKOPTS"
-(for object files produced by "ocamlc -output-obj") and
-"NATIVECCLINKOPTS" (for object files produced by "ocamlopt
--output-obj").
+compilation of OCaml, as the variable "LDFLAGS".
 \begin{itemize}
 \item Windows with the MSVC compiler: the object file produced by
 OCaml have been compiled with the "/MD" flag, and therefore
@@ -1610,6 +1621,42 @@ turned on programmatically.   This can be achieved from the OCaml side
 by calling "Printexc.record_backtrace true" in the initialization of
 one of the OCaml modules.  This can also be achieved from the C side
 by calling "caml_record_backtrace(Val_int(1));" in the OCaml-C glue code.
+
+\paragraph{Unloading the runtime.}
+
+In case the shared library produced with "-output-obj" is to be loaded and
+unloaded repeatedly by a single process, care must be taken to unload the
+OCaml runtime explicitly, in order to avoid various system resource leaks.
+
+Since 4.05, "caml_shutdown" function can be used to shut the runtime down
+gracefully, which equals the following:
+\begin{itemize}
+\item Running the functions that were registered with "Pervasives.at_exit".
+\item Triggering finalization of allocated custom blocks (see
+section~\ref{s:custom}). For example, "Pervasives.in_channel" and
+"Pervasives.out_channel" are represented by custom blocks that enclose file
+descriptors, which are to be released.
+\item Unloading the dependent shared libraries that were loaded by the runtime,
+including "dynlink" plugins.
+\item Freeing the memory blocks that were allocated by the runtime with
+"malloc". Inside C primitives, it is advised to use "caml_stat_*" functions
+from "memory.h" for managing static (that is, non-moving) blocks of heap
+memory, as all the blocks allocated with these functions are automatically
+freed by "caml_shutdown". For ensuring compatibility with legacy C stubs that
+have used "caml_stat_*" incorrectly, this behaviour is only enabled if the
+runtime is started with a specialized "caml_startup_pooled" function.
+\end{itemize}
+
+As a shared library may have several clients simultaneously, it is made for
+convenience that "caml_startup" (and "caml_startup_pooled") may be called
+multiple times, given that each such call is paired with a corresponding call
+to "caml_shutdown" (in a nested fashion). The runtime will be unloaded once
+there are no outstanding calls to "caml_startup".
+
+Once a runtime is unloaded, it cannot be started up again without reloading the
+shared library and reinitializing its static data. Therefore, at the moment, the
+facility is only useful for building reloadable shared libraries.
+
 
 \section{Advanced example with callbacks}
 \pdfsection{Advanced example with callbacks}
@@ -1675,7 +1722,7 @@ runtime library) by "libasmrun.a" (the native-code runtime library).)
 
 Now, we can use the two functions "fib" and "format_result" in any C
 program, just like regular C functions. Just remember to call
-"caml_startup" once before.
+"caml_startup" (or "caml_startup_exn") once before.
 
 \begin{verbatim}
 /* File main.c -- a sample client for the OCaml functions */
@@ -1976,13 +2023,14 @@ stub that ignores all the special annotations.
 \subsection{Passing unboxed values}
 
 We said earlier that all OCaml objects are represented by the C type
-"value", and one has to use macros such as "Int_val" to decode data
-from the "value" type. It is however possible to tell OCaml to do this
-for us and pass arguments unboxed to the C function. Similarly it is
-possible to tell OCaml to expect the result unboxed and box it for us.
+"value", and one has to use macros such as "Int_val" to decode data from
+the "value" type.  It is however possible to tell the OCaml native-code
+compiler to do this for us and pass arguments unboxed to the C function.
+Similarly it is possible to tell OCaml to expect the result unboxed and box
+it for us.
 
-The motivation is that, by letting the OCaml compiler deal with
-boxing, it can often decide to suppress it entirely.
+The motivation is that, by letting `ocamlopt` deal with boxing, it can
+often decide to suppress it entirely.
 
 For instance let's consider this example:
 
@@ -2005,7 +2053,7 @@ the result of "foo".  This results in the allocation of "3 * len"
 temporary float values.
 
 Now if we annotate the arguments and result with "[\@unboxed]", the
-compiler will be able to avoid all these allocations:
+native-code compiler will be able to avoid all these allocations:
 
 \begin{verbatim}
 external foo
@@ -2062,16 +2110,16 @@ The corresponding C type must be "intnat".
 
 \subsection{Direct C call}
 
-In order to be able to run the garbage collector in the middle of a C
-function, the OCaml compiler generates some bookkeeping code around C
-calls. Technically it wraps every C call with the C function
+In order to be able to run the garbage collector in the middle of
+a C function, the OCaml native-code compiler generates some bookkeeping
+code around C calls.  Technically it wraps every C call with the C function
 "caml_c_call" which is part of the OCaml runtime.
 
-For small functions that are called repeatedly, this indirection can
-have a big impact on performances. However this is not needed if we
-know that the C function doesn't allocate and doesn't raise
-exceptions. We can instruct the OCaml compiler of this fact by
-annotating the external declaration with the attribute "[\@\@noalloc]":
+For small functions that are called repeatedly, this indirection can have
+a big impact on performances.  However this is not needed if we know that
+the C function doesn't allocate and doesn't raise exceptions.  We can
+instruct the OCaml native-code compiler of this fact by annotating the
+external declaration with the attribute "[\@\@noalloc]":
 
 \begin{verbatim}
 external bar : int -> int -> int = "foo" [@@noalloc]
@@ -2180,15 +2228,18 @@ CAMLprim stub_gethostbyname(value vname)
   CAMLparam1 (vname);
   CAMLlocal1 (vres);
   struct hostent * h;
+  char * name;
 
   /* Copy the string argument to a C string, allocated outside the
      OCaml heap. */
-  name = stat_alloc(caml_string_length(vname) + 1);
-  name = caml_strdup (String_val(vname));
+  name = caml_stat_strdup(String_val(vname));
   /* Release the OCaml run-time system */
   caml_release_runtime_system();
   /* Resolve the name */
   h = gethostbyname(name);
+  /* Free the copy of the string, which we might as well do before
+     acquiring the runtime system to benefit from parallelism. */
+  caml_stat_free(name);
   /* Re-acquire the OCaml run-time system */
   caml_acquire_runtime_system();
   /* Encode the relevant fields of h as the OCaml value vres */
@@ -2226,6 +2277,147 @@ names, declared in "<caml/signals.h>":
 \end{itemize}
 Intuition: a ``blocking section'' is a piece of C code that does not
 use the OCaml run-time system, typically a blocking input/output operation.
+
+\section{Advanced topic: interfacing with Windows Unicode APIs}
+\label{s:interfacing-windows-unicode-apis}
+
+This section contains some general guidelines for writing C stubs that use
+Windows Unicode APIs.
+
+{\bf Note:} This is an experimental feature of OCaml: the set of APIs below, as
+well as their exact semantics are not final and subject to change in future
+releases.
+
+The OCaml system under Windows can be configured at build time in one of two
+modes:
+
+\begin{itemize}
+
+\item {\bf legacy mode:} All path names, environment variables, command line
+arguments, etc. on the OCaml side are assumed to be encoded using the current
+8-bit code page of the system.
+
+\item {\bf Unicode mode:} All path names, environment variables, command line
+arguments, etc. on the OCaml side are assumed to be encoded using UTF-8.
+
+\end{itemize}
+
+In what follows, we say that a string has the \emph{OCaml encoding} if it is
+encoded in UTF-8 when in Unicode mode, in the current code page in legacy mode,
+or is an arbitrary string under Unix. A string has the \emph{platform encoding}
+if it is encoded in UTF-16 under Windows or is an arbitrary string under Unix.
+
+From the point of view of the writer of C stubs, the challenges of interacting
+with Windows Unicode APIs are twofold:
+
+\begin{itemize}
+
+\item The Windows API uses the UTF-16 encoding to support Unicode. The runtime
+system performs the necessary conversions so that the OCaml programmer only
+needs to deal with the OCaml encoding. C stubs that call Windows Unicode APIs
+need to use specific runtime functions to perform the necessary conversions in a
+compatible way.
+
+\item When writing stubs that need to be compiled under both Windows and Unix,
+the stubs need to be written in a way that allow the necessary conversions under
+Windows but that also work under Unix, where typically nothing particular needs
+to be done to support Unicode.
+
+\end{itemize}
+
+The native C character type under Windows is "WCHAR", two bytes wide, while
+under Unix it is "char", one byte wide. A type "char_os" is defined in
+"<caml/misc.h>" that stands for the concrete C character type of each
+platform. Strings in the platform encoding are of type "char_os *".
+
+The following functions are exposed to help write compatible C stubs. To use
+them, you need to include both "<caml/misc.h>" and "<caml/osdeps.h>".
+
+\begin{itemize}
+
+\item "char_os* caml_stat_strdup_to_os(const char *)" copies the argument while
+translating from OCaml encoding to the platform encoding. This function is
+typically used to convert the "char *" underlying an OCaml string before passing
+it to an operating system API that takes an Unicode argument. Under Unix, it is
+equivalent to "caml_stat_strdup".
+
+{\bf Note:} For maximum backwards compatibility in Unicode mode, if the argument
+is not a valid UTF-8 string, this function will fall back to assuming that it is
+encoded in the current code page.
+
+\item "char* caml_stat_strdup_of_os(const char_os *)" copies the argument while
+translating from the platform encoding to the OCaml encoding. It is the inverse
+of "caml_stat_strdup_to_os". This function is typically used to convert a string
+obtained from the operating system before passing it on to OCaml code. Under
+Unix, it is equivalent to "caml_stat_strdup".
+
+\item "value caml_copy_string_of_os(char_os *)" allocates an OCaml string with
+contents equal to the argument string converted to the OCaml encoding.  This
+function is essentially equivalent to "caml_stat_strdup_of_os" followed by
+"caml_copy_string", except that it avoids the allocation of the intermediate
+string returned by "caml_stat_strdup_of_os". Under Unix, it is equivalent to
+"caml_copy_string".
+
+\end{itemize}
+
+{\bf Note:} The strings returned by "caml_stat_strdup_to_os" and
+"caml_stat_strdup_of_os" are allocated using "caml_stat_alloc", so they need to
+be deallocated using "caml_stat_free" when they are no longer needed.
+
+\paragraph{Example} We want to bind the function "getenv" in a way that works
+both under Unix and Windows.  Under Unix this function has the prototype:
+
+\begin{verbatim}
+    char *getenv(const char *);
+\end{verbatim}
+While the Unicode version under Windows has the prototype:
+\begin{verbatim}
+    WCHAR *_wgetenv(const WCHAR *);
+\end{verbatim}
+
+In terms of "char_os", both functions take an argument of type "char_os *" and
+return a result of the same type. We begin by choosing the right implementation
+of the function to bind:
+
+\begin{verbatim}
+#ifdef _WIN32
+#define getenv_os _wgetenv
+#else
+#define getenv_os getenv
+#endif
+\end{verbatim}
+
+The rest of the binding is the same for both platforms:
+
+\begin{verbatim}
+/* The following define is necessary because the API is experimental */
+#define CAML_INTERNALS
+
+#include <caml/mlvalues.h>
+#include <caml/misc.h>
+#include <caml/alloc.h>
+#include <caml/fail.h>
+#include <caml/osdeps.h>
+#include <stdlib.h>
+
+CAMLprim value stub_getenv(value var_name)
+{
+  CAMLparam1(var_name);
+  CAMLlocal1(var_value);
+  char_os *var_name_os, *var_value_os;
+
+  var_name_os = caml_stat_strdup_to_os(String_val(var_name));
+  var_value_os = getenv_os(var_name_os);
+  caml_stat_free(var_name_os);
+
+  if (var_value_os == NULL)
+    caml_raise_not_found();
+
+  var_value = caml_copy_string_of_os(var_value_os);
+
+  CAMLreturn(var_value);
+}
+\end{verbatim}
 
 \section{Building mixed C/OCaml libraries: \texttt{ocamlmklib}}
 \label{s-ocamlmklib}

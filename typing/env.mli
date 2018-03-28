@@ -32,6 +32,7 @@ type summary =
   | Env_open of summary * Path.t
   | Env_functor_arg of summary * Ident.t
   | Env_constraints of summary * type_declaration PathMap.t
+  | Env_copy_types of summary * string list
 
 type t
 
@@ -123,8 +124,7 @@ val lookup_class:
 val lookup_cltype:
   ?loc:Location.t -> Longident.t -> t -> Path.t * class_type_declaration
 
-val update_value:
-  string -> (value_description -> value_description) -> t -> t
+val copy_types: string list -> t -> t
   (* Used only in Typecore.duplicate_ident_types. *)
 
 exception Recmodule
@@ -153,11 +153,13 @@ val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
 
 (* Insertion of all fields of a signature, relative to the given path.
-   Used to implement open. *)
-
+   Used to implement open. Returns None if the path refers to a functor,
+   not a structure. *)
 val open_signature:
+    ?used_slot:bool ref ->
     ?loc:Location.t -> ?toplevel:bool -> Asttypes.override_flag -> Path.t ->
-      signature -> t -> t
+      t -> t option
+
 val open_pers_signature: string -> t -> t
 
 (* Insertion by name *)
@@ -189,12 +191,12 @@ val get_unit_name: unit -> string
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature:
-  deprecated:string option -> signature -> string -> string -> signature
+  deprecated:string option -> signature -> string -> string -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
   deprecated:string option ->
   signature -> string -> string -> (string * Digest.t option) list
-  -> signature
+  -> Cmi_format.cmi_infos
         (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
@@ -267,7 +269,7 @@ val set_type_used_callback:
 
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
-      (t -> module_type -> Path.t -> module_type -> unit) ref
+      (loc:Location.t -> t -> module_type -> Path.t -> module_type -> unit) ref
 (* Forward declaration to break mutual recursion with Typecore. *)
 val add_delayed_check_forward: ((unit -> unit) -> unit) ref
 (* Forward declaration to break mutual recursion with Mtype. *)

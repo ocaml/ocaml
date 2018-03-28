@@ -8,6 +8,14 @@
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}
 \newcommand{\?}{\black\#\blue }
 \renewcommand{\:}{\maroon}
+\def\camlinput{}
+\def\endcamlinput{}
+\def\camloutput{}
+\def\endcamloutput{}
+\def\camlerror{}
+\def\endcamlerror{}
+\def\camlwarn{}
+\def\endcamlwarn{}
 \newcommand{\var}[1]{\textit{#1}}
 
 \newenvironment{library}{}{}

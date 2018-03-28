@@ -225,7 +225,7 @@ let nest_eid_map map =
   in
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
-let print_approx ppf (t : t) =
+let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   let values = t.values in
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
@@ -331,6 +331,7 @@ let print_approx ppf (t : t) =
       print_recorded_symbols ();
     end
   in
+  List.iter (fun s -> Queue.push s symbols_to_print) root_symbols;
   fprintf ppf "@[<hov 2>Globals:@ ";
   fprintf ppf "@]@ @[<hov 2>Symbols:@ ";
   print_recorded_symbols ();
@@ -347,10 +348,13 @@ let print_offsets ppf (t : t) =
         Var_within_closure.print vid off) t.offset_fv;
   Format.fprintf ppf "@]@ "
 
-let print_all ppf (t : t) =
+let print_functions ppf (t : t) =
+  Set_of_closures_id.Map.print Flambda.print_function_declarations ppf
+    t.sets_of_closures
+
+let print_all ppf ((t, root_symbols) : t * Symbol.t list) =
   let fprintf = Format.fprintf in
   fprintf ppf "approxs@ %a@.@."
-    print_approx t;
+    print_approx (t, root_symbols);
   fprintf ppf "functions@ %a@.@."
-    (Set_of_closures_id.Map.print Flambda.print_function_declarations)
-    t.sets_of_closures
+    print_functions t

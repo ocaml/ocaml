@@ -114,7 +114,7 @@ let rec longest_path critical_outputs node =
       [] ->
         node.length <-
           if is_critical critical_outputs node.instr.res
-          || node.instr.desc = Lreloadretaddr (* alway critical *)
+          || node.instr.desc = Lreloadretaddr (* always critical *)
           then node.delay
           else 0
     | sons ->
@@ -337,7 +337,7 @@ method private reschedule ready_queue date cont =
         (* Remove node from queue *)
         let new_queue = ref (remove_instr node ready_queue) in
         (* Update the start date and number of ancestors emitted of
-           all descendents of this node. Enter those that become ready
+           all descendants of this node. Enter those that become ready
            in the queue. *)
         let issue_cycles = self#instr_issue_cycles node.instr in
         List.iter

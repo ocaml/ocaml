@@ -45,7 +45,7 @@ static value convert_addrinfo(struct addrinfo * a)
   if (len > sizeof(sa)) len = sizeof(sa);
   memcpy(&sa.s_gen, a->ai_addr, len);
   vaddr = alloc_sockaddr(&sa, len, -1);
-  vcanonname = copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
+  vcanonname = caml_copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
   vres = caml_alloc_5(0,
     cst_to_constr(a->ai_family, socket_domain_table, 3, 0),
     cst_to_constr(a->ai_socktype, socket_type_table, 4, 0),
@@ -71,13 +71,13 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
   if (caml_string_length(vnode) == 0) {
     node = NULL;
   } else {
-    node = caml_strdup(String_val(vnode));
+    node = caml_stat_strdup(String_val(vnode));
   }
   /* Extract "service" parameter */
   if (caml_string_length(vserv) == 0) {
     serv = NULL;
   } else {
-    serv = caml_strdup(String_val(vserv));
+    serv = caml_stat_strdup(String_val(vserv));
   }
   /* Parse options, set hints */
   memset(&hints, 0, sizeof(hints));
@@ -107,11 +107,11 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
       }
   }
   /* Do the call */
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = getaddrinfo(node, serv, &hints, &res);
-  leave_blocking_section();
-  if (node != NULL) stat_free(node);
-  if (serv != NULL) stat_free(serv);
+  caml_leave_blocking_section();
+  if (node != NULL) caml_stat_free(node);
+  if (serv != NULL) caml_stat_free(serv);
   /* Convert result */
   vres = Val_int(0);
   if (retcode == 0) {
@@ -128,6 +128,6 @@ CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
 #else
 
 CAMLprim value unix_getaddrinfo(value vnode, value vserv, value vopts)
-{ invalid_argument("getaddrinfo not implemented"); }
+{ caml_invalid_argument("getaddrinfo not implemented"); }
 
 #endif

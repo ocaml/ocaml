@@ -15,13 +15,17 @@
 
 /* Based on public-domain code from Berkeley Yacc */
 
+#ifndef DEBUG
+#define NDEBUG
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../config/s.h"
+#include "caml/s.h"
 
 /*  machine-dependent definitions                              */
 /*  the following definitions are for the Tahoe                */
@@ -81,8 +85,6 @@
 #define TEXT 5
 #define TYPE 6
 #define START 7
-#define UNION 8
-#define IDENT 9
 
 /*  symbol classes  */
 
@@ -227,7 +229,6 @@ extern char *defines_file_name;
 extern char *input_file_name;
 extern char *output_file_name;
 extern char *text_file_name;
-extern char *union_file_name;
 extern char *verbose_file_name;
 extern char *interface_file_name;
 
@@ -238,7 +239,6 @@ extern FILE *defines_file;
 extern FILE *input_file;
 extern FILE *output_file;
 extern FILE *text_file;
-extern FILE *union_file;
 extern FILE *verbose_file;
 extern FILE *interface_file;
 
@@ -250,7 +250,6 @@ extern int ntokens;
 extern int nvars;
 extern int ntags;
 
-extern char unionized;
 extern char line_format[];
 
 extern int   start_symbol;
@@ -333,7 +332,6 @@ extern void no_grammar (void) Noreturn;
 extern void no_space (void) Noreturn;
 extern void open_error (char *filename) Noreturn;
 extern void output (void);
-extern void over_unionized (char *u_cptr) Noreturn;
 extern void prec_redeclared (void);
 extern void polymorphic_entry_point(char *s) Noreturn;
 extern void forbidden_conflicts (void);
@@ -355,7 +353,6 @@ extern void unterminated_action (int a_lineno, char *a_line, char *a_cptr) Noret
 extern void unterminated_comment (int c_lineno, char *c_line, char *c_cptr) Noreturn;
 extern void unterminated_string (int s_lineno, char *s_line, char *s_cptr) Noreturn;
 extern void unterminated_text (int t_lineno, char *t_line, char *t_cptr) Noreturn;
-extern void unterminated_union (int u_lineno, char *u_line, char *u_cptr) Noreturn;
 extern void used_reserved (char *s) Noreturn;
 extern void verbose (void);
 extern void write_section (char **section);

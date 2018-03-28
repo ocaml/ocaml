@@ -47,7 +47,7 @@ let rec eliminate_ref id = function
       Lassign(id, Lprim(Poffsetint delta, [Lvar id], loc))
   | Lprim(p, el, loc) ->
       Lprim(p, List.map (eliminate_ref id) el, loc)
-  | Lswitch(e, sw) ->
+  | Lswitch(e, sw, loc) ->
       Lswitch(eliminate_ref id e,
         {sw_numconsts = sw.sw_numconsts;
          sw_consts =
@@ -56,7 +56,8 @@ let rec eliminate_ref id = function
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
          sw_failaction =
-            Misc.may_map (eliminate_ref id) sw.sw_failaction; })
+            Misc.may_map (eliminate_ref id) sw.sw_failaction; },
+        loc)
   | Lstringswitch(e, sw, default, loc) ->
       Lstringswitch
         (eliminate_ref id e,
@@ -118,7 +119,7 @@ let simplify_exits lam =
       List.iter (fun (_v, l) -> count l) bindings;
       count body
   | Lprim(_p, ll, _) -> List.iter count ll
-  | Lswitch(l, sw) ->
+  | Lswitch(l, sw, _loc) ->
       count_default sw ;
       count l;
       List.iter (fun (_, l) -> count l) sw.sw_consts;
@@ -134,7 +135,7 @@ let simplify_exits lam =
       end
   | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
   | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
-      (* i will be replaced by j in l1, so each occurence of i in l1
+      (* i will be replaced by j in l1, so each occurrence of i in l1
          increases j's ref count *)
       count l1 ;
       let ic = count_exit i in
@@ -232,7 +233,7 @@ let simplify_exits lam =
 
       | _ -> Lprim(p, ll, loc)
      end
-  | Lswitch(l, sw) ->
+  | Lswitch(l, sw, loc) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
@@ -240,7 +241,8 @@ let simplify_exits lam =
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
-                  sw_failaction = new_fail})
+                  sw_failaction = new_fail},
+         loc)
   | Lstringswitch(l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
@@ -379,7 +381,7 @@ let simplify_lets lam =
       List.iter (fun (_v, l) -> count bv l) bindings;
       count bv body
   | Lprim(_p, ll, _) -> List.iter (count bv) ll
-  | Lswitch(l, sw) ->
+  | Lswitch(l, sw, _loc) ->
       count_default bv sw ;
       count bv l;
       List.iter (fun (_, l) -> count bv l) sw.sw_consts;
@@ -498,7 +500,7 @@ let simplify_lets lam =
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll, loc) -> Lprim(p, List.map simplif ll, loc)
-  | Lswitch(l, sw) ->
+  | Lswitch(l, sw, loc) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
       and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
@@ -506,7 +508,8 @@ let simplify_lets lam =
       Lswitch
         (new_l,
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
-                  sw_failaction = new_fail})
+                  sw_failaction = new_fail},
+         loc)
   | Lstringswitch (l,sw,d,loc) ->
       Lstringswitch
         (simplif l,List.map (fun (s,l) -> s,simplif l) sw,
@@ -574,7 +577,7 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos is_tail arg2
   | Lprim (_, l, _) ->
       list_emit_tail_infos false l
-  | Lswitch (lam, sw) ->
+  | Lswitch (lam, sw, _loc) ->
       emit_tail_infos false lam;
       list_emit_tail_infos_fun snd is_tail sw.sw_consts;
       list_emit_tail_infos_fun snd is_tail sw.sw_blocks;
@@ -632,8 +635,7 @@ and list_emit_tail_infos is_tail =
    'Some' constructor, only to deconstruct it immediately in the
    function's body. *)
 
-let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
-      ~id:fun_id ~kind ~params ~body ~attr ~wrapper_attr ~loc () =
+let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
   let rec aux map = function
     | Llet(Strict, k, id, (Lifthenelse(Lvar optparam, _, _) as def), rest) when
         Ident.name optparam = "*opt*" && List.mem optparam params
@@ -675,9 +677,9 @@ let split_default_wrapper ?(create_wrapper_body = fun lam -> lam)
         (wrapper_body, (inner_id, inner_fun))
   in
   try
-    let wrapper_body, inner = aux [] body in
-    [(fun_id, Lfunction{kind; params; body = create_wrapper_body wrapper_body;
-       attr = wrapper_attr; loc}); inner]
+    let body, inner = aux [] body in
+    let attr = default_stub_attribute in
+    [(fun_id, Lfunction{kind; params; body; attr; loc}); inner]
   with Exit ->
     [(fun_id, Lfunction{kind; params; body; attr; loc})]
 

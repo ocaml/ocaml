@@ -13,11 +13,14 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 extern int error_table[];
@@ -25,19 +28,19 @@ extern int error_table[];
 CAMLprim value unix_error_message(value err)
 {
   int errnum;
-  char buffer[512];
+  wchar_t buffer[512];
 
   errnum = Is_block(err) ? Int_field(err, 0) : error_table[Int_val(err)];
   if (errnum > 0)
-    return copy_string(strerror(errnum));
+    return caml_copy_string(strerror(errnum));
   if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                     NULL,
                     -errnum,
                     0,
                     buffer,
-                    sizeof(buffer),
+                    sizeof(buffer)/sizeof(wchar_t),
                     NULL))
-    return copy_string(buffer);
-  sprintf(buffer, "unknown error #%d", errnum);
-  return copy_string(buffer);
+    return caml_copy_string_of_utf16(buffer);
+  swprintf(buffer, sizeof(buffer)/sizeof(wchar_t), L"unknown error #%d", errnum);
+  return caml_copy_string_of_utf16(buffer);
 }

@@ -16,6 +16,8 @@
 /* Asm part of the runtime system, ARM processor, 64-bit mode */
 /* Must be preprocessed by cpp */
 
+#include "caml/m.h"
+
 /* Special registers */
 
 #define TRAP_OFF x26
@@ -31,10 +33,14 @@
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_REGISTER(r1,r2) .cfi_register r1,r2
+#define CFI_OFFSET(r,n) .cfi_offset r,n
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
+#define CFI_REGISTER(r1,r2)
+#define CFI_OFFSET(r,n)
 #endif
 
 #define FUNCTION(name) \
@@ -301,6 +307,8 @@ CFI_STARTPROC
         SWITCH_OCAML_TO_C(TMP)
     /* Set up stack space, saving return address and frame pointer */
     /* (2 regs RA/GP, 24 allocatable int regs, 24 caller-save float regs) * 8 */
+        CFI_OFFSET(29, -400)
+        CFI_OFFSET(30, -392)
         stp     x29, x30, [sp, -400]!
         CFI_ADJUST(400)
         add     x29, sp, 0

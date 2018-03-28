@@ -45,7 +45,8 @@ COMPILEROBJS=\
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
   ../../parsing/asttypes.cmi \
   ../../parsing/location.cmo ../../parsing/longident.cmo \
-  ../../parsing/docstrings.cmo ../../parsing/ast_helper.cmo \
+  ../../parsing/docstrings.cmo ../../parsing/syntaxerr.cmo \
+  ../../parsing/ast_helper.cmo \
   ../../parsing/ast_mapper.cmo ../../parsing/ast_iterator.cmo \
   ../../parsing/attr_helper.cmo \
   ../../parsing/builtin_attributes.cmo \
@@ -89,7 +90,7 @@ extract_crc: dynlink.cma extract_crc.cmo
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
-	cp dynlink.cmi dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
+	cp dynlink.cmi dynlink.cmti dynlink.cma dynlink.mli "$(INSTALL_LIBDIR)"
 	cp extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 
 installopt:

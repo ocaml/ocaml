@@ -15,7 +15,7 @@
 
 (** Pseudo-random number generators (PRNG). *)
 
-(** {6 Basic functions} *)
+(** {1 Basic functions} *)
 
 val init : int -> unit
 (** Initialize the generator, using the argument as a seed.
@@ -64,9 +64,9 @@ val bool : unit -> bool
 (** [Random.bool ()] returns [true] or [false] with probability 0.5 each. *)
 
 
-(** {6 Advanced functions} *)
+(** {1 Advanced functions} *)
 
-(** The functions from module [State] manipulate the current state
+(** The functions from module {!State} manipulate the current state
     of the random generator explicitly.
     This allows using one or several deterministic PRNGs,
     even in a multi-threaded program, without interference from

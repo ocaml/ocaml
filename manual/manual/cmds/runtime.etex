@@ -149,6 +149,10 @@ The following environment variables are also consulted:
         \item[512 (= 0x200)] Computation of compaction-triggering condition.
         \item[1024 (= 0x400)] Output GC statistics at program exit.
   \end{options}
+  \item[c] ("cleanup_on_exit") Shut the runtime down gracefully on exit (see
+  "caml_shutdown" in section~\ref{s:embedded-code}). The option also enables
+  pooling (as in "caml_startup_pooled"). This mode can be used to detect
+  leaks with a third-party memory debugger.
   \end{options}
   The multiplier is "k", "M", or "G", for multiplication by $2^{10}$,
   $2^{20}$, and $2^{30}$ respectively.

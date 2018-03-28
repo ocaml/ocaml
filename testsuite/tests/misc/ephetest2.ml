@@ -41,7 +41,7 @@ let print_short_bool fmt b =
 
 let rec pp_form fmt = function
   | Constant b ->
-      fprintf fmt "%b" b
+      fprintf fmt "%B" b
   | And a      ->
       fprintf fmt "And[@[%a@]]" (fun fmt -> Array.iter (pp_var fmt)) a
   | Or a       ->

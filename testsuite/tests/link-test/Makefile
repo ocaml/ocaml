@@ -14,7 +14,13 @@
 #*                                                                        *
 #**************************************************************************
 
-default: byte native
+default:
+	@$(MAKE) byte
+	@if $(BYTECODE_ONLY) ; then \
+	  echo " ... testing native 'test.reference': => skipped"; \
+	else \
+	  $(MAKE) native; \
+	fi
 
 native:
 	@printf " ... testing native 'test.reference':"

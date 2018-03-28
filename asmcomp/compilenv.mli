@@ -29,8 +29,7 @@ val imported_sets_of_closures_table
   : Flambda.function_declarations option Set_of_closures_id.Tbl.t
         (* flambda-only *)
 
-val reset: ?packname:string -> source_provenance:Timings.source_provenance ->
-        string -> unit
+val reset: ?packname:string -> string -> unit
         (* Reset the environment and record the name of the unit being
            compiled (arg).  Optional argument is [-for-pack] prefix. *)
 
@@ -47,10 +46,6 @@ val current_unit_name: unit -> string
 val current_unit_linkage_name: unit -> Linkage_name.t
         (* Return the linkage_name of the unit being compiled.
            flambda-only *)
-
-val current_build: unit -> Timings.source_provenance
-        (* Return the kind of build source being compiled. If it is a
-           file compilation it also provides the filename. *)
 
 val current_unit: unit -> Compilation_unit.t
         (* flambda-only *)
@@ -94,7 +89,7 @@ val set_export_info: Export_info.t -> unit
         (* Record the informations of the unit being compiled
            flambda-only *)
 val approx_env: unit -> Export_info.t
-        (* Returns all the information loaded from extenal compilation units
+        (* Returns all the information loaded from external compilation units
            flambda-only *)
 val approx_for_global: Compilation_unit.t -> Export_info.t
         (* Loads the exported information declaring the compilation_unit
@@ -117,7 +112,7 @@ val function_label : Closure_id.t -> string
 
 val new_structured_constant:
   Clambda.ustructured_constant ->
-  shared:bool -> (* can be shared with another structually equal constant *)
+  shared:bool -> (* can be shared with another structurally equal constant *)
   string
 val structured_constants:
   unit -> Clambda.preallocated_constant list

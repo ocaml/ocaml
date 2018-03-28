@@ -7,9 +7,15 @@ OCaml distribution. These are just guidelines, not rules, use your
 best judgment and feel free to propose changes to this document itself
 in a pull request.
 
+This document assumes that you have a patch against the sources of the
+compiler distribution, that you wish to submit to the OCaml
+maintainers upstream. See [INSTALL.adoc](INSTALL.adoc) for details on
+how to build the compiler distribution from sources. See
+[HACKING.adoc](HACKING.adoc) for details on how to modify the sources.
+
 ## Contribution
 
-Adding or modifying code is far from the only way to contribute to the
+Modifying its sources is far from the only way to contribute to the
 OCaml distribution. Bug reports (in particular when they come with
 a reproducible example), simple typos or clarifications in the
 documentation also help, and help evaluating and integrating existing
@@ -18,8 +24,8 @@ forums, or asking the good questions that highlight deficiencies in
 existing documentations, also help. We currently have more
 contributors willing to propose changes than contributors willing to
 review other people's changes, so more eyes on the existing change
-requests is a good way to increase the integration bandwidth of external
-contributions.
+requests is a good way to increase the integration bandwidth of
+external contributions.
 
 There are also many valuable ways to contribute to the wider OCaml
 ecosystem that do not involve changes to the OCaml distribution.
@@ -28,6 +34,31 @@ The rest of the document is concerned with the form of change
 proposals against the OCaml distribution. (Code changes, but also
 improvement to documentation or implementation comments, which are
 valuable changes on their own.)
+
+## Workflow
+
+All changes to the OCaml distribution need to be processed through the
+GitHub Pull Request (PR) system.  In order to propose a change, a
+contributor thus needs to have a GitHub account, fork the ocaml/ocaml
+repository, create a branch for the proposal on their fork and submit
+it as a Pull Request on the upstream repository.  (If you are not yet
+familiar with GitHub, don't worry, all these steps are actually quite
+easy!)
+
+The current rule is that a PR needs to get an explicit approval from
+one of the core maintainer in order to be merged.  Reviews by
+external contributors are very much appreciated.
+
+Since core maintainers cannot push directly without going through an
+approved PR, they need to be able to apply small changes to the
+contributed branches themselves.  Such changes include fixing
+conflicts, adjusting a Changelog entry, or applying some code changes
+required by the reviewers.  Contributors are thus strongly advised to
+check the [**Allow edits from maintainer**](
+https://help.github.com/articles/allowing-changes-to-a-pull-request-branch-created-from-a-fork/
+) flag on their PRs in the GitHub interface.  Failing to do so might
+significantly delay the inclusion of an otherwise perfectly ok
+contribution.
 
 
 ## Coding guidelines
@@ -152,7 +183,7 @@ of the OCaml distribution.
 
 ### Changelog
 
-Any user-visible change should have a Changelog entry:
+Any user-visible change should have a `Changes` entry:
 
 - in the right section (named sections if major feature, generic
   "Bug fixes" and "Feature requests" otherwise)
@@ -163,18 +194,17 @@ Any user-visible change should have a Changelog entry:
   (several numbers separated by commas can be used)
 
 - maintaining the order: each section lists Mantis PRs first in ascending
-  numerical order, followed by Github PRs
+  numerical order, followed by Github PRs in ascending numerical order,
+  followed by changes that are not related to a PR.
 
 - with a concise readable description of the change (possibly taken
   from a commit message, but it should make sense to end-users
   reading release notes)
 
-- crediting the people that worked on the feature
-
-      The people that wrote the code should be credited of course,
-      but also substantial code reviews or design advice, and the
-      reporter of the bug (if applicable) or designer of the
-      feature request (if novel).
+- crediting the people that worked on the feature. The people that
+  wrote the code should be credited of course, but also substantial
+  code reviews or design advice, and the reporter of the bug
+  (if applicable) or designer of the feature request (if novel).
 
 - following the format
 

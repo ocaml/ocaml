@@ -90,9 +90,9 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
       tv.tv_usec = (int) (1e6 * (tm - tv.tv_sec));
       tvp = &tv;
     }
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = select(maxfd + 1, &read, &write, &except, tvp);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (retcode == -1) uerror("select", Nothing);
     readfds = fdset_to_fdlist(readfds, &read);
     writefds = fdset_to_fdlist(writefds, &write);
@@ -109,6 +109,6 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
 
 CAMLprim value unix_select(value readfds, value writefds, value exceptfds,
                            value timeout)
-{ invalid_argument("select not implemented"); }
+{ caml_invalid_argument("select not implemented"); }
 
 #endif

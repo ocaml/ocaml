@@ -150,11 +150,6 @@ let mem__imp s =
 let rel_plt s =
   if windows && !Clflags.dlcode then mem__imp s
   else
-    let use_plt =
-      match system with
-      | S_macosx | S_mingw64 | S_cygwin | S_win64 -> false
-      | _ -> !Clflags.dlcode
-    in
     sym (if use_plt then emit_symbol s ^ "@PLT" else emit_symbol s)
 
 let emit_call s = I.call (rel_plt s)
@@ -275,12 +270,8 @@ let record_frame_label ?label live raise_ dbg =
       | _ -> ()
     )
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
 let record_frame ?label live raise_ dbg =
@@ -868,10 +859,6 @@ let emit_instr fallthrough i =
       I.lea (addressing addr NONE i 0) (res i 0)
   | Lop(Ispecific(Istore_int(n, addr, _))) ->
       I.mov (nat n) (addressing addr QWORD i 0)
-  | Lop(Ispecific(Istore_symbol(s, addr, _))) ->
-      assert (not !Clflags.pic_code && not !Clflags.dlcode);
-      add_used_symbol s;
-      load_symbol_addr s (addressing addr QWORD i 0)
   | Lop(Ispecific(Ioffset_loc(n, addr))) ->
       I.add (int n) (addressing addr QWORD i 0)
   | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
@@ -890,6 +877,7 @@ let emit_instr fallthrough i =
       I.sqrtsd (arg i 0) (res i 0)
   | Lop(Ispecific(Ifloatsqrtf addr)) ->
       I.sqrtsd (addressing addr REAL8 i 0) (res i 0)
+  | Lop (Iname_for_debugger _) -> ()
   | Lreloadretaddr ->
       ()
   | Lreturn ->
@@ -1228,7 +1216,7 @@ let begin_assembly() =
   end;
 
 
-  if !Clflags.dlcode then begin
+  if !Clflags.dlcode || Arch.win64 then begin
     (* from amd64.S; could emit these constants on demand *)
     begin match system with
     | S_macosx -> D.section ["__TEXT";"__literal16"] None ["16byte_literals"]
@@ -1308,9 +1296,11 @@ let end_assembly() =
   emit_imp_table();
 
   D.data ();
+  D.qword (const 0);  (* PR#6329 *)
   emit_global_label "data_end";
-  D.long (const 0);
+  D.qword (const 0);
 
+  D.align 8;                            (* PR#7591 *)
   emit_global_label "frametable";
 
   let setcnt = ref 0 in

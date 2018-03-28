@@ -2,7 +2,7 @@
 
 module Msg : sig
 
-  type 'a tag
+  type 'a tag = private ..
 
   type result = Result : 'a tag * 'a -> result
 

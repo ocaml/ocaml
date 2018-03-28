@@ -12,6 +12,7 @@
 #*                                                                        *
 #**************************************************************************
 
+.PHONY: default
 default:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
@@ -23,10 +24,12 @@ default:
 	  echo " => passed" || echo " => failed"; \
 	done
 
+.PHONY: promote
 promote:
 	@for file in *.corrected; do \
 	  cp $$file `basename $$file .corrected`; \
 	done
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.corrected

@@ -54,10 +54,6 @@ val can_be_merged : Flambda.t -> Flambda.t -> bool
 
 val description_of_toplevel_node : Flambda.t -> string
 
-(** Sharing key, used for coalescing switch cases. *)
-type sharing_key
-val make_key : Flambda.t -> sharing_key option
-
 (* Given an expression, freshen all variables within it, and form a function
    whose body is the resulting expression.  The variables specified by
    [params] will become the parameters of the function; the closure will be
@@ -69,7 +65,7 @@ val make_key : Flambda.t -> sharing_key option
 val make_closure_declaration
    : id:Variable.t
   -> body:Flambda.t
-  -> params:Variable.t list
+  -> params:Parameter.t list
   -> stub:bool
   -> Flambda.t
 

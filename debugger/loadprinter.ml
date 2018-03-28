@@ -97,10 +97,15 @@ let rec eval_path = function
   | Pdot(p, _, pos) -> Obj.field (eval_path p) pos
   | Papply _ -> fatal_error "Loadprinter.eval_path"
 
+(* PR#7258: get rid of module aliases before evaluating paths *)
+
+let eval_path path =
+  eval_path (Env.normalize_path (Some Location.none) Env.empty path)
+
 (* Install, remove a printer (as in toplevel/topdirs) *)
 
 (* since 4.00, "topdirs.cmi" is not in the same directory as the standard
-  libray, so we load it beforehand as it cannot be found in the search path. *)
+  library, so we load it beforehand as it cannot be found in the search path. *)
 let () =
   let compiler_libs =
     Filename.concat Config.standard_library "compiler-libs" in

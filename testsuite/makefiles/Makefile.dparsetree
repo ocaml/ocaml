@@ -14,6 +14,7 @@
 #*                                                                        *
 #**************************************************************************
 
+.PHONY: default
 default:
 	@for file in *.ml; do \
 	  $(OCAMLC) -dparsetree -c $$file 2>$$file.result >/dev/null || true; \
@@ -24,7 +25,9 @@ default:
           && echo " => passed" || echo " => failed"; \
 	done
 
+.PHONY: promote
 promote: defaultpromote
 
+.PHONY: clean
 clean: defaultclean
 	@rm -f *.result

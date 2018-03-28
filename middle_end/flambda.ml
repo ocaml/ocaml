@@ -116,7 +116,7 @@ and function_declarations = {
 }
 
 and function_declaration = {
-  params : Variable.t list;
+  params : Parameter.t list;
   body : t;
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
@@ -353,8 +353,11 @@ and print_named ppf (named : named) =
     (* lam ppf expr *)
 
 and print_function_declaration ppf var (f : function_declaration) =
-  let idents ppf =
-    List.iter (fprintf ppf "@ %a" Variable.print) in
+  let param ppf p =
+    Variable.print ppf (Parameter.var p)
+  in
+  let params ppf =
+    List.iter (fprintf ppf "@ %a" param) in
   let stub =
     if f.stub then
       " *stub*"
@@ -382,7 +385,7 @@ and print_function_declaration ppf var (f : function_declaration) =
   in
   fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2>%a@])@]@ "
     Variable.print var stub is_a_functor inline specialise
-    idents f.params lam f.body
+    params f.params lam f.body
 
 and print_set_of_closures ppf (set_of_closures : set_of_closures) =
   match set_of_closures with
@@ -457,44 +460,38 @@ let print_constant_defining_value ppf (const : constant_defining_value) =
       Closure_id.print closure_id
 
 let rec print_program_body ppf (program : program_body) =
+  let symbol_binding ppf (symbol, constant_defining_value) =
+    fprintf ppf "@[<2>(%a@ %a)@]"
+      Symbol.print symbol
+      print_constant_defining_value constant_defining_value
+  in
   match program with
   | Let_symbol (symbol, constant_defining_value, body) ->
-    let rec letbody (ul : program_body) =
+    let rec extract acc (ul : program_body) =
       match ul with
       | Let_symbol (symbol, constant_defining_value, body) ->
-        fprintf ppf "@ @[<2>(%a@ %a)@]" Symbol.print symbol
-          print_constant_defining_value constant_defining_value;
-        letbody body
-      | _ -> ul
+        extract ((symbol, constant_defining_value) :: acc) body
+      | _ ->
+        List.rev acc,  ul
     in
-    fprintf ppf "@[<2>let_symbol@ @[<hv 1>(@[<2>%a@ %a@])@]@ "
-      Symbol.print symbol
-      print_constant_defining_value constant_defining_value;
-    let program = letbody body in
-    fprintf ppf "@]@.";
+    let defs, program = extract [symbol, constant_defining_value] body in
+    fprintf ppf
+      "@[<2>let_symbol@ @[%a@]@]@."
+      (Format.pp_print_list symbol_binding) defs;
     print_program_body ppf program
   | Let_rec_symbol (defs, program) ->
-    let bindings ppf id_arg_list =
-      let spc = ref false in
-      List.iter
-        (fun (symbol, constant_defining_value) ->
-           if !spc then fprintf ppf "@ " else spc := true;
-           fprintf ppf "@[<2>%a@ %a@]"
-             Symbol.print symbol
-             print_constant_defining_value constant_defining_value)
-        id_arg_list in
     fprintf ppf
-      "@[<2>let_rec_symbol@ (@[<hv 1>%a@])@]@."
-      bindings defs;
+      "@[<2>let_rec_symbol@ @[%a@]@]@."
+      (Format.pp_print_list symbol_binding) defs;
     print_program_body ppf program
   | Initialize_symbol (symbol, tag, fields, program) ->
-    fprintf ppf "@[<2>initialize_symbol@ @[<hv 1>(@[<2>%a@ %a@ %a@])@]@]@."
+    fprintf ppf "@[<2>initialize_symbol@ (@[<2>%a@ %a@ %a@])@]@."
       Symbol.print symbol
       Tag.print tag
       (Format.pp_print_list lam) fields;
     print_program_body ppf program
   | Effect (expr, program) ->
-    fprintf ppf "@[effect @[<hv 1>%a@]@]@."
+    fprintf ppf "@[<2>effect@ %a@]@."
       lam expr;
     print_program_body ppf program;
   | End root -> fprintf ppf "End %a" Symbol.print root
@@ -1053,7 +1050,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
       Variable.Map.fold (fun _fun_var function_decl expected_free_vars ->
           let free_vars =
             Variable.Set.diff function_decl.free_variables
-              (Variable.Set.union (Variable.Set.of_list function_decl.params)
+              (Variable.Set.union (Parameter.Set.vars function_decl.params)
                 all_fun_vars)
           in
           Variable.Set.union free_vars expected_free_vars)
@@ -1086,7 +1083,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
     end;
     let all_params =
       Variable.Map.fold (fun _fun_var function_decl all_params ->
-          Variable.Set.union (Variable.Set.of_list function_decl.params)
+          Variable.Set.union (Parameter.Set.vars function_decl.params)
             all_params)
         function_decls.funs
         Variable.Set.empty
@@ -1111,7 +1108,7 @@ let create_set_of_closures ~function_decls ~free_vars ~specialised_args
 let used_params function_decl =
   Variable.Set.filter
     (fun param -> Variable.Set.mem param function_decl.free_variables)
-    (Variable.Set.of_list function_decl.params)
+    (Parameter.Set.vars function_decl.params)
 
 let compare_const (c1:const) (c2:const) =
   match c1, c2 with

@@ -59,6 +59,7 @@ let newmarkedgenvar () =
 
 let is_Tvar = function {desc=Tvar _} -> true | _ -> false
 let is_Tunivar = function {desc=Tunivar _} -> true | _ -> false
+let is_Tconstr = function {desc=Tconstr _} -> true | _ -> false
 
 let dummy_method = "*dummy method*"
 let default_mty = function
@@ -208,27 +209,31 @@ let proxy ty =
 
 (**** Utilities for fixed row private types ****)
 
-let has_constr_row t =
+let row_of_type t = 
   match (repr t).desc with
     Tobject(t,_) ->
-      let rec check_row t =
-        match (repr t).desc with
-          Tfield(_,_,_,t) -> check_row t
-        | Tconstr _ -> true
-        | _ -> false
-      in check_row t
+      let rec get_row t =
+        let t = repr t in
+        match t.desc with
+          Tfield(_,_,_,t) -> get_row t
+        | _ -> t
+      in get_row t
   | Tvariant row ->
-      (match row_more row with {desc=Tconstr _} -> true | _ -> false)
+      row_more row
   | _ ->
-      false
+      t
+
+let has_constr_row t =
+  not (is_Tconstr t) && is_Tconstr (row_of_type t)
 
 let is_row_name s =
   let l = String.length s in
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
-let is_constr_row t =
+let is_constr_row ~allow_ident t =
   match t.desc with
-    Tconstr (Path.Pident id, _, _) -> is_row_name (Ident.name id)
+    Tconstr (Path.Pident id, _, _) when allow_ident ->
+      is_row_name (Ident.name id)
   | Tconstr (Path.Pdot (_, s, _), _, _) -> is_row_name s
   | _ -> false
 

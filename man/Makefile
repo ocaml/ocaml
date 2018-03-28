@@ -15,13 +15,14 @@
 
 include ../config/Makefile
 
-INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(MANEXT)
+INSTALL_DIR=$(DESTDIR)$(MANDIR)/man$(PROGRAMS_MAN_SECTION)
 
 install:
-	for i in *.m; do cp $$i $(INSTALL_DIR)/`basename $$i .m`.$(MANEXT); done
-	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' \
-	     > $(INSTALL_DIR)/ocamlc.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' \
-	     > $(INSTALL_DIR)/ocamlopt.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/ocamlcp.$(MANEXT)' \
-	     > $(INSTALL_DIR)/ocamloptp.$(MANEXT)
+	for i in *.m; do cp \
+	  $$i $(INSTALL_DIR)/`basename $$i .m`.$(PROGRAMS_MAN_SECTION); done
+	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlc.$(PROGRAMS_MAN_SECTION)' \
+	     > $(INSTALL_DIR)/ocamlc.opt.$(PROGRAMS_MAN_SECTION)
+	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlopt.$(PROGRAMS_MAN_SECTION)' \
+	     > $(INSTALL_DIR)/ocamlopt.opt.$(PROGRAMS_MAN_SECTION)
+	echo '.so man$(PROGRAMS_MAN_SECTION)/ocamlcp.$(PROGRAMS_MAN_SECTION)' \
+	     > $(INSTALL_DIR)/ocamloptp.$(PROGRAMS_MAN_SECTION)

@@ -124,3 +124,6 @@ external q : (int[@untagged]) -> float = "q";;
 external r : int -> (int[@untagged]) = "r";;
 external s : int -> int = "s" [@@untagged];;
 external t : float -> float = "t" [@@unboxed];;
+
+(* PR#7424 *)
+type 'a b = B of 'a b b [@@unboxed];;

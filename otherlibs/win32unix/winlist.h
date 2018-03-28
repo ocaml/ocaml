@@ -46,10 +46,10 @@ LPLIST list_next (LPLIST);
 
 #define LIST_NEXT(T, e) ((T)(list_next((LPLIST)(e))))
 
-/* Get number of element */
+/* Get the number of elements */
 int list_length (LPLIST);
 
-/* Concat two list. */
+/* Concatenate two lists */
 LPLIST list_concat (LPLIST, LPLIST);
 
 #endif /* _WINLIST_H */

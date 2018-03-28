@@ -30,8 +30,8 @@ shown below:
 systems, including Linux and \hbox{MacOS~X}.
 \end{unix}
 
-\begin{windows} This is material specific to Microsoft Windows (2000,
-  XP, Vista, Seven).
+\begin{windows} This is material specific to Microsoft Windows
+  (XP, Vista, 7, 8, 10).
 \end{windows}
 
 \section*{License}
@@ -69,13 +69,14 @@ citation is given.
 
 \begin{latexonly}
 The complete OCaml distribution can be accessed via the Web
-site \url{http://caml.inria.fr/}. This Web site contains a lot of
-additional information on OCaml.
+sites \url{http://www.ocaml.org/} and \url{http://caml.inria.fr/}.
+The former Web site contains a lot of additional information on OCaml.
 \end{latexonly}
 
 \begin{htmlonly}
 The complete OCaml distribution can be accessed via the
-\href{http://caml.inria.fr/}{Caml Web site}.
-The \href{http://caml.inria.fr/}{Caml Web site}
+\href{http://www.ocaml.org/}{community Caml Web site} and the
+\href{http://caml.inria.fr/}{older Caml Web site}.
+The \href{http://www.ocaml.org/}{community Caml Web site}
 contains a lot of additional information on OCaml.
 \end{htmlonly}

@@ -42,3 +42,7 @@ val constructor_existentials :
     - the types of the constructor's arguments
     - the existential variables introduced by the constructor
  *)
+
+
+(* Set the polymorphic variant row_name field *)
+val set_row_name : type_declaration -> Path.t -> unit

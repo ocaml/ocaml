@@ -19,7 +19,7 @@ val is_native: bool
 (** [true] if the program is native,
     [false] if the program is bytecode. *)
 
-(** {6 Dynamic loading of compiled files} *)
+(** {1 Dynamic loading of compiled files} *)
 
 val loadfile : string -> unit
 (** In bytecode: load the given bytecode object file ([.cmo] file) or
@@ -42,7 +42,7 @@ val adapt_filename : string -> string
 (** In bytecode, the identity function. In native code, replace the last
     extension with [.cmxs]. *)
 
-(** {6 Access control} *)
+(** {1 Access control} *)
 
 val allow_only: string list -> unit
 (** [allow_only units] restricts the compilation units that
@@ -81,7 +81,7 @@ val allow_unsafe_modules : bool -> unit
     not allowed. In native code, this function does nothing; object files
     with external functions are always allowed to be dynamically linked. *)
 
-(** {6 Deprecated, low-level API for access control} *)
+(** {1 Deprecated, low-level API for access control} *)
 
 (** @deprecated  The functions [add_interfaces], [add_available_units]
     and [clear_available_units] should not be used in new programs,
@@ -109,13 +109,13 @@ val clear_available_units : unit -> unit
 (** Empty the list of compilation units accessible to dynamically-linked
     programs. *)
 
-(** {6 Deprecated, initialization} *)
+(** {1 Deprecated, initialization} *)
 
 val init : unit -> unit
 (** @deprecated Initialize the [Dynlink] library. This function is called
     automatically when needed. *)
 
-(** {6 Error reporting} *)
+(** {1 Error reporting} *)
 
 type linking_error =
     Undefined_global of string
@@ -143,6 +143,6 @@ val error_message : error -> string
 
 (**/**)
 
-(** {6 Internal functions} *)
+(** {1 Internal functions} *)
 
 val digest_interface : string -> string list -> Digest.t

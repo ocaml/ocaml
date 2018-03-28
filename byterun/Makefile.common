@@ -28,13 +28,13 @@ COMMONOBJS=\
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o finalise.o custom.o \
   dynlink.o addrmap.o domain.o platform.o eventlog.o \
-  params.o spacetime.o
+  startup_aux.o spacetime.o
 
 PRIMS=\
   alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c fiber.c \
-  dynlink.c backtrace.c backtrace_prim.c domain.c memory.c params.c \
+  dynlink.c backtrace.c backtrace_prim.c domain.c memory.c startup_aux.c \
 	spacetime.c
 
 all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A) all-$(RUNTIMED) primitives

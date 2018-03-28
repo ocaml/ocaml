@@ -18,6 +18,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include "caml/config.h"
 #include "caml/misc.h"
 #include "caml/fail.h"
 #include "caml/memory.h"
@@ -28,6 +31,7 @@
 #include "caml/roots.h"
 #include "caml/alloc.h"
 #include "caml/fiber.h"
+#include "caml/platform.h"
 
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
@@ -418,4 +422,365 @@ int is_foreign(value v) {
 int is_young(value v) {
   return Is_young(v);
 }
+#endif
+
+/* Global memory pool.
+
+   The pool is structured as a ring of blocks, where each block's header
+   contains two links: to the previous and to the next block. The data
+   structure allows for insertions and removals of blocks in constant time,
+   given that a pointer to the operated block is provided.
+
+   Initially, the pool contains a single block -- a pivot with no data, the
+   guaranteed existence of which makes for a more concise implementation.
+
+   The API functions that operate on the pool receive not pointers to the
+   block's header, but rather pointers to the block's "data" field. This
+   behaviour is required to maintain compatibility with the interfaces of
+   [malloc], [realloc], and [free] family of functions, as well as to hide
+   the implementation from the user.
+*/
+
+/* A type with the most strict alignment requirements */
+union max_align {
+  char c;
+  short s;
+  long l;
+  int i;
+  float f;
+  double d;
+  void *v;
+  void (*q)(void);
+};
+
+struct pool_block {
+#ifdef DEBUG
+  long magic;
+#endif
+  struct pool_block *next;
+  struct pool_block *prev;
+  header_t header;
+  union max_align data[1];  /* not allocated, used for alignment purposes */
+};
+
+#define SIZEOF_POOL_BLOCK offsetof(struct pool_block, data)
+
+static struct pool_block *pool = NULL;
+static caml_plat_mutex pool_mutex = CAML_PLAT_MUTEX_INITIALIZER;
+
+/* Returns a pointer to the block header, given a pointer to "data" */
+static struct pool_block* get_pool_block(caml_stat_block b)
+{
+  if (b == NULL)
+    return NULL;
+
+  else {
+    struct pool_block *pb =
+      (struct pool_block*)(((char*)b) - SIZEOF_POOL_BLOCK);
+#ifdef DEBUG
+    CAMLassert(pb->magic == Debug_pool_magic);
+#endif
+    return pb;
+  }
+}
+
+CAMLexport void caml_stat_create_pool(void)
+{
+  if (pool == NULL) {
+    pool = malloc(SIZEOF_POOL_BLOCK);
+    if (pool == NULL)
+      caml_fatal_error("Fatal error: out of memory.\n");
+#ifdef DEBUG
+    pool->magic = Debug_pool_magic;
+#endif
+    pool->next = pool;
+    pool->prev = pool;
+    pool->header = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
+  }
+}
+
+CAMLexport void caml_stat_destroy_pool(void)
+{
+  caml_plat_lock(&pool_mutex);
+  if (pool != NULL) {
+    pool->prev->next = NULL;
+    while (pool != NULL) {
+      struct pool_block *next = pool->next;
+      free(pool);
+      pool = next;
+    }
+    pool = NULL;
+  }
+  caml_plat_unlock(&pool_mutex);
+}
+
+static void * stat_alloc_no_pooling (asize_t sz)
+{
+  void* result = malloc (sizeof(value) + sz);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  Hd_hp(result) = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
+#ifdef DEBUG
+  memset ((void*)Val_hp(result), Debug_uninit_stat, sz);
+#endif
+  return (void*)Val_hp(result);
+}
+
+static void stat_free_no_pooling (void * p)
+{
+  if (p == NULL) return;
+  Assert(Wosize_val((value)p) == STAT_ALLOC_MAGIC);
+  Assert(Tag_val((value)p) == Abstract_tag);
+  free (Hp_val((value)p));
+}
+
+static void * stat_resize_no_pooling (void * p, asize_t sz)
+{
+  void * result;
+
+  if (p == NULL)
+    return caml_stat_alloc(sz);
+
+  result = realloc (Hp_val((value)p), sizeof(value) + sz);
+
+  if (result == NULL) {
+    caml_stat_free(p);
+    caml_raise_out_of_memory ();
+  }
+
+  return (void*)Val_hp(result);
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_alloc_noexc(asize_t sz)
+{
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    return stat_alloc_no_pooling(sz);
+  else {
+    struct pool_block *pb = malloc(sz + SIZEOF_POOL_BLOCK);
+    if (pb == NULL) return NULL;
+#ifdef DEBUG
+    memset(&(pb->data), Debug_uninit_stat, sz);
+    pb->magic = Debug_pool_magic;
+#endif
+    pb->header = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
+
+    /* Linking the block into the ring */
+    caml_plat_lock(&pool_mutex);
+    pb->next = pool->next;
+    pb->prev = pool;
+    pool->next->prev = pb;
+    pool->next = pb;
+    caml_plat_unlock(&pool_mutex);
+
+    return &(pb->data);
+  }
+}
+
+/* [sz] and [modulo] are numbers of bytes */
+CAMLexport void* caml_stat_alloc_aligned_noexc(asize_t sz, int modulo,
+                                               caml_stat_block *b)
+{
+  char *raw_mem;
+  uintnat aligned_mem;
+  CAMLassert (modulo < Page_size);
+  raw_mem = (char *) caml_stat_alloc_noexc(sz + Page_size);
+  if (raw_mem == NULL) return NULL;
+  *b = raw_mem;
+  raw_mem += modulo;                /* Address to be aligned */
+  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
+#ifdef DEBUG
+  {
+    uintnat *p;
+    uintnat *p0 = (void *) *b;
+    uintnat *p1 = (void *) (aligned_mem - modulo);
+    uintnat *p2 = (void *) (aligned_mem - modulo + sz);
+    uintnat *p3 = (void *) ((char *) *b + sz + Page_size);
+    for (p = p0; p < p1; p++) *p = Debug_filler_align;
+    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
+    for (p = p2; p < p3; p++) *p = Debug_filler_align;
+  }
+#endif
+  return (char *) (aligned_mem - modulo);
+}
+
+/* [sz] and [modulo] are numbers of bytes */
+CAMLexport void* caml_stat_alloc_aligned(asize_t sz, int modulo,
+                                         caml_stat_block *b)
+{
+  void *result = caml_stat_alloc_aligned_noexc(sz, modulo, b);
+  /* malloc() may return NULL if size is 0 */
+  if ((result == NULL) && (sz != 0))
+    caml_raise_out_of_memory();
+  return result;
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_alloc(asize_t sz)
+{
+  void *result = caml_stat_alloc_noexc(sz);
+  /* malloc() may return NULL if size is 0 */
+  if ((result == NULL) && (sz != 0))
+    caml_raise_out_of_memory();
+  return result;
+}
+
+CAMLexport void caml_stat_free(caml_stat_block b)
+{
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    stat_free_no_pooling(b);
+  else {
+    struct pool_block *pb = get_pool_block(b);
+    if (pb == NULL) return;
+
+    /* Unlinking the block from the ring */
+    caml_plat_lock(&pool_mutex);
+    pb->prev->next = pb->next;
+    pb->next->prev = pb->prev;
+    caml_plat_unlock(&pool_mutex);
+
+    free(pb);
+  }
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_resize_noexc(caml_stat_block b, asize_t sz)
+{
+  /* Backward compatibility mode */
+  if (pool == NULL)
+    return stat_resize_no_pooling(b, sz);
+  else {
+    struct pool_block *pb = get_pool_block(b);
+    struct pool_block *pb_new = realloc(pb, sz + SIZEOF_POOL_BLOCK);
+    if (pb_new == NULL) return NULL;
+
+    /* Relinking the new block into the ring in place of the old one */
+    caml_plat_lock(&pool_mutex);
+    pb_new->prev->next = pb_new;
+    pb_new->next->prev = pb_new;
+    caml_plat_unlock(&pool_mutex);
+
+    return &(pb_new->data);
+  }
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_resize(caml_stat_block b, asize_t sz)
+{
+  void *result = caml_stat_resize_noexc(b, sz);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  return result;
+}
+
+/* [sz] is a number of bytes */
+CAMLexport caml_stat_block caml_stat_calloc_noexc(asize_t num, asize_t sz)
+{
+  uintnat total;
+  if (caml_umul_overflow(sz, num, &total))
+    return NULL;
+  else {
+    caml_stat_block result = caml_stat_alloc_noexc(total);
+    if (result != NULL)
+      memset(result, 0, total);
+    return result;
+  }
+}
+
+CAMLexport caml_stat_string caml_stat_strdup_noexc(const char *s)
+{
+  size_t slen = strlen(s);
+  caml_stat_block result = caml_stat_alloc_noexc(slen + 1);
+  if (result == NULL)
+    return NULL;
+  memcpy(result, s, slen + 1);
+  return result;
+}
+
+CAMLexport caml_stat_string caml_stat_strdup(const char *s)
+{
+  caml_stat_string result = caml_stat_strdup_noexc(s);
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  return result;
+}
+
+#ifdef _WIN32
+
+CAMLexport wchar_t * caml_stat_wcsdup(const wchar_t *s)
+{
+  int slen = wcslen(s);
+  wchar_t* result = caml_stat_alloc((slen + 1)*sizeof(wchar_t));
+  if (result == NULL)
+    caml_raise_out_of_memory();
+  memcpy(result, s, (slen + 1)*sizeof(wchar_t));
+  return result;
+}
+
+#endif
+
+CAMLexport caml_stat_string caml_stat_strconcat(int n, ...)
+{
+  va_list args;
+  char *result, *p;
+  size_t len = 0;
+  int i;
+
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const char *s = va_arg(args, const char*);
+    len += strlen(s);
+  }
+  va_end(args);
+
+  result = caml_stat_alloc(len + 1);
+
+  va_start(args, n);
+  p = result;
+  for (i = 0; i < n; i++) {
+    const char *s = va_arg(args, const char*);
+    size_t l = strlen(s);
+    memcpy(p, s, l);
+    p += l;
+  }
+  va_end(args);
+
+  *p = 0;
+  return result;
+}
+
+#ifdef _WIN32
+
+CAMLexport wchar_t* caml_stat_wcsconcat(int n, ...)
+{
+  va_list args;
+  wchar_t *result, *p;
+  size_t len = 0;
+  int i;
+
+  va_start(args, n);
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    len += wcslen(s);
+  }
+  va_end(args);
+
+  result = caml_stat_alloc((len + 1)*sizeof(wchar_t));
+
+  va_start(args, n);
+  p = result;
+  for (i = 0; i < n; i++) {
+    const wchar_t *s = va_arg(args, const wchar_t*);
+    size_t l = wcslen(s);
+    memcpy(p, s, l*sizeof(wchar_t));
+    p += l;
+  }
+  va_end(args);
+
+  *p = 0;
+  return result;
+}
+
 #endif

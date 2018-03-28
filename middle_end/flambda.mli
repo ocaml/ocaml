@@ -300,7 +300,7 @@ and function_declarations = private {
 }
 
 and function_declaration = private {
-  params : Variable.t list;
+  params : Parameter.t list;
   body : t;
   (* CR-soon mshinwell: inconsistent naming free_variables/free_vars here and
      above *)
@@ -546,7 +546,7 @@ end
 (** Create a function declaration.  This calculates the free variables and
     symbols occurring in the specified [body]. *)
 val create_function_declaration
-   : params:Variable.t list
+   : params:Parameter.t list
   -> body:t
   -> stub:bool
   -> dbg:Debuginfo.t

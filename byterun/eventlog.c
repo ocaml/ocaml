@@ -16,6 +16,7 @@
 #include "caml/startup.h"
 #include "caml/domain.h"
 #include "caml/platform.h"
+#include "caml/shared_heap.h"
 
 struct event_details {
   int type;
@@ -167,7 +168,7 @@ static void output_buffer(char* buf, mlsize_t len)
 static void output_event_descriptions()
 {
   int i;
-  char* buf = malloc(EVENT_BUFFER_SIZE);
+  char* buf = caml_stat_alloc_noexc(EVENT_BUFFER_SIZE);
   char* p = buf;
 
   p = write_string(p, "hdrb"); /* HEADER_BEGIN */
@@ -212,7 +213,7 @@ static char* append_data(int size) {
   if (size > evbuf.remaining) {
     flush_eventlog();
     if (!evbuf.buffer)
-      evbuf.buffer = malloc(EVENT_BUFFER_SIZE);
+      evbuf.buffer = caml_stat_alloc_noexc(EVENT_BUFFER_SIZE);
     /* add block header */
     p = evbuf.buffer;
     p = write_16(p, ev_block_marker.type);

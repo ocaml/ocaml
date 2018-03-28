@@ -62,9 +62,9 @@ CAMLprim value unix_wait(value unit)
 {
   int pid, status;
 
-  enter_blocking_section();
+  caml_enter_blocking_section();
   pid = wait(&status);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (pid == -1) uerror("wait", Nothing);
   return alloc_process_status(pid, status);
 }
@@ -83,10 +83,10 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
 {
   int pid, status, cv_flags;
 
-  cv_flags = convert_flag_list(flags, wait_flag_table);
-  enter_blocking_section();
+  cv_flags = caml_convert_flag_list(flags, wait_flag_table);
+  caml_enter_blocking_section();
   pid = waitpid(Int_val(pid_req), &status, cv_flags);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (pid == -1) uerror("waitpid", Nothing);
   return alloc_process_status(pid, status);
 }
@@ -94,6 +94,6 @@ CAMLprim value unix_waitpid(value flags, value pid_req)
 #else
 
 CAMLprim value unix_waitpid(value flags, value pid_req)
-{ invalid_argument("waitpid not implemented"); }
+{ caml_invalid_argument("waitpid not implemented"); }
 
 #endif

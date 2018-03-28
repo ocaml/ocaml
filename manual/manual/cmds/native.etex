@@ -4,7 +4,7 @@
 
 This chapter describes the OCaml high-performance
 native-code compiler "ocamlopt", which compiles OCaml source files to
-native code object files and link these object files to produce
+native code object files and links these object files to produce
 standalone executables.
 
 The native-code compiler is only available on certain platforms.
@@ -93,436 +93,13 @@ The following command-line options are recognized by "ocamlopt".
 The options "-pack", "-a", "-shared", "-c" and "-output-obj" are mutually
 exclusive.
 
-\begin{options}
-
-\item["-a"]
-Build a library (".cmxa" and ".a"/".lib" files) with the object files
-(".cmx" and ".o"/".obj" files) given on the command line, instead of
-linking them into an executable file. The name of the library must be
-set with the "-o" option.
-
-If "-cclib" or "-ccopt" options are passed on the command
-line, these options are stored in the resulting ".cmxa" library.  Then,
-linking with this library automatically adds back the
-"-cclib" and "-ccopt" options as if they had been provided on the
-command line, unless the "-noautolink" option is given.
-
-\item["-absname"]
-Force error messages to show absolute paths for file names.
-
-\item["-annot"]
-Dump detailed information about the compilation (types, bindings,
-tail-calls, etc).  The information for file \var{src}".ml"
-is put into file \var{src}".annot".  In case of a type error, dump
-all the information inferred by the type-checker before the error.
-The \var{src}".annot" file can be used with the emacs commands given in
-"emacs/caml-types.el" to display types and other annotations
-interactively.
-
-\item["-bin-annot"]
-Dump detailed information about the compilation (types, bindings,
-tail-calls, etc) in binary format. The information for file \var{src}".ml"
-is put into file \var{src}".cmt".  In case of a type error, dump
-all the information inferred by the type-checker before the error.
-The "*.cmt" files produced by "-bin-annot" contain more information
-and are much more compact than the files produced by "-annot".
-
-\item["-c"]
-Compile only. Suppress the linking phase of the
-compilation. Source code files are turned into compiled files, but no
-executable file is produced. This option is useful to
-compile modules separately.
-
-\item["-cc" \var{ccomp}]
-Use \var{ccomp} as the C linker called to build the final executable
-and as the C compiler for compiling ".c" source files.
-
-\item["-cclib" "-l"\var{libname}]
-Pass the "-l"\var{libname} option to the linker. This causes the given
-C library to be linked with the program.
-
-\item["-ccopt" \var{option}]
-Pass the given option to the C compiler and linker. For instance,
-"-ccopt -L"\var{dir} causes the C linker to search for C libraries in
-directory \var{dir}.
-
-\item["-compact"]
-Optimize the produced code for space rather than for time. This
-results in slightly smaller but slightly slower programs. The default is to
-optimize for speed.
-
-\item["-config"]
-Print the version number of "ocamlopt" and a detailed summary of its
-configuration, then exit.
-
-\item["-for-pack" \var{module-path}]
-Generate an object file (".cmx" and ".o"/".obj" files) that can later be
-included
-as a sub-module (with the given access path) of a compilation unit
-constructed with "-pack".  For instance, "ocamlopt -for-pack P -c A.ml"
-will generate "a.cmx" and "a.o" files that can later be used with
-"ocamlopt -pack -o P.cmx a.cmx".
-
-\item["-g"]
-Add debugging information while compiling and linking. This option is
-required in order to produce stack backtraces when
-the program terminates on an uncaught exception (see
-section~\ref{ocamlrun-options}).
-
-\item["-i"]
-Cause the compiler to print all defined names (with their inferred
-types or their definitions) when compiling an implementation (".ml"
-file).  No compiled files (".cmo" and ".cmi" files) are produced.
-This can be useful to check the types inferred by the
-compiler. Also, since the output follows the syntax of interfaces, it
-can help in writing an explicit interface (".mli" file) for a file:
-just redirect the standard output of the compiler to a ".mli" file,
-and edit that file to remove all declarations of unexported names.
-
-\item["-I" \var{directory}]
-Add the given directory to the list of directories searched for
-compiled interface files (".cmi"), compiled object code files
-(".cmx"), and libraries (".cmxa"). By default, the current directory
-is searched first, then the standard library directory. Directories
-added with "-I" are searched after the current directory, in the order
-in which they were given on the command line, but before the standard
-library directory. See also option "-nostdlib".
-
-If the given directory starts with "+", it is taken relative to the
-standard library directory.  For instance, "-I +labltk" adds the
-subdirectory "labltk" of the standard library to the search path.
-
-\item["-impl" \var{filename}]
-Compile the file \var{filename} as an implementation file, even if its
-extension is not ".ml".
-
-\item["-inline" \var{n}]
-Set aggressiveness of inlining to \var{n}, where \var{n} is a positive
-integer. Specifying "-inline 0" prevents all functions from being
-inlined, except those whose body is smaller than the call site. Thus,
-inlining causes no expansion in code size. The default aggressiveness,
-"-inline 1", allows slightly larger functions to be inlined, resulting
-in a slight expansion in code size. Higher values for the "-inline"
-option cause larger and larger functions to become candidate for
-inlining, but can result in a serious increase in code size.
-
-\item["-intf" \var{filename}]
-Compile the file \var{filename} as an interface file, even if its
-extension is not ".mli".
-
-\item["-intf-suffix" \var{string}]
-Recognize file names ending with \var{string} as interface files
-(instead of the default ".mli").
-
-\item["-labels"]
-Labels are not ignored in types, labels may be used in applications,
-and labelled parameters can be given in any order.  This is the default.
-
-\item["-linkall"]
-Force all modules contained in libraries to be linked in. If this
-flag is not given, unreferenced modules are not linked in. When
-building a library ("-a" flag), setting the "-linkall" flag forces all
-subsequent links of programs involving that library to link all the
-modules contained in the library.
-
-\item["-no-app-funct"]
-Deactivates the applicative behaviour of functors. With this option,
-each functor application generates new types in its result and
-applying the same functor twice to the same argument yields two
-incompatible structures.
-
-\item["-noassert"]
-Do not compile assertion checks.  Note that the special form
-"assert false" is always compiled because it is typed specially.
-This flag has no effect when linking already-compiled files.
-
-\item["-noautolink"]
-When linking ".cmxa" libraries, ignore "-cclib" and "-ccopt"
-options potentially contained in the libraries (if these options were
-given when building the libraries).  This can be useful if a library
-contains incorrect specifications of C libraries or C options; in this
-case, during linking, set "-noautolink" and pass the correct C
-libraries and options on the command line.
-
-\item["-nodynlink"]
-Allow the compiler to use some optimizations that are valid only for code
-that is never dynlinked.
-
-\item["-nolabels"]
-Ignore non-optional labels in types. Labels cannot be used in
-applications, and parameter order becomes strict.
-
-\item["-nostdlib"]
-Do not automatically add the standard library directory the list of
-directories searched for compiled interface files (".cmi"), compiled
-object code files (".cmx"), and libraries (".cmxa"). See also option
-"-I".
-
-\item["-o" \var{exec-file}]
-Specify the name of the output file produced by the linker. The
-default output name is "a.out" under Unix and "camlprog.exe" under
-Windows. If the "-a" option is given, specify the name of the library
-produced.  If the "-pack" option is given, specify the name of the
-packed object file produced.  If the "-output-obj" option is given,
-specify the name of the output file produced. If the "-shared" option
-is given, specify the name of plugin file produced.
-
-\item["-output-obj"]
-Cause the linker to produce a C object file instead of an executable
-file. This is useful to wrap OCaml code as a C library,
-callable from any C program. See chapter~\ref{c:intf-c},
-section~\ref{s:embedded-code}. The name of the output object file
-must be set with the "-o" option.
-This option can also be used to produce a compiled shared/dynamic
-library (".so" extension, ".dll" under Windows).
-
-\item["-p"]
-Generate extra code to write profile information when the program is
-executed.  The profile information can then be examined with the
-analysis program "gprof".  (See chapter~\ref{c:profiler} for more
-information on profiling.)  The "-p" option must be given both at
-compile-time and at link-time.  Linking object files not compiled with
-"-p" is possible, but results in less precise profiling.
-
-\begin{unix} See the Unix manual page for "gprof(1)" for more
-information about the profiles.
-
-Full support for "gprof" is only available for certain platforms
-(currently: Intel x86 32 and 64 bits under Linux, BSD and MacOS X).
-On other platforms, the "-p" option will result in a less precise
-profile (no call graph information, only a time profile).
-\end{unix}
-
-\begin{windows}
-The "-p" option does not work under Windows.
-\end{windows}
-
-\item["-pack"]
-Build an object file (".cmx" and ".o"/".obj" files) and its associated compiled
-interface (".cmi") that combines the ".cmx" object
-files given on the command line, making them appear as sub-modules of
-the output ".cmx" file.  The name of the output ".cmx" file must be
-given with the "-o" option.  For instance,
-\begin{verbatim}
-        ocamlopt -pack -o P.cmx A.cmx B.cmx C.cmx
-\end{verbatim}
-generates compiled files "P.cmx", "P.o" and "P.cmi" describing a
-compilation unit having three sub-modules "A", "B" and "C",
-corresponding to the contents of the object files "A.cmx", "B.cmx" and
-"C.cmx".  These contents can be referenced as "P.A", "P.B" and "P.C"
-in the remainder of the program.
-
-The ".cmx" object files being combined must have been compiled with
-the appropriate "-for-pack" option.  In the example above,
-"A.cmx", "B.cmx" and "C.cmx" must have been compiled with
-"ocamlopt -for-pack P".
-
-Multiple levels of packing can be achieved by combining "-pack" with
-"-for-pack".  Consider the following example:
-\begin{verbatim}
-        ocamlopt -for-pack P.Q -c A.ml
-        ocamlopt -pack -o Q.cmx -for-pack P A.cmx
-        ocamlopt -for-pack P -c B.ml
-        ocamlopt -pack -o P.cmx Q.cmx B.cmx
-\end{verbatim}
-The resulting "P.cmx" object file has sub-modules "P.Q", "P.Q.A"
-and "P.B".
-
-\item["-plugin" \var{plugin}]
-Dynamically load the code of the given \var{plugin}
-(a ".cmo", ".cma" or ".cmxs" file) in the compiler. \var{plugin} must exist in
-the same kind of code as the compiler ("ocamlopt.byte" must load bytecode
-plugins, while "ocamlopt.opt" must load native code plugins), and
-extension adaptation is done automatically for ".cma" files (to ".cmxs" files
-if the compiler is compiled in native code).
-
-\item["-pp" \var{command}]
-Cause the compiler to call the given \var{command} as a preprocessor
-for each source file. The output of \var{command} is redirected to
-an intermediate file, which is compiled. If there are no compilation
-errors, the intermediate file is deleted afterwards.
-
-\item["-ppx" \var{command}]
-After parsing, pipe the abstract syntax tree through the preprocessor
-\var{command}. The module "Ast_mapper", described in
-chapter~\ref{Ast-underscoremapper}, implements the external interface
-of a preprocessor.
-
-\item["-principal"]
-Check information path during type-checking, to make sure that all
-types are derived in a principal way. All programs accepted in
-"-principal" mode are also accepted in default mode with equivalent
-types, but different binary signatures.
-
-\item["-rectypes"]
-Allow arbitrary recursive types during type-checking.  By default,
-only recursive types where the recursion goes through an object type
-are supported. Note that once you have created an interface using this
-flag, you must use it again for all dependencies.
-
-\item["-runtime-variant" \var{suffix}]
-Add the \var{suffix} string to the name of the runtime library used by
-the program.  Currently, only one such suffix is supported: "d", and
-only if the OCaml compiler was configured with option
-"-with-debug-runtime".  This suffix gives the debug version of the
-runtime, which is useful for debugging pointer problems in low-level
-code such as C stubs.
-
-\item["-S"]
-Keep the assembly code produced during the compilation. The assembly
-code for the source file \var{x}".ml" is saved in the file \var{x}".s".
-
-\item["-shared"]
-Build a plugin (usually ".cmxs") that can be dynamically loaded with
-the "Dynlink" module. The name of the plugin must be
-set with the "-o" option. A plugin can include a number of OCaml
-modules and libraries, and extra native objects (".o", ".obj", ".a",
-".lib" files). Building native plugins is only supported for some
-operating system. Under some systems (currently,
-only Linux AMD 64), all the OCaml code linked in a plugin must have
-been compiled without the "-nodynlink" flag. Some constraints might also
-apply to the way the extra native objects have been compiled (under
-Linux AMD 64, they must contain only position-independent code).
-
-\item["-safe-string"]
-Enforce the separation between types "string" and "bytes",
-thereby making strings read-only. This will become the default in
-a future version of OCaml.
-
-\item["-short-paths"]
-When a type is visible under several module-paths, use the shortest
-one when printing the type's name in inferred interfaces and error and
-warning messages. Identifier names starting with an underscore "_" or
-containing double underscores "__" incur a penalty of $+10$ when computing
-their length.
-
-\item["-strict-sequence"]
-Force the left-hand part of each sequence to have type unit.
-
-\item["-strict-formats"]
-Reject invalid formats that were accepted in legacy format
-implementations. You should use this flag to detect and fix such
-invalid formats, as they will be rejected by future OCaml versions.
-
-\item["-thread"]
-Compile or link multithreaded programs, in combination with the
-system "threads" library described in chapter~\ref{c:threads}.
-
-\item["-unboxed-types"]
-When a type is unboxable (i.e. a record with a single argument or a
-concrete datatype with a single constructor of one argument) it will
-be unboxed unless annotated with "[@@ocaml.boxed]".
-
-\item["-no-unboxed-types"]
-When a type is unboxable  it will be boxed unless annotated with
-"[@@ocaml.unboxed]". This is the default.
-
-\item["-unsafe"]
-Turn bound checking off for array and string accesses (the "v.(i)" and
-"s.[i]" constructs). Programs compiled with "-unsafe" are therefore
-faster, but unsafe: anything can happen if the program accesses an
-array or string outside of its bounds.  Additionally, turn off the
-check for zero divisor in integer division and modulus operations.
-With "-unsafe", an integer division (or modulus) by zero can halt the
-program or continue with an unspecified result instead of raising a
-"Division_by_zero" exception.
-
-\item["-unsafe-string"]
-Identify the types "string" and "bytes",
-thereby making strings writable. For reasons of backward compatibility,
-this is the default setting for the moment, but this will change in a future
-version of OCaml.
-
-\item["-v"]
-Print the version number of the compiler and the location of the
-standard library directory, then exit.
-
-\item["-verbose"]
-Print all external commands before they are executed, in particular
-invocations of the assembler, C compiler, and linker.
-
-\item["-version" or "-vnum"]
-Print the version number of the compiler in short form (e.g. "3.11.0"),
-then exit.
-
-\item["-w" \var{warning-list}]
-Enable, disable, or mark as fatal the warnings specified by the argument
-\var{warning-list}.
-Each warning can be {\em enabled} or {\em disabled}, and each warning
-can be {\em fatal} or {\em non-fatal}.
-If a warning is disabled, it isn't displayed and doesn't affect
-compilation in any way (even if it is fatal).  If a warning is
-enabled, it is displayed normally by the compiler whenever the source
-code triggers it.  If it is enabled and fatal, the compiler will also
-stop with an error after displaying it.
-
-The \var{warning-list} argument is a sequence of warning specifiers,
-with no separators between them.  A warning specifier is one of the
-following:
-
-\begin{options}
-\item["+"\var{num}] Enable warning number \var{num}.
-\item["-"\var{num}] Disable warning number \var{num}.
-\item["@"\var{num}] Enable and mark as fatal warning number \var{num}.
-\item["+"\var{num1}..\var{num2}] Enable warnings in the given range.
-\item["-"\var{num1}..\var{num2}] Disable warnings in the given range.
-\item["@"\var{num1}..\var{num2}] Enable and mark as fatal warnings in
-the given range.
-\item["+"\var{letter}] Enable the set of warnings corresponding to
-\var{letter}. The letter may be uppercase or lowercase.
-\item["-"\var{letter}] Disable the set of warnings corresponding to
-\var{letter}. The letter may be uppercase or lowercase.
-\item["@"\var{letter}] Enable and mark as fatal the set of warnings
-corresponding to \var{letter}. The letter may be uppercase or
-lowercase.
-\item[\var{uppercase-letter}] Enable the set of warnings corresponding
-to \var{uppercase-letter}.
-\item[\var{lowercase-letter}] Disable the set of warnings corresponding
-to \var{lowercase-letter}.
-\end{options}
-
-Warning numbers and letters which are out of the range of warnings
-that are currently defined are ignored. The warning are as follows.
-\begin{options}
-\input{warnings-help.tex}
-\end{options}
-
-The default setting is "-w +a-4-6-7-9-27-29-32..39-41..42-44-45-48-50".
-It is displayed by "ocamlopt -help".
-Note that warnings 5 and 10 are not always triggered, depending on
-the internals of the type checker.
-
-\item["-warn-error" \var{warning-list}]
-Mark as fatal the warnings specified in the argument \var{warning-list}.
-The compiler will stop with an error when one of these warnings is
-emitted. The \var{warning-list} has the same meaning as for
-the "-w" option: a "+" sign (or an uppercase letter) marks the
-corresponding warnings as fatal, a "-"
-sign (or a lowercase letter) turns them back into non-fatal warnings,
-and a "@" sign both enables and marks as fatal the corresponding
-warnings.
-
-Note: it is not recommended to use warning sets (i.e. letters) as
-arguments to "-warn-error"
-in production code, because this can break your build when future versions
-of OCaml add some new warnings.
-
-The default setting is "-warn-error -a+31" (only warning 31 is fatal).
-
-\item["-warn-help"]
-Show the description of all available warning numbers.
-
-\item["-where"]
-Print the location of the standard library, then exit.
-
-\item["-" \var{file}]
-Process \var{file} as a file name, even if it starts with a dash (-)
-character.
-
-\item["-help" or "--help"]
-Display a short usage summary and exit.
-%
-\end{options}
+% Configure boolean variables used by the macros in unified-options.etex
+\compfalse
+\nattrue
+\topfalse
+% unified-options gathers all options across the native/bytecode
+% compilers and toplevel
+\input{unified-options.tex}
 
 \paragraph{Options for the IA32 architecture}
 The IA32 code generator (Intel Pentium, AMD Athlon) supports the
@@ -548,15 +125,6 @@ Athlon) supports the following additional options:
 the default.
 \item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
-
-\paragraph{Options for the Sparc architecture}
-The Sparc code generator supports the following additional options:
-\begin{options}
-\item["-march=v8"] Generate SPARC version 8 code.
-\item["-march=v9"] Generate SPARC version 9 code.
-\end{options}
-The default is to generate code for SPARC version 7, which runs on all
-SPARC processors.
 
 \paragraph{Contextual control of command-line options}
 
@@ -617,23 +185,42 @@ piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
 \item Stack overflow, typically caused by excessively deep recursion,
-is handled in one of the following ways, depending on the
-platform used:
-\begin{itemize}
-\item By raising a "Stack_overflow" exception, like the bytecode
-  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX, MS Windows
-  32-bit ports).
-\item By aborting the program on a ``segmentation fault'' signal.
-(All other Unix systems.)
-\item By terminating the program silently.
-(MS Windows 64 bits).
-\end{itemize}
+is not always turned into a "Stack_overflow" exception like the
+bytecode compiler does.  The runtime system makes a best effort to
+trap stack overflows and raise the "Stack_overflow" exception, but
+sometimes it fails and a ``segmentation fault'' or another system fault
+occurs instead.
+
+\item On ARM and PowerPC processors (32 and 64 bits), fused
+  multiply-add (FMA) instructions can be generated for a
+  floating-point multiplication followed by a floating-point addition
+  or subtraction, as in "x *. y +. z".  The FMA instruction avoids
+  rounding the intermediate result "x *. y", which is generally
+  beneficial, but produces floating-point results that differ slightly
+  from those produced by the bytecode interpreter.
 
 \item On IA32 processors only (Intel and AMD x86 processors in 32-bit
 mode), some intermediate results in floating-point computations are
 kept in extended precision rather than being rounded to double
 precision like the bytecode compiler always does.  Floating-point
 results can therefore differ slightly between bytecode and native code.
+
+\item The native-code compiler performs a number of optimizations that
+the bytecode compiler does not perform, especially when the Flambda
+optimizer is active.  In particular, the native-code compiler
+identifies and eliminates ``dead code'', i.e.\ computations that do
+not contribute to the results of the program.  For example,
+\begin{verbatim}
+        let _ = ignore M.f
+\end{verbatim}
+contains a reference to compilation unit "M" when compiled to
+bytecode.  This reference forces "M" to be linked and its
+initialization code to be executed.  The native-code compiler
+eliminates the reference to "M", hence the compilation unit "M" may
+not be linked and executed.  A workaround is to compile "M" with the
+"-linkall" flag so that it will always be linked and executed, even if
+not referenced.  See also the "Sys.opaque_identity" function from the
+"Sys" standard library module.
 
 \end{itemize}
 

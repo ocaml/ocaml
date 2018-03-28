@@ -29,7 +29,7 @@
 #include "caml/fiber.h"
 #include "caml/addrmap.h"
 #include "caml/platform.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 #include "caml/eventlog.h"
 #include <string.h>
 
@@ -112,13 +112,12 @@ static void handle_steal_req (struct domain* targetd, void* plv,
   uintnat steal_size, new_size;
   caml_domain_state* target = targetd->state;
 
-
   if (pl->major_cycle != major_cycles_completed) {
     pl->result = Not_shared;
   } else if (target->stealing || target->mark_stack_count == 0) {
     pl->result = No_work;
   } else {
-    Assert(pl->thief->mark_stack_count == 0);
+    CAMLassert(pl->thief->mark_stack_count == 0);
 
     if (target->mark_stack_count < 16) {
       steal_size = target->mark_stack_count;
@@ -133,11 +132,11 @@ static void handle_steal_req (struct domain* targetd, void* plv,
 
     /* Mark stack size and domain local marking_done flag are updated in
      * steal_mark_work(). */
-    Assert (pl->thief->marking_done);
+    CAMLassert (pl->thief->marking_done);
     atomic_fetch_add(&num_domains_to_mark, 1);
 
     if (new_size == 0) {
-      Assert(!target->marking_done);
+      CAMLassert(!target->marking_done);
       atomic_fetch_add(&num_domains_to_mark, -1);
       target->marking_done = 1;
     }
@@ -191,7 +190,7 @@ static void mark_stack_prune();
 static struct pool* find_pool_to_rescan();
 
 static void mark_stack_push(value v) {
-  Assert(Is_block(v));
+  CAMLassert(Is_block(v));
   caml_domain_state* domain_state = Caml_state;
   if (domain_state->mark_stack_count >= MARK_STACK_SIZE)
     mark_stack_prune();
@@ -221,8 +220,8 @@ static intnat do_some_marking(intnat budget) {
     value v = stack[--stack_count];
     header_t hd_v;
 
-    Assert(Is_markable(v));
-    Assert(Tag_val(v) != Infix_tag);
+    CAMLassert(Is_markable(v));
+    CAMLassert(Tag_val(v) != Infix_tag);
 
     blocks_marked++;
     /* mark the current object */
@@ -238,7 +237,7 @@ static intnat do_some_marking(intnat budget) {
         value child = Op_val(v)[i];
         /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
            However, it's a useful debugging aid for now */
-        Assert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
+        CAMLassert(!Is_debug_tag(child) || child == Debug_uninit_major || child == Debug_uninit_minor);
         if (Is_markable(child)) {
           header_t hd = Hd_val(child);
           if (Tag_hd(hd) == Infix_tag) {
@@ -246,7 +245,7 @@ static intnat do_some_marking(intnat budget) {
             hd = Hd_val(child);
           }
           /* FIXME: short-circuit Forward_tag here? */
-          Assert (!Has_status_hd(hd, global.GARBAGE));
+          CAMLassert (!Has_status_hd(hd, global.GARBAGE));
           if (Has_status_hd(hd, UNMARKED)) {
             Hd_val(child) = With_status_hd(hd, MARKED);
             if (stack_count >= MARK_STACK_SIZE) {
@@ -286,7 +285,7 @@ static intnat mark(intnat budget) {
 
 void caml_darken(void* state, value v, value* ignored) {
   header_t hd;
-  /* Assert (Is_markable(v)); */
+  /* CAMLassert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
 
   hd = Hd_val(v);
@@ -360,7 +359,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
 {
   uintnat num_domains_in_stw;
 
-  Assert(domain == caml_domain_self());
+  CAMLassert(domain == caml_domain_self());
 
   caml_gc_log("In STW callback");
 
@@ -680,7 +679,7 @@ static void mark_stack_prune ()
     p->pool = (struct pool*)caml_addrmap_iter_key(&t, i);
     p->occurs = (int)caml_addrmap_iter_value(&t, i);
   }
-  Assert(pos == count);
+  CAMLassert(pos == count);
   caml_addrmap_clear(&t);
 
   qsort(pools, count, sizeof(struct pool_count), &pool_count_cmp);
@@ -740,7 +739,26 @@ void caml_init_major_gc() {
 }
 
 void caml_teardown_major_gc() {
-  Assert(Caml_state->mark_stack_count == 0);
+  CAMLassert(Caml_state->mark_stack_count == 0);
   caml_stat_free(Caml_state->mark_stack);
   Caml_state->mark_stack = NULL;
+}
+
+void caml_finalise_heap (void)
+{
+#if 0
+  /* Finishing major cycle (all values become white) */
+  caml_empty_minor_heap ();
+  caml_finish_major_cycle ();
+  CAMLassert (caml_gc_phase == Phase_idle);
+
+  /* Finalising all values (by means of forced sweeping) */
+  caml_fl_init_merge ();
+  caml_gc_phase = Phase_sweep;
+  chunk = caml_heap_start;
+  caml_gc_sweep_hp = chunk;
+  limit = chunk + Chunk_size (chunk);
+  while (caml_gc_phase == Phase_sweep)
+    sweep_slice (LONG_MAX);
+#endif
 }

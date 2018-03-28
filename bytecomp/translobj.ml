@@ -114,7 +114,7 @@ let transl_label_init_flambda f =
   assert(Config.flambda);
   let method_cache_id = Ident.create "method_cache" in
   method_cache := Lvar method_cache_id;
-  (* Calling f (usualy Translmod.transl_struct) requires the
+  (* Calling f (usually Translmod.transl_struct) requires the
      method_cache variable to be initialised to be able to generate
      method accesses. *)
   let expr, size = f () in
@@ -141,7 +141,7 @@ let transl_store_label_init glob size f arg =
     if !method_count = 0 then (size, expr) else
     (size+1,
      Lsequence(
-     Lprim(Psetfield(size, Pointer, Initialization),
+     Lprim(Psetfield(size, Pointer, Root_initialization),
            [Lprim(Pgetglobal glob, [], Location.none);
             Lprim (Pccall prim_makearray,
                    [int !method_count; int 0],

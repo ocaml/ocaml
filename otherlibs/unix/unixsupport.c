@@ -21,6 +21,10 @@
 #include "unixsupport.h"
 #include "cst2constr.h"
 #include <errno.h>
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
+#include <fcntl.h>
 
 #ifndef E2BIG
 #define E2BIG (-1)
@@ -278,7 +282,7 @@ extern int code_of_unix_error (value error)
   }
 }
 
-void unix_error(int errcode, char *cmdname, value cmdarg)
+void unix_error(int errcode, const char *cmdname, value cmdarg)
 {
   value res;
   value name = Val_unit, err = Val_unit, arg = Val_unit;
@@ -286,28 +290,55 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
   int unix_error_found;
 
   Begin_roots3 (name, err, arg);
-    arg = cmdarg == Nothing ? copy_string("") : cmdarg;
-    name = copy_string(cmdname);
+    arg = cmdarg == Nothing ? caml_copy_string("") : cmdarg;
+    name = caml_copy_string(cmdname);
     err = unix_error_of_code (errcode);
     unix_error_exn = caml_named_root("Unix.Unix_error");
     if (!unix_error_exn)
-      invalid_argument("Exception Unix.Unix_error not initialized,"
-                       " please link unix.cma");
+      caml_invalid_argument("Exception Unix.Unix_error not initialized,"
+                            " please link unix.cma");
     res = caml_alloc_4(0,
       caml_read_root(unix_error_exn),
       err,
       name,
       arg);
   End_roots();
-  mlraise(res);
+  caml_raise(res);
 }
 
-void uerror(char *cmdname, value cmdarg)
+void uerror(const char *cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
 
-void caml_unix_check_path(value path, char * cmdname)
+void caml_unix_check_path(value path, const char * cmdname)
 {
   if (! caml_string_is_c_safe(path)) unix_error(ENOENT, cmdname, path);
+}
+
+int unix_cloexec_default = 0;
+
+int unix_cloexec_p(value cloexec)
+{
+  /* [cloexec] is a [bool option].  */
+  if (Is_block(cloexec))
+    return Bool_val(Field(cloexec, 0));
+  else
+    return unix_cloexec_default;
+}
+
+void unix_set_cloexec(int fd, char *cmdname, value cmdarg)
+{
+  int flags = fcntl(fd, F_GETFD, 0);
+  if (flags == -1 ||
+      fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
+    uerror(cmdname, cmdarg);
+}
+
+void unix_clear_cloexec(int fd, char *cmdname, value cmdarg)
+{
+  int flags = fcntl(fd, F_GETFD, 0);
+  if (flags == -1 ||
+      fcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) == -1)
+    uerror(cmdname, cmdarg);
 }

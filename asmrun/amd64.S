@@ -18,7 +18,7 @@
 
 /* PIC mode support based on contribution by Paul Stravers (see PR#4795) */
 
-#include "../config/m.h"
+#include "caml/m.h"
 
 #if defined(SYS_macosx)
 
@@ -323,9 +323,12 @@
    /* Calls from OCaml to C must reserve 32 bytes of extra stack space */
 #  define PREPARE_FOR_C_CALL subq $32, %rsp; CFI_ADJUST(32)
 #  define CLEANUP_AFTER_C_CALL addq $32, %rsp; CFI_ADJUST(-32)
+   /* Stack probing mustn't be larger than the page size */
+#  define STACK_PROBE_SIZE $4096
 #else
 #  define PREPARE_FOR_C_CALL
 #  define CLEANUP_AFTER_C_CALL
+#  define STACK_PROBE_SIZE $32768
 #endif
 
 /******************************************************************************/

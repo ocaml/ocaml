@@ -25,7 +25,13 @@ clean: defaultclean
 include ../makefiles/Makefile.common
 
 .PHONY: compile-targets
-compile-targets: testing.cmi testing.cmo
+compile-targets: testing.cmi testing.cma
 	@if $(BYTECODE_ONLY); then : ; else \
-	  $(MAKE) testing.cmx; \
+	  $(MAKE) testing.cmxa; \
 	fi
+
+testing.cma: testing.cmo
+	$(OCAMLC) -a -linkall $(ADD_COMPFLAGS) -o $@ $<
+
+testing.cmxa: testing.cmx
+	$(OCAMLOPT) -a -linkall $(ADD_COMPFLAGS) -o $@ $<

@@ -65,6 +65,62 @@ module Typ = struct
     match t.ptyp_desc with
     | Ptyp_poly _ -> t
     | _ -> poly ~loc:t.ptyp_loc [] t (* -> ghost? *)
+
+  let varify_constructors var_names t =
+    let check_variable vl loc v =
+      if List.mem v vl then
+        raise Syntaxerr.(Error(Variable_in_scope(loc,v))) in
+    let var_names = List.map (fun v -> v.txt) var_names in
+    let rec loop t =
+      let desc =
+        match t.ptyp_desc with
+        | Ptyp_any -> Ptyp_any
+        | Ptyp_var x ->
+            check_variable var_names t.ptyp_loc x;
+            Ptyp_var x
+        | Ptyp_arrow (label,core_type,core_type') ->
+            Ptyp_arrow(label, loop core_type, loop core_type')
+        | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
+        | Ptyp_constr( { txt = Longident.Lident s }, [])
+          when List.mem s var_names ->
+            Ptyp_var s
+        | Ptyp_constr(longident, lst) ->
+            Ptyp_constr(longident, List.map loop lst)
+        | Ptyp_object (lst, o) ->
+            Ptyp_object (List.map loop_object_field lst, o)
+        | Ptyp_class (longident, lst) ->
+            Ptyp_class (longident, List.map loop lst)
+        | Ptyp_alias(core_type, string) ->
+            check_variable var_names t.ptyp_loc string;
+            Ptyp_alias(loop core_type, string)
+        | Ptyp_variant(row_field_list, flag, lbl_lst_option) ->
+            Ptyp_variant(List.map loop_row_field row_field_list,
+                         flag, lbl_lst_option)
+        | Ptyp_poly(string_lst, core_type) ->
+          List.iter (fun v ->
+            check_variable var_names t.ptyp_loc v.txt) string_lst;
+            Ptyp_poly(string_lst, loop core_type)
+        | Ptyp_package(longident,lst) ->
+            Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+        | Ptyp_extension (s, arg) ->
+            Ptyp_extension (s, arg)
+      in
+      {t with ptyp_desc = desc}
+    and loop_row_field  =
+      function
+        | Rtag(label,attrs,flag,lst) ->
+            Rtag(label,attrs,flag,List.map loop lst)
+        | Rinherit t ->
+            Rinherit (loop t)
+    and loop_object_field =
+      function
+        | Otag(label, attrs, t) ->
+            Otag(label, attrs, loop t)
+        | Oinherit t ->
+            Oinherit (loop t)
+    in
+    loop t
+
 end
 
 module Pat = struct
@@ -238,6 +294,7 @@ module Cl = struct
   let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_let (a, b, c))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcl_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcl_extension a)
+  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_open (a, b, c))
 end
 
 module Cty = struct
@@ -253,6 +310,7 @@ module Cty = struct
   let signature ?loc ?attrs a = mk ?loc ?attrs (Pcty_signature a)
   let arrow ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_arrow (a, b, c))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcty_extension a)
+  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_open (a, b, c))
 end
 
 module Ctf = struct

@@ -20,5 +20,5 @@
 
 CAMLprim value unix_time(value unit)
 {
-  return copy_double((double) time((time_t *) NULL));
+  return caml_copy_double((double) time((time_t *) NULL));
 }

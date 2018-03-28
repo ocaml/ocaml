@@ -274,8 +274,8 @@ module MakeMap(Map : MapArgument) = struct
           Texp_let (rec_flag,
                     map_bindings list,
                     map_expression exp)
-        | Texp_function (label, cases, partial) ->
-          Texp_function (label, map_cases cases, partial)
+        | Texp_function { arg_label; param; cases; partial; } ->
+          Texp_function { arg_label; param; cases = map_cases cases; partial; }
         | Texp_apply (exp, list) ->
           Texp_apply (map_expression exp,
                       List.map (fun (label, expo) ->
@@ -573,7 +573,9 @@ module MakeMap(Map : MapArgument) = struct
                            Some (map_class_type clty), vals, meths, concrs)
 
         | Tcl_ident (id, name, tyl) ->
-          Tcl_ident (id, name, List.map map_core_type tyl)
+            Tcl_ident (id, name, List.map map_core_type tyl)
+        | Tcl_open (ovf, p, lid, env, e) ->
+            Tcl_open (ovf, p, lid, env, map_class_expr e)
     in
     Map.leave_class_expr { cexpr with cl_desc = cl_desc }
 
@@ -586,6 +588,8 @@ module MakeMap(Map : MapArgument) = struct
           Tcty_constr (path, lid, List.map map_core_type list)
         | Tcty_arrow (label, ct, cl) ->
           Tcty_arrow (label, map_core_type ct, map_class_type cl)
+        | Tcty_open (ovf, p, lid, env, e) ->
+          Tcty_open (ovf, p, lid, env, map_class_type e)
     in
     Map.leave_class_type { ct with cltyp_desc = cltyp_desc }
 
@@ -625,7 +629,7 @@ module MakeMap(Map : MapArgument) = struct
           Ttyp_constr (path, lid, List.map map_core_type list)
         | Ttyp_object (list, o) ->
           Ttyp_object
-            (List.map (fun (s, a, t) -> (s, a, map_core_type t)) list, o)
+            (List.map map_object_field list, o)
         | Ttyp_class (path, lid, list) ->
           Ttyp_class (path, lid, List.map map_core_type list)
         | Ttyp_alias (ct, s) -> Ttyp_alias (map_core_type ct, s)
@@ -647,6 +651,12 @@ module MakeMap(Map : MapArgument) = struct
         Ttag (label, attrs, bool, list) ->
           Ttag (label, attrs, bool, List.map map_core_type list)
       | Tinherit ct -> Tinherit (map_core_type ct)
+
+  and map_object_field ofield =
+    match ofield with
+        OTtag (label, attrs, ct) ->
+          OTtag (label, attrs, map_core_type ct)
+      | OTinherit ct -> OTinherit (map_core_type ct)
 
   and map_class_field cf =
     let cf = Map.enter_class_field cf in

@@ -92,10 +92,8 @@
 /* Define HAS_MKFIFO if the library provides the mkfifo() function. */
 
 #define HAS_GETCWD
-#define HAS_GETWD
 
 /* Define HAS_GETCWD if the library provides the getcwd() function. */
-/* Define HAS_GETWD if the library provides the getwd() function. */
 
 #define HAS_GETPRIORITY
 
