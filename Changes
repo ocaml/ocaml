@@ -191,6 +191,11 @@ Working version
   raise exceptions.
   (David Allsopp)
 
+- MPR#7100, GPR#1476: trigger a minor GC when custom blocks accumulate
+  in minor heap
+  (Alain Frisch, report by talex, review by Damien Doligez, Leo White,
+  Gabriel Scherer)
+
 - GPR#1431: remove ocamlrun dependencies on curses/terminfo/termcap C library
   (Xavier Leroy, review by Daniel Bünzli)
 
