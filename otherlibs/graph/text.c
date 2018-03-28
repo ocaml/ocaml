@@ -19,7 +19,7 @@
 
 XFontStruct * caml_gr_font = NULL;
 
-static void caml_gr_get_font(char *fontname)
+static void caml_gr_get_font(const char *fontname)
 {
   XFontStruct * font = XLoadQueryFont(caml_gr_display, fontname);
   if (font == NULL) caml_gr_fail("cannot find font %s", fontname);
@@ -41,7 +41,7 @@ value caml_gr_set_text_size (value sz)
   return Val_unit;
 }
 
-static void caml_gr_draw_text(char *txt, int len)
+static void caml_gr_draw_text(const char *txt, int len)
 {
   if (caml_gr_font == NULL) caml_gr_get_font(DEFAULT_FONT);
   if (caml_gr_remember_modeflag)
@@ -69,7 +69,7 @@ value caml_gr_draw_char(value chr)
 value caml_gr_draw_string(value str)
 {
   caml_gr_check_open();
-  caml_gr_draw_text(String_val(str), string_length(str));
+  caml_gr_draw_text(String_val(str), caml_string_length(str));
   return Val_unit;
 }
 
@@ -80,9 +80,8 @@ value caml_gr_text_size(value str)
   int width;
   caml_gr_check_open();
   if (caml_gr_font == NULL) caml_gr_get_font(DEFAULT_FONT);
-  width = XTextWidth(caml_gr_font, String_val(str), string_length(str));
-  res = alloc_small(2, 0);
-  caml_initialize_field(res, 0, Val_int(width));
-  caml_initialize_field(res, 1, Val_int(caml_gr_font->ascent + caml_gr_font->descent));
-  CAMLreturn (res);
+  width = XTextWidth(caml_gr_font, String_val(str), caml_string_length(str));
+  res = caml_alloc_2(0, Val_int(width),
+                     Val_int(caml_gr_font->ascent + caml_gr_font->descent));
+  CAMLreturn(res);
 }

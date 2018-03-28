@@ -27,12 +27,11 @@
 *.annot
 *.exe
 *.exe.manifest
-.depend
-.depend.nt
 .DS_Store
 *.out
 *.out.dSYM
 *.swp
+_ocamltest
 
 # local to root directory
 
@@ -58,7 +57,10 @@
 /asmrun/*.p.c
 /asmrun/*.d.c
 /asmrun/alloc.c
+/asmrun/afl.c
 /asmrun/array.c
+/asmrun/backtrace.c
+/asmrun/bigarray.c
 /asmrun/callback.c
 /asmrun/compact.c
 /asmrun/compare.c
@@ -93,6 +95,7 @@
 /asmrun/terminfo.c
 /asmrun/unix.c
 /asmrun/weak.c
+/asmrun/win32.c
 
 /boot/Saved
 /boot/ocamlrun
@@ -103,6 +106,8 @@
 /bytecomp/opcodes.ml
 
 /byterun/caml/jumptbl.h
+/byterun/caml/m.h
+/byterun/caml/s.h
 /byterun/primitives
 /byterun/prims.c
 /byterun/caml/opnames.h
@@ -117,9 +122,8 @@
 /byterun/*.d.c
 /byterun/*.pic.c
 
-/config/m.h
-/config/s.h
 /config/Makefile
+/config/auto-aux/hashbang4
 
 /debugger/lexer.ml
 /debugger/parser.ml
@@ -169,8 +173,14 @@
 /ocamldoc/test_latex
 /ocamldoc/test
 
+/ocamltest/ocamltest
+/ocamltest/ocamltest.opt
+/ocamltest/ocamltest_config.ml
+/ocamltest/tsl_lexer.ml
+/ocamltest/tsl_parser.ml
+/ocamltest/tsl_parser.mli
+
 /otherlibs/dynlink/extract_crc
-/otherlibs/systhreads/thread.ml
 /otherlibs/threads/marshal.mli
 /otherlibs/threads/pervasives.mli
 /otherlibs/threads/unix.mli
@@ -184,7 +194,6 @@
 /otherlibs/win32unix/chmod.c
 /otherlibs/win32unix/cst2constr.c
 /otherlibs/win32unix/cstringv.c
-/otherlibs/win32unix/envir.c
 /otherlibs/win32unix/execv.c
 /otherlibs/win32unix/execve.c
 /otherlibs/win32unix/execvp.c
@@ -197,6 +206,7 @@
 /otherlibs/win32unix/getproto.c
 /otherlibs/win32unix/getserv.c
 /otherlibs/win32unix/gmtime.c
+/otherlibs/win32unix/mmap_ba.c
 /otherlibs/win32unix/putenv.c
 /otherlibs/win32unix/rmdir.c
 /otherlibs/win32unix/socketaddr.c
@@ -231,6 +241,7 @@
 /testsuite/**/*.native
 /testsuite/**/program
 /testsuite/**/_log
+/testsuite/failure.stamp
 
 /testsuite/_retries
 
@@ -242,7 +253,6 @@
 /testsuite/tests/asmcomp/*.out.manifest
 
 /testsuite/tests/basic/*.safe-string
-/testsuite/tests/basic/pr6322.ml
 
 /testsuite/tests/embedded/caml
 
@@ -266,7 +276,18 @@
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/lib-unix/win-stat/*-file
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
+
+/testsuite/tests/lib-unix/win-symlink/link*
+/testsuite/tests/lib-unix/win-symlink/test.txt
+
 /testsuite/tests/opaque/*/*.mli
+
+/testsuite/tests/output_obj/*.bc.c
+/testsuite/tests/output_obj/*_stub
+/testsuite/tests/output_obj/*_stub
 
 /testsuite/tests/runtime-errors/*.bytecode
 
@@ -305,9 +326,27 @@
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
+/testsuite/tests/typing-misc/false.flat-float
+/testsuite/tests/typing-misc/true.flat-float
+/testsuite/tests/typing-misc/pr6939.ml
+
 /testsuite/tests/typing-multifile/a.ml
 /testsuite/tests/typing-multifile/b.ml
 /testsuite/tests/typing-multifile/c.ml
+/testsuite/tests/typing-multifile/d.mli
+/testsuite/tests/typing-multifile/e.ml
+/testsuite/tests/typing-multifile/f.ml
+/testsuite/tests/typing-multifile/g.ml
+/testsuite/tests/typing-multifile/test
+
+/testsuite/tests/typing-unboxed-types/false.flat-float
+/testsuite/tests/typing-unboxed-types/true.flat-float
+/testsuite/tests/typing-unboxed-types/test.ml.reference
+
+/testsuite/tests/translprim/false.flat-float
+/testsuite/tests/translprim/true.flat-float
+/testsuite/tests/translprim/array_spec.ml.reference
+/testsuite/tests/translprim/module_coercion.ml.reference
 
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
@@ -316,6 +355,8 @@
 
 /testsuite/tests/warnings/w55.opt.opt_result
 /testsuite/tests/warnings/w58.opt.opt_result
+
+/testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/expect_test
 
@@ -359,6 +400,8 @@
 /tools/cmpbyt.opt
 /tools/stripdebug
 /tools/stripdebug.opt
+/tools/make_opcodes
+/tools/make_opcodes.ml
 
 /utils/config.ml
 

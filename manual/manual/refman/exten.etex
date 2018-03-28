@@ -1,17 +1,13 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 %HEVEA\cutname{extn.html}
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Specific macros:
-\newcommand{\tq}{\textquotesingle}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This chapter describes language extensions and convenience features
 that are implemented in OCaml, but not described in the
 OCaml reference manual.
 
 \section{Integer literals for types \texttt{int32}, \texttt{int64}
-         and \texttt{nativeint}}
+         and \texttt{nativeint}} \label{s:ext-integer}
 
 (Introduced in Objective Caml 3.07)
 
@@ -208,7 +204,7 @@ function component of a safe module is applied during this computation
 Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
 
-\section{Private types}
+\section{Private types}\label{s:private-types}
 \ikwd{private\@\texttt{private}}
 
 Private type declarations in module signatures, of the form
@@ -280,9 +276,6 @@ declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
-For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
-variant type, but a similar behaviour can be obtained through private
-row types.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
@@ -383,95 +376,48 @@ Similarly to abstract types, the variance of type parameters
 is not inferred, and must be given explicitly.
 
 
-\section{Local opens}
+\section{Local opens for patterns}
 \ikwd{let\@\texttt{let}}
-\ikwd{open\@\texttt{open}}
+\ikwd{open\@\texttt{open}} \label{s:local-opens}
 
-(Introduced in OCaml 3.12, extended to patterns in 4.03)
+(Introduced in OCaml 4.04)
 
 \begin{syntax}
-expr:
-       ...
-     | "let" "open" module-path "in" expr
-     | module-path '.(' expr ')'
-;
 pattern:
        ...
      | module-path '.(' pattern ')'
-\end{syntax}
-
-The expressions
-@"let" "open" module-path "in" expr@
-and
-@module-path'.('expr')'@ are strictly equivalent. On the pattern side,
-only the pattern @module-path'.('pattern')'@ is available. These
-constructions locally open the module referred to by the module path
-@module-path@ in the respective scope of the expression @expr@ or
-pattern @pattern@.
-
-Restricting opening to the scope of a single expression or pattern
-instead of a whole structure allows one to benefit from shorter syntax
-to refer to components of the opened module, without polluting the
-global scope. Also, this can make the code easier to read (the open
-statement is closer to where it is used) and to refactor (because the
-code fragment is more self-contained).
-
-\paragraph{Local opens for delimited expressions or patterns} (Introduced in OCaml 4.02)
-
-\begin{syntax}
-expr:
-       ...
-     | module-path '.[' expr ']'
-     | module-path '.[|' expr '|]'
-     | module-path '.{' expr '}'
-     | module-path '.{<' expr '>}'
-;
-pattern:
-       ...
      | module-path '.[' pattern ']'
      | module-path '.[|' pattern '|]'
      | module-path '.{' pattern '}'
+
 \end{syntax}
 
-When the body of a local open expression or pattern is delimited by
+For patterns, local opens are limited to the
+@module-path'.('pattern')'@ construction. This
+construction locally open the module referred to by the module path
+@module-path@ in the scope of the pattern @pattern@.
+
+When the body of a local open pattern is delimited by
 @'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
-For expression, parentheses can also be omitted for @'{<' '>}'@.
-For example, @module-path'.['expr']'@ is equivalent to
-@module-path'.(['expr'])'@, and @module-path'.[|' pattern '|]'@ is
+For example, @module-path'.['pattern']'@ is equivalent to
+@module-path'.(['pattern'])'@, and @module-path'.[|' pattern '|]'@ is
 equivalent to @module-path'.([|' pattern '|])'@.
 
-\section{Record and object notations}
+\section{Object copy short notations} \label{s:object-notations}
 \ikwd{with\@\texttt{with}}
 
-(Introduced in OCaml 3.12, object copy notation added in Ocaml 4.03)
+(Introduced in OCaml 4.03)
 
 \begin{syntax}
-pattern:
-    ...
-  | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] [';'] '}'
-;
 expr:
      ...
-  | '{' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
-  | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '}'
   | '{' '<' expr 'with' field ['=' expr] { ';' field ['=' expr] } [';'] '>' '}'
-
 \end{syntax}
 
-In a record pattern, a record construction expression or an object copy expression,
+In an object copy expression,
 a single identifier @id@ stands for @id '=' id@, and a qualified identifier
 @module-path '.' id@ stands for @module-path '.' id '=' id@.
-For example, assuming the record type
-\begin{verbatim}
-          type point = { x: float; y: float }
-\end{verbatim}
-has been declared, the following expressions are equivalent:
-\begin{verbatim}
-          let x = 1. and y = 2. in { x = x; y = y },
-          let x = 1. and y = 2. in { x; y },
-          let x = 1. and y = 2. in { x = x; y }
-\end{verbatim}
-On the object side, all following methods are equivalent:
+For example, all following methods are equivalent:
 \begin{verbatim}
           object
             val x=0. val y=0. val z=0.
@@ -480,70 +426,10 @@ On the object side, all following methods are equivalent:
             method f_2 x y = {< x=x ; y = y >}
           end
 \end{verbatim}
-Likewise, the following functions are equivalent:
-\begin{verbatim}
-          fun {x = x; y = y} -> x +. y
-          fun {x; y} -> x +. y
-\end{verbatim}
-
-Optionally, a record pattern can be terminated by @';' '_'@ to convey the
-fact that not all fields of the record type are listed in the record
-pattern and that it is intentional.  By default, the compiler ignores
-the @';' '_'@ annotation.  If warning 9 is turned on,
-the compiler will warn when a record pattern fails to list all fields of
-the corresponding record type and is not terminated by @';' '_'@.
-Continuing the "point" example above,
-\begin{verbatim}
-          fun {x} -> x +. 1.
-\end{verbatim}
-\noindent will warn if warning 9 is on, while
-\begin{verbatim}
-          fun {x; _} -> x +. 1.
-\end{verbatim}
-\noindent will not warn.  This warning can help spot program points where
-record patterns may need to be modified after new fields are added to a
-record type.
-
-\section{Explicit polymorphic type annotations}
-\ikwd{let\@\texttt{let}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-let-binding:
-          ...
-        | value-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-Polymorphic type annotations in @"let"@-definitions behave in a way
-similar to polymorphic methods: they explicitly require the defined
-value to be polymorphic, and allow one to use this polymorphism in
-recursive occurrences (when using @"let" "rec"@). Note however that this
-is a normal  polymorphic type, unifiable with any instance of
-itself.
-
-There are two possible applications of this feature. One is polymorphic
-recursion:
-\begin{verbatim}
-        type 'a t = Leaf of 'a | Node of ('a * 'a) t
-        let rec depth : 'a. 'a t -> 'b = function
-            Leaf _ -> 1
-          | Node x -> 1 + depth x
-\end{verbatim}
-Note that "'b" is not explicitly polymorphic here, and it will
-actually be unified with "int".
-
-The other application is to ensure that some definition is sufficiently
-polymorphic.
-\caml
-\?let id : \tq\-a. \tq\-a -> \tq\-a = \<fun x -> x+1\> ;;
-\:Error: This definition has type int -> int which is less general than
-\:         \tq\-a. \tq\-a -> \tq\-a
-\endcaml
 
 \section{Locally abstract types}
 \ikwd{type\@\texttt{type}}
-\ikwd{fun\@\texttt{fun}}
+\ikwd{fun\@\texttt{fun}} \label{s:locally-abstract}
 
 (Introduced in OCaml 3.12, short syntax added in 4.03)
 
@@ -633,9 +519,6 @@ This syntax can be very useful when defining recursive functions involving
 GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
 
 The same feature is provided for method definitions.
-The @'method!'@ form combines this extension with the
-``explicit overriding'' extension described in
-section~\ref{s:explicit-overriding}.
 
 \section{First-class modules}\label{s-first-class-modules}
 \ikwd{module\@\texttt{module}}
@@ -644,7 +527,8 @@ section~\ref{s:explicit-overriding}.
 \ikwd{and\@\texttt{and}}
 
 (Introduced in OCaml 3.12; pattern syntax and package type inference
-introduced in 4.00; structural comparison of package types introduced in 4.02.)
+introduced in 4.00; structural comparison of package types introduced in 4.02.;
+fewer parens required starting from 4.05)
 
 \begin{syntax}
 typexpr:
@@ -688,6 +572,8 @@ evaluates the core language expression @expr@ to a value, which must
 have type @'module' package-type@, and extracts the module that was
 encapsulated in this value. Again @package-type@ can be omitted if the
 type of @expr@ is known.
+If the module expression is already parenthesized, like the arguments
+of functors are, no additional parens are needed: "Map.Make(val key)".
 
 The pattern @'(' 'module' module-name ':' package-type ')'@ matches a
 package with type @package-type@ and binds it to @module-name@.
@@ -860,7 +746,7 @@ Note that this function uses an explicit polymorphic annotation to obtain
 polymorphic recursion.
 \fi
 
-\section{Recovering the type of a module}
+\section{Recovering the type of a module} \label{s:module-type-of}
 
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
@@ -918,27 +804,29 @@ it to represent sets internally in a different way.
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
+\label{s:signature-substitution}
 
-(Introduced in OCaml 3.12)
+(Introduced in OCaml 3.12, generalized in 4.06)
 
 \begin{syntax}
 mod-constraint:
           ...
         | 'type' [type-params] typeconstr-name ':=' typexpr
-        | 'module' module-name ':=' extended-module-path
+        | 'module' module-path ':=' extended-module-path
 \end{syntax}
 
-``Destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
+A ``destructive'' substitution (@'with' ... ':=' ...@) behaves essentially like
 normal signature constraints (@'with' ... '=' ...@), but it additionally removes
-the redefined type or module from the signature. There are a number of
-restrictions: one can only remove types and modules at the outermost
-level (not inside submodules), and in the case of @'with type'@ the
-definition must be another type constructor with the same type
-parameters.
+the redefined type or module from the signature.
+
+Prior to OCaml 4.06, there were a number of restrictions: one could only remove
+types and modules at the outermost level (not inside submodules), and in the
+case of @'with type'@ the definition had to be another type constructor with the
+same type parameters.
 
 A natural application of destructive substitution is merging two
 signatures sharing a type name.
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
         module type Printable = sig
           type t
           val print : Format.formatter -> t -> unit
@@ -951,30 +839,26 @@ signatures sharing a type name.
           include Printable
           include Comparable with type t := t
         end
-\end{verbatim}
+\end{caml_example*}
 
 One can also use this to completely remove a field:
-\caml
-\?module type S = Comparable with type t := int;;
-\:module type S = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}{verbatim}
+module type S = Comparable with type t := int
+\end{caml_example}
 or to rename one:
-\caml
-\?module type S = sig
-\?  type u
-\?  include Comparable with type t := u
-\?end;;
-\:module type S = sig type u val compare : u -> u -> int end
-\endcaml
+\begin{caml_example}{verbatim}
+module type S = sig
+  type u
+  include Comparable with type t := u
+end
+\end{caml_example}
 
 Note that you can also remove manifest types, by substituting with the
 same type.
-\caml
-\?module type ComparableInt = Comparable with type t = int ;;
-\:module type ComparableInt = sig type t = int val compare : t -> t -> int end
-\?module type CompareInt = ComparableInt with type t := int ;;
-\:module type CompareInt = sig val compare : int -> int -> int end
-\endcaml
+\begin{caml_example}{verbatim}
+module type ComparableInt = Comparable with type t = int ;;
+module type CompareInt = ComparableInt with type t := int
+\end{caml_example}
 
 \section{Type-level module aliases}
 \ikwd{module\@\texttt{module}}
@@ -1005,9 +889,12 @@ There are several restrictions on @module-path@:
 
 Such specifications are also inferred. Namely, when @P@ is a path
 satisfying the above constraints,
-\caml
-\?module N = P
-\endcaml
+\begin{caml_eval}
+module P = struct end
+\end{caml_eval}
+\begin{caml_example*}{verbatim}
+module N = P
+\end{caml_example*}
 has type
 \caml
 \:module N = P
@@ -1079,34 +966,6 @@ you use @'Mylib.A'@, only @'Mylib_A'@ will be linked in, not
 %name the interface @'Mylib.mli'@, but this would require that all
 %clients are compiled with the @'-no-alias-deps'@ flag.
 
-\section{Explicit overriding in class definitions}\label{s:explicit-overriding}
-\ikwd{method.\@\texttt{method\char33}}
-\ikwd{val.\@\texttt{val\char33}}
-\ikwd{inherit.\@\texttt{inherit\char33}}
-
-(Introduced in OCaml 3.12)
-
-\begin{syntax}
-class-field:
-      ...
-   |  'inherit!' class-expr ['as' lowercase-ident]
-   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
-   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
-\end{syntax}
-
-The keywords @"inherit!"@, @"val!"@ and @"method!"@ have the same semantics
-as @"inherit"@, @"val"@ and @"method"@, but they additionally require the
-definition they introduce to be an overriding. Namely, @"method!"@
-requires @method-name@ to be already defined in this class, @"val!"@
-requires @inst-var-name@ to be already defined in this class, and
-@"inherit!"@ requires @class-expr@ to override some definitions.
-If no such overriding occurs, an error is signaled.
-
-As a side-effect, these 3 keywords avoid the warnings~7
-(method override) and~13 (instance variable override).
-Note that warning~7 is disabled by default.
-
 \section{Overriding in open statements}\label{s:explicit-overriding-open}
 \ikwd{open.\@\texttt{open\char33}}
 
@@ -1124,6 +983,15 @@ specification:
 expr:
        ...
      | 'let' 'open!' module-path 'in' expr
+;
+class-body-type:
+       ...
+   |  'let' 'open!' module-path 'in' class-body-type
+;
+class-expr:
+       ...
+   |  'let' 'open!' module-path 'in' class-expr
+;
 \end{syntax}
 
 Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
@@ -1131,6 +999,8 @@ Since OCaml 4.01, @"open"@ statements shadowing an existing identifier
 character after the @"open"@ keyword indicates that such a shadowing is
 intentional and should not trigger the warning.
 
+This is also available (since OCaml 4.06) for local opens in class
+expressions and class type expressions.
 
 \section{Generalized algebraic datatypes} \ikwd{type\@\texttt{type}}
 \ikwd{match\@\texttt{match}} \label{s:gadts}
@@ -1391,41 +1261,28 @@ compiler generates these names according to the following nomenclature:
 \item First, types whose name starts with a "$" are existentials.
 \item "$Constr_'a" denotes an existential type introduced for the type
 variable "'a" of the GADT constructor "Constr":
-\caml
-\?   type any = Any : \tq\-name -> any
-\?   let escape (Any x) = \<x\>;;
-\: Error: This expression has type $Any_\tq\-name
-\:        but an expression was expected of type \tq\-a
-\:        The type constructor $Any_\tq\-name would escape its scope
-\endcaml
-\item "$Constr" denotes an existential type introduced for an anonymous
+\begin{caml_example}{verbatim}[error]
+type any = Any : 'name -> any
+let escape (Any x) = x
+\end{caml_example}
+\item "$Constr" denotes an existential type introduced for an anonymous %$
 type variable in the GADT constructor "Constr":
-\caml
-\? type any = Any : _ -> any
-\? let escape (Any x) = \<x\>;;
-\: Error: This expression has type $Any but an expression was expected of type
-\:        \tq\-a
-\:        The type constructor $Any would escape its scope
-\endcaml
-\item "$'a" if the existential variable was unified with the type
+\begin{caml_example}{verbatim}[error]
+type any = Any : _ -> any
+let escape (Any x) = x
+\end{caml_example}
+\item "$'a" if the existential variable was unified with the type %$
 variable "'a" during typing:
-\caml
-\? type (\tq\-arg,\tq\-result,\tq\-aux) fn =
-\?  | Fun: (\tq\-a ->\tq\-b) -> (\tq\-a,\tq\-b,unit) fn
-\?  | Mem1: (\tq\-a ->\tq\-b) * \tq\-a * \tq\-b -> (\tq\-a, \tq\-b, \tq\-a * \tq\-b) fn
-
-\? let apply: (\tq\-arg,\tq\-result, _ ) fn -> \tq\-arg -> \tq\-result = fun f x ->
-\?  match f with
-\?  | Fun f -> f x
-\?  | \<Mem1 (f,y,fy)\> -> if x = y then fy else f x;;
-
-\: Error: This pattern matches values of type
-\:         ($\tq\-arg, $\tq\-result, $\tq\-arg * $\tq\-result) fn
-\:        but a pattern was expected which matches values of type
-\:         ($\tq\-arg, $\tq\-result, unit) fn
-\:        Type $\tq\-arg * $\tq\-result is not compatible with type unit
-\endcaml
-\item "$n" (n a number) is an internally generated existential
+\begin{caml_example}{verbatim}[error]
+type ('arg,'result,'aux) fn =
+  | Fun: ('a ->'b) -> ('a,'b,unit) fn
+  | Mem1: ('a ->'b) * 'a * 'b -> ('a, 'b, 'a * 'b) fn
+ let apply: ('arg,'result, _ ) fn -> 'arg -> 'result = fun f x ->
+  match f with
+  | Fun f -> f x
+  | Mem1 (f,y,fy) -> if x = y then fy else f x
+\end{caml_example}
+\item "$n" (n a number) is an internally generated existential %$
 which could not be named using one of the previous schemes.
 \end{itemize}
 
@@ -1439,7 +1296,7 @@ GADT pattern-matching may also add type equations to non-local
 abstract types. The behaviour is the same as with local abstract
 types. Reusing the above "eq" type, one can write:
 \begin{verbatim}
-        module M : sig type t val x : t val e : (x,int) eq end = struct
+        module M : sig type t val x : t val e : (t,int) eq end = struct
           type t = int
           let x = 33
           let e = Eq
@@ -1699,12 +1556,14 @@ Some attributes are understood by the type-checker:
  the same effect as the "-w" command-line option, in the scope between
  the attribute and the end of the current
  signature/structure/object/object type.  The attribute can also be
- used on an expression,
- in which case its scope is limited to that expression.
+ attached to any kind of syntactic item which support attributes
+ (such as an expression, or a type expression)
+ in which case its scope is limited to that item.
  Note that it is not well-defined which scope is used for a specific
  warning.  This is implementation dependant and can change between versions.
- For instance, warnings triggered by the ``ppwarning'' attribute (see below)
- are issued using the global warning configuration.
+ Some warnings are even completely outside the control of ``ocaml.warning''
+ (for instance, warnings 1, 2, 14, 29 and 50).
+
 \item
  ``ocaml.warnerror'' or ``warnerror'', with a string literal payload.
  Same as ``ocaml.warning'', for the "-warn-error" command-line option.
@@ -1885,7 +1744,7 @@ specification: ...
 class-field-spec: ...
    | item-extension
 ;
-class-field:
+class-field: ...
    | item-extension
 ;
 \end{syntax}
@@ -1924,25 +1783,25 @@ Some extension nodes are understood by the compiler itself:
     constructor slot.
 \end{itemize}
 
-\begin{verbatim}
+\begin{caml_example*}{verbatim}
 type t = ..
 type t += X of int | Y of string
 let x = [%extension_constructor X]
 let y = [%extension_constructor Y]
-\end{verbatim}
-\caml
-\? x <> y;;
-\:- : bool = true
-\endcaml
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+ x <> y;;
+\end{caml_example}
 
 \section{Quoted strings}\label{s:quoted-strings}
 
 (Introduced in OCaml 4.02)
 
-Quoted strings provide a different lexical syntax to write string
-literals in OCaml code.  This can be used to embed pieces of foreign
-syntax fragments in OCaml code, to be interpret by a "-ppx" filter or
-just a library.
+Quoted strings "{foo|...|foo}" provide a different lexical syntax to
+write string literals in OCaml code. They are useful to represent
+strings of arbitrary content without escaping -- as long as the
+delimiter you chose (here "|foo}") does not occur in the string
+itself.
 
 \begin{syntax}
 string-literal: ...
@@ -1954,9 +1813,9 @@ quoted-string-id:
 \end{syntax}
 
 The opening delimiter has the form "{id|" where "id" is a (possibly
-  empty) sequence of lowercase letters and underscores.  The
-  corresponding closing delimiter is "|id}" (with the same
-identifier).  Unlike regular OCaml string literals, quoted
+empty) sequence of lowercase letters and underscores.  The
+corresponding closing delimiter is "|id}" (with the same
+identifier). Unlike regular OCaml string literals, quoted
 strings do not interpret any character in a special way.
 
 Example:
@@ -1966,6 +1825,19 @@ String.length {|\"|}         (* returns 2 *)
 String.length {foo|\"|foo}   (* returns 2 *)
 \end{verbatim}
 
+Quoted strings are interesting in particular in conjunction to
+extension nodes "[%foo ...]" (see \ref{s:extension-nodes}) to embed
+foreign syntax fragments to be interpreted by a preprocessor and
+turned into OCaml code: you can use "[%sql {|...|}]" for example to
+represent arbitrary SQL statements -- assuming you have a ppx-rewriter
+that recognizes the "%sql" extension -- without requiring escaping
+quotes.
+
+Note that the non-extension form, for example "{sql|...|sql}", should
+not be used for this purpose, as the user cannot see in the code that
+this string literal has a different semantics than they expect, and
+giving a semantics to a specific delimiter limits the freedom to
+change the delimiter to avoid escaping issues.
 
 \section{Exception cases in pattern matching}\label{s:exception-match}
 
@@ -2063,7 +1935,43 @@ Extensible variant constructors can be declared "private". As with
 regular variants, this prevents them from being constructed directly by
 constructor application while still allowing them to be de-structured in
 pattern-matching.
+\begin{verbatim}
+        module Bool : sig
+          type attr += private Bool of int
+          val bool : bool -> attr
+        end = struct
+          type attr += Bool of int
+          let bool p = if p then Bool 1 else Bool 0
+        end
+\end{verbatim}
 
+\subsection{Private extensible variant types}
+
+(Introduced in OCaml 4.06)
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' '..'
+;
+\end{syntax}
+
+Extensible variant types can be declared "private". This prevents new
+constructors from being declared directly, but allows extension
+constructors to be referred to in interfaces.
+\begin{verbatim}
+        module Msg : sig
+          type t = private ..
+          module MkConstr (X : sig type t end) : sig
+            type t += C of X.t
+          end
+        end = struct
+          type t = ..
+          module MkConstr (X : sig type t end) = struct
+            type t += C of X.t
+          end
+        end
+\end{verbatim}
 
 \section{Generative functors}\label{s:generative-functors}
 
@@ -2125,7 +2033,7 @@ infix-symbol:
 Operator names starting with a "#" character and containing more than
 one "#" character are reserved for extensions.
 
-\subsection{Extension literals}
+\subsection{Extension literals} \label{s:extension-literals}
 (Introduced in OCaml 4.03)
 \begin{syntax}
 float-literal:
@@ -2136,7 +2044,7 @@ float-literal:
      | ["-"] ("0x"||"0X")
        ("0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f")
        { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }\\
-       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }
+       ["." { "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f"||"_" }]
        [("p"||"P") ["+"||"-"] ("0"\ldots"9") { "0"\ldots"9"||"_" }]
        ["g"\ldots"z"||"G"\ldots"Z"]
 ;
@@ -2155,7 +2063,7 @@ int-literal:
 Int and float literals followed by an one-letter identifier in the
 range @["g".."z"||"G".."Z"]@ are extension-only literals.
 
-\section{Inline records}
+\section{Inline records} \label{s:inline-records}
 (Introduced in OCaml 4.03)
 \begin{syntax}
   constr-args:
@@ -2184,7 +2092,7 @@ type t =
 let v = Point {width = 10; x = 0.; y = 0.}
 
 let scale l = function
-  | Point p -> Point {p with x = l * p.x; y = l * p.y}
+  | Point p -> Point {p with x = l *. p.x; y = l *. p.y}
   | ....
 
 let print = function
@@ -2203,7 +2111,7 @@ let invalid = function
 
 \section{Local exceptions}
 \ikwd{let\@\texttt{let}}
-\ikwd{exception\@\texttt{exception}}
+\ikwd{exception\@\texttt{exception}} \label{s:local-exceptions}
 
 (Introduced in OCaml 4.04)
 
@@ -2405,3 +2313,44 @@ will be converted directly to
 type t =  T of string
 [@@ocaml.doc " Attaches to t "]
 \end{verbatim}
+
+\section{Extended indexing operators \label{s:index-operators} }
+(Introduced in 4.06)
+
+\begin{syntax}
+
+dot-ext:
+   | ('!'||'$'||'%'||'&'||'*'||'+'||'-'||'/'||':'||'='||'>'||'?'||'@'||'^'||'|'||'~') { operator-char }
+;
+expr:
+          ...
+        | expr '.' [module-path '.'] dot-ext ( '(' expr ')' || '[' expr ']' || '{' expr '}' ) [ '<-' expr ]
+;
+operator-name:
+          ...
+        | '.' dot-ext ('()' || '[]' || '{}') ['<-']
+;
+\end{syntax}
+
+
+This extension provides syntactic sugar for getting and setting elements
+for user-defined indexed types. For instance, we can define python-like
+dictionaries with
+\begin{caml_example*}{verbatim}
+module Dict = struct
+include Hashtbl
+let ( .%{} ) tabl index = find tabl index
+let ( .%{}<- ) tabl index value = add tabl index value
+end
+let dict =
+  let dict = Dict.create 10 in
+  let () =
+    dict.Dict.%{"one"} <- 1;
+    let open Dict in
+    dict.%{"two"} <- 2 in
+  dict
+\end{caml_example*}
+\begin{caml_example}{toplevel}
+dict.Dict.%{"one"};;
+let open Dict in dict.%{"two"};;
+\end{caml_example}

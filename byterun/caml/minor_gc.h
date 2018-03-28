@@ -18,17 +18,19 @@
 
 #include "misc.h"
 #include "addrmap.h"
+#include "config.h"
 
-struct caml_ref_table {
-  value **base;
-  value **end;
-  value **threshold;
-  value **ptr;
-  value **limit;
-  asize_t size;
-  asize_t reserve;
-};
+#define CAML_TABLE_STRUCT(t) { \
+  t *base;                     \
+  t *end;                      \
+  t *threshold;                \
+  t *ptr;                      \
+  t *limit;                    \
+  asize_t size;                \
+  asize_t reserve;             \
+}
 
+struct caml_ref_table CAML_TABLE_STRUCT(value *);
 struct caml_remembered_set {
   struct caml_ref_table major_ref, minor_ref, fiber_ref;
 };
@@ -38,6 +40,7 @@ extern void caml_empty_minor_heap (void);
 CAMLextern void caml_minor_collection (void);
 CAMLextern void forward_pointer (void* domain, value v, value* p);
 CAMLextern void garbage_collection (void); /* def in asmrun/signals.c */
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv);
 extern void caml_realloc_ref_table (struct caml_ref_table *);
 struct caml_remembered_set* caml_alloc_remembered_set();
 void caml_free_remembered_set(struct caml_remembered_set*);

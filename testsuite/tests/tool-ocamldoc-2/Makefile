@@ -17,6 +17,8 @@ BASEDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/ocamldoc
 LD_PATH=$(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/str
 DOCFLAGS=-I $(OTOPDIR)/stdlib $(COMPFLAGS)\
+	-latextitle "1,subsection*" \
+	-latextitle "2,subsubsection*" \
 	-latextitle "6,subsection*" \
 	-latextitle "7,subsubsection*" \
 	-latex-type-prefix "TYP" \
@@ -33,11 +35,12 @@ default:
 	fi
 
 .PHONY: run
-run: *.ml *.mli
-	@for file in *.mli *.ml; do \
+run: *.ml *.mli *.txt
+	@for file in *.mli *.ml *.txt; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .mli`"; \
 	  F="`basename $$F .ml`"; \
+	  F="`basename $$F .txt`"; \
 	  $(OCAMLDOC) $(DOCFLAGS) -hide-warnings -latex $ \
 	              -o $$F.result $$file; \
 	  $(DIFF) $$F.reference $$F.result >/dev/null \

@@ -286,7 +286,7 @@ module Result : sig
   val set_approx : t -> Simple_value_approx.t -> t
 
   (** Set the approximation of the subexpression to the meet of the
-      current return aprroximation and the provided one. Typically
+      current return approximation and the provided one. Typically
       used just before returning from a branch case of the
       simplification algorithm. *)
   val meet_approx : t -> Env.t -> Simple_value_approx.t -> t

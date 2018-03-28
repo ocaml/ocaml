@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Lambda simplification and lambda plugin hooks *)
+
 (* Elimination of useless Llet(Alias) bindings.
    Transformation of let-bound references into variables.
    Simplification over staticraise/staticcatch constructs.
@@ -23,15 +25,12 @@ open Lambda
 val simplify_lambda: string -> lambda -> lambda
 
 val split_default_wrapper
-   : ?create_wrapper_body:(lambda -> lambda)
-  -> id:Ident.t
+   : id:Ident.t
   -> kind:function_kind
   -> params:Ident.t list
   -> body:lambda
   -> attr:function_attribute
-  -> wrapper_attr:function_attribute
   -> loc:Location.t
-  -> unit
   -> (Ident.t * lambda) list
 
 (* To be filled by asmcomp/selectgen.ml *)

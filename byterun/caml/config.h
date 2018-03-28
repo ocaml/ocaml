@@ -16,15 +16,14 @@
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
-/* <include ../config/m.h> */
-/* <include ../config/s.h> */
+/* <include m.h> */
+/* <include s.h> */
 /* <private> */
-#include "../../config/m.h"
-#include "../../config/s.h"
+#include "m.h"
+#include "s.h"
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING
 #endif
-/* </private> */
 
 #ifndef CAML_NAME_SPACE
 #include "compatibility.h"
@@ -34,6 +33,10 @@
 
 #ifdef HAS_STDINT_H
 #include <stdint.h>
+#endif
+
+#ifndef ARCH_SIZET_PRINTF_FORMAT
+#define ARCH_SIZET_PRINTF_FORMAT "z"
 #endif
 
 /* Types for 32-bit integers, 64-bit integers, and
@@ -58,14 +61,14 @@
 #endif /* ARCH_INT32_TYPE */
 
 #ifndef ARCH_INT64_TYPE
-#if SIZEOF_LONGLONG == 8
-#define ARCH_INT64_TYPE long long
-#define ARCH_UINT64_TYPE unsigned long long
-#define ARCH_INT64_PRINTF_FORMAT "ll"
-#elif SIZEOF_LONG == 8
+#if SIZEOF_LONG == 8
 #define ARCH_INT64_TYPE long
 #define ARCH_UINT64_TYPE unsigned long
 #define ARCH_INT64_PRINTF_FORMAT "l"
+#elif SIZEOF_LONGLONG == 8
+#define ARCH_INT64_TYPE long long
+#define ARCH_UINT64_TYPE unsigned long long
+#define ARCH_INT64_PRINTF_FORMAT "ll"
 #else
 #error "No 64-bit integer type available"
 #endif

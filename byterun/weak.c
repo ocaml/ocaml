@@ -78,7 +78,7 @@ value caml_ephe_set_key_option (value ar, value n, value el)
     caml_invalid_argument ("Weak.set");
   }
   if (el != None_val && Is_block (el)){
-                                              Assert (Wosize_val (el) == 1);
+    CAMLassert (Wosize_val (el) == 1);
     caml_modify_field (ar, offset, Field (el, 0));
   }else{
     caml_modify_field (ar, offset, None_val);

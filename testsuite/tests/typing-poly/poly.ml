@@ -1425,6 +1425,33 @@ Error: This expression has type M.t but an expression was expected of type 'x
        The type constructor M.t would escape its scope
 |}];;
 
+
+(* PR#6987 *)
+type 'a t = V1 of 'a
+
+type ('c,'t) pvariant = [ `V of ('c * 't t) ]
+
+class ['c] clss =
+  object
+    method mthod : 't . 'c -> 't t -> ('c, 't) pvariant = fun c x ->
+      `V (c, x)
+  end;;
+
+let f2 = fun o c x -> match x with | V1 _ -> x
+
+let rec f1 o c x =
+  match (o :> _ clss)#mthod c x with
+  | `V c -> f2 o c x;;
+[%%expect{|
+type 'a t = V1 of 'a
+type ('c, 't) pvariant = [ `V of 'c * 't t ]
+class ['c] clss : object method mthod : 'c -> 't t -> ('c, 't) pvariant end
+val f2 : 'a -> 'b -> 'c t -> 'c t = <fun>
+val f1 :
+  < mthod : 't. 'a -> 't t -> [< `V of 'a * 't t ]; .. > ->
+  'a -> 'b t -> 'b t = <fun>
+|}]
+
 (* PR#7285 *)
 type (+'a,-'b) foo = private int;;
 let f (x : int) : ('a,'a) foo = Obj.magic x;;
@@ -1432,7 +1459,152 @@ let x = f 3;;
 [%%expect{|
 type (+'a, -'b) foo = private int
 val f : int -> ('a, 'a) foo = <fun>
-val x : ('_a, '_a) foo = 3
+val x : ('_weak1, '_weak1) foo = 3
+|}]
+
+
+(* PR#7344*)
+let rec f : unit -> < m: 'a. 'a -> 'a> = fun () ->
+  let x = f () in
+  ignore (x#m 1);
+  ignore (x#m "hello");
+  assert false;;
+[%%expect{|
+val f : unit -> < m : 'a. 'a -> 'a > = <fun>
+|}]
+
+(* PR#7395 *)
+type u
+type 'a t = u;;
+let c (f : u -> u) =
+ object
+   method apply: 'a. 'a t -> 'a t = fun x -> f x
+ end;;
+[%%expect{|
+type u
+type 'a t = u
+val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
+|}]
+
+(* PR#7496 *)
+let f (x : < m: 'a. ([< `Foo of int & float] as 'a) -> unit>)
+         : < m: 'a. ([< `Foo of int & float] as 'a) -> unit> = x;;
+
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit };;
+let f t = { x = t.x };;
+[%%expect{|
+val f :
+  < m : 'a. ([< `Foo of int & float ] as 'a) -> unit > ->
+  < m : 'b. ([< `Foo of int & float ] as 'b) -> unit > = <fun>
+type t = { x : 'a. ([< `Foo of int & float ] as 'a) -> unit; }
+val f : t -> t = <fun>
+|}]
+
+type t = <m:int>
+type g = <n:string; t>
+type h = <x:string; y:int; g>
+[%%expect{|
+type t = < m : int >
+type g = < m : int; n : string >
+type h = < m : int; n : string; x : string; y : int >
+|}]
+
+type t = <g>
+and g = <a:t>
+[%%expect{|
+Line _, characters 10-11:
+Error: The type constructor g
+is not yet completely defined
+|}]
+
+type t = int
+type g = <t>
+[%%expect{|
+type t = int
+Line _, characters 10-11:
+Error: The type int is not an object type
+|}]
+
+type t = <a:int>
+type g = <t; t; t;>
+[%%expect{|
+type t = < a : int >
+type g = < a : int >
+|}]
+
+type c = <a:int; d:string>
+let s:c = object method a=1; method d="123" end
+[%%expect{|
+type c = < a : int; d : string >
+val s : c = <obj>
+|}]
+
+type 'a t = < m: 'a >
+type s = < int t >
+module M = struct type t = < m: int > end
+type u = < M.t >
+type r = < a : int; < b : int > >
+type e = < >
+type r1 = < a : int; e >
+type r2 = < a : int; < < < > > > >
+[%%expect{|
+type 'a t = < m : 'a >
+type s = < m : int >
+module M : sig type t = < m : int > end
+type u = < m : int >
+type r = < a : int; b : int >
+type e = <  >
+type r1 = < a : int >
+type r2 = < a : int >
+|}]
+
+type gg = <a:int->float; a:int>
+[%%expect{|
+Line _, characters 27-30:
+Error: Method 'a' has type int, which should be int -> float
+|}]
+
+type t = <a:int; b:string>
+type g = <b:float; t;>
+[%%expect{|
+type t = < a : int; b : string >
+Line _, characters 19-20:
+Error: Method 'b' has type string, which should be float
+|}]
+
+module A = struct
+  class type ['a] t1 = object method f : 'a end
+end
+type t = < int A.t1 >
+[%%expect{|
+module A : sig class type ['a] t1 = object method f : 'a end end
+type t = < f : int >
+|}]
+
+type t = < int #A.t1 >
+[%%expect{|
+Line _, characters 11-20:
+Error: Illegal open object type
+|}]
+
+let g = fun (y : ('a * 'b)) x -> (x : < <m: 'a> ; <m: 'b> >)
+[%%expect{|
+val g : 'a * 'a -> < m : 'a > -> < m : 'a > = <fun>
+|}]
+
+type 'a t = <m: 'a ; m: int>
+[%%expect{|
+type 'a t = < m : 'a > constraint 'a = int
+|}]
+
+(* GPR#1142 *)
+module M () = struct
+  let f : 'a -> 'a = assert false
+  let g : 'a -> 'a = raise Not_found
+end
+
+[%%expect{|
+module M : functor () -> sig val f : 'a -> 'a val g : 'a -> 'a end
 |}]
 
 (* PR#7395 *)

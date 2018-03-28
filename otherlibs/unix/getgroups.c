@@ -36,7 +36,7 @@ CAMLprim value unix_getgroups(value unit)
 
   n = getgroups(NGROUPS_MAX, gidset);
   if (n == -1) uerror("getgroups", Nothing);
-  res = alloc_tuple(n);
+  res = caml_alloc_tuple(n);
   for (i = 0; i < n; i++)
     caml_initialize_field(res, i, Val_int(gidset[i]));
   return res;
@@ -45,6 +45,6 @@ CAMLprim value unix_getgroups(value unit)
 #else
 
 CAMLprim value unix_getgroups(value unit)
-{ invalid_argument("getgroups not implemented"); }
+{ caml_invalid_argument("getgroups not implemented"); }
 
 #endif

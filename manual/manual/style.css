@@ -28,3 +28,6 @@ tr { background-color : White }
 td.typefieldcomment { background-color : #FFFFFF }
 pre { margin-bottom: 4px }
 div.sig_block {margin-left: 2em}
+ul.info-attributes { list-style: none; margin: 0; padding: 0; }
+div.info > p:first-child{ margin-top:0; }
+div.info-desc > p:first-child { margin-top:0; margin-bottom:0; }

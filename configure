@@ -24,10 +24,12 @@ bindir=''
 target_bindir=''
 libdir=''
 mandir=''
-manext=1
+programs_man_section=1
+libraries_man_section=3
 host_type=unknown
 target_type=""
 ccoption=''
+cpp='cpp'
 asoption=''
 asppoption=''
 cclibs=''
@@ -43,26 +45,32 @@ disable_libunwind=false
 graph_wanted=yes
 pthread_wanted=yes
 dl_defs=''
-verbose=no
+verbose=false
 with_curses=yes
-debugruntime=noruntimed
+debugruntime=false
 with_instrumented_runtime=false
-with_sharedlibs=yes
+with_sharedlibs=true
 partialld="ld -r"
 with_debugger=ocamldebugger
 with_ocamldoc=ocamldoc
 with_frame_pointers=false
 with_spacetime=false
+enable_call_counts=true
+with_profinfo=false
+profinfo_width=0
 no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
 with_cfi=true
 stats=false
 flambda=false
-safe_string=false
+force_safe_string=false
+default_safe_string=true
+afl_instrument=false
 max_testsuite_dir_retries=0
-with_cplugins=true
+with_cplugins=false
 with_fpic=false
+flat_float_array=true
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -117,10 +125,9 @@ while : ; do
         case "$2" in
           */man[1-9ln])
             mandir=`echo $2 | sed -e 's|^\(.*\)/man.$|\1|'`
-            manext=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
+            programs_man_section=`echo $2 | sed -e 's/^.*\(.\)$/\1/'`;;
           *)
-            mandir=$2
-            manext=1;;
+            mandir=$2;;
         esac
         shift;;
     -libunwinddir|--libunwinddir)
@@ -148,7 +155,7 @@ while : ; do
     -no-curses|--no-curses)
         with_curses=no;;
     -no-shared-libs|--no-shared-libs)
-        with_sharedlibs=no;;
+        with_sharedlibs=false;;
     -x11include*|--x11include*)
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
@@ -165,9 +172,9 @@ while : ; do
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
     -verbose|--verbose)
-        verbose=yes;;
+        verbose=true;;
     -with-debug-runtime|--with-debug-runtime)
-        debugruntime=runtimed;;
+        debugruntime=true;;
     -with-instrumented-runtime|--with-instrumented-runtime)
         with_instrumented_runtime=true;;
     -no-debugger|--no-debugger)
@@ -181,7 +188,19 @@ while : ; do
     -no-naked-pointers|--no-naked-pointers)
         no_naked_pointers=true;;
     -spacetime|--spacetime)
-        with_spacetime=true;;
+        with_spacetime=true;  with_profinfo=true; profinfo_width=26;;
+    -disable-call-counts|--disable-call-counts)
+        enable_call_counts=false;;
+    -reserved-header-bits|--reserved-header-bits)
+        with_spacetime=false; with_profinfo=true; profinfo_width=$2;shift
+        case $profinfo_width in
+            0) with_profinfo=false;;
+            [0123456789]);;
+            1?|2?);;
+            3[012]);;
+            *) err "--reserved-header-bits argument must be less than 32"
+        esac
+        ;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
 		-enable-stats|--enable-stats)
@@ -190,12 +209,48 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
+    -with-cplugins|--with-cplugins)
+        with_cplugins=true;;
     -no-cplugins|--no-cplugins)
-        with_cplugins=false;;
+        ;; # Ignored for backward compatibility
     -fPIC|--fPIC)
         with_fpic=true;;
-    -safe-string|--safe-string)
-        safe_string=true;;
+
+    # There are two configure-time string safety options,
+    # -(no-)force-safe-string and -default-(un)safe-string that
+    # interact with a compile-time (un)safe-string option.
+    #
+    # If -force-safe-string is set at configure time, then the compiler
+    # will always enforce that string and bytes are distinct: the
+    # compile-time -unsafe-string option is disabled. This lets us
+    # assume pervasive string immutability, for code optimizations and
+    # in the C layer.
+    #
+    # If -no-force-safe-string is set at configure-time, the compiler
+    # will use the compile-time (un)safe-string option to decide whether
+    # string and bytes are compatible on a per-file basis. The
+    # configure-time options default-(un)safe-string decide which
+    # setting will be chosen by default, if no compile-time option is
+    # explicitly passed.
+    #
+    # The configure-time behavior of OCaml 4.05 and older was equivalent
+    # to -no-force-safe-string -default-unsafe-string. OCaml 4.06
+    # uses -no-force-safe-string -default-safe-string. We
+    # expect -force-safe-string to become the default in the future.
+    -force-safe-string|--force-safe-string)
+        force_safe_string=true;;
+    -no-force-safe-string|--no-force-safe-string)
+        force_safe_string=false;;
+    -default-safe-string|--default-safe-string)
+        default_safe_string=true;;
+    -default-unsafe-string|--default-unsafe-string)
+        default_safe_string=false;;
+    -flat-float-array|--flat-float-array)
+        flat_float_array=true;;
+    -no-flat-float-array|--no-flat-float-array)
+        flat_float_array=false;;
+    -afl-instrument)
+        afl_instrument=true;;
     *) if echo "$1" | grep -q -e '^--\?[a-zA-Z0-9-]\+='; then
          err "configure expects arguments of the form '-prefix /foo/bar'," \
              "not '-prefix=/foo/bar' (note the '=')."
@@ -239,38 +294,63 @@ touch s.h m.h Makefile
 
 # Write options to Makefile
 
+config() {
+# This function hardens the generated Makefile against '#' symbols
+# present in a source path (opam-compiler-conf may pick such directory
+# names if working from a branch named 'PR#4242-answer-all-questions')
+# by escaping them into '\#'.
+
+# When injecting data in Makefiles, it is customary to also escape
+# '$', which get turned into '$$'. However, this transformation is
+# invalid here as some of the variables are meant to be code
+# interpreted by make: for example, passing
+#   --bindir "$(PREFIX)/bin2"
+# is explicitly supported (see "or relative to $(PREFIX)" messages above).
+
+# Finally, it is also impossible for the user to escape the '#' signs
+# before calling this configure script, given that
+# $(PREFIX) is also injected in C code where this escape is invalid
+# -- see the definition of the OCAML_STDLIB_DIR macro below.
+
+  echo "$1=$2" | sed 's/#/\\#/g' >> Makefile
+}
+
 echo "# generated by ./configure $configure_options" >> Makefile
-echo "CONFIGURE_ARGS=$configure_options" >> Makefile
+config CONFIGURE_ARGS "$configure_options"
 
 # Where to install
 
-echo "PREFIX=$prefix" >> Makefile
+config PREFIX "$prefix"
 case "$bindir" in
-  "") echo 'BINDIR=$(PREFIX)/bin' >> Makefile
+  "") config BINDIR '$(PREFIX)/bin'
       bindir="$prefix/bin";;
-   *) echo "BINDIR=$bindir" >> Makefile;;
+   *) config BINDIR "$bindir";;
 esac
+
+config BYTERUN '$(BINDIR)/ocamlrun'
+
 case "$libdir" in
-  "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
+  "") config LIBDIR '$(PREFIX)/lib/ocaml'
       libdir="$prefix/lib/ocaml";;
-   *) echo "LIBDIR=$libdir" >> Makefile;;
+   *) config LIBDIR "$libdir";;
 esac
-echo 'STUBLIBDIR=$(LIBDIR)/stublibs' >> Makefile
+config STUBLIBDIR '$(LIBDIR)/stublibs'
 case "$mandir" in
-  "") echo 'MANDIR=$(PREFIX)/man' >> Makefile
+  "") config MANDIR '$(PREFIX)/man'
       mandir="$prefix/man";;
-   *) echo "MANDIR=$mandir" >> Makefile;;
+   *) config MANDIR "$mandir";;
 esac
-echo "MANEXT=$manext" >> Makefile
+config PROGRAMS_MAN_SECTION "$programs_man_section"
+config LIBRARIES_MAN_SECTION "$libraries_man_section"
 
 # Determine the system type
 
 if test "$host_type" = "unknown"; then
-  if host_type=`../gnu/config.guess`; then :; else
+  if host_type=`sh ../gnu/config.guess`; then :; else
     err "Cannot guess host type. You must specify one with the -host option."
   fi
 fi
-if host=`../gnu/config.sub $host_type`; then :; else
+if host=`sh ../gnu/config.sub $host_type`; then :; else
   err "Please specify the correct host type with the -host option"
 fi
 inf "Configuring for host $host ..."
@@ -308,6 +388,10 @@ fi
 
 inf "Using compiler $cc."
 
+# Configure compiler to use in further tests.
+
+export cc verbose
+
 # Determine the C compiler family (GCC, Clang, etc)
 
 ccfamily=`$cc -E cckind.c | grep '^[a-z]' | tr -s ' ' '-'`
@@ -317,14 +401,33 @@ case $? in
          "Make sure the C compiler $cc is properly installed.";;
 esac
 
-# Configure the bytecode compiler
+# The BYTECODE_C_COMPILER make variable says how the C compiler should be
+# invoked to process a third-party C source file passed to ocamlc
+# when no -cc command-line option has been specified.
 
-bytecc="$cc"
-mkexe="\$(BYTECC)"
+# The BYTECCCOMPOPTS make variable contains options to pass to the C
+# compiler but only when compiling C files that belong to the OCaml
+# distribution.
+# In other words, when ocamlc is called to compile a third-party C
+# source file, it will _not_ pass these options to the C compiler.
+
+# The SHAREDCCCOMPOPTS make variable contains options to use to compile C
+# source files so that the resulting object files can then be integrated
+# into shared libraries. It is passed to BYTECC for both C source files
+# in the OCaml distribution and third-party C source files compiled
+# with ocamlc.
+
+mkexe="\$(CC) \$(CFLAGS) \$(CPPFLAGS) \$(LDFLAGS)"
 mkexedebugflag="-g"
-bytecccompopts=""
-bytecclinkopts=""
-dllccompopts=""
+common_cflags=""
+common_cppflags=""
+internal_cflags=""
+internal_cppflags=""
+ocamlc_cflags=""
+ocamlc_cppflags=""
+ocamlopt_cflags=""
+ocamlopt_cppflags=""
+ldflags=""
 ostype="Unix"
 exe=""
 iflexdir=""
@@ -387,7 +490,8 @@ esac
 
 case "$ccfamily" in
   clang-*)
-    bytecccompopts="-O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$gcc_warnings";;
   gcc-[012]-*)
     # Some versions known to miscompile OCaml, e,g, 2.7.2.1, some 2.96.
     # Plus: C99 support unknown.
@@ -397,23 +501,26 @@ case "$ccfamily" in
     # Known problems with -fwrapv fixed in 4.2 only.
     wrn "This version of GCC is rather old.  Reducing optimization level."
     wrn "Consider using GCC version 4.2 or above."
-    bytecccompopts="-std=gnu99 -O $gcc_warnings";;
+    common_cflags="-std=gnu99 -O";
+    internal_cflags="$gcc_warnings";;
+  gcc-4-*)
+    common_cflags="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv \
+-fno-builtin-memcmp";
+    internal_cflags="$gcc_warnings";;
   gcc-*)
-    bytecccompopts="-std=gnu99 -O2 -fno-strict-aliasing -fwrapv $gcc_warnings";;
+    common_cflags="-O2 -fno-strict-aliasing -fwrapv";
+    internal_cflags="$gcc_warnings";;
   *)
-    bytecccompopts="-O";;
+    common_cflags="-O";;
 esac
+
+internal_cppflags="-DCAML_NAME_SPACE $internal_cppflags"
 
 # Adjust according to target
 
-case "$bytecc,$target" in
-  cc,*-*-nextstep*)
-    # GNU C extensions disabled, but __GNUC__ still defined!
-    bytecccompopts="$bytecccompopts -U__GNUC__ -posix"
-    bytecclinkopts="-posix";;
+case "$cc,$target" in
   *,*-*-rhapsody*)
-    # Almost the same as NeXTStep
-    bytecccompopts="$bytecccompopts -DSHRINKED_GNUC"
+    common_cppflags="-DSHRINKED_GNUC $common_cppflags"
     mathlib="";;
   *,*-*-darwin*)
     mathlib=""
@@ -430,57 +537,56 @@ case "$bytecc,$target" in
     # No -lm library
     mathlib="";;
   *gcc,alpha*-*-osf*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
-      bytecccompopts="-mieee $bytecccompopts";
+    if sh ./hasgot -mieee; then
+      common_cflags="-mieee $common_cflags";
     fi
     # Put code and static data in lower 4GB
-    bytecclinkopts="-Wl,-T,12000000 -Wl,-D,14000000"
+    ldflags="-Wl,-T,12000000 -Wl,-D,14000000"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     echo "#define ARCH_CODE32" >> m.h;;
   cc,alpha*-*-osf*)
-    bytecccompopts="-std1 -ieee";;
+    common_cflags="-std1 -ieee";;
   *gcc*,alpha*-*-linux*)
-    if cc="$bytecc" sh ./hasgot -mieee; then
-      bytecccompopts="-mieee $bytecccompopts";
+    if sh ./hasgot -mieee; then
+      common_cflags="-mieee $common_cflags";
     fi;;
   *,mips-*-irix6*)
     # Turn off warning "unused library"
-    bytecclinkopts="-n32 -Wl,-woff,84";;
+    ldflags="-n32 -Wl,-woff,84";;
   *,alpha*-*-unicos*)
     # For the Cray T3E
-    bytecccompopts="$bytecccompopts -DUMK";;
+    common_cppflags="$common_cppflags -DUMK";;
   *,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
-    bytecccompopts="$bytecccompopts -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
+    common_cppflags="$common_cppflags -D_XOPEN_SOURCE=500 -D_ALL_SOURCE";;
   *,*-*-cygwin*)
     case $target in
       i686-*) flavor=cygwin;;
       x86_64-*) flavor=cygwin64;;
       *) err "unknown cygwin variant";;
     esac
-    bytecccompopts="$bytecccompopts -U_WIN32"
-    dllccompopts="-U_WIN32 -DCAML_DLL"
-    if test $with_sharedlibs = yes; then
+    common_cppflags="$common_cppflags -U_WIN32"
+    if $with_sharedlibs; then
       flexlink="flexlink -chain $flavor -merge-manifest -stack 16777216"
       flexdir=`$flexlink -where | tr -d '\015'`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
         mkexedebugflag="-link -g"
       fi
     fi
-    if test $with_sharedlibs = no; then
+    if ! $with_sharedlibs; then
       mkexe="$mkexe -Wl,--stack,16777216"
-      bytecclinkopts="-Wl,--stack,16777216"
+      ldflags="-Wl,--stack,16777216"
     fi
     exe=".exe"
     ostype="Cygwin";;
   *,*-*-mingw*)
     dllccompopt="-DCAML_DLL"
-    if test $with_sharedlibs = yes; then
+    if $with_sharedlibs; then
       case "$target" in
         i686-*-*)   flexlink_chain="mingw";;
         x86_64-*-*) flexlink_chain="mingw64";;
@@ -489,7 +595,7 @@ case "$bytecc,$target" in
       flexdir=`$flexlink -where`
       if test -z "$flexdir"; then
         wrn "flexlink not found: native shared libraries won't be available."
-        with_sharedlibs=no
+        with_sharedlibs=false
       else
         iflexdir="-I\"$flexdir\""
         mkexe="$flexlink -exe"
@@ -509,14 +615,13 @@ case "$bytecc,$target" in
     echo "#endif" >> m.h;;
 esac
 
-# Configure compiler to use in further tests.
+# Configure compiler options to use in further tests.
 
-cc="$bytecc $bytecclinkopts"
-export cc cclibs verbose
+export cclibs ldflags
 
 # Check C compiler.
 
-cc="$bytecc $bytecccompopts $bytecclinkopts" sh ./runtest ansi.c
+cflags="$common_cflags $internal_cflags" sh ./runtest ansi.c
 case $? in
   0) inf "The C compiler is ISO C99 compliant." ;;
   1) wrn "The C compiler is ANSI / ISO C90 compliant, but not ISO C99" \
@@ -549,7 +654,7 @@ if $cross_compiler; then
           "($ocaml_system_version) doesn't match the version of these\n" \
           "sources ($ocaml_source_version)."
     else
-      echo "CAMLRUN=`./searchpath -p ocamlrun`" >> Makefile
+      config CAMLRUN "`./searchpath -p ocamlrun`"
     fi
   fi
 
@@ -561,14 +666,14 @@ if $cross_compiler; then
       err "While you have an ocamlyacc binary, it cannot be executed" \
           "successfully."
     else
-      echo "CAMLYACC=`./searchpath -p ocamlyacc`" >> Makefile
+      config CAMLYACC "`./searchpath -p ocamlyacc`"
     fi
   fi
 
   if [ -z "$target_bindir" ]; then
     err "Cross-compilation requires -target-bindir."
   else
-    echo "TARGET_BINDIR=$target_bindir" >> Makefile
+    config TARGET_BINDIR "$target_bindir"
   fi
 fi # cross-compiler
 
@@ -714,7 +819,7 @@ case "$target" in
              "64-bit integers. I'm going to assume this architecture has\n" \
              "alignment constraints. That's a safe bet: OCaml will work\n" \
              "even if this architecture has actually no alignment\n" \
-             "constraints." \
+             "constraints."
          echo "#define ARCH_ALIGN_INT64" >> m.h;;
     esac
 esac
@@ -725,11 +830,11 @@ shared_libraries_supported=false
 dl_needs_underscore=false
 sharedcccompopts=''
 mksharedlib='shared-libs-not-available'
-byteccrpath=''
+rpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)
       mksharedlib="$flexlink"
@@ -739,86 +844,84 @@ if test $with_sharedlibs = "yes"; then
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
-    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
-      sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
-      byteccrpath="-Wl,-rpath,"
-      mksharedlibrpath="-Wl,-rpath,"
-      natdynlinkopts="-Wl,-E"
-      shared_libraries_supported=true;;
     alpha*-*-osf*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
-          mksharedlib="$bytecc -shared"
-          byteccrpath="-Wl,-rpath,"
+          mksharedlib="$cc -shared"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
           sharedcccompopts=""
           mksharedlib="ld -shared -expect_unresolved '*'"
-          byteccrpath="-Wl,-rpath,"
+          rpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
           shared_libraries_supported=true;;
       esac;;
     *-*-solaris2*)
-      case "$bytecc" in
+      case "$cc" in
         *gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
             mksharedlib="ld -G"
-            byteccrpath="-R"
+            rpath="-R"
             mksharedlibrpath="-R"
           else
-            mksharedlib="$bytecc -shared"
-            bytecclinkopts="$bytecclinkopts -Wl,-E"
+            mksharedlib="$cc -shared"
+            ldflags="$ldflags -Wl,-E"
             natdynlinkopts="-Wl,-E"
-            byteccrpath="-Wl,-rpath,"
+            rpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
           fi
           shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
-          byteccrpath="-R"
+          rpath="-R"
           mksharedlibrpath="-R"
           mksharedlib="/usr/ccs/bin/ld -G"
           shared_libraries_supported=true;;
       esac;;
     mips*-*-irix[56]*)
-      case "$bytecc" in
+      case "$cc" in
         cc*) sharedcccompopts="";;
         *gcc*) sharedcccompopts="-fPIC";;
       esac
       mksharedlib="ld -shared -rdata_shared"
-      byteccrpath="-Wl,-rpath,"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin[89].*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -read_only_relocs suppress"
-      bytecccompopts="$dl_defs $bytecccompopts"
+      common_cflags="$dl_defs $common_cflags"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress \
+      mksharedlib="$cc -shared -flat_namespace -undefined suppress \
                    -Wl,-no_compact_unwind"
-      bytecccompopts="$dl_defs $bytecccompopts"
+      common_cflags="$dl_defs $common_cflags"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
-    m88k-*-openbsd*)
-      shared_libraries_supported=false;;
-    vax-*-openbsd*)
-      shared_libraries_supported=false;;
-    *-*-openbsd*)
+    *-*-linux*|*-*-freebsd[3-9]*|*-*-freebsd[1-9][0-9]*\
+    |*-*-openbsd*|*-*-netbsd*|*-*-dragonfly*|*-*-gnu*|*-*-haiku*)
       sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared"
-      bytecclinkopts="$bytecclinkopts -Wl,-E"
-      natdynlinkopts="-Wl,-E"
-      byteccrpath="-Wl,-rpath,"
+      mksharedlib="$cc -shared"
+      ldflags="$ldflags -Wl,-E"
+      rpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
+      natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
+    powerpc-*-aix*)
+      case "$ccfamily" in
+        xlc-*)sharedcccompopts="-qpic"
+              mksharedlib="$cc -qmkshrobj -G"
+              mksharedlibrpath="-Wl,-blibpath,"
+              ldflags="$ldflags -brtl -bexpfull"
+              dl_needs_underscore=false
+              rpath="-Wl,-blibpath,"
+              shared_libraries_supported=true;;
+      esac
   esac
 fi
 
@@ -830,7 +933,7 @@ fi
 
 natdynlink=false
 
-if test $with_sharedlibs = "yes"; then
+if $with_sharedlibs; then
   case "$target" in
     *-*-cygwin*)                  natdynlink=true;;
     *-*-mingw*)                   natdynlink=true;;
@@ -845,7 +948,6 @@ if test $with_sharedlibs = "yes"; then
     x86_64-*-darwin*)             natdynlink=true;;
     s390x*-*-linux*)              natdynlink=true;;
     powerpc*-*-linux*)            natdynlink=true;;
-    sparc*-*-linux*)              natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
     x86_64-*-dragonfly*)          natdynlink=true;;
@@ -871,6 +973,16 @@ else
 fi
 
 
+# Try to work around the Skylake/Kaby Lake processor bug.
+case "$cc,$target" in
+    *gcc*,x86_64-*|*gcc*,i686-*)
+        if sh ./hasgot -Werror -fno-tree-vrp; then
+            internal_cflags="$internal_cflags -fno-tree-vrp"
+            inf "Adding -fno-tree-vrp option to work around PR#7452"
+        fi;;
+esac
+
+
 # Configure the native-code compiler
 
 arch=none
@@ -878,13 +990,8 @@ model=default
 system=unknown
 
 case "$target" in
-  sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
-  sparc*-*-*bsd*)               arch=sparc; system=bsd;;
-  sparc*-*-linux*)              arch=sparc; system=linux;;
-  sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
-  i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
                                   arch=amd64; system=solaris
                                 else
@@ -904,7 +1011,7 @@ case "$target" in
   powerpc*-*-linux*)            arch=power;
                                 if $arch64; then model=ppc64; else model=ppc; fi
                                 system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=netbsd;;
   powerpc-*-openbsd*)           arch=power; model=ppc; system=bsd_elf;;
   s390x*-*-linux*)              arch=s390x; model=z10; system=elf;;
   armv6*-*-linux-gnueabihf)     arch=arm; model=armv6; system=linux_eabihf;;
@@ -938,7 +1045,7 @@ esac
 # Sometimes, it's 32-bit mode that is not supported  (PR#6722).
 
 case "$arch64,$arch,$model" in
-  true,sparc,*|true,power,ppc|false,amd64,*)
+  true,power,ppc|false,amd64,*)
       arch=none; model=default; system=unknown;;
 esac
 
@@ -948,21 +1055,9 @@ case "$native_compiler" in
       arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
-if test -z "$ccoption"; then
-  nativecc="$bytecc"
-else
-  nativecc="$ccoption"
-fi
-
-nativecccompopts="$bytecccompopts"
 nativeccprofopts=''
-nativecclinkopts=''
-# FIXME the naming of nativecclinkopts is broken: these are options for
-# ld (for shared libs), not for cc
-nativeccrpath="$byteccrpath"
 
-case "$arch,$nativecc,$system,$model" in
-  *,*,nextstep,*)      nativecclinkopts="-posix";;
+case "$arch,$cc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
   amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
@@ -975,8 +1070,8 @@ asppprofflags='-DPROFILING'
 
 case "$arch,$system" in
   amd64,macosx)   if sh ./searchpath clang; then
-                      as='clang -arch x86_64 -c'
-                      aspp='clang -arch x86_64 -c'
+                      as='clang -arch x86_64 -Wno-trigraphs -c'
+                      aspp='clang -arch x86_64 -Wno-trigraphs -c'
                     else
                       as="${TOOLPREF}as -arch x86_64"
                       aspp="${TOOLPREF}gcc -arch x86_64 -c"
@@ -994,20 +1089,22 @@ case "$arch,$system" in
                   fi;;
   s390x,elf)      as="${TOOLPREF}as -m 64 -march=$model"
                   aspp="${TOOLPREF}gcc -c -Wa,-march=$model";;
-  sparc,solaris)  as="${TOOLPREF}as"
-                  case "$cc" in
-                    *gcc*) aspp="${TOOLPREF}gcc -c";;
-                    *) aspp="${TOOLPREF}as -P";;
-                  esac;;
   arm,freebsd)    as="${TOOLPREF}cc -c"
                   aspp="${TOOLPREF}cc -c";;
   *,dragonfly)    as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
   *,freebsd)      as="${TOOLPREF}as"
                   aspp="${TOOLPREF}cc -c";;
-  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|sparc,*)
+  amd64,*|arm,*|arm64,*|i386,*|power,bsd*|power,netbsd)
                   as="${TOOLPREF}as"
-                  aspp="${TOOLPREF}gcc -c";;
+                  case "$ccfamily" in
+                      clang-*)
+                          aspp="${TOOLPREF}clang -c -Wno-trigraphs"
+                          ;;
+                      *)
+                          aspp="${TOOLPREF}gcc -c"
+                          ;;
+                  esac;;
 esac
 
 if test -n "$asoption"; then as="$asoption"; fi
@@ -1015,40 +1112,37 @@ if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$system" in
-  i386,linux_elf) profiling='prof';;
-  i386,gnu) profiling='prof';;
-  i386,bsd_elf) profiling='prof';;
-  amd64,macosx) profiling='prof';;
-  i386,macosx) profiling='prof';;
-  sparc,bsd) profiling='prof';;
-  sparc,solaris)
-    profiling='prof'
-    case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
-  amd64,linux) profiling='prof';;
-  amd64,openbsd) profiling='prof';;
-  amd64,freebsd) profiling='prof';;
-  amd64,netbsd) profiling='prof';;
-  arm,netbsd) profiling='prof';;
-  amd64,gnu) profiling='prof';;
-  arm,linux*) profiling='prof';;
-  power,elf) profiling='prof';;
-  power,bsd*) profiling='prof';;
-  *) profiling='noprof';;
+  i386,linux_elf) profiling='true';;
+  i386,gnu) profiling='true';;
+  i386,bsd_elf) profiling='true';;
+  amd64,macosx) profiling='true';;
+  i386,macosx) profiling='true';;
+  amd64,linux) profiling='true';;
+  amd64,openbsd) profiling='true';;
+  amd64,freebsd) profiling='true';;
+  amd64,netbsd) profiling='true';;
+  arm,netbsd) profiling='true';;
+  amd64,gnu) profiling='true';;
+  arm,linux*) profiling='true';;
+  power,elf) profiling='true';;
+  power,bsd*) profiling='true';;
+  power,netbsd) profiling='true';;
+  *) profiling='false';;
 esac
 
 # Where is ranlib?
 
 if sh ./searchpath ${TOOLPREF}ranlib; then
   inf "ranlib found"
-  echo "RANLIB=${TOOLPREF}ranlib" >> Makefile
-  echo "RANLIBCMD=${TOOLPREF}ranlib" >> Makefile
+  config RANLIB "${TOOLPREF}ranlib"
+  config RANLIBCMD "${TOOLPREF}ranlib"
 else
   inf "ranlib not used"
-  echo "RANLIB=${TOOLPREF}ar rs" >> Makefile
-  echo "RANLIBCMD=" >> Makefile
+  config RANLIB "${TOOLPREF}ar rs"
+  config RANLIBCMD ""
 fi
 
-echo "ARCMD=${TOOLPREF}ar" >> Makefile
+config ARCMD "${TOOLPREF}ar"
 
 
 # Write the OS type (Unix or Cygwin)
@@ -1064,33 +1158,35 @@ fi
 
 # Do #! scripts work?
 
-if (SHELL=/bin/sh; export SHELL; (./hashbang || ./hashbang2) >/dev/null); then
+printf "#!%s\nexit 1\n" `command -v cat` > hashbang4
+chmod +x hashbang4
+
+if ( (./hashbang || ./hashbang2 || ./hashbang3 || ./hashbang4) >/dev/null); then
   inf "#! appears to work in shell scripts."
   case "$target" in
     *-*-sunos*|*-*-unicos*)
       wrn "We won't use it, though, because under SunOS and Unicos it breaks " \
           "on pathnames longer than 30 characters"
-      echo "HASHBANGSCRIPTS=false" >> Makefile;;
+      config HASHBANGSCRIPTS "false";;
     *-*-cygwin*)
       wrn "We won't use it, though, because of conflicts with .exe extension " \
           "under Cygwin"
-      echo "HASHBANGSCRIPTS=false" >> Makefile;;
+      config HASHBANGSCRIPTS "false";;
     *-*-mingw*)
       inf "We won't use it, though, because it's on the target platform " \
           "it would be used and windows doesn't support it."
-      echo "HASHBANGSCRIPTS=false" >> Makefile;;
+      config HASHBANGSCRIPTS "false";;
     *)
-      echo "HASHBANGSCRIPTS=true" >> Makefile;;
+      config HASHBANGSCRIPTS "true";;
   esac
 else
   inf "No support for #! in shell scripts"
-  echo "HASHBANGSCRIPTS=false" >> Makefile
+  config HASHBANGSCRIPTS "false"
 fi
 
 # Use 64-bit file offset if possible
 
-bytecccompopts="$bytecccompopts -D_FILE_OFFSET_BITS=64"
-nativecccompopts="$nativecccompopts -D_FILE_OFFSET_BITS=64"
+common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
 
 # Check the semantics of signal handlers
 
@@ -1132,6 +1228,9 @@ fi
 if sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h secure_getenv; then
   inf "secure_getenv() found."
   echo "#define HAS_SECURE_GETENV" >> s.h
+elif sh ./hasgot2 -D_GNU_SOURCE -i stdlib.h __secure_getenv; then
+  inf "__secure_getenv() found."
+  echo "#define HAS___SECURE_GETENV" >> s.h
 fi
 
 if sh ./hasgot -i unistd.h issetugid; then
@@ -1177,21 +1276,21 @@ case "$system" in
   *) unix_or_win32="unix"; unixlib="unix"; graphlib="graph";;
 esac
 
-echo "UNIX_OR_WIN32=$unix_or_win32" >> Makefile
-echo "UNIXLIB=$unixlib" >> Makefile
-echo "GRAPHLIB=$graphlib" >> Makefile
+config UNIX_OR_WIN32 "$unix_or_win32"
+config UNIXLIB "$unixlib"
+config GRAPHLIB "$graphlib"
 
-otherlibraries="$unixlib str num dynlink bigarray"
+otherlibraries="$unixlib str dynlink bigarray"
 
 # Spacetime profiling is only available for native code on 64-bit targets.
 
-case "$native_compiler" in
-    true)
+case "$arch" in
+    none) ;;
+    *)
       if $arch64; then
         otherlibraries="$otherlibraries raw_spacetime_lib"
       fi
       ;;
-    *) ;;
 esac
 
 # For the Unix library
@@ -1278,11 +1377,6 @@ fi
 if sh ./hasgot getcwd; then
   inf "getcwd() found."
   echo "#define HAS_GETCWD" >> s.h
-fi
-
-if sh ./hasgot getwd; then
-  inf "getwd() found."
-  echo "#define HAS_GETWD" >> s.h
 fi
 
 if sh ./hasgot getpriority setpriority; then
@@ -1502,6 +1596,36 @@ if sh ./hasgot nice; then
   echo "#define HAS_NICE" >> s.h
 fi
 
+if sh ./hasgot dup3; then
+  inf "dup3() found"
+  echo "#define HAS_DUP3" >> s.h
+fi
+
+if sh ./hasgot pipe2; then
+  inf "pipe2() found"
+  echo "#define HAS_PIPE2" >> s.h
+fi
+
+if sh ./hasgot accept4; then
+  inf "accept4() found"
+  echo "#define HAS_ACCEPT4" >> s.h
+fi
+
+if sh ./hasgot getauxval; then
+  inf "getauxval() found."
+  echo "#define HAS_GETAUXVAL" >> s.h
+fi
+
+if sh ./hasgot -i sys/shm.h; then
+  inf "sys/shm.h found."
+  echo "#define HAS_SYS_SHM_H" >> s.h
+fi
+
+if sh ./hasgot execvpe; then
+  inf "execvpe() found."
+  echo "#define HAS_EXECVPE" >> s.h
+fi
+
 # Determine if the debugger is supported
 
 if test -n "$with_debugger"; then
@@ -1524,23 +1648,6 @@ case "$arch,$system" in
   *)
     inf "Cannot detect system stack overflow.";;
 esac
-
-# Determine the target architecture for the "num" library
-
-case "$arch" in
-  i386)     bng_arch=ia32
-            if sh ./trycompile ia32sse2.c
-            then bng_asm_level=2
-            else bng_asm_level=1
-            fi;;
-  power)    bng_arch=ppc; bng_asm_level=1;;
-  amd64)    bng_arch=amd64; bng_asm_level=1;;
-  arm64)    bng_arch=arm64; bng_asm_level=1;;
-  *)        bng_arch=generic; bng_asm_level=0;;
-esac
-
-echo "BNG_ARCH=$bng_arch" >> Makefile
-echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 
 # Determine if the POSIX threads library is supported
 
@@ -1565,16 +1672,13 @@ if true; then
     inf "POSIX threads library supported."
     systhread_support=true
     otherlibraries="$otherlibraries systhreads"
-    bytecccompopts="$bytecccompopts -D_REENTRANT"
-    nativecccompopts="$nativecccompopts -D_REENTRANT"
+    common_cppflags="$common_cppflags -D_REENTRANT"
     case "$target" in
       *-*-freebsd*|*-*-dragonfly*)
-          bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
-          nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
+          common_cppflags="$common_cppflags -D_THREAD_SAFE";;
       *-*-openbsd*)
-          bytecccompopts="$bytecccompopts -pthread"
-          asppflags="$asppflags -pthread"
-          nativecccompopts="$nativecccompopts -pthread";;
+          common_cflags="$common_cflags -pthread";
+          asppflags="$asppflags -pthread";;
     esac
     inf "Options for linking with POSIX threads: $pthread_link"
     if sh ./hasgot $pthread_link sigwait; then
@@ -1588,8 +1692,8 @@ if true; then
 else
   pthread_link=""
 fi
-echo "PTHREAD_LINK=$pthread_link" >> Makefile
-echo "PTHREAD_CAML_LINK=$pthread_caml_link" >> Makefile
+config PTHREAD_LINK "$pthread_link"
+config PTHREAD_CAML_LINK "$pthread_caml_link"
 
 # Determine if the bytecode thread library is supported
 
@@ -1781,11 +1885,29 @@ echo "X11_LINK=$x11_link" >> Makefile
 
 # Look for BFD library
 
-if sh ./hasgot -DPACKAGE=ocaml -i bfd.h && \
-   sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+if $shared_libraries_supported && ./hasgot -DPACKAGE=ocaml -i bfd.h ; then
   inf "BFD library found."
-  echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
+  if sh ./hasgot -DPACKAGE=ocaml -lbfd bfd_openr; then
+    LIBBFD_LINK="-lbfd"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  elif sh ./hasgot -DPACKAGE=ocaml -lbfd -ldl -liberty -lz bfd_openr; then
+    LIBBFD_LINK="-lbfd -ldl -liberty -lz"
+    inf "BFD links with $LIBBFD_LINK"
+    echo "#define HAS_LIBBFD" >> s.h
+  else
+    wrn "Could not determine link options for the BFD library"
+    LIBBFD_LINK=
+  fi
+  echo "LIBBFD_LINK=$LIBBFD_LINK" >> Makefile
   echo LIBBFD_INCLUDE= >>Makefile
 elif sh ./hasgot -DPACKAGE=ocaml -I/opt/local/include -i bfd.h && \
      sh ./hasgot -DPACKAGE=ocaml -L/opt/local/lib -lbfd -ldl \
@@ -1821,10 +1943,8 @@ fi
 
 if test "$with_frame_pointers" = "true"; then
   case "$target,$cc" in
-    x86_64-*-linux*,gcc*)
-       nativecccompopts="$nativecccompopts -g  -fno-omit-frame-pointer"
-       bytecccompopts="$bytecccompopts -g  -fno-omit-frame-pointer"
-       nativecclinkopts="$nativecclinkopts -g"
+    x86_64-*-linux*,gcc*|x86_64-*-linux*,clang*)
+       common_cflags="$common_cflags -g  -fno-omit-frame-pointer"
        echo "#define WITH_FRAME_POINTERS" >> m.h
        ;;
     *) err "Unsupported architecture with frame pointers";;
@@ -1851,8 +1971,11 @@ fi
 # The more bits used for profiling, the smaller will be Max_wosize.
 # Note that PROFINFO_WIDTH must still be defined even if not configuring
 # for Spacetime (see comment in byterun/caml/mlvalues.h on [Profinfo_hd]).
-profinfo_width=26
 echo "#define PROFINFO_WIDTH $profinfo_width" >> m.h
+if $with_profinfo; then
+    echo "#define WITH_PROFINFO" >> m.h
+fi
+
 if $with_spacetime; then
   case "$arch,$system" in
     amd64,*)
@@ -1866,6 +1989,9 @@ if $with_spacetime; then
   if $spacetime_supported; then
     echo "Spacetime profiling will be available."
     echo "#define WITH_SPACETIME" >> m.h
+    if $enable_call_counts; then
+      echo "#define ENABLE_CALL_COUNTS" >> m.h
+    fi
     if $disable_libunwind; then
       has_libunwind=no
       libunwind_available=false
@@ -1933,7 +2059,8 @@ if $with_spacetime; then
       fi
     fi
   else
-    echo "Spacetime profiling is not available on 32-bit platforms."
+    echo "Spacetime profiling unavailable: it needs a 64-bit platform with"
+    echo "  support for the native code OCaml compiler."
     with_spacetime=false
     libunwind_available=false
     has_libunwind=no
@@ -1945,8 +2072,7 @@ if ! $shared_libraries_supported; then
 fi
 
 if $with_fpic; then
-  bytecccompopts="$bytecccompopts $sharedcccompopts"
-  nativecccompopts="$nativecccompopts $sharedcccompopts"
+  common_cflags="$common_cflags $sharedcccompopts"
   aspp="$aspp $sharedcccompopts"
 fi
 
@@ -1959,22 +2085,35 @@ if $with_fpic; then
   echo "#define CAML_WITH_FPIC" >> m.h
 fi
 
+if $force_safe_string; then
+  echo "#define CAML_SAFE_STRING" >> m.h
+fi
+
+if $flat_float_array; then
+  echo "#define FLAT_FLOAT_ARRAY" >> m.h
+fi
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
 
-echo "BYTECC=$bytecc" >> Makefile
-echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
-echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-echo "BYTECCLIBS=$cclibs $dllib $curseslibs $pthread_link \
-                 $instrumented_runtime_libs" >> Makefile
-echo "BYTECCRPATH=$byteccrpath" >> Makefile
-echo "CPP=$cpp" >> Makefile
-echo "EXE=$exe" >> Makefile
-echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
-echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
-echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
-echo "NATDYNLINKOPTS=$natdynlinkopts" >> Makefile
+config CC "$cc"
+config CPP "$cpp"
+config CFLAGS "$common_cflags $internal_cflags"
+config CPPFLAGS "$common_cppflags $internal_cppflags"
+config OCAMLC_CFLAGS "$common_cflags $sharedcccompopts"
+config OCAMLC_CPPFLAGS "$common_cppflags"
+config LDFLAGS "$ldflags"
+config BYTECCLIBS "$cclibs $dllib $curseslibs $pthread_link \
+                 $instrumented_runtime_libs"
+config RPATH "$rpath"
+config EXE "$exe"
+config EMPTY ""
+config OUTPUTEXE "-o \$(EMPTY)"
+config SUPPORTS_SHARED_LIBRARIES "$shared_libraries_supported"
+config SHAREDCCCOMPOPTS "$sharedcccompopts"
+config MKSHAREDLIBRPATH "$mksharedlibrpath"
+config NATDYNLINKOPTS "$natdynlinkopts"
 cat >> Makefile <<EOF
 SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
@@ -1985,76 +2124,74 @@ MKLIB=${TOOLPREF}ar rc \$(1) \$(2); ${TOOLPREF}ranlib \$(1)
 #ml   Printf.sprintf "${TOOLPREF}ar rc %s %s %s; ${TOOLPREF}ranlib %s"
 #ml                  out opts files out;;
 EOF
-echo "ARCH=$arch" >> Makefile
-echo "MODEL=$model" >> Makefile
-echo "SYSTEM=$system" >> Makefile
-echo "NATIVECC=$nativecc" >> Makefile
-echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
-echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
-echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
-echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
-echo "NATIVECCLIBS=$cclibs $dllib $pthread_link" >> Makefile
-echo "ASM=$as" >> Makefile
-echo "ASPP=$aspp" >> Makefile
-echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
-echo "PROFILING=$profiling" >> Makefile
-echo "DYNLINKOPTS=$dllib" >> Makefile
-echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
-echo "CC_PROFILE=$cc_profile" >> Makefile
-echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
-echo "STATS=$stats" >> Makefile
-echo "PARTIALLD=$partialld" >> Makefile
-echo "PACKLD=\$(PARTIALLD) \$(NATIVECCLINKOPTS) -o " \
-  | sed -e 's/ $/\\ /' >> Makefile
-echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
-echo "IFLEXDIR=$iflexdir" >> Makefile
-echo "O=o" >> Makefile
-echo "A=a" >> Makefile
-echo "SO=$SO" >> Makefile
-echo "EXT_OBJ=.o" >> Makefile
-echo "EXT_ASM=.s" >> Makefile
-echo "EXT_LIB=.a" >> Makefile
-echo "EXT_DLL=.$SO" >> Makefile
-echo "EXTRALIBS=" >> Makefile
-echo "CCOMPTYPE=cc" >> Makefile
-echo "TOOLCHAIN=$TOOLCHAIN" >> Makefile
-echo "NATDYNLINK=$natdynlink" >> Makefile
-echo "CMXS=$cmxs" >> Makefile
-echo "MKEXE=$mkexe" >> Makefile
-echo "MKEXEDEBUGFLAG=$mkexedebugflag" >> Makefile
-echo "MKDLL=$mksharedlib" >> Makefile
-echo "MKMAINDLL=$mkmaindll" >> Makefile
-echo "RUNTIMED=${debugruntime}" >>Makefile
-if $shared_libraries_supported; then
-  echo "SHARED=shared" >>Makefile
-else
-  echo "SHARED=noshared" >>Makefile
-fi
-echo "RUNTIMEI=${with_instrumented_runtime}" >>Makefile
-echo "WITH_DEBUGGER=${with_debugger}" >>Makefile
-echo "WITH_OCAMLDOC=${with_ocamldoc}" >>Makefile
-echo "ASM_CFI_SUPPORTED=$asm_cfi_supported" >> Makefile
-echo "WITH_FRAME_POINTERS=$with_frame_pointers" >> Makefile
-echo "WITH_SPACETIME=$with_spacetime" >> Makefile
-echo "LIBUNWIND_AVAILABLE=$libunwind_available" >> Makefile
-echo "LIBUNWIND_INCLUDE_FLAGS=$libunwind_include" >> Makefile
-echo "LIBUNWIND_LINK_FLAGS=$libunwind_lib" >> Makefile
-echo "PROFINFO_WIDTH=$profinfo_width" >> Makefile
-echo "WITH_CPLUGINS=$with_cplugins" >> Makefile
-echo "WITH_FPIC=$with_fpic" >> Makefile
-echo "TARGET=$target" >> Makefile
-echo "HOST=$host" >> Makefile
+config ARCH "$arch"
+config MODEL "$model"
+config SYSTEM "$system"
+config OCAMLOPT_CFLAGS "$common_cflags"
+config OCAMLOPT_CPPFLAGS "$common_cppflags"
+config NATIVECCPROFOPTS "$nativeccprofopts"
+config NATIVECCLIBS "$cclibs $dllib"
+config ASM "$as"
+config ASPP "$aspp"
+config ASPPPROFFLAGS "$asppprofflags"
+config PROFILING "$profiling"
+config DYNLINKOPTS "$dllib"
+config OTHERLIBRARIES "$otherlibraries"
+config CC_PROFILE "$cc_profile"
+config SYSTHREAD_SUPPORT "$systhread_support"
+config STATS "$stats"
+config PACKLD "$partialld -o\\ \$(EMPTY)"
+config IFLEXDIR "$iflexdir"
+config O "o"
+config A "a"
+config SO "$SO"
+config EXT_OBJ ".o"
+config OUTPUTOBJ "-o \$(EMPTY)"
+config EXT_ASM ".s"
+config EXT_LIB ".a"
+config EXT_DLL ".$SO"
+config EXTRALIBS ""
+config CCOMPTYPE "cc"
+config TOOLCHAIN "$TOOLCHAIN"
+config NATDYNLINK "$natdynlink"
+config CMXS "$cmxs"
+config MKEXE "$mkexe"
+config MKEXEDEBUGFLAG "$mkexedebugflag"
+config MKDLL "$mksharedlib"
+config MKMAINDLL "$mkmaindll"
+config RUNTIMED "${debugruntime}"
+config RUNTIMEI "${with_instrumented_runtime}"
+config WITH_DEBUGGER "${with_debugger}"
+config WITH_OCAMLDOC "${with_ocamldoc}"
+config ASM_CFI_SUPPORTED "$asm_cfi_supported"
+config WITH_FRAME_POINTERS "$with_frame_pointers"
+config WITH_SPACETIME "$with_spacetime"
+config ENABLE_CALL_COUNTS "$enable_call_counts"
+config WITH_PROFINFO "$with_profinfo"
+config LIBUNWIND_AVAILABLE "$libunwind_available"
+config LIBUNWIND_INCLUDE_FLAGS "$libunwind_include"
+config LIBUNWIND_LINK_FLAGS "$libunwind_lib"
+config PROFINFO_WIDTH "$profinfo_width"
+config WITH_CPLUGINS "$with_cplugins"
+config WITH_FPIC "$with_fpic"
+config TARGET "$target"
+config HOST "$host"
 if [ "$ostype" = Cygwin ]; then
-  echo "DIFF=diff -q --strip-trailing-cr" >>Makefile
+  config DIFF "diff -q --strip-trailing-cr"
 fi
-echo "FLAMBDA=$flambda" >> Makefile
-echo "SAFE_STRING=$safe_string" >> Makefile
-echo "MAX_TESTSUITE_DIR_RETRIES=$max_testsuite_dir_retries" >> Makefile
+config FLAMBDA "$flambda"
+config FORCE_SAFE_STRING "$force_safe_string"
+config DEFAULT_SAFE_STRING "$default_safe_string"
+config WINDOWS_UNICODE "0"
+config AFL_INSTRUMENT "$afl_instrument"
+config MAX_TESTSUITE_DIR_RETRIES "$max_testsuite_dir_retries"
+config FLAT_FLOAT_ARRAY "$flat_float_array"
 
 
 rm -f tst hasgot.c
-rm -f ../m.h ../s.h ../Makefile
-mv m.h s.h Makefile ..
+rm -f ../../byterun/caml/m.h ../../byterun/caml/s.h ../Makefile
+mv m.h s.h ../../byterun/caml/
+mv Makefile ..
 
 # Print a summary
 
@@ -2064,16 +2201,16 @@ inf
 inf "Directories where OCaml will be installed:"
 inf "        binaries.................. $bindir"
 inf "        standard library.......... $libdir"
-inf "        manual pages.............. $mandir (with extension .$manext)"
+inf "        manual pages.............. $mandir (with extension .$programs_man_section)"
 
 inf "Configuration for the bytecode compiler:"
-inf "        C compiler used........... $bytecc"
-inf "        options for compiling..... $bytecccompopts"
-inf "        options for linking....... $bytecclinkopts $cclibs $dllib" \
+inf "        C compiler used........... $cc"
+inf "        options for compiling..... $common_cflags"
+inf "        options for linking....... $ldflags $cclibs $dllib" \
                                        "$curseslibs $pthread_link"
 if $shared_libraries_supported; then
 inf "        shared libraries are supported"
-inf "        options for compiling..... $sharedcccompopts $bytecccompopts"
+inf "        options for compiling..... $sharedcccompopts $common_cflags"
 inf "        command for building...... $mksharedlib -o lib.so" \
                                        "$mksharedlibrpath/a/path objs"
 else
@@ -2092,9 +2229,9 @@ else
   if test "$system" = "unknown"; then : ; else
   inf "        OS variant................ $system"
   fi
-  inf "        C compiler used........... $nativecc"
-  inf "        options for compiling..... $nativecccompopts"
-  inf "        options for linking....... $nativecclinkopts $cclibs"
+  inf "        C compiler used........... $cc"
+  inf "        options for compiling..... $common_cflags"
+  inf "        options for linking....... $cclibs"
   inf "        assembler ................ $as"
   inf "        preprocessed assembler ... $aspp"
   if test "$asm_cfi_supported" = "true"; then
@@ -2114,9 +2251,19 @@ else
   fi
   if $with_spacetime; then
     inf "        spacetime profiling....... yes"
+    if test "$with_spacetime_call_counts" = "true"; then
+      inf "          ... with call counts.... yes"
+    else
+      inf "          ... with call counts.... no"
+    fi
     inf "          ... with libunwind...... $has_libunwind"
   else
     inf "        spacetime profiling....... no"
+  fi
+  if $with_profinfo; then
+    inf "        reserved bits in header... $profinfo_width"
+  else
+    inf "        reserved bits in header... no"
   fi
   case "$arch,$system" in
     amd64,macosx)
@@ -2145,7 +2292,7 @@ else
   inf "        compile with -fPIC........ no"
   fi
   inf "        native dynlink ........... $natdynlink"
-  if test "$profiling" = "prof"; then
+  if $profiling; then
   inf "        profiling with gprof ..... supported"
   else
   inf "        profiling with gprof ..... not supported"
@@ -2155,10 +2302,25 @@ else
   else
   inf "        using flambda middle-end . no"
   fi
-  if test "$safe_string" = "true"; then
-  inf "        safe strings ............. yes"
+  if $force_safe_string; then
+  inf "        force safe strings ............. yes"
   else
-  inf "        safe strings ............. no"
+  inf "        force safe strings ............. no"
+    if $default_safe_string; then
+  inf "        (-safe-string is the default per-file option)"
+    else
+  inf "        (-unsafe-string is the default per-file option)"
+    fi
+  fi
+  if $flat_float_array; then
+  inf "        flat float arrays ........ yes"
+  else
+  inf "        flat float arrays ........ no"
+  fi
+  if test "$afl_instrument" = "true"; then
+  inf "        afl-fuzz always enabled .. yes"
+  else
+  inf "        afl-fuzz always enabled .. no"
   fi
 fi
 
@@ -2168,7 +2330,7 @@ else
   inf "Source-level replay debugger: not supported"
 fi
 
-if test "$debugruntime" = "runtimed"; then
+if $debugruntime; then
   inf "Debug runtime will be compiled and installed"
 fi
 
@@ -2178,9 +2340,6 @@ fi
 
 inf "Additional libraries supported:"
 inf "        $otherlibraries"
-
-inf "Configuration for the \"num\" library:"
-inf "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
 if $has_graph; then
 inf "Configuration for the \"graph\" library:"

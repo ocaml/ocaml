@@ -13,4 +13,24 @@
 #*                                                                        *
 #**************************************************************************
 
-include Makefile.shared
+# Makefile for the str library
+
+LIBNAME=str
+COBJS=strstubs.$(O)
+CLIBNAME=camlstr
+CAMLOBJS=str.cmo
+
+include ../Makefile
+str.cmo: str.cmi
+str.cmx: str.cmi
+
+.PHONY: depend
+depend:
+ifeq "$(TOOLCHAIN)" "msvc"
+	$(error Dependencies cannot be regenerated using the MSVC ports)
+else
+	$(CC) -MM $(CPPFLAGS) *.c | sed -e 's/\.o/.$$(O)/g' > .depend
+	$(CAMLRUN) $(ROOTDIR)/tools/ocamldep -slash *.mli *.ml >> .depend
+endif
+
+include .depend

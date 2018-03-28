@@ -163,13 +163,16 @@ let rec core_type i ppf x =
   | Ptyp_object (l, c) ->
       line i ppf "Ptyp_object %a\n" fmt_closed_flag c;
       let i = i + 1 in
-      List.iter
-        (fun (s, attrs, t) ->
-          line i ppf "method %s\n" s;
-          attributes i ppf attrs;
-          core_type (i + 1) ppf t
-        )
-        l
+      List.iter (
+        function
+          | Otag (l, attrs, t) ->
+            line i ppf "method %s\n" l.txt;
+            attributes i ppf attrs;
+            core_type (i + 1) ppf t
+          | Oinherit ct ->
+              line i ppf "Oinherit\n";
+              core_type (i + 1) ppf ct
+      ) l
   | Ptyp_class (li, l) ->
       line i ppf "Ptyp_class %a\n" fmt_longident_loc li;
       list i core_type ppf l
@@ -178,7 +181,7 @@ let rec core_type i ppf x =
       core_type i ppf ct;
   | Ptyp_poly (sl, ct) ->
       line i ppf "Ptyp_poly%a\n"
-        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
+        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x.txt)) sl;
       core_type i ppf ct;
   | Ptyp_package (s, l) ->
       line i ppf "Ptyp_package %a\n" fmt_longident_loc s;
@@ -335,7 +338,7 @@ and expression i ppf x =
       option i core_type ppf cto1;
       core_type i ppf cto2;
   | Pexp_send (e, s) ->
-      line i ppf "Pexp_send \"%s\"\n" s;
+      line i ppf "Pexp_send \"%s\"\n" s.txt;
       expression i ppf e;
   | Pexp_new (li) -> line i ppf "Pexp_new %a\n" fmt_longident_loc li;
   | Pexp_setinstvar (s, e) ->
@@ -366,7 +369,7 @@ and expression i ppf x =
       line i ppf "Pexp_object\n";
       class_structure i ppf s
   | Pexp_newtype (s, e) ->
-      line i ppf "Pexp_newtype \"%s\"\n" s;
+      line i ppf "Pexp_newtype \"%s\"\n" s.txt;
       expression i ppf e
   | Pexp_pack me ->
       line i ppf "Pexp_pack\n";
@@ -504,6 +507,10 @@ and class_type i ppf x =
   | Pcty_extension (s, arg) ->
       line i ppf "Pcty_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcty_open (ovf, m, e) ->
+      line i ppf "Pcty_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_type i ppf e
 
 and class_signature i ppf cs =
   line i ppf "class_signature\n";
@@ -519,11 +526,11 @@ and class_type_field i ppf x =
       line i ppf "Pctf_inherit\n";
       class_type i ppf ct;
   | Pctf_val (s, mf, vf, ct) ->
-      line i ppf "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf
+      line i ppf "Pctf_val \"%s\" %a %a\n" s.txt fmt_mutable_flag mf
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Pctf_method (s, pf, vf, ct) ->
-      line i ppf "Pctf_method \"%s\" %a %a\n" s fmt_private_flag pf
+      line i ppf "Pctf_method \"%s\" %a %a\n" s.txt fmt_private_flag pf
            fmt_virtual_flag vf;
       core_type (i+1) ppf ct;
   | Pctf_constraint (ct1, ct2) ->
@@ -591,6 +598,10 @@ and class_expr i ppf x =
   | Pcl_extension (s, arg) ->
       line i ppf "Pcl_extension \"%s\"\n" s.txt;
       payload i ppf arg
+  | Pcl_open (ovf, m, e) ->
+      line i ppf "Pcl_open %a \"%a\"\n" fmt_override_flag ovf
+        fmt_longident_loc m;
+      class_expr i ppf e
 
 and class_structure i ppf { pcstr_self = p; pcstr_fields = l } =
   line i ppf "class_structure\n";
@@ -605,7 +616,7 @@ and class_field i ppf x =
   | Pcf_inherit (ovf, ce, so) ->
       line i ppf "Pcf_inherit %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
-      option (i+1) string ppf so;
+      option (i+1) string_loc ppf so;
   | Pcf_val (s, mf, k) ->
       line i ppf "Pcf_val %a\n" fmt_mutable_flag mf;
       line (i+1) ppf "%a\n" fmt_string_loc s;
@@ -736,17 +747,17 @@ and with_constraint i ppf x =
   | Pwith_type (lid, td) ->
       line i ppf "Pwith_type %a\n" fmt_longident_loc lid;
       type_declaration (i+1) ppf td;
-  | Pwith_typesubst (td) ->
-      line i ppf "Pwith_typesubst\n";
+  | Pwith_typesubst (lid, td) ->
+      line i ppf "Pwith_typesubst %a\n" fmt_longident_loc lid;
       type_declaration (i+1) ppf td;
   | Pwith_module (lid1, lid2) ->
       line i ppf "Pwith_module %a = %a\n"
         fmt_longident_loc lid1
         fmt_longident_loc lid2;
-  | Pwith_modsubst (s, li) ->
+  | Pwith_modsubst (lid1, lid2) ->
       line i ppf "Pwith_modsubst %a = %a\n"
-        fmt_string_loc s
-        fmt_longident_loc li;
+        fmt_longident_loc lid1
+        fmt_longident_loc lid2;
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
@@ -906,7 +917,7 @@ and label_x_expression i ppf (l,e) =
 and label_x_bool_x_core_type_list i ppf x =
   match x with
     Rtag (l, attrs, b, ctl) ->
-      line i ppf "Rtag \"%s\" %s\n" l (string_of_bool b);
+      line i ppf "Rtag \"%s\" %s\n" l.txt (string_of_bool b);
       attributes (i+1) ppf attrs;
       list (i+1) core_type ppf ctl
   | Rinherit (ct) ->

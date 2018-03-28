@@ -12,9 +12,7 @@
 /*                                                                        */
 /**************************************************************************/
 
-#include "../config/s.h"
-#include "../byterun/caml/mlvalues.h"
-#include "../byterun/caml/alloc.h"
+#include "caml/s.h"
 #include <stdio.h>
 
 #ifdef HAS_LIBBFD

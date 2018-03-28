@@ -24,7 +24,7 @@
 
 void caml_compact_heap (void);
 void caml_compact_heap_maybe (void);
-void invert_root (value v, value *p);
+void caml_invert_root (value v, value *p);
 
 #endif /* CAML_INTERNALS */
 

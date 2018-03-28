@@ -14,7 +14,7 @@
 #include "caml/major_gc.h"
 #include "caml/shared_heap.h"
 #include "caml/memory.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 #ifdef NATIVE_CODE
 #include "caml/stack.h"
 #include "frame_descriptors.h"

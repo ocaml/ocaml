@@ -162,6 +162,43 @@ CAMLprim value caml_get_exception_raw_backtrace(value unit)
   CAMLreturn(res);
 }
 
+/* Copy back a backtrace and exception to the global state.
+   This function should be used only with Printexc.raw_backtrace */
+/* noalloc (caml value): so no CAMLparam* CAMLreturn* */
+CAMLprim value caml_restore_raw_backtrace(value exn, value backtrace)
+{
+  intnat i;
+  mlsize_t bt_size;
+
+  if (Caml_state->backtrace_last_exn != NULL)
+    caml_delete_root (Caml_state->backtrace_last_exn);
+  Caml_state->backtrace_last_exn = caml_create_root (exn);
+
+  bt_size = Wosize_val(backtrace);
+  if(bt_size > BACKTRACE_BUFFER_SIZE){
+    bt_size = BACKTRACE_BUFFER_SIZE;
+  }
+
+  /* We don't allocate if the backtrace is empty (no -g or backtrace
+     not activated) */
+  if(bt_size == 0){
+    Caml_state->backtrace_pos = 0;
+    return Val_unit;
+  }
+
+  /* Allocate if needed and copy the backtrace buffer */
+  if (Caml_state->backtrace_buffer == NULL && caml_alloc_backtrace_buffer() == -1){
+    return Val_unit;
+  }
+
+  Caml_state->backtrace_pos = bt_size;
+  for(i=0; i < Caml_state->backtrace_pos; i++){
+    Caml_state->backtrace_buffer[i] = Backtrace_slot_val(Field(backtrace, i));
+  }
+
+  return Val_unit;
+}
+
 #define Val_debuginfo(bslot) (Val_long((uintnat)(bslot)>>1))
 #define Debuginfo_val(vslot) ((debuginfo)(Long_val(vslot) << 1))
 

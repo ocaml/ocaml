@@ -220,12 +220,12 @@ module Analyser =
     (** The name of the analysed file. *)
     let file_name = Sig.file_name
 
-    (** This function takes two indexes (start and end) and return the string
+    (** This function takes two indexes (start and end) and returns the string
        corresponding to the indexes in the file global variable. The function
        prepare_file must have been called to fill the file global variable.*)
     let get_string_of_file = Sig.get_string_of_file
 
-    (** This function loads the given file in the file global variable.
+    (** This function loads the given file in the file global variable
        and sets file_name.*)
     let prepare_file = Sig.prepare_file
 
@@ -332,7 +332,7 @@ module Analyser =
           in
          (* continue if the body is still a function *)
           match next_exp.exp_desc with
-            Texp_function (_, pat_exp_list, _) ->
+            Texp_function { cases = pat_exp_list ; _ } ->
               p :: (tt_analyse_function_parameters env current_comment_opt pat_exp_list)
           | _ ->
               (* something else ; no more parameter *)
@@ -343,7 +343,7 @@ module Analyser =
      let tt_analyse_value env current_module_name comment_opt loc pat_exp rec_flag =
        let (pat, exp) = pat_exp in
        match (pat.pat_desc, exp.exp_desc) with
-         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function (_, pat_exp_list2, _partial)) ->
+         (Typedtree.Tpat_var (ident, _), Typedtree.Texp_function { cases = pat_exp_list2; _ }) ->
            (* a new function is defined *)
            let name_pre = Name.from_ident ident in
            let name = Name.parens_if_infix name_pre in
@@ -432,7 +432,7 @@ module Analyser =
     *)
     let rec tt_analyse_method_expression env current_method_name comment_opt ?(first=true) exp =
       match exp.Typedtree.exp_desc with
-        Typedtree.Texp_function (_, pat_exp_list, _) ->
+        Typedtree.Texp_function { cases = pat_exp_list; _ } ->
           (
            match pat_exp_list with
              [] ->
@@ -678,7 +678,7 @@ module Analyser =
       in
       iter [] [] last_pos (p_cls.Parsetree.pcstr_fields)
 
-    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a a couple (class parameters, class kind). *)
+    (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a pair (class parameters, class kind). *)
     let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp table =
       match (p_class_expr.Parsetree.pcl_desc, tt_class_exp.Typedtree.cl_desc) with
         (Parsetree.Pcl_constr (lid, _), tt_class_exp_desc ) ->
@@ -1427,7 +1427,7 @@ module Analyser =
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
-                 (* FIXME : can this be Tmty_ident? In this case, we would'nt have the signature *)
+                 (* FIXME : can this be Tmty_ident? In this case, we wouldn't have the signature *)
                  Types.Mty_signature s ->
                    Odoc_env.add_signature new_env new_module.m_name
                      ~rel: (Name.simple new_module.m_name) s
@@ -1531,7 +1531,7 @@ module Analyser =
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
             match sig_mtype with
-              (* FIXME : can this be Tmty_ident? In this case, we would'nt have the signature *)
+              (* FIXME : can this be Tmty_ident? In this case, we wouldn't have the signature *)
               Some (Types.Mty_signature s) ->
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ ->
@@ -1870,25 +1870,11 @@ module Analyser =
      let analyse_typed_tree source_file input_file
          (parsetree : Parsetree.structure) (typedtree : typedtree) =
        let (tree_structure, _) = typedtree in
-       let complete_source_file =
-         try
-           let curdir = Sys.getcwd () in
-           let (dirname, basename) = (Filename.dirname source_file, Filename.basename source_file) in
-           Sys.chdir dirname ;
-           let complete = Filename.concat (Sys.getcwd ()) basename in
-           Sys.chdir curdir ;
-           complete
-         with
-           Sys_error s ->
-             prerr_endline s ;
-             incr Odoc_global.errors ;
-             source_file
-       in
-       prepare_file complete_source_file input_file;
+       prepare_file source_file input_file;
        (* We create the t_module for this file. *)
        let mod_name = String.capitalize_ascii (Filename.basename (Filename.chop_extension source_file)) in
-       let (len,info_opt) = My_ir.first_special !file_name !file in
-
+       let len, info_opt = Sig.preamble !file_name !file
+           (fun x -> x.Parsetree.pstr_loc) parsetree in
        (* we must complete the included modules *)
        let elements = analyse_structure Odoc_env.empty mod_name len (String.length !file) parsetree tree_structure in
        let included_modules_from_tt = tt_get_included_module_list tree_structure in

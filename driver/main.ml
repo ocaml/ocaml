@@ -104,9 +104,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _warn_error = (Warnings.parse_options true)
   let _warn_help = Warnings.help_warnings
   let _color option =
-    begin match Clflags.parse_color_setting option with
+    begin match parse_color_setting option with
           | None -> ()
-          | Some setting -> Clflags.color := setting
+          | Some setting -> color := Some setting
     end
   let _where = print_standard_library
   let _verbose = set verbose
@@ -117,14 +117,24 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
-  let _dtimings = set print_timings
+  let _dtimings () = profile_columns := [ `Time ]
+  let _dprofile () = profile_columns := Profile.all_columns
+
+  let _args = Arg.read_arg
+  let _args0 = Arg.read_arg0
+
   let anonymous = anonymous
 end)
 
 let main () =
+  Clflags.add_arguments __LOC__ Options.list;
+  Clflags.add_arguments __LOC__
+    ["-depend", Arg.Unit Makedepend.main_from_option,
+     "<options> Compute dependencies (use 'ocamlc -depend -help' for details)"];
   try
     readenv ppf Before_args;
-    Arg.parse Options.list anonymous usage;
+    Clflags.parse_arguments anonymous usage;
+    Compmisc.read_color_env ppf;
     begin try
       Compenv.process_deferred_actions
         (ppf,
@@ -135,7 +145,7 @@ let main () =
     with Arg.Bad msg ->
       begin
         prerr_endline msg;
-        Arg.usage Options.list usage;
+        Clflags.print_arguments usage;
         exit 2
       end
     end;
@@ -190,7 +200,7 @@ let main () =
     Location.report_exception ppf x;
     exit 2
 
-let _ =
-  Timings.(time All) main ();
-  if !Clflags.print_timings then Timings.print Format.std_formatter;
+let () =
+  main ();
+  Profile.print Format.std_formatter !Clflags.profile_columns;
   exit 0

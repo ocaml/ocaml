@@ -41,6 +41,11 @@
 #define ARCH_UINT64_TYPE unsigned __int64
 #endif
 #define ARCH_INT64_PRINTF_FORMAT "I64"
+#if _MSC_VER >= 1800
+#define ARCH_SIZET_PRINTF_FORMAT "z"
+#else
+#define ARCH_SIZET_PRINTF_FORMAT "I"
+#endif
 
 #if defined(_MSC_VER) && !defined(__cplusplus)
 #define inline __inline
@@ -48,7 +53,7 @@
 
 #undef NONSTANDARD_DIV_MOD
 
-#define PROFINFO_WIDTH 26
+#define PROFINFO_WIDTH 0
 
 /* Microsoft introduced the LL integer literal suffix in Visual C++ .NET 2003 */
 #if defined(_MSC_VER) && _MSC_VER < 1400
@@ -56,3 +61,5 @@
 #else
 #define INT64_LITERAL(s) s ## LL
 #endif
+
+#define FLAT_FLOAT_ARRAY

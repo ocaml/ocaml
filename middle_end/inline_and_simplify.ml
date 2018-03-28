@@ -807,7 +807,7 @@ and simplify_partial_application env r ~lhs_of_application
   | Default_specialise -> ()
   end;
   let freshened_params =
-    List.map (fun id -> Variable.rename id) function_decl.Flambda.params
+    List.map (fun p -> Parameter.rename p) function_decl.Flambda.params
   in
   let applied_args, remaining_args =
     Misc.Stdlib.List.map2_prefix (fun arg id' -> id', arg)
@@ -817,7 +817,7 @@ and simplify_partial_application env r ~lhs_of_application
     let body : Flambda.t =
       Apply {
         func = lhs_of_application;
-        args = freshened_params;
+        args = Parameter.List.vars freshened_params;
         kind = Direct closure_id_being_applied;
         dbg;
         inline = Default_inline;
@@ -836,8 +836,8 @@ and simplify_partial_application env r ~lhs_of_application
   in
   let with_known_args =
     Flambda_utils.bind
-      ~bindings:(List.map (fun (var, arg) ->
-          var, Flambda.Expr (Var arg)) applied_args)
+      ~bindings:(List.map (fun (param, arg) ->
+          Parameter.var param, Flambda.Expr (Var arg)) applied_args)
       ~body:wrapper_accepting_remaining_args
   in
   simplify env r with_known_args
@@ -989,6 +989,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       begin match prim, args, args_approxs with
       | Pgetglobal _, _, _ ->
         Misc.fatal_error "Pgetglobal is forbidden in Inline_and_simplify"
+      (* CR-someday mshinwell: Optimise [Pfield_computed]. *)
       | Pfield (field_index, _, _), [arg], [arg_approx] ->
         let projection : Projection.t = Field (field_index, arg) in
         begin match E.find_projection env ~projection with
@@ -1022,22 +1023,24 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
       | (Parraysetu kind | Parraysets kind),
         [_block; _field; _value],
         [block_approx; _field_approx; value_approx] ->
-        if A.is_definitely_immutable block_approx then begin
+        if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_to_non_mutable_value
         end;
-        let kind = match A.descr block_approx, A.descr value_approx with
-          | (Value_float_array _, _)
-          | (_, Value_float _) ->
-            begin match kind with
+        let kind =
+          let check () =
+            match kind with
             | Pfloatarray | Pgenarray -> ()
             | Paddrarray | Pintarray ->
               (* CR pchambart: Do a proper warning here *)
               Misc.fatal_errorf "Assignment of a float to a specialised \
                                  non-float array: %a"
                 Flambda.print_named tree
-            end;
-            Lambda.Pfloatarray
+          in
+          match A.descr block_approx, A.descr value_approx with
+          | (Value_float_array _, _) -> check (); Lambda.Pfloatarray
+          | (_, Value_float _) when Config.flat_float_array ->
+            check (); Lambda.Pfloatarray
             (* CR pchambart: This should be accounted by the benefit *)
           | _ ->
             kind
@@ -1049,7 +1052,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
         in
         Prim (prim, args, dbg), ret r (A.value_unknown Other)
       | Psetfield _, _block::_, block_approx::_ ->
-        if A.is_definitely_immutable block_approx then begin
+        if A.warn_on_mutation block_approx then begin
           Location.prerr_warning (Debuginfo.to_location dbg)
             Warnings.Assignment_to_non_mutable_value
         end;
@@ -1500,11 +1503,12 @@ let define_let_rec_symbol_approx env defs =
       env
     else
       let env =
-        List.fold_left (fun env (symbol, constant_defining_value) ->
+        List.fold_left (fun newenv (symbol, constant_defining_value) ->
             let approx =
               constant_defining_value_approx env constant_defining_value
             in
-            E.redefine_symbol env symbol approx)
+            let approx = A.augment_with_symbol approx symbol in
+            E.redefine_symbol newenv symbol approx)
           env defs
       in
       loop (times-1) env
@@ -1571,13 +1575,13 @@ let rec simplify_program_body env r (program : Flambda.program_body)
   | Let_rec_symbol (defs, program) ->
     let env = define_let_rec_symbol_approx env defs in
     let env, r, defs =
-      List.fold_left (fun (env, r, defs) (symbol, def) ->
+      List.fold_left (fun (newenv, r, defs) (symbol, def) ->
           let r, def, approx =
             simplify_constant_defining_value env r symbol def
           in
           let approx = A.augment_with_symbol approx symbol in
-          let env = E.redefine_symbol env symbol approx in
-          (env, r, (symbol, def) :: defs))
+          let newenv = E.redefine_symbol newenv symbol approx in
+          (newenv, r, (symbol, def) :: defs))
         (env, r, []) defs
     in
     let program, r = simplify_program_body env r program in

@@ -73,6 +73,9 @@ inst-var-name:
 method-name:
     lowercase-ident
 \end{syntax}
+See also the following language extension:
+\hyperref[s:index-operators]{extended indexing operators}.
+
 As shown above, prefix and infix symbols as well as some keywords can
 be used as value names, provided they are written between parentheses.
 The capitalization rules  are summarized in the table below.

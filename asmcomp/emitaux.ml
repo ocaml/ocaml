@@ -114,6 +114,14 @@ type frame_descr =
 
 let frame_descriptors = ref([] : frame_descr list)
 
+let record_frame_descr ~label ~frame_size ~live_offset ~raise_frame debuginfo =
+  frame_descriptors :=
+    { fd_lbl = label;
+      fd_frame_size = frame_size;
+      fd_live_offset = List.sort_uniq (-) live_offset;
+      fd_raise = raise_frame;
+      fd_debuginfo = debuginfo } :: !frame_descriptors
+
 type emit_frame_actions =
   { efa_code_label: int -> unit;
     efa_data_label: int -> unit;
@@ -281,7 +289,7 @@ let reset_debug_info () =
   file_pos_nums := [];
   file_pos_num_cnt := 1
 
-(* We only diplay .file if the file has not been seen before. We
+(* We only display .file if the file has not been seen before. We
    display .loc for every instruction. *)
 let emit_debug_info_gen dbg file_emitter loc_emitter =
   if is_cfi_enabled () &&

@@ -116,10 +116,10 @@ CAMLprim value caml_gr_draw_text(value text,value x)
         SetTextAlign(grwindow.gcBitmap, TA_UPDATECP|TA_BOTTOM);
         SetTextAlign(grwindow.gc, TA_UPDATECP|TA_BOTTOM);
         if (grremember_mode) {
-                TextOut(grwindow.gcBitmap,0,0,(char *)text,x);
+                TextOutA(grwindow.gcBitmap,0,0,String_val(text),x);
         }
         if(grdisplay_mode) {
-                TextOut(grwindow.gc,0,0,(char *)text,x);
+                TextOutA(grwindow.gc,0,0,String_val(text),x);
         }
         GetCurrentPosition(grwindow.gc,&pt);
         grwindow.grx = pt.x;
@@ -185,7 +185,7 @@ CAMLprim value caml_gr_circle(value x,value y,value radius)
 
 CAMLprim value caml_gr_set_window_title(value text)
 {
-        SetWindowText(grwindow.hwnd,(char *)text);
+        SetWindowTextA(grwindow.hwnd,(char *)text);
         return Val_unit;
 }
 
@@ -263,7 +263,7 @@ static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
         r_x = Int_val(vrx);
         r_y = Int_val(vry);
         if ((r_x < 0) || (r_y < 0))
-                invalid_argument("draw_arc: radius must be positive");
+                caml_invalid_argument("draw_arc: radius must be positive");
         x     = Int_val(vx);
         y     = Int_val(vy);
         start = Int_val(vstart);
@@ -358,7 +358,7 @@ CAMLprim value caml_gr_draw_char(value chr)
 CAMLprim value caml_gr_draw_string(value str)
 {
         gr_check_open();
-        caml_gr_draw_text(str, string_length(str));
+        caml_gr_draw_text(str, caml_string_length(str));
         return Val_unit;
 }
 
@@ -366,10 +366,10 @@ CAMLprim value caml_gr_text_size(value str)
 {
         SIZE extent;
 
-        mlsize_t len = string_length(str);
+        mlsize_t len = caml_string_length(str);
         if (len > 32767) len = 32767;
 
-        GetTextExtentPoint(grwindow.gc,String_val(str), len,&extent);
+        GetTextExtentPointA(grwindow.gc,String_val(str), len,&extent);
 
         return caml_alloc_2(0,
                             Val_long(extent.cx),
@@ -387,7 +387,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
         if (n_points < 3)
                 gr_fail("fill_poly: not enough points",0);
 
-        poly = (POINT *)malloc(n_points*sizeof(POINT));
+        poly = (POINT *)caml_stat_alloc(n_points*sizeof(POINT));
 
         p = poly;
         for( i = 0; i < n_points; i++ ){
@@ -404,7 +404,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
                 SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
                 Polygon(grwindow.gc,poly,n_points);
         }
-        free(poly);
+        caml_stat_free(poly);
 
         CAMLreturn (Val_unit);
 }
@@ -464,7 +464,7 @@ CAMLprim value caml_gr_create_image(value vw, value vh)
         cbm = CreateCompatibleBitmap(grwindow.gc, w, h);
         if (cbm == NULL)
                 gr_fail("create_image: cannot create bitmap", 0);
-        res = alloc_custom(&image_ops, sizeof(struct image),
+        res = caml_alloc_custom(&image_ops, sizeof(struct image),
                 w * h, Max_image_mem);
         if (res) {
                 Width (res) = w;
@@ -600,10 +600,10 @@ static value alloc_int_vect(mlsize_t size)
 
         if (size == 0) return Atom(0);
         if (size <= Max_young_wosize) {
-                res = alloc(size, 0);
+                res = caml_alloc(size, 0);
         }
         else {
-                res = alloc_shr(size, 0);
+                res = caml_alloc_shr(size, 0);
         }
         for (i = 0; i < size; i++) {
                 caml_initialize_field(res, i, Val_long(0));
@@ -622,7 +622,7 @@ CAMLprim value caml_gr_dump_image (value img)
 
         matrix = alloc_int_vect (height);
         for (i = 0; i < height; i++) {
-                caml_modify_field(matrix, i, alloc_int_vect (width));
+                Store_field(matrix, i, alloc_int_vect (width));
         }
 
         oldBmp = SelectObject(grwindow.tempDC,Data(img));

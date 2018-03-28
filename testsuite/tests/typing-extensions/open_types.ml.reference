@@ -9,10 +9,10 @@
 #     module M_S : S
 #         type foo = ..
 #     type bar = foo
-#     Characters 13-23:
+#     Characters 1-23:
   type bar += Bar of int (* Error: type is not open *)
-              ^^^^^^^^^^
-Error: Cannot extend type definition bar
+  ^^^^^^^^^^^^^^^^^^^^^^
+Error: Type definition bar is not extensible
 #     Characters 1-20:
   type baz = bar = .. (* Error: type kinds don't match *)
   ^^^^^^^^^^^^^^^^^^^
@@ -31,18 +31,13 @@ Error: This variant or record definition does not match that of type 'a foo
 Error: This variant or record definition does not match that of type
          ('a, 'a) foo
        Their constraints differ.
-#         type foo = ..
-#     Characters 24-25:
-  type bar = private foo = .. (* ERROR: Private abstract types cannot be open *)
-                         ^
-Error: Syntax error
 #         module M : sig type foo = .. end
 #     module type S = sig type foo end
 #     module M_S : S
-#     Characters 17-20:
+#     Characters 1-20:
   type M_S.foo += Foo (* ERROR: Cannot extend a type that isn't "open" *)
-                  ^^^
-Error: Cannot extend type definition M_S.foo
+  ^^^^^^^^^^^^^^^^^^^
+Error: Type definition M_S.foo is not extensible
 #         module M : sig type foo end
 #     module type S = sig type foo = .. end
 #     Characters 15-16:
@@ -55,7 +50,29 @@ Error: Signature mismatch:
        is not included in
          type foo = ..
        Their kinds differ.
-#         module M : sig type +'a foo = .. type 'a bar = 'a foo = .. end
+#         module M : sig type foo = .. end
+#     module type S = sig type foo = private .. end
+#     module M_S : S
+#     Characters 17-20:
+  type M_S.foo += Foo (* ERROR: Cannot extend a private extensible type *)
+                  ^^^
+Error: Cannot extend private type definition M_S.foo
+#         module M : sig type foo = private .. end
+#     module type S = sig type foo = .. end
+#     Characters 15-16:
+  module M_S = (M : S) (* ERROR: Signatures are not compatible *)
+                ^
+Error: Signature mismatch:
+       Modules do not match:
+         sig type foo = M.foo = private .. end
+       is not included in
+         S
+       Type declarations do not match:
+         type foo = M.foo = private ..
+       is not included in
+         type foo = ..
+       A private type would be revealed.
+#           module M : sig type +'a foo = .. type 'a bar = 'a foo = .. end
 #     module type S = sig type 'a foo = .. type 'a bar = 'a foo = .. end
 #     Characters 15-16:
   module M_S = (M : S) (* ERROR: Signatures are not compatible *)

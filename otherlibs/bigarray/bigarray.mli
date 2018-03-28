@@ -32,7 +32,7 @@
      and {!Pervasives.input_value}).
 *)
 
-(** {6 Element kinds} *)
+(** {1 Element kinds} *)
 
 (** Big arrays can contain elements of the following kinds:
 - IEEE single precision (32 bits) floating-point numbers
@@ -59,20 +59,23 @@
    of abstract types for technical injectivity reasons).
 *)
 
-type float32_elt = Float32_elt
-type float64_elt = Float64_elt
-type int8_signed_elt = Int8_signed_elt
-type int8_unsigned_elt = Int8_unsigned_elt
-type int16_signed_elt = Int16_signed_elt
-type int16_unsigned_elt = Int16_unsigned_elt
-type int32_elt = Int32_elt
-type int64_elt = Int64_elt
-type int_elt = Int_elt
-type nativeint_elt = Nativeint_elt
-type complex32_elt = Complex32_elt
-type complex64_elt = Complex64_elt
+type float32_elt = CamlinternalBigarray.float32_elt = Float32_elt
+type float64_elt = CamlinternalBigarray.float64_elt = Float64_elt
+type int8_signed_elt = CamlinternalBigarray.int8_signed_elt = Int8_signed_elt
+type int8_unsigned_elt = CamlinternalBigarray.int8_unsigned_elt =
+    Int8_unsigned_elt
+type int16_signed_elt = CamlinternalBigarray.int16_signed_elt =
+    Int16_signed_elt
+type int16_unsigned_elt = CamlinternalBigarray.int16_unsigned_elt =
+    Int16_unsigned_elt
+type int32_elt = CamlinternalBigarray.int32_elt = Int32_elt
+type int64_elt = CamlinternalBigarray.int64_elt = Int64_elt
+type int_elt = CamlinternalBigarray.int_elt = Int_elt
+type nativeint_elt = CamlinternalBigarray.nativeint_elt = Nativeint_elt
+type complex32_elt = CamlinternalBigarray.complex32_elt = Complex32_elt
+type complex64_elt = CamlinternalBigarray.complex64_elt = Complex64_elt
 
-type ('a, 'b) kind =
+type ('a, 'b) kind = ('a, 'b) CamlinternalBigarray.kind =
     Float32 : (float, float32_elt) kind
   | Float64 : (float, float64_elt) kind
   | Int8_signed : (int, int8_signed_elt) kind
@@ -176,12 +179,13 @@ val kind_size_in_bytes : ('a, 'b) kind -> int
 
    @since 4.03.0 *)
 
-(** {6 Array layouts} *)
+(** {1 Array layouts} *)
 
-type c_layout = C_layout_typ (**)
+type c_layout = CamlinternalBigarray.c_layout = C_layout_typ (**)
 (** See {!Bigarray.fortran_layout}.*)
 
-type fortran_layout = Fortran_layout_typ (**)
+type fortran_layout = CamlinternalBigarray.fortran_layout =
+    Fortran_layout_typ (**)
 (** To facilitate interoperability with existing C and Fortran code,
    this library supports two different memory layouts for big arrays,
    one compatible with the C conventions,
@@ -212,7 +216,7 @@ type fortran_layout = Fortran_layout_typ (**)
    re-exported as values below for backward-compatibility reasons.
 *)
 
-type 'a layout =
+type 'a layout = 'a CamlinternalBigarray.layout =
     C_layout: c_layout layout
   | Fortran_layout: fortran_layout layout
 
@@ -220,13 +224,13 @@ val c_layout : c_layout layout
 val fortran_layout : fortran_layout layout
 
 
-(** {6 Generic arrays (of arbitrarily many dimensions)} *)
+(** {1 Generic arrays (of arbitrarily many dimensions)} *)
 
 module Genarray :
   sig
-  type ('a, 'b, 'c) t
+  type ('a, 'b, 'c) t = ('a, 'b, 'c) CamlinternalBigarray.genarray
   (** The type [Genarray.t] is the type of big arrays with variable
-     numbers of dimensions.  Any number of dimensions between 1 and 16
+     numbers of dimensions.  Any number of dimensions between 0 and 16
      is supported.
 
      The three type parameters to [Genarray.t] identify the array element
@@ -264,7 +268,7 @@ module Genarray :
      the initial values of array elements is unspecified.
 
      [Genarray.create] raises [Invalid_argument] if the number of dimensions
-     is not in the range 1 to 16 inclusive, or if one of the dimensions
+     is not in the range 0 to 16 inclusive, or if one of the dimensions
      is negative. *)
 
   external num_dims: ('a, 'b, 'c) t -> int = "caml_ba_num_dims"
@@ -437,61 +441,75 @@ module Genarray :
   val map_file:
     Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
     bool -> int array -> ('a, 'b, 'c) t
-  (** Memory mapping of a file as a big array.
-     [Genarray.map_file fd kind layout shared dims]
-     returns a big array of kind [kind], layout [layout],
-     and dimensions as specified in [dims].  The data contained in
-     this big array are the contents of the file referred to by
-     the file descriptor [fd] (as opened previously with
-     [Unix.openfile], for example).  The optional [pos] parameter
-     is the byte offset in the file of the data being mapped;
-     it defaults to 0 (map from the beginning of the file).
-
-     If [shared] is [true], all modifications performed on the array
-     are reflected in the file.  This requires that [fd] be opened
-     with write permissions.  If [shared] is [false], modifications
-     performed on the array are done in memory only, using
-     copy-on-write of the modified pages; the underlying file is not
-     affected.
-
-     [Genarray.map_file] is much more efficient than reading
-     the whole file in a big array, modifying that big array,
-     and writing it afterwards.
-
-     To adjust automatically the dimensions of the big array to
-     the actual size of the file, the major dimension (that is,
-     the first dimension for an array with C layout, and the last
-     dimension for an array with Fortran layout) can be given as
-     [-1].  [Genarray.map_file] then determines the major dimension
-     from the size of the file.  The file must contain an integral
-     number of sub-arrays as determined by the non-major dimensions,
-     otherwise [Failure] is raised.
-
-     If all dimensions of the big array are given, the file size is
-     matched against the size of the big array.  If the file is larger
-     than the big array, only the initial portion of the file is
-     mapped to the big array.  If the file is smaller than the big
-     array, the file is automatically grown to the size of the big array.
-     This requires write permissions on [fd].
-
-     Array accesses are bounds-checked, but the bounds are determined by
-     the initial call to [map_file]. Therefore, you should make sure no
-     other process modifies the mapped file while you're accessing it,
-     or a SIGBUS signal may be raised. This happens, for instance, if the
-     file is shrunk.
-
-     This function raises [Sys_error] in the case of any errors from the
-     underlying system calls.  [Invalid_argument] or [Failure] may be
-     raised in cases where argument validation fails. *)
-
+  [@@ocaml.deprecated "\
+Use Unix.map_file instead.\n\
+Note that Bigarray.Genarray.map_file raises Sys_error while\n\
+Unix.map_file raises Unix_error."]
   end
 
-(** {6 One-dimensional arrays} *)
+(** {1 Zero-dimensional arrays} *)
+
+(** Zero-dimensional arrays. The [Array0] structure provides operations
+   similar to those of {!Bigarray.Genarray}, but specialized to the case
+   of zero-dimensional arrays that only contain a single scalar value.
+   Statically knowing the number of dimensions of the array allows
+   faster operations, and more precise static type-checking.
+   @since 4.05.0 *)
+module Array0 : sig
+  type ('a, 'b, 'c) t
+  (** The type of zero-dimensional big arrays whose elements have
+     OCaml type ['a], representation kind ['b], and memory layout ['c]. *)
+
+  val create: ('a, 'b) kind -> 'c layout -> ('a, 'b, 'c) t
+  (** [Array0.create kind layout] returns a new bigarray of zero dimension.
+     [kind] and [layout] determine the array element kind and the array
+     layout as described for {!Genarray.create}. *)
+
+  external kind: ('a, 'b, 'c) t -> ('a, 'b) kind = "caml_ba_kind"
+  (** Return the kind of the given big array. *)
+
+  external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
+  (** Return the layout of the given big array. *)
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array0.change_layout a layout] returns a big array with the
+      specified [layout], sharing the data with [a]. No copying of elements
+      is involved: the new array and the original array share the same
+      storage space.
+
+      @since 4.06.0
+  *)
+
+  val size_in_bytes : ('a, 'b, 'c) t -> int
+  (** [size_in_bytes a] is [a]'s {!kind_size_in_bytes}. *)
+
+  val get: ('a, 'b, 'c) t -> 'a
+  (** [Array0.get a] returns the only element in [a]. *)
+
+  val set: ('a, 'b, 'c) t -> 'a -> unit
+  (** [Array0.set a x v] stores the value [v] in [a]. *)
+
+  external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit = "caml_ba_blit"
+  (** Copy the first big array to the second big array.
+     See {!Genarray.blit} for more details. *)
+
+  external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
+  (** Fill the given big array with the given value.
+     See {!Genarray.fill} for more details. *)
+
+  val of_value: ('a, 'b) kind -> 'c layout -> 'a -> ('a, 'b, 'c) t
+  (** Build a zero-dimensional big array initialized from the
+     given value.  *)
+
+end
+
+
+(** {1 One-dimensional arrays} *)
 
 (** One-dimensional arrays. The [Array1] structure provides operations
    similar to those of
    {!Bigarray.Genarray}, but specialized to the case of one-dimensional arrays.
-   (The [Array2] and [Array3] structures below provide operations
+   (The {!Array2} and {!Array3} structures below provide operations
    specialized for two- and three-dimensional arrays.)
    Statically knowing the number of dimensions of the array allows
    faster operations, and more precise static type-checking. *)
@@ -504,7 +522,7 @@ module Array1 : sig
   (** [Array1.create kind layout dim] returns a new bigarray of
      one dimension, whose size is [dim].  [kind] and [layout]
      determine the array element kind and the array layout
-     as described for [Genarray.create]. *)
+     as described for {!Genarray.create}. *)
 
   external dim: ('a, 'b, 'c) t -> int = "%caml_ba_dim_1"
   (** Return the size (dimension) of the given one-dimensional
@@ -515,6 +533,16 @@ module Array1 : sig
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array1.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimension as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+
+      @since 4.06.0
+  *)
+
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
@@ -540,16 +568,23 @@ module Array1 : sig
   external sub: ('a, 'b, 'c) t -> int -> int -> ('a, 'b, 'c) t
       = "caml_ba_sub"
   (** Extract a sub-array of the given one-dimensional big array.
-     See [Genarray.sub_left] for more details. *)
+     See {!Genarray.sub_left} for more details. *)
+
+  val slice: ('a, 'b, 'c) t -> int -> ('a, 'b, 'c) Array0.t
+  (** Extract a scalar (zero-dimensional slice) of the given one-dimensional
+     big array.  The integer parameter is the index of the scalar to
+     extract.  See {!Bigarray.Genarray.slice_left} and
+     {!Bigarray.Genarray.slice_right} for more details.
+     @since 4.05.0 *)
 
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
       = "caml_ba_blit"
   (** Copy the first big array to the second big array.
-     See [Genarray.blit] for more details. *)
+     See {!Genarray.blit} for more details. *)
 
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
   (** Fill the given big array with the given value.
-     See [Genarray.fill] for more details. *)
+     See {!Genarray.fill} for more details. *)
 
   val of_array: ('a, 'b) kind -> 'c layout -> 'a array -> ('a, 'b, 'c) t
   (** Build a one-dimensional big array initialized from the
@@ -557,8 +592,10 @@ module Array1 : sig
 
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
     bool -> int -> ('a, 'b, 'c) t
-  (** Memory mapping of a file as a one-dimensional big array.
-     See {!Bigarray.Genarray.map_file} for more details. *)
+  [@@ocaml.deprecated "\
+Use [array1_of_genarray (Unix.map_file ...)] instead.\n\
+Note that Bigarray.Array1.map_file raises Sys_error while\n\
+Unix.map_file raises Unix_error."]
 
   external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
   (** Like {!Bigarray.Array1.get}, but bounds checking is not always performed.
@@ -574,7 +611,7 @@ module Array1 : sig
 end
 
 
-(** {6 Two-dimensional arrays} *)
+(** {1 Two-dimensional arrays} *)
 
 (** Two-dimensional arrays. The [Array2] structure provides operations
    similar to those of {!Bigarray.Genarray}, but specialized to the
@@ -603,6 +640,18 @@ module Array2 :
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array2.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimensions as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+      The dimensions are reversed, such that [get v [| a; b |]] in
+      C layout becomes [get v [| b+1; a+1 |]] in Fortran layout.
+
+      @since 4.06.0
+  *)
+
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
@@ -668,8 +717,10 @@ module Array2 :
 
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
                 bool -> int -> int -> ('a, 'b, 'c) t
-  (** Memory mapping of a file as a two-dimensional big array.
-     See {!Bigarray.Genarray.map_file} for more details. *)
+  [@@ocaml.deprecated "\
+Use [array2_of_genarray (Unix.map_file ...)] instead.\n\
+Note that Bigarray.Array2.map_file raises Sys_error while\n\
+Unix.map_file raises Unix_error."]
 
   external unsafe_get: ('a, 'b, 'c) t -> int -> int -> 'a
                      = "%caml_ba_unsafe_ref_2"
@@ -683,7 +734,7 @@ module Array2 :
 
 end
 
-(** {6 Three-dimensional arrays} *)
+(** {1 Three-dimensional arrays} *)
 
 (** Three-dimensional arrays. The [Array3] structure provides operations
    similar to those of {!Bigarray.Genarray}, but specialized to the case
@@ -715,6 +766,18 @@ module Array3 :
 
   external layout: ('a, 'b, 'c) t -> 'c layout = "caml_ba_layout"
   (** Return the layout of the given big array. *)
+
+
+  val change_layout: ('a, 'b, 'c) t -> 'd layout -> ('a, 'b, 'd) t
+  (** [Array3.change_layout a layout] returns a bigarray with the
+      specified [layout], sharing the data with [a] (and hence having
+      the same dimensions as [a]). No copying of elements is involved: the
+      new array and the original array share the same storage space.
+      The dimensions are reversed, such that [get v [| a; b; c |]] in
+      C layout becomes [get v [| c+1; b+1; a+1 |]] in Fortran layout.
+
+      @since 4.06.0
+  *)
 
   val size_in_bytes : ('a, 'b, 'c) t -> int
   (** [size_in_bytes a] is the number of elements in [a]
@@ -802,8 +865,10 @@ module Array3 :
 
   val map_file: Unix.file_descr -> ?pos:int64 -> ('a, 'b) kind -> 'c layout ->
              bool -> int -> int -> int -> ('a, 'b, 'c) t
-  (** Memory mapping of a file as a three-dimensional big array.
-     See {!Bigarray.Genarray.map_file} for more details. *)
+  [@@ocaml.deprecated "\
+Use [array3_of_genarray (Unix.map_file ...)] instead.\n\
+Note that Bigarray.Array3.map_file raises Sys_error while\n\
+Unix.map_file raises Unix_error."]
 
   external unsafe_get: ('a, 'b, 'c) t -> int -> int -> int -> 'a
                      = "%caml_ba_unsafe_ref_3"
@@ -817,7 +882,12 @@ module Array3 :
 
 end
 
-(** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
+(** {1 Coercions between generic big arrays and fixed-dimension big arrays} *)
+
+external genarray_of_array0 :
+  ('a, 'b, 'c) Array0.t -> ('a, 'b, 'c) Genarray.t = "%identity"
+(** Return the generic big array corresponding to the given zero-dimensional
+   big array. @since 4.05.0 *)
 
 external genarray_of_array1 :
   ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t = "%identity"
@@ -833,6 +903,12 @@ external genarray_of_array3 :
   ('a, 'b, 'c) Array3.t -> ('a, 'b, 'c) Genarray.t = "%identity"
 (** Return the generic big array corresponding to the given three-dimensional
    big array. *)
+
+val array0_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
+(** Return the zero-dimensional big array corresponding to the given
+   generic big array.  Raise [Invalid_argument] if the generic big array
+   does not have exactly zero dimension.
+   @since 4.05.0 *)
 
 val array1_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array1.t
 (** Return the one-dimensional big array corresponding to the given
@@ -850,7 +926,7 @@ val array3_of_genarray : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array3.t
    does not have exactly three dimensions. *)
 
 
-(** {6 Re-shaping big arrays} *)
+(** {1 Re-shaping big arrays} *)
 
 val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
 (** [reshape b [|d1;...;dN|]] converts the big array [b] to a
@@ -867,6 +943,11 @@ val reshape : ('a, 'b, 'c) Genarray.t -> int array -> ('a, 'b, 'c) Genarray.t
    elements as the original big array [b].  That is, the product
    of the dimensions of [b] must be equal to [i1 * ... * iN].
    Otherwise, [Invalid_argument] is raised. *)
+
+val reshape_0 : ('a, 'b, 'c) Genarray.t -> ('a, 'b, 'c) Array0.t
+(** Specialized version of {!Bigarray.reshape} for reshaping to
+   zero-dimensional arrays.
+   @since 4.05.0 *)
 
 val reshape_1 : ('a, 'b, 'c) Genarray.t -> int -> ('a, 'b, 'c) Array1.t
 (** Specialized version of {!Bigarray.reshape} for reshaping to

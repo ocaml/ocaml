@@ -28,7 +28,7 @@
     [Inconstant_idents] is a "backwards" analysis that propagates implications
     about inconstantness of variables and set of closures IDs.
 
-    [Alias_analysis] is a "forwards" analysis that is analagous to the
+    [Alias_analysis] is a "forwards" analysis that is analogous to the
     propagation of [Simple_value_approx.t] values during [Inline_and_simplify].
     It gives us information about relationships between values but not actually
     about their constantness.

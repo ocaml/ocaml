@@ -16,7 +16,7 @@
 (** Regular expressions and high-level string processing *)
 
 
-(** {6 Regular expressions} *)
+(** {1 Regular expressions} *)
 
 
 type regexp
@@ -84,7 +84,7 @@ val regexp_string_case_fold : string -> regexp
    but the regexp matches in a case-insensitive way. *)
 
 
-(** {6 String matching and searching} *)
+(** {1 String matching and searching} *)
 
 
 val string_match : regexp -> string -> int -> bool
@@ -188,7 +188,7 @@ val group_end : int -> int
    the regular expression. *)
 
 
-(** {6 Replacement} *)
+(** {1 Replacement} *)
 
 
 val global_replace : regexp -> string -> string -> string
@@ -224,7 +224,7 @@ val replace_matched : string -> string -> string
    searching function. *)
 
 
-(** {6 Splitting} *)
+(** {1 Splitting} *)
 
 
 val split : regexp -> string -> string list
@@ -270,7 +270,7 @@ val bounded_full_split : regexp -> string -> int -> split_result list
    the latter are tagged [Text]. *)
 
 
-(** {6 Extracting substrings} *)
+(** {1 Extracting substrings} *)
 
 
 val string_before : string -> int -> string

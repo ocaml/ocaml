@@ -19,8 +19,8 @@
 
 int fib(int n)
 {
-  value fib_closure = caml_read_root(caml_named_root("fib"));
-  return Int_val(callback(fib_closure, Val_int(n)));
+  value * fib_closure = caml_named_value("fib");
+  return Int_val(caml_callback(*fib_closure, Val_int(n)));
 }
 
 char * format_result(int n)

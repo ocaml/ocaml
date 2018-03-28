@@ -18,7 +18,7 @@
    add [module Unix = UnixLabels] in your implementation.
 *)
 
-(** {6 Error report} *)
+(** {1 Error report} *)
 
 
 type error = Unix.error =
@@ -114,7 +114,7 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
    describing the error and exits with code 2. *)
 
 
-(** {6 Access to the process environment} *)
+(** {1 Access to the process environment} *)
 
 
 val environment : unit -> string array
@@ -126,19 +126,19 @@ val getenv : string -> string
    environment. Raise [Not_found] if the variable is unbound.
    (This function is identical to [Sys.getenv].) *)
 
-(*
 val unsafe_getenv : string -> string
 (** Return the value associated to a variable in the process
    environment.
 
    Unlike {!getenv}, this function returns the value even if the
    process has special privileges. It is considered unsafe because the
-   programmer of a setuid program must be careful to prevent execution
-   of arbitrary commands through manipulation of the environment
-   variables.
+   programmer of a setuid or setgid program must be careful to avoid
+   using maliciously crafted environment variables in the search path
+   for executables, the locations for temporary files or logs, and the
+   like.
 
-   @raise Not_found if the variable is unbound.  *)
-*)
+   @raise Not_found if the variable is unbound.
+   @since 4.06.0  *)
 
 val putenv : string -> string -> unit
 (** [Unix.putenv name value] sets the value associated to a
@@ -147,7 +147,7 @@ val putenv : string -> string -> unit
    and [value] its new associated value. *)
 
 
-(** {6 Process handling} *)
+(** {1 Process handling} *)
 
 
 type process_status = Unix.process_status =
@@ -227,7 +227,7 @@ val nice : int -> int
    lower priorities.) Return the new nice value. *)
 
 
-(** {6 Basic file input/output} *)
+(** {1 Basic file input/output} *)
 
 
 type file_descr = Unix.file_descr
@@ -262,6 +262,8 @@ type open_flag = Unix.open_flag =
                                     while still open *)
   | O_CLOEXEC                   (** Set the close-on-exec flag on the
                                    descriptor returned by {!openfile} *)
+  | O_KEEPEXEC                  (** Clear the close-on-exec flag.
+                                    This is currently the default. *)
 (** The flags to {!UnixLabels.openfile}. *)
 
 
@@ -296,14 +298,16 @@ val single_write : file_descr -> buf:bytes -> pos:int -> len:int -> int
 
 val write_substring : file_descr -> buf:string -> pos:int -> len:int -> int
 (** Same as [write], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val single_write_substring :
   file_descr -> buf:string -> pos:int -> len:int -> int
 (** Same as [single_write], but take the data from a string instead of
-    a byte sequence. *)
+    a byte sequence.
+    @since 4.02.0 *)
 
-(** {6 Interfacing with the standard input/output library} *)
+(** {1 Interfacing with the standard input/output library} *)
 
 
 
@@ -324,7 +328,7 @@ val descr_of_out_channel : out_channel -> file_descr
 (** Return the descriptor corresponding to an output channel. *)
 
 
-(** {6 Seeking and truncating} *)
+(** {1 Seeking and truncating} *)
 
 
 type seek_command = Unix.seek_command =
@@ -346,7 +350,7 @@ val ftruncate : file_descr -> len:int -> unit
    to the given size. *)
 
 
-(** {6 File status} *)
+(** {1 File status} *)
 
 
 type file_kind = Unix.file_kind =
@@ -389,7 +393,7 @@ val isatty : file_descr -> bool
 (** Return [true] if the given file descriptor refers to a terminal or
    console window, [false] otherwise. *)
 
-(** {6 File operations on large files} *)
+(** {1 File operations on large files} *)
 
 module LargeFile :
   sig
@@ -426,7 +430,60 @@ module LargeFile :
   whose sizes are greater than [max_int]. *)
 
 
-(** {6 Operations on file names} *)
+(** {1 Mapping files into memory} *)
+
+val map_file :
+  file_descr -> ?pos:int64 -> kind:('a, 'b) CamlinternalBigarray.kind ->
+  layout:'c CamlinternalBigarray.layout -> shared:bool -> dims:int array ->
+  ('a, 'b, 'c) CamlinternalBigarray.genarray
+(** Memory mapping of a file as a big array.
+  [map_file fd kind layout shared dims]
+  returns a big array of kind [kind], layout [layout],
+  and dimensions as specified in [dims].  The data contained in
+  this big array are the contents of the file referred to by
+  the file descriptor [fd] (as opened previously with
+  [Unix.openfile], for example).  The optional [pos] parameter
+  is the byte offset in the file of the data being mapped;
+  it defaults to 0 (map from the beginning of the file).
+
+  If [shared] is [true], all modifications performed on the array
+  are reflected in the file.  This requires that [fd] be opened
+  with write permissions.  If [shared] is [false], modifications
+  performed on the array are done in memory only, using
+  copy-on-write of the modified pages; the underlying file is not
+  affected.
+
+  [Genarray.map_file] is much more efficient than reading
+  the whole file in a big array, modifying that big array,
+  and writing it afterwards.
+
+  To adjust automatically the dimensions of the big array to
+  the actual size of the file, the major dimension (that is,
+  the first dimension for an array with C layout, and the last
+  dimension for an array with Fortran layout) can be given as
+  [-1].  [Genarray.map_file] then determines the major dimension
+  from the size of the file.  The file must contain an integral
+  number of sub-arrays as determined by the non-major dimensions,
+  otherwise [Failure] is raised.
+
+  If all dimensions of the big array are given, the file size is
+  matched against the size of the big array.  If the file is larger
+  than the big array, only the initial portion of the file is
+  mapped to the big array.  If the file is smaller than the big
+  array, the file is automatically grown to the size of the big array.
+  This requires write permissions on [fd].
+
+  Array accesses are bounds-checked, but the bounds are determined by
+  the initial call to [map_file]. Therefore, you should make sure no
+  other process modifies the mapped file while you're accessing it,
+  or a SIGBUS signal may be raised. This happens, for instance, if the
+  file is shrunk.
+
+  [Invalid_argument] or [Failure] may be raised in cases where argument
+  validation fails.
+  @since 4.06.0 *)
+
+(** {1 Operations on file names} *)
 
 
 val unlink : string -> unit
@@ -440,7 +497,7 @@ val link : src:string -> dst:string -> unit
    named [source]. *)
 
 
-(** {6 File permissions and ownership} *)
+(** {1 File permissions and ownership} *)
 
 
 type access_permission = Unix.access_permission =
@@ -472,14 +529,14 @@ val access : string -> perm:access_permission list -> unit
    file. Raise [Unix_error] otherwise. *)
 
 
-(** {6 Operations on file descriptors} *)
+(** {1 Operations on file descriptors} *)
 
 
-val dup : file_descr -> file_descr
+val dup : ?cloexec:bool -> file_descr -> file_descr
 (** Return a new file descriptor referencing the same file as
    the given descriptor. *)
 
-val dup2 : src:file_descr -> dst:file_descr -> unit
+val dup2 : ?cloexec:bool -> src:file_descr -> dst:file_descr -> unit
 (** [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
    opened. *)
 
@@ -506,7 +563,7 @@ val clear_close_on_exec : file_descr -> unit
    See {!UnixLabels.set_close_on_exec}.*)
 
 
-(** {6 Directories} *)
+(** {1 Directories} *)
 
 
 val mkdir : string -> perm:file_perm -> unit
@@ -542,10 +599,10 @@ val closedir : dir_handle -> unit
 
 
 
-(** {6 Pipes and redirections} *)
+(** {1 Pipes and redirections} *)
 
 
-val pipe : unit -> file_descr * file_descr
+val pipe : ?cloexec:bool -> unit -> file_descr * file_descr
 (** Create a pipe. The first component of the result is opened
    for reading, that's the exit to the pipe. The second component is
    opened for writing, that's the entrance to the pipe. *)
@@ -554,7 +611,7 @@ val mkfifo : string -> perm:file_perm -> unit
 (** Create a named pipe with the given permissions. *)
 
 
-(** {6 High-level process and redirection management} *)
+(** {1 High-level process and redirection management} *)
 
 
 val create_process :
@@ -631,7 +688,7 @@ val close_process_full :
    and return its termination status. *)
 
 
-(** {6 Symbolic links} *)
+(** {1 Symbolic links} *)
 
 
 val symlink : ?to_dir:bool -> src:string -> dst:string -> unit
@@ -642,13 +699,14 @@ val has_symlink : unit -> bool
 (** Returns [true] if the user is able to create symbolic links. On Windows,
    this indicates that the user not only has the SeCreateSymbolicLinkPrivilege
    but is also running elevated, if necessary. On other platforms, this is
-   simply indicates that the symlink system call is available. *)
+   simply indicates that the symlink system call is available.
+   @since 4.03.0 *)
 
 val readlink : string -> string
 (** Read the contents of a link. *)
 
 
-(** {6 Polling} *)
+(** {1 Polling} *)
 
 
 val select :
@@ -665,7 +723,7 @@ val select :
    and over which an exceptional condition is pending (third
    component). *)
 
-(** {6 Locking} *)
+(** {1 Locking} *)
 
 
 type lock_command = Unix.lock_command =
@@ -704,7 +762,7 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
    It returns immediately if successful, or fails otherwise. *)
 
 
-(** {6 Signals}
+(** {1 Signals}
    Note: installation of signal handlers is performed via
    the functions {!Sys.signal} and {!Sys.set_signal}.
 *)
@@ -740,7 +798,7 @@ val pause : unit -> unit
 (** Wait until a non-ignored, non-blocked signal is delivered. *)
 
 
-(** {6 Time functions} *)
+(** {1 Time functions} *)
 
 
 type process_times = Unix.process_times =
@@ -839,7 +897,7 @@ val setitimer :
    after its next expiration. *)
 
 
-(** {6 User id, group id} *)
+(** {1 User id, group id} *)
 
 
 val getuid : unit -> int
@@ -913,7 +971,7 @@ val getgrgid : int -> group_entry
    [Not_found]. *)
 
 
-(** {6 Internet addresses} *)
+(** {1 Internet addresses} *)
 
 
 type inet_addr = Unix.inet_addr
@@ -947,7 +1005,7 @@ val inet6_addr_loopback : inet_addr
 (** A special IPv6 address representing the host machine ([::1]). *)
 
 
-(** {6 Sockets} *)
+(** {1 Sockets} *)
 
 
 type socket_domain = Unix.socket_domain =
@@ -975,7 +1033,8 @@ type sockaddr = Unix.sockaddr =
    [port] is the port number. *)
 
 val socket :
-  domain:socket_domain -> kind:socket_type -> protocol:int -> file_descr
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
+     file_descr
 (** Create a new socket in the given domain, and with the
    given kind. The third argument is the protocol type; 0 selects
    the default protocol for that kind of sockets. *)
@@ -984,11 +1043,11 @@ val domain_of_sockaddr: sockaddr -> socket_domain
 (** Return the socket domain adequate for the given socket address. *)
 
 val socketpair :
-  domain:socket_domain -> kind:socket_type -> protocol:int ->
+  ?cloexec:bool -> domain:socket_domain -> kind:socket_type -> protocol:int ->
     file_descr * file_descr
 (** Create a pair of unnamed sockets, connected together. *)
 
-val accept : file_descr -> file_descr * sockaddr
+val accept : ?cloexec:bool -> file_descr -> file_descr * sockaddr
 (** Accept connections on the given socket. The returned descriptor
    is a socket connected to the client; the returned address is
    the address of the connecting client. *)
@@ -1046,7 +1105,8 @@ val send :
 val send_substring :
   file_descr -> buf:string -> pos:int -> len:int -> mode:msg_flag list -> int
 (** Same as [send], but take the data from a string instead of a byte
-    sequence. *)
+    sequence.
+    @since 4.02.0 *)
 
 val sendto :
   file_descr -> buf:bytes -> pos:int -> len:int -> mode:msg_flag list ->
@@ -1054,14 +1114,15 @@ val sendto :
 (** Send data over an unconnected socket. *)
 
 val sendto_substring :
-  file_descr -> bug:string -> pos:int -> len:int -> mode:msg_flag list
+  file_descr -> buf:string -> pos:int -> len:int -> mode:msg_flag list
   -> sockaddr -> int
 (** Same as [sendto], but take the data from a string instead of a
-    byte sequence. *)
+    byte sequence.
+    @since 4.02.0 *)
 
 
 
-(** {6 Socket options} *)
+(** {1 Socket options} *)
 
 
 type socket_bool_option =
@@ -1139,7 +1200,7 @@ val getsockopt_error : file_descr -> error option
 (** Return the error condition associated with the given socket,
     and clear it. *)
 
-(** {6 High-level network connection functions} *)
+(** {1 High-level network connection functions} *)
 
 
 val open_connection : sockaddr -> in_channel * out_channel
@@ -1162,7 +1223,7 @@ val establish_server :
    never returns normally. *)
 
 
-(** {6 Host and protocol databases} *)
+(** {1 Host and protocol databases} *)
 
 
 type host_entry = Unix.host_entry =
@@ -1277,7 +1338,7 @@ val getnameinfo : sockaddr -> getnameinfo_option list -> name_info
     Raise [Not_found] if an error occurs. *)
 
 
-(** {6 Terminal interface} *)
+(** {1 Terminal interface} *)
 
 
 (** The following functions implement the POSIX standard terminal

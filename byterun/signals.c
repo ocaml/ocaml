@@ -32,7 +32,7 @@
 #include "caml/sys.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "../asmrun/spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 #ifndef NSIG

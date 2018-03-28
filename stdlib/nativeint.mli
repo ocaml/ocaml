@@ -99,7 +99,7 @@ external logxor : nativeint -> nativeint -> nativeint = "%nativeint_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : nativeint -> nativeint
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : nativeint -> int -> nativeint = "%nativeint_lsl"
 (** [Nativeint.shift_left x y] shifts [x] to the left by [y] bits.
@@ -158,12 +158,22 @@ external to_int32 : nativeint -> int32 = "%nativeint_to_int32"
 
 external of_string : string -> nativeint = "caml_nativeint_of_string"
 (** Convert the given string to a native integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Nativeint.max_int+1]].  If the input exceeds {!Nativeint.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Nativeint.max_int - 1].
+
+   Raise [Failure "Nativeint.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [nativeint]. *)
+
+val of_string_opt: string -> nativeint option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
 
 val to_string : nativeint -> string
 (** Return the string representation of its argument, in decimal. *)
@@ -183,7 +193,7 @@ val equal: t -> t -> bool
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> nativeint -> string = "caml_nativeint_format"
 (** [Nativeint.format fmt n] return the string representation of the

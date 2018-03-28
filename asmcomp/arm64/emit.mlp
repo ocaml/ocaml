@@ -121,6 +121,7 @@ let emit_addressing addr r =
   | Iindexed ofs ->
       `[{emit_reg r}, #{emit_int ofs}]`
   | Ibased(s, ofs) ->
+      assert (not !Clflags.dlcode);  (* see selection.ml *)
       `[{emit_reg r}, #:lo12:{emit_symbol_offset s ofs}]`
 
 (* Record live pointers at call points *)
@@ -142,12 +143,8 @@ let record_frame_label ?label live raise_ dbg =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   lbl
 
 let record_frame ?label live raise_ dbg =
@@ -357,7 +354,7 @@ let emit_literals() =
 (* Emit code to load the address of a symbol *)
 
 let emit_load_symbol_addr dst s =
-  if (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit s then begin
+  if not !Clflags.dlcode then begin
     `	adrp	{emit_reg dst}, {emit_symbol s}\n`;
     `	add	{emit_reg dst}, {emit_reg dst}, #:lo12:{emit_symbol s}\n`
   end else begin
@@ -476,8 +473,10 @@ module BR = Branch_relaxation.Make (struct
       let based = match addr with Iindexed _ -> 0 | Ibased _ -> 1 in
       based + begin match size with Single -> 2 | _ -> 1 end
     | Lop Iloadmut -> 6
-    | Lop (Ialloc _) when !fastcode_flag -> 4
-    | Lop (Ispecific (Ifar_alloc _)) when !fastcode_flag -> 5
+    | Lop (Ialloc {words = num_words}) when !fastcode_flag ->
+      if num_words <= 0xFFF then 4 else 5
+    | Lop (Ispecific (Ifar_alloc {words = num_words})) when !fastcode_flag ->
+      if num_words <= 0xFFF then 5 else 6
     | Lop (Ialloc { words = num_words; _ })
     | Lop (Ispecific (Ifar_alloc { words = num_words; _ })) ->
       begin match num_words with
@@ -503,6 +502,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop (Ispecific (Imuladd | Imulsub)) -> 1
     | Lop (Ispecific (Ibswap 16)) -> 2
     | Lop (Ispecific (Ibswap _)) -> 1
+    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 0
     | Lreturn -> epilogue_size ()
     | Llabel _ -> 0
@@ -555,8 +555,13 @@ let assembly_code_for_allocation ?label_after_call_gc i ~n ~far =
   if !fastcode_flag then begin
     let lbl_redo = new_label() in
     let lbl_call_gc = new_label() in
+    assert (n < 0x1_000_000);
+    let nl = n land 0xFFF and nh = n land 0xFFF_000 in
     `{emit_label lbl_redo}:`;
-    `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int n}\n`;
+    if nh <> 0 then
+      `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int nh}\n`;
+    if nl <> 0 then
+      `	sub	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_ptr}, #{emit_int nl}\n`;
     `	cmp	{emit_reg reg_alloc_ptr}, {emit_reg reg_alloc_limit}\n`;
     `	add	{emit_reg i.res.(0)}, {emit_reg reg_alloc_ptr}, #8\n`;
     if not far then begin
@@ -669,6 +674,7 @@ let emit_instr i =
           match addr with
           | Iindexed _ -> i.arg.(0)
           | Ibased(s, ofs) ->
+              assert (not !Clflags.dlcode);  (* see selection.ml *)
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1
         in
@@ -718,6 +724,7 @@ let emit_instr i =
           match addr with
           | Iindexed _ -> i.arg.(1)
           | Ibased(s, ofs) ->
+              assert (not !Clflags.dlcode);
               `	adrp	{emit_reg reg_tmp1}, {emit_symbol_offset s ofs}\n`;
               reg_tmp1 in
         begin match size with
@@ -840,6 +847,7 @@ let emit_instr i =
         | _ ->
             assert false
         end
+    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -1087,7 +1095,15 @@ let fundecl fundecl =
 
 let emit_item = function
   | Cglobal_symbol s -> `	.globl	{emit_symbol s}\n`;
-  | Cdefine_symbol s -> `{emit_symbol s}:\n`
+  | Cdefine_symbol s ->
+    if !Clflags.dlcode then begin
+      (* GOT relocations against non-global symbols don't seem to work
+         properly: GOT entries are not created for the symbols and the
+         relocations evaluate to random other GOT entries.  For the moment
+         force all symbols to be global. *)
+      `	.globl	{emit_symbol s}\n`;
+    end;
+    `{emit_symbol s}:\n`
   | Cint8 n -> `	.byte	{emit_int n}\n`
   | Cint16 n -> `	.short	{emit_int n}\n`
   | Cint32 n -> `	.long	{emit_nativeint n}\n`
@@ -1125,6 +1141,7 @@ let end_assembly () =
   `{emit_symbol lbl_end}:\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   `	.data\n`;
+  `	.quad	0\n`;  (* PR#6329 *)
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.long	0\n`;

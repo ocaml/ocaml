@@ -14,7 +14,6 @@
 #**************************************************************************
 
 BASEDIR=../..
-MAIN_MODULE=testarg
 
-include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.several
 include $(BASEDIR)/makefiles/Makefile.common

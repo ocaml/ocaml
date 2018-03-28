@@ -36,7 +36,7 @@
 #include "caml/domain.h"
 #include "caml/globroots.h"
 #include "caml/startup.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 
 /* Registers for the abstract machine:
         pc         the code pointer
@@ -315,16 +315,16 @@ value caml_interprete(code_t prog, asize_t prog_size)
 
     caml_bcodcount++;
     if (caml_icount-- == 0) caml_stop_here ();
-    if (caml_params->trace_flag>1) printf("\n##%ld\n", caml_bcodcount);
-    if (caml_params->trace_flag) caml_disasm_instr(pc);
-    if (caml_params->trace_flag>1) {
+    if (caml_params->trace_level>1) printf("\n##%ld\n", caml_bcodcount);
+    if (caml_params->trace_level) caml_disasm_instr(pc);
+    if (caml_params->trace_level>1) {
       printf("env=");
       caml_trace_value_file(env,prog,prog_size,stdout);
       putchar('\n');
       caml_trace_accu_sp_file(accu,sp,prog,prog_size,stdout);
       fflush(stdout);
     };
-    Assert(sp == domain_state->stack_high || caml_on_current_stack(sp));
+    CAMLassert(sp == domain_state->stack_high || caml_on_current_stack(sp));
 #endif
     curr_instr = *pc++;
 
@@ -772,9 +772,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
         block = caml_alloc_shr(size * Double_wosize, Double_array_tag);
         Restore_after_gc;
       }
-      Store_double_field(block, 0, Double_val(accu));
+      Store_double_flat_field(block, 0, Double_val(accu));
       for (i = 1; i < size; i++){
-        Store_double_field(block, i, Double_val(*sp));
+        Store_double_flat_field(block, i, Double_val(*sp));
         ++ sp;
       }
       accu = block;
@@ -804,7 +804,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(GETMUTABLEFIELD):
       Accu_field(*pc); pc++; Next;
     Instruct(GETFLOATFIELD): {
-      double d = Double_field(accu, *pc);
+      double d = Double_flat_field(accu, *pc);
       Alloc_small(accu, Double_wosize, Double_tag, Enter_gc);
       Store_double_val(accu, d);
       pc++;
@@ -833,7 +833,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       pc++;
       Next;
     Instruct(SETFLOATFIELD):
-      Store_double_field(accu, *pc, Double_val(*sp));
+      Store_double_flat_field(accu, *pc, Double_val(*sp));
       accu = Val_unit;
       sp++;
       pc++;
@@ -842,6 +842,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Array operations */
 
     Instruct(VECTLENGTH): {
+      /* Todo: when FLAT_FLOAT_ARRAY is false, this instruction should
+         be split into VECTLENGTH and FLOATVECTLENGTH because we know
+         statically which one it is. */
       mlsize_t size = Wosize_val(accu);
       if (Tag_val(accu) == Double_array_tag) size = size / Double_wosize;
       accu = Val_long(size);
@@ -884,11 +887,11 @@ value caml_interprete(code_t prog, asize_t prog_size)
       uint32_t sizes = *pc++;
       if (Is_block(accu)) {
         intnat index = Tag_val(accu);
-        Assert ((uintnat) index < (sizes >> 16));
+        CAMLassert ((uintnat) index < (sizes >> 16));
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
         intnat index = Long_val(accu);
-        Assert ((uintnat) index < (sizes & 0xFFFF)) ;
+        CAMLassert ((uintnat) index < (sizes & 0xFFFF)) ;
         pc += pc[index];
       }
       Next;

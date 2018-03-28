@@ -130,6 +130,11 @@ let active_add_variable t id =
   let t = add_sb_var t id id' in
   id', t
 
+let active_add_parameter t param =
+  let param' = Parameter.rename param in
+  let t = add_sb_var t (Parameter.var param) (Parameter.var param') in
+  param', t
+
 let add_variable t id =
   match t with
   | Inactive -> id, t
@@ -137,10 +142,11 @@ let add_variable t id =
      let id', t = active_add_variable t id in
      id', Active t
 
-let active_add_variables' t ids =
-  List.fold_right (fun id (ids, t) ->
-      let id', t = active_add_variable t id in
-      id' :: ids, t) ids ([], t)
+let active_add_parameters' t (params:Parameter.t list) =
+  List.fold_right (fun param (params, t) ->
+      let param', t = active_add_parameter t param in
+      param' :: params, t)
+    params ([], t)
 
 let add_variables t defs =
   List.fold_right (fun (id, data) (defs, t) ->
@@ -300,8 +306,8 @@ module Project_var = struct
     | Inactive -> func_decls, subst, t
     | Active subst ->
       let subst_func_decl _fun_id (func_decl : Flambda.function_declaration)
-            subst =
-        let params, subst = active_add_variables' subst func_decl.params in
+          subst =
+        let params, subst = active_add_parameters' subst func_decl.params in
         (* Since all parameters are distinct, even between functions, we can
            just use a single substitution. *)
         let body =

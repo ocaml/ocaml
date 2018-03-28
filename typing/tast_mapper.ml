@@ -47,6 +47,7 @@ type mapper =
     package_type: mapper -> package_type -> package_type;
     pat: mapper -> pattern -> pattern;
     row_field: mapper -> row_field -> row_field;
+    object_field: mapper -> object_field -> object_field;
     signature: mapper -> signature -> signature;
     signature_item: mapper -> signature_item -> signature_item;
     structure: mapper -> structure -> structure;
@@ -231,8 +232,9 @@ let expr sub x =
     | Texp_let (rec_flag, list, exp) ->
         let (rec_flag, list) = sub.value_bindings sub (rec_flag, list) in
         Texp_let (rec_flag, list, sub.expr sub exp)
-    | Texp_function (l, cases, p) ->
-        Texp_function (l, sub.cases sub cases, p)
+    | Texp_function { arg_label; param; cases; partial; } ->
+        Texp_function { arg_label; param; cases = sub.cases sub cases;
+          partial; }
     | Texp_apply (exp, list) ->
         Texp_apply (
           sub.expr sub exp,
@@ -525,6 +527,8 @@ let class_expr sub x =
         )
     | Tcl_ident (path, lid, tyl) ->
         Tcl_ident (path, lid, List.map (sub.typ sub) tyl)
+    | Tcl_open (ovf, p, lid, env, e) ->
+        Tcl_open (ovf, p, lid, sub.env sub env, sub.class_expr sub e)
   in
   {x with cl_desc; cl_env}
 
@@ -545,6 +549,8 @@ let class_type sub x =
            sub.typ sub ct,
            sub.class_type sub cl
           )
+    | Tcty_open (ovf, p, lid, env, e) ->
+        Tcty_open (ovf, p, lid, sub.env sub env, sub.class_type sub e)
   in
   {x with cltyp_desc; cltyp_env}
 
@@ -580,10 +586,7 @@ let typ sub x =
     | Ttyp_constr (path, lid, list) ->
         Ttyp_constr (path, lid, List.map (sub.typ sub) list)
     | Ttyp_object (list, closed) ->
-        Ttyp_object (
-          List.map (tuple3 id id (sub.typ sub)) list,
-          closed
-        )
+        Ttyp_object ((List.map (sub.object_field sub) list), closed)
     | Ttyp_class (path, lid, list) ->
         Ttyp_class
           (path,
@@ -610,6 +613,11 @@ let row_field sub = function
   | Ttag (label, attrs, b, list) ->
       Ttag (label, attrs, b, List.map (sub.typ sub) list)
   | Tinherit ct -> Tinherit (sub.typ sub ct)
+
+let object_field sub = function
+  | OTtag (label, attrs, ct) ->
+      OTtag (label, attrs, (sub.typ sub ct))
+  | OTinherit ct -> OTinherit (sub.typ sub ct)
 
 let class_field_kind sub = function
   | Tcfk_virtual ct -> Tcfk_virtual (sub.typ sub ct)
@@ -681,6 +689,7 @@ let default =
     package_type;
     pat;
     row_field;
+    object_field;
     signature;
     signature_item;
     structure;

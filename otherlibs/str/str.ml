@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(* In this module, [@ocaml.warnerror "-3"] is used in several places
+(* In this module, [@ocaml.warning "-3"] is used in several places
    that use deprecated functions to preserve legacy behavior.
    It overrides -w @3 given on the command line. *)
 
@@ -98,7 +98,6 @@ module Charset =
       iter (fun c -> add r (Char.lowercase_ascii c);
                      add r (Char.uppercase_ascii c)) s;
       r
-
   end
 
 (** Abstract syntax tree for regular expressions *)

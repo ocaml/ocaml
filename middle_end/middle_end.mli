@@ -20,7 +20,6 @@
 
 val middle_end
    : Format.formatter
-  -> source_provenance:Timings.source_provenance
   -> prefixname:string
   -> backend:(module Backend_intf.S)
   -> size:int

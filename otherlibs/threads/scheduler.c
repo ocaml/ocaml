@@ -41,7 +41,7 @@
        defined(HAS_SETITIMER) && \
        defined(HAS_GETTIMEOFDAY) && \
        (defined(HAS_WAITPID) || defined(HAS_WAIT4)))
-#include "Cannot compile libthreads, system calls missing"
+#warning "Cannot compile libthreads, system calls missing"
 #endif
 
 #include <errno.h>
@@ -129,7 +129,7 @@ static caml_thread_t curr_thread = NULL;
 /* Identifier for next thread creation */
 static value next_ident = Val_int(0);
 
-#define Assign(dst,src) modify((value *)&(dst), (value)(src))
+#define Assign(dst,src) caml_modify((value *)&(dst), (value)(src))
 
 /* Scan the stacks of the other threads */
 
@@ -146,7 +146,7 @@ static void thread_scan_roots(scanning_action action, void* fdata)
   /* Don't scan curr_thread->sp, this has already been done.
      Don't scan local roots either, for the same reason. */
   for (th = start->next; th != start; th = th->next) {
-    do_local_roots(action, fdata, th->sp, th->stack_high, NULL);
+    caml_do_local_roots(action, th->sp, th->stack_high, NULL);
   }
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action, fdata);
@@ -168,22 +168,22 @@ value thread_initialize(value unit)       /* ML */
   if (curr_thread != NULL) return Val_unit;
   /* Create a descriptor for the current thread */
   curr_thread =
-    (caml_thread_t) alloc_shr(sizeof(struct caml_thread_struct)
+    (caml_thread_t) caml_alloc_shr(sizeof(struct caml_thread_struct)
                               / sizeof(value), 0);
   curr_thread->ident = next_ident;
   next_ident = Val_int(Int_val(next_ident) + 1);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;
-  curr_thread->stack_low = stack_low;
-  curr_thread->stack_high = stack_high;
-  curr_thread->stack_threshold = stack_threshold;
-  curr_thread->sp = extern_sp;
+  curr_thread->stack_low = caml_stack_low;
+  curr_thread->stack_high = caml_stack_high;
+  curr_thread->stack_threshold = caml_stack_threshold;
+  curr_thread->sp = caml_extern_sp;
   curr_thread->trap_spoff = caml_trap_sp_off;
-  curr_thread->backtrace_pos = Val_int(backtrace_pos);
-  curr_thread->backtrace_buffer = backtrace_buffer;
+  curr_thread->backtrace_pos = Val_int(caml_backtrace_pos);
+  curr_thread->backtrace_buffer = caml_backtrace_buffer;
   caml_initialize_field ((value)curr_thread,
-                         offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value),
-                         caml_read_root(&backtrace_last_exn));
+                         offsetof(struct caml_thread_struct, caml_backtrace_last_exn) / sizeof(value),
+                         caml_read_root(&caml_backtrace_last_exn));
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -194,8 +194,8 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->waitpid = NO_WAITPID;
   curr_thread->retval = Val_unit;
   /* Initialize GC */
-  prev_scan_roots_hook = scan_roots_hook;
-  scan_roots_hook = thread_scan_roots;
+  prev_scan_roots_hook = caml_scan_roots_hook;
+  caml_scan_roots_hook = thread_scan_roots;
   /* Set standard file descriptors to non-blocking mode */
   stdin_initial_status = fcntl(0, F_GETFL);
   stdout_initial_status = fcntl(1, F_GETFL);
@@ -234,7 +234,7 @@ value thread_new(value clos)          /* ML */
   caml_thread_t th;
   /* Allocate the thread and its stack */
   Begin_root(clos);
-    th = (caml_thread_t) alloc_shr(sizeof(struct caml_thread_struct)
+    th = (caml_thread_t) caml_alloc_shr(sizeof(struct caml_thread_struct)
                                    / sizeof(value), 0);
   End_roots();
   th->ident = next_ident;
@@ -316,19 +316,19 @@ static value schedule_thread(void)
   int need_select, need_wait;
 
   /* Don't allow preemption during a callback */
-  if (callback_depth > 1) return curr_thread->retval;
+  if (caml_callback_depth > 1) return curr_thread->retval;
 
   /* Save the status of the current thread */
-  curr_thread->stack_low = stack_low;
-  curr_thread->stack_high = stack_high;
-  curr_thread->stack_threshold = stack_threshold;
-  curr_thread->sp = extern_sp;
+  curr_thread->stack_low = caml_stack_low;
+  curr_thread->stack_high = caml_stack_high;
+  curr_thread->stack_threshold = caml_stack_threshold;
+  curr_thread->sp = caml_extern_sp;
   curr_thread->trap_spoff = caml_trap_sp_off;
-  curr_thread->backtrace_pos = Val_int(backtrace_pos);
-  curr_thread->backtrace_buffer = backtrace_buffer;
+  curr_thread->backtrace_pos = Val_int(caml_backtrace_pos);
+  curr_thread->backtrace_buffer = caml_backtrace_buffer;
   caml_modify_field ((value)curr_thread,
-                     offsetof(struct caml_thread_struct, backtrace_last_exn) / sizeof(value),
-                     caml_read_root(&backtrace_last_exn));
+                     offsetof(struct caml_thread_struct, caml_backtrace_last_exn) / sizeof(value),
+                     caml_read_root(&caml_backtrace_last_exn));
 
 try_again:
   /* Find if a thread is runnable.
@@ -418,9 +418,9 @@ try_again:
     else {
       delay_ptr = NULL;
     }
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = select(FD_SETSIZE, &readfds, &writefds, &exceptfds, delay_ptr);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (retcode == -1)
       switch (errno) {
       case EINTR:
@@ -445,7 +445,7 @@ try_again:
         retcode = FD_SETSIZE;
         break;
       default:
-        sys_error(NO_ARG);
+        caml_sys_error(NO_ARG);
       }
     if (retcode > 0) {
       /* Some descriptors are ready.
@@ -499,7 +499,7 @@ try_again:
   }
 
   /* If we haven't something to run at that point, we're in big trouble. */
-  if (run_thread == NULL) invalid_argument("Thread: deadlock");
+  if (run_thread == NULL) caml_invalid_argument("Thread: deadlock");
 
   /* Free everything the thread was waiting on */
   Assign(run_thread->readfds, NO_FDS);
@@ -511,14 +511,14 @@ try_again:
 
   /* Activate the thread */
   curr_thread = run_thread;
-  stack_low = curr_thread->stack_low;
-  stack_high = curr_thread->stack_high;
-  stack_threshold = curr_thread->stack_threshold;
-  extern_sp = curr_thread->sp;
+  caml_stack_low = curr_thread->stack_low;
+  caml_stack_high = curr_thread->stack_high;
+  caml_stack_threshold = curr_thread->stack_threshold;
+  caml_extern_sp = curr_thread->sp;
   caml_trap_sp_off = curr_thread->trap_spoff;
-  backtrace_pos = Int_val(curr_thread->backtrace_pos);
-  backtrace_buffer = curr_thread->backtrace_buffer;
-  caml_modify_root(&backtrace_last_exn, curr_thread->backtrace_last_exn);
+  caml_backtrace_pos = Int_val(curr_thread->backtrace_pos);
+  caml_backtrace_buffer = curr_thread->backtrace_buffer;
+  caml_modify_root(&caml_backtrace_last_exn, curr_thread->backtrace_last_exn);
   return curr_thread->retval;
 #endif
 }
@@ -528,7 +528,7 @@ try_again:
 
 static void check_callback(void)
 {
-  if (callback_depth > 1)
+  if (caml_get_callback_depth() > 1)
     caml_fatal_error("Thread: deadlock during callback");
 }
 
@@ -536,7 +536,7 @@ static void check_callback(void)
 
 value thread_yield(value unit)        /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   Assign(curr_thread->retval, Val_unit);
   return schedule_thread();
 }
@@ -547,7 +547,7 @@ static void thread_reschedule(void)
 {
   value accu;
 
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   /* Pop accu from event frame, making it look like a C_CALL frame
      followed by a RETURN frame */
   accu = *Caml_state->extern_sp++;
@@ -563,8 +563,8 @@ static void thread_reschedule(void)
 value thread_request_reschedule(value unit)    /* ML */
 {
 #if 0
-  async_action_hook = thread_reschedule;
-  something_to_do = 1;
+  caml_async_action_hook = thread_reschedule;
+  caml_something_to_do = 1;
 #endif
   return Val_unit;
 }
@@ -573,7 +573,7 @@ value thread_request_reschedule(value unit)    /* ML */
 
 value thread_sleep(value unit)        /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = SUSPENDED;
   return schedule_thread();
@@ -589,7 +589,7 @@ static value thread_wait_rw(int kind, value fd)
   if (curr_thread == NULL) return RESUMED_WAKEUP;
   /* As a special case, if we're in a callback, don't fail but block
      the whole process till I/O is possible */
-  if (callback_depth > 1) {
+  if (caml_get_callback_depth() > 1) {
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(Int_val(fd), &fds);
@@ -624,7 +624,7 @@ static value thread_wait_timed_rw(int kind, value arg)
   check_callback();
   curr_thread->fd = Field(arg, 0);
   date = timeofday() + Double_val(Field(arg, 1));
-  Assign(curr_thread->delay, copy_double(date));
+  Assign(curr_thread->delay, caml_copy_double(date));
   curr_thread->status = kind | BLOCKED_DELAY;
   return schedule_thread();
 }
@@ -651,7 +651,7 @@ value thread_select(value arg)        /* ML */
   date = Double_val(Field(arg, 3));
   if (date >= 0.0) {
     date += timeofday();
-    Assign(curr_thread->delay, copy_double(date));
+    Assign(curr_thread->delay, caml_copy_double(date));
     curr_thread->status = BLOCKED_SELECT | BLOCKED_DELAY;
   } else {
     curr_thread->status = BLOCKED_SELECT;
@@ -688,10 +688,10 @@ value thread_outchan_ready(value vchan, value vsize) /* ML */
 value thread_delay(value time)          /* ML */
 {
   double date = timeofday() + Double_val(time);
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_DELAY;
-  Assign(curr_thread->delay, copy_double(date));
+  Assign(curr_thread->delay, caml_copy_double(date));
   return schedule_thread();
 }
 
@@ -700,7 +700,7 @@ value thread_delay(value time)          /* ML */
 value thread_join(value th)          /* ML */
 {
   check_callback();
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   if (((caml_thread_t)th)->status == KILLED) return Val_unit;
   curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
@@ -711,7 +711,7 @@ value thread_join(value th)          /* ML */
 
 value thread_wait_pid(value pid)          /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_WAIT;
   curr_thread->waitpid = pid;
@@ -729,9 +729,9 @@ value thread_wakeup(value thread)     /* ML */
     Assign(th->retval, RESUMED_WAKEUP);
     break;
   case KILLED:
-    failwith("Thread.wakeup: killed thread");
+    caml_failwith("Thread.wakeup: killed thread");
   default:
-    failwith("Thread.wakeup: thread not suspended");
+    caml_failwith("Thread.wakeup: thread not suspended");
   }
   return Val_unit;
 }
@@ -740,7 +740,7 @@ value thread_wakeup(value thread)     /* ML */
 
 value thread_self(value unit)         /* ML */
 {
-  Assert(curr_thread != NULL);
+  CAMLassert(curr_thread != NULL);
   return (value) curr_thread;
 }
 
@@ -750,9 +750,9 @@ value thread_kill(value thread)       /* ML */
 {
   value retval = Val_unit;
   caml_thread_t th = (caml_thread_t) thread;
-  if (th->status == KILLED) failwith("Thread.kill: killed thread");
+  if (th->status == KILLED) caml_failwith("Thread.kill: killed thread");
   /* Don't paint ourselves in a corner */
-  if (th == th->next) failwith("Thread.kill: cannot kill the last thread");
+  if (th == th->next) caml_failwith("Thread.kill: cannot kill the last thread");
   /* This thread is no longer waiting on anything */
   th->status = KILLED;
   /* If this is the current thread, activate another one */
@@ -766,14 +766,14 @@ value thread_kill(value thread)       /* ML */
   Assign(th->prev->next, th->next);
   Assign(th->next->prev, th->prev);
   /* Free its resources */
-  stat_free((char *) th->stack_low);
+  caml_stat_free((char *) th->stack_low);
   th->stack_low = NULL;
   th->stack_high = NULL;
   th->stack_threshold = NULL;
   th->sp = NULL;
   th->trap_spoff = 0;
   if (th->backtrace_buffer != NULL) {
-    free(th->backtrace_buffer);
+    caml_stat_free(th->backtrace_buffer);
     th->backtrace_buffer = NULL;
   }
   return retval;
@@ -783,11 +783,11 @@ value thread_kill(value thread)       /* ML */
 
 value thread_uncaught_exception(value exn)  /* ML */
 {
-  char * msg = format_caml_exception(exn);
+  char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(curr_thread->ident), msg);
-  free(msg);
-  //if (backtrace_active) print_exception_backtrace();
+  caml_stat_free(msg);
+  //if (caml_backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }

@@ -35,8 +35,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
   /* Use a string rather than an abstract block so that it can be
      marshaled safely.  Remember that a is in network byte order,
      hence is marshaled in an endian-independent manner. */
-  res = alloc_string(4);
-  memcpy(String_val(res), a, 4);
+  res = caml_alloc_initialized_string(4, (char *)a);
   return res;
 }
 
@@ -45,8 +44,7 @@ CAMLexport value alloc_inet_addr(struct in_addr * a)
 CAMLexport value alloc_inet6_addr(struct in6_addr * a)
 {
   value res;
-  res = alloc_string(16);
-  memcpy(String_val(res), a, 16);
+  res = caml_alloc_initialized_string(16, (char *)a);
   return res;
 }
 
@@ -62,7 +60,7 @@ void get_sockaddr(value mladr,
     { value path;
       mlsize_t len;
       path = Field_imm(mladr, 0);
-      len = string_length(path);
+      len = caml_string_length(path);
       adr->s_unix.sun_family = AF_UNIX;
       if (len >= sizeof(adr->s_unix.sun_path)) {
         unix_error(ENAMETOOLONG, "", path);
@@ -80,7 +78,7 @@ void get_sockaddr(value mladr,
 #endif
   case 1:                       /* ADDR_INET */
 #ifdef HAS_IPV6
-    if (string_length(Field_imm(mladr, 0)) == 16) {
+    if (caml_string_length(Field_imm(mladr, 0)) == 16) {
       memset(&adr->s_inet6, 0, sizeof(struct sockaddr_in6));
       adr->s_inet6.sin6_family = AF_INET6;
       adr->s_inet6.sin6_addr = GET_INET6_ADDR(Field_imm(mladr, 0));
@@ -111,14 +109,13 @@ value alloc_sockaddr(union sock_addr_union * adr /*in*/,
   switch(adr->s_gen.sa_family) {
 #ifndef _WIN32
   case AF_UNIX:
-    { char * path;
-      value n;
-      /* PR#7039: harden against unnamed sockets */
-      if (adr_len > (char *)&(adr->s_unix.sun_path) - (char *)&(adr->s_unix))
-        path = adr->s_unix.sun_path;
-      else
-        path = "";
-      n = copy_string(path);
+    { value n;
+      /* Based on recommendation in section BUGS of Linux unix(7). See
+         http://man7.org/linux/man-pages/man7/unix.7.html */
+      mlsize_t path_length =
+        strnlen(adr->s_unix.sun_path,
+                adr_len - offsetof(struct sockaddr_un, sun_path));
+      n = caml_alloc_initialized_string(path_length, (char *)adr->s_unix.sun_path);
       res = caml_alloc_1(0, n);
       break;
     }
