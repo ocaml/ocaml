@@ -188,7 +188,11 @@
 #define HAS_LOCALE
 
 /* Define HAS_LOCALE if you have the include file <locale.h> and the
-   setlocale() function. */
+   uselocale() function. */
+
+#define HAS_STRTOD_L
+
+/* Define HAS_STRTOD_L if you have strtod_l */
 
 #define HAS_MMAP
 

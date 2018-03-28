@@ -330,6 +330,7 @@ CAMLexport void caml_main(char_os **argv)
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   caml_init_ieee_floats();
+  caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif
@@ -454,6 +455,7 @@ CAMLexport value caml_startup_code_exn(
     return Val_unit;
 
   caml_init_ieee_floats();
+  caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif

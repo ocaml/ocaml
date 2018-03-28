@@ -17,6 +17,12 @@
 
 /* The interface of this file is in "caml/mlvalues.h" and "caml/alloc.h" */
 
+/* Needed for uselocale */
+#define _XOPEN_SOURCE 700
+
+/* Needed for strtod_l */
+#define _GNU_SOURCE
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +37,23 @@
 #include "caml/misc.h"
 #include "caml/reverse.h"
 #include "caml/stacks.h"
+
+#if defined(HAS_LOCALE) || defined(__MINGW32__)
+#include <locale.h>
+
+#if defined(_MSC_VER)
+#ifndef locale_t
+#define locale_t _locale_t
+#endif
+#ifndef freelocale
+#define freelocale _free_locale
+#endif
+#ifndef strtod_l
+#define strtod_l _strtod_l
+#endif
+#endif
+
+#endif
 
 #ifdef _MSC_VER
 #include <float.h>
@@ -66,6 +89,52 @@ CAMLexport void caml_Store_double_val(value val, double dbl)
 
 #endif
 
+/*
+ OCaml runtime itself doesn't call setlocale, i.e. it is using
+ standard "C" locale by default, but it is possible that
+ third-party code loaded into process does.
+*/
+#ifdef HAS_LOCALE
+locale_t caml_locale = (locale_t)0;
+#endif
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
+/* there is no analogue to uselocale in MSVC so just set locale for thread */
+#define USE_LOCALE setlocale(LC_NUMERIC,"C")
+#define RESTORE_LOCALE do {} while(0)
+#elif defined(HAS_LOCALE)
+#define USE_LOCALE locale_t saved_locale = uselocale(caml_locale)
+#define RESTORE_LOCALE uselocale(saved_locale)
+#else
+#define USE_LOCALE do {} while(0)
+#define RESTORE_LOCALE do {} while(0)
+#endif
+
+void caml_init_locale(void)
+{
+#if defined(_MSC_VER) || defined(__MINGW32__)
+  _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+#endif
+#ifdef HAS_LOCALE
+  if ((locale_t)0 == caml_locale)
+  {
+#if defined(_MSC_VER)
+    caml_locale = _create_locale(LC_NUMERIC, "C");
+#else
+    caml_locale = newlocale(LC_NUMERIC_MASK,"C",(locale_t)0);
+#endif
+  }
+#endif
+}
+
+void caml_free_locale(void)
+{
+#ifdef HAS_LOCALE
+  if ((locale_t)0 != caml_locale) freelocale(caml_locale);
+  caml_locale = (locale_t)0;
+#endif
+}
+
 CAMLexport value caml_copy_double(double d)
 {
   value res;
@@ -99,7 +168,9 @@ CAMLprim value caml_format_float(value fmt, value arg)
 #ifdef HAS_BROKEN_PRINTF
   if (isfinite(d)) {
 #endif
+    USE_LOCALE;
     res = caml_alloc_sprintf(String_val(fmt), d);
+    RESTORE_LOCALE;
 #ifdef HAS_BROKEN_PRINTF
   } else {
     if (isnan(d)) {
@@ -321,8 +392,14 @@ CAMLprim value caml_float_of_string(value vs)
   }
   *dst = 0;
   if (dst == buf) goto error;
+#if defined(HAS_STRTOD_L) && defined(HAS_LOCALE)
+  d = strtod_l((const char *) buf, &end, caml_locale);
+#else
+  USE_LOCALE;
   /* Convert using strtod */
   d = strtod((const char *) buf, &end);
+  RESTORE_LOCALE;
+#endif /* HAS_STRTOD_L */
   if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
   return caml_copy_double(d);

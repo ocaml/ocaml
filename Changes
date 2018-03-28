@@ -600,6 +600,9 @@ OCaml 4.06.0 (3 Nov 2017):
   the null device.
   (David Allsopp)
 
+- GPR#1185: make float_of_string and string_of_float locale-independent
+  (ygrek)
+
 ### Compiler user-interface and warnings:
 
 - MPR#7361, GPR#1248: support "ocaml.warning" in all attribute contexts, and
