@@ -295,7 +295,7 @@ Working version
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
-- GPR#????: refactor flambda specialise/inlining handling
+- GPR#1663: refactor flambda specialise/inlining handling
   (Xavier Clerc and Leo White, review by ???)
 
 ### Bug fixes
