@@ -151,6 +151,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- GPR#1340: Add [Closure_origin.t] to trace inlined functions to prevent
+  infinite loops from repeatedly inlining copies of the same function.
+  (Fu Yong Quah)
+
 - GPR#1370: Fix code duplication in Cmmgen
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
