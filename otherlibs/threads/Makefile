@@ -114,15 +114,20 @@ INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 install:
 	if test -f dllvmthreads.so; then \
-	  cp dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
+	  install -m $(MPROG) dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	mkdir -p "$(INSTALL_LIBDIR)/vmthreads"
-	cp libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
+	install -m $(MDATA) libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
 	cd "$(INSTALL_LIBDIR)/vmthreads"; $(RANLIB) libvmthreads.a
-	cp $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
-	   threads.cma stdlib.cma unix.cma "$(INSTALL_LIBDIR)/vmthreads"
+	install -m $(MDATA) \
+	  $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
+	  threads.cma stdlib.cma unix.cma \
+	  "$(INSTALL_LIBDIR)/vmthreads"
 
 installopt:
 

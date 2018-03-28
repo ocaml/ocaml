@@ -25,6 +25,7 @@ INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 
 PROGRAMS = ocamlrun$(EXE)
 LIBRARIES = ld.conf libcamlrun.$(A)
+DYNLIBRARIES=
 
 ifeq "$(RUNTIMED)" "true"
 PROGRAMS += ocamlrund$(EXE)
@@ -38,7 +39,8 @@ endif
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-LIBRARIES += libcamlrun_pic.$(A) libcamlrun_shared.$(SO)
+LIBRARIES += libcamlrun_pic.$(A)
+DYNLIBRARIES += libcamlrun_shared.$(SO)
 endif
 endif
 
@@ -106,18 +108,24 @@ IOBJS=$(OBJS:.$(O)=.i.$(O))
 PICOBJS=$(OBJS:.$(O)=.pic.$(O))
 
 .PHONY: all
-all: $(LIBRARIES) $(PROGRAMS)
+all: $(LIBRARIES) $(DYNLIBRARIES) $(PROGRAMS)
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 .PHONY: install
 install:
-	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
-	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
+	install -m $(MPROG) $(PROGRAMS) "$(INSTALL_BINDIR)"
+	install -m $(MDATA) $(LIBRARIES) "$(INSTALL_LIBDIR)"
+	if test -n "$(DYNLIBRARIES)"; then \
+	  install -m $(MPROG) $(DYNLIBRARIES) "$(INSTALL_LIBDIR)"; \
+	fi
 	mkdir -p "$(INSTALL_INCDIR)"
-	cp caml/*.h "$(INSTALL_INCDIR)"
+	install -m $(MDATA) caml/*.h "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
@@ -173,7 +181,7 @@ caml/version.h : ../VERSION ../tools/make-version-header.sh
 
 .PHONY: clean
 clean:
-	rm -f $(LIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
+	rm -f $(LIBRARIES) $(DYNLIBRARIES) $(PROGRAMS) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c caml/opnames.h caml/jumptbl.h
 	rm -f caml/version.h
 

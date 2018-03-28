@@ -96,8 +96,11 @@ all: ocamldebug$(EXE)
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 install:
-	cp ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
+	install -m $(MPROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
 
 clean::
 	rm -f ocamldebug$(EXE)

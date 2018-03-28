@@ -289,15 +289,24 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # TODO: it may be good to split the following rule in several ones, e.g.
 # install-programs, install-doc, install-libs
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_MANODIR)"
-	$(CP) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
-	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) "$(INSTALL_LIBDIR)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) "$(INSTALL_LIBDIR)"
-	if test -d stdlib_man; then $(CP) stdlib_man/* "$(INSTALL_MANODIR)"; else : ; fi
+	install -m $(MPROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	install -m $(MDATA) \
+	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
+	  "$(INSTALL_LIBDIR)"
+	install -m $(MDATA) \
+	  $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) \
+	  "$(INSTALL_LIBDIR)"
+	if test -d stdlib_man; then \
+	  install -m $(MDATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
+	else : ; fi
 
 # Note: at the moment, $(INSTALL_MANODIR) is created even if the doc has
 # not been built. This is not clean and should be changed.
@@ -310,9 +319,13 @@ installopt:
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
-	$(CP) $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
-	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) "$(INSTALL_LIBDIR)"
-	$(CP) ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
+	install -m $(MPROG) \
+	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
+	install -m $(MDATA) \
+	  $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) \
+	  "$(INSTALL_LIBDIR)"
+	install -m $(MDATA) \
+	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
 	  "$(INSTALL_LIBDIR)"
 
 # TODO: also split into several rules

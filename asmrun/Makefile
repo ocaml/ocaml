@@ -90,28 +90,30 @@ IOBJS=$(COBJS:.$(O)=.i.$(O)) $(ASMOBJS)
 POBJS=$(COBJS:.$(O)=.p.$(O)) $(ASMOBJS:.$(O)=.p.$(O))
 PICOBJS=$(COBJS:.$(O)=.pic.$(O)) $(ASMOBJS:.$(O)=.pic.$(O))
 
-TARGETS = libasmrun.$(A)
+TARGETS_A = libasmrun.$(A)
+TARGETS_SO=
 
 ifeq "$(RUNTIMED)" "true"
-TARGETS += libasmrund.$(A)
+TARGETS_A += libasmrund.$(A)
 endif
 
 ifeq "$(RUNTIMEI)" "true"
-TARGETS += libasmruni.$(A)
+TARGETS_A += libasmruni.$(A)
 endif
 
 ifeq "$(PROFILING)" "true"
-TARGETS += libasmrunp.$(A)
+TARGETS_A += libasmrunp.$(A)
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-TARGETS += libasmrun_pic.$(A) libasmrun_shared.$(SO)
+TARGETS_A += libasmrun_pic.$(A)
+TARGETS_SO += libasmrun_shared.$(SO)
 endif
 endif
 
 .PHONY: all
-all: $(TARGETS)
+all: $(TARGETS_A) $(TARGETS_SO)
 
 libasmrun.$(A): $(OBJS)
 	$(call MKLIB,$@, $^)
@@ -131,9 +133,15 @@ libasmrun_pic.$(A): $(PICOBJS)
 libasmrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(NATIVECCLIBS)
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 .PHONY: install
 install:
-	cp $(TARGETS) "$(INSTALL_LIBDIR)"
+	install -m $(MDATA) $(TARGETS_A) "$(INSTALL_LIBDIR)"
+	if test -n "$(TARGETS_SO)"; then \
+	  install -m $(MPROG) $(TARGETS_SO) "$(INSTALL_LIBDIR)"; \
+	fi
 
 $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@

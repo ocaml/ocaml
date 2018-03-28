@@ -79,21 +79,33 @@ lib$(CLIBNAME).$(A): $(COBJS)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
+MDATA=u+rw,g+rw,o+r
+MPROG=u+rwx,g+rwx,o+rx
+
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
-	  cp dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/"; fi
-	cp lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+	  install -m $(MPROG) \
+	    dll$(CLIBNAME)$(EXT_DLL) \
+	    "$(INSTALL_STUBLIBDIR)/"; \
+	fi
+	install -m $(MDATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
-          $(CMIFILES:.cmi=.cmti) "$(INSTALL_LIBDIR)/"
+	install -m $(MDATA) \
+	  $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
+          $(CMIFILES:.cmi=.cmti) \
+	  "$(INSTALL_LIBDIR)/"
 	if test -n "$(HEADERS)"; then \
-	  cp $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; fi
+	  install -m $(MDATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
+	fi
 
 installopt:
-	cp $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+	install -m $(MDATA) \
+	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
+	   "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
-	  cp $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; fi
+	  install -m $(MPROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
+	fi
 
 partialclean:
 	rm -f *.cm*
