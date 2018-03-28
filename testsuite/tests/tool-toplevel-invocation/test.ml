@@ -1,5 +1,7 @@
 (* TEST
 
+files = "first_arg_fail.txt last_arg_fail.txt"
+
 * setup-ocaml-build-env
 
 ** ocaml
