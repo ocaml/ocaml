@@ -1243,7 +1243,6 @@ and class_expr_aux cl_num val_env met_env scl =
         !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc me in
       let (_id, tme, new_met_env) =
         !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc me in
-      (* TODO(objmagic): what env to use here? *)
       let cl = class_expr cl_num new_val_env new_met_env e in
       let od = {
         open_expr = tme;

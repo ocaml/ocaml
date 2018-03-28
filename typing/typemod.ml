@@ -177,8 +177,8 @@ let initial_env ~loc ~safe_string ~initially_opened_module
   in
   let open_implicit_module env m =
     let open Asttypes in
-    let me = Parsetree.({pmod_desc=Pmod_ident {loc; txt = Longident.parse m };
-                         pmod_loc=loc; pmod_attributes=[]}) in
+    let me = Ast_helper.Mod.ident ~loc ~attrs:[]
+      {loc; txt = Longident.parse m } in
     let _, _, env = type_open_ Override env loc me in env
   in
   List.fold_left open_implicit_module env open_implicit_modules
@@ -779,7 +779,7 @@ let remove_inserted_modtype mty =
          | None -> None
          | Some mty -> Some (aux mty)),
         (aux mty_res))
-    | mty -> mty in
+    | (Mty_ident _ | Mty_alias _) as mty -> mty in
   aux mty
 
 let has_remove_aliases_attribute attr =
@@ -969,10 +969,10 @@ and transl_signature env sg =
             mksig (Tsig_modtype mtd) env loc :: trem,
             sg :: rem,
             final_env
-        | Psig_open sod -> begin
+        | Psig_open sod ->
             let id, od = type_open env sod in
             let open_env = od.open_env in
-            let (trem, rem, final_env) = transl_sig open_env srem in
+            let (trem, rem, final_env) = transl_sig open_env srem in begin
             match id with
             | None -> mksig (Tsig_open od) env loc :: trem, rem, final_env
             | Some (id, _md, _env) ->
@@ -984,7 +984,7 @@ and transl_signature env sg =
                     raise(Error(sod.popen_loc, env,
                                 Cannot_eliminate_anon_module(id, rem)))
                 | _ -> assert false
-          end
+            end
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
             let tmty =
@@ -1719,10 +1719,11 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
             let str_rem, sig_rem, final_env = type_struct newenv srem in
             mkstr (Tstr_modtype mtd) newenv loc :: str_rem, sg :: sig_rem,
             final_env
-        | Pstr_open sod -> begin
+        | Pstr_open sod ->
             let (inserted_md, od) = type_open ~toplevel env sod in
             let open_env = od.open_env in
             let str_rem, sig_rem, final_env = type_struct open_env srem in
+            begin
             match inserted_md with
             | None -> mkstr (Tstr_open od) open_env loc :: str_rem,
                       sig_rem, final_env
@@ -1749,7 +1750,7 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                   | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
                 else
                   tm_str :: open_str :: str_rem, md_sig :: sig_rem, final_env
-          end
+            end
         | Pstr_class cl ->
             List.iter
               (fun {pci_name} -> check_name check_type names pci_name)
@@ -1951,9 +1952,9 @@ let type_open ?used_slot ovf env loc me =
 
 let gen_mod_ident me =
   match me.pmod_desc with
-  | Pmod_functor _ | Pmod_extension _ -> assert false
-  | Pmod_ident _ -> None
-  | _ -> Some(gen_mod_ident ())
+  | Pmod_functor _ | Pmod_extension _ | Pmod_ident _ -> None 
+  | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ ->
+      Some(gen_mod_ident ())
 
 let () =
   Typecore.type_module := type_module_alias;
