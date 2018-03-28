@@ -5,8 +5,11 @@ files = "pr3918a.mli pr3918b.mli"
 module = "pr3918a.mli"
 *** ocamlc.byte
 module = "pr3918b.mli"
-**** ocamlc.byte
+**** script
+script = "rm -f pr3918a.cmi"
+***** ocamlc.byte
 module = "pr3918c.ml"
+ocamlc_byte_exit_status = "2"
 ***** check-ocamlc.byte-output
 *)
 
