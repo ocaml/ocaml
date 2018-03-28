@@ -1,1 +1,41 @@
+(* TEST
+
+* setup-ocaml-build-env
+
+** ocaml
+flags = "-args ${test_source_directory}/first_arg_fail.txt"
+compiler_reference = "${test_source_directory}/first_arg_fail.txt.reference"
+compiler_output = "${test_build_directory}/first_arg_fail.output"
+ocaml_exit_status = "2"
+*** check-ocaml-output
+
+** ocaml
+flags = "-args ${test_source_directory}/indirect_first_arg_fail.txt"
+compiler_reference = "${test_source_directory}/indirect_first_arg_fail.txt.reference"
+compiler_output = "${test_build_directory}/indirect_first_arg_fail.output"
+ocaml_exit_status = "2"
+*** check-ocaml-output
+
+** ocaml
+flags = "-args ${test_source_directory}/indirect_last_arg_fail.txt"
+compiler_reference = "${test_source_directory}/indirect_last_arg_fail.txt.reference"
+compiler_output = "${test_build_directory}/indirect_last_arg_fail.output"
+ocaml_exit_status = "2"
+*** check-ocaml-output
+
+** ocaml
+flags = "-args ${test_source_directory}/last_arg_fail.txt"
+compiler_reference = "${test_source_directory}/last_arg_fail.txt.reference"
+compiler_output = "${test_build_directory}/last_arg_fail.output"
+ocaml_exit_status = "2"
+*** check-ocaml-output
+
+** ocaml
+flags = "-args ${test_source_directory}/working_arg.txt"
+compiler_reference = "${test_source_directory}/working_arg.txt.reference"
+compiler_output = "${test_build_directory}/working_arg.output"
+*** check-ocaml-output
+
+*)
+
 printf "Test succeeds\n";;
