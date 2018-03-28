@@ -277,16 +277,16 @@ let add_param ~specialised_args ~state ~param =
   in
   let new_specialised_args_with_old_projections =
     match Variable.Map.find_opt param specialised_args with
-    | Some spec when Variable.Map.mem param state.old_params_to_new_outside ->
+    | Some (spec : Flambda.specialised_to) ->
         let new_outside_var =
-          Variable.Map.find param state.old_params_to_new_outside
+          Variable.Map.find spec.var state.old_outside_to_new_outside
         in
         let new_spec : Flambda.specialised_to =
           { spec with var = new_outside_var }
         in
         Variable.Map.add new_param new_spec
           state.new_specialised_args_with_old_projections
-    | Some _ | None -> begin
+    | None -> begin
         match Variable.Map.find_opt param state.old_params_to_new_outside with
         | None -> state.new_specialised_args_with_old_projections
         | Some new_outside_var ->
