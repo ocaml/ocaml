@@ -27,6 +27,10 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 # compiled on the platform where make depend is run
 sources := $(LINKEDFILES)
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
@@ -133,14 +137,11 @@ libasmrun_pic.$(A): $(PICOBJS)
 libasmrun_shared.$(SO): $(PICOBJS)
 	$(MKDLL) -o $@ $^ $(NATIVECCLIBS)
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 .PHONY: install
 install:
-	install -m $(MDATA) $(TARGETS_A) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) $(TARGETS_A) "$(INSTALL_LIBDIR)"
 	if test -n "$(TARGETS_SO)"; then \
-	  install -m $(MPROG) $(TARGETS_SO) "$(INSTALL_LIBDIR)"; \
+	  $(INSTALL_PROG) $(TARGETS_SO) "$(INSTALL_LIBDIR)"; \
 	fi
 
 $(LINKEDFILES): %.c: ../byterun/%.c

@@ -83,26 +83,27 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 .PHONY: install
 install::
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
-	install -m $(MDATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
+	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "true"
 install::
-	install -m $(MDATA) target_camlheaderd $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderd $(INSTALL_LIBDIR)
 endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	install -m $(MDATA) target_camlheaderi $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderi $(INSTALL_LIBDIR)
 endif
 
 .PHONY: installopt
@@ -110,7 +111,7 @@ installopt: installopt-default installopt-$(PROFILINGTARGET)
 
 .PHONY: installopt-default
 installopt-default:
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
 	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
@@ -120,7 +121,7 @@ installopt-noprof:
 
 .PHONY: installopt-prof
 installopt-prof:
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
 	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.$(A)

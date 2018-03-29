@@ -15,6 +15,10 @@
 
 include ../config/Makefile
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
@@ -114,18 +118,15 @@ ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 .PHONY: install
 install:
-	install -m $(MPROG) $(PROGRAMS) "$(INSTALL_BINDIR)"
-	install -m $(MDATA) $(LIBRARIES) "$(INSTALL_LIBDIR)"
+	$(INSTALL_PROG) $(PROGRAMS) "$(INSTALL_BINDIR)"
+	$(INSTALL_DATA) $(LIBRARIES) "$(INSTALL_LIBDIR)"
 	if test -n "$(DYNLIBRARIES)"; then \
-	  install -m $(MPROG) $(DYNLIBRARIES) "$(INSTALL_LIBDIR)"; \
+	  $(INSTALL_PROG) $(DYNLIBRARIES) "$(INSTALL_LIBDIR)"; \
 	fi
 	mkdir -p "$(INSTALL_INCDIR)"
-	install -m $(MDATA) caml/*.h "$(INSTALL_INCDIR)"
+	$(INSTALL_DATA) caml/*.h "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like

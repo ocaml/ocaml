@@ -76,35 +76,36 @@ $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
 lib$(CLIBNAME).$(A): $(COBJS)
 	$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
-	  install -m $(MPROG) \
+	  $(INSTALL_PROG) \
 	    dll$(CLIBNAME)$(EXT_DLL) \
 	    "$(INSTALL_STUBLIBDIR)/"; \
 	fi
-	install -m $(MDATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+	$(INSTALL_DATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
           $(CMIFILES:.cmi=.cmti) \
 	  "$(INSTALL_LIBDIR)/"
 	if test -n "$(HEADERS)"; then \
-	  install -m $(MDATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
+	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
 	fi
 
 installopt:
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
 	   "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
-	  install -m $(MPROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
+	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
 	fi
 
 partialclean:

@@ -40,8 +40,9 @@ COMPILECMD=(progn \
 	      (byte-compile-file "caml-font.el") \
 	      (byte-compile-file "camldebug.el"))
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \
@@ -67,7 +68,7 @@ install-el:
 simple-install:
 	@echo "Installing in $(EMACSDIR)..."
 	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
-	install -m $(MDATA) $(FILES) $(EMACSDIR)
+	$(INSTALL_DATA) $(FILES) $(EMACSDIR)
 	if [ -z "$(NOCOMPILE)" ]; then \
 	  cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'; \
 	fi
@@ -77,7 +78,7 @@ ocamltags:	ocamltags.in
 	chmod a+x ocamltags
 
 install-ocamltags: ocamltags
-	install -m $(MDATA) ocamltags $(SCRIPTDIR)/ocamltags
+	$(INSTALL_DATA) ocamltags $(SCRIPTDIR)/ocamltags
 
 # This is for testing purposes
 compile-only:

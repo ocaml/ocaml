@@ -72,11 +72,12 @@ OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)/ocamldoc
-
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-
-#MANO: man ocamldoc
 INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
 OCAMLDOC_LIBMLIS=odoc_info.mli
@@ -289,23 +290,20 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # TODO: it may be good to split the following rule in several ones, e.g.
 # install-programs, install-doc, install-libs
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 .PHONY: install
 install:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_MANODIR)"
-	install -m $(MPROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
-	install -m $(MDATA) \
+	$(INSTALL_PROG) $(OCAMLDOC) "$(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)"
+	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
 	  "$(INSTALL_LIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)"
 	if test -d stdlib_man; then \
-	  install -m $(MDATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
+	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
 	else : ; fi
 
 # Note: at the moment, $(INSTALL_MANODIR) is created even if the doc has
@@ -319,12 +317,12 @@ installopt:
 installopt_really:
 	$(MKDIR) "$(INSTALL_BINDIR)"
 	$(MKDIR) "$(INSTALL_LIBDIR)"
-	install -m $(MPROG) \
+	$(INSTALL_PROG) \
 	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
 	  "$(INSTALL_LIBDIR)"
 

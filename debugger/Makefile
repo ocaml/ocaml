@@ -27,6 +27,10 @@ CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 
 INCLUDES=\
@@ -95,9 +99,6 @@ all: ocamldebug$(EXE)
 
 ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
-
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
 
 install:
 	install -m $(MPROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"

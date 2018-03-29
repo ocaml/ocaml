@@ -112,34 +112,35 @@ partialclean:
 clean: partialclean
 	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-THREADS_LIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
+INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
+INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
+INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
 	if test -f dllthreads$(EXT_DLL); then \
-	  install -m $(MPROG) \
+	  $(INSTALL_PROG) \
 	    dllthreads$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/dllthreads$(EXT_DLL)"; \
 	fi
-	install -m $(MDATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) libthreads.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreads.$(A)
-	mkdir -p "$(THREADS_LIBDIR)"
-	install -m $(MDATA) \
+	mkdir -p "$(INSTALL_THREADSLIBDIR)"
+	$(INSTALL_DATA) \
 	  $(CMIFILES) $(CMIFILES:.cmi=.cmti) threads.cma \
-	  "$(THREADS_LIBDIR)"
-	install -m $(MDATA) $(MLIFILES) "$(INSTALL_LIBDIR)"
-	install -m $(MDATA) threads.h "$(INSTALL_LIBDIR)/caml"
+	  "$(INSTALL_THREADSLIBDIR)"
+	$(INSTALL_DATA) $(MLIFILES) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) threads.h "$(INSTALL_LIBDIR)/caml"
 
 installopt:
-	install -m $(MDATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) libthreadsnat.$(A) "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libthreadsnat.$(A)
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  $(THREADS_NCOBJS) threads.cmxa threads.$(A) \
-	  "$(THREADS_LIBDIR)"
-	cd "$(THREADS_LIBDIR)" && $(RANLIB) threads.$(A)
+	  "$(INSTALL_THREADSLIBDIR)"
+	cd "$(INSTALL_THREADSLIBDIR)" && $(RANLIB) threads.$(A)
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

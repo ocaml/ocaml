@@ -109,22 +109,23 @@ clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f stdlib.mli marshal.mli unix.mli
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 install:
 	if test -f dllvmthreads.so; then \
-	  install -m $(MPROG) dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
+	  $(INSTALL_PROG) dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	mkdir -p "$(INSTALL_LIBDIR)/vmthreads"
-	install -m $(MDATA) libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
+	$(INSTALL_DATA) libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
 	cd "$(INSTALL_LIBDIR)/vmthreads"; $(RANLIB) libvmthreads.a
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
 	  threads.cma stdlib.cma unix.cma \
 	  "$(INSTALL_LIBDIR)/vmthreads"

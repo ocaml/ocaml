@@ -88,21 +88,22 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 extract_crc: dynlink.cma extract_crc.cmo
 	$(OCAMLC) -o extract_crc dynlink.cma extract_crc.cmo
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 install:
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  dynlink.cmi dynlink.cmti dynlink.cma dynlink.mli \
 	  "$(INSTALL_LIBDIR)"
-	install -m $(MPROG) \
+	$(INSTALL_PROG) \
 	  extract_crc "$(INSTALL_LIBDIR)/extract_crc$(EXE)"
 
 installopt:
 	if $(NATDYNLINK); then \
-	  install -m $(MDATA) \
+	  $(INSTALL_DATA) \
 	    $(NATOBJS) dynlink.cmxa dynlink.$(A) \
 	    "$(INSTALL_LIBDIR)" && \
 	  cd "$(INSTALL_LIBDIR)" && $(RANLIB) dynlink.$(A); \

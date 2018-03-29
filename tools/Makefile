@@ -15,6 +15,11 @@
 
 MAKEFLAGS := -r -R
 include ../config/Makefile
+
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR:=$(DESTDIR)$(COMPLIBDIR)
@@ -142,16 +147,13 @@ $(call byte_and_opt,ocamloptp,$(ocamlcp_cmos) ocamloptp.cmo,)
 
 opt:: profiling.cmx
 
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
-
 install::
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  profiling.cmi profiling.cmo profiling.cmt profiling.cmti \
 	  "$(INSTALL_LIBDIR)"
 
 installopt::
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
           profiling.cmx profiling.$(O) \
 	  "$(INSTALL_LIBDIR)"
 
@@ -195,7 +197,7 @@ lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
 #install::
-#	install -m $(MPROG) ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
+#	$(INSTALL_PROG) ocaml299to3 "$(INSTALL_BINDIR)/ocaml299to3$(EXE)"
 
 clean::
 	rm -f ocaml299to3 lexer299.ml
@@ -211,7 +213,7 @@ lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
 #install::
-#	install -m $(MPROG) scrapelabels "$(INSTALL_LIBDIR)"
+#	$(INSTALL_PROG) scrapelabels "$(INSTALL_LIBDIR)"
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -229,7 +231,7 @@ addlabels: addlabels.cmo
 		$(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
-#	install -m $(MPROG) addlabels "$(INSTALL_LIBDIR)"
+#	$(INSTALL_PROG) addlabels "$(INSTALL_LIBDIR)"
 
 ifeq ($(UNIX_OR_WIN32),unix)
 LN := ln -sf
@@ -240,9 +242,9 @@ endif
 install::
 	for i in $(install_files); \
 	do \
-	  install -m $(MPROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)" && \
+	  $(INSTALL_PROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)" && \
 	  if test -f "$$i".opt; then \
-	    install -m $(MPROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)" && \
+	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)" && \
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
 	  else \
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
@@ -286,9 +288,9 @@ $(call byte_and_opt,read_cmt,$(READ_CMT),)
 
 install::
 	if test -f read_cmt.opt; then \
-	  install -m $(MPROG) read_cmt.opt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	  $(INSTALL_PROG) read_cmt.opt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
 	else \
-	  install -m $(MPROG) read_cmt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
+	  $(INSTALL_PROG) read_cmt "$(INSTALL_BINDIR)/ocamlcmt$(EXE)"; \
 	fi
 
 
@@ -336,7 +338,7 @@ OBJINFO=../compilerlibs/ocamlcommon.cma \
 $(call byte_and_opt,ocamlobjinfo,$(OBJINFO),objinfo_helper$(EXE))
 
 install::
-	install -m $(MPROG) \
+	$(INSTALL_PROG) \
 	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
 # Scan object files for required primitives
@@ -379,7 +381,7 @@ $(call byte_and_opt,cmpbyt,$(CMPBYT),)
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	install -m $(MPROG) \
+	$(INSTALL_PROG) \
 	  ocaml-instr-graph ocaml-instr-report \
 	  "$(INSTALL_BINDIR)/"
 endif

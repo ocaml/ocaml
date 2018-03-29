@@ -274,6 +274,10 @@ MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
 
+INSTALL=install
+INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
+INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
+
 INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
@@ -587,16 +591,13 @@ install-flexdll:
 	cat stdlib/camlheader flexdll/flexlink.exe > \
 	  "$(INSTALL_BINDIR)/flexlink.exe"
 ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
-	install -m $(MDATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
+	$(INSTALL_DATA) flexdll/default$(filter-out _i386,_$(ARCH)).manifest \
     "$(INSTALL_BINDIR)/"
 endif
 	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
 	  $(MKDIR) "$(INSTALL_FLEXDLLDIR)" ; \
-	  install -m $(MDATA) flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)" ; \
+	  $(INSTALL_DATA) flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)" ; \
 	fi
-
-MDATA=u+rw,g+rw,o+r
-MPROG=u+rwx,g+rwx,o+rx
 
 # Installation
 .PHONY: install
@@ -605,16 +606,16 @@ install:
 	$(MKDIR) "$(INSTALL_LIBDIR)"
 	$(MKDIR) "$(INSTALL_STUBLIBDIR)"
 	$(MKDIR) "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	  VERSION \
 	  "$(INSTALL_LIBDIR)"
 	$(MAKE) -C byterun install
-	install -m $(MPROG) ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
-	install -m $(MPROG) ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+	$(INSTALL_PROG) ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+	$(INSTALL_PROG) ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
 	$(MAKE) -C stdlib install
-	install -m $(MPROG) lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
-	install -m $(MPROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
-	install -m $(MDATA) \
+	$(INSTALL_PROG) lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
+	$(INSTALL_DATA) \
 	   utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
 	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
 	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
@@ -622,12 +623,12 @@ install:
 	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
 	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
 	   "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
 	   "$(INSTALL_COMPLIBDIR)"
-	install -m $(MPROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
-	install -m $(MDATA) \
+	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
+	$(INSTALL_DATA) \
 	   toplevel/topdirs.cmi \
 	   toplevel/topdirs.cmt toplevel/topdirs.cmti \
            toplevel/topdirs.mli \
@@ -655,7 +656,7 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	  $(MAKE) install-flexdll; \
 	fi
 endif
-	install -m $(MDATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+	$(INSTALL_DATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
@@ -666,24 +667,24 @@ endif
 .PHONY: installopt
 installopt:
 	$(MAKE) -C asmrun install
-	install -m $(MPROG) ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
+	$(INSTALL_PROG) ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
 	$(MAKE) -C stdlib installopt
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	    middle_end/*.cmi \
 	    middle_end/*.cmt middle_end/*.cmti \
 	    middle_end/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	    middle_end/base_types/*.cmi \
 	    middle_end/base_types/*.cmt middle_end/base_types/*.cmti \
 	    middle_end/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	    asmcomp/*.cmi \
 	    asmcomp/*.cmt asmcomp/*.cmti \
 	    asmcomp/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
 	if test -n "$(WITH_OCAMLDOC)"; then \
@@ -700,25 +701,25 @@ installopt:
 	fi
 	$(MAKE) -C tools installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
-	  install -m $(MPROG) \
+	  $(INSTALL_PROG) \
 	    flexdll/flexlink.opt "$(INSTALL_BINDIR)/flexlink$(EXE)" ; \
 	fi
 
 .PHONY: installoptopt
 installoptopt:
-	install -m $(MPROG) ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
-	install -m $(MPROG) ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
-	install -m $(MPROG) \
+	$(INSTALL_PROG) ocamlc.opt "$(INSTALL_BINDIR)/ocamlc.opt$(EXE)"
+	$(INSTALL_PROG) ocamlopt.opt "$(INSTALL_BINDIR)/ocamlopt.opt$(EXE)"
+	$(INSTALL_PROG) \
 	  lex/ocamllex.opt "$(INSTALL_BINDIR)/ocamllex.opt$(EXE)"
 	cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.opt$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.opt$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.opt$(EXE) ocamllex$(EXE)
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	   utils/*.cmx parsing/*.cmx typing/*.cmx bytecomp/*.cmx \
 	   driver/*.cmx asmcomp/*.cmx \
 	  "$(INSTALL_COMPLIBDIR)"
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
            compilerlibs/ocamlcommon.cmxa compilerlibs/ocamlcommon.$(A) \
 	   compilerlibs/ocamlbytecomp.cmxa compilerlibs/ocamlbytecomp.$(A) \
 	   compilerlibs/ocamloptcomp.cmxa  compilerlibs/ocamloptcomp.$(A) \
@@ -726,12 +727,12 @@ installoptopt:
 	   $(OPTSTART:.cmo=.cmx) $(OPTSTART:.cmo=.$(O)) \
 	   "$(INSTALL_COMPLIBDIR)"
 	if test -f ocamlnat$(EXE) ; then \
-	  install -m $(MPROG) \
+	  $(INSTALL_PROG) \
 	    ocamlnat$(EXE) "$(INSTALL_BINDIR)/ocamlnat$(EXE)"; \
-	  install -m $(MDATA) \
+	  $(INSTALL_DATA) \
 	     toplevel/opttopdirs.cmi \
 	     "$(INSTALL_LIBDIR)"; \
-	  install -m $(MDATA) \
+	  $(INSTALL_DATA) \
 	     compilerlibs/ocamlopttoplevel.cmxa \
 	     compilerlibs/ocamlopttoplevel.$(A) \
 	     $(OPTTOPLEVELSTART:.cmo=.cmx) $(OPTTOPLEVELSTART:.cmo=.$(O)) \
@@ -743,7 +744,7 @@ installoptopt:
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
 install-compiler-sources:
-	install -m $(MDATA) \
+	$(INSTALL_DATA) \
 	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
 	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
 	   asmcomp/*.ml \
