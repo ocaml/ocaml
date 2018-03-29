@@ -687,7 +687,7 @@ static uintnat nativeint_deserialize(void * dst)
   default:
     caml_deserialize_error("input_value: ill-formed native integer");
   }
-  return sizeof(long);
+  return sizeof(intnat);
 }
 
 CAMLexport struct custom_operations caml_nativeint_ops = {
