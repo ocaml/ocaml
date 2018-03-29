@@ -259,6 +259,9 @@ Working version
 
 ### Compiler distribution build system
 
+- MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
+  (Gabriel Scherer, review by Sébastien Hinderer)
+
 - MPR#7679: make sure .a files are erased before calling ar rc, otherwise
   leftover .a files from an earlier compilation may contain unwanted modules
   (Xavier Leroy)
