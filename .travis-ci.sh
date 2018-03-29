@@ -56,11 +56,11 @@ EOF
   case $XARCH in
   x64)
     ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime $CONFIG_ARG
+      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG
     ;;
   i386)
     ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime $CONFIG_ARG \
+      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG \
       -host i686-pc-linux-gnu
     ;;
   *)
