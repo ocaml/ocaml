@@ -17,8 +17,8 @@
 # We assume that config/Makefile has already been included
 
 INSTALL ?= install
-INSTALL_DATA ?= $(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG ?= $(INSTALL) -m u+rwx,g+rwx,o+rx
+INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r
+INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
 
 # note: these are defined by lazy expansions
 # as some parts of the makefiles change BINDIR, etc.
