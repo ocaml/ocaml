@@ -96,8 +96,7 @@ let mod_ident_counter = ref 0
 let gen_mod_ident () =
   let n = !mod_ident_counter in
   incr mod_ident_counter;
-  let ident = Ident.create (Printf.sprintf "M#%d" n) in
-  ident
+  Ident.create (Printf.sprintf "M#%d" n)
 
 let open_struct_level = ref 0
 let in_nested_struct () = !open_struct_level <> 0
@@ -1852,8 +1851,9 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
 let type_toplevel_phrase env s =
   Env.reset_required_globals ();
   let (str, sg, env) =
-    Misc.protect_refs [R(open_struct_level, 0)] (fun () ->
-      type_structure ~toplevel:true false None env s Location.none) in
+    Misc.protect_refs [R(open_struct_level, 0)]
+      (fun () ->
+        type_structure ~toplevel:true false None env s Location.none) in
   let (str, _coerce) = ImplementationHooks.apply_hooks
       { Misc.sourcefile = "//toplevel//" } (str, Tcoerce_none)
   in
@@ -1986,8 +1986,10 @@ let simplify_signature sg =
   let (sg, _) = aux sg in
   sg
 
+(* TODO: protect mod_ident_counter does not work: break debugger test *)
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  Misc.protect_refs [R(open_struct_level, 0)] (fun () ->
+  Misc.protect_refs [R(open_struct_level, 0)]
+  (fun () ->
     Cmt_format.clear ();
     try
     Typecore.reset_delayed_checks ();
