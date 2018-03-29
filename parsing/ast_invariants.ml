@@ -67,6 +67,7 @@ let iterator =
     | Ppat_construct (id, _) -> simple_longident id
     | Ppat_record (fields, _) ->
       List.iter (fun (id, _) -> simple_longident id) fields
+    | Ppat_open (id, _) -> simple_longident id
     | _ -> ()
   in
   let expr self exp =
