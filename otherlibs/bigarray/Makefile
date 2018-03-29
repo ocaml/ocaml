@@ -16,7 +16,7 @@
 LIBNAME=bigarray
 EXTRACFLAGS=-I../$(UNIXLIB) -DIN_OCAML_BIGARRAY
 EXTRACAMLFLAGS=-I ../$(UNIXLIB)
-COBJS=bigarray_stubs.$(O) mmap_ba.$(O) mmap.$(O)
+COBJS=mmap_ba.$(O) mmap.$(O)
 CAMLOBJS=bigarray.cmo
 
 include ../Makefile

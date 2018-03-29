@@ -76,6 +76,10 @@ Working version
   when compiled with the Js_of_ocaml backend.
   (Hugo Heuzard, reviewed by Gabriel Scherer)
 
+- GPR#1685: Move the Bigarray module to the standard library. Keep the
+  bigarray library as on overlay adding the deprecated map_file functions
+  (Jérémie Dimino, review by Mark Shinwell)
+
 ### Other libraries:
 
 - MPR#7745, GPR#1629: Graphics.open_graph displays the correct window title on
