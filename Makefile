@@ -279,7 +279,7 @@ INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
 INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
-INSTALL_FLEXDLL=$(INSTALL_LIBDIR)/flexdll
+INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 RUNTOP=./byterun/ocamlrun ./ocaml \
@@ -591,8 +591,8 @@ ifneq "$(filter-out mingw,$(TOOLCHAIN))" ""
     "$(INSTALL_BINDIR)/"
 endif
 	if test -n "$(wildcard flexdll/flexdll_*.$(O))" ; then \
-	  $(MKDIR) "$(INSTALL_FLEXDLL)" ; \
-	  install -m $(MDATA) flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLL)" ; \
+	  $(MKDIR) "$(INSTALL_FLEXDLLDIR)" ; \
+	  install -m $(MDATA) flexdll/flexdll_*.$(O) "$(INSTALL_FLEXDLLDIR)" ; \
 	fi
 
 MDATA=u+rw,g+rw,o+r
