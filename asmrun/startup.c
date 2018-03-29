@@ -126,7 +126,6 @@ value caml_startup_common(char_os **argv, int pooling)
 #endif
   caml_init_frame_descriptors();
   caml_init_ieee_floats();
-  caml_init_locale();
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
   caml_install_invalid_parameter_handler();
 #endif

@@ -1468,14 +1468,9 @@ if sh ./hasgot putenv; then
   echo "#define HAS_PUTENV" >> s.h
 fi
 
-if sh ./hasgot -i locale.h && sh ./hasgot newlocale freelocale uselocale; then
-  inf "newlocale() and <locale.h> found."
+if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
+  inf "setlocale() and <locale.h> found."
   echo "#define HAS_LOCALE" >> s.h
-fi
-
-if sh ./hasgot strtod_l; then
-  inf "strtod_l() found."
-  echo "#define HAS_STRTOD_L" >> s.h
 fi
 
 

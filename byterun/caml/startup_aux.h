@@ -20,9 +20,6 @@
 
 #include "config.h"
 
-extern void caml_init_locale(void);
-extern void caml_free_locale(void);
-
 extern void caml_init_atom_table (void);
 
 extern uintnat caml_init_percent_free;
