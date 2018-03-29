@@ -17,6 +17,8 @@
 
 ROOTDIR=../..
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
+
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
@@ -75,13 +77,6 @@ $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
 
 lib$(CLIBNAME).$(A): $(COBJS)
 	$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \

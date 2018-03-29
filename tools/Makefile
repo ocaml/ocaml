@@ -15,22 +15,13 @@
 
 MAKEFLAGS := -r -R
 include ../config/Makefile
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_BINDIR:=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR:=$(DESTDIR)$(LIBDIR)
-INSTALL_COMPLIBDIR:=$(DESTDIR)$(COMPLIBDIR)
-INSTALL_STUBLIBDIR:=$(DESTDIR)$(STUBLIBDIR)
-INSTALL_MANDIR:=$(DESTDIR)$(MANDIR)
+include ../Makefile.common
 
 ifeq ($(SYSTEM),unix)
 override define shellquote
 $i := $$(subst ",\",$$(subst $$$$,\$$$$,$$(subst `,\`,$i)))#")#
 endef
-$(foreach i,BINDIR LIBDIR COMPLIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
+$(foreach i,BINDIR LIBDIR STUBLIBDIR MANDIR,$(eval $(shellquote)))
 endif
 
 CAMLRUN ?= ../boot/ocamlrun

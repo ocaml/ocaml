@@ -13,6 +13,7 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
 
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
@@ -39,10 +40,6 @@ COMPILECMD=(progn \
 	      (byte-compile-file "caml-types.el") \
 	      (byte-compile-file "caml-font.el") \
 	      (byte-compile-file "camldebug.el"))
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \

@@ -14,6 +14,8 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
+
 UNIXDIR=../otherlibs/$(UNIXLIB)
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
@@ -26,12 +28,6 @@ YACCFLAGS=
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 
 INCLUDES=\
   -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
@@ -101,7 +97,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	install -m $(MPROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
+	$(INSTALL_PROG) ocamldebug$(EXE) "$(INSTALL_BINDIR)/ocamldebug$(EXE)"
 
 clean::
 	rm -f ocamldebug$(EXE)

@@ -31,6 +31,7 @@
 # make coreboot [new system -- now in a stable state]
 
 include config/Makefile
+include Makefile.common
 
 # For users who don't read the INSTALL file
 .PHONY: defaultentry
@@ -273,17 +274,6 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 
 COMPLIBDIR=$(LIBDIR)/compiler-libs
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-INSTALL_MANDIR=$(DESTDIR)$(MANDIR)
-INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 TOPINCLUDES=$(addprefix -I otherlibs/,$(filter-out %threads,$(OTHERLIBRARIES)))
 RUNTOP=./byterun/ocamlrun ./ocaml \
@@ -585,6 +575,9 @@ flexlink.opt:
 	           OCAMLOPT="../ocamlopt.opt -I ../stdlib" flexlink.exe && \
 	mv flexlink.exe flexlink.opt && \
 	mv flexlink flexlink.exe
+
+INSTALL_COMPLIBDIR=$(DESTDIR)$(COMPLIBDIR)
+INSTALL_FLEXDLLDIR=$(INSTALL_LIBDIR)/flexdll
 
 .PHONY: install-flexdll
 install-flexdll:

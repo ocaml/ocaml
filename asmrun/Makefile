@@ -14,6 +14,7 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
@@ -26,12 +27,6 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 # should be computed. It includes even the files that won't actually be
 # compiled on the platform where make depend is run
 sources := $(LINKEDFILES)
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp

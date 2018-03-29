@@ -16,6 +16,8 @@
 # FIXME reduce redundancy by including ../Makefile
 
 include ../../config/Makefile
+include ../../Makefile.common
+
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
@@ -108,13 +110,6 @@ partialclean:
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f stdlib.mli marshal.mli unix.mli
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 

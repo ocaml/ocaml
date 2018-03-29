@@ -14,14 +14,7 @@
 #**************************************************************************
 
 include ../config/Makefile
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
+include ../Makefile.common
 
 # The PROGRAMS (resp. LIBRARIES) variable list the files to build and
 # install as programs in $(INSTALL_BINDIR) (resp. libraries in
@@ -117,6 +110,8 @@ all: $(LIBRARIES) $(DYNLIBRARIES) $(PROGRAMS)
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" > $@
 	echo "$(LIBDIR)" >> $@
+
+INSTALL_INCDIR=$(INSTALL_LIBDIR)/caml
 
 .PHONY: install
 install:

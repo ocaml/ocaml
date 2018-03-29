@@ -18,6 +18,8 @@
 # FIXME reduce redundancy by including ../Makefile
 
 include ../../config/Makefile
+include ../../Makefile.common
+
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
@@ -87,12 +89,6 @@ dynlink.cmx: dynlink.cmi natdynlink.ml
 
 extract_crc: dynlink.cma extract_crc.cmo
 	$(OCAMLC) -o extract_crc dynlink.cma extract_crc.cmo
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 install:
 	$(INSTALL_DATA) \

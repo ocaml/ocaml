@@ -16,6 +16,8 @@
 ROOTDIR = ..
 
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
+
 OCAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 OCAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
@@ -71,14 +73,6 @@ OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)/ocamldoc
-INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
-INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
 OCAMLDOC_LIBMLIS=odoc_info.mli
 OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
@@ -289,6 +283,8 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 
 # TODO: it may be good to split the following rule in several ones, e.g.
 # install-programs, install-doc, install-libs
+
+INSTALL_MANODIR=$(INSTALL_MANDIR)/man3
 
 .PHONY: install
 install:

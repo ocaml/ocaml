@@ -16,6 +16,7 @@
 ROOTDIR=../..
 
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
 
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
@@ -112,13 +113,7 @@ partialclean:
 clean: partialclean
 	rm -f dllthreads*$(EXT_DLL) *.$(A) *.$(O)
 
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 INSTALL_THREADSLIBDIR=$(INSTALL_LIBDIR)/$(LIBNAME)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
 
 install:
 	if test -f dllthreads$(EXT_DLL); then \

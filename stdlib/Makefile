@@ -14,6 +14,8 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
+
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
@@ -82,12 +84,6 @@ allopt-noprof:
 .PHONY: allopt-prof
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
-
-INSTALL=install
-INSTALL_DATA=$(INSTALL) -m u+rw,g+rw,o+r
-INSTALL_PROG=$(INSTALL) -m u+rwx,g+rwx,o+rx
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 .PHONY: install
 install::
