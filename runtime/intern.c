@@ -525,13 +525,30 @@ static void intern_rec(value *dest)
         ReadItems(dest, 1);
         continue;  /* with next iteration of main loop, skipping *dest = v */
       case CODE_CUSTOM:
+      case CODE_CUSTOM_LEN: {
         ops = caml_find_custom_operations((char *) intern_src);
         if (ops == NULL) {
           intern_cleanup();
           caml_failwith("input_value: unknown custom block identifier");
         }
         while (*intern_src++ != 0) /*nothing*/;  /*skip identifier*/
-        size = ops->deserialize((void *) (intern_dest + 2));
+        if (code == CODE_CUSTOM_LEN) {
+          uintnat expected_size;
+#ifdef ARCH_SIXTYFOUR
+          intern_src += 4;
+          expected_size = read64u();
+#else
+          expected_size = read32u();
+          intern_src += 8;
+#endif
+          size = ops->deserialize((void *) (intern_dest + 2));
+          if (size != expected_size) {
+            intern_cleanup();
+            caml_failwith("input_value: incorrect length of serialized custom block");
+          }
+        } else {
+          size = ops->deserialize((void *) (intern_dest + 2));
+        }
         size = 1 + (size + sizeof(value) - 1) / sizeof(value);
         v = Val_hp(intern_dest);
         if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
@@ -546,6 +563,7 @@ static void intern_rec(value *dest)
 
         intern_dest += 1 + size;
         break;
+      }
       default:
         intern_cleanup();
         caml_failwith("input_value: ill-formed message");
