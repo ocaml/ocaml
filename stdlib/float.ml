@@ -25,6 +25,7 @@ external abs : float -> float = "%absfloat"
 let infinity = Pervasives.infinity
 let neg_infinity = Pervasives.neg_infinity
 let nan = Pervasives.nan
+let pi = 0x1.921fb54442d18p+1
 let max_float = Pervasives.max_float
 let min_float = Pervasives.min_float
 let epsilon = Pervasives.epsilon_float
