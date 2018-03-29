@@ -79,9 +79,9 @@ INSTALL_BINDIR=$(DESTDIR)$(BINDIR)
 #MANO: man ocamldoc
 INSTALL_MANODIR=$(DESTDIR)$(MANDIR)/man3
 
-INSTALL_MLIS=odoc_info.mli
-INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
-INSTALL_CMTS=$(INSTALL_MLIS:.mli=.cmt) $(INSTALL_MLIS:.mli=.cmti)
+OCAMLDOC_LIBMLIS=odoc_info.mli
+OCAMLDOC_LIBCMIS=$(OCAMLDOC_LIBMLIS:.mli=.cmi)
+OCAMLDOC_LIBCMTS=$(OCAMLDOC_LIBMLIS:.mli=.cmt) $(OCAMLDOC_LIBMLIS:.mli=.cmti)
 
 ODOC_TEST=odoc_test.cmo
 GENERATORS_CMOS= \
@@ -302,7 +302,7 @@ install:
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
 	  "$(INSTALL_LIBDIR)"
 	install -m $(MDATA) \
-	  $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)"
 	if test -d stdlib_man; then \
 	  install -m $(MDATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
@@ -322,7 +322,7 @@ installopt_really:
 	install -m $(MPROG) \
 	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
 	install -m $(MDATA) \
-	  $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_CMTS) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
 	  "$(INSTALL_LIBDIR)"
 	install -m $(MDATA) \
 	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
