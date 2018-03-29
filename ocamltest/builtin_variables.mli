@@ -36,6 +36,8 @@ val program2 : Variables.t
 
 val promote : Variables.t
 
+val reason : Variables.t
+
 val reference : Variables.t
 
 val skip_header_lines : Variables.t

@@ -1,10 +1,10 @@
 #**************************************************************************
 #*                                                                        *
-#*                                OCaml                                   *
+#*                                 OCaml                                  *
 #*                                                                        *
-#*                 Xavier Clerc, SED, INRIA Rocquencourt                  *
+#*            Gabriel Scherer, projet Parsifal, INRIA Saclay              *
 #*                                                                        *
-#*   Copyright 2010 Institut National de Recherche en Informatique et     *
+#*   Copyright 2018 Institut National de Recherche en Informatique et     *
 #*     en Automatique.                                                    *
 #*                                                                        *
 #*   All rights reserved.  This file is distributed under the terms of    *
@@ -13,14 +13,18 @@
 #*                                                                        *
 #**************************************************************************
 
-BASEDIR=../..
-default:
-	@printf " ... testing 'pr3918':"
-	@($(OCAMLC) -c pr3918a.mli \
-	&& $(OCAMLC) -c pr3918b.mli \
-	&& $(OCAMLC) -c pr3918c.ml \
-	&& echo " => passed") || echo " => failed"
+# This makefile contains common definitions shared by other Makefiles
+# We assume that config/Makefile has already been included
 
-clean: defaultclean
+INSTALL ?= install
+INSTALL_DATA ?= $(INSTALL) -m u=rw,g=rw,o=r
+INSTALL_PROG ?= $(INSTALL) -m u=rwx,g=rwx,o=rx
 
-include $(BASEDIR)/makefiles/Makefile.common
+# note: these are defined by lazy expansions
+# as some parts of the makefiles change BINDIR, etc.
+# and expect INSTALL_BINDIR, etc. to stay in synch
+# (see `shellquote` in tools/Makefile)
+INSTALL_BINDIR = $(DESTDIR)$(BINDIR)
+INSTALL_LIBDIR = $(DESTDIR)$(LIBDIR)
+INSTALL_STUBLIBDIR = $(DESTDIR)$(STUBLIBDIR)
+INSTALL_MANDIR = $(DESTDIR)$(MANDIR)

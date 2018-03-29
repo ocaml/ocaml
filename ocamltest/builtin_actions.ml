@@ -18,23 +18,30 @@
 open Ocamltest_stdlib
 open Actions
 
+let reason_with_fallback env fallback =
+  match Environments.lookup Builtin_variables.reason env with
+  | None -> fallback
+  | Some reason -> reason
+
 let pass = make
   "pass"
   (fun _log env ->
-    let result =
-      Result.pass_with_reason "The pass action always succeeds." in
+    let reason = reason_with_fallback env "the pass action always succeeds" in
+    let result = Result.pass_with_reason reason in
     (result, env))
 
 let skip = make
   "skip"
   (fun _log env ->
-    let result = Result.skip_with_reason "The skip action always skips." in
+    let reason = reason_with_fallback env "the skip action always skips" in
+    let result = Result.skip_with_reason reason in
     (result, env))
 
 let fail = make
   "fail"
   (fun _log env ->
-    let result = Result.fail_with_reason "The fail action always fails." in
+    let reason = reason_with_fallback env "the fail action always fails" in
+    let result = Result.fail_with_reason reason in
     (result, env))
 
 let cd = make

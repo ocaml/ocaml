@@ -53,6 +53,9 @@ let program2 = make ("program2",
 let promote = make ("promote",
   "Set to \"true\" to overwrite reference files with the test output")
 
+let reason = make ("reason",
+  "Let a test report why it passed/skipped/failed.")
+
 let reference = make ("reference",
   "Path of file to which program output should be compared")
 
@@ -106,6 +109,7 @@ let _ = List.iter register_variable
     ocamltest_log;
     output;
     program; program2;
+    reason;
     reference;
     skip_header_lines;
     skip_header_bytes;
