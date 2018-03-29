@@ -550,6 +550,9 @@ static value intern_rec(mlsize_t whsize, mlsize_t num_objects)
             v = ops->deserialize();
             if (use_intern_table) Store_field (intern_obj_table, obj_counter++, v);
             break;
+          case CODE_CUSTOM_LEN:
+            caml_failwith("CUSTOM_LEN: unsupported");
+            break;
           default:
             intern_cleanup(&S);
             caml_failwith("input_value: ill-formed message");
