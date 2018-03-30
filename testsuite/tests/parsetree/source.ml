@@ -152,6 +152,18 @@ module type S =
     (module type of[@foo] M) ->
     (sig[@foo] end)
 
+module type S = S -> S -> S
+module type S = (S -> S) -> S
+module type S = functor (M : S) -> S -> S
+module type S = (functor (M : S) -> S) -> S
+module type S = (S -> S)[@foo] -> S
+module type S = (functor[@foo] (M : S) -> S) -> S
+
+module type S = sig
+  module rec A : (S with type t = t)
+  and B : (S with type t = t)
+end
+
 (* Structure items *)
 let%foo[@foo] x = 4
 and[@foo] y = x

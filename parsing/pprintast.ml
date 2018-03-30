@@ -960,22 +960,16 @@ and module_type ctxt f x =
       (attributes ctxt) x.pmty_attributes
   end else
     match x.pmty_desc with
-    | Pmty_ident li ->
-        pp f "%a" longident_loc li;
-    | Pmty_alias li ->
-        pp f "(module %a)" longident_loc li;
-    | Pmty_signature (s) ->
-        pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
-          (list (signature_item ctxt)) s (* FIXME wrong indentation*)
     | Pmty_functor (_, None, mt2) ->
         pp f "@[<hov2>functor () ->@ %a@]" (module_type ctxt) mt2
     | Pmty_functor (s, Some mt1, mt2) ->
         if s.txt = "_" then
           pp f "@[<hov2>%a@ ->@ %a@]"
-            (module_type ctxt) mt1 (module_type ctxt) mt2
+            (module_type1 ctxt) mt1 (module_type ctxt) mt2
         else
           pp f "@[<hov2>functor@ (%s@ :@ %a)@ ->@ %a@]" s.txt
             (module_type ctxt) mt1 (module_type ctxt) mt2
+    | Pmty_with (mt, []) -> module_type ctxt f mt
     | Pmty_with (mt, l) ->
         let with_constraint f = function
           | Pwith_type (li, ({ptype_params= ls ;_} as td)) ->
@@ -993,13 +987,24 @@ and module_type ctxt f x =
                 (type_declaration ctxt) td
           | Pwith_modsubst (li, li2) ->
              pp f "module %a :=@ %a" longident_loc li longident_loc li2 in
-        (match l with
-         | [] -> pp f "@[<hov2>%a@]" (module_type ctxt) mt
-         | _ -> pp f "@[<hov2>(%a@ with@ %a)@]"
-                  (module_type ctxt) mt (list with_constraint ~sep:"@ and@ ") l)
+        pp f "@[<hov2>%a@ with@ %a@]"
+          (module_type1 ctxt) mt (list with_constraint ~sep:"@ and@ ") l
+    | _ -> module_type1 ctxt f x
+
+and module_type1 ctxt f x =
+  if x.pmty_attributes <> [] then module_type ctxt f x
+  else match x.pmty_desc with
+    | Pmty_ident li ->
+        pp f "%a" longident_loc li;
+    | Pmty_alias li ->
+        pp f "(module %a)" longident_loc li;
+    | Pmty_signature (s) ->
+        pp f "@[<hv0>@[<hv2>sig@ %a@]@ end@]" (* "@[<hov>sig@ %a@ end@]" *)
+          (list (signature_item ctxt)) s (* FIXME wrong indentation*)
     | Pmty_typeof me ->
         pp f "@[<hov2>module@ type@ of@ %a@]" (module_expr ctxt) me
     | Pmty_extension e -> extension ctxt f e
+    | _ -> paren true (module_type ctxt) f x
 
 and signature ctxt f x =  list ~sep:"@\n" (signature_item ctxt) f x
 
@@ -1070,11 +1075,11 @@ and signature_item ctxt f x : unit =
         | pmd :: tl ->
             if not first then
               pp f "@ @[<hov2>and@ %s:@ %a@]%a" pmd.pmd_name.txt
-                (module_type ctxt) pmd.pmd_type
+                (module_type1 ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes
             else
               pp f "@[<hov2>module@ rec@ %s:@ %a@]%a" pmd.pmd_name.txt
-                (module_type ctxt) pmd.pmd_type
+                (module_type1 ctxt) pmd.pmd_type
                 (item_attributes ctxt) pmd.pmd_attributes;
             string_x_module_type_list f ~first:false tl
       in
