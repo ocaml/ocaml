@@ -268,7 +268,7 @@ clean:
 
 .PHONY: report
 report:
-	@if [ ! -f $$(TESTLOG) ]; then echo "No $$(TESTLOG) file."; exit 1; fi
+	@if [ ! -f $(TESTLOG) ]; then echo "No $(TESTLOG) file."; exit 1; fi
 	@awk -f makefiles/summarize.awk < $(TESTLOG)
 
 .PHONY: retry-list
