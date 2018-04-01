@@ -1986,9 +1986,9 @@ let simplify_signature sg =
   let (sg, _) = aux sg in
   sg
 
-(* TODO: protect mod_ident_counter does not work: break debugger test *)
+(* TODO(objmagic): protect mod_ident_counter does not work: break debugger test *)
 let type_implementation sourcefile outputprefix modulename initial_env ast =
-  Misc.protect_refs [R(open_struct_level, 0)]
+  Misc.protect_refs [R(open_struct_level, 0); R(mod_ident_counter, 0)]
   (fun () ->
     Cmt_format.clear ();
     try
