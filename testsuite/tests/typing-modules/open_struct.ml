@@ -319,21 +319,12 @@ module Print_list :
 val print_list_of_int : Print_int.t list -> unit = <fun>
 |}]
 
-let f () = let open [%foo] in ();;
-
-[%%expect{|
-Line _, characters 20-26:
-  let f () = let open [%foo] in ();;
-                      ^^^^^^
-Error: Invalid open
-|}]
-
-
 let f () = let open functor(X: sig end) -> struct end in ();;
 
 [%%expect{|
 Line _, characters 20-53:
   let f () = let open functor(X: sig end) -> struct end in ();;
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: Invalid open
+Error: This module is not a structure; it has type
+       functor (X : sig  end) -> sig  end
 |}]

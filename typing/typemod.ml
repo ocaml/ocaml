@@ -106,9 +106,11 @@ let leave_struct () = decr open_struct_level
 let open_generated s = String.contains s '#'
 
 let type_open_ ?used_slot ?toplevel ovf env loc me =
+  let report_illegal_mt mt loc env =
+    ignore (extract_sig_open env loc mt);
+    assert false
+  in
   match me.pmod_desc with
-  | Pmod_functor _ | Pmod_extension _ ->
-      raise(Error(me.pmod_loc, env, Invalid_open me))
   | Pmod_ident lid ->
       let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
       begin
@@ -124,20 +126,15 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
             } in
           None, tme, env
       | None ->
-          (* use [extract_sig_open] to provide better error message *)
-          let md = Env.find_module path env in
-          ignore (extract_sig_open env lid.loc md.md_type);
-          assert false
+        let mt = (Env.find_module path env).md_type in
+        report_illegal_mt mt lid.loc env
       end
-  | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ ->
+  | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ |
+    Pmod_functor _ | Pmod_extension _ ->
       enter_struct ();
       let ident = gen_mod_ident () in
       let tme = !type_module_fwd env me in
       leave_struct ();
-      (match tme.mod_type with
-       | Mty_signature _ | Mty_ident _ -> ()
-       | Mty_functor _ -> raise(Error(me.pmod_loc, env, Invalid_open me))
-       | Mty_alias _ -> assert false);
       let md = {
         md_type = tme.mod_type;
         md_loc = me.pmod_loc;
@@ -146,7 +143,7 @@ let type_open_ ?used_slot ?toplevel ovf env loc me =
       let newenv = Env.enter_module_declaration ident md env in
       let root = Pident ident in
       match Env.open_signature ~loc ?used_slot ?toplevel ovf root newenv with
-      | None -> assert false (* not possible to illegal module_expr *)
+      | None -> report_illegal_mt tme.mod_type me.pmod_loc env
       | Some opened_env -> Some (ident, md, newenv), tme, opened_env
 
 let type_initially_opened_module env module_name =
@@ -972,17 +969,19 @@ and transl_signature env sg =
             let id, od = type_open env sod in
             let open_env = od.open_env in
             let (trem, rem, final_env) = transl_sig open_env srem in begin
-            match id with
-            | None -> mksig (Tsig_open od) env loc :: trem, rem, final_env
-            | Some (id, _md, _env) ->
-                let s_rem = Mty_signature rem in
-                match Mtype.nondep_supertype open_env id s_rem with
-                | Mty_signature rem' ->
-                    mksig (Tsig_open od) env loc :: trem, rem', final_env
-                | exception Not_found ->
-                    raise(Error(sod.popen_loc, env,
-                                Cannot_eliminate_anon_module(id, rem)))
-                | _ -> assert false
+            let rem =
+              match id with
+              | None -> rem
+              | Some (id, _md, _env) ->
+                  let s_rem = Mty_signature rem in
+                  match Mtype.nondep_supertype open_env id s_rem with
+                  | Mty_signature rem' -> rem'
+                  | exception Not_found ->
+                      raise(Error(sod.popen_loc, env,
+                                  Cannot_eliminate_anon_module(id, rem)))
+                  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
+            in
+            mksig (Tsig_open od) env loc :: trem, rem, final_env
             end
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
@@ -1733,22 +1732,23 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
                                mb_expr = od.open_expr;
                                mb_attributes=od.open_expr.mod_attributes;
                                mb_loc=od.open_expr.mod_loc} in
-                let tm_str = { str_desc = tm; str_loc = loc; str_env = md_env } in
+                let tm_str = { str_desc = tm; str_loc = loc;
+                               str_env = md_env } in
                 let open_str = mkstr (Tstr_open od) open_env loc in
                 let md_sig =
                   Sig_module (id, {md_type=md.Types.md_type; md_loc=loc;
                                    md_attributes = []}, Trec_not) in
-                if not (in_nested_struct ()) then
-                  let s_rem = Mty_signature sig_rem in
-                  match Mtype.nondep_supertype open_env id s_rem with
-                  | Mty_signature sg ->
-                      tm_str :: open_str :: str_rem, md_sig :: sg, final_env
-                  | exception Not_found ->
-                      raise (Error(loc, env,
-                                   Cannot_eliminate_anon_module(id, sig_rem)))
-                  | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
-                else
-                  tm_str :: open_str :: str_rem, md_sig :: sig_rem, final_env
+                let sg =
+                  if not (in_nested_struct ()) then
+                    let s_rem = Mty_signature sig_rem in
+                    match Mtype.nondep_supertype open_env id s_rem with
+                    | Mty_signature sg -> sg
+                    | exception Not_found ->
+                        raise (Error(loc, env,
+                                 Cannot_eliminate_anon_module(id, sig_rem)))
+                    | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
+                  else sig_rem in
+                tm_str :: open_str :: str_rem, md_sig :: sg, final_env
             end
         | Pstr_class cl ->
             List.iter
@@ -1952,7 +1952,7 @@ let type_open ?used_slot ovf env loc me =
 
 let gen_mod_ident me =
   match me.pmod_desc with
-  | Pmod_functor _ | Pmod_extension _ | Pmod_ident _ -> None 
+  | Pmod_functor _ | Pmod_extension _ | Pmod_ident _ -> None
   | Pmod_structure _ | Pmod_apply _ | Pmod_constraint _ | Pmod_unpack _ ->
       Some(gen_mod_ident ())
 
