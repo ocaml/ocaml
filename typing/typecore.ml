@@ -1418,7 +1418,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let id, _tme, new_env =
         !type_open Asttypes.Fresh !env sp.ppat_loc me in begin
       match id with
-      | Some _ -> assert false
+      | Some _ -> assert false (* not possible due to syntactic restriction *)
       | None ->
         let new_env = ref new_env in
         type_pat ~env:new_env p expected_ty ( fun p ->
