@@ -14,6 +14,8 @@
 #*                                                                        *
 #**************************************************************************
 
+set -e
+
 # TRAVIS_COMMIT_RANGE has the form   <commit1>...<commit2>
 # TRAVIS_CUR_HEAD is <commit1>
 # TRAVIS_PR_HEAD is <commit2>
@@ -28,11 +30,11 @@
 #        |          /
 #  TRAVIS_MERGE_BASE
 #
-echo TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE
-echo TRAVIS_COMMIT=$TRAVIS_COMMIT
+echo "TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE"
+echo "TRAVIS_COMMIT=$TRAVIS_COMMIT"
 if [[ $TRAVIS_EVENT_TYPE = "pull_request" ]] ; then
   FETCH_HEAD=$(git rev-parse FETCH_HEAD)
-  echo FETCH_HEAD=$FETCH_HEAD
+  echo "FETCH_HEAD=$FETCH_HEAD"
 else
   FETCH_HEAD=$TRAVIS_COMMIT
 fi
@@ -68,11 +70,11 @@ case $TRAVIS_EVENT_TYPE in
      DEEPEN=50
      while ! git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD > /dev/null 2>&1
      do
-       echo Deepening $TRAVIS_BRANCH by $DEEPEN commits
+       echo "Deepening $TRAVIS_BRANCH by $DEEPEN commits"
        git fetch origin --deepen=$DEEPEN $TRAVIS_BRANCH
        ((DEEPEN*=2))
      done
-     TRAVIS_MERGE_BASE=$(git merge-base $TRAVIS_CUR_HEAD $TRAVIS_PR_HEAD);;
+     TRAVIS_MERGE_BASE=$(git merge-base "$TRAVIS_CUR_HEAD" "$TRAVIS_PR_HEAD");;
 esac
 
 BuildAndTest () {
@@ -114,7 +116,7 @@ EOF
   echo Running the testsuite with the normal runtime
   $MAKE all
   echo Running the testsuite with the debug runtime
-  $MAKE USE_RUNTIME="d" OCAMLTESTDIR=$(pwd)/_ocamltestd TESTLOG=_logd all
+  $MAKE USE_RUNTIME="d" OCAMLTESTDIR="$(pwd)/_ocamltestd" TESTLOG=_logd all
   cd ..
   $MAKE install
   echo Check the code examples in the manual
@@ -144,14 +146,14 @@ on the github pull request.
 ------------------------------------------------------------------------
 EOF
   # check that Changes has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code Changes \
-    > /dev/null && CheckNoChangesMessage || echo pass
+  git diff "$TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD" --name-only --exit-code \
+    Changes > /dev/null && CheckNoChangesMessage || echo pass
 }
 
 CheckNoChangesMessage () {
   API_URL=https://api.github.com/repos/$TRAVIS_REPO_SLUG/issues/$TRAVIS_PULL_REQUEST/labels
   if test -n "$(git log --grep="[Nn]o [Cc]hange.* needed" --max-count=1 \
-    ${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD})"
+    "${TRAVIS_MERGE_BASE}..${TRAVIS_PR_HEAD"})"
   then echo pass
   elif test -n "$(curl $API_URL | grep 'no-change-entry-needed')"
   then echo pass
@@ -191,7 +193,7 @@ does *not* imply that your change is appropriately tested.
 ------------------------------------------------------------------------
 EOF
   # check that at least a file in testsuite/ has been modified
-  git diff $TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD --name-only --exit-code \
+  git diff "$TRAVIS_MERGE_BASE..$TRAVIS_PR_HEAD" --name-only --exit-code \
     testsuite > /dev/null && exit 1 || echo pass
 }
 
@@ -267,7 +269,7 @@ CheckTypo () {
     fi
     if [ $CHECK_ALL_COMMITS -eq 1 ]
     then
-      for commit in $(git rev-list $TRAVIS_COMMIT_RANGE --reverse)
+      for commit in $(git rev-list "$TRAVIS_COMMIT_RANGE" --reverse)
       do
         CheckTypoTree $commit $commit
       done

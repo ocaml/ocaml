@@ -15,6 +15,6 @@
 #*                                                                        *
 #**************************************************************************
 
-topdir=`dirname $0`
+topdir=`dirname "$0"`
 
-exec @compiler@ -nostdlib -I $topdir/stdlib "$@"
+exec @compiler@ -nostdlib -I "$topdir/stdlib" "$@"

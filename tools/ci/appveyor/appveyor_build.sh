@@ -13,13 +13,15 @@
 #*                                                                        *
 #**************************************************************************
 
+set -e
+
 BUILD_PID=0
 
 function run {
     NAME=$1
     shift
     echo "-=-=- $NAME -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
-    $@
+    "$@"
     CODE=$?
     if [ $CODE -ne 0 ]; then
         echo "-=-=- $NAME failed! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
@@ -58,28 +60,28 @@ function set_configuration {
 
     FILE=$(pwd | cygpath -f - -m)/Makefile.config
     echo "Edit $FILE to turn C compiler warnings into errors"
-    sed -i -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" $FILE
+    sed -i -e "/^ *OC_CFLAGS *=/s/\r\?$/ $3\0/" "$FILE"
 #    run "Content of $FILE" cat Makefile.config
 }
 
-APPVEYOR_BUILD_FOLDER=$(echo $APPVEYOR_BUILD_FOLDER| cygpath -f -)
+APPVEYOR_BUILD_FOLDER=$(echo "$APPVEYOR_BUILD_FOLDER" | cygpath -f -)
 # These directory names are specified here, because getting UTF-8 correctly
 # through appveyor.yml -> Command Script -> Bash is quite painful...
-OCAMLROOT=$(echo $PROGRAMFILES/Бактріан🐫| cygpath -f - -m)
+OCAMLROOT=$(echo "$PROGRAMFILES/Бактріан🐫" | cygpath -f - -m)
 
 # This must be kept in sync with appveyor_build.cmd
 BUILD_PREFIX=🐫реализация
 
-export PATH=$(echo $OCAMLROOT| cygpath -f -)/bin/flexdll:$PATH
+PATH=$(echo "$OCAMLROOT" | cygpath -f -)/bin/flexdll:$PATH
 
 case "$1" in
   install)
     mkdir -p "$OCAMLROOT/bin/flexdll"
-    cd $APPVEYOR_BUILD_FOLDER/../flexdll
+    cd "$APPVEYOR_BUILD_FOLDER/../flexdll"
     # msvc64 objects need to be compiled with VS2015, so are copied later from
     # a source build.
     for f in flexdll.h flexlink.exe flexdll*_msvc.obj default*.manifest ; do
-      cp $f "$OCAMLROOT/bin/flexdll/"
+      cp "$f" "$OCAMLROOT/bin/flexdll/"
     done
     if [ "$PORT" = "msvc64" ] ; then
       echo 'eval $($APPVEYOR_BUILD_FOLDER/tools/msvs-promote-path)' \
@@ -87,7 +89,7 @@ case "$1" in
     fi
     ;;
   msvc32-only)
-    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32
+    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc32"
 
     set_configuration msvc "$OCAMLROOT-msvc32" -WX
 
@@ -99,20 +101,20 @@ case "$1" in
     exit 0
     ;;
   test)
-    FULL_BUILD_PREFIX=$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX
-    run "ocamlc.opt -version" $FULL_BUILD_PREFIX-$PORT/ocamlc.opt -version
-    run "test $PORT" make -C $FULL_BUILD_PREFIX-$PORT tests
-    run "install $PORT" make -C $FULL_BUILD_PREFIX-$PORT install
+    FULL_BUILD_PREFIX="$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX"
+    run "ocamlc.opt -version" "$FULL_BUILD_PREFIX-$PORT/ocamlc.opt" -version
+    run "test $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" tests
+    run "install $PORT" make -C "$FULL_BUILD_PREFIX-$PORT" install
     if [ "$PORT" = "msvc64" ] ; then
-      run "check_all_arches" make -C $FULL_BUILD_PREFIX-$PORT check_all_arches
+      run "check_all_arches" make -C "$FULL_BUILD_PREFIX-$PORT" check_all_arches
     fi
     ;;
   *)
-    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT
+    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     if [ "$PORT" = "msvc64" ] ; then
-      tar -xzf $APPVEYOR_BUILD_FOLDER/flexdll.tar.gz
-      cd flexdll-$FLEXDLL_VERSION
+      tar -xzf "$APPVEYOR_BUILD_FOLDER/flexdll.tar.gz"
+      cd "flexdll-$FLEXDLL_VERSION"
       make MSVC_DETECT=0 CHAINS=msvc64 support
       cp flexdll*_msvc64.obj "$OCAMLROOT/bin/flexdll/"
       cd ..
@@ -124,7 +126,7 @@ case "$1" in
       set_configuration mingw "$OCAMLROOT-mingw32" -Werror
     fi
 
-    cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT
+    cd "$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-$PORT"
 
     export TERM=ansi
 
@@ -134,7 +136,7 @@ case "$1" in
       # https://github.com/appveyor/ci/issues/1824
       script --quiet --return --command \
         "make -C ../$BUILD_PREFIX-mingw32 flexdll world.opt" \
-        ../$BUILD_PREFIX-mingw32/build.log |
+        "../$BUILD_PREFIX-mingw32/build.log" |
           sed -e 's/\d027\[K//g' \
               -e 's/\d027\[m/\d027[0m/g' \
               -e 's/\d027\[01\([m;]\)/\d027[1\1/g'
