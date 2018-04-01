@@ -336,7 +336,7 @@ val split_on_char: char -> string -> string list
 (** {6 Iterators} *)
 
 val to_seq : t -> char Seq.t
-(** Iterate on the string , in increasing index order. Modifications of the
+(** Iterate on the string, in increasing index order. Modifications of the
     string during iteration will be reflected in the iterator.
     @since 4.07 *)
 
