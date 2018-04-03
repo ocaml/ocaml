@@ -46,7 +46,6 @@ type error =
   | Recursive_module_require_explicit_type
   | Apply_generative
   | Cannot_scrape_alias of Path.t
-  | Invalid_open of Parsetree.module_expr
   | Cannot_eliminate_anon_module of Ident.t * signature
 
 exception Error of Location.t * Env.t * error
@@ -2235,8 +2234,6 @@ let report_error ppf = function
       fprintf ppf
         "This is an alias for module %a, which is missing"
         path p
-  | Invalid_open _me ->
-      fprintf ppf "Invalid open"
   | Cannot_eliminate_anon_module (id, sg) ->
       fprintf ppf "The module identifier %a cannot be \
         eliminated from %a" ident id signature sg
