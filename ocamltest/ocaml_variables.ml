@@ -28,6 +28,9 @@ open Variables (* Should not be necessary with a ppx *)
 
 let all_modules = make ("all_modules",
   "All the modules to compile and link")
+  
+let binary_modules = make ("binary_modules",
+  "Additional binary modules to link")
 
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
@@ -173,6 +176,7 @@ let plugins =
 let _ = List.iter register_variable
   [
     all_modules;
+    binary_modules;
     c_preprocessor;
     caml_ld_library_path;
     compare_programs;

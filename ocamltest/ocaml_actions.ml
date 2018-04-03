@@ -55,13 +55,20 @@ let ocamllex_flags env =
 let ocamlyacc_flags env =
   Environments.safe_lookup Ocaml_variables.ocamlyacc_flags env
 
-let libraries backend env =
-  let value = Environments.safe_lookup Ocaml_variables.libraries env in
-  let libs = String.words value in
-  let extension = Ocaml_backends.library_extension backend in
-  let add_extension lib = Filename.make_filename lib extension in
-  String.concat " " (List.map add_extension libs)
+let filelist env variable extension =
+  let value = Environments.safe_lookup variable env in
+  let filenames = String.words value in
+  let add_extension filename = Filename.make_filename filename extension in
+  String.concat " " (List.map add_extension filenames)
 
+let libraries backend env =
+  let extension = Ocaml_backends.library_extension backend in
+  filelist env Ocaml_variables.libraries extension
+
+let binary_modules backend env =
+  let extension = Ocaml_backends.module_extension backend in
+  filelist env Ocaml_variables.binary_modules extension
+  
 let backend_default_flags env =
   get_backend_value_from_env env
     Ocaml_variables.ocamlc_default_flags
@@ -182,7 +189,8 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let expected_exit_status =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
   let module_names =
-    String.concat " " (List.map Ocaml_filetypes.make_filename modules) in
+    (binary_modules compiler#target env) ^ " " ^
+    (String.concat " " (List.map Ocaml_filetypes.make_filename modules)) in
   let what = Printf.sprintf "Compiling program %s from modules %s"
     program_file module_names in
   Printf.fprintf log "%s\n%!" what;
