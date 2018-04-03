@@ -290,9 +290,15 @@ let text_csig pos = Ctf.text (rhs_text pos)
 let text_def pos = [Ptop_def (Str.text (rhs_text pos))]
 
 let extra_text text pos items =
-  let pre_extras = rhs_pre_extra_text pos in
-  let post_extras = rhs_post_extra_text pos in
-    text pre_extras @ items @ text post_extras
+  match items with
+  | [] ->
+      let post = rhs_post_text pos in
+      let post_extras = rhs_post_extra_text pos in
+      text post @ text post_extras
+  | _ :: _ ->
+      let pre_extras = rhs_pre_extra_text pos in
+      let post_extras = rhs_post_extra_text pos in
+        text pre_extras @ items @ text post_extras
 
 let extra_str pos items = extra_text Str.text pos items
 let extra_sig pos items = extra_text Sig.text pos items
