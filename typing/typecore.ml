@@ -2214,7 +2214,6 @@ struct
       | Tstr_modtype _ ->
           Env.empty, Use.empty
       | Tstr_open _ ->
-          (* TODO(objmagic) adapt to GPR#556 *)
           Env.empty, Use.empty
       | Tstr_class classes ->
           (* Any occurrence in a class definition is counted as a use,
