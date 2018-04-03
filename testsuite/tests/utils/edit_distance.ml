@@ -1,3 +1,10 @@
+(* TEST
+include config
+include testing
+binary_modules = "misc identifiable numbers"
+* bytecode
+*)
+
 let edit_distance = Misc.edit_distance
 
 let show_cutoff n =
