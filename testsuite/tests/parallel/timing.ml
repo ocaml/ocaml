@@ -15,7 +15,7 @@ let check_after n =
     failwith ("Early by " ^ (Int64.(to_string (neg (div late (of_int 1_000_000))))) ^ " ms")
 
 let check_before n =
-  let late = Int64.sub (timer_ticks ()) (at n) in
+  let late = Int64.sub (timer_ticks ()) (Int64.(add (at n) (of_int (step/2)))) in
   if late > Int64.zero then
     failwith ("Late by " ^ (Int64.(to_string ((div late (of_int 1_000_000))))) ^ " ms")
 
