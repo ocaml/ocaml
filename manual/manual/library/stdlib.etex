@@ -54,6 +54,7 @@ the above 4 modules \\
 "Stack" & p.~\pageref{Stack} & last-in first-out stacks \\
 "Queue" & p.~\pageref{Queue} & first-in first-out queues \\
 "Buffer" & p.~\pageref{Buffer} & buffers that grow on demand \\
+"Seq" & p.~\pageref{Seq} & functional iterators \\
 "Lazy" & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
 from being garbage-collected \\
@@ -133,6 +134,7 @@ be called from C \\
 \item \ahref{libref/Queue.html}{Module \texttt{Queue}: first-in first-out queues}
 \item \ahref{libref/Random.html}{Module \texttt{Random}: pseudo-random number generator (PRNG)}
 \item \ahref{libref/Scanf.html}{Module \texttt{Scanf}: formatted input functions}
+\item \ahref{libref/Seq.html}{Module \texttt{Seq}: functional iterators}
 \item \ahref{libref/Set.html}{Module \texttt{Set}: sets over ordered types}
 \item \ahref{libref/Sort.html}{Module \texttt{Sort}: deprecated}
 \item \ahref{libref/Spacetime.html}{Module \texttt{Spacetime}: memory profiler}
@@ -180,6 +182,7 @@ be called from C \\
 \input{Queue.tex}
 \input{Random.tex}
 \input{Scanf.tex}
+\input{Seq.tex}
 \input{Set.tex}
 \input{Sort.tex}
 \input{Spacetime.tex}
