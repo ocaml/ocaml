@@ -83,7 +83,7 @@ UTILS=utils/config.cmo utils/misc.cmo \
   utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
   utils/consistbl.cmo \
   utils/strongly_connected_components.cmo \
-  utils/targetint.cmo
+  utils/targetint.cmo utils/domainstate.cmo
 
 PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/docstrings.cmo parsing/syntaxerr.cmo \
@@ -372,12 +372,18 @@ reconfigure:
 	./configure $(CONFIGURE_ARGS)
 endif
 
+utils/domainstate.ml: utils/domainstate.ml.c byterun/caml/domain_state.tbl
+	$(CPP) -I byterun/caml $< > $@
+
+utils/domainstate.mli: utils/domainstate.mli.c utils/domainstate.ml byterun/caml/domain_state.tbl
+	$(CPP) -I byterun/caml $< > $@
+
 .PHONY: partialclean
 partialclean::
-	rm -f utils/config.ml
+	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 .PHONY: beforedepend
-beforedepend:: utils/config.ml
+beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 # Start up the system from the distribution compiler
 .PHONY: coldstart
@@ -844,17 +850,6 @@ natruntop:
 
 otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 	$(MAKE) -C otherlibs/dynlink allopt
-
-utils/domainstate.ml: utils/domainstate.ml.c byterun/caml/domain_state.tbl
-	$(CPP) -I byterun/caml $< > $@
-
-utils/domainstate.mli: utils/domainstate.mli.c utils/domainstate.ml byterun/caml/domain_state.tbl
-	$(CPP) -I byterun/caml $< > $@
-
-partialclean::
-	rm -f utils/config.ml utils/domainstate.ml utils/domainstate.mli
-
-beforedepend:: utils/config.ml utils/domainstate.ml utils/domainstate.mli
 
 # The parser
 

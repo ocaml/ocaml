@@ -98,7 +98,7 @@ let operation d = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise k -> Format.asprintf "%a%s" raise_kind k (Debuginfo.to_string d)
+  | Craise k -> Format.asprintf "%s%s" (Lambda.raise_kind k) (Debuginfo.to_string d)
   | Ccheckbound -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function

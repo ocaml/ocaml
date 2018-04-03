@@ -395,7 +395,7 @@ let validate d m p =
 *)
 
 let raise_regular dbg exc =
-  Cop(Craise (Lambda.Raise_regular, dbg),[exc])
+  Cop(Craise Lambda.Raise_regular, [exc], dbg)
 
 let raise_symbol dbg symb =
   raise_regular dbg (Cconst_symbol symb)
@@ -746,7 +746,7 @@ let lookup_tag obj tag dbg =
 
 let lookup_label obj lab dbg =
   bind "lab" lab (fun lab ->
-    let table = Cop (Cloadmut, [obj], dbg) in
+    let table = Cop (Cloadmut, [obj; Cconst_int 0], dbg) in
                      (* Should this be Cloadmut? *)
     addr_array_ref table lab dbg)
 
@@ -779,7 +779,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
 let make_alloc dbg tag args =
   let addr_array_init arr ofs newval dbg =
     Cop(Cextcall("caml_initialize_field", typ_void, false, None),
-        [arr; untag_int dbg; newval], dbg)
+        [arr; untag_int ofs dbg; newval], dbg)
   in
   make_alloc_generic addr_array_init dbg tag (List.length args) args
 
@@ -1979,9 +1979,9 @@ and transl_prim_1 env p arg dbg =
       return_unit(remove_unit (transl env arg))
   (* Heap operations *)
   | Pfield(n, Pointer, Mutable) ->
-      get_mut_field (transl env arg) (Cconst_int n)
+      get_mut_field (transl env arg) (Cconst_int n) dbg
   | Pfield(n, _, _) ->
-      get_field env (transl env arg) n
+      get_field env (transl env arg) n dbg
   | Pfloatfield n ->
       let ptr = transl env arg in
       box_float dbg (
@@ -2578,8 +2578,8 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       (unaligned_set_64 ba_data idx newval dbg))))))
 
   | Patomic_cas ->
-     Cop (Cextcall ("caml_atomic_cas", typ_int, true, Debuginfo.none, None),
-          [transl env arg1; transl env arg2; transl env arg3])
+     Cop (Cextcall ("caml_atomic_cas", typ_int, true, None),
+          [transl env arg1; transl env arg2; transl env arg3], dbg)
 
   | prim ->
       fatal_errorf "Cmmgen.transl_prim_3: %a" Printlambda.primitive prim
@@ -3177,18 +3177,17 @@ let send_function arity =
   let cache = Ident.create "cache"
   and obj = List.hd args
   and tag = Ident.create "tag" in
-  let env = empty_env in
   let clos =
     let cache = Cvar cache and obj = Cvar obj and tag = Cvar tag in
     let meths = Ident.create "meths" and cached = Ident.create "cached" in
     let real = Ident.create "real" in
-    let mask = get_mut_field (Cvar meths) (Cconst_int 1) in
+    let mask = get_mut_field (Cvar meths) (Cconst_int 1) dbg in
     let cached_pos = Cvar cached in
     let tag_pos = Cop(Cadda, [Cop (Cadda, [cached_pos; Cvar meths], dbg);
                               Cconst_int(3*size_addr-1)], dbg) in
     let tag' = Cop(Cload (Word_int, Mutable), [tag_pos], dbg) in
     Clet (
-    meths, get_mut_field obj (Cconst_int 0),
+    meths, get_mut_field obj (Cconst_int 0) dbg,
     Clet (
     cached,
       Cop(Cand, [Cop(Cload (Word_int, Mutable), [cache], dbg); mask], dbg),
@@ -3199,8 +3198,8 @@ let send_function arity =
                 cached_pos),
     get_mut_field (Cvar meths)
                   (Cop(Casr, [Cop (Cadda, [Cvar real;
-                                           Cconst_int(2*size_addr - 1)]);
-                              Cconst_int log2_size_addr])))))
+                                           Cconst_int(2*size_addr - 1)], dbg);
+                              Cconst_int log2_size_addr], dbg)) dbg)))
   in
   let body = Clet(clos', clos, body) in
   let cache = cache in

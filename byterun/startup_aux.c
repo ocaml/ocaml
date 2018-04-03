@@ -21,9 +21,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "caml/backtrace.h"
+#include "caml/dynlink.h"
 #include "caml/memory.h"
 #include "caml/callback.h"
 #include "caml/major_gc.h"
+#include "caml/misc.h"
 #ifndef NATIVE_CODE
 #include "caml/dynlink.h"
 #endif
@@ -32,7 +34,6 @@
 #include "caml/startup_aux.h"
 #include "caml/version.h"
 
-
 /* Configuration parameters and flags */
 
 static struct caml_params params;
@@ -40,7 +41,9 @@ const struct caml_params* const caml_params = &params;
 
 static void init_startup_params()
 {
+#ifndef NATIVE_CODE
   char_os * cds_file;
+#endif
 
   params.init_percent_free = Percent_free_def;
   params.init_max_percent_free = Max_percent_free_def;
@@ -117,53 +120,6 @@ void caml_parse_ocamlrunparam(void)
     }
   }
 }
-
-/* Parse options on the command line */
-
-int caml_parse_command_line(char_os **argv)
-{
-  int i, j;
-
-  for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
-    switch(argv[i][1]) {
-    case _T('t'):
-      params.trace_level++; /* ignored unless DEBUG mode */
-      break;
-    case _T('v'):
-      if (!strcmp_os (argv[i], _T("-version"))){
-        printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
-        exit (0);
-      }else if (!strcmp_os (argv[i], _T("-vnum"))){
-        printf (OCAML_VERSION_STRING "\n");
-        exit (0);
-      }else{
-        params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
-      }
-      break;
-    case _T('p'):
-      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
-        printf("%s\n", caml_names_of_builtin_cprim[j]);
-      exit(0);
-      break;
-    case _T('b'):
-      params.backtrace_enabled_init = 1;
-      break;
-    case _T('I'):
-      if (argv[i + 1] != NULL) {
-        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
-        i++;
-      }
-      break;
-    default:
-      caml_fatal_error_arg("Unknown option %s.\n", caml_stat_strdup_of_os(argv[i]));
-    }
-  }
-  return i;
-}
-
-
-
-
 /* The number of outstanding calls to caml_startup */
 static int startup_count = 0;
 
@@ -231,3 +187,60 @@ void caml_init_section_table(const char* section_table,
   params.section_table = section_table;
   params.section_table_size = section_table_size;
 }
+
+CAMLprim value caml_maybe_print_stats (value v)
+{
+  Assert (v == Val_unit);
+  if (caml_params->print_stats)
+    caml_print_stats ();
+  return Val_unit;
+}
+
+#ifndef NATIVE_CODE
+
+/* Parse options on the command line */
+
+int caml_parse_command_line(char_os **argv)
+{
+  int i, j;
+
+  for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
+    switch(argv[i][1]) {
+    case _T('t'):
+      params.trace_level++; /* ignored unless DEBUG mode */
+      break;
+    case _T('v'):
+      if (!strcmp_os (argv[i], _T("-version"))){
+        printf ("The OCaml runtime, version " OCAML_VERSION_STRING "\n");
+        exit (0);
+      }else if (!strcmp_os (argv[i], _T("-vnum"))){
+        printf (OCAML_VERSION_STRING "\n");
+        exit (0);
+      }else{
+        params.verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      }
+      break;
+    case _T('p'):
+      for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
+        printf("%s\n", caml_names_of_builtin_cprim[j]);
+      exit(0);
+      break;
+    case _T('b'):
+      params.backtrace_enabled_init = 1;
+      break;
+    case _T('I'):
+      if (argv[i + 1] != NULL) {
+        caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
+        i++;
+      }
+      break;
+    default:
+      caml_fatal_error_arg("Unknown option %s.\n", caml_stat_strdup_of_os(argv[i]));
+    }
+  }
+  return i;
+}
+
+#endif /* not NATIVE_CODE */
+
+

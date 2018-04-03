@@ -260,14 +260,6 @@ extern void caml_install_invalid_parameter_handler();
 
 extern int caml_ensure_spacetime_dot_o_is_included;
 
-CAMLprim value caml_maybe_print_stats (value v)
-{
-  Assert (v == Val_unit);
-  if (caml_params->print_stats)
-    caml_print_stats ();
-  return Val_unit;
-}
-
 /* Main entry point when loading code from a file */
 
 CAMLexport void caml_main(char_os **argv)
