@@ -28,7 +28,7 @@ open Translcore
 open Translclass
 
 type error =
-  Circular_dependency of Ident.t
+  Circular_dependency of Ident.t list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error
@@ -249,6 +249,22 @@ let init_shape modl =
 
 type binding_status = Undefined | Inprogress | Defined
 
+let extract_unsafe_cycle id fv cycle_start =
+  let num_bindings = Array.length id in
+  let rec explore = function
+    | [] -> assert false
+    | (l,i) :: stack ->
+        if List.mem i l then
+          List.rev_map (Array.get id) (i::l)
+        else begin
+          let children =
+            List.filter
+              ( fun (_,j) -> Ident.Set.mem id.(j) fv.(i) )
+            @@ List.init num_bindings (fun j -> i::l, j ) in
+          explore (children @ stack) end
+  in
+  explore [[], cycle_start]
+
 let reorder_rec_bindings bindings =
   let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
   and loc = Array.of_list (List.map (fun (_,loc,_,_) -> loc) bindings)
@@ -261,7 +277,9 @@ let reorder_rec_bindings bindings =
   let rec emit_binding i =
     match status.(i) with
       Defined -> ()
-    | Inprogress -> raise(Error(loc.(i), Circular_dependency id.(i)))
+    | Inprogress ->
+        let cycle = extract_unsafe_cycle id fv i in
+        raise(Error(loc.(i), Circular_dependency cycle))
     | Undefined ->
         if init.(i) = None then begin
           status.(i) <- Inprogress;
@@ -1323,12 +1341,18 @@ let transl_store_package component_names target_name coercion =
 
 open Format
 
+let print_cycle ppf =
+  Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "@ -> ")
+    Printtyp.ident ppf
+
 let report_error ppf = function
-    Circular_dependency id ->
+    Circular_dependency cycle ->
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 4 in
       fprintf ppf
-        "@[Cannot safely evaluate the definition@ \
-         of the recursively-defined module %a@]"
-        Printtyp.ident id
+        "@[Cannot safely evaluate the definition of the following cycle@ \
+         of recursively-defined modules:@ %a.@ \
+         There are no safe modules in this cycle@ (see manual section %d.%d)@]"
+        print_cycle cycle chapter section
   | Conflicting_inline_attributes ->
       fprintf ppf
         "@[Conflicting ``inline'' attributes@]"

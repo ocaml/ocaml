@@ -199,7 +199,19 @@ module expressions are then evaluated, and the initial values
 for the safe modules are replaced by the values thus computed.  If a
 function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
-"Undefined_recursive_module" exception is raised.
+"Undefined_recursive_module" exception is raised at runtime:
+
+\begin{caml_example}{verbatim}
+module rec M: sig val f: unit -> int end = struct let f () = N.x end
+and N:sig val x: int end = struct let x = M.f () end
+\end{caml_example}
+
+If there are no safe modules along a dependency cycle, an error is raised
+
+\begin{caml_example}{verbatim}[error]
+module rec M: sig val x: int end = struct let x = N.y end
+and N:sig val x: int val y:int end = struct let x = M.x let y = 0 end
+\end{caml_example}
 
 Note that, in the @specification@ case, the @module-type@s must be
 parenthesized if they use the @'with' mod-constraint@ construct.
