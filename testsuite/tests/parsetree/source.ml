@@ -7407,3 +7407,9 @@ module type T = sig type s = int end
 module F(X:S) : T = X
 module G(X:T) : S = X
 type t = |
+
+let x = let open struct type t = int let x = 1 end in x
+let y =
+  let
+    open ((functor (X: sig val x : int end) -> struct X.x end)(struct let x = 1 end))
+  in x
