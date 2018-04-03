@@ -494,8 +494,8 @@ type weather2 =
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ;    (** Comment for field foo *)
-    val bar : string ; (** Comment for field bar *)
+    foo : int ;    (** Comment for field foo *)
+    bar : string ; (** Comment for field bar *)
   }
   (** Continuation of comment for type my_record *)
 
@@ -541,8 +541,8 @@ class type my_class_type =
 end
 
 (** The comment for module Foo *)
-module Foo =
-  struct
+module Foo :
+  sig
     (** The comment for x *)
     val x : int
 
@@ -556,8 +556,8 @@ module type my_module_type =
     val x : int
 
     (** The comment for module M. *)
-    module M =
-      struct
+    module M :
+      sig
         (** The comment for value y. *)
         val y : int
 
@@ -606,8 +606,8 @@ type weather =
 
 (** The comment for type my_record *)
 type my_record = {
-    val foo : int ;    (** Comment for field foo *)
-    val bar : string ; (** Comment for field bar *)
+    foo : int ;    (** Comment for field foo *)
+    bar : string ; (** Comment for field bar *)
   }
 
 (** The comment for class my_class *)
