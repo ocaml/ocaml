@@ -323,9 +323,6 @@ _ocamltestd
 
 /testsuite/tests/unwind/unwind_test
 
-/testsuite/tests/warnings/w55.opt.opt_result
-/testsuite/tests/warnings/w58.opt.opt_result
-
 /testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/expect_test

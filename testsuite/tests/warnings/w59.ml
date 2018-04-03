@@ -1,3 +1,24 @@
+(* TEST
+
+flags = "-w A"
+compile_only = "true"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+
+* no-flambda
+** setup-ocamlopt.byte-build-env
+*** ocamlopt.byte
+**** check-ocamlopt.byte-output
+
+* flambda
+compiler_reference = "${test_source_directory}/w59.flambda.reference"
+** setup-ocamlopt.byte-build-env
+*** ocamlopt.byte
+**** check-ocamlopt.byte-output
+
+*)
 
 (* Check that the warning 59 (assignment to immutable value) does not
    trigger on those examples *)
@@ -34,7 +55,7 @@ let set v =
 let () =
   set o
 
-(* Sys.opaque_identity hide all information and shouldn't warn *)
+(* Sys.opaque_identity hides all information and shouldn't warn *)
 
 let opaque = Sys.opaque_identity (1,2)
 let set_opaque =
