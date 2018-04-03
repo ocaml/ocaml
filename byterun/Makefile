@@ -91,7 +91,7 @@ PRIMS=\
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c \
   dynlink.c backtrace_prim.c backtrace.c spacetime.c afl.c domain.c \
-	platform.c eventlog.c fiber.c memory.c startup.c
+	platform.c eventlog.c fiber.c memory.c startup_aux.c
 
 OBJS=$(addsuffix .$(O), \
   interp misc fix_code startup_aux startup \

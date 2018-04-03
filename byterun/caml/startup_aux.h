@@ -55,7 +55,7 @@ struct caml_params {
 extern const struct caml_params* const caml_params;
 
 extern void caml_parse_ocamlrunparam (void);
-int caml_parse_command_line (char_os **argv);
+extern int caml_parse_command_line (char_os **argv);
 
 /* Common entry point to caml_startup.
    Returns 0 if the runtime is already initialized.
@@ -65,6 +65,7 @@ extern int caml_startup_aux (int pooling);
 void caml_init_argv(const char* exe_name, char** main_argv);
 void caml_init_section_table(const char* section_table,
                              asize_t section_table_size);
+value caml_maybe_print_stats (value v);
 
 #endif /* CAML_INTERNALS */
 

@@ -537,7 +537,6 @@ let both_moveable a b =
   | Moveable, Fixed
   | Fixed, Constant
   | Fixed, Moveable
-  | Fixed, Moveable_not_into_loops
   | Fixed, Fixed -> Fixed
 
 let primitive_moveable (prim : Lambda.primitive)

@@ -18,9 +18,10 @@ include ../config/Makefile
 LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
-  weak.c finalise.c meta.c custom.c main.c globroots.c \
+  weak.c finalise.c meta.c custom.c main.c roots.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
-  domain.c platform.c eventlog.c backtrace.c startup_aux.c
+  domain.c platform.c eventlog.c backtrace.c startup_aux.c \
+	afl.c bigarray.c fiber.c
 
 # The following variable stores the list of files for which dependencies
 # should be computed. It includes even the files that won't actually be
@@ -68,17 +69,18 @@ ASPPFLAGS += -DMODEL_$(MODEL)
 endif
 
 COBJS=startup_aux.$(O) startup.$(O) main.$(O) fail.$(O)		\
-  signals.$(O) signals_asm.$(O) misc.$(O) \
+  roots.$(O) signals.$(O) signals_asm.$(O) misc.$(O) \
   major_gc.$(O) minor_gc.$(O) memory.$(O) alloc.$(O) compare.$(O)	\
   ints.$(O) floats.$(O) str.$(O) array.$(O) io.$(O) extern.$(O)		\
   intern.$(O) hash.$(O) sys.$(O) parsing.$(O) gc_ctrl.$(O)		\
   terminfo.$(O) md5.$(O) obj.$(O) lexing.$(O) $(UNIX_OR_WIN32).$(O)	\
-  printexc.$(O) callback.$(O) weak.$(O) compact.$(O) finalise.$(O)	\
+  printexc.$(O) callback.$(O) weak.$(O) finalise.$(O)	\
   custom.$(O) globroots.$(O) backtrace_prim.$(O) backtrace.$(O)		\
   natdynlink.$(O) debugger.$(O) meta.$(O) dynlink.$(O)			\
   clambda_checks.$(O) spacetime.$(O) spacetime_snapshot.$(O)		\
   spacetime_offline.$(O) afl.$(O) bigarray.$(O) addrmap.$(O) \
-  domain.$(O) platform.$(O) eventlog.$(O) shared_heap.$(O)
+  domain.$(O) platform.$(O) eventlog.$(O) shared_heap.$(O) \
+	fiber.$(O) frame_descriptors.$(O)
 
 OBJS=$(COBJS) $(ASMOBJS)
 
