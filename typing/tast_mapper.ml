@@ -17,7 +17,7 @@ open Asttypes
 open Typedtree
 
 (* TODO: add 'methods' for location, attribute, extension,
-   open_description, include_declaration, include_description *)
+   include_declaration, include_description *)
 
 type mapper =
   {
