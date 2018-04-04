@@ -258,6 +258,9 @@ let extract_unsafe_cycle id status cycle_start =
     | Inprogress Some i when i = stop -> id.(i) :: l
     | Inprogress Some i -> collect stop (id.(i)::l) i in
   collect cycle_start [id.(cycle_start)] cycle_start
+(* This yields [cycle_start; ...; cycle_start]. The start of the cycle
+   is duplicated to make the cycle more visible in the corresponding error
+   message. *)
 
 let reorder_rec_bindings bindings =
   let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
