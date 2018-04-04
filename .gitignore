@@ -275,6 +275,9 @@ _ocamltestd
 
 /testsuite/tests/lib-threads/*.byt
 
+/testsuite/tests/opaque/fst/*.mli
+/testsuite/tests/opaque/snd/*.mli
+
 /testsuite/tests/output_obj/*.bc.c
 /testsuite/tests/output_obj/*_stub
 /testsuite/tests/output_obj/*_stub
