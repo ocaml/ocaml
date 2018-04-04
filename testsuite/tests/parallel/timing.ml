@@ -7,7 +7,8 @@ open Domain.Sync
 let startup = timer_ticks ()
 
 let step = 50_000_000           (* 50 ms *)
-let at n = Int64.(add startup (mul (of_int step) (of_int n)))
+let slop = ref Int64.zero
+let at n = Int64.(add (add !slop startup) (mul (of_int step) (of_int n)))
 
 let check_after n =
   let late = Int64.sub (timer_ticks ()) (at n) in
@@ -15,9 +16,12 @@ let check_after n =
     failwith ("Early by " ^ (Int64.(to_string (neg (div late (of_int 1_000_000))))) ^ " ms")
 
 let check_before n =
-  let late = Int64.sub (timer_ticks ()) (Int64.(add (at n) (of_int (step/2)))) in
+  let late = Int64.sub (timer_ticks ()) (at n) in
   if late > Int64.zero then
-    failwith ("Late by " ^ (Int64.(to_string ((div late (of_int 1_000_000))))) ^ " ms")
+    if late < Int64.of_int (step/2) then
+      slop := Int64.add !slop late
+    else
+      failwith ("Late by " ^ (Int64.(to_string ((div late (of_int 1_000_000))))) ^ " ms")
 
 
 let flag = Atomic.make false
