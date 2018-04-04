@@ -28,7 +28,7 @@ open Translcore
 open Translclass
 
 type error =
-  Circular_dependency of Ident.t
+  Circular_dependency of Ident.t list
 | Conflicting_inline_attributes
 
 exception Error of Location.t * error
@@ -247,7 +247,20 @@ let init_shape modl =
 
 (* Reorder bindings to honor dependencies.  *)
 
-type binding_status = Undefined | Inprogress | Defined
+type binding_status =
+  | Undefined
+  | Inprogress of int option (** parent node *)
+  | Defined
+
+let extract_unsafe_cycle id status cycle_start =
+  let rec collect stop l i = match status.(i) with
+    | Inprogress None | Undefined | Defined -> assert false
+    | Inprogress Some i when i = stop -> id.(i) :: l
+    | Inprogress Some i -> collect stop (id.(i)::l) i in
+  collect cycle_start [id.(cycle_start)] cycle_start
+(* This yields [cycle_start; ...; cycle_start]. The start of the cycle
+   is duplicated to make the cycle more visible in the corresponding error
+   message. *)
 
 let reorder_rec_bindings bindings =
   let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
@@ -258,23 +271,26 @@ let reorder_rec_bindings bindings =
   let num_bindings = Array.length id in
   let status = Array.make num_bindings Undefined in
   let res = ref [] in
-  let rec emit_binding i =
+  let rec emit_binding parent i =
     match status.(i) with
       Defined -> ()
-    | Inprogress -> raise(Error(loc.(i), Circular_dependency id.(i)))
+    | Inprogress _ ->
+        status.(i) <- Inprogress parent;
+        let cycle = extract_unsafe_cycle id status i in
+        raise(Error(loc.(i), Circular_dependency cycle))
     | Undefined ->
         if init.(i) = None then begin
-          status.(i) <- Inprogress;
+          status.(i) <- Inprogress parent;
           for j = 0 to num_bindings - 1 do
-            if Ident.Set.mem id.(j) fv.(i) then emit_binding j
+            if Ident.Set.mem id.(j) fv.(i) then emit_binding (Some i) j
           done
         end;
         res := (id.(i), init.(i), rhs.(i)) :: !res;
         status.(i) <- Defined in
   for i = 0 to num_bindings - 1 do
     match status.(i) with
-      Undefined -> emit_binding i
-    | Inprogress -> assert false
+      Undefined -> emit_binding None i
+    | Inprogress _ -> assert false
     | Defined -> ()
   done;
   List.rev !res
@@ -1323,12 +1339,18 @@ let transl_store_package component_names target_name coercion =
 
 open Format
 
+let print_cycle ppf =
+  Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "@ -> ")
+    Printtyp.ident ppf
+
 let report_error ppf = function
-    Circular_dependency id ->
+    Circular_dependency cycle ->
+      let[@manual.ref "s-recursive-modules"] chapter, section = 8, 4 in
       fprintf ppf
-        "@[Cannot safely evaluate the definition@ \
-         of the recursively-defined module %a@]"
-        Printtyp.ident id
+        "@[Cannot safely evaluate the definition of the following cycle@ \
+         of recursively-defined modules:@ %a.@ \
+         There are no safe modules in this cycle@ (see manual section %d.%d)@]"
+        print_cycle cycle chapter section
   | Conflicting_inline_attributes ->
       fprintf ppf
         "@[Conflicting ``inline'' attributes@]"

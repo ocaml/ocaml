@@ -96,6 +96,10 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+- MPR#7663, GPR#1694: print the whole cycle and add a reference to the manual in
+  the unsafe recursive module evaluation error message.
+  (Florian Angeletti, report by Matej Košík, review by Gabriel Scherer)
+
 - GPR#1166: In OCAMLPARAM, an alternative separator can be specified as
   first character (instead of comma) in the set ":|; ,"
   (Fabrice Le Fessant)
