@@ -247,23 +247,17 @@ let init_shape modl =
 
 (* Reorder bindings to honor dependencies.  *)
 
-type binding_status = Undefined | Inprogress | Defined
+type binding_status =
+  | Undefined
+  | Inprogress of int option (** parent node *)
+  | Defined
 
-let extract_unsafe_cycle id fv cycle_start =
-  let num_bindings = Array.length id in
-  let rec explore = function
-    | [] -> assert false
-    | (l,i) :: stack ->
-        if List.mem i l then
-          List.rev_map (Array.get id) (i::l)
-        else begin
-          let children =
-            List.filter
-              ( fun (_,j) -> Ident.Set.mem id.(j) fv.(i) )
-            @@ List.init num_bindings (fun j -> i::l, j ) in
-          explore (children @ stack) end
-  in
-  explore [[], cycle_start]
+let extract_unsafe_cycle id status cycle_start =
+  let rec collect stop l i = match status.(i) with
+    | Inprogress None | Undefined | Defined -> assert false
+    | Inprogress Some i when i = stop -> id.(i) :: l
+    | Inprogress Some i -> collect stop (id.(i)::l) i in
+  collect cycle_start [id.(cycle_start)] cycle_start
 
 let reorder_rec_bindings bindings =
   let id = Array.of_list (List.map (fun (id,_,_,_) -> id) bindings)
@@ -274,25 +268,26 @@ let reorder_rec_bindings bindings =
   let num_bindings = Array.length id in
   let status = Array.make num_bindings Undefined in
   let res = ref [] in
-  let rec emit_binding i =
+  let rec emit_binding parent i =
     match status.(i) with
       Defined -> ()
-    | Inprogress ->
-        let cycle = extract_unsafe_cycle id fv i in
+    | Inprogress _ ->
+        status.(i) <- Inprogress parent;
+        let cycle = extract_unsafe_cycle id status i in
         raise(Error(loc.(i), Circular_dependency cycle))
     | Undefined ->
         if init.(i) = None then begin
-          status.(i) <- Inprogress;
+          status.(i) <- Inprogress parent;
           for j = 0 to num_bindings - 1 do
-            if Ident.Set.mem id.(j) fv.(i) then emit_binding j
+            if Ident.Set.mem id.(j) fv.(i) then emit_binding (Some i) j
           done
         end;
         res := (id.(i), init.(i), rhs.(i)) :: !res;
         status.(i) <- Defined in
   for i = 0 to num_bindings - 1 do
     match status.(i) with
-      Undefined -> emit_binding i
-    | Inprogress -> assert false
+      Undefined -> emit_binding None i
+    | Inprogress _ -> assert false
     | Defined -> ()
   done;
   List.rev !res
