@@ -114,6 +114,7 @@ void caml_parse_ocamlrunparam(void)
       //case _T('w'): scanmult (opt, &caml_init_major_window); break;
       case _T('W'): scanmult (opt, &caml_runtime_warnings); break;
       }
+      --opt; /* to handle patterns like ",b=1" */
       while (*opt != _T('\0')){
         if (*opt++ == ',') break;
       }
@@ -203,6 +204,10 @@ CAMLprim value caml_maybe_print_stats (value v)
 int caml_parse_command_line(char_os **argv)
 {
   int i, j;
+
+#ifdef DEBUG
+  params.verb_gc = 0x3F;
+#endif
 
   for(i = 1; argv[i] != NULL && argv[i][0] == _T('-'); i++) {
     switch(argv[i][1]) {

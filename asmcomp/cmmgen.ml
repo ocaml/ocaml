@@ -603,9 +603,7 @@ let get_field env ptr n dbg =
         else Mutable
       | _ -> Mutable
   in
-  match mut with
-  | Mutable -> get_mut_field ptr (Cconst_int n) dbg
-  | Immutable -> Cop(Cload (Word_val, mut), [field_address ptr n dbg], dbg)
+  Cop(Cload (Word_val, mut), [field_address ptr n dbg], dbg)
 
 let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
@@ -707,7 +705,7 @@ let addr_array_set arr ofs newval dbg =
   Cop(Cextcall("caml_modify_field", typ_void, false, None),
       [arr; untag_int ofs dbg; newval], dbg)
 let addr_array_initialize arr ofs newval dbg =
-  Cop(Cextcall("caml_initialize_field", typ_void, false, None),
+  Cop(Cextcall("caml_initialize_field", typ_void, true, None),
       [arr; untag_int ofs dbg; newval], dbg)
 let int_array_set arr ofs newval dbg =
   Cop(Cstore (Word_int, Assignment),
@@ -778,7 +776,7 @@ let make_alloc_generic set_fn dbg tag wordsize args =
 
 let make_alloc dbg tag args =
   let addr_array_init arr ofs newval dbg =
-    Cop(Cextcall("caml_initialize_field", typ_void, false, None),
+    Cop(Cextcall("caml_initialize_field", typ_void, true, None),
         [arr; untag_int ofs dbg; newval], dbg)
   in
   make_alloc_generic addr_array_init dbg tag (List.length args) args
@@ -2111,7 +2109,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                         [transl env arg1; Cconst_int n; transl env arg2],
                         dbg))
       | Caml_initialize ->
-        return_unit(Cop(Cextcall("caml_initialize", typ_void, false, None),
+        return_unit(Cop(Cextcall("caml_initialize_field", typ_void, true, None),
                         [transl env arg1; Cconst_int n; transl env arg2],
                         dbg))
       | Simple ->
