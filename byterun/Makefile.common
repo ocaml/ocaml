@@ -66,7 +66,7 @@ install::
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) libcamlrun.$(A)
 	if test -d "$(INSTALL_LIBDIR)/caml"; then : ; \
 	  else mkdir "$(INSTALL_LIBDIR)/caml"; fi
-	for i in caml/*.h; do \
+	for i in caml/*.h caml/*.tbl; do \
 	  sed -f ../tools/cleanup-header $$i \
 	      > "$(INSTALL_LIBDIR)/$$i"; \
 	done
