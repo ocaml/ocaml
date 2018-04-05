@@ -181,15 +181,46 @@ let may_map = Stdlib.Option.map
 
 (* File functions *)
 
+let find_cache = Hashtbl.create 16
+let find_cache_cwd = ref (Sys.getcwd ())
+let reset_find_cache () =
+  Hashtbl.clear find_cache
+
+let really_exists dir name =
+  let dir = if dir = "" then Filename.current_dir_name else dir in
+  let () =
+    if Filename.is_relative dir then
+      let cwd = Sys.getcwd () in
+      if !find_cache_cwd <> cwd then begin
+        Hashtbl.clear find_cache;
+        find_cache_cwd := cwd
+      end
+  in
+  match Hashtbl.find find_cache dir with
+  | files -> Hashtbl.mem files name
+  | exception Not_found ->
+      try
+        let files = Sys.readdir dir in
+        let table = Hashtbl.create (Array.length files * 2) in
+        let add found file =
+          Hashtbl.add table file (); found || file = name
+        in
+        Hashtbl.add find_cache dir table;
+        Array.fold_left add false files
+      with _ ->
+        false
+
 let find_in_path path name =
   if not (Filename.is_implicit name) then
-    if Sys.file_exists name then name else raise Not_found
+    if really_exists (Filename.dirname name) (Filename.basename name) then
+      name
+    else
+      raise Not_found
   else begin
     let rec try_dir = function
       [] -> raise Not_found
     | dir::rem ->
-        let fullname = Filename.concat dir name in
-        if Sys.file_exists fullname then fullname else try_dir rem
+        if really_exists dir name then Filename.concat dir name else try_dir rem
     in try_dir path
   end
 
@@ -202,11 +233,14 @@ let find_in_path_rel path name =
     else if base = current_dir_name then simplify dir
     else concat (simplify dir) base
   in
+  let name = simplify name in
+  let suffix = Filename.dirname name in
+  let name = Filename.basename name in
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->
-      let fullname = simplify (Filename.concat dir name) in
-      if Sys.file_exists fullname then fullname else try_dir rem
+      let dir = simplify (Filename.concat dir suffix) in
+      if really_exists dir name then Filename.concat dir name else try_dir rem
   in try_dir path
 
 let find_in_path_uncap path name =
@@ -214,10 +248,8 @@ let find_in_path_uncap path name =
   let rec try_dir = function
     [] -> raise Not_found
   | dir::rem ->
-      let fullname = Filename.concat dir name
-      and ufullname = Filename.concat dir uname in
-      if Sys.file_exists ufullname then ufullname
-      else if Sys.file_exists fullname then fullname
+      if really_exists dir uname then Filename.concat dir uname
+      else if really_exists dir name then Filename.concat dir name
       else try_dir rem
   in try_dir path
 

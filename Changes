@@ -156,6 +156,11 @@ Working version
   emitted by the bytecode compiler appear more in-order than before.
   (Luc Maranget, advice and review by Damien Doligez)
 
+- GPR#1696: perform case-sensitive search for files, even on case-insensitive
+  file/operating systems (allows, for example, uChar.cmi in one directory not to
+  shadow uchar.cmi in a directory further down the search path).
+  (David Allsopp, review by ?)
+
 ### Code generation and optimizations:
 
 - GPR#1370: Fix code duplication in Cmmgen

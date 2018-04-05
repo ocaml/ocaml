@@ -99,6 +99,8 @@ module Stdlib : sig
   end
 end
 
+val reset_find_cache: unit -> unit
+        (* Allows the toploop to spot new files created between phrases. *)
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val find_in_path_rel: string list -> string -> string

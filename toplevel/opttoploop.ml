@@ -558,6 +558,7 @@ let loop ppf =
       Lexing.flush_input lb;
       Location.reset();
       first_line := true;
+      Misc.reset_find_cache ();
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
       let phr = preprocess_phrase ppf phr  in
       Env.reset_cache_toplevel ();
