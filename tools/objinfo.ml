@@ -46,12 +46,13 @@ let input_stringlist ic len =
 let dummy_crc = String.make 32 '-'
 let null_crc = String.make 32 '0'
 
+let string_of_crc crc = if !no_crc then null_crc else Digest.to_hex crc
+
 let print_name_crc (name, crco) =
   let crc =
     match crco with
       None -> dummy_crc
-    | Some crc ->
-      if !no_crc then null_crc else Digest.to_hex crc
+    | Some crc -> string_of_crc crc
   in
     printf "\t%s\t%s\n" crc name
 
@@ -112,11 +113,11 @@ let print_cmt_infos cmt =
   printf "cmt interface digest: %s\n"
     (match cmt.cmt_interface_digest with
      | None -> ""
-     | Some crc -> Digest.to_hex crc)
+     | Some crc -> string_of_crc crc)
 
 let print_general_infos name crc defines cmi cmx =
   printf "Name: %s\n" name;
-  printf "CRC of implementation: %s\n" (Digest.to_hex crc);
+  printf "CRC of implementation: %s\n" (string_of_crc crc);
   printf "Globals defined:\n";
   List.iter print_line defines;
   printf "Interfaces imported:\n";
