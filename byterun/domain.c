@@ -627,11 +627,11 @@ void caml_print_stats () {
   caml_gc_stat(Val_unit);
   caml_sample_gc_stats(&s);
   fprintf(stderr,"**** GC stats ****\n");
-  fprintf(stderr, "Minor words:\t\t%lu\n", s.minor_words);
-  fprintf(stderr, "Promoted words:\t\t%lu\n", s.promoted_words);
-  fprintf(stderr, "Major words:\t\t%lu\n", s.major_words);
-  fprintf(stderr, "Minor collections:\t%lu\n", s.minor_collections);
-  fprintf(stderr, "Major collections:\t%lu\n", (uint64_t) Caml_state->stat_major_collections);
+  fprintf(stderr, "Minor words:\t\t%llu\n", s.minor_words);
+  fprintf(stderr, "Promoted words:\t\t%llu\n", s.promoted_words);
+  fprintf(stderr, "Major words:\t\t%llu\n", s.major_words);
+  fprintf(stderr, "Minor collections:\t%lluu\n", s.minor_collections);
+  fprintf(stderr, "Major collections:\t%llu\n", (uint64_t) Caml_state->stat_major_collections);
 
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   memset(&ds,0,sizeof(struct detailed_stats));
@@ -659,32 +659,32 @@ void caml_print_stats () {
     }
   }
   fprintf(stderr, "\n**** Other stats ****\n");
-  fprintf(stderr, "Allocations:\t\t%llu\n", ds.allocations);
+  fprintf(stderr, "Allocations:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", ds.allocations);
 
   total = ds.mutable_loads + ds.immutable_loads;
-  fprintf(stderr, "\nLoads:\t\t\t%llu\n", total);
-  fprintf(stderr, "Mutable loads:\t\t%llu (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
-  fprintf(stderr, "Immutable loads:\t%llu (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
+  fprintf(stderr, "\nLoads:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
+  fprintf(stderr, "Mutable loads:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.mutable_loads, (double)ds.mutable_loads * 100.0 / total);
+  fprintf(stderr, "Immutable loads:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.immutable_loads, (double)ds.immutable_loads * 100.0 / total);
 
   total = ds.mutable_stores + ds.immutable_stores;
-  fprintf(stderr, "\nStores:\t\t\t%llu\n", total);
-  fprintf(stderr, "Mutable stores:\t\t%llu (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
-  fprintf(stderr, "Immutable stores:\t%llu (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
+  fprintf(stderr, "\nStores:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
+  fprintf(stderr, "Mutable stores:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.mutable_stores, (double)ds.mutable_stores * 100.0 / total);
+  fprintf(stderr, "Immutable stores:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.immutable_stores, (double)ds.immutable_stores * 100.0 / total);
 
   total = ds.extcall_noalloc + ds.extcall_alloc + ds.extcall_alloc_stackargs;
-  fprintf(stderr, "\nExternal calls:\t\t%llu\n", total);
-  fprintf(stderr, "NoAlloc:\t\t%llu (%.2lf%%)\n", ds.extcall_noalloc, (double)ds.extcall_noalloc * 100.0 / total);
-  fprintf(stderr, "Alloc:\t\t\t%llu (%.2lf%%)\n", ds.extcall_alloc, (double)ds.extcall_alloc * 100.0 / total);
-  fprintf(stderr, "Alloc + stack args:\t%llu (%.2lf%%)\n", ds.extcall_alloc_stackargs, (double)ds.extcall_alloc_stackargs * 100.0 / total);
+  fprintf(stderr, "\nExternal calls:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
+  fprintf(stderr, "NoAlloc:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_noalloc, (double)ds.extcall_noalloc * 100.0 / total);
+  fprintf(stderr, "Alloc:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_alloc, (double)ds.extcall_alloc * 100.0 / total);
+  fprintf(stderr, "Alloc + stack args:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.extcall_alloc_stackargs, (double)ds.extcall_alloc_stackargs * 100.0 / total);
 
   total = ds.tailcall_imm + ds.tailcall_ind + ds.call_imm + ds.call_ind;
-  fprintf(stderr, "\nCalls:\t\t\t%llu\n", total);
-  fprintf(stderr, "Imm tail:\t\t%llu (%.2lf%%)\n", ds.tailcall_imm, (double)ds.tailcall_imm * 100.0 / total);
-  fprintf(stderr, "Ind tail:\t\t%llu (%.2lf%%)\n", ds.tailcall_ind, (double)ds.tailcall_ind * 100.0 / total);
-  fprintf(stderr, "Imm non-tail:\t\t%llu (%.2lf%%)\n", ds.call_imm, (double)ds.call_imm * 100.0 / total);
-  fprintf(stderr, "Ind non-tail:\t\t%llu (%.2lf%%)\n", ds.call_ind, (double)ds.call_ind * 100.0 / total);
+  fprintf(stderr, "\nCalls:\t\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", total);
+  fprintf(stderr, "Imm tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.tailcall_imm, (double)ds.tailcall_imm * 100.0 / total);
+  fprintf(stderr, "Ind tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.tailcall_ind, (double)ds.tailcall_ind * 100.0 / total);
+  fprintf(stderr, "Imm non-tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.call_imm, (double)ds.call_imm * 100.0 / total);
+  fprintf(stderr, "Ind non-tail:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.call_ind, (double)ds.call_ind * 100.0 / total);
 
-  fprintf(stderr, "\nStackoverflow checks:\t%llu (%.2lf%%)\n", ds.stackoverflow_checks, (double)ds.stackoverflow_checks * 100.0 / total);
+  fprintf(stderr, "\nStackoverflow checks:\t%"ARCH_INTNAT_PRINTF_FORMAT"u (%.2lf%%)\n", ds.stackoverflow_checks, (double)ds.stackoverflow_checks * 100.0 / total);
 
 #endif
 }
