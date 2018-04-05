@@ -68,7 +68,7 @@ let rec init_aux i n f =
 
 let rev_init_threshold =
   match Sys.backend_type with
-  | Sys.Native | Sys.Bytecode -> 10_0000
+  | Sys.Native | Sys.Bytecode -> 10_000
   (* We don't known the size of the stack, better be safe and assume it's small. *)
   | Sys.Other _ -> 50
 
