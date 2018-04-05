@@ -529,8 +529,9 @@ let dump_exe ic =
     !globals.(i) <- Constant (init_data.(i))
   done;
   ignore(Bytesections.seek_section ic "SYMB");
-  let (_, sym_table) = (input_value ic : int * (Ident.t, int) Tbl.t) in
-  Tbl.iter (fun id pos -> !globals.(pos) <- Global id) sym_table;
+  let sym_table = (input_value ic : Symtable.global_map) in
+  Symtable.iter_global_map
+    (fun id pos -> !globals.(pos) <- Global id) sym_table;
   begin try
     ignore (Bytesections.seek_section ic "DBUG");
     let num_eventlists = input_binary_int ic in

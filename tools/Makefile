@@ -302,11 +302,13 @@ install::
 
 # The bytecode disassembler
 
-DUMPOBJ=opnames.cmo dumpobj.cmo
+DUMPOBJ= \
+          ../compilerlibs/ocamlcommon.cma \
+          ../compilerlibs/ocamlbytecomp.cma \
+          \
+          opnames.cmo dumpobj.cmo
 
-$(call byte_and_opt,dumpobj,config.cmo misc.cmo identifiable.cmo \
-                    numbers.cmo arg_helper.cmo clflags.cmo tbl.cmo \
-                    ident.cmo opcodes.cmo bytesections.cmo $(DUMPOBJ),)
+$(call byte_and_opt,dumpobj,$(DUMPOBJ),)
 
 make_opcodes.ml: make_opcodes.mll
 	$(CAMLLEX) make_opcodes.mll

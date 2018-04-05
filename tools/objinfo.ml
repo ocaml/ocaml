@@ -127,9 +127,9 @@ let print_general_infos name crc defines cmi cmx =
 
 let print_global_table table =
   printf "Globals defined:\n";
-  Tbl.iter
+  Symtable.iter_global_map
     (fun id _ -> print_line (Ident.name id))
-    table.num_tbl
+    table
 
 open Cmx_format
 
