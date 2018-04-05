@@ -4,7 +4,8 @@
        (module-defn(O) functors.ml(5):48-143
          (function X is_a_functor always_inline
            (let
-             (cow = (function x (apply (field 0 X) x))
+             (cow =
+                (function x (apply (field_imm 0 X) x))
               sheep = (function x (+ 1 (apply cow x))))
              (makeblock 0 cow sheep))))
      F =
@@ -13,7 +14,8 @@
            (let
              (cow =
                 (function x
-                  (apply (field 0 Y) (apply (field 0 X) x)))
+                  (apply (field_imm 0 Y)
+                    (apply (field_imm 0 X) x)))
               sheep = (function x (+ 1 (apply cow x))))
              (makeblock 0 cow sheep))))
      F1/1022 =
@@ -22,18 +24,20 @@
            (let
              (cow =
                 (function x
-                  (apply (field 0 Y) (apply (field 0 X) x)))
+                  (apply (field_imm 0 Y)
+                    (apply (field_imm 0 X) x)))
               sheep = (function x (+ 1 (apply cow x))))
              (makeblock 0 sheep))))
      F2/1029 =
        (module-defn(F2/1029) functors.ml(29):498-648
          (function X Y is_a_functor always_inline
            (let
-             (X =a (makeblock 0 (field 1 X))
-              Y =a (makeblock 0 (field 1 Y))
+             (X =a (makeblock 0 (field_mut 1 X))
+              Y =a (makeblock 0 (field_mut 1 Y))
               cow =
                 (function x
-                  (apply (field 0 Y) (apply (field 0 X) x)))
+                  (apply (field_imm 0 Y)
+                    (apply (field_imm 0 X) x)))
               sheep = (function x (+ 1 (apply cow x))))
              (makeblock 0 sheep))))
      M =
@@ -45,8 +49,8 @@
                   (let
                     (cow =
                        (function x
-                         (apply (field 0 Y)
-                           (apply (field 0 X) x)))
+                         (apply (field_imm 0 Y)
+                           (apply (field_imm 0 X) x)))
                      sheep =
                        (function x (+ 1 (apply cow x))))
                     (makeblock 0 cow sheep)))))
@@ -54,7 +58,7 @@
              (function funarg funarg is_a_functor stub
                (let
                  (let =
-                    (apply F (makeblock 0 (field 1 funarg))
-                      (makeblock 0 (field 1 funarg))))
-                 (makeblock 0 (field 1 let))))))))
+                    (apply F (makeblock 0 (field_mut 1 funarg))
+                      (makeblock 0 (field_mut 1 funarg))))
+                 (makeblock 0 (field_mut 1 let))))))))
     (makeblock 0 O F F1/1022 F2/1029 M)))

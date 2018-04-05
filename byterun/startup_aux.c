@@ -151,7 +151,8 @@ static void call_registered_value(char* name)
   caml_root f;
 
   f = caml_named_root(name);
-  caml_callback_exn(caml_read_root(f), Val_unit);
+  if (f != NULL)
+    caml_callback_exn(caml_read_root(f), Val_unit);
 }
 
 CAMLexport void caml_shutdown(void)
