@@ -168,7 +168,7 @@ static int steal_mark_work () {
 
     if(victim->state && caml_domain_rpc(victim, &handle_steal_req, &pl)) {
       if (pl.result == Shared) {
-        caml_gc_log("Stolen mark work (size=%llu) from domain %d",
+        caml_gc_log("Stolen mark work (size=%"ARCH_INTNAT_PRINTF_FORMAT"u) from domain %d",
                     domain_self->state->mark_stack_count, i);
         Caml_state->stealing = 0;
         return i;
