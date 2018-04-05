@@ -178,10 +178,10 @@ source.cmo : primitives.cmi ../utils/misc.cmi debugger_config.cmi \
 source.cmx : primitives.cmx ../utils/misc.cmx debugger_config.cmx \
     ../utils/config.cmx source.cmi
 source.cmi :
-symbols.cmo : ../bytecomp/symtable.cmi program_loading.cmi \
+symbols.cmo : ../bytecomp/symtable.cmi program_loading.cmi ../utils/misc.cmi \
     ../bytecomp/instruct.cmi events.cmi debugger_config.cmi debugcom.cmi \
     checkpoints.cmi ../bytecomp/bytesections.cmi symbols.cmi
-symbols.cmx : ../bytecomp/symtable.cmx program_loading.cmx \
+symbols.cmx : ../bytecomp/symtable.cmx program_loading.cmx ../utils/misc.cmx \
     ../bytecomp/instruct.cmx events.cmx debugger_config.cmx debugcom.cmx \
     checkpoints.cmx ../bytecomp/bytesections.cmx symbols.cmi
 symbols.cmi : ../bytecomp/instruct.cmi

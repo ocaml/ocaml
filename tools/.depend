@@ -18,11 +18,11 @@ cmt2annot.cmx : ../typing/untypeast.cmx ../typing/types.cmx \
     ../parsing/asttypes.cmi ../typing/annot.cmi
 cvt_emit.cmo :
 cvt_emit.cmx :
-dumpobj.cmo : ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
+dumpobj.cmo : ../bytecomp/symtable.cmi opnames.cmo ../bytecomp/opcodes.cmo \
     ../parsing/location.cmi ../bytecomp/lambda.cmi ../bytecomp/instruct.cmi \
     ../typing/ident.cmi ../utils/config.cmi ../bytecomp/cmo_format.cmi \
     ../bytecomp/bytesections.cmi ../parsing/asttypes.cmi
-dumpobj.cmx : ../utils/tbl.cmx opnames.cmx ../bytecomp/opcodes.cmx \
+dumpobj.cmx : ../bytecomp/symtable.cmx opnames.cmx ../bytecomp/opcodes.cmx \
     ../parsing/location.cmx ../bytecomp/lambda.cmx ../bytecomp/instruct.cmx \
     ../typing/ident.cmx ../utils/config.cmx ../bytecomp/cmo_format.cmi \
     ../bytecomp/bytesections.cmx ../parsing/asttypes.cmi
@@ -38,14 +38,14 @@ lintapidiff.cmx : ../typing/printtyp.cmx ../driver/pparse.cmx \
     ../utils/misc.cmx ../parsing/location.cmx ../typing/ident.cmx
 make_opcodes.cmo :
 make_opcodes.cmx :
-objinfo.cmo : ../utils/tbl.cmi ../middle_end/base_types/symbol.cmi \
+objinfo.cmo : ../bytecomp/symtable.cmi ../middle_end/base_types/symbol.cmi \
     ../asmcomp/printclambda.cmi ../utils/misc.cmi \
     ../middle_end/base_types/linkage_name.cmi ../typing/ident.cmi \
     ../asmcomp/export_info.cmi ../utils/config.cmi \
     ../middle_end/base_types/compilation_unit.cmi ../asmcomp/cmx_format.cmi \
     ../typing/cmt_format.cmi ../bytecomp/cmo_format.cmi \
     ../typing/cmi_format.cmi ../bytecomp/bytesections.cmi
-objinfo.cmx : ../utils/tbl.cmx ../middle_end/base_types/symbol.cmx \
+objinfo.cmx : ../bytecomp/symtable.cmx ../middle_end/base_types/symbol.cmx \
     ../asmcomp/printclambda.cmx ../utils/misc.cmx \
     ../middle_end/base_types/linkage_name.cmx ../typing/ident.cmx \
     ../asmcomp/export_info.cmx ../utils/config.cmx \
@@ -72,8 +72,10 @@ ocamlprof.cmx : ../utils/warnings.cmx ../parsing/parsetree.cmi \
     ../parsing/parse.cmx ../parsing/location.cmx
 opnames.cmo :
 opnames.cmx :
-primreq.cmo : ../utils/config.cmi ../bytecomp/cmo_format.cmi
-primreq.cmx : ../utils/config.cmx ../bytecomp/cmo_format.cmi
+primreq.cmo : ../utils/misc.cmi ../utils/config.cmi \
+    ../bytecomp/cmo_format.cmi
+primreq.cmx : ../utils/misc.cmx ../utils/config.cmx \
+    ../bytecomp/cmo_format.cmi
 profiling.cmo : profiling.cmi
 profiling.cmx : profiling.cmi
 profiling.cmi :
