@@ -18,12 +18,6 @@
 
 open Misc
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare = compare
-  end)
-
 let is_exn =
   let h = Hashtbl.create 64 in
   Array.iter (fun n -> Hashtbl.add h n ()) Runtimedef.builtin_exceptions;

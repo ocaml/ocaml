@@ -39,8 +39,6 @@ type directive_info = {
 
 (* The table of toplevel value bindings and its accessors *)
 
-module StringMap = Map.Make(String)
-
 let toplevel_value_bindings : Obj.t StringMap.t ref = ref StringMap.empty
 
 let getvalue name =

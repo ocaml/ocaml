@@ -14,9 +14,7 @@
 (**************************************************************************)
 
 (** Module dependencies. *)
-
-module StringSet : Set.S with type elt = string
-module StringMap : Map.S with type key = string
+open Misc
 
 type map_tree = Node of StringSet.t * bound_map
 and  bound_map = map_tree StringMap.t

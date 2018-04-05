@@ -21,9 +21,11 @@ open Cmm
 open Reg
 open Mach
 
+module Int = Numbers.Int
+
 type environment =
   { vars : Reg.t array Ident.Map.t;
-    static_exceptions : Reg.t array list IntMap.t;
+    static_exceptions : Reg.t array list Int.Map.t;
     (** Which registers must be populated when jumping to the given
         handler. *)
   }
@@ -32,17 +34,17 @@ let env_add id v env =
   { env with vars = Ident.Map.add id v env.vars }
 
 let env_add_static_exception id v env =
-  { env with static_exceptions = IntMap.add id v env.static_exceptions }
+  { env with static_exceptions = Int.Map.add id v env.static_exceptions }
 
 let env_find id env =
   Ident.Map.find id env.vars
 
 let env_find_static_exception id env =
-  IntMap.find id env.static_exceptions
+  Int.Map.find id env.static_exceptions
 
 let env_empty = {
   vars = Ident.Map.empty;
-  static_exceptions = IntMap.empty;
+  static_exceptions = Int.Map.empty;
 }
 
 (* Infer the type of the result of an operation *)

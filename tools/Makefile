@@ -347,8 +347,12 @@ install::
 	$(INSTALL_PROG) \
 	  objinfo_helper$(EXE) "$(INSTALL_LIBDIR)/objinfo_helper$(EXE)"
 
+primreq=../compilerlibs/ocamlcommon.cma \
+        ../compilerlibs/ocamlbytecomp.cma \
+        primreq.cmo
+
 # Scan object files for required primitives
-$(call byte_and_opt,primreq,config.cmo primreq.cmo,)
+$(call byte_and_opt,primreq,$(primreq),)
 
 LINTAPIDIFF=../compilerlibs/ocamlcommon.cmxa \
         ../compilerlibs/ocamlbytecomp.cmxa \

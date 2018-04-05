@@ -23,8 +23,6 @@ open Instruct
 open Opcodes
 open Cmo_format
 
-module StringSet = Set.Make(String)
-
 type error = Not_compatible_32 of (string * string)
 exception Error of error
 

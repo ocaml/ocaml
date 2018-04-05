@@ -627,7 +627,7 @@ let rec substitute loc fpc sb rn ulam =
         match rn with
         | Some rn ->
           begin try
-            IntMap.find nfail rn
+            Int.Map.find nfail rn
           with Not_found ->
             fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
           end
@@ -638,7 +638,7 @@ let rec substitute loc fpc sb rn ulam =
         match rn with
         | Some rn ->
           let new_nfail = next_raise_count () in
-          new_nfail, Some (IntMap.add nfail new_nfail rn)
+          new_nfail, Some (Int.Map.add nfail new_nfail rn)
         | None -> nfail, rn in
       let ids' = List.map Ident.rename ids in
       let sb' =
@@ -699,7 +699,7 @@ let no_effects = function
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
-    ([], []) -> substitute loc fpc subst (Some IntMap.empty) body
+    ([], []) -> substitute loc fpc subst (Some Int.Map.empty) body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
         bind_params_rec loc fpc (Ident.Map.add p1 a1 subst) pl al body

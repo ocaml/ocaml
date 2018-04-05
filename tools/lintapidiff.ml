@@ -38,7 +38,7 @@ let ignore_changes_for = [
   "value Unix.map_file_impl";
 ]
 
-module IdMap = Map.Make(String)
+module IdMap = Misc.StringMap
 
 module Version : sig
   type t

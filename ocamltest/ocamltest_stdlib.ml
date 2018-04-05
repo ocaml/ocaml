@@ -177,8 +177,8 @@ module Sys = struct
 end
 
 module StringSet = struct
-  include Set.Make (String)
+  include Misc.StringSet
   let string_of_stringset s = String.concat ", " (elements s)
 end
 
-module StringMap : Map.S with type key = string = Map.Make (String)
+module StringMap = Misc.StringMap

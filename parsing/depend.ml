@@ -13,15 +13,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc
 open Asttypes
 open Location
 open Longident
 open Parsetree
 
 let pp_deps = ref []
-
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-module StringMap = Map.Make(String)
 
 (* Module resolution map *)
 (* Node (set of imports for this path, map for submodules) *)

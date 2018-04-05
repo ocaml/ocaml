@@ -20,8 +20,6 @@ open Misc
 open Instruct
 open Cmo_format
 
-module StringSet = Set.Make(String)
-
 type error =
     Forward_reference of string * Ident.t
   | Multiple_definition of string * Ident.t

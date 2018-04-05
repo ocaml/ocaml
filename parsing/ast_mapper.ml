@@ -20,7 +20,7 @@
   (* Ensure that record patterns don't miss any field. *)
 *)
 
-
+open Misc
 open Parsetree
 open Ast_helper
 open Location
@@ -665,11 +665,6 @@ let rec extension_of_error {loc; msg; if_highlight; sub} =
 let attribute_of_warning loc s =
   { loc; txt = "ocaml.ppwarning" },
   PStr ([Str.eval ~loc (Exp.constant (Pconst_string (s, None)))])
-
-module StringMap = Map.Make(struct
-    type t = string
-    let compare = compare
-end)
 
 let cookies = ref StringMap.empty
 

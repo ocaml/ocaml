@@ -138,13 +138,7 @@ let get_alias_names module_list =
   Hashtbl.clear exception_aliases;
   build_alias_list (Search_alias.search module_list 0)
 
-module Map_ord =
-  struct
-    type t = string
-    let compare (x:t) y = Pervasives.compare x y
-  end
-
-module Ele_map = Map.Make (Map_ord)
+module Ele_map = Misc.StringMap
 
 let known_elements = ref Ele_map.empty
 let add_known_element name k =

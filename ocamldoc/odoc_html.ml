@@ -17,6 +17,7 @@
 
 let print_DEBUG s = print_string s ; print_newline ()
 
+open Misc
 open Odoc_info
 open Value
 open Type
@@ -229,11 +230,6 @@ module Naming =
     let file_type_class_complete_target name =
       type_prefix^name^".html"
   end
-
-module StringSet = Set.Make (struct
-  type t = string
-  let compare (x:t) y = compare x y
-end)
 
 (** A class with a method to colorize a string which represents OCaml code. *)
 class ocaml_code =

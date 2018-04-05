@@ -16,11 +16,10 @@
 
 (* Handling of symbol tables (globals and events) *)
 
+open Misc
 open Instruct
 open Debugger_config (* Toplevel *)
 open Program_loading
-
-module StringSet = Set.Make(String)
 
 let modules =
   ref ([] : string list)

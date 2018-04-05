@@ -16,10 +16,9 @@
 (* Determine the set of C primitives required by the given .cmo and .cma
    files *)
 
+open Misc
 open Config
 open Cmo_format
-
-module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let defined = ref true
 let used = ref false

@@ -62,4 +62,4 @@ module StringSet : sig
   val string_of_stringset : t -> string
 end
 
-module StringMap : Map.S with type key = string
+module StringMap = Misc.StringMap

@@ -205,12 +205,6 @@ let set_fixed_row env loc p decl =
 
 (* Translate one type declaration *)
 
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare (x:t) y = compare x y
-  end)
-
 let make_params env params =
   let make_param (sty, v) =
     try
@@ -598,8 +592,6 @@ let rec check_constraints_rec env loc visited ty =
       Btype.iter_type_expr (check_constraints_rec env loc visited) ty
   end
 
-module SMap = Map.Make(String)
-
 let check_constraints_labels env visited l pl =
   let rec get_loc name = function
       [] -> assert false
@@ -624,14 +616,14 @@ let check_constraints env sdecl (_, decl) =
       let pl = find_pl sdecl.ptype_kind in
       let pl_index =
         let foldf acc x =
-          SMap.add x.pcd_name.txt x acc
+          StringMap.add x.pcd_name.txt x acc
         in
-        List.fold_left foldf SMap.empty pl
+        List.fold_left foldf StringMap.empty pl
       in
       List.iter
         (fun {Types.cd_id=name; cd_args; cd_res} ->
           let {pcd_args; pcd_res; _} =
-            try SMap.find (Ident.name name) pl_index
+            try StringMap.find (Ident.name name) pl_index
             with Not_found -> assert false in
           begin match cd_args, pcd_args with
           | Cstr_tuple tyl, Pcstr_tuple styl ->

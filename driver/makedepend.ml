@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Misc
 open Compenv
 open Parsetree
-module StringMap = Depend.StringMap
 
 let ppf = Format.err_formatter
 (* Print the dependencies *)
@@ -34,7 +34,7 @@ let sort_files = ref false
 let all_dependencies = ref false
 let one_line = ref false
 let files =
-  ref ([] : (string * file_kind * Depend.StringSet.t * string list) list)
+  ref ([] : (string * file_kind * StringSet.t * string list) list)
 let allow_approximation = ref false
 let map_files = ref []
 let module_map = ref StringMap.empty
@@ -203,7 +203,7 @@ let print_dependencies target_files deps =
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string depends_on;
-  Depend.StringSet.iter
+  StringSet.iter
     (fun dep ->
        (* filter out "*predef*" *)
       if (String.length dep > 0)
@@ -240,7 +240,7 @@ let rec lexical_approximation lexbuf =
       match Lexer.token lexbuf with
       | Parser.UIDENT name ->
           Depend.free_structure_names :=
-            Depend.StringSet.add name !Depend.free_structure_names;
+            StringSet.add name !Depend.free_structure_names;
           process false lexbuf
       | Parser.LIDENT _ -> process true lexbuf
       | Parser.DOT when after_lident -> process false lexbuf
@@ -259,7 +259,7 @@ let rec lexical_approximation lexbuf =
 
 let read_and_approximate inputfile =
   error_occurred := false;
-  Depend.free_structure_names := Depend.StringSet.empty;
+  Depend.free_structure_names := StringSet.empty;
   let ic = open_in_bin inputfile in
   try
     seek_in ic 0;
@@ -277,7 +277,7 @@ let read_and_approximate inputfile =
 let read_parse_and_extract parse_function extract_function def ast_kind
     source_file =
   Depend.pp_deps := [];
-  Depend.free_structure_names := Depend.StringSet.empty;
+  Depend.free_structure_names := StringSet.empty;
   try
     let input_file = Pparse.preprocess source_file in
     begin try
@@ -298,7 +298,7 @@ let read_parse_and_extract parse_function extract_function def ast_kind
   with x -> begin
     report_err x;
     if not !allow_approximation
-    then (Depend.StringSet.empty, def)
+    then (StringSet.empty, def)
     else (read_and_approximate source_file, def)
   end
 
@@ -320,7 +320,7 @@ let print_ml_dependencies source_file extracted_deps pp_deps =
          (if !all_dependencies then [cmi_name] else [])
   in
   let (byt_deps, native_deps) =
-    Depend.StringSet.fold (find_dependency ML)
+    StringSet.fold (find_dependency ML)
       extracted_deps init_deps in
   if not !native_only then
     print_dependencies (byte_targets @ extra_targets) (byt_deps @ pp_deps);
@@ -336,7 +336,7 @@ let print_ml_dependencies source_file extracted_deps pp_deps =
 let print_mli_dependencies source_file extracted_deps pp_deps =
   let basename = Filename.chop_extension source_file in
   let (byt_deps, _opt_deps) =
-    Depend.StringSet.fold (find_dependency MLI)
+    StringSet.fold (find_dependency MLI)
       extracted_deps ([], []) in
   print_dependencies [basename ^ ".cmi"] (byt_deps @ pp_deps)
 
@@ -422,7 +422,7 @@ let sort_files_by_dependencies files =
     let add_dep modname kind =
       new_deps := (modname, kind) :: !new_deps;
     in
-    Depend.StringSet.iter (fun modname ->
+    StringSet.iter (fun modname ->
       match file_kind with
           ML -> (* ML depends both on ML and MLI *)
             if Hashtbl.mem h (modname, MLI) then add_dep modname MLI;
@@ -508,7 +508,7 @@ let parse_map fname =
   let old_transp = !Clflags.transparent_modules in
   Clflags.transparent_modules := true;
   let (deps, m) =
-    process_file fname ~def:(Depend.StringSet.empty, StringMap.empty)
+    process_file fname ~def:(StringSet.empty, StringMap.empty)
       ~ml_file:process_ml_map
       ~mli_file:process_mli_map
   in
@@ -521,7 +521,7 @@ let parse_map fname =
   let mm = Depend.make_node m in
   if !debug then begin
     Format.printf "@[<v>%s:%t%a@]@." fname
-      (fun ppf -> Depend.StringSet.iter (Format.fprintf ppf " %s") deps)
+      (fun ppf -> StringSet.iter (Format.fprintf ppf " %s") deps)
       (dump_map deps) (StringMap.add modname mm StringMap.empty)
   end;
   let mm = Depend.(weaken_map (StringSet.singleton modname) mm) in

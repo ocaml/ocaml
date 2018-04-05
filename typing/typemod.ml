@@ -698,9 +698,6 @@ let approx_modtype env smty =
 
 (* Auxiliaries for checking uniqueness of names in signatures and structures *)
 
-module StringSet =
-  Set.Make(struct type t = string let compare (x:t) y = String.compare x y end)
-
 let check cl loc set_ref name =
   if StringSet.mem name !set_ref
   then raise(Error(loc, Env.empty, Repeated_name(cl, name)))
