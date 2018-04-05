@@ -500,7 +500,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
     /* Callback the closure */
     clos = Start_closure(th->descr);
     caml_modify_field(th->descr, Start_closure_index, Val_unit);
-    callback_exn(clos, Val_unit);
+    caml_callback_exn(clos, Val_unit);
     /* Enter blocking section to release domain locks */
     caml_enter_blocking_section();
     caml_thread_stop();

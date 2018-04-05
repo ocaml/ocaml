@@ -27,6 +27,8 @@ tests/tool-ocaml/t350-heapcheck.ml
 tests/misc/finaliser.ml
 tests/regression/pr3612/
 tests/lib-hashtbl/htbl.ml
+tests/lib-bigarray/weak_bigarray.ml
+tests/basic/opt_variants.ml
 
 # ocamldebug is broken (#34)
 tool-debugger
