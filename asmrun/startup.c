@@ -144,7 +144,7 @@ value caml_startup_common(char_os **argv, int pooling)
     return Val_unit;
   }
   caml_init_main_stack();
-  caml_start_program(Caml_state->young_ptr);
+  return caml_start_program(Caml_state->young_ptr);
 }
 
 value caml_startup_exn(char_os **argv)

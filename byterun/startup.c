@@ -277,9 +277,6 @@ CAMLexport void caml_main(char_os **argv)
   caml_ensure_spacetime_dot_o_is_included++;
 
   /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
@@ -395,9 +392,6 @@ CAMLexport value caml_startup_code_exn(
   char_os * exe_name;
 
   /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
