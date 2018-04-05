@@ -38,3 +38,6 @@ let runtime_library backend ocamlsrcdir =
     | Ocaml_backends.Native -> "asmrun"
     | Ocaml_backends.Bytecode -> "byterun" in
   Filename.make_path [ocamlsrcdir; backend_lib_dir]
+
+let tools ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "tools"]

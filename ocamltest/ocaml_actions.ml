@@ -481,6 +481,7 @@ let ocamldebug = Actions.make "ocamldebug" debug
 
 let objinfo log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let tools_directory = Ocaml_directories.tools ocamlsrcdir in
   let program = Environments.safe_lookup Builtin_variables.program env in
   let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
   Printf.fprintf log "%s\n%!" what;
@@ -490,10 +491,14 @@ let objinfo log env =
     Ocaml_flags.ocamlobjinfo_default_flags;
     program
   ] in
+  let ocamllib = [| (Printf.sprintf "OCAMLLIB=%s" tools_directory) |] in
   let systemenv =
-    Array.append
-      dumb_term
+    Array.concat
+    [
+      dumb_term;
+      ocamllib;
       (Environments.to_system_env (env_with_lib_unix ocamlsrcdir env))
+    ]
   in
   let expected_exit_status = 0 in
   let exit_status =
