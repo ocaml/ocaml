@@ -27,6 +27,7 @@
 #include "caml/misc.h"
 #include "caml/mlvalues.h"
 #include "caml/printexc.h"
+#include "caml/memory.h"
 
 struct stringbuf {
   char * ptr;
@@ -39,7 +40,7 @@ static void add_char(struct stringbuf *buf, char c)
   if (buf->ptr < buf->end) *(buf->ptr++) = c;
 }
 
-static void add_string(struct stringbuf *buf, char *s)
+static void add_string(struct stringbuf *buf, const char *s)
 {
   int len = strlen(s);
   if (buf->ptr + len > buf->end) len = buf->end - buf->ptr;
@@ -108,7 +109,7 @@ CAMLexport char * caml_format_exception(value exn)
 
   *buf.ptr = 0;              /* Terminate string */
   i = buf.ptr - buf.data + 1;
-  res = malloc(i);
+  res = caml_stat_alloc_noexc(i);
   if (res == NULL) CAMLreturnT (char*, NULL);
   memmove(res, buf.data, i);
   CAMLreturnT (char*, res);
@@ -143,11 +144,13 @@ static void default_fatal_uncaught_exception(value exn)
   domain_state->backtrace_pos = saved_backtrace_pos;
   /* Display the uncaught exception */
   fprintf(stderr, "Fatal error: exception %s\n", msg);
-  free(msg);
+  caml_stat_free(msg);
   /* Display the backtrace if available */
-  if (Caml_state->backtrace_active && !DEBUGGER_IN_USE)
+  if (domain_state->backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();
 }
+
+int caml_abort_on_uncaught_exn = 0; /* see afl.c */
 
 void caml_fatal_uncaught_exception(value exn)
 {
@@ -159,6 +162,10 @@ void caml_fatal_uncaught_exception(value exn)
   else
     default_fatal_uncaught_exception(exn);
   /* Terminate the process */
-  CAML_SYS_EXIT(2);
-  exit(2); /* Second exit needed for the Noreturn flag */
+  if (caml_abort_on_uncaught_exn) {
+    abort();
+  } else {
+    CAML_SYS_EXIT(2);
+    exit(2); /* Second exit needed for the Noreturn flag */
+  }
 }

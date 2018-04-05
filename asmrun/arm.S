@@ -17,6 +17,8 @@
 /* Asm part of the runtime system, ARM processor */
 /* Must be preprocessed by cpp */
 
+#include "caml/m.h"
+
         .syntax unified
         .text
 #if defined(SYS_linux_eabihf) && defined(MODEL_armv6)
@@ -87,10 +89,14 @@ alloc_limit     .req    r11
 #define CFI_STARTPROC .cfi_startproc
 #define CFI_ENDPROC .cfi_endproc
 #define CFI_ADJUST(n) .cfi_adjust_cfa_offset n
+#define CFI_REGISTER(r1,r2) .cfi_register r1,r2
+#define CFI_OFFSET(r,n) .cfi_offset r,n
 #else
 #define CFI_STARTPROC
 #define CFI_ENDPROC
 #define CFI_ADJUST(n)
+#define CFI_REGISTER(r1,r2)
+#define CFI_OFFSET(r,n)
 #endif
 
 /* Support for profiling with gprof */
@@ -128,6 +134,11 @@ caml_call_gc:
 #endif
     /* Save integer registers and return address on the stack */
         push    {r0-r7,r12,lr}; CFI_ADJUST(40)
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
+        CFI_OFFSET(lr, -68)
+#else
+        CFI_OFFSET(lr, -4)
+#endif
     /* Store pointer to saved integer registers in caml_gc_regs */
         ldr     r12, =caml_gc_regs
         str     sp, [r12]
@@ -265,6 +276,7 @@ caml_c_call:
         str     sp, [r6]
     /* Preserve return address in callee-save register r4 */
         mov     r4, lr
+        CFI_REGISTER(lr, r4)
     /* Make the exception handler alloc ptr available to the C code */
         ldr     r5, =caml_young_ptr
         ldr     r6, =caml_exception_pointer
@@ -302,6 +314,11 @@ caml_start_program:
 #endif
     /* Save return address and callee-save registers */
         push    {r4-r8,r10,r11,lr}; CFI_ADJUST(32)      /* 8-byte alignment */
+#if defined(SYS_linux_eabihf) || defined(SYS_netbsd)
+        CFI_OFFSET(lr, -68)
+#else
+        CFI_OFFSET(lr, -4)
+#endif
     /* Setup a callback link on the stack */
         sub     sp, sp, 16; CFI_ADJUST(16)              /* 8-byte alignment */
         ldr     r4, =caml_bottom_of_stack

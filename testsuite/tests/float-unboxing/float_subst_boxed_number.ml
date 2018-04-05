@@ -139,6 +139,15 @@ let unbox_minor_words () =
     ignore (Gc.minor_words () = 0.)
   done
 
+let ignore_useless_args () =
+  let f x _y = int_of_float (cos x) in
+  let rec g a n x =
+    if n = 0
+    then a
+    else g (a + (f [@inlined always]) x (x +. 1.)) (n - 1) x
+  in
+  ignore (g 0 10 5.)
+
 let () =
   let flambda =
     match Sys.getenv "FLAMBDA" with
@@ -153,6 +162,7 @@ let () =
   check_noalloc "float refs" unbox_float_refs;
   check_noalloc "unbox let float" unbox_let_float;
   check_noalloc "unbox only if useful" unbox_only_if_useful;
+  check_noalloc "ignore useless args" ignore_useless_args;
 
   if flambda then begin
     check_noalloc "float and int32 record" unbox_record;

@@ -17,17 +17,18 @@
 
 include ../config/Makefile
 
-CC=$(BYTECC)
-CFLAGS=-DNDEBUG $(BYTECCCOMPOPTS)
-
 OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
   mkpar.$(O) output.$(O) reader.$(O) \
   skeleton.$(O) symtab.$(O) verbose.$(O) warshall.$(O)
 
 all: ocamlyacc$(EXE)
 
+ifeq ($(TOOLCHAIN),cc)
+MKEXE_ANSI=$(MKEXE)
+endif
+
 ocamlyacc$(EXE): $(OBJS)
-	$(MKEXE) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
+	$(MKEXE_ANSI) -o ocamlyacc$(EXE) $(OBJS) $(EXTRALIBS)
 
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`sed -e 1q $^ | tr -d '\r'`\"" > $@
@@ -49,3 +50,9 @@ skeleton.$(O): defs.h
 symtab.$(O): defs.h
 verbose.$(O): defs.h
 warshall.$(O): defs.h
+
+# The following rule is similar to make's default one, except that it
+# also works for .obj files.
+
+%.$(O): %.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -I../byterun $(OUTPUTOBJ)$@ $<

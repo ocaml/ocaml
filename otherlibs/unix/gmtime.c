@@ -79,7 +79,7 @@ CAMLprim value unix_mktime(value t)
     clock = mktime(&tm);
     if (clock == (time_t) -1) unix_error(ERANGE, "mktime", Nothing);
     tmval = alloc_tm(&tm);
-    clkval = copy_double((double) clock);
+    clkval = caml_copy_double((double) clock);
     res = caml_alloc_2(0, clkval, tmval);
   End_roots ();
   return res;
@@ -88,6 +88,6 @@ CAMLprim value unix_mktime(value t)
 #else
 
 CAMLprim value unix_mktime(value t)
-{ invalid_argument("mktime not implemented"); }
+{ caml_invalid_argument("mktime not implemented"); }
 
 #endif

@@ -27,8 +27,8 @@ let prim_size (prim : Lambda.primitive) args =
   | Pfield _ -> 1
   | Psetfield (_, isptr, init) ->
     begin match init with
-    | Initialization -> 1  (* never causes a write barrier hit *)
-    | Assignment ->
+    | Root_initialization -> 1  (* never causes a write barrier hit *)
+    | Assignment | Heap_initialization ->
       match isptr with
       | Pointer -> 4
       | Immediate -> 1
@@ -482,7 +482,7 @@ module Whether_sufficient_benefit = struct
     let estimate = if t.estimate then "<" else "=" in
       Printf.sprintf "{benefit%s{call=%d,alloc=%d,prim=%i,branch=%i,\
           indirect=%i,req=%i,\
-          lifting=%b}, orig_size=%d,new_size=%d,eval_size=%d,\
+          lifting=%B}, orig_size=%d,new_size=%d,eval_size=%d,\
           eval_benefit%s%d,\
           branch_depth=%d}=%s"
         estimate

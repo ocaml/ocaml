@@ -20,18 +20,52 @@
 
 #include "config.h"
 
-extern void caml_init_atom_table (void);
+/* readonly after startup */
+struct caml_params {
+  const char* exe_name;
+  const char* const* main_argv;
 
-extern uintnat caml_init_percent_free;
-extern uintnat caml_init_max_percent_free;
-extern uintnat caml_init_minor_heap_wsz;
-extern uintnat caml_init_heap_chunk_sz;
-extern uintnat caml_init_heap_wsz;
-extern uintnat caml_init_max_stack_wsz;
-extern uintnat caml_init_major_window;
-extern uintnat caml_trace_level;
+  /* for meta.c */
+  const char* section_table;
+  asize_t section_table_size;
+
+  const char* cds_file;
+
+  uintnat verb_gc;
+  uintnat parser_trace;
+  uintnat trace_level;
+  uintnat eventlog_enabled;
+  uintnat verify_heap;
+  uintnat print_stats;
+
+  uintnat init_percent_free;
+  uintnat init_max_percent_free;
+  uintnat init_minor_heap_wsz;
+  uintnat init_heap_chunk_sz;
+  uintnat init_heap_wsz;
+  uintnat init_max_stack_wsz;
+  uintnat init_fiber_wsz;
+  uintnat profile_slop_wsz;
+
+  uintnat backtrace_enabled_init;
+  uintnat runtime_warnings;
+  uintnat cleanup_on_exit;
+};
+
+extern const struct caml_params* const caml_params;
 
 extern void caml_parse_ocamlrunparam (void);
+extern int caml_parse_command_line (char_os **argv);
+
+/* Common entry point to caml_startup.
+   Returns 0 if the runtime is already initialized.
+   If [pooling] is 0, [caml_stat_*] functions will not be backed by a pool. */
+extern int caml_startup_aux (int pooling);
+
+void caml_init_argv(const char* exe_name, char** main_argv);
+void caml_init_section_table(const char* section_table,
+                             asize_t section_table_size);
+value caml_maybe_print_stats (value v);
 
 #endif /* CAML_INTERNALS */
 

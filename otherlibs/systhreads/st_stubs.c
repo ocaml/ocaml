@@ -38,7 +38,7 @@
 #include "threads.h"
 
 #if defined(NATIVE_CODE) && defined(WITH_SPACETIME)
-#include "../../asmrun/spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
@@ -67,7 +67,7 @@ struct caml_thread_descr {
 #define Start_closure_index ((offsetof(struct caml_thread_descr, start_closure))/sizeof(value))
 #define Terminated(v) (((struct caml_thread_descr *)(v))->terminated)
 
-/* The infos on threads (allocated via malloc()) */
+/* The infos on threads (allocated via caml_stat_alloc()) */
 
 struct caml_thread_struct {
   value descr;                  /* The heap-allocated descriptor (root) */
@@ -221,14 +221,14 @@ static inline void caml_thread_restore_runtime_state(void)
 #else
   Caml_state->trap_sp_off = curr_thread->trap_sp_off;
   Caml_state->trap_barrier_off = curr_thread->trap_barrier_off;
-  Caml_state->caml_external_raise = curr_thread->external_raise;
+  Caml_state->external_raise = curr_thread->external_raise;
 #endif
   Caml_state->backtrace_pos = curr_thread->backtrace_pos;
   Caml_state->backtrace_buffer = curr_thread->backtrace_buffer;
   Caml_state->backtrace_last_exn = curr_thread->backtrace_last_exn;
 }
 
-/* Hooks for enter_blocking_section and leave_blocking_section */
+/* Hooks for caml_enter_blocking_section and caml_leave_blocking_section */
 
 
 static void caml_thread_enter_blocking_section(void)
@@ -333,7 +333,7 @@ static value caml_thread_new_descriptor(value clos)
     /* Create and initialize the termination semaphore */
     mu = caml_threadstatus_new();
     /* Create a descriptor for the new thread */
-    descr = alloc_small(3, 0);
+    descr = caml_alloc_small(3, 0);
     Ident(descr) = Val_long(thread_next_ident);
     Start_closure(descr) = clos;
     Terminated(descr) = mu;
@@ -355,7 +355,7 @@ static void caml_thread_remove_info(caml_thread_t th)
   th->prev->next = th->next;
   if (th->backtrace_buffer != NULL) free(th->backtrace_buffer);
 #ifndef WITH_SPACETIME
-  stat_free(th);
+  caml_stat_free(th);
   /* CR-soon mshinwell: consider what to do about the Spacetime trace.  Could
      perhaps have a hook to save a snapshot on thread termination.
      For the moment we can't even free [th], since it contains the trie
@@ -374,7 +374,7 @@ static void caml_thread_reinitialize(void)
   thr = curr_thread->next;
   while (thr != curr_thread) {
     next = thr->next;
-    stat_free(thr);
+    caml_stat_free(thr);
     thr = next;
   }
   curr_thread->next = curr_thread;
@@ -382,7 +382,7 @@ static void caml_thread_reinitialize(void)
   all_threads = curr_thread;
   /* Reinitialize the master lock machinery,
      just in case the fork happened while other threads were doing
-     leave_blocking_section */
+     caml_leave_blocking_section */
   st_masterlock_init(&caml_master_lock);
   /* Tick thread is not currently running in child process, will be
      re-created at next Thread.create */
@@ -413,7 +413,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   curr_thread->exit_buf = &caml_termination_jmpbuf;
 #endif
   /* The stack-related fields will be filled in at the next
-     enter_blocking_section */
+     caml_enter_blocking_section */
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) curr_thread);
   /* Set up the hooks */
@@ -421,6 +421,7 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   caml_scan_roots_hook = caml_thread_scan_roots;
   caml_enter_blocking_section_hook = caml_thread_enter_blocking_section;
   caml_leave_blocking_section_hook = caml_thread_leave_blocking_section;
+  //XXX KC caml_try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
 #ifdef NATIVE_CODE
   caml_termination_hook = st_thread_exit;
 #endif
@@ -430,7 +431,9 @@ CAMLprim value caml_thread_initialize(value unit)   /* ML */
   return Val_unit;
 }
 
-/* Cleanup the thread machinery on program exit or DLL unload. */
+/* Cleanup the thread machinery when the runtime is shut down. Joining the tick
+   thread take 25ms on average / 50ms in the worst case, so we don't do it on
+   program exit. */
 
 CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 {
@@ -486,7 +489,7 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
   /* Associate the thread descriptor with the thread */
   st_tls_set(thread_descriptor_key, (void *) th);
   /* Acquire the global mutex */
-  leave_blocking_section();
+  caml_leave_blocking_section();
 #ifdef NATIVE_CODE
   /* Record top of stack (approximative) */
   Caml_state->system_stack_high = &tos;
@@ -497,9 +500,9 @@ static ST_THREAD_FUNCTION caml_thread_start(void * arg)
     /* Callback the closure */
     clos = Start_closure(th->descr);
     caml_modify_field(th->descr, Start_closure_index, Val_unit);
-    callback_exn(clos, Val_unit);
+    caml_callback_exn(clos, Val_unit);
     /* Enter blocking section to release domain locks */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     caml_thread_stop();
 #ifdef NATIVE_CODE
   }
@@ -583,7 +586,7 @@ CAMLexport int caml_c_thread_register(void)
   /* Release the master lock */
   st_masterlock_release(&caml_master_lock);
   /* Now we can re-enter the run-time system and heap-allocate the descriptor */
-  leave_blocking_section();
+  caml_leave_blocking_section();
   th->descr = caml_thread_new_descriptor(Val_unit);  /* no closure */
   /* Create the tick thread if not already done.  */
   if (! caml_tick_thread_running) {
@@ -591,7 +594,7 @@ CAMLexport int caml_c_thread_register(void)
     if (err == 0) caml_tick_thread_running = 1;
   }
   /* Exit the run-time system */
-  enter_blocking_section();
+  caml_enter_blocking_section();
   return 1;
 }
 
@@ -618,7 +621,7 @@ CAMLexport int caml_c_thread_unregister(void)
 
 CAMLprim value caml_thread_self(value unit)         /* ML */
 {
-  if (curr_thread == NULL) invalid_argument("Thread.self: not initialized");
+  if (curr_thread == NULL) caml_invalid_argument("Thread.self: not initialized");
   return curr_thread->descr;
 }
 
@@ -633,11 +636,11 @@ CAMLprim value caml_thread_id(value th)          /* ML */
 
 CAMLprim value caml_thread_uncaught_exception(value exn)  /* ML */
 {
-  char * msg = format_caml_exception(exn);
+  char * msg = caml_format_exception(exn);
   fprintf(stderr, "Thread %d killed on uncaught exception %s\n",
           Int_val(Ident(curr_thread->descr)), msg);
-  free(msg);
-  if (Caml_state->backtrace_active) print_exception_backtrace();
+  caml_stat_free(msg);
+  if (Caml_state->backtrace_active) caml_print_exception_backtrace();
   fflush(stderr);
   return Val_unit;
 }
@@ -648,7 +651,7 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 {
   struct longjmp_buffer * exit_buf = NULL;
 
-  if (curr_thread == NULL) invalid_argument("Thread.exit: not initialized");
+  if (curr_thread == NULL) caml_invalid_argument("Thread.exit: not initialized");
 
   /* In native code, we cannot call pthread_exit here because on some
      systems this raises a C++ exception, and ocamlopt-generated stack
@@ -677,9 +680,9 @@ CAMLprim value caml_thread_exit(value unit)   /* ML */
 CAMLprim value caml_thread_yield(value unit)        /* ML */
 {
   if (st_masterlock_waiters(&caml_master_lock) == 0) return Val_unit;
-  enter_blocking_section();
+  caml_enter_blocking_section();
   st_thread_yield();
-  leave_blocking_section();
+  caml_leave_blocking_section();
   return Val_unit;
 }
 
@@ -695,7 +698,6 @@ CAMLprim value caml_thread_join(value th)          /* ML */
 /* Mutex operations */
 
 #define Mutex_val(v) (* ((st_mutex *) Data_custom_val(v)))
-#define Max_mutex_number 5000
 
 static void caml_mutex_finalize(value wrapper)
 {
@@ -728,8 +730,8 @@ CAMLprim value caml_mutex_new(value unit)        /* ML */
   st_mutex mut = NULL;          /* suppress warning */
   value wrapper;
   st_check_error(st_mutex_create(&mut), "Mutex.create");
-  wrapper = alloc_custom(&caml_mutex_ops, sizeof(st_mutex *),
-                         1, Max_mutex_number);
+  wrapper = caml_alloc_custom(&caml_mutex_ops, sizeof(st_mutex *),
+                              0, 1);
   Mutex_val(wrapper) = mut;
   return wrapper;
 }
@@ -743,9 +745,9 @@ CAMLprim value caml_mutex_lock(value wrapper)     /* ML */
   if (st_mutex_trylock(mut) == PREVIOUSLY_UNLOCKED) return Val_unit;
   /* If unsuccessful, block on mutex */
   Begin_root(wrapper)           /* prevent the deallocation of mutex */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = st_mutex_lock(mut);
-    leave_blocking_section();
+    caml_leave_blocking_section();
   End_roots();
   st_check_error(retcode, "Mutex.lock");
   return Val_unit;
@@ -774,7 +776,6 @@ CAMLprim value caml_mutex_try_lock(value wrapper)           /* ML */
 /* Conditions operations */
 
 #define Condition_val(v) (* (st_condvar *) Data_custom_val(v))
-#define Max_condition_number 5000
 
 static void caml_condition_finalize(value wrapper)
 {
@@ -808,8 +809,8 @@ CAMLprim value caml_condition_new(value unit)        /* ML */
   st_condvar cond = NULL;       /* suppress warning */
   value wrapper;
   st_check_error(st_condvar_create(&cond), "Condition.create");
-  wrapper = alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
-                         1, Max_condition_number);
+  wrapper = caml_alloc_custom(&caml_condition_ops, sizeof(st_condvar *),
+                              0, 1);
   Condition_val(wrapper) = cond;
   return wrapper;
 }
@@ -821,9 +822,9 @@ CAMLprim value caml_condition_wait(value wcond, value wmut)           /* ML */
   st_retcode retcode;
 
   Begin_roots2(wcond, wmut)     /* prevent deallocation of cond and mutex */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = st_condvar_wait(cond, mut);
-    leave_blocking_section();
+    caml_leave_blocking_section();
   End_roots();
   st_check_error(retcode, "Condition.wait");
   return Val_unit;
@@ -846,7 +847,6 @@ CAMLprim value caml_condition_broadcast(value wrapper)           /* ML */
 /* Thread status blocks */
 
 #define Threadstatus_val(v) (* ((st_event *) Data_custom_val(v)))
-#define Max_threadstatus_number 500
 
 static void caml_threadstatus_finalize(value wrapper)
 {
@@ -875,8 +875,8 @@ static value caml_threadstatus_new (void)
   st_event ts = NULL;           /* suppress warning */
   value wrapper;
   st_check_error(st_event_create(&ts), "Thread.create");
-  wrapper = alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
-                         1, Max_threadstatus_number);
+  wrapper = caml_alloc_custom(&caml_threadstatus_ops, sizeof(st_event *),
+                              0, 1);
   Threadstatus_val(wrapper) = ts;
   return wrapper;
 }
@@ -892,9 +892,9 @@ static st_retcode caml_threadstatus_wait (value wrapper)
   st_retcode retcode;
 
   Begin_roots1(wrapper)         /* prevent deallocation of ts */
-    enter_blocking_section();
+    caml_enter_blocking_section();
     retcode = st_event_wait(ts);
-    leave_blocking_section();
+    caml_leave_blocking_section();
   End_roots();
   return retcode;
 }

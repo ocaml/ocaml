@@ -50,6 +50,7 @@ and print_types = ref false             (* -i *)
 and make_archive = ref false            (* -a *)
 and debug = ref false                   (* -g *)
 and fast = ref false                    (* -unsafe *)
+and use_linscan = ref false             (* -linscan *)
 and link_everything = ref false         (* -linkall *)
 and custom_runtime = ref false          (* -custom *)
 and no_check_prims = ref false          (* -no-check-prims *)
@@ -113,6 +114,7 @@ and dump_cmm = ref false                (* -dcmm *)
 let dump_selection = ref false          (* -dsel *)
 let dump_cse = ref false                (* -dcse *)
 let dump_live = ref false               (* -dlive *)
+let dump_avail = ref false              (* -davail *)
 let dump_spill = ref false              (* -dspill *)
 let dump_split = ref false              (* -dsplit *)
 let dump_interf = ref false             (* -dinterf *)
@@ -121,9 +123,12 @@ let dump_regalloc = ref false           (* -dalloc *)
 let dump_reload = ref false             (* -dreload *)
 let dump_scheduling = ref false         (* -dscheduling *)
 let dump_linear = ref false             (* -dlinear *)
+let dump_interval = ref false           (* -dinterval *)
 let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
-let print_timings = ref false           (* -dtimings *)
+let profile_columns : Profile.column list ref = ref [] (* -dprofile/-dtimings *)
+
+let debug_runavail = ref false          (* -drunavail *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
 
@@ -153,12 +158,17 @@ let pic_code = ref (match Config.architecture with (* -fPIC *)
 let runtime_variant = ref "";;      (* -runtime-variant *)
 
 let keep_docs = ref false              (* -keep-docs *)
-let keep_locs = ref false              (* -keep-locs *)
-let unsafe_string = ref (not Config.safe_string)
+let keep_locs = ref true               (* -keep-locs *)
+let unsafe_string =
+  if Config.safe_string then ref false
+  else ref (not Config.default_safe_string)
                                    (* -safe-string / -unsafe-string *)
 
 let classic_inlining = ref false       (* -Oclassic *)
 let inlining_report = ref false    (* -inlining-report *)
+
+let afl_instrument = ref Config.afl_instrument (* -afl-instrument *)
+let afl_inst_ratio = ref 100           (* -afl-inst-ratio *)
 
 let simplify_rounds = ref None        (* -rounds *)
 let default_simplify_rounds = ref 1        (* -rounds *)
@@ -356,6 +366,41 @@ let parse_color_setting = function
   | "always" -> Some Misc.Color.Always
   | "never" -> Some Misc.Color.Never
   | _ -> None
-let color = ref Misc.Color.Auto ;; (* -color *)
+let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
+
+let arg_spec = ref []
+let arg_names = ref Misc.StringMap.empty
+
+let reset_arguments () =
+  arg_spec := [];
+  arg_names := Misc.StringMap.empty
+
+let add_arguments loc args =
+  List.iter (function (arg_name, _, _) as arg ->
+    try
+      let loc2 = Misc.StringMap.find arg_name !arg_names in
+      Printf.eprintf
+        "Warning: plugin argument %s is already defined:\n" arg_name;
+      Printf.eprintf "   First definition: %s\n" loc2;
+      Printf.eprintf "   New definition: %s\n" loc;
+    with Not_found ->
+      arg_spec := !arg_spec @ [ arg ];
+      arg_names := Misc.StringMap.add arg_name loc !arg_names
+  ) args
+
+let print_arguments usage =
+  Arg.usage !arg_spec usage
+
+(* This function is almost the same as [Arg.parse_expand], except
+   that [Arg.parse_expand] could not be used because it does not take a
+   reference for [arg_spec].*)
+let parse_arguments f msg =
+  try
+    let argv = ref Sys.argv in
+    let current = ref (!Arg.current) in
+    Arg.parse_and_expand_argv_dynamic current argv arg_spec f msg
+  with
+  | Arg.Bad msg -> Printf.eprintf "%s" msg; exit 2
+  | Arg.Help msg -> Printf.printf "%s" msg; exit 0

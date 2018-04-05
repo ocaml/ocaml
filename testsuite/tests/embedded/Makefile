@@ -22,10 +22,10 @@ default:
 
 .PHONY: compile
 compile:
-	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmstub.c
-	@$(OCAMLC) -ccopt -I -ccopt $(CTOPDIR)/byterun cmmain.c
-	@$(OCAMLC) -c cmcaml.ml
-	@$(OCAMLC) -custom -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
+	@$(OCAMLC) -g -ccopt -I -ccopt $(CTOPDIR)/byterun cmstub.c
+	@$(OCAMLC) -g -ccopt -I -ccopt $(CTOPDIR)/byterun cmmain.c
+	@$(OCAMLC) -g -c cmcaml.ml
+	@$(OCAMLC) -g -custom -o program cmstub.$(O) cmcaml.cmo cmmain.$(O)
 
 .PHONY: run
 run:

@@ -243,7 +243,7 @@ let create_value_set_of_closures
     lazy (
       let functions = Variable.Map.keys function_decls.funs in
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
-          let params = Variable.Set.of_list function_decl.params in
+          let params = Parameter.Set.vars function_decl.params in
           let free_vars =
             Variable.Set.diff
               (Variable.Set.diff function_decl.free_variables params)
@@ -488,10 +488,11 @@ let useful t =
 
 let all_not_useful ts = List.for_all (fun t -> not (useful t)) ts
 
-let is_definitely_immutable t =
+let warn_on_mutation t =
   match t.descr with
+  | Value_block(_, fields) -> Array.length fields > 0
   | Value_string { contents = Some _ }
-  | Value_block _ | Value_int _ | Value_char _ | Value_constptr _
+  | Value_int _ | Value_char _ | Value_constptr _
   | Value_set_of_closures _ | Value_float _ | Value_boxed_int _
   | Value_closure _ -> true
   | Value_string { contents = None } | Value_float_array _

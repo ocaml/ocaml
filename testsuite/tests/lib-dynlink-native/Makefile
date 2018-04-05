@@ -23,7 +23,7 @@ LD_PATH = $(TOPDIR)/otherlibs/$(UNIXLIBVAR)unix:$(TOPDIR)/otherlibs/systhreads\
 
 .PHONY: default
 default:
-	@if ! $(SUPPORTS_SHARED_LIBRARIES) || $(BYTECODE_ONLY) ; then \
+	@if ! $(NATDYNLINK) || $(BYTECODE_ONLY) ; then \
 	  echo " ... testing 'main' => skipped"; \
 	else \
 	   $(SET_LD_PATH) $(MAKE) all; \
@@ -69,7 +69,7 @@ plugin2.cmx: api.cmx plugin.cmi plugin.cmx
 	@mv plugin.cmx.bak plugin.cmx
 
 sub/api.so: sub/api.cmi sub/api.ml
-	@cd sub; $(OCAMLOPT) -c $(SHARED) api.ml
+	@cd sub; $(OCAMLOPT) -c $(SUPPORTS_SHARED_LIBRARIES) api.ml
 
 sub/api.cmi: sub/api.mli
 	@cd sub; $(OCAMLOPT) -c -opaque api.mli

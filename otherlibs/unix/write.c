@@ -40,9 +40,9 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
     while (len > 0) {
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
       memmove (iobuf, &Byte(buf, ofs), numbytes);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       ret = write(Int_val(fd), iobuf, numbytes);
-      leave_blocking_section();
+      caml_leave_blocking_section();
       if (ret == -1) {
         if ((errno == EAGAIN || errno == EWOULDBLOCK) && written > 0) break;
         uerror("write", Nothing);
@@ -76,9 +76,9 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
     if (len > 0) {
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
       memmove (iobuf, &Byte(buf, ofs), numbytes);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       ret = write(Int_val(fd), iobuf, numbytes);
-      leave_blocking_section();
+      caml_leave_blocking_section();
       if (ret == -1) uerror("single_write", Nothing);
     }
   End_roots();

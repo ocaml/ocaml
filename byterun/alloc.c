@@ -35,8 +35,8 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   value result;
   mlsize_t i;
 
-  Assert (tag < 256);
-  Assert (tag != Infix_tag);
+  CAMLassert (tag < 256);
+  CAMLassert (tag != Infix_tag);
   if (wosize == 0){
     result = Atom (tag);
   } else if (wosize <= Max_young_wosize) {
@@ -80,7 +80,7 @@ static inline value do_alloc_small(mlsize_t wosize, tag_t tag, value* vals)
 {
   value v;
   mlsize_t i;
-  Assert (tag < 256);
+  CAMLassert (tag < 256);
   Alloc_small(v, wosize, tag,
       { enter_gc_preserving_vals(wosize, vals); });
   for (i = 0; i < wosize; i++) {
@@ -178,9 +178,9 @@ CAMLexport value caml_alloc_small_with_my_or_given_profinfo (mlsize_t wosize,
   else {
     value result;
 
-    Assert (wosize > 0);
-    Assert (wosize <= Max_young_wosize);
-    Assert (tag < 256);
+    CAMLassert (wosize > 0);
+    CAMLassert (wosize <= Max_young_wosize);
+    CAMLassert (tag < 256);
     Alloc_small_with_profinfo (result, wosize, tag,
       { caml_handle_gc_interrupt(); }, profinfo);
     return result;
@@ -206,6 +206,14 @@ CAMLexport value caml_alloc_string (mlsize_t len)
   return result;
 }
 
+/* [len] is a number of bytes (chars) */
+CAMLexport value caml_alloc_initialized_string (mlsize_t len, const char *p)
+{
+  value result = caml_alloc_string (len);
+  memcpy((char *)String_val(result), p, len);
+  return result;
+}
+
 /* [len] is a number of words.
    [mem] and [max] are relative (without unit).
 */
@@ -222,8 +230,7 @@ CAMLexport value caml_copy_string(char const *s)
   value res;
 
   len = strlen(s);
-  res = caml_alloc_string(len);
-  memmove(String_val(res), s, len);
+  res = caml_alloc_initialized_string(len, s);
   return res;
 }
 
@@ -241,26 +248,34 @@ CAMLexport value caml_alloc_array(value (*funct)(char const *),
   } else {
     result = caml_alloc (nbr, 0);
     for (n = 0; n < nbr; n++) {
-      caml_modify_field(result, n, funct(arr[n]));
+      Store_field(result, n, funct(arr[n]));
     }
     CAMLreturn (result);
   }
+  CAMLreturn (result);
 }
 
 /* [len] is a number of floats */
 CAMLprim value caml_alloc_float_array(mlsize_t len)
 {
+#ifdef FLAT_FLOAT_ARRAY
   mlsize_t wosize = len * Double_wosize;
   value result;
-  if (wosize == 0)
+  /* For consistency with [caml_make_vect], which can't tell whether it should
+     create a float array or not when the size is zero, the tag is set to
+     zero when the size is zero. */
+  if (wosize == 0) {
     return Atom(0);
-  else if (wosize <= Max_young_wosize){
+  } else if (wosize <= Max_young_wosize) {
     Alloc_small (result, wosize, Double_array_tag, { caml_handle_gc_interrupt(); });
-  }else {
+  } else {
     result = caml_alloc_shr (wosize, Double_array_tag);
     result = caml_check_urgent_gc (result);
   }
   return result;
+#else
+  return caml_alloc (len, 0);
+#endif
 }
 
 
@@ -286,8 +301,6 @@ CAMLexport int caml_convert_flag_list(value list, const int *flags)
 CAMLprim value caml_alloc_dummy(value size)
 {
   mlsize_t wosize = Long_val(size);
-
-  if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
 }
 
@@ -302,8 +315,6 @@ CAMLprim value caml_alloc_dummy_function(value size,value arity)
 CAMLprim value caml_alloc_dummy_float (value size)
 {
   mlsize_t wosize = Long_val(size) * Double_wosize;
-
-  if (wosize == 0) return Atom(0);
   return caml_alloc (wosize, 0);
 }
 
@@ -316,14 +327,14 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
 
   size = Wosize_val(newval);
   tag = Tag_val (newval);
-  Assert (size == Wosize_val(dummy));
-  Assert (tag < No_scan_tag || tag == Double_array_tag);
+  CAMLassert (size == Wosize_val(dummy));
+  CAMLassert (tag < No_scan_tag || tag == Double_array_tag);
 
   Tag_val(dummy) = tag;
   if (tag == Double_array_tag){
     size = Wosize_val (newval) / Double_wosize;
     for (i = 0; i < size; i++){
-      Store_double_field (dummy, i, Double_field (newval, i));
+      Store_double_flat_field (dummy, i, Double_flat_field (newval, i));
     }
   }else{
     for (i = 0; i < size; i++){
@@ -333,7 +344,3 @@ CAMLprim value caml_update_dummy(value dummy, value newval)
   }
   CAMLreturn (Val_unit);
 }
-
-
-
-

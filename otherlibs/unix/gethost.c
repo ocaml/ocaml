@@ -59,23 +59,23 @@ static value alloc_host_entry(struct hostent *entry)
   value res;
   value name = Val_unit, aliases = Val_unit;
   value addr_list = Val_unit, adr = Val_unit;
+  int addrtype;
 
   Begin_roots4 (name, aliases, addr_list, adr);
-    name = copy_string((char *)(entry->h_name));
+    name = caml_copy_string((char *)(entry->h_name));
     /* PR#4043: protect against buggy implementations of gethostbyname()
        that return a NULL pointer in h_aliases */
     if (entry->h_aliases)
-      aliases = copy_string_array((const char**)entry->h_aliases);
+      aliases = caml_copy_string_array((const char**)entry->h_aliases);
     else
       aliases = Atom(0);
     entry_h_length = entry->h_length;
 #ifdef h_addr
-    addr_list = alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
+    addr_list = caml_alloc_array(alloc_one_addr, (const char**)entry->h_addr_list);
 #else
     adr = alloc_one_addr(entry->h_addr);
     addr_list = caml_alloc_1(0, adr);
 #endif
-    int addrtype;
     switch (entry->h_addrtype) {
     case PF_UNIX:          addrtype = 0; break;
     case PF_INET:          addrtype = 1; break;
@@ -95,29 +95,29 @@ CAMLprim value unix_gethostbyaddr(value a)
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop;
-  enter_blocking_section();
+  caml_enter_blocking_section();
   hp = gethostbyaddr_r((char *) &adr, 4, AF_INET,
                        &h, buffer, sizeof(buffer), &h_errnop);
-  leave_blocking_section();
+  caml_leave_blocking_section();
 #elif HAS_GETHOSTBYADDR_R == 8
   struct hostent h;
   char buffer[NETDB_BUFFER_SIZE];
   int h_errnop, rc;
-  enter_blocking_section();
+  caml_enter_blocking_section();
   rc = gethostbyaddr_r((char *) &adr, 4, AF_INET,
                        &h, buffer, sizeof(buffer), &hp, &h_errnop);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (rc != 0) hp = NULL;
 #else
 #ifdef GETHOSTBYADDR_IS_REENTRANT
-  enter_blocking_section();
+  caml_enter_blocking_section();
 #endif
   hp = gethostbyaddr((char *) &adr, 4, AF_INET);
 #ifdef GETHOSTBYADDR_IS_REENTRANT
-  leave_blocking_section();
+  caml_leave_blocking_section();
 #endif
 #endif
-  if (hp == (struct hostent *) NULL) raise_not_found();
+  if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);
 }
 
@@ -131,52 +131,46 @@ CAMLprim value unix_gethostbyname(value name)
   int err;
 #endif
 
-  if (! caml_string_is_c_safe(name)) raise_not_found();
+  if (! caml_string_is_c_safe(name)) caml_raise_not_found();
 
-#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
-  hostname = caml_strdup(String_val(name));
-#else
-  hostname = String_val(name);
-#endif
+  hostname = caml_stat_strdup(String_val(name));
 
 #if HAS_GETHOSTBYNAME_R == 5
   {
-    enter_blocking_section();
+    caml_enter_blocking_section();
     hp = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &err);
-    leave_blocking_section();
+    caml_leave_blocking_section();
   }
 #elif HAS_GETHOSTBYNAME_R == 6
   {
     int rc;
-    enter_blocking_section();
+    caml_enter_blocking_section();
     rc = gethostbyname_r(hostname, &h, buffer, sizeof(buffer), &hp, &err);
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (rc != 0) hp = NULL;
   }
 #else
 #ifdef GETHOSTBYNAME_IS_REENTRANT
-  enter_blocking_section();
+  caml_enter_blocking_section();
 #endif
   hp = gethostbyname(hostname);
 #ifdef GETHOSTBYNAME_IS_REENTRANT
-  leave_blocking_section();
+  caml_leave_blocking_section();
 #endif
 #endif
 
-#if HAS_GETHOSTBYNAME_R || GETHOSTBYNAME_IS_REENTRANT
-  stat_free(hostname);
-#endif
+  caml_stat_free(hostname);
 
-  if (hp == (struct hostent *) NULL) raise_not_found();
+  if (hp == (struct hostent *) NULL) caml_raise_not_found();
   return alloc_host_entry(hp);
 }
 
 #else
 
 CAMLprim value unix_gethostbyaddr(value name)
-{ invalid_argument("gethostbyaddr not implemented"); }
+{ caml_invalid_argument("gethostbyaddr not implemented"); }
 
 CAMLprim value unix_gethostbyname(value name)
-{ invalid_argument("gethostbyname not implemented"); }
+{ caml_invalid_argument("gethostbyname not implemented"); }
 
 #endif

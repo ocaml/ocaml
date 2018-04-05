@@ -98,7 +98,7 @@ void
 caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
 {
   int i;
-  fprintf (f, "%#lx", v);
+  fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", v);
   if (!v)
     return;
   if (prog && v % sizeof (int) == 0
@@ -135,7 +135,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     case Double_array_tag:
       fprintf (f, "=floatarray[s%d]", s);
       for (i = 0; i < ((s>0xf)?0xf:s); i++)
-        fprintf (f, " %g", Double_field (v, i));
+        fprintf (f, " %g", Double_flat_field (v, i));
       goto displayfields;
     case Abstract_tag:
       fprintf (f, "=abstract[s%d]", s);
@@ -155,7 +155,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
         };
         if (i > 0)
           putc (' ', f);
-        fprintf (f, "%#lx", Op_val (v)[i]);
+        fprintf (f, "%#" ARCH_INTNAT_PRINTF_FORMAT "x", Op_val (v)[i]);
       };
       if (s > 0)
         putc (')', f);
@@ -174,7 +174,7 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
   fprintf (f, "\n sp=%#" ARCH_INTNAT_PRINTF_FORMAT "x @%ld:",
            (intnat) sp, (long) (Caml_state->stack_high - sp));
   for (p = sp, i = 0;
-       i < 12 + (1 << caml_params->trace_flag) && p < Caml_state->stack_high;
+       i < 12 + (1 << caml_params->trace_level) && p < Caml_state->stack_high;
        p++, i++) {
     fprintf (f, "\n[%ld] ", (long) (Caml_state->stack_high - p));
     caml_trace_value_file (*p, prog, proglen, f);

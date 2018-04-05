@@ -118,7 +118,7 @@ let transition a b =
 
 let go () =
   let r = ref None in
-  Domain.spawn (fun () ->
+  ignore @@ Domain.spawn (fun () ->
     transition Starting DomainStarted;
     transition MadeObject GettingForeign;
     let foreign = match !r with Some {f000} -> f000 | None -> assert false in

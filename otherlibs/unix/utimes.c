@@ -13,10 +13,13 @@
 /*                                                                        */
 /**************************************************************************/
 
+#define CAML_INTERNALS
+
 #include <caml/fail.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/signals.h>
+#include <caml/osdeps.h>
 #include "unixsupport.h"
 
 #if defined(HAS_UTIMES)
@@ -43,7 +46,7 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
     tv[1].tv_usec = (mt - tv[1].tv_sec) * 1000000;
     t = tv;
   }
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   ret = utimes(p, t);
   caml_leave_blocking_section();
@@ -64,23 +67,27 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 CAMLprim value unix_utimes(value path, value atime, value mtime)
 {
   CAMLparam3(path, atime, mtime);
+#ifdef _WIN32
+  struct _utimbuf times, * t;
+#else
   struct utimbuf times, * t;
-  char * p;
+#endif
+  char_os * p;
   int ret;
   double at, mt;
   caml_unix_check_path(path, "utimes");
   at = Double_val(atime);
   mt = Double_val(mtime);
   if (at == 0.0 && mt == 0.0) {
-    t = (struct utimbuf *) NULL;
+    t = NULL;
   } else {
     times.actime = at;
     times.modtime = mt;
     t = &times;
   }
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup_to_os(String_val(path));
   caml_enter_blocking_section();
-  ret = utime(p, t);
+  ret = utime_os(p, t);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (ret == -1) uerror("utimes", path);
@@ -90,6 +97,6 @@ CAMLprim value unix_utimes(value path, value atime, value mtime)
 #else
 
 CAMLprim value unix_utimes(value path, value atime, value mtime)
-{ invalid_argument("utimes not implemented"); }
+{ caml_invalid_argument("utimes not implemented"); }
 
 #endif

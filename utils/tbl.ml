@@ -13,9 +13,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type ('a, 'b) t =
+type ('k, 'v) t =
     Empty
-  | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
+  | Node of ('k, 'v) t * 'k * 'v * ('k, 'v) t * int
 
 let empty = Empty
 
@@ -65,6 +65,14 @@ let rec find x = function
       let c = compare x v in
       if c = 0 then d
       else find x (if c < 0 then l else r)
+
+let rec find_str (x : string) = function
+    Empty ->
+      raise Not_found
+  | Node(l, v, d, r, _) ->
+      let c = compare x v in
+      if c = 0 then d
+      else find_str x (if c < 0 then l else r)
 
 let rec mem x = function
     Empty -> false

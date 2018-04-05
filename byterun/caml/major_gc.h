@@ -51,6 +51,15 @@ struct gc_stats {
 };
 void caml_sample_gc_stats(struct gc_stats* buf);
 
-#endif /* CAML_INTERNALS */
+/* Forces finalisation of all heap-allocated values,
+   disregarding both local and global roots.
+
+   Warning: finalisation is performed by means of forced sweeping, which may
+   result in pointers referencing nonexistent values; therefore the function
+   should only be used on runtime shutdown.
+*/
+void caml_finalise_heap (void);
+
+#endif /* CAML_INTERNALiS */
 
 #endif /* CAML_MAJOR_GC_H */

@@ -60,6 +60,8 @@ type operation =
   | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
+  | Iname_for_debugger of { ident : Ident.t; which_parameter : int option;
+      provenance : unit option; is_assignment : bool; }
 
 type instruction =
   { desc: instruction_desc;
@@ -67,7 +69,10 @@ type instruction =
     arg: Reg.t array;
     res: Reg.t array;
     dbg: Debuginfo.t;
-    mutable live: Reg.Set.t }
+    mutable live: Reg.Set.t;
+    mutable available_before: Reg_availability_set.t;
+    mutable available_across: Reg_availability_set.t option;
+  }
 
 and instruction_desc =
     Iend
@@ -76,7 +81,7 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of int * instruction * instruction
+  | Icatch of Cmm.rec_flag * (int * instruction) list * instruction
   | Iexit of int
   | Itrywith of instruction * instruction
   | Iraise of Lambda.raise_kind
@@ -103,7 +108,10 @@ let rec dummy_instr =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 let end_instr () =
   { desc = Iend;
@@ -111,14 +119,23 @@ let end_instr () =
     arg = [||];
     res = [||];
     dbg = Debuginfo.none;
-    live = Reg.Set.empty }
+    live = Reg.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 let instr_cons d a r n =
   { desc = d; next = n; arg = a; res = r;
-    dbg = Debuginfo.none; live = Reg.Set.empty }
+    dbg = Debuginfo.none; live = Reg.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 let instr_cons_debug d a r dbg n =
-  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty }
+  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty;
+    available_before = Reg_availability_set.Ok Reg_with_debug_info.Set.empty;
+    available_across = None;
+  }
 
 let rec instr_iter f i =
   match i.desc with
@@ -137,8 +154,10 @@ let rec instr_iter f i =
           instr_iter f i.next
       | Iloop(body) ->
           instr_iter f body; instr_iter f i.next
-      | Icatch(_, body, handler) ->
-          instr_iter f body; instr_iter f handler; instr_iter f i.next
+      | Icatch(_, handlers, body) ->
+          instr_iter f body;
+          List.iter (fun (_n, handler) -> instr_iter f handler) handlers;
+          instr_iter f i.next
       | Iexit _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
@@ -174,7 +193,15 @@ let spacetime_node_hole_pointer_is_live_before insn =
     | Imove | Ispill | Ireload | Iconst_int _ | Iconst_float _
     | Iconst_symbol _ | Istackoffset _ | Iload _ | Iloadmut | Istore _
     | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
-    | Ifloatofint | Iintoffloat -> false
+    | Ifloatofint | Iintoffloat
+    | Iname_for_debugger _ -> false
     end
   | Iend | Ireturn | Iifthenelse _ | Iswitch _ | Iloop _ | Icatch _
   | Iexit _ | Itrywith _ | Iraise _ -> false
+
+let operation_can_raise op =
+  match op with
+  | Icall_ind _ | Icall_imm _ | Iextcall _
+  | Iintop (Icheckbound _) | Iintop_imm (Icheckbound _, _)
+  | Ialloc _ -> true
+  | _ -> false

@@ -49,6 +49,7 @@ let rec init_mod loc shape =
 let rec update_mod shape o n =
   match shape with
   | Function ->
+      (* XXX KC: Is this always true? *)
       assert (Obj.tag n = Obj.closure_tag);
       overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->

@@ -74,7 +74,7 @@ let g x= match  x with
 | 4|5|7 -> 100
 | 7 | 8 -> 6
 | 9 -> 7
-| _ -> 8;;
+| _ -> 8 [@@ocaml.warning "-12"];;
 test "quatre" g 4 4 ;
 test "quatre" g 7 100 ; ()
 ;;
@@ -229,6 +229,7 @@ test "foo1" f (1,2) (-1)
 
 
 let f = function (([]|[_]) as x)|(_::([] as x))|(_::_::x)  -> x
+  [@@ocaml.warning "-12"]
 ;;
 
 test "zob" f [] [] ;
@@ -397,7 +398,7 @@ let yaya = function
 | A,_,_ -> 1
 | _,A,_ -> 2
 | B,B,_ -> 3
-| A,_,(100|103) -> 5
+| A,_,(100|103) -> 5 [@@ocaml.warning "-11"]
 ;;
 
 test "yaya" yaya (A,A,0) 1 ;
@@ -444,7 +445,7 @@ let rec autre = function
 | (J,J,((C|D) as x |E x|F (_,x))) | (J,_,((C|J) as x)) -> autre (x,x,x)
 | (J, J, (I|H _|K _)) -> 9
 | I,_,_ -> 6
-| E _,_,_ -> 7
+| E _,_,_ -> 7 [@@ocaml.warning "-12"]
 ;;
 (*
 File "morematch.ml", line 437, characters 43-44:
@@ -467,7 +468,7 @@ let xyz = function
 | YB,YB,_ -> 3
 | ((YB|YC), (YB|YC), (X|Y|Z|V _|T _)) -> 6
 | _,_,(X|U _) -> 8
-| _,_,Y -> 5
+| _,_,Y -> 5 [@@ocaml.warning "-11-12"]
 ;;
 (*
 File "morematch.ml", line 459, characters 7-8:
@@ -1075,7 +1076,7 @@ type ('a, 'b) t_j = A of 'a | B of 'b * 'a | C
 let f = function
   | A (`A|`C) -> 0
   | B (`B,`D) -> 1
-  | C -> 2
+  | C -> 2 [@@ocaml.warning "-8"]
 
 let g x = try f x with Match_failure _ -> 3
 
@@ -1109,7 +1110,7 @@ let f = function
   |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"
   |  B, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "12"
   |  _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "13"
-
+[@@ocaml.warning "-11"]
 (*
 File "morematch.ml", line 1094, characters 5-51:
 Warning: this match case is unused.

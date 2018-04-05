@@ -12,7 +12,7 @@
 #include "caml/roots.h"
 #include "caml/globroots.h"
 #include "caml/shared_heap.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 #include "caml/fiber.h" /* for verification */
 
 typedef unsigned int sizeclass;
@@ -694,44 +694,4 @@ void caml_cycle_heap(struct caml_heap_state* local) {
     caml_gc_log("Received %d new pools, %d new large allocs", received_p, received_l);
 
   local->next_to_sweep = 0;
-}
-
-
-
-#define STAT_ALLOC_MAGIC 0x314159
-CAMLexport void * caml_stat_alloc (asize_t sz)
-{
-  void* result = malloc (sizeof(value) + sz);
-  if (result == NULL)
-    caml_raise_out_of_memory();
-  Hd_hp(result) = Make_header(STAT_ALLOC_MAGIC, Abstract_tag, NOT_MARKABLE);
-#ifdef DEBUG
-  memset ((void*)Val_hp(result), Debug_uninit_stat, sz);
-#endif
-  return (void*)Val_hp(result);
-}
-
-CAMLexport void caml_stat_free (void * p)
-{
-  if (p == NULL) return;
-  Assert(Wosize_val((value)p) == STAT_ALLOC_MAGIC);
-  Assert(Tag_val((value)p) == Abstract_tag);
-  free (Hp_val((value)p));
-}
-
-CAMLexport void * caml_stat_resize (void * p, asize_t sz)
-{
-  void * result;
-
-  if (p == NULL)
-    return caml_stat_alloc(sz);
-
-  result = realloc (Hp_val((value)p), sizeof(value) + sz);
-
-  if (result == NULL) {
-    caml_stat_free(p);
-    caml_raise_out_of_memory ();
-  }
-
-  return (void*)Val_hp(result);
 }

@@ -36,5 +36,5 @@ CAMLprim value unix_gettimeofday(value unit)
 #else
   tm = *(uint64_t *)&ft - epoch_ft; /* shift to Epoch-relative time */
 #endif
-  return copy_double(tm * 1e-7);  /* tm is in 100ns */
+  return caml_copy_double(tm * 1e-7);  /* tm is in 100ns */
 }

@@ -93,7 +93,7 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 static void unlink_channel(struct channel *channel)
 {
   if (channel->prev == NULL) {
-    Assert (channel == caml_all_opened_channels);
+    CAMLassert (channel == caml_all_opened_channels);
     caml_all_opened_channels = caml_all_opened_channels->next;
     if (caml_all_opened_channels != NULL)
       caml_all_opened_channels->prev = NULL;
@@ -387,6 +387,7 @@ CAMLexport intnat caml_input_scan_line(struct channel *channel)
 CAMLexport void caml_finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
+  if ((chan->flags & CHANNEL_FLAG_MANAGED_BY_GC) == 0) return;
   if (--chan->refcount > 0) return;
   caml_plat_mutex_free(&chan->mutex);
   /* TODO KC: See commented out section */
@@ -457,12 +458,16 @@ CAMLexport value caml_alloc_channel(struct channel *chan)
 
 CAMLprim value caml_ml_open_descriptor_in(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_in(Int_val(fd)));
+  struct channel * chan = caml_open_descriptor_in(Int_val(fd));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  return caml_alloc_channel(chan);
 }
 
 CAMLprim value caml_ml_open_descriptor_out(value fd)
 {
-  return caml_alloc_channel(caml_open_descriptor_out(Int_val(fd)));
+  struct channel * chan = caml_open_descriptor_out(Int_val(fd));
+  chan->flags |= CHANNEL_FLAG_MANAGED_BY_GC;
+  return caml_alloc_channel(chan);
 }
 
 CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
@@ -470,7 +475,7 @@ CAMLprim value caml_ml_set_channel_name(value vchannel, value vname)
   struct channel * channel = Channel(vchannel);
   caml_stat_free(channel->name);
   if (caml_string_length(vname) > 0)
-    channel->name = caml_strdup(String_val(vname));
+    channel->name = caml_stat_strdup(String_val(vname));
   else
     channel->name = NULL;
   return Val_unit;

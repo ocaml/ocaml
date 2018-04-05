@@ -20,11 +20,16 @@ open Cmx_format
 
 type handle
 
-type globals_map = (string * Digest.t * Digest.t * string list) list
+type global_map = {
+  name : string;
+  crc_intf : Digest.t;
+  crc_impl : Digest.t;
+  syms : string list
+}
 
 external ndl_open: string -> bool -> handle * dynheader = "caml_natdynlink_open"
 external ndl_run: handle -> string -> unit = "caml_natdynlink_run"
-external ndl_getmap: unit -> globals_map = "caml_natdynlink_getmap"
+external ndl_getmap: unit -> global_map list = "caml_natdynlink_getmap"
 external ndl_globals_inited: unit -> int = "caml_natdynlink_globals_inited"
 
 type linking_error =
@@ -46,7 +51,7 @@ type error =
 exception Error of error
 
 (* Copied from config.ml to avoid dependencies *)
-let cmxs_magic_number = "Caml2007D002"
+let cmxs_magic_number = "Caml1999D022"
 
 let dll_filename fname =
   if Filename.is_implicit fname then Filename.concat (Sys.getcwd ()) fname
@@ -96,7 +101,7 @@ let default_available_units () =
   let rank = ref 0 in
   global_state :=
     List.fold_left
-      (fun st (name,crc_intf,crc_impl,syms) ->
+      (fun st {name;crc_intf;crc_impl;syms} ->
         rank := !rank + List.length syms;
         {
          ifaces = StrMap.add name (crc_intf,exe) st.ifaces;

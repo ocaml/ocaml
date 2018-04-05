@@ -80,10 +80,18 @@ let rec regalloc ppf round fd =
     fatal_error(fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
   dump_if ppf dump_live "Liveness analysis" fd;
-  Interf.build_graph fd;
-  if !dump_interf then Printmach.interferences ppf ();
-  if !dump_prefer then Printmach.preferences ppf ();
-  Coloring.allocate_registers();
+  if !use_linscan then begin
+    (* Linear Scan *)
+    Interval.build_intervals fd;
+    if !dump_interval then Printmach.intervals ppf ();
+    Linscan.allocate_registers()
+  end else begin
+    (* Graph Coloring *)
+    Interf.build_graph fd;
+    if !dump_interf then Printmach.interferences ppf ();
+    if !dump_prefer then Printmach.preferences ppf ();
+    Coloring.allocate_registers()
+  end;
   dump_if ppf dump_regalloc "After register allocation" fd;
   let (newfd, redo_regalloc) = Reload.fundecl fd in
   dump_if ppf dump_reload "After insertion of reloading code" newfd;
@@ -96,29 +104,29 @@ let (++) x f = f x
 let compile_fundecl (ppf : formatter) fd_cmm =
   Proc.init ();
   Reg.reset();
-  let build = Compilenv.current_build () in
   fd_cmm
-  ++ Timings.(accumulate_time (Selection build)) Selection.fundecl
+  ++ Profile.record ~accumulate:true "selection" Selection.fundecl
   ++ pass_dump_if ppf dump_selection "After instruction selection"
-  ++ Timings.(accumulate_time (Comballoc build)) Comballoc.fundecl
+  ++ Profile.record ~accumulate:true "comballoc" Comballoc.fundecl
   ++ pass_dump_if ppf dump_combine "After allocation combining"
-  ++ Timings.(accumulate_time (CSE build)) CSE.fundecl
+  ++ Profile.record ~accumulate:true "cse" CSE.fundecl
   ++ pass_dump_if ppf dump_cse "After CSE"
-  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
-  ++ Timings.(accumulate_time (Deadcode build)) Deadcode.fundecl
+  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "deadcode" Deadcode.fundecl
   ++ pass_dump_if ppf dump_live "Liveness analysis"
-  ++ Timings.(accumulate_time (Spill build)) Spill.fundecl
-  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
+  ++ Profile.record ~accumulate:true "spill" Spill.fundecl
+  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
   ++ pass_dump_if ppf dump_spill "After spilling"
-  ++ Timings.(accumulate_time (Split build)) Split.fundecl
+  ++ Profile.record ~accumulate:true "split" Split.fundecl
   ++ pass_dump_if ppf dump_split "After live range splitting"
-  ++ Timings.(accumulate_time (Liveness build)) (liveness ppf)
-  ++ Timings.(accumulate_time (Regalloc build)) (regalloc ppf 1)
-  ++ Timings.(accumulate_time (Linearize build)) Linearize.fundecl
+  ++ Profile.record ~accumulate:true "liveness" (liveness ppf)
+  ++ Profile.record ~accumulate:true "regalloc" (regalloc ppf 1)
+  ++ Profile.record ~accumulate:true "available_regs" Available_regs.fundecl
+  ++ Profile.record ~accumulate:true "linearize" Linearize.fundecl
   ++ pass_dump_linear_if ppf dump_linear "Linearized code"
-  ++ Timings.(accumulate_time (Scheduling build)) Scheduling.fundecl
+  ++ Profile.record ~accumulate:true "scheduling" Scheduling.fundecl
   ++ pass_dump_linear_if ppf dump_scheduling "After instruction scheduling"
-  ++ Timings.(accumulate_time (Emit build)) Emit.fundecl
+  ++ Profile.record ~accumulate:true "emit" Emit.fundecl
 
 let compile_phrase ppf p =
   if !dump_cmm then fprintf ppf "%a@." Printcmm.phrase p;
@@ -137,7 +145,7 @@ let compile_genfuns ppf f =
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 
-let compile_unit ~source_provenance _output_prefix asm_filename keep_asm
+let compile_unit _output_prefix asm_filename keep_asm
       obj_filename gen =
   let create_asm = keep_asm || not !Emitaux.binary_backend_available in
   Emitaux.create_asm_file := create_asm;
@@ -152,7 +160,7 @@ let compile_unit ~source_provenance _output_prefix asm_filename keep_asm
       raise exn
     end;
     let assemble_result =
-      Timings.(time (Assemble source_provenance))
+      Profile.record "assemble"
         (Proc.assemble_file asm_filename) obj_filename
     in
     if assemble_result <> 0
@@ -166,13 +174,12 @@ let set_export_info (ulambda, prealloc, structured_constants, export) =
   Compilenv.set_export_info export;
   (ulambda, prealloc, structured_constants)
 
-let end_gen_implementation ?toplevel ~source_provenance ppf
+let end_gen_implementation ?toplevel ppf
     (clambda:clambda_and_constants) =
   Emit.begin_assembly ();
   clambda
-  ++ Timings.(time (Cmm source_provenance)) Cmmgen.compunit
-  ++ Timings.(time (Compile_phrases source_provenance))
-       (List.iter (compile_phrase ppf))
+  ++ Profile.record "cmm" Cmmgen.compunit
+  ++ Profile.record "compile_phrases" (List.iter (compile_phrase ppf))
   ++ (fun () -> ());
   (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
 
@@ -189,11 +196,11 @@ let end_gen_implementation ?toplevel ~source_provenance ppf
     );
   Emit.end_assembly ()
 
-let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
+let flambda_gen_implementation ?toplevel ~backend ppf
     (program:Flambda.program) =
   let export = Build_export_info.build_export_info ~backend program in
   let (clambda, preallocated, constants) =
-    Timings.time (Flambda_pass ("backend", source_provenance)) (fun () ->
+    Profile.record_call "backend" (fun () ->
       (program, export)
       ++ Flambda_to_clambda.convert
       ++ flambda_raw_clambda_dump_if ppf
@@ -203,7 +210,7 @@ let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
                 [Cmmgen.compunit_and_constants]. *)
            Un_anf.apply expr ~what:"init_code", preallocated_blocks,
            structured_constants, exported)
-      ++ set_export_info) ()
+      ++ set_export_info)
   in
   let constants =
     List.map (fun (symbol, definition) ->
@@ -212,10 +219,10 @@ let flambda_gen_implementation ?toplevel ~source_provenance ~backend ppf
           definition })
       (Symbol.Map.bindings constants)
   in
-  end_gen_implementation ?toplevel ~source_provenance ppf
+  end_gen_implementation ?toplevel ppf
     (clambda, preallocated, constants)
 
-let lambda_gen_implementation ?toplevel ~source_provenance ppf
+let lambda_gen_implementation ?toplevel ppf
     (lambda:Lambda.program) =
   let clambda = Closure.intro lambda.main_module_block_size lambda.code in
   let preallocated_block =
@@ -230,29 +237,29 @@ let lambda_gen_implementation ?toplevel ~source_provenance ppf
     clambda, [preallocated_block], []
   in
   raw_clambda_dump_if ppf clambda_and_constants;
-  end_gen_implementation ?toplevel ~source_provenance ppf clambda_and_constants
+  end_gen_implementation ?toplevel ppf clambda_and_constants
 
-let compile_implementation_gen ?toplevel ~source_provenance prefixname
+let compile_implementation_gen ?toplevel prefixname
     ~required_globals ppf gen_implementation program =
   let asmfile =
     if !keep_asm_file || !Emitaux.binary_backend_available
     then prefixname ^ ext_asm
     else Filename.temp_file "camlasm" ext_asm
   in
-  compile_unit ~source_provenance prefixname asmfile !keep_asm_file
+  compile_unit prefixname asmfile !keep_asm_file
       (prefixname ^ ext_obj) (fun () ->
         Ident.Set.iter Compilenv.require_global required_globals;
-        gen_implementation ?toplevel ~source_provenance ppf program)
+        gen_implementation ?toplevel ppf program)
 
-let compile_implementation_clambda ?toplevel ~source_provenance prefixname
+let compile_implementation_clambda ?toplevel prefixname
     ppf (program:Lambda.program) =
-  compile_implementation_gen ?toplevel ~source_provenance prefixname
+  compile_implementation_gen ?toplevel prefixname
     ~required_globals:program.Lambda.required_globals
     ppf lambda_gen_implementation program
 
-let compile_implementation_flambda ?toplevel ~source_provenance prefixname
+let compile_implementation_flambda ?toplevel prefixname
     ~required_globals ~backend ppf (program:Flambda.program) =
-  compile_implementation_gen ?toplevel ~source_provenance prefixname
+  compile_implementation_gen ?toplevel prefixname
     ~required_globals ppf (flambda_gen_implementation ~backend) program
 
 (* Error report *)

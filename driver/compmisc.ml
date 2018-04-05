@@ -46,13 +46,14 @@ let init_path ?(dir="") native =
 let open_implicit_module m env =
   let open Asttypes in
   let lid = {loc = Location.in_file "command line";
-             txt = Longident.Lident m } in
+             txt = Longident.parse m } in
   snd (Typemod.type_open_ Override env lid.loc lid)
 
 let initial_env () =
   Ident.reinit();
   let initial =
-    if !Clflags.unsafe_string then Env.initial_unsafe_string
+    if Config.safe_string then Env.initial_safe_string
+    else if !Clflags.unsafe_string then Env.initial_unsafe_string
     else Env.initial_safe_string
   in
   let env =
@@ -62,3 +63,18 @@ let initial_env () =
   List.fold_left (fun env m ->
     open_implicit_module m env
   ) env (!implicit_modules @ List.rev !Clflags.open_modules)
+
+
+let read_color_env ppf =
+  try
+    match Clflags.parse_color_setting (Sys.getenv "OCAML_COLOR") with
+    | None ->
+        Location.print_warning Location.none ppf
+          (Warnings.Bad_env_variable
+             ("OCAML_COLOR",
+              "expected \"auto\", \"always\" or \"never\""));
+    | Some x -> match !Clflags.color with
+      | None -> Clflags.color := Some x
+      | Some _ -> ()
+  with
+    Not_found -> ()

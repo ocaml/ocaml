@@ -14,7 +14,7 @@
 /**************************************************************************/
 
 #include <caml/mlvalues.h>
-#include <bigarray.h>
+#include <caml/bigarray.h>
 
 char *ocaml_buffer;
 char *c_buffer;

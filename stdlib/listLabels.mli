@@ -33,6 +33,25 @@ val hd : 'a list -> 'a
 (** Return the first element of the given list. Raise
    [Failure "hd"] if the list is empty. *)
 
+val compare_lengths : 'a list -> 'b list -> int
+(** Compare the lengths of two lists. [compare_lengths l1 l2] is
+   equivalent to [compare (length l1) (length l2)], except that
+   the computation stops after itering on the shortest list.
+   @since 4.05.0
+ *)
+
+val compare_length_with : 'a list -> len:int -> int
+(** Compare the length of a list to an integer. [compare_length_with l n] is
+   equivalent to [compare (length l) n], except that
+   the computation stops after at most [n] iterations on the list.
+   @since 4.05.0
+*)
+
+val cons : 'a -> 'a list -> 'a list
+(** [cons x xs] is [x :: xs]
+    @since 4.05.0
+*)
+
 val tl : 'a list -> 'a list
 (** Return the given list without its first element. Raise
    [Failure "tl"] if the list is empty. *)
@@ -43,8 +62,23 @@ val nth : 'a list -> int -> 'a
    Raise [Failure "nth"] if the list is too short.
    Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
+val nth_opt: 'a list -> int -> 'a option
+(** Return the [n]-th element of the given list.
+    The first element (head of the list) is at position 0.
+    Return [None] if the list is too short.
+    Raise [Invalid_argument "List.nth"] if [n] is negative.
+    @since 4.05
+*)
+
 val rev : 'a list -> 'a list
 (** List reversal. *)
+
+val init : len:int -> f:(int -> 'a) -> 'a list
+(** [List.init len f] is [f 0; f 1; ...; f (len-1)], evaluated left to right.
+
+    @raise Invalid_argument if [len < 0].
+    @since 4.06.0
+*)
 
 val append : 'a list -> 'a list -> 'a list
 (** Catenate two lists.  Same function as the infix operator [@].
@@ -52,8 +86,8 @@ val append : 'a list -> 'a list -> 'a list
    operator is not tail-recursive either. *)
 
 val rev_append : 'a list -> 'a list -> 'a list
-(** [ListLabels.rev_append l1 l2] reverses [l1] and concatenates it to [l2].
-   This is equivalent to {!ListLabels.rev}[ l1 @ l2], but [rev_append] is
+(** [List.rev_append l1 l2] reverses [l1] and concatenates it with [l2].
+   This is equivalent to [(]{!List.rev}[ l1) @ l2], but [rev_append] is
    tail-recursive and more efficient. *)
 
 val concat : 'a list list -> 'a list
@@ -67,83 +101,83 @@ val flatten : 'a list list -> 'a list
    (length of the argument + length of the longest sub-list). *)
 
 
-(** {6 Iterators} *)
+(** {1 Iterators} *)
 
 
 val iter : f:('a -> unit) -> 'a list -> unit
-(** [ListLabels.iter f [a1; ...; an]] applies function [f] in turn to
+(** [List.iter f [a1; ...; an]] applies function [f] in turn to
    [a1; ...; an]. It is equivalent to
    [begin f a1; f a2; ...; f an; () end]. *)
 
 val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
-(** Same as {!ListLabels.iter}, but the function is applied to the index of
+(** Same as {!List.iter}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.00.0
 *)
 
 val map : f:('a -> 'b) -> 'a list -> 'b list
-(** [ListLabels.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
+(** [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
    with the results returned by [f].  Not tail-recursive. *)
 
 val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
-(** Same as {!ListLabels.map}, but the function is applied to the index of
+(** Same as {!List.map}, but the function is applied to the index of
    the element as first argument (counting from 0), and the element
    itself as second argument.
    @since 4.00.0
 *)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
-(** [ListLabels.rev_map f l] gives the same result as
-   {!ListLabels.rev}[ (]{!ListLabels.map}[ f l)], but is tail-recursive and
+(** [List.rev_map f l] gives the same result as
+   {!List.rev}[ (]{!List.map}[ f l)], but is tail-recursive and
    more efficient. *)
 
 val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
-(** [ListLabels.fold_left f a [b1; ...; bn]] is
+(** [List.fold_left f a [b1; ...; bn]] is
    [f (... (f (f a b1) b2) ...) bn]. *)
 
 val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
-(** [ListLabels.fold_right f [a1; ...; an] b] is
+(** [List.fold_right f [a1; ...; an] b] is
    [f a1 (f a2 (... (f an b) ...))].  Not tail-recursive. *)
 
 
-(** {6 Iterators on two lists} *)
+(** {1 Iterators on two lists} *)
 
 
 val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
-(** [ListLabels.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
+(** [List.iter2 f [a1; ...; an] [b1; ...; bn]] calls in turn
    [f a1 b1; ...; f an bn].
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths. *)
 
 val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [ListLabels.map2 f [a1; ...; an] [b1; ...; bn]] is
+(** [List.map2 f [a1; ...; an] [b1; ...; bn]] is
    [[f a1 b1; ...; f an bn]].
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths.  Not tail-recursive. *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [ListLabels.rev_map2 f l1 l2] gives the same result as
-   {!ListLabels.rev}[ (]{!ListLabels.map2}[ f l1 l2)], but is tail-recursive and
+(** [List.rev_map2 f l1 l2] gives the same result as
+   {!List.rev}[ (]{!List.map2}[ f l1 l2)], but is tail-recursive and
    more efficient. *)
 
 val fold_left2 :
   f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
-(** [ListLabels.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
+(** [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
    [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths. *)
 
 val fold_right2 :
   f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
-(** [ListLabels.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
+(** [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
    [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths.  Not tail-recursive. *)
 
 
-(** {6 List scanning} *)
+(** {1 List scanning} *)
 
 
 val for_all : f:('a -> bool) -> 'a list -> bool
@@ -157,12 +191,12 @@ val exists : f:('a -> bool) -> 'a list -> bool
    [(p a1) || (p a2) || ... || (p an)]. *)
 
 val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-(** Same as {!ListLabels.for_all}, but for a two-argument predicate.
+(** Same as {!List.for_all}, but for a two-argument predicate.
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths. *)
 
 val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
-(** Same as {!ListLabels.exists}, but for a two-argument predicate.
+(** Same as {!List.exists}, but for a two-argument predicate.
    Raise [Invalid_argument] if the two lists are determined
    to have different lengths. *)
 
@@ -171,11 +205,11 @@ val mem : 'a -> set:'a list -> bool
    to an element of [l]. *)
 
 val memq : 'a -> set:'a list -> bool
-(** Same as {!ListLabels.mem}, but uses physical equality instead of structural
+(** Same as {!List.mem}, but uses physical equality instead of structural
    equality to compare list elements. *)
 
 
-(** {6 List searching} *)
+(** {1 List searching} *)
 
 
 val find : f:('a -> bool) -> 'a list -> 'a
@@ -184,13 +218,20 @@ val find : f:('a -> bool) -> 'a list -> 'a
    Raise [Not_found] if there is no value that satisfies [p] in the
    list [l]. *)
 
+val find_opt: f:('a -> bool) -> 'a list -> 'a option
+(** [find p l] returns the first element of the list [l]
+   that satisfies the predicate [p].
+   Returns [None] if there is no value that satisfies [p] in the
+   list [l].
+   @since 4.05 *)
+
 val filter : f:('a -> bool) -> 'a list -> 'a list
 (** [filter p l] returns all the elements of the list [l]
    that satisfy the predicate [p].  The order of the elements
    in the input list is preserved.  *)
 
 val find_all : f:('a -> bool) -> 'a list -> 'a list
-(** [find_all] is another name for {!ListLabels.filter}. *)
+(** [find_all] is another name for {!List.filter}. *)
 
 val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
 (** [partition p l] returns a pair of lists [(l1, l2)], where
@@ -200,7 +241,7 @@ val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
    The order of the elements in the input list is preserved. *)
 
 
-(** {6 Association lists} *)
+(** {1 Association lists} *)
 
 
 val assoc : 'a -> ('a * 'b) list -> 'b
@@ -211,16 +252,31 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    Raise [Not_found] if there is no value associated with [a] in the
    list [l]. *)
 
+val assoc_opt: 'a -> ('a * 'b) list -> 'b option
+(** [assoc_opt a l] returns the value associated with key [a] in the list of
+    pairs [l]. That is,
+    [assoc a [ ...; (a,b); ...] = b]
+    if [(a,b)] is the leftmost binding of [a] in list [l].
+    Returns [None] if there is no value associated with [a] in the
+    list [l].
+    @since 4.05
+*)
+
 val assq : 'a -> ('a * 'b) list -> 'b
-(** Same as {!ListLabels.assoc}, but uses physical equality instead of
+(** Same as {!List.assoc}, but uses physical equality instead of
    structural equality to compare keys. *)
 
+val assq_opt: 'a -> ('a * 'b) list -> 'b option
+(** Same as {!List.assoc_opt}, but uses physical equality instead of
+   structural equality to compare keys.
+   @since 4.05.0 *)
+
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
-(** Same as {!ListLabels.assoc}, but simply return true if a binding exists,
+(** Same as {!List.assoc}, but simply return true if a binding exists,
    and false if no bindings exist for the given key. *)
 
 val mem_assq : 'a -> map:('a * 'b) list -> bool
-(** Same as {!ListLabels.mem_assoc}, but uses physical equality instead of
+(** Same as {!List.mem_assoc}, but uses physical equality instead of
    structural equality to compare keys. *)
 
 val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
@@ -229,11 +285,11 @@ val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
    Not tail-recursive. *)
 
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
-(** Same as {!ListLabels.remove_assoc}, but uses physical equality instead
+(** Same as {!List.remove_assoc}, but uses physical equality instead
    of structural equality to compare keys.  Not tail-recursive. *)
 
 
-(** {6 Lists of pairs} *)
+(** {1 Lists of pairs} *)
 
 
 val split : ('a * 'b) list -> 'a list * 'b list
@@ -250,7 +306,7 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    have different lengths.  Not tail-recursive. *)
 
 
-(** {6 Sorting} *)
+(** {1 Sorting} *)
 
 
 val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
@@ -261,7 +317,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    a complete specification).  For example,
    {!Pervasives.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
-   [ListLabels.sort] is guaranteed to run in constant heap space
+   [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
 
@@ -270,7 +326,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!ListLabels.sort}, but the sorting algorithm is guaranteed to
+(** Same as {!List.sort}, but the sorting algorithm is guaranteed to
    be stable (i.e. elements that compare equal are kept in their
    original order) .
 
@@ -279,18 +335,18 @@ val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!ListLabels.sort} or {!ListLabels.stable_sort}, whichever is
+(** Same as {!List.sort} or {!List.stable_sort}, whichever is
     faster on typical input. *)
 
 val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!ListLabels.sort}, but also remove duplicates.
-    @since 4.02.0 *)
+(** Same as {!List.sort}, but also remove duplicates.
+    @since 4.03.0 *)
 
 val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 (** Merge two lists:
     Assuming that [l1] and [l2] are sorted according to the
     comparison function [cmp], [merge cmp l1 l2] will return a
-    sorted list containting all the elements of [l1] and [l2].
+    sorted list containing all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
     Not tail-recursive (sum of the lengths of the arguments).

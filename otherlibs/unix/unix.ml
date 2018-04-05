@@ -186,8 +186,9 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+external unsafe_environment : unit -> string array = "unix_environment_unsafe"
 external getenv: string -> string = "caml_sys_getenv"
-(* external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv" *)
+external unsafe_getenv: string -> string = "caml_sys_unsafe_getenv"
 external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
@@ -202,7 +203,68 @@ type wait_flag =
 external execv : string -> string array -> 'a = "unix_execv"
 external execve : string -> string array -> string array -> 'a = "unix_execve"
 external execvp : string -> string array -> 'a = "unix_execvp"
-external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
+external execvpe_c :
+            string -> string array -> string array -> 'a = "unix_execvpe"
+
+let execvpe_ml name args env =
+  (* Try to execute the given file *)
+  let exec file =
+    try
+      execve file args env
+    with Unix_error(ENOEXEC, _, _) ->
+      (* Assume this is a script and try to execute through the shell *)
+      let argc = Array.length args in
+      (* Drop the original args.(0) if it is there *)
+      let new_args = Array.append
+        [| "/bin/sh"; file |]
+        (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
+      execve new_args.(0) new_args env in
+  (* Try each path element in turn *)
+  let rec scan_dir eacces = function
+  | [] ->
+      (* No matching file was found (if [eacces = false]) or
+         a matching file was found but we got a "permission denied"
+         error while trying to execute it (if [eacces = true]).
+         Raise the error appropriate to each case. *)
+      raise (Unix_error((if eacces then EACCES else ENOENT),
+                        "execvpe", name))
+  | dir :: rem ->
+      let dir =  (* an empty path element means the current directory *)
+        if dir = "" then Filename.current_dir_name else dir in
+      try
+        exec (Filename.concat dir name)
+      with Unix_error(err, _, _) as exn ->
+        match err with
+        (* The following errors are treated as nonfatal, meaning that
+           we will ignore them and continue searching in the path.
+           Among those errors, EACCES is recorded specially so as
+           to produce the correct exception in the end.
+           To determine which errors are nonfatal, we looked at the
+           execvpe() sources in Glibc and in OpenBSD. *)
+        | EACCES ->
+            scan_dir true rem
+        | EISDIR|ELOOP|ENAMETOOLONG|ENODEV|ENOENT|ENOTDIR|ETIMEDOUT ->
+            scan_dir eacces rem
+        (* Other errors, e.g. E2BIG, are fatal and abort the search. *)
+        | _ ->
+            raise exn in
+  if String.contains name '/' then
+    (* If the command name contains "/" characters, don't search in path *)
+    exec name
+  else
+    (* Split path into elements and search in these elements *)
+    (try unsafe_getenv "PATH" with Not_found -> "/bin:/usr/bin")
+    |> String.split_on_char ':'
+    |> scan_dir false
+      (* [unsafe_getenv] and not [getenv] to be consistent with [execvp],
+         which looks up the PATH environment variable whether SUID or not. *)
+
+let execvpe name args env =
+  try
+    execvpe_c name args env
+  with Unix_error(ENOSYS, _, _) ->
+    execvpe_ml name args env
+
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status
@@ -232,6 +294,7 @@ type open_flag =
   | O_RSYNC
   | O_SHARE_DELETE
   | O_CLOEXEC
+  | O_KEEPEXEC
 
 type file_perm = int
 
@@ -342,6 +405,16 @@ module LargeFile =
     external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
+external map_internal:
+   file_descr -> ('a, 'b) CamlinternalBigarray.kind
+              -> 'c CamlinternalBigarray.layout
+              -> bool -> int array -> int64
+              -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+     = "caml_unix_map_file_bytecode" "caml_unix_map_file"
+
+let map_file fd ?(pos=0L) kind layout shared dims =
+  map_internal fd kind layout shared dims pos
+
 type access_permission =
     R_OK
   | W_OK
@@ -355,17 +428,13 @@ external fchown : file_descr -> int -> int -> unit = "unix_fchown"
 external umask : int -> int = "unix_umask"
 external access : string -> access_permission list -> unit = "unix_access"
 
-external dup : file_descr -> file_descr = "unix_dup"
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+external dup : ?cloexec: bool -> file_descr -> file_descr = "unix_dup"
+external dup2 :
+   ?cloexec: bool -> file_descr -> file_descr -> unit = "unix_dup2"
 external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
-
-(* FD_CLOEXEC should be supported on all Unix systems these days,
-   but just in case... *)
-let try_set_close_on_exec fd =
-  try set_close_on_exec fd; true with Invalid_argument _ -> false
 
 external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
@@ -380,7 +449,8 @@ external readdir : dir_handle -> string = "unix_readdir"
 external rewinddir : dir_handle -> unit = "unix_rewinddir"
 external closedir : dir_handle -> unit = "unix_closedir"
 
-external pipe : unit -> file_descr * file_descr = "unix_pipe"
+external pipe :
+  ?cloexec: bool -> unit -> file_descr * file_descr = "unix_pipe"
 external symlink : ?to_dir:bool -> string -> string -> unit = "unix_symlink"
 external has_symlink : unit -> bool = "unix_has_symlink"
 external readlink : string -> string = "unix_readlink"
@@ -527,12 +597,15 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : socket_domain -> socket_type -> int -> file_descr
-                                  = "unix_socket"
+external socket :
+  ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
+  = "unix_socket"
 external socketpair :
-        socket_domain -> socket_type -> int -> file_descr * file_descr
-                                  = "unix_socketpair"
-external accept : file_descr -> file_descr * sockaddr = "unix_accept"
+  ?cloexec: bool -> socket_domain -> socket_type -> int ->
+                                           file_descr * file_descr
+  = "unix_socketpair"
+external accept :
+  ?cloexec: bool -> file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
@@ -874,29 +947,34 @@ let system cmd =
           end
   | id -> snd(waitpid_non_intr id)
 
-let rec safe_dup fd =
-  let new_fd = dup fd in
-  if new_fd >= 3 then
-    new_fd
-  else begin
-    let res = safe_dup fd in
-    close new_fd;
-    res
-  end
+(* Duplicate [fd] if needed to make sure it isn't one of the
+   standard descriptors (stdin, stdout, stderr).
+   Note that this function always leaves the standard descriptors open,
+   the caller must take care of closing them if needed.
+   The "cloexec" mode doesn't matter, because
+   the descriptor returned by [dup] will be closed before the [exec],
+   and because no other thread is running concurrently
+   (we are in the child process of a fork).
+ *)
+let rec file_descr_not_standard fd =
+  if fd >= 3 then fd else file_descr_not_standard (dup fd)
 
 let safe_close fd =
   try close fd with Unix_error(_,_,_) -> ()
 
 let perform_redirections new_stdin new_stdout new_stderr =
-  let newnewstdin = safe_dup new_stdin in
-  let newnewstdout = safe_dup new_stdout in
-  let newnewstderr = safe_dup new_stderr in
+  let new_stdin = file_descr_not_standard new_stdin in
+  let new_stdout = file_descr_not_standard new_stdout in
+  let new_stderr = file_descr_not_standard new_stderr in
+  (*  The three dup2 close the original stdin, stdout, stderr,
+      which are the descriptors possibly left open
+      by file_descr_not_standard *)
+  dup2 ~cloexec:false new_stdin stdin;
+  dup2 ~cloexec:false new_stdout stdout;
+  dup2 ~cloexec:false new_stderr stderr;
   safe_close new_stdin;
   safe_close new_stdout;
-  safe_close new_stderr;
-  dup2 newnewstdin stdin; close newnewstdin;
-  dup2 newnewstdout stdout; close newnewstdout;
-  dup2 newnewstderr stderr; close newnewstderr
+  safe_close new_stderr
 
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
@@ -928,24 +1006,26 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd proc input output toclose =
-  let cloexec = List.for_all try_set_close_on_exec toclose in
-  match fork() with
-     0 -> begin try
-            if input <> stdin then begin dup2 input stdin; close input end;
-            if output <> stdout then begin dup2 output stdout; close output end;
-            if not cloexec then List.iter close toclose;
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-          with _ -> sys_exit 127
+let open_proc cmd envopt proc input output error =
+   match fork() with
+     0 -> perform_redirections input output error;
+          let shell = "/bin/sh" in
+          let argv = [| shell; "-c"; cmd |] in
+          begin try
+            match envopt with
+            | Some env -> execve shell argv env
+            | None     -> execv shell argv
+          with _ ->
+            sys_exit 127
           end
-  | id -> Hashtbl.add popen_processes proc id
+   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
-  let (in_read, in_write) = pipe() in
+  let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
   begin
     try
-      open_proc cmd (Process_in inchan) stdin in_write [in_read];
+      open_proc cmd None (Process_in inchan) stdin in_write stderr
     with e ->
       close_in inchan;
       close in_write;
@@ -955,69 +1035,64 @@ let open_process_in cmd =
   inchan
 
 let open_process_out cmd =
-  let (out_read, out_write) = pipe() in
+  let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd (Process_out outchan) out_read stdout [out_write];
+      open_proc cmd None (Process_out outchan) out_read stdout stderr
     with e ->
-      close_out outchan;
-      close out_read;
-      raise e
+    close_out outchan;
+    close out_read;
+    raise e
   end;
   close out_read;
   outchan
 
 let open_process cmd =
-  let (in_read, in_write) = pipe() in
-  let fds_to_close = ref [in_read;in_write] in
-  try
-    let (out_read, out_write) = pipe() in
-    fds_to_close := [in_read;in_write;out_read;out_write];
-    let inchan = in_channel_of_descr in_read in
-    let outchan = out_channel_of_descr out_write in
-    open_proc cmd (Process(inchan, outchan)) out_read in_write
-                                           [in_read; out_write];
-    close out_read;
-    close in_write;
-    (inchan, outchan)
-  with e ->
-    List.iter close !fds_to_close;
-    raise e
-
-let open_proc_full cmd env proc input output error toclose =
-  let cloexec = List.for_all try_set_close_on_exec toclose in
-  match fork() with
-     0 -> begin try
-            dup2 input stdin; close input;
-            dup2 output stdout; close output;
-            dup2 error stderr; close error;
-            if not cloexec then List.iter close toclose;
-            execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
-          with _ -> sys_exit 127
-          end
-  | id -> Hashtbl.add popen_processes proc id
+  let (in_read, in_write) = pipe ~cloexec:true () in
+  let (out_read, out_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write; raise e in
+  let inchan = in_channel_of_descr in_read in
+  let outchan = out_channel_of_descr out_write in
+  begin
+    try
+      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr
+    with e ->
+      close out_read; close out_write;
+      close in_read; close in_write;
+      raise e
+  end;
+  close out_read;
+  close in_write;
+  (inchan, outchan)
 
 let open_process_full cmd env =
-  let (in_read, in_write) = pipe() in
-  let fds_to_close = ref [in_read;in_write] in
-  try
-    let (out_read, out_write) = pipe() in
-    fds_to_close := out_read::out_write:: !fds_to_close;
-    let (err_read, err_write) = pipe() in
-    fds_to_close := err_read::err_write:: !fds_to_close;
-    let inchan = in_channel_of_descr in_read in
-    let outchan = out_channel_of_descr out_write in
-    let errchan = in_channel_of_descr err_read in
-    open_proc_full cmd env (Process_full(inchan, outchan, errchan))
-      out_read in_write err_write [in_read; out_write; err_read];
-    close out_read;
-    close in_write;
-    close err_write;
-    (inchan, outchan, errchan)
-  with e ->
-    List.iter close !fds_to_close;
-    raise e
+  let (in_read, in_write) = pipe ~cloexec:true () in
+  let (out_read, out_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write; raise e in
+  let (err_read, err_write) =
+    try pipe ~cloexec:true ()
+    with e -> close in_read; close in_write;
+              close out_read; close out_write; raise e in
+  let inchan = in_channel_of_descr in_read in
+  let outchan = out_channel_of_descr out_write in
+  let errchan = in_channel_of_descr err_read in
+  begin
+    try
+      open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+                out_read in_write err_write
+    with e ->
+      close out_read; close out_write;
+      close in_read; close in_write;
+      close err_read; close err_write;
+      raise e
+  end;
+  close out_read;
+  close in_write;
+  close err_write;
+  (inchan, outchan, errchan)
 
 let find_proc_id fun_name proc =
   try
@@ -1034,7 +1109,9 @@ let close_process_in inchan =
 
 let close_process_out outchan =
   let pid = find_proc_id "close_process_out" (Process_out outchan) in
-  close_out outchan;
+  (* The application may have closed [outchan] already to signal
+     end-of-input to the process.  *)
+  begin try close_out outchan with Sys_error _ -> () end;
   snd(waitpid_non_intr pid)
 
 let close_process (inchan, outchan) =
@@ -1056,10 +1133,9 @@ let close_process_full (inchan, outchan, errchan) =
 
 let open_connection sockaddr =
   let sock =
-    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+    socket ~cloexec:true (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   try
     connect sock sockaddr;
-    ignore(try_set_close_on_exec sock);
     (in_channel_of_descr sock, out_channel_of_descr sock)
   with exn ->
     close sock; raise exn
@@ -1068,12 +1144,12 @@ let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
 let rec accept_non_intr s =
-  try accept s
+  try accept ~cloexec:true s
   with Unix_error (EINTR, _, _) -> accept_non_intr s
 
 let establish_server server_fun sockaddr =
   let sock =
-    socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
+    socket ~cloexec:true (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   setsockopt sock SO_REUSEADDR true;
   bind sock sockaddr;
   listen sock 5;
@@ -1085,7 +1161,6 @@ let establish_server server_fun sockaddr =
        0 -> if fork() <> 0 then sys_exit 0;
                                 (* The son exits, the grandson works *)
             close sock;
-            ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;

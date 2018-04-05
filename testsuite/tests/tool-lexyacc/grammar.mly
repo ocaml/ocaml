@@ -29,7 +29,8 @@ lexer_definition:
 ;
 header:
     Taction
-        { $1 }
+        { $1 (* '"' test that ocamlyacc can
+                    handle comments correctly"*)" "(*" *) }
   |
         { Location(0,0) }
 ;

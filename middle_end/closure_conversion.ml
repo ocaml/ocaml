@@ -32,17 +32,6 @@ type t = {
 }
 
 let add_default_argument_wrappers lam =
-  (* CR-someday mshinwell: Temporary hack to mark default argument wrappers
-     as stubs.  Other possibilities:
-     1. Change Lambda.inline_attribute to add another ("stub") case;
-     2. Add a "stub" field to the Lfunction record. *)
-  let stubify body : Lambda.lambda =
-    let stub_prim =
-      Primitive.simple ~name:Closure_conversion_aux.stub_hack_prim_name
-        ~arity:1 ~alloc:false
-    in
-    Lprim (Pccall stub_prim, [body], Location.none)
-  in
   let defs_are_all_functions (defs : (_ * Lambda.lambda) list) =
     List.for_all (function (_, Lambda.Lfunction _) -> true | _ -> false) defs
   in
@@ -51,9 +40,8 @@ let add_default_argument_wrappers lam =
     | Llet (( Strict | Alias | StrictOpt), _k, id,
         Lfunction {kind; params; body = fbody; attr; loc}, body) ->
       begin match
-        Simplif.split_default_wrapper ~id ~kind ~params ~body:fbody
-          ~attr ~wrapper_attr:Lambda.default_function_attribute
-          ~loc ~create_wrapper_body:stubify ()
+        Simplif.split_default_wrapper ~id ~kind ~params
+          ~body:fbody ~attr ~loc
       with
       | [fun_id, def] -> Llet (Alias, Pgenval, fun_id, def, body)
       | [fun_id, def; inner_fun_id, def_inner] ->
@@ -69,8 +57,7 @@ let add_default_argument_wrappers lam =
                (function
                  | (id, Lambda.Lfunction {kind; params; body; attr; loc}) ->
                    Simplif.split_default_wrapper ~id ~kind ~params ~body
-                     ~attr ~wrapper_attr:Lambda.default_function_attribute
-                     ~loc ~create_wrapper_body:stubify ()
+                     ~attr ~loc
                  | _ -> assert false)
                defs)
         in
@@ -85,7 +72,7 @@ let add_default_argument_wrappers lam =
     manner from the tuple. *)
 let tupled_function_call_stub original_params unboxed_version
       : Flambda.function_declaration =
-  let tuple_param =
+  let tuple_param_var =
     Variable.rename ~append:"tupled_stub_param" unboxed_version
   in
   let params = List.map (fun p -> Variable.rename p) original_params in
@@ -104,11 +91,12 @@ let tupled_function_call_stub original_params unboxed_version
   let _, body =
     List.fold_left (fun (pos, body) param ->
         let lam : Flambda.named =
-          Prim (Pfield (pos, Pointer, Mutable), [tuple_param], Debuginfo.none)
+          Prim (Pfield (pos, Pointer, Mutable), [tuple_param_var], Debuginfo.none)
         in
         pos + 1, Flambda.create_let param lam body)
       (0, call) params
   in
+  let tuple_param = Parameter.wrap tuple_param_var in
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
@@ -218,8 +206,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let set_of_closures =
       let decl =
         Function_decl.create ~let_rec_ident:None ~closure_bound_var ~kind
-          ~params ~body ~inline:attr.inline ~specialise:attr.specialise
-          ~is_a_functor:attr.is_a_functor ~loc
+          ~params ~body ~attr ~loc
       in
       close_functions t env (Function_decls.create [decl])
     in
@@ -266,8 +253,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
             let function_declaration =
               Function_decl.create ~let_rec_ident:(Some let_rec_ident)
                 ~closure_bound_var ~kind ~params ~body
-                ~inline:attr.inline ~specialise:attr.specialise
-                ~is_a_functor:attr.is_a_functor ~loc
+                ~attr ~loc
             in
             Some function_declaration
           | _ -> None)
@@ -409,7 +395,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
     let cond = Variable.create "cond_sequor" in
-    Flambda.create_let const_true (Const (Int 1))
+    Flambda.create_let const_true (Const (Const_pointer 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
@@ -417,7 +403,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_false" in
     let cond = Variable.create "cond_sequand" in
-    Flambda.create_let const_false (Const (Int 0))
+    Flambda.create_let const_false (Const (Const_pointer 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
@@ -476,7 +462,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
       ~create_body:(fun args ->
         name_expr (Prim (p, args, dbg))
           ~name)
-  | Lswitch (arg, sw) ->
+  | Lswitch (arg, sw, _loc) ->
     let scrutinee = Variable.create "switch" in
     let aux (i, lam) = i, close t env lam in
     let zero_to_n = Numbers.Int.zero_to_n in
@@ -577,12 +563,9 @@ and close_functions t external_env function_declarations : Flambda.named =
        argument with a default value, make sure it always gets inlined.
        CR-someday pchambart: eta-expansion wrapper for a primitive are
        not marked as stub but certainly should *)
-    let stub, body =
-      match Function_decl.primitive_wrapper decl with
-      | None -> false, body
-      | Some wrapper_body -> true, wrapper_body
-    in
-    let params = List.map (Env.find_var closure_env) params in
+    let stub = Function_decl.stub decl in
+    let param_vars = List.map (Env.find_var closure_env) params in
+    let params = List.map Parameter.wrap param_vars in
     let closure_bound_var = Function_decl.closure_bound_var decl in
     let body = close t closure_env body in
     let fun_decl =
@@ -596,7 +579,7 @@ and close_functions t external_env function_declarations : Flambda.named =
     | Tupled ->
       let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub params unboxed_version
+        tupled_function_call_stub param_vars unboxed_version
       in
       Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
@@ -641,8 +624,7 @@ and close_let_bound_expression t ?let_rec_ident let_bound_var env
     let closure_bound_var = Variable.rename let_bound_var in
     let decl =
       Function_decl.create ~let_rec_ident ~closure_bound_var ~kind ~params
-        ~body ~inline:attr.inline ~specialise:attr.specialise
-        ~is_a_functor:attr.is_a_functor ~loc
+        ~body ~attr ~loc
     in
     let set_of_closures_var =
       Variable.rename let_bound_var ~append:"_set_of_closures"

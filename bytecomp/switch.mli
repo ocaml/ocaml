@@ -42,6 +42,7 @@ exception Not_simple
 module type Stored = sig
   type t
   type key
+  val compare_key : key -> key -> int
   val make_key : t -> key option
 end
 
@@ -78,7 +79,7 @@ module type S =
       make_switch arg cases acts
       NB:  cases is in the value form *)
     val make_switch :
-        act -> int array -> act array -> act
+        Location.t -> act -> int array -> act array -> act
    (* Build last minute sharing of action stuff *)
    val make_catch : act -> int * (act -> act)
    val make_exit : int -> act
@@ -94,13 +95,14 @@ module type S =
     - actions is an array of actions.
 
   All these arguments specify a switch construct and zyva
-  returns an action that performs the switch,
+  returns an action that performs the switch.
 *)
 module Make :
   functor (Arg : S) ->
     sig
 (* Standard entry point, sharing is tracked *)
       val zyva :
+          Location.t ->
           (int * int) ->
            Arg.act ->
            (int * int * int) array ->

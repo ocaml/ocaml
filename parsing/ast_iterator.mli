@@ -19,7 +19,7 @@
 
 open Parsetree
 
-(** {2 A generic Parsetree iterator} *)
+(** {1 A generic Parsetree iterator} *)
 
 type iterator = {
   attribute: iterator -> attribute -> unit;

@@ -29,7 +29,7 @@ open Translclass
 
 type error =
   Circular_dependency of Ident.t
-
+| Conflicting_inline_attributes
 
 exception Error of Location.t * error
 
@@ -77,20 +77,8 @@ let rec apply_coercion loc strict restr arg =
         wrap_id_pos_list loc id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
       let param = Ident.create "funarg" in
-      name_lambda strict arg (fun id ->
-        Lfunction{kind = Curried; params = [param];
-                  attr = { default_function_attribute with
-                           is_a_functor = true };
-                  loc = loc;
-                  body = apply_coercion
-                           loc Strict cc_res
-                           (Lapply{ap_should_be_tailcall=false;
-                                   ap_loc=loc;
-                                   ap_func=Lvar id;
-                                   ap_args=[apply_coercion loc Alias cc_arg
-                                                           (Lvar param)];
-                                   ap_inlined=Default_inline;
-                                   ap_specialised=Default_specialise})})
+      let carg = apply_coercion loc Alias cc_arg (Lvar param) in
+      apply_coercion_result loc strict arg [param] [carg] cc_res
   | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
       transl_primitive pc_loc pc_desc pc_env pc_type None
   | Tcoerce_alias (path, cc) ->
@@ -99,6 +87,29 @@ let rec apply_coercion loc strict restr arg =
 
 and apply_coercion_field loc get_field (pos, cc) =
   apply_coercion loc Alias cc (get_field pos)
+
+and apply_coercion_result loc strict funct params args cc_res =
+  match cc_res with
+  | Tcoerce_functor(cc_arg, cc_res) ->
+    let param = Ident.create "funarg" in
+    let arg = apply_coercion loc Alias cc_arg (Lvar param) in
+    apply_coercion_result loc strict funct
+      (param :: params) (arg :: args) cc_res
+  | _ ->
+    name_lambda strict funct (fun id ->
+      Lfunction{kind = Curried; params = List.rev params;
+                attr = { default_function_attribute with
+                         is_a_functor = true;
+                         stub = true; };
+                loc = loc;
+                body = apply_coercion
+                         loc Strict cc_res
+                         (Lapply{ap_should_be_tailcall=false;
+                                 ap_loc=loc;
+                                 ap_func=Lvar id;
+                                 ap_args=List.rev args;
+                                 ap_inlined=Default_inline;
+                                 ap_specialised=Default_specialise})})
 
 and wrap_id_pos_list loc id_pos_list get_field lam =
   let fv = free_variables lam in
@@ -162,7 +173,7 @@ let compose_coercions c1 c2 =
   c3
 *)
 
-(* Record the primitive declarations occuring in the module compiled *)
+(* Record the primitive declarations occurring in the module compiled *)
 
 let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
@@ -314,8 +325,8 @@ let compile_recmodule compile_rhs bindings cont =
   eval_rec_bindings
     (reorder_rec_bindings
        (List.map
-          (fun {mb_id=id; mb_expr=modl; _} ->
-            (id, modl.mod_loc, init_shape modl, compile_rhs id modl))
+          (fun {mb_id=id; mb_expr=modl; mb_loc=loc; _} ->
+            (id, modl.mod_loc, init_shape modl, compile_rhs id modl loc))
           bindings))
     cont
 
@@ -344,49 +355,89 @@ let transl_class_bindings cl_list =
        (id, transl_class ids id meths cl vf))
      cl_list)
 
+(* Compile one or more functors, merging curried functors to produce
+   multi-argument functors.  Any [@inline] attribute on a functor that is
+   merged must be consistent with any other [@inline] attribute(s) on the
+   functor(s) being merged with.  Such an attribute will be placed on the
+   resulting merged functor. *)
+
+let merge_inline_attributes attr1 attr2 loc =
+  match Lambda.merge_inline_attributes attr1 attr2 with
+  | Some attr -> attr
+  | None -> raise (Error (loc, Conflicting_inline_attributes))
+
+let merge_functors mexp coercion root_path =
+  let rec merge mexp coercion path acc inline_attribute =
+    let finished = acc, mexp, path, coercion, inline_attribute in
+    match mexp.mod_desc with
+    | Tmod_functor (param, _, _, body) ->
+      let inline_attribute' =
+        Translattribute.get_inline_attribute mexp.mod_attributes
+      in
+      let arg_coercion, res_coercion =
+        match coercion with
+        | Tcoerce_none -> Tcoerce_none, Tcoerce_none
+        | Tcoerce_functor (arg_coercion, res_coercion) ->
+          arg_coercion, res_coercion
+        | _ -> fatal_error "Translmod.merge_functors: bad coercion"
+      in
+      let loc = mexp.mod_loc in
+      let path = functor_path path param in
+      let inline_attribute =
+        merge_inline_attributes inline_attribute inline_attribute' loc
+      in
+      merge body res_coercion path ((param, loc, arg_coercion) :: acc)
+        inline_attribute
+    | _ -> finished
+  in
+  merge mexp coercion root_path [] Default_inline
+
+let rec compile_functor mexp coercion root_path loc =
+  let functor_params_rev, body, body_path, res_coercion, inline_attribute =
+    merge_functors mexp coercion root_path
+  in
+  assert (List.length functor_params_rev >= 1);  (* cf. [transl_module] *)
+  let params, body =
+    List.fold_left (fun (params, body) (param, loc, arg_coercion) ->
+        let param' = Ident.rename param in
+        let arg = apply_coercion loc Alias arg_coercion (Lvar param') in
+        let params = param' :: params in
+        let body = Llet (Alias, Pgenval, param, arg, body) in
+        params, body)
+      ([], transl_module res_coercion body_path body)
+      functor_params_rev
+  in
+  Lfunction {
+    kind = Curried;
+    params;
+    attr = {
+      inline = inline_attribute;
+      specialise = Default_specialise;
+      is_a_functor = true;
+      stub = false;
+    };
+    loc;
+    body;
+  }
+
 (* Compile a module expression *)
 
-let rec transl_module cc rootpath mexp =
+and transl_module cc rootpath mexp =
   List.iter (Translattribute.check_attribute_on_module mexp)
     mexp.mod_attributes;
   let loc = mexp.mod_loc in
   match mexp.mod_type with
-    Mty_alias _ -> apply_coercion loc Alias cc lambda_unit
+    Mty_alias (Mta_absent, _) -> apply_coercion loc Alias cc lambda_unit
   | _ ->
       match mexp.mod_desc with
         Tmod_ident (path,_) ->
           apply_coercion loc Strict cc
-            (transl_path ~loc mexp.mod_env path)
+            (transl_module_path ~loc mexp.mod_env path)
       | Tmod_structure str ->
           fst (transl_struct loc [] cc rootpath str)
-      | Tmod_functor(param, _, _, body) ->
-          let bodypath = functor_path rootpath param in
-          let inline_attribute =
-            Translattribute.get_inline_attribute mexp.mod_attributes
-          in
-          oo_wrap mexp.mod_env true
-            (function
-              | Tcoerce_none ->
-                  Lfunction{kind = Curried; params = [param];
-                            attr = { inline = inline_attribute;
-                                     specialise = Default_specialise;
-                                     is_a_functor = true };
-                            loc = loc;
-                            body = transl_module Tcoerce_none bodypath body}
-              | Tcoerce_functor(ccarg, ccres) ->
-                  let param' = Ident.create "funarg" in
-                  Lfunction{kind = Curried; params = [param'];
-                            attr = { inline = inline_attribute;
-                                     specialise = Default_specialise;
-                                     is_a_functor = true };
-                            loc = loc;
-                            body = Llet(Alias, Pgenval, param,
-                                        apply_coercion loc Alias ccarg
-                                                       (Lvar param'),
-                                        transl_module ccres bodypath body)}
-              | _ ->
-                  fatal_error "Translmod.transl_module")
-            cc
+      | Tmod_functor _ ->
+          oo_wrap mexp.mod_env true (fun () ->
+            compile_functor mexp cc rootpath loc) ()
       | Tmod_apply(funct, arg, ccarg) ->
           let inlined_attribute, funct =
             Translattribute.get_and_remove_inlined_attribute_on_module funct
@@ -510,6 +561,14 @@ and transl_structure loc fields cc rootpath final_env = function
             Translattribute.add_inline_attribute module_body mb.mb_loc
                                                  mb.mb_attributes
           in
+          let module_body =
+            Levent (module_body, {
+              lev_loc = mb.mb_loc;
+              lev_kind = Lev_module_definition id;
+              lev_repr = None;
+              lev_env = Env.summary Env.empty;
+            })
+          in
           Llet(pure_module mb.mb_expr, Pgenval, id,
                module_body,
                body), size
@@ -522,8 +581,16 @@ and transl_structure loc fields cc rootpath final_env = function
           in
           let lam =
             compile_recmodule
-              (fun id modl ->
-                 transl_module Tcoerce_none (field_path rootpath id) modl)
+              (fun id modl loc ->
+                 let module_body =
+                   transl_module Tcoerce_none (field_path rootpath id) modl
+                 in
+                 Levent (module_body, {
+                   lev_loc = loc;
+                   lev_kind = Lev_module_definition id;
+                   lev_repr = None;
+                   lev_env = Env.summary Env.empty;
+                 }))
               bindings
               body
           in
@@ -678,6 +745,10 @@ let rec more_idents = function
     | Tstr_open _ -> more_idents rem
     | Tstr_class _ -> more_idents rem
     | Tstr_class_type _ -> more_idents rem
+    | Tstr_include{incl_mod={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
+        all_idents str.str_items @ more_idents rem
     | Tstr_include _ -> more_idents rem
     | Tstr_module {mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_expr={mod_desc =
@@ -708,8 +779,14 @@ and all_idents = function
     | Tstr_class cl_list ->
       List.map (fun (ci, _) -> ci.ci_id_class) cl_list @ all_idents rem
     | Tstr_class_type _ -> all_idents rem
+
+    | Tstr_include{incl_type; incl_mod={mod_desc =
+                             Tmod_constraint ({mod_desc = Tmod_structure str},
+                                              _, _, _)}} ->
+        bound_value_identifiers incl_type @ all_idents str.str_items @ all_idents rem
     | Tstr_include incl ->
       bound_value_identifiers incl.incl_type @ all_idents rem
+
     | Tstr_module {mb_id;mb_expr={mod_desc = Tmod_structure str}}
     | Tstr_module{mb_id;
                   mb_expr={mod_desc =
@@ -739,6 +816,15 @@ let nat_toplevel_name id =
     | _ -> raise Not_found
   with Not_found ->
     fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
+
+let field_of_str loc str =
+  let ids = Array.of_list (defined_idents str.str_items) in
+  fun (pos, cc) ->
+    match cc with
+    | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
+        transl_primitive pc_loc pc_desc pc_env pc_type None
+    | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
+
 
 let transl_store_structure glob map prims str =
   let rec transl_store rootpath subst = function
@@ -823,13 +909,7 @@ let transl_store_structure glob map prims str =
             in
             (* Careful: see next case *)
             let subst = !transl_store_subst in
-            let ids = Array.of_list (defined_idents str.str_items) in
-            let field (pos, cc) =
-              match cc with
-              | Tcoerce_primitive { pc_loc; pc_desc; pc_env; pc_type; } ->
-                  transl_primitive pc_loc pc_desc pc_env pc_type None
-              | _ -> apply_coercion loc Strict cc (Lvar ids.(pos))
-            in
+            let field = field_of_str loc str in
             Lsequence(lam,
                       Llet(Strict, Pgenval, id,
                            subst_lambda subst
@@ -857,7 +937,7 @@ let transl_store_structure glob map prims str =
         | Tstr_recmodule bindings ->
             let ids = List.map (fun mb -> mb.mb_id) bindings in
             compile_recmodule
-              (fun id modl ->
+              (fun id modl _loc ->
                  subst_lambda subst
                    (transl_module Tcoerce_none
                       (field_path rootpath id) modl))
@@ -871,6 +951,43 @@ let transl_store_structure glob map prims str =
             in
             Lsequence(subst_lambda subst lam,
                       transl_store rootpath (add_idents false ids subst) rem)
+
+        | Tstr_include{
+            incl_loc=loc;
+            incl_mod= {
+              mod_desc = Tmod_constraint (
+                  ({mod_desc = Tmod_structure str} as mexp), _, _,
+                  (Tcoerce_structure (map, _)))};
+            incl_attributes;
+            incl_type;
+          } ->
+            List.iter (Translattribute.check_attribute_on_module mexp)
+              incl_attributes;
+            (* Shouldn't we use mod_attributes instead of incl_attributes?
+               Same question for the Tstr_module cases above, btw. *)
+            let lam =
+              transl_store None subst str.str_items
+                (* It is tempting to pass rootpath instead of None
+                   in order to give a more precise name to exceptions
+                   in the included structured, but this would introduce
+                   a difference of behavior compared to bytecode. *)
+            in
+            let subst = !transl_store_subst in
+            let field = field_of_str loc str in
+            let ids0 = bound_value_identifiers incl_type in
+            let rec loop ids args =
+              match ids, args with
+              | [], [] ->
+                  transl_store rootpath (add_idents true ids0 subst) rem
+              | id :: ids, arg :: args ->
+                  Llet(Alias, Pgenval, id, subst_lambda subst (field arg),
+                       Lsequence(store_ident loc id,
+                                 loop ids args))
+              | _ -> assert false
+            in
+            Lsequence(lam, loop ids0 map)
+
+
         | Tstr_include incl ->
             let ids = bound_value_identifiers incl.incl_type in
             let modl = incl.incl_mod in
@@ -897,7 +1014,7 @@ let transl_store_structure glob map prims str =
     try
       let (pos, cc) = Ident.find_same id map in
       let init_val = apply_coercion loc Alias cc (Lvar id) in
-      Lprim(Psetfield(pos, Pointer, Initialization),
+      Lprim(Psetfield(pos, Pointer, Root_initialization),
             [Lprim(Pgetglobal glob, [], loc); init_val],
             loc)
     with Not_found ->
@@ -925,7 +1042,7 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, Pointer, Initialization),
+    Lsequence(Lprim(Psetfield(pos, Pointer, Root_initialization),
                     [Lprim(Pgetglobal glob, [], Location.none);
                      transl_primitive Location.none
                        prim.pc_desc prim.pc_env prim.pc_type None],
@@ -1092,7 +1209,7 @@ let transl_toplevel_item item =
   | Tstr_recmodule bindings ->
       let idents = List.map (fun mb -> mb.mb_id) bindings in
       compile_recmodule
-        (fun id modl -> transl_module Tcoerce_none (Some(Pident id)) modl)
+        (fun id modl _loc -> transl_module Tcoerce_none (Some(Pident id)) modl)
         bindings
         (make_sequence toploop_setvalue_id idents)
   | Tstr_class cl_list ->
@@ -1185,7 +1302,7 @@ let transl_store_package component_names target_name coercion =
       (List.length component_names,
        make_sequence
          (fun pos id ->
-           Lprim(Psetfield(pos, Pointer, Initialization),
+           Lprim(Psetfield(pos, Pointer, Root_initialization),
                  [Lprim(Pgetglobal target_name, [], Location.none);
                   get_component id],
                  Location.none))
@@ -1202,7 +1319,7 @@ let transl_store_package component_names target_name coercion =
              apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos _id ->
-                 Lprim(Psetfield(pos, Pointer, Initialization),
+                 Lprim(Psetfield(pos, Pointer, Root_initialization),
                        [Lprim(Pgetglobal target_name, [], Location.none);
                         Lprim(Pfield (pos, Pointer, Mutable), [Lvar blk], Location.none)],
                        Location.none))
@@ -1230,6 +1347,9 @@ let report_error ppf = function
         "@[Cannot safely evaluate the definition@ \
          of the recursively-defined module %a@]"
         Printtyp.ident id
+  | Conflicting_inline_attributes ->
+      fprintf ppf
+        "@[Conflicting ``inline'' attributes@]"
 
 let () =
   Location.register_error_of_exn

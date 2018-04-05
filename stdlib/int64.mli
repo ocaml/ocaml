@@ -84,7 +84,7 @@ external logxor : int64 -> int64 -> int64 = "%int64_xor"
 (** Bitwise logical exclusive or. *)
 
 val lognot : int64 -> int64
-(** Bitwise logical negation *)
+(** Bitwise logical negation. *)
 
 external shift_left : int64 -> int -> int64 = "%int64_lsl"
 (** [Int64.shift_left x y] shifts [x] to the left by [y] bits.
@@ -150,12 +150,24 @@ external to_nativeint : int64 -> nativeint = "%int64_to_nativeint"
 
 external of_string : string -> int64 = "caml_int64_of_string"
 (** Convert the given string to a 64-bit integer.
-   The string is read in decimal (by default) or in hexadecimal,
-   octal or binary if the string begins with [0x], [0o] or [0b]
-   respectively.
-   Raise [Failure "int_of_string"] if the given string is not
+   The string is read in decimal (by default, or if the string 
+   begins with [0u]) or in hexadecimal, octal or binary if the
+   string begins with [0x], [0o] or [0b] respectively.
+
+   The [0u] prefix reads the input as an unsigned integer in the range
+   [[0, 2*Int64.max_int+1]].  If the input exceeds {!Int64.max_int}
+   it is converted to the signed integer
+   [Int64.min_int + input - Int64.max_int - 1].
+
+   The [_] (underscore) character can appear anywhere in the string
+   and is ignored.
+   Raise [Failure "Int64.of_string"] if the given string is not
    a valid representation of an integer, or if the integer represented
    exceeds the range of integers representable in type [int64]. *)
+
+val of_string_opt: string -> int64 option
+(** Same as [of_string], but return [None] instead of raising.
+    @since 4.05 *)
 
 val to_string : int64 -> string
 (** Return the string representation of its argument, in decimal. *)
@@ -191,7 +203,7 @@ val equal: t -> t -> bool
 
 (**/**)
 
-(** {6 Deprecated functions} *)
+(** {1 Deprecated functions} *)
 
 external format : string -> int64 -> string = "caml_int64_format"
 (** Do not use this deprecated function.  Instead,

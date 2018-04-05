@@ -117,7 +117,7 @@ static void intern_init(void * src, void * input)
   /* This is asserted at the beginning of demarshaling primitives.
      If it fails, it probably means that an exception was raised
      without calling intern_cleanup() during the previous demarshaling. */
-  Assert (intern_input == NULL);
+  CAMLassert (intern_input == NULL);
   intern_src = src;
   intern_input = input;
 }

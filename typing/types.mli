@@ -123,7 +123,7 @@ and type_desc =
   | Tpoly of type_expr * type_expr list
   (** [Tpoly (ty,tyl)] ==> ['a1... 'an. ty],
       where 'a1 ... 'an are names given to types in tyl
-      and occurences of those types in ty. *)
+      and occurrences of those types in ty. *)
 
   | Tpackage of Path.t * Longident.t list * type_expr list
   (** Type of a first-class module (a.k.a package). *)
@@ -186,7 +186,7 @@ and row_field =
     removing abbreviations.
 *)
 and abbrev_memo =
-  | Mnil (** No known abbrevation *)
+  | Mnil (** No known abbreviation *)
 
   | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
   (** Found one abbreviation.
@@ -266,7 +266,7 @@ and value_kind =
 module Variance : sig
   type t
   type f = May_pos | May_neg | May_weak | Inj | Pos | Neg | Inv
-  val null : t                          (* no occurence *)
+  val null : t                          (* no occurrence *)
   val full : t                          (* strictly invariant *)
   val covariant : t                     (* strictly covariant *)
   val contravariant : t                 (* strictly contravariant *)
@@ -473,6 +473,8 @@ and constructor_tag =
   | Cstr_unboxed                        (* Constructor of an unboxed type *)
   | Cstr_extension of Path.t * bool     (* Extension constructor
                                            true if a constant false if a block*)
+
+val equal_tag :  constructor_tag -> constructor_tag -> bool
 
 type label_description =
   { lbl_name: string;                   (* Short name *)

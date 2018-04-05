@@ -45,6 +45,13 @@
 struct longjmp_buffer {
   sigjmp_buf buf;
 };
+#elif defined(__MINGW64__) && defined(__GNUC__) && __GNUC__ >= 4
+/* MPR#7638: issues with setjmp/longjmp in Mingw64, use GCC builtins instead */
+struct longjmp_buffer {
+  intptr_t buf[5];
+};
+#define sigsetjmp(buf,save) __builtin_setjmp(buf)
+#define siglongjmp(buf,val) __builtin_longjmp(buf,val)
 #else
 struct longjmp_buffer {
   jmp_buf buf;
@@ -66,22 +73,73 @@ int caml_is_special_exception(value exn);
 extern "C" {
 #endif
 
-CAMLextern void caml_raise (value bucket) Noreturn;
-CAMLextern void caml_raise_constant (value tag) Noreturn;
-CAMLextern void caml_raise_with_arg (value tag, value arg) Noreturn;
+CAMLnoreturn_start
+CAMLextern void caml_raise (value bucket)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_constant (value tag)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_with_arg (value tag, value arg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
 CAMLextern void caml_raise_with_args (value tag, int nargs, value arg[])
-                Noreturn;
-CAMLextern void caml_raise_with_string (value tag, char const * msg) Noreturn;
-CAMLextern void caml_failwith (char const *) Noreturn;
-CAMLextern void caml_invalid_argument (char const *) Noreturn;
-CAMLextern void caml_raise_out_of_memory (void) Noreturn;
-CAMLextern void caml_raise_stack_overflow (void) Noreturn;
-CAMLextern void caml_raise_sys_error (value) Noreturn;
-CAMLextern void caml_raise_end_of_file (void) Noreturn;
-CAMLextern void caml_raise_zero_divide (void) Noreturn;
-CAMLextern void caml_raise_not_found (void) Noreturn;
-CAMLextern void caml_array_bound_error (void) Noreturn;
-CAMLextern void caml_raise_sys_blocked_io (void) Noreturn;
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_with_string (value tag, char const * msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_failwith (char const *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_failwith_value (value msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument (char const *msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_invalid_argument_value (value msg)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_out_of_memory (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_stack_overflow (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_sys_error (value)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_end_of_file (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_zero_divide (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_not_found (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_array_bound_error (void)
+CAMLnoreturn_end;
+
+CAMLnoreturn_start
+CAMLextern void caml_raise_sys_blocked_io (void)
+CAMLnoreturn_end;
 
 #ifdef __cplusplus
 }

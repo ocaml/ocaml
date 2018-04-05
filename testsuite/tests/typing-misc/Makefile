@@ -13,6 +13,24 @@
 #*                                                                        *
 #**************************************************************************
 
+all: pr6939.ml
+	$(MAKE) default
+
 BASEDIR=../..
 include $(BASEDIR)/makefiles/Makefile.expect
 include $(BASEDIR)/makefiles/Makefile.common
+
+GENERATED_SOURCES = pr6939.ml *.flat-float
+
+ifeq "$(FLAT_FLOAT_ARRAY)" "true"
+suffix = -flat
+else
+suffix = -noflat
+endif
+
+pr6939.ml: pr6939.ml$(suffix) $(FLAT_FLOAT_ARRAY).flat-float
+	cp $< $@
+
+%.flat-float:
+	@rm -f $(GENERATED_SOURCES)
+	@touch $@

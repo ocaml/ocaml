@@ -30,6 +30,16 @@ external unsafe_blit :
 external create_float: int -> float array = "caml_make_float_vect"
 let make_float = create_float
 
+module Floatarray = struct
+  external create : int -> floatarray = "caml_floatarray_create"
+  external length : floatarray -> int = "%floatarray_length"
+  external get : floatarray -> int -> float = "%floatarray_safe_get"
+  external set : floatarray -> int -> float -> unit = "%floatarray_safe_set"
+  external unsafe_get : floatarray -> int -> float = "%floatarray_unsafe_get"
+  external unsafe_set : floatarray -> int -> float -> unit
+      = "%floatarray_unsafe_set"
+end
+
 let init l f =
   if l = 0 then [||] else
   if l < 0 then invalid_arg "Array.init"

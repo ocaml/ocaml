@@ -149,12 +149,12 @@ static value caml_gr_wait_allocate_result(int mouse_x, int mouse_y, int button,
 {
   CAMLparam0();
   CAMLlocal1(res);
-  res = alloc_small(5, 0);
-  caml_initialize_field(res, 0, Val_int(mouse_x));
-  caml_initialize_field(res, 1, Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y)));
-  caml_initialize_field(res, 2, Val_bool(button));
-  caml_initialize_field(res, 3, Val_bool(keypressed));
-  caml_initialize_field(res, 4, Val_int(key & 0xFF));
+  res = caml_alloc_5(0,
+                     Val_int(mouse_x),
+                     Val_int(mouse_y == -1 ? -1 : Wcvt(mouse_y)),
+                     Val_bool(button),
+                     Val_bool(keypressed),
+                     Val_int(key & 0xFF));
   CAMLreturn (res);
 }
 
@@ -240,9 +240,9 @@ static value caml_gr_wait_event_blocking(long mask)
       /* No event available: block on input socket until one is */
       FD_ZERO(&readfds);
       FD_SET(ConnectionNumber(caml_gr_display), &readfds);
-      enter_blocking_section();
+      caml_enter_blocking_section();
       select(FD_SETSIZE, &readfds, NULL, NULL, NULL);
-      leave_blocking_section();
+      caml_leave_blocking_section();
       caml_gr_check_open(); /* in case another thread closed the display */
     }
   }

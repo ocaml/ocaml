@@ -16,11 +16,13 @@
 TOPDIR=$(BASEDIR)/..
 include $(TOPDIR)/Makefile.tools
 
+.PHONY: defaultpromote
 defaultpromote:
 	@for file in *.reference; do \
 	  cp `basename $$file reference`result $$file; \
 	done
 
+.PHONY: defaultclean
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A) *.exe
 	@rm -f *.exe.manifest
@@ -58,9 +60,8 @@ defaultclean:
 .mll.ml:
 	@$(OCAMLLEX) -q $< > /dev/null
 
-.cmm.o:
-	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
-	@$(ASM) -o $*.o $*.s
+.cmm.s:
+	@$(OCAMLRUN) ./codegen -S $*.cmm
 
 .cmm.obj:
 	@$(OCAMLRUN) ./codegen $*.cmm \
@@ -72,11 +73,12 @@ defaultclean:
 .S.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -DMODEL_$(MODEL) -o $*.o $*.S
 
+.PRECIOUS: %.s
 .s.o:
 	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s
 
 .c.o:
-	@$(CC) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
+	@$(CC) $(CFLAGS) -c -I$(CTOPDIR)/byterun $*.c -o $*.$(O)
 
 .f.o:
 	@$(FORTRAN_COMPILER) -c -I$(CTOPDIR)/byterun $*.f -o $*.$(O)

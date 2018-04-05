@@ -39,6 +39,7 @@ let add_load_dir = "<dir> Add the given directory to the search path for custom\
   "\t\tgenerators"
 let load_file = "<file.cm[o|a|xs]> Load file defining a new documentation generator"
 let werr = " Treat ocamldoc warnings as errors"
+let show_missed_crossref = " Show missed cross-reference opportunities"
 let hide_warnings = " do not print ocamldoc warnings"
 let target_dir = "<dir> Generate files in directory <dir>, rather than in current\n"^
   "\t\tdirectory (for man and HTML generators)"
@@ -202,6 +203,14 @@ let merge_all = ('A', "merge all")
 
 let no_index = " Do not build index for Info files "^texi_only
 let esc_8bits = " Escape accentuated characters in Info files "^texi_only
+let texinfo_title r=
+  "n,style Associate {n } to the given sectionning style\n"^
+  "\t\t(e.g. 'section') in the texInfo output "^texi_only^"\n"^
+  "\t\tDefault sectionning is:\n\t\t"^
+  (String.concat "\n\t\t"
+     (List.map (fun (n,(t,h)) ->
+          Printf.sprintf " %d -> %s, %s " n t h) !r))
+
 let info_section = " Specify section of Info directory "^texi_only
 let info_entry = " Specify Info directory entry "^texi_only
 
@@ -250,7 +259,9 @@ let errors_occured n = (string_of_int n)^" error(s) encountered"
 let parse_error = "Parse error"
 let text_parse_error l c s =
   let lines = Str.split (Str.regexp_string "\n") s in
-  (List.nth lines l) ^ "\n" ^ (String.make c ' ') ^ "^"
+  "Error parsing text:\n"
+  ^ (List.nth lines l) ^ "\n"
+  ^ (String.make c ' ') ^ "^"
 
 let file_not_found_in_paths paths name =
   Printf.sprintf "No file %s found in the load paths: \n%s"
@@ -320,6 +331,12 @@ let cross_value_not_found n = "Value "^n^" not found"
 let cross_type_not_found n = "Type "^n^" not found"
 let cross_recfield_not_found n = Printf.sprintf "Record field %s not found" n
 let cross_const_not_found n = Printf.sprintf "Constructor %s not found" n
+
+let code_could_be_cross_reference n parent =
+  Printf.sprintf "Code element [%s] in %s corresponds to a known \
+                  cross-referenceable element, it might be worthwhile to replace it \
+                  with {!%s}" n parent n
+
 
 let object_end = "object ... end"
 let struct_end = "struct ... end"
