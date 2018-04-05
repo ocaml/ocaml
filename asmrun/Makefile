@@ -21,7 +21,7 @@ LINKEDFILES=misc.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   weak.c finalise.c meta.c custom.c main.c roots.c globroots.c \
   $(UNIX_OR_WIN32).c dynlink.c signals.c debugger.c addrmap.c \
   domain.c platform.c eventlog.c backtrace.c startup_aux.c \
-	afl.c bigarray.c fiber.c
+	afl.c bigarray.c fiber.c shared_heap.c
 
 # The following variable stores the list of files for which dependencies
 # should be computed. It includes even the files that won't actually be

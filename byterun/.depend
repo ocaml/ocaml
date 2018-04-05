@@ -297,10 +297,10 @@ startup.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
 startup_aux.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
  caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/callback.h caml/major_gc.h \
- caml/dynlink.h caml/osdeps.h caml/prims.h caml/startup_aux.h \
- caml/version.h
+ caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
+ caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/startup_aux.h caml/version.h
 str.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
@@ -641,10 +641,10 @@ startup.d.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
 startup_aux.d.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
  caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/callback.h caml/major_gc.h \
- caml/dynlink.h caml/osdeps.h caml/prims.h caml/startup_aux.h \
- caml/version.h
+ caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
+ caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/startup_aux.h caml/version.h
 str.d.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
@@ -979,10 +979,10 @@ startup.i.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
 startup_aux.i.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
  caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/callback.h caml/major_gc.h \
- caml/dynlink.h caml/osdeps.h caml/prims.h caml/startup_aux.h \
- caml/version.h
+ caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
+ caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/startup_aux.h caml/version.h
 str.i.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
@@ -1317,10 +1317,10 @@ startup.pic.$(O): startup.c caml/config.h caml/m.h caml/s.h caml/alloc.h \
 startup_aux.pic.$(O): startup_aux.c caml/backtrace.h caml/mlvalues.h \
  caml/config.h caml/m.h caml/s.h caml/misc.h caml/domain_state.h \
  caml/domain_state.tbl caml/byte_domain_state.tbl caml/exec.h \
- caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h caml/addrmap.h \
- caml/domain.h caml/memory.h caml/alloc.h caml/callback.h caml/major_gc.h \
- caml/dynlink.h caml/osdeps.h caml/prims.h caml/startup_aux.h \
- caml/version.h
+ caml/dynlink.h caml/memory.h caml/gc.h caml/major_gc.h caml/minor_gc.h \
+ caml/addrmap.h caml/domain.h caml/memory.h caml/alloc.h caml/callback.h \
+ caml/major_gc.h caml/misc.h caml/osdeps.h caml/prims.h \
+ caml/startup_aux.h caml/version.h
 str.pic.$(O): str.c caml/alloc.h caml/misc.h caml/config.h caml/m.h caml/s.h \
  caml/mlvalues.h caml/domain_state.h caml/domain_state.tbl \
  caml/byte_domain_state.tbl caml/fail.h caml/memory.h caml/gc.h \
