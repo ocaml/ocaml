@@ -107,3 +107,10 @@ let is_constructor_typath p =
   match constructor_typath p with
   | Regular _ -> false
   | _ -> true
+
+module T = struct
+  type nonrec t = t
+  let compare = compare
+end
+module Set = Set.Make(T)
+module Map = Map.Make(T)

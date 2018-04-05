@@ -16,7 +16,6 @@
 (* Inclusion checks for the module language *)
 
 open Misc
-open Path
 open Typedtree
 open Types
 
@@ -165,6 +164,14 @@ let kind_of_field_desc = function
   | Field_class _ -> "class"
   | Field_classtype _ -> "class type"
 
+(** Map indexed by both field types and names.
+    This avoids name clashes between different sorts of fields
+    such as values and types. *)
+module FieldMap = Map.Make(struct
+    type t = field_desc
+    let compare = Pervasives.compare
+  end)
+
 let item_ident_name = function
     Sig_value(id, d) -> (id, d.val_loc, Field_value(Ident.name id))
   | Sig_type(id, d, _) -> (id, d.type_loc, Field_type(Ident.name id))
@@ -309,7 +316,8 @@ and try_modtypes ~loc env ~mark cxt subst mty1 mty2 =
       in
       let cc_res =
         modtypes ~loc (Env.add_module param1 arg2' env) ~mark
-          (Body param1::cxt) (Subst.add_module param2 (Pident param1) subst)
+          (Body param1::cxt)
+          (Subst.add_module param2 (Path.Pident param1) subst)
           res1 res2
       in
       begin match (cc_arg, cc_res) with
@@ -354,9 +362,9 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
         let (id, _loc, name) = item_ident_name item in
         let nextpos = if is_runtime_component item then pos + 1 else pos in
         build_component_table nextpos
-                              (Tbl.add name (id, item, pos) tbl) rem in
+                              (FieldMap.add name (id, item, pos) tbl) rem in
   let len1, comps1 =
-    build_component_table 0 Tbl.empty sig1 in
+    build_component_table 0 FieldMap.empty sig1 in
   let len2 =
     List.fold_left
       (fun n i -> if is_runtime_component i then n + 1 else n)
@@ -394,15 +402,15 @@ and signatures ~loc env ~mark cxt subst sig1 sig2 =
           | _ -> name2, true
         in
         begin try
-          let (id1, item1, pos1) = Tbl.find name2 comps1 in
+          let (id1, item1, pos1) = FieldMap.find name2 comps1 in
           let new_subst =
             match item2 with
               Sig_type _ ->
-                Subst.add_type id2 (Pident id1) subst
+                Subst.add_type id2 (Path.Pident id1) subst
             | Sig_module _ ->
-                Subst.add_module id2 (Pident id1) subst
+                Subst.add_module id2 (Path.Pident id1) subst
             | Sig_modtype _ ->
-                Subst.add_modtype id2 (Mty_ident (Pident id1)) subst
+                Subst.add_modtype id2 (Mty_ident (Path.Pident id1)) subst
             | Sig_value _ | Sig_typext _
             | Sig_class _ | Sig_class_type _ ->
                 subst
@@ -466,7 +474,7 @@ and module_declarations ~loc env ~mark cxt subst id1 md1 md2 =
     loc
     md1.md_attributes md2.md_attributes
     (Ident.name id1);
-  let p1 = Pident id1 in
+  let p1 = Path.Pident id1 in
   if mark_positive mark then
     Env.mark_module_used (Ident.name id1) md1.md_loc;
   modtypes ~loc env ~mark (Module id1::cxt) subst
@@ -490,7 +498,7 @@ and modtype_infos ~loc env ~mark cxt subst id info1 info2 =
     | (Some mty1, Some mty2) ->
         check_modtype_equiv ~loc env ~mark cxt' mty1 mty2
     | (None, Some mty2) ->
-        check_modtype_equiv ~loc env ~mark cxt' (Mty_ident(Pident id)) mty2
+        check_modtype_equiv ~loc env ~mark cxt' (Mty_ident(Path.Pident id)) mty2
   with Error reasons ->
     raise(Error((cxt, env, Modtype_infos(id, info1, info2)) :: reasons))
 
@@ -509,9 +517,9 @@ and check_modtype_equiv ~loc env ~mark cxt mty1 mty2 =
 
 let can_alias env path =
   let rec no_apply = function
-    | Pident _ -> true
-    | Pdot(p, _, _) -> no_apply p
-    | Papply _ -> false
+    | Path.Pident _ -> true
+    | Path.Pdot(p, _, _) -> no_apply p
+    | Path.Papply _ -> false
   in
   no_apply path && not (Env.is_functor_arg path env)
 
@@ -669,9 +677,9 @@ let path_of_context = function
     Module id :: rem ->
       let rec subm path = function
           [] -> path
-        | Module id :: rem -> subm (Pdot (path, Ident.name id, -1)) rem
+        | Module id :: rem -> subm (Path.Pdot (path, Ident.name id, -1)) rem
         | _ -> assert false
-      in subm (Pident id) rem
+      in subm (Path.Pident id) rem
   | _ -> assert false
 
 let context ppf cxt =

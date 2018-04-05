@@ -17,9 +17,6 @@
 
 open Types
 
-module PathMap : Map.S with type key = Path.t
-                        and type 'a t = 'a Map.Make(Path).t
-
 type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
@@ -33,7 +30,7 @@ type summary =
   (** The string set argument of [Env_open] represents a list of module names
       to skip, i.e. that won't be imported in the toplevel namespace. *)
   | Env_functor_arg of summary * Ident.t
-  | Env_constraints of summary * type_declaration PathMap.t
+  | Env_constraints of summary * type_declaration Path.Map.t
   | Env_copy_types of summary * string list
 
 type t

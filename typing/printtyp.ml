@@ -565,8 +565,7 @@ let printing_depth = ref 0
 let printing_cont = ref ([] : Env.iter_cont list)
 let printing_old = ref Env.empty
 let printing_pers = ref Concr.empty
-module PathMap = Map.Make(Path)
-let printing_map = ref PathMap.empty
+let printing_map = ref Path.Map.empty
 
 let same_type t t' = repr t == repr t'
 
@@ -632,7 +631,7 @@ let set_printing_env env =
     (* printf "Reset printing_map@."; *)
     printing_old := env;
     printing_pers := Env.used_persistent ();
-    printing_map := PathMap.empty;
+    printing_map := Path.Map.empty;
     printing_depth := 0;
     (* printf "Recompute printing_map.@."; *)
     let cont =
@@ -642,12 +641,12 @@ let set_printing_env env =
           (* Format.eprintf "%a -> %a = %a@." path p path p' path p1 *)
           if s1 = Id then
           try
-            let r = PathMap.find p1 !printing_map in
+            let r = Path.Map.find p1 !printing_map in
             match !r with
               Paths l -> r := Paths (p :: l)
             | Best p' -> r := Paths [p; p'] (* assert false *)
           with Not_found ->
-            printing_map := PathMap.add p1 (ref (Paths [p])) !printing_map)
+            printing_map := Path.Map.add p1 (ref (Paths [p])) !printing_map)
         env in
     printing_cont := [cont];
   end
@@ -698,7 +697,7 @@ let best_type_path p =
   then (p, Id)
   else
     let (p', s) = normalize_type_path !printing_env p in
-    let get_path () = get_best_path (PathMap.find  p' !printing_map) in
+    let get_path () = get_best_path (Path.Map.find  p' !printing_map) in
     while !printing_cont <> [] &&
       try fst (path_size (get_path ())) > !printing_depth with Not_found -> true
     do
