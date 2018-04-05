@@ -260,8 +260,6 @@ val cut_at : string -> char -> string * string
 
 module StringSet: Set.S with type elt = string
 module StringMap: Map.S with type key = string
-(* TODO: replace all custom instantiations of StringSet/StringMap in various
-   compiler modules with this one. *)
 
 (* Color handling *)
 module Color : sig
