@@ -639,11 +639,11 @@ void caml_print_stats () {
   caml_gc_stat(Val_unit);
   caml_sample_gc_stats(&s);
   fprintf(stderr,"**** GC stats ****\n");
-  fprintf(stderr, "Minor words:\t\t%llu\n", s.minor_words);
-  fprintf(stderr, "Promoted words:\t\t%llu\n", s.promoted_words);
-  fprintf(stderr, "Major words:\t\t%llu\n", s.major_words);
-  fprintf(stderr, "Minor collections:\t%lluu\n", s.minor_collections);
-  fprintf(stderr, "Major collections:\t%llu\n", (uint64_t) Caml_state->stat_major_collections);
+  fprintf(stderr, "Minor words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", s.minor_words);
+  fprintf(stderr, "Promoted words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", s.promoted_words);
+  fprintf(stderr, "Major words:\t\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", s.major_words);
+  fprintf(stderr, "Minor collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"uu\n", s.minor_collections);
+  fprintf(stderr, "Major collections:\t%"ARCH_INTNAT_PRINTF_FORMAT"u\n", Caml_state->stat_major_collections);
 
 #if defined(COLLECT_STATS) && defined(NATIVE_CODE)
   memset(&ds,0,sizeof(struct detailed_stats));
