@@ -88,11 +88,23 @@ static __thread dom_internal* domain_self;
 static int64_t startup_timestamp;
 
 #ifdef __APPLE__
-  /* OSX has issues with dynamic loading + exported TLS.
-     This is slower but works */
-  CAMLexport pthread_key_t caml_domain_state_key;
+/* OSX has issues with dynamic loading + exported TLS.
+    This is slower but works */
+CAMLexport pthread_key_t caml_domain_state_key;
+static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+
+static void caml_make_domain_state_key ()
+{
+  (void) pthread_key_create (&caml_domain_state_key, NULL);
+}
+
+void caml_init_domain_state_key ()
+{
+  pthread_once(&key_once, caml_make_domain_state_key);
+}
+
 #else
-  CAMLexport __thread caml_domain_state* caml_domain_curr_state;
+CAMLexport __thread caml_domain_state* caml_domain_curr_state;
 #endif
 
 asize_t caml_norm_minor_heap_size (intnat wsize)
