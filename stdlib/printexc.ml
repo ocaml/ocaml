@@ -84,7 +84,7 @@ let catch fct arg =
     exit 2
 
 type raw_backtrace_slot
-type raw_backtrace = raw_backtrace_slot array
+type raw_backtrace
 
 external get_raw_backtrace:
   unit -> raw_backtrace = "caml_get_exception_raw_backtrace"
