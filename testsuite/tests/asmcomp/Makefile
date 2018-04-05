@@ -96,19 +96,19 @@ skips:
 	done
 
 one_ml:
-	@$(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+	@$(OCAMLOPT) -I $(OTOPDIR)/byterun $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
 one_ml_cond:
 	@if $(COND); then \
-	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+	   $(OCAMLOPT) -I $(OTOPDIR)/byterun $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
 	   echo " => skipped"; \
 	 fi
 
 one:
-	@$(OCAMLOPT) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O) \
+	@$(OCAMLOPT) -I $(OTOPDIR)/byterun -o $(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
