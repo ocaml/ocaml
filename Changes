@@ -249,6 +249,9 @@ Working version
   boot/ocamlc -depend can be used in its place.
   (Nicolás Ojeda Bär, review by Xavier Leroy and Damien Doligez)
 
+- GPR#1695: add the -no-crc command-line option to ocamlobjinfo.
+  (Sébastien Hinderer, review by David Allsopp and Gabriel Scherer)
+
 ### Manual and documentation:
 
 - MPR#7613: minor reword of the "refutation cases" paragraph

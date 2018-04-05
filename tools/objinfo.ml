@@ -23,9 +23,12 @@ open Misc
 open Config
 open Cmo_format
 
-(* Command line option to prevent printing approximation and function code *)
+(* Command line options to prevent printing approximation,
+   function code and CRC
+ *)
 let no_approx = ref false
 let no_code = ref false
+let no_crc = ref false
 
 let input_stringlist ic len =
   let get_string_list sect len =
@@ -44,9 +47,11 @@ let dummy_crc = String.make 32 '-'
 
 let print_name_crc (name, crco) =
   let crc =
-    match crco with
-      None -> dummy_crc
-    | Some crc -> Digest.to_hex crc
+    if !no_crc then "" else begin
+      match crco with
+        None -> dummy_crc
+      | Some crc -> Digest.to_hex crc
+    end
   in
     printf "\t%s\t%s\n" crc name
 
@@ -323,6 +328,7 @@ let dump_obj filename =
 let arg_list = [
   "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
   "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions";
+  "-no-crc", Arg.Set no_crc, " Do not print the CRC of imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
      \      from <file>";
