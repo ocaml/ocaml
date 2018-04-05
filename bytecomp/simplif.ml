@@ -347,12 +347,12 @@ let simplify_lets lam =
   and bind_var bv v =
     let r = ref 0 in
     Hashtbl.add occ v r;
-    Tbl.add v r bv
+    Ident.Map.add v r bv
 
   (* Record a use of a variable *)
   and use_var bv v n =
     try
-      let r = Tbl.find v bv in r := !r + n
+      let r = Ident.Map.find v bv in r := !r + n
     with Not_found ->
       (* v is not locally bound, therefore this is a use under a lambda
          or within a loop.  Increase use count by 2 -- enough so
@@ -377,7 +377,7 @@ let simplify_lets lam =
   | Lapply{ap_func = l1; ap_args = ll} ->
       count bv l1; List.iter (count bv) ll
   | Lfunction {body} ->
-      count Tbl.empty body
+      count Ident.Map.empty body
   | Llet(_str, _k, v, Lvar w, l2) when optimize ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
@@ -412,8 +412,9 @@ let simplify_lets lam =
   | Ltrywith(l1, _v, l2) -> count bv l1; count bv l2
   | Lifthenelse(l1, l2, l3) -> count bv l1; count bv l2; count bv l3
   | Lsequence(l1, l2) -> count bv l1; count bv l2
-  | Lwhile(l1, l2) -> count Tbl.empty l1; count Tbl.empty l2
-  | Lfor(_, l1, l2, _dir, l3) -> count bv l1; count bv l2; count Tbl.empty l3
+  | Lwhile(l1, l2) -> count Ident.Map.empty l1; count Ident.Map.empty l2
+  | Lfor(_, l1, l2, _dir, l3) ->
+      count bv l1; count bv l2; count Ident.Map.empty l3
   | Lassign(_v, l) ->
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
@@ -437,7 +438,7 @@ let simplify_lets lam =
         count bv al
       end
   in
-  count Tbl.empty lam;
+  count Ident.Map.empty lam;
 
   (* Second pass: remove Lalias bindings of unused variables,
      and substitute the bindings of variables used exactly once. *)
