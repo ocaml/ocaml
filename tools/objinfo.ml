@@ -44,14 +44,14 @@ let input_stringlist ic len =
   get_string_list sect len
 
 let dummy_crc = String.make 32 '-'
+let null_crc = String.make 32 '0'
 
 let print_name_crc (name, crco) =
   let crc =
-    if !no_crc then "" else begin
-      match crco with
-        None -> dummy_crc
-      | Some crc -> Digest.to_hex crc
-    end
+    match crco with
+      None -> dummy_crc
+    | Some crc ->
+      if !no_crc then null_crc else Digest.to_hex crc
   in
     printf "\t%s\t%s\n" crc name
 
@@ -328,7 +328,7 @@ let dump_obj filename =
 let arg_list = [
   "-no-approx", Arg.Set no_approx, " Do not print module approximation information";
   "-no-code", Arg.Set no_code, " Do not print code from exported flambda functions";
-  "-no-crc", Arg.Set no_crc, " Do not print the CRC of imported interfaces";
+  "-null-crc", Arg.Set no_crc, " Print a null CRC for imported interfaces";
   "-args", Arg.Expand Arg.read_arg,
      "<file> Read additional newline separated command line arguments \n\
      \      from <file>";
