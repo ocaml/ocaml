@@ -146,7 +146,7 @@ static void default_fatal_uncaught_exception(value exn)
   fprintf(stderr, "Fatal error: exception %s\n", msg);
   caml_stat_free(msg);
   /* Display the backtrace if available */
-  if (Caml_state->backtrace_active && !DEBUGGER_IN_USE)
+  if (domain_state->backtrace_active && !DEBUGGER_IN_USE)
     caml_print_exception_backtrace();
 }
 

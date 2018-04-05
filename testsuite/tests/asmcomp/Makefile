@@ -70,24 +70,24 @@ ARGS_static_float_array_flambda_opaque=\
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
       catch-try catch-rec even-odd even-odd-spill pgcd
-ARGS_fib=-DINT_INT -DFUN=fib main.c
-ARGS_tak=-DUNIT_INT -DFUN=takmain main.c
-ARGS_quicksort=-DSORT -DFUN=quicksort main.c
-ARGS_quicksort2=-DSORT -DFUN=quicksort main.c
-ARGS_soli=-DUNIT_INT -DFUN=solitaire main.c
-ARGS_integr=-DINT_FLOAT -DFUN=test main.c
+ARGS_fib=-ccopt -DINT_INT -ccopt -DFUN=fib main.c
+ARGS_tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
+ARGS_quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_quicksort2=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_soli=-ccopt -DUNIT_INT -ccopt -DFUN=solitaire main.c
+ARGS_integr=-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c
 ARGS_arith=mainarith.c
-ARGS_checkbound=-DCHECKBOUND main.c
-ARGS_tagged-fib=-DINT_INT -DFUN=fib main.c
-ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
-ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
-ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
+ARGS_checkbound=-ccopt -DCHECKBOUND main.c
+ARGS_tagged-fib=-ccopt -DINT_INT -ccopt -DFUN=fib main.c
+ARGS_tagged-integr=-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c
+ARGS_tagged-quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
+ARGS_tagged-tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
 ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
-ARGS_catch-try=-DINT_INT -DFUN=catch_exit main.c
-ARGS_catch-rec=-DINT_INT -DFUN=catch_fact main.c
-ARGS_even-odd=-DINT_INT -DFUN=is_even main.c
-ARGS_even-odd-spill=-DINT_INT -DFUN=is_even main.c
-ARGS_pgcd=-DINT_INT -DFUN=pgcd_30030 main.c
+ARGS_catch-try=-ccopt -DINT_INT -ccopt -DFUN=catch_exit main.c
+ARGS_catch-rec=-ccopt -DINT_INT -ccopt -DFUN=catch_fact main.c
+ARGS_even-odd=-ccopt -DINT_INT -ccopt -DFUN=is_even main.c
+ARGS_even-odd-spill=-ccopt -DINT_INT -ccopt -DFUN=is_even main.c
+ARGS_pgcd=-ccopt -DINT_INT -ccopt -DFUN=pgcd_30030 main.c
 
 skips:
 	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA) \
@@ -108,7 +108,7 @@ one_ml_cond:
 	 fi
 
 one:
-	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(OCAMLOPT) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean

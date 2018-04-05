@@ -190,7 +190,6 @@ static void oldify_one (void* st_v, value v, value *p)
       sz = Wosize_hd (hd);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (sz, tag);
-      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
       *p = result + infix_offset;
       if (tag == Stack_tag) {
         /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
@@ -229,12 +228,11 @@ static void oldify_one (void* st_v, value v, value *p)
       value curr = Op_val(v)[i];
       /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
          However, it's a useful debugging aid for now */
-      //CAMLassert(!Is_debug_tag(curr));
+      CAMLassert(!Is_debug_tag(curr));
       Op_val (result)[i] = curr;
     }
     Hd_val (v) = 0;            /* Set forward flag */
     Op_val (v)[0] = result;    /*  and forward pointer. */
-    // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
     CAMLassert (infix_offset == 0);
     *p = result;
   } else {
@@ -253,8 +251,6 @@ static void oldify_one (void* st_v, value v, value *p)
       CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (1, Forward_tag);
-      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
-      //             (value*)v, p, tag, (value)1, (value*)result);
       *p = result;
       Hd_val (v) = 0;             /* Set (GC) forward flag */
       Op_val (v)[0] = result;      /*  and forward pointer. */
@@ -287,11 +283,7 @@ static void oldify_mopup (struct oldify_state* st)
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     if (Tag_val(new_v) == Stack_tag) {
       st->todo_list = Op_val (v)[1];   /* Remove from list (stack) */
-      //caml_gc_log ("oldify_mopup: caml_scan_stack start old=%p new=%p",
-      //             (value*)v, (value*)new_v);
       caml_scan_stack(oldify_one, st, new_v);
-      //caml_gc_log ("oldify_mopup: caml_scan_stack end old=%p new=%p",
-      //             (value*)v, (value*)new_v);
     } else {
       st->todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
@@ -332,7 +324,6 @@ void forward_pointer (void* state, value v, value *p) {
   if (Is_block (v) && young_ptr <= (char*)Hp_val(v) && (char*)Hp_val(v) < young_end) {
     hd = Hd_val(v);
     if (hd == 0) {
-      // caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);
       *p = Op_val(v)[0];
       CAMLassert (Is_block(*p) && !Is_minor(*p));
     } else if (Tag_hd(hd) == Infix_tag) {
@@ -422,9 +413,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   oldify_mopup (&st);
 
-  // caml_gc_log ("caml_promote: new root=0x%lx oldest_promoted=0x%lx",
-  //            root, oldest_promoted);
-
   CAMLassert (!Is_minor(root));
   /* XXX KC: We might checking for rpc's just before a stw_phase of a major
    * collection? Is this necessary? */
@@ -459,7 +447,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
           __sync_bool_compare_and_swap (*r,old_p,new_p);
-        //caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
       }
     }
 
@@ -503,7 +490,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       value curr = Val_hp(iter);
       if (hd != 0) {
         tag_t tag = Tag_hd (hd);
-        //caml_gc_log ("Scan: curr=%p sz=%lu tag=%u", (value*)curr, Wsize_bsize(sz), tag);
         if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
           for (i = 0; i < Wosize_hd (hd); i++) {
             f = Op_val(curr)[i];
@@ -687,7 +673,6 @@ static void realloc_generic_table
   }else{
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
-    CAMLassert (caml_requested_minor_gc);
 
     tbl->size *= 2;
     sz = (tbl->size + tbl->reserve) * element_size;

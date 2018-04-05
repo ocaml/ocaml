@@ -99,9 +99,6 @@ value caml_startup_common(char_os **argv, int pooling)
   CAML_INIT_DOMAIN_STATE;
 
   /* Determine options */
-#ifdef DEBUG
-  caml_verb_gc = 0x3F;
-#endif
   caml_parse_ocamlrunparam();
 #ifdef DEBUG
   caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
