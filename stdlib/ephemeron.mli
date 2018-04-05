@@ -15,14 +15,12 @@
 
 (** Ephemerons and weak hash table *)
 
-(** Ephemerons and weak hash table
-
-    Ephemerons and weak hash table are useful when one wants to cache
+(** Ephemerons and weak hash table are useful when one wants to cache
     or memorize the computation of a function, as long as the
     arguments and the function are used, without creating memory leaks
     by continuously keeping old computation results that are not
     useful anymore because one argument or the function is freed. An
-    implementation using {Hashtbl.t} is not suitable because all
+    implementation using {!Hashtbl.t} is not suitable because all
     associations would keep in memory the arguments and the result.
 
     Ephemerons can also be used for "adding" a field to an arbitrary
@@ -64,6 +62,7 @@
     Ephemerons are defined in a language agnostic way in this paper:
     B. Hayes, Ephemerons: a New Finalization Mechanism, OOPSLA'9
 
+    @since 4.03.0
 *)
 
 module type S = sig
@@ -116,6 +115,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_key_copy eph] returns [None] if the key of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the key) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_key: ('k,'d) t -> 'k -> unit
@@ -138,8 +139,8 @@ module K1 : sig
 
   val blit_key : ('k,_) t -> ('k,_) t -> unit
   (** [Ephemeron.K1.blit_key eph1 eph2] sets the key of [eph2] with
-      the key of [eph1]. Contrary to using [Ephemeron.K1.get_key]
-      followed by [Ephemeron.K1.set_key] or [Ephemeon.K1.unset_key]
+      the key of [eph1]. Contrary to using {!Ephemeron.K1.get_key}
+      followed by {!Ephemeron.K1.set_key} or {!Ephemeron.K1.unset_key}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 
@@ -151,6 +152,8 @@ module K1 : sig
   (** [Ephemeron.K1.get_data_copy eph] returns [None] if the data of [eph] is
       empty, [Some x] (where [x] is a (shallow) copy of the data) if
       it is full. This function has the same GC friendliness as {!Weak.get_copy}
+
+      If the element is a custom block it is not copied.
   *)
 
   val set_data: ('k,'d) t -> 'd -> unit
@@ -172,8 +175,8 @@ module K1 : sig
 
   val blit_data : (_,'d) t -> (_,'d) t -> unit
   (** [Ephemeron.K1.blit_data eph1 eph2] sets the data of [eph2] with
-      the data of [eph1]. Contrary to using [Ephemeron.K1.get_data]
-      followed by [Ephemeron.K1.set_data] or [Ephemeon.K1.unset_data]
+      the data of [eph1]. Contrary to using {!Ephemeron.K1.get_data}
+      followed by {!Ephemeron.K1.set_data} or {!Ephemeron.K1.unset_data}
       this function does not prevent the incremental GC from erasing
       the value in its current cycle. *)
 

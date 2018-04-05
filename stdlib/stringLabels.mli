@@ -53,9 +53,10 @@ val init : int -> f:(int -> char) -> string
 (** [init n f] returns a string of length [n],
     with character [i] initialized to the result of [f i].
 
-   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}. *)
+   Raise [Invalid_argument] if [n < 0] or [n > ]{!Sys.max_string_length}.
+   @since 4.02.0 *)
 
-val copy : string -> string
+val copy : string -> string  [@@ocaml.deprecated]
 (** Return a copy of the given string. *)
 
 val sub : string -> pos:int -> len:int -> string
@@ -135,11 +136,23 @@ val index : string -> char -> int
 
    Raise [Not_found] if [c] does not occur in [s]. *)
 
+val index_opt: string -> char -> int option
+(** [String.index_opt s c] returns the index of the first
+    occurrence of character [c] in string [s], or
+    [None] if [c] does not occur in [s].
+    @since 4.05 *)
+
 val rindex : string -> char -> int
 (** [String.rindex s c] returns the index of the last
    occurrence of character [c] in string [s].
 
    Raise [Not_found] if [c] does not occur in [s]. *)
+
+val rindex_opt: string -> char -> int option
+(** [String.rindex_opt s c] returns the index of the last occurrence
+    of character [c] in string [s], or [None] if [c] does not occur in
+    [s].
+    @since 4.05 *)
 
 val index_from : string -> int -> char -> int
 (** [String.index_from s i c] returns the index of the
@@ -149,6 +162,17 @@ val index_from : string -> int -> char -> int
    Raise [Invalid_argument] if [i] is not a valid position in [s].
    Raise [Not_found] if [c] does not occur in [s] after position [i]. *)
 
+val index_from_opt: string -> int -> char -> int option
+(** [String.index_from_opt s i c] returns the index of the
+    first occurrence of character [c] in string [s] after position [i]
+    or [None] if [c] does not occur in [s] after position [i].
+
+    [String.index_opt s c] is equivalent to [String.index_from_opt s 0 c].
+    Raise [Invalid_argument] if [i] is not a valid position in [s].
+
+    @since 4.05
+*)
+
 val rindex_from : string -> int -> char -> int
 (** [String.rindex_from s i c] returns the index of the
    last occurrence of character [c] in string [s] before position [i+1].
@@ -157,6 +181,19 @@ val rindex_from : string -> int -> char -> int
 
    Raise [Invalid_argument] if [i+1] is not a valid position in [s].
    Raise [Not_found] if [c] does not occur in [s] before position [i+1]. *)
+
+val rindex_from_opt: string -> int -> char -> int option
+(** [String.rindex_from_opt s i c] returns the index of the
+   last occurrence of character [c] in string [s] before position [i+1]
+   or [None] if [c] does not occur in [s] before position [i+1].
+
+   [String.rindex_opt s c] is equivalent to
+   [String.rindex_from_opt s (String.length s - 1) c].
+
+   Raise [Invalid_argument] if [i+1] is not a valid position in [s].
+
+    @since 4.05
+*)
 
 val contains : string -> char -> bool
 (** [String.contains s c] tests if character [c]
@@ -178,20 +215,50 @@ val rcontains_from : string -> int -> char -> bool
    position in [s]. *)
 
 val uppercase : string -> string
+  [@@ocaml.deprecated "Use String.uppercase_ascii instead."]
 (** Return a copy of the argument, with all lowercase letters
    translated to uppercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set. *)
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val lowercase : string -> string
+  [@@ocaml.deprecated "Use String.lowercase_ascii instead."]
 (** Return a copy of the argument, with all uppercase letters
    translated to lowercase, including accented letters of the ISO
-   Latin-1 (8859-1) character set. *)
+   Latin-1 (8859-1) character set.
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val capitalize : string -> string
-(** Return a copy of the argument, with the first character set to uppercase. *)
+  [@@ocaml.deprecated "Use String.capitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
 
 val uncapitalize : string -> string
-(** Return a copy of the argument, with the first character set to lowercase. *)
+  [@@ocaml.deprecated "Use String.uncapitalize_ascii instead."]
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the ISO Latin-1 (8859-1) character set..
+   @deprecated Functions operating on Latin-1 character set are deprecated. *)
+
+val uppercase_ascii : string -> string
+(** Return a copy of the argument, with all lowercase letters
+   translated to uppercase, using the US-ASCII character set.
+   @since 4.05.0 *)
+
+val lowercase_ascii : string -> string
+(** Return a copy of the argument, with all uppercase letters
+   translated to lowercase, using the US-ASCII character set.
+   @since 4.05.0 *)
+
+val capitalize_ascii : string -> string
+(** Return a copy of the argument, with the first character set to uppercase,
+   using the US-ASCII character set.
+   @since 4.05.0 *)
+
+val uncapitalize_ascii : string -> string
+(** Return a copy of the argument, with the first character set to lowercase,
+   using the US-ASCII character set.
+   @since 4.05.0 *)
 
 type t = string
 (** An alias for the type of strings. *)
@@ -201,6 +268,25 @@ val compare: t -> t -> int
     {!Pervasives.compare}.  Along with the type [t], this function [compare]
     allows the module [String] to be passed as argument to the functors
     {!Set.Make} and {!Map.Make}. *)
+
+val equal: t -> t -> bool
+(** The equal function for strings.
+    @since 4.05.0 *)
+
+val split_on_char: sep:char -> string -> string list
+(** [String.split_on_char sep s] returns the list of all (possibly empty)
+    substrings of [s] that are delimited by the [sep] character.
+
+    The function's output is specified by the following invariants:
+
+    - The list is not empty.
+    - Concatenating its elements using [sep] as a separator returns a
+      string equal to the input ([String.concat (String.make 1 sep)
+      (String.split_on_char sep s) = s]).
+    - No string in the result contains the [sep] character.
+
+    @since 4.05.0
+*)
 
 (**/**)
 

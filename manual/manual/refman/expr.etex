@@ -39,10 +39,10 @@ expr:
   | expr '::' expr
   | '[' expr { ';' expr } [';'] ']'
   | '[|' expr { ';' expr } [';'] '|]'
-  | '{' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
-  | '{' expr 'with' field [':' typexpr] '=' expr%
-    { ';' field [':' typexpr] '=' expr } [';'] '}'
+  | '{' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
+  | '{' expr 'with' field [':' typexpr] ['=' expr]%
+    { ';' field [':' typexpr] ['=' expr] } [';'] '}'
   | expr {{ argument }}
   | prefix-symbol expr
   | '-' expr
@@ -75,7 +75,12 @@ expr:
   | 'lazy' expr
   | 'let' 'module' module-name { '(' module-name ':' module-type ')' }
     [ ':' module-type ] \\ '=' module-expr 'in' expr
-
+  | "let" "open" module-path "in" expr
+  | module-path '.(' expr ')'
+  | module-path '.[' expr ']'
+  | module-path '.[|' expr '|]'
+  | module-path '.{' expr '}'
+  | module-path '.{<' expr '>}'
 ;
 %BEGIN LATEX
 \end{syntax} \begin{syntax}
@@ -95,6 +100,7 @@ pattern-matching:
 let-binding:
     pattern '=' expr
   | value-name { parameter } [':' typexpr] [':>' typexpr] '=' expr
+  | value-name ':' poly-typexpr '=' expr %since 3.12
 ;
 parameter:
     pattern
@@ -106,6 +112,15 @@ parameter:
   | '?' label-name ':' pattern
   | '?' label-name ':' '(' pattern [':' typexpr] ['=' expr] ')'
 \end{syntax}
+See also the following language extensions:
+\hyperref[s:object-notations]{object notations},
+\hyperref[s-first-class-modules]{first-class modules},
+\hyperref[s:explicit-overriding-open]{overriding in open statements},
+\hyperref[s:bigarray-access]{syntax for Bigarray access},
+\hyperref[s:attributes]{attributes},
+\hyperref[s:extension-nodes]{extension nodes},
+\hyperref[s:local-exceptions]{local exceptions}
+\hyperref[s:index-operators]{extended indexing operators}.
 
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
@@ -400,6 +415,20 @@ The behavior of other forms of @"let" "rec"@ definitions is
 implementation-dependent. The current implementation also supports
 a certain class of recursive definitions of non-functional values,
 as explained in section~\ref{s:letrecvalues}.
+\subsubsection{Explicit polymorphic type annotations}
+(Introduced in OCaml 3.12)
+
+Polymorphic type annotations in @"let"@-definitions behave in a way
+similar to polymorphic methods:
+
+\begin{center}
+@"let" pattern_1 ":" typ_1 \ldots typ_n "." typeexpr "=" expr  @
+\end{center}
+
+These annotations explicitly require the defined value to be polymorphic,
+and allow one to use this polymorphism in recursive occurrences
+(when using @"let" "rec"@). Note however that this is a normal polymorphic
+type, unifiable with any instance of itself.
 
 \subsection{Control structures}
 
@@ -555,10 +584,13 @@ value whose tag is @tag-name@, and whose argument is the value of @expr@.
 
 \subsubsection*{Records}
 
-The expression @'{' field_1 '=' expr_1 ';' \ldots ';' field_n '='
-expr_n '}'@ evaluates to the record value
+The expression @'{' field_1 ['=' expr_1] ';' \ldots ';' field_n ['='
+expr_n ']}'@ evaluates to the record value
 $\{ field_1 = v_1; \ldots; field_n = v_n \}$
 where $v_i$ is the value of @expr_i@ for \fromoneto{i}{n}.
+A single identifier @field_k@ stands for @field_k '=' field_k@,
+and a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@.
 The fields @field_1@ to @field_n@ must all belong to the same record
 type; each field of this record type must appear exactly
 once in the record expression, though they can appear in any
@@ -569,12 +601,15 @@ specified. Optional type constraints can be added after each field
 to force the type of @field_k@ to be compatible with @typexpr_k@.
 
 The expression
-@"{" expr "with" field_1 "=" expr_1 ";" \ldots ";" field_n "=" expr_n "}"@
+@"{" expr "with" field_1 ["=" expr_1] ";" \ldots ";" field_n ["=" expr_n] "}"@
 builds a fresh record with fields @field_1 \ldots field_n@ equal to
 @expr_1 \ldots expr_n@, and all other fields having the same value as
 in the record @expr@.  In other terms, it returns a shallow copy of
 the record @expr@, except for the fields @field_1 \ldots field_n@,
-which are initialized to @expr_1 \ldots expr_n@. As previously, it is
+which are initialized to @expr_1 \ldots expr_n@. As previously,
+single identifier @field_k@ stands for @field_k '=' field_k@,
+a qualified identifier @module-path '.' field_k@ stands for
+@module-path '.' field_k '=' field_k@ and it is
 possible to add an optional type constraint on each field being updated
 with
 @"{" expr "with" field_1 ':' typexpr_1 "=" expr_1 ";" %
@@ -943,5 +978,21 @@ It then returns the value of @expr@.  For example:
           StringSet.elements
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
+
+\subsubsection*{Local opens}
+\ikwd{let\@\texttt{let}}
+\ikwd{module\@\texttt{open}}
+
+The expressions @"let" "open" module-path "in" expr@ and
+@module-path'.('expr')'@ are strictly equivalent. These
+constructions locally open the module referred to by the module path
+@module-path@ in the respective scope of the expression @expr@.
+
+When the body of a local open expression is delimited by
+@'[' ']'@,  @'[|' '|]'@,  or @'{' '}'@, the parentheses can be omitted.
+For expression, parentheses can also be omitted for @'{<' '>}'@.
+For example, @module-path'.['expr']'@ is equivalent to
+@module-path'.(['expr'])'@, and @module-path'.[|' expr '|]'@ is
+equivalent to @module-path'.([|' expr '|])'@.
 
 %% \newpage

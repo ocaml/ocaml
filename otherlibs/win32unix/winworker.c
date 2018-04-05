@@ -283,10 +283,10 @@ LPWORKER worker_job_submit (WORKERFUNC f, void *user_data)
   LPWORKER lpWorker = worker_pop();
 
   DEBUG_PRINT("Waiting for worker to be ready");
-  enter_blocking_section();
+  caml_enter_blocking_section();
   WaitForSingleObject(lpWorker->hWorkerReady, INFINITE);
   ResetEvent(lpWorker->hWorkerReady);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   DEBUG_PRINT("Worker is ready");
 
   lpWorker->hJobFunc      = f;
@@ -314,9 +314,9 @@ void worker_job_stop (LPWORKER lpWorker)
 void worker_job_finish (LPWORKER lpWorker)
 {
   DEBUG_PRINT("Finishing call of worker %x", lpWorker);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   WaitForSingleObject(lpWorker->hJobDone, INFINITE);
-  leave_blocking_section();
+  caml_leave_blocking_section();
 
   worker_push(lpWorker);
 }

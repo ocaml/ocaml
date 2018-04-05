@@ -13,22 +13,23 @@
 #*                                                                        *
 #**************************************************************************
 
-CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
 CMO_FILES=$(MODULES:=.cmo)
 CMX_FILES=$(MODULES:=.cmx)
 CMA_FILES=$(LIBRARIES:=.cma)
 CMXA_FILES=$(LIBRARIES:=.cmxa)
-O_FILES=$(F_FILES:=.o) $(C_FILES:=.o)
+O_FILES=$(F_FILES:=.$(O)) $(C_FILES:=.$(O))
 
 CUSTOM_FLAG=`if [ -n "$(C_FILES)" ]; then echo '-custom'; fi`
 ADD_CFLAGS+=$(CUSTOM_FLAG)
-MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; fi`
+MYRUNTIME=`if [ -z "$(C_FILES)$(CUSTOM)" ]; then echo '$(OCAMLRUN)'; echo '$(ADD_BYTERUN_FLAGS)'; fi`
 FORTRAN_LIB=`if [ -n "$(F_FILES)" ]; then echo $(FORTRAN_LIBRARY); fi`
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
-C_INCLUDES+=-I $(CTOPDIR)/byterun -I$(CTOPDIR)/otherlibs/bigarray
+C_INCLUDES+=-I $(CTOPDIR)/byterun -I $(CTOPDIR)/otherlibs/bigarray
+
+GENERATED_SOURCES=
 
 GENERATED_SOURCES=
 
@@ -61,26 +62,28 @@ run-all:
 	      continue; \
 	    fi; \
 	  fi; \
-	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
-	          RUNTIME='$(MYRUNTIME)' \
-	          COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
-	                     $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
-	                     $(CMO_FILES)' \
-	          FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) \
+	  if $(NATIVECODE_ONLY); then : ; else \
+	    $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' \
+	            RUNTIME='$(MYRUNTIME)' \
+	            COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) \
+	                       $(CMA_FILES) -I $(OTOPDIR)/testsuite/lib \
+	                       $(CMO_FILES)' \
+	            FILE=$$file PROGRAM_ARGS='$(PROGRAM_ARGS)'; \
+	  fi \
 	  && \
 	  if $(BYTECODE_ONLY); then : ; else \
 	    $(MAKE) run-file DESC=ocamlopt COMP='$(OCAMLOPT)' \
 	            RUNTIME= \
-	            COMPFLAGS='-w a $(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
+	            COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) \
 		               $(O_FILES) $(CMXA_FILES) \
 			       -I $(OTOPDIR)/testsuite/lib $(CMX_FILES)' \
-	            FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS); \
+	            FILE=$$file PROGRAM_ARGS='$(PROGRAM_ARGS)'; \
 	  fi \
 	  && \
 	  if [ -n "$(UNSAFE)" ]; then \
 	    $(MAKE) run-file DESC=ocamlc-unsafe COMP='$(OCAMLC)' \
 	            RUNTIME='$(MYRUNTIME)' \
-	            COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
+	            COMPFLAGS='-unsafe $(ADD_COMPFLAGS) $(ADD_CFLAGS) \
 	                       $(O_FILES) $(CMA_FILES) \
 	                       -I $(OTOPDIR)/testsuite/lib $(CMO_FILES)' \
 	            FILE=$$file \
@@ -88,7 +91,7 @@ run-all:
 	    if $(BYTECODE_ONLY); then : ; else \
 	      $(MAKE) run-file DESC=ocamlopt-unsafe COMP='$(OCAMLOPT)' \
 	              RUNTIME= \
-	              COMPFLAGS='-w a -unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS)\
+	              COMPFLAGS='-unsafe $(ADD_COMPFLAGS) $(ADD_OPTFLAGS)\
 		                 $(O_FILES) $(CMXA_FILES) \
 	                         -I $(OTOPDIR)/testsuite/lib $(CMX_FILES)' \
 	              FILE=$$file; \
@@ -114,12 +117,23 @@ run-file:
 	  rm -f "$$T"; \
 	} || true
 	@rm -f program program$(EXE)
-	@$(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE)
+	@if [ -f "$(FILE).silent-compilation" ]; then \
+          temp="$$(mktemp "$${TMPDIR:-/tmp}/ocaml-test-XXXXXXXX")"; \
+          $(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE) >$$temp 2>&1 ; \
+          if [ -s "$$temp" ]; then \
+            rm -f $$temp; \
+            printf "  Error: compilation wrote to stdout/stderr!\n"; \
+            exit 1; \
+          fi; \
+          rm -f $$temp; \
+        else \
+          $(COMP) $(COMPFLAGS) $(FILE) -o program$(EXE); \
+        fi
 	@F="`basename $(FILE) .ml`"; \
 	if [ -f $$F.runner ]; then \
 	  RUNTIME="$(RUNTIME)" sh $$F.runner; \
 	else \
-	  $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
+	  $(SET_LD_PATH) $(RUNTIME) ./program$(EXE) $(PROGRAM_ARGS) >$$F.result; \
 	fi \
 	&& \
 	if [ -f $$F.checker ]; then \

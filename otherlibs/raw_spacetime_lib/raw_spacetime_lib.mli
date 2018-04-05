@@ -4,7 +4,7 @@
 (*                                                                        *)
 (*           Mark Shinwell and Leo White, Jane Street Europe              *)
 (*                                                                        *)
-(*   Copyright 2015--2016 Jane Street Group LLC                           *)
+(*   Copyright 2015--2017 Jane Street Group LLC                           *)
 (*                                                                        *)
 (*   All rights reserved.  This file is distributed under the terms of    *)
 (*   the GNU Lesser General Public License version 2.1, with the          *)
@@ -97,6 +97,7 @@ module Trace : sig
       information required to decode profiling annotations written into
       values' headers. *)
   type t
+  type trace = t
 
   type node
   type ocaml_node
@@ -134,6 +135,11 @@ module Trace : sig
 
       (** The node corresponding to the callee. *)
       val callee_node : 'target t -> 'target
+
+      (** The number of times the callee was called.  Only available if the
+          compiler that recorded the Spacetime profile was configured with
+          "-with-spacetime-call-counts".  [None] will be returned otherwise. *)
+      val call_count : _ t -> int option
     end
 
     module Indirect_call_point : sig
@@ -153,6 +159,10 @@ module Trace : sig
 
         (** The node corresponding to the callee. *)
         val callee_node : t -> node
+
+        (** The number of times the callee was called.  This returns [None] in
+            the same circumstances as [Direct_call_point.call_count], above. *)
+        val call_count : t -> int option
 
         (** Move to the next callee to which this call point has branched.
             [None] is returned when the end of the list is reached. *)
@@ -218,7 +228,7 @@ module Trace : sig
     module Call_point : sig
       (** A value of type [t] corresponds to a call point from non-OCaml
           code (to either non-OCaml code, or OCaml code via the usual
-          assembly veneer). *)
+          assembly veneer).  Call counts are not available for such nodes. *)
       type t
 
       (** N.B. The address of the callee (of type [Function_entry_point.t]) is
@@ -345,5 +355,9 @@ module Heap_snapshot : sig
     val num_snapshots : t -> int
     val snapshot : t -> index:int -> heap_snapshot
     val events : t -> Event.t list
+
+    (** Returns [true] iff call count information was recorded in the
+        series. *)
+    val has_call_counts : t -> bool
   end
 end

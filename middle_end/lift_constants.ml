@@ -841,9 +841,15 @@ let replace_definitions_in_initialize_symbol_and_effects
               var_to_definition_tbl
               var
           in
-          match resolved with
-          | Symbol s -> Symbol s
-          | Const c -> Const c)
+          match named, resolved with
+          | Symbol s1, Symbol s2 ->
+            assert (s1 == s2);  (* physical equality for speed *)
+            named;
+          | Const c1, Const c2 ->
+            assert (c1 == c2);
+            named
+          | _, Symbol s -> Symbol s
+          | _, Const c -> Const c)
   in
   (* This is safe because we only [replace] the current key during
      iteration (cf. https://github.com/ocaml/ocaml/pull/337) *)

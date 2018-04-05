@@ -30,23 +30,31 @@ extern value unix_error_of_code (int errcode);
 extern int code_of_unix_error (value error);
 
 CAMLnoreturn_start
-extern void unix_error (int errcode, char * cmdname, value arg)
+extern void unix_error (int errcode, const char * cmdname, value arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-extern void uerror (char * cmdname, value arg)
+extern void uerror (const char * cmdname, value arg)
 CAMLnoreturn_end;
 
-extern void caml_unix_check_path(value path, char * cmdname);
+extern void caml_unix_check_path(value path, const char * cmdname);
 
 #define UNIX_BUFFER_SIZE 65536
 
 #define DIR_Val(v) *((DIR **) Data_abstract_val(v))
 
 extern char ** cstringvect(value arg, char * cmdname);
+extern void cstringvect_free(char **);
+
+extern int unix_cloexec_default;
+extern int unix_cloexec_p(value cloexec);
+extern void unix_set_cloexec(int fd, char * cmdname, value arg);
+extern void unix_clear_cloexec(int fd, char * cmdname, value arg);
 
 #ifdef __cplusplus
 }
 #endif
+
+#define EXECV_CAST
 
 #endif /* CAML_UNIXSUPPORT_H */

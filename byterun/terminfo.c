@@ -68,7 +68,7 @@ CAMLprim value caml_terminfo_setup (value vchan)
     standout = tgetstr ("so", &area_p);
     standend = tgetstr ("se", &area_p);
   }
-  Assert (area_p <= area + 1024);
+  CAMLassert (area_p <= area + 1024);
   if (num_lines == -1 || up == NULL || down == NULL
       || standout == NULL || standend == NULL){
     CAMLreturn (Bad_term);

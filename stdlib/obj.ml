@@ -31,11 +31,12 @@ external set_field : t -> int -> t -> unit = "%obj_set_field"
 external compare_and_swap_field : t -> int -> t -> t -> bool
   = "caml_obj_compare_and_swap"
 external is_shared : t -> bool = "caml_obj_is_shared"
-external array_get: 'a array -> int -> 'a = "%array_safe_get"
-external array_set: 'a array -> int -> 'a -> unit = "%array_safe_set"
-let [@inline always] double_field x i = array_get (obj x : float array) i
+external floatarray_get : floatarray -> int -> float = "caml_floatarray_get"
+external floatarray_set :
+    floatarray -> int -> float -> unit = "caml_floatarray_set"
+let [@inline always] double_field x i = floatarray_get (obj x : floatarray) i
 let [@inline always] set_double_field x i v =
-  array_set (obj x : float array) i v
+  floatarray_set (obj x : floatarray) i v
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"

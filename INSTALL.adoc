@@ -1,4 +1,4 @@
-= Installing OCaml on a Unix(-like) machine =
+= Installing OCaml from sources on a Unix(-like) machine =
 
 == PREREQUISITES
 
@@ -25,8 +25,8 @@
 
         ./configure
 +
-This generates the three configuration files `Makefile`, `m.h` and `s.h`
-in the `config/` subdirectory.
+This generates the three configuration files `config/Makefile`,
+`byterun/caml/m.h` and `byterun/caml/s.h`.
 +
 The `configure` script accepts the following options:
 +
@@ -54,6 +54,8 @@ The `configure` script accepts the following options:
 
 `-no-curses`::
         Do not use the curses library.
+        The only use for this is to highlight errors in the toplevel using
+        'standout' mode, e.g. underline, rather than with '^' on a newline.
 
 `-host <hosttype>`::                (default: determined automatically)
         The type of the host machine, in GNU's "configuration name" format
@@ -181,10 +183,6 @@ On a 64-bit POWER architecture host running Linux, OCaml only operates in a
 
     ./configure -cc "acc -fast" -libs "-lucb"
 
-* For Sun Solaris on Sparc 64bit, to compile natively (32bit only)
-
-    ./configure -cc "gcc -m32" -as "as -32" -aspp "gcc -m32 -c"
-
 * For AIX 4.3 with the IBM compiler `xlc`:
 
     ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
@@ -208,6 +206,7 @@ fairly verbose; consider redirecting the output to a file:
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
+[[bootstrap]]
 3. (Optional) To be sure everything works well, you can try to bootstrap the
    system -- that is, to recompile all OCaml sources with the newly created
    compiler. From the top directory, do:
@@ -314,8 +313,9 @@ In the latter case, the destination directory defaults to the
 Read the "common problems" and "machine-specific hints" section at the end of
 this file.
 
-Check the files `m.h` and `s.h` in `config/`. Wrong endian-ness or alignment
-constraints in `m.h` will immediately crash the bytecode interpreter.
+Check the files `m.h` and `s.h` in `byterun/caml/`.
+Wrong endianness or alignment constraints in `machine.h` will
+immediately crash the bytecode interpreter.
 
 If you get a "segmentation violation" signal, check the limits on the stack size
 and data segment size (type `limit` under csh or `ulimit -a` under bash). Make

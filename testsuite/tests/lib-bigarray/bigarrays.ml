@@ -476,6 +476,16 @@ let tests () =
                              Complex.i 1 1);
   test 12 true (test_blit_fill complex64 [Complex.zero; Complex.one; Complex.i]
                              Complex.i 1 1);
+  testing_function "slice";
+  let a = Array1.of_array int c_layout [| 5; 4; 3 |] in
+  test 1 (Array1.slice a 0) (Array0.of_value int c_layout 5);
+  test 2 (Array1.slice a 1) (Array0.of_value int c_layout 4);
+  test 3 (Array1.slice a 2) (Array0.of_value int c_layout 3);
+  let a = Array1.of_array int fortran_layout [| 5; 4; 3 |] in
+  test 6 (Array1.slice a 1) (Array0.of_value int fortran_layout 5);
+  test 7 (Array1.slice a 2) (Array0.of_value int fortran_layout 4);
+  test 8 (Array1.slice a 3) (Array0.of_value int fortran_layout 3);
+
 
 (* Bi-dimensional arrays *)
 
@@ -769,6 +779,111 @@ let tests () =
   let a = Genarray.create int c_layout [|2;2;2;2;2|] in
   test 1 (Genarray.size_in_bytes a) (32 * (kind_size_in_bytes int));
 
+(* Zero-dimensional arrays *)
+  testing_function "------ Array0 --------";
+  testing_function "create/set/get";
+  let test_setget kind vals =
+    List.for_all (fun (v1, v2) ->
+      let ca = Array0.create kind c_layout in
+      let fa = Array0.create kind fortran_layout in
+      Array0.set ca v1;
+      Array0.set fa v1;
+      Array0.get ca = v2 && Array0.get fa = v2) vals in
+  test 1 true
+    (test_setget int8_signed
+                 [0, 0;
+                  123, 123;
+                  -123, -123;
+                  456, -56;
+                  0x101, 1]);
+  test 2 true
+    (test_setget int8_unsigned
+                 [0, 0;
+                  123, 123;
+                  -123, 133;
+                  456, 0xc8;
+                  0x101, 1]);
+  test 3 true
+    (test_setget int16_signed
+                 [0, 0;
+                  123, 123;
+                  -123, -123;
+                  31456, 31456;
+                  -31456, -31456;
+                  65432, -104;
+                  0x10001, 1]);
+  test 4 true
+    (test_setget int16_unsigned
+                 [0, 0;
+                  123, 123;
+                  -123, 65413;
+                  31456, 31456;
+                  -31456, 34080;
+                  65432, 65432;
+                  0x10001, 1]);
+  test 5 true
+    (test_setget int
+                 [0, 0;
+                  123, 123;
+                  -456, -456;
+                  max_int, max_int;
+                  min_int, min_int;
+                  0x12345678, 0x12345678;
+                  -0x12345678, -0x12345678]);
+  test 6 true
+    (test_setget int32
+                 [Int32.zero, Int32.zero;
+                  Int32.of_int 123, Int32.of_int 123;
+                  Int32.of_int (-456), Int32.of_int (-456);
+                  Int32.max_int, Int32.max_int;
+                  Int32.min_int, Int32.min_int;
+                  Int32.of_string "0x12345678", Int32.of_string "0x12345678"]);
+  test 7 true
+    (test_setget int64
+                 [Int64.zero, Int64.zero;
+                  Int64.of_int 123, Int64.of_int 123;
+                  Int64.of_int (-456), Int64.of_int (-456);
+                  Int64.max_int, Int64.max_int;
+                  Int64.min_int, Int64.min_int;
+                  Int64.of_string "0x123456789ABCDEF0",
+                     Int64.of_string "0x123456789ABCDEF0"]);
+  test 8 true
+    (test_setget nativeint
+                 [Nativeint.zero, Nativeint.zero;
+                  Nativeint.of_int 123, Nativeint.of_int 123;
+                  Nativeint.of_int (-456), Nativeint.of_int (-456);
+                  Nativeint.max_int, Nativeint.max_int;
+                  Nativeint.min_int, Nativeint.min_int;
+                  Nativeint.of_string "0x12345678",
+                    Nativeint.of_string "0x12345678"]);
+  test 9 true
+    (test_setget float32
+                 [0.0, 0.0;
+                  4.0, 4.0;
+                  -0.5, -0.5;
+                  655360.0, 655360.0]);
+  test 10 true
+    (test_setget float64
+                 [0.0, 0.0;
+                  4.0, 4.0;
+                  -0.5, -0.5;
+                  1.2345678, 1.2345678;
+                  3.1415e10, 3.1415e10]);
+  test 11 true
+    (test_setget complex32
+                 [Complex.zero, Complex.zero;
+                  Complex.one, Complex.one;
+                  Complex.i, Complex.i;
+                  {im = 0.5; re = -2.0}, {im = 0.5; re = -2.0}]);
+  test 12 true
+    (test_setget complex64
+                 [Complex.zero, Complex.zero;
+                  Complex.one, Complex.one;
+                  Complex.i, Complex.i;
+                  {im=0.5;re= -2.0}, {im=0.5;re= -2.0};
+                  {im=3.1415;re=1.2345678}, {im=3.1415;re=1.2345678}]);
+
+
 (* Kind size *)
   testing_function "kind_size_in_bytes";
   let arr1 = Array1.create Float32 c_layout 1 in
@@ -819,6 +934,13 @@ let tests () =
   test 5 (Array2.slice_right d 1) (from_list_fortran int [1001;2001;3001;1002]);
   test 6 (Array2.slice_right d 2) (from_list_fortran int [2002;3002;1003;2003]);
   test 7 (Array2.slice_right d 3) (from_list_fortran int [3003;1004;2004;3004]);
+  testing_function "reshape";
+  let a = make_array2 int c_layout 0 1 1 (fun i -> i + 3) in
+  let b = reshape_0 (genarray_of_array2 a) in
+  let c = reshape (genarray_of_array0 b) [|1|] in
+  test 8 (Array0.get b) 3;
+  test 9 (Genarray.get c [|0|]) 3;
+  test 10 (Genarray.get (Genarray.slice_left c [|0|]) [||]) 3;
 
 (* I/O *)
 
@@ -853,61 +975,6 @@ let tests () =
   test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
   test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30
                                      makecomplex);
-
-  testing_function "map_file";
-  let mapped_file = Filename.temp_file "bigarray" ".data" in
-  begin
-    let fd =
-     Unix.openfile mapped_file
-                   [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
-    let a = Array1.map_file fd float64 c_layout true 10000 in
-    Unix.close fd;
-    for i = 0 to 9999 do a.{i} <- float i done;
-    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let b = Array2.map_file fd float64 fortran_layout false 100 (-1) in
-    Unix.close fd;
-    let ok = ref true in
-    for i = 0 to 99 do
-      for j = 0 to 99 do
-        if b.{j+1,i+1} <> float (100 * i + j) then ok := false
-      done
-    done;
-    test 1 !ok true;
-    b.{50,50} <- (-1.0);
-    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let c = Array2.map_file fd float64 c_layout false (-1) 100 in
-    Unix.close fd;
-    let ok = ref true in
-    for i = 0 to 99 do
-      for j = 0 to 99 do
-        if c.{i,j} <> float (100 * i + j) then ok := false
-      done
-    done;
-    test 2 !ok true;
-    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let c = Array2.map_file fd ~pos:800L float64 c_layout false (-1) 100 in
-    Unix.close fd;
-    let ok = ref true in
-    for i = 1 to 99 do
-      for j = 0 to 99 do
-        if c.{i-1,j} <> float (100 * i + j) then ok := false
-      done
-    done;
-    test 3 !ok true;
-    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let c = Array2.map_file fd ~pos:79200L float64 c_layout false (-1) 100 in
-    Unix.close fd;
-    let ok = ref true in
-    for j = 0 to 99 do
-      if c.{0,j} <> float (100 * 99 + j) then ok := false
-    done;
-    test 4 !ok true
-  end;
-  (* Force garbage collection of the mapped bigarrays above, otherwise
-     Win32 doesn't let us erase the file.  Notice the begin...end above
-     so that the VM doesn't keep stack references to the mapped bigarrays. *)
-  Gc.full_major();
-  Sys.remove mapped_file;
 
   ()
   [@@inline never]

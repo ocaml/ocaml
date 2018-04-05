@@ -22,11 +22,15 @@ let cautious f ppf arg =
   try f ppf arg with
     Ellipsis -> fprintf ppf "..."
 
+let print_lident ppf = function
+  | "::" -> pp_print_string ppf "(::)"
+  | s -> pp_print_string ppf s
+
 let rec print_ident ppf =
   function
-    Oide_ident s -> pp_print_string ppf s
+    Oide_ident s -> print_lident ppf s
   | Oide_dot (id, s) ->
-      print_ident ppf id; pp_print_char ppf '.'; pp_print_string ppf s
+      print_ident ppf id; pp_print_char ppf '.'; print_lident ppf s
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
@@ -74,6 +78,63 @@ let parenthesize_if_neg ppf fmt v isneg =
   fprintf ppf fmt v;
   if isneg then pp_print_char ppf ')'
 
+let escape_string s =
+  (* Escape only C0 control characters (bytes <= 0x1F), DEL(0x7F), '\\' and '"' *)
+   let n = ref 0 in
+  for i = 0 to String.length s - 1 do
+    n := !n +
+      (match String.unsafe_get s i with
+       | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
+       | '\x00' .. '\x1F'
+       | '\x7F' -> 4
+       | _ -> 1)
+  done;
+  if !n = String.length s then s else begin
+    let s' = Bytes.create !n in
+    n := 0;
+    for i = 0 to String.length s - 1 do
+      begin match String.unsafe_get s i with
+      | ('\"' | '\\') as c ->
+          Bytes.unsafe_set s' !n '\\'; incr n; Bytes.unsafe_set s' !n c
+      | '\n' ->
+          Bytes.unsafe_set s' !n '\\'; incr n; Bytes.unsafe_set s' !n 'n'
+      | '\t' ->
+          Bytes.unsafe_set s' !n '\\'; incr n; Bytes.unsafe_set s' !n 't'
+      | '\r' ->
+          Bytes.unsafe_set s' !n '\\'; incr n; Bytes.unsafe_set s' !n 'r'
+      | '\b' ->
+          Bytes.unsafe_set s' !n '\\'; incr n; Bytes.unsafe_set s' !n 'b'
+      | '\x00' .. '\x1F' | '\x7F' as c ->
+          let a = Char.code c in
+          Bytes.unsafe_set s' !n '\\';
+          incr n;
+          Bytes.unsafe_set s' !n (Char.chr (48 + a / 100));
+          incr n;
+          Bytes.unsafe_set s' !n (Char.chr (48 + (a / 10) mod 10));
+          incr n;
+          Bytes.unsafe_set s' !n (Char.chr (48 + a mod 10));
+      | c -> Bytes.unsafe_set s' !n c
+      end;
+      incr n
+    done;
+    Bytes.to_string s'
+  end
+
+
+let print_out_string ppf s =
+  let not_escaped =
+    (* let the user dynamically choose if strings should be escaped: *)
+    match Sys.getenv_opt "OCAMLTOP_UTF_8" with
+    | None -> true
+    | Some x ->
+        match bool_of_string_opt x with
+        | None -> true
+        | Some f -> f in
+  if not_escaped then
+    fprintf ppf "\"%s\"" (escape_string s)
+  else
+    fprintf ppf "%S" s
+
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
@@ -91,6 +152,10 @@ let print_out_value ppf tree =
     | Oval_int64 i -> parenthesize_if_neg ppf "%LiL" i (i < 0L)
     | Oval_nativeint i -> parenthesize_if_neg ppf "%nin" i (i < 0n)
     | Oval_float f -> parenthesize_if_neg ppf "%s" (float_repres f) (f < 0.0)
+    | Oval_string (_,_, Ostr_bytes) as tree ->
+      pp_print_char ppf '(';
+      print_simple_tree ppf tree;
+      pp_print_char ppf ')';
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
@@ -100,8 +165,19 @@ let print_out_value ppf tree =
     | Oval_nativeint i -> fprintf ppf "%nin" i
     | Oval_float f -> pp_print_string ppf (float_repres f)
     | Oval_char c -> fprintf ppf "%C" c
-    | Oval_string s ->
-        begin try fprintf ppf "%S" s with
+    | Oval_string (s, maxlen, kind) ->
+       begin try
+         let len = String.length s in
+         let s = if len > maxlen then String.sub s 0 maxlen else s in
+         begin match kind with
+         | Ostr_bytes -> fprintf ppf "Bytes.of_string %S" s
+         | Ostr_string -> print_out_string ppf s
+         end;
+         (if len > maxlen then
+            fprintf ppf
+              "... (* string length %d; truncated *)" len
+         )
+          with
           Invalid_argument _ (* "String.create" *)-> fprintf ppf "<huge string>"
         end
     | Oval_list tl ->
@@ -212,8 +288,8 @@ and print_simple_out_type ppf =
           Ovar_fields fields ->
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
               ppf fields
-        | Ovar_name (id, tyl) ->
-            fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
+        | Ovar_typ typ ->
+           print_simple_out_type ppf typ
       in
       fprintf ppf "%s[%s@[<hv>@[<hv>%a@]%a ]@]" (if non_gen then "_" else "")
         (if closed then if tags = None then " " else "< "
@@ -524,7 +600,8 @@ and print_out_type_decl kwd ppf td =
         print_private td.otype_private
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | Otyp_open ->
-      fprintf ppf " = .."
+      fprintf ppf " =%a .."
+        print_private td.otype_private
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private td.otype_private

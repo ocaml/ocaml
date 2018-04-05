@@ -206,7 +206,7 @@ unix_getsockopt_aux(char * name,
       return caml_alloc_1(0, Val_int(optval.lg.l_linger)); /* Some */
     }
   case TYPE_TIMEVAL:
-    return copy_double((double) optval.tv.tv_sec
+    return caml_copy_double((double) optval.tv.tv_sec
                        + (double) optval.tv.tv_usec / 1e6);
   case TYPE_UNIX_ERROR:
     if (optval.i == 0) {
@@ -287,9 +287,9 @@ CAMLprim value unix_setsockopt(value vty, value vsocket, value voption,
 #else
 
 CAMLprim value unix_getsockopt(value vty, value socket, value option)
-{ invalid_argument("getsockopt not implemented"); }
+{ caml_invalid_argument("getsockopt not implemented"); }
 
 CAMLprim value unix_setsockopt(value vty, value socket, value option, value val)
-{ invalid_argument("setsockopt not implemented"); }
+{ caml_invalid_argument("setsockopt not implemented"); }
 
 #endif

@@ -76,6 +76,13 @@ let set_int contents = { contents : int }
 let set_int2 c = { contents : int = c }
 ;;
 
+(* applying a functor to the unpacking of a first-class module *)
+module M() = struct
+  module type String = module type of String
+  let string = (module String : String)
+  module M = Set.Make(val string)
+end ;;
+
 (* More exotic: not even found in the manual (up to version 4.00),
    but used in some programs found in the wild.
 *)

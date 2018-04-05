@@ -20,6 +20,23 @@ let usage =
 
 let preload_objects = ref []
 
+(* Position of the first non expanded argument *)
+let first_nonexpanded_pos = ref 0
+
+let current = ref (!Arg.current)
+
+let argv = ref Sys.argv
+
+(* Test whether the option is part of a responsefile *)
+let is_expanded pos = pos < !first_nonexpanded_pos
+
+let expand_position pos len =
+  if pos < !first_nonexpanded_pos then
+    first_nonexpanded_pos := !first_nonexpanded_pos + len (* Shift the position *)
+  else
+    first_nonexpanded_pos :=  pos + len + 2 (* New last position *)
+
+
 let prepare ppf =
   Opttoploop.set_paths ();
   try
@@ -40,10 +57,18 @@ let file_argument name =
     || Filename.check_suffix name ".cmx"
     || Filename.check_suffix name ".cmxa"
   then preload_objects := name :: !preload_objects
-  else
-    begin
-      let newargs = Array.sub Sys.argv !Arg.current
-                              (Array.length Sys.argv - !Arg.current)
+  else if is_expanded !current then begin
+    (* Script files are not allowed in expand options because otherwise the
+       check in override arguments may fail since the new argv can be larger
+       than the original argv.
+    *)
+    Printf.eprintf "For implementation reasons, the toplevel does not support\
+    \ having script files (here %S) inside expanded arguments passed through the\
+    \ -args{,0} command-line option.\n" name;
+    exit 2
+  end else begin
+    let newargs = Array.sub !argv !Arg.current
+                              (Array.length !argv - !Arg.current)
       in
       if prepare ppf && Opttoploop.run_script ppf name newargs
       then exit 0
@@ -59,6 +84,12 @@ let print_version_num () =
   Printf.printf "%s\n" Sys.ocaml_version;
   exit 0;
 ;;
+
+let wrap_expand f s =
+  let start = !current in
+  let arr = f s in
+  expand_position start (Array.length arr);
+  arr
 
 module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
@@ -147,6 +178,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _labels = clear classic
   let _alias_deps = clear transparent_modules
   let _no_alias_deps = set transparent_modules
+  let _dlinscan = set use_linscan
   let _app_funct = set applicative_functors
   let _no_app_funct = clear applicative_functors
   let _noassert = set noassert
@@ -190,6 +222,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _dcombine = set dump_combine
   let _dcse = set dump_cse
   let _dlive () = dump_live := true; Printmach.print_live := true
+  let _davail () = dump_avail := true
+  let _drunavail () = debug_runavail := true
   let _dspill = set dump_spill
   let _dsplit = set dump_split
   let _dinterf = set dump_interf
@@ -198,17 +232,28 @@ module Options = Main_args.Make_opttop_options (struct
   let _dreload = set dump_reload
   let _dscheduling = set dump_scheduling
   let _dlinear = set dump_linear
+  let _dinterval = set dump_interval
   let _dstartup = set keep_startup_file
   let _safe_string = clear unsafe_string
   let _unsafe_string = set unsafe_string
   let _open s = open_modules := s :: !open_modules
-  let _plugin p = Compplugin.load p
+
+  let _args = wrap_expand Arg.read_arg
+  let _args0 = wrap_expand Arg.read_arg0
 
   let anonymous = file_argument
 end);;
 
 let main () =
   native_code := true;
-  Arg.parse Options.list file_argument usage;
+  let list = ref Options.list in
+  begin
+    try
+      Arg.parse_and_expand_argv_dynamic current argv list file_argument usage;
+    with
+    | Arg.Bad msg -> Format.fprintf Format.err_formatter "%s%!" msg; exit 2
+    | Arg.Help msg -> Format.fprintf Format.std_formatter "%s%!" msg; exit 0
+  end;
   if not (prepare Format.err_formatter) then exit 2;
+  Compmisc.init_path true;
   Opttoploop.loop Format.std_formatter

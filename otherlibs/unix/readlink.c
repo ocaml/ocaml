@@ -39,19 +39,19 @@ CAMLprim value unix_readlink(value path)
   int len;
   char * p;
   caml_unix_check_path(path, "readlink");
-  p = caml_strdup(String_val(path));
+  p = caml_stat_strdup(String_val(path));
   caml_enter_blocking_section();
   len = readlink(p, buffer, sizeof(buffer) - 1);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (len == -1) uerror("readlink", path);
   buffer[len] = '\0';
-  CAMLreturn(copy_string(buffer));
+  CAMLreturn(caml_copy_string(buffer));
 }
 
 #else
 
 CAMLprim value unix_readlink(value path)
-{ invalid_argument("readlink not implemented"); }
+{ caml_invalid_argument("readlink not implemented"); }
 
 #endif

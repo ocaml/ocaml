@@ -16,6 +16,7 @@
 #define CAML_INTERNALS
 
 #include <string.h>
+#include <stdio.h>
 #include "caml/config.h"
 #include "caml/fail.h"
 #include "caml/finalise.h"
@@ -35,17 +36,30 @@
 #include "caml/fiber.h"
 #include "caml/eventlog.h"
 
-static void alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+struct generic_table CAML_TABLE_STRUCT(char);
+
+/* [sz] and [rsv] are numbers of entries */
+static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
+                                 asize_t rsv, asize_t element_size)
 {
+  void *new_table;
+
   tbl->size = sz;
   tbl->reserve = rsv;
+  new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
+                                             element_size);
+  if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
-  tbl->base = (value**) caml_stat_alloc ((tbl->size + tbl->reserve)
-                                         * sizeof (value*));
+  tbl->base = new_table;
   tbl->ptr = tbl->base;
-  tbl->threshold = tbl->base + tbl->size;
+  tbl->threshold = tbl->base + tbl->size * element_size;
   tbl->limit = tbl->threshold;
-  tbl->end = tbl->base + tbl->size + tbl->reserve;
+  tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
+}
+
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+{
+  alloc_generic_table ((struct generic_table *) tbl, sz, rsv, sizeof (value *));
 }
 
 static void reset_table (struct caml_ref_table *tbl)
@@ -72,10 +86,10 @@ struct caml_remembered_set* caml_alloc_remembered_set()
 
 void caml_free_remembered_set(struct caml_remembered_set* r)
 {
-  Assert(r->major_ref.ptr == r->major_ref.base);
-  Assert(r->minor_ref.ptr == r->minor_ref.base);
-  Assert(r->fiber_ref.ptr == r->fiber_ref.base + 1);
-  Assert((value)*r->fiber_ref.base == Caml_state->current_stack);
+  CAMLassert(r->major_ref.ptr == r->major_ref.base);
+  CAMLassert(r->minor_ref.ptr == r->minor_ref.base);
+  CAMLassert(r->fiber_ref.ptr == r->fiber_ref.base + 1);
+  CAMLassert((value)*r->fiber_ref.base == Caml_state->current_stack);
   reset_table(&r->major_ref);
   reset_table(&r->minor_ref);
   reset_table(&r->fiber_ref);
@@ -132,7 +146,7 @@ static void oldify_one (void* st_v, value v, value *p)
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
-  Assert (domain_state->young_start <= domain_state->young_ptr &&
+  CAMLassert (domain_state->young_start <= domain_state->young_ptr &&
           domain_state->young_ptr <= domain_state->young_end);
 
  tail_call:
@@ -155,9 +169,9 @@ static void oldify_one (void* st_v, value v, value *p)
     tag = Tag_hd (hd);
     if (tag == Infix_tag) {
       /* Infix header, retry with the real block */
-      Assert (infix_offset == 0);
+      CAMLassert (infix_offset == 0);
       infix_offset = Infix_offset_hd (hd);
-      Assert(infix_offset > 0);
+      CAMLassert(infix_offset > 0);
       v -= infix_offset;
     }
   } while (tag == Infix_tag);
@@ -176,7 +190,6 @@ static void oldify_one (void* st_v, value v, value *p)
       sz = Wosize_hd (hd);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (sz, tag);
-      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
       *p = result + infix_offset;
       if (tag == Stack_tag) {
         /* Ensure that the stack remains 16-byte aligned. Note: Stack_high
@@ -192,7 +205,7 @@ static void oldify_one (void* st_v, value v, value *p)
         st->todo_list = v;
       } else {
         field0 = Op_val(v)[0];
-        Assert (!Is_debug_tag(field0));
+        CAMLassert (!Is_debug_tag(field0));
         Hd_val (v) = 0;            /* Set forward flag */
         Op_val(v)[0] = result;     /*  and forward pointer. */
         if (sz > 1){
@@ -200,7 +213,7 @@ static void oldify_one (void* st_v, value v, value *p)
           Op_val (result)[1] = st->todo_list;    /* Add this block */
           st->todo_list = v;                     /*  to the "to do" list. */
         }else{
-          Assert (sz == 1);
+          CAMLassert (sz == 1);
           p = Op_val(result);
           v = field0;
           goto tail_call;
@@ -215,17 +228,16 @@ static void oldify_one (void* st_v, value v, value *p)
       value curr = Op_val(v)[i];
       /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
          However, it's a useful debugging aid for now */
-      //Assert(!Is_debug_tag(curr));
+      CAMLassert(!Is_debug_tag(curr));
       Op_val (result)[i] = curr;
     }
     Hd_val (v) = 0;            /* Set forward flag */
     Op_val (v)[0] = result;    /*  and forward pointer. */
-    // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p", (value*)v, p, tag, sz, (value*)result);
-    Assert (infix_offset == 0);
+    CAMLassert (infix_offset == 0);
     *p = result;
   } else {
-    Assert (tag == Forward_tag);
-    Assert (infix_offset == 0);
+    CAMLassert (tag == Forward_tag);
+    CAMLassert (infix_offset == 0);
 
     value f = Forward_val (v);
     tag_t ft = 0;
@@ -236,11 +248,9 @@ static void oldify_one (void* st_v, value v, value *p)
 
     if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag) {
       /* Do not short-circuit the pointer.  Copy as a normal block. */
-      Assert (Wosize_hd (hd) == 1);
+      CAMLassert (Wosize_hd (hd) == 1);
       st->live_bytes += Bhsize_hd(hd);
       result = alloc_shared (1, Forward_tag);
-      // caml_gc_log ("promoting object %p (referred from %p) tag=%d size=%lu to %p",
-      //             (value*)v, p, tag, (value)1, (value*)result);
       *p = result;
       Hd_val (v) = 0;             /* Set (GC) forward flag */
       Op_val (v)[0] = result;      /*  and forward pointer. */
@@ -269,27 +279,23 @@ static void oldify_mopup (struct oldify_state* st)
 
   while (st->todo_list != 0){
     v = st->todo_list;                 /* Get the head. */
-    Assert (Hd_val (v) == 0);             /* It must be forwarded. */
+    CAMLassert (Hd_val (v) == 0);             /* It must be forwarded. */
     new_v = Op_val (v)[0];                /* Follow forward pointer. */
     if (Tag_val(new_v) == Stack_tag) {
       st->todo_list = Op_val (v)[1];   /* Remove from list (stack) */
-      //caml_gc_log ("oldify_mopup: caml_scan_stack start old=%p new=%p",
-      //             (value*)v, (value*)new_v);
       caml_scan_stack(oldify_one, st, new_v);
-      //caml_gc_log ("oldify_mopup: caml_scan_stack end old=%p new=%p",
-      //             (value*)v, (value*)new_v);
     } else {
       st->todo_list = Op_val (new_v)[1]; /* Remove from list (non-stack) */
 
       f = Op_val (new_v)[0];
-      Assert (!Is_debug_tag(f));
+      CAMLassert (!Is_debug_tag(f));
       if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
           && (char*)Hp_val(v) < young_end) {
         oldify_one (st, f, Op_val (new_v));
       }
       for (i = 1; i < Wosize_val (new_v); i++){
         f = Op_val (v)[i];
-        Assert (!Is_debug_tag(f));
+        CAMLassert (!Is_debug_tag(f));
         if (Is_block (f) && young_ptr <= (char*)Hp_val(v)
             && (char*)Hp_val(v) < young_end) {
           oldify_one (st, f, Op_val (new_v) + i);
@@ -299,7 +305,7 @@ static void oldify_mopup (struct oldify_state* st)
       }
     }
 
-    Assert (Wosize_val(new_v));
+    CAMLassert (Wosize_val(new_v));
   }
 }
 
@@ -318,9 +324,8 @@ void forward_pointer (void* state, value v, value *p) {
   if (Is_block (v) && young_ptr <= (char*)Hp_val(v) && (char*)Hp_val(v) < young_end) {
     hd = Hd_val(v);
     if (hd == 0) {
-      // caml_gc_log ("forward_pointer: p=%p old=%p new=%p", p, (value*)v, (value*)Op_val(v)[0]);
       *p = Op_val(v)[0];
-      Assert (Is_block(*p) && !Is_minor(*p));
+      CAMLassert (Is_block(*p) && !Is_minor(*p));
     } else if (Tag_hd(hd) == Infix_tag) {
       offset = Infix_offset_hd(hd);
       fwd = 0;
@@ -335,17 +340,17 @@ static value next_minor_block(caml_domain_state* domain_state, value curr_hp)
   mlsize_t wsz;
   header_t hd;
   value curr_val;
-  Assert ((value)domain_state->young_ptr <= curr_hp);
-  Assert (curr_hp < (value)domain_state->young_end);
+  CAMLassert ((value)domain_state->young_ptr <= curr_hp);
+  CAMLassert (curr_hp < (value)domain_state->young_end);
   hd = Hd_hp(curr_hp);
   curr_val = Val_hp(curr_hp);
   if (hd == 0) {
     /* Forwarded object, find the promoted version */
     curr_val = Op_val(curr_val)[0];
   }
-  Assert (Is_block(curr_val) && Hd_val(curr_val) != 0 && Tag_val(curr_val) != Infix_tag);
+  CAMLassert (Is_block(curr_val) && Hd_val(curr_val) != 0 && Tag_val(curr_val) != Infix_tag);
   wsz = Wosize_val(curr_val);
-  Assert (wsz <= Max_young_wosize);
+  CAMLassert (wsz <= Max_young_wosize);
   return curr_hp + Bsize_wsize(Whsize_wosize(wsz));
 }
 
@@ -384,7 +389,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   st.promote_domain = domain;
 
   if (tag != Stack_tag) {
-    Assert(caml_owner_of_young_block(root) == domain);
+    CAMLassert(caml_owner_of_young_block(root) == domain);
 
     /* For non-stack objects, don't promote referenced stacks. They are
      * promoted only when explicitly requested. */
@@ -408,10 +413,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
   oldify_mopup (&st);
 
-  // caml_gc_log ("caml_promote: new root=0x%lx oldest_promoted=0x%lx",
-  //            root, oldest_promoted);
-
-  Assert (!Is_minor(root));
+  CAMLassert (!Is_minor(root));
   /* XXX KC: We might checking for rpc's just before a stw_phase of a major
    * collection? Is this necessary? */
   caml_darken(0, root, 0);
@@ -445,7 +447,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
           __sync_bool_compare_and_swap (*r,old_p,new_p);
-        //caml_gc_log ("forward: old_p=%p new_p=%p **r=%p",(value*)old_p, (value*)new_p,(value*)**r);
       }
     }
 
@@ -467,7 +468,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
           for (i = 0; i < Wosize_hd(hd); i++) {
             value* f = Op_val(curr) + i;
             if (Is_block(*f) && young_ptr <= *f && *f < young_end && *f < curr) {
-              Assert(caml_addrmap_contains(&young_young_ptrs, (value)f));
+              CAMLassert(caml_addrmap_contains(&young_young_ptrs, (value)f));
             }
           }
         }
@@ -489,7 +490,6 @@ CAMLexport value caml_promote(struct domain* domain, value root)
       value curr = Val_hp(iter);
       if (hd != 0) {
         tag_t tag = Tag_hd (hd);
-        //caml_gc_log ("Scan: curr=%p sz=%lu tag=%u", (value*)curr, Wsize_bsize(sz), tag);
         if (tag < No_scan_tag && tag != Stack_tag) { /* Stacks will be scanned lazily, so skip. */
           for (i = 0; i < Wosize_hd (hd); i++) {
             f = Op_val(curr)[i];
@@ -565,11 +565,11 @@ void caml_empty_minor_heap_domain (struct domain* domain)
           offset = Infix_offset_hd(hd);
           v -= offset;
         }
-        Assert (Hd_val(v) == 0);
+        CAMLassert (Hd_val(v) == 0);
         vnew = Op_val(v)[0] + offset;
-        Assert (Is_block(vnew) && !Is_minor(vnew));
-        Assert (Hd_val(vnew));
-        if (Tag_hd(hd) == Infix_tag) { Assert(Tag_val(vnew) == Infix_tag); }
+        CAMLassert (Is_block(vnew) && !Is_minor(vnew));
+        CAMLassert (Hd_val(vnew));
+        if (Tag_hd(hd) == Infix_tag) { CAMLassert(Tag_val(vnew) == Infix_tag); }
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
         caml_darken(0, vnew,0);
       }
@@ -639,7 +639,7 @@ CAMLexport void caml_minor_collection (void)
      If finalisers run, need to rerun caml_empty_minor_heap.
    */
 
-  Assert (Caml_state->young_end == Caml_state->young_ptr);
+  CAMLassert (Caml_state->young_end == Caml_state->young_ptr);
 
   caml_ev_resume();
 
@@ -654,33 +654,46 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
   CAMLreturn (extra_root);
 }
 
-void caml_realloc_ref_table (struct caml_ref_table *tbl)
-{                                           Assert (tbl->ptr == tbl->limit);
-                                            Assert (tbl->limit <= tbl->end);
-                                      Assert (tbl->limit >= tbl->threshold);
+static void realloc_generic_table
+(struct generic_table *tbl, asize_t element_size,
+ char * msg_intr_int, char *msg_threshold, char *msg_growing, char *msg_error)
+{
+  CAMLassert (tbl->ptr == tbl->limit);
+  CAMLassert (tbl->limit <= tbl->end);
+  CAMLassert (tbl->limit >= tbl->threshold);
 
   if (tbl->base == NULL){
-    alloc_table (tbl, Caml_state->minor_heap_size / sizeof (value) / 8, 256);
+    alloc_generic_table (tbl, Caml_state->minor_heap_size / sizeof(value) / 8, 256,
+                         element_size);
   }else if (tbl->limit == tbl->threshold){
-    caml_gc_log ("ref_table threshold crossed");
+    CAML_INSTR_INT (msg_intr_int, 1);
+    caml_gc_message (0x08, msg_threshold, 0);
     tbl->limit = tbl->end;
     caml_urge_major_slice ();
-  }else{ /* This will almost never happen with the bytecode interpreter. */
+  }else{
     asize_t sz;
     asize_t cur_ptr = tbl->ptr - tbl->base;
 
     tbl->size *= 2;
-    sz = (tbl->size + tbl->reserve) * sizeof (value*);
-    caml_gc_log ("Growing ref_table to %"
-                 ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-                     (intnat) sz/1024);
-    tbl->base = (value**) caml_stat_resize ((char *) tbl->base, sz);
+    sz = (tbl->size + tbl->reserve) * element_size;
+    caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
+    tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
-      caml_fatal_error ("Fatal error: ref_table overflow\n");
+      caml_fatal_error (msg_error);
     }
-    tbl->end = tbl->base + tbl->size + tbl->reserve;
-    tbl->threshold = tbl->base + tbl->size;
+    tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
+    tbl->threshold = tbl->base + tbl->size * element_size;
     tbl->ptr = tbl->base + cur_ptr;
     tbl->limit = tbl->end;
   }
+}
+
+void caml_realloc_ref_table (struct caml_ref_table *tbl)
+{
+  realloc_generic_table
+    ((struct generic_table *) tbl, sizeof (value *),
+     "request_minor/realloc_ref_table@",
+     "ref_table threshold crossed\n",
+     "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+     "Fatal error: ref_table overflow\n");
 }

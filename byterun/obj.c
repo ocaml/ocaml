@@ -29,9 +29,7 @@
 #include "caml/mlvalues.h"
 #include "caml/prims.h"
 #include "caml/platform.h"
-
-/* all uses of this are bugs */
-#include "spacetime.h"
+#include "caml/spacetime.h"
 
 /* [size] is a value encoding a number of bytes */
 CAMLprim value caml_static_alloc(value size)
@@ -111,6 +109,22 @@ CAMLprim value caml_obj_dup(value arg)
   CAMLreturn (res);
 }
 
+/* Shorten the given block to the given size and return void.
+   Raise Invalid_argument if the given size is less than or equal
+   to 0 or greater than the current size.
+
+   algorithm:
+   Change the length field of the header.  Make up a black object
+   with the leftover part of the object: this is needed in the major
+   heap and harmless in the minor heap. The object cannot be white
+   because there may still be references to it in the ref table. By
+   using a black object we ensure that the ref table will be emptied
+   before the block is reallocated (since there must be a minor
+   collection within each major cycle).
+
+   [newsize] is a value encoding a number of fields (words, except
+   for float arrays on 32-bit architectures).
+*/
 CAMLprim value caml_obj_truncate (value v, value newsize)
 {
   caml_failwith("Obj.truncate not supported");

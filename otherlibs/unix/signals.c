@@ -68,9 +68,9 @@ CAMLprim value unix_sigprocmask(value vaction, value vset)
 
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigprocmask(how, &set, &oldset);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1) uerror("sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
@@ -87,9 +87,9 @@ CAMLprim value unix_sigsuspend(value vset)
   sigset_t set;
   int retcode;
   decode_sigset(vset, &set);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   retcode = sigsuspend(&set);
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (retcode == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
   return Val_unit;
 }
@@ -97,12 +97,12 @@ CAMLprim value unix_sigsuspend(value vset)
 #else
 
 CAMLprim value unix_sigprocmask(value vaction, value vset)
-{ invalid_argument("Unix.sigprocmask not available"); }
+{ caml_invalid_argument("Unix.sigprocmask not available"); }
 
 CAMLprim value unix_sigpending(value unit)
-{ invalid_argument("Unix.sigpending not available"); }
+{ caml_invalid_argument("Unix.sigpending not available"); }
 
 CAMLprim value unix_sigsuspend(value vset)
-{ invalid_argument("Unix.sigsuspend not available"); }
+{ caml_invalid_argument("Unix.sigsuspend not available"); }
 
 #endif

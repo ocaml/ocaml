@@ -28,26 +28,26 @@
 #include "caml/globroots.h"
 #include "caml/signals.h"
 #ifdef WITH_SPACETIME
-#include "spacetime.h"
+#include "caml/spacetime.h"
 #endif
 
 #include "caml/hooks.h"
 
-CAMLexport void (*caml_natdynlink_hook)(void* handle, char* unit) = NULL;
+CAMLexport void (*caml_natdynlink_hook)(void* handle, const char* unit) = NULL;
 
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
 
-#define Handle_val(v) (*((void **) (v)))
+#define Handle_val(v) (*((void **) Data_abstract_val(v)))
 static value Val_handle(void* handle) {
   value res = caml_alloc(1, Abstract_tag);
   Handle_val(res) = handle;
   return res;
 }
 
-static void *getsym(void *handle, char *module, char *name){
-  char *fullname = caml_strconcat(3, "caml", module, name);
+static void *getsym(void *handle, const char *module, const char *name){
+  char *fullname = caml_stat_strconcat(3, "caml", module, name);
   void *sym;
   sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
@@ -73,11 +73,11 @@ CAMLprim value caml_natdynlink_open(value filename, value global)
   CAMLlocal3 (res, handle, header);
   void *sym;
   void *dlhandle;
-  char *p;
+  char_os *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
   dlhandle = caml_dlopen(p, 1, Int_val(global));
   caml_leave_blocking_section();
@@ -107,7 +107,7 @@ CAMLprim value caml_natdynlink_run(value handle_v, value symbol) {
   struct code_fragment * cf;
 
 #define optsym(n) getsym(handle,unit,n)
-  char *unit;
+  const char *unit;
   void (*entrypoint)(void);
 
   unit = String_val(symbol);
@@ -149,11 +149,11 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
   CAMLparam2 (filename, symbol);
   CAMLlocal3 (res, v, handle_v);
   void *handle;
-  char *p;
+  char_os *p;
 
   /* TODO: dlclose in case of error... */
 
-  p = caml_strdup(String_val(filename));
+  p = caml_stat_strdup_to_os(String_val(filename));
   caml_enter_blocking_section();
   handle = caml_dlopen(p, 1, 1);
   caml_leave_blocking_section();

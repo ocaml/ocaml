@@ -41,6 +41,6 @@ CAMLprim value unix_initgroups(value user, value group)
 #else
 
 CAMLprim value unix_initgroups(value user, value group)
-{ invalid_argument("initgroups not implemented"); }
+{ caml_invalid_argument("initgroups not implemented"); }
 
 #endif

@@ -15,7 +15,6 @@
 
 BASEDIR=../..
 
-CC=$(NATIVECC) -I $(CTOPDIR)/byterun
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/unix
 LD_PATH=$(TOPDIR)/otherlibs/unix
 
@@ -26,6 +25,10 @@ default:
 	              $(SET_LD_PATH) $(MAKE) run-opt;; \
 	  *) $(MAKE) skip;; \
 	esac
+
+.PHONY: common
+common:
+	@$(CC) -c $(CFLAGS) $(CPPFLAGS)  -I$(CTOPDIR)/byterun callbackprim.c
 
 .PHONY: skip
 skip:
@@ -38,7 +41,7 @@ run-byte:
 	@for f in *.ml; do \
 	  printf " ... testing 'bytecode':"; \
 	  F=`basename $$f .ml`; \
-		$(CC) -c $$F.c; \
+		$(CC) -I $(CTOPDIR)/byterun -c $$F.c; \
 		$(OCAMLC) $(COMPFLAGS) -c $$F.mli; \
 		$(OCAMLC) $(COMPFLAGS) -c $$F.ml; \
 		$(OCAMLC) $(COMPFLAGS) -o ./$$F.byte$(EXE) -custom unix.cma $$F.$(O) $$F.cmo; \
@@ -52,7 +55,7 @@ run-opt:
 		for f in *.ml; do \
 			printf " ... testing 'nativecode':"; \
 			F=`basename $$f .ml`; \
-			$(CC) -c $$F.c; \
+			$(CC) -I $(CTOPDIR)/byterun -c $$F.c; \
 			mv $$F.$(O) $$F.c.$(O); \
 			$(OCAMLOPT) $(COMPFLAGS) -c $$F.mli; \
 			$(OCAMLOPT) $(COMPFLAGS) -o ./$$F.native$(EXE) unix.cmxa $$F.c.$(O) $$F.ml; \

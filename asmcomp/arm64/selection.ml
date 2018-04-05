@@ -76,12 +76,14 @@ let rec run_automata nbits state input =
 let is_logical_immediate n =
   n <> 0 && n <> -1 && run_automata 64 0 n
 
+(* If you update [inline_ops], you may need to update [is_simple_expr] and/or
+   [effects_of], below. *)
 let inline_ops =
   [ "sqrt"; "caml_bswap16_direct"; "caml_int32_direct_bswap";
     "caml_int64_direct_bswap"; "caml_nativeint_direct_bswap" ]
 
-let use_direct_addressing symb =
-  (not !Clflags.dlcode) || Compilenv.symbol_in_current_unit symb
+let use_direct_addressing _symb =
+  not !Clflags.dlcode
 
 (* Instruction selection *)
 
@@ -96,27 +98,33 @@ method is_immediate n =
 
 method! is_simple_expr = function
   (* inlined floating-point ops are simple if their arguments are *)
-  | Cop(Cextcall (fn, _, _, _, _), args) when List.mem fn inline_ops ->
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
       List.for_all self#is_simple_expr args
   | e -> super#is_simple_expr e
 
+method! effects_of e =
+  match e with
+  | Cop(Cextcall (fn, _, _, _), args, _) when List.mem fn inline_ops ->
+      Selectgen.Effect_and_coeffect.join_list_map args self#effects_of
+  | e -> super#effects_of e
+
 method select_addressing chunk = function
-  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n])
+  | Cop((Caddv | Cadda), [Cconst_symbol s; Cconst_int n], _)
     when use_direct_addressing s ->
       (Ibased(s, n), Ctuple [])
-  | Cop((Caddv | Cadda), [arg; Cconst_int n])
+  | Cop((Caddv | Cadda), [arg; Cconst_int n], _)
     when is_offset chunk n ->
       (Iindexed n, arg)
-  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n])])
+  | Cop((Caddv | Cadda as op), [arg1; Cop(Caddi, [arg2; Cconst_int n], _)], dbg)
     when is_offset chunk n ->
-      (Iindexed n, Cop(op, [arg1; arg2]))
+      (Iindexed n, Cop(op, [arg1; arg2], dbg))
   | Cconst_symbol s
     when use_direct_addressing s ->
       (Ibased(s, 0), Ctuple [])
   | arg ->
       (Iindexed 0, arg)
 
-method! select_operation op args =
+method! select_operation op args dbg =
   match op with
   (* Integer addition *)
   | Caddi | Caddv | Cadda ->
@@ -129,26 +137,26 @@ method! select_operation op args =
           ((if n >= 0 then Iintop_imm(Iadd, n) else Iintop_imm(Isub, -n)),
            [arg])
       (* Shift-add *)
-      | [arg1; Cop(Clsl, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
+      | [arg1; Cop(Clsl, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg1; arg2])
-      | [arg1; Cop(Casr, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
+      | [arg1; Cop(Casr, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, -n)), [arg1; arg2])
-      | [Cop(Clsl, [arg1; Cconst_int n]); arg2] when n > 0 && n < 64 ->
+      | [Cop(Clsl, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, n)), [arg2; arg1])
-      | [Cop(Casr, [arg1; Cconst_int n]); arg2] when n > 0 && n < 64 ->
+      | [Cop(Casr, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftadd, -n)), [arg2; arg1])
       (* Multiply-add *)
-      | [arg1; Cop(Cmuli, args2)] | [Cop(Cmuli, args2); arg1] ->
-          begin match self#select_operation Cmuli args2 with
+      | [arg1; Cop(Cmuli, args2, dbg)] | [Cop(Cmuli, args2, dbg); arg1] ->
+          begin match self#select_operation Cmuli args2 dbg with
           | (Iintop_imm(Ilsl, l), [arg3]) ->
               (Ispecific(Ishiftarith(Ishiftadd, l)), [arg1; arg3])
           | (Iintop Imul, [arg3; arg4]) ->
               (Ispecific Imuladd, [arg3; arg4; arg1])
           | _ ->
-              super#select_operation op args
+              super#select_operation op args dbg
           end
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
   (* Integer subtraction *)
   | Csubi ->
@@ -158,31 +166,31 @@ method! select_operation op args =
           ((if n >= 0 then Iintop_imm(Isub, n) else Iintop_imm(Iadd, -n)),
            [arg])
       (* Shift-sub *)
-      | [arg1; Cop(Clsl, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
+      | [arg1; Cop(Clsl, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, n)), [arg1; arg2])
-      | [arg1; Cop(Casr, [arg2; Cconst_int n])] when n > 0 && n < 64 ->
+      | [arg1; Cop(Casr, [arg2; Cconst_int n], _)] when n > 0 && n < 64 ->
           (Ispecific(Ishiftarith(Ishiftsub, -n)), [arg1; arg2])
       (* Multiply-sub *)
-      | [arg1; Cop(Cmuli, args2)] ->
-          begin match self#select_operation Cmuli args2 with
+      | [arg1; Cop(Cmuli, args2, dbg)] ->
+          begin match self#select_operation Cmuli args2 dbg with
           | (Iintop_imm(Ilsl, l), [arg3]) ->
               (Ispecific(Ishiftarith(Ishiftsub, l)), [arg1; arg3])
           | (Iintop Imul, [arg3; arg4]) ->
               (Ispecific Imulsub, [arg3; arg4; arg1])
           | _ ->
-              super#select_operation op args
+              super#select_operation op args dbg
           end
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
   (* Checkbounds *)
-  | Ccheckbound _ ->
+  | Ccheckbound ->
       begin match args with
-      | [Cop(Clsr, [arg1; Cconst_int n]); arg2] when n > 0 && n < 64 ->
+      | [Cop(Clsr, [arg1; Cconst_int n], _); arg2] when n > 0 && n < 64 ->
           (Ispecific(Ishiftcheckbound { shift = n; label_after_error = None; }),
             [arg1; arg2])
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
   (* Integer multiplication *)
   (* ARM does not support immediate operands for multiplication *)
@@ -198,40 +206,40 @@ method! select_operation op args =
   (* Recognize floating-point negate and multiply *)
   | Cnegf ->
       begin match args with
-      | [Cop(Cmulf, args)] -> (Ispecific Inegmulf, args)
-      | _ -> super#select_operation op args
+      | [Cop(Cmulf, args, _)] -> (Ispecific Inegmulf, args)
+      | _ -> super#select_operation op args dbg
       end
   (* Recognize floating-point multiply and add/sub *)
   | Caddf ->
       begin match args with
-      | [arg; Cop(Cmulf, args)] | [Cop(Cmulf, args); arg] ->
+      | [arg; Cop(Cmulf, args, _)] | [Cop(Cmulf, args, _); arg] ->
           (Ispecific Imuladdf, arg :: args)
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
   | Csubf ->
       begin match args with
-      | [arg; Cop(Cmulf, args)] ->
+      | [arg; Cop(Cmulf, args, _)] ->
           (Ispecific Imulsubf, arg :: args)
-      | [Cop(Cmulf, args); arg] ->
+      | [Cop(Cmulf, args, _); arg] ->
           (Ispecific Inegmulsubf, arg :: args)
       | _ ->
-          super#select_operation op args
+          super#select_operation op args dbg
       end
   (* Recognize floating-point square root *)
-  | Cextcall("sqrt", _, _, _, _) ->
+  | Cextcall("sqrt", _, _, _) ->
       (Ispecific Isqrtf, args)
   (* Recognize bswap instructions *)
-  | Cextcall("caml_bswap16_direct", _, _, _, _) ->
+  | Cextcall("caml_bswap16_direct", _, _, _) ->
       (Ispecific(Ibswap 16), args)
-  | Cextcall("caml_int32_direct_bswap", _, _, _, _) ->
+  | Cextcall("caml_int32_direct_bswap", _, _, _) ->
       (Ispecific(Ibswap 32), args)
   | Cextcall(("caml_int64_direct_bswap"|"caml_nativeint_direct_bswap"),
-              _, _, _, _) ->
+              _, _, _) ->
       (Ispecific (Ibswap 64), args)
   (* Other operations are regular *)
   | _ ->
-      super#select_operation op args
+      super#select_operation op args dbg
 
 method select_logical op = function
   | [arg; Cconst_int n] when is_logical_immediate n ->

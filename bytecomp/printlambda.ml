@@ -150,6 +150,7 @@ let primitive ppf = function
         | Pointer, Immutable -> "field_imm "
       in
       fprintf ppf "%s%i" instr n
+  | Pfield_computed -> fprintf ppf "field_computed"
   | Psetfield(n, ptr, init) ->
       let instr =
         match ptr with
@@ -158,15 +159,30 @@ let primitive ppf = function
       in
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfield_%s%s %i" instr init n
+  | Psetfield_computed (ptr, init) ->
+      let instr =
+        match ptr with
+        | Pointer -> "ptr"
+        | Immediate -> "imm"
+      in
+      let init =
+        match init with
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
+        | Assignment -> ""
+      in
+      fprintf ppf "setfield_%s%s_computed" instr init
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield (n, init) ->
       let init =
         match init with
-        | Initialization -> "(init)"
+        | Heap_initialization -> "(heap-init)"
+        | Root_initialization -> "(root-init)"
         | Assignment -> ""
       in
       fprintf ppf "setfloatfield%s %i" init n
@@ -336,7 +352,9 @@ let name_of_primitive = function
   | Psetglobal _ -> "Psetglobal"
   | Pmakeblock _ -> "Pmakeblock"
   | Pfield _ -> "Pfield"
+  | Pfield_computed -> "Pfield_computed"
   | Psetfield _ -> "Psetfield"
+  | Psetfield_computed _ -> "Psetfield_computed"
   | Pfloatfield _ -> "Pfloatfield"
   | Psetfloatfield _ -> "Psetfloatfield"
   | Pduprecord _ -> "Pduprecord"
@@ -431,9 +449,11 @@ let name_of_primitive = function
   | Pperform -> "Pperform"
   | Preperform -> "Preperform"
 
-let function_attribute ppf { inline; specialise; is_a_functor } =
+let function_attribute ppf { inline; specialise; is_a_functor; stub } =
   if is_a_functor then
     fprintf ppf "is_a_functor@ ";
+  if stub then
+    fprintf ppf "stub@ ";
   begin match inline with
   | Default_inline -> ()
   | Always_inline -> fprintf ppf "always_inline@ "
@@ -517,7 +537,7 @@ let rec lam ppf = function
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(%a%a)@]" primitive prim lams largs
-  | Lswitch(larg, sw) ->
+  | Lswitch(larg, sw, _loc) ->
       let switch ppf sw =
         let spc = ref false in
         List.iter
@@ -600,6 +620,8 @@ let rec lam ppf = function
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body"
        | Lev_pseudo -> "pseudo"
+       | Lev_module_definition ident ->
+         Format.asprintf "module-defn(%a)" Ident.print ident
       in
       fprintf ppf "@[<2>(%s %s(%i)%s:%i-%i@ %a)@]" kind
               ev.lev_loc.Location.loc_start.Lexing.pos_fname

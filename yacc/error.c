@@ -109,24 +109,6 @@ void unterminated_text(int t_lineno, char *t_line, char *t_cptr)
 }
 
 
-void unterminated_union(int u_lineno, char *u_line, char *u_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: unterminated %%union declaration\n",
-            virtual_input_file_name, u_lineno);
-    print_pos(u_line, u_cptr);
-    done(1);
-}
-
-
-void over_unionized(char *u_cptr)
-{
-    fprintf(stderr, "File \"%s\", line %d: too many %%union declarations\n",
-            virtual_input_file_name, lineno);
-    print_pos(line, u_cptr);
-    done(1);
-}
-
-
 void illegal_tag(int t_lineno, char *t_line, char *t_cptr)
 {
     fprintf(stderr, "File \"%s\", line %d: illegal tag\n",

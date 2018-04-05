@@ -12,9 +12,9 @@ arrayLabels.cmi :
 atomic.cmo : atomic.cmi
 atomic.cmx : atomic.cmi
 atomic.cmi :
-buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
-buffer.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
-buffer.cmi :
+buffer.cmo : uchar.cmi sys.cmi string.cmi char.cmi bytes.cmi buffer.cmi
+buffer.cmx : uchar.cmx sys.cmx string.cmx char.cmx bytes.cmx buffer.cmi
+buffer.cmi : uchar.cmi
 bytes.cmo : pervasives.cmi char.cmi bytes.cmi
 bytes.cmx : pervasives.cmx char.cmx bytes.cmi
 bytes.cmi :
@@ -24,6 +24,8 @@ bytesLabels.cmi :
 callback.cmo : obj.cmi callback.cmi
 callback.cmx : obj.cmx callback.cmi
 callback.cmi :
+camlinternalBigarray.cmo : complex.cmi
+camlinternalBigarray.cmx : complex.cmx
 camlinternalFormat.cmo : sys.cmi string.cmi char.cmi \
     camlinternalFormatBasics.cmi bytes.cmi buffer.cmi camlinternalFormat.cmi
 camlinternalFormat.cmx : sys.cmx string.cmx char.cmx \
@@ -67,9 +69,9 @@ filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
 filename.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
     filename.cmi
 filename.cmi :
-format.cmo : string.cmi pervasives.cmi camlinternalFormatBasics.cmi \
+format.cmo : string.cmi pervasives.cmi list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi buffer.cmi format.cmi
-format.cmx : string.cmx pervasives.cmx camlinternalFormatBasics.cmx \
+format.cmx : string.cmx pervasives.cmx list.cmx camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx buffer.cmx format.cmi
 format.cmi : pervasives.cmi buffer.cmi
 gc.cmo : sys.cmi string.cmi printf.cmi gc.cmi
@@ -184,9 +186,9 @@ stringLabels.cmi :
 sys.cmo : sys.cmi
 sys.cmx : sys.cmi
 sys.cmi :
-uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
-uchar.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
-uchar.cmi : format.cmi
+uchar.cmo : pervasives.cmi char.cmi uchar.cmi
+uchar.cmx : pervasives.cmx char.cmx uchar.cmi
+uchar.cmi :
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi
 weak.cmi : hashtbl.cmi
@@ -200,14 +202,16 @@ arrayLabels.cmo : array.cmi arrayLabels.cmi
 arrayLabels.p.cmx : array.cmx arrayLabels.cmi
 atomic.cmo : atomic.cmi
 atomic.p.cmx : atomic.cmi
-buffer.cmo : sys.cmi string.cmi bytes.cmi buffer.cmi
-buffer.p.cmx : sys.cmx string.cmx bytes.cmx buffer.cmi
+buffer.cmo : uchar.cmi sys.cmi string.cmi char.cmi bytes.cmi buffer.cmi
+buffer.p.cmx : uchar.cmx sys.cmx string.cmx char.cmx bytes.cmx buffer.cmi
 bytes.cmo : pervasives.cmi char.cmi bytes.cmi
 bytes.p.cmx : pervasives.cmx char.cmx bytes.cmi
 bytesLabels.cmo : bytes.cmi bytesLabels.cmi
 bytesLabels.p.cmx : bytes.cmx bytesLabels.cmi
 callback.cmo : obj.cmi callback.cmi
 callback.p.cmx : obj.cmx callback.cmi
+camlinternalBigarray.cmo : complex.cmi
+camlinternalBigarray.p.cmx : complex.cmx
 camlinternalFormat.cmo : sys.cmi string.cmi char.cmi \
     camlinternalFormatBasics.cmi bytes.cmi buffer.cmi camlinternalFormat.cmi
 camlinternalFormat.p.cmx : sys.cmx string.cmx char.cmx \
@@ -240,9 +244,9 @@ filename.cmo : sys.cmi string.cmi random.cmi printf.cmi lazy.cmi buffer.cmi \
     filename.cmi
 filename.p.cmx : sys.cmx string.cmx random.cmx printf.cmx lazy.cmx buffer.cmx \
     filename.cmi
-format.cmo : string.cmi pervasives.cmi camlinternalFormatBasics.cmi \
+format.cmo : string.cmi pervasives.cmi list.cmi camlinternalFormatBasics.cmi \
     camlinternalFormat.cmi buffer.cmi format.cmi
-format.p.cmx : string.cmx pervasives.cmx camlinternalFormatBasics.cmx \
+format.p.cmx : string.cmx pervasives.cmx list.cmx camlinternalFormatBasics.cmx \
     camlinternalFormat.cmx buffer.cmx format.cmi
 gc.cmo : sys.cmi string.cmi printf.cmi gc.cmi
 gc.p.cmx : sys.cmx string.cmx printf.cmx gc.cmi
@@ -324,7 +328,7 @@ stringLabels.cmo : string.cmi stringLabels.cmi
 stringLabels.p.cmx : string.cmx stringLabels.cmi
 sys.cmo : sys.cmi
 sys.p.cmx : sys.cmi
-uchar.cmo : printf.cmi pervasives.cmi format.cmi char.cmi uchar.cmi
-uchar.p.cmx : printf.cmx pervasives.cmx format.cmx char.cmx uchar.cmi
+uchar.cmo : pervasives.cmi char.cmi uchar.cmi
+uchar.p.cmx : pervasives.cmx char.cmx uchar.cmi
 weak.cmo : sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi
 weak.p.cmx : sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi

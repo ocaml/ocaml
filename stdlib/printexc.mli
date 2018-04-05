@@ -42,13 +42,20 @@ val print_backtrace: out_channel -> unit
     on the output channel [oc].  The backtrace lists the program
     locations where the most-recently raised exception was raised
     and where it was propagated through function calls.
+
+    If the call is not inside an exception handler, the returned
+    backtrace is unspecified. If the call is after some
+    exception-catching code (before in the handler, or in a when-guard
+    during the matching of the exception handler), the backtrace may
+    correspond to a later exception than the handled one.
+
     @since 3.11.0
 *)
 
 val get_backtrace: unit -> string
 (** [Printexc.get_backtrace ()] returns a string containing the
     same exception backtrace that [Printexc.print_backtrace] would
-    print.
+    print. Same restriction usage than {!print_backtrace}.
     @since 3.11.0
 *)
 
@@ -85,7 +92,7 @@ val register_printer: (exn -> string option) -> unit
     @since 3.11.2
 *)
 
-(** {6 Raw backtraces} *)
+(** {1 Raw backtraces} *)
 
 type raw_backtrace
 (** The abstract type [raw_backtrace] stores a backtrace in
@@ -106,7 +113,7 @@ type raw_backtrace
 val get_raw_backtrace: unit -> raw_backtrace
 (** [Printexc.get_raw_backtrace ()] returns the same exception
     backtrace that [Printexc.print_backtrace] would print, but in
-    a raw format.
+    a raw format. Same restriction usage than {!print_backtrace}.
 
     @since 4.01.0
 *)
@@ -125,7 +132,15 @@ val raw_backtrace_to_string: raw_backtrace -> string
     @since 4.01.0
 *)
 
-(** {6 Current call stack} *)
+external raise_with_backtrace: exn -> raw_backtrace -> 'a
+  = "%raise_with_backtrace"
+(** Reraise the exception using the given raw_backtrace for the
+    origin of the exception
+
+    @since 4.05.0
+*)
+
+(** {1 Current call stack} *)
 
 val get_callstack: int -> raw_backtrace
 (** [Printexc.get_callstack n] returns a description of the top of the
@@ -145,7 +160,7 @@ val get_continuation_callstack: ('a,'b) continuation -> int -> raw_backtrace
     the [Printexc] module.)
 *)
 
-(** {6 Uncaught exceptions} *)
+(** {1 Uncaught exceptions} *)
 
 val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 (** [Printexc.set_uncaught_exception_handler fn] registers [fn] as the handler
@@ -166,7 +181,7 @@ val set_uncaught_exception_handler: (exn -> raw_backtrace -> unit) -> unit
 *)
 
 
-(** {6 Manipulation of backtrace information}
+(** {1 Manipulation of backtrace information}
 
     These functions are used to traverse the slots of a raw backtrace
     and extract information from them in a programmer-friendly format.
@@ -209,6 +224,7 @@ type location = {
     @since 4.02
 *)
 
+(** @since 4.02.0 *)
 module Slot : sig
   type t = backtrace_slot
 
@@ -254,7 +270,7 @@ module Slot : sig
 end
 
 
-(** {6 Raw backtrace slots} *)
+(** {1 Raw backtrace slots} *)
 
 type raw_backtrace_slot
 (** This type allows direct access to raw backtrace slots, without any
@@ -317,7 +333,7 @@ val get_raw_backtrace_next_slot :
     @since 4.04.0
 *)
 
-(** {6 Exception slots} *)
+(** {1 Exception slots} *)
 
 val exn_slot_id: exn -> int
 (** [Printexc.exn_slot_id] returns an integer which uniquely identifies

@@ -27,7 +27,7 @@
 #include "caml/version.h"
 #include "caml/domain.h"
 #include "caml/startup.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
@@ -62,7 +62,7 @@ int caml_failed_assert (char * expr, char * file, int line)
            Caml_state ? Caml_state->id : -1, file, line, expr);
   print_trace ();
   fflush (stderr);
-  exit (100);
+  abort();
 }
 
 #endif /* DEBUG */
@@ -115,33 +115,6 @@ CAMLexport void caml_fatal_error_arg2 (const char *fmt1, const char *arg1,
   exit(2);
 }
 
-/* [size] and [modulo] are numbers of bytes */
-char *caml_aligned_malloc (asize_t size, int modulo, void **block)
-{
-  char *raw_mem;
-  uintnat aligned_mem;
-                                                  Assert (modulo < Page_size);
-  raw_mem = (char *) malloc (size + Page_size);
-  if (raw_mem == NULL) return NULL;
-  *block = raw_mem;
-  raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
-#ifdef DEBUG
-  {
-    uintnat *p;
-    uintnat *p0 = (void *) *block,
-            *p1 = (void *) (aligned_mem - modulo),
-            *p2 = (void *) (aligned_mem - modulo + size),
-            *p3 = (void *) ((char *) *block + size + Page_size);
-
-    for (p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (p = p2; p < p3; p++) *p = Debug_filler_align;
-  }
-#endif
-  return (char *) (aligned_mem - modulo);
-}
-
 /* If you change the caml_ext_table* functions, also update
    asmrun/spacetime.c:find_trie_node_from_libunwind. */
 
@@ -152,7 +125,7 @@ void caml_ext_table_init(struct ext_table * tbl, int init_capa)
   tbl->contents = caml_stat_alloc(sizeof(void *) * init_capa);
 }
 
-int caml_ext_table_add(struct ext_table * tbl, void * data)
+int caml_ext_table_add(struct ext_table * tbl, caml_stat_block data)
 {
   int res;
   if (tbl->size >= tbl->capacity) {
@@ -166,7 +139,7 @@ int caml_ext_table_add(struct ext_table * tbl, void * data)
   return res;
 }
 
-void caml_ext_table_remove(struct ext_table * tbl, void * data)
+void caml_ext_table_remove(struct ext_table * tbl, caml_stat_block data)
 {
   int i;
   for (i = 0; i < tbl->size; i++) {
@@ -194,41 +167,50 @@ void caml_ext_table_free(struct ext_table * tbl, int free_entries)
   caml_stat_free(tbl->contents);
 }
 
-CAMLexport char * caml_strdup(const char * s)
-{
-  size_t slen = strlen(s);
-  char * res = caml_stat_alloc(slen + 1);
-  memcpy(res, s, slen + 1);
-  return res;
-}
+/* Integer arithmetic with overflow detection */
 
-CAMLexport char * caml_strconcat(int n, ...)
+#if ! (__GNUC__ >= 5 || Caml_has_builtin(__builtin_mul_overflow))
+CAMLexport int caml_umul_overflow(uintnat a, uintnat b, uintnat * res)
 {
-  va_list args;
-  char * res, * p;
-  size_t len;
-  int i;
-
-  len = 0;
-  va_start(args, n);
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    len += strlen(s);
-  }
-  va_end(args);
-  res = caml_stat_alloc(len + 1);
-  va_start(args, n);
-  p = res;
-  for (i = 0; i < n; i++) {
-    const char * s = va_arg(args, const char *);
-    size_t l = strlen(s);
-    memcpy(p, s, l);
-    p += l;
-  }
-  va_end(args);
-  *p = 0;
-  return res;
+#define HALF_SIZE (sizeof(uintnat) * 4)
+#define HALF_MASK (((uintnat)1 << HALF_SIZE) - 1)
+#define LOW_HALF(x) ((x) & HALF_MASK)
+#define HIGH_HALF(x) ((x) >> HALF_SIZE)
+  /* Cut in half words */
+  uintnat al = LOW_HALF(a);
+  uintnat ah = HIGH_HALF(a);
+  uintnat bl = LOW_HALF(b);
+  uintnat bh = HIGH_HALF(b);
+  /* Exact product is:
+              al * bl
+           +  ah * bl  << HALF_SIZE
+           +  al * bh  << HALF_SIZE
+           +  ah * bh  << 2*HALF_SIZE
+     Overflow occurs if:
+        ah * bh is not 0, i.e. ah != 0 and bh != 0
+     OR ah * bl has high half != 0
+     OR al * bh has high half != 0
+     OR the sum al * bl + LOW_HALF(ah * bl) << HALF_SIZE
+                        + LOW_HALF(al * bh) << HALF_SIZE overflows.
+     This sum is equal to p = (a * b) modulo word size. */
+  uintnat p = a * b;
+  uintnat p1 = al * bh;
+  uintnat p2 = ah * bl;
+  *res = p;
+  if (ah == 0 && bh == 0) return 0;
+  if (ah != 0 && bh != 0) return 1;
+  if (HIGH_HALF(p1) != 0 || HIGH_HALF(p2) != 0) return 1;
+  p1 <<= HALF_SIZE;
+  p2 <<= HALF_SIZE;
+  p1 += p2;
+  if (p < p1 || p1 < p2) return 1; /* overflow in sums */
+  return 0;
+#undef HALF_SIZE
+#undef HALF_MASK
+#undef LOW_HALF
+#undef HIGH_HALF
 }
+#endif
 
 /* Runtime warnings */
 
@@ -263,10 +245,10 @@ void CAML_INSTR_INIT (void)
   char *s;
 
   CAML_INSTR_STARTTIME = 0;
-  s = getenv ("OCAML_INSTR_START");
+  s = caml_secure_getenv ("OCAML_INSTR_START");
   if (s != NULL) CAML_INSTR_STARTTIME = atol (s);
   CAML_INSTR_STOPTIME = LONG_MAX;
-  s = getenv ("OCAML_INSTR_STOP");
+  s = caml_secure_getenv ("OCAML_INSTR_STOP");
   if (s != NULL) CAML_INSTR_STOPTIME = atol (s);
 }
 
@@ -312,11 +294,11 @@ void CAML_INSTR_ATEXIT (void)
     for (p = CAML_INSTR_LOG; p != NULL; p = p->next){
       for (i = 0; i < p->index; i++){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, i), Get_time(p, i+1), p->tag[i+1]);
+                 (long) Get_time (p, i), (long) Get_time(p, i+1), p->tag[i+1]);
       }
       if (p->tag[0][0] != '\000'){
         fprintf (f, "@@ %19ld %19ld %s\n",
-                 Get_time (p, 0), Get_time(p, p->index), p->tag[0]);
+                 (long) Get_time (p, 0), (long) Get_time(p, p->index), p->tag[0]);
       }
     }
     fclose (f);

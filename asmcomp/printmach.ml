@@ -19,6 +19,7 @@ open Format
 open Cmm
 open Reg
 open Mach
+open Interval
 
 let reg ppf r =
   if not (Reg.anonymous r) then
@@ -158,6 +159,13 @@ let operation op arg ppf res =
   | Idivf -> fprintf ppf "%a /f %a" reg arg.(0) reg arg.(1)
   | Ifloatofint -> fprintf ppf "floatofint %a" reg arg.(0)
   | Iintoffloat -> fprintf ppf "intoffloat %a" reg arg.(0)
+  | Iname_for_debugger { ident; which_parameter; } ->
+    fprintf ppf "name_for_debugger %a%s=%a"
+      Ident.print ident
+      (match which_parameter with
+        | None -> ""
+        | Some index -> sprintf "[P%d]" index)
+      reg arg.(0)
   | Ispecific op ->
       Arch.print_specific_operation reg op ppf arg
 
@@ -166,6 +174,16 @@ let rec instr ppf i =
     fprintf ppf "@[<1>{%a" regsetaddr i.live;
     if Array.length i.arg > 0 then fprintf ppf "@ +@ %a" regs i.arg;
     fprintf ppf "}@]@,";
+    if !Clflags.dump_avail then begin
+      let module RAS = Reg_availability_set in
+      fprintf ppf "@[<1>AB={%a}" (RAS.print ~print_reg:reg) i.available_before;
+      begin match i.available_across with
+      | None -> ()
+      | Some available_across ->
+        fprintf ppf ",AA={%a}" (RAS.print ~print_reg:reg) available_across
+      end;
+      fprintf ppf "@]@,"
+    end
   end;
   begin match i.desc with
   | Iend -> ()
@@ -192,10 +210,20 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(i, body, handler) ->
-      fprintf
-        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
-        instr body i instr handler
+  | Icatch(flag, handlers, body) ->
+      fprintf ppf "@[<v 2>catch%a@,%a@;<0 -2>with"
+        Printcmm.rec_flag flag instr body;
+      let h (nfail, handler) =
+        fprintf ppf "(%d)@,%a@;" nfail instr handler in
+      let rec aux = function
+        | [] -> ()
+        | [v] -> h v
+        | v :: t ->
+            h v;
+            fprintf ppf "@ and";
+            aux t
+      in
+      aux handlers
   | Iexit i ->
       fprintf ppf "exit(%d)" i
   | Itrywith(body, handler) ->
@@ -233,6 +261,18 @@ let interference ppf r =
 let interferences ppf () =
   fprintf ppf "*** Interferences@.";
   List.iter (interference ppf) (Reg.all_registers())
+
+let interval ppf i =
+  let interv ppf =
+    List.iter
+      (fun r -> fprintf ppf "@ [%d;%d]" r.rbegin r.rend)
+      i.ranges in
+  fprintf ppf "@[<2>%a:%t@]@." reg i.reg interv
+
+let intervals ppf () =
+  fprintf ppf "*** Intervals@.";
+  List.iter (interval ppf) (Interval.all_fixed_intervals());
+  List.iter (interval ppf) (Interval.all_intervals())
 
 let preference ppf r =
   let prefs ppf =

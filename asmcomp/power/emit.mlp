@@ -317,12 +317,8 @@ let record_frame ?label live raise_ dbg =
           Misc.fatal_error ("bad GC root " ^ Reg.name r)
       | _ -> ())
     live;
-  frame_descriptors :=
-    { fd_lbl = lbl;
-      fd_frame_size = frame_size();
-      fd_live_offset = !live_offset;
-      fd_raise = raise_;
-      fd_debuginfo = dbg } :: !frame_descriptors;
+  record_frame_descr ~label:lbl ~frame_size:(frame_size())
+    ~live_offset:!live_offset ~raise_frame:raise_ dbg;
   `{emit_label lbl}:\n`
 
 (* Record floating-point literals (for PPC32) *)
@@ -479,6 +475,7 @@ module BR = Branch_relaxation.Make (struct
     | Lop(Ifloatofint) -> 9
     | Lop(Iintoffloat) -> 4
     | Lop(Ispecific _) -> 1
+    | Lop (Iname_for_debugger _) -> 0
     | Lreloadretaddr -> 2
     | Lreturn -> 2
     | Llabel _ -> 0
@@ -823,6 +820,7 @@ let emit_instr i =
     | Lop(Ispecific sop) ->
         let instr = name_for_specific sop in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(2)}\n`
+    | Lop (Iname_for_debugger _) -> ()
     | Lreloadretaddr ->
         `	{emit_string lg}	11, {emit_int(retaddr_offset())}(1)\n`;
         `	mtlr	11\n`
@@ -1197,10 +1195,11 @@ let end_assembly() =
   emit_string data_space;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
   declare_global_data lbl_end;
+  `	{emit_string datag}	0\n`;  (* PR#6329 *)
   `{emit_symbol lbl_end}:\n`;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
-  emit_string rodata_space;
+  emit_string data_space;  (* not rodata_space because it contains relocations *)
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;

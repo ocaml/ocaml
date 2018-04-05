@@ -16,7 +16,7 @@
 (** Arrays of weak pointers and hash sets of weak pointers. *)
 
 
-(** {6 Low-level functions} *)
+(** {1 Low-level functions} *)
 
 type 'a t
 (** The type of arrays of weak pointers (weak arrays).  A weak
@@ -66,7 +66,11 @@ val get_copy : 'a t -> int -> 'a option
    the incremental GC from erasing the value in its current cycle
    ([get] may delay the erasure to the next GC cycle).
    Raise [Invalid_argument "Weak.get"] if [n] is not in the range
-   0 to {!Weak.length}[ a - 1].*)
+   0 to {!Weak.length}[ a - 1].
+
+   If the element is a custom block it is not copied.
+
+*)
 
 
 val check : 'a t -> int -> bool
@@ -88,7 +92,7 @@ val blit : 'a t -> int -> 'a t -> int -> int -> unit
    do not designate a valid subarray of [ar2].*)
 
 
-(** {6 Weak hash sets} *)
+(** {1 Weak hash sets} *)
 
 (** A weak hash set is a hashed set of values.  Each value may
     magically disappear from the set when it is not used by the
@@ -136,6 +140,12 @@ module type S = sig
   val find : t -> data -> data
     (** [find t x] returns an instance of [x] found in [t].
         Raise [Not_found] if there is no such element. *)
+
+  val find_opt: t -> data -> data option
+    (** [find_opt t x] returns an instance of [x] found in [t]
+        or [None] if there is no such element.
+        @since 4.05
+    *)
 
   val find_all : t -> data -> data list
     (** [find_all t x] returns a list of all the instances of [x]

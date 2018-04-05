@@ -66,6 +66,8 @@ val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
+val name_pattern : string -> Typedtree.case list -> Ident.t
+
 val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
@@ -124,6 +126,9 @@ type error =
   | Not_an_extension_constructor
   | Literal_overflow of string
   | Unknown_literal of string * char
+  | Illegal_letrec_pat
+  | Illegal_letrec_expr
+  | Illegal_class_expr
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -135,7 +140,8 @@ val report_error: Env.t -> formatter -> error -> unit
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 (* Forward declaration, to be filled in by Typemod.type_open *)
 val type_open:
-    (override_flag -> Env.t -> Location.t -> Longident.t loc -> Path.t * Env.t)
+  (?used_slot:bool ref -> override_flag -> Env.t -> Location.t ->
+   Longident.t loc -> Path.t * Env.t)
     ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
@@ -150,3 +156,7 @@ val create_package_type : Location.t -> Env.t ->
   Path.t * (Longident.t * Typedtree.core_type) list * Types.type_expr
 
 val constant: Parsetree.constant -> (Asttypes.constant, error) result
+
+val check_recursive_bindings : Env.t -> Typedtree.value_binding list -> unit
+val check_recursive_class_bindings :
+  Env.t -> Ident.t list -> Typedtree.class_expr list -> unit

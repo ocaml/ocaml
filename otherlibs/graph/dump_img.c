@@ -28,9 +28,9 @@ value caml_gr_dump_image(value image)
   caml_gr_check_open();
   width = Width_im(image);
   height = Height_im(image);
-  m = alloc(height, 0);
+  m = caml_alloc(height, 0);
   for (i = 0; i < height; i++) {
-    value v = alloc(width, 0);
+    value v = caml_alloc(width, 0);
     caml_modify_field(m, i, v);
   }
 

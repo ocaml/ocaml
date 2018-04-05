@@ -14,6 +14,22 @@
 /*   special exception on linking described in the file LICENSE.          */
 /*                                                                        */
 /**************************************************************************/
+
+#if defined(__PIC__)
+
+#define Addrglobal(reg,glob) \
+        lgrl    reg, glob@GOTENT
+#define Loadglobal(reg,glob) \
+        lgrl    %r1, glob@GOTENT; lg reg, 0(%r1)
+#define Storeglobal(reg,glob) \
+        lgrl    %r1, glob@GOTENT; stg reg, 0(%r1)
+#define Loadglobal32(reg,glob) \
+        lgrl    %r1, glob@GOTENT; lgf reg, 0(%r1)
+#define Storeglobal32(reg,glob) \
+        lgrl    %r1, glob@GOTENT; sty reg, 0(%r1)
+
+#else
+
 #define Addrglobal(reg,glob) \
         larl    reg, glob
 #define Loadglobal(reg,glob) \
@@ -25,6 +41,7 @@
 #define Storeglobal32(reg,glob) \
         strl   reg, glob
 
+#endif
 
         .section ".text"
 
@@ -246,10 +263,10 @@ caml_start_program:
 .L106:
         lg      %r5, 0(%r15)
         lg      %r6, 8(%r15)
-        lg      %r1, 16(%r15)
+        lg      %r0, 16(%r15)
         Storeglobal(%r5, caml_bottom_of_stack)
         Storeglobal(%r6, caml_last_return_address)
-        Storeglobal(%r1, caml_gc_regs)
+        Storeglobal(%r0, caml_gc_regs)
         la      %r15, 32(%r15)
 
     /* Update allocation pointer */
@@ -318,7 +335,7 @@ caml_ml_array_bound_error:
            the frame descriptor for the call site is not correct */
         Storeglobal(%r15, caml_bottom_of_stack)
         lay     %r15, -160(%r15)    /* Reserve stack space for C call */
-        larl    %r7, caml_array_bound_error
+        Addrglobal(%r7, caml_array_bound_error)
         j       .L101
         .globl  caml_system__code_end
 caml_system__code_end:

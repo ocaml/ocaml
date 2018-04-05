@@ -28,7 +28,7 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
                          value flags)
 {
   SOCKET s = Socket_val(sock);
-  int flg = convert_flag_list(flags, msg_flag_table);
+  int flg = caml_convert_flag_list(flags, msg_flag_table);
   int ret;
   intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
@@ -37,10 +37,10 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len,
   Begin_root (buff);
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
-    enter_blocking_section();
+    caml_enter_blocking_section();
     ret = recv(s, iobuf, (int) numbytes, flg);
     if (ret == -1) err = WSAGetLastError();
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (ret == -1) {
       win32_maperr(err);
       uerror("recv", Nothing);
@@ -54,7 +54,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
                              value flags)
 {
   SOCKET s = Socket_val(sock);
-  int flg = convert_flag_list(flags, msg_flag_table);
+  int flg = caml_convert_flag_list(flags, msg_flag_table);
   int ret;
   intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
@@ -68,10 +68,10 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len,
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     addr_len = sizeof(sock_addr);
-    enter_blocking_section();
+    caml_enter_blocking_section();
     ret = recvfrom(s, iobuf, (int) numbytes, flg, &addr.s_gen, &addr_len);
     if (ret == -1) err = WSAGetLastError();
-    leave_blocking_section();
+    caml_leave_blocking_section();
     if (ret == -1) {
       win32_maperr(err);
       uerror("recvfrom", Nothing);
@@ -89,7 +89,7 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len,
                          value flags)
 {
   SOCKET s = Socket_val(sock);
-  int flg = convert_flag_list(flags, msg_flag_table);
+  int flg = caml_convert_flag_list(flags, msg_flag_table);
   int ret;
   intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
@@ -98,10 +98,10 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len,
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   ret = send(s, iobuf, (int) numbytes, flg);
   if (ret == -1) err = WSAGetLastError();
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (ret == -1) {
     win32_maperr(err);
     uerror("send", Nothing);
@@ -113,7 +113,7 @@ value unix_sendto_native(value sock, value buff, value ofs, value len,
                          value flags, value dest)
 {
   SOCKET s = Socket_val(sock);
-  int flg = convert_flag_list(flags, msg_flag_table);
+  int flg = caml_convert_flag_list(flags, msg_flag_table);
   int ret;
   intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
@@ -125,10 +125,10 @@ value unix_sendto_native(value sock, value buff, value ofs, value len,
   numbytes = Long_val(len);
   if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
   memmove (iobuf, &Byte(buff, Long_val(ofs)), numbytes);
-  enter_blocking_section();
+  caml_enter_blocking_section();
   ret = sendto(s, iobuf, (int) numbytes, flg, &addr.s_gen, addr_len);
   if (ret == -1) err = WSAGetLastError();
-  leave_blocking_section();
+  caml_leave_blocking_section();
   if (ret == -1) {
     win32_maperr(err);
     uerror("sendto", Nothing);

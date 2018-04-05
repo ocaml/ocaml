@@ -15,7 +15,10 @@
 
 BASEDIR=../..
 
+include $(BASEDIR)/../config/Makefile
+
 INCLUDES=\
+  -I $(OTOPDIR)/parsing \
   -I $(OTOPDIR)/utils \
   -I $(OTOPDIR)/typing \
   -I $(OTOPDIR)/middle_end \
@@ -39,6 +42,8 @@ all:
 	@$(MAKE) arch codegen
 	@$(MAKE) tests
 
+main.cmo: parsecmm.cmo
+
 codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
 
@@ -50,9 +55,11 @@ lexcmm.ml: lexcmm.mll
 
 MLCASES=optargs staticalloc bind_tuples is_static register_typing \
   register_typing_switch
+ARGS_optargs=-g
 ARGS_is_static=-I $(OTOPDIR)/byterun is_in_static_data.c
-MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2 \
-  static_float_array_flambda static_float_array_flambda_opaque
+MLCASES_FLAMBDA=is_static_flambda unrolling_flambda unrolling_flambda2
+MLCASES_FLAMBDA_FLOAT=static_float_array_flambda \
+                      static_float_array_flambda_opaque
 ARGS_is_static_flambda=\
   -I $(OTOPDIR)/byterun is_in_static_data.c is_static_flambda_dep.ml
 ARGS_static_float_array_flambda=\
@@ -61,7 +68,8 @@ ARGS_static_float_array_flambda_opaque=\
   -I $(OTOPDIR)/byterun is_in_static_data.c -opaque simple_float_const_opaque.ml
 
 CASES=fib tak quicksort quicksort2 soli \
-      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak
+      arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
+      catch-try catch-rec even-odd even-odd-spill pgcd
 ARGS_fib=-ccopt -DINT_INT -ccopt -DFUN=fib main.c
 ARGS_tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
 ARGS_quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
@@ -75,26 +83,32 @@ ARGS_tagged-integr=-ccopt -DINT_FLOAT -ccopt -DFUN=test main.c
 ARGS_tagged-quicksort=-ccopt -DSORT -ccopt -DFUN=quicksort main.c
 ARGS_tagged-tak=-ccopt -DUNIT_INT -ccopt -DFUN=takmain main.c
 ARGS_staticalloc=-I $(OTOPDIR)/utils config.cmx
+ARGS_catch-try=-ccopt -DINT_INT -ccopt -DFUN=catch_exit main.c
+ARGS_catch-rec=-ccopt -DINT_INT -ccopt -DFUN=catch_fact main.c
+ARGS_even-odd=-ccopt -DINT_INT -ccopt -DFUN=is_even main.c
+ARGS_even-odd-spill=-ccopt -DINT_INT -ccopt -DFUN=is_even main.c
+ARGS_pgcd=-ccopt -DINT_INT -ccopt -DFUN=pgcd_30030 main.c
 
 skips:
-	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA); do \
+	@for c in $(CASES) $(MLCASES) $(MLCASES_FLAMBDA) \
+                  $(MLCASES_FLAMBDA_FLOAT); do \
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
 one_ml:
-	@$(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+	@$(OCAMLOPT) -I $(OTOPDIR)/byterun $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	./$(NAME).exe && echo " => passed" || echo " => failed"
 
-one_ml_flambda:
-	@if $(FLAMBDA); then \
-	   $(OCAMLOPT) $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
+one_ml_cond:
+	@if $(COND); then \
+	   $(OCAMLOPT) -I $(OTOPDIR)/byterun $(ARGS_$(NAME)) -o $(NAME).exe $(NAME).ml && \
 	   ./$(NAME).exe && echo " => passed" || echo " => failed"; \
 	 else \
 	   echo " => skipped"; \
 	 fi
 
 one:
-	@$(OCAMLOPT) -o $(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O) \
+	@$(OCAMLOPT) -I $(OTOPDIR)/byterun -o $(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
@@ -117,11 +131,9 @@ SKIP=true
 endif
 
 ifeq ($(CCOMPTYPE),msvc)
-CC=set -o pipefail ; $(NATIVECC) $(CFLAGS) /Fe$(1) | tail -n +2
-CFLAGS=$(NATIVECCCOMPOPTS) -I$(OTOPDIR)/byterun
+CCOMP=set -o pipefail ; $(CC) $(CFLAGS) /Fe$(1) | tail -n +2
 else
-CC=$(NATIVECC) $(CFLAGS) -o $(1)
-CFLAGS=$(NATIVECCCOMPOPTS) -g -I$(OTOPDIR)/byterun
+CCOMP=$(CC) $(CFLAGS) -o $(1)
 endif
 tests: $(CASES:=.$(O))
 	@for c in $(CASES); do \
@@ -134,7 +146,12 @@ tests: $(CASES:=.$(O))
         done
 	@for c in $(MLCASES_FLAMBDA); do \
 	  printf " ... testing '$$c':"; \
-          $(MAKE) one_ml_flambda NAME=$$c; \
+          $(MAKE) one_ml_cond NAME=$$c COND=$(FLAMBDA); \
+        done
+	@for c in $(MLCASES_FLAMBDA_FLOAT); do \
+	  printf " ... testing '$$c':"; \
+	  $(MAKE) one_ml_cond NAME=$$c \
+                  COND='$(FLAMBDA) && $(FLAT_FLOAT_ARRAY)'; \
         done
 
 promote:

@@ -293,7 +293,7 @@ module Env = struct
       try
         Set_of_closures_origin.Map.find origin t.actively_unrolling
       with Not_found ->
-        Misc.fatal_error "Unexpected actively unrolled function";
+        Misc.fatal_error "Unexpected actively unrolled function"
     in
     let actively_unrolling =
       Set_of_closures_origin.Map.add origin (unrolling - 1) t.actively_unrolling
@@ -543,7 +543,7 @@ let prepare_to_simplify_set_of_closures ~env
           match only_for_function_decl with
           | None -> true
           | Some function_decl ->
-            Variable.Set.mem param (Variable.Set.of_list function_decl.params)
+            Variable.Set.mem param (Parameter.Set.vars function_decl.params)
         in
         if not keep then None
         else
@@ -660,7 +660,7 @@ let populate_closure_approximations
           with Not_found -> (A.value_unknown Other)
         in
         E.add env id approx)
-      env function_decl.params
+      env (Parameter.List.vars function_decl.params)
   in
   env
 

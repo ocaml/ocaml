@@ -58,9 +58,7 @@ module Function_decls : sig
       -> kind:Lambda.function_kind
       -> params:Ident.t list
       -> body:Lambda.lambda
-      -> inline:Lambda.inline_attribute
-      -> specialise:Lambda.specialise_attribute
-      -> is_a_functor:bool
+      -> attr:Lambda.function_attribute
       -> loc:Location.t
       -> t
 
@@ -72,12 +70,8 @@ module Function_decls : sig
     val inline : t -> Lambda.inline_attribute
     val specialise : t -> Lambda.specialise_attribute
     val is_a_functor : t -> bool
+    val stub : t -> bool
     val loc : t -> Location.t
-
-    (* [primitive_wrapper t] is [None] iff [t] is not a wrapper for a function
-       with default optional arguments. Otherwise it is [Some body], where
-       [body] is the body of the wrapper. *)
-    val primitive_wrapper : t -> Lambda.lambda option
 
     (* Like [all_free_idents], but for just one function. *)
     val free_idents : t -> Lambda.IdentSet.t
@@ -98,5 +92,3 @@ module Function_decls : sig
      It also contains the globals bindings of the provided environment. *)
   val closure_env_without_parameters : Env.t -> t -> Env.t
 end
-
-val stub_hack_prim_name : string

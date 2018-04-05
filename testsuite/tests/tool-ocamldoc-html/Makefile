@@ -33,10 +33,12 @@ default:
 	fi
 
 .PHONY: run
-run: *.mli
-	@for file in *.mli; do \
+run: *.mli *.ml
+# Note that we strip both .ml and .mli extensions
+	@for file in *.ml *.mli; do \
 	  printf " ... testing '$$file'"; \
 	  F="`basename $$file .mli`"; \
+	  F="`basename $$F .ml`"; \
 	  $(OCAMLDOC) $(DOCFLAGS) -colorize-code -hide-warnings -html $ \
 	              -o index $$file; \
 	  cp $$F.html $$F.result; \
@@ -44,7 +46,7 @@ run: *.mli
 	  && echo " => passed" || echo " => failed"; \
 	done;\
 # For linebreaks.mli, we also compare type_Linebreaks.html and not only
-# themain html file
+# the main html file
 	@cp type_Linebreaks.html type_Linebreaks.result;\
 	printf " ... testing 'type_Linebreak.html'";\
 	$(DIFF) type_Linebreaks.reference type_Linebreaks.result\

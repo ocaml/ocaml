@@ -34,10 +34,10 @@
 #include "caml/printexc.h"
 #include "caml/stack.h"
 #include "caml/sys.h"
-#include "caml/params.h"
+#include "caml/startup_aux.h"
 #include "caml/fiber.h"
 #ifdef WITH_SPACETIME
-#include "spacetime.h"
+#include "caml/spacetime.h"
 #endif
 #ifdef HAS_UI
 #include "caml/ui.h"
@@ -80,6 +80,9 @@ void (*caml_termination_hook)(void *) = NULL;
 extern value caml_start_program (char*);
 extern void caml_init_ieee_floats (void);
 extern void caml_init_signals (void);
+#ifdef _WIN32
+extern void caml_win32_overflow_detection (void);
+#endif
 
 #if defined(_MSC_VER) && __STDC_SECURE_LIB__ >= 200411L
 
@@ -88,16 +91,23 @@ extern void caml_install_invalid_parameter_handler();
 
 #endif
 
-void caml_main(char **argv)
+value caml_startup_common(char_os **argv, int pooling)
 {
-  char * exe_name;
-  static char proc_self_exe[256];
-  value res;
+  char_os * exe_name, * proc_self_exe;
   char tos;
 
   CAML_INIT_DOMAIN_STATE;
 
-  caml_init_startup_params();
+  /* Determine options */
+  caml_parse_ocamlrunparam();
+#ifdef DEBUG
+  caml_gc_message (-1, "### OCaml runtime: debug mode ###\n");
+#endif
+  if (caml_params->cleanup_on_exit)
+    pooling = 1;
+  if (!caml_startup_aux(pooling))
+    return Val_unit;
+
 #ifdef WITH_SPACETIME
   caml_spacetime_initialize();
 #endif
@@ -108,7 +118,8 @@ void caml_main(char **argv)
   caml_init_custom_operations();
   caml_init_gc ();
 
-  if (caml_params->backtrace_enabled_init) caml_record_backtrace(Val_int(1));
+  if (caml_params->backtrace_enabled_init)
+    caml_record_backtrace(Val_int(1));
 
   /* Capture 16-byte aligned (ceil) system_stack_high */
   Caml_state->system_stack_high =
@@ -116,26 +127,52 @@ void caml_main(char **argv)
 
   init_segments();
   caml_init_signals();
+#ifdef _WIN32
+  caml_win32_overflow_detection();
+#endif
   caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
-  if (exe_name == NULL) exe_name = "";
-  if (caml_executable_name(proc_self_exe, sizeof(proc_self_exe)) == 0)
+  if (exe_name == NULL) exe_name = _T("");
+  proc_self_exe = caml_executable_name();
+  if (proc_self_exe != NULL)
     exe_name = proc_self_exe;
   else
     exe_name = caml_search_exe_in_path(exe_name);
   caml_init_argv(exe_name, argv);
   if (sigsetjmp(caml_termination_jmpbuf.buf, 0)) {
     if (caml_termination_hook != NULL) caml_termination_hook(NULL);
-    return;
+    return Val_unit;
   }
   caml_init_main_stack();
-  res = caml_start_program(Caml_state->young_ptr);
+  return caml_start_program(Caml_state->young_ptr);
+}
+
+value caml_startup_exn(char_os **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 0);
+}
+
+void caml_startup(char_os **argv)
+{
+  value res = caml_startup_exn(argv);
   caml_maybe_print_stats(Val_unit);
   if (Is_exception_result(res))
     caml_fatal_uncaught_exception(Extract_exception(res));
 }
 
-void caml_startup(char **argv)
+void caml_main(char_os **argv)
 {
-  caml_main(argv);
+  caml_startup(argv);
+}
+
+value caml_startup_pooled_exn(char_os **argv)
+{
+  return caml_startup_common(argv, /* pooling */ 1);
+}
+
+void caml_startup_pooled(char_os **argv)
+{
+  value res = caml_startup_pooled_exn(argv);
+  if (Is_exception_result(res))
+    caml_fatal_uncaught_exception(Extract_exception(res));
 }

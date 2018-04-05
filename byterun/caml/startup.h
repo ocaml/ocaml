@@ -20,19 +20,27 @@
 
 #include "mlvalues.h"
 #include "exec.h"
-#include "params.h"
+#include "startup_aux.h"
 
-CAMLextern void caml_main(char **argv);
+CAMLextern void caml_main(char_os **argv);
 
 CAMLextern void caml_startup_code(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
            char *section_table, asize_t section_table_size,
-           char **argv);
+           int pooling,
+           char_os **argv);
+
+CAMLextern value caml_startup_code_exn(
+  code_t code, asize_t code_size,
+  char *data, asize_t data_size,
+  char *section_table, asize_t section_table_size,
+  int pooling,
+  char_os **argv);
 
 enum { FILE_NOT_FOUND = -1, BAD_BYTECODE  = -2 };
 
-extern int caml_attempt_open(const char **name, struct exec_trailer *trail,
+extern int caml_attempt_open(char_os **name, struct exec_trailer *trail,
                              int do_open_script);
 extern void caml_read_section_descriptors(int fd, struct exec_trailer *trail);
 extern int32_t caml_seek_optional_section(int fd, struct exec_trailer *trail,

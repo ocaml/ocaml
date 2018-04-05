@@ -101,6 +101,12 @@ let parse_arguments argv =
     else if s = "-linkall" then
       caml_opts := s :: !caml_opts
     else if starts_with s "-l" then
+      let s =
+        if Config.ccomp_type = "msvc" then
+          String.sub s 2 (String.length s - 2) ^ ".lib"
+        else
+          s
+      in
       c_libs := s :: !c_libs
     else if starts_with s "-L" then
      (c_Lopts := s :: !c_Lopts;
@@ -295,7 +301,7 @@ let build_libs () =
                   (Filename.basename !output_c)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt byteccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -309,7 +315,7 @@ let build_libs () =
                   (String.concat " " !native_objs)
                   (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt nativeccrpath)
+                  (make_rpath_ccopt default_rpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 
