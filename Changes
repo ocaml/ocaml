@@ -18,11 +18,11 @@ Working version
 
 ### Type system:
 
-- MPR#7717, GPR#1593: don't treat unboxed constructor size as statically known
-  (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
-
 - MPR#7611, GPR#1491: reject the use of generative functors as applicative
   (Valentin Gatien-Baron)
+
+- MPR#7717, GPR#1593: don't treat unboxed constructor size as statically known
+  (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
 
 - GPR#1469: Use the information from [@@immediate] annotations when
   computing whether a type can be [@@unboxed]
@@ -54,13 +54,16 @@ Working version
 
 ### Standard library:
 
-- GPR#1002: add a new `Seq` module defining a list-of-thunks style iterator.
-  Also add `{to,of}_seq` to several standard modules.
-  (Simon Cruanes, review by Alain Frisch and François Bobot)
+- MPR#4170, GPR#1674: add the constant `Float.pi`.
+  (Christophe Troestler, review by Damien Doligez)
 
 - MPR#7690, GPR#1528: fix the float_of_string function for hexadecimal floats
   with very large values of the exponent.
   (Olivier Andrieu)
+
+- GPR#1002: add a new `Seq` module defining a list-of-thunks style iterator.
+  Also add `{to,of}_seq` to several standard modules.
+  (Simon Cruanes, review by Alain Frisch and François Bobot)
 
 - GPR#1637: String.escaped is faster does and not allocate when called with a
   string that does not contain any characters needing to be escaped.
@@ -69,12 +72,9 @@ Working version
 - GPR#1638: add Float module.
   (Nicolás Ojeda Bär, review by Alain Frisch and Jeremy Yallop)
 
-- GPR#1674, MPR#4170: add the constant `Float.pi`.
-  (Christophe Troestler, review by Damien Doligez)
-
 - GPR#1697: Tune [List.init] tailrec threshold so that it does not stack overflow
   when compiled with the Js_of_ocaml backend.
-  (Hugo Heuzard, reviewed by ...)
+  (Hugo Heuzard, reviewed by Gabriel Scherer)
 
 ### Other libraries:
 
@@ -162,11 +162,7 @@ Working version
 
 ### Code generation and optimizations:
 
-- GPR#1370: Fix code duplication in Cmmgen
-  (Vincent Laviron, with help from Pierre Chambart,
-   reviews by Gabriel Scherer and Luc Maranget)
-
-- MPR#7630 GPR#1401: Faster compilation of large modules with Flambda.
+- MPR#7630, GPR#1401: Faster compilation of large modules with Flambda.
   (Pierre Chambart, report by Emilio Jesús Gallego Arias,
   Pierre-Marie Pédrot and Paul Steckler, review by Gabriel Scherer
   and Leo White)
@@ -174,6 +170,10 @@ Working version
 - MPR#7630, GPR#1455: Disable CSE for the initialization function
   (Pierre Chambart, report by Emilio Jesús Gallego Arias,
    review by Gabriel Scherer and Xavier Leroy)
+
+- GPR#1370: Fix code duplication in Cmmgen
+  (Vincent Laviron, with help from Pierre Chambart,
+   reviews by Gabriel Scherer and Luc Maranget)
 
 - GPR#1486: ARM 32-bit port: add support for ARMv8 in 32-bit mode,
   a.k.a. AArch32.
@@ -235,15 +235,16 @@ Working version
   structures and signatures (e.g. "include struct … include(struct … end) … end")
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
+- MPR#7687, GPR#1653: deprecate -thread option,
+  which is equivalent to -I +threads.
+  (Nicolás Ojeda Bär, report by Daniel Bünzli)
+
 - MPR#7710: `ocamldep -sort` should exit with nonzero code in case of
   cyclic dependencies
   (Xavier Leroy, report by Mantis user baileyparker)
 
 - GPR#1585: optimize output of "ocamllex -ml"
   (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
-
-- MPR#7687: deprecate -thread option, which is equivalent to -I +threads.
-  (Nicolás Ojeda Bär, report by Daniel Bünzli)
 
 - GPR#1667: add command-line options -no-propt, -no-version, -no-time,
   -no-breakpoint and -topdirs-path to ocamldebug
@@ -264,12 +265,12 @@ Working version
 - PR#7647, GPR#1384: emphasize ocaml.org website and forum in README
   (Yawar Amin, review by Gabriel Scherer)
 
-- GPR#1540: manual, decouple verbatim and toplevel style in code examples
-  (Florian Angeletti, review by Gabriel Scherer)
-
 - PR#7698, GPR#1545: improve wording in OCaml manual in several places,
   mostly in Chapter 1.  This addresses the easier changes suggested in the PR.
   (Jim Fehrle, review by Florian Angeletti and David Allsopp)
+
+- GPR#1540: manual, decouple verbatim and toplevel style in code examples
+  (Florian Angeletti, review by Gabriel Scherer)
 
 - GPR#1556: manual, add a consistency test for manual references inside
   the compiler source code.
@@ -292,6 +293,9 @@ Working version
   (Xavier Clerc, review by Damien Doligez)
 
 ### Internal/compiler-libs changes:
+
+- MPR#7738, GPR#1624: Asmlink.reset also resets lib_ccobjs/ccopts
+  (Cedric Cellier, review by Gabriel Scherer)
 
 - GPR#1488, GPR#1560: Refreshing parmatch
   (Gabriel Scherer and Thomas Refis, review by Luc Maranget)
@@ -329,14 +333,16 @@ Working version
 - GPR#1621: expect_test: make sure to not use the installed stdlib
   (Jérémie Dimino, review by Thomas Refis)
 
-- MPR#7738, GPR#1624: Asmlink.reset also resets lib_ccobjs/ccopts
-  (Cedric Cellier, review by Gabriel Scherer)
-
 - GPR#1646 : add ocamldoc test to ocamltest and
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
 ### Bug fixes
+
+- MPR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
+  Unix.getenv and Unix.environment under Windows.
+  (Nicolás Ojeda Bär, report by Alain Frisch, review by David Allsopp, Xavier
+  Leroy)
 
 - MPR#5250, GPR#1435: on Cygwin, when ocamlrun searches the path
   for a bytecode executable file, skip directories and other
@@ -371,24 +377,12 @@ Working version
 - MPR#7695, GPR#1541: Fatal error: exception Ctype.Unify(_) with field override
   (Jacques Garrigue, report by Nicolás Ojeda Bär)
 
+- MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
+  (Jacques Garrigue, report by Thomas Refis)
+
 - MPR#7711, GPR#1581: Internal typechecker error triggered by a constraint on
    self type in a class type
   (Jacques Garrigue, report and review by Florian Angeletti)
-
-- GPR#1517: More robust handling of type variables in mcomp
-  (Leo White and Thomas Refis, review by Jacques Garrigue)
-
-- PR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
-  Unix.getenv and Unix.environment under Windows.
-  (Nicolás Ojeda Bär, report by Alain Frisch, review by David Allsopp, Xavier
-  Leroy)
-
-- GPR#1550, GPR#1555: Make pattern matching warnings more robust
-  to ill-typed columns
-  (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
-
-- MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
-  (Jacques Garrigue, report by Thomas Refis)
 
 - MPR#7712, GPR#1576: assertion failure with type abbreviations
   (Thomas Refis, report by Michael O'Connor, review by Jacques Garrigue)
@@ -399,9 +393,16 @@ Working version
 - MPR#7751, GPR#1657: The toplevel prints some concrete types as abstract
   (Jacques Garrigue, report by Matej Kosik)
 
+- GPR#1517: More robust handling of type variables in mcomp
+  (Leo White and Thomas Refis, review by Jacques Garrigue)
+
 - GPR#1530, GPR#1574: testsuite, fix 'make parallel' and 'make one DIR=...'
   to work on ocamltest-based tests.
   (Runhang Li and Sébastien Hinderer, review by Gabriel Scherer)
+
+- GPR#1550, GPR#1555: Make pattern matching warnings more robust
+  to ill-typed columns
+  (Thomas Refis, with help from Gabriel Scherer and Luc Maranget)
 
 - GPR#1614: consider all bound variables when inlining, fixing a compiler
   fatal error.
