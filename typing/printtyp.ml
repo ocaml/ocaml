@@ -1506,6 +1506,11 @@ let is_unit env ty =
   | Tconstr (p, _, _) -> Path.same p Predef.path_unit
   | _ -> false
 
+let is_ref_path p =
+  match p with
+  | Pdot (Pident id, "ref", _) -> Ident.same id ident_pervasives
+  | _ -> false
+
 let unifiable env ty1 ty2 =
   let snap = Btype.snapshot () in
   let res =
@@ -1527,6 +1532,24 @@ let explanation env unif t3 t4 : (Format.formatter -> unit) option =
       Some (fun ppf ->
         fprintf ppf
           "@,@[Hint: Did you forget to wrap the expression using `fun () ->'?@]")
+  | Tconstr (p, [ty1], _), _
+    when is_ref_path p && unifiable env ty1 t4 ->
+      let non_shadowed_deref =
+        match Env.lookup_value (Lident "!") env with
+        | Path.(Pdot (Pident id, "!", _)), _ -> Ident.same id ident_pervasives
+        | _ -> false
+        | exception Not_found -> true
+      in
+      let pp_deref ppf =
+        if non_shadowed_deref then
+          Format.fprintf ppf "!"
+        else
+          Format.fprintf ppf "%s.(!)" ident_pervasives.Ident.name
+      in
+      Some (fun ppf ->
+        fprintf ppf
+          "@,@[Hint: Did you forget to use `%t' to get the content \
+           of a reference somewhere?@]" pp_deref)
   | Ttuple [], Tvar _ | Tvar _, Ttuple [] ->
       Some (fun ppf ->
         fprintf ppf "@,Self type cannot escape its class")
@@ -1653,7 +1676,7 @@ let rec trace_same_names = function
       type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
   | _ -> ()
 
-let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
+let unification_error env unif explain_mismatch tr txt1 ppf txt2 ty_expect_explanation =
   reset ();
   trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
@@ -1678,7 +1701,7 @@ let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
         txt2 (type_expansion t2) t2'
         ty_expect_explanation
         (trace false "is not compatible with type") tr
-        (explain mis);
+        (fun ppf -> if explain_mismatch then explain mis ppf);
       if env <> Env.empty
       then begin
         warn_on_missing_def env ppf t1;
@@ -1689,10 +1712,11 @@ let unification_error env unif tr txt1 ppf txt2 ty_expect_explanation =
       print_labels := true;
       raise exn
 
-let report_unification_error ppf env ?(unif=true) tr
+let report_unification_error ppf env ?(unif=true) ?(explain_mismatch=true) tr
     ?(type_expected_explanation = fun _ -> ())
     txt1 txt2 =
-  wrap_printing_env env (fun () -> unification_error env unif tr txt1 ppf txt2
+  wrap_printing_env env (fun () -> unification_error env unif explain_mismatch
+                            tr txt1 ppf txt2
                             type_expected_explanation)
     ~error:true
 ;;
