@@ -38,14 +38,14 @@ let rec combine i allocstate =
           when totalsz + sz < Config.max_young_wosize * Arch.size_addr ->
          let (newnext, newsz) =
               combine i.next (Pending_alloc(i.res.(0), totalsz + sz)) in
-            (instr_cons (Iop(Iintop_imm(Iadd, -sz))) [| reg |] i.res newnext,
+            (instr_cons_debug (Iop(Iintop_imm(Iadd, -sz))) [| reg |] i.res i.dbg newnext,
              newsz)
       | _ ->
          let (newnext, newsz) = combine i.next (Pending_alloc(i.res.(0), sz)) in
          let newnext =
            if newsz = sz then newnext
-           else instr_cons (Iop(Iintop_imm(Iadd, newsz - sz))) i.res
-                i.res newnext
+           else instr_cons_debug (Iop(Iintop_imm(Iadd, newsz - sz))) i.res
+                i.res i.dbg newnext
          in
          (instr_cons_debug (Iop(Ialloc {words = newsz; spacetime_index = 0;
                                         label_after_call_gc = None; }))

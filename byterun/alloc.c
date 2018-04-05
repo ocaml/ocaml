@@ -39,7 +39,7 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
   CAMLassert (tag != Infix_tag);
   if (wosize == 0){
     result = Atom (tag);
-  }else if (wosize <= Max_young_wosize){
+  } else if (wosize <= Max_young_wosize) {
     Alloc_small (result, wosize, tag, { caml_handle_gc_interrupt(); });
     if (tag < No_scan_tag){
       for (i = 0; i < wosize; i++) {
@@ -50,10 +50,12 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag)
         Op_val(result)[i] = init_val;
       }
     }
-
-    if (tag == Stack_tag) Stack_sp(result) = 0;
-  }else{
+    if (tag == Stack_tag)
+      caml_init_stack (result);
+  } else {
     result = caml_alloc_shr (wosize, tag);
+    if (tag == Stack_tag)
+      caml_init_stack (result);
     result = caml_check_urgent_gc(result);
   }
 
