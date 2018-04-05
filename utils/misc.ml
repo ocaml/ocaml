@@ -220,7 +220,11 @@ let find_in_path path name =
     let rec try_dir = function
       [] -> raise Not_found
     | dir::rem ->
-        if really_exists dir name then Filename.concat dir name else try_dir rem
+        let name = Filename.concat dir name in
+        if really_exists (Filename.dirname name) (Filename.basename name) then
+          name
+        else
+          try_dir rem
     in try_dir path
   end
 
