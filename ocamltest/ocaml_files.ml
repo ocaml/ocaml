@@ -68,9 +68,10 @@ let ocamlyacc ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "yacc"; Filename.mkexe "ocamlyacc"]
 
 let ocamldoc ocamlsrcdir =
-  Filename.make_path
-    [ocamlsrcdir; "ocamldoc"; "ocamldoc"]
+  Filename.make_path [ocamlsrcdir; "ocamldoc"; "ocamldoc"]
 
 let ocamldebug ocamlsrcdir =
-  Filename.make_path
-    [ocamlsrcdir; "debugger"; Filename.mkexe "ocamldebug"]
+  Filename.make_path [ocamlsrcdir; "debugger"; Filename.mkexe "ocamldebug"]
+
+let ocamlobjinfo ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "tools"; "ocamlobjinfo"]

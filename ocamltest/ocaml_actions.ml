@@ -479,6 +479,41 @@ let debug log env =
 
 let ocamldebug = Actions.make "ocamldebug" debug
 
+let objinfo log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Running ocamlobjinfo on %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_ocamlobjinfo ocamlsrcdir;
+    Ocaml_flags.ocamlobjinfo_default_flags;
+    program
+  ] in
+  let systemenv =
+    Array.append
+      dumb_term
+      (Environments.to_system_env (env_with_lib_unix ocamlsrcdir env))
+  in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:systemenv
+      ~stdout_variable:Builtin_variables.output
+      ~stderr_variable:Builtin_variables.output
+      ~append:true
+      log (env_with_lib_unix ocamlsrcdir env) commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
+
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
@@ -1043,5 +1078,6 @@ let _ =
     setup_ocamldoc_build_env;
     run_ocamldoc;
     check_ocamldoc_output;
-    ocamldebug
+    ocamldebug;
+    ocamlobjinfo
   ]
