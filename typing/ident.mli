@@ -48,7 +48,6 @@ val hide: t -> t
            up by name. *)
 
 val make_global: t -> unit
-val reset_flag: t -> unit
 val global: t -> bool
 val is_predef_exn: t -> bool
 

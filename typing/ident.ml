@@ -77,9 +77,6 @@ let hide i =
 let make_global i =
   i.flags <- i.flags lor global_flag
 
-let reset_flag i =
-  i.flags <- 0
-
 let global i =
   (i.flags land global_flag) <> 0
 
