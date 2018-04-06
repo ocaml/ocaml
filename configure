@@ -67,6 +67,7 @@ max_testsuite_dir_retries=0
 with_cplugins=false
 with_fpic=false
 flat_float_array=true
+with_flambda_invariants=false
 
 # we distinguish '' (not set) from 'true' (explicitly set by the user)
 with_instrumented_runtime=''
@@ -210,6 +211,8 @@ while : ; do
         native_compiler=false;;
     -flambda|--flambda)
         flambda=true;;
+    -with-flambda-invariants|--with-flambda-invariants)
+        with_flambda_invariants=true;;
     -with-cplugins|--with-cplugins)
         with_cplugins=true;;
     -no-cplugins|--no-cplugins)
@@ -2132,6 +2135,7 @@ if [ "$ostype" = Cygwin ]; then
   config DIFF "diff -q --strip-trailing-cr"
 fi
 config FLAMBDA "$flambda"
+config WITH_FLAMBDA_INVARIANTS "$with_flambda_invariants"
 config FORCE_SAFE_STRING "$force_safe_string"
 config DEFAULT_SAFE_STRING "$default_safe_string"
 config WINDOWS_UNICODE "0"
@@ -2251,6 +2255,11 @@ else
   fi
   if test "$flambda" = "true"; then
   inf "        using flambda middle-end . yes"
+    if test "$with_flambda_invariants" = "true"; then
+    inf "        ... with flambda invariants checks . yes"
+    else
+    inf "        ... with flambda invariants checks . no"
+    fi
   else
   inf "        using flambda middle-end . no"
   fi

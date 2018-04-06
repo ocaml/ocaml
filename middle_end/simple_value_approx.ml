@@ -69,6 +69,7 @@ and value_closure = {
 and value_set_of_closures = {
   function_decls : Flambda.function_declarations;
   bound_vars : t Var_within_closure.Map.t;
+  free_vars : Flambda.specialised_to Variable.Map.t;
   invariant_params : Variable.Set.t Variable.Map.t lazy_t;
   size : int option Variable.Map.t lazy_t;
   specialised_args : Flambda.specialised_to Variable.Map.t;
@@ -237,7 +238,7 @@ let value_closure ?closure_var ?set_of_closures_var ?set_of_closures_symbol
 
 let create_value_set_of_closures
       ~(function_decls : Flambda.function_declarations) ~bound_vars
-      ~invariant_params ~specialised_args ~freshening
+      ~free_vars ~invariant_params ~specialised_args ~freshening
       ~direct_call_surrogates =
   let size =
     lazy (
@@ -259,6 +260,7 @@ let create_value_set_of_closures
   in
   { function_decls;
     bound_vars;
+    free_vars;
     invariant_params;
     size;
     specialised_args;

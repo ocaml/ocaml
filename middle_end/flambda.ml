@@ -1011,6 +1011,11 @@ let create_function_declaration ~params ~body ~stub ~dbg
     is_a_functor;
   }
 
+let update_function_declaration fun_decl ~params ~body =
+  let free_variables = free_variables body in
+  let free_symbols = free_symbols body in
+  { fun_decl with params; body; free_variables; free_symbols }
+
 let create_function_declarations ~funs =
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_id = Set_of_closures_id.create compilation_unit in

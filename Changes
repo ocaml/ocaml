@@ -192,8 +192,15 @@ Working version
   including some API changes in bytecomp/lambda.mli
   (Pierre Chambart, review by Gabriel Scherer)
 
+- GPR#1613: ensure that set-of-closures are processed first so that other
+  entries in the let-rec symbol do not get dummy approximations
+  (Leo White and Xavier Clerc, review by Pierre Chambart)
+
 * GPR#1617: Make string/bytes distinguishable in the bytecode.
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
+
+- GPR#1686: Turn off by default flambda invariants checks.
+  (Pierre Chambart)
 
 ### Runtime system:
 
@@ -336,6 +343,9 @@ Working version
 - GPR#1646 : add ocamldoc test to ocamltest and
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
+
+- GPR#1663: refactor flambda specialise/inlining handling
+  (Leo White and Xavier Clerc, review by Pierre Chambart)
 
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)

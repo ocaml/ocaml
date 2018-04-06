@@ -150,6 +150,8 @@ val profiling : bool
 
 val flambda : bool
         (* Whether the compiler was configured for flambda *)
+val with_flambda_invariants : bool
+        (* Whether the invariants checks for flambda are enabled *)
 
 val spacetime : bool
         (* Whether the compiler was configured for Spacetime profiling *)

@@ -551,6 +551,13 @@ val create_function_declaration
   -> is_a_functor:bool
   -> function_declaration
 
+(** Create a function declaration based on another function declaration *)
+val update_function_declaration
+  : function_declaration
+  -> params:Parameter.t list
+  -> body:t
+  -> function_declaration
+
 (** Create a set of function declarations given the individual declarations. *)
 val create_function_declarations
    : funs:function_declaration Variable.Map.t

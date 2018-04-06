@@ -333,6 +333,7 @@ utils/config.ml: utils/config.mlp config/Makefile Makefile
 	    $(call SUBST,EXT_LIB) \
 	    $(call SUBST,EXT_OBJ) \
 	    $(call SUBST,FLAMBDA) \
+	    $(call SUBST,WITH_FLAMBDA_INVARIANTS) \
 	    $(call SUBST,FLEXLINK_FLAGS) \
 	    $(call SUBST_QUOTE,FLEXDLL_DIR) \
 	    $(call SUBST,HOST) \
