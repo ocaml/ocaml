@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 let s = Bytes.of_string "abcdefgh" in
 Bytes.unsafe_blit s 3 s 0 3;
