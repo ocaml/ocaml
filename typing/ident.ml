@@ -15,7 +15,7 @@
 
 open Format
 
-type t = { stamp: int; name: string; mutable flags: int }
+type t = { stamp: int; name: string; flags: int }
 
 let global_flag = 1
 let predef_exn_flag = 2
