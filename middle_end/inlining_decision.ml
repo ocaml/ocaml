@@ -538,9 +538,8 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
             Don't_try_it S.Not_inlined.Self_call
           else if not (E.inlining_allowed env closure_id_being_applied) then
             Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
-          else begin
+          else
             Try_it
-          end
         in
         match try_inlining with
         | Don't_try_it decision -> Original decision
@@ -701,22 +700,22 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
               Changed (res, D.Inlined (spec_reason, inl_reason))
             | Original inl_reason ->
               Original (D.Unchanged (spec_reason, inl_reason))
-      end
-    in
-    let res, decision =
-      match simpl with
-      | Original decision -> (original, original_r), decision
-      | Changed ((expr, r), decision) ->
-        let res =
-          if E.inlining_level env = 0
-          then expr, R.set_inlining_threshold r raw_inlining_threshold
-          else expr, R.add_inlining_threshold r inlining_threshold_diff
-        in
-        res, decision
-    in
-    E.record_decision env decision;
-    res
-  end
+        end
+      in
+      let res, decision =
+        match simpl with
+        | Original decision -> (original, original_r), decision
+        | Changed ((expr, r), decision) ->
+          let res =
+            if E.inlining_level env = 0
+            then expr, R.set_inlining_threshold r raw_inlining_threshold
+            else expr, R.add_inlining_threshold r inlining_threshold_diff
+          in
+          res, decision
+      in
+      E.record_decision env decision;
+      res
+    end
 
 (* We do not inline inside stubs, which are always inlined at their call site.
    Inlining inside the declaration of a stub could result in more code than
