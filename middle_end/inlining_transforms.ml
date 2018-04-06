@@ -99,7 +99,7 @@ let inline_by_copying_function_body ~env ~r
   assert (E.mem env lhs_of_application);
   assert (List.for_all (E.mem env) args);
   let r =
-    if function_decl.stub then r
+    if function_body.stub then r
     else R.map_benefit r B.remove_call
   in
   let freshened_params, body =
@@ -107,7 +107,7 @@ let inline_by_copying_function_body ~env ~r
       ~function_decl ~function_body
   in
   let body =
-    if function_decl.stub &&
+    if function_body.stub &&
        ((inline_requested <> Lambda.Default_inline)
         || (specialise_requested <> Lambda.Default_specialise)) then
       (* When the function inlined function is a stub, the annotation
@@ -526,11 +526,11 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
   let new_function_decl =
     Flambda.create_function_declaration
       ~params ~body
-      ~stub:function_decl.stub
-      ~dbg:function_decl.dbg
-      ~inline:function_decl.inline
-      ~specialise:function_decl.specialise
-      ~is_a_functor:function_decl.is_a_functor
+      ~stub:function_body.stub
+      ~dbg:function_body.dbg
+      ~inline:function_body.inline
+      ~specialise:function_body.specialise
+      ~is_a_functor:function_body.is_a_functor
   in
   let new_funs =
     Variable.Map.add new_fun_var new_function_decl state.new_funs

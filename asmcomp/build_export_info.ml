@@ -569,8 +569,7 @@ let build_export_info ~(backend : (module Backend_intf.S))
           (Flambda_utils.all_sets_of_closures_map program)
       in
       let export = Compilenv.approx_env () in
-      Export_id.Map.fold (fun _eid (descr:Export_info.descr)
-                           (recursive) ->
+      Export_id.Map.fold (fun _eid (descr:Export_info.descr) recursive ->
           match descr with
           | Value_closure { set_of_closures }
           | Value_set_of_closures set_of_closures ->

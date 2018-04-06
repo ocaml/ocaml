@@ -76,17 +76,17 @@ and function_declarations = {
 and function_body = {
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
-  body : Flambda.t;
-}
-
-and function_declaration = {
-  function_body : function_body option;
-  params : Parameter.t list;
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
   specialise : Lambda.specialise_attribute;
   is_a_functor : bool;
+  body : Flambda.t;
+}
+
+and function_declaration = {
+  params : Parameter.t list;
+  function_body : function_body option;
 }
 
 and value_set_of_closures = {
@@ -133,28 +133,33 @@ let print_unresolved_value ppf = function
 let print_function_declaration ppf var (f : function_declaration) =
   let param ppf p = Variable.print ppf (Parameter.var p) in
   let params ppf = List.iter (Format.fprintf ppf "@ %a" param) in
-  let stub = if f.stub then " *stub*" else "" in
-  let is_a_functor = if f.is_a_functor then " *functor*" else "" in
-  let inline =
-    match f.inline with
-    | Always_inline -> " *inline*"
-    | Never_inline -> " *never_inline*"
-    | Unroll _ -> " *unroll*"
-    | Default_inline -> ""
-  in
-  let specialise =
-    match f.specialise with
-    | Always_specialise -> " *specialise*"
-    | Never_specialise -> " *never_specialise*"
-    | Default_specialise -> ""
-  in
-  let print_body ppf _ =
-    Format.fprintf ppf "<Function Body>"
-  in
-  Format.fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2><%a>@])@]@ "
-    Variable.print var stub is_a_functor inline specialise
-    params f.params
-    print_body f.function_body
+  match f.function_body with
+  | None ->
+    Format.fprintf ppf "@[<2>(%a@ =@ fun@[<2>%a@])@]@ "
+      Variable.print var params f.params
+  | Some (b : function_body) ->
+    let stub = if b.stub then " *stub*" else "" in
+    let is_a_functor = if b.is_a_functor then " *functor*" else "" in
+    let inline =
+      match b.inline with
+      | Always_inline -> " *inline*"
+      | Never_inline -> " *never_inline*"
+      | Unroll _ -> " *unroll*"
+      | Default_inline -> ""
+    in
+    let specialise =
+      match b.specialise with
+      | Always_specialise -> " *specialise*"
+      | Never_specialise -> " *never_specialise*"
+      | Default_specialise -> ""
+    in
+    let print_body ppf _ =
+      Format.fprintf ppf "<Function Body>"
+    in
+    Format.fprintf ppf "@[<2>(%a%s%s%s%s@ =@ fun@[<2>%a@] ->@ @[<2><%a>@])@]@ "
+      Variable.print var stub is_a_functor inline specialise
+      params f.params
+      print_body b
 
 let print_function_declarations ppf (fd : function_declarations) =
   let funs ppf = Variable.Map.iter (print_function_declaration ppf) in
@@ -940,14 +945,17 @@ let function_declaration_approx ~keep_body fun_var
     if not (keep_body fun_var fun_decl) then None
     else begin
       Some { body = fun_decl.body;
+             stub = fun_decl.stub;
+             inline = fun_decl.inline;
+             dbg = fun_decl.dbg;
+             specialise = fun_decl.specialise;
+             is_a_functor = fun_decl.is_a_functor;
              free_variables = fun_decl.free_variables;
              free_symbols = fun_decl.free_symbols; }
     end
   in
   { function_body;
-    params = fun_decl.params; stub = fun_decl.stub; dbg = fun_decl.dbg;
-    inline = fun_decl.inline; specialise = fun_decl.specialise;
-    is_a_functor = fun_decl.is_a_functor; }
+    params = fun_decl.params; }
 
 let function_declarations_approx ~keep_body
   (fun_decls : Flambda.function_declarations) =
@@ -990,7 +998,7 @@ let update_function_declaration_body
       let body = f function_body.body in
       let free_variables = Flambda.free_variables body in
       let free_symbols = Flambda.free_symbols body in
-      { free_variables; free_symbols; body }
+      { function_body with free_variables; free_symbols; body; }
     in
     { function_decl with function_body = Some new_function_body }
 

@@ -153,17 +153,17 @@ and function_declarations = private {
 and function_body = private {
   free_variables : Variable.Set.t;
   free_symbols : Symbol.Set.t;
-  body : Flambda.t;
-}
-
-and function_declaration = private {
-  function_body : function_body option;
-  params : Parameter.t list;
   stub : bool;
   dbg : Debuginfo.t;
   inline : Lambda.inline_attribute;
   specialise : Lambda.specialise_attribute;
   is_a_functor : bool;
+  body : Flambda.t;
+}
+
+and function_declaration = private {
+  params : Parameter.t list;
+  function_body : function_body option;
 }
 
 
@@ -224,7 +224,7 @@ val function_declarations_approx
 val create_value_set_of_closures
    : function_decls:function_declarations
   -> bound_vars:t Var_within_closure.Map.t
-  -> free_vars: Flambda.specialised_to Variable.Map.t
+  -> free_vars:Flambda.specialised_to Variable.Map.t
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> recursive:Variable.Set.t Lazy.t
   -> specialised_args:Flambda.specialised_to Variable.Map.t

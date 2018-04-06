@@ -24,11 +24,6 @@ module T = Inlining_cost.Threshold
 module S = Inlining_stats_types
 module D = S.Decision
 
-let get_function_body (function_decl : A.function_declaration) =
-  match function_decl.function_body with
-  | None -> assert false
-  | Some function_body -> function_body
-
 type ('a, 'b) inlining_result =
   | Changed of (Flambda.t * R.t) * 'a
   | Original of 'b
@@ -63,7 +58,7 @@ let inline env r ~lhs_of_application
              The call site annotation takes precedence *)
           match (inline_requested : Lambda.inline_attribute) with
           | Always_inline | Never_inline | Unroll _ -> inline_requested
-          | Default_inline -> function_decl.inline
+          | Default_inline -> function_body.inline
         in
         match inline_annotation with
         | Always_inline -> false, true, false, env
@@ -158,7 +153,7 @@ let inline env r ~lhs_of_application
             ~new_size:body_size
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.A.is_a_functor
+            ~lifting:function_body.A.is_a_functor
             ~round:(E.round env)
             ~benefit
         in
@@ -241,7 +236,7 @@ let inline env r ~lhs_of_application
         W.create ~original body
           ~toplevel:(E.at_toplevel env)
           ~branch_depth:(E.branch_depth env)
-          ~lifting:function_decl.is_a_functor
+          ~lifting:function_body.is_a_functor
           ~round:(E.round env)
           ~benefit:(R.benefit r_inlined)
       in
@@ -267,7 +262,7 @@ let inline env r ~lhs_of_application
           W.create ~original body
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.is_a_functor
+            ~lifting:function_body.is_a_functor
             ~round:(E.round env)
             ~benefit:(R.benefit r_inlined)
         in
@@ -321,10 +316,13 @@ let specialise env r ~lhs_of_application
     | Always_specialise -> true, false
     | Never_specialise -> false, true
     | Default_specialise -> begin
-        match (function_decl.specialise : Lambda.specialise_attribute) with
-        | Always_specialise -> true, false
-        | Never_specialise -> false, true
-        | Default_specialise -> false, false
+        match function_decl.function_body with
+        | None -> false, true
+        | Some { specialise } ->
+          match (specialise : Lambda.specialise_attribute) with
+          | Always_specialise -> true, false
+          | Never_specialise -> false, true
+          | Default_specialise -> false, false
       end
   in
   let remaining_inlining_threshold : Inlining_cost.Threshold.t =
@@ -504,9 +502,19 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
   let original_r =
     R.set_approx (R.seen_direct_application r) (A.value_unknown Other)
   in
-  if function_decl.stub then begin
+  match function_decl.function_body with
+  | None ->
+      assert (function_decls.is_classic_mode);
+      (* Only in classic mode can the function code be absent *)
+      let decision =
+        S.Decision.Unchanged
+          (S.Not_specialised.Classic_mode, S.Not_inlined.Classic_mode)
+      in
+      E.record_decision env decision;
+      original, original_r
+  | Some function_body ->
+  if function_body.stub then begin
     let fun_vars = Variable.Map.keys function_decls.funs in
-    let function_body = get_function_body function_decl in
     let body, r =
       Inlining_transforms.inline_by_copying_function_body ~env
         ~r ~fun_vars ~lhs_of_application
@@ -526,9 +534,6 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
         ~closure_id:closure_id_being_applied ~dbg:dbg
     in
     let simpl =
-      match function_decl.function_body with
-      | None -> Original S.Not_inlined.Classic_mode
-      | Some function_body ->
         let self_call =
           E.inside_set_of_closures_declaration
             function_decls.set_of_closures_origin env
@@ -598,7 +603,6 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
     E.record_decision env decision;
     res
   end else begin
-    let function_body = get_function_body function_decl in
     let env = E.unset_never_inline_inside_closures env in
     let env =
       E.note_entering_call env
