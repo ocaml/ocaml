@@ -2014,7 +2014,8 @@ let report_error env ppf = function
       Printtyp.type_scheme self
 
 let report_error env ppf err =
-  Printtyp.wrap_printing_env env (fun () -> report_error env ppf err)
+  Printtyp.wrap_printing_env ~error:true
+    env (fun () -> report_error env ppf err)
 
 let () =
   Location.register_error_of_exn

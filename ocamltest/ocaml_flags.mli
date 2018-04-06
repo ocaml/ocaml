@@ -24,3 +24,7 @@ val c_includes : string -> string
 val runtime_flags : string -> Ocaml_backends.t -> bool -> string
 
 val toplevel_default_flags : string
+
+val ocamldebug_default_flags : string -> string
+
+val ocamlobjinfo_default_flags : string

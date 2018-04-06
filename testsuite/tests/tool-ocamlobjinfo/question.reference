@@ -1,0 +1,10 @@
+File question.cmxs
+Name: Question
+CRC of implementation: 00000000000000000000000000000000
+Globals defined:
+	Question
+Interfaces imported:
+	00000000000000000000000000000000	Stdlib
+	00000000000000000000000000000000	Question
+	00000000000000000000000000000000	CamlinternalFormatBasics
+Implementations imported:

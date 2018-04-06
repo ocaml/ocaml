@@ -45,7 +45,7 @@ let out fd txt =
 let refl =
   Filename.concat Filename.current_dir_name "reflector.exe"
 
-let test_createprocess ocamlrunparam =
+let test_createprocess systemenv =
   let f_out =
     Unix.(openfile "./tmpout.txt" [O_WRONLY;O_TRUNC;O_CREAT;O_CLOEXEC] 0o600) in
   let f_err =
@@ -56,7 +56,7 @@ let test_createprocess ocamlrunparam =
     Unix.create_process_env
        refl
        [| refl; "-i2o"; "-i2e"; "-o"; "123"; "-e"; "456"; "-i2o"; "-v"; "XVAR" |]
-       (Array.append [| "XVAR=xvar" |] ocamlrunparam)
+       (Array.append [| "XVAR=xvar" |] systemenv)
        p_exit f_out f_err in
   out p_entrance "aaaa\n";
   out p_entrance "bbbb\n";
@@ -109,11 +109,11 @@ let test_open_process_out () =
   if status <> Unix.WEXITED 0 then
     out Unix.stdout "!!! reflector exited with an error\n"
 
-let test_open_process_full ocamlrunparam =
+let test_open_process_full systemenv =
   let ((o, i, e) as res) =
     Unix.open_process_full
       (refl ^ " -o 123 -i2o -e 456 -i2e -v XVAR")
-      (Array.append [|"XVAR=xvar"|] ocamlrunparam) in
+      (Array.append [|"XVAR=xvar"|] systemenv) in
   output_string i "aa\nbbbb\n"; close_out i;
   for _i = 1 to 3 do 
     out Unix.stdout (input_line o ^ "\n")

@@ -23,6 +23,10 @@ let srcdir () =
 let stdlib ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "stdlib"]
 
+let libunix ocamlsrcdir =
+  let subdir = if Sys.os_type="Win32" then "win32unix" else "unix" in
+  Filename.make_path [ocamlsrcdir; "otherlibs"; subdir]
+
 let toplevel ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "toplevel"]
 
@@ -34,3 +38,6 @@ let runtime_library backend ocamlsrcdir =
     | Ocaml_backends.Native -> "asmrun"
     | Ocaml_backends.Bytecode -> "byterun" in
   Filename.make_path [ocamlsrcdir; backend_lib_dir]
+
+let tools ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "tools"]

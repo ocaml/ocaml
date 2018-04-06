@@ -72,8 +72,12 @@ EOF
   export PATH=$PREFIX/bin:$PATH
   $MAKE world.opt
   $MAKE ocamlnat
-  (cd testsuite && $MAKE all)
-  (cd testsuite && $MAKE USE_RUNTIME="d" all)
+  cd testsuite
+  echo Running the testsuite with the normal runtime
+  $MAKE all
+  echo Running the testsuite with the debug runtime
+  $MAKE USE_RUNTIME="d" OCAMLTESTDIR=$(pwd)/_ocamltestd TESTLOG=_logd all
+  cd ..
   $MAKE install
   $MAKE manual-pregen
   # check_all_arches checks tries to compile all backends in place,

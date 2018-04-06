@@ -1,0 +1,20 @@
+File "w59.ml", line 46, characters 2-43:
+Warning 59: A potential assignment to a non-mutable value was detected 
+in this source file.  Such assignments may generate incorrect code 
+when using Flambda.
+File "w59.ml", line 47, characters 2-43:
+Warning 59: A potential assignment to a non-mutable value was detected 
+in this source file.  Such assignments may generate incorrect code 
+when using Flambda.
+File "w59.ml", line 48, characters 2-43:
+Warning 59: A potential assignment to a non-mutable value was detected 
+in this source file.  Such assignments may generate incorrect code 
+when using Flambda.
+File "w59.ml", line 49, characters 2-43:
+Warning 59: A potential assignment to a non-mutable value was detected 
+in this source file.  Such assignments may generate incorrect code 
+when using Flambda.
+File "w59.ml", line 56, characters 2-7:
+Warning 59: A potential assignment to a non-mutable value was detected 
+in this source file.  Such assignments may generate incorrect code 
+when using Flambda.

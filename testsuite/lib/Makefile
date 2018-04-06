@@ -25,7 +25,7 @@ clean: defaultclean
 include ../makefiles/Makefile.common
 
 .PHONY: compile-targets
-compile-targets: testing.cmi testing.cma
+compile-targets: testing.cmi testing.cma lib.cmo
 	@if $(BYTECODE_ONLY); then : ; else \
 	  $(MAKE) testing.cmxa; \
 	fi

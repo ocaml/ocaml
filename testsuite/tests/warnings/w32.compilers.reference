@@ -1,0 +1,30 @@
+File "w32.ml", line 40, characters 24-25:
+Warning 39: unused rec flag.
+File "w32.ml", line 43, characters 24-25:
+Warning 39: unused rec flag.
+File "w32.ml", line 20, characters 4-5:
+Warning 32: unused value h.
+File "w32.ml", line 26, characters 4-5:
+Warning 32: unused value j.
+File "w32.ml", line 28, characters 4-5:
+Warning 32: unused value k.
+File "w32.ml", line 41, characters 4-5:
+Warning 32: unused value r.
+File "w32.ml", line 44, characters 20-21:
+Warning 32: unused value t.
+File "w32.ml", line 46, characters 24-25:
+Warning 32: unused value u.
+File "w32.ml", line 47, characters 4-5:
+Warning 32: unused value v.
+File "w32.ml", line 55, characters 22-23:
+Warning 32: unused value g.
+File "w32.ml", line 56, characters 22-23:
+Warning 32: unused value h.
+File "w32.ml", line 59, characters 22-23:
+Warning 32: unused value k.
+File "w32.ml", line 52, characters 0-174:
+Warning 60: unused module M.
+File "w32.ml", line 63, characters 18-29:
+Warning 32: unused value x.
+File "w32.ml", line 65, characters 18-29:
+Warning 32: unused value x.

@@ -78,7 +78,6 @@ let for_primitive (prim : Lambda.primitive) =
       No_effects, Has_coeffects  (* That old chestnut: [Obj.truncate]. *)
   | Pisint
   | Pisout
-  | Pbittest
   | Pbintofint _
   | Pintofbint _
   | Pcvtbint _

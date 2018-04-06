@@ -1312,8 +1312,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let ty_elt = newvar() in
       unify_pat_types
         loc !env (instance_def (Predef.type_array ty_elt)) expected_ty;
-      let spl_ann = List.map (fun p -> (p,newvar())) spl in
-      map_fold_cont (fun (p,_) -> type_pat p ty_elt) spl_ann (fun pl ->
+      map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
         rp k {
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
@@ -5297,7 +5296,7 @@ let report_error env ppf = function
   | Empty_pattern -> assert false
 
 let report_error env ppf err =
-  wrap_printing_env env (fun () -> report_error env ppf err)
+  wrap_printing_env ~error:true env (fun () -> report_error env ppf err)
 
 let () =
   Location.register_error_of_exn
