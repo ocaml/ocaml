@@ -2348,18 +2348,6 @@ and transl_prim_2 env p arg1 arg2 dbg =
                 unboxed_float_array_ref arr idx dbg))))
       end
 
-  (* Operations on bitvects *)
-  | Pbittest ->
-      bind "index" (untag_int(transl env arg2) dbg) (fun idx ->
-        tag_int(
-          Cop(Cand, [Cop(Clsr, [Cop(Cload (Byte_unsigned, Mutable),
-                                    [add_int (transl env arg1)
-                                      (Cop(Clsr, [idx; Cconst_int 3], dbg))
-                                      dbg],
-                                    dbg);
-                                Cop(Cand, [idx; Cconst_int 7], dbg)], dbg);
-                     Cconst_int 1], dbg)) dbg)
-
   (* Boxed integers *)
   | Paddbint bi ->
       box_int dbg bi (Cop(Caddi,

@@ -1,3 +1,11 @@
+(* TEST
+
+flags = "-w A"
+
+* bytecode
+
+*)
+
 (* Values *)
 
 module X : sig

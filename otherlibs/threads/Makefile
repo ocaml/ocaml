@@ -16,6 +16,8 @@
 # FIXME reduce redundancy by including ../Makefile
 
 include ../../config/Makefile
+include ../../Makefile.common
+
 CAMLRUN ?= ../../boot/ocamlrun
 CAMLYACC ?= ../../boot/ocamlyacc
 
@@ -109,20 +111,19 @@ clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
 	rm -f stdlib.mli marshal.mli unix.mli
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-
 CMIFILES=thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi
 
 install:
 	if test -f dllvmthreads.so; then \
-	  cp dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
+	  $(INSTALL_PROG) dllvmthreads.so "$(INSTALL_STUBLIBDIR)"; \
 	fi
 	mkdir -p "$(INSTALL_LIBDIR)/vmthreads"
-	cp libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
+	$(INSTALL_DATA) libvmthreads.a "$(INSTALL_LIBDIR)/vmthreads"
 	cd "$(INSTALL_LIBDIR)/vmthreads"; $(RANLIB) libvmthreads.a
-	cp $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
-	   threads.cma stdlib.cma unix.cma "$(INSTALL_LIBDIR)/vmthreads"
+	$(INSTALL_DATA) \
+	  $(CMIFILES) $(CMIFILES:.cmi=.mli) $(CMIFILES:.cmi=.cmti) \
+	  threads.cma stdlib.cma unix.cma \
+	  "$(INSTALL_LIBDIR)/vmthreads"
 
 installopt:
 

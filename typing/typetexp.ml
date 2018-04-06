@@ -907,7 +907,7 @@ let report_error env ppf = function
   | Present_has_no_type l ->
       fprintf ppf "The present constructor %s has no type" l
   | Constructor_mismatch (ty, ty') ->
-      wrap_printing_env env (fun ()  ->
+      wrap_printing_env ~error:true env (fun ()  ->
         Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>%s %a@ %s@ %a@]"
           "This variant type contains a constructor"
@@ -941,7 +941,7 @@ let report_error env ppf = function
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %a" longident s
   | Method_mismatch (l, ty, ty') ->
-      wrap_printing_env env (fun ()  ->
+      wrap_printing_env ~error:true env (fun ()  ->
         Printtyp.reset_and_mark_loops_list [ty; ty'];
         fprintf ppf "@[<hov>Method '%s' has type %a,@ which should be %a@]"
           l Printtyp.type_expr ty Printtyp.type_expr ty')

@@ -106,11 +106,9 @@ let eval_path path =
 
 (* since 4.00, "topdirs.cmi" is not in the same directory as the standard
   library, so we load it beforehand as it cannot be found in the search path. *)
-let () =
-  let compiler_libs =
-    Filename.concat Config.standard_library "compiler-libs" in
+let init () =
   let topdirs =
-    Filename.concat compiler_libs "topdirs.cmi" in
+    Filename.concat !Parameters.topdirs_path "topdirs.cmi" in
   ignore (Env.read_signature "Topdirs" topdirs)
 
 let match_printer_type desc typename =

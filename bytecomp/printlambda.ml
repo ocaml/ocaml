@@ -262,7 +262,6 @@ let primitive ppf = function
      fprintf ppf "sys.constant_%s" const_name
   | Pisint -> fprintf ppf "isint"
   | Pisout -> fprintf ppf "isout"
-  | Pbittest -> fprintf ppf "testbit"
   | Pbintofint bi -> print_boxed_integer "of_int" ppf bi
   | Pintofbint bi -> print_boxed_integer "to_int" ppf bi
   | Pcvtbint (bi1, bi2) -> print_boxed_integer_conversion ppf bi1 bi2
@@ -411,7 +410,6 @@ let name_of_primitive = function
   | Pctconst _ -> "Pctconst"
   | Pisint -> "Pisint"
   | Pisout -> "Pisout"
-  | Pbittest -> "Pbittest"
   | Pbintofint _ -> "Pbintofint"
   | Pintofbint _ -> "Pintofbint"
   | Pcvtbint _ -> "Pcvtbint"

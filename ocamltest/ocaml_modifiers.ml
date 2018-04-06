@@ -59,6 +59,12 @@ let make_library_modifier library directory =
   Append (Ocaml_variables.caml_ld_library_path, (wrap directory));
 ]
 
+let make_module_modifier unit_name directory =
+[
+  Append (Ocaml_variables.directories, (wrap directory));
+  Append (Ocaml_variables.binary_modules, (wrap unit_name));
+]
+
 let compiler_subdir subdir =
   Filename.make_path (Ocamltest_config.ocamlsrcdir :: subdir)
 
@@ -69,6 +75,9 @@ let config =
 
 let testing = make_library_modifier
   "testing" (compiler_subdir ["testsuite"; "lib"])
+
+let tool_ocaml_lib = make_module_modifier
+  "lib" (compiler_subdir ["testsuite"; "lib"])
 
 let unixlibdir = if Sys.os_type="Win32" then "win32unix" else "unix"
 
@@ -110,4 +119,5 @@ let _ =
   register_modifiers "latex" latex;
   register_modifiers "html" html;
   register_modifiers "man" man;
+  register_modifiers "tool-ocaml-lib" tool_ocaml_lib;
   ()
