@@ -12,8 +12,13 @@ TRANSF=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
-WITH_TRANSF= ocamldoc.tex top.tex intf-c.tex flambda.tex spacetime.tex \
+CAMLLATEX= $(OCAMLRUN) ../../tools/caml-tex2 -caml "TERM=norepeat $(OCAML)" \
+-n 80 -v false
+
+WITH_TRANSF= top.tex intf-c.tex flambda.tex spacetime.tex \
   afl-fuzz.tex lexyacc.tex debugger.tex
+
+WITH_CAMLEXAMPLE = ocamldoc.tex
 
 etex-files: $(FILES)
 
@@ -36,6 +41,16 @@ $(WITH_TRANSF):%.tex:%.etex
 	&& mv $*.transf_error.tex $*.transf_gen.tex \
 	&& $(TEXQUOTE) < $*.transf_gen.tex > $*.texquote_error.tex \
 	&& mv $*.texquote_error.tex $*.tex \
+	|| printf "Failure when generating %s\n" $*.tex
+
+
+$(WITH_CAMLEXAMPLE):%.tex:%.etex
+	@$(CAMLLATEX) -o $*.caml_tex_error.tex $*.etex \
+	&& mv $*.caml_tex_error.tex $*.gen.tex \
+	&& $(TRANSF) < $*.gen.tex > $*.transf_error.tex \
+	&& mv $*.transf_error.tex $*.gen.tex\
+	&& $(TEXQUOTE) < $*.gen.tex  > $*.texquote_error.tex\
+	&& mv $*.texquote_error.tex $*.tex\
 	|| printf "Failure when generating %s\n" $*.tex
 
 warnings-help.etex: ../warnings-help.etex
