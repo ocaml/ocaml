@@ -772,6 +772,14 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       expected_exit_status in
     Printf.fprintf log "%s\n%!" what;
     let toplevel_name = toplevel#name ocamlsrcdir in
+    let ocaml_script_as_argument =
+      match
+        Environments.lookup_as_bool
+          Ocaml_variables.ocaml_script_as_argument env
+      with
+      | None -> false 
+      | Some b -> b
+    in
     let commandline =
     [
       toplevel_name;
@@ -783,14 +791,22 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       flags env;
       libraries toplevel#backend env;
       binary_modules toplevel#backend env;
+      if ocaml_script_as_argument then testfile else "";
     ] in
     let exit_status =
-      Actions_helpers.run_cmd
+      if ocaml_script_as_argument
+      then Actions_helpers.run_cmd
+        ~environment:dumb_term
+        ~stdout_variable:compiler_output_variable
+        ~stderr_variable:compiler_output_variable
+        log env commandline
+      else Actions_helpers.run_cmd
         ~environment:dumb_term
         ~stdin_variable:Builtin_variables.test_file
         ~stdout_variable:compiler_output_variable
         ~stderr_variable:compiler_output_variable
-        log env commandline in
+        log env commandline
+    in
     if exit_status=expected_exit_status
     then (Result.pass, env)
     else begin

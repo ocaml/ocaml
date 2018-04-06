@@ -168,10 +168,12 @@ let ocamldoc_reference =
   Variables.make ( "ocamldoc_reference",
                    "Where to find expected ocamldoc output")
 
+let ocaml_script_as_argument =
+  Variables.make ( "ocaml_script_as_argument",
+    "Whether the ocaml script should be passed as argument or on stdin")
 
 let plugins =
   Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
-
 
 let _ = List.iter register_variable
   [
@@ -214,5 +216,6 @@ let _ = List.iter register_variable
     ocamldoc_exit_status;
     ocamldebug_flags;
     ocamldebug_script;
+    ocaml_script_as_argument;
     plugins
   ]

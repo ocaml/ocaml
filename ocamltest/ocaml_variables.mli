@@ -91,4 +91,6 @@ val ocamldoc_exit_status : Variables.t
 val ocamldoc_output : Variables.t
 val ocamldoc_reference : Variables.t
 
+val ocaml_script_as_argument : Variables.t
+
 val plugins: Variables.t
