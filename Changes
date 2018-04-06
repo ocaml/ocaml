@@ -344,6 +344,9 @@ Working version
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
+- GPR#1663: refactor flambda specialise/inlining handling
+  (Leo White and Xavier Clerc, review by Pierre Chambart)
+
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)
 

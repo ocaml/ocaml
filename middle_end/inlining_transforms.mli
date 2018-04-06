@@ -97,6 +97,7 @@ val inline_by_copying_function_declaration
   -> args_approxs:Simple_value_approx.t list
   -> invariant_params:Variable.Set.t Variable.Map.t lazy_t
   -> specialised_args:Flambda.specialised_to Variable.Map.t
+  -> free_vars:Flambda.specialised_to Variable.Map.t
   -> direct_call_surrogates:Closure_id.t Closure_id.Map.t
   -> dbg:Debuginfo.t
   -> simplify:Inlining_decision_intf.simplify

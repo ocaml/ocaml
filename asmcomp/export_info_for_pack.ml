@@ -82,6 +82,7 @@ let import_set_of_closures units pack
     bound_vars =
       Var_within_closure.Map.map (import_approx_for_pack units pack)
         set_of_closures.bound_vars;
+    free_vars = set_of_closures.free_vars;
     results =
       Closure_id.Map.map (import_approx_for_pack units pack)
         set_of_closures.results;

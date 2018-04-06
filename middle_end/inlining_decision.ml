@@ -398,6 +398,7 @@ let specialise env r ~lhs_of_application
           ~args ~args_approxs
           ~invariant_params:value_set_of_closures.invariant_params
           ~specialised_args:value_set_of_closures.specialised_args
+          ~free_vars:value_set_of_closures.free_vars
           ~direct_call_surrogates:value_set_of_closures.direct_call_surrogates
           ~dbg ~simplify ~inline_requested
       in

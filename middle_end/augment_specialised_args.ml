@@ -618,14 +618,8 @@ module Make (T : S) = struct
         function_decl.params @ new_params
       in
       let rewritten_function_decl =
-        Flambda.create_function_declaration
-          ~params:all_params
-          ~body:function_decl.body
-          ~stub:function_decl.stub
-          ~dbg:function_decl.dbg
-          ~inline:function_decl.inline
-          ~specialise:function_decl.specialise
-          ~is_a_functor:function_decl.is_a_functor
+        Flambda.update_function_declaration function_decl
+          ~params:all_params ~body:function_decl.body
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then
