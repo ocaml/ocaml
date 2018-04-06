@@ -201,7 +201,7 @@ case $configure in
   unix)
     confoptions="$confoptions -with-debug-runtime"
     if $flambda; then
-      confoptions="$confoptions -flambda"
+      confoptions="$confoptions -flambda -with-flambda-invariants"
     fi
     eval "./configure -prefix '$instdir' $confoptions"
   ;;

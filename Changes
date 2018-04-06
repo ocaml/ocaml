@@ -195,6 +195,9 @@ Working version
 * GPR#1617: Make string/bytes distinguishable in the bytecode.
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
 
+- GPR#1686: Turn off by default flambda invariants checks.
+  (Pierre Chambart)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
