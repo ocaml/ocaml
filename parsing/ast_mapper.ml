@@ -66,6 +66,7 @@ type mapper = {
   typ: mapper -> core_type -> core_type;
   type_declaration: mapper -> type_declaration -> type_declaration;
   type_extension: mapper -> type_extension -> type_extension;
+  type_exception: mapper -> type_exception -> type_exception;
   type_kind: mapper -> type_kind -> type_kind;
   value_binding: mapper -> value_binding -> value_binding;
   value_description: mapper -> value_description -> value_description;
@@ -161,6 +162,13 @@ module T = struct
       ~params:(List.map (map_fst (sub.typ sub)) ptyext_params)
       ~priv:ptyext_private
       ~attrs:(sub.attributes sub ptyext_attributes)
+
+  let map_type_exception sub
+        {ptyexn_constructor;
+         ptyexn_attributes} =
+    Te.mk_exception
+      (sub.extension_constructor sub ptyexn_constructor)
+      ~attrs:(sub.attributes sub ptyexn_attributes)
 
   let map_extension_constructor_kind sub = function
       Pext_decl(ctl, cto) ->
@@ -258,7 +266,7 @@ module MT = struct
     | Psig_value vd -> value ~loc (sub.value_description sub vd)
     | Psig_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Psig_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Psig_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Psig_exception ed -> exception_ ~loc (sub.type_exception sub ed)
     | Psig_module x -> module_ ~loc (sub.module_declaration sub x)
     | Psig_recmodule l ->
         rec_module ~loc (List.map (sub.module_declaration sub) l)
@@ -306,7 +314,7 @@ module M = struct
     | Pstr_primitive vd -> primitive ~loc (sub.value_description sub vd)
     | Pstr_type (rf, l) -> type_ ~loc rf (List.map (sub.type_declaration sub) l)
     | Pstr_typext te -> type_extension ~loc (sub.type_extension sub te)
-    | Pstr_exception ed -> exception_ ~loc (sub.extension_constructor sub ed)
+    | Pstr_exception ed -> exception_ ~loc (sub.type_exception sub ed)
     | Pstr_module x -> module_ ~loc (sub.module_binding sub x)
     | Pstr_recmodule l -> rec_module ~loc (List.map (sub.module_binding sub) l)
     | Pstr_modtype x -> modtype ~loc (sub.module_type_declaration sub x)
@@ -528,6 +536,7 @@ let default_mapper =
     type_kind = T.map_type_kind;
     typ = T.map;
     type_extension = T.map_type_extension;
+    type_exception = T.map_type_exception;
     extension_constructor = T.map_extension_constructor;
     value_description =
       (fun this {pval_name; pval_type; pval_prim; pval_loc;

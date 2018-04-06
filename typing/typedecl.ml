@@ -1646,7 +1646,18 @@ let transl_exception env sext =
   | None -> ()
   end;
   let newenv = Env.add_extension ~check:true ext.ext_id ext.ext_type env in
-    ext, newenv
+  ext, newenv
+
+let transl_type_exception env t =
+  let contructor, newenv =
+    Builtin_attributes.warning_scope t.ptyexn_attributes
+      (fun () ->
+         transl_exception env t.ptyexn_constructor
+      )
+  in
+  {tyexn_constructor = contructor;
+   tyexn_attributes = t.ptyexn_attributes}, newenv
+
 
 type native_repr_attribute =
   | Native_repr_attr_absent
