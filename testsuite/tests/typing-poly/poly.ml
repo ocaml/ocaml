@@ -914,7 +914,7 @@ type t = A | B
 Line _, characters 0-41:
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-(`AnyExtraTag, `AnyExtraTag)
+(`<some other tag>, `<some other tag>)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
 Line _, characters 0-29:
 Warning 8: this pattern-matching is not exhaustive.
