@@ -121,6 +121,10 @@ Working version
   simpler IT blocks instead
   (Xavier Leroy, review by Mark Shinwell)
 
+- GPR#1613: ensure that set-of-closures are processed first so that other
+  entries in the let-rec symbol do not get dummy approximations
+  (Leo White and Xavier Clerc, review by Pierre Chambart)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
