@@ -471,7 +471,7 @@ let rec rewrite_direct_call ~specialised_args ~funs ~direct_call_surrogates
 let rewrite_function ~lhs_of_application ~closure_id_being_applied
       ~direct_call_surrogates ~specialised_args ~free_vars ~funs
       ~state fun_var =
-  let function_decl : Flambda.function_declaration =
+  let function_decl : A.function_declaration =
     Variable.Map.find fun_var funs
   in
   let function_body =
@@ -499,7 +499,7 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
            add_free_var ~free_vars ~state ~free_var:var
          else
            state)
-      function_decl.free_variables state
+      function_body.free_variables state
   in
   let state_ref = ref state in
   let body =
@@ -517,13 +517,19 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
                  expr
            end
          | _ -> expr)
-      function_body
+      function_body.body
   in
   let body =
     Flambda_utils.toplevel_substitution state.old_inside_to_new_inside body
   in
   let new_function_decl =
-    Flambda.update_function_declaration function_decl ~params ~body
+    Flambda.create_function_declaration
+      ~params ~body
+      ~stub:function_body.stub
+      ~dbg:function_body.dbg
+      ~inline:function_body.inline
+      ~specialise:function_body.specialise
+      ~is_a_functor:function_body.is_a_functor
   in
   let new_funs =
     Variable.Map.add new_fun_var new_function_decl state.new_funs
