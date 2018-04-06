@@ -192,6 +192,10 @@ Working version
   including some API changes in bytecomp/lambda.mli
   (Pierre Chambart, review by Gabriel Scherer)
 
+- GPR#1613: ensure that set-of-closures are processed first so that other
+  entries in the let-rec symbol do not get dummy approximations
+  (Leo White and Xavier Clerc, review by Pierre Chambart)
+
 * GPR#1617: Make string/bytes distinguishable in the bytecode.
   (Hugo Heuzard, reviewed by Nicolás Ojeda Bär)
 
