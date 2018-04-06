@@ -101,17 +101,13 @@ let trim s =
   else s
 
 let escaped s =
-  let rec needs_escape i =
-    if i >= length s then false else
+  let rec escape_if_needed s n i =
+    if i >= n then s else
       match unsafe_get s i with
-      | '\"' | '\\' | '\n' | '\t' | '\r' | '\b' -> true
-      | ' ' .. '~' -> needs_escape (i+1)
-      | _ -> true
+      | '\"' | '\\' | '\000'..'\031' | '\127'.. '\255' -> bts (B.escaped (bos s))
+      | _ -> escape_if_needed s n (i+1)
   in
-  if needs_escape 0 then
-    bts (B.escaped (bos s))
-  else
-    s
+  escape_if_needed s (length s) 0
 
 (* duplicated in bytes.ml *)
 let rec index_rec s lim i c =
@@ -224,3 +220,12 @@ let capitalize s =
   B.capitalize (bos s) |> bts
 let uncapitalize s =
   B.uncapitalize (bos s) |> bts
+
+(** {6 Iterators} *)
+
+let to_seq s = bos s |> B.to_seq
+
+let to_seqi s = bos s |> B.to_seqi
+
+let of_seq g = B.of_seq g |> bts
+

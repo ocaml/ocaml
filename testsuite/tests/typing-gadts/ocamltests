@@ -1,3 +1,4 @@
+ambiguity.ml
 didier.ml
 dynamic_frisch.ml
 nested_equations.ml
@@ -38,7 +39,8 @@ pr7391.ml
 pr7397.ml
 pr7421.ml
 pr7432.ml
-pr7518.ml
+pr7618.ml
+pr7747.ml
 term-conv.ml
 test.ml
 unify_mb.ml

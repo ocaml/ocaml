@@ -1,0 +1,4 @@
+File "deprecated_module.ml", line 16, characters 8-11:
+Warning 3: deprecated: module M
+File "deprecated_module.ml", line 17, characters 8-9:
+Warning 3: deprecated: module M

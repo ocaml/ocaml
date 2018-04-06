@@ -26,3 +26,14 @@ let ocamlrun_ocaml ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocaml
 
 let ocamlrun_expect_test ocamlsrcdir =
   ocamlrun ocamlsrcdir Ocaml_files.expect_test
+
+let ocamlrun_ocamllex ocamlsrcdir = ocamlrun ocamlsrcdir Ocaml_files.ocamllex
+
+let ocamlrun_ocamldoc ocamlsrcdir =
+  ocamlrun ocamlsrcdir Ocaml_files.ocamldoc
+
+let ocamlrun_ocamldebug ocamlsrcdir =
+  ocamlrun ocamlsrcdir Ocaml_files.ocamldebug
+
+let ocamlrun_ocamlobjinfo ocamlsrcdir =
+  ocamlrun ocamlsrcdir Ocaml_files.ocamlobjinfo

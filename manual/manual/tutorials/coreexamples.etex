@@ -289,6 +289,94 @@ let rec insert x btree =
                 else Node(y, left, insert x right);;
 \end{caml_example}
 
+
+\subsection{Record and variant disambiguation}
+( This subsection can be skipped on the first reading )
+
+Astute readers may have wondered what happens when two or more record
+fields or constructors share the same name
+
+\begin{caml_example*}{toplevel}
+type first_record  = { x:int; y:int; z:int }
+type middle_record = { x:int; z:int }
+type last_record   = { x:int };;
+type first_variant = A | B | C
+type last_variant  = A;;
+\end{caml_example*}
+
+The answer is that when confronted with multiple options, OCaml tries to
+use locally available information to disambiguate between the various fields
+and constructors. First, if the type of the record or variant is known,
+OCaml can pick unambiguously the corresponding field or constructor.
+For instance:
+
+\begin{caml_example}{toplevel}
+let look_at_x_then_z (r:first_record) =
+  let x = r.x in
+  x + r.z;;
+let permute (x:first_variant) = match x with
+  | A -> (B:first_variant)
+  | B -> A
+  | C -> C;;
+type wrapped = First of first_record
+let f (First r) = r, r.x;;
+\end{caml_example}
+
+In the first example, "(r:first_record)" is an explicit annotation
+telling OCaml that the type of "r" is "first_record". With this
+annotation, Ocaml knows that "r.x" refers to the "x" field of the first
+record type. Similarly, the type annotation in the second example makes
+it clear to OCaml that the constructors "A", "B" and "C" come from the
+first variant type. Contrarily, in the last example, OCaml has inferred
+by itself that the type of "r" can only be "first_record" and there are
+no needs for explicit type annotations.
+
+Those explicit type annotations can in fact be used anywhere.
+Most of the time they are unnecessary, but they are useful to guide
+disambiguation, to debug unexpected type errors, or combined with some
+of the more advanced features of OCaml described in later chapters.
+
+Secondly, for records, OCaml can also deduce the right record type by
+looking at the whole set of fields used in a expression or pattern:
+\begin{caml_example}{toplevel}
+let project_and_rotate {x;y; _ } = { x= - y; y = x ; z = 0} ;;
+\end{caml_example}
+Since the fields "x" and "y" can only appear simultaneously in the first
+record type, OCaml infers that the type of "project_and_rotate" is
+"first_record -> first_record".
+
+In last resort, if there is not enough information to disambiguate between
+different fields or constructors, Ocaml picks the last defined type
+amongst all locally valid choices:
+
+\begin{caml_example}{toplevel}
+let look_at_xz {x;z} = x;;
+\end{caml_example}
+
+Here, OCaml has inferred that the possible choices for the type of
+"{x;z}" are "first_record" and "middle_record", since the type
+"last_record" has no field "z". Ocaml then picks the type "middle_record"
+as the last defined type between the two possibilities.
+
+Beware that this last resort disambiguation is local: once Ocaml has
+chosen a disambiguation, it sticks to this choice, even if it leads to
+an ulterior type error:
+
+\begin{caml_example}{toplevel}[error]
+let look_at_x_then_y r =
+  let x = r.x in (* Ocaml deduces [r: last_record] *)
+  x + r.y;;
+let is_a_or_b x = match x with
+  | A -> true (* OCaml infers [x: last_variant] *)
+  | B -> true;;
+\end{caml_example}
+
+Moreover, being the last defined type is a quite unstable position that
+may change surreptitiously after adding or moving around a type
+definition, or after opening a module (see chapter \ref{c:moduleexamples}).
+Consequently, adding explicit type annotations to guide disambiguation is
+more robust than relying on the last defined type disambiguation.
+
 \section{Imperative features}
 \pdfsection{Imperative features}
 

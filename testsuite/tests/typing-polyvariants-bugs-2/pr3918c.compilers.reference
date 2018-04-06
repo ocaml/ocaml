@@ -1,0 +1,4 @@
+File "pr3918c.ml", line 24, characters 11-12:
+Error: This expression has type 'b Pr3918b.vlist = 'a
+       but an expression was expected of type 'b Pr3918b.vlist
+       The type variable 'a occurs inside 'a

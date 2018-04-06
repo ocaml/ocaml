@@ -18,8 +18,8 @@
 type label = Cmm.label
 
 type integer_comparison =
-    Isigned of Cmm.comparison
-  | Iunsigned of Cmm.comparison
+    Isigned of Cmm.integer_comparison
+  | Iunsigned of Cmm.integer_comparison
 
 type integer_operation =
     Iadd | Isub | Imul | Imulh | Idiv | Imod
@@ -28,12 +28,14 @@ type integer_operation =
   | Icheckbound of { label_after_error : label option;
         spacetime_index : int; }
 
+type float_comparison = Cmm.float_comparison
+
 type test =
     Itruetest
   | Ifalsetest
   | Iinttest of integer_comparison
   | Iinttest_imm of integer_comparison * int
-  | Ifloattest of Cmm.comparison * bool
+  | Ifloattest of float_comparison
   | Ioddtest
   | Ieventest
 
@@ -96,7 +98,7 @@ type fundecl =
   { fun_name: string;
     fun_args: Reg.t array;
     fun_body: instruction;
-    fun_fast: bool;
+    fun_codegen_options : Cmm.codegen_option list;
     fun_dbg : Debuginfo.t;
     fun_spacetime_shape : spacetime_shape option;
   }

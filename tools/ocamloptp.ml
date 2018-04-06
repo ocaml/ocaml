@@ -146,6 +146,8 @@ module Options = Main_args.Make_optcomp_options (struct
 
   let _linscan = option "-linscan"
   let _nopervasives = option "-nopervasives"
+  let _dno_unique_ids = option "-dno-unique_ids"
+  let _dunique_ids = option "-dunique_ids"
   let _dsource = option "-dsource"
   let _dparsetree = option "-dparsetree"
   let _dtypedtree = option "-dtypedtree"
@@ -155,6 +157,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dclambda = option "-dclambda"
   let _drawflambda = option "-drawflambda"
   let _dflambda = option "-dflambda"
+  let _dflambda_invariants = option "-dflambda-invariants"
   let _dflambda_no_invariants = option "-dflambda-no-invariants"
   let _dflambda_let stamp = option_with_int "-dflambda-let" stamp
   let _dflambda_verbose = option "-dflambda-verbose"

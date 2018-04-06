@@ -18,24 +18,44 @@
 open Ocamltest_stdlib
 open Actions
 
+let reason_with_fallback env fallback =
+  match Environments.lookup Builtin_variables.reason env with
+  | None -> fallback
+  | Some reason -> reason
+
 let pass = make
   "pass"
   (fun _log env ->
-    let result =
-      Result.pass_with_reason "The pass action always succeeds." in
+    let reason = reason_with_fallback env "the pass action always succeeds" in
+    let result = Result.pass_with_reason reason in
     (result, env))
 
 let skip = make
   "skip"
   (fun _log env ->
-    let result = Result.skip_with_reason "The skip action always skips." in
+    let reason = reason_with_fallback env "the skip action always skips" in
+    let result = Result.skip_with_reason reason in
     (result, env))
 
 let fail = make
   "fail"
   (fun _log env ->
-    let result = Result.fail_with_reason "The fail action always fails." in
+    let reason = reason_with_fallback env "the fail action always fails" in
+    let result = Result.fail_with_reason reason in
     (result, env))
+
+let cd = make
+  "cd"
+  (fun _log env ->
+    let cwd = Environments.safe_lookup Builtin_variables.cwd env in
+    begin
+      try
+        Sys.chdir cwd; (Result.pass, env)
+      with _ ->
+        let reason = "Could not chidir to \"" ^ cwd ^ "\"" in
+        let result = Result.fail_with_reason reason in
+        (result, env)
+    end)    
 
 let dumpenv = make
   "dumpenv"
@@ -56,7 +76,7 @@ let libwin32unix = make
 
 let windows_OS = "Windows_NT"
 
-let get_OS () = try Sys.getenv "OS" with Not_found -> ""
+let get_OS () = Sys.safe_getenv "OS"
 
 let windows = make
   "windows"
@@ -83,6 +103,24 @@ let not_bsd = make
   (Actions_helpers.pass_or_skip (Ocamltest_config.system <> bsd_system)
     "not on a BSD system"
     "on a BSD system")
+
+let arch32 = make
+  "arch32"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 32)
+    "32-bit architecture"
+    "non-32-bit architecture")
+
+let arch64 = make
+  "arch64"
+  (Actions_helpers.pass_or_skip (Sys.word_size = 64)
+    "64-bit architecture"
+    "non-64-bit architecture")
+
+let has_symlink = make
+  "has_symlink"
+  (Actions_helpers.pass_or_skip (Sys.has_symlink () )
+    "symlinks available"
+    "symlinks not available")
 
 let setup_build_env = make
   "setup-build-env"
@@ -122,6 +160,7 @@ let _ =
     pass;
     skip;
     fail;
+    cd;
     dumpenv;
     libunix;
     libwin32unix;
@@ -129,6 +168,9 @@ let _ =
     not_windows;
     bsd;
     not_bsd;
+    arch32;
+    arch64;
+    has_symlink;
     setup_build_env;
     run;
     script;

@@ -1,3 +1,13 @@
+(* TEST
+
+include systhreads
+
+* libunix (* Broken on Windows (missing join?), needs to be fixed *)
+** bytecode
+** native
+
+*)
+
 open Printf
 
 (* Regression test for PR#5325: simultaneous read and write on socket

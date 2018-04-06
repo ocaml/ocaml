@@ -75,7 +75,6 @@ exception AsInt
 let const_as_int = function
   | Const_base(Const_int i) -> i
   | Const_base(Const_char c) -> Char.code c
-  | Const_pointer i -> i
   | _ -> raise AsInt
 
 let is_immed i = immed_min <= i && i <= immed_max
@@ -168,8 +167,10 @@ let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then
-    debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
+  if Filename.is_relative path then begin
+    let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
+    debug_dirs := StringSet.add cwd !debug_dirs;
+  end;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -185,12 +186,12 @@ let init () =
 (* Emission of one instruction *)
 
 let emit_comp = function
-| Ceq -> out opEQ    | Cneq -> out opNEQ
+| Ceq -> out opEQ    | Cne -> out opNEQ
 | Clt -> out opLTINT | Cle -> out opLEINT
 | Cgt -> out opGTINT | Cge -> out opGEINT
 
 and emit_branch_comp = function
-| Ceq -> out opBEQ    | Cneq -> out opBNEQ
+| Ceq -> out opBEQ    | Cne -> out opBNEQ
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
@@ -236,10 +237,6 @@ let emit_instr = function
           else (out opCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opCONSTINT; out_int (Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opCONST0 + i)
-          else (out opCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opATOM0 else (out opATOM; out_int t)
       | _ ->
@@ -262,7 +259,8 @@ let emit_instr = function
   | Kgetvectitem -> out opGETVECTITEM
   | Ksetvectitem -> out opSETVECTITEM
   | Kgetstringchar -> out opGETSTRINGCHAR
-  | Ksetstringchar -> out opSETSTRINGCHAR
+  | Kgetbyteschar -> out opGETBYTESCHAR
+  | Ksetbyteschar -> out opSETBYTESCHAR
   | Kbranch lbl -> out opBRANCH; out_label lbl
   | Kbranchif lbl -> out opBRANCHIF; out_label lbl
   | Kbranchifnot lbl -> out opBRANCHIFNOT; out_label lbl
@@ -304,6 +302,11 @@ let emit_instr = function
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 
+let remerge_events ev1 = function
+  | Kevent ev2 :: c ->
+    Kevent (Bytegen.merge_events ev1 ev2) :: c
+  | c -> Kevent ev1 :: c
+
 let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
@@ -316,7 +319,7 @@ let rec emit = function
         emit rem
   | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
       when is_immed_const k ->
-        emit_branch_comp (negate_comparison c) ;
+        emit_branch_comp (negate_integer_comparison c) ;
         out_const k ;
         out_label lbl ;
         emit rem
@@ -362,23 +365,19 @@ let rec emit = function
           else (out opPUSHCONSTINT; out_int i)
       | Const_base(Const_char c) ->
           out opPUSHCONSTINT; out_int(Char.code c)
-      | Const_pointer i ->
-          if i >= 0 && i <= 3
-          then out (opPUSHCONST0 + i)
-          else (out opPUSHCONSTINT; out_int i)
       | Const_block(t, []) ->
           if t = 0 then out opPUSHATOM0 else (out opPUSHATOM; out_int t)
       | _ ->
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;
       emit c
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
-      emit (Kpush :: instr1 :: instr2 :: ev :: c)
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+      emit (Kpush :: instr1 :: instr2 :: remerge_events ev c)
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
     c ->
-      emit (Kpush :: instr :: ev :: c)
+      emit (Kpush :: instr :: remerge_events ev c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)

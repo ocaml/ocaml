@@ -174,6 +174,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _dflambda_verbose () =
     set dump_flambda ();
     set dump_flambda_verbose ()
+  let _dflambda_invariants = set flambda_invariant_checks
   let _dflambda_no_invariants = clear flambda_invariant_checks
   let _labels = clear classic
   let _alias_deps = clear transparent_modules
@@ -210,6 +211,8 @@ module Options = Main_args.Make_opttop_options (struct
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings
 
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree

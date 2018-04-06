@@ -49,6 +49,8 @@ module type Common_options = sig
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
 
+  val _dno_unique_ids : unit -> unit
+  val _dunique_ids : unit -> unit
   val _dsource : unit -> unit
   val _dparsetree : unit -> unit
   val _dtypedtree : unit -> unit
@@ -171,6 +173,7 @@ module type Optcommon_options = sig
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _drawflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
   val _dflambda_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit

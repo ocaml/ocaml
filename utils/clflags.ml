@@ -92,6 +92,7 @@ and for_package = ref (None: string option) (* -for-pack *)
 and error_size = ref 500                (* -error-size *)
 and float_const_prop = ref true         (* -no-float-const-prop *)
 and transparent_modules = ref false     (* -trans-mod *)
+let unique_ids = ref true
 let dump_source = ref false             (* -dsource *)
 let dump_parsetree = ref false          (* -dparsetree *)
 and dump_typedtree = ref false          (* -dtypedtree *)
@@ -134,7 +135,8 @@ let native_code = ref false             (* set to true under ocamlopt *)
 let force_slash = ref false             (* for ocamldep *)
 let clambda_checks = ref false          (* -clambda-checks *)
 
-let flambda_invariant_checks = ref true (* -flambda-invariants *)
+let flambda_invariant_checks =
+  ref Config.with_flambda_invariants    (* -flambda-(no-)invariants *)
 
 let dont_write_files = ref false        (* set to true under ocamldoc *)
 

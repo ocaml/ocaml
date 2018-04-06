@@ -260,7 +260,7 @@ let output_automata ctx auto inline =
 
 (* Output the entries *)
 
-let output_init ctx pref e =
+let output_init ctx pref e init_moves =
   if e.auto_mem_size > 0 then
     pr ctx "%slexbuf.Lexing.lex_mem <- Array.make %d (-1);\n"
       pref e.auto_mem_size;
@@ -269,7 +269,8 @@ let output_init ctx pref e =
   pr ctx "%slet _len = lexbuf.Lexing.lex_buffer_len in\n" pref;
   pr ctx "%slet _buf = lexbuf.Lexing.lex_buffer in\n" pref;
   pr ctx "%slet _last_action = -1 in\n" pref;
-  pr ctx "%slexbuf.Lexing.lex_start_pos <- _curr;\n" pref
+  pr ctx "%slexbuf.Lexing.lex_start_pos <- _curr;\n" pref;
+  output_memory_actions pref ctx.oc init_moves
 
 let output_rules ic ctx pref tr e =
   pr ctx "%sbegin\n" pref;
@@ -294,17 +295,16 @@ let output_rules ic ctx pref tr e =
 let output_entry ic ctx tr e =
   let init_num, init_moves = e.auto_initial_state in
   pr ctx "%s %alexbuf =\n" e.auto_name output_args e.auto_args;
-  output_memory_actions "  " ctx.oc init_moves;
 
   if ctx.has_refill then begin
     pr ctx "  let k lexbuf __ocaml_lex_result =\n";
     output_rules ic ctx "    " tr e;
     pr ctx "  in\n";
-    output_init ctx "  " e;
+    output_init ctx "  " e init_moves;
     ctx.goto_state ctx "  " init_num
   end else begin
     pr ctx "  let __ocaml_lex_result =\n";
-    output_init ctx "    " e;
+    output_init ctx "    " e init_moves;
     ctx.goto_state ctx "    " init_num;
     pr ctx "  in\n";
     output_rules ic ctx "  " tr e

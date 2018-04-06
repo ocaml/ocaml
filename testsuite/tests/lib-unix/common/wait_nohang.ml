@@ -1,3 +1,7 @@
+(* TEST
+include unix
+*)
+
 let () =
   let fd = Unix.openfile "plop" [O_CREAT; O_WRONLY] 0o666 in
   let pid =

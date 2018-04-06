@@ -56,11 +56,11 @@ EOF
   case $XARCH in
   x64)
     ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime $CONFIG_ARG
+      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG
     ;;
   i386)
     ./configure --prefix $PREFIX -with-debug-runtime \
-      -with-instrumented-runtime $CONFIG_ARG \
+      -with-instrumented-runtime -with-flambda-invariants $CONFIG_ARG \
       -host i686-pc-linux-gnu
     ;;
   *)
@@ -72,8 +72,12 @@ EOF
   export PATH=$PREFIX/bin:$PATH
   $MAKE world.opt
   $MAKE ocamlnat
-  (cd testsuite && $MAKE all)
-  [ $XARCH =  "i386" ] ||  (cd testsuite && $MAKE USE_RUNTIME="d" all)
+  cd testsuite
+  echo Running the testsuite with the normal runtime
+  $MAKE all
+  echo Running the testsuite with the debug runtime
+  $MAKE USE_RUNTIME="d" OCAMLTESTDIR=$(pwd)/_ocamltestd TESTLOG=_logd all
+  cd ..
   $MAKE install
   $MAKE manual-pregen
   # check_all_arches checks tries to compile all backends in place,

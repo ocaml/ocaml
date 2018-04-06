@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* Producer-consumer with events and multiple producers *)
 
 open Event

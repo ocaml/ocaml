@@ -31,6 +31,7 @@ type-equation:
 type-representation:
           '=' ['|'] constr-decl { '|' constr-decl }
         | '=' record-decl
+        | '=' '|'
 ;
 type-params:
           type-param

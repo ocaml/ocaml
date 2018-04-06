@@ -22,13 +22,36 @@
   should be similar. Is there a way to enforce this?
 *)
 
+open Ocamltest_stdlib
+
 open Variables (* Should not be necessary with a ppx *)
 
 let all_modules = make ("all_modules",
   "All the modules to compile and link")
+  
+let binary_modules = make ("binary_modules",
+  "Additional binary modules to link")
 
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
+
+let caml_ld_library_path_name = "CAML_LD_LIBRARY_PATH"
+
+let export_caml_ld_library_path value =
+  let current_value = Sys.safe_getenv caml_ld_library_path_name in
+  let local_value =
+    (String.concat Filename.path_sep (String.words value)) in
+  let new_value =
+    if local_value="" then current_value else
+    if current_value="" then local_value else
+    String.concat Filename.path_sep [local_value; current_value] in
+  Printf.sprintf "%s=%s" caml_ld_library_path_name new_value
+
+let caml_ld_library_path =
+  make_with_exporter
+    export_caml_ld_library_path
+    ("ld_library_path",
+      "List of paths to lookup for loading dynamic libraries")
 
 let compare_programs = make ("compare_programs",
   "Set to \"false\" to disable program comparison")
@@ -51,6 +74,12 @@ let compiler_output = make ("compiler_output",
 let compiler_output2 = make ("compiler_output2",
   "Where to log output of native compilers")
 
+let compiler_stdin = make ("compiler_stdin",
+  "standard input of compilers")
+
+let compile_only = make ("compile_only",
+  "Compile only (do not link)")
+
 let ocamlc_flags = make ("ocamlc_flags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
 
@@ -72,11 +101,17 @@ let module_ = make ("module",
 let modules = make ("modules",
   "Other modules of the test")
 
+let ocamllex_flags = make ("ocamllex_flags",
+  "Flags passed to ocamllex")
+
 let ocamlopt_flags = make ("ocamlopt_flags",
   "Flags passed to ocamlopt.byte and ocamlopt.opt")
 
 let ocamlopt_default_flags = make ("ocamlopt_default_flags",
   "Flags passed by default to ocamlopt.byte and ocamlopt.opt")
+
+let ocamlyacc_flags = make ("ocamlyacc_flags",
+  "Flags passed to ocamlyacc")
 
 let ocaml_exit_status = make ("ocaml_exit_status",
   "Expected exit status of ocaml")
@@ -96,16 +131,56 @@ let ocamlc_opt_exit_status = make ("ocamlc_opt_exit_status",
 let ocamlopt_opt_exit_status = make ("ocamlopt_opt_exit_status",
   "Expected exit status of ocamlopt.opt")
 
+let export_ocamlrunparam value =
+  Printf.sprintf "%s=%s" "OCAMLRUNPARAM" value
+
+let ocamlrunparam =
+  make_with_exporter
+    export_ocamlrunparam
+    ("ocamlrunparam",
+      "Equivalent of OCAMLRUNPARAM")
+
 let ocamlsrcdir = make ("ocamlsrcdir",
   "Where OCaml sources are")
+
+let ocamldebug_flags = make ("ocamldebug_flags",
+  "Flags for ocamldebug")
+
+let ocamldebug_script = make ("ocamldebug_script",
+  "Where ocamldebug should read its commands")
 
 let os_type = make ("os_type",
   "The OS we are running on")
 
+let ocamldoc_flags = Variables.make ("ocamldoc_flags",
+  "ocamldoc flags")
+
+let ocamldoc_backend = Variables.make ("ocamldoc_backend",
+  "ocamldoc backend (html, latex, man, ... )")
+
+let ocamldoc_exit_status =
+  Variables.make ( "ocamldoc_exit_status", "expected ocamldoc exit status")
+
+let ocamldoc_output =
+  Variables.make ( "ocamldoc_output", "Where to log ocamldoc output")
+
+let ocamldoc_reference =
+  Variables.make ( "ocamldoc_reference",
+                   "Where to find expected ocamldoc output")
+
+let ocaml_script_as_argument =
+  Variables.make ( "ocaml_script_as_argument",
+    "Whether the ocaml script should be passed as argument or on stdin")
+
+let plugins =
+  Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
+
 let _ = List.iter register_variable
   [
     all_modules;
+    binary_modules;
     c_preprocessor;
+    caml_ld_library_path;
     compare_programs;
     compiler_directory_suffix;
     compiler_reference;
@@ -113,6 +188,8 @@ let _ = List.iter register_variable
     compiler_reference_suffix;
     compiler_output;
     compiler_output2;
+    compiler_stdin;
+    compile_only;
     directories;
     flags;
     libraries;
@@ -128,5 +205,17 @@ let _ = List.iter register_variable
     ocamlnat_exit_status;
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
+    ocamlrunparam;
     os_type;
+    ocamllex_flags;
+    ocamlyacc_flags;
+    ocamldoc_flags;
+    ocamldoc_backend;
+    ocamldoc_output;
+    ocamldoc_reference;
+    ocamldoc_exit_status;
+    ocamldebug_flags;
+    ocamldebug_script;
+    ocaml_script_as_argument;
+    plugins
   ]

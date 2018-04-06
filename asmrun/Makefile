@@ -14,6 +14,7 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
@@ -26,8 +27,6 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 # should be computed. It includes even the files that won't actually be
 # compiled on the platform where make depend is run
 sources := $(LINKEDFILES)
-
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
 
 ifeq "$(UNIX_OR_WIN32)" "win32"
 LN = cp
@@ -90,28 +89,30 @@ IOBJS=$(COBJS:.$(O)=.i.$(O)) $(ASMOBJS)
 POBJS=$(COBJS:.$(O)=.p.$(O)) $(ASMOBJS:.$(O)=.p.$(O))
 PICOBJS=$(COBJS:.$(O)=.pic.$(O)) $(ASMOBJS:.$(O)=.pic.$(O))
 
-TARGETS = libasmrun.$(A)
+TARGETS_A = libasmrun.$(A)
+TARGETS_SO=
 
 ifeq "$(RUNTIMED)" "true"
-TARGETS += libasmrund.$(A)
+TARGETS_A += libasmrund.$(A)
 endif
 
 ifeq "$(RUNTIMEI)" "true"
-TARGETS += libasmruni.$(A)
+TARGETS_A += libasmruni.$(A)
 endif
 
 ifeq "$(PROFILING)" "true"
-TARGETS += libasmrunp.$(A)
+TARGETS_A += libasmrunp.$(A)
 endif
 
 ifeq "$(UNIX_OR_WIN32)" "unix"
 ifeq "$(SUPPORTS_SHARED_LIBRARIES)" "true"
-TARGETS += libasmrun_pic.$(A) libasmrun_shared.$(SO)
+TARGETS_A += libasmrun_pic.$(A)
+TARGETS_SO += libasmrun_shared.$(SO)
 endif
 endif
 
 .PHONY: all
-all: $(TARGETS)
+all: $(TARGETS_A) $(TARGETS_SO)
 
 libasmrun.$(A): $(OBJS)
 	$(call MKLIB,$@, $^)
@@ -133,7 +134,10 @@ libasmrun_shared.$(SO): $(PICOBJS)
 
 .PHONY: install
 install:
-	cp $(TARGETS) "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) $(TARGETS_A) "$(INSTALL_LIBDIR)"
+	if test -n "$(TARGETS_SO)"; then \
+	  $(INSTALL_PROG) $(TARGETS_SO) "$(INSTALL_LIBDIR)"; \
+	fi
 
 $(LINKEDFILES): %.c: ../byterun/%.c
 	$(LN) $< $@

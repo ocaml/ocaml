@@ -172,7 +172,6 @@ let simplify_const (const : Flambda.const) =
   match const with
   | Int i -> A.value_int i
   | Char c -> A.value_char c
-  | Const_pointer i -> A.value_constptr i
 
 let approx_for_allocated_const (const : Allocated_const.t) =
   match const with

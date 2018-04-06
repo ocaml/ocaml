@@ -21,13 +21,6 @@ Line _, characters 31-34:
 Error: This pattern matches values of type [? `B ]
        but a pattern was expected which matches values of type [ `A ]
        The second variant type does not allow tag(s) `B
-|}, Principal{|
-Line _, characters 31-34:
-  let f x = ignore (match x with #ab -> 1); ignore (x : [`A]);;
-                                 ^^^
-Error: This pattern matches values of type [? `B ]
-       but a pattern was expected which matches values of type [ `A ]
-       Types for tag `B are incompatible
 |}];;
 let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
 [%%expect{|
@@ -37,13 +30,6 @@ Line _, characters 34-36:
 Error: This pattern matches values of type [? `B ]
        but a pattern was expected which matches values of type [ `A ]
        The second variant type does not allow tag(s) `B
-|}, Principal{|
-Line _, characters 34-36:
-  let f x = ignore (match x with `A|`B -> 1); ignore (x : [`A]);;
-                                    ^^
-Error: This pattern matches values of type [? `B ]
-       but a pattern was expected which matches values of type [ `A ]
-       Types for tag `B are incompatible
 |}];;
 
 let f (x : [< `A | `B]) = match x with `A | `B | `C -> 0;; (* warn *)

@@ -1,3 +1,11 @@
+(* TEST
+   modules = "is_in_static_data.c simple_float_const_opaque.ml"
+   flags = "-opaque"
+   * flambda
+   ** flat-float-array
+   *** native
+*)
+
 external is_in_static_data : 'a -> bool = "caml_is_in_static_data"
 
 let a = [|0.; 1.|]

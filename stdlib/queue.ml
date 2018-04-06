@@ -130,3 +130,20 @@ let transfer q1 q2 =
       last.next <- q1.first;
       q2.last <- q1.last;
       clear q1
+
+(** {6 Iterators} *)
+
+let to_seq q =
+  let rec aux c () = match c with
+    | Nil -> Seq.Nil
+    | Cons { content=x; next; } -> Seq.Cons (x, aux next)
+  in
+  aux q.first
+
+let add_seq q i = Seq.iter (fun x -> push x q) i
+
+let of_seq g =
+  let q = create() in
+  add_seq q g;
+  q
+

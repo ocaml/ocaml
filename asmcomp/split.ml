@@ -221,7 +221,7 @@ let fundecl f =
   { fun_name = f.fun_name;
     fun_args = new_args;
     fun_body = new_body;
-    fun_fast = f.fun_fast;
+    fun_codegen_options = f.fun_codegen_options;
     fun_dbg  = f.fun_dbg;
     fun_spacetime_shape = f.fun_spacetime_shape;
   }

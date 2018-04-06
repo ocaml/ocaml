@@ -1,3 +1,8 @@
+(* TEST
+include unix
+stderr = "/dev/null"
+*)
+
 let cat file =
   let fd = Unix.openfile file [Unix.O_RDONLY] 0 in
   let buf = Bytes.create 1024 in

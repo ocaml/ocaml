@@ -26,6 +26,7 @@ type t =
   | Grammar
   | Binary_interface
   | Backend_specific of Ocaml_backends.t * backend_specific
+  | Text (* used by ocamldoc for text only documentation *)
 
 let string_of_backend_specific = function
   | Object -> "object"
@@ -43,6 +44,7 @@ let string_of_filetype = function
   | Backend_specific (backend, filetype) ->
     ((Ocaml_backends.string_of_backend backend) ^ " " ^
       (string_of_backend_specific filetype))
+  | Text -> "text"
 
 let extension_of_filetype = function
   | Implementation -> "ml"
@@ -61,6 +63,7 @@ let extension_of_filetype = function
       | (Ocaml_backends.Bytecode, Library) -> "cma"
       | (Ocaml_backends.Bytecode, Program) -> "byte"
     end
+  | Text -> "txt"
 
 let filetype_of_extension = function
   | "ml" -> Implementation
@@ -76,6 +79,7 @@ let filetype_of_extension = function
   | "cmo" -> Backend_specific (Ocaml_backends.Bytecode, Object)
   | "cma" -> Backend_specific (Ocaml_backends.Bytecode, Library)
   | "byte" -> Backend_specific (Ocaml_backends.Bytecode, Program)
+  | "txt" -> Text
   | _ -> raise Not_found
 
 let split_filename name =

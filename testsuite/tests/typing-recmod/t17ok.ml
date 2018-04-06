@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 (* A synthetic example of bootstrapped data structure
    (suggested by J-C Filliatre) *)
 

@@ -72,16 +72,17 @@ val ge_component
 
 val size_machtype: machtype -> int
 
-type comparison =
-    Ceq
-  | Cne
-  | Clt
-  | Cle
-  | Cgt
-  | Cge
+type integer_comparison = Lambda.integer_comparison =
+  | Ceq | Cne | Clt | Cgt | Cle | Cge
 
-val negate_comparison: comparison -> comparison
-val swap_comparison: comparison -> comparison
+val negate_integer_comparison: integer_comparison -> integer_comparison
+val swap_integer_comparison: integer_comparison -> integer_comparison
+
+type float_comparison = Lambda.float_comparison =
+  | CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
+
+val negate_float_comparison: float_comparison -> float_comparison
+val swap_float_comparison: float_comparison -> float_comparison
 
 type label = int
 val new_label: unit -> label
@@ -113,14 +114,14 @@ and operation =
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
-  | Ccmpi of comparison
+  | Ccmpi of integer_comparison
   | Caddv (* pointer addition that produces a [Val] (well-formed Caml value) *)
   | Cadda (* pointer addition that produces a [Addr] (derived heap pointer) *)
-  | Ccmpa of comparison
+  | Ccmpa of integer_comparison
   | Cnegf | Cabsf
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
-  | Ccmpf of comparison
+  | Ccmpf of float_comparison
   | Craise of raise_kind
   | Ccheckbound
 
@@ -133,8 +134,6 @@ and expression =
   | Cconst_natint of nativeint
   | Cconst_float of float
   | Cconst_symbol of string
-  | Cconst_pointer of int
-  | Cconst_natpointer of nativeint
   | Cblockheader of nativeint * Debuginfo.t
   | Cvar of Ident.t
   | Clet of Ident.t * expression * expression
@@ -149,11 +148,15 @@ and expression =
   | Cexit of int * expression list
   | Ctrywith of expression * Ident.t * expression
 
+type codegen_option =
+  | Reduce_code_size
+  | No_CSE
+
 type fundecl =
   { fun_name: string;
     fun_args: (Ident.t * machtype) list;
     fun_body: expression;
-    fun_fast: bool;
+    fun_codegen_options : codegen_option list;
     fun_dbg : Debuginfo.t;
   }
 

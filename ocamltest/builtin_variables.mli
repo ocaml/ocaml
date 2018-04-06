@@ -19,9 +19,11 @@
 
 val arguments : Variables.t
 
-val files : Variables.t
+val cwd : Variables.t
 
-val ld_library_path : Variables.t
+val exit_status : Variables.t
+
+val files : Variables.t
 
 val ocamltest_response : Variables.t
 
@@ -34,7 +36,12 @@ val program2 : Variables.t
 
 val promote : Variables.t
 
+val reason : Variables.t
+
 val reference : Variables.t
+
+val skip_header_lines : Variables.t
+val skip_header_bytes : Variables.t
 
 val script : Variables.t
 

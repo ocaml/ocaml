@@ -320,7 +320,7 @@ let params_are_constrained =
   loop
 ;;
 
-let merge_constraint initial_env loc sg constr =
+let merge_constraint initial_env remove_aliases loc sg constr =
   let lid =
     match constr with
     | Pwith_type (lid, _) | Pwith_module (lid, _)
@@ -359,7 +359,8 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
@@ -399,7 +400,9 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_module (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
-        let md'' = {md' with md_type = Mtype.remove_aliases env md'.md_type} in
+        let mty = md'.md_type in
+        let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
+        let md'' = { md' with md_type = mty } in
         let newmd = Mtype.strengthen_decl ~aliasable:false env md'' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         (Pident id, lid, Twith_module (path, lid')),
@@ -407,7 +410,8 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
-        let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
+        let aliasable = not (Env.is_functor_arg path env) in
+        let newmd = Mtype.strengthen_decl ~aliasable env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
@@ -703,6 +707,15 @@ let simplify_signature sg =
   let (sg, _) = aux sg in
   sg
 
+let has_remove_aliases_attribute attr =
+  let remove_aliases =
+    Attr_helper.get_no_payload_attribute
+      ["remove_aliases"; "ocaml.remove_aliases"] attr
+  in
+  match remove_aliases with
+  | None -> false
+  | Some _ -> true
+
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
@@ -762,10 +775,12 @@ and transl_modtype_aux env smty =
   | Pmty_with(sbody, constraints) ->
       let body = transl_modtype env sbody in
       let init_sg = extract_sig env sbody.pmty_loc body.mty_type in
+      let remove_aliases = has_remove_aliases_attribute smty.pmty_attributes in
       let (rev_tcstrs, final_sg) =
         List.fold_left
           (fun (rev_tcstrs,sg) sdecl ->
-            let (tcstr, sg) = merge_constraint env smty.pmty_loc sg sdecl
+            let (tcstr, sg) =
+              merge_constraint env remove_aliases smty.pmty_loc sg sdecl
             in
             (tcstr :: rev_tcstrs, sg)
         )
@@ -1263,10 +1278,11 @@ let package_subtype env p1 nl1 tl1 p2 nl2 tl2 =
 
 let () = Ctype.package_subtype := package_subtype
 
-let wrap_constraint env arg mty explicit =
+let wrap_constraint env mark arg mty explicit =
+  let mark = if mark then Includemod.Mark_both else Includemod.Mark_neither in
   let coercion =
     try
-      Includemod.modtypes ~loc:arg.mod_loc env arg.mod_type mty
+      Includemod.modtypes ~loc:arg.mod_loc env ~mark arg.mod_type mty
     with Includemod.Error msg ->
       raise(Error(arg.mod_loc, env, Not_included msg)) in
   { mod_desc = Tmod_constraint(arg, mty, explicit, coercion);
@@ -1324,7 +1340,7 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
       in
       let sg' = simplify_signature sg in
       if List.length sg' = List.length sg then md else
-      wrap_constraint (Env.implicit_coercion env) md (Mty_signature sg')
+      wrap_constraint env false md (Mty_signature sg')
         Tmodtype_implicit
   | Pmod_functor(name, smty, sbody) ->
       let mty = may_map (transl_modtype env) smty in
@@ -1387,7 +1403,10 @@ and type_module_aux ~alias sttn funct_body anchor env smod =
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module ~alias true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      rm {(wrap_constraint env arg mty.mty_type (Tmodtype_explicit mty)) with
+      let md =
+        wrap_constraint env true arg mty.mty_type (Tmodtype_explicit mty)
+      in
+      rm { md with
           mod_loc = smod.pmod_loc;
           mod_attributes = smod.pmod_attributes;
          }
@@ -1732,19 +1751,20 @@ and normalize_signature_item env = function
 (* Extract the module type of a module expression *)
 
 let type_module_type_of env smod =
+  let remove_aliases = has_remove_aliases_attribute smod.pmod_attributes in
   let tmty =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
         let path, md = Typetexp.find_module env smod.pmod_loc lid.txt in
-        rm { mod_desc = Tmod_ident (path, lid);
-             mod_type = md.md_type;
-             mod_env = env;
-             mod_attributes = smod.pmod_attributes;
-             mod_loc = smod.pmod_loc }
-    | _ -> type_module env smod in
+          rm { mod_desc = Tmod_ident (path, lid);
+               mod_type = md.md_type;
+               mod_env = env;
+               mod_attributes = smod.pmod_attributes;
+               mod_loc = smod.pmod_loc }
+    | _ -> type_module env smod
+  in
   let mty = tmty.mod_type in
-  (* PR#6307: expand aliases at root and submodules *)
-  let mty = Mtype.remove_aliases env mty in
+  let mty = Mtype.scrape_for_type_of ~remove_aliases env mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype env mty) then
     raise(Error(smod.pmod_loc, env, Non_generalizable_module mty));
@@ -1785,7 +1805,7 @@ let type_package env m p nl =
   (* go back to original level *)
   Ctype.end_def ();
   if nl = [] then
-    (wrap_constraint env modl (Mty_ident p) Tmodtype_implicit, [])
+    (wrap_constraint env true modl (Mty_ident p) Tmodtype_implicit, [])
   else let mty = modtype_of_package env modl.mod_loc p nl tl' in
   List.iter2
     (fun n ty ->
@@ -1793,7 +1813,7 @@ let type_package env m p nl =
       with Ctype.Unify _ ->
         raise (Error(m.pmod_loc, env, Scoping_pack (n,ty))))
     nl tl';
-  (wrap_constraint env modl mty Tmodtype_implicit, tl')
+  (wrap_constraint env true modl mty Tmodtype_implicit, tl')
 
 (* Fill in the forward declarations *)
 let () =
@@ -1819,7 +1839,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   let simple_sg = simplify_signature sg in
   if !Clflags.print_types then begin
     Typecore.force_delayed_checks ();
-    Printtyp.wrap_printing_env initial_env
+    Printtyp.wrap_printing_env ~error:false initial_env
       (fun () -> fprintf std_formatter "%a@." Printtyp.signature simple_sg);
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
@@ -1834,7 +1854,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                       Interface_not_compiled sourceintf)) in
       let dclsig = Env.read_signature modulename intf_file in
       let coercion =
-        Includemod.compunit initial_env sourcefile sg intf_file dclsig in
+        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+          sourcefile sg intf_file dclsig
+      in
       Typecore.force_delayed_checks ();
       (* It is important to run these checks after the inclusion test above,
          so that value declarations which are not used internally but exported
@@ -1844,8 +1866,9 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (str, coercion)
     end else begin
       let coercion =
-        Includemod.compunit initial_env sourcefile sg
-                            "(inferred signature)" simple_sg in
+        Includemod.compunit initial_env ~mark:Includemod.Mark_positive
+          sourcefile sg "(inferred signature)" simple_sg
+      in
       check_nongen_schemes finalenv simple_sg;
       normalize_signature finalenv simple_sg;
       Typecore.force_delayed_checks ();
@@ -2052,7 +2075,7 @@ let report_error ppf = function
         path p
 
 let report_error env ppf err =
-  Printtyp.wrap_printing_env env (fun () -> report_error ppf err)
+  Printtyp.wrap_printing_env ~error:true env (fun () -> report_error ppf err)
 
 let () =
   Location.register_error_of_exn

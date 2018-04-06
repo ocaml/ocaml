@@ -22,6 +22,7 @@
 #include "caml/fail.h"
 #include "caml/memory.h"
 #include "caml/mlvalues.h"
+#include "caml/signals.h"
 
 /* [size] is a number of bytes */
 CAMLexport value caml_alloc_custom(struct custom_operations * ops,
@@ -39,6 +40,16 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
     if (ops->finalize != NULL || mem != 0) {
       /* Remember that the block needs processing after minor GC. */
       add_to_custom_table (&caml_custom_table, result, mem, max);
+      /* Keep track of extra resources held by custom block in
+         minor heap. */
+      if (mem != 0) {
+        if (max == 0) max = 1;
+        caml_extra_heap_resources_minor += (double) mem / (double) max;
+        if (caml_extra_heap_resources_minor > 1.0) {
+          caml_request_minor_gc ();
+          caml_gc_dispatch ();
+        }
+      }
     }
   } else {
     result = caml_alloc_shr(wosize, Custom_tag);

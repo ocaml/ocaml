@@ -17,6 +17,10 @@
 
 type t = Native | Bytecode
 
+let is_bytecode t = t=Bytecode
+
+let is_native t = t=Native
+
 let string_of_backend = function
   | Native -> "native"
   | Bytecode -> "bytecode"

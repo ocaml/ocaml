@@ -1,3 +1,10 @@
+(* TEST
+flags = " -w a "
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+*** check-ocamlc.byte-output
+*)
+
 class type t = object end;;
 class ['a] o1 = object (self : #t as 'a) end;;
 type 'a obj = ( < .. > as 'a);;

@@ -1,3 +1,12 @@
+(* TEST
+include unix
+flags += "-strict-sequence -safe-string -w A -warn-error A"
+modules = "stubs.c"
+* libwin32unix
+** bytecode
+** native
+*)
+
 external set_environment_variable: string -> string -> unit = "stub_SetEnvironmentVariable"
 
 let find_env s =

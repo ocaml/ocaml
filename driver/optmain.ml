@@ -195,6 +195,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives
+  let _dno_unique_ids = clear unique_ids
+  let _dunique_ids = set unique_ids
   let _dsource = set dump_source
   let _dparsetree = set dump_parsetree
   let _dtypedtree = set dump_typedtree
@@ -208,6 +210,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _dflambda_verbose () =
     set dump_flambda ();
     set dump_flambda_verbose ()
+  let _dflambda_invariants = set flambda_invariant_checks
   let _dflambda_no_invariants = clear flambda_invariant_checks
   let _dcmm = set dump_cmm
   let _dsel = set dump_selection
