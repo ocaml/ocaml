@@ -508,7 +508,8 @@ let simplif_prim fpc p (args, approxs as args_approxs) dbg =
 (* Substitute variables in a [ulambda] term (a body of an inlined function)
    and perform some more simplifications on integer primitives.
    Also perform alpha-conversion on let-bound identifiers to avoid
-   clashes with locally-generated identifiers.
+   clashes with locally-generated identifiers, and refresh raise counts
+   in order to avoid clashes with inlined code from other modules.
    The variables must not be assigned in the term.
    This is used to substitute "trivial" arguments for parameters
    during inline expansion, and also for the translation of let rec
@@ -533,18 +534,18 @@ let subst_debuginfo loc dbg =
   else
     dbg
 
-let rec substitute loc fpc sb ulam =
+let rec substitute loc fpc sb rn ulam =
   match ulam with
     Uvar v ->
       begin try Tbl.find v sb with Not_found -> ulam end
   | Uconst _ -> ulam
   | Udirect_apply(lbl, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Udirect_apply(lbl, List.map (substitute loc fpc sb) args, dbg)
+      Udirect_apply(lbl, List.map (substitute loc fpc sb rn) args, dbg)
   | Ugeneric_apply(fn, args, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Ugeneric_apply(substitute loc fpc sb fn,
-                     List.map (substitute loc fpc sb) args, dbg)
+      Ugeneric_apply(substitute loc fpc sb rn fn,
+                     List.map (substitute loc fpc sb rn) args, dbg)
   | Uclosure(defs, env) ->
       (* Question: should we rename function labels as well?  Otherwise,
          there is a risk that function labels are not globally unique.
@@ -554,12 +555,12 @@ let rec substitute loc fpc sb ulam =
          - When we substitute offsets for idents bound by let rec
            in [close], case [Lletrec], we discard the original
            let rec body and use only the substituted term. *)
-      Uclosure(defs, List.map (substitute loc fpc sb) env)
-  | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb u, ofs)
+      Uclosure(defs, List.map (substitute loc fpc sb rn) env)
+  | Uoffset(u, ofs) -> Uoffset(substitute loc fpc sb rn u, ofs)
   | Ulet(str, kind, id, u1, u2) ->
       let id' = Ident.rename id in
-      Ulet(str, kind, id', substitute loc fpc sb u1,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) u2)
+      Ulet(str, kind, id', substitute loc fpc sb rn u1,
+           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
   | Uletrec(bindings, body) ->
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
@@ -569,17 +570,17 @@ let rec substitute loc fpc sb ulam =
           bindings1 sb in
       Uletrec(
         List.map
-           (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rhs))
+           (fun (_id, id', rhs) -> (id', substitute loc fpc sb' rn rhs))
            bindings1,
-        substitute loc fpc sb' body)
+        substitute loc fpc sb' rn body)
   | Uprim(p, args, dbg) ->
-      let sargs = List.map (substitute loc fpc sb) args in
+      let sargs = List.map (substitute loc fpc sb rn) args in
       let dbg = subst_debuginfo loc dbg in
       let (res, _) =
         simplif_prim fpc p (sargs, List.map approx_ulam sargs) dbg in
       res
   | Uswitch(arg, sw, dbg) ->
-      let sarg = substitute loc fpc sb arg in
+      let sarg = substitute loc fpc sb rn arg in
       let action =
         (* Unfortunately, we cannot easily deal with the
            case of a constructed block (makeblock) bound to a local
@@ -595,64 +596,79 @@ let rec substitute loc fpc sb ulam =
         | _ -> None
       in
       begin match action with
-      | Some u -> substitute loc fpc sb u
+      | Some u -> substitute loc fpc sb rn u
       | None ->
           Uswitch(sarg,
                   { sw with
                     us_actions_consts =
-                      Array.map (substitute loc fpc sb) sw.us_actions_consts;
+                      Array.map (substitute loc fpc sb rn) sw.us_actions_consts;
                     us_actions_blocks =
-                      Array.map (substitute loc fpc sb) sw.us_actions_blocks;
+                      Array.map (substitute loc fpc sb rn) sw.us_actions_blocks;
                   },
                   dbg)
       end
   | Ustringswitch(arg,sw,d) ->
       Ustringswitch
-        (substitute loc fpc sb arg,
-         List.map (fun (s,act) -> s,substitute loc fpc sb act) sw,
-         Misc.may_map (substitute loc fpc sb) d)
+        (substitute loc fpc sb rn arg,
+         List.map (fun (s,act) -> s,substitute loc fpc sb rn act) sw,
+         Misc.may_map (substitute loc fpc sb rn) d)
   | Ustaticfail (nfail, args) ->
-      Ustaticfail (nfail, List.map (substitute loc fpc sb) args)
+      let nfail =
+        match rn with
+        | Some rn ->
+          begin try
+            Tbl.find nfail rn
+          with Not_found ->
+            fatal_errorf "Closure.split_list: invalid nfail (%d)" nfail
+          end
+        | None -> nfail in
+      Ustaticfail (nfail, List.map (substitute loc fpc sb rn) args)
   | Ucatch(nfail, ids, u1, u2) ->
+      let nfail, rn =
+        match rn with
+        | Some rn ->
+          let new_nfail = next_raise_count () in
+          new_nfail, Some (Tbl.add nfail new_nfail rn)
+        | None -> nfail, rn in
       let ids' = List.map Ident.rename ids in
       let sb' =
         List.fold_right2
           (fun id id' s -> Tbl.add id (Uvar id') s)
           ids ids' sb
       in
-      Ucatch(nfail, ids', substitute loc fpc sb u1, substitute loc fpc sb' u2)
+      Ucatch(nfail, ids', substitute loc fpc sb rn u1, substitute loc fpc sb' rn u2)
   | Utrywith(u1, id, u2) ->
       let id' = Ident.rename id in
-      Utrywith(substitute loc fpc sb u1, id',
-               substitute loc fpc (Tbl.add id (Uvar id') sb) u2)
+      Utrywith(substitute loc fpc sb rn u1, id',
+               substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
-      begin match substitute loc fpc sb u1 with
+      begin match substitute loc fpc sb rn u1 with
         Uconst (Uconst_ptr n) ->
-          if n <> 0 then substitute loc fpc sb u2 else substitute loc fpc sb u3
+          if n <> 0 then substitute loc fpc sb rn u2 else substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
-          substitute loc fpc sb u2
+          substitute loc fpc sb rn u2
       | su1 ->
-          Uifthenelse(su1, substitute loc fpc sb u2, substitute loc fpc sb u3)
+          Uifthenelse(su1, substitute loc fpc sb rn u2, substitute loc fpc sb rn u3)
       end
   | Usequence(u1, u2) ->
-      Usequence(substitute loc fpc sb u1, substitute loc fpc sb u2)
+      Usequence(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
   | Uwhile(u1, u2) ->
-      Uwhile(substitute loc fpc sb u1, substitute loc fpc sb u2)
+      Uwhile(substitute loc fpc sb rn u1, substitute loc fpc sb rn u2)
   | Ufor(id, u1, u2, dir, u3) ->
       let id' = Ident.rename id in
-      Ufor(id', substitute loc fpc sb u1, substitute loc fpc sb u2, dir,
-           substitute loc fpc (Tbl.add id (Uvar id') sb) u3)
+      Ufor(id', substitute loc fpc sb rn u1, substitute loc fpc sb rn u2, dir,
+           substitute loc fpc (Tbl.add id (Uvar id') sb) rn u3)
   | Uassign(id, u) ->
       let id' =
         try
           match Tbl.find id sb with Uvar i -> i | _ -> assert false
         with Not_found ->
           id in
-      Uassign(id', substitute loc fpc sb u)
+      Uassign(id', substitute loc fpc sb rn u)
   | Usend(k, u1, u2, ul, dbg) ->
       let dbg = subst_debuginfo loc dbg in
-      Usend(k, substitute loc fpc sb u1, substitute loc fpc sb u2,
-            List.map (substitute loc fpc sb) ul, dbg)
+      Usend(k, substitute loc fpc sb rn u1, substitute loc fpc sb rn u2,
+            List.map (substitute loc fpc sb rn) ul, dbg)
   | Uunreachable ->
       Uunreachable
 
@@ -668,7 +684,7 @@ let no_effects = function
 
 let rec bind_params_rec loc fpc subst params args body =
   match (params, args) with
-    ([], []) -> substitute loc fpc subst body
+    ([], []) -> substitute loc fpc subst (Some Tbl.empty) body
   | (p1 :: pl, a1 :: al) ->
       if is_simple_argument a1 then
         bind_params_rec loc fpc (Tbl.add p1 a1 subst) pl al body
@@ -956,7 +972,7 @@ let rec close fenv cenv = function
               Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
             infos Tbl.empty in
         (Ulet(Immutable, Pgenval, clos_ident, clos,
-              substitute Location.none !Clflags.float_const_prop sb ubody),
+              substitute Location.none !Clflags.float_const_prop sb None ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
