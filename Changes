@@ -184,10 +184,6 @@ Working version
 - GPR#1487: Treat negated float comparisons more directly
   (Leo White, review by Xavier Leroy)
 
-- GPR#1580: Replace constant pointers by regular integers
-  (Vincent Laviron, on a suggestion by Mark Shinwell,
-  reviews by Pierre Chambart and Xavier Leroy)
-
 - GPR#1606: Simplify the semantics of Lambda.free_variables and Lambda.subst,
   including some API changes in bytecomp/lambda.mli
   (Pierre Chambart, review by Gabriel Scherer)

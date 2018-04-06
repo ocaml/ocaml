@@ -389,7 +389,7 @@ let make_const_char n =
   name_expr_fst (make_const_char_named n) ~name:"const_char"
 
 let make_const_ptr_named n : Flambda.named * t =
-  Const (Int n), value_constptr n
+  Const (Const_pointer n), value_constptr n
 let make_const_ptr (n : int) =
   let name =
     match n with

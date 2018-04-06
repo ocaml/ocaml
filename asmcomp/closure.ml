@@ -223,7 +223,8 @@ let make_const_ref c =
   make_const(Uconst_ref(Compilenv.new_structured_constant ~shared:true c,
     Some c))
 let make_const_int n = make_const (Uconst_int n)
-let make_const_bool b = make_const_int(if b then 1 else 0)
+let make_const_ptr n = make_const (Uconst_ptr n)
+let make_const_bool b = make_const_ptr(if b then 1 else 0)
 
 let make_integer_comparison cmp x y =
   make_const_bool
@@ -261,7 +262,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   let default = (Uprim(p, args, dbg), Value_unknown) in
   match approxs with
   (* int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1) ] ->
+  | [ Value_const(Uconst_int n1 | Uconst_ptr n1) ] ->
       begin match p with
       | Pnot -> make_const_bool (n1 = 0)
       | Pnegint -> make_const_int (- n1)
@@ -275,8 +276,8 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
       | _ -> default
       end
   (* int (or enumerated type), int (or enumerated type) *)
-  | [ Value_const(Uconst_int n1);
-      Value_const(Uconst_int n2) ] ->
+  | [ Value_const(Uconst_int n1 | Uconst_ptr n1);
+      Value_const(Uconst_int n2 | Uconst_ptr n2) ] ->
       begin match p with
       | Psequand -> make_const_bool (n1 <> 0 && n2 <> 0)
       | Psequor -> make_const_bool (n1 <> 0 || n2 <> 0)
@@ -477,7 +478,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
   (* Kind test *)
   | Pisint, _, [a1] ->
       begin match a1 with
-      | Value_const(Uconst_int _) -> make_const_bool true
+      | Value_const(Uconst_int _ | Uconst_ptr _) -> make_const_bool true
       | Value_const(Uconst_ref _) -> make_const_bool false
       | Value_closure _ | Value_tuple _ -> make_const_bool false
       | _ -> (Uprim(p, args, dbg), Value_unknown)
@@ -493,7 +494,7 @@ let simplif_prim_pure fpc p (args, approxs) dbg =
         | Ostype_win32 -> make_const_bool (Sys.os_type = "Win32")
         | Ostype_cygwin -> make_const_bool (Sys.os_type = "Cygwin")
         | Backend_type ->
-            make_const_int 0 (* tag 0 is the same as Native here *)
+            make_const_ptr 0 (* tag 0 is the same as Native here *)
       end
   (* Catch-all *)
   | _ ->
@@ -599,7 +600,7 @@ let rec substitute loc fpc sb rn ulam =
         match sarg with
         | Uconst (Uconst_ref (_,  Some (Uconst_block (tag, _)))) ->
             find_action sw.us_index_blocks sw.us_actions_blocks tag
-        | Uconst (Uconst_int tag) ->
+        | Uconst (Uconst_ptr tag) ->
             find_action sw.us_index_consts sw.us_actions_consts tag
         | _ -> None
       in
@@ -651,7 +652,7 @@ let rec substitute loc fpc sb rn ulam =
                substitute loc fpc (Tbl.add id (Uvar id') sb) rn u2)
   | Uifthenelse(u1, u2, u3) ->
       begin match substitute loc fpc sb rn u1 with
-        Uconst (Uconst_int n) ->
+        Uconst (Uconst_ptr n) ->
           if n <> 0 then substitute loc fpc sb rn u2 else substitute loc fpc sb rn u3
       | Uprim(Pmakeblock _, _, _) ->
           substitute loc fpc sb rn u2
@@ -831,7 +832,7 @@ let rec close fenv cenv = function
       let rec transl = function
         | Const_base(Const_int n) -> Uconst_int n
         | Const_base(Const_char c) -> Uconst_int (Char.code c)
-        | Const_pointer _ -> assert false
+        | Const_pointer n -> Uconst_ptr n
         | Const_block (tag, fields) ->
             str (Uconst_block (tag, List.map transl fields))
         | Const_float_array sl ->
@@ -1083,7 +1084,7 @@ let rec close fenv cenv = function
       (Utrywith(ubody, id, uhandler), Value_unknown)
   | Lifthenelse(arg, ifso, ifnot) ->
       begin match close fenv cenv arg with
-        (uarg, Value_const (Uconst_int n)) ->
+        (uarg, Value_const (Uconst_ptr n)) ->
           sequence_constant_expr arg uarg
             (close fenv cenv (if n = 0 then ifnot else ifso))
       | (uarg, _ ) ->
@@ -1347,7 +1348,7 @@ let collect_exported_structured_constants a =
         Compilenv.add_exported_constant s;
         structured_constant c
     | Uconst_ref (_s, None) -> assert false (* Cannot be generated *)
-    | Uconst_int _ -> ()
+    | Uconst_int _ | Uconst_ptr _ -> ()
   and structured_constant = function
     | Uconst_block (_, ul) -> List.iter const ul
     | Uconst_float _ | Uconst_int32 _

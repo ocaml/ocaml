@@ -61,6 +61,7 @@ let add_unboxed_id id unboxed_id bn env =
 let bind name arg fn =
   match arg with
     Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
@@ -72,6 +73,7 @@ let bind_load name arg fn =
 let bind_nonvar name arg fn =
   match arg with
     Cconst_int _ | Cconst_natint _ | Cconst_symbol _
+  | Cconst_pointer _ | Cconst_natpointer _
   | Cblockheader _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
@@ -560,11 +562,11 @@ let complex_im c dbg = Cop(Cload (Double_u, Immutable),
 
 (* Unit *)
 
-let return_unit c = Csequence(c, Cconst_int 1)
+let return_unit c = Csequence(c, Cconst_pointer 1)
 
 let rec remove_unit = function
-    Cconst_int 1 -> Ctuple []
-  | Csequence(c, Cconst_int 1) -> c
+    Cconst_pointer 1 -> Ctuple []
+  | Csequence(c, Cconst_pointer 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso, ifnot) ->
@@ -880,6 +882,11 @@ let transl_float_comparison cmp = cmp
 let transl_constant = function
   | Uconst_int n ->
       int_const n
+  | Uconst_ptr n ->
+      if n <= max_repr_int && n >= min_repr_int
+      then Cconst_pointer((n lsl 1) + 1)
+      else Cconst_natpointer
+              (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | Uconst_ref (label, _) ->
       Cconst_symbol label
 
@@ -1399,14 +1406,18 @@ let make_switch arg cases actions dbg =
   let is_const = function
     (* Constant integers loaded from a table should end in 1,
        so that Cload never produces untagged integers *)
-    | Cconst_int n-> (n land 1) = 1
-    | Cconst_natint n -> (Nativeint.(to_int (logand n one) = 1))
+    | Cconst_int n
+    | Cconst_pointer n -> (n land 1) = 1
+    | Cconst_natint n
+    | Cconst_natpointer n -> (Nativeint.(to_int (logand n one) = 1))
     | Cconst_symbol _ -> true
     | _ -> false in
   if Array.for_all is_const actions then
     let to_data_item = function
-      | Cconst_int n -> Cint (Nativeint.of_int n)
-      | Cconst_natint n -> Cint n
+      | Cconst_int n
+      | Cconst_pointer n -> Cint (Nativeint.of_int n)
+      | Cconst_natint n
+      | Cconst_natpointer n -> Cint n
       | Cconst_symbol s -> Csymbol_address s
       | _ -> assert false in
     let const_actions = Array.map to_data_item actions in
@@ -2076,7 +2087,7 @@ and transl_prim_1 env p arg dbg =
   (* Boolean operations *)
   | Pnot ->
       transl_if env arg dbg Then_false_else_true
-        (Cconst_int 1) (Cconst_int 3)
+        (Cconst_pointer 1) (Cconst_pointer 3)
   (* Test integer/block *)
   | Pisint ->
       tag_int(Cop(Cand, [transl env arg; Cconst_int 1], dbg)) dbg
@@ -2139,14 +2150,14 @@ and transl_prim_2 env p arg1 arg2 dbg =
   | Psequand ->
       let dbg' = Debuginfo.none in
       transl_sequand env arg1 dbg arg2 dbg' Then_true_else_false
-        (Cconst_int 3) (Cconst_int 1)
+        (Cconst_pointer 3) (Cconst_pointer 1)
       (* let id = Ident.create "res1" in
       Clet(id, transl env arg1,
            Cifthenelse(test_bool dbg (Cvar id), transl env arg2, Cvar id)) *)
   | Psequor ->
       let dbg' = Debuginfo.none in
       transl_sequor env arg1 dbg arg2 dbg' Then_true_else_false
-        (Cconst_int 3) (Cconst_int 1)
+        (Cconst_pointer 3) (Cconst_pointer 1)
   (* Integer operations *)
   | Paddint ->
       decr_int(add_int (transl env arg1) (transl env arg2) dbg) dbg
@@ -2661,23 +2672,23 @@ and make_shareable_cont mk exp =
 
 and transl_if env cond dbg approx then_ else_ =
   match cond with
-  | Uconst (Uconst_int 0) -> else_
-  | Uconst (Uconst_int 1) -> then_
-  | Uifthenelse (arg1, arg2, Uconst (Uconst_int 0)) ->
+  | Uconst (Uconst_ptr 0) -> else_
+  | Uconst (Uconst_ptr 1) -> then_
+  | Uifthenelse (arg1, arg2, Uconst (Uconst_ptr 0)) ->
       let dbg' = Debuginfo.none in
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Psequand, [arg1; arg2], dbg') ->
       transl_sequand env arg1 dbg' arg2 dbg approx then_ else_
-  | Uifthenelse (arg1, Uconst (Uconst_int 1), arg2) ->
+  | Uifthenelse (arg1, Uconst (Uconst_ptr 1), arg2) ->
       let dbg' = Debuginfo.none in
       transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Psequor, [arg1; arg2], dbg') ->
       transl_sequor env arg1 dbg' arg2 dbg approx then_ else_
   | Uprim(Pnot, [arg], _) ->
       transl_if env arg dbg (invert_then_else approx) else_ then_
-  | Uifthenelse (Uconst (Uconst_int 1), ifso, _) ->
+  | Uifthenelse (Uconst (Uconst_ptr 1), ifso, _) ->
       transl_if env ifso dbg approx then_ else_
-  | Uifthenelse (Uconst (Uconst_int 0), _, ifnot) ->
+  | Uifthenelse (Uconst (Uconst_ptr 0), _, ifnot) ->
       transl_if env ifnot dbg approx then_ else_
   | Uifthenelse (cond, ifso, ifnot) ->
       make_shareable_cont
@@ -2882,7 +2893,7 @@ let rec emit_structured_constant symb cst cont =
 
 and emit_constant cst cont =
   match cst with
-  | Uconst_int n ->
+  | Uconst_int n | Uconst_ptr n ->
       cint_const n
       :: cont
   | Uconst_ref (label, _) ->

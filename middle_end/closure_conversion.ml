@@ -134,7 +134,7 @@ let rec declare_const t (const : Lambda.structured_constant)
     register_const t (Allocated_const (Int64 c)) "int64"
   | Const_base (Const_nativeint c) ->
     register_const t (Allocated_const (Nativeint c)) "nativeint"
-  | Const_pointer _ -> assert false
+  | Const_pointer c -> Const (Const_pointer c), "pointer"
   | Const_immstring c ->
     register_const t (Allocated_const (Immutable_string c)) "immstring"
   | Const_float_array c ->
@@ -394,7 +394,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create "const_true" in
     let cond = Variable.create "cond_sequor" in
-    Flambda.create_let const_true (Const (Int 1))
+    Flambda.create_let const_true (Const (Const_pointer 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
@@ -402,7 +402,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create "const_false" in
     let cond = Variable.create "cond_sequand" in
-    Flambda.create_let const_false (Const (Int 0))
+    Flambda.create_let const_false (Const (Const_pointer 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
