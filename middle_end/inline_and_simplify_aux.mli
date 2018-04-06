@@ -361,3 +361,10 @@ val prepare_to_simplify_closure
   -> parameter_approximations:Simple_value_approx.t Variable.Map.t
   -> set_of_closures_env:Env.t
   -> Env.t
+
+val keep_body_check
+   : is_classic_mode:bool
+  -> recursive:Variable.Set.t Lazy.t
+  -> Variable.t
+  -> Flambda.function_declaration
+  -> bool

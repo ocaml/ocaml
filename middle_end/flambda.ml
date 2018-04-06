@@ -109,6 +109,7 @@ and set_of_closures = {
 }
 
 and function_declarations = {
+  is_classic_mode : bool;
   set_of_closures_id : Set_of_closures_id.t;
   set_of_closures_origin : Set_of_closures_origin.t;
   funs : function_declaration Variable.Map.t;
@@ -1016,33 +1017,63 @@ let update_function_declaration fun_decl ~params ~body =
   let free_symbols = free_symbols body in
   { fun_decl with params; body; free_variables; free_symbols }
 
-let create_function_declarations ~funs =
+let create_function_declarations ~is_classic_mode ~funs =
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_id = Set_of_closures_id.create compilation_unit in
   let set_of_closures_origin =
     Set_of_closures_origin.create set_of_closures_id
   in
-  { set_of_closures_id;
+  { is_classic_mode;
+    set_of_closures_id;
+    set_of_closures_origin;
+    funs;
+  }
+
+let create_function_declarations_with_origin
+      ~is_classic_mode ~funs ~set_of_closures_origin =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  { is_classic_mode;
+    set_of_closures_id;
     set_of_closures_origin;
     funs;
   }
 
 let update_function_declarations function_decls ~funs =
+  let is_classic_mode = function_decls.is_classic_mode in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_id = Set_of_closures_id.create compilation_unit in
   let set_of_closures_origin = function_decls.set_of_closures_origin in
-  { set_of_closures_id;
+  { is_classic_mode;
+    set_of_closures_id;
     set_of_closures_origin;
     funs;
   }
 
+let create_function_declarations_with_closures_origin
+      ~is_classic_mode ~funs ~set_of_closures_origin =
+  let compilation_unit = Compilation_unit.get_current_exn () in
+  let set_of_closures_id = Set_of_closures_id.create compilation_unit in
+  { is_classic_mode;
+    set_of_closures_id;
+    set_of_closures_origin;
+    funs
+  }
+
 let import_function_declarations_for_pack function_decls
-    import_set_of_closures_id import_set_of_closures_origin =
-  { set_of_closures_id =
-      import_set_of_closures_id function_decls.set_of_closures_id;
-    set_of_closures_origin =
-      import_set_of_closures_origin function_decls.set_of_closures_origin;
-    funs = function_decls.funs;
+      import_set_of_closures_id import_set_of_closures_origin =
+  let is_classic_mode = function_decls.is_classic_mode in
+  let set_of_closures_id =
+    import_set_of_closures_id function_decls.set_of_closures_id
+  in
+  let set_of_closures_origin =
+    import_set_of_closures_origin function_decls.set_of_closures_origin
+  in
+  let funs = function_decls.funs in
+  { is_classic_mode;
+    set_of_closures_id;
+    set_of_closures_origin;
+    funs;
   }
 
 let create_set_of_closures ~function_decls ~free_vars ~specialised_args

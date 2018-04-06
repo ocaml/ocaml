@@ -16,21 +16,21 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-type for_one_or_more_units = {
+type 'a for_one_or_more_units = {
   fun_offset_table : int Closure_id.Map.t;
   fv_offset_table : int Var_within_closure.Map.t;
-  closures : Flambda.function_declarations Closure_id.Map.t;
+  closures : 'a Closure_id.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
 }
 
 type t = {
-  current_unit : for_one_or_more_units;
-  imported_units : for_one_or_more_units;
+  current_unit : Set_of_closures_id.t for_one_or_more_units;
+  imported_units : Simple_value_approx.function_declarations for_one_or_more_units;
 }
 
-type ('a, 'b) declaration_position =
-  | Current_unit of 'a
-  | Imported_unit of 'b
+type declaration_position =
+  | Current_unit of Set_of_closures_id.t
+  | Imported_unit of Set_of_closures_id.t
   | Not_declared
 
 let get_fun_offset t closure_id =
@@ -61,15 +61,18 @@ let function_declaration_position t closure_id =
     Current_unit (Closure_id.Map.find closure_id t.current_unit.closures)
   with Not_found ->
     try
-      Imported_unit (Closure_id.Map.find closure_id t.imported_units.closures)
+      let function_decls =
+        Closure_id.Map.find closure_id t.imported_units.closures
+      in
+      Imported_unit function_decls.set_of_closures_id
     with Not_found -> Not_declared
 
 let is_function_constant t closure_id =
   match function_declaration_position t closure_id with
-  | Current_unit { set_of_closures_id } ->
+  | Current_unit set_of_closures_id ->
     Set_of_closures_id.Set.mem set_of_closures_id
       t.current_unit.constant_sets_of_closures
-  | Imported_unit { set_of_closures_id } ->
+  | Imported_unit set_of_closures_id ->
     Set_of_closures_id.Set.mem set_of_closures_id
       t.imported_units.constant_sets_of_closures
   | Not_declared ->

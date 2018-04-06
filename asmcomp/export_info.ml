@@ -16,6 +16,8 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module A = Simple_value_approx
+
 type value_string_contents =
   | Contents of string
   | Unknown_or_mutable
@@ -42,7 +44,7 @@ type descr =
   | Value_constptr of int
   | Value_float of float
   | Value_float_array of value_float_array
-  | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
+  | Value_boxed_int : 'a A.boxed_int * 'a -> descr
   | Value_string of value_string
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
@@ -115,7 +117,7 @@ let equal_descr (d1:descr) (d2:descr) : bool =
   | Value_float_array s1, Value_float_array s2 ->
     s1 = s2
   | Value_boxed_int (t1, v1), Value_boxed_int (t2, v2) ->
-    Simple_value_approx.equal_boxed_int t1 v1 t2 v2
+    A.equal_boxed_int t1 v1 t2 v2
   | Value_string s1, Value_string s2 ->
     s1 = s2
   | Value_closure c1, Value_closure c2 ->
@@ -134,14 +136,15 @@ let equal_descr (d1:descr) (d2:descr) : bool =
     false
 
 type t = {
-  sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
-  closures : Flambda.function_declarations Closure_id.Map.t;
+  sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
+  closures : A.function_declarations Closure_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
   constant_sets_of_closures : Set_of_closures_id.Set.t;
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
+  recursive : Variable.Set.t Set_of_closures_id.Map.t;
 }
 
 let empty : t = {
@@ -153,11 +156,12 @@ let empty : t = {
   offset_fv = Var_within_closure.Map.empty;
   constant_sets_of_closures = Set_of_closures_id.Set.empty;
   invariant_params = Set_of_closures_id.Map.empty;
+  recursive = Set_of_closures_id.Map.empty;
 }
 
 let create ~sets_of_closures ~closures ~values ~symbol_id
       ~offset_fun ~offset_fv ~constant_sets_of_closures
-      ~invariant_params =
+      ~invariant_params ~recursive =
   { sets_of_closures;
     closures;
     values;
@@ -166,6 +170,7 @@ let create ~sets_of_closures ~closures ~values ~symbol_id
     offset_fv;
     constant_sets_of_closures;
     invariant_params;
+    recursive;
   }
 
 let add_clambda_info t ~offset_fun ~offset_fv ~constant_sets_of_closures =
@@ -204,6 +209,11 @@ let merge (t1 : t) (t2 : t) : t =
         ~print:(Variable.Map.print Variable.Set.print)
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
+    recursive =
+      Set_of_closures_id.Map.disjoint_union
+        ~print:Variable.Set.print
+        ~eq:Variable.Set.equal
+        t1.recursive t2.recursive;
   }
 
 let find_value eid map =
@@ -287,7 +297,6 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
           | Contents _ -> "_imm")
         float_array.size
     | Value_boxed_int (t, i) ->
-      let module A = Simple_value_approx in
       match t with
       | A.Int32 -> Format.fprintf ppf "%li" i
       | A.Int64 -> Format.fprintf ppf "%Li" i
@@ -350,7 +359,8 @@ let print_offsets ppf (t : t) =
   Format.fprintf ppf "@]@ "
 
 let print_functions ppf (t : t) =
-  Set_of_closures_id.Map.print Flambda.print_function_declarations ppf
+  Set_of_closures_id.Map.print
+    A.print_function_declarations ppf
     t.sets_of_closures
 
 let print_all ppf ((t, root_symbols) : t * Symbol.t list) =
