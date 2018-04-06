@@ -687,6 +687,7 @@ let build_transient ~(backend : (module Backend_intf.S))
             None
           end)
     in
+
     let values =
       Compilation_unit.Map.map (fun map ->
           Export_id.Map.filter (fun key _ ->
@@ -708,3 +709,4 @@ let build_transient ~(backend : (module Backend_intf.S))
       ~relevant_imported_closure_ids
       ~relevant_local_vars_within_closure
       ~relevant_imported_vars_within_closure
+

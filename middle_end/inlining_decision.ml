@@ -63,7 +63,7 @@ let inline env r ~lhs_of_application
              The call site annotation takes precedence *)
           match (inline_requested : Lambda.inline_attribute) with
           | Always_inline | Never_inline | Unroll _ -> inline_requested
-          | Default_inline -> function_decl.inline
+          | Default_inline -> function_body.inline
         in
         match inline_annotation with
         | Always_inline -> false, true, false, env
@@ -158,7 +158,7 @@ let inline env r ~lhs_of_application
             ~new_size:body_size
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.A.is_a_functor
+            ~lifting:function_body.A.is_a_functor
             ~round:(E.round env)
             ~benefit
         in
@@ -241,7 +241,7 @@ let inline env r ~lhs_of_application
         W.create ~original body
           ~toplevel:(E.at_toplevel env)
           ~branch_depth:(E.branch_depth env)
-          ~lifting:function_decl.is_a_functor
+          ~lifting:function_body.is_a_functor
           ~round:(E.round env)
           ~benefit:(R.benefit r_inlined)
       in
@@ -267,7 +267,7 @@ let inline env r ~lhs_of_application
           W.create ~original body
             ~toplevel:(E.at_toplevel env)
             ~branch_depth:(E.branch_depth env)
-            ~lifting:function_decl.is_a_functor
+            ~lifting:function_body.is_a_functor
             ~round:(E.round env)
             ~benefit:(R.benefit r_inlined)
         in
@@ -321,10 +321,13 @@ let specialise env r ~lhs_of_application
     | Always_specialise -> true, false
     | Never_specialise -> false, true
     | Default_specialise -> begin
-        match (function_decl.specialise : Lambda.specialise_attribute) with
-        | Always_specialise -> true, false
-        | Never_specialise -> false, true
-        | Default_specialise -> false, false
+        match function_decl.function_body with
+        | None -> false, true
+        | Some { specialise } ->
+          match (specialise : Lambda.specialise_attribute) with
+          | Always_specialise -> true, false
+          | Never_specialise -> false, true
+          | Default_specialise -> false, false
       end
   in
   let remaining_inlining_threshold : Inlining_cost.Threshold.t =
@@ -700,22 +703,22 @@ let for_call_site ~env ~r ~(function_decls : A.function_declarations)
               Changed (res, D.Inlined (spec_reason, inl_reason))
             | Original inl_reason ->
               Original (D.Unchanged (spec_reason, inl_reason))
-        end
-      in
-      let res, decision =
-        match simpl with
-        | Original decision -> (original, original_r), decision
-        | Changed ((expr, r), decision) ->
-          let res =
-            if E.inlining_level env = 0
-            then expr, R.set_inlining_threshold r raw_inlining_threshold
-            else expr, R.add_inlining_threshold r inlining_threshold_diff
-          in
-          res, decision
-      in
-      E.record_decision env decision;
-      res
-    end
+      end
+    in
+    let res, decision =
+      match simpl with
+      | Original decision -> (original, original_r), decision
+      | Changed ((expr, r), decision) ->
+        let res =
+          if E.inlining_level env = 0
+          then expr, R.set_inlining_threshold r raw_inlining_threshold
+          else expr, R.add_inlining_threshold r inlining_threshold_diff
+        in
+        res, decision
+    in
+    E.record_decision env decision;
+    res
+  end
 
 (* We do not inline inside stubs, which are always inlined at their call site.
    Inlining inside the declaration of a stub could result in more code than
