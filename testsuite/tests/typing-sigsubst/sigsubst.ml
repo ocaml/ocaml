@@ -179,8 +179,8 @@ Error: Destructive substitutions are not supported for constrained
        a type constructor with the same arguments).
 |}]
 
-(* Issue where the typer expands an alias, which breaks the typing of the rest
-   of the signature, but no error is given to the user. *)
+(* Issue where the typer weakens an alias, which breaks the typing of the rest
+   of the signature. (MPR#7723)*)
 module type S = sig
   module M1 : sig type t = int end
   module M2 = M1
@@ -197,6 +197,35 @@ module type S =
     module F : functor (X : sig module M = M1 end) -> sig type t end
     type t = F(M3).t
   end
+|}]
+
+type (_, _) eq = Refl : ('a, 'a) eq
+
+module Equal (M : Set.OrderedType) (N : Set.OrderedType with type t = M.t) : sig
+  val eq : (Set.Make(M).t, Set.Make(N).t) eq
+end = struct
+  type meq = Eq of (Set.Make(M).t, Set.Make(M).t) eq
+  module type S = sig
+    module N = M
+    type neq = meq = Eq of (Set.Make(M).t, Set.Make(N).t) eq
+  end
+  module type T = S with type N.t = M.t with module N := N;;
+  module rec T : T = T
+  let eq =
+    let T.Eq eq = Eq Refl in
+    eq
+end;;
+[%%expect {|
+type (_, _) eq = Refl : ('a, 'a) eq
+Line _, characters 18-58:
+    module type T = S with type N.t = M.t with module N := N;;
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In this `with' constraint, the new definition of N
+       does not match its original definition in the constrained signature:
+       Modules do not match:
+         sig type t = M.t val compare : t -> t -> int end
+       is not included in
+         (module M)
 |}]
 
 (* Checking that the uses of M.t are rewritten regardless of how they
