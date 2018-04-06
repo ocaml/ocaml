@@ -72,6 +72,8 @@ let rec import_ex ex =
     match import_set_of_closures set_of_closures_id with
     | None -> None
     | Some function_decls ->
+      (* CR-someday xclerc: add a test to the test suite to ensure that
+         classic mode behaves as expected. *)
       let is_classic_mode = function_decls.is_classic_mode in
       let invariant_params =
         match
