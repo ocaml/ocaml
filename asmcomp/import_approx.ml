@@ -187,7 +187,7 @@ let import_symbol sym =
   if Compilenv.is_predefined_exception sym then
     A.value_unknown Other
   else begin
-    let compilation_unit = (Symbol.compilation_unit sym) in
+    let compilation_unit = Symbol.compilation_unit sym in
     match Compilenv.approx_for_global compilation_unit with
     | None -> A.value_unresolved (Symbol sym)
     | Some export_info ->

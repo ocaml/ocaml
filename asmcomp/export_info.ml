@@ -177,10 +177,10 @@ let empty : t = {
 let opaque_transient ~compilation_unit ~root_symbol : transient =
   let export_id = Export_id.create compilation_unit in
   let values =
-    let map = Export_id.Map.of_list [(export_id, Value_unknown_descr)] in
-    Compilation_unit.Map.of_list [(compilation_unit, map)]
+    let map = Export_id.Map.singleton export_id Value_unknown_descr in
+    Compilation_unit.Map.singleton compilation_unit map
   in
-  let symbol_id = Symbol.Map.of_list [(root_symbol, export_id)] in
+  let symbol_id = Symbol.Map.singleton root_symbol export_id in
   { sets_of_closures = Set_of_closures_id.Map.empty;
     values;
     symbol_id;
