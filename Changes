@@ -337,6 +337,9 @@ Working version
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
 
+- GPR#1679 : remove Pbittest from primitives in lambda
+  (Hugo Heuzard, review by Mark Shinwell)
+
 ### Bug fixes
 
 - MPR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,
