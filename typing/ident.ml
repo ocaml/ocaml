@@ -30,7 +30,8 @@ let create s =
 
 let create_predef_exn s =
   incr currentstamp;
-  { name = s; stamp = !currentstamp; flags = predef_exn_flag }
+  { name = s; stamp = !currentstamp;
+    flags = predef_exn_flag lor global_flag }
 
 let create_persistent s =
   { name = s; stamp = 0; flags = global_flag }
@@ -73,9 +74,6 @@ let reinit () =
 
 let hide i =
   { i with stamp = -1 }
-
-let make_global i =
-  i.flags <- i.flags lor global_flag
 
 let global i =
   (i.flags land global_flag) <> 0
