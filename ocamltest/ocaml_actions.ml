@@ -782,6 +782,7 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       Ocaml_flags.include_toplevel_directory ocamlsrcdir;
       flags env;
       libraries toplevel#backend env;
+      binary_modules toplevel#backend env;
     ] in
     let exit_status =
       Actions_helpers.run_cmd
