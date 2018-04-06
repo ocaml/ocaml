@@ -5,6 +5,10 @@
    *** check-ocamlc.byte-output
 *)
 
+exception Foo [@foo] [@@foo]
+
+exception Bar of (int [@foo]) [@foo] [@@foo]
+
 [@@@foo]
 
 let (x[@foo]) : unit [@foo] = ()[@foo]
@@ -29,6 +33,8 @@ end[@foo]
 [@@foo]
 
 module type S = sig
+
+  exception Bar of (int [@foo]) [@foo] [@@foo]
 
   include (module type of (M[@foo]))[@foo] with type t := M.t[@foo]
     [@@foo]

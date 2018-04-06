@@ -23,8 +23,8 @@ val transl_type_decl:
     Typedtree.type_declaration list * Env.t
 
 val transl_exception:
-    Env.t ->
-    Parsetree.extension_constructor -> Typedtree.extension_constructor * Env.t
+    Env.t -> Parsetree.extension_constructor ->
+    Typedtree.extension_constructor * Env.t
 
 val transl_type_exception:
     Env.t ->

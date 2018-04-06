@@ -515,8 +515,7 @@ module Te = struct
      ptyext_attributes = add_docs_attrs docs attrs;
     }
 
-  let mk_exception ?(attrs = []) ?(docs = empty_docs)
-        constructor =
+  let mk_exception ?(attrs = []) ?(docs = empty_docs) constructor =
     {
      ptyexn_constructor = constructor;
      ptyexn_attributes = add_docs_attrs docs attrs;

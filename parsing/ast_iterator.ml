@@ -156,9 +156,7 @@ module T = struct
     List.iter (iter_fst (sub.typ sub)) ptyext_params;
     sub.attributes sub ptyext_attributes
 
-  let iter_type_exception sub
-        {ptyexn_constructor;
-         ptyexn_attributes} =
+  let iter_type_exception sub {ptyexn_constructor; ptyexn_attributes} =
     sub.extension_constructor sub ptyexn_constructor;
     sub.attributes sub ptyexn_attributes
 

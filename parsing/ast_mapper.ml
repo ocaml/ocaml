@@ -163,9 +163,7 @@ module T = struct
       ~priv:ptyext_private
       ~attrs:(sub.attributes sub ptyext_attributes)
 
-  let map_type_exception sub
-        {ptyexn_constructor;
-         ptyexn_attributes} =
+  let map_type_exception sub {ptyexn_constructor; ptyexn_attributes} =
     Te.mk_exception
       (sub.extension_constructor sub ptyexn_constructor)
       ~attrs:(sub.attributes sub ptyexn_attributes)
