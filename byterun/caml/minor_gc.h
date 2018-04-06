@@ -26,6 +26,7 @@ CAMLextern value *caml_young_ptr, *caml_young_limit;
 CAMLextern value *caml_young_trigger;
 extern asize_t caml_minor_heap_wsz;
 extern int caml_in_minor_collection;
+extern double caml_extra_heap_resources_minor;
 
 #define CAML_TABLE_STRUCT(t) { \
   t *base;                     \

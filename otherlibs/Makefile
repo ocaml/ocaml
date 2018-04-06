@@ -17,6 +17,8 @@
 
 ROOTDIR=../..
 include $(ROOTDIR)/config/Makefile
+include $(ROOTDIR)/Makefile.common
+
 CAMLRUN ?= $(ROOTDIR)/boot/ocamlrun
 CAMLYACC ?= $(ROOTDIR)/boot/ocamlyacc
 
@@ -76,24 +78,30 @@ $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(CLIBNAME).$(A)
 lib$(CLIBNAME).$(A): $(COBJS)
 	$(MKLIB) -oc $(CLIBNAME) $(COBJS) $(LDOPTS)
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-INSTALL_STUBLIBDIR=$(DESTDIR)$(STUBLIBDIR)
-
 install::
 	if test -f dll$(CLIBNAME)$(EXT_DLL); then \
-	  cp dll$(CLIBNAME)$(EXT_DLL) "$(INSTALL_STUBLIBDIR)/"; fi
-	cp lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+	  $(INSTALL_PROG) \
+	    dll$(CLIBNAME)$(EXT_DLL) \
+	    "$(INSTALL_STUBLIBDIR)/"; \
+	fi
+	$(INSTALL_DATA) lib$(CLIBNAME).$(A) "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) lib$(CLIBNAME).$(A)
-	cp $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
-          $(CMIFILES:.cmi=.cmti) "$(INSTALL_LIBDIR)/"
+	$(INSTALL_DATA) \
+	  $(LIBNAME).cma $(CMIFILES) $(CMIFILES:.cmi=.mli) \
+          $(CMIFILES:.cmi=.cmti) \
+	  "$(INSTALL_LIBDIR)/"
 	if test -n "$(HEADERS)"; then \
-	  cp $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; fi
+	  $(INSTALL_DATA) $(HEADERS) "$(INSTALL_LIBDIR)/caml/"; \
+	fi
 
 installopt:
-	cp $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) "$(INSTALL_LIBDIR)/"
+	$(INSTALL_DATA) \
+	   $(CAMLOBJS_NAT) $(LIBNAME).cmxa $(LIBNAME).$(A) \
+	   "$(INSTALL_LIBDIR)/"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) $(LIBNAME).a
 	if test -f $(LIBNAME).cmxs; then \
-	  cp $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; fi
+	  $(INSTALL_PROG) $(LIBNAME).cmxs "$(INSTALL_LIBDIR)/"; \
+	fi
 
 partialclean:
 	rm -f *.cm*

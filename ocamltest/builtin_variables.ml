@@ -27,6 +27,9 @@ open Variables (* Should not be necessary with a ppx *)
 let arguments = make ("arguments",
   "Arguments passed to executed programs and scripts")
 
+let cwd = make ("cwd",
+  "Used to change current working directory, but not updated")
+
 let exit_status = make ("exit_status",
   "Expected program exit status")
 
@@ -49,6 +52,9 @@ let program2 = make ("program2",
 
 let promote = make ("promote",
   "Set to \"true\" to overwrite reference files with the test output")
+
+let reason = make ("reason",
+  "Let a test report why it passed/skipped/failed.")
 
 let reference = make ("reference",
   "Path of file to which program output should be compared")
@@ -96,12 +102,14 @@ let test_fail = make ("TEST_FAIL",
 let _ = List.iter register_variable
   [
     arguments;
+    cwd;
     exit_status;
     files;
     ocamltest_response;
     ocamltest_log;
     output;
     program; program2;
+    reason;
     reference;
     skip_header_lines;
     skip_header_bytes;

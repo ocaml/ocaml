@@ -1,0 +1,6 @@
+File "b_bad.ml", line 13, characters 29-66:
+Error (warning 8): this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Y
+File "b_bad.ml", line 17, characters 11-14:
+Error: Unbound value A.y

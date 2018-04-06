@@ -288,16 +288,16 @@ let add_param ~specialised_args ~state ~param =
   in
   let new_specialised_args_with_old_projections =
     match Variable.Map.find_opt param specialised_args with
-    | Some spec when Variable.Map.mem param state.old_params_to_new_outside ->
+    | Some (spec : Flambda.specialised_to) ->
         let new_outside_var =
-          Variable.Map.find param state.old_params_to_new_outside
+          Variable.Map.find spec.var state.old_outside_to_new_outside
         in
         let new_spec : Flambda.specialised_to =
           { spec with var = new_outside_var }
         in
         Variable.Map.add new_param new_spec
           state.new_specialised_args_with_old_projections
-    | Some _ | None -> begin
+    | None -> begin
         match Variable.Map.find_opt param state.old_params_to_new_outside with
         | None -> state.new_specialised_args_with_old_projections
         | Some new_outside_var ->
@@ -367,10 +367,9 @@ let add_free_var ~free_vars ~state ~free_var =
   end
 
 (* Add a function to the new set of closures iff:
-   1) It's function body is known
-   2) All it's specialised parameters are available in
+    1) All it's specialised parameters are available in
       [old_outside_to_new_outside]
-   3) At least one more parameter will become specialised *)
+   2) At least one more parameter will become specialised *)
 let add_function ~specialised_args ~state ~fun_var ~function_decl =
   match function_decl.A.function_body with
   | None -> None
@@ -472,7 +471,7 @@ let rec rewrite_direct_call ~specialised_args ~funs ~direct_call_surrogates
 let rewrite_function ~lhs_of_application ~closure_id_being_applied
       ~direct_call_surrogates ~specialised_args ~free_vars ~funs
       ~state fun_var =
-  let function_decl : A.function_declaration =
+  let function_decl : Flambda.function_declaration =
     Variable.Map.find fun_var funs
   in
   let function_body =
@@ -500,7 +499,7 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
            add_free_var ~free_vars ~state ~free_var:var
          else
            state)
-      function_body.free_variables state
+      function_decl.free_variables state
   in
   let state_ref = ref state in
   let body =
@@ -518,19 +517,13 @@ let rewrite_function ~lhs_of_application ~closure_id_being_applied
                  expr
            end
          | _ -> expr)
-      function_body.body
+      function_body
   in
   let body =
     Flambda_utils.toplevel_substitution state.old_inside_to_new_inside body
   in
   let new_function_decl =
-    Flambda.create_function_declaration
-      ~params ~body
-      ~stub:function_body.stub
-      ~dbg:function_body.dbg
-      ~inline:function_body.inline
-      ~specialise:function_body.specialise
-      ~is_a_functor:function_body.is_a_functor
+    Flambda.update_function_declaration function_decl ~params ~body
   in
   let new_funs =
     Variable.Map.add new_fun_var new_function_decl state.new_funs

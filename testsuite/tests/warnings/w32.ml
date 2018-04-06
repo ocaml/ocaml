@@ -1,3 +1,16 @@
+(* TEST
+
+flags = "-w A"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+module = "w32.mli"
+*** ocamlc.byte
+module = "w32.ml"
+**** check-ocamlc.byte-output
+
+*)
+
 (* from MPR#7624 *)
 
 let[@warning "-32"] f x = x

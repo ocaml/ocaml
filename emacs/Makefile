@@ -13,6 +13,7 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
 
 # Files to install
 FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
@@ -64,7 +65,7 @@ install-el:
 simple-install:
 	@echo "Installing in $(EMACSDIR)..."
 	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
-	cp $(FILES) $(EMACSDIR)
+	$(INSTALL_DATA) $(FILES) $(EMACSDIR)
 	if [ -z "$(NOCOMPILE)" ]; then \
 	  cd $(EMACSDIR); $(EMACS) --batch --eval '$(COMPILECMD)'; \
 	fi
@@ -74,7 +75,7 @@ ocamltags:	ocamltags.in
 	chmod a+x ocamltags
 
 install-ocamltags: ocamltags
-	cp ocamltags $(SCRIPTDIR)/ocamltags
+	$(INSTALL_DATA) ocamltags $(SCRIPTDIR)/ocamltags
 
 # This is for testing purposes
 compile-only:

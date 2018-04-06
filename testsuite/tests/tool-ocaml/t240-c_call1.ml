@@ -1,3 +1,11 @@
+(* TEST
+include tool-ocaml-lib
+flags = "-w a"
+ocaml_script_as_argument = "true"
+* setup-ocaml-build-env
+** ocaml
+*)
+
 open Lib;;
 if Pervasives.int_of_string "123" <> 123 then raise Not_found;;
 (** test for fix of bug 6649: http://caml.inria.fr/mantis/view.php?id=6649 *)
