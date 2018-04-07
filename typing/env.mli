@@ -428,6 +428,13 @@ val print_longident: (Format.formatter -> Longident.t -> unit) ref
 (* Forward declaration to break mutual recursion with Printtyp. *)
 val print_path: (Format.formatter -> Path.t -> unit) ref
 
+
+(** Folds *)
+
+val fold_constructors:
+  (constructor_description -> 'a -> 'a) ->
+  Longident.t option -> t -> 'a -> 'a
+
 (** Utilities *)
 val scrape_alias: t -> module_type -> module_type
 val check_value_name: string -> Location.t -> unit

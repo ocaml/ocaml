@@ -24,6 +24,12 @@ Working version
   (Gabriel Scherer and Rodolphe Lepigre,
    review by Jeremy Yallop, Damien Doligez and Frédéric Bour)
 
+- #1154, #1706: spellchecker hints and type-directed disambiguation
+  for extensible sum type constructors
+  (Florian Angeletti, review by Alain Frisch, Gabriel Radanne, Gabriel Scherer
+  and Leo White)
+
+
 ### Runtime system:
 
 - #9119: Make [caml_stat_resize_noexc] compatible with the [realloc]
