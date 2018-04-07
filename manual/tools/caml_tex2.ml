@@ -244,6 +244,10 @@ exception Missing_double_semicolon of string * int
 
 exception Missing_mode of string * int
 
+type incompatibility =
+  | Signature_with_visible_answer of string * int
+exception Incompatible_options of incompatibility
+
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -280,6 +284,10 @@ let process_file file =
         | "{verbatim}" -> Verbatim
         | "{signature}" -> Signature
         | _ -> assert false in
+      if mode = Signature && not omit_answer then raise
+          (Incompatible_options(
+              Signature_with_visible_answer(file,!phrase_stop))
+          );
       let explicit_stop = match mode with
         | Verbatim | Signature -> false
         | Toplevel -> true in
@@ -417,7 +425,16 @@ let process_file file =
         close_in ic; close_out oc;
         exit 1
       )
-
+  | Incompatible_options Signature_with_visible_answer (file, line_number) ->
+      ( Format.eprintf
+          "@[<hov 2>  Error when parsing a caml_example environment in@ \
+           %s, line %d:@,\
+           the signature mode is only compatible with \"caml_example*\"@ \
+           Hint: did you forget to add \"*\"?@]@."
+          file (line_number-2);
+        close_in ic; close_out oc;
+        exit 1
+      )
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
