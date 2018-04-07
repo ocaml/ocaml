@@ -381,6 +381,9 @@ OCaml 4.07
 - GPR#1647: manual, subsection on record and variant disambiguation
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
 
+- GPR#1702: manual, add a signature mode for code examples
+  (Florian Angeletti, review by Gabriel Scherer)
+
 - GPR#1741: manual, improve typesetting and legibility in HTML output
   (steinuil, review by Gabriel Scherer)
 
