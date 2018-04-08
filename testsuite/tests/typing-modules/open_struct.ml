@@ -65,6 +65,18 @@ end
 module M : S
 |}];;
 
+module M = struct
+  module M (F: sig end) (X: sig end) = struct end
+  open M(struct end)
+end
+[%%expect{|
+Line _, characters 7-20:
+    open M(struct end)
+         ^^^^^^^^^^^^^
+Error: This module is not a structure; it has type
+       functor (X : sig  end) -> sig  end
+|}]
+
 open struct
   open struct let counter = ref 0 end
   let inc () = incr counter
@@ -85,7 +97,7 @@ include struct open struct type t = T end let x = T end
 Line _, characters 15-41:
   include struct open struct type t = T end let x = T end
                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The module identifier M#7 cannot be eliminated from val x : M#7.t
+Error: The module identifier M#8 cannot be eliminated from val x : M#8.t
 |}];;
 
 module A = struct
@@ -118,8 +130,8 @@ Line _, characters 2-74:
       end
       let y = T
     end
-Error: The module identifier M#10 cannot be eliminated from val g :
-                                                              M#10.M#11.t
+Error: The module identifier M#11 cannot be eliminated from val g :
+                                                              M#11.M#12.t
 |}]
 
 module type S = sig open struct type t = T end val x : t end
@@ -127,7 +139,7 @@ module type S = sig open struct type t = T end val x : t end
 Line _, characters 20-46:
   module type S = sig open struct type t = T end val x : t end
                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The module identifier M#12 cannot be eliminated from val x : M#12.t
+Error: The module identifier M#13 cannot be eliminated from val x : M#13.t
 |}];;
 
 
@@ -269,7 +281,7 @@ end
 Line _, characters 24-50:
       module type S = sig open struct type t = T end val x : t end
                           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: The module identifier M#31 cannot be eliminated from val x : M#31.t
+Error: The module identifier M#32 cannot be eliminated from val x : M#32.t
 |}]
 
 let x = let open struct open struct let y = 1 end let x = y + 1 end in x
@@ -292,9 +304,9 @@ let x = let open struct type t = T end in T
 Line _, characters 42-43:
   let x = let open struct type t = T end in T
                                             ^
-Error: This expression has type M#35.t but an expression was expected of type
+Error: This expression has type M#36.t but an expression was expected of type
          'a
-       The type constructor M#35.t would escape its scope
+       The type constructor M#36.t would escape its scope
 |}]
 
 module type Print = sig
