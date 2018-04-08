@@ -125,10 +125,6 @@ and exp_extra =
         (** E :> T           [Texp_coerce (None, T)]
             E : T0 :> T      [Texp_coerce (Some T0, T)]
          *)
-  | Texp_open of override_flag * Path.t * Longident.t loc * Env.t
-        (** let open[!] M in    [Texp_open (!, P, M, env)]
-                                where [env] is the environment after opening [P]
-         *)
   | Texp_poly of core_type option
         (** Used for method bodies. *)
   | Texp_newtype of string
@@ -233,6 +229,8 @@ and expression_desc =
   | Texp_pack of module_expr
   | Texp_unreachable
   | Texp_extension_constructor of Longident.t loc * Path.t
+  | Texp_open of open_declaration * expression
+        (** let open[!] M in e *)
 
 and meth =
     Tmeth_name of string
@@ -272,7 +270,7 @@ and class_expr_desc =
   | Tcl_constraint of
       class_expr * class_type option * string list * string list * Concr.t
   (* Visible instance variables, methods and concrete methods *)
-  | Tcl_open of override_flag * Path.t * Longident.t loc * Env.t * class_expr
+  | Tcl_open of open_description * class_expr
 
 and class_structure =
   {
@@ -355,7 +353,7 @@ and structure_item_desc =
   | Tstr_module of module_binding
   | Tstr_recmodule of module_binding list
   | Tstr_modtype of module_type_declaration
-  | Tstr_open of open_description
+  | Tstr_open of open_declaration
   | Tstr_class of (class_declaration * string list) list
   | Tstr_class_type of (Ident.t * string loc * class_type_declaration) list
   | Tstr_include of include_declaration
@@ -467,14 +465,20 @@ and module_type_declaration =
      mtd_loc: Location.t;
     }
 
-and open_description =
+and 'a open_infos =
     {
-     open_path: Path.t;
-     open_txt: Longident.t loc;
+     open_expr: 'a;
+     open_bound_items: Types.signature;
      open_override: override_flag;
+     open_env: Env.t;
      open_loc: Location.t;
      open_attributes: attribute list;
     }
+
+and open_description = (Path.t * Longident.t loc) open_infos
+
+and open_declaration = module_expr open_infos
+
 
 and 'a include_infos =
     {
@@ -643,7 +647,7 @@ and class_type_desc =
     Tcty_constr of Path.t * Longident.t loc * core_type list
   | Tcty_signature of class_signature
   | Tcty_arrow of arg_label * core_type * class_type
-  | Tcty_open of override_flag * Path.t * Longident.t loc * Env.t * class_type
+  | Tcty_open of open_description * class_type
 
 and class_signature = {
     csig_self : core_type;

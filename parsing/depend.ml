@@ -163,33 +163,6 @@ let add_type_extension bv te =
 let add_type_exception bv te =
   add_extension_constructor bv te.ptyexn_constructor
 
-let rec add_class_type bv cty =
-  match cty.pcty_desc with
-    Pcty_constr(l, tyl) ->
-      add bv l; List.iter (add_type bv) tyl
-  | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
-      add_type bv ty;
-      List.iter (add_class_type_field bv) fieldl
-  | Pcty_arrow(_, ty1, cty2) ->
-      add_type bv ty1; add_class_type bv cty2
-  | Pcty_extension e -> handle_extension e
-  | Pcty_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_class_type bv e
-
-and add_class_type_field bv pctf =
-  match pctf.pctf_desc with
-    Pctf_inherit cty -> add_class_type bv cty
-  | Pctf_val(_, _, _, ty) -> add_type bv ty
-  | Pctf_method(_, _, _, ty) -> add_type bv ty
-  | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
-  | Pctf_attribute _ -> ()
-  | Pctf_extension e -> handle_extension e
-
-let add_class_description bv infos =
-  add_class_type bv infos.pci_expr
-
-let add_class_type_declaration = add_class_description
-
 let pattern_bv = ref String.Map.empty
 
 let rec add_pattern bv pat =
@@ -270,8 +243,9 @@ let rec add_expr bv exp =
       let bv = add_pattern bv pat in List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
   | Pexp_pack m -> add_module_expr bv m
-  | Pexp_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_expr bv e
+  | Pexp_open (o, e) ->
+      let bv = open_declaration bv o in
+      add_expr bv e
   | Pexp_extension (({ txt = ("ocaml.extension_constructor"|
                               "extension_constructor"); _ },
                      PStr [item]) as e) ->
@@ -379,7 +353,7 @@ and add_sig_item (bv, m) item =
       end;
       (bv, m)
   | Psig_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      (open_description bv od, m)
   | Psig_include incl ->
       let Node (s, m') = add_modtype_binding bv incl.pincl_mod in
       add_names s;
@@ -393,6 +367,16 @@ and add_sig_item (bv, m) item =
   | Psig_extension (e, _) ->
       handle_extension e;
       (bv, m)
+
+and open_description bv od =
+  let Node(s, m) = add_module_alias bv od.popen_expr in
+  add_names s;
+  String.Map.fold String.Map.add m bv
+
+and open_declaration bv od =
+  let Node (s, m) = add_module_binding bv od.popen_expr in
+  add_names s;
+  String.Map.fold String.Map.add m bv
 
 and add_module_binding bv modl =
   match modl.pmod_desc with
@@ -416,6 +400,34 @@ and add_module_expr bv modl =
       add_expr bv e
   | Pmod_extension e ->
       handle_extension e
+
+and add_class_type bv cty =
+  match cty.pcty_desc with
+    Pcty_constr(l, tyl) ->
+      add bv l; List.iter (add_type bv) tyl
+  | Pcty_signature { pcsig_self = ty; pcsig_fields = fieldl } ->
+      add_type bv ty;
+      List.iter (add_class_type_field bv) fieldl
+  | Pcty_arrow(_, ty1, cty2) ->
+      add_type bv ty1; add_class_type bv cty2
+  | Pcty_extension e -> handle_extension e
+  | Pcty_open (o, e) ->
+      let bv = open_description bv o in
+      add_class_type bv e
+
+and add_class_type_field bv pctf =
+  match pctf.pctf_desc with
+    Pctf_inherit cty -> add_class_type bv cty
+  | Pctf_val(_, _, _, ty) -> add_type bv ty
+  | Pctf_method(_, _, _, ty) -> add_type bv ty
+  | Pctf_constraint(ty1, ty2) -> add_type bv ty1; add_type bv ty2
+  | Pctf_attribute _ -> ()
+  | Pctf_extension e -> handle_extension e
+
+and add_class_description bv infos =
+  add_class_type bv infos.pci_expr
+
+and add_class_type_declaration bv infos = add_class_description bv infos
 
 and add_structure bv item_list =
   let (bv, m) = add_structure_binding bv item_list in
@@ -461,7 +473,7 @@ and add_struct_item (bv, m) item : _ String.Map.t * _ String.Map.t =
       end;
       (bv, m)
   | Pstr_open od ->
-      (open_module bv od.popen_lid.txt, m)
+      (open_declaration bv od, m)
   | Pstr_class cdl ->
       List.iter (add_class_declaration bv) cdl; (bv, m)
   | Pstr_class_type cdtl ->
@@ -510,8 +522,9 @@ and add_class_expr bv ce =
   | Pcl_constraint(ce, ct) ->
       add_class_expr bv ce; add_class_type bv ct
   | Pcl_extension e -> handle_extension e
-  | Pcl_open (_ovf, m, e) ->
-      let bv = open_module bv m.txt in add_class_expr bv e
+  | Pcl_open (o, e) ->
+      let bv = open_description bv o in
+      add_class_expr bv e
 
 and add_class_field bv pcf =
   match pcf.pcf_desc with

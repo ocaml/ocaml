@@ -48,6 +48,8 @@ type mapper =
     pat: mapper -> pattern -> pattern;
     row_field: mapper -> row_field -> row_field;
     object_field: mapper -> object_field -> object_field;
+    open_declaration: mapper -> open_declaration -> open_declaration;
+    open_description: mapper -> open_description -> open_description;
     signature: mapper -> signature -> signature;
     signature_item: mapper -> signature_item -> signature_item;
     structure: mapper -> structure -> structure;

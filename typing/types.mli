@@ -406,6 +406,10 @@ type class_type_declaration =
 
 (* Type expressions for the module language *)
 
+type visibility =
+  | Exported
+  | Hidden
+
 type module_type =
     Mty_ident of Path.t
   | Mty_signature of signature
@@ -419,13 +423,14 @@ and module_presence =
 and signature = signature_item list
 
 and signature_item =
-    Sig_value of Ident.t * value_description
-  | Sig_type of Ident.t * type_declaration * rec_status
-  | Sig_typext of Ident.t * extension_constructor * ext_status
-  | Sig_module of Ident.t * module_presence * module_declaration * rec_status
-  | Sig_modtype of Ident.t * modtype_declaration
-  | Sig_class of Ident.t * class_declaration * rec_status
-  | Sig_class_type of Ident.t * class_type_declaration * rec_status
+    Sig_value of Ident.t * value_description * visibility
+  | Sig_type of Ident.t * type_declaration * rec_status * visibility
+  | Sig_typext of Ident.t * extension_constructor * ext_status * visibility
+  | Sig_module of
+      Ident.t * module_presence * module_declaration * rec_status * visibility
+  | Sig_modtype of Ident.t * modtype_declaration * visibility
+  | Sig_class of Ident.t * class_declaration * rec_status * visibility
+  | Sig_class_type of Ident.t * class_type_declaration * rec_status * visibility
 
 and module_declaration =
   {
@@ -498,3 +503,11 @@ type label_description =
     lbl_loc: Location.t;
     lbl_attributes: Parsetree.attributes;
   }
+
+(** Extracts the list of "value" identifiers bound by a signature.
+    "Value" identifiers are identifiers for signature components that
+    correspond to a run-time value: values, extensions, modules, classes.
+    Note: manifest primitives do not correspond to a run-time value! *)
+val bound_value_identifiers: signature -> Ident.t list
+
+val signature_item_id : signature_item -> Ident.t

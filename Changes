@@ -9,6 +9,11 @@ Working version
   (Thomas Refis, with help and review from Alain Frisch, Gabriel Scherer, Jeremy
   Yallop, Leo White and Luc Maranget)
 
+- GPR#1506, GPR#XXXX: Extended open to arbitrary module expression in
+  structures and to applicative paths in signatures
+  (Runhang Li, review by Alain Frisch, Florian Angeletti, Jeremy Yallop and
+  Thomas Refis)
+
 - GPR#1705: Allow @@attributes on exceptions.
   (Hugo Heuzard, review by Gabriel Radanne and Thomas Refis)
 

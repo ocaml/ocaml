@@ -81,6 +81,11 @@ exception Error_forward of Location.error
 
 open Typedtree
 
+let type_open_descr :
+  (?used_slot:bool ref -> Env.t -> Parsetree.open_description
+   -> open_description * Env.t) ref =
+  ref (fun ?used_slot:_ _ -> assert false)
+
 let ctyp desc typ env loc =
   { ctyp_desc = desc; ctyp_type = typ; ctyp_loc = loc; ctyp_env = env;
     ctyp_attributes = [] }
@@ -554,10 +559,10 @@ and class_type_aux env scty =
       let typ = Cty_arrow (l, ty, clty.cltyp_type) in
       cltyp (Tcty_arrow (l, cty, clty)) typ
 
-  | Pcty_open (ovf, lid, e) ->
-      let (path, newenv) = !Typecore.type_open ovf env scty.pcty_loc lid in
+  | Pcty_open (od, e) ->
+      let (od, newenv) = !type_open_descr env od in
       let clty = class_type newenv e in
-      cltyp (Tcty_open (ovf, path, lid, newenv, clty)) clty.cltyp_type
+      cltyp (Tcty_open (od, clty)) clty.cltyp_type
 
   | Pcty_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
@@ -1226,14 +1231,12 @@ and class_expr_aux cl_num val_env met_env scl =
           cl_env = val_env;
           cl_attributes = scl.pcl_attributes;
          }
-  | Pcl_open (ovf, lid, e) ->
+  | Pcl_open (pod, e) ->
       let used_slot = ref false in
-      let (path, new_val_env) =
-        !Typecore.type_open ~used_slot ovf val_env scl.pcl_loc lid in
-      let (_path, new_met_env) =
-        !Typecore.type_open ~used_slot ovf met_env scl.pcl_loc lid in
+      let (od, new_val_env) = !type_open_descr ~used_slot val_env pod in
+      let ( _, new_met_env) = !type_open_descr ~used_slot met_env pod in
       let cl = class_expr cl_num new_val_env new_met_env e in
-      rc {cl_desc = Tcl_open (ovf, path, lid, new_val_env, cl);
+      rc {cl_desc = Tcl_open (od, cl);
           cl_loc = scl.pcl_loc;
           cl_type = cl.cl_type;
           cl_env = val_env;
@@ -1803,7 +1806,7 @@ let rec unify_parents env ty cl =
       | _exn -> assert false
       end
   | Tcl_structure st -> unify_parents_struct env ty st
-  | Tcl_open (_, _, _, _, cl)
+  | Tcl_open (_, cl)
   | Tcl_fun (_, _, _, cl, _)
   | Tcl_apply (cl, _)
   | Tcl_let (_, _, _, cl)

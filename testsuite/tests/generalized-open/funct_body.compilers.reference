@@ -1,0 +1,5 @@
+File "funct_body.ml", line 30, characters 12-20:
+30 |     include (val !r)
+                 ^^^^^^^^
+Error: This expression creates fresh types.
+       It is not allowed inside applicative functors.

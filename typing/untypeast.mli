@@ -54,6 +54,7 @@ type mapper = {
   module_type_declaration:
     mapper -> Typedtree.module_type_declaration -> module_type_declaration;
   package_type: mapper -> Typedtree.package_type -> package_type;
+  open_declaration: mapper -> Typedtree.open_declaration -> open_declaration;
   open_description: mapper -> Typedtree.open_description -> open_description;
   pat: mapper -> Typedtree.pattern -> pattern;
   row_field: mapper -> Typedtree.row_field -> row_field;

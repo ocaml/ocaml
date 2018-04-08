@@ -147,7 +147,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
-        | Tstr_open _ -> ()
+        | Tstr_open od -> iter_module_expr od.open_expr
         | Tstr_class list ->
             List.iter (fun (ci, _) -> iter_class_declaration ci) list
         | Tstr_class_type list ->
@@ -267,7 +267,6 @@ module MakeIterator(Iter : IteratorArgument) : sig
             iter_core_type ct
         | Texp_coerce (cty1, cty2) ->
             option iter_core_type cty1; iter_core_type cty2
-        | Texp_open _ -> ()
         | Texp_poly cto -> option iter_core_type cto
         | Texp_newtype _ -> ())
         exp.exp_extra;
@@ -366,6 +365,9 @@ module MakeIterator(Iter : IteratorArgument) : sig
             ()
         | Texp_extension_constructor _ ->
             ()
+        | Texp_open (od, e) ->
+            iter_module_expr od.open_expr;
+            iter_expression e
       end;
       Iter.leave_expression exp;
 
@@ -522,7 +524,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_ident (_, _, tyl) ->
             List.iter iter_core_type tyl
 
-        | Tcl_open (_, _, _, _, e) ->
+        | Tcl_open (_, e) ->
             iter_class_expr e
       end;
       Iter.leave_class_expr cexpr;
@@ -537,7 +539,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcty_arrow (_label, ct, cl) ->
             iter_core_type ct;
             iter_class_type cl
-        | Tcty_open (_, _, _, _, e) ->
+        | Tcty_open (_, e) ->
             iter_class_type e
       end;
       Iter.leave_class_type ct;

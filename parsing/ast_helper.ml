@@ -206,7 +206,7 @@ module Exp = struct
   let object_ ?loc ?attrs a = mk ?loc ?attrs (Pexp_object a)
   let newtype ?loc ?attrs a b = mk ?loc ?attrs (Pexp_newtype (a, b))
   let pack ?loc ?attrs a = mk ?loc ?attrs (Pexp_pack a)
-  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pexp_open (a, b, c))
+  let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pexp_open (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pexp_extension a)
   let unreachable ?loc ?attrs () = mk ?loc ?attrs Pexp_unreachable
 
@@ -313,7 +313,7 @@ module Cl = struct
   let let_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_let (a, b, c))
   let constraint_ ?loc ?attrs a b = mk ?loc ?attrs (Pcl_constraint (a, b))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcl_extension a)
-  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcl_open (a, b, c))
+  let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pcl_open (a, b))
 end
 
 module Cty = struct
@@ -329,7 +329,7 @@ module Cty = struct
   let signature ?loc ?attrs a = mk ?loc ?attrs (Pcty_signature a)
   let arrow ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_arrow (a, b, c))
   let extension ?loc ?attrs a = mk ?loc ?attrs (Pcty_extension a)
-  let open_ ?loc ?attrs a b c = mk ?loc ?attrs (Pcty_open (a, b, c))
+  let open_ ?loc ?attrs a b = mk ?loc ?attrs (Pcty_open (a, b))
 end
 
 module Ctf = struct
@@ -448,9 +448,9 @@ end
 
 module Opn = struct
   let mk ?(loc = !default_loc) ?(attrs = []) ?(docs = empty_docs)
-        ?(override = Fresh) lid =
+        ?(override = Fresh) expr =
     {
-     popen_lid = lid;
+     popen_expr = expr;
      popen_override = override;
      popen_loc = loc;
      popen_attributes = add_docs_attrs docs attrs;

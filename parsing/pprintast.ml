@@ -692,8 +692,9 @@ and expression ctxt f x =
     | Pexp_poly (e, Some ct) ->
         pp f "@[<hov2>(!poly!@ %a@ : %a)@]"
           (simple_expr ctxt) e (core_type ctxt) ct
-    | Pexp_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pexp_open (o, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]"
+          (override o.popen_override) (module_expr ctxt) o.popen_expr
           (expression ctxt) e
     | Pexp_variant (l,Some eo) ->
         pp f "@[<2>`%s@;%a@]" l (simple_expr ctxt) eo
@@ -858,8 +859,9 @@ and class_type ctxt f x =
   | Pcty_extension e ->
       extension ctxt f e;
       attributes ctxt f x.pcty_attributes
-  | Pcty_open (ovf, lid, e) ->
-      pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+  | Pcty_open (o, e) ->
+      pp f "@[<2>let open%s %a in@;%a@]"
+        (override o.popen_override) longident_loc o.popen_expr
         (class_type ctxt) e
 
 (* [class type a = object end] *)
@@ -980,8 +982,9 @@ and class_expr ctxt f x =
           (class_expr ctxt) ce
           (class_type ctxt) ct
     | Pcl_extension e -> extension ctxt f e
-    | Pcl_open (ovf, lid, e) ->
-        pp f "@[<2>let open%s %a in@;%a@]" (override ovf) longident_loc lid
+    | Pcl_open (o, e) ->
+        pp f "@[<2>let open%s %a in@;%a@]"
+          (override o.popen_override) longident_loc o.popen_expr
           (class_expr ctxt) e
 
 and module_type ctxt f x =
@@ -1087,7 +1090,7 @@ and signature_item ctxt f x : unit =
   | Psig_open od ->
       pp f "@[<hov2>open%s@ %a@]%a"
         (override od.popen_override)
-        longident_loc od.popen_lid
+        longident_loc od.popen_expr
         (item_attributes ctxt) od.popen_attributes
   | Psig_include incl ->
       pp f "@[<hov2>include@ %a@]%a"
@@ -1289,7 +1292,7 @@ and structure_item ctxt f x =
   | Pstr_open od ->
       pp f "@[<2>open%s@;%a@]%a"
         (override od.popen_override)
-        longident_loc od.popen_lid
+        (module_expr ctxt) od.popen_expr
         (item_attributes ctxt) od.popen_attributes
   | Pstr_modtype {pmtd_name=s; pmtd_type=md; pmtd_attributes=attrs} ->
       pp f "@[<hov2>module@ type@ %s%a@]%a"

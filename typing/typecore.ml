@@ -125,6 +125,12 @@ let type_open :
     ref =
   ref (fun ?used_slot:_ _ -> assert false)
 
+let type_open_decl :
+  (?used_slot:bool ref -> Env.t -> Parsetree.open_declaration
+   -> open_declaration * Types.signature * Env.t)
+    ref =
+  ref (fun ?used_slot:_ _ -> assert false)
+
 (* Forward declaration, to be filled in by Typemod.type_package *)
 
 let type_package =
@@ -188,7 +194,7 @@ let iter_expression f e =
     | Pexp_variant (_, eo) -> may expr eo
     | Pexp_record (iel, eo) ->
         may expr eo; List.iter (fun (_, e) -> expr e) iel
-    | Pexp_open (_, _, e)
+    | Pexp_open (_, e)
     | Pexp_newtype (_, e)
     | Pexp_poly (e, _)
     | Pexp_lazy e
@@ -255,7 +261,7 @@ let iter_expression f e =
         class_expr ce; List.iter (fun (_, e) -> expr e) lel
     | Pcl_let (_, pel, ce) ->
         List.iter binding pel; class_expr ce
-    | Pcl_open (_, _, ce)
+    | Pcl_open (_, ce)
     | Pcl_constraint (ce, _) -> class_expr ce
     | Pcl_extension _ -> ()
 
@@ -2041,7 +2047,7 @@ let check_partial_application statement exp =
                 check e; List.iter (fun {c_rhs; _} -> check c_rhs) cases
             | Texp_ifthenelse (_, e1, Some e2) ->
                 check e1; check e2
-            | Texp_let (_, _, e) | Texp_sequence (_, e)
+            | Texp_let (_, _, e) | Texp_sequence (_, e) | Texp_open (_, e)
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ ->
@@ -3309,15 +3315,17 @@ and type_expect_
         exp_type = newty (Tpackage (p, nl, tl'));
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
-  | Pexp_open (ovf, lid, e) ->
-      let (path, newenv) = !type_open ovf env sexp.pexp_loc lid in
+  | Pexp_open (od, e) ->
+      let (od, _, newenv) = !type_open_decl env od in
       let exp = type_expect newenv e ty_expected_explained in
-      { exp with
-        exp_extra = (Texp_open (ovf, path, lid, newenv), loc,
-                     sexp.pexp_attributes) ::
-                      exp.exp_extra;
+      rue {
+        exp_desc = Texp_open (od, exp);
+        exp_type = exp.exp_type;
+        exp_loc = loc;
+        exp_extra = [];
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env;
       }
-
   | Pexp_extension ({ txt = ("ocaml.extension_constructor"
                              |"extension_constructor"); _ },
                     payload) ->
@@ -3738,7 +3746,7 @@ and type_argument ?recarg env sarg ty_expected' ty_expected =
     match sexp.pexp_desc with
       Pexp_ident _ | Pexp_apply _ | Pexp_field _ | Pexp_constraint _
     | Pexp_coerce _ | Pexp_send _ | Pexp_new _ -> true
-    | Pexp_sequence (_, e) | Pexp_open (_, _, e) -> is_inferred e
+    | Pexp_sequence (_, e) | Pexp_open (_, e) -> is_inferred e
     | Pexp_ifthenelse (_, e1, Some e2) -> is_inferred e1 && is_inferred e2
     | _ -> false
   in
@@ -4014,11 +4022,11 @@ and type_application env funct sargs =
       check_partial_application false exp;
       ([Nolabel, Some exp], ty_res)
   | _ ->
-      let ty = funct.exp_type in
-      if ignore_labels then
-        type_args [] [] ty (instance ty) ty [] sargs
-      else
-        type_args [] [] ty (instance ty) ty sargs []
+    let ty = funct.exp_type in
+    if ignore_labels then
+      type_args [] [] ty (instance ty) ty [] sargs
+    else
+      type_args [] [] ty (instance ty) ty sargs []
 
 and type_construct env loc lid sarg ty_expected_explained attrs =
   let { ty = ty_expected; explanation } = ty_expected_explained in
@@ -4048,7 +4056,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     | Some se -> [se] in
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, env, Constructor_arity_mismatch
-                  (lid.txt, constr.cstr_arity, List.length sargs)));
+                            (lid.txt, constr.cstr_arity, List.length sargs)));
   let separate = !Clflags.principal || Env.has_local_constraints env in
   if separate then (begin_def (); begin_def ());
   let (ty_args, ty_res) = instance_constructor constr in
@@ -4064,7 +4072,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     generalize_structure ty_res;
     with_explanation explanation (fun () ->
       unify_exp env {texp with exp_type = instance ty_res}
-                    (instance ty_expected));
+        (instance ty_expected));
     end_def ();
     List.iter generalize_structure ty_args;
     generalize_structure ty_res;
@@ -4080,14 +4088,14 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
     match constr.cstr_inlined with
     | None -> Rejected
     | Some _ ->
-        begin match sargs with
-        | [{pexp_desc =
-              Pexp_ident _ |
-              Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
-            Required
-        | _ ->
-            raise (Error(loc, env, Inlined_record_expected))
-        end
+      begin match sargs with
+      | [{pexp_desc =
+            Pexp_ident _ |
+            Pexp_record (_, (Some {pexp_desc = Pexp_ident _}| None))}] ->
+        Required
+      | _ ->
+        raise (Error(loc, env, Inlined_record_expected))
+      end
   in
   let args =
     List.map2 (fun e (t,t0) -> type_argument ~recarg env e t t0) sargs
@@ -4107,7 +4115,7 @@ and type_statement ?explanation env sexp =
   end_def();
   let ty = expand_head env exp.exp_type and tv = newvar() in
   if is_Tvar ty && ty.level > tv.level then
-      Location.prerr_warning loc Warnings.Nonreturning_statement;
+    Location.prerr_warning loc Warnings.Nonreturning_statement;
   if !Clflags.strict_sequence then
     let expected_ty = instance Predef.type_unit in
     with_explanation explanation (fun () ->
