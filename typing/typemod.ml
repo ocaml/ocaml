@@ -967,9 +967,9 @@ and transl_signature env sg =
         | Psig_open sod ->
             let id, od = type_open env sod in
             let open_env = od.open_env in
-            let (trem, rem, final_env) = transl_sig open_env srem in begin
+            let (trem, rem, final_env) = transl_sig open_env srem in
             let rem =
-              match id with
+              begin match id with
               | None -> rem
               | Some (id, _md, _env) ->
                   let s_rem = Mty_signature rem in
@@ -979,9 +979,8 @@ and transl_signature env sg =
                       raise(Error(sod.popen_loc, env,
                                   Cannot_eliminate_anon_module(id, rem)))
                   | Mty_ident _ | Mty_functor _ | Mty_alias _ -> assert false
-            in
+              end in
             mksig (Tsig_open od) env loc :: trem, rem, final_env
-            end
         | Psig_include sincl ->
             let smty = sincl.pincl_mod in
             let tmty =
