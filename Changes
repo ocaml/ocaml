@@ -325,6 +325,9 @@ Working version
 - GPR#1520: more robust implementation of Misc.no_overflow_mul
   (Max Mouratov, review by Xavier Leroy)
 
+- GPR#1557: Organise and simplify translation of primitives
+  (Leo White, review by François Bobot and Nicolás Ojeda Bär)
+
 - GPR#1567: register all idents relevant for reraise
   (Thomas Refis, review by Alain Frisch and Frédéric Bour)
 
