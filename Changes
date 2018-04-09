@@ -76,7 +76,7 @@ Working version
   when compiled with the Js_of_ocaml backend.
   (Hugo Heuzard, reviewed by Gabriel Scherer)
 
-- GPR#1685: Move the Bigarray module to the standard library. Keep the
+- MPR#6139, GPR#1685: Move the Bigarray module to the standard library. Keep the
   bigarray library as on overlay adding the deprecated map_file functions
   (Jérémie Dimino, review by Mark Shinwell)
 
