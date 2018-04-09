@@ -118,10 +118,6 @@ Working version
 - GPR#1428: give a non dummy location for warning 49 (no cmi found)
   (Valentin Gatien-Baron)
 
-- GPR#1472: Improve error reporting for missing 'rec' in let-bindings
-  (Arthur Charguéraud and Armaël Guéneau, with help from Gabriel Scherer and
-  Frédéric Bour)
-
 - GPR#1491: Improve error reporting for ill-typed applicative functor
   types, F(M).t.
   (Valentin Gatien-Baron, review by Florian Angeletti and Gabriel Radanne)
