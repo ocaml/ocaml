@@ -133,14 +133,14 @@
      eta_int32_ge = (function prim prim stub (Int32.>= prim prim))
      eta_int64_ge = (function prim prim stub (Int64.>= prim prim))
      eta_nativeint_ge = (function prim prim stub (Nativeint.>= prim prim))
-     int_vec = [0: [0: 1 1] [0: [0: 1 2] [0: [0: 2 1] 0]]]
-     bool_vec = [0: [0: 0 0] [0: [0: 0 1] [0: [0: 1 0] 0]]]
-     intlike_vec = [0: [0: 0 0] [0: [0: 0 1] [0: [0: 1 0] 0]]]
-     float_vec = [0: [0: 1. 1.] [0: [0: 1. 2.] [0: [0: 2. 1.] 0]]]
-     string_vec = [0: [0: "1" "1"] [0: [0: "1" "2"] [0: [0: "2" "1"] 0]]]
-     int32_vec = [0: [0: 1l 1l] [0: [0: 1l 2l] [0: [0: 2l 1l] 0]]]
-     int64_vec = [0: [0: 1L 1L] [0: [0: 1L 2L] [0: [0: 2L 1L] 0]]]
-     nativeint_vec = [0: [0: 1n 1n] [0: [0: 1n 2n] [0: [0: 2n 1n] 0]]]
+     int_vec = [0: [0: 1 1] [0: [0: 1 2] [0: [0: 2 1] 0a]]]
+     bool_vec = [0: [0: 0a 0a] [0: [0: 0a 1a] [0: [0: 1a 0a] 0a]]]
+     intlike_vec = [0: [0: 0a 0a] [0: [0: 0a 1a] [0: [0: 1a 0a] 0a]]]
+     float_vec = [0: [0: 1. 1.] [0: [0: 1. 2.] [0: [0: 2. 1.] 0a]]]
+     string_vec = [0: [0: "1" "1"] [0: [0: "1" "2"] [0: [0: "2" "1"] 0a]]]
+     int32_vec = [0: [0: 1l 1l] [0: [0: 1l 2l] [0: [0: 2l 1l] 0a]]]
+     int64_vec = [0: [0: 1L 1L] [0: [0: 1L 2L] [0: [0: 2L 1L] 0a]]]
+     nativeint_vec = [0: [0: 1n 1n] [0: [0: 1n 2n] [0: [0: 2n 1n] 0a]]]
      test_vec =
        (function cmp eq ne lt gt le ge vec
          (let
@@ -159,7 +159,7 @@
                    (makeblock 0 (makeblock 0 gen_lt lt)
                      (makeblock 0 (makeblock 0 gen_gt gt)
                        (makeblock 0 (makeblock 0 gen_le le)
-                         (makeblock 0 (makeblock 0 gen_ge ge) 0)))))))))))
+                         (makeblock 0 (makeblock 0 gen_ge ge) 0a)))))))))))
     (seq
       (apply test_vec int_cmp int_eq int_ne int_lt int_gt int_le int_ge
         int_vec)
@@ -199,7 +199,7 @@
                        (makeblock 0 (makeblock 0 eta_gen_lt lt)
                          (makeblock 0 (makeblock 0 eta_gen_gt gt)
                            (makeblock 0 (makeblock 0 eta_gen_le le)
-                             (makeblock 0 (makeblock 0 eta_gen_ge ge) 0)))))))))))
+                             (makeblock 0 (makeblock 0 eta_gen_ge ge) 0a)))))))))))
         (seq
           (apply eta_test_vec eta_int_cmp eta_int_eq eta_int_ne eta_int_lt
             eta_int_gt eta_int_le eta_int_ge int_vec)

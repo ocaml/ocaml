@@ -792,6 +792,7 @@ let run_test_program_in_toplevel (toplevel : Ocaml_toplevels.toplevel) log env =
       libraries toplevel#backend env;
       binary_modules toplevel#backend env;
       if ocaml_script_as_argument then testfile else "";
+      Environments.safe_lookup Builtin_variables.arguments env
     ] in
     let exit_status =
       if ocaml_script_as_argument
