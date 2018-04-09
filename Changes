@@ -345,7 +345,11 @@ Working version
 
 - GPR#1665: reduce the size of cmx files in classic mode by droping the
   bodies of functions that will not be inlined
-  (Fuyong Quah, review by Leo White)
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
+  
+- GPR#1666: reduce the size of cmx files in classic mode by droping the
+  bodies of functions that cannot be reached from the module block
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
 
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)

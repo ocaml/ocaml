@@ -988,6 +988,18 @@ let update_function_declarations function_decls ~funs =
     funs;
   }
 
+let clear_function_bodies (function_decls : function_declarations) =
+  let funs =
+    Variable.Map.map (fun (fun_decl : function_declaration) ->
+      match fun_decl.function_body with
+      | None | Some { stub = true; _ } ->
+        fun_decl
+      | Some _ ->
+        { fun_decl with function_body = None })
+      function_decls.funs
+  in
+  { function_decls with funs }
+
 let update_function_declaration_body
       (function_decl : function_declaration)
       (f : Flambda.t -> Flambda.t) =

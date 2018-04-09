@@ -48,32 +48,32 @@ let import_set_of_closures =
     A.update_function_declarations clos ~funs
   in
   let aux set_of_closures_id =
-    ignore (Compilenv.approx_for_global
-      (Set_of_closures_id.get_compilation_unit set_of_closures_id));
-    let ex_info = Compilenv.approx_env () in
-    let function_declarations =
-      try
-        Some (Set_of_closures_id.Map.find set_of_closures_id
-          ex_info.sets_of_closures)
-      with Not_found ->
-        None
-    in
-    match function_declarations with
+    match
+      Compilenv.approx_for_global
+        (Set_of_closures_id.get_compilation_unit set_of_closures_id)
+    with
     | None -> None
-    | Some function_declarations ->
-      Some (import_function_declarations function_declarations)
+    | Some ex_info ->
+      try
+        let function_declarations =
+          Set_of_closures_id.Map.find set_of_closures_id
+            ex_info.sets_of_closures
+        in
+        Some (import_function_declarations function_declarations)
+      with Not_found ->
+        Misc.fatal_error "Cannot find set of closures"
   in
   Set_of_closures_id.Tbl.memoize Compilenv.imported_sets_of_closures_table aux
 
 let rec import_ex ex =
-  ignore (Compilenv.approx_for_global (Export_id.get_compilation_unit ex));
-  let ex_info = Compilenv.approx_env () in
   let import_value_set_of_closures ~set_of_closures_id ~bound_vars ~free_vars
         ~(ex_info : Export_info.t) ~what : A.value_set_of_closures option =
     let bound_vars = Var_within_closure.Map.map import_approx bound_vars in
     match import_set_of_closures set_of_closures_id with
     | None -> None
     | Some function_decls ->
+      (* CR-someday xclerc: add a test to the test suite to ensure that
+         classic mode behaves as expected. *)
       let is_classic_mode = function_decls.is_classic_mode in
       let invariant_params =
         match
@@ -116,62 +116,68 @@ let rec import_ex ex =
         ~freshening:Freshening.Project_var.empty
         ~direct_call_surrogates:Closure_id.Map.empty)
   in
-  match Export_info.find_description ex_info ex with
-  | exception Not_found -> A.value_unknown Other
-  | Value_int i -> A.value_int i
-  | Value_char c -> A.value_char c
-  | Value_constptr i -> A.value_constptr i
-  | Value_float f -> A.value_float f
-  | Value_float_array float_array ->
-    begin match float_array.contents with
-    | Unknown_or_mutable ->
-      A.value_mutable_float_array ~size:float_array.size
-    | Contents contents ->
-      A.value_immutable_float_array
-        (Array.map (function
-           | None -> A.value_any_float
-           | Some f -> A.value_float f)
-           contents)
-    end
-  | Export_info.Value_boxed_int (t, i) -> A.value_boxed_int t i
-  | Value_string { size; contents } ->
-    let contents =
-      match contents with
-      | Unknown_or_mutable -> None
-      | Contents contents -> Some contents
-    in
-    A.value_string size contents
-  | Value_mutable_block _ -> A.value_unknown Other
-  | Value_block (tag, fields) ->
-    A.value_block tag (Array.map import_approx fields)
-  | Value_closure { closure_id;
-        set_of_closures =
-          { set_of_closures_id; bound_vars; free_vars; aliased_symbol } } ->
-    let value_set_of_closures =
-      import_value_set_of_closures
-        ~set_of_closures_id ~bound_vars ~free_vars ~ex_info
-        ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
-    in
-    begin match value_set_of_closures with
-    | None -> A.value_unresolved (Set_of_closures_id set_of_closures_id)
-    | Some value_set_of_closures ->
-      A.value_closure ?set_of_closures_symbol:aliased_symbol
-        value_set_of_closures closure_id
-    end
-  | Value_set_of_closures
-      { set_of_closures_id; bound_vars; free_vars; aliased_symbol } ->
-    let value_set_of_closures =
-      import_value_set_of_closures ~set_of_closures_id ~bound_vars
-        ~free_vars ~ex_info ~what:"Value_set_of_closures"
-    in
-    match value_set_of_closures with
-    | None ->
-      A.value_unresolved (Set_of_closures_id set_of_closures_id)
-    | Some value_set_of_closures ->
-      let approx = A.value_set_of_closures value_set_of_closures in
-      match aliased_symbol with
-      | None -> approx
-      | Some symbol -> A.augment_with_symbol approx symbol
+  let compilation_unit = Export_id.get_compilation_unit ex in
+  match Compilenv.approx_for_global compilation_unit with
+  | None -> A.value_unknown Other
+  | Some ex_info ->
+    match Export_info.find_description ex_info ex with
+    | exception Not_found ->
+      Misc.fatal_errorf "Cannot find export id %a" Export_id.print ex
+    | Value_unknown_descr -> A.value_unknown Other
+    | Value_int i -> A.value_int i
+    | Value_char c -> A.value_char c
+    | Value_constptr i -> A.value_constptr i
+    | Value_float f -> A.value_float f
+    | Value_float_array float_array ->
+      begin match float_array.contents with
+      | Unknown_or_mutable ->
+        A.value_mutable_float_array ~size:float_array.size
+      | Contents contents ->
+        A.value_immutable_float_array
+          (Array.map (function
+             | None -> A.value_any_float
+             | Some f -> A.value_float f)
+             contents)
+      end
+    | Export_info.Value_boxed_int (t, i) -> A.value_boxed_int t i
+    | Value_string { size; contents } ->
+      let contents =
+        match contents with
+        | Unknown_or_mutable -> None
+        | Contents contents -> Some contents
+      in
+      A.value_string size contents
+    | Value_mutable_block _ -> A.value_unknown Other
+    | Value_block (tag, fields) ->
+      A.value_block tag (Array.map import_approx fields)
+    | Value_closure { closure_id;
+          set_of_closures =
+            { set_of_closures_id; bound_vars; free_vars; aliased_symbol } } ->
+      let value_set_of_closures =
+        import_value_set_of_closures
+          ~set_of_closures_id ~bound_vars ~free_vars ~ex_info
+          ~what:(Format.asprintf "Value_closure %a" Closure_id.print closure_id)
+      in
+      begin match value_set_of_closures with
+      | None -> A.value_unresolved (Set_of_closures_id set_of_closures_id)
+      | Some value_set_of_closures ->
+        A.value_closure ?set_of_closures_symbol:aliased_symbol
+          value_set_of_closures closure_id
+      end
+    | Value_set_of_closures
+        { set_of_closures_id; bound_vars; free_vars; aliased_symbol } ->
+      let value_set_of_closures =
+        import_value_set_of_closures ~set_of_closures_id
+          ~bound_vars ~free_vars ~ex_info ~what:"Value_set_of_closures"
+      in
+      match value_set_of_closures with
+      | None ->
+        A.value_unresolved (Set_of_closures_id set_of_closures_id)
+      | Some value_set_of_closures ->
+        let approx = A.value_set_of_closures value_set_of_closures in
+        match aliased_symbol with
+        | None -> approx
+        | Some symbol -> A.augment_with_symbol approx symbol
 
 and import_approx (ap : Export_info.approx) =
   match ap with
@@ -182,15 +188,19 @@ and import_approx (ap : Export_info.approx) =
 let import_symbol sym =
   if Compilenv.is_predefined_exception sym then
     A.value_unknown Other
-  else
-    let symbol_id_map =
-      let global = Symbol.compilation_unit sym in
-      (Compilenv.approx_for_global global).symbol_id
-    in
-    match Symbol.Map.find sym symbol_id_map with
-    | approx -> A.augment_with_symbol (import_ex approx) sym
-    | exception Not_found ->
-      A.value_unresolved (Symbol sym)
+  else begin
+    let compilation_unit = Symbol.compilation_unit sym in
+    match Compilenv.approx_for_global compilation_unit with
+    | None -> A.value_unresolved (Symbol sym)
+    | Some export_info ->
+      match Symbol.Map.find sym export_info.symbol_id with
+      | approx -> A.augment_with_symbol (import_ex approx) sym
+      | exception Not_found ->
+        Misc.fatal_errorf
+          "Compilation unit = %a Cannot find symbol %a"
+          Compilation_unit.print compilation_unit
+          Symbol.print sym
+  end
 
 (* Note for code reviewers: Observe that [really_import] iterates until
    the approximation description is fully resolved (or a necessary .cmx

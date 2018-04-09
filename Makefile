@@ -167,6 +167,7 @@ ASMCOMP=\
   asmcomp/export_info_for_pack.cmo \
   asmcomp/compilenv.cmo \
   asmcomp/closure.cmo \
+	asmcomp/traverse_for_exported_symbols.cmo \
   asmcomp/build_export_info.cmo \
   asmcomp/closure_offsets.cmo \
   asmcomp/flambda_to_clambda.cmo \

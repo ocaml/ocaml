@@ -20,7 +20,14 @@ module Env : sig
   type t
 
   val new_descr : t -> Export_info.descr -> Export_id.t
+
   val record_descr : t -> Export_id.t -> Export_info.descr -> unit
+  val new_value_closure_descr
+    : t
+    -> closure_id:Closure_id.t
+    -> set_of_closures: Export_info.value_set_of_closures
+    -> Export_id.t
+
   val get_descr : t -> Export_info.approx -> Export_info.descr option
 
   val add_approx : t -> Variable.t -> Export_info.approx -> t
@@ -56,11 +63,13 @@ end = struct
         (* Note that [ex_table]s themselves are shared (hence [ref] and not
            [mutable]). *)
         ex_table : Export_info.descr Export_id.Map.t ref;
+        closure_table : Export_id.t Closure_id.Map.t ref;
       }
 
     let create_empty () =
       { sym = Symbol.Map.empty;
         ex_table = ref Export_id.Map.empty;
+        closure_table = ref Closure_id.Map.empty;
       }
 
     let add_symbol t sym export_id =
@@ -85,12 +94,14 @@ end = struct
     { var : Export_info.approx Variable.Map.t;
       sym : Export_id.t Symbol.Map.t;
       ex_table : Export_info.descr Export_id.Map.t ref;
+      closure_table: Export_id.t Closure_id.Map.t ref;
     }
 
   let empty_of_global (env : Global.t) =
     { var = Variable.Map.empty;
       sym = env.sym;
       ex_table = env.ex_table;
+      closure_table = env.closure_table;
     }
 
   let extern_id_descr export_id =
@@ -102,13 +113,17 @@ end = struct
     if Compilenv.is_predefined_exception sym
     then None
     else
-      let export = Compilenv.approx_for_global (Symbol.compilation_unit sym) in
-      try
-        let id = Symbol.Map.find sym export.symbol_id in
-        let descr = Export_info.find_description export id in
-        Some descr
+      match
+        Compilenv.approx_for_global (Symbol.compilation_unit sym)
       with
-      | Not_found -> None
+      | None -> None
+      | Some export ->
+        try
+          let id = Symbol.Map.find sym export.symbol_id in
+          let descr = Export_info.find_description export id in
+          Some descr
+        with
+        | Not_found -> None
 
   let get_id_descr t export_id =
     try Some (Export_id.Map.find export_id !(t.ex_table))
@@ -139,6 +154,17 @@ end = struct
     let id = fresh_id () in
     record_descr t id descr;
     id
+
+  let new_value_closure_descr t ~closure_id ~set_of_closures =
+    match Closure_id.Map.find closure_id !(t.closure_table) with
+    | exception Not_found ->
+      let export_id =
+        new_descr t (Value_closure { closure_id; set_of_closures })
+      in
+      t.closure_table :=
+        Closure_id.Map.add closure_id export_id !(t.closure_table);
+      export_id
+    | export_id -> export_id
 
   let new_unit_descr t =
     new_descr t (Value_constptr 0)
@@ -278,10 +304,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
             [Project_closure]: closure ID %a not in set of closures"
           Closure_id.print closure_id
       end;
-      let descr : Export_info.descr =
-        Value_closure { closure_id = closure_id; set_of_closures; }
-      in
-      Value_id (Env.new_descr env descr)
+      Value_id (
+        Env.new_value_closure_descr env ~closure_id ~set_of_closures
+      )
     | _ ->
       (* It would be nice if this were [assert false], but owing to the fact
          that this pass may propagate less information than for example
@@ -292,10 +317,9 @@ and descr_of_named (env : Env.t) (named : Flambda.named)
     begin match Env.get_descr env (Env.find_approx env closure) with
     | Some (Value_closure { set_of_closures; closure_id; }) ->
       assert (Closure_id.equal closure_id start_from);
-      let descr : Export_info.descr =
-        Value_closure { closure_id = move_to; set_of_closures; }
-      in
-      Value_id (Env.new_descr env descr)
+      Value_id (
+        Env.new_value_closure_descr env ~closure_id:move_to ~set_of_closures
+      )
     | _ -> Value_unknown
     end
   | Project_var { closure; closure_id = closure_id'; var; } ->
@@ -352,13 +376,12 @@ and describe_set_of_closures env (set : Flambda.set_of_closures)
       }
     in
     Variable.Map.mapi (fun fun_var _function_decl ->
-        let descr : Export_info.descr =
-          Value_closure
-            { closure_id = Closure_id.wrap fun_var;
-              set_of_closures = initial_value_set_of_closures;
-            }
+        let export_id =
+          let closure_id = Closure_id.wrap fun_var in
+          let set_of_closures = initial_value_set_of_closures in
+          Env.new_value_closure_descr env ~closure_id ~set_of_closures
         in
-        Export_info.Value_id (Env.new_descr env descr))
+        Export_info.Value_id export_id)
       set.function_decls.funs
   in
   let closure_env =
@@ -491,10 +514,13 @@ let describe_program (env : Env.Global.t) (program : Flambda.program) =
   in
   loop env program.program_body
 
-let build_export_info ~(backend : (module Backend_intf.S))
-      (program : Flambda.program) : Export_info.t =
+
+let build_transient ~(backend : (module Backend_intf.S))
+      (program : Flambda.program) : Export_info.transient =
   if !Clflags.opaque then
-    Export_info.empty
+    let compilation_unit = Compilenv.current_unit () in
+    let root_symbol = Compilenv.current_unit_symbol () in
+    Export_info.opaque_transient ~root_symbol ~compilation_unit
   else
     (* CR-soon pchambart: Should probably use that instead of the ident of
        the module as global identifier.
@@ -504,23 +530,24 @@ let build_export_info ~(backend : (module Backend_intf.S))
     let _global_symbol, env =
       describe_program (Env.Global.create_empty ()) program
     in
-    let function_declarations_approx (fun_decls : Flambda.function_declarations) =
-      let recursive =
-        lazy (Find_recursive_functions.in_function_declarations fun_decls ~backend)
-      in
-      let keep_body =
-        Inline_and_simplify_aux.keep_body_check
-          ~is_classic_mode:fun_decls.is_classic_mode ~recursive
-      in
-      Simple_value_approx.function_declarations_approx ~keep_body fun_decls
+    let sets_of_closures_map =
+      Flambda_utils.all_sets_of_closures_map program
     in
-    let sets_of_closures =
-      Flambda_utils.all_function_decls_indexed_by_set_of_closures_id program
-      |> Set_of_closures_id.Map.map function_declarations_approx
-    in
-    let closures =
-      Flambda_utils.all_function_decls_indexed_by_closure_id program
-      |> Closure_id.Map.map function_declarations_approx
+    let function_declarations_map =
+      let set_of_closures_approx { Flambda. function_decls; _ } =
+        let recursive =
+          lazy
+            (Find_recursive_functions.in_function_declarations
+               function_decls ~backend)
+        in
+        let keep_body =
+          Inline_and_simplify_aux.keep_body_check
+            ~is_classic_mode:function_decls.is_classic_mode ~recursive
+        in
+        Simple_value_approx.function_declarations_approx
+          ~keep_body function_decls
+      in
+      Set_of_closures_id.Map.map set_of_closures_approx sets_of_closures_map
     in
     let unnested_values =
       Env.Global.export_id_to_descr_map env
@@ -538,9 +565,9 @@ let build_export_info ~(backend : (module Backend_intf.S))
           (Flambda_utils.all_sets_of_closures_map program)
       in
       let export = Compilenv.approx_env () in
-      Export_id.Map.fold (fun _eid (descr:Export_info.descr)
-                           (invariant_params) ->
-          match descr with
+      Export_id.Map.fold
+        (fun _eid (descr:Export_info.descr) invariant_params ->
+          match (descr : Export_info.descr) with
           | Value_closure { set_of_closures }
           | Value_set_of_closures set_of_closures ->
             let { Export_info.set_of_closures_id } = set_of_closures in
@@ -550,10 +577,20 @@ let build_export_info ~(backend : (module Backend_intf.S))
             with
             | exception Not_found ->
               invariant_params
-            | (set:Variable.Set.t Variable.Map.t) ->
-              Set_of_closures_id.Map.add set_of_closures_id set invariant_params
+            | (set : Variable.Set.t Variable.Map.t) ->
+              Set_of_closures_id.Map.add
+                set_of_closures_id set invariant_params
             end
-          | _ ->
+          | Export_info.Value_boxed_int (_, _)
+          | Value_block _
+          | Value_mutable_block _
+          | Value_int _
+          | Value_char _
+          | Value_constptr _
+          | Value_float _
+          | Value_float_array _
+          | Value_string _
+          | Value_unknown_descr ->
             invariant_params)
         unnested_values invariant_params
     in
@@ -570,8 +607,9 @@ let build_export_info ~(backend : (module Backend_intf.S))
           (Flambda_utils.all_sets_of_closures_map program)
       in
       let export = Compilenv.approx_env () in
-      Export_id.Map.fold (fun _eid (descr:Export_info.descr) recursive ->
-          match descr with
+      Export_id.Map.fold
+        (fun _eid (descr:Export_info.descr) recursive ->
+          match (descr : Export_info.descr) with
           | Value_closure { set_of_closures }
           | Value_set_of_closures set_of_closures ->
             let { Export_info.set_of_closures_id } = set_of_closures in
@@ -581,21 +619,95 @@ let build_export_info ~(backend : (module Backend_intf.S))
             with
             | exception Not_found ->
               recursive
-            | (set:Variable.Set.t) ->
-              Set_of_closures_id.Map.add set_of_closures_id set recursive
+            | (set : Variable.Set.t) ->
+              Set_of_closures_id.Map.add
+                set_of_closures_id set recursive
             end
-          | _ ->
+          | Export_info.Value_boxed_int (_, _)
+          | Value_block _
+          | Value_mutable_block _
+          | Value_int _
+          | Value_char _
+          | Value_constptr _
+          | Value_float _
+          | Value_float_array _
+          | Value_string _
+          | Value_unknown_descr ->
             recursive)
         unnested_values recursive
     in
-    let values =
-      Export_info.nest_eid_map unnested_values
+    let values = Export_info.nest_eid_map unnested_values in
+    let symbol_id = Env.Global.symbol_to_export_id_map env in
+    let { Traverse_for_exported_symbols.
+          set_of_closure_ids = relevant_set_of_closures;
+          symbols = relevant_symbols;
+          export_ids = relevant_export_ids;
+          set_of_closure_ids_keep_declaration =
+            relevant_set_of_closures_declaration_only;
+          relevant_local_closure_ids;
+          relevant_imported_closure_ids;
+          relevant_local_vars_within_closure;
+          relevant_imported_vars_within_closure;
+        } =
+      let closure_id_to_set_of_closures_id =
+        Set_of_closures_id.Map.fold
+          (fun set_of_closure_id
+            (function_declarations : Simple_value_approx.function_declarations) acc ->
+             Variable.Map.fold
+               (fun fun_var _ acc ->
+                  let closure_id = Closure_id.wrap fun_var in
+                  Closure_id.Map.add closure_id set_of_closure_id acc)
+               function_declarations.funs
+               acc)
+          function_declarations_map
+          Closure_id.Map.empty
+      in
+      Traverse_for_exported_symbols.traverse
+        ~sets_of_closures_map
+        ~closure_id_to_set_of_closures_id
+        ~function_declarations_map
+        ~values:(Compilation_unit.Map.find (Compilenv.current_unit ()) values)
+        ~symbol_id
+        ~root_symbol:(Compilenv.current_unit_symbol ())
     in
-    Export_info.create ~values
-      ~symbol_id:(Env.Global.symbol_to_export_id_map env)
-      ~offset_fun:Closure_id.Map.empty
-      ~offset_fv:Var_within_closure.Map.empty
-      ~sets_of_closures ~closures
-      ~constant_sets_of_closures:Set_of_closures_id.Set.empty
+    let sets_of_closures =
+      Set_of_closures_id.Map.filter_map
+        function_declarations_map
+        ~f:(fun key (fun_decls : Simple_value_approx.function_declarations) ->
+          if Set_of_closures_id.Set.mem key relevant_set_of_closures then
+            Some fun_decls
+          else if begin
+            Set_of_closures_id.Set.mem key
+              relevant_set_of_closures_declaration_only
+          end then begin
+            if fun_decls.is_classic_mode then
+              Some (Simple_value_approx.clear_function_bodies fun_decls)
+            else
+              Some fun_decls
+          end else begin
+            None
+          end)
+    in
+
+    let values =
+      Compilation_unit.Map.map (fun map ->
+          Export_id.Map.filter (fun key _ ->
+              Export_id.Set.mem key relevant_export_ids)
+            map)
+        values
+    in
+    let symbol_id =
+      Symbol.Map.filter
+        (fun key _ -> Symbol.Set.mem key relevant_symbols)
+        symbol_id
+    in
+    Export_info.create_transient ~values
+      ~symbol_id
+      ~sets_of_closures
       ~invariant_params
       ~recursive
+      ~relevant_local_closure_ids
+      ~relevant_imported_closure_ids
+      ~relevant_local_vars_within_closure
+      ~relevant_imported_vars_within_closure
+
