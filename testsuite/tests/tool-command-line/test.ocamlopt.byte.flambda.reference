@@ -34,7 +34,7 @@ Options are:
   -i  Print inferred interface
   -I <dir>  Add <dir> to the list of include directories
   -impl <file>  Compile <file> as a .ml file
-  -inline <n>|<round>=<n>[,...]  Aggressiveness of inlining (default 1.25, higher numbers mean more aggressive)
+  -inline <n>|<round>=<n>[,...]  Aggressiveness of inlining (default 10.00, higher numbers mean more aggressive)
   -inline-toplevel <n>|<round>=<n>[,...]  Aggressiveness of inlining at toplevel (higher numbers mean more aggressive)
   -inline-alloc-cost <n>|<round>=<n>[,...]  The cost of not removing an allocation during inlining (default 7, higher numbers more costly)
   -inline-branch-cost <n>|<round>=<n>[,...]  The cost of not removing a conditional during inlining (default 5, higher numbers more costly)
