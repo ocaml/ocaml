@@ -100,6 +100,10 @@ let access_array base numelt size =
 %token NEA
 %token NEF
 %token NEI
+%token NGEF
+%token NGTF
+%token NLEF
+%token NLTF
 %token OR
 %token <int> POINTER
 %token PROJ
@@ -293,12 +297,16 @@ binaryop:
   | ADDF                        { Caddf }
   | MULF                        { Cmulf }
   | DIVF                        { Cdivf }
-  | EQF                         { Ccmpf Ceq }
-  | NEF                         { Ccmpf Cne }
-  | LTF                         { Ccmpf Clt }
-  | LEF                         { Ccmpf Cle }
-  | GTF                         { Ccmpf Cgt }
-  | GEF                         { Ccmpf Cge }
+  | EQF                         { Ccmpf CFeq }
+  | NEF                         { Ccmpf CFneq }
+  | LTF                         { Ccmpf CFlt }
+  | NLTF                        { Ccmpf CFnlt }
+  | LEF                         { Ccmpf CFle }
+  | NLEF                        { Ccmpf CFnle }
+  | GTF                         { Ccmpf CFgt }
+  | NGTF                        { Ccmpf CFngt }
+  | GEF                         { Ccmpf CFge }
+  | NGEF                        { Ccmpf CFnge }
   | CHECKBOUND                  { Ccheckbound }
   | MULH                        { Cmulhi }
 ;

@@ -7340,3 +7340,5 @@ module Indexop = struct
   h.Def.%{"three"} <- 3
   let x,y,z = Def.(h.%["one"], h.%("two"), h.%{"three"})
 end
+
+type t = |

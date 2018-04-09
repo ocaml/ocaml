@@ -356,7 +356,7 @@ let is_tos = function { loc = Reg _; typ = Float } -> true | _ -> false
 
 (* Emit the code for a floating-point comparison *)
 
-let emit_float_test cmp neg arg lbl =
+let emit_float_test cmp arg lbl =
   let actual_cmp =
     match (is_tos arg.(0), is_tos arg.(1)) with
     | (true, true) ->
@@ -370,7 +370,7 @@ let emit_float_test cmp neg arg lbl =
     | (false, true) ->
         (* second arg on top of FP stack *)
         I.fcomp (reg arg.(0));
-        Cmm.swap_comparison cmp
+        Cmm.swap_float_comparison cmp
     | (false, false) ->
         I.fld     (reg arg.(0));
         I.fcomp   (reg arg.(1));
@@ -378,49 +378,44 @@ let emit_float_test cmp neg arg lbl =
   in
   I.fnstsw ax;
   match actual_cmp with
-  | Ceq ->
-      if neg then begin
-        I.and_ (int 68) ah;
-        I.xor (int 64) ah;
-        I.jne lbl
-      end else begin
-        I.and_ (int 69) ah;
-        I.cmp (int 64) ah;
-        I.je lbl
-      end
-  | Cne ->
-      if neg then begin
-        I.and_ (int 69) ah;
-        I.cmp (int 64) ah;
-        I.je lbl
-      end else begin
-        I.and_ (int 68) ah;
-        I.xor (int 64) ah;
-        I.jne lbl
-      end
-  | Cle ->
+  | CFeq ->
+      I.and_ (int 69) ah;
+      I.cmp (int 64) ah;
+      I.je lbl
+  | CFneq ->
+      I.and_ (int 68) ah;
+      I.xor (int 64) ah;
+      I.jne lbl
+  | CFle ->
       I.and_ (int 69) ah;
       I.dec ah;
       I.cmp (int 64) ah;
-      if neg
-      then I.jae lbl
-      else I.jb lbl
-  | Cge ->
+      I.jb lbl
+  | CFnle ->
+      I.and_ (int 69) ah;
+      I.dec ah;
+      I.cmp (int 64) ah;
+      I.jae lbl
+  | CFge ->
       I.and_ (int 5) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
-  | Clt ->
+      I.je lbl
+  | CFnge ->
+      I.and_ (int 5) ah;
+      I.jne lbl
+  | CFlt ->
       I.and_ (int 69) ah;
       I.cmp (int 1) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
-  | Cgt ->
+      I.je lbl
+  | CFnlt ->
       I.and_ (int 69) ah;
-      if neg
-      then I.jne lbl
-      else I.je lbl
+      I.cmp (int 1) ah;
+      I.jne lbl
+  | CFgt ->
+      I.and_ (int 69) ah;
+      I.je lbl
+  | CFngt ->
+      I.and_ (int 69) ah;
+      I.jne lbl
 
 (* Emit a Ifloatspecial instruction *)
 
@@ -825,8 +820,8 @@ let emit_instr fallthrough i =
       | Iinttest_imm(cmp, n) ->
           I.cmp (int n) (reg i.arg.(0));
           I.j (cond cmp) lbl
-      | Ifloattest(cmp, neg) ->
-          emit_float_test cmp neg i.arg lbl
+      | Ifloattest cmp ->
+          emit_float_test cmp i.arg lbl
       | Ioddtest ->
           I.test (int 1) (reg i.arg.(0));
           I.jne lbl

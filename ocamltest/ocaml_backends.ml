@@ -15,24 +15,21 @@
 
 (* Backends of the OCaml compiler and their properties *)
 
-open Ocamltest_stdlib
+type t = Native | Bytecode
 
-type t = Sys.backend_type
+let is_bytecode t = t=Bytecode
+
+let is_native t = t=Native
 
 let string_of_backend = function
-  | Sys.Bytecode -> "bytecode"
-  | Sys.Native -> "native"
-  | Sys.Other backend_name -> backend_name
+  | Native -> "native"
+  | Bytecode -> "bytecode"
 
-(* Creates a function that returns its first argument for Bytecode,          *)
-(* its second argument for Native code and fails for other backends          *)
+(* Creates a function that returns its first argument for Bytecode           *)
+(* and its second argument for Native code                                   *)
 let make_backend_function bytecode_value native_value = function
-  | Sys.Bytecode -> bytecode_value
-  | Sys.Native -> native_value
-  | Sys.Other backend_name ->
-    let error_message =
-      ("Other backend " ^ backend_name ^ " not supported") in
-    raise (Invalid_argument error_message)
+  | Bytecode -> bytecode_value
+  | Native -> native_value
 
 let module_extension = make_backend_function "cmo" "cmx"
 

@@ -23,13 +23,15 @@ marshal.cmx :
 mutex.cmo : thread.cmi mutex.cmi
 mutex.cmx : thread.cmx mutex.cmi
 mutex.cmi :
-pervasives.cmo : unix.cmo
-pervasives.cmx : unix.cmx
-thread.cmo : unix.cmo thread.cmi
+stdlib.cmo : unix.cmi marshal.cmo stdlib.cmi
+stdlib.cmx : unix.cmx marshal.cmx stdlib.cmi
+stdlib.cmi : marshal.cmo
+thread.cmo : unix.cmi thread.cmi
 thread.cmx : unix.cmx thread.cmi
-thread.cmi : unix.cmo
-threadUnix.cmo : unix.cmo thread.cmi threadUnix.cmi
+thread.cmi : unix.cmi
+threadUnix.cmo : unix.cmi thread.cmi threadUnix.cmi
 threadUnix.cmx : unix.cmx thread.cmx threadUnix.cmi
-threadUnix.cmi : unix.cmo
-unix.cmo :
-unix.cmx :
+threadUnix.cmi : unix.cmi
+unix.cmo : unix.cmi
+unix.cmx : unix.cmi
+unix.cmi :

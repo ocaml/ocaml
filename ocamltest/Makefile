@@ -46,7 +46,6 @@ core := \
   ocamltest_config.mli ocamltest_config.ml.in \
   ocamltest_stdlib.mli ocamltest_stdlib.ml \
   run_command.mli run_command.ml \
-  filetype.mli filetype.ml \
   filecompare.mli filecompare.ml \
   variables.mli variables.ml \
   environments.mli environments.ml \
@@ -63,13 +62,16 @@ core := \
 
 ocaml_plugin := \
   ocaml_backends.mli ocaml_backends.ml \
+  ocaml_filetypes.mli ocaml_filetypes.ml \
   ocaml_variables.mli ocaml_variables.ml \
   ocaml_modifiers.mli ocaml_modifiers.ml \
   ocaml_directories.mli ocaml_directories.ml \
   ocaml_files.mli ocaml_files.ml \
   ocaml_flags.mli ocaml_flags.ml \
   ocaml_commands.mli ocaml_commands.ml \
+  ocaml_tools.mli ocaml_tools.ml \
   ocaml_compilers.mli ocaml_compilers.ml \
+  ocaml_toplevels.mli ocaml_toplevels.ml \
   ocaml_actions.mli ocaml_actions.ml \
   ocaml_tests.mli ocaml_tests.ml
 
@@ -173,8 +175,16 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
 
+ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
+WITH_OCAMLDOC := true
+else
+WITH_OCAMLDOC := false
+endif
+
+
 ocamltest_config.ml: ocamltest_config.ml.in
 	sed \
+	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
 	  -e 's|@@SHARED_LIBRARIES@@|$(SUPPORTS_SHARED_LIBRARIES)|' \
 	  -e 's|@@UNIX@@|$(unix)|' \
@@ -184,8 +194,10 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLOPTDEFAULTFLAGS@@|$(ocamloptdefaultflags)|' \
 	  -e 's|@@OCAMLSRCDIR@@|$(ocamlsrcdir)|' \
 	  -e 's|@@FLAMBDA@@|$(FLAMBDA)|' \
+	  -e 's|@@SPACETIME@@|$(WITH_SPACETIME)|' \
 	  -e 's|@@FORCE_SAFE_STRING@@|$(FORCE_SAFE_STRING)|' \
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
+	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  $< > $@
 
 .PHONY: clean

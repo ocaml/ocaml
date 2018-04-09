@@ -85,14 +85,14 @@ type primitive =
   | Pdivint of is_safe | Pmodint of is_safe
   | Pandint | Porint | Pxorint
   | Plslint | Plsrint | Pasrint
-  | Pintcomp of comparison
+  | Pintcomp of integer_comparison
   | Poffsetint of int
   | Poffsetref of int
   (* Float operations *)
   | Pintoffloat | Pfloatofint
   | Pnegfloat | Pabsfloat
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
-  | Pfloatcomp of comparison
+  | Pfloatcomp of float_comparison
   (* String operations *)
   | Pstringlength | Pstringrefu  | Pstringrefs
   | Pbyteslength | Pbytesrefu | Pbytessetu | Pbytesrefs | Pbytessets
@@ -129,7 +129,7 @@ type primitive =
   | Plslbint of boxed_integer
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
-  | Pbintcomp of boxed_integer * comparison
+  | Pbintcomp of boxed_integer * integer_comparison
   (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
   | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
   | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
@@ -160,8 +160,11 @@ type primitive =
   (* Inhibition of optimisation *)
   | Popaque
 
-and comparison =
-    Ceq | Cneq | Clt | Cgt | Cle | Cge
+and integer_comparison =
+    Ceq | Cne | Clt | Cgt | Cle | Cge
+
+and float_comparison =
+    CFeq | CFneq | CFlt | CFnlt | CFgt | CFngt | CFle | CFnle | CFge | CFnge
 
 and array_kind =
     Pgenarray | Paddrarray | Pintarray | Pfloatarray
@@ -341,8 +344,11 @@ val subst_lambda: lambda Ident.tbl -> lambda -> lambda
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 
-val commute_comparison : comparison -> comparison
-val negate_comparison : comparison -> comparison
+val negate_integer_comparison : integer_comparison -> integer_comparison
+val swap_integer_comparison : integer_comparison -> integer_comparison
+
+val negate_float_comparison : float_comparison -> float_comparison
+val swap_float_comparison : float_comparison -> float_comparison
 
 val default_function_attribute : function_attribute
 val default_stub_attribute : function_attribute

@@ -1363,7 +1363,7 @@ let {foo} = (raise Exit : t);;
 type s = A of int
 let (A x) = (raise Exit : s);;
 [%%expect {|
-Exception: Pervasives.Exit.
+Exception: Stdlib.Pervasives.Exit.
 |}];;
 
 (* PR#5224 *)
@@ -1630,11 +1630,23 @@ type 'a t = < m : 'a > constraint 'a = int
 |}]
 
 (* GPR#1142 *)
+external reraise : exn -> 'a = "%reraise"
+
 module M () = struct
   let f : 'a -> 'a = assert false
   let g : 'a -> 'a = raise Not_found
+  let h : 'a -> 'a = reraise Not_found
+  let i : 'a -> 'a = raise_notrace Not_found
 end
 
 [%%expect{|
-module M : functor () -> sig val f : 'a -> 'a val g : 'a -> 'a end
+external reraise : exn -> 'a = "%reraise"
+module M :
+  functor () ->
+    sig
+      val f : 'a -> 'a
+      val g : 'a -> 'a
+      val h : 'a -> 'a
+      val i : 'a -> 'a
+    end
 |}]

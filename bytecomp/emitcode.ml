@@ -168,8 +168,10 @@ let record_event ev =
   let path = ev.ev_loc.Location.loc_start.Lexing.pos_fname in
   let abspath = Location.absolute_path path in
   debug_dirs := StringSet.add (Filename.dirname abspath) !debug_dirs;
-  if Filename.is_relative path then
-    debug_dirs := StringSet.add (Sys.getcwd ()) !debug_dirs;
+  if Filename.is_relative path then begin
+    let cwd = Location.rewrite_absolute_path (Sys.getcwd ()) in
+    debug_dirs := StringSet.add cwd !debug_dirs;
+  end;
   ev.ev_pos <- !out_position;
   events := ev :: !events
 
@@ -185,12 +187,12 @@ let init () =
 (* Emission of one instruction *)
 
 let emit_comp = function
-| Ceq -> out opEQ    | Cneq -> out opNEQ
+| Ceq -> out opEQ    | Cne -> out opNEQ
 | Clt -> out opLTINT | Cle -> out opLEINT
 | Cgt -> out opGTINT | Cge -> out opGEINT
 
 and emit_branch_comp = function
-| Ceq -> out opBEQ    | Cneq -> out opBNEQ
+| Ceq -> out opBEQ    | Cne -> out opBNEQ
 | Clt -> out opBLTINT | Cle -> out opBLEINT
 | Cgt -> out opBGTINT | Cge -> out opBGEINT
 
@@ -304,6 +306,11 @@ let emit_instr = function
 
 (* Emission of a list of instructions. Include some peephole optimization. *)
 
+let remerge_events ev1 = function
+  | Kevent ev2 :: c ->
+    Kevent (Bytegen.merge_events ev1 ev2) :: c
+  | c -> Kevent ev1 :: c
+
 let rec emit = function
     [] -> ()
   (* Peephole optimizations *)
@@ -316,7 +323,7 @@ let rec emit = function
         emit rem
   | Kpush::Kconst k::Kintcomp c::Kbranchifnot lbl::rem
       when is_immed_const k ->
-        emit_branch_comp (negate_comparison c) ;
+        emit_branch_comp (negate_integer_comparison c) ;
         out_const k ;
         out_label lbl ;
         emit rem
@@ -372,13 +379,13 @@ let rec emit = function
           out opPUSHGETGLOBAL; slot_for_literal sc
       end;
       emit c
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kgetglobal _ as instr1) :: (Kgetfield _ as instr2) :: c ->
-      emit (Kpush :: instr1 :: instr2 :: ev :: c)
-  | Kpush :: (Kevent {ev_kind = Event_before} as ev) ::
+      emit (Kpush :: instr1 :: instr2 :: remerge_events ev c)
+  | Kpush :: (Kevent ({ev_kind = Event_before} as ev)) ::
     (Kacc _ | Kenvacc _ | Koffsetclosure _ | Kgetglobal _ | Kconst _ as instr)::
     c ->
-      emit (Kpush :: instr :: ev :: c)
+      emit (Kpush :: instr :: remerge_events ev c)
   | Kgetglobal id :: Kgetfield n :: c ->
       out opGETGLOBALFIELD; slot_for_getglobal id; out_int n; emit c
   (* Default case *)

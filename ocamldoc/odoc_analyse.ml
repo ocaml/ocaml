@@ -33,10 +33,17 @@ let init_path () =
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
+  let initially_opened_module =
+    let m = !Odoc_global.initially_opened_module in
+    if m = Env.get_unit_name () then
+      None
+    else
+      Some m
+  in
   Typemod.initial_env
     ~loc:(Location.in_file "ocamldoc command line")
     ~safe_string:(Config.safe_string || not !Clflags.unsafe_string)
-    ~open_pervasives:(Env.get_unit_name () <> "Pervasives")
+    ~initially_opened_module
     ~open_implicit_modules:(List.rev !Clflags.open_modules)
 
 (** Optionally preprocess a source file *)

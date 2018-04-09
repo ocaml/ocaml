@@ -20,7 +20,8 @@ open Format
 val rec_flag : formatter -> Cmm.rec_flag -> unit
 val machtype_component : formatter -> Cmm.machtype_component -> unit
 val machtype : formatter -> Cmm.machtype_component array -> unit
-val comparison : Cmm.comparison -> string
+val integer_comparison : Cmm.integer_comparison -> string
+val float_comparison : Cmm.float_comparison -> string
 val chunk : Cmm.memory_chunk -> string
 val operation : Debuginfo.t -> Cmm.operation -> string
 val expression : formatter -> Cmm.expression -> unit

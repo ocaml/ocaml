@@ -534,9 +534,13 @@ header_t *caml_fl_merge_block (value bp)
 */
 void caml_fl_add_blocks (value bp)
 {
+  value cur = bp;
   CAMLassert (fl_last != Val_NULL);
   CAMLassert (Next (fl_last) == Val_NULL);
-  caml_fl_cur_wsz += Whsize_bp (bp);
+  do {
+    caml_fl_cur_wsz += Whsize_bp (cur);
+    cur = Field(cur, 0);
+  } while (cur != Val_NULL);
 
   if (bp > fl_last){
     Next (fl_last) = bp;
@@ -547,7 +551,7 @@ void caml_fl_add_blocks (value bp)
       flp [flp_size++] = fl_last;
     }
   }else{
-    value cur, prev;
+    value prev;
 
     prev = Fl_head;
     cur = Next (prev);

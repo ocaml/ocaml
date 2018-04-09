@@ -163,6 +163,10 @@ rule token = parse
   | "!=a" { NEA }
   | "!=f" { NEF }
   | "!=" { NEI }
+  | "!>=f" { NGEF }
+  | "!>f" { NGTF }
+  | "!<=f" { NLEF }
+  | "!<f" { NLTF }
   | "]" { RBRACKET }
   | ")" { RPAREN }
   | "-f" { SUBF }

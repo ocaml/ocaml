@@ -46,6 +46,11 @@ let test_build_directory_prefix env =
 let words_of_variable env variable =
   String.words (Environments.safe_lookup variable env)
 
+let exit_status_of_variable env variable =
+  try int_of_string
+    (Environments.safe_lookup variable env)
+  with _ -> 0
+
 let files env = words_of_variable env Builtin_variables.files
 
 let setup_symlinks test_source_directory build_directory files =
@@ -119,21 +124,6 @@ let run_cmd
     Run_command.log = log
   }
 
-let caml_ld_library_path = "CAML_LD_LIBRARY_PATH"
-
-let string_of_binding variable value =
-  if variable=Builtin_variables.ld_library_path then begin
-    let current_value =
-      try Sys.getenv caml_ld_library_path with Not_found -> "" in
-    let local_value =
-      (String.concat Filename.path_sep (String.words value)) in
-    let new_value =
-      if local_value="" then current_value else
-      if current_value="" then local_value else
-      String.concat Filename.path_sep [local_value; current_value] in
-    Printf.sprintf "%s=%s" caml_ld_library_path new_value
-  end else Environments.string_of_binding variable value
-
 let run
     (log_message : string)
     (redirect_output : bool)
@@ -168,19 +158,26 @@ let run
         Environments.add_bindings bindings env
       end else env in
     let systemenv =
-      Environments.to_system_env ~f:string_of_binding execution_env in
-    match run_cmd ~environment:systemenv log execution_env commandline with
-      | 0 ->
-        let newenv =
-          if redirect_output
-          then Environments.add Builtin_variables.output output env
-          else env in
-        (Result.pass, newenv)
-      | _ as exitcode ->
-        let reason = mkreason what (String.concat " " commandline) exitcode in
-        if exitcode = 125 && can_skip
-        then (Result.skip_with_reason reason, execution_env)
-        else (Result.fail_with_reason reason, execution_env)
+      Environments.to_system_env execution_env in
+    let expected_exit_status =
+      exit_status_of_variable env Builtin_variables.exit_status
+    in
+    let exit_status =
+      run_cmd ~environment:systemenv log execution_env commandline
+    in
+    if exit_status=expected_exit_status
+    then begin
+      let newenv =
+        if redirect_output
+        then Environments.add Builtin_variables.output output env
+        else env in
+      (Result.pass, newenv)
+    end else begin
+      let reason = mkreason what (String.concat " " commandline) exit_status in
+      if exit_status = 125 && can_skip
+      then (Result.skip_with_reason reason, execution_env)
+      else (Result.fail_with_reason reason, execution_env)
+    end
 
 let run_program =
   run
@@ -190,13 +187,28 @@ let run_program =
     Builtin_variables.program
     (Some Builtin_variables.arguments)
 
-let run_script =
-  run
+let run_script log env =
+  let response_file = Filename.temp_file "ocamltest-" ".response" in
+  Printf.fprintf log "Script should write its response to %s\n%!"
+    response_file;
+  let scriptenv = Environments.add
+    Builtin_variables.ocamltest_response response_file env in
+  let (result, newenv) = run
     "Running script"
     false
     true
     Builtin_variables.script
     None
+    log scriptenv in
+  if Result.is_pass result then begin
+    let modifiers = Environments.modifiers_of_file response_file in
+    let modified_env = Environments.apply_modifiers newenv modifiers in
+    (result, modified_env)
+  end else begin
+    let reason = String.trim (Sys.string_of_file response_file) in
+    let newresult = { result with Result.reason = Some reason } in
+    (newresult, newenv)
+  end
 
 let run_hook hook_name log input_env =
   Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name;
@@ -206,7 +218,7 @@ let run_hook hook_name log input_env =
   let hookenv = Environments.add
     Builtin_variables.ocamltest_response response_file input_env in
   let systemenv =
-    Environments.to_system_env ~f:string_of_binding hookenv in
+    Environments.to_system_env hookenv in
   let open Run_command in
   let settings = {
     progname = "sh";
@@ -231,7 +243,13 @@ let run_hook hook_name log input_env =
       then (Result.skip_with_reason reason, hookenv)
       else (Result.fail_with_reason reason, hookenv)
 
-let check_output kind_of_output output_variable reference_variable log env =
+let check_output kind_of_output output_variable reference_variable log
+    env =
+  let to_int = function None -> 0 | Some s -> int_of_string s in
+  let skip_lines =
+    to_int (Environments.lookup Builtin_variables.skip_header_lines env) in
+  let skip_bytes =
+    to_int (Environments.lookup Builtin_variables.skip_header_bytes env) in
   let reference_filename = Environments.safe_lookup reference_variable env in
   let output_filename = Environments.safe_lookup output_variable env in
   Printf.fprintf log "Comparing %s output %s to reference %s\n%!"
@@ -242,7 +260,9 @@ let check_output kind_of_output output_variable reference_variable log env =
     Filecompare.reference_filename = reference_filename;
     Filecompare.output_filename = output_filename
   } in
-  match Filecompare.check_file files with
+  let tool =
+    Filecompare.(make_cmp_tool ~ignore:{lines=skip_lines;bytes=skip_bytes}) in
+  match Filecompare.check_file ~tool files with
     | Filecompare.Same -> (Result.pass, env)
     | Filecompare.Different ->
       let diff = Filecompare.diff files in
@@ -252,6 +272,12 @@ let check_output kind_of_output output_variable reference_variable log env =
       let reason =
         Printf.sprintf "%s output %s differs from reference %s: \n%s\n"
         kind_of_output output_filename reference_filename diffstr in
+      if Environments.lookup_as_bool Builtin_variables.promote env = Some true
+      then begin
+        Printf.fprintf log "Promoting %s output %s to reference %s\n%!"
+          kind_of_output output_filename reference_filename;
+        Sys.copy_file output_filename reference_filename;
+      end;
       (Result.fail_with_reason reason, env)
     | Filecompare.Unexpected_output ->
       let banner = String.make 40 '=' in

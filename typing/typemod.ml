@@ -94,9 +94,9 @@ let type_open_ ?used_slot ?toplevel ovf env loc lid =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
-let type_initially_opened_module env =
+let type_initially_opened_module env module_name =
   let loc = Location.in_file "compiler internals" in
-  let lid = { Asttypes.loc; txt = Longident.Lident "Pervasives" } in
+  let lid = { Asttypes.loc; txt = Longident.Lident module_name } in
   let path = Typetexp.lookup_module ~load:true env lid.loc lid.txt in
   match Env.open_signature_of_initially_opened_module path env with
   | Some env -> path, env
@@ -105,7 +105,8 @@ let type_initially_opened_module env =
       ignore (extract_sig_open env lid.loc md.md_type);
       assert false
 
-let initial_env ~loc ~safe_string ~open_pervasives ~open_implicit_modules =
+let initial_env ~loc ~safe_string ~initially_opened_module
+      ~open_implicit_modules =
   let env =
     if safe_string then
       Env.initial_safe_string
@@ -113,10 +114,10 @@ let initial_env ~loc ~safe_string ~open_pervasives ~open_implicit_modules =
       Env.initial_unsafe_string
   in
   let env =
-    if open_pervasives then
-      snd (type_initially_opened_module env)
-    else
-      env
+    match initially_opened_module with
+    | None -> env
+    | Some name ->
+      snd (type_initially_opened_module env name)
   in
   let open_implicit_module env m =
     let open Asttypes in
@@ -358,7 +359,8 @@ let merge_constraint initial_env loc sg constr =
                 )
                 sdecl.ptype_params;
             type_loc = sdecl.ptype_loc;
-            type_newtype_level = None;
+            type_is_newtype = false;
+            type_expansion_scope = None;
             type_attributes = [];
             type_immediate = false;
             type_unboxed = unboxed_false_default_false;
@@ -406,7 +408,8 @@ let merge_constraint initial_env loc sg constr =
     | (Sig_module(id, md, rs) :: rem, [s], Pwith_modsubst (_, lid'))
       when Ident.name id = s ->
         let path, md' = Typetexp.find_module initial_env loc lid'.txt in
-        let newmd = Mtype.strengthen_decl ~aliasable:false env md' path in
+        let aliasable = not (Env.is_functor_arg path env) in
+        let newmd = Mtype.strengthen_decl ~aliasable env md' path in
         ignore(Includemod.modtypes ~loc env newmd.md_type md.md_type);
         real_ids := [Pident id];
         (Pident id, lid, Twith_modsubst (path, lid')),
@@ -1111,7 +1114,7 @@ let enrich_type_decls anchor decls oldenv newenv =
           let id = info.typ_id in
           let info' =
             Mtype.enrich_typedecl oldenv (Pdot(p, Ident.name id, nopos))
-              info.typ_type
+              id info.typ_type
           in
             Env.add_type ~check:true id info' e)
         oldenv decls
