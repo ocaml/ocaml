@@ -75,3 +75,6 @@ let ocamldebug ocamlsrcdir =
 
 let ocamlobjinfo ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "tools"; "ocamlobjinfo"]
+
+let ocamlmklib ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "tools"; "ocamlmklib"]

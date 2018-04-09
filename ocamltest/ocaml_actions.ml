@@ -519,6 +519,43 @@ let objinfo log env =
 
 let ocamlobjinfo = Actions.make "ocamlobjinfo" objinfo
 
+let mklib log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Running ocamlmklib to produce %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let ocamlc_command =
+    String.concat " " 
+    [
+      Ocaml_commands.ocamlrun_ocamlc ocamlsrcdir;
+      Ocaml_flags.stdlib ocamlsrcdir;
+    ]
+  in
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_ocamlmklib ocamlsrcdir;
+    "-ocamlc '" ^ ocamlc_command ^ "'";
+    "-o " ^ program
+  ] @ modules env in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:Ocaml_variables.compiler_output
+      ~stderr_variable:Ocaml_variables.compiler_output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let ocamlmklib = Actions.make "ocamlmklib" mklib
+
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
@@ -1103,5 +1140,6 @@ let _ =
     run_ocamldoc;
     check_ocamldoc_output;
     ocamldebug;
+    ocamlmklib;
     ocamlobjinfo
   ]
