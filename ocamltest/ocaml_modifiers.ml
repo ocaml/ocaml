@@ -84,6 +84,9 @@ let unixlibdir = if Sys.os_type="Win32" then "win32unix" else "unix"
 let unix = make_library_modifier
   "unix" (compiler_subdir ["otherlibs"; unixlibdir])
 
+let dynlink =
+  make_library_modifier "dynlink" (compiler_subdir ["otherlibs"; "dynlink"])
+
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
 
@@ -109,6 +112,7 @@ let _ =
   register_modifiers "config" config;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
+  register_modifiers "dynlink" dynlink;
   register_modifiers "str" str;
   register_modifiers "ocamlcommon" ocamlcommon;
   register_modifiers "systhreads" systhreads;
