@@ -613,32 +613,6 @@ CAMLprim value caml_ba_get_3(value vb, value vind1, value vind2, value vind3)
   return caml_ba_get_N(vb, vind, 3);
 }
 
-CAMLprim value caml_ba_get_4(value vb, value vind1, value vind2,
-                     value vind3, value vind4)
-{
-  value vind[4];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3; vind[3] = vind4;
-  return caml_ba_get_N(vb, vind, 4);
-}
-
-CAMLprim value caml_ba_get_5(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5)
-{
-  value vind[5];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
-  vind[3] = vind4; vind[4] = vind5;
-  return caml_ba_get_N(vb, vind, 5);
-}
-
-CAMLprim value caml_ba_get_6(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5, value vind6)
-{
-  value vind[6];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
-  vind[3] = vind4; vind[4] = vind5; vind[5] = vind6;
-  return caml_ba_get_N(vb, vind, 6);
-}
-
 CAMLprim value caml_ba_get_generic(value vb, value vind)
 {
   return caml_ba_get_N(vb, &Field(vind, 0), Wosize_val(vind));
@@ -781,33 +755,6 @@ CAMLprim value caml_ba_set_3(value vb, value vind1, value vind2, value vind3,
   value vind[3];
   vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
   return caml_ba_set_aux(vb, vind, 3, newval);
-}
-
-CAMLprim value caml_ba_set_4(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value newval)
-{
-  value vind[4];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3; vind[3] = vind4;
-  return caml_ba_set_aux(vb, vind, 4, newval);
-}
-
-CAMLprim value caml_ba_set_5(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5, value newval)
-{
-  value vind[5];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
-  vind[3] = vind4; vind[4] = vind5;
-  return caml_ba_set_aux(vb, vind, 5, newval);
-}
-
-CAMLprim value caml_ba_set_6(value vb, value vind1, value vind2,
-                     value vind3, value vind4, value vind5,
-                     value vind6, value newval)
-{
-  value vind[6];
-  vind[0] = vind1; vind[1] = vind2; vind[2] = vind3;
-  vind[3] = vind4; vind[4] = vind5; vind[5] = vind6;
-  return caml_ba_set_aux(vb, vind, 6, newval);
 }
 
 value caml_ba_set_N(value vb, value * vind, int nargs)
