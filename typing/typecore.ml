@@ -156,6 +156,7 @@ let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
 let maybe_add_pattern_variables_ghost loc_let env pv =
+  let multiple = List.length pv > 1 in
   List.fold_right
     (fun (id, ty, _name, _loc, _as_var) env ->
        let lid = Longident.Lident (Ident.name id) in
@@ -164,7 +165,7 @@ let maybe_add_pattern_variables_ghost loc_let env pv =
        | exception Not_found ->
          Env.add_value id
            { val_type = ty;
-             val_kind = Val_unbound Val_unbound_ghost_recursive;
+             val_kind = Val_unbound (Val_unbound_ghost_recursive multiple);
              val_loc = loc_let;
              val_attributes = [];
            } env
@@ -2725,8 +2726,14 @@ and type_expect_
                 Texp_ident(path, lid, desc)
             | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
-            | Val_unbound Val_unbound_ghost_recursive ->
-                raise(Error(loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)))
+            | Val_unbound (Val_unbound_ghost_recursive multiple) ->
+                (* We want the "missing rec" hint iff the value is an arrow,
+                   or there are multiple simultaneous definitions. *)
+                if multiple
+                || (Typeopt.is_function_type env (Ctype.repr desc.val_type) <> None) then
+                  raise(Error(loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)))
+                else
+                  raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
                 Env.add_required_global (Path.head p);
