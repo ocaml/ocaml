@@ -14,6 +14,8 @@
 #**************************************************************************
 
 include ../config/Makefile
+include ../Makefile.common
+
 CAMLRUN ?= ../boot/ocamlrun
 CAMLYACC ?= ../boot/ocamlyacc
 TARGET_BINDIR ?= $(BINDIR)
@@ -36,8 +38,9 @@ CAMLDEP=$(CAMLRUN) ../tools/ocamldep
 P=stdlib__
 
 OBJS=camlinternalFormatBasics.cmo stdlib.cmo $(OTHERS)
-OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
-  $(P)sys.cmo $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)array.cmo \
+OTHERS=$(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
+  $(P)bytes.cmo $(P)string.cmo \
+  $(P)sort.cmo $(P)marshal.cmo $(P)obj.cmo $(P)float.cmo $(P)array.cmo \
   $(P)int32.cmo $(P)int64.cmo $(P)nativeint.cmo \
   $(P)lexing.cmo $(P)parsing.cmo \
   $(P)set.cmo $(P)map.cmo $(P)stack.cmo $(P)queue.cmo \
@@ -51,7 +54,8 @@ OTHERS=$(P)list.cmo $(P)char.cmo $(P)uchar.cmo $(P)bytes.cmo $(P)string.cmo \
   $(P)filename.cmo $(P)complex.cmo \
   $(P)arrayLabels.cmo $(P)listLabels.cmo $(P)bytesLabels.cmo \
   $(P)stringLabels.cmo $(P)moreLabels.cmo $(P)stdLabels.cmo \
-  $(P)spacetime.cmo camlinternalBigarray.cmo
+  $(P)spacetime.cmo $(P)bigarray.cmo
+
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
 
 .PHONY: all
@@ -81,23 +85,21 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
-INSTALL_LIBDIR=$(DESTDIR)$(LIBDIR)
-
 .PHONY: install
 install::
-	cp stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml \
-	  camlheader_ur \
+	$(INSTALL_DATA) \
+	  stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
-	cp target_camlheader "$(INSTALL_LIBDIR)/camlheader"
+	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "true"
 install::
-	cp target_camlheaderd $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderd $(INSTALL_LIBDIR)
 endif
 
 ifeq "$(RUNTIMEI)" "true"
 install::
-	cp target_camlheaderi $(INSTALL_LIBDIR)
+	$(INSTALL_DATA) target_camlheaderi $(INSTALL_LIBDIR)
 endif
 
 .PHONY: installopt
@@ -105,7 +107,9 @@ installopt: installopt-default installopt-$(PROFILINGTARGET)
 
 .PHONY: installopt-default
 installopt-default:
-	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx "$(INSTALL_LIBDIR)"
+	$(INSTALL_DATA) \
+	  stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx \
+	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.$(A)
 
 .PHONY: installopt-noprof
@@ -113,7 +117,8 @@ installopt-noprof:
 
 .PHONY: installopt-prof
 installopt-prof:
-	cp stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
+	$(INSTALL_DATA) \
+	  stdlib.p.cmxa stdlib.p.$(A) std_exit.p.cmx std_exit.p.$(O) \
 	  "$(INSTALL_LIBDIR)"
 	cd "$(INSTALL_LIBDIR)"; $(RANLIB) stdlib.p.$(A)
 

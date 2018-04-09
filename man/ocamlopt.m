@@ -589,11 +589,6 @@ warning messages.
 .B \-strict\-sequence
 The left-hand part of a sequence must have type unit.
 .TP
-.B \-thread
-Compile or link multithreaded programs, in combination with the
-system threads library described in
-.IR "The OCaml user's manual" .
-.TP
 .B \-unboxed\-types
 When a type is unboxable (i.e. a record with a single argument or a
 concrete datatype with a single constructor of one argument) it will

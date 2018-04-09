@@ -59,6 +59,12 @@ let make_library_modifier library directory =
   Append (Ocaml_variables.caml_ld_library_path, (wrap directory));
 ]
 
+let make_module_modifier unit_name directory =
+[
+  Append (Ocaml_variables.directories, (wrap directory));
+  Append (Ocaml_variables.binary_modules, (wrap unit_name));
+]
+
 let compiler_subdir subdir =
   Filename.make_path (Ocamltest_config.ocamlsrcdir :: subdir)
 
@@ -70,13 +76,13 @@ let config =
 let testing = make_library_modifier
   "testing" (compiler_subdir ["testsuite"; "lib"])
 
+let tool_ocaml_lib = make_module_modifier
+  "lib" (compiler_subdir ["testsuite"; "lib"])
+
 let unixlibdir = if Sys.os_type="Win32" then "win32unix" else "unix"
 
 let unix = make_library_modifier
   "unix" (compiler_subdir ["otherlibs"; unixlibdir])
-
-let bigarray =
-  make_library_modifier "bigarray" (compiler_subdir ["otherlibs"; "bigarray"])
 
 let str = make_library_modifier
   "str" (compiler_subdir ["otherlibs"; "str"])
@@ -88,7 +94,7 @@ let systhreads =
 
 let compilerlibs_subdirs =
 [
-  "utils"; "parsing"; "typing"; "bytecomp"; "compilerlibs";
+  "utils"; "parsing"; "toplevel"; "typing"; "bytecomp"; "compilerlibs";
 ]
 
 let add_compiler_subdir subdir =
@@ -103,11 +109,11 @@ let _ =
   register_modifiers "config" config;
   register_modifiers "testing" testing;
   register_modifiers "unix" unix;
-  register_modifiers "bigarray" bigarray;
   register_modifiers "str" str;
   register_modifiers "ocamlcommon" ocamlcommon;
   register_modifiers "systhreads" systhreads;
   register_modifiers "latex" latex;
   register_modifiers "html" html;
   register_modifiers "man" man;
+  register_modifiers "tool-ocaml-lib" tool_ocaml_lib;
   ()

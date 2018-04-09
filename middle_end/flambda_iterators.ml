@@ -409,8 +409,8 @@ let map_general ~toplevel f f_named tree =
                   func_decl
                 end else begin
                   done_something := true;
-                  Flambda.update_body_of_function_declaration
-                    func_decl ~body:new_body
+                  Flambda.update_function_declaration func_decl
+                    ~params:func_decl.params ~body:new_body
                 end)
               function_decls.funs
           in
@@ -493,7 +493,8 @@ let map_symbols_on_set_of_closures
         if not (body == func_decl.body) then begin
           done_something := true;
         end;
-        Flambda.update_body_of_function_declaration func_decl ~body)
+        Flambda.update_function_declaration func_decl
+          ~params:func_decl.params ~body)
       function_decls.funs
   in
   if not !done_something then
@@ -580,8 +581,8 @@ let map_function_bodies (set_of_closures : Flambda.set_of_closures) ~f =
           function_decl
         else begin
           done_something := true;
-          Flambda.update_body_of_function_declaration ~body:new_body
-            function_decl
+          Flambda.update_function_declaration function_decl
+            ~body:new_body ~params:function_decl.params
         end)
       set_of_closures.function_decls.funs
   in
@@ -611,8 +612,8 @@ let map_sets_of_closures_of_program (program : Flambda.program)
                 function_decl
               else begin
                 done_something := true;
-                Flambda.update_body_of_function_declaration ~body
-                  function_decl
+                Flambda.update_function_declaration function_decl
+                  ~body ~params:function_decl.params
               end)
             set_of_closures.function_decls.funs
         in
@@ -707,8 +708,8 @@ let map_exprs_at_toplevel_of_program (program : Flambda.program)
               function_decl
             else begin
               done_something := true;
-              Flambda.update_body_of_function_declaration ~body
-                function_decl
+              Flambda.update_function_declaration function_decl
+                ~body ~params:function_decl.params
             end)
           set_of_closures.function_decls.funs
       in

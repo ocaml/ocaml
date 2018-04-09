@@ -1374,7 +1374,8 @@ let simplif_primitive_32bits = function
   | Pbigarrayset(_unsafe, n, Pbigarray_int64, _layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pstring_load_64(_) -> Pccall (default_prim "caml_string_get64")
-  | Pstring_set_64(_) -> Pccall (default_prim "caml_string_set64")
+  | Pbytes_load_64(_) -> Pccall (default_prim "caml_bytes_get64")
+  | Pbytes_set_64(_) -> Pccall (default_prim "caml_bytes_set64")
   | Pbigstring_load_64(_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set_64(_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
@@ -1647,8 +1648,10 @@ let rec is_unboxed_number ~strict env e =
             Boxed (Boxed_integer (Pint64, dbg), false)
         | Pbigarrayref(_, _, Pbigarray_native_int,_) ->
             Boxed (Boxed_integer (Pnativeint, dbg), false)
-        | Pstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
-        | Pstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
+        | Pstring_load_32(_) | Pbytes_load_32(_) ->
+            Boxed (Boxed_integer (Pint32, dbg), false)
+        | Pstring_load_64(_) | Pbytes_load_64(_) ->
+            Boxed (Boxed_integer (Pint64, dbg), false)
         | Pbigstring_load_32(_) -> Boxed (Boxed_integer (Pint32, dbg), false)
         | Pbigstring_load_64(_) -> Boxed (Boxed_integer (Pint64, dbg), false)
         | Praise _ -> No_result
@@ -2240,7 +2243,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
               Cop(Cload (Byte_unsigned, Mutable),
                 [add_int str idx dbg], dbg))))) dbg
 
-  | Pstring_load_16(unsafe) ->
+  | Pstring_load_16(unsafe) | Pbytes_load_16(unsafe) ->
      tag_int
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2260,7 +2263,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 1) dbg) idx
                       (unaligned_load_16 ba_data idx dbg))))) dbg
 
-  | Pstring_load_32(unsafe) ->
+  | Pstring_load_32(unsafe) | Pbytes_load_32(unsafe) ->
      box_int dbg Pint32
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2280,7 +2283,7 @@ and transl_prim_2 env p arg1 arg2 dbg =
                                           (Cconst_int 3) dbg) idx
                       (unaligned_load_32 ba_data idx dbg)))))
 
-  | Pstring_load_64(unsafe) ->
+  | Pstring_load_64(unsafe) | Pbytes_load_64(unsafe) ->
      box_int dbg Pint64
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2355,18 +2358,6 @@ and transl_prim_2 env p arg1 arg2 dbg =
                   idx],
                 unboxed_float_array_ref arr idx dbg))))
       end
-
-  (* Operations on bitvects *)
-  | Pbittest ->
-      bind "index" (untag_int(transl env arg2) dbg) (fun idx ->
-        tag_int(
-          Cop(Cand, [Cop(Clsr, [Cop(Cload (Byte_unsigned, Mutable),
-                                    [add_int (transl env arg1)
-                                      (Cop(Clsr, [idx; Cconst_int 3], dbg))
-                                      dbg],
-                                    dbg);
-                                Cop(Cand, [idx; Cconst_int 7], dbg)], dbg);
-                     Cconst_int 1], dbg)) dbg)
 
   (* Boxed integers *)
   | Paddbint bi ->
@@ -2523,7 +2514,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                       float_array_set arr idx newval dbg))))
       end)
 
-  | Pstring_set_16(unsafe) ->
+  | Pbytes_set_16(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2546,7 +2537,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_16 ba_data idx newval dbg))))))
 
-  | Pstring_set_32(unsafe) ->
+  | Pbytes_set_32(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2569,7 +2560,7 @@ and transl_prim_3 env p arg1 arg2 arg3 dbg =
                                           dbg)
                       idx (unaligned_set_32 ba_data idx newval dbg))))))
 
-  | Pstring_set_64(unsafe) ->
+  | Pbytes_set_64(unsafe) ->
      return_unit
        (bind "str" (transl env arg1) (fun str ->
         bind "index" (untag_int (transl env arg2) dbg) (fun idx ->
@@ -2826,10 +2817,16 @@ let transl_function f =
       Afl_instrument.instrument_function (transl env body)
     else
       transl env body in
+  let fun_codegen_options =
+    if !Clflags.optimize_for_speed then
+      []
+    else
+      [ Reduce_code_size ]
+  in
   Cfunction {fun_name = f.label;
              fun_args = List.map (fun id -> (id, typ_val)) f.params;
              fun_body = cmm_body;
-             fun_fast = !Clflags.optimize_for_speed;
+             fun_codegen_options;
              fun_dbg  = f.dbg}
 
 (* Translate all function definitions *)
@@ -3088,7 +3085,16 @@ let compunit (ulam, preallocated_blocks, constants) =
       transl empty_env ulam in
   let c1 = [Cfunction {fun_name = Compilenv.make_symbol (Some "entry");
                        fun_args = [];
-                       fun_body = init_code; fun_fast = false;
+                       fun_body = init_code;
+                       (* This function is often large and run only once.
+                          Compilation time matter more than runtime.
+                          See MPR#7630 *)
+                       fun_codegen_options =
+                         if Config.flambda then [
+                           Reduce_code_size;
+                           No_CSE;
+                         ]
+                         else [ Reduce_code_size ];
                        fun_dbg  = Debuginfo.none }] in
   let c2 = emit_constants c1 constants in
   let c3 = transl_all_functions_and_emit_all_constants c2 in
@@ -3229,7 +3235,7 @@ let send_function arity =
    {fun_name;
     fun_args = fun_args;
     fun_body = body;
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
 
 let apply_function arity =
@@ -3240,7 +3246,7 @@ let apply_function arity =
    {fun_name;
     fun_args = List.map (fun id -> (id, typ_val)) all_args;
     fun_body = body;
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
    }
 
@@ -3265,7 +3271,7 @@ let tuplify_function arity =
       Cop(Capply typ_val,
           get_field env (Cvar clos) 2 dbg :: access_components 0 @ [Cvar clos],
           dbg);
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none;
    }
 
@@ -3328,7 +3334,7 @@ let final_curry_function arity =
                "_" ^ string_of_int (arity-1);
     fun_args = [last_arg, typ_val; last_clos, typ_val];
     fun_body = curry_fun [] last_clos (arity-1);
-    fun_fast = true;
+    fun_codegen_options = [];
     fun_dbg  = Debuginfo.none }
 
 let rec intermediate_curry_functions arity num =
@@ -3358,7 +3364,7 @@ let rec intermediate_curry_functions arity num =
                  Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                  int_const 1; Cvar arg; Cvar clos],
                 dbg);
-      fun_fast = true;
+      fun_codegen_options = [];
       fun_dbg  = Debuginfo.none }
     ::
       (if arity <= max_arity_optimized && arity - num > 2 then
@@ -3386,7 +3392,7 @@ let rec intermediate_curry_functions arity num =
                fun_args = direct_args @ [clos, typ_val];
                fun_body = iter (num+1)
                   (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
-               fun_fast = true;
+               fun_codegen_options = [];
                fun_dbg = Debuginfo.none }
           in
           cf :: intermediate_curry_functions arity (num+1)
@@ -3449,7 +3455,7 @@ let entry_point namelist =
   Cfunction {fun_name = "caml_program";
              fun_args = [];
              fun_body = body;
-             fun_fast = false;
+             fun_codegen_options = [Reduce_code_size];
              fun_dbg  = Debuginfo.none }
 
 (* Generate the table of globals *)

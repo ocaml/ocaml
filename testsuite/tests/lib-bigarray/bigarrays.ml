@@ -1,5 +1,4 @@
 (* TEST
-   include bigarray
 *)
 
 open Bigarray

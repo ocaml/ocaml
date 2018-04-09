@@ -32,6 +32,7 @@
 *.out.dSYM
 *.swp
 _ocamltest
+_ocamltestd
 *.odoc
 
 # local to root directory
@@ -242,7 +243,7 @@ _ocamltest
 /testsuite/**/*.byte
 /testsuite/**/*.native
 /testsuite/**/program
-/testsuite/**/_log
+/testsuite/**/_log*
 /testsuite/failure.stamp
 
 /testsuite/_retries
@@ -256,9 +257,6 @@ _ocamltest
 
 
 /testsuite/tests/embedded/caml
-
-/testsuite/tests/float-unboxing/*.flambda
-/testsuite/tests/float-unboxing/float_inline.ml
 
 /testsuite/tests/lib-dynlink-bytecode/main
 /testsuite/tests/lib-dynlink-bytecode/static
@@ -277,18 +275,6 @@ _ocamltest
 
 /testsuite/tests/lib-threads/*.byt
 
-/testsuite/tests/lib-unix/common/utimes.txt
-
-/testsuite/tests/lib-unix/win-stat/*-file
-/testsuite/tests/lib-unix/win-symlink/link*
-/testsuite/tests/lib-unix/win-symlink/test.txt
-
-/testsuite/tests/lib-unix/win-symlink/link*
-/testsuite/tests/lib-unix/win-symlink/test.txt
-
-/testsuite/tests/opaque/fst/*.mli
-/testsuite/tests/opaque/snd/*.mli
-
 /testsuite/tests/output_obj/*.bc.c
 /testsuite/tests/output_obj/*_stub
 /testsuite/tests/output_obj/*_stub
@@ -296,11 +282,6 @@ _ocamltest
 /testsuite/tests/runtime-errors/*.bytecode
 
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml
-
-/testsuite/tests/tool-debugger/**/compiler-libs
-/testsuite/tests/tool-debugger/find-artifacts/out
-/testsuite/tests/tool-debugger/no_debug_event/out
-/testsuite/tests/tool-debugger/no_debug_event/c
 
 /testsuite/tests/tool-ocamldep-modalias/*.byt*
 /testsuite/tests/tool-ocamldep-modalias/*.opt*
@@ -330,15 +311,6 @@ _ocamltest
 /testsuite/tests/tool-lexyacc/grammar.mli
 /testsuite/tests/tool-lexyacc/grammar.ml
 
-/testsuite/tests/typing-multifile/a.ml
-/testsuite/tests/typing-multifile/b.ml
-/testsuite/tests/typing-multifile/c.ml
-/testsuite/tests/typing-multifile/d.mli
-/testsuite/tests/typing-multifile/e.ml
-/testsuite/tests/typing-multifile/f.ml
-/testsuite/tests/typing-multifile/g.ml
-/testsuite/tests/typing-multifile/test
-
 /testsuite/tests/typing-unboxed-types/false.flat-float
 /testsuite/tests/typing-unboxed-types/true.flat-float
 /testsuite/tests/typing-unboxed-types/test.ml.reference
@@ -347,9 +319,6 @@ _ocamltest
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
 /testsuite/tests/unwind/unwind_test
-
-/testsuite/tests/warnings/w55.opt.opt_result
-/testsuite/tests/warnings/w58.opt.opt_result
 
 /testsuite/tests/win-unicode/symlink_tests.precheck
 

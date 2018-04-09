@@ -339,12 +339,24 @@ let primitives_table = create_hashtable 57 [
   "%caml_string_get32u", Pstring_load_32(true);
   "%caml_string_get64", Pstring_load_64(false);
   "%caml_string_get64u", Pstring_load_64(true);
-  "%caml_string_set16", Pstring_set_16(false);
-  "%caml_string_set16u", Pstring_set_16(true);
-  "%caml_string_set32", Pstring_set_32(false);
-  "%caml_string_set32u", Pstring_set_32(true);
-  "%caml_string_set64", Pstring_set_64(false);
-  "%caml_string_set64u", Pstring_set_64(true);
+  "%caml_string_set16", Pbytes_set_16(false);
+  "%caml_string_set16u", Pbytes_set_16(true);
+  "%caml_string_set32", Pbytes_set_32(false);
+  "%caml_string_set32u", Pbytes_set_32(true);
+  "%caml_string_set64", Pbytes_set_64(false);
+  "%caml_string_set64u", Pbytes_set_64(true);
+  "%caml_bytes_get16", Pbytes_load_16(false);
+  "%caml_bytes_get16u", Pbytes_load_16(true);
+  "%caml_bytes_get32", Pbytes_load_32(false);
+  "%caml_bytes_get32u", Pbytes_load_32(true);
+  "%caml_bytes_get64", Pbytes_load_64(false);
+  "%caml_bytes_get64u", Pbytes_load_64(true);
+  "%caml_bytes_set16", Pbytes_set_16(false);
+  "%caml_bytes_set16u", Pbytes_set_16(true);
+  "%caml_bytes_set32", Pbytes_set_32(false);
+  "%caml_bytes_set32u", Pbytes_set_32(true);
+  "%caml_bytes_set64", Pbytes_set_64(false);
+  "%caml_bytes_set64u", Pbytes_set_64(true);
   "%caml_bigstring_get16", Pbigstring_load_16(false);
   "%caml_bigstring_get16u", Pbigstring_load_16(true);
   "%caml_bigstring_get32", Pbigstring_load_32(false);
@@ -1209,12 +1221,18 @@ and transl_function loc untuplify_fn repr partial param cases =
        Matching.for_function loc repr (Lvar param)
          (transl_cases cases) partial)
 
-and transl_let rec_flag pat_expr_list body =
+(*
+  Notice: transl_let consumes (ie compiles) its pat_expr_list argument,
+  and returns a function that will take the body of the lambda-let construct.
+  This complication allows choosing any compilation order for the
+  bindings and body of let constructs.
+*)
+and transl_let rec_flag pat_expr_list =
   match rec_flag with
     Nonrecursive ->
       let rec transl = function
         [] ->
-          body
+          fun body -> body
       | {vb_pat=pat; vb_expr=expr; vb_attributes=attr; vb_loc} :: rem ->
           let lam = transl_exp expr in
           let lam =
@@ -1223,7 +1241,8 @@ and transl_let rec_flag pat_expr_list body =
           let lam =
             Translattribute.add_specialise_attribute lam vb_loc attr
           in
-          Matching.for_let pat.pat_loc lam pat (transl rem)
+          let mk_body = transl rem in
+          fun body -> Matching.for_let pat.pat_loc lam pat (mk_body body)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1244,7 +1263,8 @@ and transl_let rec_flag pat_expr_list body =
             vb_attributes
         in
         (id, lam) in
-      Lletrec(List.map2 transl_case pat_expr_list idlist, body)
+      let lam_bds = List.map2 transl_case pat_expr_list idlist in
+      fun body -> Lletrec(lam_bds, body)
 
 and transl_setinstvar loc self var expr =
   Lprim(Psetfield_computed (maybe_pointer expr, Assignment),

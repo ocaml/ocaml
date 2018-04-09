@@ -630,6 +630,33 @@ let prerr_ids msg ids =
   prerr_endline (String.concat " " (msg :: names))
 *)
 
+let free_methods l =
+  let fv = ref Ident.Set.empty in
+  let rec free l =
+    Lambda.iter_head_constructor free l;
+    match l with
+    | Lsend(Self, Lvar meth, _, _, _) ->
+        fv := Ident.Set.add meth !fv
+    | Lsend _ -> ()
+    | Lfunction{params} ->
+        List.iter (fun param -> fv := Ident.Set.remove param !fv) params
+    | Llet(_str, _k, id, _arg, _body) ->
+        fv := Ident.Set.remove id !fv
+    | Lletrec(decl, _body) ->
+        List.iter (fun (id, _exp) -> fv := Ident.Set.remove id !fv) decl
+    | Lstaticcatch(_e1, (_,vars), _e2) ->
+        List.iter (fun id -> fv := Ident.Set.remove id !fv) vars
+    | Ltrywith(_e1, exn, _e2) ->
+        fv := Ident.Set.remove exn !fv
+    | Lfor(v, _e1, _e2, _dir, _e3) ->
+        fv := Ident.Set.remove v !fv
+    | Lassign _
+    | Lvar _ | Lconst _ | Lapply _
+    | Lprim _ | Lswitch _ | Lstringswitch _ | Lstaticraise _
+    | Lifthenelse _ | Lsequence _ | Lwhile _
+    | Levent _ | Lifused _ -> ()
+  in free l; !fv
+
 let transl_class ids cl_id pub_meths cl vflag =
   (* First check if it is not only a rebind *)
   let rebind = transl_class_rebind cl vflag in
@@ -662,8 +689,8 @@ let transl_class ids cl_id pub_meths cl vflag =
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
-        incr i; Ident.add id (lfield env !i)  subst)
-      Ident.empty !new_ids'
+        incr i; Ident.Map.add id (lfield env !i)  subst)
+      Ident.Map.empty !new_ids'
   in
   let new_ids_meths = ref [] in
   let msubst arr = function
@@ -671,7 +698,7 @@ let transl_class ids cl_id pub_meths cl vflag =
         let env = Ident.create "env" in
         let body' =
           if new_ids = [] then body else
-          subst_lambda (subst env body 0 new_ids_meths) body in
+          Lambda.subst (subst env body 0 new_ids_meths) body in
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
@@ -698,7 +725,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
-    let lam = subst_lambda (subst env1 lam 1 new_ids_init) lam in
+    let lam = Lambda.subst (subst env1 lam 1 new_ids_init) lam in
     Llet(Alias, Pgenval, env1, (if l = [] then Lvar envs else lfield envs 0),
     Llet(Alias, Pgenval, env1',
          (if !new_ids_init = [] then Lvar env1 else lfield env1 0),

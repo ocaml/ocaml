@@ -1,3 +1,8 @@
+(* TEST
+include unix
+files = "utimes.txt"
+*)
+
 (* We do not check setting the "last access time" because it is hard to do so on
    some file systems. FAT, for example, only has a 1d resolution for this
    timestamp, and even NTFS can potentially delay the update of this timestamp

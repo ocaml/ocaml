@@ -406,10 +406,10 @@ module LargeFile =
   end
 
 external map_internal:
-   file_descr -> ('a, 'b) CamlinternalBigarray.kind
-              -> 'c CamlinternalBigarray.layout
+   file_descr -> ('a, 'b) Stdlib.Bigarray.kind
+              -> 'c Stdlib.Bigarray.layout
               -> bool -> int array -> int64
-              -> ('a, 'b, 'c) CamlinternalBigarray.genarray
+              -> ('a, 'b, 'c) Stdlib.Bigarray.Genarray.t
      = "caml_unix_map_file_bytecode" "caml_unix_map_file"
 
 let map_file fd ?(pos=0L) kind layout shared dims =

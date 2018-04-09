@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 let main () =
   let (rd, wr) = Unix.pipe() in
   let t = Thread.create

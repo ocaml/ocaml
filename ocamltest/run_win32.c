@@ -238,6 +238,11 @@ if ( (condition) ) \
   goto cleanup; \
 } else { }
 
+static WCHAR *translate_finename(WCHAR *filename)
+{
+  if (!wcscmp(filename, L"/dev/null")) return L"NUL"; else return filename;
+}
+
 int run_command(const command_settings *settings)
 {
   BOOL process_created = FALSE;
@@ -271,21 +276,23 @@ int run_command(const command_settings *settings)
 
   if (is_defined(settings->stdin_filename))
   {
-    startup_info.hStdInput = create_input_handle(settings->stdin_filename);
+    WCHAR *stdin_filename = translate_finename(settings->stdin_filename);
+    startup_info.hStdInput = create_input_handle(stdin_filename);
     checkerr( (startup_info.hStdInput == INVALID_HANDLE_VALUE),
       "Could not redirect standard input",
-      settings->stdin_filename);
+      stdin_filename);
     stdin_redirected = 1;
   } else startup_info.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
 
   if (is_defined(settings->stdout_filename))
   {
+    WCHAR *stdout_filename = translate_finename(settings->stdout_filename);
     startup_info.hStdOutput = create_output_handle(
-      settings->stdout_filename, settings->append
+      stdout_filename, settings->append
     );
     checkerr( (startup_info.hStdOutput == INVALID_HANDLE_VALUE),
       "Could not redirect standard output",
-      settings->stdout_filename);
+      stdout_filename);
     stdout_redirected = 1;
   } else startup_info.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -303,13 +310,14 @@ int run_command(const command_settings *settings)
 
     if (! stderr_redirected)
     {
+      WCHAR *stderr_filename = translate_finename(settings->stderr_filename);
       startup_info.hStdError = create_output_handle
       (
-        settings->stderr_filename, settings->append
+        stderr_filename, settings->append
       );
       checkerr( (startup_info.hStdError == INVALID_HANDLE_VALUE),
         "Could not redirect standard error",
-        settings->stderr_filename);
+        stderr_filename);
       stderr_redirected = 1;
     }
   } else startup_info.hStdError = GetStdHandle(STD_ERROR_HANDLE);

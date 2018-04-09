@@ -60,6 +60,10 @@ module type S =
     val find_last: (elt -> bool) -> t -> elt
     val find_last_opt: (elt -> bool) -> t -> elt option
     val of_list: elt list -> t
+    val to_seq_from : elt -> t -> elt Seq.t
+    val to_seq : t -> elt Seq.t
+    val add_seq : elt Seq.t -> t -> t
+    val of_seq : elt Seq.t -> t
   end
 
 module Make(Ord: OrderedType) =
@@ -523,4 +527,27 @@ module Make(Ord: OrderedType) =
       | [x0; x1; x2; x3] -> add x3 (add x2 (add x1 (singleton x0)))
       | [x0; x1; x2; x3; x4] -> add x4 (add x3 (add x2 (add x1 (singleton x0))))
       | _ -> of_sorted_list (List.sort_uniq Ord.compare l)
+
+    let add_seq i m =
+      Seq.fold_left (fun s x -> add x s) m i
+
+    let of_seq i = add_seq i empty
+
+    let rec seq_of_enum_ c () = match c with
+      | End -> Seq.Nil
+      | More (x, t, rest) -> Seq.Cons (x, seq_of_enum_ (cons_enum t rest))
+
+    let to_seq c = seq_of_enum_ (cons_enum c End)
+
+    let to_seq_from low s =
+      let rec aux low s c = match s with
+        | Empty -> c
+        | Node {l; r; v; _} ->
+            begin match Ord.compare v low with
+              | 0 -> More (v, r, c)
+              | n when n<0 -> aux low r c
+              | _ -> aux low l (More (v, r, c))
+            end
+      in
+      seq_of_enum_ (aux low s End)
   end

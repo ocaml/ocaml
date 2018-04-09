@@ -32,6 +32,6 @@ thread.cmi : unix.cmi
 threadUnix.cmo : unix.cmi thread.cmi threadUnix.cmi
 threadUnix.cmx : unix.cmx thread.cmx threadUnix.cmi
 threadUnix.cmi : unix.cmi
-unix.cmo : unix.cmi
-unix.cmx : unix.cmi
-unix.cmi :
+unix.cmo : stdlib.cmi unix.cmi
+unix.cmx : stdlib.cmx unix.cmi
+unix.cmi : stdlib.cmi

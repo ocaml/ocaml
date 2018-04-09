@@ -146,7 +146,13 @@ phrase:
 fundecl:
     LPAREN FUNCTION fun_name LPAREN params RPAREN sequence RPAREN
       { List.iter (fun (id, ty) -> unbind_ident id) $5;
-        {fun_name = $3; fun_args = $5; fun_body = $7; fun_fast = true;
+        {fun_name = $3; fun_args = $5; fun_body = $7;
+         fun_codegen_options =
+           if Config.flambda then [
+             Reduce_code_size;
+             No_CSE;
+           ]
+           else [ Reduce_code_size ];
          fun_dbg = debuginfo ()} }
 ;
 fun_name:

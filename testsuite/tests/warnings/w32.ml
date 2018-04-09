@@ -1,3 +1,16 @@
+(* TEST
+
+flags = "-w A"
+
+* setup-ocamlc.byte-build-env
+** ocamlc.byte
+module = "w32.mli"
+*** ocamlc.byte
+module = "w32.ml"
+**** check-ocamlc.byte-output
+
+*)
+
 (* from MPR#7624 *)
 
 let[@warning "-32"] f x = x
@@ -45,3 +58,10 @@ module M = struct
   let j x = x
   and[@warning "+32"] k x = x
 end
+
+(* unused values in functor argument *)
+module F (X : sig val x : int end) = struct end
+
+module G (X : sig val x : int end) = X
+
+module H (X : sig val x : int end) = X

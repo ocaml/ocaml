@@ -1,0 +1,4 @@
+File "pr6870_bad.ml", line 10, characters 38-50:
+Error: This alias is bound to type 'a T.t but is used as an instance of type
+         'a
+       The type variable 'a occurs inside 'a T.t

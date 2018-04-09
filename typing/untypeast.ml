@@ -708,7 +708,7 @@ let core_type sub ct =
 let class_structure sub cs =
   let rec remove_self = function
     | { pat_desc = Tpat_alias (p, id, _s) }
-      when string_is_prefix "selfpat-" id.Ident.name ->
+      when string_is_prefix "selfpat-" (Ident.name id) ->
         remove_self p
     | p -> p
   in

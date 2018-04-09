@@ -8,6 +8,15 @@ run_stubs.$(O): run_stubs.c run.h ../byterun/caml/misc.h \
  ../byterun/caml/major_gc.h ../byterun/caml/freelist.h \
  ../byterun/caml/minor_gc.h ../byterun/caml/address_class.h \
  ../byterun/caml/io.h ../byterun/caml/osdeps.h ../byterun/caml/memory.h
+ocamltest_stdlib_stubs.$(O): ocamltest_stdlib_stubs.c \
+ ../byterun/caml/config.h ../byterun/caml/m.h ../byterun/caml/s.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/config.h \
+ ../byterun/caml/misc.h ../byterun/caml/memory.h ../byterun/caml/gc.h \
+ ../byterun/caml/mlvalues.h ../byterun/caml/major_gc.h \
+ ../byterun/caml/freelist.h ../byterun/caml/minor_gc.h \
+ ../byterun/caml/address_class.h ../byterun/caml/alloc.h \
+ ../byterun/caml/signals.h ../byterun/caml/osdeps.h \
+ ../byterun/caml/memory.h
 actions.cmo : result.cmi environments.cmi actions.cmi
 actions.cmx : result.cmx environments.cmx actions.cmi
 actions.cmi : result.cmi environments.cmi
@@ -42,17 +51,17 @@ main.cmx : tsl_semantics.cmx tsl_parser.cmx tsl_lexer.cmx tests.cmx \
     builtin_variables.cmx actions_helpers.cmx actions.cmx main.cmi
 main.cmi :
 ocaml_actions.cmo : result.cmi ocamltest_stdlib.cmi ocamltest_config.cmi \
-    ocaml_variables.cmi ocaml_toplevels.cmi ocaml_tools.cmi ocaml_flags.cmi \
-    ocaml_filetypes.cmi ocaml_files.cmi ocaml_directories.cmi \
-    ocaml_compilers.cmi ocaml_commands.cmi ocaml_backends.cmi filecompare.cmi \
-    environments.cmi builtin_variables.cmi actions_helpers.cmi actions.cmi \
-    ocaml_actions.cmi
+    ocaml_variables.cmi ocaml_toplevels.cmi ocaml_tools.cmi \
+    ocaml_modifiers.cmi ocaml_flags.cmi ocaml_filetypes.cmi ocaml_files.cmi \
+    ocaml_directories.cmi ocaml_compilers.cmi ocaml_commands.cmi \
+    ocaml_backends.cmi filecompare.cmi environments.cmi builtin_variables.cmi \
+    actions_helpers.cmi actions.cmi ocaml_actions.cmi
 ocaml_actions.cmx : result.cmx ocamltest_stdlib.cmx ocamltest_config.cmx \
-    ocaml_variables.cmx ocaml_toplevels.cmx ocaml_tools.cmx ocaml_flags.cmx \
-    ocaml_filetypes.cmx ocaml_files.cmx ocaml_directories.cmx \
-    ocaml_compilers.cmx ocaml_commands.cmx ocaml_backends.cmx filecompare.cmx \
-    environments.cmx builtin_variables.cmx actions_helpers.cmx actions.cmx \
-    ocaml_actions.cmi
+    ocaml_variables.cmx ocaml_toplevels.cmx ocaml_tools.cmx \
+    ocaml_modifiers.cmx ocaml_flags.cmx ocaml_filetypes.cmx ocaml_files.cmx \
+    ocaml_directories.cmx ocaml_compilers.cmx ocaml_commands.cmx \
+    ocaml_backends.cmx filecompare.cmx environments.cmx builtin_variables.cmx \
+    actions_helpers.cmx actions.cmx ocaml_actions.cmi
 ocaml_actions.cmi : actions.cmi
 ocaml_backends.cmo : ocaml_backends.cmi
 ocaml_backends.cmx : ocaml_backends.cmi
@@ -94,9 +103,9 @@ ocaml_tests.cmx : tests.cmx ocamltest_config.cmx ocaml_actions.cmx \
     builtin_actions.cmx ocaml_tests.cmi
 ocaml_tests.cmi : tests.cmi
 ocaml_tools.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
-    environments.cmi actions_helpers.cmi ocaml_tools.cmi
+    ocaml_files.cmi environments.cmi actions_helpers.cmi ocaml_tools.cmi
 ocaml_tools.cmx : variables.cmx ocamltest_stdlib.cmx ocaml_variables.cmx \
-    environments.cmx actions_helpers.cmx ocaml_tools.cmi
+    ocaml_files.cmx environments.cmx actions_helpers.cmx ocaml_tools.cmi
 ocaml_tools.cmi : variables.cmi environments.cmi
 ocaml_toplevels.cmo : variables.cmi ocamltest_stdlib.cmi ocaml_variables.cmi \
     ocaml_tools.cmi ocaml_files.cmi ocaml_compilers.cmi ocaml_commands.cmi \

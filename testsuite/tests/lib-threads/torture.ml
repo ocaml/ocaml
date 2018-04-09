@@ -1,3 +1,9 @@
+(* TEST
+
+include systhreads
+
+*)
+
 (* Torture test - I/O interspersed with lots of GC *)
 
 let finished = ref false

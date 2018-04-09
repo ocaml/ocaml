@@ -457,7 +457,7 @@ let mk_strict_sequence f =
 
 let mk_thread f =
   "-thread", Arg.Unit f,
-  " Generate code that supports the system threads library"
+  " (deprecated) same as -I +threads"
 ;;
 
 let mk_dtimings f =
@@ -643,6 +643,11 @@ let mk_dflambda f =
 
 let mk_drawflambda f =
   "-drawflambda", Arg.Unit f, " Print Flambda terms after closure conversion"
+;;
+
+let mk_dflambda_invariants f =
+  "-dflambda-invariants", Arg.Unit f, " Check Flambda invariants \
+      around each pass"
 ;;
 
 let mk_dflambda_no_invariants f =
@@ -941,6 +946,7 @@ module type Optcommon_options = sig
   val _clambda_checks : unit -> unit
   val _dflambda : unit -> unit
   val _drawflambda : unit -> unit
+  val _dflambda_invariants : unit -> unit
   val _dflambda_no_invariants : unit -> unit
   val _dflambda_let : int -> unit
   val _dflambda_verbose : unit -> unit
@@ -1279,6 +1285,7 @@ struct
     mk_dclambda F._dclambda;
     mk_dflambda F._dflambda;
     mk_drawflambda F._drawflambda;
+    mk_dflambda_invariants F._dflambda_invariants;
     mk_dflambda_no_invariants F._dflambda_no_invariants;
     mk_dflambda_let F._dflambda_let;
     mk_dflambda_verbose F._dflambda_verbose;

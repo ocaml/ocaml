@@ -1,0 +1,18 @@
+File "pr7414_bad.ml", line 52, characters 22-28:
+Error: Signature mismatch:
+       Modules do not match:
+         functor () -> sig module Choice : T val r : '_weak1 list ref ref end
+       is not included in
+         functor () -> S
+       At position functor () -> <here>
+       Modules do not match:
+         sig module Choice : T val r : '_weak1 list ref ref end
+       is not included in
+         S
+       At position functor () -> <here>
+       Values do not match:
+         val r : '_weak1 list ref ref
+       is not included in
+         val r : Choice.t list ref ref
+       File "pr7414_bad.ml", line 38, characters 2-31: Expected declaration
+       File "pr7414_bad.ml", line 33, characters 6-7: Actual declaration

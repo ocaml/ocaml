@@ -1,7 +1,7 @@
 (* TEST
    * setup-ocamlc.byte-build-env
    ** ocamlc.byte
-      flags = "-dlambda -dunique-ids"
+      flags = "-dlambda -dno-unique-ids"
    *** flat-float-array
    **** check-ocamlc.byte-output
         compiler_reference = "${test_source_directory}/array_spec.compilers.reference.flat"

@@ -1,0 +1,178 @@
+don't know what to do with unknown-file
+Usage: ocamlopt <options> <files>
+Options are:
+  -fPIC  Generate position-independent machine code (default)
+  -fno-PIC  Generate position-dependent machine code
+  -a  Build a library
+  -absname  Show absolute filenames in error messages
+  -afl-instrument Enable instrumentation for afl-fuzz
+  -afl-inst-ratio Configure percentage of branches instrumented
+     (advanced, see afl-fuzz docs for AFL_INST_RATIO)
+  -annot  Save information in <filename>.annot
+  -bin-annot  Save typedtree in <filename>.cmt
+  -inline-branch-factor <n>|<round>=<n>[,...]  Estimate the probability of a branch being cold as 1/(1+n) (used for inlining) (default 0.10)
+  -c  Compile only (do not link)
+  -cc <command>  Use <command> as the C compiler and linker
+  -cclib <opt>  Pass option <opt> to the C linker
+  -ccopt <opt>  Pass option <opt> to the C compiler and linker
+  -clambda-checks  Instrument clambda code with closure and field access checks (for debugging the compiler)
+  -Oclassic  Make inlining decisions at function definition time rather than at the call site (replicates previous behaviour of the compiler)
+  -color {auto|always|never}  Enable or disable colors in compiler messages
+    The following settings are supported:
+      auto    use heuristics to enable colors only if supported
+      always  enable colors
+      never   disable colors
+    The default setting is 'auto', and the current heuristic
+    checks that the TERM environment variable exists and is
+    not empty or "dumb", and that isatty(stderr) holds.
+  -compact  Optimize code size rather than speed
+  -config  Print configuration values and exit
+  -dtypes  (deprecated) same as -annot
+  -for-pack <ident>  Generate code that can later be `packed' with
+     ocamlopt -pack -o <ident>.cmx
+  -g  Record debugging information for exception backtrace
+  -i  Print inferred interface
+  -I <dir>  Add <dir> to the list of include directories
+  -impl <file>  Compile <file> as a .ml file
+  -inline <n>|<round>=<n>[,...]  Aggressiveness of inlining (default 10.00, higher numbers mean more aggressive)
+  -inline-toplevel <n>|<round>=<n>[,...]  Aggressiveness of inlining at toplevel (higher numbers mean more aggressive)
+  -inline-alloc-cost <n>|<round>=<n>[,...]  The cost of not removing an allocation during inlining (default 7, higher numbers more costly)
+  -inline-branch-cost <n>|<round>=<n>[,...]  The cost of not removing a conditional during inlining (default 5, higher numbers more costly)
+  -inline-call-cost <n>|<round>=<n>[,...]  The cost of not removing a call during inlining (default 5, higher numbers more costly)
+  -inline-prim-cost <n>|<round>=<n>[,...]  The cost of not removing a primitive during inlining (default 3, higher numbers more costly)
+  -inline-indirect-cost <n>|<round>=<n>[,...]  The cost of not removing an indirect call during inlining (default 4, higher numbers more costly)
+  -inline-lifting-benefit <n>|<round>=<n>[,...]  The benefit of lifting definitions to toplevel during inlining (default 1300, higher numbers more beneficial)
+  -inlining-report  Emit `.<round>.inlining' file(s) (one per round) showing the inliner's decisions
+  -intf <file>  Compile <file> as a .mli file
+  -intf-suffix <string>  Suffix for interface files (default: .mli)
+  -keep-docs  Keep documentation strings in .cmi files
+  -no-keep-docs  Do not keep documentation strings in .cmi files (default)
+  -keep-locs  Keep locations in .cmi files (default)
+  -no-keep-locs  Do not keep locations in .cmi files
+  -labels  Use commuting label mode
+  -linkall  Link all modules, even unused ones
+  -inline-max-depth <n>|<round>=<n>[,...]  Maximum depth of search for inlining opportunities inside inlined functions (default 1)
+  -alias-deps  Do record dependencies for module aliases
+  -no-alias-deps  Do not record dependencies for module aliases
+  -linscan  Use the linear scan register allocator
+  -app-funct  Activate applicative functors
+  -no-app-funct  Deactivate applicative functors
+  -no-float-const-prop  Deactivate constant propagation for floating-point operations
+  -noassert  Do not compile assertion checks
+  -noautolink  Do not automatically link C libraries specified in .cmxa files
+  -nodynlink  Enable optimizations for code that will not be dynlinked
+  -nolabels  Ignore non-optional labels in types
+  -nostdlib  Do not add default directory to the list of include directories
+  -no-unbox-free-vars-of-closures  Do not unbox variables that will appear inside function closures
+  -no-unbox-specialised-args  Do not unbox arguments to which functions have been specialised
+  -o <file>  Set output file name to <file>
+  -O2  Apply increased optimization for speed
+  -O3  Apply aggressive optimization for speed (may significantly increase code size and compilation time)
+  -opaque  Does not generate cross-module optimization information
+     (reduces necessary recompilation on module change)
+  -open <module>  Opens the module <module> before typing
+  -output-obj  Output an object file instead of an executable
+  -output-complete-obj  Output an object file, including runtime, instead of an executable
+  -p  Compile and link with profiling support for "gprof"
+     (not supported on all platforms)
+  -pack  Package the given .cmx files into one .cmx
+  -plugin <plugin>  Load dynamic plugin <plugin>
+  -pp <command>  Pipe sources through preprocessor <command>
+  -ppx <command>  Pipe abstract syntax trees through preprocessor <command>
+  -principal  Check principality of type inference
+  -no-principal  Do not check principality of type inference (default)
+  -rectypes  Allow arbitrary recursive types
+  -no-rectypes  Do not allow arbitrary recursive types (default)
+  -remove-unused-arguments  Remove unused function arguments
+  -rounds <n>  Repeat tree optimization and inlining phases this many times (default 1).  Rounds are numbered starting from zero.
+  -runtime-variant <str>  Use the <str> variant of the run-time system
+  -S  Keep intermediate assembly file
+  -safe-string  Make strings immutable (default)
+  -shared  Produce a dynlinkable plugin
+  -short-paths  Shorten paths in types
+  -strict-sequence  Left-hand part of a sequence must have type unit
+  -no-strict-sequence  Left-hand part of a sequence need not have type unit (default)
+  -strict-formats  Reject invalid formats accepted by legacy implementations
+     (Warning: Invalid formats may behave differently from
+      previous OCaml versions, and will become always-rejected
+      in future OCaml versions. You should always use this flag
+      to detect invalid formats so you can fix them.)
+  -no-strict-formats  Accept invalid formats accepted by legacy implementations (default)
+     (Warning: Invalid formats may behave differently from
+      previous OCaml versions, and will become always-rejected
+      in future OCaml versions. You should never use this flag
+      and instead fix invalid formats.)
+  -thread  (deprecated) same as -I +threads
+  -unbox-closures  Pass free variables via specialised arguments rather than closures
+  -unbox-closures-factor <n > 0>  Scale the size threshold above which unbox-closures will slow down indirect calls rather than duplicating a function (default 10)
+  -inline-max-unroll <n>|<round>=<n>[,...]  Unroll recursive functions at most this many times (default 0)
+  -unboxed-types  unannotated unboxable types will be unboxed
+  -no-unboxed-types  unannotated unboxable types will not be unboxed (default)
+  -unsafe  Do not compile bounds checking on array and string access
+  -unsafe-string  Make strings mutable
+  -v  Print compiler version and location of standard library and exit
+  -verbose  Print calls to external commands
+  -version  Print version and exit
+  --version  Print version and exit
+  -vnum  Print version number and exit
+  -w <list>  Enable or disable warnings according to <list>:
+        +<spec>   enable warnings in <spec>
+        -<spec>   disable warnings in <spec>
+        @<spec>   enable warnings in <spec> and treat them as errors
+     <spec> can be:
+        <num>             a single warning number
+        <num1>..<num2>    a range of consecutive warning numbers
+        <letter>          a predefined set
+     default setting is "+a-4-6-7-9-27-29-32..42-44-45-48-50-60"
+  -warn-error <list>  Enable or disable error status for warnings according
+     to <list>.  See option -w for the syntax of <list>.
+     Default setting is "-a+31"
+  -warn-help  Show description of warning numbers
+  -where  Print location of standard library and exit
+  - <file>  Treat <file> as a file name (even if it starts with `-')
+  -nopervasives  (undocumented)
+  -dno-unique-ids  (undocumented)
+  -dunique-ids  (undocumented)
+  -dsource  (undocumented)
+  -dparsetree  (undocumented)
+  -dtypedtree  (undocumented)
+  -drawlambda  (undocumented)
+  -dlambda  (undocumented)
+  -drawclambda  (undocumented)
+  -dclambda  (undocumented)
+  -dflambda  Print Flambda terms
+  -drawflambda  Print Flambda terms after closure conversion
+  -dflambda-invariants  Check Flambda invariants around each pass
+  -dflambda-no-invariants  Do not Check Flambda invariants around each pass
+  -dflambda-let <stamp>  Print when the given Flambda [Let] is created
+  -dflambda-verbose  Print Flambda terms including around each pass
+  -dcmm  (undocumented)
+  -dsel  (undocumented)
+  -dcombine  (undocumented)
+  -dcse  (undocumented)
+  -dlive  (undocumented)
+  -davail  Print register availability info when printing liveness
+  -drunavail  Run register availability pass (for testing only; needs -g)
+  -dspill  (undocumented)
+  -dsplit  (undocumented)
+  -dinterf  (undocumented)
+  -dprefer  (undocumented)
+  -dalloc  (undocumented)
+  -dreload  (undocumented)
+  -dscheduling  (undocumented)
+  -dlinear  (undocumented)
+  -dinterval  (undocumented)
+  -dstartup  (undocumented)
+  -dtimings  Print timings information for each pass
+  -dprofile  Print performance information for each pass
+    The columns are: time alloc top-heap absolute-top-heap.
+  -dump-pass  Record transformations performed by these passes:
+     unbox-closures unbox-specialised-args unbox-free-vars-of-closures
+     remove-free-vars-equal-to-args remove-unused-arguments unused-arguments
+  -args <file> Read additional newline-terminated command line arguments
+      from <file>
+  -args0 <file> Read additional null character terminated command line arguments
+from <file>
+  -depend <options> Compute dependencies (use 'ocamlopt -depend -help' for details)
+  -help  Display this list of options
+  --help  Display this list of options

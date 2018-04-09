@@ -24,10 +24,10 @@
 val for_call_site
    : env:Inline_and_simplify_aux.Env.t
   -> r:Inline_and_simplify_aux.Result.t
-  -> function_decls:Flambda.function_declarations
+  -> function_decls:Simple_value_approx.function_declarations
   -> lhs_of_application:Variable.t
   -> closure_id_being_applied:Closure_id.t
-  -> function_decl:Flambda.function_declaration
+  -> function_decl:Simple_value_approx.function_declaration
   -> value_set_of_closures:Simple_value_approx.value_set_of_closures
   -> args:Variable.t list
   -> args_approxs:Simple_value_approx.t list

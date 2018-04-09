@@ -1,0 +1,2 @@
+File "t09bad.ml", line 10, characters 15-41:
+Error: In the definition of B.t, type 'a array A.t should be 'a A.t

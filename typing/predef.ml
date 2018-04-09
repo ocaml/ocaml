@@ -244,12 +244,7 @@ let build_initial_env add_type add_exception empty_env =
   (safe_string, unsafe_string)
 
 let builtin_values =
-  List.map (fun id -> Ident.make_global id; (Ident.name id, id))
-      [ident_match_failure; ident_out_of_memory; ident_stack_overflow;
-       ident_invalid_argument;
-       ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
-       ident_division_by_zero; ident_sys_blocked_io;
-       ident_assert_failure; ident_undefined_recursive_module ]
+  List.map (fun id -> (Ident.name id, id)) all_predef_exns
 
 (* Start non-predef identifiers at 1000.  This way, more predefs can
    be defined in this file (above!) without breaking .cmi

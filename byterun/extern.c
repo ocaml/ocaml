@@ -694,7 +694,7 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_output_value_to_string(value v, value flags)
+CAMLprim value caml_output_value_to_bytes(value v, value flags)
 {
   char header[32];
   int header_len;
@@ -720,6 +720,11 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
     blk = nextblk;
   }
   return res;
+}
+
+CAMLprim value caml_output_value_to_string(value v, value flags)
+{
+  return caml_output_value_to_bytes(v,flags);
 }
 
 CAMLexport intnat caml_output_value_to_block(value v, value flags,

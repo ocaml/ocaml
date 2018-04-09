@@ -159,7 +159,7 @@ let add_variables' t ids =
       id' :: ids, t) ids ([], t)
 
 let active_add_mutable_variable t id =
-  let id' = Mutable_variable.freshen id in
+  let id' = Mutable_variable.rename id in
   let t = add_sb_mutable_var t id id' in
   id', t
 
@@ -197,7 +197,11 @@ let rewrite_recursive_calls_with_symbols t
   | Inactive -> function_declarations
   | Active _ ->
     let all_free_symbols =
-      Flambda_utils.all_free_symbols function_declarations
+      Variable.Map.fold
+        (fun _ (function_decl : Flambda.function_declaration)
+            syms ->
+          Symbol.Set.union syms function_decl.free_symbols)
+        function_declarations.funs Symbol.Set.empty
     in
     let closure_symbols_used = ref false in
     let closure_symbols =

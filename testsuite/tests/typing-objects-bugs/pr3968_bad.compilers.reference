@@ -1,0 +1,39 @@
+File "pr3968_bad.ml", line 20, characters 0-165:
+Error: The class type
+         object
+           val l :
+             [ `Abs of
+                 string *
+                 ([ `Abs of string * expr | `App of 'a * exp ] as 'b)
+             | `App of expr * expr ] as 'a
+           val r : exp
+           method eval : (string, exp) Hashtbl.t -> 'b
+         end
+       is not matched by the class type exp
+       The class type
+         object
+           val l :
+             [ `Abs of
+                 string *
+                 ([ `Abs of string * expr | `App of 'a * exp ] as 'b)
+             | `App of expr * expr ] as 'a
+           val r : exp
+           method eval : (string, exp) Hashtbl.t -> 'b
+         end
+       is not matched by the class type
+         object method eval : (string, exp) Hashtbl.t -> expr end
+       The method eval has type
+         (string, exp) Hashtbl.t ->
+         ([ `Abs of string * expr
+          | `App of [ `Abs of string * 'a | `App of expr * expr ] * exp ]
+          as 'a)
+       but is expected to have type (string, exp) Hashtbl.t -> expr
+       Type
+         [ `Abs of string * expr
+         | `App of [ `Abs of string * 'a | `App of expr * expr ] * exp ]
+         as 'a
+       is not compatible with type
+         expr = [ `Abs of string * expr | `App of expr * expr ] 
+       Type exp = < eval : (string, exp) Hashtbl.t -> expr >
+       is not compatible with type
+         expr = [ `Abs of string * expr | `App of expr * expr ] 

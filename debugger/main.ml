@@ -152,6 +152,8 @@ let add_include d =
     Misc.expand_directory Config.standard_library d :: !default_load_path
 let set_socket s =
   socket_name := s
+let set_topdirs_path s =
+  topdirs_path := s
 let set_checkpoints n =
   checkpoint_max_count := n
 let set_directory dir =
@@ -182,6 +184,16 @@ let speclist = [
       " Print version and exit";
    "-vnum", Arg.Unit print_version_num,
       " Print version number and exit";
+   "-no-version", Arg.Clear Parameters.version,
+      " Do not print version at startup";
+   "-no-prompt", Arg.Clear Parameters.prompt,
+      " Suppress all prompts";
+   "-no-time", Arg.Clear Parameters.time,
+      " Do not print times";
+   "-no-breakpoint-message", Arg.Clear Parameters.breakpoint,
+      " Do not print message at breakpoint setup and removal";
+   "-topdirs-path", Arg.String set_topdirs_path,
+      " Set path to the directory containing topdirs.cmi";
    ]
 
 let function_placeholder () =
@@ -211,7 +223,9 @@ let main () =
         arguments := !arguments ^ " " ^ (Filename.quote Sys.argv.(j))
       done
     end;
-    printf "\tOCaml Debugger version %s@.@." Config.version;
+    if !Parameters.version
+    then printf "\tOCaml Debugger version %s@.@." Config.version;
+    Loadprinter.init();
     Config.load_path := !default_load_path;
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)

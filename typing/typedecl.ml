@@ -687,6 +687,7 @@ let check_coherence env loc id decl =
               then [Includecore.Constraint]
               else
                 Includecore.type_declarations ~loc ~equality:true env
+                  ~mark:true
                   (Path.last path)
                   decl'
                   id
@@ -1310,7 +1311,7 @@ let transl_type_decl env rec_flag sdecl_list =
              match !current_slot with
              | Some slot -> slot := (name, td) :: !slot
              | None ->
-                 List.iter (fun (name, d) -> Env.mark_type_used env name d)
+                 List.iter (fun (name, d) -> Env.mark_type_used name d)
                    (get_ref slot);
                  old_callback ()
           );
@@ -1799,7 +1800,7 @@ let transl_value_decl env loc valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path orig_decl sdecl =
-  Env.mark_type_used env (Ident.name id) orig_decl;
+  Env.mark_type_used (Ident.name id) orig_decl;
   reset_type_variables();
   Ctype.begin_def();
   let tparams = make_params env sdecl.ptype_params in

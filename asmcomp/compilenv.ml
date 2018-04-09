@@ -39,7 +39,8 @@ let export_infos_table =
 
 let imported_sets_of_closures_table =
   (Set_of_closures_id.Tbl.create 10
-   : Flambda.function_declarations option Set_of_closures_id.Tbl.t)
+   : Simple_value_approx.function_declarations option
+       Set_of_closures_id.Tbl.t)
 
 module CstMap =
   Map.Make(struct
@@ -144,12 +145,6 @@ let current_unit_infos () =
 
 let current_unit_name () =
   current_unit.ui_name
-
-let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
-  let prefix = "caml" ^ unitname in
-  match idopt with
-  | None -> prefix
-  | Some id -> prefix ^ "__" ^ id
 
 let symbol_in_current_unit name =
   let prefix = "caml" ^ current_unit.ui_symbol in
@@ -278,9 +273,9 @@ let is_predefined_exception sym =
 let symbol_for_global' id =
   let sym_label = Linkage_name.create (symbol_for_global id) in
   if Ident.is_predef_exn id then
-    Symbol.unsafe_create predefined_exception_compilation_unit sym_label
+    Symbol.of_global_linkage predefined_exception_compilation_unit sym_label
   else
-    Symbol.unsafe_create (unit_for_global id) sym_label
+    Symbol.of_global_linkage (unit_for_global id) sym_label
 
 let set_global_approx approx =
   assert(not Config.flambda);
@@ -307,14 +302,16 @@ let approx_for_global comp_unit =
      || not (Ident.global id)
   then invalid_arg (Format.asprintf "approx_for_global %a" Ident.print id);
   let modname = Ident.name id in
-  try Hashtbl.find export_infos_table modname with
-  | Not_found ->
-    let exported = match get_global_info id with
-      | None -> Export_info.empty
-      | Some ui -> get_flambda_export_info ui in
-    Hashtbl.add export_infos_table modname exported;
-    merged_environment := Export_info.merge !merged_environment exported;
-    exported
+  match Hashtbl.find export_infos_table modname with
+  | otherwise -> Some otherwise
+  | exception Not_found ->
+    match get_global_info id with
+    | None -> None
+    | Some ui ->
+      let exported = get_flambda_export_info ui in
+      Hashtbl.add export_infos_table modname exported;
+      merged_environment := Export_info.merge !merged_environment exported;
+      Some exported
 
 let approx_env () = !merged_environment
 
@@ -348,16 +345,13 @@ let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imports();
   write_unit_info current_unit filename
 
-let current_unit_linkage_name () =
-  Linkage_name.create (make_symbol ~unitname:current_unit.ui_symbol None)
-
 let current_unit () =
   match Compilation_unit.get_current () with
   | Some current_unit -> current_unit
   | None -> Misc.fatal_error "Compilenv.current_unit"
 
 let current_unit_symbol () =
-  Symbol.unsafe_create (current_unit ()) (current_unit_linkage_name ())
+  Symbol.of_global_linkage (current_unit ()) (current_unit_linkage_name ())
 
 let const_label = ref 0
 
@@ -414,7 +408,7 @@ let closure_symbol fv =
   let linkage_name =
     concat_symbol unitname ((Closure_id.unique_name fv) ^ "_closure")
   in
-  Symbol.unsafe_create compilation_unit (Linkage_name.create linkage_name)
+  Symbol.of_global_linkage compilation_unit (Linkage_name.create linkage_name)
 
 let function_label fv =
   let compilation_unit = Closure_id.get_compilation_unit fv in

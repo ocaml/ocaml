@@ -81,7 +81,6 @@ type error =
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
-  | Unqualified_gadt_pattern of Path.t * string
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
@@ -685,7 +684,7 @@ end) = struct
 
   let lookup_from_type env tpath lid =
     let descrs = get_descrs (Env.find_type_descrs tpath env) in
-    Env.mark_type_used env (Path.last tpath) (Env.find_type tpath env);
+    Env.mark_type_used (Path.last tpath) (Env.find_type tpath env);
     match lid.txt with
       Longident.Lident s -> begin
         try
@@ -720,8 +719,7 @@ end) = struct
     in
     List.find check_type lbls
 
-  let disambiguate ?(warn=Location.prerr_warning) ?(check_lk=fun _ _ -> ())
-      ?scope lid env opath lbls =
+  let disambiguate ?(warn=Location.prerr_warning) ?scope lid env opath lbls =
     let scope = match scope with None -> lbls | Some l -> l in
     let lbl = match opath with
       None ->
@@ -763,7 +761,6 @@ end) = struct
           lbl
         with Not_found -> try
           let lbl = lookup_from_type env tpath lid in
-          check_lk tpath lbl;
           if in_env lbl then
           begin
           let s = Printtyp.string_of_path tpath in
@@ -1163,15 +1160,10 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
             [Hashtbl.find constrs s, (fun () -> ())]
         | _ ->  Typetexp.find_all_constructors !env lid.loc lid.txt
       in
-      let check_lk tpath constr =
-        if constr.cstr_generalized then
-          raise (Error (lid.loc, !env,
-                        Unqualified_gadt_pattern (tpath, constr.cstr_name)))
-      in
       let constr =
         wrap_disambiguate "This variant pattern is expected to have"
           (mk_expected expected_ty)
-          (Constructor.disambiguate lid !env opath ~check_lk) candidates
+          (Constructor.disambiguate lid !env opath) candidates
       in
       if constr.cstr_generalized && constrs <> None && mode = Inside_or
       then raise Need_backtrack;
@@ -1320,8 +1312,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       let ty_elt = newvar() in
       unify_pat_types
         loc !env (instance_def (Predef.type_array ty_elt)) expected_ty;
-      let spl_ann = List.map (fun p -> (p,newvar())) spl in
-      map_fold_cont (fun (p,_) -> type_pat p ty_elt) spl_ann (fun pl ->
+      map_fold_cont (fun p -> type_pat p ty_elt) spl (fun pl ->
         rp k {
         pat_desc = Tpat_array pl;
         pat_loc = loc; pat_extra=[];
@@ -2558,22 +2549,27 @@ let contains_polymorphic_variant p =
   in
   try loop p; false with Exit -> true
 
-let contains_gadt env p =
-  let rec loop env p =
-    match p.ppat_desc with
-      | Ppat_construct (lid, _) ->
-        begin try
-          let cstrs = Env.lookup_all_constructors lid.txt env in
-          List.iter (fun (cstr,_) -> if cstr.cstr_generalized then raise Exit)
-            cstrs
-        with Not_found -> ()
-        end; iter_ppat (loop env) p
-      | Ppat_open (lid,sub_p) ->
-        let _, new_env = !type_open Asttypes.Override env p.ppat_loc lid in
-        loop new_env sub_p
-    | _ -> iter_ppat (loop env) p
+let contains_gadt p =
+  let check p =
+    match p.pat_desc with
+    | Tpat_construct (_, cd, _) when cd.cstr_generalized ->
+      raise Exit
+    | _ -> ()
   in
-  try loop env p; false with Exit -> true
+  try iter_pattern check p; false with Exit -> true
+
+(* There are various things that we need to do in presence of GADT constructors
+   that aren't required if there are none.
+   However, because of disambiguation, we can't know for sure whether the
+   patterns contain some GADT constructors. So we conservatively assume that
+   any constructor might be a GADT constructor. *)
+let may_contain_gadts p =
+  let rec loop p =
+    match p.ppat_desc with
+    | Ppat_construct (_, _) -> raise Exit
+    | _ -> iter_ppat loop p
+  in
+  try loop p; false with Exit -> true
 
 let check_absent_variant env =
   iter_pattern
@@ -2598,7 +2594,7 @@ let check_absent_variant env =
 
 let duplicate_ident_types caselist env =
   let caselist =
-    List.filter (fun {pc_lhs} -> contains_gadt env pc_lhs) caselist in
+    List.filter (fun {pc_lhs} -> may_contain_gadts pc_lhs) caselist in
   Env.copy_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
@@ -2780,7 +2776,7 @@ and type_expect_
         exp_env = env }
   | Pexp_let(Nonrecursive,
              [{pvb_pat=spat; pvb_expr=sval; pvb_attributes=[]}], sbody)
-    when contains_gadt env spat ->
+    when may_contain_gadts spat ->
     (* TODO: allow non-empty attributes? *)
       type_expect ?in_function env
         {sexp with
@@ -3830,7 +3826,7 @@ and type_label_access env srecord lid =
   let opath =
     try
       let (p0, p,_) = extract_concrete_record env ty_exp in
-      Some(p0, p, ty_exp.level = generic_level || not !Clflags.principal)
+      Some(p0, p, (repr ty_exp).level = generic_level || not !Clflags.principal)
     with Not_found -> None
   in
   let labels = Typetexp.find_all_labels env lid.loc lid.txt in
@@ -4551,14 +4547,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* ty_arg is _fully_ generalized *)
   let patterns = List.map (fun {pc_lhs=p} -> p) caselist in
   let contains_polyvars = List.exists contains_polymorphic_variant patterns in
-  let erase_either = contains_polyvars && contains_variant_either ty_arg
-  and has_gadts = List.exists (contains_gadt env) patterns in
-(*  prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
+  let erase_either = contains_polyvars && contains_variant_either ty_arg in
+  let may_contain_gadts = List.exists may_contain_gadts patterns in
   let ty_arg =
-    if (has_gadts || erase_either) && not !Clflags.principal
+    if (may_contain_gadts || erase_either) && not !Clflags.principal
     then correct_levels ty_arg else ty_arg
   and ty_res, env =
-    if has_gadts && not !Clflags.principal then
+    if may_contain_gadts && not !Clflags.principal then
       correct_levels ty_res, duplicate_ident_types caselist env
     else ty_res, env
   in
@@ -4583,13 +4578,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     lev
   in
   let lev =
-    if has_gadts then init_env () else get_current_level ()
+    if may_contain_gadts then init_env () else get_current_level ()
   in
-(*  if has_gadts then
-    Format.printf "lev = %d@.%a@." lev Printtyp.raw_type_expr ty_res; *)
   (* Do we need to propagate polymorphism *)
   let propagate =
-    !Clflags.principal || has_gadts || (repr ty_arg).level = generic_level ||
+    !Clflags.principal || may_contain_gadts || (repr ty_arg).level = generic_level ||
     match caselist with
       [{pc_lhs}] when is_var pc_lhs -> false
     | _ -> true in
@@ -4661,7 +4654,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, _, (ext_env, unpacks)) {pc_lhs; pc_guard; pc_rhs} ->
+      (fun (pat, _, (ext_env, unpacks)) {pc_lhs = _; pc_guard; pc_rhs} ->
         let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -4670,7 +4663,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt env pc_lhs then correct_levels ty_res
+          else if contains_gadt pat then correct_levels ty_res
           else ty_res in
 (*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
@@ -4692,13 +4685,15 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       )
       pat_env_list caselist
   in
-  if !Clflags.principal || has_gadts then begin
+  if !Clflags.principal || may_contain_gadts then begin
     let ty_res' = instance ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
-  let do_init = has_gadts || needs_exhaust_check in
+  (* We could check whether there actually is a GADT here instead of reusing
+     [has_constructor], but I'm not sure it's worth it. *)
+  let do_init = may_contain_gadts || needs_exhaust_check in
   let lev =
-    if do_init && not has_gadts then init_env () else lev in
+    if do_init && not may_contain_gadts then init_env () else lev in
   let ty_arg_check =
     if do_init then
       (* Hack: use for_saving to copy variables too *)
@@ -4871,7 +4866,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
                          slot := (name, vd) :: !slot; rec_needed := true
                        | None ->
                          List.iter
-                           (fun (name, vd) -> Env.mark_value_used env name vd)
+                           (fun (name, vd) -> Env.mark_value_used name vd)
                            (get_ref slot);
                          used := true;
                          some_used := true
@@ -5247,10 +5242,6 @@ let report_error env ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"
-  | Unqualified_gadt_pattern (tpath, name) ->
-      fprintf ppf "@[The GADT constructor %s of type %a@ %s.@]"
-        name path tpath
-        "must be qualified in this pattern"
   | Invalid_interval ->
       fprintf ppf "@[Only character intervals are supported in patterns.@]"
   | Invalid_for_loop_index ->
@@ -5305,7 +5296,7 @@ let report_error env ppf = function
   | Empty_pattern -> assert false
 
 let report_error env ppf err =
-  wrap_printing_env env (fun () -> report_error env ppf err)
+  wrap_printing_env ~error:true env (fun () -> report_error env ppf err)
 
 let () =
   Location.register_error_of_exn

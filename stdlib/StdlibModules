@@ -25,11 +25,11 @@ STDLIB_MODULES=\
   $(P)arg \
   $(P)array \
   $(P)arrayLabels \
+  $(P)bigarray \
   $(P)buffer \
   $(P)bytes \
   $(P)bytesLabels \
   $(P)callback \
-  camlinternalBigarray \
   camlinternalFormat \
   camlinternalFormatBasics \
   camlinternalLazy \
@@ -40,6 +40,7 @@ STDLIB_MODULES=\
   $(P)digest \
   $(P)ephemeron \
   $(P)filename \
+  $(P)float \
   $(P)format \
   $(P)gc \
   $(P)genlex \
@@ -62,6 +63,7 @@ STDLIB_MODULES=\
   $(P)queue \
   $(P)random \
   $(P)scanf \
+  $(P)seq \
   $(P)set \
   $(P)sort \
   $(P)stack \

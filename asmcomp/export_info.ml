@@ -16,6 +16,8 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
+module A = Simple_value_approx
+
 type value_string_contents =
   | Contents of string
   | Unknown_or_mutable
@@ -42,10 +44,11 @@ type descr =
   | Value_constptr of int
   | Value_float of float
   | Value_float_array of value_float_array
-  | Value_boxed_int : 'a Simple_value_approx.boxed_int * 'a -> descr
+  | Value_boxed_int : 'a A.boxed_int * 'a -> descr
   | Value_string of value_string
   | Value_closure of value_closure
   | Value_set_of_closures of value_set_of_closures
+  | Value_unknown_descr
 
 and value_closure = {
   closure_id : Closure_id.t;
@@ -55,6 +58,7 @@ and value_closure = {
 and value_set_of_closures = {
   set_of_closures_id : Set_of_closures_id.t;
   bound_vars : approx Var_within_closure.Map.t;
+  free_vars : Flambda.specialised_to Variable.Map.t;
   results : approx Closure_id.Map.t;
   aliased_symbol : Symbol.t option;
 }
@@ -98,6 +102,8 @@ let equal_set_of_closures (s1:value_set_of_closures)
 
 let equal_descr (d1:descr) (d2:descr) : bool =
   match d1, d2 with
+  | Value_unknown_descr, Value_unknown_descr ->
+    true
   | Value_block (t1, f1), Value_block (t2, f2) ->
     Tag.equal t1 t2 && equal_array equal_approx f1 f2
   | Value_mutable_block (t1, s1), Value_mutable_block (t2, s2) ->
@@ -114,7 +120,7 @@ let equal_descr (d1:descr) (d2:descr) : bool =
   | Value_float_array s1, Value_float_array s2 ->
     s1 = s2
   | Value_boxed_int (t1, v1), Value_boxed_int (t2, v2) ->
-    Simple_value_approx.equal_boxed_int t1 v1 t2 v2
+    A.equal_boxed_int t1 v1 t2 v2
   | Value_string s1, Value_string s2 ->
     s1 = s2
   | Value_closure c1, Value_closure c2 ->
@@ -125,53 +131,135 @@ let equal_descr (d1:descr) (d2:descr) : bool =
   | ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
     | Value_char _ | Value_constptr _ | Value_float _ | Value_float_array _
     | Value_boxed_int _ | Value_string _ | Value_closure _
-    | Value_set_of_closures _ ),
+    | Value_set_of_closures _
+    | Value_unknown_descr ),
     ( Value_block (_, _) | Value_mutable_block (_, _) | Value_int _
     | Value_char _ | Value_constptr _ | Value_float _ | Value_float_array _
     | Value_boxed_int _ | Value_string _ | Value_closure _
-    | Value_set_of_closures _ ) ->
+    | Value_set_of_closures _
+    | Value_unknown_descr ) ->
     false
 
 type t = {
-  sets_of_closures : Flambda.function_declarations Set_of_closures_id.Map.t;
-  closures : Flambda.function_declarations Closure_id.Map.t;
+  sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
   values : descr Export_id.Map.t Compilation_unit.Map.t;
   symbol_id : Export_id.t Symbol.Map.t;
   offset_fun : int Closure_id.Map.t;
   offset_fv : int Var_within_closure.Map.t;
-  constant_sets_of_closures : Set_of_closures_id.Set.t;
+  constant_closures : Closure_id.Set.t;
   invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
+  recursive : Variable.Set.t Set_of_closures_id.Map.t;
+}
+
+type transient = {
+  sets_of_closures : A.function_declarations Set_of_closures_id.Map.t;
+  values : descr Export_id.Map.t Compilation_unit.Map.t;
+  symbol_id : Export_id.t Symbol.Map.t;
+  invariant_params : Variable.Set.t Variable.Map.t Set_of_closures_id.Map.t;
+  recursive : Variable.Set.t Set_of_closures_id.Map.t;
+  relevant_local_closure_ids : Closure_id.Set.t;
+  relevant_imported_closure_ids : Closure_id.Set.t;
+  relevant_local_vars_within_closure  : Var_within_closure.Set.t;
+  relevant_imported_vars_within_closure : Var_within_closure.Set.t;
 }
 
 let empty : t = {
   sets_of_closures = Set_of_closures_id.Map.empty;
-  closures = Closure_id.Map.empty;
   values = Compilation_unit.Map.empty;
   symbol_id = Symbol.Map.empty;
   offset_fun = Closure_id.Map.empty;
   offset_fv = Var_within_closure.Map.empty;
-  constant_sets_of_closures = Set_of_closures_id.Set.empty;
+  constant_closures = Closure_id.Set.empty;
   invariant_params = Set_of_closures_id.Map.empty;
+  recursive = Set_of_closures_id.Map.empty;
 }
 
-let create ~sets_of_closures ~closures ~values ~symbol_id
-      ~offset_fun ~offset_fv ~constant_sets_of_closures
-      ~invariant_params =
+let opaque_transient ~compilation_unit ~root_symbol : transient =
+  let export_id = Export_id.create compilation_unit in
+  let values =
+    let map = Export_id.Map.singleton export_id Value_unknown_descr in
+    Compilation_unit.Map.singleton compilation_unit map
+  in
+  let symbol_id = Symbol.Map.singleton root_symbol export_id in
+  { sets_of_closures = Set_of_closures_id.Map.empty;
+    values;
+    symbol_id;
+    invariant_params = Set_of_closures_id.Map.empty;
+    recursive = Set_of_closures_id.Map.empty;
+    relevant_local_closure_ids = Closure_id.Set.empty;
+    relevant_imported_closure_ids = Closure_id.Set.empty;
+    relevant_local_vars_within_closure = Var_within_closure.Set.empty;
+    relevant_imported_vars_within_closure = Var_within_closure.Set.empty;
+  }
+
+let create ~sets_of_closures ~values ~symbol_id
+      ~offset_fun ~offset_fv ~constant_closures
+      ~invariant_params ~recursive =
   { sets_of_closures;
-    closures;
     values;
     symbol_id;
     offset_fun;
     offset_fv;
-    constant_sets_of_closures;
+    constant_closures;
     invariant_params;
+    recursive;
   }
 
-let add_clambda_info t ~offset_fun ~offset_fv ~constant_sets_of_closures =
-  assert (Closure_id.Map.cardinal t.offset_fun = 0);
-  assert (Var_within_closure.Map.cardinal t.offset_fv = 0);
-  assert (Set_of_closures_id.Set.cardinal t.constant_sets_of_closures = 0);
-  { t with offset_fun; offset_fv; constant_sets_of_closures; }
+let create_transient
+      ~sets_of_closures ~values ~symbol_id ~invariant_params ~recursive
+      ~relevant_local_closure_ids ~relevant_imported_closure_ids
+      ~relevant_local_vars_within_closure
+      ~relevant_imported_vars_within_closure =
+  { sets_of_closures;
+    values;
+    symbol_id;
+    invariant_params;
+    recursive;
+    relevant_local_closure_ids;
+    relevant_imported_closure_ids;
+    relevant_local_vars_within_closure;
+    relevant_imported_vars_within_closure;
+  }
+
+let t_of_transient transient
+      ~program:_
+      ~local_offset_fun ~local_offset_fv
+      ~imported_offset_fun ~imported_offset_fv
+      ~constant_closures =
+  let offset_fun =
+    let fold_map set =
+      Closure_id.Map.fold (fun key value unchanged ->
+        if Closure_id.Set.mem key set then
+          Closure_id.Map.add key value unchanged
+        else
+          unchanged)
+    in
+    Closure_id.Map.empty
+    |> fold_map transient.relevant_local_closure_ids local_offset_fun
+    |> fold_map transient.relevant_imported_closure_ids imported_offset_fun
+  in
+  let offset_fv =
+    let fold_map set =
+      Var_within_closure.Map.fold (fun key value unchanged ->
+        if Var_within_closure.Set.mem key set then
+          Var_within_closure.Map.add key value unchanged
+        else
+          unchanged)
+    in
+    Var_within_closure.Map.empty
+    |> fold_map transient.relevant_local_vars_within_closure local_offset_fv
+    |> fold_map transient.relevant_imported_vars_within_closure
+         imported_offset_fv
+  in
+  { sets_of_closures = transient.sets_of_closures;
+    values = transient.values;
+    symbol_id = transient.symbol_id;
+    invariant_params = transient.invariant_params;
+    recursive = transient.recursive;
+    offset_fun;
+    offset_fv;
+    constant_closures;
+  }
 
 let merge (t1 : t) (t2 : t) : t =
   let eidmap_disjoint_union ?eq map1 map2 =
@@ -189,20 +277,23 @@ let merge (t1 : t) (t2 : t) : t =
     sets_of_closures =
       Set_of_closures_id.Map.disjoint_union t1.sets_of_closures
         t2.sets_of_closures;
-    closures = Closure_id.Map.disjoint_union t1.closures t2.closures;
     symbol_id = Symbol.Map.disjoint_union ~print:Export_id.print t1.symbol_id t2.symbol_id;
     offset_fun = Closure_id.Map.disjoint_union
         ~eq:int_eq t1.offset_fun t2.offset_fun;
     offset_fv = Var_within_closure.Map.disjoint_union
         ~eq:int_eq t1.offset_fv t2.offset_fv;
-    constant_sets_of_closures =
-      Set_of_closures_id.Set.union t1.constant_sets_of_closures
-        t2.constant_sets_of_closures;
+    constant_closures =
+      Closure_id.Set.union t1.constant_closures t2.constant_closures;
     invariant_params =
       Set_of_closures_id.Map.disjoint_union
         ~print:(Variable.Map.print Variable.Set.print)
         ~eq:(Variable.Map.equal Variable.Set.equal)
         t1.invariant_params t2.invariant_params;
+    recursive =
+      Set_of_closures_id.Map.disjoint_union
+        ~print:Variable.Set.print
+        ~eq:Variable.Set.equal
+        t1.recursive t2.recursive;
   }
 
 let find_value eid map =
@@ -225,8 +316,103 @@ let nest_eid_map map =
   in
   Export_id.Map.fold add_map map Compilation_unit.Map.empty
 
-let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
-  let values = t.values in
+let print_raw_approx ppf approx =
+  let fprintf = Format.fprintf in
+  match approx with
+  | Value_unknown -> fprintf ppf "(Unknown)"
+  | Value_id export_id -> fprintf ppf "(Id %a)" Export_id.print export_id
+  | Value_symbol symbol -> fprintf ppf "(Symbol %a)" Symbol.print symbol
+
+let print_value_set_of_closures ppf (t : value_set_of_closures) =
+  let print_bound_vars ppf bound_vars =
+    Format.fprintf ppf "(%a)"
+      (Var_within_closure.Map.print print_raw_approx)
+      bound_vars
+  in
+  let print_free_vars ppf free_vars =
+    Format.fprintf ppf "(%a)"
+      (Variable.Map.print Flambda.print_specialised_to)
+      free_vars
+  in
+  let print_results ppf results =
+    Format.fprintf ppf "(%a)" (Closure_id.Map.print print_raw_approx) results
+  in
+  let print_aliased_symbol ppf aliased_symbol =
+    match aliased_symbol with
+    | None -> Format.fprintf ppf "<None>"
+    | Some symbol -> Format.fprintf ppf "(%a)" Symbol.print symbol
+  in
+  Format.fprintf ppf
+    "((set_of_closures_id %a) \
+     (bound_vars %a) \
+     (free_vars %a) \
+     (results %a) \
+     (aliased_symbol %a))"
+    Set_of_closures_id.print t.set_of_closures_id
+    print_bound_vars t.bound_vars
+    print_free_vars t.free_vars
+    print_results t.results
+    print_aliased_symbol t.aliased_symbol
+
+let print_value_closure ppf (t : value_closure) =
+  Format.fprintf ppf "((closure_id %a) (set_of_closures %a))"
+    Closure_id.print t.closure_id
+    print_value_set_of_closures t.set_of_closures
+
+let print_value_float_array_contents
+      ppf (value : value_float_array_contents) =
+  match value with
+  | Unknown_or_mutable -> Format.fprintf ppf "(Unknown_or_mutable)"
+  | Contents _ -> Format.fprintf ppf "(Contents ...)"
+
+let print_value_float_array ppf (value : value_float_array) =
+  Format.fprintf ppf "((size %d) (contents %a))"
+    value.size
+    print_value_float_array_contents value.contents
+
+let print_value_string_contents ppf (value : value_string_contents) =
+  match value with
+  | Unknown_or_mutable -> Format.fprintf ppf "(Unknown_or_mutable)"
+  | Contents _ -> Format.fprintf ppf "(Contents ...)"
+
+let print_value_string ppf (value : value_string) =
+  Format.fprintf ppf "((size %d) (contents %a))"
+    value.size
+    print_value_string_contents value.contents
+
+let print_raw_descr ppf descr =
+  let fprintf = Format.fprintf in
+  let print_approx_array ppf arr =
+    Array.iter (fun approx -> fprintf ppf "%a " print_raw_approx approx) arr
+  in
+  match descr with
+  | Value_block (tag, approx_array) ->
+    fprintf ppf "(Value_block (%a %a))"
+      Tag.print tag
+      print_approx_array approx_array
+  | Value_mutable_block (tag, i) ->
+    fprintf ppf "(Value_mutable-block (%a %d))" Tag.print tag i
+  | Value_int i -> fprintf ppf "(Value_int %d)" i
+  | Value_char c -> fprintf ppf "(Value_char %c)" c
+  | Value_constptr p -> fprintf ppf "(Value_constptr  %d)" p
+  | Value_float f -> fprintf ppf "(Value_float %.3f)" f
+  | Value_float_array value_float_array ->
+    fprintf ppf "(Value_float_array %a)"
+      print_value_float_array value_float_array
+  | Value_boxed_int _ ->
+    fprintf ppf "(Value_Boxed_int)"
+  | Value_string value_string ->
+    fprintf ppf "(Value_string %a)" print_value_string value_string
+  | Value_closure value_closure ->
+    fprintf ppf "(Value_closure %a)"
+      print_value_closure value_closure
+  | Value_set_of_closures value_set_of_closures ->
+    fprintf ppf "(Value_set_of_closures %a)"
+    print_value_set_of_closures value_set_of_closures
+  | Value_unknown_descr -> fprintf ppf "(Value_unknown_descr)"
+
+let print_approx_components ppf ~symbol_id ~values
+      (root_symbols : Symbol.t list) =
   let fprintf = Format.fprintf in
   let printed = ref Export_id.Set.empty in
   let recorded_symbol = ref Symbol.Set.empty in
@@ -286,11 +472,12 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
           | Contents _ -> "_imm")
         float_array.size
     | Value_boxed_int (t, i) ->
-      let module A = Simple_value_approx in
-      match t with
+      begin match t with
       | A.Int32 -> Format.fprintf ppf "%li" i
       | A.Int64 -> Format.fprintf ppf "%Li" i
       | A.Nativeint -> Format.fprintf ppf "%ni" i
+      end
+    | Value_unknown_descr -> Format.fprintf ppf "?"
   and print_fields ppf fields =
     Array.iter (fun approx -> fprintf ppf "%a@ " print_approx approx) fields
   and print_set_of_closures ppf
@@ -321,7 +508,7 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   let rec print_recorded_symbols () =
     if not (Queue.is_empty symbols_to_print) then begin
       let sym = Queue.pop symbols_to_print in
-      begin match Symbol.Map.find sym t.symbol_id with
+      begin match Symbol.Map.find sym symbol_id with
       | exception Not_found -> ()
       | id ->
         fprintf ppf "@[<hov 2>%a:@ %a@];@ "
@@ -337,6 +524,11 @@ let print_approx ppf ((t,root_symbols) : t * Symbol.t list) =
   print_recorded_symbols ();
   fprintf ppf "@]"
 
+let print_approx ppf ((t : t), symbols) =
+  let symbol_id = t.symbol_id in
+  let values = t.values in
+  print_approx_components ppf ~symbol_id ~values symbols
+
 let print_offsets ppf (t : t) =
   Format.fprintf ppf "@[<v 2>offset_fun:@ ";
   Closure_id.Map.iter (fun cid off ->
@@ -349,7 +541,8 @@ let print_offsets ppf (t : t) =
   Format.fprintf ppf "@]@ "
 
 let print_functions ppf (t : t) =
-  Set_of_closures_id.Map.print Flambda.print_function_declarations ppf
+  Set_of_closures_id.Map.print
+    A.print_function_declarations ppf
     t.sets_of_closures
 
 let print_all ppf ((t, root_symbols) : t * Symbol.t list) =
