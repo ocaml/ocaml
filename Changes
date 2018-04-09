@@ -351,7 +351,7 @@ Working version
   (Hugo Heuzard, review by Mark Shinwell)
 
 * GPR#1704: Make Ident.t abstract and immutable.
-  (Gabriel Radanne)
+  (Gabriel Radanne, review by Mark Shinwell)
 
 ### Bug fixes
 

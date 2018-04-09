@@ -42,7 +42,7 @@ let rename i =
 
 let name i = i.name
 
-let with_name i name = {i with name}
+let with_name i name = { i with name; }
 
 let unique_name i = i.name ^ "_" ^ string_of_int i.stamp
 
