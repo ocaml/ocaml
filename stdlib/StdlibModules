@@ -25,11 +25,11 @@ STDLIB_MODULES=\
   $(P)arg \
   $(P)array \
   $(P)arrayLabels \
+  $(P)bigarray \
   $(P)buffer \
   $(P)bytes \
   $(P)bytesLabels \
   $(P)callback \
-  camlinternalBigarray \
   camlinternalFormat \
   camlinternalFormatBasics \
   camlinternalLazy \

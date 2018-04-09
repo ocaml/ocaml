@@ -2,7 +2,7 @@ annot.cmi : location.cmi
 arg.cmi :
 arg_helper.cmi : map.cmi
 array.cmi : seq.cmi
-arrayLabels.cmi :
+arrayLabels.cmi : seq.cmi
 ast_helper.cmi : parsetree.cmi longident.cmi location.cmi docstrings.cmi \
     asttypes.cmi
 ast_invariants.cmi : parsetree.cmi
@@ -10,20 +10,20 @@ ast_iterator.cmi : parsetree.cmi location.cmi
 ast_mapper.cmi : parsetree.cmi location.cmi
 asttypes.cmi : location.cmi
 attr_helper.cmi : parsetree.cmi location.cmi format.cmi asttypes.cmi
-bigarray.cmi : unix.cmi complex.cmi camlinternalBigarray.cmi
+bigarray.cmi : complex.cmi
 btype.cmi : types.cmi set.cmi path.cmi map.cmi hashtbl.cmi format.cmi \
     asttypes.cmi
 buffer.cmi : uchar.cmi seq.cmi
+build_path_prefix_map.cmi :
 builtin_attributes.cmi : parsetree.cmi location.cmi
 bytegen.cmi : lambda.cmi instruct.cmi
 bytelibrarian.cmi : format.cmi
 bytelink.cmi : symtable.cmi format.cmi digest.cmi cmo_format.cmi
 bytepackager.cmi : ident.cmi format.cmi env.cmi
 bytes.cmi : seq.cmi
-bytesLabels.cmi :
+bytesLabels.cmi : seq.cmi
 bytesections.cmi :
 callback.cmi :
-camlinternalBigarray.cmi : complex.cmi
 camlinternalFormat.cmi : camlinternalFormatBasics.cmi buffer.cmi
 camlinternalFormatBasics.cmi :
 camlinternalLazy.cmi :
@@ -78,7 +78,7 @@ lazy.cmi :
 lexer.cmi : parser.cmi location.cmi lexing.cmi format.cmi
 lexing.cmi :
 list.cmi : seq.cmi
-listLabels.cmi :
+listLabels.cmi : seq.cmi
 location.cmi : warnings.cmi lexing.cmi format.cmi
 longident.cmi :
 map.cmi : seq.cmi
@@ -133,7 +133,7 @@ stdLabels.cmi : stringLabels.cmi listLabels.cmi bytesLabels.cmi \
 str.cmi :
 stream.cmi :
 string.cmi : seq.cmi
-stringLabels.cmi :
+stringLabels.cmi : seq.cmi
 strongly_connected_components.cmi : identifiable.cmi
 stypes.cmi : typedtree.cmi location.cmi annot.cmi
 subst.cmi : types.cmi path.cmi ident.cmi
@@ -175,8 +175,8 @@ types.cmi : set.cmi primitive.cmi path.cmi parsetree.cmi map.cmi \
 typetexp.cmi : types.cmi typedtree.cmi path.cmi parsetree.cmi longident.cmi \
     location.cmi includemod.cmi format.cmi env.cmi asttypes.cmi
 uchar.cmi :
-unix.cmi : camlinternalBigarray.cmi
-unixLabels.cmi : unix.cmi camlinternalBigarray.cmi
+unix.cmi : bigarray.cmi
+unixLabels.cmi : unix.cmi bigarray.cmi
 untypeast.cmi : typedtree.cmi path.cmi parsetree.cmi longident.cmi \
     location.cmi asttypes.cmi
 warnings.cmi : lexing.cmi lazy.cmi

@@ -1231,6 +1231,7 @@ include module type of struct include Pervasives end
 module Arg          = Arg
 module Array        = Array
 module ArrayLabels  = ArrayLabels
+module Bigarray     = Bigarray
 module Buffer       = Buffer
 module Bytes        = Bytes
 module BytesLabels  = BytesLabels
