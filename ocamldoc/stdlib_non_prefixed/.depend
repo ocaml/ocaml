@@ -151,11 +151,13 @@ threadUnix.cmi : unix.cmi
 translattribute.cmi : typedtree.cmi parsetree.cmi location.cmi lambda.cmi
 translclass.cmi : typedtree.cmi location.cmi lambda.cmi ident.cmi format.cmi \
     asttypes.cmi
-translcore.cmi : types.cmi typedtree.cmi primitive.cmi path.cmi location.cmi \
-    lambda.cmi ident.cmi hashtbl.cmi format.cmi env.cmi asttypes.cmi
+translcore.cmi : typedtree.cmi path.cmi location.cmi lambda.cmi ident.cmi \
+    format.cmi env.cmi asttypes.cmi
 translmod.cmi : typedtree.cmi primitive.cmi location.cmi lambda.cmi \
     ident.cmi format.cmi
 translobj.cmi : lambda.cmi ident.cmi env.cmi
+translprim.cmi : types.cmi typedtree.cmi primitive.cmi path.cmi location.cmi \
+    lambda.cmi ident.cmi format.cmi env.cmi
 typeclass.cmi : types.cmi typedtree.cmi parsetree.cmi longident.cmi \
     location.cmi ident.cmi format.cmi env.cmi ctype.cmi asttypes.cmi
 typecore.cmi : types.cmi typedtree.cmi path.cmi parsetree.cmi longident.cmi \
