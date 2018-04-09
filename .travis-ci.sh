@@ -79,6 +79,8 @@ EOF
   $MAKE USE_RUNTIME="d" OCAMLTESTDIR=$(pwd)/_ocamltestd TESTLOG=_logd all
   cd ..
   $MAKE install
+  echo Shallow tests for the manual
+  $MAKE -C manual/tests check-stdlib
   $MAKE manual-pregen
   # check_all_arches checks tries to compile all backends in place,
   # we would need to redo (small parts of) world.opt afterwards to
