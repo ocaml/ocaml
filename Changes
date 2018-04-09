@@ -336,6 +336,9 @@ Working version
 - GPR#1621: expect_test: make sure to not use the installed stdlib
   (Jérémie Dimino, review by Thomas Refis)
 
+- GPR#1627: Reduce cmx sizes by sharing variable names (Flambda only)
+  (Fuyong Quah, Leo White, review by Xavier Clerc)
+
 - GPR#1646 : add ocamldoc test to ocamltest and
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
