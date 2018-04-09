@@ -1,5 +1,7 @@
 (* TEST
+
 files = "unknown-file"
+
 * setup-ocamlc.byte-build-env
 ** ocamlc.byte
 all_modules = ""
@@ -12,7 +14,11 @@ ocamlc_byte_exit_status = "2"
 all_modules = ""
 flags = "unknown-file"
 ocamlopt_byte_exit_status = "2"
-*** check-ocamlopt.byte-output
+*** no-flambda
+**** check-ocamlopt.byte-output
+*** flambda
+**** check-ocamlopt.byte-output
+compiler_reference = "${test_source_directory}/test.ocamlopt.byte.flambda.reference"
 
 *)
 
