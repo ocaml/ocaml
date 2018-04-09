@@ -270,14 +270,6 @@ _ocamltestd
 
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml
 
-/testsuite/tests/tool-ocamldep-modalias/*.byt*
-/testsuite/tests/tool-ocamldep-modalias/*.opt*
-/testsuite/tests/tool-ocamldep-modalias/depend.mk
-/testsuite/tests/tool-ocamldep-modalias/depend.mk2
-/testsuite/tests/tool-ocamldep-modalias/depend.mod
-/testsuite/tests/tool-ocamldep-modalias/depend.mod2
-/testsuite/tests/tool-ocamldep-modalias/depend.mod3
-
 /testsuite/tests/tool-ocamldoc/*.html
 /testsuite/tests/tool-ocamldoc/*.sty
 /testsuite/tests/tool-ocamldoc/*.css
