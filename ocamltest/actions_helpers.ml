@@ -191,7 +191,7 @@ let run_script log env =
     Builtin_variables.ocamltest_response response_file env in
   let (result, newenv) = run
     "Running script"
-    false
+    true
     true
     Builtin_variables.script
     None
