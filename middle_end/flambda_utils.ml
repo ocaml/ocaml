@@ -81,8 +81,11 @@ let compare_const (c1 : Flambda.const) (c2 : Flambda.const) =
   match c1, c2 with
   | Int v1, Int v2 -> compare v1 v2
   | Char v1, Char v2 -> compare v1 v2
+  | Const_pointer v1, Const_pointer v2 -> compare v1 v2
   | Int _, _ -> -1
   | _, Int _ -> 1
+  | Char _, _ -> -1
+  | _, Char _ -> 1
 
 let rec same (l1 : Flambda.t) (l2 : Flambda.t) =
   l1 == l2 || (* it is ok for the string case: if they are physically the same,
@@ -324,7 +327,8 @@ let toplevel_substitution_named sb named =
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
 
-let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
+let make_closure_declaration
+      ~is_classic_mode ~id ~body ~params ~stub : Flambda.t =
   let free_variables = Flambda.free_variables body in
   let param_set = Parameter.Set.vars params in
   if not (Variable.Set.subset param_set free_variables) then begin
@@ -369,6 +373,7 @@ let make_closure_declaration ~id ~body ~params ~stub : Flambda.t =
   let set_of_closures =
     let function_decls =
       Flambda.create_function_declarations
+        ~is_classic_mode
         ~funs:(Variable.Map.singleton id function_declaration)
     in
     Flambda.create_set_of_closures ~function_decls ~free_vars
@@ -472,7 +477,8 @@ let make_closure_map program =
     { function_decls } ->
     Variable.Map.iter (fun var _ ->
         let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
+        let set_of_closures_id = function_decls.set_of_closures_id in
+        map := Closure_id.Map.add closure_id set_of_closures_id !map)
       function_decls.funs
   in
   Flambda_iterators.iter_on_set_of_closures_of_program
@@ -480,16 +486,18 @@ let make_closure_map program =
     ~f:add_set_of_closures;
   !map
 
-let make_closure_map' input =
-  let map = ref Closure_id.Map.empty in
-  let add_set_of_closures _ (function_decls : Flambda.function_declarations) =
-    Variable.Map.iter (fun var _ ->
-        let closure_id = Closure_id.wrap var in
-        map := Closure_id.Map.add closure_id function_decls !map)
-      function_decls.funs
-  in
-  Set_of_closures_id.Map.iter add_set_of_closures input;
-  !map
+let all_lifted_constant_closures program =
+  List.fold_left (fun unchanged flambda ->
+      match flambda with
+      | (_, Flambda.Set_of_closures { function_decls = { funs } }) ->
+        Variable.Map.fold
+          (fun key (_ : Flambda.function_declaration) acc ->
+             Closure_id.Set.add (Closure_id.wrap key) acc)
+          funs
+          unchanged
+      | _ -> unchanged)
+    Closure_id.Set.empty
+    (all_lifted_constants program)
 
 let all_lifted_constant_sets_of_closures program =
   let set = ref Set_of_closures_id.Set.empty in
@@ -516,22 +524,6 @@ let all_sets_of_closures_map program =
           set_of_closures.function_decls.set_of_closures_id
           set_of_closures !r);
   !r
-
-let all_function_decls_indexed_by_set_of_closures_id program =
-  Set_of_closures_id.Map.map
-    (fun { Flambda. function_decls; _ } -> function_decls)
-    (all_sets_of_closures_map program)
-
-let all_function_decls_indexed_by_closure_id program =
-  let aux_fun function_decls fun_var _ map =
-    let closure_id = Closure_id.wrap fun_var in
-    Closure_id.Map.add closure_id function_decls map
-  in
-  let aux _ ({ function_decls; _ } : Flambda.set_of_closures) map =
-    Variable.Map.fold (aux_fun function_decls) function_decls.funs map
-  in
-  Set_of_closures_id.Map.fold aux (all_sets_of_closures_map program)
-    Closure_id.Map.empty
 
 let substitute_read_symbol_field_for_variables
     (substitution : (Symbol.t * int list) Variable.Map.t)

@@ -387,12 +387,6 @@ CAMLprim value caml_fill_string(value s, value offset, value len, value init)
   return caml_fill_bytes (s, offset, len, init);
 }
 
-CAMLprim value caml_bitvect_test(value bv, value n)
-{
-  intnat pos = Long_val(n);
-  return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
-}
-
 CAMLexport value caml_alloc_sprintf(const char * format, ...)
 {
   va_list args;

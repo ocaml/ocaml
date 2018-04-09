@@ -134,6 +134,7 @@ let rec declare_const t (const : Lambda.structured_constant)
       Names.const_int64
   | Const_base (Const_nativeint c) ->
     register_const t (Allocated_const (Nativeint c)) Names.const_nativeint
+  | Const_pointer c -> Const (Const_pointer c), Names.const_ptr
   | Const_immstring c ->
     register_const t (Allocated_const (Immutable_string c))
       Names.const_immstring
@@ -378,7 +379,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_true = Variable.create Names.const_true in
     let cond = Variable.create Names.cond_sequor in
-    Flambda.create_let const_true (Const (Int 1))
+    Flambda.create_let const_true (Const (Const_pointer 1))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, Var const_true, arg2)))
   | Lprim (Psequand, [arg1; arg2], _) ->
@@ -386,7 +387,7 @@ let rec close t env (lam : Lambda.lambda) : Flambda.t =
     let arg2 = close t env arg2 in
     let const_false = Variable.create Names.const_false in
     let cond = Variable.create Names.const_sequand in
-    Flambda.create_let const_false (Const (Int 0))
+    Flambda.create_let const_false (Const (Const_pointer 0))
       (Flambda.create_let cond (Expr arg1)
         (If_then_else (cond, arg2, Var const_false)))
   | Lprim ((Psequand | Psequor), _, _) ->
@@ -574,10 +575,12 @@ and close_functions t external_env function_declarations : Flambda.named =
         (Variable.Map.add closure_bound_var generic_function_stub map)
   in
   let function_decls =
-    Flambda.create_function_declarations
-      ~funs:
-        (List.fold_left close_one_function Variable.Map.empty
-          (Function_decls.to_list function_declarations))
+    let is_classic_mode = !Clflags.classic_inlining in
+    let funs =
+      List.fold_left close_one_function Variable.Map.empty
+        (Function_decls.to_list function_declarations)
+    in
+    Flambda.create_function_declarations ~is_classic_mode ~funs
   in
   (* The closed representation of a set of functions is a "set of closures".
      (For avoidance of doubt, the runtime representation of the *whole set* is

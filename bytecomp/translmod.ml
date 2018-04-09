@@ -202,7 +202,7 @@ let init_shape modl =
       Mty_ident _ ->
         raise Not_found
     | Mty_alias _ ->
-        Const_block (1, [Const_base (Const_int 0)])
+        Const_block (1, [Const_pointer 0])
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
     | Mty_functor _ ->
@@ -214,9 +214,9 @@ let init_shape modl =
         let init_v =
           match Ctype.expand_head env ty with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_base (Const_int 0) (* camlinternalMod.Function *)
+              Const_pointer 0 (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_base (Const_int 1) (* camlinternalMod.Lazy *)
+              Const_pointer 1 (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
         init_v :: init_shape_struct env rem
     | Sig_value(_, {val_kind=Val_prim _}) :: rem ->
@@ -234,7 +234,7 @@ let init_shape modl =
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class _ :: rem ->
-        Const_base (Const_int 2) (* camlinternalMod.Class *)
+        Const_pointer 2 (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type _ :: rem ->
         init_shape_struct env rem
