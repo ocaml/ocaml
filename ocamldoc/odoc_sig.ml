@@ -248,7 +248,7 @@ module Analyser =
 
     let types =
       let open Types in
-      { name = (fun ld -> ld.ld_id.Ident.name );
+      { name = (fun ld -> Ident.name ld.ld_id );
         start = (fun ld -> Loc.start ld.ld_loc);
         end_ =  (fun ld -> Loc.start ld.ld_loc);
         (* Beware, Loc.start is correct in the code above:
@@ -265,7 +265,7 @@ module Analyser =
 
     let typedtree =
       let open Typedtree in
-      { name = (fun ld -> ld.ld_id.Ident.name );
+      { name = (fun ld -> Ident.name ld.ld_id );
         start = (fun ld -> Loc.start ld.ld_type.ctyp_loc);
         end_ =  (fun ld -> Loc.end_ ld.ld_type.ctyp_loc);
         inline_record = begin

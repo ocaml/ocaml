@@ -1367,7 +1367,6 @@ let () =
 let reset () =
   primitive_declarations := [];
   transl_store_subst := Ident.Map.empty;
-  toploop_ident.Ident.flags <- 0;
   aliased_idents := Ident.empty;
   Env.reset_required_globals ();
   Hashtbl.clear used_primitives

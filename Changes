@@ -360,6 +360,9 @@ Working version
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)
 
+* GPR#1704: Make Ident.t abstract and immutable.
+  (Gabriel Radanne, review by Mark Shinwell)
+
 ### Bug fixes
 
 - MPR#4499, GPR#1479: Use native Windows API to implement Sys.getenv,

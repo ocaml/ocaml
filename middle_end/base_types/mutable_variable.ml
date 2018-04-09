@@ -18,4 +18,71 @@
 
 include Variable
 
-let create_from_variable = rename
+<<<<<<< HEAD
+include Identifiable.Make (struct
+  type nonrec t = t
+
+  let compare v1 v2 =
+    let c = Ident.compare v1.ident v2.ident in
+    if c = 0
+    then Compilation_unit.compare v1.compilation_unit v2.compilation_unit
+    else c
+
+  let output c v = Ident.output c v.ident
+
+  let hash v = Ident.hash v.ident
+
+  let equal v1 v2 =
+    Ident.same v1.ident v2.ident &&
+    Compilation_unit.equal v1.compilation_unit v2.compilation_unit
+
+  let print ppf v =
+    Format.fprintf ppf "%a.%a"
+      Compilation_unit.print v.compilation_unit
+      Ident.print v.ident
+end)
+
+let create ?current_compilation_unit name =
+  let compilation_unit =
+    match current_compilation_unit with
+    | Some compilation_unit -> compilation_unit
+    | None -> Compilation_unit.get_current_exn ()
+  in
+  { compilation_unit;
+    ident = Ident.create name;
+  }
+
+let of_ident ident = create (Ident.name ident)
+
+let unique_ident t =
+  Ident.with_name t.ident (
+    Format.asprintf "%a_%s"
+      Compilation_unit.print t.compilation_unit
+      (Ident.name t.ident)
+  )
+
+let rename ?current_compilation_unit ?append t =
+  let compilation_unit =
+    match current_compilation_unit with
+    | Some compilation_unit -> compilation_unit
+    | None -> Compilation_unit.get_current_exn ()
+  in
+  let ident =
+    match append with
+    | None -> Ident.rename t.ident
+    | Some s -> Ident.create (Ident.name t.ident ^ s)
+  in
+  { compilation_unit = compilation_unit;
+    ident;
+  }
+
+let freshen t =
+  rename t ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+
+let in_compilation_unit t cu =
+  Compilation_unit.equal t.compilation_unit cu
+
+let output_full c t =
+  Compilation_unit.output c t.compilation_unit;
+  Printf.fprintf c ".";
+  Ident.output c t.ident
