@@ -175,10 +175,6 @@ Working version
   (Pierre Chambart, report by Emilio Jesús Gallego Arias,
    review by Gabriel Scherer and Xavier Leroy)
 
-- GPR#1340: Add [Closure_origin.t] to trace inlined functions to prevent
-  infinite loops from repeatedly inlining copies of the same function.
-  (Fu Yong Quah)
-
 - GPR#1370: Fix code duplication in Cmmgen
   (Vincent Laviron, with help from Pierre Chambart,
    reviews by Gabriel Scherer and Luc Maranget)
@@ -205,6 +201,10 @@ Working version
 
 - GPR#1686: Turn off by default flambda invariants checks.
   (Pierre Chambart)
+
+- GPR#1707: Add [Closure_origin.t] to trace inlined functions to prevent
+  infinite loops from repeatedly inlining copies of the same function.
+  (Fu Yong Quah)
 
 ### Runtime system:
 
