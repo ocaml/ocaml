@@ -122,9 +122,10 @@ let rec accumulate ~substitution ~copied_lets ~extracted_lets
     in
     let extracted =
       let expr =
+        let name = Internal_variable_names.lifted_let_rec_block in
         Flambda_utils.toplevel_substitution def_substitution
           (Let_rec (renamed_defs,
-                    Flambda_utils.name_expr ~name:"lifted_let_rec_block"
+                    Flambda_utils.name_expr ~name
                       (Prim (Pmakeblock (0, Immutable, None),
                              List.map fst renamed_defs,
                              Debuginfo.none))))
@@ -172,9 +173,11 @@ let rebuild (used_variables:Variable.Set.t) (accumulated:accumulated) =
     List.map (fun decl ->
         match decl with
         | Block (var, _, _) | Expr (var, _) ->
-          Flambda_utils.make_variable_symbol var, decl
-        | Exprs (vars, _) ->
-          Flambda_utils.make_variables_symbol vars, decl)
+          Symbol.of_variable (Variable.rename var), decl
+        | Exprs _ ->
+          let name = Internal_variable_names.lifted_let_rec_block in
+          let var = Variable.create name in
+          Symbol.of_variable var, decl)
       accumulated.extracted_lets
   in
   let extracted_definitions =

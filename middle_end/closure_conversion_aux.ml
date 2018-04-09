@@ -178,6 +178,6 @@ module Function_decls = struct
     in
     (* For free variables. *)
     Ident.Set.fold (fun id env ->
-        Env.add_var env id (Variable.create (Ident.name id)))
+        Env.add_var env id (Variable.create_with_same_name_as_ident id))
       t.all_free_idents closure_env
 end

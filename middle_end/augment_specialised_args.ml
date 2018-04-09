@@ -99,7 +99,6 @@ module W = What_to_specialise
 
 module type S = sig
   val pass_name : string
-  val variable_suffix : string
 
   val what_to_specialise
      : env:Inline_and_simplify_aux.Env.t
@@ -120,7 +119,6 @@ module Processed_what_to_specialise = struct
   }
 
   type t = {
-    variable_suffix : string;
     set_of_closures : Flambda.set_of_closures;
     existing_definitions_via_spec_args_indexed_by_fun_var
       : Definition.Set.t Variable.Map.t;
@@ -192,9 +190,7 @@ module Processed_what_to_specialise = struct
           | existing_outer_var -> existing_outer_var.var, t
           end
         | Projection_from_existing_specialised_arg projection ->
-          let new_outer_var =
-            Variable.rename group ~append:t.variable_suffix
-          in
+          let new_outer_var = Variable.rename group in
           let projection = lift_projection t ~projection in
           let new_outer_vars_indexed_by_new_lifted_defns =
             Projection.Map.add
@@ -214,9 +210,7 @@ module Processed_what_to_specialise = struct
           in
           new_outer_var, t
     in
-    let new_inner_var =
-      Variable.rename group ~append:t.variable_suffix
-    in
+    let new_inner_var = Variable.rename group in
     let new_inner_to_new_outer_vars =
       Variable.Map.add new_inner_var new_outer_var
         for_one_function.new_inner_to_new_outer_vars
@@ -285,7 +279,7 @@ module Processed_what_to_specialise = struct
     if exists_already then t
     else really_add_new_specialised_arg t ~group ~definition ~for_one_function
 
-  let create ~env ~(what_to_specialise : W.t) ~variable_suffix =
+  let create ~env ~(what_to_specialise : W.t) =
     let existing_definitions_via_spec_args_indexed_by_fun_var =
       Variable.Map.map (fun (function_decl : Flambda.function_declaration) ->
           if function_decl.stub then
@@ -309,8 +303,7 @@ module Processed_what_to_specialise = struct
           what_to_specialise.set_of_closures.function_decls.funs
     in
     let t : t =
-      { variable_suffix;
-        set_of_closures = what_to_specialise.set_of_closures;
+      { set_of_closures = what_to_specialise.set_of_closures;
         existing_definitions_via_spec_args_indexed_by_fun_var;
         new_lifted_defns_indexed_by_new_outer_vars = Variable.Map.empty;
         new_outer_vars_indexed_by_new_lifted_defns = Projection.Map.empty;
@@ -407,10 +400,10 @@ module Make (T : S) = struct
 
   let rename_function_and_parameters ~fun_var
         ~(function_decl : Flambda.function_declaration) =
-    let new_fun_var = Variable.rename fun_var ~append:T.variable_suffix in
+    let new_fun_var = Variable.rename fun_var in
     let params_renaming_list =
       List.map (fun param ->
-          let new_param = Parameter.rename param ~append:T.variable_suffix in
+          let new_param = Parameter.rename param in
           param, new_param)
         function_decl.params
     in
@@ -623,7 +616,7 @@ module Make (T : S) = struct
       in
       let funs, direct_call_surrogates =
         if for_one_function.make_direct_call_surrogates then
-          let surrogate = Variable.rename fun_var ~append:"_surrogate" in
+          let surrogate = Variable.rename fun_var in
           let funs =
             (* In this case, the original function declaration remains
                untouched up to alpha-equivalence.  Direct calls to it
@@ -658,8 +651,9 @@ module Make (T : S) = struct
         ~(set_of_closures : Flambda.set_of_closures) ~benefit
         ~new_lifted_defns_indexed_by_new_outer_vars =
     let body =
-      Flambda_utils.name_expr (Set_of_closures set_of_closures)
-        ~name:("set_of_closures" ^ T.variable_suffix)
+      Flambda_utils.name_expr
+        ~name:Internal_variable_names.set_of_closures
+        (Set_of_closures set_of_closures)
     in
     Variable.Map.fold (fun new_outer_var (projection : Projection.t)
           (expr, benefit) ->
@@ -673,7 +667,7 @@ module Make (T : S) = struct
   let rewrite_set_of_closures_core ~env ~duplicate_function ~benefit
         ~(set_of_closures : Flambda.set_of_closures) =
     let what_to_specialise =
-      P.create ~env ~variable_suffix:T.variable_suffix
+      P.create ~env
         ~what_to_specialise:(T.what_to_specialise ~env ~set_of_closures)
     in
     let original_set_of_closures = set_of_closures in

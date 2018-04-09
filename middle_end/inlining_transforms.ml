@@ -212,7 +212,7 @@ let bind_free_vars ~lhs_of_application ~closure_id_being_applied
       ~state ~free_vars =
   Variable.Map.fold
     (fun free_var (spec : Flambda.specialised_to) state ->
-       let var_clos = new_var "from_closure" in
+       let var_clos = new_var Internal_variable_names.from_closure in
        let expr : Flambda.named =
          Project_var {
            closure = lhs_of_application;
@@ -282,7 +282,7 @@ let register_arguments ~specialised_args ~invariant_params
    [old_params_to_new_outside] then also add it to the new specialised args. *)
 let add_param ~specialised_args ~state ~param =
   let param = Parameter.var param in
-  let new_param = Variable.rename ~append:"_param" param in
+  let new_param = Variable.rename param in
   let old_inside_to_new_inside =
     Variable.Map.add param new_param state.old_inside_to_new_inside
   in
@@ -319,8 +319,8 @@ let add_param ~specialised_args ~state ~param =
 let add_fun_var ~lhs_of_application ~closure_id_being_applied ~state ~fun_var =
   if Variable.Map.mem fun_var state.old_inside_to_new_inside then state
   else begin
-    let inside_var = Variable.rename ~append:"_original" fun_var in
-    let outside_var = Variable.create "closure" in
+    let inside_var = Variable.rename fun_var in
+    let outside_var = Variable.create Internal_variable_names.closure in
     let expr =
       Flambda.Move_within_set_of_closures
         { closure    = lhs_of_application;
@@ -393,7 +393,7 @@ let add_function ~specialised_args ~state ~fun_var ~function_decl =
     let worth_specialising = loop false function_decl.A.params in
     if not worth_specialising then None
     else begin
-      let new_fun_var = Variable.rename ~append:"_copied" fun_var in
+      let new_fun_var = Variable.rename fun_var in
       let old_fun_var_to_new_fun_var =
         Variable.Map.add fun_var new_fun_var state.old_fun_var_to_new_fun_var
       in
@@ -638,8 +638,10 @@ let inline_by_copying_function_declaration
         Flambda.create_set_of_closures ~function_decls
           ~free_vars ~specialised_args ~direct_call_surrogates
       in
-      let closure_var = new_var "dup_func" in
-      let set_of_closures_var = new_var "dup_set_of_closures" in
+      let closure_var = new_var Internal_variable_names.dup_func in
+      let set_of_closures_var =
+        new_var Internal_variable_names.dup_set_of_closures
+      in
       let project : Flambda.project_closure =
         {set_of_closures = set_of_closures_var; closure_id}
       in

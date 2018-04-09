@@ -377,37 +377,40 @@ let make_const_int_named n : Flambda.named * t =
 let make_const_int (n : int) =
   let name =
     match n with
-    | 0 -> "const_zero"
-    | 1 -> "const_one"
-    | _ -> "const_int"
+    | 0 -> Internal_variable_names.const_zero
+    | 1 -> Internal_variable_names.const_one
+    | _ -> Internal_variable_names.const_int
   in
   name_expr_fst (make_const_int_named n) ~name
 
 let make_const_char_named n : Flambda.named * t =
   Const (Char n), value_char n
 let make_const_char n =
-  name_expr_fst (make_const_char_named n) ~name:"const_char"
+  let name = Internal_variable_names.const_char in
+  name_expr_fst (make_const_char_named n) ~name
 
 let make_const_ptr_named n : Flambda.named * t =
   Const (Const_pointer n), value_constptr n
 let make_const_ptr (n : int) =
   let name =
     match n with
-    | 0 -> "const_ptr_zero"
-    | 1 -> "const_ptr_one"
-    | _ -> "const_ptr"
+    | 0 -> Internal_variable_names.const_ptr_zero
+    | 1 -> Internal_variable_names.const_ptr_one
+    | _ -> Internal_variable_names.const_ptr
   in
   name_expr_fst (make_const_ptr_named n) ~name
 
 let make_const_bool_named b : Flambda.named * t =
   make_const_ptr_named (if b then 1 else 0)
 let make_const_bool b =
-  name_expr_fst (make_const_bool_named b) ~name:"const_bool"
+  name_expr_fst (make_const_bool_named b)
+    ~name:Internal_variable_names.const_bool
 
 let make_const_float_named f : Flambda.named * t =
   Allocated_const (Float f), value_float f
 let make_const_float f =
-  name_expr_fst (make_const_float_named f) ~name:"const_float"
+  name_expr_fst (make_const_float_named f)
+    ~name:Internal_variable_names.const_float
 
 let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
       : Flambda.named * t =
@@ -419,7 +422,8 @@ let make_const_boxed_int_named (type bi) (t:bi boxed_int) (i:bi)
   in
   Allocated_const c, value_boxed_int t i
 let make_const_boxed_int t i =
-  name_expr_fst (make_const_boxed_int_named t i) ~name:"const_boxed_int"
+  name_expr_fst (make_const_boxed_int_named t i)
+    ~name:Internal_variable_names.const_boxed_int
 
 type simplification_summary =
   | Nothing_done
@@ -447,7 +451,8 @@ let simplify t (lam : Flambda.t) : simplification_result =
       let const, approx = make_const_boxed_int t i in
       const, Replaced_term, approx
     | Value_symbol sym ->
-      U.name_expr (Symbol sym) ~name:"symbol", Replaced_term, t
+      let name = Internal_variable_names.symbol in
+      U.name_expr (Symbol sym) ~name, Replaced_term, t
     | Value_string _ | Value_float_array _ | Value_float None
     | Value_block _ | Value_set_of_closures _ | Value_closure _
     | Value_unknown _ | Value_bottom | Value_extern _ | Value_unresolved _ ->
@@ -514,10 +519,12 @@ let simplify_using_env t ~is_present_in_env flam =
     | Some var when is_present_in_env var -> true, Flambda.Var var
     | _ ->
       match t.symbol with
-      | Some (sym, None) -> true,
-        U.name_expr (Symbol sym) ~name:"symbol"
+      | Some (sym, None) ->
+        let name = Internal_variable_names.symbol in
+        (true, U.name_expr (Symbol sym) ~name)
       | Some (sym, Some field) ->
-        true, U.name_expr (Read_symbol_field (sym, field)) ~name:"symbol_field"
+        let name = Internal_variable_names.symbol_field in
+        (true, U.name_expr (Read_symbol_field (sym, field)) ~name)
       | None -> false, flam
   in
   let const, summary, approx = simplify t flam in
