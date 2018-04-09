@@ -232,6 +232,9 @@ Working version
   (it's a native code primitive)
   (David Allsopp)
 
+- GPR#1701: fix missing root bug in GPR#1476
+  (Mark Shinwell)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
@@ -336,6 +339,9 @@ Working version
 - GPR#1621: expect_test: make sure to not use the installed stdlib
   (Jérémie Dimino, review by Thomas Refis)
 
+- GPR#1627: Reduce cmx sizes by sharing variable names (Flambda only)
+  (Fuyong Quah, Leo White, review by Xavier Clerc)
+
 - GPR#1646 : add ocamldoc test to ocamltest and
   migrate ocamldoc tests to ocamltest
   (Florian Angeletti, review by Sébastien Hinderer)
@@ -345,7 +351,11 @@ Working version
 
 - GPR#1665: reduce the size of cmx files in classic mode by droping the
   bodies of functions that will not be inlined
-  (Fuyong Quah, review by Leo White)
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
+  
+- GPR#1666: reduce the size of cmx files in classic mode by droping the
+  bodies of functions that cannot be reached from the module block
+  (Fuyong Quah, review by Leo White and Pierre Chambart)
 
 - GPR#1679 : remove Pbittest from primitives in lambda
   (Hugo Heuzard, review by Mark Shinwell)

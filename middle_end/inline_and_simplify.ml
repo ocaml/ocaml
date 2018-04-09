@@ -119,7 +119,9 @@ let simplify_free_variables_named env vars ~f : Flambda.named * R.t =
         in
         let body =
           match body with
-          | Is_named body -> Flambda_utils.name_expr body ~name:"simplify_fv"
+          | Is_named body ->
+            let name = Internal_variable_names.simplify_fv in
+            Flambda_utils.name_expr body ~name
           | Is_expr body -> body
         in
         Is_expr (W.create_let_reusing_defining_expr var named body), r
@@ -357,13 +359,17 @@ let simplify_move_within_set_of_closures env r
             | Some _ | None ->
               match set_of_closures_symbol with
               | Some set_of_closures_symbol ->
-                let set_of_closures_var = Variable.create "symbol" in
+                let set_of_closures_var =
+                  Variable.create Internal_variable_names.symbol
+                in
                 let project_closure : Flambda.project_closure =
                   { set_of_closures = set_of_closures_var;
                     closure_id = move_to;
                   }
                 in
-                let project_closure_var = Variable.create "project_closure" in
+                let project_closure_var =
+                  Variable.create Internal_variable_names.project_closure
+                in
                 let let1 =
                   Flambda.create_let project_closure_var
                     (Project_closure project_closure)
@@ -695,9 +701,7 @@ and simplify_apply env r ~(apply : Flambda.apply) : Flambda.t * R.t =
                 | surrogate -> find_transitively surrogate
               in
               let surrogate = find_transitively surrogate in
-              let surrogate_var =
-                Variable.rename lhs_of_application ~append:"_surrogate"
-              in
+              let surrogate_var = Variable.rename lhs_of_application in
               let move_to_surrogate : Projection.move_within_set_of_closures =
                 { closure = lhs_of_application;
                   start_from = closure_id_being_applied;
@@ -820,7 +824,6 @@ and simplify_partial_application env r ~lhs_of_application
     in
     let closure_variable =
       Variable.rename
-        ~append:"_partial_fun"
         (Closure_id.unwrap closure_id_being_applied)
     in
     Flambda_utils.make_closure_declaration ~id:closure_variable
@@ -855,7 +858,7 @@ and simplify_over_application env r ~args ~args_approxs ~function_decls
       ~args:full_app_args ~args_approxs:full_app_approxs ~dbg
       ~inline_requested ~specialise_requested
   in
-  let func_var = Variable.create "full_apply" in
+  let func_var = Variable.create Internal_variable_names.full_apply in
   let expr : Flambda.t =
     Flambda.create_let func_var (Expr expr)
       (Apply { func = func_var; args = remaining_args; kind = Indirect; dbg;
@@ -966,7 +969,7 @@ and simplify_named env r (tree : Flambda.named) : Flambda.named * R.t =
           | Some set_of_closures ->
             let expr =
               Flambda_utils.name_expr (Set_of_closures set_of_closures)
-                ~name:"remove_unused_arguments"
+                ~name:Internal_variable_names.remove_unused_arguments
             in
             simplify env r expr ~pass_name:"Remove_unused_arguments"
           | None ->

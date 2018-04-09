@@ -156,7 +156,7 @@ let print_cmx_infos (ui, crc) =
       Compilation_unit.set_current cu;
       let root_symbols =
         List.map (fun s ->
-            Symbol.unsafe_create cu (Linkage_name.create ("caml"^s)))
+            Symbol.of_global_linkage cu (Linkage_name.create ("caml"^s)))
           ui.ui_defines
       in
       Format.printf "approximations@ %a@.@."

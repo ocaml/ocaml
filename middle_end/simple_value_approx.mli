@@ -496,3 +496,5 @@ val update_function_declaration_body
 val make_closure_map
    : function_declarations Set_of_closures_id.Map.t
   -> function_declarations Closure_id.Map.t
+
+val clear_function_bodies : function_declarations -> function_declarations

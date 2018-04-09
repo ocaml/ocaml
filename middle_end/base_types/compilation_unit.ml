@@ -64,6 +64,10 @@ let get_persistent_ident cu = cu.id
 let get_linkage_name cu = cu.linkage_name
 
 let current = ref None
+let is_current arg =
+  match !current with
+  | None -> Misc.fatal_error "Current compilation unit is not set!"
+  | Some cur -> equal cur arg
 let set_current t = current := Some t
 let get_current () = !current
 let get_current_exn () =

@@ -16,11 +16,19 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-let name_expr (named : Flambda.named) ~name : Flambda.t =
+let name_expr ~name (named : Flambda.named) : Flambda.t =
   let var =
     Variable.create
       ~current_compilation_unit:(Compilation_unit.get_current_exn ())
       name
+  in
+  Flambda.create_let var named (Var var)
+
+let name_expr_from_var ~var (named : Flambda.named) : Flambda.t =
+  let var =
+    Variable.rename
+      ~current_compilation_unit:(Compilation_unit.get_current_exn ())
+      var
   in
   Flambda.create_let var named (Var var)
 
@@ -313,7 +321,8 @@ let toplevel_substitution sb tree =
 (* CR-someday mshinwell: Fix [Flambda_iterators] so this can be implemented
    properly. *)
 let toplevel_substitution_named sb named =
-  let expr = name_expr named ~name:"toplevel_substitution_named" in
+  let name = Internal_variable_names.toplevel_substitution_named in
+  let expr = name_expr named ~name in
   match toplevel_substitution sb expr with
   | Let let_expr -> let_expr.defining_expr
   | _ -> assert false
@@ -358,7 +367,7 @@ let make_closure_declaration
   in
   let compilation_unit = Compilation_unit.get_current_exn () in
   let set_of_closures_var =
-    Variable.create "set_of_closures"
+    Variable.create Internal_variable_names.set_of_closures
       ~current_compilation_unit:compilation_unit
   in
   let set_of_closures =
@@ -378,7 +387,7 @@ let make_closure_declaration
       }
   in
   let project_closure_var =
-    Variable.create "project_closure"
+    Variable.create Internal_variable_names.project_closure
       ~current_compilation_unit:compilation_unit
   in
   Flambda.create_let set_of_closures_var (Set_of_closures set_of_closures)
@@ -477,6 +486,19 @@ let make_closure_map program =
     ~f:add_set_of_closures;
   !map
 
+let all_lifted_constant_closures program =
+  List.fold_left (fun unchanged flambda ->
+      match flambda with
+      | (_, Flambda.Set_of_closures { function_decls = { funs } }) ->
+        Variable.Map.fold
+          (fun key (_ : Flambda.function_declaration) acc ->
+             Closure_id.Set.add (Closure_id.wrap key) acc)
+          funs
+          unchanged
+      | _ -> unchanged)
+    Closure_id.Set.empty
+    (all_lifted_constants program)
+
 let all_lifted_constant_sets_of_closures program =
   let set = ref Set_of_closures_id.Set.empty in
   List.iter (function
@@ -503,34 +525,6 @@ let all_sets_of_closures_map program =
           set_of_closures !r);
   !r
 
-let all_function_decls_indexed_by_set_of_closures_id program =
-  Set_of_closures_id.Map.map
-    (fun { Flambda. function_decls; _ } -> function_decls)
-    (all_sets_of_closures_map program)
-
-let all_function_decls_indexed_by_closure_id program =
-  let aux_fun function_decls fun_var _ map =
-    let closure_id = Closure_id.wrap fun_var in
-    Closure_id.Map.add closure_id function_decls map
-  in
-  let aux _ ({ function_decls; _ } : Flambda.set_of_closures) map =
-    Variable.Map.fold (aux_fun function_decls) function_decls.funs map
-  in
-  Set_of_closures_id.Map.fold aux (all_sets_of_closures_map program)
-    Closure_id.Map.empty
-
-let make_variable_symbol var =
-  Symbol.create (Compilation_unit.get_current_exn ())
-    (Linkage_name.create
-       (Variable.unique_name (Variable.rename var)))
-
-let make_variables_symbol vars =
-  let name =
-    String.concat "_and_"
-      (List.map (fun var -> Variable.unique_name (Variable.rename var)) vars)
-  in
-  Symbol.create (Compilation_unit.get_current_exn ()) (Linkage_name.create name)
-
 let substitute_read_symbol_field_for_variables
     (substitution : (Symbol.t * int list) Variable.Map.t)
     (expr : Flambda.t) =
@@ -541,8 +535,10 @@ let substitute_read_symbol_field_for_variables
       | [] -> Symbol symbol
       | [i] -> Read_symbol_field (symbol, i)
       | h :: t ->
-          let block = Variable.create "symbol_field_block" in
-          let field = Variable.create "get_symbol_field" in
+          let block_name = Internal_variable_names.symbol_field_block in
+          let block = Variable.create block_name in
+          let field_name = Internal_variable_names.get_symbol_field in
+          let field = Variable.create field_name in
           Expr (
             Flambda.create_let block (make_named t)
               (Flambda.create_let field

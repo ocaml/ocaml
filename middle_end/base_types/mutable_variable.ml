@@ -16,11 +16,9 @@
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
 
-type t = {
-  compilation_unit : Compilation_unit.t;
-  ident : Ident.t;
-}
+include Variable
 
+<<<<<<< HEAD
 include Identifiable.Make (struct
   type nonrec t = t
 

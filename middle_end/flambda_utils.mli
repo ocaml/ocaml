@@ -88,7 +88,15 @@ val bind
   -> body:Flambda.t
   -> Flambda.t
 
-val name_expr : Flambda.named -> name:string -> Flambda.t
+val name_expr
+    : name:Internal_variable_names.t
+   -> Flambda.named
+   -> Flambda.t
+
+val name_expr_from_var
+    : var:Variable.t
+   -> Flambda.named
+   -> Flambda.t
 
 val compare_const : Flambda.const -> Flambda.const -> int
 
@@ -131,6 +139,8 @@ val all_lifted_constant_sets_of_closures
    : Flambda.program
   -> Set_of_closures_id.Set.t
 
+val all_lifted_constant_closures : Flambda.program -> Closure_id.Set.t
+
 (** All sets of closures in the given program (whether or not bound to a
     symbol.) *)
 val all_sets_of_closures : Flambda.program -> Flambda.set_of_closures list
@@ -139,16 +149,6 @@ val all_sets_of_closures_map
    : Flambda.program
   -> Flambda.set_of_closures Set_of_closures_id.Map.t
 
-val all_function_decls_indexed_by_set_of_closures_id
-   : Flambda.program
-  -> Flambda.function_declarations Set_of_closures_id.Map.t
-
-val all_function_decls_indexed_by_closure_id
-   : Flambda.program
-  -> Flambda.function_declarations Closure_id.Map.t
-
-val make_variable_symbol : Variable.t -> Symbol.t
-val make_variables_symbol : Variable.t list -> Symbol.t
 
 (* CR-someday pchambart: A more general version of this function might
    take a [named] instead of a symbol and be called with

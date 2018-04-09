@@ -159,7 +159,7 @@ let add_variables' t ids =
       id' :: ids, t) ids ([], t)
 
 let active_add_mutable_variable t id =
-  let id' = Mutable_variable.freshen id in
+  let id' = Mutable_variable.rename id in
   let t = add_sb_mutable_var t id id' in
   id', t
 
