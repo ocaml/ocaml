@@ -2,14 +2,14 @@
 
 files = "unknown-file"
 
-* setup-ocamlc.byte-build-env
+* skip (* setup-ocamlc.byte-build-env *)
 ** ocamlc.byte
 all_modules = ""
 flags = "unknown-file"
 ocamlc_byte_exit_status = "2"
 *** check-ocamlc.byte-output
 
-* setup-ocamlopt.byte-build-env
+* skip (* setup-ocamlopt.byte-build-env *)
 ** ocamlopt.byte
 all_modules = ""
 flags = "unknown-file"
