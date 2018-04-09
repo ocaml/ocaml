@@ -2,23 +2,29 @@
 
 files = "unknown-file"
 
-* skip (* setup-ocamlc.byte-build-env *)
+* setup-ocamlc.byte-build-env
+compiler_output = "compiler-output.raw"
 ** ocamlc.byte
 all_modules = ""
 flags = "unknown-file"
 ocamlc_byte_exit_status = "2"
-*** check-ocamlc.byte-output
+*** script
+script = "grep 'know what to do with unknown-file' compiler-output.raw"
+output = "compiler-output"
+**** check-ocamlc.byte-output
+compiler_output = "compiler-output"
 
-* skip (* setup-ocamlopt.byte-build-env *)
+* setup-ocamlopt.byte-build-env
+compiler_output = "compiler-output.raw"
 ** ocamlopt.byte
 all_modules = ""
 flags = "unknown-file"
 ocamlopt_byte_exit_status = "2"
-*** no-flambda
+*** script
+script = "grep 'know what to do with unknown-file' compiler-output.raw"
+output = "compiler-output"
 **** check-ocamlopt.byte-output
-*** flambda
-**** check-ocamlopt.byte-output
-compiler_reference = "${test_source_directory}/test.ocamlopt.byte.flambda.reference"
+compiler_output = "compiler-output"
 
 *)
 
