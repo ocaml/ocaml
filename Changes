@@ -232,6 +232,9 @@ Working version
   (it's a native code primitive)
   (David Allsopp)
 
+- GPR#1701: fix missing root bug in GPR#1476
+  (Mark Shinwell)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
