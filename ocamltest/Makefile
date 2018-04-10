@@ -201,6 +201,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@FLAT_FLOAT_ARRAY@@|$(FLAT_FLOAT_ARRAY)|' \
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
+	  -e 's|@@OBJEXT@@|$(O)|' \
 	  $< > $@
 
 .PHONY: clean

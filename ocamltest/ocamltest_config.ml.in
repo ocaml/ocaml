@@ -23,6 +23,8 @@ let shared_libraries = @@SHARED_LIBRARIES@@
 
 let libunix = @@UNIX@@
 
+let objext = "@@OBJEXT@@"
+
 let system = "@@SYSTEM@@"
 
 let c_preprocessor = "@@CPP@@"

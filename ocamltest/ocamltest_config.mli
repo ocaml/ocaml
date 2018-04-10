@@ -27,6 +27,9 @@ val shared_libraries : bool
 val libunix : bool
 (** [true] for unix, [false] for win32unix *)
 
+val objext : string
+(** Extension of object files *)
+
 val system : string
 (** The content of the SYSTEM Make variable *)
 
