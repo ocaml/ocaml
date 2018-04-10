@@ -291,7 +291,7 @@ depend:
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >>.depend.tmp
 	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
-	sed -re \
+	sed -Ee \
 	  's#(^| )(${subst ${SPACE},|,${PREFIXED_OBJS:stdlib__%.cmo=%}})[.]#\1stdlib__\2.#g' \
 	  .depend.tmp > .depend
 	rm -f .depend.tmp
