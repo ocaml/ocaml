@@ -37,7 +37,7 @@ module Env = struct
     never_inline_inside_closures : bool;
     never_inline_outside_closures : bool;
     unroll_counts : int Set_of_closures_origin.Map.t;
-    inlining_counts : int Closure_id.Map.t;
+    inlining_counts : int Closure_origin.Map.t;
     actively_unrolling : int Set_of_closures_origin.Map.t;
     closure_depth : int;
     inlining_stats_closure_stack : Inlining_stats.Closure_stack.t;
@@ -59,7 +59,7 @@ module Env = struct
       never_inline_inside_closures = false;
       never_inline_outside_closures = false;
       unroll_counts = Set_of_closures_origin.Map.empty;
-      inlining_counts = Closure_id.Map.empty;
+      inlining_counts = Closure_origin.Map.empty;
       actively_unrolling = Set_of_closures_origin.Map.empty;
       closure_depth = 0;
       inlining_stats_closure_stack =
@@ -225,7 +225,7 @@ module Env = struct
   let activate_freshening t =
     { t with freshening = Freshening.activate t.freshening }
 
-  let enter_set_of_closures_declaration origin t =
+  let enter_set_of_closures_declaration t origin =
     { t with
       current_functions =
         Set_of_closures_origin.Set.add origin t.current_functions; }
@@ -327,7 +327,7 @@ module Env = struct
   let inlining_allowed t id =
     let inlining_count =
       try
-        Closure_id.Map.find id t.inlining_counts
+        Closure_origin.Map.find id t.inlining_counts
       with Not_found ->
         max 1 (Clflags.Int_arg_helper.get
                  ~key:t.round !Clflags.inline_max_unroll)
@@ -337,13 +337,13 @@ module Env = struct
   let inside_inlined_function t id =
     let inlining_count =
       try
-        Closure_id.Map.find id t.inlining_counts
+        Closure_origin.Map.find id t.inlining_counts
       with Not_found ->
         max 1 (Clflags.Int_arg_helper.get
                  ~key:t.round !Clflags.inline_max_unroll)
     in
     let inlining_counts =
-      Closure_id.Map.add id (inlining_count - 1) t.inlining_counts
+      Closure_origin.Map.add id (inlining_count - 1) t.inlining_counts
     in
     { t with inlining_counts }
 
@@ -640,8 +640,8 @@ let prepare_to_simplify_set_of_closures ~env
       Closure_id.Map.empty
   in
   let env =
-    E.enter_set_of_closures_declaration
-      function_decls.set_of_closures_origin env
+    E.enter_set_of_closures_declaration env
+      function_decls.set_of_closures_origin
   in
   (* we use the previous closure for evaluating the functions *)
   let internal_value_set_of_closures =

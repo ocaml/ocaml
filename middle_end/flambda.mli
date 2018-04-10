@@ -303,6 +303,7 @@ and function_declarations = private {
 }
 
 and function_declaration = private {
+  closure_origin: Closure_origin.t;
   params : Parameter.t list;
   body : t;
   (* CR-soon mshinwell: inconsistent naming free_variables/free_vars here and
@@ -556,6 +557,7 @@ val create_function_declaration
   -> inline:Lambda.inline_attribute
   -> specialise:Lambda.specialise_attribute
   -> is_a_functor:bool
+  -> closure_origin:Closure_origin.t
   -> function_declaration
 
 (** Create a function declaration based on another function declaration *)
@@ -578,6 +580,20 @@ val create_function_declarations_with_origin
   -> funs:function_declaration Variable.Map.t
   -> set_of_closures_origin:Set_of_closures_origin.t
   -> function_declarations
+
+(** Change only the code of a function declaration. *)
+val update_body_of_function_declaration
+   : function_declaration
+  -> body:expr
+  -> function_declaration
+
+(** Change only the code and parameters of a function declaration. *)
+(* CR-soon mshinwell: rename this to match new update function above *)
+val update_function_decl's_params_and_body
+   : function_declaration
+  -> params:Parameter.t list
+  -> body:expr
+  -> function_declaration
 
 (** Create a set of function declarations based on another set of function
     declarations. *)

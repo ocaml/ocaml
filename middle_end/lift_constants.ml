@@ -671,8 +671,7 @@ let introduce_free_variables_in_set_of_closures
              end else begin
                done_something := true;
                let body = Flambda_utils.toplevel_substitution subst body in
-               Flambda.update_function_declaration func_decl
-                 ~params:func_decl.params ~body
+               Flambda.update_body_of_function_declaration func_decl ~body
              end)
           function_decls.funs)
   in

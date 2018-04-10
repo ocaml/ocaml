@@ -162,6 +162,7 @@ and function_body = private {
 }
 
 and function_declaration = private {
+  closure_origin : Closure_origin.t;
   params : Parameter.t list;
   function_body : function_body option;
 }

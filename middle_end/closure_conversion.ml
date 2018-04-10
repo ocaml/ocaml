@@ -71,7 +71,7 @@ let add_default_argument_wrappers lam =
 (** Generate a wrapper ("stub") function that accepts a tuple argument and
     calls another function with arguments extracted in the obvious
     manner from the tuple. *)
-let tupled_function_call_stub original_params unboxed_version
+let tupled_function_call_stub original_params unboxed_version ~closure_bound_var
       : Flambda.function_declaration =
   let tuple_param_var = Variable.rename unboxed_version in
   let params = List.map (fun p -> Variable.rename p) original_params in
@@ -99,6 +99,7 @@ let tupled_function_call_stub original_params unboxed_version
   Flambda.create_function_declaration ~params:[tuple_param]
     ~body ~stub:true ~dbg:Debuginfo.none ~inline:Default_inline
     ~specialise:Default_specialise ~is_a_functor:false
+    ~closure_origin:(Closure_origin.create (Closure_id.wrap closure_bound_var))
 
 let register_const t (constant:Flambda.constant_defining_value) name
     : Flambda.constant_defining_value_block_field * Internal_variable_names.t =
@@ -557,19 +558,24 @@ and close_functions t external_env function_declarations : Flambda.named =
     let param_vars = List.map (Env.find_var closure_env) params in
     let params = List.map Parameter.wrap param_vars in
     let closure_bound_var = Function_decl.closure_bound_var decl in
+    let unboxed_version = Variable.rename closure_bound_var in
     let body = close t closure_env body in
+    let closure_origin =
+      Closure_origin.create (Closure_id.wrap unboxed_version)
+    in
     let fun_decl =
       Flambda.create_function_declaration ~params ~body ~stub ~dbg
         ~inline:(Function_decl.inline decl)
         ~specialise:(Function_decl.specialise decl)
         ~is_a_functor:(Function_decl.is_a_functor decl)
+        ~closure_origin
     in
     match Function_decl.kind decl with
     | Curried -> Variable.Map.add closure_bound_var fun_decl map
     | Tupled ->
       let unboxed_version = Variable.rename closure_bound_var in
       let generic_function_stub =
-        tupled_function_call_stub param_vars unboxed_version
+        tupled_function_call_stub param_vars unboxed_version ~closure_bound_var
       in
       Variable.Map.add unboxed_version fun_decl
         (Variable.Map.add closure_bound_var generic_function_stub map)
