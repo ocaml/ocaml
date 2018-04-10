@@ -24,6 +24,7 @@ open Lambda
 open Clambda
 open Cmm
 open Cmx_format
+module String = Misc.Stdlib.String
 
 (* Environments used for translation to Cmm. *)
 
@@ -2850,11 +2851,11 @@ let transl_function f =
 let rec transl_all_functions already_translated cont =
   try
     let f = Queue.take functions in
-    if StringSet.mem f.label already_translated then
+    if String.Set.mem f.label already_translated then
       transl_all_functions already_translated cont
     else begin
       transl_all_functions
-        (StringSet.add f.label already_translated)
+        (String.Set.add f.label already_translated)
         ((f.dbg, transl_function f) :: cont)
     end
   with Queue.Empty ->
@@ -3028,7 +3029,7 @@ let transl_all_functions_and_emit_all_constants cont =
       aux already_translated cont translated_functions
   in
   let cont, translated_functions =
-    aux StringSet.empty cont []
+    aux String.Set.empty cont []
   in
   let translated_functions =
     (* Sort functions according to source position *)

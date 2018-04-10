@@ -138,7 +138,7 @@ let get_alias_names module_list =
   Hashtbl.clear exception_aliases;
   build_alias_list (Search_alias.search module_list 0)
 
-module Ele_map = Misc.StringMap
+module Ele_map = Misc.Stdlib.String.Map
 
 let known_elements = ref Ele_map.empty
 let add_known_element name k =

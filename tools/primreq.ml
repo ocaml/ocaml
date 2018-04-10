@@ -16,22 +16,22 @@
 (* Determine the set of C primitives required by the given .cmo and .cma
    files *)
 
-open Misc
 open Config
 open Cmo_format
+module String = Misc.Stdlib.String
 
 let defined = ref true
 let used = ref false
 let exclude_file = ref ""
 
-let primitives = ref StringSet.empty
+let primitives = ref String.Set.empty
 
 let scan_reloc = function
-    (Reloc_primitive s, _) -> primitives := StringSet.add s !primitives
+    (Reloc_primitive s, _) -> primitives := String.Set.add s !primitives
   | _ -> ()
 
 let scan_prim s =
-  primitives := StringSet.add s !primitives
+  primitives := String.Set.add s !primitives
 
 let scan_info cu =
   if !used then List.iter scan_reloc cu.cu_reloc;
@@ -62,7 +62,7 @@ let exclude filename =
   try
     while true do
       let s = input_line ic in
-      primitives := StringSet.remove s !primitives
+      primitives := String.Set.remove s !primitives
     done
   with End_of_file -> close_in ic
      | x -> close_in ic; raise x
@@ -86,7 +86,7 @@ let main() =
     scan_obj
     "Usage: primreq [options] <.cmo and .cma files>\nOptions are:";
   if String.length !exclude_file > 0 then exclude !exclude_file;
-  StringSet.iter
+  String.Set.iter
     (fun s ->
       if s.[0] <> '%' then begin print_string s; print_newline() end)
     !primitives;

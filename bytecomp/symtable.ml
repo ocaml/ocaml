@@ -22,6 +22,8 @@ open Asttypes
 open Lambda
 open Cmo_format
 
+module String = Misc.Stdlib.String
+
 (* Functions for batch linking *)
 
 type error =
@@ -56,7 +58,7 @@ module Num_tbl (M : Map.S) = struct
 
 end
 module GlobalMap = Num_tbl(Ident.Map)
-module PrimMap = Num_tbl(StringMap)
+module PrimMap = Num_tbl(Misc.Stdlib.String.Map)
 
 (* Global variables *)
 
@@ -109,7 +111,7 @@ let require_primitive name =
 
 let all_primitives () =
   let prim = Array.make !c_prim_table.cnt "" in
-  StringMap.iter (fun name number -> prim.(number) <- name) !c_prim_table.tbl;
+  String.Map.iter (fun name number -> prim.(number) <- name) !c_prim_table.tbl;
   prim
 
 let data_primitive_names () =

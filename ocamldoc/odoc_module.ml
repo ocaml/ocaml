@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Misc
+module String = Misc.Stdlib.String
 
 (** Representation and manipulation of modules and module types. *)
 
@@ -262,10 +262,10 @@ let module_elements ?(trans=true) m =
             match ma.ma_module with
               None -> []
             | Some (Mod m') ->
-                if StringSet.mem m'.m_name visited then
+                if String.Set.mem m'.m_name visited then
                   []
                 else
-                  module_elements (StringSet.add m'.m_name visited) m'
+                  module_elements (String.Set.add m'.m_name visited) m'
             | Some (Modtype mt) -> module_type_elements mt
           else
             []
@@ -304,7 +304,7 @@ let module_elements ?(trans=true) m =
 *)
     in
     iter_kind m.m_kind in
-  module_elements StringSet.empty ~trans m
+  module_elements String.Set.empty ~trans m
 
 (** Returns the list of values of a module.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)
@@ -475,18 +475,18 @@ let module_is_functor m =
       Module_functor _ -> true
     | Module_alias ma ->
         (
-          not (StringSet.mem ma.ma_name visited)
+          not (String.Set.mem ma.ma_name visited)
           &&
           match ma.ma_module with
             None -> false
-          | Some (Mod mo) -> iter (StringSet.add ma.ma_name visited) mo.m_kind
+          | Some (Mod mo) -> iter (String.Set.add ma.ma_name visited) mo.m_kind
           | Some (Modtype mt) -> module_type_is_functor mt
         )
     | Module_constraint (k, _) ->
         iter visited k
     | _ -> false
   in
-  iter StringSet.empty m.m_kind
+  iter String.Set.empty m.m_kind
 
 (** Returns the list of values of a module type.
   @param trans indicates if, for aliased modules, we must perform a transitive search.*)

@@ -19,6 +19,7 @@
 open Misc
 open Instruct
 open Cmo_format
+module String = Misc.Stdlib.String
 
 type error =
     Forward_reference of string * Ident.t
@@ -33,7 +34,7 @@ exception Error of error
 
 let relocs = ref ([] : (reloc_info * int) list)
 let events = ref ([] : debug_event list)
-let debug_dirs = ref StringSet.empty
+let debug_dirs = ref String.Set.empty
 let primitives = ref ([] : string list)
 let force_link = ref false
 
@@ -146,7 +147,7 @@ let rename_append_bytecode packagename oc mapping defined ofs prefix subst
       seek_in ic compunit.cu_debug;
       List.iter (relocate_debug ofs prefix subst) (input_value ic);
       debug_dirs := List.fold_left
-        (fun s e -> StringSet.add e s)
+        (fun s e -> String.Set.add e s)
         !debug_dirs
         (input_value ic);
     end;
@@ -245,7 +246,7 @@ let package_object_files files targetfile targetname coercion =
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then begin
       output_value oc (List.rev !events);
-      output_value oc (StringSet.elements !debug_dirs);
+      output_value oc (String.Set.elements !debug_dirs);
     end;
     let pos_final = pos_out oc in
     let imports =

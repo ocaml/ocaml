@@ -374,24 +374,26 @@ let color = ref None ;; (* -color *)
 
 let unboxed_types = ref false
 
+module String = Misc.Stdlib.String
+
 let arg_spec = ref []
-let arg_names = ref Misc.StringMap.empty
+let arg_names = ref String.Map.empty
 
 let reset_arguments () =
   arg_spec := [];
-  arg_names := Misc.StringMap.empty
+  arg_names := String.Map.empty
 
 let add_arguments loc args =
   List.iter (function (arg_name, _, _) as arg ->
     try
-      let loc2 = Misc.StringMap.find arg_name !arg_names in
+      let loc2 = String.Map.find arg_name !arg_names in
       Printf.eprintf
         "Warning: plugin argument %s is already defined:\n" arg_name;
       Printf.eprintf "   First definition: %s\n" loc2;
       Printf.eprintf "   New definition: %s\n" loc;
     with Not_found ->
       arg_spec := !arg_spec @ [ arg ];
-      arg_names := Misc.StringMap.add arg_name loc !arg_names
+      arg_names := String.Map.add arg_name loc !arg_names
   ) args
 
 let print_arguments usage =
