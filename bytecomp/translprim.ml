@@ -686,13 +686,13 @@ let transl_primitive loc p env ty path =
   let params = make_params p.prim_arity in
   let args = List.map (fun id -> Lvar id) params in
   let body = lambda_of_prim p.prim_name prim loc args None in
-  let lam =
-    Lfunction{ kind = Curried; params;
-               attr = default_stub_attribute;
-               loc = loc;
-               body = body; }
-  in
-  lam
+  match params with
+  | [] -> body
+  | _ ->
+      Lfunction{ kind = Curried; params;
+                 attr = default_stub_attribute;
+                 loc = loc;
+                 body = body; }
 
 (* Determine if a primitive is a Pccall or will be turned later into
    a C function call that may raise an exception *)
