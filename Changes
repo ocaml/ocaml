@@ -1,6 +1,33 @@
 Working version
 ---------------
 
+(Changes that can break existing programs are marked with a "*")
+
+### Language features:
+
+### Type system:
+
+### Standard library:
+
+### Other libraries:
+
+### Compiler user-interface and warnings:
+
+### Code generation and optimizations:
+
+### Runtime system:
+
+### Tools:
+
+### Manual and documentation:
+
+### Compiler distribution build system:
+
+### Internal/compiler-libs changes:
+
+### Bug fixes:
+
+
 OCaml 4.07
 ----------
 
