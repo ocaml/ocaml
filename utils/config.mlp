@@ -82,7 +82,8 @@ let flat_float_array = %%FLAT_FLOAT_ARRAY%%
 
 let afl_instrument = %%AFL_INSTRUMENT%%
 
-let exec_magic_number = "Caml1999X011"
+let exec_magic_number = "Caml1999X023"
+    (* exec_magic_number is duplicated in byterun/caml/exec.h *)
 and cmi_magic_number = "Caml1999I023"
 and cmo_magic_number = "Caml1999O023"
 and cma_magic_number = "Caml1999A023"
