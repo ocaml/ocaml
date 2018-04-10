@@ -94,3 +94,5 @@ val ocamldoc_reference : Variables.t
 val ocaml_script_as_argument : Variables.t
 
 val plugins: Variables.t
+
+val use_runtime : Variables.t

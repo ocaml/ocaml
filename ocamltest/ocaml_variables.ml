@@ -175,6 +175,9 @@ let ocaml_script_as_argument =
 let plugins =
   Variables.make ( "plugins", "plugins for ocamlc,ocamlopt or ocamldoc" )
 
+let use_runtime =
+  Variables.make ( "use_runtime", "Whether the -use-runtime option should be used" )
+
 let _ = List.iter register_variable
   [
     all_modules;
@@ -217,5 +220,6 @@ let _ = List.iter register_variable
     ocamldebug_flags;
     ocamldebug_script;
     ocaml_script_as_argument;
-    plugins
+    plugins;
+    use_runtime;
   ]

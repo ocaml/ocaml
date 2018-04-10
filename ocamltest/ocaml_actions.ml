@@ -204,7 +204,7 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let commandline =
   [
     compiler#name ocamlsrcdir;
-    Ocaml_flags.runtime_flags ocamlsrcdir compiler#target has_c_file;
+    Ocaml_flags.runtime_flags ocamlsrcdir env compiler#target has_c_file;
     c_headers_flags;
     Ocaml_flags.stdlib ocamlsrcdir;
     directory_flags env;
