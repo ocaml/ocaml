@@ -24,7 +24,12 @@ OCaml 4.07
 - MPR#7611, GPR#1491: reject the use of generative functors as applicative
   (Valentin Gatien-Baron)
 
-- MPR#7717, GPR#1593: don't treat unboxed constructor size as statically known
+- MPR#7706, GPR#1565: in recursive value declarations, track
+  static size of locally-defined variables
+  (Gabriel Scherer, review by Jeremy Yallop and Leo White, report by Leo White)
+
+- MPR#7717, GPR#1593: in recursive value declarations, don't treat
+  unboxed constructor size as statically known
   (Jeremy Yallop, report by Pierre Chambart, review by Gabriel Scherer)
 
 - GPR#1469: Use the information from [@@immediate] annotations when

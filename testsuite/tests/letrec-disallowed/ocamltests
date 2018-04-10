@@ -7,4 +7,5 @@ lazy_.ml
 module_constraints.ml
 pr7215.ml
 pr7231.ml
+pr7706.ml
 unboxed.ml
