@@ -80,6 +80,9 @@ let compiler_stdin = make ("compiler_stdin",
 let compile_only = make ("compile_only",
   "Compile only (do not link)")
 
+let objext = make ("objext",
+  "Extension of object files")
+
 let ocamlc_flags = make ("ocamlc_flags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
 
@@ -198,6 +201,7 @@ let _ = List.iter register_variable
     libraries;
     module_;
     modules;
+    objext;
     ocamlc_flags;
     ocamlc_default_flags;
     ocamlopt_flags;

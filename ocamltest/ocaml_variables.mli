@@ -53,6 +53,8 @@ val module_ : Variables.t
 
 val modules : Variables.t
 
+val objext : Variables.t
+
 val ocamlc_flags : Variables.t
 val ocamlc_default_flags : Variables.t
 
