@@ -423,6 +423,11 @@ Working version
 - MPR#7751, GPR#1657: The toplevel prints some concrete types as abstract
   (Jacques Garrigue, report by Matej Kosik)
 
+- PR#7760, GPR#1713: Exact selection of lexing engine, that is
+  correct "Segfault in ocamllex-generated code using 'shortest'"
+  (Luc Maranget, Frédéric Bour, report by Stephen Dolan,
+  review by Gabriel Scherer)
+
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
@@ -2857,6 +2862,7 @@ OCaml 4.03.0 (25 Apr 2016):
 
 - PR#7119: the toplevel does not respect [@@@warning]
   (Alain Frisch, report by Gabriel Radanne)
+
 
 ### Other libraries:
 
