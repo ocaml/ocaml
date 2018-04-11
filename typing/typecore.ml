@@ -4968,10 +4968,25 @@ and type_let
     end else pat_list in
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
+  let sexp_is_fun { pvb_expr = sexp; _ } =
+    match sexp.pexp_desc with
+    | Pexp_fun _ | Pexp_function _ -> true
+    | _ -> false
+  in
   let exp_env =
     if is_recursive then new_env
-    else if not is_recursive then begin
-      (* add ghost bindings to help detecting missing "rec" keywords *)
+    else if not is_recursive && List.for_all sexp_is_fun spat_sexp_list
+    then begin
+      (* Add ghost bindings to help detecting missing "rec" keywords.
+
+         We only add those if the body of the definition is obviously a
+         function. The rationale is that, in other cases, the hint is probably
+         wrong (and the user is using "advanced features" anyway (lazy,
+         recursive values...)).
+
+         [pvb_loc] (below) is the location of the first let-binding (in case of
+         a let .. and ..), and is where the missing "rec" hint suggests to add a
+         "rec" keyword. *)
       match spat_sexp_list with
       | {pvb_loc; _} :: _ -> maybe_add_pattern_variables_ghost pvb_loc env pvs
       | _ -> assert false

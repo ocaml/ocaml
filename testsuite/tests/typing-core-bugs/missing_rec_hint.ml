@@ -47,5 +47,17 @@ Line _, characters 13-19:
                ^^^^^^
 Error: Unbound value value2
 Hint: Did you mean value1?
+|}];;
+
+let foobar1 () = () in
+let foobar2 () = foobar2 () (* typo? or missing "rec"? *) in
+()
+
+[%%expect{|
+Line _, characters 17-24:
+  let foobar2 () = foobar2 () (* typo? or missing "rec"? *) in
+                   ^^^^^^^
+Error: Unbound value foobar2
+Hint: Did you mean foobar1?
 Hint: If this is a recursive definition, you should add a 'rec' keyword on line 2
 |}];;
