@@ -455,7 +455,7 @@ CAMLexport uintnat caml_ba_deserialize(void * dst)
     if (caml_umul_overflow(num_elts, b->dim[i], &num_elts))
       caml_deserialize_error("input_value: size overflow for bigarray");
   }
-  /* Determine element size in bytes.  Watch out for overflows (MPR#7765). */
+  /* Determine array size in bytes.  Watch out for overflows (MPR#7765). */
   if ((b->flags & CAML_BA_KIND_MASK) > CAML_BA_CHAR)
     caml_deserialize_error("input_value: bad bigarray kind");
   if (caml_umul_overflow(num_elts,
