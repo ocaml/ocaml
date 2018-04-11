@@ -258,13 +258,6 @@ _ocamltestd
 
 /testsuite/tests/embedded/caml
 
-/testsuite/tests/lib-dynlink-native/mypack.pack.s
-/testsuite/tests/lib-dynlink-native/mypack.pack.asm
-/testsuite/tests/lib-dynlink-native/result
-/testsuite/tests/lib-dynlink-native/main
-/testsuite/tests/lib-dynlink-native/marshal.data
-/testsuite/tests/lib-dynlink-native/caml
-
 /testsuite/tests/lib-scanf/tscanf_data
 
 /testsuite/tests/lib-threads/*.byt
