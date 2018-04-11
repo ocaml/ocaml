@@ -7,6 +7,7 @@ evaluation_order_2.ml
 evaluation_order_3.ml
 float_block_1.ml
 generic_array.ml
+labels.ml
 lazy_.ml
 lists.ml
 mixing_value_closures_1.ml

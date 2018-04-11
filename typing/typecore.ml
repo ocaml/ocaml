@@ -1920,6 +1920,12 @@ struct
   let has_concrete_element_type : Typedtree.expression -> bool =
     fun e -> array_kind e <> `Pgenarray
 
+  (* See the note on abstracted arguments in the documentation for
+     Typedtree.Texp_apply *)
+  let is_abstracted_arg : arg_label * expression option -> bool = function
+    | (_, None) -> true
+    | (_, Some _) -> false    
+
   type sd = Static | Dynamic
 
   let classify_expression : Typedtree.expression -> sd =
@@ -1970,6 +1976,9 @@ struct
 
       | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, _)
         when is_ref vd ->
+          Static
+      | Texp_apply (_,args)
+        when List.exists is_abstracted_arg args ->
           Static
       | Texp_apply _ ->
           Dynamic
@@ -2089,11 +2098,14 @@ struct
       | Texp_apply ({exp_desc = Texp_ident (_, _, vd)}, [_, Some arg])
         when is_ref vd ->
           Use.guard (expression env arg)
-      | Texp_apply (e, args) ->
-        let arg env (_, eo) = option expression env eo in
-        Use.(join
-                (inspect (expression env e))
-                (inspect (list arg env args)))
+      | Texp_apply (e, args)  ->
+          let arg env (_, eo) = option expression env eo in
+          let ty = Use.join (list arg env args) (expression env e) in
+          if List.exists is_abstracted_arg args
+          then (* evaluate expressions, abstract over the results
+                  let g = f and x = e in fun z -> g ~x z *)
+            Use.discard ty
+          else Use.inspect ty
       | Texp_tuple exprs ->
         Use.guard (list expression env exprs)
       | Texp_array exprs when array_kind exp = `Pfloatarray ->
