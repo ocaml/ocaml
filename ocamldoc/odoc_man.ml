@@ -329,9 +329,9 @@ class man =
           self#man_of_text_element b
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       | Odoc_info.Superscript t ->
-          bs b "^{"; self#man_of_text2 b t
+          bs b "^"; self#man_of_text2 b t
       | Odoc_info.Subscript t ->
-          bs b "_{"; self#man_of_text2 b t
+          bs b "_"; self#man_of_text2 b t
       | Odoc_info.Module_list _ ->
           ()
       | Odoc_info.Index_list ->
