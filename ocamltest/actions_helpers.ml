@@ -73,7 +73,6 @@ let setup_build_env add_testfile additional_files (_log : out_channel) env =
     if add_testfile
     then (testfile env) :: some_files
     else some_files in
-  ignore (Sys.command ("rm -rf " ^ build_dir));
   setup_symlinks (test_source_directory env) build_dir files;
   Sys.chdir build_dir;
   (Result.pass, env)
