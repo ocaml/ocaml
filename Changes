@@ -27,6 +27,9 @@ Working version
 
 ### Bug fixes:
 
+- MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
+  ignored when used on streams based on input channels.
+  (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
 OCaml 4.07
 ----------
