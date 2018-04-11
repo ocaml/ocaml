@@ -39,7 +39,7 @@ case $# in
 esac
 
 major="`echo "$version" | sed -n -e '1s/^\([0-9]*\)\..*/\1/p'`"
-minor="`echo "$version" | sed -n -e '1s/^[0-9]*\.\([0-9]*\).*/\1/p'`"
+minor="`echo "$version" | sed -n -e '1s/^[0-9]*\.0*\([0-9]*\).*/\1/p'`"
 patchlvl="`echo "$version" | sed -n -e '1s/^[0-9]*\.[0-9]*\.\([0-9]*\).*/\1/p'`"
 suffix="`echo "$version" | sed -n -e '1s/^[^+]*+\(.*\)/\1/p'`"
 
