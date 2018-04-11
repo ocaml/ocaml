@@ -72,15 +72,18 @@ let output_tables oc tbl =
 
 (* Output the entries *)
 
-let output_entry ic oc has_refill oci e =
+let output_entry some_mem_code ic oc has_refill oci e =
   let init_num, init_moves = e.auto_initial_state in
+  (* Will use "memory" instructions when (1) some memory instructions are
+     here and (2) this entry point needs memory. *)
+  let some_mem_code = some_mem_code &&  e.auto_mem_size > 0 in
   fprintf oc
     "%s %alexbuf =\
    \n  %a%a __ocaml_lex_%s_rec %alexbuf %d\n"
     e.auto_name
     output_args e.auto_args
     (fun oc x ->
-      if x > 0 then
+      if some_mem_code then
         fprintf oc "lexbuf.Lexing.lex_mem <- Array.make %d (-1);" x)
     e.auto_mem_size
     (output_memory_actions "  ") init_moves
@@ -90,7 +93,7 @@ let output_entry ic oc has_refill oci e =
   fprintf oc "and __ocaml_lex_%s_rec %alexbuf __ocaml_lex_state =\n"
     e.auto_name output_args e.auto_args;
   fprintf oc "  match Lexing.%sengine"
-          (if e.auto_mem_size == 0 then "" else "new_");
+          (if some_mem_code then "new_" else "");
   fprintf oc " __ocaml_lex_tables __ocaml_lex_state lexbuf with\n    ";
   List.iter
     (fun (num, env, loc) ->
@@ -138,15 +141,16 @@ let output_lexdef ic oc oci header rh tables entry_points trailer =
   copy_chunk ic oc oci header false;
   let has_refill = output_refill_handler ic oc oci rh in
   output_tables oc tables;
+  let some_mem_code = Array.length tables.tbl_code > 0 in
   begin match entry_points with
     [] -> ()
   | entry1 :: entries ->
     output_string oc "let rec ";
-    output_entry ic oc has_refill oci entry1;
+    output_entry some_mem_code ic oc has_refill oci entry1;
       List.iter
         (fun e ->
            output_string oc "and ";
-           output_entry ic oc has_refill oci e)
+           output_entry some_mem_code ic oc has_refill oci e)
         entries;
       output_string oc ";;\n\n";
   end;
