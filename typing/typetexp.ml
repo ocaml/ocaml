@@ -1023,8 +1023,8 @@ let report_error env ppf = function
       spellcheck ppf fold_values env lid;
       let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
       fprintf ppf
-        "@.@[%s %i.@]"
-        "Hint: You are probably missing the `rec' keyword on line"
+        "@.@[%s %i@]"
+        "Hint: If this is a recursive definition, you should add a 'rec' keyword on line"
         line
 
 let () =
