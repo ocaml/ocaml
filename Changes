@@ -31,6 +31,9 @@ Working version
   ignored when used on streams based on input channels.
   (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
+- GPR#???: fix Pervasives.LargeFile functions under Windows
+  (Alain Frisch)
+
 OCaml 4.07
 ----------
 
