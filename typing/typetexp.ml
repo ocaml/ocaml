@@ -64,6 +64,7 @@ type error =
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
+  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -1016,6 +1017,15 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not an object type@]"
         Printtyp.type_expr ty
+  | Unbound_value_missing_rec (lid, loc) ->
+      fprintf ppf
+        "Unbound value %a" longident lid;
+      spellcheck ppf fold_values env lid;
+      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
+      fprintf ppf
+        "@.@[%s %i.@]"
+        "Hint: You are probably missing the `rec' keyword on line"
+        line
 
 let () =
   Location.register_error_of_exn

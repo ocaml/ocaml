@@ -104,7 +104,6 @@ type error =
   | Illegal_letrec_pat
   | Illegal_letrec_expr
   | Illegal_class_expr
-  | Unbound_value_missing_rec of Longident.t * Location.t
   | Empty_pattern
 
 exception Error of Location.t * Env.t * error
@@ -2862,7 +2861,9 @@ and type_expect_
             | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
             | Val_unbound Val_unbound_ghost_recursive ->
-                raise(Error(loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)))
+                raise(Typetexp.Error(
+                  loc, env, Typetexp.Unbound_value_missing_rec (lid.txt, desc.val_loc)
+                ))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
                 Env.add_required_global (Path.head p);
@@ -5481,14 +5482,6 @@ let report_error env ppf = function
         "This kind of expression is not allowed as right-hand side of `let rec'"
   | Illegal_class_expr ->
       fprintf ppf "This kind of recursive class expression is not allowed"
-  | Unbound_value_missing_rec (lid, loc) ->
-      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
-      fprintf ppf
-        "@[%s %a.@ %s %i.@]"
-        "Unbound value"
-        longident lid
-        "Hint: You are probably missing the `rec' keyword on line"
-        line
   | Empty_pattern -> assert false
 
 let report_error env ppf err =
