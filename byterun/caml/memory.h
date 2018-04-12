@@ -62,9 +62,6 @@ CAMLextern value caml_read_barrier (value, int);
 CAMLextern void caml_initialize_field (value, int, value);
 CAMLextern void caml_blit_fields (value src, int srcoff, value dst, int dstoff, int n);
 CAMLextern value caml_check_urgent_gc (value);
-CAMLextern void * caml_stat_alloc (asize_t);              /* Size in bytes. */
-CAMLextern void caml_stat_free (void *);
-CAMLextern void * caml_stat_resize (void *, asize_t);     /* Size in bytes. */
 CAMLextern char *caml_alloc_for_heap (asize_t request);   /* Size in bytes. */
 CAMLextern void caml_free_for_heap (char *mem);
 CAMLextern int caml_add_to_heap (char *mem);
