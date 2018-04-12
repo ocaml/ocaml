@@ -40,6 +40,7 @@ function set_configuration {
     FILE=$(pwd | cygpath -f - -m)/config/Makefile
     echo "Edit $FILE to set PREFIX=$2"
     sed -e "/PREFIX=/s|=.*|=$2|" \
+        -e "/RUNTIMED=/s|=.*|=true|" \
         -e "/^ *CFLAGS *=/s/\r\?$/ $3\0/" \
          config/Makefile.$1 > config/Makefile
 #    run "Content of $FILE" cat config/Makefile
@@ -82,7 +83,8 @@ case "$1" in
     FULL_BUILD_PREFIX=$APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX
     run "ocamlc.opt -version" $FULL_BUILD_PREFIX-msvc64/ocamlc.opt -version
     run "test msvc64" make -C $FULL_BUILD_PREFIX-msvc64 tests
-    run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32 tests
+    run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32/testsuite \
+                            USE_RUNTIME="d" all
     run "install msvc64" make -C $FULL_BUILD_PREFIX-msvc64 install
     run "install mingw32" make -C $FULL_BUILD_PREFIX-mingw32 install
     ;;
