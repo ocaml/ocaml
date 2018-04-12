@@ -112,6 +112,7 @@ value caml_startup_common(char_os **argv, int pooling)
   caml_install_invalid_parameter_handler();
 #endif
   caml_init_custom_operations();
+  caml_init_os_params();
   caml_init_gc ();
 
   init_segments();

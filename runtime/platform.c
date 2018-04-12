@@ -142,10 +142,11 @@ static uintnat round_up(uintnat size, uintnat align) {
   return (size + align - 1) & ~(align - 1);
 }
 
+long caml_sys_pagesize = 0;
 
 uintnat caml_mem_round_up_pages(uintnat size)
 {
-  return round_up(size, sysconf(_SC_PAGESIZE));
+  return round_up(size, caml_sys_pagesize);
 }
 
 void* caml_mem_map(uintnat size, uintnat alignment, int reserve_only)

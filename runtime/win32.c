@@ -1092,3 +1092,8 @@ int caml_thread_setname(wchar_t *name)
 {
   return -1;
 }
+
+void caml_init_os_params(void)
+{
+  return;
+}
