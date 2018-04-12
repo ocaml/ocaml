@@ -226,9 +226,6 @@ static void oldify_one (void* st_v, value v, value *p)
     result = alloc_shared(sz, tag);
     for (i = 0; i < sz; i++) {
       value curr = Op_val(v)[i];
-      /* FIXME: this is wrong, as Debug_tag(N) is a valid value.
-         However, it's a useful debugging aid for now */
-      CAMLassert(!Is_debug_tag(curr));
       Op_val (result)[i] = curr;
     }
     Hd_val (v) = 0;            /* Set forward flag */
