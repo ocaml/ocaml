@@ -44,7 +44,7 @@ index::
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
-html: files $(STDLIB_CMIS)
+html: files
 	cd htmlman; \
 	mkdir -p libref ; \
 	$(OCAMLDOC) -colorize-code -sort -html \
@@ -77,7 +77,8 @@ etex-files: $(FILES)
 	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
 	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
 
-files: $(FILES)
+files: $(FILES) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
 	cd library; $(MAKE) all RELEASEDIR=$(SRC)
 	cd cmds; $(MAKE) all RELEASEDIR=$(SRC)
