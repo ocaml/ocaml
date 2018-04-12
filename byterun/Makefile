@@ -161,17 +161,18 @@ prims.c : primitives
 	 echo '	 0 };') > prims.c
 
 caml/opnames.h : caml/instruct.h
+	cat $^ | tr -d '\r' | \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' caml/instruct.h \
-	    > caml/opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' > $@
 
 # caml/jumptbl.h is required only if you have GCC 2.0 or later
 caml/jumptbl.h : caml/instruct.h
+	cat $^ | tr -d '\r' | \
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
-	       -e '/^}/q' caml/instruct.h > caml/jumptbl.h
+	       -e '/^}/q' > $@
 
 caml/version.h : ../VERSION ../tools/make-version-header.sh
 	../tools/make-version-header.sh ../VERSION > caml/version.h
