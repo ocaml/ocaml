@@ -934,6 +934,12 @@ let native_compiler = Actions.make
     "native compiler available"
     "native compiler not available")
 
+let native_dynlink = Actions.make
+  "native-dynlink"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.native_dynlink)
+    "native dynlink support available"
+    "native dynlink support not available")
+
 let afl_instrument = Actions.make
   "afl-instrument"
   (Actions_helpers.pass_or_skip Ocamltest_config.afl_instrument
@@ -1134,6 +1140,7 @@ let _ =
     no_spacetime;
     shared_libraries;
     native_compiler;
+    native_dynlink;
     afl_instrument;
     no_afl_instrument;
     setup_ocamldoc_build_env;

@@ -62,3 +62,6 @@ val ocamldoc : bool
 
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
+
+val native_dynlink : bool
+(** Whether support for native dynlink is available or not *)

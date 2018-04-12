@@ -45,3 +45,5 @@ let flat_float_array = @@FLAT_FLOAT_ARRAY@@
 let ocamldoc = @@OCAMLDOC@@
 
 let ocamldebug = @@OCAMLDEBUG@@
+
+let native_dynlink = @@NATIVE_DYNLINK@@

@@ -202,6 +202,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
 	  -e 's|@@OBJEXT@@|$(O)|' \
+	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
 	  $< > $@
 
 .PHONY: clean
