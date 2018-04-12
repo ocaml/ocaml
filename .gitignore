@@ -244,6 +244,7 @@ _ocamltest
 /testsuite/failure.stamp
 
 /testsuite/_retries
+/testsuite/disabled-dirs
 
 /testsuite/tests/asmcomp/codegen
 /testsuite/tests/asmcomp/parsecmm.ml
