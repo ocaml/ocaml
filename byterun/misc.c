@@ -41,7 +41,7 @@ void caml_failed_assert (char * expr, char * file, int line)
   abort();
 }
 
-void caml_set_fields (value v, unsigned long start, unsigned long filler)
+void caml_set_fields (value v, uintnat start, uintnat filler)
 {
   mlsize_t i;
   for (i = start; i < Wosize_val (v); i++){
