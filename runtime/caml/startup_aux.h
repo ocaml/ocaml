@@ -25,13 +25,13 @@ extern void caml_free_locale(void);
 
 /* readonly after startup */
 struct caml_params {
-  const char* exe_name;
+  const char_os* exe_name;
 
   /* for meta.c */
   const char* section_table;
   asize_t section_table_size;
 
-  const char* cds_file;
+  const char_os* cds_file;
 
   uintnat verb_gc;
   uintnat parser_trace;
@@ -69,7 +69,7 @@ extern void caml_command_error(char *msg, ...);
    If [pooling] is 0, [caml_stat_*] functions will not be backed by a pool. */
 extern int caml_startup_aux (int pooling);
 
-void caml_init_exe_name(const char* exe_name);
+void caml_init_exe_name(const char_os* exe_name);
 void caml_init_section_table(const char* section_table,
                              asize_t section_table_size);
 
