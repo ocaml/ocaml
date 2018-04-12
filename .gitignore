@@ -404,6 +404,8 @@ _ocamltest
 /tools/make_opcodes.ml
 
 /utils/config.ml
+/utils/domainstate.ml
+/utils/domainstate.mli
 
 /yacc/ocamlyacc
 /yacc/version.h
