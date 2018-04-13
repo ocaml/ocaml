@@ -440,13 +440,12 @@ let to_memory init_code fun_code =
   init();
   emit init_code;
   emit fun_code;
-  let code = Meta.static_alloc !out_position in
-  LongString.unsafe_blit_to_bytes !out_buffer 0 code 0 !out_position;
-  let reloc = List.rev !reloc_info
-  and code_size = !out_position in
+  let code = LongString.create !out_position in
+  LongString.blit !out_buffer 0 code 0 !out_position;
+  let reloc = List.rev !reloc_info in
   let events = !events in
   init();
-  (code, code_size, reloc, events)
+  (code, reloc, events)
 
 (* Emission to a file for a packed library *)
 
