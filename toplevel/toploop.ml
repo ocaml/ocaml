@@ -174,7 +174,7 @@ let load_lambda ppf lam =
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
-  let bytecode, closure = Meta.reify_bytecode code [| events |] in
+  let bytecode, closure = Meta.reify_bytecode code [| events |] None in
   try
     may_trace := true;
     let retval = closure () in
