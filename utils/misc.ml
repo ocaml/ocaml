@@ -416,6 +416,11 @@ module LongString = struct
       set dst (dstoff + i) (get src (srcoff + i))
     done
 
+  let blit_string src srcoff dst dstoff len =
+    for i = 0 to len - 1 do
+      set dst (dstoff + i) (String.get src (srcoff + i))
+    done
+
   let output oc tbl pos len =
     for i = pos to pos + len - 1 do
       output_char oc (get tbl i)

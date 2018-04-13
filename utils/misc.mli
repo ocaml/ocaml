@@ -206,6 +206,7 @@ module LongString :
     val get : t -> int -> char
     val set : t -> int -> char -> unit
     val blit : t -> int -> t -> int -> int -> unit
+    val blit_string : string -> int -> t -> int -> int -> unit
     val output : out_channel -> t -> int -> int -> unit
     val input_bytes_into : t -> in_channel -> int -> unit
     val input_bytes : in_channel -> int -> t
