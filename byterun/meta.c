@@ -54,9 +54,9 @@ struct bytecode {
 };
 #define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
 
-CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo)
+CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo, value digest_opt)
 {
-  CAMLparam2(ls_prog, debuginfo);
+  CAMLparam3(ls_prog, debuginfo, digest_opt);
   CAMLlocal4(clos, bytecode, retval, s);
   struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
   code_t prog;
@@ -83,7 +83,12 @@ CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo)
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + len;
-  cf->digest_computed = 0;
+  if (Is_block(digest_opt)) {
+    memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
+    cf->digest_computed = 1;
+  } else {
+    cf->digest_computed = 0;
+  }
   caml_ext_table_add(&caml_code_fragments_table, cf);
 
 #ifdef ARCH_BIG_ENDIAN
