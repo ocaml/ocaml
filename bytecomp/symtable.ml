@@ -175,30 +175,24 @@ let init () =
 
 (* Relocate a block of object bytecode *)
 
-(* Must use the unsafe String.set here because the block may be
-   a "fake" string as returned by Meta.static_alloc. *)
+let patch_int buff pos n =
+  LongString.set buff pos (Char.unsafe_chr n);
+  LongString.set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+  LongString.set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+  LongString.set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
-let gen_patch_int str_set buff pos n =
-  str_set buff pos (Char.unsafe_chr n);
-  str_set buff (pos + 1) (Char.unsafe_chr (n asr 8));
-  str_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
-  str_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
-
-let gen_patch_object str_set buff patchlist =
+let patch_object buff patchlist =
   List.iter
     (function
         (Reloc_literal sc, pos) ->
-          gen_patch_int str_set buff pos (slot_for_literal sc)
+          patch_int buff pos (slot_for_literal sc)
       | (Reloc_getglobal id, pos) ->
-          gen_patch_int str_set buff pos (slot_for_getglobal id)
+          patch_int buff pos (slot_for_getglobal id)
       | (Reloc_setglobal id, pos) ->
-          gen_patch_int str_set buff pos (slot_for_setglobal id)
+          patch_int buff pos (slot_for_setglobal id)
       | (Reloc_primitive name, pos) ->
-          gen_patch_int str_set buff pos (num_of_prim name))
+          patch_int buff pos (num_of_prim name))
     patchlist
-
-let patch_object = gen_patch_object Bytes.unsafe_set
-let ls_patch_object = gen_patch_object LongString.set
 
 (* Translate structured constants *)
 

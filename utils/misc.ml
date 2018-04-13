@@ -421,14 +421,16 @@ module LongString = struct
       output_char oc (get tbl i)
     done
 
-  let unsafe_blit_to_bytes src srcoff dst dstoff len =
-    for i = 0 to len - 1 do
-      Bytes.unsafe_set dst (dstoff + i) (get src (srcoff + i))
-    done
+  let input_bytes_into tbl ic len =
+    let count = ref len in
+    Array.iter (fun str ->
+      let chunk = min !count (Bytes.length str) in
+      really_input ic str 0 chunk;
+      count := !count - chunk) tbl
 
   let input_bytes ic len =
     let tbl = create len in
-    Array.iter (fun str -> really_input ic str 0 (Bytes.length str)) tbl;
+    input_bytes_into tbl ic len;
     tbl
 end
 

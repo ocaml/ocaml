@@ -165,34 +165,26 @@ let load_lambda ppf lam =
     fprintf ppf "%a%a@."
     Printinstr.instrlist init_code
     Printinstr.instrlist fun_code;
-  let (code, code_size, reloc, events) =
+  let (code, reloc, events) =
     Emitcode.to_memory init_code fun_code
   in
-  Meta.add_debug_info code code_size [| events |];
   let can_free = (fun_code = []) in
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code reloc;
   Symtable.check_global_initialized reloc;
   Symtable.update_global_table();
   let initial_bindings = !toplevel_value_bindings in
+  let bytecode, closure = Meta.reify_bytecode code [| events |] in
   try
     may_trace := true;
-    let retval = (Meta.reify_bytecode code code_size) () in
+    let retval = closure () in
     may_trace := false;
-    if can_free then begin
-      Meta.remove_debug_info code;
-      Meta.static_release_bytecode code code_size;
-      Meta.static_free code;
-    end;
+    if can_free then Meta.release_bytecode bytecode;
     Result retval
   with x ->
     may_trace := false;
+    if can_free then Meta.release_bytecode bytecode;
     record_backtrace ();
-    if can_free then begin
-      Meta.remove_debug_info code;
-      Meta.static_release_bytecode code code_size;
-      Meta.static_free code;
-    end;
     toplevel_value_bindings := initial_bindings; (* PR#6211 *)
     Symtable.restore_state initial_symtable;
     Exception x

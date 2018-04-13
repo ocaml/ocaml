@@ -28,13 +28,12 @@ val to_file: out_channel -> string -> string ->
                evaluated before this one
              list of instructions to emit *)
 val to_memory: instruction list -> instruction list ->
-                    bytes * int * (reloc_info * int) list * debug_event list
+                    Misc.LongString.t * (reloc_info * int) list * debug_event list
         (* Arguments:
              initialization code (terminated by STOP)
              function code
            Results:
              block of relocatable bytecode
-             size of this block
              relocation information
              debug events *)
 val to_packed_file:

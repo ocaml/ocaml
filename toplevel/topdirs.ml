@@ -124,11 +124,16 @@ let load_compunit ic filename ppf compunit =
   check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
-  let code = Meta.static_alloc code_size in
-  unsafe_really_input ic code 0 compunit.cu_codesize;
-  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  String.unsafe_blit "\000\000\000\001\000\000\000" 0
-                     code (compunit.cu_codesize + 1) 7;
+  let code = LongString.create code_size in
+  LongString.input_bytes_into code ic compunit.cu_codesize;
+  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  LongString.set code (compunit.cu_codesize + 1) '\000';
+  LongString.set code (compunit.cu_codesize + 2) '\000';
+  LongString.set code (compunit.cu_codesize + 3) '\000';
+  LongString.set code (compunit.cu_codesize + 4) '\001';
+  LongString.set code (compunit.cu_codesize + 5) '\000';
+  LongString.set code (compunit.cu_codesize + 6) '\000';
+  LongString.set code (compunit.cu_codesize + 7) '\000';
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
@@ -138,10 +143,10 @@ let load_compunit ic filename ppf compunit =
       seek_in ic compunit.cu_debug;
       [| input_value ic |]
     end in
-  Meta.add_debug_info code code_size events;
   begin try
     may_trace := true;
-    ignore((Meta.reify_bytecode code code_size) ());
+    let _bytecode, closure = Meta.reify_bytecode code events in
+    ignore (closure ());
     may_trace := false;
   with exn ->
     record_backtrace ();
