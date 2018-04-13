@@ -127,13 +127,8 @@ let load_compunit ic filename ppf compunit =
   let code = LongString.create code_size in
   LongString.input_bytes_into code ic compunit.cu_codesize;
   LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  LongString.set code (compunit.cu_codesize + 1) '\000';
-  LongString.set code (compunit.cu_codesize + 2) '\000';
-  LongString.set code (compunit.cu_codesize + 3) '\000';
-  LongString.set code (compunit.cu_codesize + 4) '\001';
-  LongString.set code (compunit.cu_codesize + 5) '\000';
-  LongString.set code (compunit.cu_codesize + 6) '\000';
-  LongString.set code (compunit.cu_codesize + 7) '\000';
+  LongString.blit_string "\000\000\000\001\000\000\000" 0
+                     code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
