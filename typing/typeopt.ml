@@ -50,6 +50,7 @@ let is_base_type env ty base_ty_path =
   | _ -> false
 
 let maybe_pointer_type env ty =
+  let ty = scrape_ty env ty in
   if Ctype.maybe_pointer_type env ty then
     Pointer
   else
