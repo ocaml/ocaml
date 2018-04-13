@@ -140,7 +140,7 @@ let load_compunit ic filename ppf compunit =
     end in
   begin try
     may_trace := true;
-    let _bytecode, closure = Meta.reify_bytecode code events in
+    let _bytecode, closure = Meta.reify_bytecode code events None in
     ignore (closure ());
     may_trace := false;
   with exn ->

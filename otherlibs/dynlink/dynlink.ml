@@ -206,9 +206,6 @@ let check_unsafe_module cu =
 
 (* Load in-core and execute a bytecode object file *)
 
-external register_code_fragment: Meta.bytecode -> string -> unit
-                               = "caml_register_code_fragment"
-
 let load_compunit ic file_name file_digest compunit =
   let open Misc in
   check_consistency file_name compunit;
@@ -238,8 +235,6 @@ let load_compunit ic file_name file_digest compunit =
      digest of file contents + unit name.
      Unit name is needed for .cma files, which produce several code fragments.*)
   let digest = Digest.string (file_digest ^ compunit.cu_name) in
-  (* FIXME *)
-  register_code_fragment (assert false) digest;
   let events =
     if compunit.cu_debug = 0 then [| |]
     else begin
@@ -247,7 +242,7 @@ let load_compunit ic file_name file_digest compunit =
       [| input_value ic |]
     end in
   begin try
-    let _, clos = Meta.reify_bytecode code events in
+    let _, clos = Meta.reify_bytecode code events (Some digest) in
     ignore (clos ())
   with exn ->
     Symtable.restore_state initial_symtable;
