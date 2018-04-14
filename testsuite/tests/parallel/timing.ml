@@ -1,70 +1,62 @@
 open Domain
 open Domain.Sync
 
-(* Since this test checks timing, it's possible for it to
-   spuriously fail on a very loaded system *)
+let millis_since event =
+  Int64.(to_int (div (sub (timer_ticks ()) event) (of_int 1_000_000)))
 
-let startup = timer_ticks ()
+let after_millis n event =
+  Int64.(add event (mul (of_int n) (of_int 1_000_000)))
 
-let step = 50_000_000           (* 50 ms *)
-let slop = ref Int64.zero
-let at n = Int64.(add (add !slop startup) (mul (of_int step) (of_int n)))
-
-let check_after n =
-  let late = Int64.sub (timer_ticks ()) (at n) in
-  if late < Int64.zero then
-    failwith ("Early by " ^ (Int64.(to_string (neg (div late (of_int 1_000_000))))) ^ " ms")
-
-let check_before n =
-  let late = Int64.sub (timer_ticks ()) (at n) in
-  if late > Int64.zero then
-    if late < Int64.of_int (step/2) then
-      slop := Int64.add !slop late
-    else
-      failwith ("Late by " ^ (Int64.(to_string ((div late (of_int 1_000_000))))) ^ " ms")
-
-
-let flag = Atomic.make false
-
-let d1 () =
-  critical_section (fun () ->
-      let r = wait_until (at (-1)) in
-      assert (r = Timeout));
-  check_before 1;
-  critical_section (fun () ->
-      let r = wait_until (at 1) in
-      assert (r = Timeout));
-  check_after 1;
-  check_before 2;
-  critical_section (fun () ->
-      let r = wait_for (Int64.of_int (- step)) in
-      assert (r = Timeout));
-  check_before 2;
-  critical_section (fun () ->
-      let r = wait_for (Int64.of_int step) in
-      assert (r = Timeout));
-  check_after 2;
-  critical_section (fun () ->
-      check_before 3;
-      let r = wait_until (at 4) in
-      assert (r = Notified);
-      Atomic.set flag true);
-  check_after 3;
-  check_before 4
-
-let d2 d1 =
-  critical_section (fun () ->
-      let r = wait_until (at 3) in
-      assert (r = Timeout));
-  check_after 3;
-  notify d1;
-  assert (Atomic.get flag);
-  check_before 4
-
+(* Waiting until a time that already passed should not take long. *)
 let () =
-  let d1 = spawn d1 in
-  let d2 = spawn (fun () -> d2 (get_id d1)) in
+  let start = timer_ticks () in
+  for i = 0 to 2000 do
+    critical_section (fun () ->
+      let r = wait_until start in
+      assert (r = Timeout));
+  done;
+  assert (millis_since start < 1000) (* can spuriously fail, in principle *)
+
+(* Waiting for a negative interval should not take long. *)
+let () =
+  let start = timer_ticks () in
+  for i = 0 to 2000 do
+    critical_section (fun () ->
+      let r = wait_for (Int64.of_int (-50_000_000)) in
+      assert (r = Timeout));
+  done;
+  assert (millis_since start < 1000) (* can spuriously fail, in principle *)
+
+(* Waiting until a time 50ms in the future should take at least 50ms *)
+let () =
+  let start = timer_ticks () in
+  critical_section (fun () ->
+    let r = wait_until (after_millis 50 start) in
+    assert (r = Timeout));
+  assert (millis_since start >= 50)
+
+(* Waiting for 50ms should take at least 50ms *)
+let () =
+  let start = timer_ticks () in
+  critical_section (fun () ->
+    let r = wait_for (Int64.of_int 50_000_000) in
+    assert (r = Timeout));
+  assert (millis_since start >= 50)
+
+(* Test that notifications interrupt waits *)
+let () =
+  let start = timer_ticks () in
+  let flag = Atomic.make false in
+  let d1 = spawn (fun () ->
+    critical_section (fun () ->
+      let r = wait_until Int64.(add start (of_int 1000_000_000)) in
+      assert (r = Notified);
+      Atomic.set flag true)) in
+  let d2 = spawn (fun () ->
+    notify (get_id d1);
+    assert (Atomic.get flag)) in
   join d1;
   join d2;
-  print_endline "ok"
+  assert (millis_since start < 1000)
 
+let () = print_endline "ok"
