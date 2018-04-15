@@ -244,6 +244,7 @@ _ocamltest
 /testsuite/failure.stamp
 
 /testsuite/_retries
+/testsuite/disabled-dirs
 
 /testsuite/tests/asmcomp/codegen
 /testsuite/tests/asmcomp/parsecmm.ml
@@ -404,6 +405,8 @@ _ocamltest
 /tools/make_opcodes.ml
 
 /utils/config.ml
+/utils/domainstate.ml
+/utils/domainstate.mli
 
 /yacc/ocamlyacc
 /yacc/version.h
