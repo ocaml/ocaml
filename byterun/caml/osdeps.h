@@ -147,11 +147,6 @@ extern value caml_copy_string_of_utf16(const wchar_t *s);
    resolution may be less. The starting point is unspecified. */
 extern int64_t caml_time_counter(void);
 
-/* Secure version of [getenv]: returns NULL if the process has special
-   privileges (setuid bit or capabilities).
-*/
-extern char *caml_secure_getenv(char const *var);
-
 #endif /* CAML_INTERNALS */
 
 #endif /* CAML_OSDEPS_H */

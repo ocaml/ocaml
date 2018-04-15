@@ -248,6 +248,7 @@ tools:
 clean:
 	@cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean
 	@cd tools && $(MAKE) BASEDIR=$(BASEDIR) clean
+	@rm -f disabled-dirs
 	@for file in `$(FIND) interactive tests -name Makefile`; do \
 	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
