@@ -21,7 +21,9 @@ let command cmdline =
     prerr_string cmdline;
     prerr_newline()
   end;
-  Sys.command cmdline
+  let res = Sys.command cmdline in
+  if res = 127 then raise (Sys_error cmdline);
+  res
 
 let run_command cmdline = ignore(command cmdline)
 
