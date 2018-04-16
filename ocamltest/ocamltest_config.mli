@@ -65,3 +65,6 @@ val ocamldebug : bool
 
 val native_dynlink : bool
 (** Whether support for native dynlink is available or not *)
+
+val shared_library_cflags : string
+(** Flags to use when compiling a C object for a shared library *)

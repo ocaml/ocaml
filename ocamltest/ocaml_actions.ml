@@ -876,6 +876,7 @@ let check_ocamlnat_output =
 let config_variables _log env = Environments.add_bindings
   [
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
+    Ocaml_variables.shared_library_cflags, Ocamltest_config.shared_library_cflags;
     Ocaml_variables.objext, Ocamltest_config.objext;
     Ocaml_variables.ocamlc_default_flags,
       Ocamltest_config.ocamlc_default_flags;

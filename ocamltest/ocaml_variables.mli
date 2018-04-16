@@ -97,4 +97,6 @@ val ocaml_script_as_argument : Variables.t
 
 val plugins : Variables.t
 
+val shared_library_cflags : Variables.t
+
 val use_runtime : Variables.t
