@@ -25,6 +25,7 @@ type t =
   | Lexer
   | Grammar
   | Binary_interface
+  | Obj
   | Backend_specific of Ocaml_backends.t * backend_specific
   | Text (** text-only documentation file *)
 
