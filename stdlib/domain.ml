@@ -19,7 +19,8 @@ module Raw = struct
 end
 
 type nanoseconds = int64
-external timer_ticks : unit -> nanoseconds = "caml_ml_domain_ticks"
+external timer_ticks : unit -> (int64 [@unboxed]) =
+  "caml_ml_domain_ticks" "caml_ml_domain_ticks_unboxed" [@@noalloc]
 
 module Sync = struct
   exception Retry

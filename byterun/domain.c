@@ -959,9 +959,14 @@ CAMLprim value caml_ml_domain_interrupt(value domain)
   CAMLreturn (Val_unit);
 }
 
+CAMLprim int64_t caml_ml_domain_ticks_unboxed(value unused)
+{
+  return caml_time_counter() - startup_timestamp;
+}
+
 CAMLprim value caml_ml_domain_ticks(value unused)
 {
-  return caml_copy_int64(caml_time_counter() - startup_timestamp);
+  return caml_copy_int64(caml_ml_domain_ticks_unboxed(unused));
 }
 
 CAMLprim value caml_ml_domain_yield_until(value t)
