@@ -17,6 +17,9 @@ Working version
 
 ### Runtime system:
 
+- GPR#1723: Remove internal Meta.static_{alloc,free} primitives.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Tools:
 
 ### Manual and documentation:
