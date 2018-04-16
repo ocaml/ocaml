@@ -87,6 +87,11 @@ allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 
 .PHONY: install
 install::
+# Transitional: when upgrading from 4.06 -> 4.07, module M is in stdlib__m.cm*, while previously
+# it was in m.cm*, which confuses the compiler. Also, pervasives.* is now stdlib.*.
+	rm -f $(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", $(filter stdlib__%,$(OBJS)))
+	rm -f "$(INSTALL_LIBDIR)/pervasives.*"
+# End transitional
 	$(INSTALL_DATA) \
 	  stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
