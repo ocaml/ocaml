@@ -173,6 +173,8 @@ let get_program_file backend env =
     Actions_helpers.test_build_directory env in
   Filename.make_path [test_build_directory; program_filename]
 
+let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C
+
 let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let program_variable = compiler#program_variable in
   let program_file = Environments.safe_lookup program_variable env in
@@ -182,7 +184,6 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
   let prepare = prepare_module ocamlsrcdir output_variable log env in
   let modules =
     List.concatmap prepare (List.map Ocaml_filetypes.filetype all_modules) in
-  let is_c_file (_filename, filetype) = filetype=Ocaml_filetypes.C in
   let has_c_file = List.exists is_c_file modules in
   let c_headers_flags =
     if has_c_file then Ocaml_flags.c_includes ocamlsrcdir else "" in
@@ -238,10 +239,15 @@ let compile_module ocamlsrcdir compiler module_ log env =
     Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
   let what = Printf.sprintf "Compiling module %s" module_ in
   Printf.fprintf log "%s\n%!" what;
+  let module_with_filetype = Ocaml_filetypes.filetype module_ in
+  let is_c = is_c_file module_with_filetype in
+  let c_headers_flags =
+    if is_c then Ocaml_flags.c_includes ocamlsrcdir else "" in
   let commandline =
   [
     compiler#name ocamlsrcdir;
     Ocaml_flags.stdlib ocamlsrcdir;
+    c_headers_flags;
     directory_flags env;
     flags env;
     libraries compiler#target env;
