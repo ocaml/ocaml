@@ -99,4 +99,6 @@ val plugins : Variables.t
 
 val shared_library_cflags : Variables.t
 
+val sharedobjext : Variables.t
+
 val use_runtime : Variables.t

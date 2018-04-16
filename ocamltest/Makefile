@@ -204,6 +204,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OBJEXT@@|$(O)|' \
 	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
 	  -e 's|@@SHARED_LIBRARY_CFLAGS@@|$(SHAREDCCCOMPOPTS)|' \
+	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
 	  $< > $@
 
 .PHONY: clean

@@ -182,6 +182,10 @@ let shared_library_cflags =
   Variables.make ("shared_library_cflags",
     "Flags used to compile C files for inclusion in shared libraries")
 
+let sharedobjext =
+  Variables.make ("sharedobjext",
+    "Extension of shared object files")
+
 let use_runtime =
   Variables.make ( "use_runtime", "Whether the -use-runtime option should be used" )
 
@@ -230,5 +234,6 @@ let _ = List.iter register_variable
     ocaml_script_as_argument;
     plugins;
     shared_library_cflags;
+    sharedobjext;
     use_runtime;
   ]

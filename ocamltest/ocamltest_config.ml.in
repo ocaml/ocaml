@@ -49,3 +49,5 @@ let ocamldebug = @@OCAMLDEBUG@@
 let native_dynlink = @@NATIVE_DYNLINK@@
 
 let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
+
+let sharedobjext = "@@SHAREDOBJEXT@@"

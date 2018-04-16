@@ -68,3 +68,6 @@ val native_dynlink : bool
 
 val shared_library_cflags : string
 (** Flags to use when compiling a C object for a shared library *)
+
+val sharedobjext : string
+(** Extension of shared object files *)
