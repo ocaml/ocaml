@@ -30,6 +30,9 @@ let arguments = make ("arguments",
 let cwd = make ("cwd",
   "Used to change current working directory, but not updated")
 
+let commandline = make ("commandline",
+  "Specify the commandline of a tool")
+
 let exit_status = make ("exit_status",
   "Expected program exit status")
 
@@ -103,6 +106,7 @@ let _ = List.iter register_variable
   [
     arguments;
     cwd;
+    commandline;
     exit_status;
     files;
     ocamltest_response;

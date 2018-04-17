@@ -21,6 +21,8 @@ val arguments : Variables.t
 
 val cwd : Variables.t
 
+val commandline : Variables.t
+
 val exit_status : Variables.t
 
 val files : Variables.t
