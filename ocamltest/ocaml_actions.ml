@@ -411,10 +411,36 @@ let setup_ocamlnat_build_env =
 
 let compile (compiler : Ocaml_compilers.compiler) log env =
   let ocamlsrcdir = Ocaml_directories.srcdir () in
-  match Environments.lookup_nonempty Ocaml_variables.module_ env with
-    | None -> compile_program ocamlsrcdir compiler log env
-    | Some module_ -> compile_module ocamlsrcdir compiler module_ log env
-
+  match Environments.lookup_nonempty Builtin_variables.commandline env with  
+  | None ->
+    begin
+      match Environments.lookup_nonempty Ocaml_variables.module_ env with
+      | None -> compile_program ocamlsrcdir compiler log env
+      | Some module_ -> compile_module ocamlsrcdir compiler module_ log env
+    end
+  | Some cmdline ->
+    let expected_exit_status =
+      Ocaml_tools.expected_exit_status env (compiler :> Ocaml_tools.tool) in
+    let what = Printf.sprintf "Compiling using commandline %s" cmdline in
+    Printf.fprintf log "%s\n%!" what;
+    let commandline = [compiler#name ocamlsrcdir; cmdline] in
+    let exit_status =
+      Actions_helpers.run_cmd
+        ~environment:dumb_term
+        ~stdin_variable: Ocaml_variables.compiler_stdin
+        ~stdout_variable:compiler#output_variable
+        ~stderr_variable:compiler#output_variable
+        ~append:true
+        log env commandline in
+    if exit_status=expected_exit_status
+    then (Result.pass, env)
+    else begin
+      let reason =
+        (Actions_helpers.mkreason
+          what (String.concat " " commandline) exit_status) in
+      (Result.fail_with_reason reason, env)
+    end
+    
 (* Compile actions *)
 
 let ocamlc_byte =
