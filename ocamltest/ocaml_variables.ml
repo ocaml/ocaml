@@ -80,6 +80,10 @@ let compiler_stdin = make ("compiler_stdin",
 let compile_only = make ("compile_only",
   "Compile only (do not link)")
 
+let csc = make ("csc", "Path to the CSharp compiler")
+
+let csc_flags = make ("csc_flags", "Flags for the CSharp compiler")
+
 let objext = make ("objext",
   "Extension of object files")
 
@@ -204,6 +208,8 @@ let _ = List.iter register_variable
     compiler_output2;
     compiler_stdin;
     compile_only;
+    csc;
+    csc_flags;
     directories;
     flags;
     libraries;

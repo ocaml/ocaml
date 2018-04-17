@@ -34,6 +34,16 @@ endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
+CSC := csc
+ifeq "$(HOST)" "msvc"
+CSCFLAGS := /platform:x86
+else
+CSCFLAGS :=
+endif
+CSCFLAGS += /nologo /nowarn:1668
+else
+CSC :=
+CSCFLAGS :=
 endif
 
 ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
@@ -205,6 +215,8 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
 	  -e 's|@@SHARED_LIBRARY_CFLAGS@@|$(SHAREDCCCOMPOPTS)|' \
 	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
+	  -e 's|@@CSC@@|$(CSC)|' \
+	  -e 's|@@CSCFLAGS@@|$(CSCFLAGS)|' \
 	  $< > $@
 
 .PHONY: clean

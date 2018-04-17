@@ -71,3 +71,9 @@ val shared_library_cflags : string
 
 val sharedobjext : string
 (** Extension of shared object files *)
+
+val csc : string
+(** Path of the CSharp compiler, empty if not available *)
+
+val csc_flags : string
+(** Flags for the CSharp compiler *)

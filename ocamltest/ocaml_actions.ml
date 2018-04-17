@@ -882,6 +882,8 @@ let check_ocamlnat_output =
 let config_variables _log env = Environments.add_bindings
   [
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
+    Ocaml_variables.csc, Ocamltest_config.csc;
+    Ocaml_variables.csc_flags, Ocamltest_config.csc_flags;
     Ocaml_variables.shared_library_cflags, Ocamltest_config.shared_library_cflags;
     Ocaml_variables.objext, Ocamltest_config.objext;
     Ocaml_variables.sharedobjext, Ocamltest_config.sharedobjext;
@@ -947,6 +949,12 @@ let native_dynlink = Actions.make
   (Actions_helpers.pass_or_skip (Ocamltest_config.native_dynlink)
     "native dynlink support available"
     "native dynlink support not available")
+
+let csharp_compiler = Actions.make
+  "csharp-compiler"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.csc<>"")
+    "C# compiler available"
+    "C# compiler not available")
 
 let afl_instrument = Actions.make
   "afl-instrument"
@@ -1149,6 +1157,7 @@ let _ =
     shared_libraries;
     native_compiler;
     native_dynlink;
+    csharp_compiler;
     afl_instrument;
     no_afl_instrument;
     setup_ocamldoc_build_env;

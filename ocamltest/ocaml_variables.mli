@@ -43,6 +43,10 @@ val compiler_stdin : Variables.t
 
 val compile_only : Variables.t
 
+val csc : Variables.t
+
+val csc_flags : Variables.t
+
 val directories : Variables.t
 
 val flags : Variables.t

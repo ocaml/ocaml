@@ -51,3 +51,7 @@ let native_dynlink = @@NATIVE_DYNLINK@@
 let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
 
 let sharedobjext = "@@SHAREDOBJEXT@@"
+
+let csc = "@@CSC@@"
+
+let csc_flags = "@@CSCFLAGS@@"
