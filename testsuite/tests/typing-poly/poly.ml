@@ -1606,16 +1606,3 @@ end
 [%%expect{|
 module M : functor () -> sig val f : 'a -> 'a val g : 'a -> 'a end
 |}]
-
-(* PR#7395 *)
-type u
-type 'a t = u;;
-let c (f : u -> u) =
- object
-   method apply: 'a. 'a t -> 'a t = fun x -> f x
- end;;
-[%%expect{|
-type u
-type 'a t = u
-val c : (u -> u) -> < apply : 'a. 'a t -> 'a t > = <fun>
-|}]
