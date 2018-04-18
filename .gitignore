@@ -96,6 +96,14 @@ _ocamltest
 /asmrun/unix.c
 /asmrun/weak.c
 /asmrun/win32.c
+/asmrun/addrmap.c
+/asmrun/domain.c
+/asmrun/eventlog.c
+/asmrun/fiber.c
+/asmrun/params.c
+/asmrun/platform.c
+/asmrun/roots.c
+/asmrun/shared_heap.c
 
 /boot/Saved
 /boot/ocamlrun
@@ -109,6 +117,7 @@ _ocamltest
 /byterun/caml/m.h
 /byterun/caml/s.h
 /byterun/primitives
+/byterun/primitives.new
 /byterun/prims.c
 /byterun/caml/opnames.h
 /byterun/caml/version.h
@@ -272,6 +281,8 @@ _ocamltest
 /testsuite/tests/lib-dynlink-native/main
 /testsuite/tests/lib-dynlink-native/marshal.data
 /testsuite/tests/lib-dynlink-native/caml
+
+/testsuite/tests/lib-marshal/intext.data
 
 /testsuite/tests/lib-scanf/tscanf_data
 
