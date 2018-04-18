@@ -217,6 +217,9 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
 	  -e 's|@@CSC@@|$(CSC)|' \
 	  -e 's|@@CSCFLAGS@@|$(CSCFLAGS)|' \
+	  -e 's|@@MKDLL@@|$(MKDLL)|' \
+	  -e 's|@@BYTECCLIBS@@|$(BYTECCLIBS)|' \
+	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
 	  $< > $@
 
 .PHONY: clean

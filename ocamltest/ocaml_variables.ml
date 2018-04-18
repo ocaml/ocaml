@@ -32,6 +32,9 @@ let all_modules = make ("all_modules",
 let binary_modules = make ("binary_modules",
   "Additional binary modules to link")
 
+let bytecc_libs = make ("bytecc_libs",
+  "Libraries to link with for bytecode")
+
 let c_preprocessor = make ("c_preprocessor",
   "Command to use to invoke the C preprocessor")
 
@@ -102,11 +105,17 @@ let flags = make ("flags",
 let libraries = make ("libraries",
   "Libraries the program should be linked with")
 
+let mkdll = make ("mkdll",
+  "Command to use to build a DLL")
+
 let module_ = make ("module",
   "Compile one module at once")
 
 let modules = make ("modules",
   "Other modules of the test")
+
+let nativecc_libs = make ("nativecc_libs",
+  "Libraries to link with for native code")
 
 let ocamllex_flags = make ("ocamllex_flags",
   "Flags passed to ocamllex")

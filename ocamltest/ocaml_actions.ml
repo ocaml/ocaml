@@ -881,6 +881,9 @@ let check_ocamlnat_output =
 
 let config_variables _log env = Environments.add_bindings
   [
+    Ocaml_variables.bytecc_libs, Ocamltest_config.bytecc_libs;
+    Ocaml_variables.nativecc_libs, Ocamltest_config.nativecc_libs;
+    Ocaml_variables.mkdll, Ocamltest_config.mkdll;
     Ocaml_variables.c_preprocessor, Ocamltest_config.c_preprocessor;
     Ocaml_variables.csc, Ocamltest_config.csc;
     Ocaml_variables.csc_flags, Ocamltest_config.csc_flags;

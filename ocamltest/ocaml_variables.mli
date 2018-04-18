@@ -21,6 +21,9 @@ val all_modules : Variables.t
 
 val binary_modules : Variables.t
 
+val bytecc_libs : Variables.t
+(** Libraries to link with for bytecode *)
+
 val c_preprocessor : Variables.t
 
 val caml_ld_library_path : Variables.t
@@ -53,9 +56,15 @@ val flags : Variables.t
 
 val libraries : Variables.t
 
+val mkdll : Variables.t
+(** Command used to make a DLL *)
+
 val module_ : Variables.t
 
 val modules : Variables.t
+
+val nativecc_libs : Variables.t
+(** Libraries to link with for native code *)
 
 val objext : Variables.t
 

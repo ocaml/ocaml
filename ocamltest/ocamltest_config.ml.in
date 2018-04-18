@@ -55,3 +55,9 @@ let sharedobjext = "@@SHAREDOBJEXT@@"
 let csc = "@@CSC@@"
 
 let csc_flags = "@@CSCFLAGS@@"
+
+let mkdll = "@@MKDLL@@"
+
+let bytecc_libs = "@@BYTECCLIBS@@"
+
+let nativecc_libs = "@@NATIVECCLIBS@@"

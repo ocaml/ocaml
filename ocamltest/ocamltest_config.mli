@@ -77,3 +77,9 @@ val csc : string
 
 val csc_flags : string
 (** Flags for the CSharp compiler *)
+
+val mkdll : string
+
+val bytecc_libs : string
+
+val nativecc_libs : string
