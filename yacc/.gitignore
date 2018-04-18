@@ -1,6 +1,0 @@
-*.cm[ioxa]
-program.exe
-ocamlyacc
-ocamlyacc.exe
-version.h
-.gdb_history
