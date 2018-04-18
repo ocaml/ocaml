@@ -31,8 +31,6 @@ C_INCLUDES+=-I $(CTOPDIR)/byterun -I $(CTOPDIR)/otherlibs/bigarray
 
 GENERATED_SOURCES=
 
-GENERATED_SOURCES=
-
 SKIP=false
 
 .PHONY: check
