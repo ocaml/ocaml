@@ -119,7 +119,7 @@ install:
 	cp $(PROGRAMS) "$(INSTALL_BINDIR)"
 	cp $(LIBRARIES) "$(INSTALL_LIBDIR)"
 	mkdir -p "$(INSTALL_INCDIR)"
-	cp caml/*.h "$(INSTALL_INCDIR)"
+	cp caml/*.h caml/*.tbl "$(INSTALL_INCDIR)"
 
 # If primitives contain duplicated lines (e.g. because the code is defined
 # like
