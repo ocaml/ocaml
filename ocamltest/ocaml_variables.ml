@@ -90,6 +90,15 @@ let csc_flags = make ("csc_flags", "Flags for the CSharp compiler")
 let objext = make ("objext",
   "Extension of object files")
 
+let ocamlc_byte = make ("ocamlc_byte",
+  "Path of the ocamlc.byte executable")
+
+let ocamlopt_byte = make ("ocamlopt_byte",
+  "Path of the ocamlopt.byte executable")
+
+let ocamlrun = make ("ocamlrun",
+  "Path of the ocamlrun executable")
+
 let ocamlc_flags = make ("ocamlc_flags",
   "Flags passed to ocamlc.byte and ocamlc.opt")
 
@@ -225,6 +234,9 @@ let _ = List.iter register_variable
     module_;
     modules;
     objext;
+    ocamlc_byte;
+    ocamlopt_byte;
+    ocamlrun;
     ocamlc_flags;
     ocamlc_default_flags;
     ocamlopt_flags;

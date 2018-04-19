@@ -905,8 +905,13 @@ let check_ocamlnat_output =
     (make_check_tool_output
       "check-ocamlnat-output" Ocaml_toplevels.ocamlnat)
 
-let config_variables _log env = Environments.add_bindings
+let config_variables _log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  Environments.add_bindings
   [
+    Ocaml_variables.ocamlrun, Ocaml_files.ocamlrun ocamlsrcdir;
+    Ocaml_variables.ocamlc_byte, Ocaml_files.ocamlc ocamlsrcdir;
+    Ocaml_variables.ocamlopt_byte, Ocaml_files.ocamlopt ocamlsrcdir;
     Ocaml_variables.bytecc_libs, Ocamltest_config.bytecc_libs;
     Ocaml_variables.nativecc_libs, Ocamltest_config.nativecc_libs;
     Ocaml_variables.mkdll, Ocamltest_config.mkdll;
