@@ -71,7 +71,9 @@ let rec live i finally =
                  Hence, everything that must be live at the beginning of
                  the exception handler must also be live across this instr. *)
                Reg.Set.union across_after !live_at_raise
-           | _ ->
+          | Iload _ when Array.length i.arg = 2 ->
+               Reg.Set.add i.arg.(1) across_after
+          | _ ->
                across_after in
         i.live <- across;
         Reg.add_set_array across arg

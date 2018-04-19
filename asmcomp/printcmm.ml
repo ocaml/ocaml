@@ -73,12 +73,18 @@ let raise_kind fmt = function
   | Raise_withtrace -> Format.fprintf fmt "raise_withtrace"
   | Raise_notrace -> Format.fprintf fmt "raise_notrace"
 
+let ident_option = function
+  | None -> ""
+  | Some id -> Printf.sprintf " from %s" (Ident.unique_name id)
+
 let operation d = function
   | Capply _ty -> "app" ^ Debuginfo.to_string d
   | Cextcall(lbl, _ty, _alloc, _) ->
       Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
-  | Cload (c, Asttypes.Immutable) -> Printf.sprintf "load %s" (chunk c)
-  | Cload (c, Asttypes.Mutable) -> Printf.sprintf "load_mut %s" (chunk c)
+  | Cload (c, Asttypes.Immutable, from) ->
+      Printf.sprintf "load %s%s" (chunk c) (ident_option from)
+  | Cload (c, Asttypes.Mutable, from) ->
+      Printf.sprintf "load_mut %s%s" (chunk c) (ident_option from)
   | Calloc -> "alloc" ^ Debuginfo.to_string d
   | Cstore (c, init) ->
     let init =

@@ -50,7 +50,7 @@ let env_empty = {
 let oper_result_type = function
     Capply ty -> ty
   | Cextcall(_s, ty, _alloc, _) -> ty
-  | Cload (c, _) ->
+  | Cload (c, _, _) ->
       begin match c with
       | Word_val -> typ_val
       | Single | Double | Double_u -> typ_float
@@ -337,8 +337,8 @@ method effects_of exp =
       | Calloc -> EC.none
       | Cstore _ -> EC.effect_only Effect.Arbitrary
       | Craise _ | Ccheckbound -> EC.effect_only Effect.Raise
-      | Cload (_, Asttypes.Immutable) -> EC.none
-      | Cload (_, Asttypes.Mutable) -> EC.coeffect_only Coeffect.Read_mutable
+      | Cload (_, Asttypes.Immutable, _) -> EC.none
+      | Cload (_, Asttypes.Mutable, _) -> EC.coeffect_only Coeffect.Read_mutable
       | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi | Cand | Cor | Cxor
       | Clsl | Clsr | Casr | Ccmpi _ | Caddv | Cadda | Ccmpa _ | Cnegf | Cabsf
       | Caddf | Csubf | Cmulf | Cdivf | Cfloatofint | Cintoffloat | Ccmpf _ ->
@@ -418,9 +418,14 @@ method select_operation op args _dbg =
       | Some label_after -> label_after
     in
     Iextcall { func; alloc; label_after; }, args
-  | (Cload (chunk, _mut), [arg]) ->
+  | (Cload (chunk, _mut, from), [arg]) ->
       let (addr, eloc) = self#select_addressing chunk arg in
-      (Iload(chunk, addr), [eloc])
+      let efrom =
+        match from with
+        | None -> []
+        | Some id -> [snd (self#select_addressing chunk (Cvar id))]
+      in
+      (Iload(chunk, addr), eloc :: efrom)
   | (Cstore (chunk, init), [arg1; arg2]) ->
       let (addr, eloc) = self#select_addressing chunk arg1 in
       let is_assign =

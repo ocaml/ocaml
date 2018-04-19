@@ -134,7 +134,7 @@ and operation =
   | Cextcall of string * machtype * bool * label option
     (** If specified, the given label will be placed immediately after the
         call (at the same place as any frame descriptor would reference). *)
-  | Cload of memory_chunk * Asttypes.mutable_flag
+  | Cload of memory_chunk * Asttypes.mutable_flag * Ident.t option
   | Calloc
   | Cstore of memory_chunk * Lambda.initialization_or_assignment
   | Caddi | Csubi | Cmuli | Cmulhi | Cdivi | Cmodi
