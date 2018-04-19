@@ -27,6 +27,8 @@ val exit_status : Variables.t
 
 val files : Variables.t
 
+val make : Variables.t
+
 val ocamltest_response : Variables.t
 
 val ocamltest_log : Variables.t

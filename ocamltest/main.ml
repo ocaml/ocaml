@@ -147,8 +147,10 @@ let test_file test_filename =
 
        let reference_filename = Filename.concat
            test_source_directory (test_prefix ^ ".reference") in
+       let make = try Sys.getenv "MAKE" with Not_found -> "make" in
        let initial_environment = Environments.from_bindings
            [
+             Builtin_variables.make, make;
              Builtin_variables.test_file, test_basename;
              Builtin_variables.reference, reference_filename;
              Builtin_variables.test_source_directory, test_source_directory;
