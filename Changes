@@ -9,6 +9,9 @@ Working version
 
 ### Standard library:
 
+- GPR#1731: Format, use raise_notrace to preserve backtraces
+  (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
+
 ### Other libraries:
 
 ### Compiler user-interface and warnings:
