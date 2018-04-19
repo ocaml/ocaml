@@ -96,3 +96,5 @@ val mkexe : string
 val bytecc_libs : string
 
 val nativecc_libs : string
+
+val windows_unicode : bool

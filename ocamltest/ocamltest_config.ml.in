@@ -70,3 +70,5 @@ let mkexe = "@@MKEXE@@"
 let bytecc_libs = "@@BYTECCLIBS@@"
 
 let nativecc_libs = "@@NATIVECCLIBS@@"
+
+let windows_unicode = @@WINDOWS_UNICODE@@ != 0

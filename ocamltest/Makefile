@@ -227,6 +227,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@CC@@|$(CC)|' \
 	  -e 's|@@CFLAGS@@|$(CFLAGS)|' \
 	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
+	  -e 's|@@WINDOWS_UNICODE@@|$(WINDOWS_UNICODE)|' \
 	  $< > $@
 
 .PHONY: clean

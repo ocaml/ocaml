@@ -1122,6 +1122,12 @@ let csharp_compiler = Actions.make
     "C# compiler available"
     "C# compiler not available")
 
+let windows_unicode = Actions.make
+  "windows-unicode"
+  (Actions_helpers.pass_or_skip (Ocamltest_config.windows_unicode )
+    "Windows Unicode support available"
+    "Windows Unicode support not available")
+
 let afl_instrument = Actions.make
   "afl-instrument"
   (Actions_helpers.pass_or_skip Ocamltest_config.afl_instrument
@@ -1324,6 +1330,7 @@ let _ =
     native_compiler;
     native_dynlink;
     csharp_compiler;
+    windows_unicode;
     afl_instrument;
     no_afl_instrument;
     setup_ocamldoc_build_env;
