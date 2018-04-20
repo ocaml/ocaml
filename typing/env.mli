@@ -127,8 +127,9 @@ val lookup_cltype:
   ?loc:Location.t -> ?mark:bool ->
   Longident.t -> t -> Path.t * class_type_declaration
 
-val copy_types: string list -> t -> t
-  (* Used only in Typecore.duplicate_ident_types. *)
+val get_copy_of_types: string list -> t -> (string * value_description) list
+
+val do_copy_types: (string * value_description) list -> t -> t
 
 exception Recmodule
   (* Raise by lookup_module when the identifier refers

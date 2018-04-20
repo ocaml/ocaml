@@ -2675,7 +2675,10 @@ let check_absent_variant env =
 let duplicate_ident_types caselist env =
   let caselist =
     List.filter (fun {pc_lhs} -> may_contain_gadts pc_lhs) caselist in
-  Env.copy_types (all_idents_cases caselist) env
+  let duplicated =
+    Env.get_copy_of_types (all_idents_cases caselist) env
+  in
+  Env.do_copy_types duplicated env
 
 (* Getting proper location of already typed expressions.
 
