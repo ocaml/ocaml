@@ -4705,6 +4705,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         check_scope_escape pat.pat_loc env outer_level ty_arg;
         (pat, ty_arg, (ext_env, unpacks)))
       caselist in
+  let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
   let unify_pats ty =
@@ -4714,7 +4715,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   in
   unify_pats ty_arg';
   (* Check for polymorphic variants to close *)
-  let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
