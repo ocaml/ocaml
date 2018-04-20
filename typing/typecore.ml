@@ -270,7 +270,7 @@ let all_idents_cases el =
     | _ -> ()
   in
   List.iter
-    (fun cp ->
+    (fun (_, cp) ->
       may (iter_expression f) cp.pc_guard;
       iter_expression f cp.pc_rhs
     )
@@ -2674,11 +2674,8 @@ let check_absent_variant env =
 
 let duplicate_ident_types caselist env =
   let caselist =
-    List.filter (fun {pc_lhs} -> may_contain_gadts pc_lhs) caselist in
-  let duplicated =
-    Env.get_copy_of_types (all_idents_cases caselist) env
-  in
-  Env.do_copy_types duplicated env
+    List.filter (fun (pc, _) -> contains_gadt pc) caselist in
+  Env.get_copy_of_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
 
@@ -4633,10 +4630,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_arg =
     if (may_contain_gadts || erase_either) && not !Clflags.principal
     then correct_levels ty_arg else ty_arg
-  and ty_res, env =
-    if may_contain_gadts && not !Clflags.principal then
-      correct_levels ty_res, duplicate_ident_types caselist env
-    else ty_res, env
   in
   let rec is_var spat =
     match spat.ppat_desc with
@@ -4707,6 +4700,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         (pat, ty_arg, (ext_env, pvs, unpacks)))
       caselist in
   let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
+  let ty_res, duplicated_ident_types =
+    if may_contain_gadts && not !Clflags.principal then
+      correct_levels ty_res, duplicate_ident_types (List.combine patl caselist) env
+    else ty_res, []
+  in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
   let unify_pats ty =
@@ -4736,6 +4734,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let cases =
     List.map2
       (fun (pat, _, (ext_env, pvs, unpacks)) {pc_lhs = _; pc_guard; pc_rhs} ->
+        let contains_gadt = contains_gadt pat in
+        let ext_env =
+          if contains_gadt then
+            Env.do_copy_types duplicated_ident_types ext_env
+          else
+            ext_env
+        in
         let ext_env =
           add_pattern_variables ext_env pvs
             ~check:(fun s -> Warnings.Unused_var_strict s)
@@ -4749,7 +4754,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             end_def ();
             generalize_structure ty; ty
           end
-          else if contains_gadt pat then correct_levels ty_res
+          else if contains_gadt then
+            (* Even though we've already done that, apparently we need to do it
+               again.
+               stdlib/camlinternalFormat.ml:2288 is an example of use of this
+               call to [correct_levels]... *)
+            correct_levels ty_res
           else ty_res in
 (*        Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
