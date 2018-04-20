@@ -536,8 +536,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   if (minor_allocated_bytes != 0) {
     uintnat prev_alloc_words = domain_state->allocated_words;
     caml_gc_log ("Minor collection of domain %d starting", domain->state->id);
-    caml_ev_start_gc();
-    caml_ev_msg("Start minor");
+    caml_ev_begin("minor_gc");
+    caml_ev_begin("minor_gc/roots");
     caml_do_local_roots(&oldify_one, &st, domain);
 
     for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
@@ -547,9 +547,13 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) { value x = **r;
       oldify_one (&st, x, &x);
     }
+    caml_ev_end("minor_gc/roots");
 
+    caml_ev_begin("minor_gc/promote");
     oldify_mopup (&st);
+    caml_ev_end("minor_gc/promote");
 
+    caml_ev_begin("minor_gc/update_remembered_set");
     for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
       value v = **r;
       if (Is_block (v) &&
@@ -571,6 +575,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         caml_darken(0, vnew,0);
       }
     }
+    caml_ev_end("minor_gc/update_remembered_set");
 
     clear_table (&remembered_set->major_ref);
     clear_table (&remembered_set->minor_ref);
@@ -579,8 +584,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     domain_state->stat_minor_collections++;
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
-    caml_ev_msg("End minor");
-    caml_ev_end_gc();
+    caml_ev_end("minor_gc");
     caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
                  domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
@@ -600,7 +604,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     caml_restore_stack_gc();
   }
 
-  caml_ev_msg("Minor heap empty");
   domain_state->promoted_in_current_cycle = 0;
 
 #ifdef DEBUG

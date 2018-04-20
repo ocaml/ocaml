@@ -32,6 +32,7 @@
 #include "caml/alloc.h"
 #include "caml/fiber.h"
 #include "caml/platform.h"
+#include "caml/eventlog.h"
 
 /* The write barrier does not read or write the heap, it just
    modifies domain-local data structures. */
@@ -309,7 +310,9 @@ CAMLexport value caml_read_barrier(value obj, int field)
   v = Op_val(obj)[field];
   if (Is_foreign(v)) {
     struct read_fault_req req = {obj, field, &v};
+    caml_ev_begin("fault/read");
     send_read_fault(&req);
+    caml_ev_end("fault/read");
     Assert (!Is_foreign(v));
   }
   CAMLreturn (v);
