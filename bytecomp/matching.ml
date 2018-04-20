@@ -1659,7 +1659,7 @@ let make_record_matching no_opt loc all_labels def = function
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias,mut
-            | Mutable -> StrictOpt,no_opt && true in
+            | Mutable -> StrictOpt,no_opt in
           (access, str) :: make_args(pos + 1)
         end in
       let nfields = Array.length all_labels in
@@ -2909,7 +2909,7 @@ let may_call p = find_in_pat may_call_pat p
    it will activate de-optimization of mutable accesses.
 *)
 
-let check_partial is_mutable may_call pat_act_list partial =
+let do_check_partial is_mutable may_call pat_act_list partial =
   match pat_act_list with
   | [] -> Partial,false (* Always partial *)
   | _::_ ->
@@ -2921,16 +2921,13 @@ let check_partial is_mutable may_call pat_act_list partial =
           pat_act_list in
       let partial = match partial with
       | Partial -> Partial
-      | Total ->
-          if
-            mut || (match pat_act_list with [] -> true | _::_ -> false)
-          then Partial
-          else Total in
+      | Total ->  if mut then Partial else Total in
       partial,mut
 
 let check_partial_list =
-  check_partial (List.exists is_mutable) (List.exists may_call)
-let check_partial = check_partial is_mutable may_call
+  do_check_partial (List.exists is_mutable) (List.exists may_call)
+
+let check_partial = do_check_partial is_mutable may_call
 
 (* have toplevel handler when appropriate *)
 

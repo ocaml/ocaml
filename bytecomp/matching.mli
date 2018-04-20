@@ -23,10 +23,21 @@ open Lambda
 val for_function:
         Location.t -> int ref option -> lambda -> (pattern * lambda) list ->
         partial -> lambda
+
+(* By contrast with other entry points, for_trywith does not take
+   a Location.t value as first parameter. Namely, this location is
+   used only when PM compilation changes exhautivity from Total to Partial
+   The location is used at compile time for warning and at runtime,
+   as an argument to the Match_failure exception.
+
+   All this does not apply to try .. with .., as unmatched exceptions are
+   always re-raised silently. *)
+
 val for_trywith:
         lambda -> (pattern * lambda) list -> lambda
 val for_let:
         Location.t -> lambda -> pattern -> lambda -> lambda
+
 val for_multiple_match:
         Location.t -> lambda list -> (pattern * lambda) list -> partial ->
         lambda
