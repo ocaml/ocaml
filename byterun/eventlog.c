@@ -38,6 +38,7 @@ static caml_plat_mutex lock = CAML_PLAT_MUTEX_INITIALIZER;
 static struct evbuf_list_node evbuf_head =
   { &evbuf_head, &evbuf_head };
 static FILE* output;
+static int64_t startup_timestamp;
 
 #define EVENT_BUF_SIZE 4096
 struct event_buffer {
@@ -90,21 +91,24 @@ static void teardown_eventlog(void);
 void caml_setup_eventlog()
 {
   char filename[64];
-  char* fullname = 0;
   if (!caml_params->eventlog_enabled) return;
   sprintf(filename, "eventlog."Pi64".json", (int64_t)getpid());
-  fullname = realpath(filename, 0);
   caml_plat_lock(&lock);
   if (pthread_key_create(&evbuf_pkey, &thread_teardown_evbuf) == 0 &&
       (output = fopen(filename, "w"))) {
+    char* fullname = realpath(filename, 0);
     fprintf(stderr, "Tracing events to %s\n", fullname);
-    fprintf(output, "[\n");
+    free(fullname);
+    fprintf(output,
+            "{\n"
+            "\"displayTimeUnit\": \"ns\",\n"
+            "\"traceEvents\": [\n");
+    startup_timestamp = caml_time_counter();
   } else {
     fprintf(stderr, "Could not begin logging events to %s\n", filename);
     _exit(128);
   }
   caml_plat_unlock(&lock);
-  free(fullname);
   atexit(&teardown_eventlog);
 }
 
@@ -118,8 +122,8 @@ void caml_setup_eventlog()
     extra_fmt \
     "},\n", \
     (ph), \
-    (ev).timestamp / 1000, \
-    (int)((ev).timestamp % 1000), \
+    ((ev).timestamp - startup_timestamp) / 1000, \
+    (int)(((ev).timestamp - startup_timestamp) % 1000), \
     Caml_state->unique_id, \
     Caml_state->unique_id, \
     (ev).name, \
@@ -179,8 +183,8 @@ static void teardown_eventlog()
           "\"pid\": %d, "
           "\"tid\": %d, "
           "\"s\": \"g\"}\n"
-          "]\n",
-          caml_time_counter() / 1000,
+          "]\n}\n",
+          (caml_time_counter() - startup_timestamp) / 1000,
           Caml_state->id,
           Caml_state->id);
   fclose(output);
