@@ -708,7 +708,7 @@ let check_abbrev env sdecl (id, decl) =
 
 (* Check that recursion is well-founded *)
 
-let check_well_founded env loc path to_check ty =
+let check_well_founded ?(recmod=false) env loc path to_check ty =
   let visited = ref TypeMap.empty in
   let rec check ty0 parents ty =
     let ty = Btype.repr ty in
@@ -756,7 +756,22 @@ let check_well_founded env loc path to_check ty =
           let ty0 = if TypeSet.is_empty parents then ty else ty0 in
           check ty0 (TypeSet.add ty parents) ty'
         with
-          Ctype.Cannot_expand -> may raise arg_exn
+          Ctype.Cannot_expand ->
+            may raise arg_exn;
+            (* MPR#7726: Recursive modules allow invalid recursive types *)
+            if recmod && to_check p &&
+              let rec is_virtual_functor_app ~app = function
+                | Path.Pident _ as p  -> app && Env.is_functor_arg p env
+                | Path.Pdot (p, _, _) -> is_virtual_functor_app ~app p
+                | Path.Papply (p1, _) -> is_virtual_functor_app ~app:true p1
+              in
+              is_virtual_functor_app ~app:false p &&
+              try
+                let decl = Env.find_type p env in
+                decl.type_manifest = None && decl.type_kind = Type_abstract
+              with Not_found -> true
+            then
+              raise (Error (loc, Recursive_abbrev (Path.name path)))
         end
     | _ -> may raise arg_exn
   in
@@ -771,11 +786,11 @@ let check_well_founded_manifest env loc path decl =
   let args = List.map (fun _ -> Ctype.newvar()) decl.type_params in
   check_well_founded env loc path (Path.same path) (Ctype.newconstr path args)
 
-let check_well_founded_decl env loc path decl to_check =
+let check_well_founded_decl ?recmod env loc path decl to_check =
   let open Btype in
   let it =
-    {type_iterators with
-     it_type_expr = (fun _ -> check_well_founded env loc path to_check)} in
+    {type_iterators with it_type_expr =
+     (fun _ -> check_well_founded ?recmod env loc path to_check)} in
   it.it_type_declaration it (Ctype.instance_declaration decl)
 
 (* Check for ill-defined abbrevs *)
@@ -1923,9 +1938,13 @@ let approx_type_decl sdecl_list =
 let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
+  (* Format.eprintf "@[check_recmod_typedecls [%s]@ %a@]@."
+    (String.concat " " (List.map Ident.name recmod_ids))
+    (Printtyp.type_declaration (Ident.create_persistent (Path.name path)))
+    decl; *)
   let to_check path =
     List.exists (fun id -> Path.isfree id path) recmod_ids in
-  check_well_founded_decl env loc path decl to_check;
+  check_well_founded_decl ~recmod:true env loc path decl to_check;
   check_recursion env loc path decl to_check
 
 
