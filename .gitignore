@@ -262,8 +262,6 @@ _ocamltestd
 
 /testsuite/tests/lib-threads/*.byt
 
-/testsuite/tests/runtime-errors/*.bytecode
-
 /testsuite/tests/self-contained-toplevel/cached_cmi.ml
 
 /testsuite/tests/tool-ocamldoc/*.html
