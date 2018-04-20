@@ -239,7 +239,7 @@ exception Empty_queue
 
 let peek_queue = function
   | { body = Cons { head = x; tail = _; }; _ } -> x
-  | { body = Nil; insert = _; } -> raise Empty_queue
+  | { body = Nil; insert = _; } -> raise_notrace Empty_queue
 
 
 let take_queue = function
@@ -247,7 +247,7 @@ let take_queue = function
     q.body <- tl;
     if tl = Nil then q.insert <- Nil; (* Maintain the invariant. *)
     x
-  | { body = Nil; insert = _; } -> raise Empty_queue
+  | { body = Nil; insert = _; } -> raise_notrace Empty_queue
 
 
 (* Enter a token in the pretty-printer queue. *)
@@ -393,7 +393,7 @@ let format_pp_token state size = function
     | Pp_tbox tabs :: _ ->
       let rec find n = function
         | x :: l -> if x >= n then x else find n l
-        | [] -> raise Not_found in
+        | [] -> raise_notrace Not_found in
       let tab =
         match !tabs with
         | x :: _ ->
