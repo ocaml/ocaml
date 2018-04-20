@@ -57,6 +57,7 @@ let csc = "@@CSC@@"
 let csc_flags = "@@CSCFLAGS@@"
 
 let mkdll = "@@MKDLL@@"
+let mkexe = "@@MKEXE@@"
 
 let bytecc_libs = "@@BYTECCLIBS@@"
 

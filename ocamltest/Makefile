@@ -26,10 +26,12 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   else
     FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
   endif
+  mkexe := $(MKEXE_ANSI) -link $(LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
   FLEXLINK_ENV=
+  mkexe := $(MKEXE)
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
@@ -218,6 +220,7 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@CSC@@|$(CSC)|' \
 	  -e 's|@@CSCFLAGS@@|$(CSCFLAGS)|' \
 	  -e 's|@@MKDLL@@|$(MKDLL)|' \
+	  -e 's|@@MKEXE@@|$(mkexe)|' \
 	  -e 's|@@BYTECCLIBS@@|$(BYTECCLIBS)|' \
 	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
 	  $< > $@

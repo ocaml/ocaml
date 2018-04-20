@@ -99,6 +99,9 @@ let libraries = make ("libraries",
 let mkdll = make ("mkdll",
   "Command to use to build a DLL")
 
+let mkexe = make ("mkexe",
+  "Command used to build an executable program DLL")
+
 let module_ = make ("module",
   "Compile one module at once")
 

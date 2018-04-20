@@ -59,6 +59,9 @@ val libraries : Variables.t
 val mkdll : Variables.t
 (** Command used to make a DLL *)
 
+val mkexe : Variables.t
+(** Command used to build an executable program *)
+
 val module_ : Variables.t
 
 val modules : Variables.t
