@@ -87,24 +87,6 @@ let csc = make ("csc", "Path to the CSharp compiler")
 
 let csc_flags = make ("csc_flags", "Flags for the CSharp compiler")
 
-let objext = make ("objext",
-  "Extension of object files")
-
-let ocamlc_byte = make ("ocamlc_byte",
-  "Path of the ocamlc.byte executable")
-
-let ocamlopt_byte = make ("ocamlopt_byte",
-  "Path of the ocamlopt.byte executable")
-
-let ocamlrun = make ("ocamlrun",
-  "Path of the ocamlrun executable")
-
-let ocamlc_flags = make ("ocamlc_flags",
-  "Flags passed to ocamlc.byte and ocamlc.opt")
-
-let ocamlc_default_flags = make ("ocamlc_default_flags",
-  "Flags passed by default to ocamlc.byte and ocamlc.opt")
-
 let directories = make ("directories",
   "Directories to include by all the compilers")
 
@@ -125,6 +107,26 @@ let modules = make ("modules",
 
 let nativecc_libs = make ("nativecc_libs",
   "Libraries to link with for native code")
+
+let objext = make ("objext",
+  "Extension of object files")
+
+let ocamlc_byte = make ("ocamlc_byte",
+  "Path of the ocamlc.byte executable")
+
+let ocamlopt_byte = make ("ocamlopt_byte",
+  "Path of the ocamlopt.byte executable")
+
+let ocamlrun = make ("ocamlrun",
+  "Path of the ocamlrun executable")
+
+let ocamlc_flags = make ("ocamlc_flags",
+  "Flags passed to ocamlc.byte and ocamlc.opt")
+
+let ocamlc_default_flags = make ("ocamlc_default_flags",
+  "Flags passed by default to ocamlc.byte and ocamlc.opt")
+
+
 
 let ocamllex_flags = make ("ocamllex_flags",
   "Flags passed to ocamllex")
@@ -215,6 +217,7 @@ let _ = List.iter register_variable
   [
     all_modules;
     binary_modules;
+    bytecc_libs;
     c_preprocessor;
     caml_ld_library_path;
     compare_programs;
@@ -231,8 +234,10 @@ let _ = List.iter register_variable
     directories;
     flags;
     libraries;
+    mkdll;
     module_;
     modules;
+    nativecc_libs;
     objext;
     ocamlc_byte;
     ocamlopt_byte;
@@ -248,7 +253,6 @@ let _ = List.iter register_variable
     ocamlc_opt_exit_status;
     ocamlopt_opt_exit_status;
     ocamlrunparam;
-    os_type;
     ocamllex_flags;
     ocamlyacc_flags;
     ocamldoc_flags;
@@ -259,6 +263,7 @@ let _ = List.iter register_variable
     ocamldebug_flags;
     ocamldebug_script;
     ocaml_script_as_argument;
+    os_type;
     plugins;
     shared_library_cflags;
     sharedobjext;
