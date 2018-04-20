@@ -1476,11 +1476,7 @@ let type_pattern ~lev env spat scope expected_ty =
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
   let pvs = get_ref pattern_variables in
   let unpacks = get_ref module_variables in
-  let new_env =
-    add_pattern_variables !new_env pvs
-      ~check:(fun s -> Warnings.Unused_var_strict s)
-      ~check_as:(fun s -> Warnings.Unused_var s) in
-  (pat, new_env, get_ref pattern_force, unpacks)
+  (pat, !new_env, get_ref pattern_force, pvs, unpacks)
 
 let type_pattern_list env spatl scope expected_tys allow =
   reset_pattern scope allow;
@@ -4692,7 +4688,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         end_def ();
         generalize_structure ty_arg;
         let expected_ty_arg = instance ty_arg in
-        let (pat, ext_env, force, unpacks) =
+        let (pat, ext_env, force, pvs, unpacks) =
           type_pattern ~lev env pc_lhs scope expected_ty_arg
         in
         pattern_force := force @ !pattern_force;
@@ -4705,7 +4701,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         in
         (* Ensure that no ambivalent pattern type escapes its branch *)
         check_scope_escape pat.pat_loc env outer_level ty_arg;
-        (pat, ty_arg, (ext_env, unpacks)))
+        (pat, ty_arg, (ext_env, pvs, unpacks)))
       caselist in
   let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
   (* Unify all cases (delayed to keep it order-free) *)
@@ -4736,7 +4732,12 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
-      (fun (pat, _, (ext_env, unpacks)) {pc_lhs = _; pc_guard; pc_rhs} ->
+      (fun (pat, _, (ext_env, pvs, unpacks)) {pc_lhs = _; pc_guard; pc_rhs} ->
+        let ext_env =
+          add_pattern_variables ext_env pvs
+            ~check:(fun s -> Warnings.Unused_var_strict s)
+            ~check_as:(fun s -> Warnings.Unused_var s)
+        in
         let sexp = wrap_unpacks pc_rhs unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -4792,7 +4793,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let lev =
       if do_init then init_env () else get_current_level ()
     in
-    List.iter (fun (pat, _, (env, _)) -> check_absent_variant env pat)
+    List.iter (fun (pat, _, (env, _, _)) -> check_absent_variant env pat)
       pat_env_list;
     check_unused ~lev env (instance ty_arg_check) cases ;
     if do_init then end_def ();
