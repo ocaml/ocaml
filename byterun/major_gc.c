@@ -362,6 +362,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
   CAMLassert(domain == caml_domain_self());
 
   caml_gc_log("In STW callback");
+  caml_ev_begin("major_gc/stw");
 
   /* finish GC */
   caml_finish_sweeping();
@@ -387,7 +388,7 @@ static void major_cycle_callback(struct domain* domain, void* unused)
       caml_cycle_heap_stw();
       /* FIXME: Maybe logging outside the barrier would be better */
       caml_gc_log("GC cycle %lu completed (heap cycled)", (long unsigned int)major_cycles_completed);
-      caml_ev_msg("GC cycle completed");
+      caml_ev_global_sync();
       major_cycles_completed++;
 
       num_domains_in_stw = (uintnat)caml_global_barrier_num_domains();
@@ -418,18 +419,18 @@ static void major_cycle_callback(struct domain* domain, void* unused)
   /* Mark roots for new cycle */
   domain->state->marking_done = 0;
 
-  caml_ev_start_gc();
-  caml_ev_msg("Start marking roots");
+  caml_ev_begin("major_gc/roots");
   caml_do_local_roots(&caml_darken, 0, caml_domain_self());
   caml_scan_stack(&caml_darken, 0, Caml_state->current_stack);
   caml_scan_global_roots(&caml_darken, 0);
-  caml_ev_msg("End marking roots");
-  caml_ev_end_gc();
+  caml_ev_end("major_gc/roots");
 
   if (domain->state->mark_stack_count == 0) {
     atomic_fetch_add(&num_domains_to_mark, -1);
     domain->state->marking_done = 1;
   }
+
+  caml_ev_end("major_gc/stw");
 }
 
 void caml_finish_major_cycle() {
@@ -456,10 +457,10 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
   int was_marking = 0;
 
   caml_save_stack_gc();
-  caml_ev_start_gc();
+  caml_ev_begin("major_gc/slice");
 
   if (!domain_state->sweeping_done) {
-    caml_ev_msg("Start sweeping");
+    caml_ev_begin("major_gc/sweep");
 
     sweep_work = budget;
     do {
@@ -474,7 +475,7 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
       atomic_fetch_add(&num_domains_to_sweep, -1);
     }
 
-    caml_ev_msg("End sweeping");
+    caml_ev_end("major_gc/end");
 
     caml_handle_incoming_interrupts();
   }
@@ -483,7 +484,7 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
   while (budget > 0) {
     if (!domain_state->marking_done) {
       if (!was_marking) {
-        caml_ev_msg("Start marking");
+        caml_ev_begin("major_gc/mark");
         was_marking = 1;
       }
       available = budget > Chunk_size ? Chunk_size : budget;
@@ -492,24 +493,21 @@ intnat caml_major_collection_slice(intnat howmuch, intnat* budget_left /* out */
       caml_handle_incoming_interrupts();
     } else if (0) {
       if (was_marking) {
-        caml_ev_msg("End marking");
+        caml_ev_end("major_gc/mark");
         was_marking = 0;
       }
-      caml_ev_end_gc();
-      caml_ev_msg("Start stealing");
+      caml_ev_begin("major_gc/steal");
       steal_result = steal_mark_work();
-      caml_ev_msg("Finish stealing from domain %d size=%lu",
-                  steal_result, domain_state->mark_stack_count);
-      caml_ev_start_gc();
+      caml_ev_end("major_gc/steal");
       if (steal_result == -1) break;
     } else {
       break;
     }
   }
   if (was_marking)
-    caml_ev_msg("End marking");
+    caml_ev_end("major_gc/mark");
   mark_work -= budget;
-  caml_ev_end_gc();
+  caml_ev_end("major_gc/slice");
 
   if (budget_left)
     *budget_left = budget;
@@ -543,24 +541,23 @@ void caml_empty_mark_stack () {
 
 void caml_finish_marking () {
   if (!Caml_state->marking_done) {
-    caml_ev_start_gc();
+    caml_ev_begin("major_gc/finish_marking");
     caml_save_stack_gc();
     caml_empty_mark_stack();
     Caml_state->stat_major_words += Caml_state->allocated_words;
     Caml_state->allocated_words = 0;
     caml_restore_stack_gc();
-    caml_ev_msg("Mark stack empty");
-    caml_ev_end_gc();
+    caml_ev_end("major_gc/finish_marking");
   }
 }
 
 void caml_finish_sweeping () {
   if (!Caml_state->sweeping_done) {
-    caml_ev_start_gc();
+    caml_ev_begin("major_gc/finish_sweeping");
     while (caml_sweep(Caml_state->shared_heap, 10) <= 0);
     Caml_state->sweeping_done = 1;
     atomic_fetch_add(&num_domains_to_sweep, -1);
-    caml_ev_end_gc();
+    caml_ev_end("major_gc/finish_sweeping");
   }
 }
 
