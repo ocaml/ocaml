@@ -56,6 +56,9 @@ extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
+extern uintnat caml_custom_major_ratio;   /* see custom.c */
+extern uintnat caml_custom_minor_ratio;   /* see custom.c */
+extern uintnat caml_custom_minor_max_bsz; /* see custom.c */
 
 #define Next(hp) ((hp) + Whsize_hp (hp))
 
@@ -356,7 +359,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (8);
+  res = caml_alloc_tuple (11);
   Store_field (res, 0, Val_long (caml_minor_heap_wsz));                 /* s */
   Store_field (res, 1, Val_long (caml_major_heap_increment));           /* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
@@ -369,6 +372,9 @@ CAMLprim value caml_gc_get(value v)
 #endif
   Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
   Store_field (res, 7, Val_long (caml_major_window));                   /* w */
+  Store_field (res, 8, Val_long (caml_custom_major_ratio));             /* M */
+  Store_field (res, 9, Val_long (caml_custom_minor_ratio));             /* m */
+  Store_field (res, 10, Val_long (caml_custom_minor_max_bsz));          /* n */
   CAMLreturn (res);
 }
 
@@ -398,12 +404,23 @@ static uintnat norm_window (intnat w)
   return w;
 }
 
+static uintnat norm_custom_maj (uintnat p)
+{
+  return Max (p, 1);
+}
+
+static uintnat norm_custom_min (uintnat p)
+{
+  return Max (p, 1);
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminwsz;
   uintnat oldpolicy;
+  uintnat new_custom_maj, new_custom_min, new_custom_sz;
   CAML_INSTR_SETUP (tmr, "");
 
   caml_verb_gc = Long_val (Field (v, 3));
@@ -453,6 +470,31 @@ CAMLprim value caml_gc_set(value v)
     if (old_window != caml_major_window){
       caml_gc_message (0x20, "New smoothing window size: %d\n",
                        caml_major_window);
+    }
+  }
+
+  /* These fields were added in 4.08.0. */
+  if (Wosize_val (v) >= 11){
+    new_custom_maj = norm_custom_maj (Field (v, 8));
+    if (new_custom_maj != caml_custom_major_ratio){
+      caml_custom_major_ratio = new_custom_maj;
+      caml_gc_message (0x20, "New custom major ratio: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_major_ratio);
+    }
+    new_custom_min = norm_custom_min (Field (v, 9));
+    if (new_custom_min != caml_custom_minor_ratio){
+      caml_custom_minor_ratio = new_custom_min;
+      caml_gc_message (0x20, "New custom minor ratio: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_minor_ratio);
+    }
+    new_custom_sz = Field (v, 10);
+    if (new_custom_sz != caml_custom_minor_max_bsz){
+      caml_custom_minor_max_bsz = new_custom_sz;
+      caml_gc_message (0x20, "New custom minor size limit: %"
+                       ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                       caml_custom_minor_max_bsz);
     }
   }
 
@@ -584,7 +626,9 @@ uintnat caml_normalize_heap_increment (uintnat i)
    [major_incr] is either a percentage or a number of words */
 void caml_init_gc (uintnat minor_size, uintnat major_size,
                    uintnat major_incr, uintnat percent_fr,
-                   uintnat percent_m, uintnat window)
+                   uintnat percent_m, uintnat window,
+                   uintnat custom_maj, uintnat custom_min,
+                   uintnat custom_bsz)
 {
   uintnat major_heap_size =
     Bsize_wsize (caml_normalize_heap_increment (major_size));
@@ -602,6 +646,9 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_percent_max = norm_pmax (percent_m);
   caml_init_major_heap (major_heap_size);
   caml_major_window = norm_window (window);
+  caml_custom_major_ratio = norm_custom_maj (custom_maj);
+  caml_custom_minor_ratio = norm_custom_min (custom_min);
+  caml_custom_minor_max_bsz = custom_bsz;
   caml_gc_message (0x20, "Initial minor heap size: %"
                    ARCH_SIZET_PRINTF_FORMAT "uk words\n",
                    caml_minor_heap_wsz / 1024);

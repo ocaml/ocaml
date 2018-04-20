@@ -41,6 +41,9 @@ type control = {
   mutable stack_limit : int;
   mutable allocation_policy : int;
   window_size : int;
+  custom_major_ratio : int;
+  custom_minor_ratio : int;
+  custom_minor_max_size : int;
 }
 
 external stat : unit -> stat = "caml_gc_stat"

@@ -149,7 +149,30 @@ type control =
         out variations in its workload. This is an integer between
         1 and 50.
         Default: 1. @since 4.03.0 *)
-}
+
+    custom_major_ratio : int;
+    (** A percentage relative to the major heap size. This parameter
+        controls the major GC speed as a function of memory allocated
+        outside the heap and retained by custom values located in the
+        major heap. The GC will speed up as needed to (try to) limit
+        the amount of floating garbage to this much memory. The
+        default value keeps the out-of-heap floating garbage about the
+        same size as the in-heap overhead.
+        Default: 44. @since 4.08.0 *)
+
+    custom_minor_ratio : int;
+    (** A percentage relative to the minor heap size. This parameter
+        forces a minor collection when the memory allocated outside
+        the heap and retained by custom values located in the minor
+        heap grows larger than the specified amount.
+        Default: 100. @since 4.08.0 *)
+
+    custom_minor_max_size : int;
+    (** Custom values larger than this parameter will not count
+        against [custom_minor_ratio] but directly against
+        [custom_major_ratio] (because they are presumably long-lived).
+        Default: 8192. @since 4.08.0 *)
+  }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
     OCAMLRUNPARAM environment variable.  See the documentation of
