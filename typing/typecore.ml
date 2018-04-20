@@ -1459,25 +1459,25 @@ let check_unused ?(lev=get_current_level ()) env expected_ty cases =
       | r -> r)
     cases
 
-let add_pattern_variables ?check ?check_as env =
-  let pv = get_ref pattern_variables in
-  (List.fold_right
-     (fun (id, ty, _name, loc, as_var) env ->
+let add_pattern_variables ?check ?check_as env pv =
+  List.fold_right
+    (fun (id, ty, _name, loc, as_var) env ->
        let check = if as_var then check_as else check in
        Env.add_value ?check id
          {val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
           val_attributes = [];
          } env
-     )
-     pv env,
-   get_ref module_variables)
+    )
+    pv env
 
 let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
-  let new_env, unpacks =
-    add_pattern_variables !new_env
+  let pvs = get_ref pattern_variables in
+  let unpacks = get_ref module_variables in
+  let new_env =
+    add_pattern_variables !new_env pvs
       ~check:(fun s -> Warnings.Unused_var_strict s)
       ~check_as:(fun s -> Warnings.Unused_var s) in
   (pat, new_env, get_ref pattern_force, unpacks)
@@ -1492,7 +1492,9 @@ let type_pattern_list env spatl scope expected_tys allow =
       )
   in
   let patl = List.map2 type_pat spatl expected_tys in
-  let new_env, unpacks = add_pattern_variables !new_env in
+  let pvs = get_ref pattern_variables in
+  let unpacks = get_ref module_variables in
+  let new_env = add_pattern_variables !new_env pvs in
   (patl, new_env, get_ref pattern_force, unpacks)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
@@ -1521,7 +1523,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
             env))
       !pattern_variables ([], met_env)
   in
-  let val_env, _ = add_pattern_variables val_env in
+  let val_env = add_pattern_variables val_env (get_ref pattern_variables) in
   (pat, pv, val_env, met_env)
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
