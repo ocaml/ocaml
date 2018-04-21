@@ -273,10 +273,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 .mly.mli:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 # Installation targets
 ######################
