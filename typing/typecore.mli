@@ -55,13 +55,22 @@ val mk_expected:
 
 val is_nonexpansive: Typedtree.expression -> bool
 
+type existential_restriction =
+  | At_toplevel (** no existential types at the toplevel *)
+  | In_group (** nor with [let ... and ...] *)
+  | In_rec (** or recursive definition *)
+  | With_attributes (** or [let[@any_attribute] = ...] *)
+  | In_class_args (** or in class arguments [class c (...) = ...] *)
+  | In_class_def (** or in [class c = let ... in ...] *)
+  | In_self_pattern (** or in self pattern *)
+
 val type_binding:
         Env.t -> rec_flag ->
           Parsetree.value_binding list ->
           Annot.ident option ->
           Typedtree.value_binding list * Env.t
 val type_let:
-        Env.t -> rec_flag ->
+        existential_restriction -> Env.t -> rec_flag ->
           Parsetree.value_binding list ->
           Annot.ident option ->
           Typedtree.value_binding list * Env.t
@@ -103,11 +112,6 @@ val force_delayed_checks: unit -> unit
 val name_pattern : string -> Typedtree.case list -> Ident.t
 
 val self_coercion : (Path.t * Location.t list ref) list ref
-
-type existential_restriction =
-  | At_toplevel (** no existential types at the toplevel *)
-  | In_class_args (** nor in class arguments *)
-  | In_self_pattern (** or in self pattern *)
 
 type error =
     Polymorphic_label of Longident.t

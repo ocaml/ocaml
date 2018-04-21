@@ -17,6 +17,42 @@ Error: Existential types are not allowed in toplevel bindings,
 but this pattern introduces the existential type $Any_'a.
 |}]
 
+let () =
+  let Any x = Any () and () = () in
+  ()
+[%%expect {|
+Line _, characters 6-11:
+    let Any x = Any () and () = () in
+        ^^^^^
+Error: Existential types are not allowed in "let ... and ..." bindings,
+but this pattern introduces the existential type $Any_'a.
+|}]
+
+
+let () =
+  let rec Any x = Any () in
+  ()
+[%%expect {|
+Line _, characters 10-15:
+    let rec Any x = Any () in
+            ^^^^^
+Error: Existential types are not allowed in recursive bindings,
+but this pattern introduces the existential type $Any_'a.
+|}]
+
+
+let () =
+  let[@attribute] Any x = Any () in
+  ()
+[%%expect {|
+Line _, characters 18-23:
+    let[@attribute] Any x = Any () in
+                    ^^^^^
+Error: Existential types are not allowed in presence of attributes,
+but this pattern introduces the existential type $Any_'a.
+|}]
+
+
 class c (Any x) = object end
 [%%expect {|
 Line _, characters 8-15:
@@ -49,6 +85,51 @@ Error: Existential types are not allowed in toplevel bindings,
 but the constructor Any introduces unnamed existential types.
 |}]
 
+
+class c = let Any _x = () in object end
+[%%expect {|
+Line _, characters 14-20:
+  class c = let Any _x = () in object end
+                ^^^^^^
+Error: Existential types are not allowed in bindings inside class definition,
+but the constructor Any introduces unnamed existential types.
+|}]
+
+let () =
+  let Any x = Any () and () = () in
+  ()
+[%%expect {|
+Line _, characters 6-11:
+    let Any x = Any () and () = () in
+        ^^^^^
+Error: Existential types are not allowed in "let ... and ..." bindings,
+but the constructor Any introduces unnamed existential types.
+|}]
+
+
+let () =
+  let rec Any x = Any () in
+  ()
+[%%expect {|
+Line _, characters 10-15:
+    let rec Any x = Any () in
+            ^^^^^
+Error: Existential types are not allowed in recursive bindings,
+but the constructor Any introduces unnamed existential types.
+|}]
+
+
+let () =
+  let[@attribute] Any x = Any () in
+  ()
+[%%expect {|
+Line _, characters 18-23:
+    let[@attribute] Any x = Any () in
+                    ^^^^^
+Error: Existential types are not allowed in presence of attributes,
+but the constructor Any introduces unnamed existential types.
+|}]
+
 class c (Any x) = object end
 [%%expect {|
 Line _, characters 8-15:
@@ -64,5 +145,14 @@ Line _, characters 16-23:
   class c = object(Any x) end
                   ^^^^^^^
 Error: Existential types are not allowed in self patterns,
+but the constructor Any introduces unnamed existential types.
+|}]
+
+class c = let Any _x = () in object end
+[%%expect {|
+Line _, characters 14-20:
+  class c = let Any _x = () in object end
+                ^^^^^^
+Error: Existential types are not allowed in bindings inside class definition,
 but the constructor Any introduces unnamed existential types.
 |}]

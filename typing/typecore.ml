@@ -41,7 +41,11 @@ type type_expected = {
 
 type existential_restriction =
   | At_toplevel (** no existential types at the toplevel *)
-  | In_class_args (** nor in class arguments *)
+  | In_group (** nor with let ... and ... *)
+  | In_rec (** or recursive definition *)
+  | With_attributes (** or let[@any_attribute] = ... *)
+  | In_class_args (** or in class arguments *)
+  | In_class_def  (** or in [class c = let ... in ...] *)
   | In_self_pattern (** or in self pattern *)
 
 type error =
@@ -1505,13 +1509,13 @@ let type_pattern ~lev env spat scope expected_ty =
   let unpacks = get_ref module_variables in
   (pat, !new_env, get_ref pattern_force, pvs, unpacks)
 
-let type_pattern_list env spatl scope expected_tys allow =
+let type_pattern_list no_existentials env spatl scope expected_tys allow =
   reset_pattern scope allow;
   let new_env = ref env in
   let type_pat (attrs, pat) ty =
     Builtin_attributes.warning_scope ~ppwarning:false attrs
       (fun () ->
-         type_pat ~no_existentials:At_toplevel new_env pat ty
+         type_pat ~no_existentials new_env pat ty
       )
   in
   let patl = List.map2 type_pat spatl expected_tys in
@@ -2891,6 +2895,10 @@ and type_expect_
          pexp_desc = Pexp_match (sval, [Ast_helper.Exp.case spat sbody])}
         ty_expected_explained
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
+      let existential_context =
+        if rec_flag = Recursive then In_rec
+        else if List.compare_length_with spat_sexp_list 1 > 0 then In_group
+        else With_attributes in
       let scp =
         match sexp.pexp_attributes, rec_flag with
         | [{txt="#default"},_], _ -> None
@@ -2898,7 +2906,7 @@ and type_expect_
         | _, Nonrecursive -> Some (Annot.Idef sbody.pexp_loc)
       in
       let (pat_exp_list, new_env, unpacks) =
-        type_let env rec_flag spat_sexp_list scp true in
+        type_let existential_context env rec_flag spat_sexp_list scp true in
       let body =
         type_expect new_env (wrap_unpacks sbody unpacks)
           ty_expected_explained in
@@ -4868,8 +4876,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 
 (* Typing of let bindings *)
 
-and type_let ?(check = fun s -> Warnings.Unused_var s)
-             ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+and type_let
+    ?(check = fun s -> Warnings.Unused_var s)
+    ?(check_strict = fun s -> Warnings.Unused_var_strict s)
+    existential_context
     env rec_flag spat_sexp_list scope allow =
   let open Ast_helper in
   begin_def();
@@ -4903,7 +4913,7 @@ and type_let ?(check = fun s -> Warnings.Unused_var s)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) =
-    type_pattern_list env spatl scope nvs allow in
+    type_pattern_list existential_context env spatl scope nvs allow in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
   (* If recursive, first unify with an approximation of the expression *)
@@ -5090,13 +5100,14 @@ let type_binding env rec_flag spat_sexp_list scope =
     type_let
       ~check:(fun s -> Warnings.Unused_value_declaration s)
       ~check_strict:(fun s -> Warnings.Unused_value_declaration s)
+      At_toplevel
       env rec_flag spat_sexp_list scope false
   in
   (pat_exp_list, new_env)
 
-let type_let env rec_flag spat_sexp_list scope =
+let type_let existential_ctx env rec_flag spat_sexp_list scope =
   let (pat_exp_list, new_env, _unpacks) =
-    type_let env rec_flag spat_sexp_list scope false in
+    type_let existential_ctx env rec_flag spat_sexp_list scope false in
   (pat_exp_list, new_env)
 
 (* Typing of toplevel expressions *)
@@ -5373,12 +5384,25 @@ let report_error env ppf = function
   | Unexpected_existential (reason, name, types) -> (
       begin match reason with
       | In_class_args ->
-          fprintf ppf "Existential types are not allowed in class arguments,@,"
+          fprintf ppf "Existential types are not allowed in class arguments,@ "
+      | In_class_def ->
+          fprintf ppf "Existential types are not allowed in bindings inside \
+                       class definition,@ "
       | In_self_pattern ->
-          fprintf ppf "Existential types are not allowed in self patterns,@,"
+          fprintf ppf "Existential types are not allowed in self patterns,@ "
       | At_toplevel ->
           fprintf ppf
-            "Existential types are not allowed in toplevel bindings,@,"
+            "Existential types are not allowed in toplevel bindings,@ "
+      | In_group ->
+          fprintf ppf
+            "Existential types are not allowed in \"let ... and ...\" bindings,\
+             @ "
+      | In_rec ->
+          fprintf ppf
+            "Existential types are not allowed in recursive bindings,@ "
+      | With_attributes ->
+          fprintf ppf
+            "Existential types are not allowed in presence of attributes,@ "
       end;
       try
         let example = List.find (fun ty -> ty <> "$" ^ name) types in
