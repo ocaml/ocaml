@@ -39,6 +39,11 @@ type type_expected = {
   explanation: type_forcing_context option;
 }
 
+type existential_restriction =
+  | At_toplevel (** no existential types at the toplevel *)
+  | In_class_args (** nor in class arguments *)
+  | In_self_pattern (** or in self pattern *)
+
 type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
@@ -80,7 +85,7 @@ type error =
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
-  | Unexpected_existential
+  | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
@@ -1171,8 +1176,13 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
       Builtin_attributes.check_deprecated loc constr.cstr_attributes
         constr.cstr_name;
-      if no_existentials && constr.cstr_existentials <> [] then
-        raise (Error (loc, !env, Unexpected_existential));
+      begin match no_existentials, constr.cstr_existentials with
+      | None, _ | _, [] -> ()
+      | Some r, (_ :: _ as exs)  ->
+          let exs = List.map (Ctype.existential_name constr) exs in
+          let name = constr.cstr_name in
+          raise (Error (loc, !env, Unexpected_existential (r,name, exs)))
+      end;
       (* if constructor is gadt, we must verify that the expected type has the
          correct head *)
       if constr.cstr_generalized then
@@ -1206,7 +1216,8 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
           constr
       in
       (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || mode = Inside_or || no_existentials
+      if not constr.cstr_generalized || mode = Inside_or
+         || no_existentials <> None
       then unify_pat_types loc !env ty_res expected_ty
       else unify_pat_types_gadt loc env ty_res expected_ty;
 
@@ -1424,13 +1435,13 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
   | Ppat_extension ext ->
       raise (Error_forward (Builtin_attributes.error_of_extension ext))
 
-let type_pat ?(allow_existentials=false) ?constrs ?labels ?(mode=Normal)
+let type_pat ?no_existentials ?constrs ?labels ?(mode=Normal)
     ?(explode=0) ?(lev=get_current_level()) env sp expected_ty =
   gadt_equations_level := Some lev;
   try
     let r =
-      type_pat ~no_existentials:(not allow_existentials) ~constrs ~labels
-        ~mode ~explode ~env sp expected_ty (fun x -> x) in
+      type_pat ~no_existentials ~constrs ~labels ~mode ~explode ~env sp
+        expected_ty (fun x -> x) in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     gadt_equations_level := None;
     r
@@ -1448,8 +1459,7 @@ let partial_pred ~lev ?mode ?explode env expected_ty constrs labels p =
     reset_pattern None true;
     let typed_p =
       Ctype.with_passive_variants
-        (type_pat ~allow_existentials:true ~lev
-           ~constrs ~labels ?mode ?explode env p)
+        (type_pat ~lev ~constrs ~labels ?mode ?explode env p)
         expected_ty
     in
     set_state state env;
@@ -1490,7 +1500,7 @@ let add_pattern_variables ?check ?check_as env pv =
 let type_pattern ~lev env spat scope expected_ty =
   reset_pattern scope true;
   let new_env = ref env in
-  let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
+  let pat = type_pat ~lev new_env spat expected_ty in
   let pvs = get_ref pattern_variables in
   let unpacks = get_ref module_variables in
   (pat, !new_env, get_ref pattern_force, pvs, unpacks)
@@ -1501,7 +1511,7 @@ let type_pattern_list env spatl scope expected_tys allow =
   let type_pat (attrs, pat) ty =
     Builtin_attributes.warning_scope ~ppwarning:false attrs
       (fun () ->
-         type_pat new_env pat ty
+         type_pat ~no_existentials:At_toplevel new_env pat ty
       )
   in
   let patl = List.map2 type_pat spatl expected_tys in
@@ -1513,7 +1523,7 @@ let type_pattern_list env spatl scope expected_tys allow =
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern None false;
   let nv = newvar () in
-  let pat = type_pat (ref val_env) spat nv in
+  let pat = type_pat ~no_existentials:In_class_args (ref val_env) spat nv in
   if has_variants pat then begin
     Parmatch.pressure_variants val_env [pat];
     iter_pattern finalize_variant pat
@@ -1547,7 +1557,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
   in
   reset_pattern None false;
   let nv = newvar() in
-  let pat = type_pat (ref val_env) spat nv in
+  let pat = type_pat ~no_existentials:In_self_pattern (ref val_env) spat nv in
   List.iter (fun f -> f()) (get_ref pattern_force);
   let meths = ref Meths.empty in
   let vars = ref Vars.empty in
@@ -5360,9 +5370,24 @@ let report_error env ppf = function
            fprintf ppf "Recursive local constraint when unifying")
         (function ppf ->
            fprintf ppf "with")
-  | Unexpected_existential ->
-      fprintf ppf
-        "Unexpected existential"
+  | Unexpected_existential (reason, name, types) -> (
+      begin match reason with
+      | In_class_args ->
+          fprintf ppf "Existential types are not allowed in class arguments,@,"
+      | In_self_pattern ->
+          fprintf ppf "Existential types are not allowed in self patterns,@,"
+      | At_toplevel ->
+          fprintf ppf
+            "Existential types are not allowed in toplevel bindings,@,"
+      end;
+      try
+        let example = List.find (fun ty -> ty <> "$" ^ name) types in
+        fprintf ppf
+          "but this pattern introduces the existential type %s." example
+      with Not_found ->
+        fprintf ppf
+          "but the constructor %s introduces unnamed existential types." name
+    )
   | Invalid_interval ->
       fprintf ppf "@[Only character intervals are supported in patterns.@]"
   | Invalid_for_loop_index ->

@@ -16,6 +16,9 @@ Working version
 
 ### Compiler user-interface and warnings:
 
+  -GPR#1733: change the perspective of the unexpected existential error message
+  (Florian Angeletti)
+
 ### Code generation and optimizations:
 
 ### Runtime system:
