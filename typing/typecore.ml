@@ -2861,9 +2861,15 @@ and type_expect_
             | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
             | Val_unbound Val_unbound_ghost_recursive ->
-                raise(Typetexp.Error(
-                  loc, env, Typetexp.Unbound_value_missing_rec (lid.txt, desc.val_loc)
-                ))
+                (* Only display the "missing rec" hint for non-ghost code *)
+                if not loc.Location.loc_ghost
+                && not desc.val_loc.Location.loc_ghost
+                then
+                  raise Typetexp.(Error (
+                    loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)
+                  ))
+                else
+                  raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
                 Env.add_required_global (Path.head p);
