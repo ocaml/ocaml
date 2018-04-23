@@ -984,7 +984,8 @@ type half_typed_case =
     untyped_case: Parsetree.case;
     branch_env: Env.t;
     pat_vars: pattern_variable list;
-    unpacks: module_variable list; }
+    unpacks: module_variable list;
+    contains_gadt: bool; }
 
 let all_idents_cases half_typed_cases =
   let idents = Hashtbl.create 8 in
@@ -4721,12 +4722,16 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
           untyped_case = case;
           branch_env = ext_env;
           pat_vars = pvs;
-          unpacks; }
+          unpacks;
+          contains_gadt = contains_gadt pat; }
         )
       caselist in
   let patl = List.map (fun { typed_pat; _ } -> typed_pat) half_typed_cases in
+  let does_contain_gadt =
+    List.exists (fun { contains_gadt; _ } -> contains_gadt) half_typed_cases
+  in
   let ty_res, duplicated_ident_types =
-    if may_contain_gadts && not !Clflags.principal then
+    if does_contain_gadt && not !Clflags.principal then
       correct_levels ty_res, duplicate_ident_types half_typed_cases env
     else ty_res, []
   in
@@ -4759,8 +4764,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let cases =
     List.map
       (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
-             untyped_case = {pc_lhs = _; pc_guard; pc_rhs} }  ->
-        let contains_gadt = contains_gadt pat in
+             untyped_case = {pc_lhs = _; pc_guard; pc_rhs};
+             contains_gadt; _ }  ->
         let ext_env =
           if contains_gadt then
             Env.do_copy_types duplicated_ident_types ext_env
@@ -4807,14 +4812,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       )
       half_typed_cases
   in
-  if !Clflags.principal || may_contain_gadts then begin
+  if !Clflags.principal || does_contain_gadt then begin
     let ty_res' = instance ty_res in
     List.iter (fun c -> unify_exp env c.c_rhs ty_res') cases
   end;
-  (* We could check whether there actually is a GADT here instead of reusing
-     [has_constructor], but I'm not sure it's worth it. *)
-  let do_init = may_contain_gadts || needs_exhaust_check in
+  let do_init = does_contain_gadt || needs_exhaust_check in
   let lev =
+    (* if [may_contain_gadt] then [init_env] was already called, no need to do
+       it again. *)
     if do_init && not may_contain_gadts then init_env () else lev in
   let ty_arg_check =
     if do_init then
