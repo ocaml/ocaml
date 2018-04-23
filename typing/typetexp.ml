@@ -1025,7 +1025,7 @@ let report_error env ppf = function
       fprintf ppf
         "@.@[%s@ %s %i@]"
         "Hint: If this is a recursive definition,"
-        "you should add a 'rec' keyword on line"
+        "you should add the 'rec' keyword on line"
         line
 
 let () =
