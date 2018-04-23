@@ -2695,7 +2695,7 @@ let duplicate_ident_types half_typed_cases env =
       contains_gadt typed_pat
     ) half_typed_cases
   in
-  Env.get_copy_of_types (all_idents_cases caselist) env
+  Env.make_copy_of_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
 
@@ -4733,7 +4733,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_res, duplicated_ident_types =
     if does_contain_gadt && not !Clflags.principal then
       correct_levels ty_res, duplicate_ident_types half_typed_cases env
-    else ty_res, []
+    else ty_res, duplicate_ident_types [] env
   in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
