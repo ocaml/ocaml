@@ -262,22 +262,6 @@ let iter_expression f e =
   expr e
 
 
-let all_idents_cases el =
-  let idents = Hashtbl.create 8 in
-  let f = function
-    | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
-        Hashtbl.replace idents id ()
-    | _ -> ()
-  in
-  List.iter
-    (fun (_, cp) ->
-      may (iter_expression f) cp.pc_guard;
-      iter_expression f cp.pc_rhs
-    )
-    el;
-  Hashtbl.fold (fun x () rest -> x :: rest) idents []
-
-
 (* Typing of constants *)
 
 let type_constant = function
@@ -454,12 +438,16 @@ let has_variants p =
 
 
 (* pattern environment *)
-let pattern_variables = ref ([] :
- (Ident.t * type_expr * string loc * Location.t * bool (* as-variable *)) list)
+type pattern_variable =
+  Ident.t * type_expr * string loc * Location.t * bool (* as-variable *)
+type module_variable =
+  string loc * Location.t
+
+let pattern_variables = ref ([] : pattern_variable list)
 let pattern_force = ref ([] : (unit -> unit) list)
 let pattern_scope = ref (None : Annot.ident option);;
 let allow_modules = ref false
-let module_variables = ref ([] : (string loc * Location.t) list)
+let module_variables = ref ([] : module_variable list)
 let reset_pattern scope allow =
   pattern_variables := [];
   pattern_force := [];
@@ -985,6 +973,34 @@ type type_pat_mode =
   | Splitting_or   (* splitting an or-pattern *)
   | Inside_or      (* inside a non-split or-pattern *)
   | Split_or       (* always split or-patterns *)
+
+(* "half typed" cases are produced in [type_cases] when we've just typechecked
+   the pattern but haven't type-checked the body yet.
+   At this point we might have added some type equalities to the environment,
+   but haven't yet added identifiers bound by the pattern. *)
+type half_typed_case =
+  { typed_pat: pattern;
+    pat_type_for_unif: type_expr;
+    untyped_case: Parsetree.case;
+    branch_env: Env.t;
+    pat_vars: pattern_variable list;
+    unpacks: module_variable list; }
+
+let all_idents_cases half_typed_cases =
+  let idents = Hashtbl.create 8 in
+  let f = function
+    | {pexp_desc=Pexp_ident { txt = Longident.Lident id; _ }; _} ->
+        Hashtbl.replace idents id ()
+    | _ -> ()
+  in
+  List.iter
+    (fun { untyped_case = cp; _ } ->
+      may (iter_expression f) cp.pc_guard;
+      iter_expression f cp.pc_rhs
+    )
+    half_typed_cases;
+  Hashtbl.fold (fun x () rest -> x :: rest) idents []
+
 
 exception Need_backtrack
 
@@ -2672,9 +2688,12 @@ let check_absent_variant env =
 (* Duplicate types of values in the environment *)
 (* XXX Should we do something about global type variables too? *)
 
-let duplicate_ident_types caselist env =
+let duplicate_ident_types half_typed_cases env =
   let caselist =
-    List.filter (fun (pc, _) -> contains_gadt pc) caselist in
+    List.filter (fun { typed_pat; _ } ->
+      contains_gadt typed_pat
+    ) half_typed_cases
+  in
   Env.get_copy_of_types (all_idents_cases caselist) env
 
 (* Getting proper location of already typed expressions.
@@ -4668,9 +4687,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let pattern_force = ref [] in
 (*  Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
     Printtyp.raw_type_expr ty_arg; *)
-  let pat_env_list =
+  let half_typed_cases =
     List.map
-      (fun {pc_lhs; pc_guard; pc_rhs} ->
+      (fun ({pc_lhs; pc_guard; pc_rhs} as case) ->
         let loc =
           let open Location in
           match pc_guard with
@@ -4697,20 +4716,26 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         in
         (* Ensure that no ambivalent pattern type escapes its branch *)
         check_scope_escape pat.pat_loc env outer_level ty_arg;
-        (pat, ty_arg, (ext_env, pvs, unpacks)))
+        { typed_pat = pat;
+          pat_type_for_unif = ty_arg;
+          untyped_case = case;
+          branch_env = ext_env;
+          pat_vars = pvs;
+          unpacks; }
+        )
       caselist in
-  let patl = List.map (fun (pat, _, _) -> pat) pat_env_list in
+  let patl = List.map (fun { typed_pat; _ } -> typed_pat) half_typed_cases in
   let ty_res, duplicated_ident_types =
     if may_contain_gadts && not !Clflags.principal then
-      correct_levels ty_res, duplicate_ident_types (List.combine patl caselist) env
+      correct_levels ty_res, duplicate_ident_types half_typed_cases env
     else ty_res, []
   in
   (* Unify all cases (delayed to keep it order-free) *)
   let ty_arg' = newvar () in
   let unify_pats ty =
-    List.iter (fun (pat, pat_ty, _) ->
+    List.iter (fun { typed_pat = pat; pat_type_for_unif = pat_ty; _ } ->
       unify_pat_types pat.pat_loc env pat_ty ty
-    ) pat_env_list
+    ) half_typed_cases
   in
   unify_pats ty_arg';
   (* Check for polymorphic variants to close *)
@@ -4732,8 +4757,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
-    List.map2
-      (fun (pat, _, (ext_env, pvs, unpacks)) {pc_lhs = _; pc_guard; pc_rhs} ->
+    List.map
+      (fun { typed_pat = pat; branch_env = ext_env; pat_vars = pvs; unpacks;
+             untyped_case = {pc_lhs = _; pc_guard; pc_rhs} }  ->
         let contains_gadt = contains_gadt pat in
         let ext_env =
           if contains_gadt then
@@ -4779,7 +4805,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
          c_rhs = {exp with exp_type = instance ty_res'}
         }
       )
-      pat_env_list caselist
+      half_typed_cases
   in
   if !Clflags.principal || may_contain_gadts then begin
     let ty_res' = instance ty_res in
@@ -4806,8 +4832,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let lev =
       if do_init then init_env () else get_current_level ()
     in
-    List.iter (fun (pat, _, (env, _, _)) -> check_absent_variant env pat)
-      pat_env_list;
+    List.iter (fun { typed_pat; branch_env; _ } ->
+      check_absent_variant branch_env typed_pat
+    ) half_typed_cases;
     check_unused ~lev env (instance ty_arg_check) cases ;
     if do_init then end_def ();
     Parmatch.check_ambiguous_bindings cases
