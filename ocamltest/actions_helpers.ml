@@ -88,7 +88,7 @@ let run_cmd
     ?(stdin_variable=Builtin_variables.stdin)
     ?(stdout_variable=Builtin_variables.stdout)
     ?(stderr_variable=Builtin_variables.stderr)
-    ?(append=true)
+    ?(append=false)
     ?(timeout=0)
     log env cmd
   =
