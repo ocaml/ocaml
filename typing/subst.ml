@@ -31,6 +31,7 @@ type t =
     modules: Path.t PathMap.t;
     modtypes: (Ident.t, module_type) Tbl.t;
     for_saving: bool;
+    loc: Location.t option;
   }
 
 let identity =
@@ -38,6 +39,7 @@ let identity =
     modules = PathMap.empty;
     modtypes = Tbl.empty;
     for_saving = false;
+    loc = None;
   }
 
 let add_type_path id p s = { s with types = PathMap.add id (Path p) s.types }
@@ -53,8 +55,13 @@ let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
 let for_saving s = { s with for_saving = true }
 
+let change_locs s loc = { s with loc = Some loc }
+
 let loc s x =
-  if s.for_saving && not !Clflags.keep_locs then Location.none else x
+  match s.loc with
+  | Some l -> l
+  | None ->
+    if s.for_saving && not !Clflags.keep_locs then Location.none else x
 
 let remove_loc =
   let open Ast_mapper in
@@ -474,6 +481,11 @@ let merge_tbls f m1 m2 =
 let merge_path_maps f m1 m2 =
   PathMap.fold (fun k d accu -> PathMap.add k (f d) accu) m1 m2
 
+let keep_latest_loc l1 l2 =
+  match l2 with
+  | None -> l1
+  | Some _ -> l2
+
 let type_replacement s = function
   | Path p -> Path (type_path s p)
   | Type_function { params; body } ->
@@ -489,4 +501,5 @@ let compose s1 s2 =
     modules = merge_path_maps (module_path s2) s1.modules s2.modules;
     modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = s1.for_saving || s2.for_saving;
+    loc = keep_latest_loc s1.loc s2.loc;
   }
