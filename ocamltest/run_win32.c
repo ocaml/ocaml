@@ -215,7 +215,7 @@ static HANDLE create_input_handle(const WCHAR *filename)
 
 static HANDLE create_output_handle(const WCHAR *filename, int append)
 {
-  DWORD desired_access = GENERIC_WRITE;
+  DWORD desired_access = append ? FILE_APPEND_DATA : GENERIC_WRITE;
   DWORD share_mode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
   DWORD creation_disposition = append ? OPEN_ALWAYS : CREATE_ALWAYS;
   return CreateFile
