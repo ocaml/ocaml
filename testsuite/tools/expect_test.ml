@@ -329,8 +329,11 @@ let process_expect_file fname =
   write_corrected ~file:corrected_fname ~file_contents correction
 
 let repo_root = ref None
+let keep_original_error_size = ref false
 
 let main fname =
+  if not !keep_original_error_size then
+    Clflags.error_size := 0;
   Toploop.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));
@@ -419,6 +422,8 @@ let args =
     ( [ "-repo-root", Arg.String (fun s -> repo_root := Some s),
         "<dir> root of the OCaml repository. This causes the tool to use \
          the stdlib from the current source tree rather than the installed one."
+      ; "-keep-original-error-size", Arg.Set keep_original_error_size,
+        " truncate long error messages as the compiler would"
       ] @ Options.list
     )
 
@@ -427,7 +432,6 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
 
 let () =
   Clflags.color := Some Misc.Color.Never;
-  Clflags.error_size := 0;
   try
     Arg.parse args main usage;
     Printf.eprintf "expect_test: no input file\n";
