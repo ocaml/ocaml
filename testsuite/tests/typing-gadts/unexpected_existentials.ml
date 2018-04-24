@@ -82,7 +82,7 @@ Line _, characters 4-9:
   let Any x = Any ()
       ^^^^^
 Error: Existential types are not allowed in toplevel bindings,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 
@@ -92,7 +92,7 @@ Line _, characters 14-20:
   class c = let Any _x = () in object end
                 ^^^^^^
 Error: Existential types are not allowed in bindings inside class definition,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 let () =
@@ -103,7 +103,7 @@ Line _, characters 6-11:
     let Any x = Any () and () = () in
         ^^^^^
 Error: Existential types are not allowed in "let ... and ..." bindings,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 
@@ -115,7 +115,7 @@ Line _, characters 10-15:
     let rec Any x = Any () in
             ^^^^^
 Error: Existential types are not allowed in recursive bindings,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 
@@ -127,7 +127,7 @@ Line _, characters 18-23:
     let[@attribute] Any x = Any () in
                     ^^^^^
 Error: Existential types are not allowed in presence of attributes,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 class c (Any x) = object end
@@ -136,7 +136,7 @@ Line _, characters 8-15:
   class c (Any x) = object end
           ^^^^^^^
 Error: Existential types are not allowed in class arguments,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 class c = object(Any x) end
@@ -145,7 +145,7 @@ Line _, characters 16-23:
   class c = object(Any x) end
                   ^^^^^^^
 Error: Existential types are not allowed in self patterns,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]
 
 class c = let Any _x = () in object end
@@ -154,5 +154,5 @@ Line _, characters 14-20:
   class c = let Any _x = () in object end
                 ^^^^^^
 Error: Existential types are not allowed in bindings inside class definition,
-but the constructor Any introduces unnamed existential types.
+but the constructor Any introduces existential types.
 |}]

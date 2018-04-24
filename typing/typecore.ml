@@ -5410,7 +5410,7 @@ let report_error env ppf = function
           "but this pattern introduces the existential type %s." example
       with Not_found ->
         fprintf ppf
-          "but the constructor %s introduces unnamed existential types." name
+          "but the constructor %s introduces existential types." name
     )
   | Invalid_interval ->
       fprintf ppf "@[Only character intervals are supported in patterns.@]"
