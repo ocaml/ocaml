@@ -340,6 +340,30 @@ Error: This pattern matches values of type int
        it would escape the scope of its equation
 |}]
 
+type _ gadt_opt =
+  | GNone : 'a gadt_opt
+  | GSome : 'a -> 'a gadt_opt
+;;
+[%%expect{|
+type _ gadt_opt = GNone : 'a gadt_opt | GSome : 'a -> 'a gadt_opt
+|}]
+
+let simple_merged_annotated_under_gadt_constructor (type a) (pair : a t * a) =
+  match GSome pair with
+  | GSome ( IntLit, 3
+          | BoolLit, true ) -> ()
+  | _ -> ()
+;;
+[%%expect{|
+Line _, characters 20-21:
+    | GSome ( IntLit, 3
+                      ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
 (* back to simpler tests. *)
 
 let noop t a =
