@@ -331,13 +331,7 @@ let simple_merged_annotated_under_constructor (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 19-20:
-    | Some ( IntLit, 3
-                     ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_constructor : 'a t * 'a -> unit = <fun>
 |}]
 
 type _ gadt_opt =
@@ -355,13 +349,8 @@ let simple_merged_annotated_under_gadt_constructor (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 20-21:
-    | GSome ( IntLit, 3
-                      ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_gadt_constructor : 'a t * 'a -> unit =
+  <fun>
 |}]
 
 (* back to simpler tests. *)

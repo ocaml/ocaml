@@ -1228,9 +1228,8 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       end;
       (* if constructor is gadt, we must verify that the expected type has the
          correct head *)
-      let ret_ty = instance expected_ty in
       if constr.cstr_generalized then
-        unify_head_only loc !env ret_ty constr;
+        unify_head_only loc !env (instance expected_ty) constr;
       let sargs =
         match sarg with
           None -> []
@@ -1255,14 +1254,33 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, !env, Constructor_arity_mismatch(lid.txt,
                                      constr.cstr_arity, List.length sargs)));
+      begin_def ();
       let (ty_args, ty_res) =
         instance_constructor ~in_pattern:(env, get_gadt_equations_level ())
           constr
       in
-      (* PR#7214: do not use gadt unification for toplevel lets *)
-      if not constr.cstr_generalized || no_existentials <> None
-      then unify_pat_types loc !env ty_res ret_ty
-      else unify_pat_types_gadt loc env ty_res ret_ty;
+      end_def ();
+      generalize ty_res;
+      List.iter generalize ty_args;
+      let expected_ty =
+        (* PR#7214: do not use gadt unification for toplevel lets *)
+        if not constr.cstr_generalized || no_existentials <> None
+        then (
+          unify_pat_types loc !env ty_res expected_ty;
+          expected_ty
+        ) else (
+          (* we can't directly pass [expected_ty] to [unify_pat_types_gadt] as
+             it might add equations on it, that would then be leaking out of
+             scope.
+             So we make a copy beforehand. *)
+          begin_def ();
+          let expected_ty' = instance expected_ty in
+          end_def ();
+          generalize_structure expected_ty';
+          unify_pat_types_gadt loc env ty_res expected_ty';
+          expected_ty'
+        )
+      in
 
       let rec check_non_escaping p =
         match p.ppat_desc with
@@ -1283,7 +1301,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         rp k {
           pat_desc=Tpat_construct(lid, constr, args);
           pat_loc = loc; pat_extra=[];
-          pat_type = ret_ty;
+          pat_type = instance expected_ty;
           pat_attributes = sp.ppat_attributes;
           pat_env = !env })
   | Ppat_variant(l, sarg) ->
