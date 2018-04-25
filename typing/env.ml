@@ -1274,9 +1274,19 @@ let lookup_class =
 let lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-let copy_types l env =
-  let f desc = {desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
+type copy_of_types = {
+  to_copy: string list;
+  initial_values: value_description IdTbl.t;
+  new_values: value_description IdTbl.t;
+}
+
+let make_copy_of_types l env : copy_of_types =
+  let f desc = { desc with val_type = Subst.type_expr Subst.identity desc.val_type} in
   let values = List.fold_left (fun env s -> IdTbl.update s f env) env.values l in
+  {to_copy = l; initial_values = env.values; new_values = values}
+
+let do_copy_types { to_copy = l; initial_values; new_values = values } env =
+  if initial_values != env.values then fatal_error "Env.do_copy_types";
   {env with values; summary = Env_copy_types (env.summary, l)}
 
 let mark_value_used name vd =
