@@ -291,8 +291,6 @@ _ocamltestd
 /testsuite/tests/unboxed-primitive-args/main.ml
 /testsuite/tests/unboxed-primitive-args/stubs.c
 
-/testsuite/tests/unwind/unwind_test
-
 /testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/expect_test
