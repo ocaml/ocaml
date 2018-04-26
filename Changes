@@ -41,6 +41,9 @@ Working version
   ignored when used on streams based on input channels.
   (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
+- GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
+  (David Allsopp, review by Sébastien Hinderer)
+
 OCaml 4.07
 ----------
 
