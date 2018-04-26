@@ -13,6 +13,7 @@
 #**************************************************************************
 
 BASEDIR=..
+include $(BASEDIR)/../config/Makefile
 expect_MAIN=expect_test
 expect_PROG=$(expect_MAIN)$(EXE)
 expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
@@ -37,10 +38,18 @@ codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
 
 codegen_ADD_COMPFLAGS=$(codegen_INCLUDES) -w -40 -g
 
-all: $(expect_PROG) codegen
+ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
+# The asmgen tests are not ported to MSVC64 yet
+# so do not compile any arch-specific module
+arch_target :=
+else
+arch_target := asmgen_$(ARCH).$(O)
+endif
+
+all: $(expect_PROG) codegen $(arch_target)
 
 $(expect_PROG): $(expect_LIBRARIES:=.cma) $(expect_MAIN).cmo
-	$(OCAMLC) -linkall -o $@ $^
+	@$(OCAMLC) -linkall -o $@ $^
 
 include $(BASEDIR)/makefiles/Makefile.common
 
@@ -63,4 +72,8 @@ parsecmm.mli parsecmm.ml: parsecmm.mly
 
 lexcmm.ml: lexcmm.mll
 	@$(OCAMLLEX) -q lexcmm.mll
+
+asmgen_i386.obj: asmgen_i386nt.asm
+	@set -o pipefail ; \
+	$(ASM) $@ $^ | tail -n +2
 

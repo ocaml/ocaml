@@ -22,9 +22,7 @@ default:
 	  $(MAKE) all; \
 	fi
 
-all:
-	@$(MAKE) arch
-	@$(MAKE) tests
+all: tests
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
@@ -52,15 +50,16 @@ skips:
 	  echo " ... testing '$$c': => skipped"; \
 	done
 
+include $(BASEDIR)/makefiles/Makefile.common
+archmod = $(OTOPDIR)/testsuite/tools/asmgen_$(ARCH).$(O)
+
 one:
-	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(ARCH).$(O)) \
+	@$(call CCOMP,$(NAME).out $(ARGS_$(NAME)) $(NAME).$(O) $(archmod)) \
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
 	@rm -f *.out *.out.manifest *.$(O) *.exe
 	@rm -f $(CASES:=.s)
-
-include $(BASEDIR)/makefiles/Makefile.common
 
 ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # these tests are not ported to MSVC64 yet
@@ -86,9 +85,3 @@ tests: $(CASES:=.$(O))
 	done
 
 promote:
-
-arch: $(ARCH).$(O)
-
-i386.obj: i386nt.asm
-	@set -o pipefail ; \
-	$(ASM) $@ $^ | tail -n +2
