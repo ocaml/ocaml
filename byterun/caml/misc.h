@@ -94,13 +94,33 @@ extern caml_timing_hook caml_major_slice_begin_hook, caml_major_slice_end_hook;
 extern caml_timing_hook caml_minor_gc_begin_hook, caml_minor_gc_end_hook;
 extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 
+/* Windows Unicode support (rest below - char_os is needed earlier) */
+
+#ifdef _WIN32
+typedef wchar_t char_os;
+#else
+typedef char char_os;
+#endif
+
 /* Assertions */
 
 #ifdef DEBUG
+
+#ifdef UNICODE
+/* See https://msdn.microsoft.com/ja-jp/library/b0084kay(v=vs.71).aspx
+   It's not clear why this isn't so obviously documented, as it doesn't
+   seem to have been superseded by a more sensible mechanism! */
+#define CAML_WIDEN_STRING_LITERAL2(x) L##x
+#define CAML_WIDEN_STRING_LITERAL(x) CAML_WIDEN_STRING_LITERAL2(x)
+#define __OSFILE__ CAML_WIDEN_STRING_LITERAL(__FILE__)
+#else
+#define __OSFILE__ __FILE__
+#endif
+
 #define CAMLassert(x) \
-  ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
+  ((x) ? (void) 0 : caml_failed_assert ( #x , __OSFILE__, __LINE__))
 CAMLnoreturn_start
-CAMLextern void caml_failed_assert (char *, char *, int)
+CAMLextern void caml_failed_assert (char *, char_os *, int)
 CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
@@ -163,8 +183,6 @@ extern int caml_umul_overflow(uintnat a, uintnat b, uintnat * res);
 
 #ifdef _WIN32
 
-typedef wchar_t char_os;
-
 #define _T(x) L ## x
 
 #define access_os _waccess
@@ -194,8 +212,6 @@ typedef wchar_t char_os;
 #define caml_copy_string_of_os caml_copy_string_of_utf16
 
 #else /* _WIN32 */
-
-typedef char char_os;
 
 #define _T(x) x
 
