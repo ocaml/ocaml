@@ -1158,7 +1158,7 @@ and class_expr_aux cl_num val_env met_env scl =
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
         try
-          Typecore.type_let val_env rec_flag sdefs None
+          Typecore.type_let In_class_def val_env rec_flag sdefs None
         with Ctype.Unify [(ty, _)] ->
           raise(Error(scl.pcl_loc, val_env, Make_nongen_seltype ty))
       in

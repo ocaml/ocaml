@@ -55,13 +55,22 @@ val mk_expected:
 
 val is_nonexpansive: Typedtree.expression -> bool
 
+type existential_restriction =
+  | At_toplevel (** no existential types at the toplevel *)
+  | In_group (** nor with [let ... and ...] *)
+  | In_rec (** or recursive definition *)
+  | With_attributes (** or [let[@any_attribute] = ...] *)
+  | In_class_args (** or in class arguments [class c (...) = ...] *)
+  | In_class_def (** or in [class c = let ... in ...] *)
+  | In_self_pattern (** or in self pattern *)
+
 val type_binding:
         Env.t -> rec_flag ->
           Parsetree.value_binding list ->
           Annot.ident option ->
           Typedtree.value_binding list * Env.t
 val type_let:
-        Env.t -> rec_flag ->
+        existential_restriction -> Env.t -> rec_flag ->
           Parsetree.value_binding list ->
           Annot.ident option ->
           Typedtree.value_binding list * Env.t
@@ -145,7 +154,7 @@ type error =
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
   | Recursive_local_constraint of (type_expr * type_expr) list
-  | Unexpected_existential
+  | Unexpected_existential of existential_restriction * string * string list
   | Invalid_interval
   | Invalid_for_loop_index
   | No_value_clauses
