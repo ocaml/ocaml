@@ -248,13 +248,8 @@ _ocamltestd
 
 /testsuite/_retries
 
-/testsuite/tests/asmgen/codegen
-/testsuite/tests/asmgen/parsecmm.ml
-/testsuite/tests/asmgen/parsecmm.mli
-/testsuite/tests/asmgen/lexcmm.ml
 /testsuite/tests/asmgen/*.s
 /testsuite/tests/asmgen/*.out.manifest
-
 
 /testsuite/tests/embedded/caml
 
@@ -290,7 +285,11 @@ _ocamltestd
 
 /testsuite/tests/win-unicode/symlink_tests.precheck
 
+/testsuite/tools/codegen
 /testsuite/tools/expect_test
+/testsuite/tools/lexcmm.ml
+/testsuite/tools/parsecmm.ml
+/testsuite/tools/parsecmm.mli
 
 /tools/ocamldep
 /tools/ocamldep.opt

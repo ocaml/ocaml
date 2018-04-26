@@ -17,41 +17,14 @@ BASEDIR=../..
 
 include $(BASEDIR)/../config/Makefile
 
-INCLUDES=\
-  -I $(OTOPDIR)/parsing \
-  -I $(OTOPDIR)/utils \
-  -I $(OTOPDIR)/typing \
-  -I $(OTOPDIR)/middle_end \
-  -I $(OTOPDIR)/bytecomp \
-  -I $(OTOPDIR)/asmcomp
-
-OTHEROBJS=\
-  $(OTOPDIR)/compilerlibs/ocamlcommon.cma \
-  $(OTOPDIR)/compilerlibs/ocamloptcomp.cma
-
-OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo
-
-ADD_COMPFLAGS=$(INCLUDES) -w -40 -g
-
 default:
 	@if $(BYTECODE_ONLY) || $(SKIP) ; then $(MAKE) skips ; else \
 	  $(MAKE) all; \
 	fi
 
 all:
-	@$(MAKE) arch codegen
+	@$(MAKE) arch
 	@$(MAKE) tests
-
-main.cmo: parsecmm.cmo
-
-codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
-	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
-
-parsecmm.mli parsecmm.ml: parsecmm.mly
-	@$(OCAMLYACC) -q parsecmm.mly
-
-lexcmm.ml: lexcmm.mll
-	@$(OCAMLLEX) -q lexcmm.mll
 
 CASES=fib tak quicksort quicksort2 soli \
       arith checkbound tagged-fib tagged-integr tagged-quicksort tagged-tak \
@@ -84,8 +57,7 @@ one:
 	&& echo " => passed" || echo " => failed"
 
 clean: defaultclean
-	@rm -f ./codegen *.out *.out.manifest *.$(O) *.exe
-	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
+	@rm -f *.out *.out.manifest *.$(O) *.exe
 	@rm -f $(CASES:=.s)
 
 include $(BASEDIR)/makefiles/Makefile.common
