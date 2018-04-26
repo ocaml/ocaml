@@ -324,6 +324,59 @@ Error: This pattern matches values of type int
        it would escape the scope of its equation
 |}]
 
+let simple_merged_annotated_under_mutable_record (type a) (pair : a t * a) =
+  match { contents = pair } with
+  | { contents = ( IntLit, 3
+                 | BoolLit, true ) } -> ()
+  | _ -> ()
+;;
+[%%expect{|
+Line _, characters 27-28:
+    | { contents = ( IntLit, 3
+                             ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+type 'a piref = { pcontent : 'b. 'a * 'b; };;
+[%%expect{|
+type 'a piref = { pcontent : 'b. 'a * 'b; }
+|}]
+
+let simple_merged_annotated_under_poly_record1 (type a) (r : (a t * a) piref) =
+  match r with
+  | { pcontent = ( IntLit, 3
+                 | BoolLit, true ), _ } -> ()
+  | _ -> ()
+;;
+[%%expect{|
+Line _, characters 27-28:
+    | { pcontent = ( IntLit, 3
+                             ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
+let simple_merged_annotated_under_poly_record2 (type a) (r : (a t * a) piref) =
+  match r with
+  | { pcontent = ( (IntLit, 3), _
+                 | (BoolLit, true), _ ) } -> ()
+  | _ -> ()
+;;
+[%%expect{|
+Line _, characters 28-29:
+    | { pcontent = ( (IntLit, 3), _
+                              ^
+Error: This pattern matches values of type int
+       but a pattern was expected which matches values of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
+|}]
+
 let simple_merged_annotated_under_constructor (type a) (pair : a t * a) =
   match Some pair with
   | Some ( IntLit, 3
