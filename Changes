@@ -21,6 +21,11 @@ Working version
 
 ### Code generation and optimizations:
 
+- GPR#....: make sure startup.o is always linked in when using
+  "-output-complete-obj". Previously, it was always linked in only on some
+  platforms, making this option unusable on platforms where it wasn't
+  (Jérémie Dimino)
+
 ### Runtime system:
 
 ### Tools:

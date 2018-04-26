@@ -203,6 +203,9 @@ let scan_file obj_name tolink = match read_file obj_name with
 
 (* Second pass: generate the startup file and link it with everything else *)
 
+let force_linking_of_startup ppf =
+  Asmgen.compile_phrase ppf (Cmm.Cdata([Cmm.Cglobal_symbol "caml_startup"]))
+
 let make_startup_file ppf units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
   Location.input_name := "caml_startup"; (* set name of "current" input *)
@@ -238,6 +241,7 @@ let make_startup_file ppf units_list =
   if Config.spacetime then begin
     compile_phrase (Cmmgen.spacetime_shapes all_names);
   end;
+  force_linking_of_startup ppf;
   Emit.end_assembly ()
 
 let make_shared_startup_file ppf units =
@@ -251,6 +255,7 @@ let make_shared_startup_file ppf units =
   compile_phrase
     (Cmmgen.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
+  force_linking_of_startup ppf;
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly ()
