@@ -93,6 +93,9 @@ let directories = make ("directories",
 let flags = make ("flags",
   "Flags passed to all the compilers")
 
+let last_flags = make ("last_flags",
+  "Flags passed to all the compilers at the end of the commandline")
+
 let libraries = make ("libraries",
   "Libraries the program should be linked with")
 
@@ -236,6 +239,7 @@ let _ = List.iter register_variable
     csc_flags;
     directories;
     flags;
+    last_flags;
     libraries;
     mkdll;
     module_;

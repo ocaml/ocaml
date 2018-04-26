@@ -49,6 +49,8 @@ let directory_flags env =
 
 let flags env = Environments.safe_lookup Ocaml_variables.flags env
 
+let last_flags env = Environments.safe_lookup Ocaml_variables.last_flags env
+
 let ocamllex_flags env =
   Environments.safe_lookup Ocaml_variables.ocamllex_flags env
 
@@ -215,7 +217,8 @@ let compile_program ocamlsrcdir (compiler : Ocaml_compilers.compiler) log env =
     backend_flags env compiler#target;
     compile_flags;
     output;
-    module_names
+    module_names;
+    last_flags env
   ] in
   let exit_status =
     Actions_helpers.run_cmd

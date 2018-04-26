@@ -54,6 +54,8 @@ val directories : Variables.t
 
 val flags : Variables.t
 
+val last_flags : Variables.t
+
 val libraries : Variables.t
 
 val mkdll : Variables.t
