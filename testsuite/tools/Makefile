@@ -38,15 +38,18 @@ codegen_OBJECTS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo codegen_main.cmo
 
 codegen_ADD_COMPFLAGS=$(codegen_INCLUDES) -w -40 -g
 
-ifeq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
+targets := $(expect_PROG) 
+
+ifneq "$(ARCH)" "none"
+targets += codegen
+ifneq "$(CCOMPTYPE)-$(ARCH)" "msvc-amd64"
 # The asmgen tests are not ported to MSVC64 yet
 # so do not compile any arch-specific module
-arch_target :=
-else
-arch_target := asmgen_$(ARCH).$(O)
+targets += asmgen_$(ARCH).$(O)
+endif
 endif
 
-all: $(expect_PROG) codegen $(arch_target)
+all: $(targets)
 
 $(expect_PROG): $(expect_LIBRARIES:=.cma) $(expect_MAIN).cmo
 	@$(OCAMLC) -linkall -o $@ $^
