@@ -13,19 +13,21 @@
 #**************************************************************************
 
 BASEDIR=..
-MAIN=expect_test
-PROG=$(MAIN)$(EXE)
-COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
+expect_MAIN=expect_test
+expect_PROG=$(expect_MAIN)$(EXE)
+expect_COMPFLAGS=-I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
           -I $(OTOPDIR)/driver -I $(OTOPDIR)/toplevel
-LIBRARIES=../../compilerlibs/ocamlcommon \
+expect_LIBRARIES=../../compilerlibs/ocamlcommon \
           ../../compilerlibs/ocamlbytecomp \
           ../../compilerlibs/ocamltoplevel
 
-$(PROG): $(MAIN).cmo $(LIBRARIES:=.cma)
-	$(OCAMLC) -linkall -o $(PROG) $(LIBRARIES:=.cma) $(MAIN).cmo
+$(expect_PROG): $(expect_LIBRARIES:=.cma) $(expect_MAIN).cmo
+	$(OCAMLC) -linkall -o $@ $^
 
 include $(BASEDIR)/makefiles/Makefile.common
 
 .PHONY: clean
 clean: defaultclean
-	rm -f $(PROG)
+	rm -f $(expect_PROG)
+
+expect_test.cmo: COMPFLAGS=$(expect_COMPFLAGS)
