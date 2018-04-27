@@ -591,6 +591,134 @@ let mklib log env =
 
 let ocamlmklib = Actions.make "ocamlmklib" mklib
 
+let finalise_codegen_cc ocamlsrcdir test_basename _log env =
+  let test_module =
+    Filename.make_filename test_basename "s"
+  in
+  let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
+  let modules = test_module ^ " " ^ archmod in
+  let program = Filename.make_filename test_basename "out" in
+  let env = Environments.add_bindings
+  [
+    Ocaml_variables.modules, modules;
+    Builtin_variables.program, program;
+  ] env in
+  (Result.pass, env)
+
+let finalise_codegen_msvc ocamlsrcdir test_basename log env =
+  let obj = Filename.make_filename test_basename Ocamltest_config.objext in
+  let src = Filename.make_filename test_basename "s" in
+  let what = "Running Microsoft assembler" in
+  Printf.fprintf log "%s\n%!" what;
+  let commandline = [Ocamltest_config.asm; obj; src] in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:Ocaml_variables.compiler_output
+      ~stderr_variable:Ocaml_variables.compiler_output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then begin
+    let archmod = Ocaml_files.asmgen_archmod ocamlsrcdir in
+    let modules = obj ^ " " ^ archmod in
+    let program = Filename.make_filename test_basename "out" in
+    let env = Environments.add_bindings
+    [
+      Ocaml_variables.modules, modules;
+      Builtin_variables.program, program;
+    ] env in
+    (Result.pass, env)
+  end else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let run_codegen log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let testfile = Actions_helpers.testfile env in
+  let what = Printf.sprintf "Running codegen on %s" testfile in
+  Printf.fprintf log "%s\n%!" what;
+  let test_build_directory =
+    Actions_helpers.test_build_directory env in
+  let compiler_output = 
+    Filename.make_path [test_build_directory; "compiler-output"]
+  in
+  let env =
+    Environments.add_if_undefined
+      Ocaml_variables.compiler_output
+      compiler_output
+      env
+  in
+  let commandline =
+  [
+    Ocaml_commands.ocamlrun_codegen ocamlsrcdir;
+    "-S " ^ testfile
+  ] in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:Ocaml_variables.compiler_output
+      ~stderr_variable:Ocaml_variables.compiler_output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then begin
+    let testfile_basename = Filename.chop_extension testfile in
+    let finalise =
+       if Ocamltest_config.ccomptype="msvc"
+      then finalise_codegen_msvc 
+      else finalise_codegen_cc
+    in
+    finalise ocamlsrcdir testfile_basename log env
+  end else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let codegen = Actions.make "codegen" run_codegen
+
+let run_cc log env =
+  let ocamlsrcdir = Ocaml_directories.srcdir () in
+  let program = Environments.safe_lookup Builtin_variables.program env in
+  let what = Printf.sprintf "Running C compiler to build %s" program in
+  Printf.fprintf log "%s\n%!" what;
+  let output_exe =
+    if Ocamltest_config.ccomptype="msvc" then "/Fe" else "-o "
+  in
+  let commandline =
+  [
+    Ocamltest_config.cc;
+    Ocamltest_config.cflags;
+    "-I" ^ Ocaml_directories.runtime ocamlsrcdir;
+    output_exe ^ program;
+    Environments.safe_lookup Builtin_variables.arguments env;
+  ] @ modules env in
+  let expected_exit_status = 0 in
+  let exit_status =
+    Actions_helpers.run_cmd
+      ~environment:dumb_term
+      ~stdout_variable:Ocaml_variables.compiler_output
+      ~stderr_variable:Ocaml_variables.compiler_output
+      ~append:true
+      log env commandline in
+  if exit_status=expected_exit_status
+  then (Result.pass, env)
+  else begin
+    let reason =
+      (Actions_helpers.mkreason
+        what (String.concat " " commandline) exit_status) in
+    (Result.fail_with_reason reason, env)
+  end
+
+let cc = Actions.make "cc" run_cc
+
 let run_expect_once ocamlsrcdir input_file principal log env =
   let expect_flags = Sys.safe_getenv "EXPECT_FLAGS" in
   let repo_root = "-repo-root " ^ ocamlsrcdir in
@@ -1203,5 +1331,7 @@ let _ =
     check_ocamldoc_output;
     ocamldebug;
     ocamlmklib;
+    codegen;
+    cc;
     ocamlobjinfo
   ]

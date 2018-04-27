@@ -50,3 +50,7 @@ val native_compiler : Actions.t
 
 val afl_instrument : Actions.t
 val no_afl_instrument : Actions.t
+
+val codegen : Actions.t
+
+val cc : Actions.t

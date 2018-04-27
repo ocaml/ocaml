@@ -48,3 +48,6 @@ val ocamldoc : string -> string
 val ocamldebug : string -> string
 val ocamlobjinfo : string -> string
 val ocamlmklib : string -> string
+val codegen : string -> string
+
+val asmgen_archmod : string -> string

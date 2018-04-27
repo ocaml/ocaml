@@ -17,6 +17,13 @@
 
 open Ocamltest_stdlib
 
+let skip_with_reason reason =
+  let code _log env =
+    let result = Result.skip_with_reason reason in
+    (result, env)
+  in
+  Actions.make "skip" code
+
 let pass_or_skip test pass_reason skip_reason _log env =
   let open Result in
   let result =

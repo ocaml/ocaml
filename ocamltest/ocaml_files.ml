@@ -78,3 +78,12 @@ let ocamlobjinfo ocamlsrcdir =
 
 let ocamlmklib ocamlsrcdir =
   Filename.make_path [ocamlsrcdir; "tools"; "ocamlmklib"]
+
+let codegen ocamlsrcdir =
+  Filename.make_path [ocamlsrcdir; "testsuite"; "tools"; "codegen"]
+
+let asmgen_archmod ocamlsrcdir =
+  let objname =
+    "asmgen_" ^ Ocamltest_config.arch ^ "." ^ Ocamltest_config.objext
+  in
+  Filename.make_path [ocamlsrcdir; "testsuite"; "tools"; objname]

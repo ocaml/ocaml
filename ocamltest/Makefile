@@ -223,6 +223,10 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@MKEXE@@|$(mkexe)|' \
 	  -e 's|@@BYTECCLIBS@@|$(BYTECCLIBS)|' \
 	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
+	  -e 's|@@ASM@@|$(ASM)|' \
+	  -e 's|@@CC@@|$(CC)|' \
+	  -e 's|@@CFLAGS@@|$(CFLAGS)|' \
+	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
 	  $< > $@
 
 .PHONY: clean
