@@ -21,6 +21,29 @@ val f : 'a list -> 'a fold = <fun>
 - : int = 6
 |}];;
 
+type pty = {pv : 'a. 'a list};;
+[%%expect {|
+type pty = { pv : 'a. 'a list; }
+|}];;
+
+
+let px = {pv = []};;
+[%%expect {|
+val px : pty = {pv = []}
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=5::_} -> "int"
+| {pv=true::_} -> "bool";;
+[%%expect {|
+Line _, characters 3-5:
+  | {pv=5::_} -> "int"
+     ^^
+Error: The record field pv is polymorphic.
+       You cannot instantiate it in a pattern.
+|}];;
+
 class ['b] ilist l = object
   val l = l
   method add x = {< l = x :: l >}
