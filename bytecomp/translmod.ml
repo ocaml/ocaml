@@ -199,9 +199,10 @@ let undefined_location loc =
 let init_shape modl =
   let rec init_shape_mod env mty =
     match Mtype.scrape env mty with
-      Mty_ident _ ->
+      Mty_ident _
+    | Mty_alias (Mta_present, _) ->
         raise Not_found
-    | Mty_alias _ ->
+    | Mty_alias (Mta_absent, _) ->
         Const_block (1, [Const_pointer 0])
     | Mty_signature sg ->
         Const_block(0, [Const_block(0, init_shape_struct env sg)])
