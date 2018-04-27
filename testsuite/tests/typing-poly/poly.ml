@@ -44,6 +44,11 @@ Error: The record field pv is polymorphic.
        You cannot instantiate it in a pattern.
 |}];;
 
+fun {pv=v} -> true::v, 1::v;;
+[%%expect {|
+- : pty -> bool list * int list = <fun>
+|}];;
+
 class ['b] ilist l = object
   val l = l
   method add x = {< l = x :: l >}
