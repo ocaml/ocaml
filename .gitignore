@@ -248,41 +248,6 @@ _ocamltestd
 
 /testsuite/_retries
 
-/testsuite/tests/asmgen/*.s
-/testsuite/tests/asmgen/*.out.manifest
-
-/testsuite/tests/embedded/caml
-
-/testsuite/tests/lib-scanf/tscanf_data
-
-/testsuite/tests/lib-threads/*.byt
-
-/testsuite/tests/self-contained-toplevel/cached_cmi.ml
-
-/testsuite/tests/tool-ocamldoc/*.html
-/testsuite/tests/tool-ocamldoc/*.sty
-/testsuite/tests/tool-ocamldoc/*.css
-
-/testsuite/tests/tool-ocamldoc-2/ocamldoc.sty
-
-/testsuite/tests/tool-ocamldoc-html/*.html
-/testsuite/tests/tool-ocamldoc-html/style.css
-
-/testsuite/tests/tool-ocamldoc-man/*.3o
-
-/testsuite/tests/tool-ocamldoc-open/alias.odoc
-/testsuite/tests/tool-ocamldoc-open/inner.odoc
-/testsuite/tests/tool-ocamldoc-open/main.odoc
-/testsuite/tests/tool-ocamldoc-open/ocamldoc.sty
-
-/testsuite/tests/tool-lexyacc/scanner.ml
-/testsuite/tests/tool-lexyacc/grammar.mli
-/testsuite/tests/tool-lexyacc/grammar.ml
-
-/testsuite/tests/typing-unboxed-types/false.flat-float
-/testsuite/tests/typing-unboxed-types/true.flat-float
-/testsuite/tests/typing-unboxed-types/test.ml.reference
-
 /testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/codegen
