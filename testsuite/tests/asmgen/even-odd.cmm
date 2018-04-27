@@ -1,3 +1,9 @@
+(* TEST
+files= "main.c"
+arguments = "-DINT_INT -DFUN=is_even main.c"
+* asmgen
+*)
+
 (function "is_even" (b:int)
   (catch (exit even b)
    with (odd v)

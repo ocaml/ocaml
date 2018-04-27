@@ -1,3 +1,11 @@
+(* TEST
+files = "main.c"
+arguments = "-DINT_FLOAT -DFUN=test main.c"
+* skip
+reason = "This test is currently broken"
+** asmgen
+*)
+
 (**************************************************************************)
 (*                                                                        *)
 (*                                OCaml                                   *)
