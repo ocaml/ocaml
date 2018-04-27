@@ -62,6 +62,9 @@ OCaml 4.07
 - GPR#1546: Allow empty variants
   (Runhang Li, review by Gabriel Radanne and Jacques Garrigue)
 
+- GRP#1705: Allow @@attributes on exceptions
+  (Hugo Heuzard, review by Gabriel Radanne)
+
 ### Type system:
 
 - MPR#7767, GPR#1712: restore legacy treatment of partially-applied

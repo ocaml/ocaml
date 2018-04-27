@@ -863,7 +863,7 @@ module Analyser =
               (maybe_more + maybe_more2, new_env, [ Element_type_extension new_te ])
 
         | Parsetree.Psig_exception ext ->
-            let name = ext.Parsetree.pext_name in
+            let name = ext.Parsetree.ptyexn_constructor.Parsetree.pext_name in
             let types_ext =
               try Signature_search.search_extension table name.txt
               with Not_found ->

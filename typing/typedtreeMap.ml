@@ -20,6 +20,7 @@ module type MapArgument = sig
   val enter_value_description : value_description -> value_description
   val enter_type_declaration : type_declaration -> type_declaration
   val enter_type_extension : type_extension -> type_extension
+  val enter_type_exception : type_exception -> type_exception
   val enter_extension_constructor :
     extension_constructor -> extension_constructor
   val enter_pattern : pattern -> pattern
@@ -49,6 +50,7 @@ module type MapArgument = sig
   val leave_value_description : value_description -> value_description
   val leave_type_declaration : type_declaration -> type_declaration
   val leave_type_extension : type_extension -> type_extension
+  val leave_type_exception : type_exception -> type_exception
   val leave_extension_constructor :
     extension_constructor -> extension_constructor
   val leave_pattern : pattern -> pattern
@@ -121,7 +123,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tstr_typext tyext ->
           Tstr_typext (map_type_extension tyext)
         | Tstr_exception ext ->
-          Tstr_exception (map_extension_constructor ext)
+          Tstr_exception (map_type_exception ext)
         | Tstr_module x ->
           Tstr_module (map_module_binding x)
         | Tstr_recmodule list ->
@@ -211,6 +213,13 @@ module MakeMap(Map : MapArgument) = struct
     in
     Map.leave_type_extension { tyext with tyext_params = tyext_params;
       tyext_constructors = tyext_constructors }
+
+  and map_type_exception tyexn =
+    let tyexn = Map.enter_type_exception tyexn in
+    let tyexn_constructor =
+      map_extension_constructor tyexn.tyexn_constructor
+    in
+    Map.leave_type_exception { tyexn with tyexn_constructor = tyexn_constructor }
 
   and map_extension_constructor ext =
     let ext = Map.enter_extension_constructor ext in
@@ -434,7 +443,7 @@ module MakeMap(Map : MapArgument) = struct
         | Tsig_typext tyext ->
             Tsig_typext (map_type_extension tyext)
         | Tsig_exception ext ->
-            Tsig_exception (map_extension_constructor ext)
+            Tsig_exception (map_type_exception ext)
         | Tsig_module md ->
             Tsig_module {md with md_type = map_module_type md.md_type}
         | Tsig_recmodule list ->
@@ -680,6 +689,7 @@ module DefaultMapArgument = struct
   let enter_value_description t = t
   let enter_type_declaration t = t
   let enter_type_extension t = t
+  let enter_type_exception t = t
   let enter_extension_constructor t = t
   let enter_pattern t = t
   let enter_expression t = t
@@ -707,6 +717,7 @@ module DefaultMapArgument = struct
   let leave_value_description t = t
   let leave_type_declaration t = t
   let leave_type_extension t = t
+  let leave_type_exception t = t
   let leave_extension_constructor t = t
   let leave_pattern t = t
   let leave_expression t = t

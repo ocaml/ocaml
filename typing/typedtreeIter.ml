@@ -27,6 +27,7 @@ module type IteratorArgument = sig
     val enter_structure : structure -> unit
     val enter_value_description : value_description -> unit
     val enter_type_extension : type_extension -> unit
+    val enter_type_exception : type_exception -> unit
     val enter_extension_constructor : extension_constructor -> unit
     val enter_pattern : pattern -> unit
     val enter_expression : expression -> unit
@@ -53,6 +54,7 @@ module type IteratorArgument = sig
     val leave_structure : structure -> unit
     val leave_value_description : value_description -> unit
     val leave_type_extension : type_extension -> unit
+    val leave_type_exception : type_exception -> unit
     val leave_extension_constructor : extension_constructor -> unit
     val leave_pattern : pattern -> unit
     val leave_expression : expression -> unit
@@ -141,7 +143,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tstr_primitive vd -> iter_value_description vd
         | Tstr_type (rf, list) -> iter_type_declarations rf list
         | Tstr_typext tyext -> iter_type_extension tyext
-        | Tstr_exception ext -> iter_extension_constructor ext
+        | Tstr_exception ext -> iter_type_exception ext
         | Tstr_module x -> iter_module_binding x
         | Tstr_recmodule list -> List.iter iter_module_binding list
         | Tstr_modtype mtd -> iter_module_type_declaration mtd
@@ -218,6 +220,11 @@ module MakeIterator(Iter : IteratorArgument) : sig
       List.iter iter_type_parameter tyext.tyext_params;
       List.iter iter_extension_constructor tyext.tyext_constructors;
       Iter.leave_type_extension tyext
+
+    and iter_type_exception tyexn =
+      Iter.enter_type_exception tyexn;
+      iter_extension_constructor tyexn.tyexn_constructor;
+      Iter.leave_type_exception tyexn
 
     and iter_pattern pat =
       Iter.enter_pattern pat;
@@ -381,7 +388,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tsig_type (rf, list) ->
             iter_type_declarations rf list
         | Tsig_exception ext ->
-            iter_extension_constructor ext
+            iter_type_exception ext
         | Tsig_typext tyext ->
             iter_type_extension tyext
         | Tsig_module md ->
@@ -626,6 +633,7 @@ module DefaultIteratorArgument = struct
       let enter_structure _ = ()
       let enter_value_description _ = ()
       let enter_type_extension _ = ()
+      let enter_type_exception _ = ()
       let enter_extension_constructor _ = ()
       let enter_pattern _ = ()
       let enter_expression _ = ()
@@ -652,6 +660,7 @@ module DefaultIteratorArgument = struct
       let leave_structure _ = ()
       let leave_value_description _ = ()
       let leave_type_extension _ = ()
+      let leave_type_exception _ = ()
       let leave_extension_constructor _ = ()
       let leave_pattern _ = ()
       let leave_expression _ = ()
