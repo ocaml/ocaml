@@ -43,6 +43,9 @@ Working version
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
   (Thomas Refis, review by Leo White)
 
+- GPR#1746: remove unreachable error variant: Make_seltype_nongen
+  (Florian Angeletti, review by Gabriel Radanne)
+
 - GPR#1747: type_cases: always propagate
   (Thomas Refis, review by Jacques Garrigue)
 
