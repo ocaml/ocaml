@@ -47,6 +47,12 @@
 #define SEEK_END 2
 #endif
 
+#if defined(_WIN32)
+#include <io.h>
+#define lseek _lseeki64
+#endif
+
+
 /* Hooks for locking channels */
 
 CAMLexport void (*caml_channel_mutex_free) (struct channel *) = NULL;
