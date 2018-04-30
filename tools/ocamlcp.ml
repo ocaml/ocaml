@@ -52,6 +52,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
   let _config = option "-config"
+  let _config_var s = option_with_arg "-config-var" s
   let _compat_32 = option "-compat-32"
   let _custom = option "-custom"
   let _dllib = option_with_arg "-dllib"

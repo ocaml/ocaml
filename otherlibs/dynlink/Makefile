@@ -40,7 +40,7 @@ endif
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/misc.cmo ../../utils/config.cmo \
+  ../../utils/config.cmo ../../utils/misc.cmo \
   ../../utils/identifiable.cmo ../../utils/numbers.cmo \
   ../../utils/arg_helper.cmo ../../utils/clflags.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \

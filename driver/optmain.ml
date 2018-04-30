@@ -36,11 +36,6 @@ let backend = (module Backend : Backend_intf.S)
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
-let show_config () =
-  Config.print_config stdout;
-  exit 0;
-;;
-
 module Options = Main_args.Make_optcomp_options (struct
   let set r () = r := true
   let clear r () = r := false
@@ -57,7 +52,8 @@ module Options = Main_args.Make_optcomp_options (struct
   let _ccopt s = first_ccopts := s :: !first_ccopts
   let _clambda_checks () = clambda_checks := true
   let _compact = clear optimize_for_speed
-  let _config () = show_config ()
+  let _config = Misc.show_config_and_exit
+  let _config_var = Misc.show_config_variable_and_exit
   let _for_pack s = for_package := Some s
   let _g = set debug
   let _i () = print_types := true; compile_only := true

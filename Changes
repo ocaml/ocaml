@@ -16,7 +16,12 @@ Working version
 
 ### Compiler user-interface and warnings:
 
-  -GPR#1733: change the perspective of the unexpected existential error message
+- MPR#7116, GPR#1430: new -config-var option
+  to get the value of a single configuration variable in scripts
+  (Gabriel Scherer, review by Sébastien Hinderer and David Allsopp,
+   request by Adrien Nader)
+
+- GPR#1733: change the perspective of the unexpected existential error message
   (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
 
 ### Code generation and optimizations:
