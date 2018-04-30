@@ -33,6 +33,9 @@ void caml_plat_mutex_init(caml_plat_mutex* m)
 static __thread int lockdepth;
 #define DEBUG_LOCK(m) (lockdepth++)
 #define DEBUG_UNLOCK(m) (lockdepth--)
+#else
+#define DEBUG_LOCK(m)
+#define DEBUG_UNLOCK(m)
 #endif
 
 void caml_plat_lock(caml_plat_mutex* m)
