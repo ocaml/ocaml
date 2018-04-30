@@ -523,7 +523,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
         extra_args--;
         pc = Code_val(accu);
         env = accu;
-      } else if (sp == domain_state->stack_high) {
+        Next;
+      } else {
+        goto do_return;
+      }
+    }
+
+    do_return:
+      if (sp == domain_state->stack_high) {
+        /* return to parent stack */
         value parent_stack = Stack_parent(domain_state->current_stack);
         value hval = Stack_handle_value(domain_state->current_stack);
         Assert(parent_stack != Val_long(0));
@@ -543,13 +551,13 @@ value caml_interprete(code_t prog, asize_t prog_size)
         env = accu;
         goto check_stacks;
       } else {
+        /* return to callee, no stack switching */
         pc = Pc_val(sp[0]);
         env = sp[1];
         extra_args = Long_val(sp[2]);
         sp += 3;
       }
       Next;
-    }
 
     Instruct(RESTART): {
       int num_args = Wosize_val(env) - 2;
@@ -565,6 +573,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       int required = *pc++;
       if (extra_args >= required) {
         extra_args -= required;
+        Next;
       } else {
         mlsize_t num_args, i;
         num_args = 1 + extra_args; /* arg1 + extra args */
@@ -573,12 +582,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
         for (i = 0; i < num_args; i++) Init_field(accu, i + 2, sp[i]);
         Init_field(accu, 0, Val_bytecode(pc - 3)); /* Point to the preceding RESTART instr. */
         sp += num_args;
-        pc = Pc_val(sp[0]);
-        env = sp[1];
-        extra_args = Long_val(sp[2]);
-        sp += 3;
+        goto do_return;
       }
-      Next;
     }
 
     Instruct(CLOSURE): {
