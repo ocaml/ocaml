@@ -19,6 +19,14 @@ let arch = "@@ARCH@@"
 
 let afl_instrument = @@AFL_INSTRUMENT@@
 
+let asm = "@@ASM@@"
+
+let cc = "@@CC@@"
+
+let cflags = "@@CFLAGS@@"
+
+let ccomptype = "@@CCOMPTYPE@@"
+
 let shared_libraries = @@SHARED_LIBRARIES@@
 
 let libunix = @@UNIX@@
@@ -44,4 +52,21 @@ let flat_float_array = @@FLAT_FLOAT_ARRAY@@
 
 let ocamldoc = @@OCAMLDOC@@
 
-let ocamldebug = @@OCAMLDOC@@
+let ocamldebug = @@OCAMLDEBUG@@
+
+let native_dynlink = @@NATIVE_DYNLINK@@
+
+let shared_library_cflags = "@@SHARED_LIBRARY_CFLAGS@@"
+
+let sharedobjext = "@@SHAREDOBJEXT@@"
+
+let csc = "@@CSC@@"
+
+let csc_flags = "@@CSCFLAGS@@"
+
+let mkdll = "@@MKDLL@@"
+let mkexe = "@@MKEXE@@"
+
+let bytecc_libs = "@@BYTECCLIBS@@"
+
+let nativecc_libs = "@@NATIVECCLIBS@@"

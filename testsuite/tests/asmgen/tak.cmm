@@ -1,3 +1,9 @@
+(* TEST
+files = "main.c"
+arguments = "-DUNIT_INT -DFUN=takmain main.c"
+* asmgen
+*)
+
 (**************************************************************************)
 (*                                                                        *)
 (*                                OCaml                                   *)

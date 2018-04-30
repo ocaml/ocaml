@@ -13,10 +13,11 @@ SRC = $(abspath ../../)
 
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
+SET_LD_PATH=CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
 OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
  $(SRC)/ocamldoc/ocamldoc.opt,\
- $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
+ $(SET_LD_PATH) $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
  -hide Pervasives -nostdlib -initially-opened-module Pervasives
 
 manual: files
@@ -43,7 +44,7 @@ index::
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
-html: files $(STDLIB_CMIS)
+html: files
 	cd htmlman; \
 	mkdir -p libref ; \
 	$(OCAMLDOC) -colorize-code -sort -html \
@@ -76,7 +77,8 @@ etex-files: $(FILES)
 	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
 	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
 
-files: $(FILES)
+files: $(FILES) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
 	cd library; $(MAKE) all RELEASEDIR=$(SRC)
 	cd cmds; $(MAKE) all RELEASEDIR=$(SRC)
@@ -130,7 +132,7 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
-	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	$(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
 	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/'\
 	) >$@
 #	sed --inplace is not portable, emulate

@@ -77,7 +77,7 @@ module Typedtree_search =
           | ext :: _ -> Hashtbl.add table (X (Name.from_ident ext.ext_id)) tt
         end
       | Typedtree.Tstr_exception ext ->
-          Hashtbl.add table (E (Name.from_ident ext.ext_id)) tt
+          Hashtbl.add table (E (Name.from_ident ext.tyexn_constructor.ext_id)) tt
       | Typedtree.Tstr_type (rf, ident_type_decl_list) ->
           List.iter
             (fun td ->
@@ -1344,7 +1344,7 @@ module Analyser =
               (maybe_more, new_env, [ Element_type_extension new_te ])
 
       | Parsetree.Pstr_exception ext ->
-          let name = ext.Parsetree.pext_name in
+          let name = ext.Parsetree.ptyexn_constructor.Parsetree.pext_name in
           (* a new exception is defined *)
           let complete_name = Name.concat current_module_name name.txt in
           (* we get the exception declaration in the typed tree *)
@@ -1355,7 +1355,7 @@ module Analyser =
           in
           let new_env = Odoc_env.add_extension env complete_name in
           let new_ext =
-            match tt_ext.ext_kind with
+            match tt_ext.Typedtree.tyexn_constructor.ext_kind with
               Text_decl(tt_args, tt_ret_type) ->
                 let loc_start = loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  loc.Location.loc_end.Lexing.pos_cnum in

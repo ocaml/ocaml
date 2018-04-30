@@ -466,7 +466,14 @@ and extension_constructor =
      pext_kind : extension_constructor_kind;
      pext_loc : Location.t;
      pext_attributes: attributes; (* C of ... [@id1] [@id2] *)
-    }
+   }
+
+(* exception E *)
+and type_exception =
+  {
+    ptyexn_constructor: extension_constructor;
+    ptyexn_attributes: attributes; (* ... [@@id1] [@@id2] *)
+  }
 
 and extension_constructor_kind =
     Pext_decl of constructor_arguments * core_type option
@@ -691,7 +698,7 @@ and signature_item_desc =
         (* type t1 = ... and ... and tn = ... *)
   | Psig_typext of type_extension
         (* type t1 += ... *)
-  | Psig_exception of extension_constructor
+  | Psig_exception of type_exception
         (* exception C of T *)
   | Psig_module of module_declaration
         (* module X : MT *)
@@ -818,7 +825,7 @@ and structure_item_desc =
         (* type t1 = ... and ... and tn = ... *)
   | Pstr_typext of type_extension
         (* type t1 += ... *)
-  | Pstr_exception of extension_constructor
+  | Pstr_exception of type_exception
         (* exception C of T
            exception C = M.X *)
   | Pstr_module of module_binding

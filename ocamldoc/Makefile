@@ -224,10 +224,10 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $^
 
 .PHONY: manpages
-manpages: stdlib_man/Stdlib.3o
+manpages: stdlib_man/Pervasives.3o
 
 .PHONY: html_doc
-html_doc: stdlib_html/Stdlib.html
+html_doc: stdlib_html/Pervasives.html
 
 .PHONY: dot
 dot: ocamldoc.dot
@@ -273,10 +273,10 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 	$(OCAMLLEX) $<
 
 .mly.ml:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 .mly.mli:
-	$(OCAMLYACC) -v $<
+	$(OCAMLYACC) --strict -v $<
 
 # Installation targets
 ######################
@@ -388,13 +388,15 @@ test_texi:
 SRC=$(ROOTDIR)
 include Makefile.unprefix
 
-stdlib_man/Stdlib.3o: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
+stdlib_man/Pervasives.3o: $(OCAMLDOC) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man -nostdlib -I stdlib_non_prefixed \
 	-t "OCaml library" -man-mini $(STDLIB_MLIS) \
 	-initially-opened-module Pervasives
 
-stdlib_html/Stdlib.html: $(OCAMLDOC) $(STDLIB_MLIS) $(STDLIB_CMIS)
+stdlib_html/Pervasives.html: $(OCAMLDOC) $(STDLIB_MLIS)
+	$(MAKE) unprefix_stdlib_for_ocamldoc
 	$(MKDIR) stdlib_html
 	$(OCAMLDOC_RUN) -d stdlib_html -html -nostdlib -I stdlib_non_prefixed \
 	-t "OCaml library" $(STDLIB_MLIS) \

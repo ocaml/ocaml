@@ -43,6 +43,7 @@ pr7618.ml
 pr7747.ml
 term-conv.ml
 test.ml
+unexpected_existentials.ml
 unify_mb.ml
 variables_in_mcomp.ml
 yallop_bugs.ml

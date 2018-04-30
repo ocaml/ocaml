@@ -17,6 +17,13 @@
 
 open Ocamltest_stdlib
 
+let skip_with_reason reason =
+  let code _log env =
+    let result = Result.skip_with_reason reason in
+    (result, env)
+  in
+  Actions.make "skip" code
+
 let pass_or_skip test pass_reason skip_reason _log env =
   let open Result in
   let result =
@@ -196,15 +203,19 @@ let run_script log env =
     Builtin_variables.script
     None
     log scriptenv in
-  if Result.is_pass result then begin
-    let modifiers = Environments.modifiers_of_file response_file in
-    let modified_env = Environments.apply_modifiers newenv modifiers in
-    (result, modified_env)
-  end else begin
-    let reason = String.trim (Sys.string_of_file response_file) in
-    let newresult = { result with Result.reason = Some reason } in
-    (newresult, newenv)
-  end
+  let final_value =
+    if Result.is_pass result then begin
+      let modifiers = Environments.modifiers_of_file response_file in
+      let modified_env = Environments.apply_modifiers newenv modifiers in
+      (result, modified_env)
+    end else begin
+      let reason = String.trim (Sys.string_of_file response_file) in
+      let newresult = { result with Result.reason = Some reason } in
+      (newresult, newenv)
+    end
+  in
+  Sys.force_remove response_file;
+  final_value
 
 let run_hook hook_name log input_env =
   Printf.fprintf log "Entering run_hook for hook %s\n%!" hook_name;
@@ -227,7 +238,7 @@ let run_hook hook_name log input_env =
     timeout = 0;
     log = log;
   } in let exit_status = run settings in
-  match exit_status with
+  let final_value = match exit_status with
     | 0 ->
       let modifiers = Environments.modifiers_of_file response_file in
       let modified_env = Environments.apply_modifiers hookenv modifiers in
@@ -238,6 +249,9 @@ let run_hook hook_name log input_env =
       if exit_status=125
       then (Result.skip_with_reason reason, hookenv)
       else (Result.fail_with_reason reason, hookenv)
+  in
+  Sys.force_remove response_file;
+  final_value
 
 let check_output kind_of_output output_variable reference_variable log
     env =

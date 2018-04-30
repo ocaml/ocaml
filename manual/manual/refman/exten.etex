@@ -2094,7 +2094,7 @@ range @["g".."z"||"G".."Z"]@ are extension-only literals.
 ;
 \end{syntax}
 
-The arguments of a sum-type constructors can now be defined using the
+The arguments of sum-type constructors can now be defined using the
 same syntax as records.  Mutable and polymorphic fields are allowed.
 GADT syntax is supported.  Attributes can be specified on individual
 fields.

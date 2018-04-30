@@ -105,6 +105,35 @@ let ocamldoc =
   [ skip ]
 }
 
+let asmgen_skip_on_bytecode_only =
+  Actions_helpers.skip_with_reason "native compiler disabled"
+
+let asmgen_skip_on_spacetime =
+  Actions_helpers.skip_with_reason "not ported to Spacetime yet"
+
+let msvc64 =
+  Ocamltest_config.ccomptype = "msvc" && Ocamltest_config.arch="amd64"
+  
+let asmgen_skip_on_msvc64 =
+  Actions_helpers.skip_with_reason "not ported to MSVC64 yet"
+
+let asmgen_actions =
+  if Ocamltest_config.arch="none" then [asmgen_skip_on_bytecode_only]
+  else if Ocamltest_config.spacetime then [asmgen_skip_on_spacetime]
+  else if msvc64 then [asmgen_skip_on_msvc64]
+  else [
+    setup_simple_build_env;
+    codegen;
+    cc;
+  ]
+
+let asmgen =
+{
+  test_name = "asmgen";
+  test_run_by_default = false;
+  test_actions = asmgen_actions
+}
+
 let _ =
   List.iter register
   [
@@ -113,4 +142,5 @@ let _ =
     toplevel;
     expect;
     ocamldoc;
+    asmgen;
   ]

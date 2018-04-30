@@ -838,11 +838,11 @@ and transl_signature env sg =
                 Sig_typext(ext.ext_id, ext.ext_type, es)) constructors rem,
               final_env
         | Psig_exception sext ->
-            check_name check_typext names sext.pext_name;
-            let (ext, newenv) = Typedecl.transl_exception env sext in
+            check_name check_typext names sext.ptyexn_constructor.pext_name;
+            let (ext, newenv) = Typedecl.transl_type_exception env sext in
             let (trem, rem, final_env) = transl_sig newenv srem in
             mksig (Tsig_exception ext) env loc :: trem,
-            Sig_typext(ext.ext_id, ext.ext_type, Text_exception) :: rem,
+            Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception) :: rem,
             final_env
         | Psig_module pmd ->
             check_name check_module names pmd.pmd_name;
@@ -1508,10 +1508,10 @@ and type_structure ?(toplevel = false) funct_body anchor env sstr scope =
            tyext.tyext_constructors [],
          newenv)
     | Pstr_exception sext ->
-        check_name check_typext names sext.pext_name;
-        let (ext, newenv) = Typedecl.transl_exception env sext in
+        check_name check_typext names sext.ptyexn_constructor.pext_name;
+        let (ext, newenv) = Typedecl.transl_type_exception env sext in
         Tstr_exception ext,
-        [Sig_typext(ext.ext_id, ext.ext_type, Text_exception)],
+        [Sig_typext(ext.tyexn_constructor.ext_id, ext.tyexn_constructor.ext_type, Text_exception)],
         newenv
     | Pstr_module {pmb_name = name; pmb_expr = smodl; pmb_attributes = attrs;
                    pmb_loc;

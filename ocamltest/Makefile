@@ -26,14 +26,26 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
   else
     FLEXLINK_ENV=OCAML_FLEXLINK="../boot/ocamlrun ../flexdll/flexlink.exe"
   endif
+  mkexe := $(MKEXE_ANSI) -link $(LDFLAGS)
 else
   unix := true
   ocamlsrcdir := $(abspath $(shell pwd)/..)
   FLEXLINK_ENV=
+  mkexe := $(MKEXE)
 endif
 
 ifeq "$(TOOLCHAIN)" "msvc"
 CPP := $(CPP) 2> nul
+CSC := csc
+ifeq "$(HOST)" "msvc"
+CSCFLAGS := /platform:x86
+else
+CSCFLAGS :=
+endif
+CSCFLAGS += /nologo /nowarn:1668
+else
+CSC :=
+CSCFLAGS :=
 endif
 
 ifeq "$(WITH_OCAMLDOC)" "ocamldoc"
@@ -202,6 +214,19 @@ ocamltest_config.ml: ocamltest_config.ml.in
 	  -e 's|@@OCAMLDOC@@|$(WITH_OCAMLDOC)|' \
 	  -e 's|@@OCAMLDEBUG@@|$(WITH_OCAMLDEBUG)|' \
 	  -e 's|@@OBJEXT@@|$(O)|' \
+	  -e 's|@@NATIVE_DYNLINK@@|$(NATDYNLINK)|' \
+	  -e 's|@@SHARED_LIBRARY_CFLAGS@@|$(SHAREDCCCOMPOPTS)|' \
+	  -e 's|@@SHAREDOBJEXT@@|$(SO)|' \
+	  -e 's|@@CSC@@|$(CSC)|' \
+	  -e 's|@@CSCFLAGS@@|$(CSCFLAGS)|' \
+	  -e 's|@@MKDLL@@|$(MKDLL)|' \
+	  -e 's|@@MKEXE@@|$(mkexe)|' \
+	  -e 's|@@BYTECCLIBS@@|$(BYTECCLIBS)|' \
+	  -e 's|@@NATIVECCLIBS@@|$(NATIVECCLIBS)|' \
+	  -e 's|@@ASM@@|$(ASM)|' \
+	  -e 's|@@CC@@|$(CC)|' \
+	  -e 's|@@CFLAGS@@|$(CFLAGS)|' \
+	  -e 's|@@CCOMPTYPE@@|$(CCOMPTYPE)|' \
 	  $< > $@
 
 .PHONY: clean

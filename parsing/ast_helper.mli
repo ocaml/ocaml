@@ -206,6 +206,9 @@ module Te:
       ?params:(core_type * variance) list -> ?priv:private_flag ->
       lid -> extension_constructor list -> type_extension
 
+    val mk_exception: ?attrs:attrs -> ?docs:docs ->
+      extension_constructor -> type_exception
+
     val constructor: ?loc:loc -> ?attrs:attrs -> ?docs:docs -> ?info:info ->
       str -> extension_constructor_kind -> extension_constructor
 
@@ -261,7 +264,7 @@ module Sig:
     val value: ?loc:loc -> value_description -> signature_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> signature_item
     val type_extension: ?loc:loc -> type_extension -> signature_item
-    val exception_: ?loc:loc -> extension_constructor -> signature_item
+    val exception_: ?loc:loc -> type_exception -> signature_item
     val module_: ?loc:loc -> module_declaration -> signature_item
     val rec_module: ?loc:loc -> module_declaration list -> signature_item
     val modtype: ?loc:loc -> module_type_declaration -> signature_item
@@ -284,7 +287,7 @@ module Str:
     val primitive: ?loc:loc -> value_description -> structure_item
     val type_: ?loc:loc -> rec_flag -> type_declaration list -> structure_item
     val type_extension: ?loc:loc -> type_extension -> structure_item
-    val exception_: ?loc:loc -> extension_constructor -> structure_item
+    val exception_: ?loc:loc -> type_exception -> structure_item
     val module_: ?loc:loc -> module_binding -> structure_item
     val rec_module: ?loc:loc -> module_binding list -> structure_item
     val modtype: ?loc:loc -> module_type_declaration -> structure_item

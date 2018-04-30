@@ -127,6 +127,7 @@ let test_file test_filename =
   let hookname_prefix = Filename.concat test_source_directory test_prefix in
   let test_build_directory_prefix =
     get_test_build_directory_prefix test_directory in
+  ignore (Sys.command ("rm -rf " ^ test_build_directory_prefix));
   Sys.make_directory test_build_directory_prefix;
   Sys.with_chdir test_build_directory_prefix
     (fun () ->
@@ -146,8 +147,10 @@ let test_file test_filename =
 
        let reference_filename = Filename.concat
            test_source_directory (test_prefix ^ ".reference") in
+       let make = try Sys.getenv "MAKE" with Not_found -> "make" in
        let initial_environment = Environments.from_bindings
            [
+             Builtin_variables.make, make;
              Builtin_variables.test_file, test_basename;
              Builtin_variables.reference, reference_filename;
              Builtin_variables.test_source_directory, test_source_directory;

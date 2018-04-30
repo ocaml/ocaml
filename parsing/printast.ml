@@ -448,6 +448,14 @@ and type_extension i ppf x =
   list (i+1) extension_constructor ppf x.ptyext_constructors;
   line i ppf "ptyext_private = %a\n" fmt_private_flag x.ptyext_private;
 
+and type_exception i ppf x =
+  line i ppf "type_exception\n";
+  attributes i ppf x.ptyexn_attributes;
+  let i = i+1 in
+  line i ppf "ptyext_constructor =\n";
+  let i = i+1 in
+  extension_constructor i ppf x.ptyexn_constructor
+
 and extension_constructor i ppf x =
   line i ppf "extension_constructor %a\n" fmt_location x.pext_loc;
   attributes i ppf x.pext_attributes;
@@ -676,9 +684,9 @@ and signature_item i ppf x =
   | Psig_typext te ->
       line i ppf "Psig_typext\n";
       type_extension i ppf te
-  | Psig_exception ext ->
+  | Psig_exception te ->
       line i ppf "Psig_exception\n";
-      extension_constructor i ppf ext;
+      type_exception i ppf te
   | Psig_module pmd ->
       line i ppf "Psig_module %a\n" fmt_string_loc pmd.pmd_name;
       attributes i ppf pmd.pmd_attributes;
@@ -784,9 +792,9 @@ and structure_item i ppf x =
   | Pstr_typext te ->
       line i ppf "Pstr_typext\n";
       type_extension i ppf te
-  | Pstr_exception ext ->
+  | Pstr_exception te ->
       line i ppf "Pstr_exception\n";
-      extension_constructor i ppf ext;
+      type_exception i ppf te
   | Pstr_module x ->
       line i ppf "Pstr_module\n";
       module_binding i ppf x

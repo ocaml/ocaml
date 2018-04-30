@@ -1145,17 +1145,17 @@ let new_declaration expansion_scope manifest =
     type_unboxed = unboxed_false_default_false;
   }
 
+let existential_name cstr ty = match repr ty with
+  | {desc = Tvar (Some name)} -> "$" ^ cstr.cstr_name ^ "_'" ^ name
+  | _ -> "$" ^ cstr.cstr_name
+
 let instance_constructor ?in_pattern cstr =
   begin match in_pattern with
   | None -> ()
   | Some (env, expansion_scope) ->
       let process existential =
         let decl = new_declaration (Some expansion_scope) None in
-        let name =
-          match repr existential with
-            {desc = Tvar (Some name)} -> "$" ^ cstr.cstr_name ^ "_'" ^ name
-          | _ -> "$" ^ cstr.cstr_name
-        in
+        let name = existential_name cstr existential in
         let path = Path.Pident (Ident.create (get_new_abstract_name name)) in
         let new_env = Env.add_local_type path decl !env in
         env := new_env;

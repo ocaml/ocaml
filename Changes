@@ -9,15 +9,25 @@ Working version
 
 ### Standard library:
 
+- GPR#1731: Format, use raise_notrace to preserve backtraces
+  (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
+
 ### Other libraries:
 
 ### Compiler user-interface and warnings:
+
+  -GPR#1733: change the perspective of the unexpected existential error message
+  (Florian Angeletti, review by Gabriel Scherer and Jeremy Yallop)
 
 ### Code generation and optimizations:
 
 ### Runtime system:
 
 ### Tools:
+
+- GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
+  modules to open as if they had been passed via the command line -open flag.
+  (Nicolás Ojeda Bär, review by Mark Shinwell)
 
 ### Manual and documentation:
 
@@ -33,6 +43,9 @@ Working version
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows
   (Alain Frisch)
+
+- GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
+  (David Allsopp, review by Sébastien Hinderer)
 
 OCaml 4.07
 ----------
@@ -51,6 +64,9 @@ OCaml 4.07
 
 - GPR#1546: Allow empty variants
   (Runhang Li, review by Gabriel Radanne and Jacques Garrigue)
+
+- GRP#1705: Allow @@attributes on exceptions
+  (Hugo Heuzard, review by Gabriel Radanne)
 
 ### Type system:
 
@@ -312,6 +328,10 @@ OCaml 4.07
 - GPR#1695: add the -null-crc command-line option to ocamlobjinfo.
   (Sébastien Hinderer, review by David Allsopp and Gabriel Scherer)
 
+- GPR#1710: ocamldoc, improve the 'man' rendering of subscripts and
+  superscripts.
+  (Gabriel Scherer)
+
 ### Manual and documentation:
 
 - MPR#7613: minor reword of the "refutation cases" paragraph
@@ -333,6 +353,9 @@ OCaml 4.07
 
 - GPR#1647: manual, subsection on record and variant disambiguation
   (Florian Angeletti, review by Alain Frisch and Gabriel Scherer)
+
+- GPR#1741: manual, improve typesetting and legibility in HTML output
+  (steinuil, review by Gabriel Scherer)
 
 ### Compiler distribution build system
 
@@ -471,6 +494,11 @@ OCaml 4.07
 - MPR#7751, GPR#1657: The toplevel prints some concrete types as abstract
   (Jacques Garrigue, report by Matej Kosik)
 
+- MPR#7765, GPR#1718: When unmarshaling bigarrays, protect against integer
+  overflows in size computations
+  (Xavier Leroy, report by Maximilian Tschirschnitz,
+   review by Gabriel Scherer)
+
 - PR#7760, GPR#1713: Exact selection of lexing engine, that is
   correct "Segfault in ocamllex-generated code using 'shortest'"
   (Luc Maranget, Frédéric Bour, report by Stephen Dolan,
@@ -498,6 +526,9 @@ OCaml 4.07
 - GPR#1661: more precise principality warning regarding record fields
   disambiguation
   (Thomas Refis, review by Leo White)
+
+- GPR#1722: Scrape types in Typeopt.maybe_pointer
+  (Leo White, review by Thomas Refis)
 
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------

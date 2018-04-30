@@ -21,6 +21,18 @@ val arch : string
 val afl_instrument : bool
 (** Whether AFL support has been enabled in the compiler *)
 
+val asm : string
+(** Path to the assembler*)
+
+val cc : string
+(** Path to the C compiler*)
+
+val cflags : string
+(** Flags to pass to the C compiler *)
+
+val ccomptype : string
+(** Type of C compiler (msvc, cc, etc.) *)
+
 val shared_libraries : bool
 (** [true] if shared libraries are supported, [false] otherwise *)
 
@@ -62,3 +74,25 @@ val ocamldoc : bool
 
 val ocamldebug : bool
 (** Whether ocamldebug has been enabled at configure time *)
+
+val native_dynlink : bool
+(** Whether support for native dynlink is available or not *)
+
+val shared_library_cflags : string
+(** Flags to use when compiling a C object for a shared library *)
+
+val sharedobjext : string
+(** Extension of shared object files *)
+
+val csc : string
+(** Path of the CSharp compiler, empty if not available *)
+
+val csc_flags : string
+(** Flags for the CSharp compiler *)
+
+val mkdll : string
+val mkexe : string
+
+val bytecc_libs : string
+
+val nativecc_libs : string
