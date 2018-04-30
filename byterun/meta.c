@@ -54,39 +54,54 @@ struct bytecode {
 };
 #define Bytecode_val(p) ((struct bytecode*)Data_abstract_val(p))
 
-CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo, value digest_opt)
+/* Convert a bytes array (= LongString.t) to a contiguous buffer.
+   The result is allocated with caml_stat_alloc */
+static char* buffer_of_bytes_array(value ls, asize_t *len)
 {
-  CAMLparam3(ls_prog, debuginfo, digest_opt);
-  CAMLlocal4(clos, bytecode, retval, s);
-  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
-  code_t prog;
-  asize_t len, off;
+  CAMLparam1(ls);
+  CAMLlocal1(s);
+  asize_t off;
+  char *ret;
   int i;
 
-  /* Convert from LongString.t to contiguous buffer */
-  len = 0;
-  for (i = 0; i < Wosize_val(ls_prog); i++) {
-    s = Field(ls_prog, i);
-    len += caml_string_length(s);
+  *len = 0;
+  for (i = 0; i < Wosize_val(ls); i++) {
+    s = Field(ls, i);
+    *len += caml_string_length(s);
   }
 
-  prog = (code_t)caml_stat_alloc(len);
+  ret = caml_stat_alloc(*len);
   off = 0;
-  for (i = 0; i < Wosize_val(ls_prog); i++) {
+  for (i = 0; i < Wosize_val(ls); i++) {
     size_t s_len;
-    s = Field(ls_prog, i);
+    s = Field(ls, i);
     s_len = caml_string_length(s);
-    memcpy((char*)prog + off, Bytes_val(s), s_len);
+    memcpy(ret + off, Bytes_val(s), s_len);
     off += s_len;
   }
 
+  CAMLreturnT (char*, ret);
+}
+
+CAMLprim value caml_reify_bytecode(value ls_prog, value debuginfo, value digest_opt)
+{
+  CAMLparam3(ls_prog, debuginfo, digest_opt);
+  CAMLlocal3(clos, bytecode, retval);
+  struct code_fragment * cf = caml_stat_alloc(sizeof(struct code_fragment));
+  code_t prog;
+  asize_t len;
+
+  prog = (code_t)buffer_of_bytes_array(ls_prog, &len);
   caml_add_debug_info(prog, Val_long(len), debuginfo);
   cf->code_start = (char *) prog;
   cf->code_end = (char *) prog + len;
+  /* match (digest_opt : string option) with */
   if (Is_block(digest_opt)) {
+    /* | Some digest -> */
     memcpy(cf->digest, String_val(Field(digest_opt, 0)), 16);
     cf->digest_computed = 1;
   } else {
+    /* | None -> */
     cf->digest_computed = 0;
   }
   caml_ext_table_add(&caml_code_fragments_table, cf);
