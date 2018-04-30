@@ -40,6 +40,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1745: do not generalize the type of every sub-pattern, only of variables
+  (Thomas Refis, review by Leo White)
+
 - GPR#1747: type_cases: always propagate
   (Thomas Refis, review by Jacques Garrigue)
 
