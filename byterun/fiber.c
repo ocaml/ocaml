@@ -481,9 +481,15 @@ void caml_realloc_stack(asize_t required_space, value* saved_vals, int nsaved)
     if (size >= caml_max_stack_size) caml_raise_stack_overflow();
     size *= 2;
   } while (size < stack_used + required_space);
-  caml_gc_log ("Growing stack to %"
-                         ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
-                   (uintnat) size * sizeof(value) / 1024);
+  if (size > 4096 / sizeof(value)) {
+    caml_gc_log ("Growing stack to %"
+                 ARCH_INTNAT_PRINTF_FORMAT "uk bytes",
+                 (uintnat) size * sizeof(value) / 1024);
+  } else {
+    caml_gc_log ("Growing stack to %"
+                 ARCH_INTNAT_PRINTF_FORMAT "u bytes",
+                 (uintnat) size * sizeof(value));
+  }
 
   new_stack = caml_alloc(Stack_ctx_words + size, Stack_tag);
   memcpy(Stack_high(new_stack) - stack_used,
