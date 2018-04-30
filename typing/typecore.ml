@@ -4772,7 +4772,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   if take_partial_instance <> None then unify_pats (instance ty_arg);
   if propagate then begin
     List.iter
-      (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar()))) patl;
+      (iter_pattern (fun {pat_type=t} -> unify_var env (newvar()) t)) patl;
     end_def ();
     generalize ty_arg';
     List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
