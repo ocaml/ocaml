@@ -241,7 +241,8 @@ let make_startup_file ppf units_list =
   if Config.spacetime then begin
     compile_phrase (Cmmgen.spacetime_shapes all_names);
   end;
-  force_linking_of_startup ppf;
+  if !Clflags.output_complete_object then
+    force_linking_of_startup ppf;
   Emit.end_assembly ()
 
 let make_shared_startup_file ppf units =
@@ -255,7 +256,8 @@ let make_shared_startup_file ppf units =
   compile_phrase
     (Cmmgen.global_table
        (List.map (fun (ui,_) -> ui.ui_symbol) units));
-  force_linking_of_startup ppf;
+  if !Clflags.output_complete_object then
+    force_linking_of_startup ppf;
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
   Emit.end_assembly ()
