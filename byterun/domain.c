@@ -827,6 +827,7 @@ static void domain_terminate() {
   caml_ev_resume();
   caml_enter_blocking_section();
   caml_ev_resume();
+  caml_plat_assert_all_locks_unlocked();
 }
 
 void caml_handle_incoming_interrupts()

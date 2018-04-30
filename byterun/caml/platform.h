@@ -163,6 +163,7 @@ void caml_plat_mutex_init(caml_plat_mutex*);
 void caml_plat_lock(caml_plat_mutex*);
 int caml_plat_try_lock(caml_plat_mutex*);
 void caml_plat_assert_locked(caml_plat_mutex*);
+void caml_plat_assert_all_locks_unlocked();
 void caml_plat_unlock(caml_plat_mutex*);
 void caml_plat_mutex_free(caml_plat_mutex*);
 typedef struct { pthread_cond_t cond; caml_plat_mutex* mutex; } caml_plat_cond;

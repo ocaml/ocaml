@@ -29,9 +29,16 @@ void caml_plat_mutex_init(caml_plat_mutex* m)
 #endif
 }
 
+#ifdef DEBUG
+static __thread int lockdepth;
+#define DEBUG_LOCK(m) (lockdepth++)
+#define DEBUG_UNLOCK(m) (lockdepth--)
+#endif
+
 void caml_plat_lock(caml_plat_mutex* m)
 {
   check_err("lock", pthread_mutex_lock(m));
+  DEBUG_LOCK(m);
 }
 
 int caml_plat_try_lock(caml_plat_mutex* m)
@@ -41,6 +48,7 @@ int caml_plat_try_lock(caml_plat_mutex* m)
     return 0;
   } else {
     check_err("try_lock", r);
+    DEBUG_LOCK(m);
     return 1;
   }
 }
@@ -62,7 +70,15 @@ void caml_plat_assert_locked(caml_plat_mutex* m)
 
 void caml_plat_unlock(caml_plat_mutex* m)
 {
+  DEBUG_UNLOCK(m);
   check_err("unlock", pthread_mutex_unlock(m));
+}
+
+void caml_plat_assert_all_locks_unlocked()
+{
+#ifdef DEBUG
+  if (lockdepth) caml_fatal_error("Locks still locked at termination");
+#endif
 }
 
 void caml_plat_mutex_free(caml_plat_mutex* m)
