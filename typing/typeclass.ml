@@ -1978,11 +1978,12 @@ let report_error env ppf = function
   | Non_collapsable_conjunction (id, clty, trace) ->
       fprintf ppf
         "@[The type of this class,@ %a,@ \
-           contains non-collapsible conjunctive types in constraints@]"
-        (Printtyp.class_declaration id) clty;
-      Printtyp.report_unification_error ppf env trace
-        (fun ppf -> fprintf ppf "Type")
-        (fun ppf -> fprintf ppf "is not compatible with type")
+           contains non-collapsible conjunctive types in constraints.@ %t@]"
+        (Printtyp.class_declaration id) clty
+        (fun ppf -> Printtyp.report_unification_error ppf env trace
+            (fun ppf -> fprintf ppf "Type")
+            (fun ppf -> fprintf ppf "is not compatible with type")
+        )
   | Final_self_clash trace ->
       Printtyp.report_unification_error ppf env trace
         (function ppf ->
