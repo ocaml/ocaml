@@ -793,19 +793,5 @@ end = struct
 end;;
 [%%expect{|
 module X : sig module N : sig  end end
-Line _, characters 6-70:
-  ......struct
-    module type S = module type of struct include X end
-  end..
-Error: Signature mismatch:
-       Modules do not match:
-         sig module type S = sig module N = X.N end end
-       is not included in
-         sig module type S = sig module N = X.N end end
-       Module type declarations do not match:
-         module type S = sig module N = X.N end
-       does not match
-         module type S = sig module N = X.N end
-       At position module type S = <here>
-       Illegal permutation of structure fields
+module Y : sig module type S = sig module N = X.N end end
 |}];;
