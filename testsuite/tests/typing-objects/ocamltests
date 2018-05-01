@@ -1,4 +1,5 @@
 dummy.ml
+errors.ml
 Exemples.ml
 open_in_classes.ml
 pr5545.ml
