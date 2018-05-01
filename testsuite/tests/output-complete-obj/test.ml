@@ -14,9 +14,6 @@ output = "${compiler_output}"
 program = "./test.ml_bc_stub.exe"
 stdout = "program-output"
 stderr = "program-output"
-
-* skip
-reason = "native test disabled until -output-complete-obj gets fixed"
 ** setup-ocamlopt.byte-build-env
 *** ocamlopt.byte
 flags = "-w a -output-complete-obj"
