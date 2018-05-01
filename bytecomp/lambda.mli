@@ -349,10 +349,20 @@ val transl_class_path: ?loc:Location.t -> Env.t -> Path.t -> lambda
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
-val subst: lambda Ident.Map.t -> lambda -> lambda
-(** Apply a substitution to a lambda-term.
+val subst: (Ident.t -> Types.value_description -> Env.t -> Env.t) ->
+  lambda Ident.Map.t -> lambda -> lambda
+(** [subst env_update_fun s lt] applies a substitution [s] to the lambda-term
+    [lt].
+
     Assumes that the image of the substitution is out of reach
-    of the bound variables of the lambda-term (no capture). *)
+    of the bound variables of the lambda-term (no capture).
+
+    [env_update_fun] is used to refresh the environment contained in debug
+    events.  *)
+
+val rename : Ident.t Ident.Map.t -> lambda -> lambda
+(** A version of [subst] specialized for the case where we're just renaming
+    idents. *)
 
 val map : (lambda -> lambda) -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda

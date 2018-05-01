@@ -264,13 +264,10 @@ let simplify_exits lam =
       begin try
         let xs,handler =  Hashtbl.find subst i in
         let ys = List.map Ident.rename xs in
-        let env =
-          List.fold_right2
-            (fun x y t -> Ident.Map.add x (Lvar y) t)
-            xs ys Ident.Map.empty in
+        let env = List.fold_right2 Ident.Map.add xs ys Ident.Map.empty in
         List.fold_right2
           (fun y l r -> Llet (Alias, Pgenval, y, l, r))
-          ys ls (Lambda.subst env handler)
+          ys ls (Lambda.rename env handler)
       with
       | Not_found -> Lstaticraise (i,ls)
       end
@@ -680,12 +677,12 @@ let split_default_wrapper ~id:fun_id ~kind ~params ~body ~attr ~loc =
         in
         let inner_params = List.map map_param params in
         let new_ids = List.map Ident.rename inner_params in
-        let subst = List.fold_left2
-            (fun s id new_id ->
-               Ident.Map.add id (Lvar new_id) s)
-            Ident.Map.empty inner_params new_ids
+        let subst =
+          List.fold_left2 (fun s id new_id ->
+            Ident.Map.add id new_id s
+          ) Ident.Map.empty inner_params new_ids
         in
-        let body = Lambda.subst subst body in
+        let body = Lambda.rename subst body in
         let inner_fun =
           Lfunction { kind = Curried; params = new_ids; body; attr; loc; }
         in
