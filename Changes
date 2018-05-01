@@ -212,6 +212,11 @@ OCaml 4.07
   infinite loops from repeatedly inlining copies of the same function.
   (Fu Yong Quah)
 
+- GPR#1740: make sure startup.o is always linked in when using
+  "-output-complete-obj". Previously, it was always linked in only on some
+  platforms, making this option unusable on platforms where it wasn't
+  (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
+
 ### Runtime system:
 
 - MPR#6411, GPR#1535: don't compile everything with -static-libgcc on mingw32,
