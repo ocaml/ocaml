@@ -156,7 +156,7 @@ let event_function exp lam =
      Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
-                   lev_env = Env.summary exp.exp_env}))
+                   lev_env = exp.exp_env}))
   else
     lam None
 
@@ -456,7 +456,7 @@ and transl_exp0 e =
           lev_loc = loc.loc;
           lev_kind = Lev_module_definition id;
           lev_repr = None;
-          lev_env = Env.summary Env.empty;
+          lev_env = Env.empty;
         })
       in
       Llet(Strict, Pgenval, id, defining_expr, transl_exp body)

@@ -314,7 +314,7 @@ and lambda_event =
   { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
-    lev_env: Env.summary }
+    lev_env: Env.t }
 
 and lambda_event_kind =
     Lev_before

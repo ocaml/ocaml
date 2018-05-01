@@ -520,7 +520,7 @@ and transl_structure loc fields cc rootpath final_env = function
                 {lev_loc = loc;
                  lev_kind = Lev_pseudo;
                  lev_repr = None;
-                 lev_env = Env.summary final_env})
+                 lev_env = final_env})
        else
          body),
       size
@@ -582,7 +582,7 @@ and transl_structure loc fields cc rootpath final_env = function
               lev_loc = mb.mb_loc;
               lev_kind = Lev_module_definition id;
               lev_repr = None;
-              lev_env = Env.summary Env.empty;
+              lev_env = Env.empty;
             })
           in
           Llet(pure_module mb.mb_expr, Pgenval, id,
@@ -605,7 +605,7 @@ and transl_structure loc fields cc rootpath final_env = function
                    lev_loc = loc;
                    lev_kind = Lev_module_definition id;
                    lev_repr = None;
-                   lev_env = Env.summary Env.empty;
+                   lev_env = Env.empty;
                  }))
               bindings
               body
