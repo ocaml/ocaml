@@ -20,7 +20,8 @@ case $1 in
            ' -pp "$AWK -f expand_module_aliases.awk"';;
   stdlib__pervasives.cm[iox]|stdlib__pervasives.p.cmx) echo ' -nopervasives';;
   camlinternalOO.cmx|camlinternalOO.p.cmx) echo ' -inline 0 -afl-inst-ratio 0';;
-    # never instrument camlinternalOO (PR#7725)
+  camlinternalLazy.cmx|camlinternalLazy.p.cmx) echo ' -afl-inst-ratio 0';;
+    # never instrument camlinternalOO or camlinternalLazy (PR#7725)
   stdlib__buffer.cmx|stdlib__buffer.p.cmx) echo ' -inline 3';;
                            # make sure add_char is inlined (PR#5872)
   stdlib__buffer.cm[io]) echo ' -w A';;
