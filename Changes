@@ -313,6 +313,9 @@ OCaml 4.07
 
 - GPR#1752: do not alias function arguments to sigprocmask (Anil Madhavapeddy)
 
+- GPR#1753: avoid potential off-by-one overflow in debugger socket path
+  length (Anil Madhavapeddy)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
