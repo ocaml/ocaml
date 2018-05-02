@@ -254,6 +254,8 @@ OCaml 4.07
 - GPR#1701: fix missing root bug in GPR#1476
   (Mark Shinwell)
 
+- GPR#1752: do not alias function arguments to sigprocmask (Anil Madhavapeddy)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
