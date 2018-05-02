@@ -197,59 +197,6 @@ struct caml__mutex_unwind {
          CAML_LOCAL_ROOTS->mutexes =                    \
          CAML_LOCAL_ROOTS->mutexes->next)
 
-
-/* One-shot events.
-   Once created, can be waited for (once) or triggered (once).
-   Events cannot be reused, and are free after being both
-   waited for and triggered */
-
-typedef struct {
-  pthread_mutex_t mutex;
-  pthread_cond_t cond;
-  int waited, triggered;
-} caml_plat_event;
-
-void caml_plat_event_init(caml_plat_event*);
-void caml_plat_event_wait(caml_plat_event*);
-void caml_plat_event_trigger(caml_plat_event*);
-
-
-/* Better implementations of shared_stack can use CAS (+ABA protection) or LL/SC */
-
-typedef struct shared_stack_node {
-  struct shared_stack_node* next;
-} shared_stack_node;
-
-typedef struct shared_stack {
-  caml_plat_mutex lock;
-  struct shared_stack_node first;
-} shared_stack;
-
-#define SHARED_STACK_INIT { CAML_PLAT_MUTEX_INITIALIZER, { 0 } }
-
-INLINE void shared_stack_init(shared_stack* stk) {
-  stk->first.next = 0;
-  caml_plat_mutex_init(&stk->lock);
-}
-
-INLINE void shared_stack_push(shared_stack* stk, shared_stack_node* node) {
-  caml_plat_lock(&stk->lock);
-  node->next = stk->first.next;
-  stk->first.next = node;
-  caml_plat_unlock(&stk->lock);
-}
-
-INLINE void* shared_stack_pop(shared_stack* stk) {
-  caml_plat_lock(&stk->lock);
-  shared_stack_node* n = stk->first.next;
-  if (n) {
-    stk->first.next = n->next;
-  }
-  caml_plat_unlock(&stk->lock);
-  return n;
-}
-
-
 /* Memory management primitives (mmap) */
 
 uintnat caml_mem_round_up_pages(uintnat size);
