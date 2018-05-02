@@ -19,6 +19,8 @@ Working 4.05.x branch
   (Mark Shinwell, Xavier Clerc, report and initial debugging by
   Valentin Gatien-Baron)
 
+- GPR#1752: do not alias function arguments to sigprocmask.
+  (Anil Madhavapeddy)
 
 OCaml 4.05.0 (13 Jul 2017):
 ---------------------------
