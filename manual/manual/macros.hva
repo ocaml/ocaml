@@ -1,19 +1,52 @@
-%%Colors for links
-\def\visited@color{\#006000}
-\def\link@color{\#00A000}
+% Colors for links
+\def\visited@color{\#4cd2ff}
+\def\link@color{\#4286f4}
 \def\hover@color{\@getstylecolor{subsection}}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
 \newstyle{a:visited}{color:\visited@color;text-decoration:underline;}
-\newstyle{a:hover}{color:black;text-decoration:none;background-color:\hover@color}
+\newstyle{a:hover}{color:black;text-decoration:underline;background-color:\hover@color}
+
+
+\newstyle{@media all}{
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Fira Sans Regular'), local('FiraSans-Regular'), url(/fira-sans.ttf) format('truetype');
+}
+}
 
 % Compact layout
-\newstyle{body}{max-width:800px}
-\newstyle{@media (min-width:900px)}{body\{margin-left:50px\}}
-\newstyle{@media (min-width:1000px)}{body\{margin-left:100px\}}
-\newstyle{pre}{overflow-y:auto}
+\newstyle{body}{
+  max-width:800px;
+  width: 85\%;
+  margin: auto;
+  margin-top: 80px;
+  font-size: 19px
+}
+
+% selects the index's title
+\newstyle{body >
+          div:first-child >
+          span:first-child >
+          span:first-child}{
+  font-family: "Fira Sans", sans-serif;
+}
+
+\newstyle{h1, h2, h3}{
+  font-family: "Fira Sans", sans-serif;
+  font-weight: normal;
+  border-bottom: 1px solid black;
+}
+
+\newstyle{pre}{
+  font-size: 0.85em;
+  overflow-y:auto;
+  white-space: pre-wrap;
+}
 
 % More spacing between lines and inside tables
-\newstyle{p}{line-height:1.3em}
+\newstyle{p,ul}{line-height:1.3em}
 \newstyle{.cellpadding1 tr td}{padding:1px 4px}
 
 %Styles for caml-example and friends

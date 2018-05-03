@@ -14,6 +14,18 @@
 \plaintextfalse
 %\newif\ifpdf
 %\pdffalse
+
+% Add meta tag to the generated head tag
+\ifouthtml
+\let\oldmeta=\@meta
+\renewcommand{\@meta}{
+\oldmeta
+\begin{rawhtml}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+\end{rawhtml}
+}
+\fi
+
 \input{macros.tex}
 
 \usepackage{hyperref}
