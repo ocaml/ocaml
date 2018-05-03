@@ -543,6 +543,10 @@ OCaml 4.07
 - GPR#1722: Scrape types in Typeopt.maybe_pointer
   (Leo White, review by Thomas Refis)
 
+- GPR#1755: ensure that a bigarray is never collected while reading complex
+  values (Xavier Clerc, Mark Shinwell and Leo White, report by Chris Hardin,
+  reviews by Stephen Dolan and Xavier Leroy)
+
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
 
