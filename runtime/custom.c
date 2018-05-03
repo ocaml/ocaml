@@ -33,32 +33,37 @@ static value alloc_custom_gen (struct custom_operations * ops,
                                uintnat bsz,
                                mlsize_t mem,
                                mlsize_t max_major,
-                               mlsize_t max_minor,
-                               int long_lived)
+                               mlsize_t mem_minor,
+                               mlsize_t max_minor)
 {
   mlsize_t wosize;
   CAMLparam0();
   CAMLlocal1(result);
+
+  /* [mem] is the total amount of out-of-heap memory, [mem_minor] is how much
+     of it should be counted against [max_minor]. */
+  CAMLassert (mem_minor <= mem);
 
   wosize = 1 + (bsz + sizeof(value) - 1) / sizeof(value);
   if (wosize <= Max_young_wosize) {
     result = caml_alloc_small(wosize, Custom_tag);
     Custom_ops_val(result) = ops;
     if (ops->finalize != NULL || mem != 0) {
-      if (long_lived){
-        caml_adjust_gc_speed (mem, max_major);
-      }else{
-        /* Remember that the block needs processing after minor GC. */
-        add_to_custom_table (&caml_custom_table, result, mem, max_major);
-        /* Keep track of extra resources held by custom block in
-           minor heap. */
-        if (mem != 0) {
-          if (max_minor == 0) max_minor = 1;
-          caml_extra_heap_resources_minor += (double) mem / (double) max_minor;
-          if (caml_extra_heap_resources_minor > 1.0) {
-            caml_request_minor_gc ();
-            caml_gc_dispatch ();
-          }
+      if (mem > mem_minor){
+        caml_adjust_gc_speed (mem - mem_minor, max_major);
+      }
+      /* The remaining [mem_minor] will be counted if the block survives a
+         minor GC */
+      add_to_custom_table (&caml_custom_table, result, mem_minor, max_major);
+      /* Keep track of extra resources held by custom block in
+         minor heap. */
+      if (mem_minor != 0) {
+        if (max_minor == 0) max_minor = 1;
+        caml_extra_heap_resources_minor +=
+          (double) mem_minor / (double) max_minor;
+        if (caml_extra_heap_resources_minor > 1.0) {
+          caml_request_minor_gc ();
+          caml_gc_dispatch ();
         }
       }
     }
@@ -76,19 +81,21 @@ CAMLexport value caml_alloc_custom(struct custom_operations * ops,
                                    mlsize_t mem,
                                    mlsize_t max)
 {
-  return alloc_custom_gen (ops, bsz, mem, max, max, 0);
+  return alloc_custom_gen (ops, bsz, mem, max, mem, max);
 }
 
 CAMLexport value caml_alloc_custom_mem(struct custom_operations * ops,
                                        uintnat bsz,
                                        mlsize_t mem)
 {
+  mlsize_t mem_minor =
+    mem < caml_custom_minor_max_bsz ? mem : caml_custom_minor_max_bsz;
   return alloc_custom_gen (ops, bsz, mem,
                            Bsize_wsize (caml_stat_heap_wsz) / 150
                            * caml_custom_major_ratio,
+                           mem_minor,
                            Bsize_wsize (caml_minor_heap_wsz) / 100
-                           * caml_custom_major_ratio,
-                           mem >= caml_custom_minor_max_bsz);
+                           * caml_custom_major_ratio);
 }
 
 struct custom_operations_list {
