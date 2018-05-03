@@ -107,7 +107,6 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/semantics_of_primitives.cmo \
   bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translattribute.cmo \
   bytecomp/translprim.cmo bytecomp/translcore.cmo \
@@ -194,6 +193,7 @@ MIDDLE_END=\
   middle_end/int_replace_polymorphic_compare.cmo \
   middle_end/debuginfo.cmo \
   asmcomp/clambda_primitives.cmo \
+  asmcomp/semantics_of_primitives.cmo \
   asmcomp/convert_primitives.cmo \
   asmcomp/printclambda_primitives.cmo \
   middle_end/base_types/tag.cmo \
