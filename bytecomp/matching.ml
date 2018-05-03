@@ -24,7 +24,6 @@ open Parmatch
 open Printf
 open Printpat
 
-
 let dbg = false
 
 (*  See Peyton-Jones, ``The Implementation of functional programming
@@ -52,7 +51,7 @@ and may_compats = MayCompat.compats
      - Pattern matrices.
      - Default environments: mapping from matrices to exit numbers.
      - Contexts:  matrices whose column are partitioned into
-       left and right.
+       left (matched) and right (to match).
      - Jump summaries: mapping from exit numbers to contexts
 *)
 
@@ -114,11 +113,15 @@ let ctx_lshift ctx =
     get_mins le_ctx (List.map lforget ctx)
   end
 
-let  rshift {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=p::right}
+let  rshift mut {left=left ; right=right} = match left with
+| p::ps ->
+    if mut then
+      {left=ps; right=omega::right;}
+    else
+      {left=ps ; right=p::right;}
 | _ -> assert false
 
-let ctx_rshift ctx = List.map rshift ctx
+let ctx_rshift mut ctx = List.map (rshift mut) ctx
 
 let rec nchars n ps =
   if n <= 0 then [],ps
@@ -128,21 +131,29 @@ let rec nchars n ps =
     p::chars,cdrs
   | _ -> assert false
 
-let  rshift_num n {left=left ; right=right} =
+let  rshift_num mut n {left=left ; right=right} =
   let shifted,left = nchars n left in
+  let shifted =
+    if mut then omegas n else shifted in
   {left=left ; right = shifted@right}
 
-let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
+let ctx_rshift_num mut n ctx = List.map (rshift_num mut n) ctx
 
 (* Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
-  All mutable fields are replaced by '_', since side-effects in
-  guards can alter these fields *)
+   If mut is true, all information is cancelled,
+   (eg: (_,_)::p1::p2::rem -> _::rem) *)
 
-let combine {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=set_args_erase_mutable p right}
+let top_erase mut ps =
+  if mut then match ps with
+      | _::rem -> omega::rem
+      | [] -> assert false
+  else ps
+
+let combine mut {left=left ; right=right} = match left with
+| p::ps -> {left=ps ; right=top_erase mut (set_args_erase_mutable p right)}
 | _ -> assert false
 
-let ctx_combine ctx = List.map combine ctx
+let ctx_combine mut ctx = List.map (combine mut) ctx
 
 let ncols = function
   | [] -> 0
@@ -387,9 +398,17 @@ let jumps_map f env =
 (* Pattern matching before any compilation *)
 
 type pattern_matching =
-  { mutable cases : (pattern list * lambda) list;
-    args : (lambda * let_kind) list ;
-    default : (matrix * int) list}
+  { mutable cases : (pattern list * lambda) list;  (* matrix *)
+    args : (lambda * (let_kind * bool)) list ;     (* subject vector *)
+    default : (matrix * int) list} (* default matrices, with exit number *)
+
+(* NB: args hold some information
+    - let_kind describe the nature of the binding to be added.
+    - the boolean is true when the bound value can change (ie it is a mutable
+      argument or below it.
+   See for instance  make_record_matching below for information production,
+   compile_match for binding addition and boolean usage.
+ *)
 
 (* Pattern matching after application of both the or-pat rule and the
    mixture rule *)
@@ -419,7 +438,8 @@ let pretty_cases cases =
         (fun p ->
           top_pretty Format.str_formatter p ;
           prerr_string " " ;
-          prerr_string (Format.flush_str_formatter ()))
+          let pp = Format.flush_str_formatter () in
+          eprintf "%s" pp)
         ps ;
 (*
       prerr_string " -> " ;
@@ -1328,21 +1348,21 @@ let matcher_constr cstr = match cstr.cstr_arity with
 
 let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
-  | ((arg, _mut) :: argl) ->
+  | ((arg, (_,mut)) :: argl) ->
       let cstr = pat_as_constr p in
       let newargs =
         if cstr.cstr_inlined <> None then
-          (arg, Alias) :: argl
+          (arg, (Alias,mut)) :: argl
         else match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
-            make_field_args p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
-        | Cstr_unboxed -> (arg, Alias) :: argl
+            make_field_args p.pat_loc (Alias,mut) arg 0 (cstr.cstr_arity - 1) argl
+        | Cstr_unboxed -> (arg, (Alias,mut)) :: argl
         | Cstr_extension _ ->
-            make_field_args p.pat_loc Alias arg 1 cstr.cstr_arity argl in
+            make_field_args p.pat_loc (Alias,mut) arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
-        ctx =  filter_ctx p ctx ;
+        ctx = filter_ctx p ctx ;
         pat=normalize_pat p}
 
 
@@ -1385,11 +1405,11 @@ let matcher_variant_nonconst lab p rem = match p.pat_desc with
 
 let make_variant_matching_nonconst p lab def ctx = function
     [] -> fatal_error "Matching.make_variant_matching_nonconst"
-  | ((arg, _mut) :: argl) ->
+  | ((arg, (_,mut)) :: argl) ->
       let def = make_default (matcher_variant_nonconst lab) def
       and ctx = filter_ctx p ctx in
       {pm=
-        {cases = []; args = (Lprim(Pfield 1, [arg], p.pat_loc), Alias) :: argl;
+        {cases = []; args = (Lprim(Pfield 1, [arg], p.pat_loc), (Alias,mut)) :: argl;
           default=def} ;
         ctx=ctx ;
         pat = normalize_pat p}
@@ -1550,10 +1570,10 @@ let inline_lazy_force arg loc =
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
-  | (arg,_mut) :: argl ->
+  | (arg,(_,mut)) :: argl ->
       { cases = [];
         args =
-          (inline_lazy_force arg Location.none, Strict) :: argl;
+          (inline_lazy_force arg Location.none, (Strict,mut)) :: argl;
         default = make_default matcher_lazy def }
 
 let divide_lazy p ctx pm =
@@ -1581,11 +1601,11 @@ let matcher_tuple arity p rem = match p.pat_desc with
 
 let make_tuple_matching loc arity def = function
     [] -> fatal_error "Matching.make_tuple_matching"
-  | (arg, _mut) :: argl ->
+  | (arg, (_,mut)) :: argl ->
       let rec make_args pos =
         if pos >= arity
         then argl
-        else (Lprim(Pfield pos, [arg], loc), Alias) :: make_args (pos + 1) in
+        else (Lprim(Pfield pos, [arg], loc), (Alias,mut)) :: make_args (pos + 1) in
       {cases = []; args = make_args 0 ;
         default=make_default (matcher_tuple arity) def}
 
@@ -1622,9 +1642,9 @@ let matcher_record num_fields p rem = match p.pat_desc with
     record_matching_line num_fields lbl_pat_list @ rem
 | _ -> raise NoMatch
 
-let make_record_matching loc all_labels def = function
+let make_record_matching no_opt loc all_labels def = function
     [] -> fatal_error "Matching.make_record_matching"
-  | ((arg, _mut) :: argl) ->
+  | ((arg, (_,mut)) :: argl) ->
       let rec make_args pos =
         if pos >= Array.length all_labels then argl else begin
           let lbl = all_labels.(pos) in
@@ -1638,8 +1658,8 @@ let make_record_matching loc all_labels def = function
           in
           let str =
             match lbl.lbl_mut with
-              Immutable -> Alias
-            | Mutable -> StrictOpt in
+              Immutable -> Alias,mut
+            | Mutable -> StrictOpt,no_opt in
           (access, str) :: make_args(pos + 1)
         end in
       let nfields = Array.length all_labels in
@@ -1647,11 +1667,11 @@ let make_record_matching loc all_labels def = function
       {cases = []; args = make_args 0 ; default = def}
 
 
-let divide_record all_labels p ctx pm =
+let divide_record no_opt all_labels p ctx pm =
   let get_args = get_args_record (Array.length all_labels) in
   divide_line
     (filter_ctx p)
-    (make_record_matching p.pat_loc all_labels)
+    (make_record_matching no_opt p.pat_loc all_labels)
     get_args
     p ctx pm
 
@@ -1671,7 +1691,7 @@ let matcher_array len p rem = match p.pat_desc with
 | Tpat_any -> Parmatch.omegas len @ rem
 | _ -> raise NoMatch
 
-let make_array_matching kind p def ctx = function
+let make_array_matching no_opt kind p def ctx = function
   | [] -> fatal_error "Matching.make_array_matching"
   | ((arg, _mut) :: argl) ->
       let len = get_key_array p in
@@ -1681,16 +1701,16 @@ let make_array_matching kind p def ctx = function
         else (Lprim(Parrayrefu kind,
                     [arg; Lconst(Const_base(Const_int pos))],
                     p.pat_loc),
-              StrictOpt) :: make_args (pos + 1) in
+              (StrictOpt,no_opt)) :: make_args (pos + 1) in
       let def = make_default (matcher_array len) def
       and ctx = filter_ctx p ctx in
       {pm={cases = []; args = make_args 0 ; default = def} ;
         ctx=ctx ;
         pat = normalize_pat p}
 
-let divide_array kind ctx pm =
+let divide_array no_opt kind ctx pm =
   divide
-    (make_array_matching kind)
+    (make_array_matching no_opt kind)
     (=) get_key_array get_args_array ctx pm
 
 
@@ -2151,7 +2171,7 @@ let complete_pats_constrs = function
     to jump to in case of failure of elementary tests
 *)
 
-let mk_failaction_neg partial ctx def = match partial with
+let mk_failaction_neg _mut partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
@@ -2168,7 +2188,7 @@ let mk_failaction_neg partial ctx def = match partial with
 
 
 (* In line with the article and simpler than before *)
-let mk_failaction_pos partial seen ctx defs  =
+let mk_failaction_pos mut partial seen ctx defs  =
   if dbg then begin
     prerr_endline "**POS**" ;
     pretty_def defs ;
@@ -2195,8 +2215,8 @@ let mk_failaction_pos partial seen ctx defs  =
       | [] -> scan_def env to_test rem
       | _  -> scan_def ((List.map fst now,idef)::env) later rem in
 
-  let fail_pats = complete_pats_constrs seen in
-  if List.length fail_pats < 32 then begin
+  let fail_pats = if mut then [] else complete_pats_constrs seen in
+  if not mut && List.length fail_pats < 32 then begin
     let fail,jmps =
       scan_def
         []
@@ -2209,9 +2229,10 @@ let mk_failaction_pos partial seen ctx defs  =
       pretty_jumps jmps
     end ;
     None,fail,jmps
-  end else begin (* Too many non-matched constructors -> reduced information *)
+  end else begin
+  (* If mutable or too many non-matched constructors -> reduced information *)
     if dbg then eprintf "POS->NEG!!!\n%!" ;
-    let fail,jumps =  mk_failaction_neg partial ctx defs in
+    let fail,jumps =  mk_failaction_neg mut partial ctx defs in
     if dbg then
       eprintf "FAIL: %s\n"
         (match fail with
@@ -2220,10 +2241,10 @@ let mk_failaction_pos partial seen ctx defs  =
     fail,[],jumps
   end
 
-let combine_constant loc arg cst partial ctx def
+let combine_constant mut loc arg cst partial ctx def
     (const_lambda_list, total, _pats) =
   let fail, local_jumps =
-    mk_failaction_neg partial ctx def in
+    mk_failaction_neg mut partial ctx def in
   let lambda1 =
     match cst with
     | Const_int _ ->
@@ -2301,12 +2322,12 @@ let split_extension_cases tag_lambda_list =
   split_rec tag_lambda_list
 
 
-let combine_constructor loc arg ex_pat cstr partial ctx def
+let combine_constructor mut loc arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for extensions *)
     let fail, local_jumps =
-      mk_failaction_neg partial ctx def in
+      mk_failaction_neg mut partial ctx def in
     let lambda1 =
       let consts, nonconsts = split_extension_cases tag_lambda_list in
       let default, consts, nonconsts =
@@ -2351,7 +2372,7 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
     let fail_opt,fails,local_jumps =
       if sig_complete then None,[],jumps_empty
       else
-        mk_failaction_pos partial pats ctx def in
+        mk_failaction_pos mut partial pats ctx def in
 
     let tag_lambda_list = fails @ tag_lambda_list in
     let (consts, nonconsts) = split_cases tag_lambda_list in
@@ -2413,7 +2434,7 @@ let call_switcher_variant_constr loc fail arg int_lambda_list =
        call_switcher loc
          fail (Lvar v) min_int max_int int_lambda_list)
 
-let combine_variant loc row arg partial ctx def
+let combine_variant mut loc row arg partial ctx def
                     (tag_lambda_list, total1, _pats) =
   let row = Btype.row_repr row in
   let num_constr = ref 0 in
@@ -2436,7 +2457,7 @@ let combine_variant loc row arg partial ctx def
     then
       None, jumps_empty
     else
-      mk_failaction_neg partial ctx def in
+      mk_failaction_neg mut partial ctx def in
   let (consts, nonconsts) = split_cases tag_lambda_list in
   let lambda1 = match fail, one_action with
   | None, Some act -> act
@@ -2466,9 +2487,9 @@ let combine_variant loc row arg partial ctx def
   lambda1, jumps_union local_jumps total1
 
 
-let combine_array loc arg kind partial ctx def
+let combine_array mut loc arg kind partial ctx def
     (len_lambda_list, total1, _pats)  =
-  let fail, local_jumps = mk_failaction_neg partial  ctx def in
+  let fail, local_jumps = mk_failaction_neg mut partial  ctx def in
   let lambda1 =
     let newvar = Ident.create "len" in
     let switch =
@@ -2517,7 +2538,7 @@ let rec event_branch repr lam =
 
 exception Unused
 
-let compile_list compile_fun division =
+let compile_list mut compile_fun division =
 
   let rec c_rec totals = function
   | [] -> [], jumps_unions totals, []
@@ -2529,7 +2550,7 @@ let compile_list compile_fun division =
             let (lambda1, total1) = compile_fun cell.ctx cell.pm in
             let c_rem, total, new_pats =
               c_rec
-                (jumps_map ctx_combine total1::totals) rem in
+                (jumps_map (ctx_combine mut) total1::totals) rem in
             ((key,lambda1)::c_rem), total, (cell.pat::new_pats)
           with
           | Unused -> c_rec totals rem
@@ -2537,7 +2558,7 @@ let compile_list compile_fun division =
   c_rec [] division
 
 
-let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
+let compile_orhandlers mut compile_fun lambda1 total1 ctx to_catch =
   let rec do_rec r total_r = function
     | [] -> r,total_r
     | (mat,i,vars,pm)::rem ->
@@ -2549,7 +2570,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           | Lstaticraise (j,args) ->
               if i=j then
                 List.fold_right2 (bind Alias) vars args handler_i,
-                jumps_map (ctx_rshift_num (ncols mat)) total_i
+                jumps_map (ctx_rshift_num mut (ncols mat)) total_i
               else
                 do_rec r total_r rem
           | _ ->
@@ -2557,7 +2578,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
                 (Lstaticcatch (r,(i,vars), handler_i))
                 (jumps_union
                    (jumps_remove i total_r)
-                   (jumps_map (ctx_rshift_num (ncols mat)) total_i))
+                   (jumps_map (ctx_rshift_num mut (ncols mat)) total_i))
               rem
         with
         | Unused ->
@@ -2566,12 +2587,12 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   do_rec lambda1 total1 to_catch
 
 
-let compile_test compile_fun partial divide combine ctx to_match =
+let compile_test mut compile_fun partial divide combine ctx to_match =
   let division = divide ctx to_match in
-  let c_div = compile_list compile_fun division in
+  let c_div = compile_list mut compile_fun division in
   match c_div with
   | [],_,_ ->
-     begin match mk_failaction_neg partial ctx to_match.default with
+     begin match mk_failaction_neg mut partial ctx to_match.default with
      | None,_ -> raise Unused
      | Some l,total -> l,total
      end
@@ -2685,6 +2706,8 @@ let arg_to_var arg cls = match arg with
 (*
   The main compilation function.
    Input:
+      no_opt=if true will de-optimize mutable accesses. That is no
+      memory of values of matched mutable record fields or arrays.
       repr=used for inserting debug events
       partial=exhaustiveness information from Parmatch
       ctx=a context
@@ -2693,23 +2716,31 @@ let arg_to_var arg cls = match arg with
    Output: a lambda term, a jump summary {..., exit number -> context, .. }
 *)
 
-let rec compile_match repr partial ctx m = match m with
+let rec compile_match no_opt repr partial ctx m = match m with
 | { cases = []; args = [] } -> comp_exit ctx m
 | { cases = ([], action) :: rem } ->
     if is_guarded action then begin
+      if dbg then begin
+        eprintf "GUARD WITH CTX\n" ;
+        pretty_ctx ctx ;
+        eprintf "END GUARD\n"
+      end ;
       let (lambda, total) =
-        compile_match None partial ctx { m with cases = rem } in
+        compile_match no_opt None partial
+          ctx
+          { m with cases = rem } in
       event_branch repr (patch_guarded lambda action), total
     end else
       (event_branch repr action, jumps_empty)
-| { args = (arg, str)::argl } ->
+| { args = (arg, (str,mut))::argl } ->
     let v,newarg = arg_to_var arg m.cases in
     let first_match,rem =
       split_precompile (Some v)
-        { m with args = (newarg, Alias) :: argl } in
+        { m with args = (newarg, (Alias,mut)) :: argl } in
     let (lam, total) =
       comp_match_handlers
-        ((if dbg then do_compile_matching_pr else do_compile_matching) repr)
+        ((if dbg then do_compile_matching_pr else do_compile_matching)
+           no_opt repr mut)
         partial ctx newarg first_match rem in
     bind_check str v arg lam, total
 | _ -> assert false
@@ -2717,72 +2748,73 @@ let rec compile_match repr partial ctx m = match m with
 
 (* verbose version of do_compile_matching, for debug *)
 
-and do_compile_matching_pr repr partial ctx arg x =
-  prerr_string "COMPILE: " ;
+and do_compile_matching_pr no_opt repr mut partial ctx arg x =
+  eprintf "COMPILE: mut=%b, partial=" mut ;
   prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
   prerr_endline "MATCH" ;
   pretty_precompiled x ;
   prerr_endline "CTX" ;
   pretty_ctx ctx ;
-  let (_, jumps) as r =  do_compile_matching repr partial ctx arg x in
+  let (_, jumps) as r =  do_compile_matching no_opt repr mut partial ctx arg x in
   prerr_endline "JUMPS" ;
   pretty_jumps jumps ;
   r
 
-and do_compile_matching repr partial ctx arg pmh = match pmh with
+and do_compile_matching no_opt repr mut partial ctx arg pmh = match pmh with
 | Pm pm ->
   let pat = what_is_cases pm.cases in
   begin match pat.pat_desc with
   | Tpat_any ->
-      compile_no_test
-        divide_var ctx_rshift repr partial ctx pm
+      compile_no_test no_opt
+        divide_var (ctx_rshift mut) repr partial ctx pm
   | Tpat_tuple patl ->
-      compile_no_test
-        (divide_tuple (List.length patl) (normalize_pat pat)) ctx_combine
+      compile_no_test no_opt
+        (divide_tuple (List.length patl) (normalize_pat pat)) (ctx_combine mut)
         repr partial ctx pm
   | Tpat_record ((_, lbl,_)::_,_) ->
-      compile_no_test
-        (divide_record lbl.lbl_all (normalize_pat pat))
-        ctx_combine repr partial ctx pm
+      compile_no_test no_opt
+        (divide_record no_opt lbl.lbl_all (normalize_pat pat))
+        (ctx_combine mut) repr partial ctx pm
   | Tpat_constant cst ->
-      compile_test
-        (compile_match repr partial) partial
+      compile_test mut
+        (compile_match no_opt repr partial) partial
         divide_constant
-        (combine_constant pat.pat_loc arg cst partial)
+        (combine_constant mut pat.pat_loc arg cst partial)
         ctx pm
   | Tpat_construct (_, cstr, _) ->
-      compile_test
-        (compile_match repr partial) partial
+      compile_test mut
+        (compile_match no_opt repr partial) partial
         divide_constructor
-        (combine_constructor pat.pat_loc arg pat cstr partial)
+        (combine_constructor mut pat.pat_loc arg pat cstr partial)
         ctx pm
   | Tpat_array _ ->
       let kind = Typeopt.array_pattern_kind pat in
-      compile_test (compile_match repr partial) partial
-        (divide_array kind) (combine_array pat.pat_loc arg kind partial)
+      compile_test mut (compile_match no_opt repr partial) partial
+        (divide_array no_opt kind)
+        (combine_array mut pat.pat_loc arg kind partial)
         ctx pm
   | Tpat_lazy _ ->
-      compile_no_test
+      compile_no_test no_opt
         (divide_lazy (normalize_pat pat))
-        ctx_combine repr partial ctx pm
+        (ctx_combine mut) repr partial ctx pm
   | Tpat_variant(_, _, row) ->
-      compile_test (compile_match repr partial) partial
+      compile_test mut (compile_match no_opt repr partial) partial
         (divide_variant !row)
-        (combine_variant pat.pat_loc !row arg partial)
+        (combine_variant mut pat.pat_loc !row arg partial)
         ctx pm
   | _ -> assert false
   end
 | PmVar {inside=pmh ; var_arg=arg} ->
     let lam, total =
-      do_compile_matching repr partial (ctx_lshift ctx) arg pmh in
-    lam, jumps_map ctx_rshift total
+      do_compile_matching no_opt repr mut partial (ctx_lshift ctx) arg pmh in
+    lam, jumps_map (ctx_rshift mut) total
 | PmOr {body=body ; handlers=handlers} ->
-    let lam, total = compile_match repr partial ctx body in
-    compile_orhandlers (compile_match repr partial) lam total ctx handlers
+    let lam, total = compile_match no_opt repr partial ctx body in
+    compile_orhandlers mut (compile_match no_opt repr partial) lam total ctx handlers
 
-and compile_no_test divide up_ctx repr partial ctx to_match =
+and compile_no_test no_opt divide up_ctx repr partial ctx to_match =
   let {pm=this_match ; ctx=this_ctx } = divide ctx to_match in
-  let lambda,total = compile_match repr partial this_ctx this_match in
+  let lambda,total = compile_match no_opt repr partial this_ctx this_match in
   lambda, jumps_map up_ctx total
 
 
@@ -2791,8 +2823,7 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 (* The entry points *)
 
 (*
-   If there is a guard in a matching or a lazy pattern,
-   then set exhaustiveness info to Partial.
+   If there is a mutable pattern set exhaustiveness to partial
    (because of side effects, assume the worst).
 
    Notice that exhaustiveness information is trusted by the compiler,
@@ -2800,17 +2831,18 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
    More specifically, for instance if match y with x::_ -> x is flagged
    total (as it happens during JoCaml compilation) then y cannot be []
    at runtime. As a consequence, the static Total exhaustiveness information
-   have to be downgraded to Partial, in the dubious cases where guards
-   or lazy pattern execute arbitrary code that may perform side effects
-   and change the subject values.
+   have to to be downgraded to Partial, in the dubious cases 
+   where side effects may change the subject values.
+   Notice that those sides effects can be performed at any moment
+   'a priori' (multithreading, guards, lazy patterns, signal handlers...).
+   So we sub-optimise in case of mutable patterns.
 LM:
    Lazy pattern was PR#5992, initial patch by lpw25.
-   I have  generalized the patch, so as to also find mutable fields.
 *)
 
 let find_in_pat pred =
   let rec find_rec p =
-    pred p.pat_desc ||
+    pred p ||
     begin match p.pat_desc with
     | Tpat_alias (p,_,_) | Tpat_variant (_,Some p,_) | Tpat_lazy p ->
         find_rec p
@@ -2827,16 +2859,7 @@ let find_in_pat pred =
   end in
   find_rec
 
-let is_lazy_pat = function
-  | Tpat_lazy _ -> true
-  | Tpat_alias _ | Tpat_variant _ | Tpat_record _
-  | Tpat_tuple _|Tpat_construct _ | Tpat_array _
-  | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
-      -> false
-
-let is_lazy p = find_in_pat is_lazy_pat p
-
-let have_mutable_field p = match p with
+let is_mutable_pat p = match p.pat_desc with
 | Tpat_record (lps,_) ->
     List.exists
       (fun (_,lbl,_) ->
@@ -2844,69 +2867,124 @@ let have_mutable_field p = match p with
         | Mutable -> true
         | Immutable -> false)
       lps
+| Tpat_array _ -> true
 | Tpat_alias _ | Tpat_variant _ | Tpat_lazy _
-| Tpat_tuple _|Tpat_construct _ | Tpat_array _
+| Tpat_tuple _|Tpat_construct _
 | Tpat_or _
 | Tpat_constant _ | Tpat_var _ | Tpat_any
   -> false
 
-let is_mutable p = find_in_pat have_mutable_field p
+let is_mutable p = find_in_pat is_mutable_pat p
+
+let may_call_pat p = match p.pat_desc with
+  | Tpat_lazy _ -> true (* Thunk reduction *)
+  | Tpat_array _ ->
+      let open Lambda in
+      begin match Typeopt.array_pattern_kind p with
+      | Paddrarray | Pintarray -> false
+      | Pgenarray | Pfloatarray -> true (* may/will allocate *)
+      end
+  | Tpat_record ((_,lbl,_)::_,_) ->
+      let open Types in
+      begin match lbl.lbl_repres with
+      | Record_float -> true
+      | Record_regular|Record_extension
+      |Record_unboxed _|Record_inlined _
+          -> false
+      end
+  | Tpat_alias _ | Tpat_variant _
+  | Tpat_tuple _|Tpat_construct _ | Tpat_record ([],_)
+  | Tpat_or _ | Tpat_constant _ | Tpat_var _ | Tpat_any
+    -> false
+
+let may_call p = find_in_pat may_call_pat p
 
 (* Downgrade Total when
    1. Matching accesses some mutable fields;
-   2. And there are  guards or lazy patterns.
+   2. And pattern matching may call code that may mutate
+      the subject value. This happens for: (a) guards (b) lazy
+      patterns, and (b) structures that contain unboxed floats.
+
+   Also notice that the above condition is returned as 2nd pair component,
+   it will activate de-optimization of mutable accesses.
 *)
 
-let check_partial is_mutable is_lazy pat_act_list = function
-  | Partial -> Partial
-  | Total ->
-      if
-        pat_act_list = [] ||  (* allow empty case list *)
+let do_check_partial is_mutable may_call pat_act_list partial =
+  match pat_act_list with
+  | [] -> Partial,false (* Always partial *)
+  | _::_ ->
+      let mut =
+        List.exists (fun (pats, _) -> is_mutable pats) pat_act_list
+          &&
         List.exists
-          (fun (pats, lam) ->
-            is_mutable pats && (is_guarded lam || is_lazy pats))
-          pat_act_list
-      then Partial
-      else Total
+          (fun (pats,lam) -> may_call pats || is_guarded lam)
+          pat_act_list in
+      let partial = match partial with
+      | Partial -> Partial
+      | Total ->  if mut then Partial else Total in
+      partial,mut
 
 let check_partial_list =
-  check_partial (List.exists is_mutable) (List.exists is_lazy)
-let check_partial = check_partial is_mutable is_lazy
+  do_check_partial (List.exists is_mutable) (List.exists may_call)
+
+let check_partial = do_check_partial is_mutable may_call
 
 (* have toplevel handler when appropriate *)
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
-let check_total total lambda i handler_fun =
+let check_total warn loc total lambda i handler_fun =
   if jumps_is_empty total then
     lambda
   else begin
+    begin if
+      warn && Warnings.is_active Warnings.Partial_match_extra
+    then
+      Location.prerr_warning loc  Warnings.Partial_match_extra
+    end ;
     Lstaticcatch(lambda, (i,[]), handler_fun())
   end
 
-let compile_matching repr handler_fun arg pat_act_list partial =
-  let partial = check_partial pat_act_list partial in
+(* Warn for "extra" match failure *)
+let check_warn no_opt partial cls =
+  match partial,cls,no_opt  with
+  | Total,_::_,true -> true
+  | _,_,_ -> false
+
+(* Standard entry point to the PM compiler, shared by compile_matching
+   and  for_tupled_function.
+*)
+
+let compile_matching_gen loc repr handler_fun args pats_act_list partial0 =
+  let partial,no_opt = check_partial_list pats_act_list partial0 in
+  let ctx = start_ctx (List.length args) in
   match partial with
   | Partial ->
       let raise_num = next_raise_count () in
+      let omegas = [List.map (fun _ -> omega) args] in
       let pm =
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [arg, Strict] ;
-          default = [[[omega]],raise_num]} in
+        { cases = pats_act_list;
+          args;
+          default = [omegas,raise_num]} in
       begin try
-        let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
-        check_total total lambda raise_num handler_fun
+        let (lambda, total) = compile_match no_opt repr partial ctx pm in
+        let warn = check_warn no_opt partial0 pats_act_list in
+        check_total warn loc total lambda raise_num handler_fun
       with
       | Unused -> assert false (* ; handler_fun() *)
       end
   | Total ->
       let pm =
-        { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [arg, Strict] ;
+        { cases = pats_act_list;
+          args;
           default = []} in
-      let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
+      let (lambda, total) = compile_match no_opt repr partial ctx pm in
       assert (jumps_is_empty total) ;
       lambda
+
+let compile_matching loc repr handler_fun arg pat_act_list partial0 =
+  let cls = List.map (fun (pat,act) ->  [pat],act) pat_act_list in
+  compile_matching_gen loc repr handler_fun [arg,(Strict,false)] cls partial0
 
 
 let partial_function loc () =
@@ -2920,16 +2998,16 @@ let partial_function loc () =
                Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching repr (partial_function loc) param pat_act_list partial
+  compile_matching loc repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
-  compile_matching None
+  compile_matching Location.none None
     (fun () -> Lprim(Praise Raise_reraise, [param], Location.none))
     param pat_act_list Partial
 
 let simple_for_let loc param pat body =
-  compile_matching None (partial_function loc) param [pat, body] Partial
+  compile_matching loc None (partial_function loc) param [pat, body] Partial
 
 
 (* Optimize binding of immediate tuples
@@ -3060,26 +3138,21 @@ let for_let loc param pat body =
       if !opt then Lstaticcatch(bind, (nraise, catch_ids), body)
       else simple_for_let loc param pat body
 
+(**********************************************)
 (* Handling of tupled functions and matchings *)
+(**********************************************)
 
 (* Easy case since variables are available *)
-let for_tupled_function loc paraml pats_act_list partial =
-  let partial = check_partial_list pats_act_list partial in
-  let raise_num = next_raise_count () in
-  let omegas = [List.map (fun _ -> omega) paraml] in
-  let pm =
-    { cases = pats_act_list;
-      args = List.map (fun id -> (Lvar id, Strict)) paraml ;
-      default = [omegas,raise_num]
-    } in
-  try
-    let (lambda, total) = compile_match None partial
-        (start_ctx (List.length paraml)) pm in
-    check_total total lambda raise_num (partial_function loc)
-  with
-  | Unused -> partial_function loc ()
+let for_tupled_function loc paraml pats_act_list partial0 =
+  let args =  List.map (fun id -> (Lvar id, (Strict,false))) paraml in
+  compile_matching_gen
+    loc None  (partial_function loc)  args pats_act_list partial0
 
 
+(* Complex case, attempt to avoid tuple construction in
+   "match e1,...,en with p1,...,pn | ..."
+   where all patterns are n-tuples or wild cards and where the
+   tuple is not pattern-bound by a variable or as pattern. *)
 
 let flatten_pattern size p = match p.pat_desc with
 | Tpat_tuple args -> args
@@ -3136,28 +3209,29 @@ let flatten_precompiled size args  pmh = match pmh with
    Hence it needs a fourth argument, which it ignores
 *)
 
-let compile_flattened repr partial ctx _ pmh = match pmh with
-| Pm pm -> compile_match repr partial ctx pm
+let compile_flattened no_opt repr partial ctx _ pmh = match pmh with
+| Pm pm -> compile_match no_opt repr partial ctx pm
 | PmOr {body=b ; handlers=hs} ->
-    let lam, total = compile_match repr partial ctx b in
-    compile_orhandlers (compile_match repr partial) lam total ctx hs
+    let lam, total = compile_match no_opt repr partial ctx b in
+    compile_orhandlers false (compile_match no_opt repr partial)
+      lam total ctx hs
 | PmVar _ -> assert false
 
-let do_for_multiple_match loc paraml pat_act_list partial =
+let do_for_multiple_match loc paraml pat_act_list partial0 =
   let repr = None in
-  let partial = check_partial pat_act_list partial in
+  let partial,no_opt = check_partial pat_act_list partial0 in
   let raise_num,pm1 =
     match partial with
     | Partial ->
         let raise_num = next_raise_count () in
         raise_num,
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict];
+          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), (Strict,false)];
           default = [[[omega]],raise_num] }
     | _ ->
         -1,
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
-          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), Strict];
+          args = [Lprim(Pmakeblock(0, Immutable, None), paraml, loc), (Strict,false)];
           default = [] } in
 
   try
@@ -3167,8 +3241,7 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
       let size = List.length paraml
       and idl = List.map (fun _ -> Ident.create "*match*") paraml in
-      let args =  List.map (fun id -> Lvar id, Alias) idl in
-
+      let args =  List.map (fun id -> Lvar id, (Alias,false)) idl in
       let flat_next = flatten_precompiled size args next
       and flat_nexts =
         List.map
@@ -3177,20 +3250,22 @@ let do_for_multiple_match loc paraml pat_act_list partial =
 
       let lam, total =
         comp_match_handlers
-          (compile_flattened repr)
+          (compile_flattened no_opt repr)
           partial (start_ctx size) () flat_next flat_nexts in
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
-            check_total total lam raise_num (partial_function loc)
+            let warn = check_warn no_opt partial0 pat_act_list in
+            check_total warn loc total lam raise_num (partial_function loc)
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
     with Cannot_flatten ->
-      let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
+      let (lambda, total) = compile_match no_opt None partial (start_ctx 1) pm1 in
       begin match partial with
       | Partial ->
-          check_total total lambda raise_num (partial_function loc)
+          let warn = check_warn no_opt partial0 pat_act_list in
+          check_total warn loc total lambda raise_num (partial_function loc)
       | Total ->
           assert (jumps_is_empty total) ;
           lambda

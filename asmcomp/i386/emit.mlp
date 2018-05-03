@@ -136,17 +136,17 @@ let register_name r =
 
 let sym32 ?ofs s = mem_sym ?ofs DWORD (emit_symbol s)
 
-let reg = function
-  | { loc = Reg r } -> register_name r
-  | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
+let reg r = match r.Reg.loc,r.Reg.typ with
+  | Reg r,_ -> register_name r
+  | Stack(Incoming n | Outgoing n),_ when n < 0 ->
       sym32 "caml_extra_params" ~ofs:(n + 64)
-  | { loc = Stack s; typ = Float } as r ->
+  | Stack s, Float ->
       let ofs = slot_offset s (register_class r) in
       mem32 REAL8 ofs RSP
-  | { loc = Stack s } as r ->
+  | Stack s,_ ->
       let ofs = slot_offset s (register_class r) in
       mem32 DWORD ofs RSP
-  | { loc = Unknown } ->
+  | Unknown,_ ->
       fatal_error "Emit_i386.reg"
 
 (* Output a reference to the lower 8 bits or lower 16 bits of a register *)

@@ -151,3 +151,4 @@ g A Y X -> '_'
 f A Z Y -> '_'
 g A Z Y -> '_'
 PR#7661-E=Ok
+PR#7241=Ok

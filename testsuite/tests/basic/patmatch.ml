@@ -1874,3 +1874,39 @@ module MPR7761 = struct
     let () = printf "PR#7661-E=Ok\n%!"
   end
 end
+
+module PR7241 = struct
+
+  type u = {a: bool; mutable b: int option}
+
+  let tst f =
+    try  let _ = f {a=true; b=Some 5} in assert false
+    with Match_failure _ -> ()
+
+  let f x = match x with
+    {a=false} -> 0
+  | {b=None} -> 1
+  | {b=Some z}  when (x.b <- None; false) -> z
+  | {a=true; b=Some y} -> y
+
+  let () = tst f
+
+  let f x = match x with
+    {a=false} -> 0
+  | {b=None} -> 1
+  | _  when (x.b <- None; false) -> 2
+  | {a=true; b=Some y} -> y
+
+  let () = tst f
+
+  let f x = match x with
+    {a=false} -> 0
+  | {b=None} -> 1
+  | {b=Some 5}  when (x.b <- None; false) -> 2
+  | {a=true; b=Some y} -> y
+
+  let () = tst f
+
+  let () = printf "PR#7241=Ok\n%!"
+end
+
