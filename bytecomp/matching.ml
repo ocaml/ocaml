@@ -1545,7 +1545,8 @@ let inline_lazy_force arg loc =
   if !Clflags.afl_instrument then
     (* Disable inlining optimisation if AFL instrumentation active,
        so that the GC forwarding optimisation is not visible in the
-       instrumentation output. (PR#???) *)
+       instrumentation output.
+       (see https://github.com/stedolan/crowbar/issues/14) *)
     Lapply{ap_should_be_tailcall = false;
            ap_loc=loc;
            ap_func=Lazy.force code_force_lazy;
