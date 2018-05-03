@@ -301,6 +301,7 @@ let simplif_arith_prim_pure fpc p (args, approxs) dbg =
   (* float *)
   | [Value_const(Uconst_ref(_, Some (Uconst_float n1)))] when fpc ->
       begin match p with
+      | Pidentityfloat -> make_const_float n1
       | Pintoffloat -> make_const_int (int_of_float n1)
       | Pnegfloat -> make_const_float (-. n1)
       | Pabsfloat -> make_const_float (abs_float n1)

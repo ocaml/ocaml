@@ -30,6 +30,9 @@
     @since 4.07.0
 *)
 
+external identity : float -> float = "%identityfloat"
+(** Identity. *)
+
 external neg : float -> float = "%negfloat"
 (** Unary negation. *)
 

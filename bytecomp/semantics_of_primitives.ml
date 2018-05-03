@@ -63,6 +63,7 @@ let for_primitive (prim : Lambda.primitive) =
       Arbitrary_effects, No_coeffects
   | Poffsetint _ -> No_effects, No_coeffects
   | Poffsetref _ -> Arbitrary_effects, Has_coeffects
+  | Pidentityfloat
   | Pintoffloat
   | Pfloatofint
   | Pnegfloat
@@ -165,6 +166,7 @@ type return_type =
 
 let return_type_of_primitive (prim:Lambda.primitive) =
   match prim with
+  | Pidentityfloat
   | Pfloatofint
   | Pnegfloat
   | Pabsfloat
