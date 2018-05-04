@@ -40,6 +40,9 @@ Working version
 
 ### Internal/compiler-libs changes:
 
+- GPR#1747: type_cases: always propagate
+  (Thomas Refis, review by Jacques Garrigue)
+
 ### Bug fixes:
 
 - MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
