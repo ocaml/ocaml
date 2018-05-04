@@ -82,11 +82,7 @@ type ctx = {left:pattern list ; right:pattern list}
 let pretty_ctx ctx =
   List.iter
     (fun {left=left ; right=right} ->
-      Format.eprintf "LEFT:" ;
-      pretty_line Format.err_formatter left ;
-      Format.eprintf " RIGHT:" ;
-      pretty_line Format.err_formatter right ;
-      Format.eprintf "\n")
+      Format.eprintf "LEFT:%a RIGHT:%a\n" pretty_line left pretty_line right)
     ctx
 
 let le_ctx c1 c2 =
@@ -424,9 +420,7 @@ let pretty_cases cases =
 let pretty_def def =
   Format.eprintf "+++++ Defaults +++++\n" ;
   List.iter
-    (fun (pss,i) ->
-      Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix Format.err_formatter pss)
+    (fun (pss,i) -> Format.eprintf "Matrix for %d\n%a" i pretty_matrix pss)
     def ;
   Format.eprintf "+++++++++++++++++++++\n"
 
@@ -2724,10 +2718,8 @@ let rec compile_match repr partial ctx m = match m with
 (* verbose version of do_compile_matching, for debug *)
 
 and do_compile_matching_pr repr partial ctx arg x =
-  Format.eprintf "COMPILE: " ;
-  Format.eprintf "%s\n"
+  Format.eprintf "COMPILE: %s\nMATCH\n"
     (match partial with Partial -> "Partial" | Total -> "Total") ;
-  Format.eprintf "MATCH\n" ;
   pretty_precompiled x ;
   Format.eprintf "CTX\n" ;
   pretty_ctx ctx ;
