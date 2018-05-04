@@ -1,5 +1,5 @@
 % Colors for links
-\def\visited@color{\#4cd2ff}
+\def\visited@color{\#0d46a3}
 \def\link@color{\#4286f4}
 \def\hover@color{\@getstylecolor{subsection}}
 \newstyle{a:link}{color:\link@color;text-decoration:underline;}
@@ -18,9 +18,10 @@
 
 % Compact layout
 \newstyle{body}{
-  max-width:800px;
+  max-width:850px;
   width: 85\%;
   margin: auto;
+  background: \#efefef;
   margin-top: 80px;
   font-size: 19px
 }
@@ -41,6 +42,9 @@
 
 \newstyle{pre}{
   font-size: 0.85em;
+  background: beige;
+  border: 1px solid grey;
+  padding: 10px;
   overflow-y:auto;
   white-space: pre-wrap;
 }
