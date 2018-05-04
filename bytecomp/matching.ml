@@ -722,9 +722,33 @@ let pat_as_constr = function
   | {pat_desc=Tpat_construct (_, cstr,_)} -> cstr
   | _ -> fatal_error "Matching.pat_as_constr"
 
-let group_constant = function
-  | {pat_desc= Tpat_constant _} -> true
-  | _                           -> false
+let group_const_int = function
+  | {pat_desc= Tpat_constant Const_int _ } -> true
+  | _                                      -> false
+
+let group_const_char = function
+  | {pat_desc= Tpat_constant Const_char _ } -> true
+  | _                                      -> false
+
+let group_const_string = function
+  | {pat_desc= Tpat_constant Const_string _ } -> true
+  | _                                      -> false
+
+let group_const_float = function
+  | {pat_desc= Tpat_constant Const_float _ } -> true
+  | _                                      -> false
+
+let group_const_int32 = function
+  | {pat_desc= Tpat_constant Const_int32 _ } -> true
+  | _                                      -> false
+
+let group_const_int64 = function
+  | {pat_desc= Tpat_constant Const_int64 _ } -> true
+  | _                                      -> false
+
+let group_const_nativeint = function
+  | {pat_desc= Tpat_constant Const_nativeint _ } -> true
+  | _                                      -> false
 
 and group_constructor = function
   | {pat_desc = Tpat_construct (_,_,_)} -> true
@@ -756,7 +780,13 @@ and group_lazy = function
 
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
-| Tpat_constant _ -> group_constant
+| Tpat_constant Const_int _ -> group_const_int
+| Tpat_constant Const_char _ -> group_const_char
+| Tpat_constant Const_string _ -> group_const_string
+| Tpat_constant Const_float _ -> group_const_float
+| Tpat_constant Const_int32 _ -> group_const_int32
+| Tpat_constant Const_int64 _ -> group_const_int64
+| Tpat_constant Const_nativeint _ -> group_const_nativeint
 | Tpat_construct _ -> group_constructor
 | Tpat_tuple _ -> group_tuple
 | Tpat_record _ -> group_record

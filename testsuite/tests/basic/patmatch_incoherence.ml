@@ -15,8 +15,16 @@ match { x = [] } with
 | { x = "" :: _ } -> ()
 ;;
 [%%expect{|
-Uncaught exception: File "bytecomp/matching.ml", line 2237, characters 58-64: Assertion failed
-
+(let (*match* = [0: 0a] *match* =a (field 0 *match*))
+  (if *match*
+    (let (*match* =a (field 0 *match*))
+      (catch
+        (if (!= *match* 3) (exit 1) (let (*match* =a (field 1 *match*)) 0a))
+       with (1)
+        (stringswitch *match*
+         case "": (let (*match* =a (field 1 *match*)) 0a))))
+    0a))
+- : unit = ()
 |}];;
 
 
@@ -31,8 +39,14 @@ match { x = assert false } with
 | { x = "" } -> ()
 ;;
 [%%expect{|
-Uncaught exception: File "bytecomp/matching.ml", line 2237, characters 58-64: Assertion failed
-
+(let
+  (*match* =
+     (makeblock 0
+       (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
+   *match* =a (field 0 *match*))
+  (catch (if (!= *match* 3) (exit 2) 0a) with (2)
+    (stringswitch *match* case "": 0a)))
+Exception: Assert_failure ("", 1, 12).
 |}];;
 
 match { x = assert false } with
@@ -53,8 +67,8 @@ Here is an example of a case that is not matched:
        (makeblock 0
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
-    (catch (if (!= *match* 3) (exit 2) 0a) with (2) (if *match* (exit 1) 0a)))
- with (1) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+    (catch (if (!= *match* 3) (exit 4) 0a) with (4) (if *match* (exit 3) 0a)))
+ with (3) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -76,8 +90,8 @@ Here is an example of a case that is not matched:
        (makeblock 0
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
-    (if *match* (exit 3) 0a))
- with (3) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+    (if *match* (exit 5) 0a))
+ with (5) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -99,8 +113,8 @@ Here is an example of a case that is not matched:
        (makeblock 0
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
-    (if *match* (exit 5) 0a))
- with (5) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+    (if *match* (exit 7) 0a))
+ with (7) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -123,9 +137,9 @@ Here is an example of a case that is not matched:
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
     (catch
-      (let (len =a (array.length[gen] *match*)) (if (!= len 0) (exit 8) 0a))
-     with (8) (if (!= *match* 3) (exit 7) 0a)))
- with (7) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+      (let (len =a (array.length[gen] *match*)) (if (!= len 0) (exit 10) 0a))
+     with (10) (if (!= *match* 3) (exit 9) 0a)))
+ with (9) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -147,9 +161,9 @@ Here is an example of a case that is not matched:
        (makeblock 0
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
-    (catch (if (!= *match* 88) (exit 10) 0a) with (10)
-      (if (!= *match* 3) (exit 9) 0a)))
- with (9) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+    (catch (if (!= *match* 88) (exit 12) 0a) with (12)
+      (if (!= *match* 3) (exit 11) 0a)))
+ with (11) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -172,14 +186,14 @@ Here is an example of a case that is not matched:
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*))
     (catch
-      (if (isint *match*) (exit 12)
+      (if (isint *match*) (exit 14)
         (let (variant =a (field 0 *match*))
-          (if (!= variant 88) (exit 12)
+          (if (!= variant 88) (exit 14)
             (let (*match* =a (field 1 *match*))
               (stringswitch *match* case "lol": 0a
-                                    default: (exit 11))))))
-     with (12) (if (!= *match* 3) (exit 11) 0a)))
- with (11) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+                                    default: (exit 13))))))
+     with (14) (if (!= *match* 3) (exit 13) 0a)))
+ with (13) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
 
@@ -204,10 +218,10 @@ Here is an example of a case that is not matched:
          (raise (makeblock 0 (global Assert_failureg) [0: "" 1 12])))
      *match* =a (field 0 *match*)
      *match* =a (field 0 *match*))
-    (if (!=. *match* 2.) (exit 13)
+    (if (!=. *match* 2.) (exit 15)
       (let (*match* =a (field 1 *match*))
         (stringswitch *match* case "": 0a
-                              default: (exit 13)))))
- with (13) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
+                              default: (exit 15)))))
+ with (15) (raise (makeblock 0 (global Match_failureg) [0: "" 1 0])))
 Exception: Assert_failure ("", 1, 12).
 |}];;
