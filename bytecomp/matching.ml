@@ -1478,6 +1478,8 @@ let get_mod_field modname field =
 
 let code_force_lazy_block =
   get_mod_field "CamlinternalLazy" "force_lazy_block"
+let code_force_lazy =
+  get_mod_field "CamlinternalLazy" "force"
 ;;
 
 (* inline_lazy_force inlines the beginning of the code of Lazy.force. When
@@ -1540,13 +1542,25 @@ let inline_lazy_force_switch arg loc =
                sw_failaction = Some varg }, loc ))))
 
 let inline_lazy_force arg loc =
-  if !Clflags.native_code then
-    (* Lswitch generates compact and efficient native code *)
-    inline_lazy_force_switch arg loc
+  if !Clflags.afl_instrument then
+    (* Disable inlining optimisation if AFL instrumentation active,
+       so that the GC forwarding optimisation is not visible in the
+       instrumentation output.
+       (see https://github.com/stedolan/crowbar/issues/14) *)
+    Lapply{ap_should_be_tailcall = false;
+           ap_loc=loc;
+           ap_func=Lazy.force code_force_lazy;
+           ap_args=[arg];
+           ap_inlined=Default_inline;
+           ap_specialised=Default_specialise}
   else
-    (* generating bytecode: Lswitch would generate too many rather big
-       tables (~ 250 elts); conditionals are better *)
-    inline_lazy_force_cond arg loc
+    if !Clflags.native_code then
+      (* Lswitch generates compact and efficient native code *)
+      inline_lazy_force_switch arg loc
+    else
+      (* generating bytecode: Lswitch would generate too many rather big
+         tables (~ 250 elts); conditionals are better *)
+      inline_lazy_force_cond arg loc
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"

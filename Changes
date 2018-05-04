@@ -319,6 +319,9 @@ OCaml 4.07
 
 - GPR#1752: do not alias function arguments to sigprocmask (Anil Madhavapeddy)
 
+- GPR#1754, MPR#7725: improve AFL instrumentation for objects and lazy values
+  (Stephen Dolan)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
