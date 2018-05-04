@@ -164,6 +164,7 @@ static void winsock_cleanup(void)
 void caml_debugger_init(void)
 {
   char * address;
+  size_t a_len;
   char * port, * p;
   struct hostent * host;
   int n;
@@ -191,11 +192,16 @@ void caml_debugger_init(void)
     /* Unix domain */
     sock_domain = PF_UNIX;
     sock_addr.s_unix.sun_family = AF_UNIX;
+    a_len = strlen(address);
+    if (a_len >= sizeof(sock_addr.s_unix.sun_path)) {
+      caml_fatal_error("Debug socket path length exceeds maximum permitted length");
+    }
     strncpy(sock_addr.s_unix.sun_path, address,
-            sizeof(sock_addr.s_unix.sun_path));
+            sizeof(sock_addr.s_unix.sun_path) - 1);
+    sock_addr.s_unix.sun_path[sizeof(sock_addr.s_unix.sun_path) - 1] = '\0';
     sock_addr_len =
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
-        + strlen(address);
+        + a_len;
 #else
     caml_fatal_error("Unix sockets not supported");
 #endif
