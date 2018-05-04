@@ -107,6 +107,28 @@ and strengthen_decl ~aliasable env md p =
 
 let () = Env.strengthen := strengthen
 
+let rec make_aliases_absent mty =
+  match mty with
+  | Mty_alias(_, p) ->
+      Mty_alias(Mta_absent, p)
+  | Mty_signature sg ->
+      Mty_signature(make_aliases_absent_sig sg)
+  | Mty_functor(param, arg, res) ->
+      Mty_functor(param, arg, make_aliases_absent res)
+  | mty ->
+      mty
+
+and make_aliases_absent_sig sg =
+  match sg with
+    [] -> []
+  | Sig_module(id, md, rs) :: rem ->
+      let str =
+        { md with md_type = make_aliases_absent md.md_type }
+      in
+      Sig_module(id, str, rs) :: make_aliases_absent_sig rem
+  | sigelt :: rem ->
+      sigelt :: make_aliases_absent_sig rem
+
 let scrape_for_type_of env mty =
   let rec loop env path mty =
     match mty, path with
@@ -120,7 +142,7 @@ let scrape_for_type_of env mty =
         strengthen ~aliasable:false env mty path
     | _ -> mty
   in
-  loop env None mty
+  make_aliases_absent (loop env None mty)
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
