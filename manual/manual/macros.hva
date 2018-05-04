@@ -8,12 +8,7 @@
 
 
 \newstyle{@media all}{
-@font-face {
-  font-family: 'Fira Sans';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Fira Sans Regular'), local('FiraSans-Regular'), url('/fira-sans.ttf'), format('truetype');
-}
+@import url('https://fonts.googleapis.com/css?family=Fira+Sans');
 }
 
 % Compact layout
@@ -21,7 +16,7 @@
   max-width:850px;
   width: 85\%;
   margin: auto;
-  background: \#efefef;
+  background: \#f7f7f7;
   margin-top: 80px;
   font-size: 19px
 }
