@@ -322,6 +322,9 @@ OCaml 4.07
 - GPR#1754, MPR#7725: improve AFL instrumentation for objects and lazy values
   (Stephen Dolan)
 
+- GPR#1753: avoid potential off-by-one overflow in debugger socket path
+  length (Anil Madhavapeddy)
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
