@@ -119,8 +119,6 @@ let x = { f = 12; g = 43 };;
 type 'a t = { f : 'a; g : 'a; }
 val x : int t = {f = 12; g = 43}
 Line _, characters 0-19:
-  {x with f = "hola"};;
-  ^^^^^^^^^^^^^^^^^^^
 Error: This expression has type string t
        but an expression was expected of type int t
        Type string is not compatible with type int
