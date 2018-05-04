@@ -1490,6 +1490,9 @@ let check_unused ?(lev=get_current_level ()) env expected_ty cases =
       | r -> r)
     cases
 
+let iter_pattern_variables_type f : pattern_variable list -> unit =
+  List.iter (fun (_, t, _, _, _) -> f t)
+
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
     (fun (id, ty, _name, loc, as_var) env ->
@@ -4723,7 +4726,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         let pat =
           if !Clflags.principal then begin
             end_def ();
-            iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
+            iter_pattern_variables_type generalize_structure pvs;
             { pat with pat_type = instance pat.pat_type }
           end else pat
         in
@@ -4764,11 +4767,14 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   List.iter (fun f -> f()) !pattern_force;
   (* Post-processing and generalization *)
   if take_partial_instance <> None then unify_pats (instance ty_arg);
-  List.iter
-    (iter_pattern (fun {pat_type=t} -> unify_var env (newvar()) t)) patl;
+  List.iter (fun { pat_vars; _ } ->
+    iter_pattern_variables_type (fun t -> unify_var env (newvar()) t) pat_vars
+  ) half_typed_cases;
   end_def ();
   generalize ty_arg';
-  List.iter (iter_pattern (fun {pat_type=t} -> generalize t)) patl;
+  List.iter (fun { pat_vars; _ } ->
+    iter_pattern_variables_type generalize pat_vars
+  ) half_typed_cases;
   (* type bodies *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
