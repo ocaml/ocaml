@@ -1,0 +1,11 @@
+val f : unit -> 'a = <fun>
+Characters 11-15:
+  let g () = f (); 1;;
+             ^^^^
+Warning 21: this statement never returns (or has an unsound type.)
+val g : unit -> int = <fun>
+Exception: Not_found.
+Raised at file "//toplevel//", line 5, characters 17-26
+Called from file "//toplevel//", line 5, characters -15--11
+Called from file "toplevel/toploop.ml", line 180, characters 17-56
+
