@@ -103,7 +103,7 @@ let occurs_var var u =
 
 let prim_size prim args =
   match prim with
-    Pidentity | Pbytes_to_string | Pbytes_of_string -> 0
+    Pidentity | Pidentityfloat | Pbytes_to_string | Pbytes_of_string -> 0
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args

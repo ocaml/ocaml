@@ -20,7 +20,7 @@
 
 let prim_size (prim : Lambda.primitive) args =
   match prim with
-  | Pidentity -> 0
+  | Pidentity | Pidentityfloat -> 0
   | Pgetglobal _ -> 1
   | Psetglobal _ -> 1
   | Pmakeblock _ -> 5 + List.length args
