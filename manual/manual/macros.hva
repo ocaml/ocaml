@@ -22,11 +22,9 @@
 }
 
 % selects the index's title
-\newstyle{body >
-          div:first-child >
-          span:first-child >
-          span:first-child}{
+\newstyle{.maintitle}{
   font-family: "Fira Sans", sans-serif;
+  text-align: center;
 }
 
 \newstyle{h1, h2, h3}{
@@ -124,13 +122,21 @@
 
 \def\entree#1#2{#1 & #2 \\}
 \def\tableau#1#2#3{%
-\par\begin{center}%
+\par
+\@open{div}{class="tableau"}
+\begin{center}%
 \begin{tabular*}{.8\linewidth}{#1}%
 \multicolumn{1}{c}{\textbf{#2}} &
 \multicolumn{1}{c}{\textbf{#3}} \\
 %%#2 & #3 \\%
 }%
-\def\endtableau{\end{tabular*}\end{center}\par}
+\def\endtableau{\end{tabular*}\end{center}\@close{div}\par}
+
+\newstyle{.tableau, .syntax, .syntaxleft}{
+  /* same width as body */
+  max-width: 850px;
+  overflow-y: scroll;
+}
 
 % L'environnement library (pour composer les descriptions des modules
 % de bibliotheque).
@@ -180,3 +186,5 @@
 \newenvironment{links}
 {\setenvclass{itemize}{ftoc2}\setenvclass{li-itemize}{li-links}\itemize}
 {\enditemize}
+
+\newenvironment{maintitle}{\@open{div}{class="maintitle"}}{\@close{div}}
