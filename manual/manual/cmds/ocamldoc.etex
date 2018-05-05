@@ -464,7 +464,6 @@ placement rules for comments in ".mli" files.
 \begin{caml_eval}
 class cl = object end
 \end{caml_eval}
-\newcommand{\camlat}{\@}
 \begin{caml_example*}{signature}
 (** The first special comment of the file is the comment associated
     with the whole module.*)
