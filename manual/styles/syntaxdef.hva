@@ -150,8 +150,8 @@
 \def\sep{ \\ \\ \spacefalse }
 \def\cutline{}
 \def\emptystring{\epsilon}
-\def\syntax{$$\begin{array}{>{\set@name}rcl}\spacefalse}
-\def\endsyntax{\end{array}$$}
-\def\syntaxleft{$\begin{array}{>{\set@name}rcl}\spacefalse}
-\def\endsyntaxleft{\end{array}$}
+\def\syntax{\@open{div}{class="syntax"}$$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\endsyntax{\end{array}$$\@close{div}}
+\def\syntaxleft{\@open{div}{class="syntaxleft"}$\begin{array}{>{\set@name}rcl}\spacefalse}
+\def\endsyntaxleft{\end{array}$\@close{div}}
 \def\synt#1{$\spacefalse#1$}
