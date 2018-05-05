@@ -832,10 +832,7 @@ let rec generalize_expansive env var_level visited ty =
 
 let generalize_expansive env ty =
   simple_abbrevs := Mnil;
-  try
-    generalize_expansive env !nongen_level (Hashtbl.create 7) ty
-  with Unify ([_, ty'] as tr) ->
-    raise (Unify ((ty, ty') :: tr))
+  generalize_expansive env !nongen_level (Hashtbl.create 7) ty
 
 let generalize_global ty = generalize_structure !global_level ty
 let generalize_structure ty = generalize_structure !current_level ty
