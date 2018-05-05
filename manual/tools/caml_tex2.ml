@@ -25,10 +25,11 @@ let code_env ?(newline=true) env out s =
     (fun ppf env -> start false ppf env []) env s (stop newline) env
 
 let main = "example"
-type example_mode = Toplevel | Verbatim
+type example_mode = Toplevel | Verbatim | Signature
 let string_of_mode =  function
   | Toplevel -> "toplevel"
   | Verbatim -> "verbatim"
+  | Signature -> "signature"
 
 let input_env = "input"
 let ok_output ="output"
@@ -107,7 +108,7 @@ module Output = struct
   exception Unexpected_status of unexpected_report
 
   let print_source ppf {file; lines = (start, stop); phrase; output} =
-    Printf.fprintf ppf "%s, lines %d to %d:\n\"\n%s\n%s\n\"."
+    Printf.fprintf ppf "%s, lines %d to %d:\n\"\n%s\n\"\n\"\n%s\n\"."
       file start stop phrase output
 
   let print_unexpected {source; expected; got} =
@@ -211,7 +212,9 @@ let () =
 
 let read_output () =
   let input = ref (input_line caml_input) in
-  input := replace_first ~!"^# *" "" !input;
+  input := replace_first ~!{|^#\( *\*\)* *|} "" !input;
+  (* the inner ( *\* )* group is here to clean the starting "*"
+     introduced for multiline comments *)
   let underline =
     if string_match ~!"Characters *\\([0-9]+\\)-\\([0-9]+\\):$" !input 0
     then
@@ -241,6 +244,10 @@ exception Missing_double_semicolon of string * int
 
 exception Missing_mode of string * int
 
+type incompatibility =
+  | Signature_with_visible_answer of string * int
+exception Incompatible_options of incompatibility
+
 let process_file file =
   prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -260,7 +267,7 @@ let process_file file =
   let re_spaces = "[ \t]*" in
   let re_start = ~!(
       {|\\begin{caml_example\(\*?\)}|} ^ re_spaces
-      ^ {|\({toplevel}\|{verbatim}\)?|} ^ re_spaces
+      ^ {|\({toplevel}\|{verbatim}\|{signature}\)?|} ^ re_spaces
       ^ {|\(\[\(.*\)\]\)?|} ^ re_spaces
       ^ "$"
     ) in
@@ -275,10 +282,15 @@ let process_file file =
         | exception Not_found -> raise (Missing_mode(file, !phrase_stop))
         | "{toplevel}" -> Toplevel
         | "{verbatim}" -> Verbatim
+        | "{signature}" -> Signature
         | _ -> assert false in
+      if mode = Signature && not omit_answer then raise
+          (Incompatible_options(
+              Signature_with_visible_answer(file,!phrase_stop))
+          );
       let explicit_stop = match mode with
-        | Verbatim -> false
-        | Toplevel -> true  in
+        | Verbatim | Signature -> false
+        | Toplevel -> true in
       let global_expected = try Output.expected @@ matched_group 4 !input
         with Not_found -> Output.Ok in
       start true oc main [string_of_mode mode];
@@ -301,8 +313,11 @@ let process_file file =
               end
             else false in
           if Buffer.length phrase > 0 then Buffer.add_char phrase '\n';
-          let stop = implicit_stop
-                     || string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 in
+          let stop =
+            implicit_stop ||
+            ( not (mode = Signature)
+              && string_match ~!"\\(.*\\)[ \t]*;;[ \t]*$" input 0 )
+          in
           if not stop then (
             Buffer.add_string phrase input; read ()
           )
@@ -323,7 +338,9 @@ let process_file file =
       in
       try while true do
         let implicit_stop, phrase, expected = read_phrase () in
-        fprintf caml_output "%s%s" phrase
+        if mode = Signature then fprintf caml_output "module type Wrap = sig\n";
+        fprintf caml_output "%s%s%s" phrase
+        (if mode = Signature then "\nend" else "")
         (if implicit_stop then ";;\n" else "\n");
         flush caml_output;
         output_string caml_output "\"end_of_input\";;\n";
@@ -408,7 +425,16 @@ let process_file file =
         close_in ic; close_out oc;
         exit 1
       )
-
+  | Incompatible_options Signature_with_visible_answer (file, line_number) ->
+      ( Format.eprintf
+          "@[<hov 2>  Error when parsing a caml_example environment in@ \
+           %s, line %d:@,\
+           the signature mode is only compatible with \"caml_example*\"@ \
+           Hint: did you forget to add \"*\"?@]@."
+          file (line_number-2);
+        close_in ic; close_out oc;
+        exit 1
+      )
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
