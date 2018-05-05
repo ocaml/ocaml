@@ -243,6 +243,12 @@ let get_text pos =
       get_docstrings dsl
   with Not_found -> []
 
+let get_post_text pos =
+  try
+    let dsl = Hashtbl.find post_table pos in
+      get_docstrings dsl
+  with Not_found -> []
+
 (* Maps from positions to extra docstrings *)
 
 let pre_extra_table : (Lexing.position, docstring list) Hashtbl.t =
@@ -314,6 +320,9 @@ let symbol_text_lazy () =
 
 let rhs_text pos =
   get_text (Parsing.rhs_start_pos pos)
+
+let rhs_post_text pos =
+  get_post_text (Parsing.rhs_end_pos pos)
 
 let rhs_text_lazy pos =
   let pos = Parsing.rhs_start_pos pos in
