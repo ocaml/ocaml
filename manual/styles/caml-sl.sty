@@ -43,10 +43,10 @@
 
 % Caml-example related command
 \def\camlexample#1{
-  \ifnum\pdfstrcmp{#1}{verbatim}=0
-  \renewcommand{\hash}{}
+  \ifnum\pdfstrcmp{#1}{toplevel}=0
+    \renewcommand{\hash}{\#}
   \else
-  \renewcommand{\hash}{\#}
+    \renewcommand{\hash}{}
   \fi
   \begin{flushleft}
 }

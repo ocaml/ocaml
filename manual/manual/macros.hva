@@ -82,9 +82,9 @@
 
 % Caml-example environment
 \newcommand{\camlexample}[1]{
-  \ifthenelse{\equal{#1}{verbatim}}
-  {\renewcommand{\examplespace}{}}
-  {\renewcommand{\examplespace}{\ }}
+  \ifthenelse{\equal{#1}{toplevel}}
+    {\renewcommand{\examplespace}{\ }}
+    {\renewcommand{\examplespace}{}}
   \fi
   \@open{div}{class="caml-example #1"}
 }
