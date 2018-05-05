@@ -359,6 +359,10 @@ OCaml 4.07
 
 ### Manual and documentation:
 
+- PR#1757: style the html manual, changing type and layout
+  (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
+  Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
+
 - MPR#7613: minor reword of the "refutation cases" paragraph
   (Florian Angeletti, review by Jacques Garrigue)
 
