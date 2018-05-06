@@ -147,7 +147,6 @@ module Output = struct
            Supported annotations are [@@expect ok], [@@expect error],\n\
            and [@@expect warning n] (with n a warning number).\n" s
 
-
   (** {1 Output analysis} *)
   let catch_error s =
     if string_match ~!{|Error:|} s 0 then Some Error else None
@@ -202,6 +201,59 @@ module Output = struct
 
 end
 
+module Text_transform = struct
+
+  type kind =
+    | Underline
+    | Ellipsis
+
+  exception Intersection of
+      {line:int; file:string; left:kind; stop:int; start:int; right:kind}
+
+  let pp ppf = function
+    | Underline -> Format.fprintf ppf "underline"
+    | Ellipsis -> Format.fprintf ppf "ellipsis"
+
+  type t = { kind:kind; start:int; stop:int}
+  let escape_specials s =
+    let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
+    let s2 = global_replace ~!"'" "\\\\textquotesingle\\\\-" s1 in
+    let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
+    s3
+
+  let apply_transform input (pos,out) t =
+    if t.start < pos || pos >= String.length input then pos, out
+    else
+      let out =
+        escape_specials (String.sub input ~pos ~len:(t.start - pos)) :: out in
+      match t.kind with
+      | Ellipsis -> t.stop, {|\ldots|} :: out
+      | Underline ->
+          let underlined =
+            String.sub input ~pos:t.start ~len:(t.stop-t.start) in
+          t.stop, {|\>|}:: escape_specials underlined :: {|\<|} :: out
+
+  (** Check that no transform starts before the end of the previous transform
+      in a list of transforms *)
+  let check_partition line file l =
+    List.fold_left ~f:(fun (left,stop) t ->
+        if t.start >= stop then t.kind, t.stop else
+          raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
+      ) ~init:(Ellipsis,0) l
+    |> ignore
+
+  let apply ts file line s =
+    let ts = List.sort (fun x y -> compare x.start y.start) ts in
+    check_partition line file ts;
+    let last, ls = List.fold_left ~f:(apply_transform s) ~init:(0,[]) ts in
+    let ls =
+      let n = String.length s in
+      if last = n then ls else
+        escape_specials (String.sub s last (n-last)) :: ls in
+    String.concat "" (List.rev ls)
+end
+
+
 let caml_input, caml_output =
   let cmd = !camllight ^ " 2>&1" in
   try Unix.open_process cmd with _ -> failwith "Cannot start toplevel"
@@ -218,11 +270,11 @@ let read_output () =
   let underline =
     if string_match ~!"Characters *\\([0-9]+\\)-\\([0-9]+\\):$" !input 0
     then
-      let b = int_of_string (matched_group 1 !input)
-      and e = int_of_string (matched_group 2 !input) in
+      let start = int_of_string (matched_group 1 !input)
+      and stop = int_of_string (matched_group 2 !input) in
       input := input_line caml_input;
-      b, e
-    else 0, 0
+      Text_transform.[{kind=Underline; start; stop}]
+    else []
   in
   let output = Buffer.create 256 in
   let first_line = ref true in
@@ -234,12 +286,6 @@ let read_output () =
   done;
   Buffer.contents output, underline
 
-let escape_specials s =
-  let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
-  let s2 = global_replace ~!"'" "\\\\textquotesingle\\\\-" s1 in
-  let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
-  s3
-
 exception Missing_double_semicolon of string * int
 
 exception Missing_mode of string * int
@@ -247,6 +293,85 @@ exception Missing_mode of string * int
 type incompatibility =
   | Signature_with_visible_answer of string * int
 exception Incompatible_options of incompatibility
+
+exception Phrase_parsing of string
+
+module Ellipsis = struct
+  (** This module implements the extraction of ellipsis locations
+      from phrases.
+
+      An ellipsis is either an [[@ellipsis]] attribute, or a pair
+      of [[@@@ellipsis.start]...[@@@ellipsis.stop]] attributes. *)
+
+  exception Unmatched_ellipsis of {kind:string; start:int; stop:int}
+  (** raised when an [[@@@ellipsis.start]] or [[@@@ellipsis.stop]] is
+      not paired with another ellipsis attribute *)
+
+  exception Nested_ellipses of {first:int ; second:int }
+  (** raised by [[@@@ellipsis.start][@@@ellipsis.start]] *)
+
+  let extract f x =
+    let transforms = ref [] in
+    let last_loc = ref Location.none in
+    let left_mark = ref None (* stored position of [@@@ellipsis.start]*) in
+    let location _this loc =
+      (* we rely on the fact that the default iterator call first
+         the location subiterator, then the attribute subiterator *)
+      last_loc := loc in
+    let attribute _this (attr,_) =
+      let name = attr.Location.txt in
+      let loc = !last_loc in
+      let start = loc.Location.loc_start.Lexing.pos_cnum in
+      let attr_start = attr.Location.loc.loc_start.Lexing.pos_cnum in
+      let attr_stop = 1 + attr.Location.loc.loc_end.Lexing.pos_cnum in
+      let stop = loc.Location.loc_end.Lexing.pos_cnum
+      in
+      match name with
+      | "ellipsis" ->
+          transforms :=
+            { Text_transform.kind=Ellipsis; start; stop= max attr_stop stop }
+            :: !transforms
+      | "ellipsis.start" ->
+          begin match !left_mark with
+          | None -> left_mark := Some (start, stop)
+          | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
+          end
+      | "ellipsis.stop" ->
+          begin match !left_mark with
+          | None -> raise (Unmatched_ellipsis {kind="right"; start; stop})
+          | Some (start, _ ) ->
+              transforms := {kind=Ellipsis; start ; stop } :: !transforms;
+              left_mark := None
+          end
+      | _ -> ()
+    in
+    f {Ast_iterator.default_iterator with location; attribute} x;
+    (match !left_mark with
+     | None -> ()
+     | Some (start,stop) ->
+         raise (Unmatched_ellipsis {kind="left"; start; stop })
+    );
+    !transforms
+
+  let find fname mode s =
+    let lex = Lexing.from_string s in
+    Location.init lex fname;
+    Location.input_name := fname;
+    Location.input_lexbuf := Some lex;
+    try
+      match mode with
+      | Toplevel -> begin
+          match Parse.toplevel_phrase lex with
+          | Ptop_dir _ -> []
+          | Ptop_def str -> extract (fun it -> it.structure it) str
+        end
+      | Verbatim ->
+          extract (fun it -> it.structure it) (Parse.implementation lex)
+      | Signature ->
+          extract (fun it -> it.signature it) (Parse.interface lex)
+    with Syntaxerr.Error _ -> raise (Phrase_parsing s)
+
+end
 
 let process_file file =
   prerr_endline ("Processing " ^ file);
@@ -264,6 +389,10 @@ let process_file file =
       open_out_gen [Open_wronly; Open_creat; Open_append; Open_text]
         0x666 !outfile
     with _ -> failwith "Cannot open output file" in
+  let fatal fmt =
+    Format.kfprintf
+      (fun ppf -> Format.fprintf ppf "@]@."; close_in ic; close_out oc; exit 1)
+      Format.err_formatter ("@[<hov 2>  Error " ^^ fmt) in
   let re_spaces = "[ \t]*" in
   let re_start = ~!(
       {|\\begin{caml_example\(\*?\)}|} ^ re_spaces
@@ -338,6 +467,7 @@ let process_file file =
       in
       try while true do
         let implicit_stop, phrase, expected = read_phrase () in
+        let ellipses = Ellipsis.find file mode phrase in
         if mode = Signature then fprintf caml_output "module type Wrap = sig\n";
         fprintf caml_output "%s%s%s" phrase
         (if mode = Signature then "\nend" else "")
@@ -345,7 +475,7 @@ let process_file file =
         flush caml_output;
         output_string caml_output "\"end_of_input\";;\n";
         flush caml_output;
-        let output, (b, e) = read_output () in
+        let output, underline = read_output () in
         let status = Output.status output in
         if status <> expected then (
           let source = Output.{
@@ -358,20 +488,10 @@ let process_file file =
                    {Output.got=status; expected; source} ) )
         else ( incr phrase_stop; phrase_start := !phrase_stop );
         let phrase =
-          if b < e then begin
-            let start = String.sub phrase ~pos:0 ~len:b
-            and underlined = String.sub phrase ~pos:b ~len:(e-b)
-            and rest =
-              String.sub phrase ~pos:e ~len:(String.length phrase - e)
-            in
-            String.concat ""
-              [escape_specials start; "\\<";
-               escape_specials underlined; "\\>";
-               escape_specials rest]
-          end else
-            escape_specials phrase in
+          Text_transform.apply (underline @ ellipses)
+            file !phrase_stop phrase in
         (* Special characters may also appear in output strings -Didier *)
-        let output = escape_specials output in
+        let output = Text_transform.escape_specials output in
         let phrase = global_replace ~!{|^\(.\)|} camlin phrase
         and output = global_replace ~!{|^\(.\)|} camlout output in
         start false oc phrase_env [];
@@ -409,32 +529,41 @@ let process_file file =
   | Output.Parsing_error (k,s) ->
       ( Output.print_parsing_error k s;
         close_in ic; close_out oc; exit 1 )
+  | Phrase_parsing s -> fatal "when parsing the following phrase:@ %s" s
   | Missing_double_semicolon (file, line_number) ->
-      ( Format.eprintf "@[<hov 2> Error \
-                        when evaluating a caml_example environment in %s:@;\
-                        missing \";;\" at line %d@]@." file (line_number-2);
-        close_in ic; close_out oc;
-        exit 1
-      )
+      fatal
+        "when evaluating a caml_example environment in %s:@;\
+         missing \";;\" at line %d@]@." file (line_number-2)
   | Missing_mode (file, line_number) ->
-      ( Format.eprintf "@[<hov 2>Error \
-                        when parsing a caml_example environment in %s:@;\
-                        missing mode argument at line %d,@ \
-                        available modes {toplevel,verbatim}@]@."
-          file (line_number-2);
-        close_in ic; close_out oc;
-        exit 1
-      )
+      fatal "when parsing a caml_example environment in %s:@;\
+             missing mode argument at line %d,@ \
+             available modes {toplevel,verbatim}@]@."
+          file (line_number-2)
   | Incompatible_options Signature_with_visible_answer (file, line_number) ->
-      ( Format.eprintf
-          "@[<hov 2>  Error when parsing a caml_example environment in@ \
+      fatal
+          "when parsing a caml_example environment in@ \
            %s, line %d:@,\
            the signature mode is only compatible with \"caml_example*\"@ \
            Hint: did you forget to add \"*\"?@]@."
           file (line_number-2);
-        close_in ic; close_out oc;
-        exit 1
-      )
+  | Text_transform.Intersection {line;file;left;stop;start;right} ->
+      fatal
+        "when evaluating a caml_example environment in %s, line %d:@ \
+         Textual transforms must be well-separated.@ The \"%a\" transform \
+         ended at %d,@ after the start at %d of another \"%a\" transform.@ \
+         Hind: did you try to elide a code fragment which raised a warning?\
+         @]@."
+        file (line-2)
+        Text_transform.pp left stop start Text_transform.pp right
+  | Ellipsis.Unmatched_ellipsis {kind;start;stop} ->
+      fatal "when evaluating a caml_example environment,@ \
+             the %s mark at position %d-%d was unmatched"
+        kind start stop
+  | Ellipsis.Nested_ellipses {first;second} ->
+      fatal "when evaluating a caml_example environment,@ \
+             there were two nested ellipsis attribute.@ The first one \
+             started at position %d,@ the second one at %d"
+        first second
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
