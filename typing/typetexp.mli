@@ -76,6 +76,7 @@ type error =
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
+  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 

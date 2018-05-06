@@ -64,6 +64,7 @@ type error =
   | Cannot_scrape_alias of Longident.t * Path.t
   | Opened_object of Path.t option
   | Not_an_object of type_expr
+  | Unbound_value_missing_rec of Longident.t * Location.t
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -856,7 +857,16 @@ let spellcheck ppf fold env lid =
 let fold_descr fold get_name f = fold (fun descr acc -> f (get_name descr) acc)
 let fold_simple fold4 f = fold4 (fun name _path _descr acc -> f name acc)
 
-let fold_values = fold_simple Env.fold_values
+let fold_values f =
+  (* We only use "real" values while spellchecking (as opposed to "ghost"
+     values inserted in the environment to trigger the "missing rec" hint).
+     This is needed in order to avoid dummy suggestions like:
+     "unbound value x, did you mean x?" *)
+  Env.fold_values
+    (fun name _path descr acc ->
+       match descr.val_kind with
+       | Val_unbound _ -> acc
+       | _ -> f name acc)
 let fold_types = fold_simple Env.fold_types
 let fold_modules = fold_simple Env.fold_modules
 let fold_constructors = fold_descr Env.fold_constructors (fun d -> d.cstr_name)
@@ -1007,6 +1017,16 @@ let report_error env ppf = function
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ is not an object type@]"
         Printtyp.type_expr ty
+  | Unbound_value_missing_rec (lid, loc) ->
+      fprintf ppf
+        "Unbound value %a" longident lid;
+      spellcheck ppf fold_values env lid;
+      let (_, line, _) = Location.get_pos_info loc.Location.loc_start in
+      fprintf ppf
+        "@.@[%s@ %s %i@]"
+        "Hint: If this is a recursive definition,"
+        "you should add the 'rec' keyword on line"
+        line
 
 let () =
   Location.register_error_of_exn

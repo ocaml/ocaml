@@ -163,6 +163,21 @@ let mk_expected ?explanation ty = { ty; explanation; }
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
+let maybe_add_pattern_variables_ghost loc_let env pv =
+  List.fold_right
+    (fun (id, ty, _name, _loc, _as_var) env ->
+       let lid = Longident.Lident (Ident.name id) in
+       match Env.lookup_value ~mark:false lid env with
+       | _ -> env
+       | exception Not_found ->
+         Env.add_value id
+           { val_type = ty;
+             val_kind = Val_unbound Val_unbound_ghost_recursive;
+             val_loc = loc_let;
+             val_attributes = [];
+           } env
+    ) pv env
+
 (* Upper approximation of free identifiers on the parse tree *)
 
 let iter_expression f e =
@@ -1525,7 +1540,7 @@ let type_pattern_list no_existentials env spatl scope expected_tys allow =
   let pvs = get_ref pattern_variables in
   let unpacks = get_ref module_variables in
   let new_env = add_pattern_variables !new_env pvs in
-  (patl, new_env, get_ref pattern_force, unpacks)
+  (patl, new_env, get_ref pattern_force, pvs, unpacks)
 
 let type_class_arg_pattern cl_num val_env met_env l spat =
   reset_pattern None false;
@@ -1574,7 +1589,8 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
     List.fold_right
       (fun (id, ty, _name, loc, as_var) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty;
-                            val_kind = Val_unbound;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } val_env,
@@ -1586,7 +1602,9 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
             ~check:(fun s -> if as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
-          Env.add_value id {val_type = ty; val_kind = Val_unbound;
+          Env.add_value id {val_type = ty;
+                            val_kind =
+                              Val_unbound Val_unbound_instance_variable;
                             val_attributes = [];
                             Types.val_loc = loc;
                            } par_env))
@@ -1956,7 +1974,7 @@ struct
      Typedtree.Texp_apply *)
   let is_abstracted_arg : arg_label * expression option -> bool = function
     | (_, None) -> true
-    | (_, Some _) -> false    
+    | (_, Some _) -> false
 
   type sd = Static | Dynamic
 
@@ -2840,8 +2858,18 @@ and type_expect_
                   Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
                 in
                 Texp_ident(path, lid, desc)
-            | Val_unbound ->
+            | Val_unbound Val_unbound_instance_variable ->
                 raise(Error(loc, env, Masked_instance_variable lid.txt))
+            | Val_unbound Val_unbound_ghost_recursive ->
+                (* Only display the "missing rec" hint for non-ghost code *)
+                if not loc.Location.loc_ghost
+                && not desc.val_loc.Location.loc_ghost
+                then
+                  raise Typetexp.(Error (
+                    loc, env, Unbound_value_missing_rec (lid.txt, desc.val_loc)
+                  ))
+                else
+                  raise Typetexp.(Error (loc, env, Unbound_value lid.txt))
             (*| Val_prim _ ->
                 let p = Env.normalize_path (Some loc) env path in
                 Env.add_required_global (Path.head p);
@@ -4910,7 +4938,7 @@ and type_let
         | _ -> spat)
       spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
-  let (pat_list, new_env, force, unpacks) =
+  let (pat_list, new_env, force, pvs, unpacks) =
     type_pattern_list existential_context env spatl scope nvs allow in
   let attrs_list = List.map fst spatl in
   let is_recursive = (rec_flag = Recursive) in
@@ -4946,8 +4974,30 @@ and type_let
     end else pat_list in
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
+  let sexp_is_fun { pvb_expr = sexp; _ } =
+    match sexp.pexp_desc with
+    | Pexp_fun _ | Pexp_function _ -> true
+    | _ -> false
+  in
   let exp_env =
-    if is_recursive then new_env else env in
+    if is_recursive then new_env
+    else if not is_recursive && List.for_all sexp_is_fun spat_sexp_list
+    then begin
+      (* Add ghost bindings to help detecting missing "rec" keywords.
+
+         We only add those if the body of the definition is obviously a
+         function. The rationale is that, in other cases, the hint is probably
+         wrong (and the user is using "advanced features" anyway (lazy,
+         recursive values...)).
+
+         [pvb_loc] (below) is the location of the first let-binding (in case of
+         a let .. and ..), and is where the missing "rec" hint suggests to add a
+         "rec" keyword. *)
+      match spat_sexp_list with
+      | {pvb_loc; _} :: _ -> maybe_add_pattern_variables_ghost pvb_loc env pvs
+      | _ -> assert false
+    end
+    else env in
 
   let current_slot = ref None in
   let rec_needed = ref false in
