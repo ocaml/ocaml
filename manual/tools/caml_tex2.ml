@@ -221,31 +221,62 @@ module Text_transform = struct
     let s3 = global_replace ~!"`" "\\\\textasciigrave\\\\-" s2 in
     s3
 
-  let apply_transform input (pos,out) t =
-    if t.start < pos || pos >= String.length input then pos, out
-    else
-      let out =
-        escape_specials (String.sub input ~pos ~len:(t.start - pos)) :: out in
-      match t.kind with
-      | Ellipsis -> t.stop, {|\ldots|} :: out
-      | Underline ->
-          let underlined =
-            String.sub input ~pos:t.start ~len:(t.stop-t.start) in
-          t.stop, {|\>|}:: escape_specials underlined :: {|\<|} :: out
+  let rec apply_transform input (pos,underline_stop,out) t =
+    if pos >= String.length input then pos, underline_stop, out
+    else match underline_stop with
+      | Some stop when stop <= t.start ->
+          let f = escape_specials (String.sub input ~pos ~len:(stop - pos)) in
+          let out =  {|\>|} :: f :: out in
+          apply_transform input (stop,None,out) t
+      | _ ->
+          let out =
+            escape_specials (String.sub input ~pos ~len:(t.start - pos))::out in
+          match t.kind with
+          | Ellipsis -> t.stop, underline_stop, {|\ldots|} :: out
+          | Underline ->
+              t.start, Some t.stop, {|\<|} :: out
 
-  (** Check that no transform starts before the end of the previous transform
-      in a list of transforms *)
+  (** Check that all ellipsis are strictly nested inside underline transform
+      and that otherwise no transform starts before the end of the previous
+      transform in a list of transforms *)
+  type partition = U of t * t list | E of t
   let check_partition line file l =
-    List.fold_left ~f:(fun (left,stop) t ->
-        if t.start >= stop then t.kind, t.stop else
-          raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
-      ) ~init:(Ellipsis,0) l
+    let init = Ellipsis, 0 in
+    let rec partition = function
+      | [] -> []
+      | {kind=Underline; _ } as t :: q -> underline t [] q
+      | {kind=Ellipsis; _ } as t :: q -> E t :: partition q
+    and underline u n = function
+      | [] -> end_underline u n []
+      | {kind=Underline; _ } :: _ as q -> end_underline u n q
+      | {kind=Ellipsis; _ } as t :: q ->
+          if t.stop < u.stop then underline u (t::n) q
+          else end_underline u n (t::q)
+    and end_underline u n l = U(u,List.rev n) :: partition l in
+  let check_elt (left,stop) t =
+    if t.start < stop then
+      raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
+    else
+      (t.kind,t.stop) in
+  let check acc = function
+    | E t -> check_elt acc t
+    | U(u,n) ->
+        let _ = check_elt acc u in
+        let _ = List.fold_left ~f:check_elt ~init n in
+        u.kind, u.stop in
+    List.fold_left ~f:check ~init (partition l)
     |> ignore
 
   let apply ts file line s =
     let ts = List.sort (fun x y -> compare x.start y.start) ts in
     check_partition line file ts;
-    let last, ls = List.fold_left ~f:(apply_transform s) ~init:(0,[]) ts in
+    let last, underline, ls =
+      List.fold_left ~f:(apply_transform s) ~init:(0,None,[]) ts in
+    let last, ls = match underline with
+      | None -> last, ls
+      | Some stop ->
+          let f = escape_specials (String.sub s ~pos:last ~len:(stop - last)) in
+          stop, {|\>|} :: f :: ls in
     let ls =
       let n = String.length s in
       if last = n then ls else
