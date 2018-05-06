@@ -654,7 +654,7 @@ top_structure_tail:
   | structure_item top_structure_tail    { (text_str 1) @ $1 :: $2 }
 ;
 use_file:
-    use_file_body                        { extra_def 1 $1 }
+    use_file_body EOF                    { extra_def 1 $1 }
 ;
 use_file_body:
     use_file_tail                        { $1 }
@@ -662,18 +662,10 @@ use_file_body:
       { (text_def 1) @ Ptop_def[mkstrexp $1 $2] :: $3 }
 ;
 use_file_tail:
-    EOF
+    /* empty */
       { [] }
-  | SEMISEMI EOF
-      { text_def 1 }
-  | SEMISEMI seq_expr post_item_attributes use_file_tail
-      {  mark_rhs_docs 2 3;
-        (text_def 1) @ (text_def 2) @ Ptop_def[mkstrexp $2 $3] :: $4 }
-  | SEMISEMI structure_item use_file_tail
-      { (text_def 1) @ (text_def 2) @ Ptop_def[$2] :: $3 }
-  | SEMISEMI toplevel_directive use_file_tail
-      {  mark_rhs_docs 2 3;
-        (text_def 1) @ (text_def 2) @ $2 :: $3 }
+  | SEMISEMI use_file_body
+      { $2 }
   | structure_item use_file_tail
       { (text_def 1) @ Ptop_def[$1] :: $2 }
   | toplevel_directive use_file_tail
