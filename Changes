@@ -61,6 +61,11 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
+- GPR#????: in byterun/memory.c, struct pool_block, use C99 flexible arrays
+  if possible to avoid alarms with Clang's address sanitizer
+  (Xavier Leroy)
+
+
 OCaml 4.07
 ----------
 
