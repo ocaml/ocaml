@@ -481,19 +481,19 @@ This construction is useful because the type constructors it introduces
 can be used in places where a type variable is not allowed. For
 instance, one can use it to define an exception in a local module
 within a polymorphic function.
-\begin{caml_example*}{verbatim}
+\begin{verbatim}
         let f (type t) () =
           let module M = struct exception E of t end in
           (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
-\end{caml_example*}
+\end{verbatim}
 
 Here is another example:
-\begin{caml_example*}{verbatim}
+\begin{verbatim}
         let sort_uniq (type s) (cmp : s -> s -> int) =
           let module S = Set.Make(struct type t = s let compare = cmp end) in
           fun l ->
             S.elements (List.fold_right S.add l S.empty)
-\end{caml_example*}
+\end{verbatim}
 
 It is also extremely useful for first-class modules (see
 section~\ref{s-first-class-modules}) and generalized algebraic datatypes
