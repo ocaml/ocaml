@@ -1881,26 +1881,6 @@ struct
   end
 end
 
-let rec pattern_variables : Typedtree.pattern -> Ident.t list =
-  fun pat -> match pat.pat_desc with
-    | Tpat_any -> []
-    | Tpat_var (id, _) -> [id]
-    | Tpat_alias (pat, id, _) -> id :: pattern_variables pat
-    | Tpat_constant _ -> []
-    | Tpat_tuple pats -> List.concat (List.map pattern_variables pats)
-    | Tpat_construct (_, _, pats) ->
-        List.concat (List.map pattern_variables pats)
-    | Tpat_variant (_, Some pat, _) -> pattern_variables pat
-    | Tpat_variant (_, None, _) -> []
-    | Tpat_record (fields, _) ->
-        List.concat (List.map (fun (_,_,p) -> pattern_variables p) fields)
-    | Tpat_array pats ->
-        List.concat (List.map pattern_variables pats)
-    | Tpat_or (l,r,_) ->
-        pattern_variables l @ pattern_variables r
-    | Tpat_lazy p ->
-        pattern_variables p
-
 module Rec_check =
 struct
   open Rec_context
@@ -2379,7 +2359,7 @@ struct
         if is_destructuring_pattern c_lhs then Use.inspect ty
         else Use.discard ty (* as in 'let' *)
       in
-      let vars = pattern_variables c_lhs in
+      let vars = pat_bound_idents c_lhs in
       let env =
         List.fold_left
           (fun env id -> Ident.add id ty env)
@@ -2408,7 +2388,7 @@ struct
           let ids, ty =
             List.fold_left
               (fun (pats, tys) {vb_pat=p; vb_expr=e} ->
-                 (pattern_variables p @ pats,
+                 (pat_bound_idents p @ pats,
                   Use.join (expression env e) tys))
               ([], Use.empty)
               bindings
@@ -2426,7 +2406,7 @@ struct
   and value_binding : Env.env -> Typedtree.value_binding -> Env.env * Use.t =
     (* NB: returns new environment only *)
     fun env { vb_pat; vb_expr } ->
-      let vars = pattern_variables vb_pat in
+      let vars = pat_bound_idents vb_pat in
       let ty = expression env vb_expr in
       let ty = if is_destructuring_pattern vb_pat then Use.inspect ty else ty in
       (List.fold_left
@@ -2481,7 +2461,7 @@ end
 
 let check_recursive_bindings env valbinds =
   let ids = List.concat
-      (List.map (fun b -> pattern_variables b.vb_pat) valbinds) in
+      (List.map (fun b -> pat_bound_idents b.vb_pat) valbinds) in
   List.iter
     (fun {vb_expr} ->
        Rec_check.check_recursive_expression env ids vb_expr)
