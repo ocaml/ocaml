@@ -621,13 +621,13 @@ Each implementation is a structure that we can encapsulate as a
 first-class module, then store in a data structure such as a hash
 table:
 \begin{caml_example*}{verbatim}
-        module type DEVICE = sig [@@@ellipsis.start][@@@ellipsis.stop] end
+        module type DEVICE = sig [@@@ellipsis] end
         let devices : (string, (module DEVICE)) Hashtbl.t = Hashtbl.create 17
 
-        module SVG = struct [@@@ellipsis.start][@@@ellipsis.stop] end
+        module SVG = struct [@@@ellipsis] end
         let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
 
-        module PDF = struct [@@@ellipsis.start][@@@ellipsis.stop] end
+        module PDF = struct [@@@ellipsis] end
         let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
 \end{caml_example*}
 We can then select one implementation based on command-line
