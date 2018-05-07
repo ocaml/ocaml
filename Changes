@@ -510,8 +510,13 @@ OCaml 4.07
   reviews by Stephen Dolan and Xavier Leroy)
 
 - GPR#1764: in byterun/memory.c, struct pool_block, use C99 flexible arrays
-  if available 
+  if available
   (Xavier Leroy, review by Max Mouratov)
+
+- MPR#7793, GPR#1766: the toplevel #use directive now accepts sequences of ';;'
+  tokens. This fixes a bug in which certain files accepted by the compiler were
+  rejected by ocamldep.
+  (Nicolás Ojeda Bär, report by Hugo Heuzard, review by Hugo Heuzard)
 
 - GPR#1774: ocamlopt for ARM could generate VFP loads and stores with bad
   offsets, rejected by the assembler.
