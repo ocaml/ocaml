@@ -44,7 +44,7 @@
 }
 
 \newstyle{pre}{
-  font-size: 0.85em;
+  font-size: 0.91rem;
   background: beige;
   border: 1px solid grey;
   padding: 10px;
