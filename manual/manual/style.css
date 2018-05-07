@@ -58,8 +58,9 @@ div.h9 { background-color: #FFFFFF; }
 body {
   background-color : #f7f7f7;
   font-size: 1rem;
-  padding-left: 5%;
-  padding-right: 5%;
+  max-width: 800px;
+  width: 85%;
+  margin: auto;
   padding-bottom: 30px;
 }
 td {
@@ -72,7 +73,7 @@ td {
 }
 tr { background-color : #f7f7f7 }
 td.typefieldcomment { background-color : #f7f7f7 }
-pre { margin-bottom: 4px }
+pre { margin-bottom: 4px; white-space: pre-wrap; }
 div.sig_block {margin-left: 2em}
 ul.info-attributes { list-style: none; margin: 0; padding: 0; }
 div.info > p:first-child{ margin-top:0; }

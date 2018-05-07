@@ -376,6 +376,10 @@ OCaml 4.07
 
 ### Manual and documentation:
 
+- PR#1757: change html manual to use relative font sizes
+  (Charles Chamberlain, review by Daniel Bünzli, Perry E. Metzger,
+  and Gabriel Scherer)
+
 - PR#1757: style the html manual, changing type and layout
   (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
   Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
