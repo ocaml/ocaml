@@ -387,6 +387,9 @@ OCaml 4.07
 - GPR#1741: manual, improve typesetting and legibility in HTML output
   (steinuil, review by Gabriel Scherer)
 
+- GPR#1765: manual, ellipsis in code examples
+  (Florian Angeletti, review and suggestion by Gabriel Scherer)
+
 ### Compiler distribution build system
 
 - MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
