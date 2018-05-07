@@ -4981,7 +4981,7 @@ and type_let
   in
   let exp_env =
     if is_recursive then new_env
-    else if not is_recursive && List.for_all sexp_is_fun spat_sexp_list
+    else if List.for_all sexp_is_fun spat_sexp_list
     then begin
       (* Add ghost bindings to help detecting missing "rec" keywords.
 
