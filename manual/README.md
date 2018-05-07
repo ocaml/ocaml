@@ -171,9 +171,31 @@ let f None = None [@@expect warning 8];;
 \end{caml_example}
 ```
 
-The `caml_eval` environment is a companion environment to `caml_example`
-and can be used to evaluate OCaml expressions in the toplevel without
-printing anything:
+It is also possible to elide a code fragment by annotating it with
+an `[@ellipsis]` attribute
+
+```latex
+\begin{caml_example}{toplevel}
+let f: type a. a list -> int = List.length[@ellipsis] ;;
+\end{caml_example}
+```
+For module components, it might be easier to hide them by using
+`[@@@ellipsis.start]` and `[@@@ellipsis.stop]`:
+```latex
+\begin{caml_example*}{verbatim}
+module M = struct
+  [@@@ellipsis.start]
+  type t = T
+  let x = 0
+  [@@@ellipsis.stop]
+ end
+\end{caml_example*}
+```
+
+Another possibility to avoid displaying distracting code is to use
+the `caml_eval` environment. This environment is a companion environment
+to `caml_example` and can be used to evaluate OCaml expressions in the
+toplevel without printing anything:
 ```latex
 \begin{caml_eval}
 let pi = 4. *. atan 1.;;
