@@ -55,13 +55,13 @@ div.h9 { background-color: #FFFFFF; }
 .paramstable { border-style : hidden ; padding: 5pt 5pt}
 body {
   background-color : #f7f7f7;
-  font-size: 17px;
+  font-size: 1rem;
   padding-left: 5%;
   padding-right: 5%;
   padding-bottom: 30px;
 }
 td {
-  font-size: 17px;
+  font-size: 1rem;
 }
 .navbar { /* previous - up - next */
   position: absolute;

@@ -28,7 +28,7 @@
   margin: auto;
   background: \#f7f7f7;
   margin-top: 80px;
-  font-size: 19px
+  font-size: 1.1rem;
 }
 
 % selects the index's title
