@@ -24,10 +24,12 @@ a:active {color : Black; text-decoration : underline; }
 .type { color : #5C6585 }
 .string { color : Maroon }
 .warning { color : Red ; font-weight : bold }
-.info { margin-left : 3em; margin-right : 3em } .code { color : #465F91 ; } h1 { font-size : 24pt ; text-align: center; }
+.info { margin-left : 3em; margin-right : 3em }
+.code { color : #465F91 ; }
+h1 { font-size : 2rem ; text-align: center; }
 
 h2, h3, h4, h5, h6, div.h7, div.h8, div.h9 {
-  font-size: 22pt;
+  font-size: 1.75rem;
   border: 1px solid #000;
   margin-top: 20px;
   margin-bottom: 2px;
