@@ -253,17 +253,17 @@ module Text_transform = struct
           if t.stop < u.stop then underline u (t::n) q
           else end_underline u n (t::q)
     and end_underline u n l = U(u,List.rev n) :: partition l in
-  let check_elt (left,stop) t =
-    if t.start < stop then
-      raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
-    else
-      (t.kind,t.stop) in
-  let check acc = function
-    | E t -> check_elt acc t
-    | U(u,n) ->
-        let _ = check_elt acc u in
-        let _ = List.fold_left ~f:check_elt ~init n in
-        u.kind, u.stop in
+    let check_elt (left,stop) t =
+      if t.start < stop then
+        raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
+      else
+        (t.kind,t.stop) in
+    let check acc = function
+      | E t -> check_elt acc t
+      | U(u,n) ->
+          let _ = check_elt acc u in
+          let _ = List.fold_left ~f:check_elt ~init n in
+          u.kind, u.stop in
     List.fold_left ~f:check ~init (partition l)
     |> ignore
 
