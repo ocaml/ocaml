@@ -37,6 +37,12 @@
   text-align: center;
 }
 
+\newstyle{@media all}{
+  .c003 \{
+    font-size: 0.91rem;
+  \}
+}
+
 \newstyle{h1, h2, h3}{
   font-family: "Fira Sans", sans-serif;
   font-weight: normal;
