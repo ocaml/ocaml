@@ -65,6 +65,7 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
+
 OCaml 4.07
 ----------
 
@@ -577,6 +578,11 @@ OCaml 4.07
 - GPR#1755: ensure that a bigarray is never collected while reading complex
   values (Xavier Clerc, Mark Shinwell and Leo White, report by Chris Hardin,
   reviews by Stephen Dolan and Xavier Leroy)
+
+- GPR#1764: in byterun/memory.c, struct pool_block, use C99 flexible arrays
+  if available 
+  (Xavier Leroy, review by Max Mouratov)
+
 
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
