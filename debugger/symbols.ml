@@ -167,7 +167,10 @@ let find_event ev char =
       else bsearch (pivot + 1) hi
     end
   in
-  bsearch 0 (Array.length ev - 1)
+  if Array.length ev = 0 then
+    raise Not_found
+  else
+    bsearch 0 (Array.length ev - 1)
 
 (* Return first event after the given position. *)
 (* Raise [Not_found] if module is unknown or no event is found. *)
