@@ -1070,28 +1070,30 @@ let transl_store_structure glob map prims str =
 
 let build_ident_map restr idlist more_ids =
   let rec natural_map pos map prims = function
-      [] ->
+    | [] ->
         (map, prims, pos)
     | id :: rem ->
-        natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem in
+        natural_map (pos+1) (Ident.add id (pos, Tcoerce_none) map) prims rem
+  in
   let (map, prims, pos) =
     match restr with
-        Tcoerce_none ->
-          natural_map 0 Ident.empty [] idlist
-      | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
-              (* ignore _id_pos_list as the ids are already bound *)
+    | Tcoerce_none ->
+        natural_map 0 Ident.empty [] idlist
+    | Tcoerce_structure (pos_cc_list, _id_pos_list) ->
+        (* ignore _id_pos_list as the ids are already bound *)
         let idarray = Array.of_list idlist in
         let rec export_map pos map prims undef = function
-        [] ->
-          natural_map pos map prims undef
+          | [] ->
+              natural_map pos map prims undef
           | (_source_pos, Tcoerce_primitive p) :: rem ->
-            export_map (pos + 1) map ((pos, p) :: prims) undef rem
+              export_map (pos + 1) map ((pos, p) :: prims) undef rem
           | (source_pos, cc) :: rem ->
-            let id = idarray.(source_pos) in
-            export_map (pos + 1) (Ident.add id (pos, cc) map)
-              prims (list_remove id undef) rem
-        in export_map 0 Ident.empty [] idlist pos_cc_list
-      | _ ->
+              let id = idarray.(source_pos) in
+              export_map (pos + 1) (Ident.add id (pos, cc) map)
+                prims (list_remove id undef) rem
+        in
+        export_map 0 Ident.empty [] idlist pos_cc_list
+    | _ ->
         fatal_error "Translmod.build_ident_map"
   in
   natural_map pos map prims more_ids
