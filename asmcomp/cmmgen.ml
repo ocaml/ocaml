@@ -611,7 +611,10 @@ let get_field env ptr n dbg =
 let set_field ptr n newval init dbg =
   Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
 
-let non_profinfo_mask = (1 lsl (64 - Config.profinfo_width)) - 1
+let non_profinfo_mask =
+  if Config.profinfo 
+  then (1 lsl (64 - Config.profinfo_width)) - 1
+  else 0 (* [non_profinfo_mask] is unused in this case *)
 
 let get_header ptr dbg =
   (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
