@@ -119,12 +119,6 @@ static void check_stack(int nargs, value* args)
   CAMLreturn0;
 }
 
-struct caml_saved_context {
-  char* system_sp;
-  uintnat system_exnptr_offset;
-  value* stack_parent;
-};
-
 static value do_callback(callback_stub* cbstub, value closure,
                          int nargs, value* args)
 {
@@ -132,20 +126,21 @@ static value do_callback(callback_stub* cbstub, value closure,
      to keep them alive for the whole duration of the callback */
   CAMLparam1(closure);
   CAMLlocal1(saved_parent);
+  char* saved_system_sp;
+  uintnat saved_system_exnptr_offset;
   value ret;
 
-  struct caml_saved_context old_context =
-    { Caml_state->system_sp,
-      Caml_state->system_exnptr_offset,
-      &saved_parent };
+  saved_system_sp = Caml_state->system_sp;
+  saved_system_exnptr_offset = Caml_state->system_exnptr_offset;
   saved_parent = Stack_parent(Caml_state->current_stack);
+
   Stack_parent(Caml_state->current_stack) = Val_unit;
 
   check_stack(nargs, args);
   ret = cbstub(Caml_state->young_ptr, closure, args);
 
-  Caml_state->system_sp = old_context.system_sp;
-  Caml_state->system_exnptr_offset = old_context.system_exnptr_offset;
+  Caml_state->system_sp = saved_system_sp;
+  Caml_state->system_exnptr_offset = saved_system_exnptr_offset;
   Stack_parent(Caml_state->current_stack) = saved_parent;
 
   CAMLreturn(ret);
