@@ -286,6 +286,9 @@ OCaml 4.07
   superscripts.
   (Gabriel Scherer)
 
+- GPR#1771: ocamdebug, avoid out of bound access
+  (Thomas Refis)
+
 ### Manual and documentation:
 
 - PR#1757: style the html manual, changing type and layout
