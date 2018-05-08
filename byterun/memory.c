@@ -728,10 +728,19 @@ struct pool_block {
 #endif
   struct pool_block *next;
   struct pool_block *prev;
-  union max_align data[1];  /* not allocated, used for alignment purposes */
+  /* Use C99's flexible array types if possible */
+#if (__STDC_VERSION__ >= 199901L)
+  union max_align data[];  /* not allocated, used for alignment purposes */
+#else
+  union max_align data[1];
+#endif
 };
 
+#if (__STDC_VERSION__ >= 199901L)
+#define SIZEOF_POOL_BLOCK sizeof(struct pool_block)
+#else
 #define SIZEOF_POOL_BLOCK offsetof(struct pool_block, data)
+#endif
 
 static struct pool_block *pool = NULL;
 
