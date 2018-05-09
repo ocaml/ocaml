@@ -42,6 +42,10 @@ Working version
 
 ### Compiler distribution build system:
 
+- GPR#1776: add -no-install-bytecode-programs and related configure options to
+  control (non-)installation of ".byte" executables
+  (Mark Shinwell, review by Sébastien Hinderer and Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables

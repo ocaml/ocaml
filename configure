@@ -59,6 +59,7 @@ no_naked_pointers=false
 native_compiler=true
 TOOLPREF=""
 with_cfi=true
+install_bytecode_programs=true
 flambda=false
 force_safe_string=false
 default_safe_string=true
@@ -209,6 +210,10 @@ while : ; do
         with_cfi=false;;
     -no-native-compiler|--no-native-compiler)
         native_compiler=false;;
+    -install-bytecode-programs|--install-bytecode-programs)
+        install_bytecode_programs=true;;
+    -no-install-bytecode-programs|--no-install-bytecode-programs)
+        install_bytecode_programs=false;;
     -flambda|--flambda)
         flambda=true;;
     -with-flambda-invariants|--with-flambda-invariants)
@@ -2050,6 +2055,8 @@ if $flat_float_array; then
   echo "#define FLAT_FLOAT_ARRAY" >> m.h
 fi
 
+echo "INSTALL_BYTECODE_PROGRAMS=$install_bytecode_programs" >> Makefile
+
 # Finish generated files
 
 cclibs="$cclibs $mathlib"
@@ -2297,6 +2304,10 @@ fi
 
 if $with_instrumented_runtime; then
   inf "Instrumented runtime will be compiled and installed"
+fi
+
+if ! $install_bytecode_programs; then
+  inf "Bytecode programs will not be installed"
 fi
 
 inf "Additional libraries supported:"

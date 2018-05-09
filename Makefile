@@ -606,9 +606,13 @@ install:
 	  "$(INSTALL_LIBDIR)"
 	$(MAKE) -C byterun install
 	$(INSTALL_PROG) ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+endif
 	$(MAKE) -C stdlib install
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	$(INSTALL_DATA) \
 	   utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
@@ -662,7 +666,9 @@ endif
 .PHONY: installopt
 installopt:
 	$(MAKE) -C asmrun install
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
+endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
 	    middle_end/*.cmi \
