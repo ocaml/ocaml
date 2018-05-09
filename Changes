@@ -42,6 +42,10 @@ Working version
 
 ### Compiler distribution build system:
 
+- GPR#1777: add -no-install-source-artifacts and related configure options to
+  control installation of .cmt, .cmti, .mli and .ml files
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Sébastien Hinderer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
