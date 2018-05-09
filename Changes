@@ -285,7 +285,7 @@ OCaml 4.07
 
 - GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
   sign-extension operations
-  (LemonBoy, review by Alain Frisch)
+  (LemonBoy, review by Alain Frisch and Xavier Leroy)
 
 ### Runtime system:
 

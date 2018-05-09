@@ -235,7 +235,7 @@ method! select_operation op args dbg =
       begin match args with
         (* Recognize sign extension *)
         [Cop(Clsl, [k; Cconst_int 32], _); Cconst_int 32] ->
-          (Ispecific Isextend, [k])
+          (Ispecific Isextend32, [k])
         | _ -> super#select_operation op args dbg
       end
   | _ -> super#select_operation op args dbg

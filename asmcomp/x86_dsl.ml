@@ -113,7 +113,6 @@ module I = struct
   let bswap x = emit (BSWAP x)
   let call x = emit (CALL x)
   let cdq () = emit CDQ
-  let cdqe () = emit CDQE
   let cmp x y = emit (CMP (x, y))
   let comisd x y = emit (COMISD (x, y))
   let cqo () = emit CQO
