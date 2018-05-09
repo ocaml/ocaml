@@ -3652,6 +3652,7 @@ and type_expect_
       Ident.set_current_time ty.level;
       let context = Typetexp.narrow () in
       let modl = !type_module env smodl in
+      Mtype.lower_nongen ty.level modl.mod_type;
       let (id, new_env) = Env.enter_module name.txt modl.mod_type env in
       Ctype.init_def(Ident.current_time());
       Typetexp.widen context;
