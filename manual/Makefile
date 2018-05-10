@@ -14,7 +14,7 @@ release:
 
 .PHONY: tools
 tools:
-	cd tools; ${MAKE} clean; ${MAKE} all
+	${MAKE} -C tools all
 
 # The pregen-etex target generates the latex files from the .etex
 # files to ensure that this phase of the manual build process, which

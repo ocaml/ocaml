@@ -10,8 +10,6 @@ LD_PATH="$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
 
 TRANSF=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
-FORMAT=../../tools/format-intf
-
 CAMLLATEX=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/caml-tex2 \
 -caml "TERM=norepeat $(OCAML)" -n 80 -v false
 

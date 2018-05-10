@@ -36,7 +36,6 @@ SRC=../../..
 LD_PATH := $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 SET_LD_PATH=CAML_LD_LIBRARY_PATH=$(LD_PATH)
 
-FORMAT=../../tools/format-intf
 TEXQUOTE=../../tools/texquote2
 
 VPATH=.:$(STDLIB_DIR):$(CSLDIR)/parsing:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dynlink:$(CSLDIR)/otherlibs/bigarray
@@ -74,13 +73,9 @@ clean:
 	rm -f $(FILES)
 
 .SUFFIXES:
-.SUFFIXES: .tex .etex .mli
+.SUFFIXES: .tex .etex
 
 .etex.tex: $(TEXQUOTE)
 	@$(TEXQUOTE) < $*.etex > $*.texquote_error.tex\
 	&& mv $*.texquote_error.tex $*.tex\
 	|| printf "Failure when generating %s\n" $*.tex
-
-
-.mli.tex: $(FORMAT)
-	$(FORMAT) $< > $*.tex < $<
