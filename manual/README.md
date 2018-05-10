@@ -119,7 +119,7 @@ Latex extensions
 
 ### Caml environments
 
-The tool `tool/caml-tex2` is used to generate the latex code for the examples
+The tool `tools/caml-tex2` is used to generate the latex code for the examples
 in the introduction and language extension parts of the manual. It implements
 two pseudo-environments: `caml_example` and `caml_eval`.
 
