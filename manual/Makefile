@@ -3,10 +3,11 @@ all: tools
 	${MAKE} tests
 #	cd fpcl; ${MAKE} all
 
+.PHONY: clean
 clean:
-	cd manual; ${MAKE} clean
-	cd tools; ${MAKE} clean
-#	cd fpcl; ${MAKE} clean
+	${MAKE} -C manual clean
+	${MAKE} -C tools  clean
+	${MAKE} -C tests  clean
 
 release:
 	cd manual; ${MAKE} release
