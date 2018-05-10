@@ -1,111 +1,96 @@
-# $Id$
-
-FILES=allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
-TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
-TEXFONTS=../../styles:
-RELEASE=$$HOME/release/$${RELEASENAME}
-HEVEA=hevea
-HACHA=hacha
-INFO=-fix -exec xxdate.exe -info -w 79
-HTML=-fix -exec xxdate.exe -O
-TEXT=-fix -exec xxdate.exe -text -w 79
 SRC = $(abspath ../..)
 
-TEXQUOTE=../tools/texquote2
+export LD_LIBRARY_PATH   ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+export DYLD_LIBRARY_PATH ?= "$(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/"
+SET_LD_PATH = CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 
-export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
-export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
-SET_LD_PATH=CAML_LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
-
-OCAMLDOC=$(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
- $(SRC)/ocamldoc/ocamldoc.opt,\
- $(SET_LD_PATH) $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
- -hide Pervasives -nostdlib -initially-opened-module Pervasives
-
-manual: files
-	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) latex manual.tex
-
-index::
-	cd texstuff && \
-	  sh ../../tools/fix_index.sh manual.idx && \
-	  makeindex manual.idx
-	cd texstuff; makeindex manual.kwd.idx
-
-pdfmanual: files
-	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) pdflatex pdfmanual.tex
-
-index::
-	cd texstuff && \
-	  sh ../../tools/fix_index.sh pdfmanual.idx && \
-	  makeindex pdfmanual.idx
-	cd texstuff; makeindex pdfmanual.kwd.idx
-
+OCAMLDOC = $(if $(wildcard $(SRC)/ocamldoc/ocamldoc.opt),\
+  $(SRC)/ocamldoc/ocamldoc.opt,\
+  $(SET_LD_PATH) $(SRC)/byterun/ocamlrun $(SRC)/ocamldoc/ocamldoc)\
+  -hide Pervasives -nostdlib -initially-opened-module Pervasives
 
 # Copy and unprefix the standard library when needed
 include $(SRC)/ocamldoc/Makefile.unprefix
 
-html: files
-	cd htmlman; \
-	mkdir -p libref ; \
+TEXQUOTE = ../tools/texquote2
+
+
+FILES = allfiles.tex biblio.tex foreword.tex version.tex warnings-help.etex
+
+TEXINPUTS = ".:..:../refman:../library:../cmds:../tutorials:../../styles:"
+RELEASE = $$HOME/release/$${RELEASENAME}
+HEVEA = hevea
+HACHA = hacha
+INFO_FLAGS = -fix -exec xxdate.exe -info -w 79
+HTML_FLAGS = -fix -exec xxdate.exe -O
+TEXT_FLAGS = -fix -exec xxdate.exe -text -w 79
+
+
+manual: files
+	cd texstuff \
+	  && TEXINPUTS=$(TEXINPUTS) latex manual.tex
+
+pdfmanual: files
+	cd texstuff \
+	  && TEXINPUTS=$(TEXINPUTS) pdflatex pdfmanual.tex
+
+index:
+	cd texstuff \
+	  && sh ../../tools/fix_index.sh manual.idx \
+	  && makeindex manual.idx \
+	  && makeindex manual.kwd.idx
+	cd texstuff \
+	  && sh ../../tools/fix_index.sh pdfmanual.idx \
+	  && makeindex pdfmanual.idx \
+	  && makeindex pdfmanual.kwd.idx
+
+
+# libref/style.css is used as witness for the generation of the html stdlib
+# reference.
+html: htmlman/libref/style.css etex-files
+	cd htmlman \
+	  && $(HEVEA) $(HTML_FLAGS) \
+	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I ../../styles -I ../texstuff \
+	    manual.hva -e macros.tex ../manual.tex \
+	  && $(HACHA) -tocter manual.html
+
+htmlman/libref/style.css: style.css $(STDLIB_MLIS) | unprefix_stdlib_for_ocamldoc
+	mkdir -p htmlman/libref
 	$(OCAMLDOC) -colorize-code -sort -html \
-	-d libref \
-	-I $(STDLIB_UNPREFIXED) \
-	$(STDLIB_MLIS) ; \
-	cp -f ../style.css libref ; \
-	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds \
-	         -I ../tutorials -I ../../styles -I ../texstuff manual.hva \
-	         -e macros.tex ../manual.tex ; \
-	${HACHA} -tocter manual.html ; \
+	  -d htmlman/libref \
+	  -I $(STDLIB_UNPREFIXED) \
+	  $(STDLIB_MLIS)
+	cp style.css $@
+
 
 info: files
-	cd infoman; rm -f ocaml.info*; \
-	${HEVEA} ${INFO} -o ocaml.info.body -I .. -I ../refman -I ../library \
-	         -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff \
-	         ../manual.inf -e macros.tex ../manual.tex
+	cd infoman \
+	  && rm -f ocaml.info* \
+	  && $(HEVEA) $(INFO_FLAGS) -o ocaml.info.body \
+	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I ../../styles -I ../texstuff \
+	    ../manual.inf -e macros.tex ../manual.tex
 	cat manual.info.header infoman/ocaml.info.body > infoman/ocaml.info
-	cd infoman; rm -f ocaml.info.tmp ocaml.info.body ; gzip -9 ocaml.info*
+	cd infoman \
+	  && rm -f ocaml.info.tmp ocaml.info.body \
+	  && gzip -9 ocaml.info*
 
 text: files
-	cd textman; \
-	${HEVEA} ${TEXT} -I .. -I ../refman -I ../library -I ../cmds \
-	         -I ../tutorials -I ../../styles -I ../texstuff \
-	         ../manual.inf -e macros.tex ../manual.tex
+	cd textman \
+	  && $(HEVEA) $(TEXT_FLAGS) \
+	    -I .. -I ../cmds -I ../library -I ../refman -I ../tutorials \
+	    -I ../../styles -I ../texstuff \
+	    ../manual.inf -e macros.tex ../manual.tex
 
-etex-files: $(FILES)
-	cd refman; $(MAKE) etex-files RELEASEDIR=$(SRC)
-	cd library; $(MAKE) etex-files RELEASEDIR=$(SRC)
-	cd cmds; $(MAKE) etex-files RELEASEDIR=$(SRC)
-	cd tutorials; $(MAKE) etex-files RELEASEDIR=$(SRC)
-
-files: $(FILES) $(STDLIB_MLIS)
-	$(MAKE) unprefix_stdlib_for_ocamldoc
-	cd refman; $(MAKE) all RELEASEDIR=$(SRC)
-	cd library; $(MAKE) all RELEASEDIR=$(SRC)
-	cd cmds; $(MAKE) all RELEASEDIR=$(SRC)
-	cd tutorials; $(MAKE) all RELEASEDIR=$(SRC)
 
 all:
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
-	$(MAKE) index RELEASEDIR=$(SRC)
-	$(MAKE) manual pdfmanual RELEASEDIR=$(SRC)
-	$(MAKE) html text info RELEASEDIR=$(SRC)
+	$(MAKE) html text info manual pdfmanual
+	$(MAKE) manual pdfmanual
+	$(MAKE) index
+	$(MAKE) manual pdfmanual
 
-clean:
-	rm -f $(FILES) *.texquote_error.tex
-	cd refman; $(MAKE) clean
-	cd library; $(MAKE) clean
-	cd cmds; $(MAKE) clean
-	cd tutorials; $(MAKE) clean
-	-rm -f texstuff/*
-	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind
-	cd textman; rm -f manual.txt *.haux *.hind
-	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
-	rm -f warnings-help.etex
-
-release:
+release: all
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	cp htmlman/manual.html $(RELEASE)refman.html
@@ -116,8 +101,18 @@ release:
 	cp textman/manual.txt $(RELEASE)refman.txt
 	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
 
-.SUFFIXES:
-.SUFFIXES: .tex .etex .htex
+
+files: $(FILES)
+	$(MAKE) -C cmds      all
+	$(MAKE) -C library   all
+	$(MAKE) -C refman    all
+	$(MAKE) -C tutorials all
+
+etex-files: $(FILES)
+	$(MAKE) -C cmds      etex-files
+	$(MAKE) -C library   etex-files
+	$(MAKE) -C refman    etex-files
+	$(MAKE) -C tutorials etex-files
 
 
 %.tex: %.etex
@@ -125,8 +120,7 @@ release:
 	mv $*.texquote_error.tex $@
 
 version.tex: $(SRC)/VERSION
-	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' \
-	    $(SRC)/VERSION > version.tex
+	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $< > $@
 
 warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	(echo "% This file is generated from (ocamlc -warn-help)";\
@@ -135,13 +129,26 @@ warnings-help.etex: $(SRC)/utils/warnings.ml $(SRC)/ocamlc
 	 echo "% are inserted through the Makefile, which should be updated";\
 	 echo "% when a new warning is documented.";\
 	 echo "%";\
-	$(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
-	| sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/'\
+	 $(SET_LD_PATH) $(SRC)/boot/ocamlrun $(SRC)/ocamlc -warn-help \
+	 | sed -e 's/^ *\([0-9A-Z][0-9]*\)\(.*\)/\\item[\1] \2/'\
 	) >$@
 #	sed --inplace is not portable, emulate
 	for i in 52 57; do\
-		sed\
-		  s'/\\item\['$$i'\]/\\item\['$$i' (see \\ref{ss:warn'$$i'})\]/'\
-                  $@ > $@.tmp;\
-		mv $@.tmp $@;\
+	  sed\
+	    s'/\\item\['$$i'\]/\\item\['$$i' (see \\ref{ss:warn'$$i'})\]/'\
+	    $@ > $@.tmp;\
+	  mv $@.tmp $@;\
 	done
+
+
+.PHONY: clean
+clean:
+	rm -f $(FILES) *.texquote_error
+	$(MAKE) -C cmds      clean
+	$(MAKE) -C library   clean
+	$(MAKE) -C refman    clean
+	$(MAKE) -C tutorials clean
+	-rm -f texstuff/*
+	cd htmlman; rm -rf libref index.html manual*.html *.haux *.hind
+	cd textman; rm -f manual.txt *.haux *.hind
+	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
