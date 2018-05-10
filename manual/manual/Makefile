@@ -9,7 +9,9 @@ HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
 HTML=-fix -exec xxdate.exe -O
 TEXT=-fix -exec xxdate.exe -text -w 79
-SRC = $(abspath ../../)
+SRC = $(abspath ../..)
+
+TEXQUOTE=../tools/texquote2
 
 export LD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
 export DYLD_LIBRARY_PATH ?= $(SRC)/otherlibs/unix/:$(SRC)/otherlibs/str/
@@ -92,7 +94,7 @@ all:
 	$(MAKE) html text info RELEASEDIR=$(SRC)
 
 clean:
-	rm -f $(FILES)
+	rm -f $(FILES) *.texquote_error.tex
 	cd refman; $(MAKE) clean
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean
@@ -118,8 +120,9 @@ release:
 .SUFFIXES: .tex .etex .htex
 
 
-.etex.tex:
-	../tools/texquote2 < $*.etex > $*.tex
+%.tex: %.etex
+	$(TEXQUOTE) < $< > $*.texquote_error.tex
+	mv $*.texquote_error.tex $@
 
 version.tex: $(SRC)/VERSION
 	sed -n -e '1s/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' \
