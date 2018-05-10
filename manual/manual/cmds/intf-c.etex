@@ -2011,6 +2011,111 @@ word is reserved for storing the custom operations; the other
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
 
+\section{Advanced topic: Big arrays and the OCaml-C interface}
+\label{s:C-Bigarrays}
+
+This section explains how C stub code that interfaces C or Fortran
+code with OCaml code can use big arrays.
+
+\subsection{Include file}
+
+The include file "<caml/bigarray.h>" must be included in the C stub
+file.  It declares the functions, constants and macros discussed
+below.
+
+\subsection{Accessing an OCaml bigarray from C or Fortran}
+
+If \var{v} is a OCaml "value" representing a big array, the expression
+"Caml_ba_data_val("\var{v}")" returns a pointer to the data part of the array.
+This pointer is of type "void *" and can be cast to the appropriate C
+type for the array (e.g. "double []", "char [][10]", etc).
+
+Various characteristics of the OCaml big array can be consulted from C
+as follows:
+\begin{tableau}{|l|l|}{C expression}{Returns}
+\entree{"Caml_ba_array_val("\var{v}")->num_dims"}{number of dimensions}
+\entree{"Caml_ba_array_val("\var{v}")->dim["\var{i}"]"}{\var{i}-th dimension}
+\entree{"Caml_ba_array_val("\var{v}")->flags & BIGARRAY_KIND_MASK"}{kind of array elements}
+\end{tableau}
+The kind of array elements is one of the following constants:
+\begin{tableau}{|l|l|}{Constant}{Element kind}
+\entree{"CAML_BA_FLOAT32"}{32-bit single-precision floats}
+\entree{"CAML_BA_FLOAT64"}{64-bit double-precision floats}
+\entree{"CAML_BA_SINT8"}{8-bit signed integers}
+\entree{"CAML_BA_UINT8"}{8-bit unsigned integers}
+\entree{"CAML_BA_SINT16"}{16-bit signed integers}
+\entree{"CAML_BA_UINT16"}{16-bit unsigned integers}
+\entree{"CAML_BA_INT32"}{32-bit signed integers}
+\entree{"CAML_BA_INT64"}{64-bit signed integers}
+\entree{"CAML_BA_CAML_INT"}{31- or 63-bit signed integers}
+\entree{"CAML_BA_NATIVE_INT"}{32- or 64-bit (platform-native) integers}
+\end{tableau}
+%
+The following example shows the passing of a two-dimensional big array
+to a C function and a Fortran function.
+\begin{verbatim}
+    extern void my_c_function(double * data, int dimx, int dimy);
+    extern void my_fortran_function_(double * data, int * dimx, int * dimy);
+
+    value caml_stub(value bigarray)
+    {
+      int dimx = Caml_ba_array_val(bigarray)->dim[0];
+      int dimy = Caml_ba_array_val(bigarray)->dim[1];
+      /* C passes scalar parameters by value */
+      my_c_function(Caml_ba_data_val(bigarray), dimx, dimy);
+      /* Fortran passes all parameters by reference */
+      my_fortran_function_(Caml_ba_data_val(bigarray), &dimx, &dimy);
+      return Val_unit;
+    }
+\end{verbatim}
+
+\subsection{Wrapping a C or Fortran array as an OCaml big array}
+
+A pointer \var{p} to an already-allocated C or Fortran array can be
+wrapped and returned to OCaml as a big array using the "caml_ba_alloc"
+or "caml_ba_alloc_dims" functions.
+\begin{itemize}
+\item
+"caml_ba_alloc("\var{kind} "|" \var{layout}, \var{numdims}, \var{p}, \var{dims}")"
+
+Return an OCaml big array wrapping the data pointed to by \var{p}.
+\var{kind} is the kind of array elements (one of the "CAML_BA_"
+kind constants above).  \var{layout} is "CAML_BA_C_LAYOUT" for an
+array with C layout and "CAML_BA_FORTRAN_LAYOUT" for an array with
+Fortran layout.  \var{numdims} is the number of dimensions in the
+array.  \var{dims} is an array of \var{numdims} long integers, giving
+the sizes of the array in each dimension.
+
+\item
+"caml_ba_alloc_dims("\var{kind} "|" \var{layout}, \var{numdims},
+\var{p}, "(long) "\nth{dim}{1}, "(long) "\nth{dim}{2}, \ldots, "(long) "\nth{dim}{numdims}")"
+
+Same as "caml_ba_alloc", but the sizes of the array in each dimension
+are listed as extra arguments in the function call, rather than being
+passed as an array.
+\end{itemize}
+%
+The following example illustrates how statically-allocated C and
+Fortran arrays can be made available to OCaml.
+\begin{verbatim}
+    extern long my_c_array[100][200];
+    extern float my_fortran_array_[300][400];
+
+    value caml_get_c_array(value unit)
+    {
+      long dims[2];
+      dims[0] = 100; dims[1] = 200;
+      return caml_ba_alloc(CAML_BA_NATIVE_INT | CAML_BA_C_LAYOUT,
+                           2, my_c_array, dims);
+    }
+
+    value caml_get_fortran_array(value unit)
+    {
+      return caml_ba_alloc_dims(CAML_BA_FLOAT32 | CAML_BA_FORTRAN_LAYOUT,
+                                2, my_fortran_array_, 300L, 400L);
+    }
+\end{verbatim}
+
 \section{Advanced topic: cheaper C call}
 \label{s:C-cheaper-call}
 

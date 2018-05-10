@@ -398,6 +398,9 @@ OCaml 4.07
 - GPR#1765: manual, ellipsis in code examples
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
 
+- GPR#1779: integrate the Bigarray documentation into the main manual.
+  (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
+
 ### Compiler distribution build system
 
 - MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
