@@ -247,7 +247,6 @@ _ocamltestd
 
 /testsuite/_retries
 
-/testsuite/tests/win-unicode/symlink_tests.precheck
 
 /testsuite/tools/codegen
 /testsuite/tools/expect_test
