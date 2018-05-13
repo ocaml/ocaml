@@ -58,7 +58,8 @@ the above 4 modules \\
 "Lazy" & p.~\pageref{Lazy} & delayed evaluation \\
 "Weak" & p.~\pageref{Weak} & references that don't prevent objects
 from being garbage-collected \\
-"Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash tables
+"Ephemeron" & p.~\pageref{Ephemeron} & ephemerons and weak hash tables \\
+"Bigarray" & p.~\pageref{Bigarray} & large, multi-dimensional, numerical arrays
 \end{tabular}
 \subsubsection*{Arithmetic:}
 \begin{tabular}{lll}
