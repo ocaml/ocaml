@@ -9,6 +9,9 @@ Working version
 
 ### Standard library:
 
+- MPR#7795, GPR#1782: Fix off-by-one error in Weak.create
+  (KC Sivaramakrishnan)
+
 - GPR#1731: Format, use raise_notrace to preserve backtraces
   (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
 
