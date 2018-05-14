@@ -95,8 +95,13 @@ install::
 	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
 # End transitional
 	$(INSTALL_DATA) \
-	  stdlib.cma std_exit.cmo *.cmi *.cmt *.cmti *.mli *.ml camlheader_ur \
+	  stdlib.cma std_exit.cmo *.cmi camlheader_ur \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  *.cmt *.cmti *.mli *.ml \
+	  "$(INSTALL_LIBDIR)"
+endif
 	$(INSTALL_DATA) target_camlheader "$(INSTALL_LIBDIR)/camlheader"
 
 ifeq "$(RUNTIMED)" "true"
