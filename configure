@@ -60,6 +60,7 @@ native_compiler=true
 TOOLPREF=""
 with_cfi=true
 install_bytecode_programs=true
+install_source_artifacts=true
 flambda=false
 force_safe_string=false
 default_safe_string=true
@@ -208,6 +209,10 @@ while : ; do
         ;;
     -no-cfi|--no-cfi)
         with_cfi=false;;
+    -install-source-artifacts|--install-source-artifacts)
+        install_source_artifacts=true;;
+    -no-install-source-artifacts|--no-install-source-artifacts)
+        install_source_artifacts=false;;
     -no-native-compiler|--no-native-compiler)
         native_compiler=false;;
     -install-bytecode-programs|--install-bytecode-programs)
@@ -2056,6 +2061,7 @@ if $flat_float_array; then
 fi
 
 echo "INSTALL_BYTECODE_PROGRAMS=$install_bytecode_programs" >> Makefile
+echo "INSTALL_SOURCE_ARTIFACTS=$install_source_artifacts" >> Makefile
 
 # Finish generated files
 
@@ -2308,6 +2314,10 @@ fi
 
 if ! $install_bytecode_programs; then
   inf "Bytecode programs will not be installed"
+fi
+
+if ! $install_source_artifacts; then
+  inf ".cmt, .cmti, .ml and .mli files will not be installed"
 fi
 
 inf "Additional libraries supported:"

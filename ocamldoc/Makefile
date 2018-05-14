@@ -296,8 +296,13 @@ install:
 	  ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) \
 	  "$(INSTALL_LIBDIR)"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
+	  $(OCAMLDOC_LIBCMIS) \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)"
+endif
 	if test -d stdlib_man; then \
 	  $(INSTALL_DATA) stdlib_man/* "$(INSTALL_MANODIR)"; \
 	else : ; fi
@@ -316,8 +321,13 @@ installopt_really:
 	$(INSTALL_PROG) \
 	   $(OCAMLDOC_OPT) "$(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)"
 	$(INSTALL_DATA) \
-	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMIS) $(OCAMLDOC_LIBCMTS) \
+	  $(OCAMLDOC_LIBCMIS) \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  $(OCAMLDOC_LIBMLIS) $(OCAMLDOC_LIBCMTS) \
+	  "$(INSTALL_LIBDIR)"
+endif
 	$(INSTALL_DATA) \
 	  ocamldoc.hva *.cmx $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) \
 	  "$(INSTALL_LIBDIR)"

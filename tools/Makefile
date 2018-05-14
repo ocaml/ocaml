@@ -140,8 +140,13 @@ opt:: profiling.cmx
 
 install::
 	$(INSTALL_DATA) \
-	  profiling.cmi profiling.cmo profiling.cmt profiling.cmti \
+	  profiling.cmi profiling.cmo \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  profiling.cmt profiling.cmti \
+	  "$(INSTALL_LIBDIR)"
+endif
 
 installopt::
 	$(INSTALL_DATA) \
