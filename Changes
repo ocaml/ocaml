@@ -45,6 +45,10 @@ Working version
 
 ### Compiler distribution build system:
 
+- GPR#1776: add -no-install-bytecode-programs and related configure options to
+  control (non-)installation of ".byte" executables
+  (Mark Shinwell, review by Sébastien Hinderer and Gabriel Scherer)
+
 - GPR#1777: add -no-install-source-artifacts and related configure options to
   control installation of .cmt, .cmti, .mli and .ml files
   (Mark Shinwell, review by Nicolas Ojeda Bar and Sébastien Hinderer)
