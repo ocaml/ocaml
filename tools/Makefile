@@ -235,10 +235,6 @@ ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	for i in $(install_files); \
 	do \
 	  $(INSTALL_PROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)"; \
-	done
-endif
-	for i in $(install_files); \
-	do \
 	  if test -f "$$i".opt; then \
 	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)" && \
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
@@ -246,6 +242,14 @@ endif
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
+else
+	for i in $(install_files); \
+	do \
+	  if test -f "$$i".opt; then \
+	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)"; \
+	  fi; \
+	done
+endif
 
 clean::
 	rm -f addlabels

@@ -656,11 +656,15 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	fi
 endif
 	$(INSTALL_DATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
+else
+	if test -f ocamlopt; then $(MAKE) installopt; fi
+endif
 
 # Installation of the native-code compiler
 .PHONY: installopt
@@ -694,12 +698,16 @@ endif
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
+else
+	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
+endif
 	$(MAKE) -C tools installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
 	  $(INSTALL_PROG) \
