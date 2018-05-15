@@ -37,13 +37,6 @@
   text-align: center;
 }
 
-% without this "@media all", the .c003 get's stripped out:
-\newstyle{@media all}{
-  .c003 \{
-    font-size: 0.91em;
-  \}
-}
-
 \newstyle{h1, h2, h3}{
   font-family: "Fira Sans", sans-serif;
   font-weight: normal;
@@ -51,7 +44,7 @@
 }
 
 \newstyle{pre}{
-  font-size: 0.91rem;
+  font-size: 1rem;
   background: beige;
   border: 1px solid grey;
   padding: 10px;
