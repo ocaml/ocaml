@@ -46,15 +46,17 @@ struct section_descriptor {
   uint32_t len;                   /* Length of data in bytes */
 };
 
+#define EXEC_MAGIC_LENGTH 12
+
 /* Structure of the trailer. */
 
 struct exec_trailer {
-  uint32_t num_sections;          /* Number of sections */
-  char magic[12];               /* The magic number */
+  uint32_t num_sections;               /* Number of sections */
+  char magic[EXEC_MAGIC_LENGTH];       /* The magic number */
   struct section_descriptor * section; /* Not part of file */
 };
 
-#define TRAILER_SIZE (4+12)
+#define TRAILER_SIZE (4+EXEC_MAGIC_LENGTH)
 
 /* Magic number for this release */
 
