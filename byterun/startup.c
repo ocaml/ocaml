@@ -66,6 +66,8 @@
 #define SEEK_END 2
 #endif
 
+static char magicstr[EXEC_MAGIC_LENGTH+1];
+
 /* Read the trailer of a bytecode file */
 
 static void fixup_endianness_trailer(uint32_t * p)
@@ -82,10 +84,13 @@ static int read_trailer(int fd, struct exec_trailer *trail)
   if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
     return BAD_BYTECODE;
   fixup_endianness_trailer(&trail->num_sections);
-  if (strncmp(trail->magic, EXEC_MAGIC, 12) == 0)
+  if (strncmp(trail->magic, EXEC_MAGIC, sizeof(trail->magic)) == 0)
     return 0;
-  else
-    return BAD_BYTECODE;
+  else {
+    memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
+    magicstr[EXEC_MAGIC_LENGTH] = 0;
+    return WRONG_MAGIC;
+  }
 }
 
 int caml_attempt_open(char_os **name, struct exec_trailer *trail,
@@ -369,6 +374,14 @@ CAMLexport void caml_main(char_os **argv)
       caml_fatal_error(
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
+      break;
+    case WRONG_MAGIC:
+      caml_fatal_error(
+        "the file '%s' has not the right magic number: "\
+        "expected %s, got %s",
+        caml_stat_strdup_of_os(exe_name),
+        EXEC_MAGIC,
+        magicstr);
       break;
     }
   }
