@@ -157,7 +157,7 @@ struct code_fragment {
   char digest_computed;
 };
 
-struct ext_table caml_code_fragments_table;
+extern struct ext_table caml_code_fragments_table;
 
 /* </private> */
 
