@@ -64,9 +64,9 @@ extern uintnat total_heap_size;
 extern char *caml_gc_sweep_hp;
 
 extern int caml_major_window;
-double caml_major_ring[Max_major_window];
-int caml_major_ring_index;
-double caml_major_work_credit;
+extern double caml_major_ring[Max_major_window];
+extern int caml_major_ring_index;
+extern double caml_major_work_credit;
 extern double caml_gc_clock;
 
 /* [caml_major_gc_hook] is called just between the end of the mark
