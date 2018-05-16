@@ -196,7 +196,7 @@ struct code_fragment {
 
 CAMLextern struct code_fragment * caml_extern_find_code(char *addr);
 
-struct ext_table caml_code_fragments_table;
+extern struct ext_table caml_code_fragments_table;
 
 #endif /* CAML_INTERNALS */
 
