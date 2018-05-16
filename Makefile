@@ -434,19 +434,27 @@ compare:
 	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
 
+# Promote a compiler
+
+PROMOTE ?= cp
+
+.PHONY: promote-common
+promote-common:
+	$(PROMOTE) ocamlc boot/ocamlc
+	$(PROMOTE) lex/ocamllex boot/ocamllex
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+	cd stdlib; cp $(LIBFILES) ../boot
+
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 .PHONY: promote-cross
-promote-cross:
-	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
-	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cd stdlib; cp $(LIBFILES) ../boot
+promote-cross: promote-common
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 .PHONY: promote
-promote: promote-cross
+promote: PROMOTE = $(CAMLRUN) tools/stripdebug
+promote: promote-common
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 
 # Remove old bootstrap compilers
