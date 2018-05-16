@@ -46,6 +46,7 @@
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
 char * caml_code_area_start, * caml_code_area_end;
+struct ext_table caml_code_fragments_table;
 
 /* Initialize the atom table and the static data and code area limits. */
 
