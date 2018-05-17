@@ -125,6 +125,11 @@ OCaml 4.07
   The old behaviour can be obtained using the `[@remove_aliases]` attribute.
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
+* GPR#1778: Fix Soundness bug with non-generalized type variable and
+  local modules.  This is the same bug as MPR#7414, but using local
+  modules instead of non-local ones.
+  (Leo White, review by Jacques Garrigue)
+
 ### Standard library:
 
 - MPR#4170, GPR#1674: add the constant `Float.pi`.
