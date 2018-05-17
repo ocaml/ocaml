@@ -41,6 +41,8 @@ Working version
 ### Code generation and optimizations:
 
 ### Runtime system:
+- GPR#1793: add the -m and -M command-line options to ocamlrun
+  (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
 
 ### Tools:
 

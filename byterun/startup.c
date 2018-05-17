@@ -67,6 +67,7 @@
 #endif
 
 static char magicstr[EXEC_MAGIC_LENGTH+1];
+static int print_magic = 0;
 
 /* Read the trailer of a bytecode file */
 
@@ -84,13 +85,16 @@ static int read_trailer(int fd, struct exec_trailer *trail)
   if (read(fd, (char *) trail, TRAILER_SIZE) < TRAILER_SIZE)
     return BAD_BYTECODE;
   fixup_endianness_trailer(&trail->num_sections);
-  if (strncmp(trail->magic, EXEC_MAGIC, sizeof(trail->magic)) == 0)
-    return 0;
-  else {
-    memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
-    magicstr[EXEC_MAGIC_LENGTH] = 0;
-    return WRONG_MAGIC;
+  memcpy(magicstr, trail->magic, EXEC_MAGIC_LENGTH);
+  magicstr[EXEC_MAGIC_LENGTH] = 0;
+  
+  if (print_magic) {
+    printf("%s\n", magicstr);
+    exit(0);
   }
+  return
+    (strncmp(trail->magic, EXEC_MAGIC, sizeof(trail->magic)) == 0)
+      ? 0 : WRONG_MAGIC;
 }
 
 int caml_attempt_open(char_os **name, struct exec_trailer *trail,
@@ -284,6 +288,13 @@ static int parse_command_line(char_os **argv)
         caml_ext_table_add(&caml_shared_libs_path, argv[i + 1]);
         i++;
       }
+      break;
+    case _T('m'):
+      print_magic = 1;
+      break;
+    case _T('M'):
+      printf ( "%s\n", EXEC_MAGIC);
+      exit(0);
       break;
     default:
       caml_fatal_error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
