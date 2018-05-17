@@ -540,7 +540,10 @@ let at_exit f =
   let g = !exit_function in
   exit_function := (fun () -> f(); g())
 
-let do_at_exit () = (!exit_function) ()
+let do_at_exit () =
+  (!exit_function) ();
+  (* MPR#7796: make sure these at-exit functions will not be run again *)
+  exit_function := (fun () -> ())
 
 let exit retcode =
   do_at_exit ();

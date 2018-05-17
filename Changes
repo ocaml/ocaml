@@ -563,6 +563,10 @@ OCaml 4.07
   (Luc Maranget, Frédéric Bour, report by Stephen Dolan,
   review by Gabriel Scherer)
 
+- MPR#7796: Avoid executing at_exit functions twice in cleanup-at-exit mode
+  (when "c" is set in OCAMLRUNPARAM)
+  (Xavier Leroy)
+
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
 
