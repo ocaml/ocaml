@@ -1155,6 +1155,8 @@ else
   config HASHBANGSCRIPTS "false"
 fi
 
+rm hashbang4
+
 # Use 64-bit file offset if possible
 
 common_cppflags="$common_cppflags -D_FILE_OFFSET_BITS=64"
