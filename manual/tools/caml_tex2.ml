@@ -641,10 +641,15 @@ let process_file file =
         let output = Text_transform.escape_specials output in
         let phrase = global_replace ~!{|^\(.\)|} camlin phrase
         and output = global_replace ~!{|^\(.\)|} camlout output in
+        let final_output =
+          if omit_answer && String.length error_msgs > 0 then
+            global_replace ~!{|^\(.\)|} camlout error_msgs
+          else if omit_answer then ""
+          else output in
         start false tex_fmt phrase_env [];
         code_env ~newline:omit_answer input_env tex_fmt phrase;
-        if not omit_answer then
-          code_env ~newline:false (Output.env status) tex_fmt output;
+        if String.length final_output > 0 then
+          code_env ~newline:false (Output.env status) tex_fmt final_output;
         stop true tex_fmt phrase_env;
         flush oc;
         first := false;
