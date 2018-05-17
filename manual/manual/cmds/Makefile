@@ -13,7 +13,7 @@ TEXQUOTE=../../tools/texquote2
 FORMAT=../../tools/format-intf
 
 CAMLLATEX=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/caml-tex2 \
--caml "TERM=norepeat $(OCAML)" -n 80 -v false
+-repo-root $(TOPDIR) -n 80 -v false
 
 WITH_TRANSF= top.tex intf-c.tex flambda.tex spacetime.tex \
   afl-fuzz.tex lexyacc.tex debugger.tex

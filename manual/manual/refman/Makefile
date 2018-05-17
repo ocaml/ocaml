@@ -9,7 +9,7 @@ include $(TOPDIR)/Makefile.tools
 LD_PATH="$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
 
 CAMLLATEX=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/caml-tex2 \
-  -caml "TERM=norepeat $(OCAML)" -n 80 -v false
+  -repo-root $(TOPDIR) -n 80 -v false
 TRANSF=$(SET_LD_PATH) $(OCAMLRUN) ../../tools/transf
 TEXQUOTE=../../tools/texquote2
 
