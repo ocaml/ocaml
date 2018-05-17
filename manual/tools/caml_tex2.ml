@@ -347,6 +347,7 @@ module Text_transform = struct
   type t = { kind:kind; start:int; stop:int}
 
   let underline start stop = { kind = Underline; start; stop}
+  let ellipsis start stop = { kind = Ellipsis; start; stop}
 
   let escape_specials s =
     let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
@@ -428,86 +429,318 @@ exception Incompatible_options of incompatibility
 
 exception Phrase_parsing of string
 
-module Ellipsis = struct
-  (** This module implements the extraction of ellipsis locations
-      from phrases.
 
-      An ellipsis is either an [[@ellipsis]] attribute, or a pair
-      of [[@@@ellipsis.start]...[@@@ellipsis.stop]] attributes. *)
+module Ellipsis = struct
+  (** This module implements the transformation of ellipsis nodes
+      to valid ocaml ast, and the recording of the locations of those elided
+      nodes.
+
+      An ellipsis is either an [[%ellipsis]] node, or a pair
+      of [[%%ellipsis.start]...[%%ellipsis.stop]] nodes.
+
+      The payload of the extension node must be acceptable in the
+      context of the node (a pattern payload inside a pattern,
+      an expression inside an expression, etc ...).
+
+      Moreover, a default payload is available in all contexts:
+      - [[%ellipsis]] <=> [[%ellipsis assert false]] in expression contexts
+      - [[%ellipsis]] <=> [[%ellipsis? _ ]] in pattern contexts
+      - [[%ellipsis]] <=> [[%ellipsis: _ ] in type expression contexts
+      - [[%ellipsis]] <=> [[%ellipsis: (module struct end)]] in module
+        expression contexts
+      - [[%%ellipsis]] <=> [] in signature or structure
+
+
+
+      - [[%ellipsis]] <=> [[%ellipsis: (module struct end)]] in module
+        expression contexts
+      - [[%ellipsis]] <=> [[%ellipsis object end]] in class expression context
+      - [[%ellipsis]] <=> [[%ellipsis object end]] in class type context
+      - [[%ellipsis]] <=> [[%ellipsis val ellipsis=unit]]
+        in class field context
+      - [[%ellipsis]] <=> [[%ellipsis val ellipsis:unit]]
+        in class field context
+
+      Note that the last five variants require a somewhat contrived syntax
+      to be used:
+
+      {[
+        class c = let x = 0 in [%ellipsis class x = let y = 0 in object end]
+        class type c =
+          [%ellipsis class type x = fun y = 0 in object end]
+        class c = object [%%ellipsis object method f = x end] end
+        class type c = object
+          [%%ellipsis class type x = object method f = x end]
+        end
+        module type s = [%ellipsis module type x= sig end]
+        module X = struct include [%ellipsis (module struct end)]
+      ]}
+*)
 
   exception Unmatched_ellipsis of {kind:string; start:int; stop:int}
-  (** raised when an [[@@@ellipsis.start]] or [[@@@ellipsis.stop]] is
-      not paired with another ellipsis attribute *)
+  (** raised when an [[%%ellipsis.start]] or [[%%ellipsis.stop]] is
+      not paired with another ellipsis node *)
 
-  exception Nested_ellipses of {first:int ; second:int }
-  (** raised by [[@@@ellipsis.start][@@@ellipsis.start]] *)
+  exception Nested_ellipses of {first:int; second:int}
+  (** raised by [[%ellipsis.start] [%ellipsis.start]] *)
 
-  let extract f x =
-    let transforms = ref [] in
-    let last_loc = ref Location.none in
-    let left_mark = ref None (* stored position of [@@@ellipsis.start]*) in
-    let location _this loc =
-      (* we rely on the fact that the default iterator call first
-         the location subiterator, then the attribute subiterator *)
-      last_loc := loc in
-    let attribute _this (attr,_) =
-      let name = attr.Location.txt in
-      let loc = !last_loc in
-      let start = loc.Location.loc_start.Lexing.pos_cnum in
-      let attr_start = attr.Location.loc.loc_start.Lexing.pos_cnum in
-      let attr_stop = 1 + attr.Location.loc.loc_end.Lexing.pos_cnum in
-      let stop = loc.Location.loc_end.Lexing.pos_cnum in
-      let check_nested () = match !left_mark with
-        | Some (first,_) -> raise (Nested_ellipses {first; second=attr_start})
+
+  open Parsetree
+
+  (** Extension node context *)
+  type 'a ctx =
+    | Typ : core_type ctx
+    | Pat : pattern ctx
+    | Expr : expression ctx
+    | Str : structure_item list ctx
+    | Sig : signature_item list ctx
+    | Stri : structure_item ctx
+    | Sigi : signature_item ctx
+    | Me: module_expr ctx
+    (** vv unimplemented vv
+        There are no payload that clearly match to these contexts *)
+    | Mty: module_type ctx (** module type whatever = $ ?*)
+    | Class: class_expr ctx (** class whatever = $ ?*)
+    | Class_field: class_field ctx (** object $ end ? *)
+    | Class_type: class_type ctx (** class type whatever = $ ?*)
+    | Class_type_field: class_type_field ctx
+    (** class type whatever = object $ end ?*)
+
+  (** Remove the context type *)
+  type actx = Ctx: 'result ctx -> actx
+
+  exception Invalid_ellipsis_contents of {file:string; line:int; ctx: actx}
+
+  module H = Ast_helper
+  let name loc s = Location.mkloc (Longident.Lident s) loc
+  let assert_false loc =
+    H.Exp.mk ~loc @@ Pexp_assert (H.Exp.construct ~loc (name loc "false") None)
+
+  let unit_type loc = H.Typ.constr ~loc (name loc "unit") []
+
+  let class_str loc = H.Cstr.mk (H.Pat.mk ~loc Ppat_any)
+
+  (** lift an extension payload outside of the extension node *)
+  let lift file line (type a) (ctx:a ctx) loc extension: a =
+    match ctx, extension with
+    | Typ, PTyp t-> t
+    | Typ, PStr [] -> H.Typ.mk ~loc Ptyp_any
+    | Pat, PPat (t,None) -> t
+    | Pat, PStr [] -> H.Pat.mk ~loc Ppat_any
+    | Expr, PStr [{pstr_desc=Pstr_eval (e,_); _ } ] -> e
+    | Expr, PStr [] -> assert_false loc
+    | Str, PStr s -> s
+    | Sig, PSig s -> s
+    | Sig, PStr [] -> []
+    | Stri, PStr [s] -> s
+    | Sigi, PSig [s] -> s
+    | Me, PStr [{pstr_desc=Pstr_eval ({pexp_desc = Pexp_pack me; _}, _ ); _}] ->
+        me
+    | Me, PStr [] -> H.Mod.structure ~loc []
+    | Mty, PStr [{pstr_desc=Pstr_modtype {pmtd_type= Some mty; _ };_}] -> mty
+    | Mty, PSig [{psig_desc=Psig_modtype {pmtd_type= Some mty; _ };_}] -> mty
+    | Mty, PStr [] -> H.Mty.signature ~loc []
+    | Class, PStr[{pstr_desc = Pstr_class [c];_}] ->
+        c.pci_expr
+    | Class, PStr [] -> H.Cl.structure ~loc (class_str loc [])
+    | Class_field, PStr[{pstr_desc = Pstr_eval (exp,_);_}] ->
+        begin match exp.pexp_desc with
+        | Pexp_object {pcstr_fields = [field]; _ } -> field
+        | _ -> raise (Invalid_ellipsis_contents {file;line;ctx=Ctx ctx})
+        end
+    | Class_field, PStr [] ->
+        H.Cf.val_ ~loc
+          (Location.mkloc "ellipsis" loc)
+          Immutable
+          (Cfk_concrete (Fresh,H.Exp.construct ~loc (name loc "()") None))
+    | Class_type, PStr[{pstr_desc = Pstr_class_type [c];_}] -> c.pci_expr
+    | Class_type, PSig [{psig_desc = Psig_class [c];_}] -> c.pci_expr
+    | Class_type, PStr [] ->
+        H.Cty.signature ~loc (H.Csig.mk (H.Typ.mk ~loc Ptyp_any) [])
+    | Class_type_field, PStr[{pstr_desc = Pstr_class_type [c];_}] ->
+        begin match c.pci_expr.pcty_desc with
+        | Pcty_signature {pcsig_fields = [field]; _ } -> field
+        | _ -> raise (Invalid_ellipsis_contents {file;line;ctx=Ctx ctx})
+        end
+    | Class_type_field, PStr [] ->
+        H.Ctf.val_ ~loc (Location.mkloc "ellipsis" loc)
+          Immutable Concrete (unit_type loc)
+    | _ -> raise (Invalid_ellipsis_contents {file;line;ctx=Ctx ctx})
+
+
+  let pp_invalid_ctx ppf (Ctx ctx) = match ctx with
+    | Typ -> Format.fprintf ppf "A type payload was expected in this context."
+    | Pat ->
+        Format.fprintf ppf "A pattern payload was expected in this context."
+    | Expr ->
+        Format.fprintf ppf "A structure payload with a single toplevel \
+                            expression was expected in this context."
+    | Str ->
+        Format.fprintf ppf "A structure payload was expected in this context."
+    | Sig ->
+        Format.fprintf ppf "A signature payload was expected in this context."
+    | Stri ->
+        Format.fprintf ppf
+          "A structure item payload was expected in this context."
+    | Sigi ->
+        Format.fprintf ppf
+          "A structure item payload was expected in this context."
+    | Me ->
+        Format.fprintf ppf
+          "A structure payload with a single toplevel expression containing
+           a packed module,@ e.g. [%%ellipsis (module F(X))], was expected \
+           in this module expression context"
+    | Mty ->
+        Format.fprintf ppf
+          "A structure payload with a single module type declaration,@ \
+           [%%ellipsis module type any = sig ... end],@ was expected \
+           in this context"
+    | Class ->
+        Format.fprintf ppf
+          "A structure payload with a single class declaration,@ \
+           [%%ellipsis class any = object ... end],@ was expected \
+           in this class context"
+    | Class_type ->
+        Format.fprintf ppf
+          "A signature payload with a single class declaration,@ \
+           [%%ellipsis: class any: int -> object ... end],@ was expected \
+           in this class type context"
+    | Class_type_field ->
+        Format.fprintf ppf
+          "A structure payload with a single class type declaration \
+           containing only an object structure with a single field,@ \
+           [%%ellipsis class type x = object val x: ... end],@ was expected \
+           in this class type field context"
+    | Class_field ->
+        Format.fprintf ppf
+          "A structure payload with a single class declaration \
+           containing only an object structure with a single field,@ \
+           [%%ellipsis class x = object val x= ... end],@ was expected \
+           in this class field context"
+
+  open Ast_mapper
+  let super = Ast_mapper.default_mapper
+
+  type records =
+    { mutable transforms: Text_transform.t list;
+      mutable left_mark: (int* int) option }
+
+  let record records name (loc:Location.t) =
+    let start = loc.loc_start.Lexing.pos_cnum in
+    let stop = loc.loc_end.Lexing.pos_cnum in
+    let ellipsis = Text_transform.ellipsis in
+    let check_nested () = match records.left_mark with
+        | Some (first,_) -> raise (Nested_ellipses {first; second=start})
         | None -> () in
       match name with
       | "ellipsis" ->
           check_nested ();
-          transforms :=
-            {Text_transform.kind=Ellipsis; start; stop=max attr_stop stop }
-            :: !transforms
+          records.transforms <- ellipsis start stop :: records.transforms
       | "ellipsis.start" ->
           check_nested ();
-          left_mark := Some (start, stop)
+          records.left_mark <- Some (start, stop)
       | "ellipsis.stop" ->
-          begin match !left_mark with
+          begin match records.left_mark with
           | None -> raise (Unmatched_ellipsis {kind="right"; start; stop})
-          | Some (start, _ ) ->
-              transforms := {kind=Ellipsis; start ; stop } :: !transforms;
-              left_mark := None
+          | Some (start', stop' ) ->
+              records.transforms <-
+                (* ellipsis.start-stop are not always ordered in the
+                   location increasing order *)
+                ellipsis (min start start') (max stop stop')
+                :: records.transforms;
+              records.left_mark <- None
           end
       | _ -> ()
-    in
-    f {Ast_iterator.default_iterator with location; attribute} x;
-    (match !left_mark with
-     | None -> ()
-     | Some (start,stop) ->
-         raise (Unmatched_ellipsis {kind="left"; start; stop })
-    );
-    !transforms
 
-  let parse_and_find fname mode s =
+
+  let dispatch file line m outer_loc super ty (x:_ Location.loc * _ )=
+    match x with
+    | {txt = "ellipsis"|"ellipsis.start"|"ellipsis.stop" as n; loc }, payload ->
+        record m n outer_loc; lift file line ty loc payload
+    | _ -> super
+
+  (** the ast mapper itself *)
+  let map file line m =
+    let dispatch x = dispatch file line m x in
+    let typ this x = match x.ptyp_desc with
+      | Ptyp_extension ext -> super.typ this @@ dispatch x.ptyp_loc x Typ ext
+      | _ -> super.typ this x in
+    let pat this x = match x.ppat_desc with
+      | Ppat_extension ext -> super.pat this @@ dispatch x.ppat_loc x Pat ext
+      | _ -> super.pat this x in
+    let class_expr this x = match x.pcl_desc with
+      | Pcl_extension ext ->
+          super.class_expr this @@ dispatch x.pcl_loc x Class ext
+      | _ -> super.class_expr this x in
+    let class_field this x = match x.pcf_desc with
+      | Pcf_extension ext ->
+          super.class_field this @@  dispatch x.pcf_loc x Class_field ext
+      | _ -> super.class_field this x in
+    let class_type this x = match x.pcty_desc with
+      | Pcty_extension ext ->
+          super.class_type this @@ dispatch x.pcty_loc x Class_type ext
+      | _ -> super.class_type this x in
+    let class_type_field this x = match x.pctf_desc with
+      | Pctf_extension ext ->
+          super.class_type_field this @@
+          dispatch x.pctf_loc x Class_type_field ext
+      | _ -> super.class_type_field this x in
+    let expr this x = match x.pexp_desc with
+      | Pexp_extension ext -> super.expr this @@ dispatch x.pexp_loc x Expr ext
+      | _ -> super.expr this x in
+    let structure_item this x = match x.pstr_desc with
+      | Pstr_extension (ext,_) -> dispatch x.pstr_loc [x] Str ext
+      | _ -> [super.structure_item this x] in
+    let signature_item this x = match x.psig_desc with
+      | Psig_extension (ext,_) -> dispatch x.psig_loc [x] Sig ext
+      | _ -> [super.signature_item this x] in
+    let module_type this x = match x.pmty_desc with
+      | Pmty_extension ext ->
+          super.module_type this @@ dispatch x.pmty_loc x Mty ext
+      | _ -> super.module_type this x in
+    let module_expr this x = match x.pmod_desc with
+      | Pmod_extension ext ->
+          super.module_expr this @@ dispatch x.pmod_loc x Me ext
+      | _ -> super.module_expr this x in
+    let structure this x =
+      List.rev @@ List.fold_left
+        ~f:(fun l x -> structure_item this x @ l)
+        ~init:[] x in
+    let signature this x =
+      List.rev @@ List.fold_left
+        ~f:(fun l x -> signature_item this x @ l)
+        ~init:[] x in
+    {super with typ;pat;expr;structure; signature;
+                module_type; module_expr;
+                class_expr; class_field; class_type;class_type_field
+    }
+
+  let run file line f ast =
+    let m = { transforms = []; left_mark = None } in
+    let () = f (map file line m) ast in
+    m.transforms
+
+  let transform_and_run fname line mode ppf s =
     let lex = Lexing.from_string s in
     Location.init lex fname;
     Location.input_name := fname;
     Location.input_lexbuf := Some lex;
+    let pstr it x =
+      Toplevel.exec ppf @@ Ptop_def (it.structure it x) in
+    let psig it x =
+      let s = it.signature it x in
+      let name = Location.mknoloc "wrap" in
+      let str =
+        Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature s) name] in
+      Toplevel.exec ppf (Ptop_def str) in
     try
       match mode with
-      | Toplevel -> begin
+      | Verbatim -> run fname line pstr (Parse.implementation lex)
+      | Signature -> run fname line psig (Parse.interface lex)
+      | Toplevel ->
           match Parse.toplevel_phrase lex with
-          | Ptop_dir _ -> Parsetree.Ptop_def [], []
-          | Ptop_def str as ast -> ast, extract (fun it -> it.structure it) str
-        end
-      | Verbatim ->
-          let str = Parse.implementation lex in
-          Ptop_def str, extract (fun it -> it.structure it) str
-      | Signature ->
-          let sign = Parse.interface lex in
-          let name = Location.mknoloc "wrap" in
-          let str =
-            Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
-          Ptop_def str,
-          extract (fun it -> it.signature it) sign
+          | Ptop_dir _ -> []
+          | Ptop_def str -> run fname line pstr str
     with Syntaxerr.Error _ -> raise (Phrase_parsing s)
 
 end
@@ -604,7 +837,9 @@ let process_file file =
       in
       try while true do
         let implicit_stop, phrase, expected = read_phrase () in
-        let ast, ellipses = Ellipsis.parse_and_find file mode phrase in
+        let ellipses =
+          Ellipsis.transform_and_run file !phrase_start mode
+            Toplevel.out_fmt phrase in
         let out = Toplevel.read_output () in
         let msgs = String.concat "" (out.warnings @ [out.error]) in
         let raw_output = msgs ^ out.stdout ^ out.values in
@@ -703,6 +938,10 @@ let process_file file =
              there were two nested ellipsis attribute.@ The first one \
              started at position %d,@ the second one at %d"
         first second
+  | Ellipsis.Invalid_ellipsis_contents {file;line;ctx} ->
+      fatal
+      "when evaluating a caml_example environment in %s, line %d:@ %a"
+      file (line-2) Ellipsis.pp_invalid_ctx ctx
 
 let _ =
   if !outfile <> "-" && !outfile <> "" then begin
