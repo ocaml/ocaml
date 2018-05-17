@@ -76,11 +76,9 @@ CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
   exit(2);
 }
 
-CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
+CAMLexport void caml_fatal_error_arg2 (char *fmt, char *arg1, char *arg2)
 {
-  fprintf (stderr, fmt1, arg1);
-  fprintf (stderr, fmt2, arg2);
+  fprintf (stderr, fmt, arg1, arg2);
   exit(2);
 }
 

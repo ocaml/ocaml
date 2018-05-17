@@ -121,8 +121,13 @@ static void open_connection(void)
 #endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error_arg2 ("cannot connect to debugger at %s\n", (dbg_addr ? dbg_addr : "(none)"),
-                           "error: %s\n", strerror (errno));
+    caml_fatal_error_arg2
+    (
+      "cannot connect to debugger at %s\n"
+      "error: %s\n",
+      (dbg_addr ? dbg_addr : "(none)"),
+      strerror (errno)
+    );
   }
 #ifdef _WIN32
   dbg_socket = _open_osfhandle(dbg_socket, 0);

@@ -137,9 +137,13 @@ static void open_shared_lib(char_os * name)
   handle = caml_dlopen(realname, 1, 1);
   caml_leave_blocking_section();
   if (handle == NULL)
-    caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n",
-                          caml_stat_strdup_of_os(name),
-                          "Reason: %s\n", caml_dlerror());
+    caml_fatal_error_arg2
+    (
+      "Fatal error: cannot load shared library %s\n"
+      "Reason: %s\n",
+      caml_stat_strdup_of_os(name),
+      caml_dlerror()
+    );
   caml_ext_table_add(&shared_libs, handle);
   caml_stat_free(realname);
 }

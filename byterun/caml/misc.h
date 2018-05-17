@@ -115,8 +115,7 @@ CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
 CAMLnoreturn_end;
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-                                       char *fmt2, char *arg2)
+CAMLextern void caml_fatal_error_arg2 (char *fmt, char *arg1, char *arg2)
 CAMLnoreturn_end;
 
 /* Detection of available C built-in functions, the Clang way. */
