@@ -1,7 +1,6 @@
 (* $Id$ *)
 
 open StdLabels
-open Printf
 open Str
 
 let camlbegin = "\\caml"
@@ -12,17 +11,18 @@ let camlbunderline = "\\<"
 let camleunderline = "\\>"
 
 let start newline out s args =
-  Printf.fprintf out "%s%s" camlbegin s;
-  List.iter (Printf.fprintf out "{%s}") args;
-  if newline then Printf.fprintf out "\n"
+  Format.fprintf out "%s%s" camlbegin s;
+  List.iter (Format.fprintf out "{%s}") args;
+  if newline then Format.fprintf out "\n"
 
 let stop newline out s =
-  Printf.fprintf out "%s%s" camlend s;
-  if newline then Printf.fprintf out "\n"
+  Format.fprintf out "%s%s" camlend s;
+  if newline then Format.fprintf out "\n"
 
 let code_env ?(newline=true) env out s =
-  Printf.fprintf out "%a%s\n%a"
-    (fun ppf env -> start false ppf env []) env s (stop newline) env
+  let sep = if s.[String.length s - 1] = '\n' then "" else "\n" in
+  Format.fprintf out "%a%s%s%a"
+    (fun ppf env -> start false ppf env []) env s sep (stop newline) env
 
 let main = "example"
 type example_mode = Toplevel | Verbatim | Signature
@@ -37,23 +37,12 @@ let error ="error"
 let warning ="warn"
 let phrase_env = ""
 
-
-let camllight = ref "TERM=norepeat ocaml"
 let verbose = ref true
 let linelen = ref 72
 let outfile = ref ""
 let cut_at_blanks = ref false
 let files = ref []
-
-let _ =
-  Arg.parse ["-n", Arg.Int (fun n -> linelen := n), "line length";
-             "-o", Arg.String (fun s -> outfile := s), "output";
-             "-caml", Arg.String (fun s -> camllight := s), "toplevel";
-             "-w", Arg.Set cut_at_blanks, "cut at blanks";
-             "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
-            ]
-    (fun s -> files := s :: !files)
-    "caml-tex2: "
+let repo_root = ref ""
 
 let (~!) =
   let memo = ref [] in
@@ -63,6 +52,164 @@ let (~!) =
       let data = Str.regexp key in
       memo := (key, data) :: !memo;
       data
+
+exception Phrase_parsing of string
+
+module Toplevel = struct
+  (** Initialize the toplevel loop, redirect stdout and stderr,
+      capture warnings and error messages *)
+
+  type output =
+    {
+      error:string; (** error message text *)
+      warnings:string list; (** warning messages text *)
+      values:string; (** toplevel output *)
+      stdout:string; (** output printed on the toplevel stdout *)
+      underlined: (int * int) list
+      (** locations to underline in input phrases *)
+    }
+
+  let buffer_fmt () =
+    let b = Buffer.create 30 in b, Format.formatter_of_buffer b
+
+  let error_fmt = buffer_fmt ()
+  let warning_fmt = buffer_fmt ()
+
+  let out_fmt = buffer_fmt ()
+
+  let flush_fmt (b,fmt) =
+    Format.pp_print_flush fmt ();
+    let r = Buffer.contents b in
+    Buffer.reset b;
+    r
+
+  (** Redirect the stdout *)
+  let stdout_out, stdout_in = Unix.pipe ~cloexec:true ()
+  let () = Unix.dup2 stdout_in Unix.stdout;
+    Unix.set_nonblock stdout_out
+
+  let self_error_fmt = Format.formatter_of_out_channel stderr
+  let eprintf = Format.eprintf
+
+  let read_stdout =
+    let size = 50 in
+    let b = Bytes.create size in
+    let buffer = Buffer.create 100 in
+    let max_retry = 5 in
+    let rec loop retry =
+      try
+        let n = Unix.read stdout_out b 0 size in
+        if n = size then
+          (Buffer.add_bytes buffer b; loop max_retry)
+        else
+          Buffer.add_bytes buffer (Bytes.sub b 0 n)
+      with Unix.(Unix_error (EAGAIN,_,_) ) ->
+        if retry = 0 then () else loop (retry - 1)
+    in
+    fun () ->
+      let () = flush stdout; loop max_retry in
+      let r = Buffer.contents buffer in
+      Buffer.reset buffer;
+      r
+
+  (** Store character intervals directly *)
+  let locs = ref []
+  let print_loc _ppf (loc : Location.t) =
+    let startchar = loc.loc_start.pos_cnum in
+    let endchar = loc.loc_end.pos_cnum in
+    if startchar >= 0 then
+      locs := (startchar, endchar) :: !locs
+
+  (** Capture warnings and keep them in a list *)
+  let warnings = ref []
+  let print_warning loc _ppf w =
+    Location.default_warning_printer loc (snd warning_fmt) w;
+    let w = flush_fmt warning_fmt in
+    warnings := w :: !warnings
+
+  let fatal ic oc fmt =
+    Format.kfprintf
+      (fun ppf -> Format.fprintf ppf "@]@."; close_in ic; close_out oc; exit 1)
+      self_error_fmt ("@[<hov 2>  Error " ^^ fmt)
+
+  let init () =
+    Location.printer := print_loc;
+    Location.warning_printer := print_warning;
+    Clflags.color := Some Misc.Color.Never;
+    Clflags.no_std_include := true;
+    Compenv.last_include_dirs := [Filename.concat !repo_root "stdlib"];
+    Location.error_reporter :=
+      (fun _ e -> Location.default_error_reporter (snd error_fmt) e);
+    Compmisc.init_path false;
+    try
+      Toploop.initialize_toplevel_env ();
+      Sys.interactive := false
+    with _ ->
+      (eprintf "Invalid repo root: %s?%!" !repo_root; exit 2)
+
+  let exec (_,ppf) p =
+    try
+      ignore @@ Toploop.execute_phrase true ppf p
+    with exn ->
+      let bt = Printexc.get_raw_backtrace () in
+      begin try Location.report_exception (snd error_fmt) exn
+      with _ ->
+        eprintf "Uncaught exception: %s\n%s\n"
+          (Printexc.to_string exn)
+          (Printexc.raw_backtrace_to_string bt)
+      end
+
+  let parse fname mode s =
+    let lex = Lexing.from_string s in
+    Location.init lex fname;
+    Location.input_name := fname;
+    Location.input_lexbuf := Some lex;
+    try
+      match mode with
+      | Toplevel -> Parse.toplevel_phrase lex
+      | Verbatim -> Ptop_def (Parse.implementation lex)
+      | Signature ->
+          let sign = Parse.interface lex in
+          let name = Location.mknoloc "wrap" in
+          let str =
+            Ast_helper.[Str.modtype @@ Mtd.mk ~typ:(Mty.signature sign) name] in
+          Ptop_def str
+    with Syntaxerr.Error _ -> raise (Phrase_parsing s)
+
+  let take x = let r = !x in x := []; r
+
+  let read_output ()  =
+    let warnings = take warnings in
+    let error = flush_fmt error_fmt in
+    let values =
+      replace_first ~!{|^#\( *\*\)* *|} "" @@ flush_fmt out_fmt in
+    (* the inner ( *\* )* group is here to clean the starting "*"
+       introduced for multiline comments *)
+    let underlined = take locs in
+    let stdout = read_stdout () in
+    { values; warnings; error; stdout; underlined }
+
+  (** exec and ignore all output from the toplevel *)
+  let eval b =
+    let s = Buffer.contents b in
+    let ast = Parse.toplevel_phrase (Lexing.from_string s) in
+    exec out_fmt ast;
+    ignore (read_output());
+    Buffer.reset b
+
+end
+
+let () =
+  Arg.parse ["-n", Arg.Int (fun n -> linelen := n), "line length";
+             "-o", Arg.String (fun s -> outfile := s), "output";
+             "-repo-root", Arg.String ((:=) repo_root ), "repo root";
+             "-w", Arg.Set cut_at_blanks, "cut at blanks";
+             "-v", Arg.Bool (fun b -> verbose := b ), "output result on stderr"
+            ]
+    (fun s -> files := s :: !files)
+    "caml-tex2: ";
+  Toplevel.init ()
+
 
 (** The Output module deals with the analysis and classification
     of the interpreter output and the parsing of status-related options
@@ -84,15 +231,15 @@ module Output = struct
 
   (** Pretty printer for status *)
   let pp_status ppf = function
-    | Error -> Printf.fprintf ppf "error"
-    | Ok -> Printf.fprintf ppf "ok"
-    | Warning n -> Printf.fprintf ppf "warning %d" n
+    | Error -> Format.fprintf ppf "error"
+    | Ok -> Format.fprintf ppf "ok"
+    | Warning n -> Format.fprintf ppf "warning %d" n
 
   (** Pretty printer for status preceded with an undefined determinant *)
   let pp_a_status ppf = function
-    | Error -> Printf.fprintf ppf "an error"
-    | Ok -> Printf.fprintf ppf "an ok"
-    | Warning n -> Printf.fprintf ppf "a warning %d" n
+    | Error -> Format.fprintf ppf "an error"
+    | Ok -> Format.fprintf ppf "an ok"
+    | Warning n -> Format.fprintf ppf "a warning %d" n
 
   (** {1 Related latex environment } *)
   let env = function
@@ -108,12 +255,12 @@ module Output = struct
   exception Unexpected_status of unexpected_report
 
   let print_source ppf {file; lines = (start, stop); phrase; output} =
-    Printf.fprintf ppf "%s, lines %d to %d:\n\"\n%s\n\"\n\"\n%s\n\"."
+    Format.fprintf ppf "%s, lines %d to %d:\n\"\n%s\n\"\n\"\n%s\n\"."
       file start stop phrase output
 
   let print_unexpected {source; expected; got} =
     if expected = Ok then
-      Printf.eprintf
+      Toplevel.eprintf
         "Error when evaluating a caml_example environment in %a\n\
          Unexpected %a status.\n\
          If %a status was expected, add an [@@expect %a] annotation.\n"
@@ -122,7 +269,7 @@ module Output = struct
         pp_a_status got
         pp_status got
     else
-      Printf.eprintf
+      Toplevel.eprintf
         "Error when evaluating a guarded caml_example environment in %a\n\
          Unexpected %a status, %a status was expected.\n\
          If %a status was in fact expected, change the status annotation to \
@@ -137,27 +284,30 @@ module Output = struct
   let print_parsing_error k s =
     match k with
     | Option ->
-        Printf.eprintf
+        Toplevel.eprintf
           "Unknown caml_example option: [%s].\n\
            Supported options are \"ok\",\"error\", or \"warning=n\" (with n \
            a warning number).\n" s
     | Annotation ->
-        Printf.eprintf
+        Toplevel.eprintf
           "Unknown caml_example phrase annotation: [@@expect %s].\n\
            Supported annotations are [@@expect ok], [@@expect error],\n\
            and [@@expect warning n] (with n a warning number).\n" s
 
   (** {1 Output analysis} *)
-  let catch_error s =
-    if string_match ~!{|Error:|} s 0 then Some Error else None
+  let catch_error = function
+    | "" -> None
+    | _ -> Some Error
 
-  let catch_warning s =
-    if string_match ~!{|Warning \([0-9]+\):|} s 0 then
-      Some (Warning (int_of_string @@ matched_group 1 s))
-    else
-      None
+  let catch_warning =
+    function
+    | [] -> None
+    | s :: _ when string_match ~!{|Warning \([0-9]+\):|} s 0 ->
+        Some (Warning (int_of_string @@ matched_group 1 s))
+    | _ -> None
 
-  let status s = match catch_warning s, catch_error s with
+  let status ws es =
+    match catch_warning ws, catch_error es with
     | Some w, _ -> w
     | None, Some e -> e
     | None, None -> Ok
@@ -215,6 +365,9 @@ module Text_transform = struct
     | Ellipsis -> Format.fprintf ppf "ellipsis"
 
   type t = { kind:kind; start:int; stop:int}
+
+  let underline start stop = { kind = Underline; start; stop}
+
   let escape_specials s =
     let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
     let s2 = global_replace ~!"'" "\\\\textquotesingle\\\\-" s1 in
@@ -285,38 +438,6 @@ module Text_transform = struct
 end
 
 
-let caml_input, caml_output =
-  let cmd = !camllight ^ " 2>&1" in
-  try Unix.open_process cmd with _ -> failwith "Cannot start toplevel"
-let () =
-  at_exit (fun () -> ignore (Unix.close_process (caml_input, caml_output)));
-  ignore (input_line caml_input);
-  ignore (input_line caml_input)
-
-let read_output () =
-  let input = ref (input_line caml_input) in
-  input := replace_first ~!{|^#\( *\*\)* *|} "" !input;
-  (* the inner ( *\* )* group is here to clean the starting "*"
-     introduced for multiline comments *)
-  let underline =
-    if string_match ~!"Characters *\\([0-9]+\\)-\\([0-9]+\\):$" !input 0
-    then
-      let start = int_of_string (matched_group 1 !input)
-      and stop = int_of_string (matched_group 2 !input) in
-      input := input_line caml_input;
-      Text_transform.[{kind=Underline; start; stop}]
-    else []
-  in
-  let output = Buffer.create 256 in
-  let first_line = ref true in
-  while not (string_match ~!".*\"end_of_input\"$" !input 0) do
-    if !verbose then prerr_endline !input;
-    if not !first_line then Buffer.add_char output '\n' else first_line:=false;
-    Buffer.add_string output !input;
-    input := input_line caml_input;
-  done;
-  Buffer.contents output, underline
-
 exception Missing_double_semicolon of string * int
 
 exception Missing_mode of string * int
@@ -325,7 +446,6 @@ type incompatibility =
   | Signature_with_visible_answer of string * int
 exception Incompatible_options of incompatibility
 
-exception Phrase_parsing of string
 
 module Ellipsis = struct
   (** This module implements the extraction of ellipsis locations
@@ -385,23 +505,9 @@ module Ellipsis = struct
     );
     !transforms
 
-  let find fname mode s =
-    let lex = Lexing.from_string s in
-    Location.init lex fname;
-    Location.input_name := fname;
-    Location.input_lexbuf := Some lex;
-    try
-      match mode with
-      | Toplevel -> begin
-          match Parse.toplevel_phrase lex with
-          | Ptop_dir _ -> []
-          | Ptop_def str -> extract (fun it -> it.structure it) str
-        end
-      | Verbatim ->
-          extract (fun it -> it.structure it) (Parse.implementation lex)
-      | Signature ->
-          extract (fun it -> it.signature it) (Parse.interface lex)
-    with Syntaxerr.Error _ -> raise (Phrase_parsing s)
+  let find = function
+    | Parsetree.Ptop_def ast -> extract (fun it -> it.structure it) ast
+    | Ptop_dir (_,_) -> []
 
 end
 
@@ -421,10 +527,8 @@ let process_file file =
       open_out_gen [Open_wronly; Open_creat; Open_append; Open_text]
         0x666 !outfile
     with _ -> failwith "Cannot open output file" in
-  let fatal fmt =
-    Format.kfprintf
-      (fun ppf -> Format.fprintf ppf "@]@."; close_in ic; close_out oc; exit 1)
-      Format.err_formatter ("@[<hov 2>  Error " ^^ fmt) in
+  let tex_fmt = Format.formatter_of_out_channel oc in
+  let fatal x = Toplevel.fatal ic oc x in
   let re_spaces = "[ \t]*" in
   let re_start = ~!(
       {|\\begin{caml_example\(\*?\)}|} ^ re_spaces
@@ -454,7 +558,7 @@ let process_file file =
         | Toplevel -> true in
       let global_expected = try Output.expected @@ matched_group 4 !input
         with Not_found -> Output.Ok in
-      start true oc main [string_of_mode mode];
+      start true tex_fmt main [string_of_mode mode];
       let first = ref true in
       let read_phrase () =
         let phrase = Buffer.create 256 in
@@ -484,7 +588,8 @@ let process_file file =
           )
           else begin
             decr phrase_stop;
-            let last_input = if implicit_stop then "" else matched_group 1 input in
+            let last_input =
+              if implicit_stop then "" else matched_group 1 input in
             let expected =
               if string_match ~!{|\(.*\)\[@@expect \(.*\)\]|} last_input 0 then
                 ( Buffer.add_string phrase (matched_group 1 last_input);
@@ -499,16 +604,13 @@ let process_file file =
       in
       try while true do
         let implicit_stop, phrase, expected = read_phrase () in
-        let ellipses = Ellipsis.find file mode phrase in
-        if mode = Signature then fprintf caml_output "module type Wrap = sig\n";
-        fprintf caml_output "%s%s%s" phrase
-        (if mode = Signature then "\nend" else "")
-        (if implicit_stop then ";;\n" else "\n");
-        flush caml_output;
-        output_string caml_output "\"end_of_input\";;\n";
-        flush caml_output;
-        let output, underline = read_output () in
-        let status = Output.status output in
+        let ast = Toplevel.parse file mode phrase in
+        let ellipses = Ellipsis.find ast in
+        let () = Toplevel.(exec out_fmt) ast in
+        let out = Toplevel.read_output () in
+        let error_msgs = String.concat "" (out.warnings @ [out.error]) in
+        let output = String.concat "" [error_msgs; out.stdout; out.values] in
+        let status = Output.status out.warnings out.error in
         if status <> expected then (
           let source = Output.{
               file;
@@ -520,39 +622,43 @@ let process_file file =
                    {Output.got=status; expected; source} ) )
         else ( incr phrase_stop; phrase_start := !phrase_stop );
         let phrase =
+          let underline =
+            List.map (fun (x,y) -> Text_transform.underline x y)
+              out.underlined in
           Text_transform.apply (underline @ ellipses)
             file !phrase_stop phrase in
         (* Special characters may also appear in output strings -Didier *)
         let output = Text_transform.escape_specials output in
         let phrase = global_replace ~!{|^\(.\)|} camlin phrase
         and output = global_replace ~!{|^\(.\)|} camlout output in
-        start false oc phrase_env [];
-        code_env ~newline:omit_answer input_env oc phrase;
+        start false tex_fmt phrase_env [];
+        code_env ~newline:omit_answer input_env tex_fmt phrase;
         if not omit_answer then
-          code_env ~newline:false (Output.env status) oc output;
-        stop true oc phrase_env;
+          code_env ~newline:false (Output.env status) tex_fmt output;
+        stop true tex_fmt phrase_env;
         flush oc;
         first := false;
         if implicit_stop then raise End_of_file
       done
-      with End_of_file -> phrase_start:= !phrase_stop; stop true oc main
+      with End_of_file -> phrase_start:= !phrase_stop; stop true tex_fmt main
     end
     else if string_match ~!"\\\\begin{caml_eval}[ \t]*$" !input 0
     then begin
+      let eval_buffer = Buffer.create 256 in
       while input := input_line ic;
         not (string_match ~!"\\\\end{caml_eval}[ \t]*$" !input 0)
       do
-        fprintf caml_output "%s\n" !input;
+        Buffer.add_string eval_buffer !input;
+        Buffer.add_char eval_buffer '\n';
         if string_match ~!".*;;[ \t]*$" !input 0 then begin
-          flush caml_output;
-          output_string caml_output "\"end_of_input\";;\n";
-          flush caml_output;
-          ignore (read_output ())
+          Toplevel.eval eval_buffer
         end
-      done
+      done;
+      if Buffer.length eval_buffer > 0 then
+        ( Buffer.add_string eval_buffer ";;\n"; Toplevel.eval eval_buffer )
     end else begin
-      fprintf oc "%s\n" !input;
-      flush oc
+      Format.fprintf tex_fmt "%s\n" !input;
+      Format.pp_print_flush tex_fmt ()
     end
   done with
   | End_of_file -> close_in ic; close_out oc
@@ -565,7 +671,7 @@ let process_file file =
   | Missing_double_semicolon (file, line_number) ->
       fatal
         "when evaluating a caml_example environment in %s:@;\
-         missing \";;\" at line %d@]@." file (line_number-2)
+         missing \";;\" at line %d" file (line_number-2)
   | Missing_mode (file, line_number) ->
       fatal "when parsing a caml_example environment in %s:@;\
              missing mode argument at line %d,@ \

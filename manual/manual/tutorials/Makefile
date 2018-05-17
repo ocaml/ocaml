@@ -6,7 +6,7 @@ LD_PATH = "$(TOPDIR)/otherlibs/str:$(TOPDIR)/otherlibs/unix"
 TOOLS = ../../tools
 CAMLLATEX = $(SET_LD_PATH) \
   $(OCAMLRUN) $(TOOLS)/caml-tex2 \
-  -caml "TERM=norepeat $(OCAML)" -n 80 -v false
+  -repo-root $(TOPDIR) -n 80 -v false
 TEXQUOTE = $(OCAMLRUN) $(TOOLS)/texquote2
 TRANSF = $(SET_LD_PATH) $(OCAMLRUN) $(TOOLS)/transf
 
