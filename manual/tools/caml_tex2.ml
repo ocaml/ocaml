@@ -872,11 +872,17 @@ let process_file file =
         (* Special characters may also appear in output strings -Didier *)
         let output = Text_transform.escape_specials raw_output in
         let phrase = global_replace ~!{|^\(.\)|} camlin phrase
-        and output = global_replace ~!{|^\(.\)|} camlout output in
+        and output = global_replace ~!{|^\(.\)|} camlout output
+        and msgs =
+          if String.length msgs > 0 then
+            global_replace ~!{|^\(.\)|} camlout output
+          else msgs
+        in
         start false tex_fmt phrase_env [];
         code_env ~newline:omit_answer input_env tex_fmt phrase;
-        if not omit_answer then
-          code_env ~newline:false (Output.env status) tex_fmt output;
+        if not omit_answer || String.length msgs > 0  then
+          code_env ~newline:false (Output.env status) tex_fmt
+            (if omit_answer then msgs else output);
         stop true tex_fmt phrase_env;
         flush oc;
         first := false;
