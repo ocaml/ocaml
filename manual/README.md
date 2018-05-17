@@ -171,26 +171,36 @@ let f None = None [@@expect warning 8];;
 \end{caml_example}
 ```
 
-It is also possible to elide a code fragment by annotating it with
-an `[@ellipsis]` attribute
+It is also possible to elide a code fragment by putting it inside
+an [%ellipsis] extension node.
 
 ```latex
 \begin{caml_example}{toplevel}
-let f: type a. a list -> int = List.length[@ellipsis] ;;
+let f: type a. a list -> int = [%ellipsis List.length];;
 \end{caml_example}
 ```
 For module components, it might be easier to hide them by using
-`[@@@ellipsis.start]` and `[@@@ellipsis.stop]`:
+`[%%ellipsis.start]` and `[%%ellipsis.stop]`:
 ```latex
 \begin{caml_example*}{verbatim}
 module M = struct
-  [@@@ellipsis.start]
+  [%%ellipsis.start]
   type t = T
   let x = 0
-  [@@@ellipsis.stop]
+  [%%ellipsis.stop]
  end
 \end{caml_example*}
 ```
+
+In some case, it may be possible to simply use `[%ellipsis]` without any
+payload, which is translated to
+- `assert false` for expressions
+- `_` for type expressions or patterns
+-`struct end` for module expression
+- nothing for structure and signature items
+- `object end` for classes and class types
+- `val ellipsis=()` for class fields
+- `val ellipsis:unit` for class type fields
 
 Another possibility to avoid displaying distracting code is to use
 the `caml_eval` environment. This environment is a companion environment
