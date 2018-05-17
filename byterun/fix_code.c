@@ -61,7 +61,7 @@ void caml_load_code(int fd, asize_t len)
   caml_code_size = len;
   caml_start_code = (code_t) caml_stat_alloc(caml_code_size);
   if (read(fd, (char *) caml_start_code, caml_code_size) != caml_code_size)
-    caml_fatal_error("Fatal error: truncated bytecode file.\n");
+    caml_fatal_error("truncated bytecode file");
   caml_init_code_fragments();
   /* Prepare the code for execution */
 #ifdef ARCH_BIG_ENDIAN
@@ -145,7 +145,7 @@ void caml_thread_code (code_t code, asize_t len)
     opcode_t instr = *p;
     if (instr < 0 || instr >= FIRST_UNIMPLEMENTED_OP){
       /* FIXME -- should Assert(false) ?
-      caml_fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
+      caml_fatal_error_arg ("in fix_code: bad opcode (%lx)",
                             (char *)(long)instr);
       */
       instr = STOP;

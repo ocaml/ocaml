@@ -124,7 +124,7 @@ static void open_connection(void)
     caml_fatal_error_arg2
     (
       "cannot connect to debugger at %s\n"
-      "error: %s\n",
+      "error: %s",
       (dbg_addr ? dbg_addr : "(none)"),
       strerror (errno)
     );
@@ -202,7 +202,10 @@ void caml_debugger_init(void)
     sock_addr.s_unix.sun_family = AF_UNIX;
     a_len = strlen(address);
     if (a_len >= sizeof(sock_addr.s_unix.sun_path)) {
-      caml_fatal_error("Debug socket path length exceeds maximum permitted length");
+      caml_fatal_error
+      (
+        "debug socket path length exceeds maximum permitted length"
+      );
     }
     strncpy(sock_addr.s_unix.sun_path, address,
             sizeof(sock_addr.s_unix.sun_path) - 1);
@@ -211,7 +214,7 @@ void caml_debugger_init(void)
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
         + a_len;
 #else
-    caml_fatal_error("Unix sockets not supported");
+    caml_fatal_error("unix sockets not supported");
 #endif
   } else {
     /* Internet domain */
@@ -223,7 +226,7 @@ void caml_debugger_init(void)
     if (sock_addr.s_inet.sin_addr.s_addr == -1) {
       host = gethostbyname(address);
       if (host == NULL)
-        caml_fatal_error_arg("Unknown debugging host %s\n", address);
+        caml_fatal_error_arg("unknown debugging host %s", address);
       memmove(&sock_addr.s_inet.sin_addr, host->h_addr, host->h_length);
     }
     sock_addr.s_inet.sin_port = htons(atoi(port));
@@ -345,7 +348,7 @@ void caml_debugger(enum event_kind event)
         caml_flush(dbg_out);
       }
 #else
-      caml_fatal_error("error: REQ_CHECKPOINT command");
+      caml_fatal_error("REQ_CHECKPOINT command");
       exit(-1);
 #endif
       break;
@@ -359,7 +362,7 @@ void caml_debugger(enum event_kind event)
 #ifndef _WIN32
       wait(NULL);
 #else
-      caml_fatal_error("Fatal error: REQ_WAIT command");
+      caml_fatal_error("REQ_WAIT command");
       exit(-1);
 #endif
       break;

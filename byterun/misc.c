@@ -24,6 +24,8 @@
 #include "caml/osdeps.h"
 #include "caml/version.h"
 
+#define FATAL_ERROR "Fatal error: "
+
 caml_timing_hook caml_major_slice_begin_hook = NULL;
 caml_timing_hook caml_major_slice_end_hook = NULL;
 caml_timing_hook caml_minor_gc_begin_hook = NULL;
@@ -66,19 +68,23 @@ void caml_gc_message (int level, char *msg, ...)
 
 CAMLexport void caml_fatal_error (char *msg)
 {
-  fprintf (stderr, "%s", msg);
+  fprintf (stderr, FATAL_ERROR "%s\n", msg);
   exit(2);
 }
 
 CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
 {
+  fprintf (stderr, FATAL_ERROR);
   fprintf (stderr, fmt, arg);
+  fprintf(stderr, "\n");
   exit(2);
 }
 
 CAMLexport void caml_fatal_error_arg2 (char *fmt, char *arg1, char *arg2)
 {
+  fprintf (stderr, FATAL_ERROR);
   fprintf (stderr, fmt, arg1, arg2);
+  fprintf(stderr, "\n");
   exit(2);
 }
 

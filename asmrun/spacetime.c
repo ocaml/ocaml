@@ -766,7 +766,7 @@ static NOINLINE void* find_trie_node_from_libunwind(int for_allocation,
       frames =
         (struct ext_table*) caml_stat_alloc_noexc(sizeof(struct ext_table));
       if (!frames) {
-        caml_fatal_error("Not enough memory for ext_table allocation");
+        caml_fatal_error("not enough memory for ext_table allocation");
       }
       caml_ext_table_init(frames, initial_table_size);
       *cached_frames = frames;
