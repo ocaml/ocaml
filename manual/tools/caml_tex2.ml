@@ -357,16 +357,20 @@ module Text_transform = struct
     | Underline
     | Ellipsis
 
+  type t = { kind:kind; start:int; stop:int}
   exception Intersection of
-      {line:int; file:string; left:kind; stop:int; start:int; right:kind}
+      {line:int;
+       file:string;
+       left: t;
+       right: t;
+      }
 
   let pp ppf = function
     | Underline -> Format.fprintf ppf "underline"
     | Ellipsis -> Format.fprintf ppf "ellipsis"
 
-  type t = { kind:kind; start:int; stop:int}
-
   let underline start stop = { kind = Underline; start; stop}
+  let ellipsis start stop = { kind = Ellipsis; start; stop }
 
   let escape_specials s =
     let s1 = global_replace ~!"\\\\" "\\\\\\\\" s in
@@ -394,7 +398,7 @@ module Text_transform = struct
       transform in a list of transforms *)
   type partition = U of t * t list | E of t
   let check_partition line file l =
-    let init = Ellipsis, 0 in
+    let init = ellipsis 0 0 in
     let rec partition = function
       | [] -> []
       | {kind=Underline; _ } as t :: q -> underline t [] q
@@ -406,21 +410,27 @@ module Text_transform = struct
           if t.stop < u.stop then underline u (t::n) q
           else end_underline u n (t::q)
     and end_underline u n l = U(u,List.rev n) :: partition l in
-    let check_elt (left,stop) t =
-      if t.start < stop then
-        raise (Intersection{line;file;left;stop;start=t.start;right=t.kind})
+    let check_elt last t =
+      if t.start < last.stop then
+        raise (Intersection {line;file; left = last; right = t})
       else
-        (t.kind,t.stop) in
+        t in
     let check acc = function
       | E t -> check_elt acc t
       | U(u,n) ->
           let _ = check_elt acc u in
           let _ = List.fold_left ~f:check_elt ~init n in
-          u.kind, u.stop in
+          u in
     List.fold_left ~f:check ~init (partition l)
     |> ignore
 
   let apply ts file line s =
+    (* remove duplicated transforms that can appear due to
+        duplicated parse tree elements. For instance,
+        [let f : (_ [@ellipsis] = ()] is transformed to
+        [let f: (_ [@ellipsis]) = (():(_ [@ellipsis])] with the same location
+        for the two ellipses. *)
+    let ts = List.sort_uniq compare ts in
     let ts = List.sort (fun x y -> compare x.start y.start) ts in
     check_partition line file ts;
     let last, underline, ls =
@@ -675,24 +685,26 @@ let process_file file =
   | Missing_mode (file, line_number) ->
       fatal "when parsing a caml_example environment in %s:@;\
              missing mode argument at line %d,@ \
-             available modes {toplevel,verbatim}@]@."
+             available modes {toplevel,verbatim}"
           file (line_number-2)
   | Incompatible_options Signature_with_visible_answer (file, line_number) ->
       fatal
           "when parsing a caml_example environment in@ \
            %s, line %d:@,\
            the signature mode is only compatible with \"caml_example*\"@ \
-           Hint: did you forget to add \"*\"?@]@."
+           Hint: did you forget to add \"*\"?"
           file (line_number-2);
-  | Text_transform.Intersection {line;file;left;stop;start;right} ->
+  | Text_transform.Intersection {line;file;left;right} ->
       fatal
         "when evaluating a caml_example environment in %s, line %d:@ \
          Textual transforms must be well-separated.@ The \"%a\" transform \
-         ended at %d,@ after the start at %d of another \"%a\" transform.@ \
-         Hind: did you try to elide a code fragment which raised a warning?\
-         @]@."
+         spanned the interval %d-%d,@ \
+         intersecting with another \"%a\" transform @ \
+         on the %d-%d interval.@ \
+         Hind: did you try to elide a code fragment which raised a warning?"
         file (line-2)
-        Text_transform.pp left stop start Text_transform.pp right
+        Text_transform.pp left.kind left.start left.stop
+        Text_transform.pp right.kind right.start right.stop
   | Ellipsis.Unmatched_ellipsis {kind;start;stop} ->
       fatal "when evaluating a caml_example environment,@ \
              the %s mark at position %d-%d was unmatched"
