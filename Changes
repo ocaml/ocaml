@@ -42,6 +42,9 @@ Working version
 
 ### Runtime system:
 
+- GPR#1793: add the -m and -M command-line options to ocamlrun
+  (Sébastien Hinderer, review by ??)
+
 ### Tools:
 
 - GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of
