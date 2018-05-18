@@ -373,6 +373,11 @@ than with the usual graph coloring allocator, sometimes quite drastically so for
 long functions and modules. On the other hand, the generated code can be a bit
 slower.
 .TP
+.B \-match\-context\-rows
+Set number of rows of context used during pattern matching
+compilation. Lower values cause faster compilation, but
+less optimized code. The default value is 32.
+.TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
 .TP

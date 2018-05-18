@@ -603,6 +603,14 @@ let mk_nopervasives f =
   "-nopervasives", Arg.Unit f, " (undocumented)"
 ;;
 
+let mk_match_context_rows f =
+  "-match-context-rows", Arg.Int f,
+  Printf.sprintf
+  "<n> Set number of rows of context used during pattern matching\n\
+  \    compilation. Lower values cause faster compilation, but\n\
+  \    less optimized code. The default value is 32."
+;;
+
 let mk_use_prims f =
   "-use-prims", Arg.String f, "<file>  (undocumented)"
 ;;
@@ -881,6 +889,7 @@ module type Compiler_options = sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
 
@@ -1105,6 +1114,7 @@ struct
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
     mk_use_prims F._use_prims;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
@@ -1283,6 +1293,7 @@ struct
     mk__ F.anonymous;
 
     mk_nopervasives F._nopervasives;
+    mk_match_context_rows F._match_context_rows;
     mk_dno_unique_ids F._dno_unique_ids;
     mk_dunique_ids F._dunique_ids;
     mk_dsource F._dsource;
