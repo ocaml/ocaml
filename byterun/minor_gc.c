@@ -518,7 +518,7 @@ static void realloc_generic_table
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
     tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
-      caml_fatal_error (msg_error);
+      caml_fatal_error ("%s", msg_error);
     }
     tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
     tbl->threshold = tbl->base + tbl->size * element_size;

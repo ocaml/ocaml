@@ -170,7 +170,7 @@ int32_t caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
   int32_t len = caml_seek_optional_section(fd, trail, name);
   if (len == -1)
-    caml_fatal_error_arg("section `%s' is missing", name);
+    caml_fatal_error("section `%s' is missing", name);
   return len;
 }
 
@@ -186,7 +186,7 @@ static char * read_section(int fd, struct exec_trailer *trail, char *name)
   if (len == -1) return NULL;
   data = caml_stat_alloc(len + 1);
   if (read(fd, data, len) != len)
-    caml_fatal_error_arg("error reading section %s", name);
+    caml_fatal_error("error reading section %s", name);
   data[len] = 0;
   return data;
 }
@@ -203,7 +203,7 @@ static char_os * read_section_to_os(int fd, struct exec_trailer *trail, char *na
   if (len == -1) return NULL;
   data = caml_stat_alloc(len + 1);
   if (read(fd, data, len) != len)
-    caml_fatal_error_arg("error reading section %s", name);
+    caml_fatal_error("error reading section %s", name);
   data[len] = 0;
   wlen = win_multi_byte_to_wide_char(data, len, NULL, 0);
   wdata = caml_stat_alloc((wlen + 1)*sizeof(wchar_t));
@@ -281,7 +281,7 @@ static int parse_command_line(char_os **argv)
       }
       break;
     default:
-      caml_fatal_error_arg("unknown option %s", caml_stat_strdup_of_os(argv[i]));
+      caml_fatal_error("unknown option %s", caml_stat_strdup_of_os(argv[i]));
     }
   }
   return i;
@@ -363,10 +363,10 @@ CAMLexport void caml_main(char_os **argv)
     fd = caml_attempt_open(&exe_name, &trail, 1);
     switch(fd) {
     case FILE_NOT_FOUND:
-      caml_fatal_error_arg("cannot find file '%s'", caml_stat_strdup_of_os(argv[pos]));
+      caml_fatal_error("cannot find file '%s'", caml_stat_strdup_of_os(argv[pos]));
       break;
     case BAD_BYTECODE:
-      caml_fatal_error_arg(
+      caml_fatal_error(
         "the file '%s' is not a bytecode executable file",
         caml_stat_strdup_of_os(exe_name));
       break;

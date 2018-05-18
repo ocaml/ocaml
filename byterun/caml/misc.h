@@ -107,15 +107,10 @@ CAMLnoreturn_end;
 #endif
 
 CAMLnoreturn_start
-CAMLextern void caml_fatal_error (char *msg)
-CAMLnoreturn_end;
-
-CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg (char *fmt, char *arg)
-CAMLnoreturn_end;
-
-CAMLnoreturn_start
-CAMLextern void caml_fatal_error_arg2 (char *fmt, char *arg1, char *arg2)
+CAMLextern void caml_fatal_error (char *, ...)
+#ifdef __GNUC__
+  __attribute__ ((format (printf, 1, 2)))
+#endif
 CAMLnoreturn_end;
 
 /* Detection of available C built-in functions, the Clang way. */

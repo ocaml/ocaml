@@ -1145,9 +1145,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if _MSC_VER >= 1200
       __assume(0);
 #else
-      caml_fatal_error_arg("bad opcode (%"
+      caml_fatal_error("bad opcode (%"
                            ARCH_INTNAT_PRINTF_FORMAT "x)",
-                           (char *) (intnat) *(pc-1));
+                           (intnat) *(pc-1));
 #endif
     }
   }

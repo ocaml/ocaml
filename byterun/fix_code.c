@@ -145,7 +145,7 @@ void caml_thread_code (code_t code, asize_t len)
     opcode_t instr = *p;
     if (instr < 0 || instr >= FIRST_UNIMPLEMENTED_OP){
       /* FIXME -- should Assert(false) ?
-      caml_fatal_error_arg ("in fix_code: bad opcode (%lx)",
+      caml_fatal_error ("in fix_code: bad opcode (%lx)",
                             (char *)(long)instr);
       */
       instr = STOP;

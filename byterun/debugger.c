@@ -121,7 +121,7 @@ static void open_connection(void)
 #endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error_arg2
+    caml_fatal_error
     (
       "cannot connect to debugger at %s\n"
       "error: %s",
@@ -226,7 +226,7 @@ void caml_debugger_init(void)
     if (sock_addr.s_inet.sin_addr.s_addr == -1) {
       host = gethostbyname(address);
       if (host == NULL)
-        caml_fatal_error_arg("unknown debugging host %s", address);
+        caml_fatal_error("unknown debugging host %s", address);
       memmove(&sock_addr.s_inet.sin_addr, host->h_addr, host->h_length);
     }
     sock_addr.s_inet.sin_port = htons(atoi(port));
