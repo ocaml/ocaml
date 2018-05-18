@@ -24,10 +24,12 @@ a:active {color : Black; text-decoration : underline; }
 .type { color : #5C6585 }
 .string { color : Maroon }
 .warning { color : Red ; font-weight : bold }
-.info { margin-left : 3em; margin-right : 3em } .code { color : #465F91 ; } h1 { font-size : 24pt ; text-align: center; }
+.info { margin-left : 3em; margin-right : 3em }
+.code { color : #465F91 ; }
+h1 { font-size : 2rem ; text-align: center; }
 
 h2, h3, h4, h5, h6, div.h7, div.h8, div.h9 {
-  font-size: 22pt;
+  font-size: 1.75rem;
   border: 1px solid #000;
   margin-top: 20px;
   margin-bottom: 2px;
@@ -55,13 +57,14 @@ div.h9 { background-color: #FFFFFF; }
 .paramstable { border-style : hidden ; padding: 5pt 5pt}
 body {
   background-color : #f7f7f7;
-  font-size: 17px;
-  padding-left: 5%;
-  padding-right: 5%;
+  font-size: 1rem;
+  max-width: 800px;
+  width: 85%;
+  margin: auto;
   padding-bottom: 30px;
 }
 td {
-  font-size: 17px;
+  font-size: 1rem;
 }
 .navbar { /* previous - up - next */
   position: absolute;
@@ -70,7 +73,7 @@ td {
 }
 tr { background-color : #f7f7f7 }
 td.typefieldcomment { background-color : #f7f7f7 }
-pre { margin-bottom: 4px }
+pre { margin-bottom: 4px; white-space: pre-wrap; }
 div.sig_block {margin-left: 2em}
 ul.info-attributes { list-style: none; margin: 0; padding: 0; }
 div.info > p:first-child{ margin-top:0; }

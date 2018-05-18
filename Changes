@@ -332,6 +332,10 @@ OCaml 4.07
 - GPR#1779: integrate the Bigarray documentation into the main manual.
   (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
 
+- GPR#1767: change html manual to use relative font sizes
+  (Charles Chamberlain, review by Daniel Bünzli, Perry E. Metzger,
+  Josh Berdine, and Gabriel Scherer)
+
 ### Compiler distribution build system
 
 - MPR#5219, GPR#1680: use 'install' instead of 'cp' in install scripts
