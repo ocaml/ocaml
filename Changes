@@ -42,6 +42,9 @@ Working version
 
 ### Compiler distribution build system:
 
+- GPR#1781: cleanup of the manual's build process
+  (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
