@@ -23,12 +23,12 @@
 
 % Compact layout
 \newstyle{body}{
-  max-width:850px;
+  max-width:750px;
   width: 85\%;
   margin: auto;
   background: \#f7f7f7;
   margin-top: 80px;
-  font-size: 19px
+  font-size: 1rem;
 }
 
 % selects the index's title
@@ -44,7 +44,7 @@
 }
 
 \newstyle{pre}{
-  font-size: 0.85em;
+  font-size: 1rem;
   background: beige;
   border: 1px solid grey;
   padding: 10px;
@@ -144,7 +144,7 @@
 
 \newstyle{.tableau, .syntax, .syntaxleft}{
   /* same width as body */
-  max-width: 850px;
+  max-width: 750px;
   overflow-y: auto;
 }
 
