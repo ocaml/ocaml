@@ -1,8 +1,18 @@
 TOPDIR=../..
 COMPFLAGS=-I $(OTOPDIR)/otherlibs/str -I $(OTOPDIR)/otherlibs/unix
+CAMLTEX2_FLAGS= -I $(OTOPDIR)/parsing -I $(OTOPDIR)/utils \
+          -I $(OTOPDIR)/driver -I $(OTOPDIR)/toplevel
+
+CAMLTEX2_LIBS = $(TOPDIR)/compilerlibs/ocamlcommon.cma \
+ $(TOPDIR)/compilerlibs/ocamlbytecomp.cma \
+ $(TOPDIR)/compilerlibs/ocamltoplevel.cma
+
+
 include $(TOPDIR)/Makefile.tools
 
 CFLAGS=-g -O
+
+
 
 all: texquote2 transf htmlquote htmlgen dvi2txt caml-tex2
 
@@ -25,7 +35,8 @@ latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
 
 caml-tex2: caml_tex2.ml
-	$(OCAMLC) $(TOPDIR)/compilerlibs/ocamlcommon.cma -I $(TOPDIR)/parsing \
+	$(OCAMLC) -linkall \
+	$(CAMLTEX2_FLAGS) $(CAMLTEX2_LIBS) \
 	-o caml-tex2 str.cma unix.cma caml_tex2.ml
 
 .SUFFIXES:

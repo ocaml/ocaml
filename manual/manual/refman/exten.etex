@@ -461,11 +461,11 @@ syntax has been chosen to fit nicely in the context of function
 declarations, where it is generally used. It is possible to freely mix
 regular function parameters with pseudo type parameters, as in:
 \begin{caml_example*}{verbatim}
-        let f = fun (type t) (foo : t list) -> assert false[@ellipsis]
+        let f = fun (type t) (foo : t list) -> [%ellipsis]
 \end{caml_example*}
 and even use the alternative syntax for declaring functions:
 \begin{caml_example*}{verbatim}
-        let f (type t) (foo : t list) = assert false[@ellipsis]
+        let f (type t) (foo : t list) = [%ellipsis assert false]
 \end{caml_example*}
 If several locally abstract types need to be introduced, it is possible to use
 the syntax
@@ -473,8 +473,8 @@ the syntax
 as syntactic sugar for @"fun" '(' "type" typeconstr-name_1 ')' "->" \ldots "->"
 "fun" '(' "type" typeconstr-name_n ')' "->" expr@. For instance,
 \begin{caml_example*}{verbatim}
-        let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> assert false[@ellipsis]
-        let f' (type t u v) (foo : (t * u * v) list) = assert false[@ellipsis]
+        let f = fun (type t u v) -> fun (foo : (t * u * v) list) -> [%ellipsis]
+        let f' (type t u v) (foo : (t * u * v) list) = [%ellipsis]
 \end{caml_example}
 
 This construction is useful because the type constructors it introduces
@@ -519,13 +519,13 @@ polymorphic the type variable it introduces, but it can be combined
 with explicit polymorphic annotations where needed.
 The above rule is provided as syntactic sugar to make this easier:
 \begin{caml_example*}{verbatim}
-        let rec f : type t1 t2. t1 * t2 list -> t1 = assert false[@ellipsis]
+        let rec f : type t1 t2. t1 * t2 list -> t1 = [%ellipsis]
 \end{caml_example*}
 \noindent
 is automatically expanded into
 \begin{caml_example*}{verbatim}
         let rec f : 't1 't2. 't1 * 't2 list -> 't1 =
-          fun (type t1) (type t2) -> ( assert false[@ellipsis] : t1 * t2 list -> t1)
+          fun (type t1) (type t2) -> ( [%ellipsis] : t1 * t2 list -> t1)
 \end{caml_example*}
 This syntax can be very useful when defining recursive functions involving
 GADTs, see the section~\ref{s:gadts} for a more detailed explanation.
@@ -621,13 +621,13 @@ Each implementation is a structure that we can encapsulate as a
 first-class module, then store in a data structure such as a hash
 table:
 \begin{caml_example*}{verbatim}
-        module type DEVICE = sig [@@@ellipsis] end
+        module type DEVICE = sig [%%ellipsis] end
         let devices : (string, (module DEVICE)) Hashtbl.t = Hashtbl.create 17
 
-        module SVG = struct [@@@ellipsis] end
+        module SVG = struct [%%ellipsis] end
         let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
 
-        module PDF = struct [@@@ellipsis] end
+        module PDF = struct [%%ellipsis] end
         let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
 \end{caml_example*}
 We can then select one implementation based on command-line
