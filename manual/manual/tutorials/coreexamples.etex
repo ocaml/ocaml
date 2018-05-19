@@ -58,7 +58,8 @@ usual basic data types: booleans, characters, and immutable character strings.
 \begin{caml_example}{toplevel}
 (1 < 2) = false;;
 'a';;
-"Hello world";;
+"Hello" ^ " " ^ "world";;
+{|This is a quoted string where \n is not a newline|};;
 \end{caml_example}
 
 Predefined data structures include tuples, arrays, and lists. There are also
