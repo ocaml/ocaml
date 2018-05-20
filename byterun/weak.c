@@ -55,7 +55,7 @@ static inline int Is_Dead_during_clean(value x){
   return Is_block (x) && Is_in_heap (x) && Is_white_val(x);
 }
 static inline int Must_be_Marked_during_mark(value x){
-  CAMLassert (x != caml_ephe_none); 
+  CAMLassert (x != caml_ephe_none);
   CAMLassert (caml_gc_phase == Phase_mark);
   return Is_block (x) && Is_in_heap (x);
 }
@@ -69,7 +69,7 @@ CAMLprim value caml_ephe_create (value len)
   value res;
 
   size = Long_val (len) + 1 /* weak_list */ + 1 /* the value */;
-  if (size <= 0 || size > Max_wosize) caml_invalid_argument ("Weak.create");
+  if (size < 2 || size > Max_wosize) caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
   for (i = 1; i < size; i++) Field (res, i) = caml_ephe_none;
   Field (res, CAML_EPHE_LINK_OFFSET) = caml_ephe_list_head;

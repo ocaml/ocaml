@@ -56,12 +56,6 @@
 #define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
 #endif
 
-/* Very old Microsoft headers don't include intptr_t */
-#if defined(_MSC_VER) && !defined(_UINTPTR_T_DEFINED)
-typedef unsigned int uintptr_t;
-#define _UINTPTR_T_DEFINED
-#endif
-
 unsigned short caml_win32_major = 0;
 unsigned short caml_win32_minor = 0;
 unsigned short caml_win32_build = 0;
@@ -370,7 +364,7 @@ static void expand_argument(wchar_t * arg)
 static void expand_pattern(wchar_t * pat)
 {
   wchar_t * prefix, * p, * name;
-  int handle;
+  intptr_t handle;
   struct _wfinddata_t ffblk;
   size_t i;
 
@@ -419,11 +413,7 @@ int caml_read_directory(wchar_t * dirname, struct ext_table * contents)
 {
   size_t dirnamelen;
   wchar_t * template;
-#if _MSC_VER <= 1200
-  int h;
-#else
   intptr_t h;
-#endif
   struct _wfinddata_t fileinfo;
 
   dirnamelen = wcslen(dirname);

@@ -9,6 +9,9 @@ Working version
 
 ### Standard library:
 
+- MPR#7795, GPR#1782: Fix off-by-one error in Weak.create
+  (KC Sivaramakrishnan)
+
 - GPR#1731: Format, use raise_notrace to preserve backtraces
   (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
 
@@ -42,6 +45,14 @@ Working version
 
 ### Compiler distribution build system:
 
+- GPR#1776: add -no-install-bytecode-programs and related configure options to
+  control (non-)installation of ".byte" executables
+  (Mark Shinwell, review by Sébastien Hinderer and Gabriel Scherer)
+
+- GPR#1777: add -no-install-source-artifacts and related configure options to
+  control installation of .cmt, .cmti, .mli and .ml files
+  (Mark Shinwell, review by Nicolas Ojeda Bar and Sébastien Hinderer)
+
 - GPR#1781: cleanup of the manual's build process
   (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
 
@@ -58,6 +69,10 @@ Working version
 
 ### Bug fixes:
 
+- GPR#1623: Segfault on Windows 64 bits when expanding wildcards in arguments.
+  (Marc Lasson, review by David Allsopp, Alain Frisch, Sébastien Hinderer,
+   Xavier Leroy, Nicolas Ojeda Bar)
+
 - MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
   ignored when used on streams based on input channels.
   (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
@@ -67,7 +82,6 @@ Working version
 
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
-
 
 OCaml 4.07
 ----------
@@ -130,6 +144,11 @@ OCaml 4.07
   and `with module`.
   The old behaviour can be obtained using the `[@remove_aliases]` attribute.
   (Leo White and Thomas Refis, review by Jacques Garrigue)
+
+* GPR#1778: Fix Soundness bug with non-generalized type variable and
+  local modules.  This is the same bug as MPR#7414, but using local
+  modules instead of non-local ones.
+  (Leo White, review by Jacques Garrigue)
 
 ### Standard library:
 
@@ -368,10 +387,6 @@ OCaml 4.07
 
 ### Manual and documentation:
 
-- PR#1757: style the html manual, changing type and layout
-  (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
-  Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
-
 - MPR#7613: minor reword of the "refutation cases" paragraph
   (Florian Angeletti, review by Jacques Garrigue)
 
@@ -398,8 +413,19 @@ OCaml 4.07
 - GPR#1741: manual, improve typesetting and legibility in HTML output
   (steinuil, review by Gabriel Scherer)
 
+- GPR#1757: style the html manual, changing type and layout
+  (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
+  Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
+
 - GPR#1765: manual, ellipsis in code examples
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
+
+- GPR#1779: integrate the Bigarray documentation into the main manual.
+  (Perry E. Metzger, review by Florian Angeletti and Xavier Clerc)
+
+- GPR#1767: change html manual to use relative font sizes
+  (Charles Chamberlain, review by Daniel Bünzli, Perry E. Metzger,
+  Josh Berdine, and Gabriel Scherer)
 
 ### Compiler distribution build system
 
@@ -502,6 +528,10 @@ OCaml 4.07
   (Tadeu Zagallo, report by Roberto Di Cosmo,
    review by Hongbo Zhang, David Allsopp, Gabriel Scherer, Xavier Leroy)
 
+- MPR#7138, MPR#7701, GPR#1693: Keep documentation comments
+  even in empty structures and signatures
+  (Leo White, Florian Angeletti, report by Anton Bachin)
+
 - MPR#7391, GPR#1620: Do not put a dummy method in object types
   (Thomas Refis, review by Jacques Garrigue)
 
@@ -521,10 +551,6 @@ OCaml 4.07
 
 - MPR#7695, GPR#1541: Fatal error: exception Ctype.Unify(_) with field override
   (Jacques Garrigue, report by Nicolás Ojeda Bär)
-
-- MPR#7701, GPR#1693: Keep documentation comments even in empty
-  structures and signatures
-  (Leo White, Florian Angeletti, report by Anton Bachin)
 
 - MPR#7704, GPR#1564: use proper variant tag in non-exhaustiveness warning
   (Jacques Garrigue, report by Thomas Refis)
@@ -583,8 +609,13 @@ OCaml 4.07
   reviews by Stephen Dolan and Xavier Leroy)
 
 - GPR#1764: in byterun/memory.c, struct pool_block, use C99 flexible arrays
-  if available 
+  if available
   (Xavier Leroy, review by Max Mouratov)
+
+- MPR#7793, GPR#1766: the toplevel #use directive now accepts sequences of ';;'
+  tokens. This fixes a bug in which certain files accepted by the compiler were
+  rejected by ocamldep.
+  (Nicolás Ojeda Bär, report by Hugo Heuzard, review by Hugo Heuzard)
 
 - GPR#1774: ocamlopt for ARM could generate VFP loads and stores with bad
   offsets, rejected by the assembler.

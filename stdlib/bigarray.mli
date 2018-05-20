@@ -16,13 +16,42 @@
 (** Large, multi-dimensional, numerical arrays.
 
    This module implements multi-dimensional arrays of integers and
-   floating-point numbers, thereafter referred to as 'big arrays'.
+   floating-point numbers, thereafter referred to as 'big arrays',
+   to distinguish them from the standard OCaml arrays described in
+   {!module:Array}.
+
    The implementation allows efficient sharing of large numerical
    arrays between OCaml code and C or Fortran numerical libraries.
 
-   Concerning the naming conventions, users of this module are encouraged
-   to do [open Bigarray] in their source, then refer to array types and
-   operations via short dot notation, e.g. [Array1.t] or [Array2.sub].
+   The main differences between 'big arrays' and standard OCaml
+   arrays are as follows:
+   - Big arrays are not limited in size, unlike OCaml arrays.
+     (Normal float arrays are limited to 2,097,151 elements on a 32-bit
+     platform, and normal arrays of other types to 4,194,303 elements.)
+   - Big arrays are multi-dimensional.  Any number of dimensions
+     between 0 and 16 is supported.  In contrast, OCaml arrays
+     are mono-dimensional and require encoding multi-dimensional
+     arrays as arrays of arrays.
+   - Big arrays can only contain integers and floating-point numbers,
+     while OCaml arrays can contain arbitrary OCaml data types.
+   - Big arrays provide more space-efficient storage of
+     integer and floating-point elements than normal OCaml arrays, in
+     particular because they support 'small' types such as
+     single-precision floats and 8 and 16-bit integers, in addition to
+     the standard OCaml types of double-precision floats and 32 and
+     64-bit integers.
+   - The memory layout of big arrays is entirely compatible with that
+     of arrays in C and Fortran, allowing large arrays to be passed
+     back and forth between OCaml code and C / Fortran code with no
+     data copying at all.
+   - Big arrays support interesting high-level operations that normal
+     arrays do not provide efficiently, such as extracting sub-arrays
+     and 'slicing' a multi-dimensional array along certain dimensions,
+     all without any copying.
+
+   Users of this module are encouraged to do [open Bigarray] in their
+   source, then refer to array types and operations via short dot
+   notation, e.g. [Array1.t] or [Array2.sub].
 
    Big arrays support all the OCaml ad-hoc polymorphic operations:
    - comparisons ([=], [<>], [<=], etc, as well as {!Pervasives.compare});

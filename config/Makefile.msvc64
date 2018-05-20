@@ -189,6 +189,9 @@ OCAMLOPT_CPPFLAGS=-D_CRT_SECURE_NO_DEPRECATE
 ### Build partially-linked object file
 PACKLD=link -lib -nologo -machine:AMD64 -out:# must have no space after '-out:'
 
+### Set to "true" to install ".byte" executables (ocamlc.byte, etc.)
+INSTALL_BYTECODE_PROGRAMS=true
+
 ### Clear this to disable compiling ocamldebug
 WITH_DEBUGGER=ocamldebugger
 

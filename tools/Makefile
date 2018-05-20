@@ -140,8 +140,13 @@ opt:: profiling.cmx
 
 install::
 	$(INSTALL_DATA) \
-	  profiling.cmi profiling.cmo profiling.cmt profiling.cmti \
+	  profiling.cmi profiling.cmo \
 	  "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	  profiling.cmt profiling.cmti \
+	  "$(INSTALL_LIBDIR)"
+endif
 
 installopt::
 	$(INSTALL_DATA) \
@@ -231,9 +236,10 @@ LN := cp -pf
 endif
 
 install::
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	for i in $(install_files); \
 	do \
-	  $(INSTALL_PROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)" && \
+	  $(INSTALL_PROG) "$$i" "$(INSTALL_BINDIR)/$$i.byte$(EXE)"; \
 	  if test -f "$$i".opt; then \
 	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)" && \
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.opt$(EXE)" "$$i$(EXE)"); \
@@ -241,6 +247,14 @@ install::
 	    (cd "$(INSTALL_BINDIR)/" && $(LN) "$$i.byte$(EXE)" "$$i$(EXE)"); \
 	  fi; \
 	done
+else
+	for i in $(install_files); \
+	do \
+	  if test -f "$$i".opt; then \
+	    $(INSTALL_PROG) "$$i.opt" "$(INSTALL_BINDIR)/$$i.opt$(EXE)"; \
+	  fi; \
+	done
+endif
 
 clean::
 	rm -f addlabels

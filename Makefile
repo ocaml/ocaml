@@ -606,18 +606,32 @@ install:
 	  "$(INSTALL_LIBDIR)"
 	$(MAKE) -C byterun install
 	$(INSTALL_PROG) ocaml "$(INSTALL_BINDIR)/ocaml$(EXE)"
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlc "$(INSTALL_BINDIR)/ocamlc.byte$(EXE)"
+endif
 	$(MAKE) -C stdlib install
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) lex/ocamllex "$(INSTALL_BINDIR)/ocamllex.byte$(EXE)"
+endif
 	$(INSTALL_PROG) yacc/ocamlyacc$(EXE) "$(INSTALL_BINDIR)/ocamlyacc$(EXE)"
 	$(INSTALL_DATA) \
-	   utils/*.cmi utils/*.cmt utils/*.cmti utils/*.mli \
-	   parsing/*.cmi parsing/*.cmt parsing/*.cmti parsing/*.mli \
-	   typing/*.cmi typing/*.cmt typing/*.cmti typing/*.mli \
-	   bytecomp/*.cmi bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
-	   driver/*.cmi driver/*.cmt driver/*.cmti driver/*.mli \
-	   toplevel/*.cmi toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   utils/*.cmi \
+	   parsing/*.cmi \
+	   typing/*.cmi \
+	   bytecomp/*.cmi \
+	   driver/*.cmi \
+	   toplevel/*.cmi \
 	   "$(INSTALL_COMPLIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
+	   utils/*.cmt utils/*.cmti utils/*.mli \
+	   parsing/*.cmt parsing/*.cmti parsing/*.mli \
+	   typing/*.cmt typing/*.cmti typing/*.mli \
+	   bytecomp/*.cmt bytecomp/*.cmti bytecomp/*.mli \
+	   driver/*.cmt driver/*.cmti driver/*.mli \
+	   toplevel/*.cmt toplevel/*.cmti toplevel/*.mli \
+	   "$(INSTALL_COMPLIBDIR)"
+endif
 	$(INSTALL_DATA) \
 	   compilerlibs/ocamlcommon.cma compilerlibs/ocamlbytecomp.cma \
 	   compilerlibs/ocamltoplevel.cma $(BYTESTART) $(TOPLEVELSTART) \
@@ -625,9 +639,13 @@ install:
 	$(INSTALL_PROG) expunge "$(INSTALL_LIBDIR)/expunge$(EXE)"
 	$(INSTALL_DATA) \
 	   toplevel/topdirs.cmi \
+	   "$(INSTALL_LIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
 	   toplevel/topdirs.cmt toplevel/topdirs.cmti \
            toplevel/topdirs.mli \
 	   "$(INSTALL_LIBDIR)"
+endif
 	$(MAKE) -C tools install
 ifeq "$(UNIX_OR_WIN32)" "unix" # Install manual pages only on Unix
 	$(MKDIR) "$(INSTALL_MANDIR)/man$(PROGRAMS_MAN_SECTION)"
@@ -652,33 +670,47 @@ ifeq "$(UNIX_OR_WIN32)" "win32"
 	fi
 endif
 	$(INSTALL_DATA) config/Makefile "$(INSTALL_LIBDIR)/Makefile.config"
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt; then $(MAKE) installopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
+else
+	if test -f ocamlopt; then $(MAKE) installopt; fi
+endif
 
 # Installation of the native-code compiler
 .PHONY: installopt
 installopt:
 	$(MAKE) -C asmrun install
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	$(INSTALL_PROG) ocamlopt "$(INSTALL_BINDIR)/ocamlopt.byte$(EXE)"
+endif
 	$(MAKE) -C stdlib installopt
 	$(INSTALL_DATA) \
 	    middle_end/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    middle_end/base_types/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
+	$(INSTALL_DATA) \
+	    asmcomp/*.cmi \
+	    "$(INSTALL_COMPLIBDIR)"
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
+	$(INSTALL_DATA) \
 	    middle_end/*.cmt middle_end/*.cmti \
 	    middle_end/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    middle_end/base_types/*.cmi \
 	    middle_end/base_types/*.cmt middle_end/base_types/*.cmti \
 	    middle_end/base_types/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
 	$(INSTALL_DATA) \
-	    asmcomp/*.cmi \
 	    asmcomp/*.cmt asmcomp/*.cmti \
 	    asmcomp/*.mli \
 	    "$(INSTALL_COMPLIBDIR)"
+endif
 	$(INSTALL_DATA) \
 	    compilerlibs/ocamloptcomp.cma $(OPTSTART) \
 	    "$(INSTALL_COMPLIBDIR)"
@@ -688,12 +720,16 @@ installopt:
 	for i in $(OTHERLIBRARIES); do \
 	  $(MAKE) -C otherlibs/$$i installopt || exit $$?; \
 	done
+ifeq "$(INSTALL_BYTECODE_PROGRAMS)" "true"
 	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; else \
 	   cd "$(INSTALL_BINDIR)"; \
 	   $(LN) ocamlc.byte$(EXE) ocamlc$(EXE); \
 	   $(LN) ocamlopt.byte$(EXE) ocamlopt$(EXE); \
 	   $(LN) ocamllex.byte$(EXE) ocamllex$(EXE); \
 	fi
+else
+	if test -f ocamlopt.opt ; then $(MAKE) installoptopt; fi
+endif
 	$(MAKE) -C tools installopt
 	if test -f ocamlopt.opt -a -f flexdll/flexlink.opt ; then \
 	  $(INSTALL_PROG) \
@@ -739,11 +775,13 @@ installoptopt:
 # Installation of the *.ml sources of compiler-libs
 .PHONY: install-compiler-sources
 install-compiler-sources:
+ifeq "$(INSTALL_SOURCE_ARTIFACTS)" "true"
 	$(INSTALL_DATA) \
 	   utils/*.ml parsing/*.ml typing/*.ml bytecomp/*.ml driver/*.ml \
 	   toplevel/*.ml middle_end/*.ml middle_end/base_types/*.ml \
 	   asmcomp/*.ml \
 	   "$(INSTALL_COMPLIBDIR)"
+endif
 
 # Run all tests
 

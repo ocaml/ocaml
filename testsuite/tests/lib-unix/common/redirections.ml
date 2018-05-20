@@ -126,17 +126,13 @@ let test_open_process_full systemenv =
     out Unix.stdout "!!! reflector exited with an error\n"
 
 let _ =
-  let ocamlrunparam =
-    match Sys.getenv_opt "OCAMLRUNPARAM" with
-    | None -> [||]
-    | Some v -> [|"OCAMLRUNPARAM=" ^ v|]
-  in
+  let env = Unix.environment() in
   (* The following 'close' makes things more difficult.
      Under Unix it works fine, but under Win32 create_process 
      gives an error if one of the standard handles is closed. *)
   (* Unix.close Unix.stdin; *)
   out Unix.stdout "** create_process\n";
-  test_createprocess ocamlrunparam;
+  test_createprocess env;
   out Unix.stdout "** create_process 2>&1 redirection\n";
   test_2ampsup1();
   out Unix.stdout "** create_process swap 1-2\n";
@@ -146,4 +142,4 @@ let _ =
   out Unix.stdout "** open_process_out\n";
   test_open_process_out();
   out Unix.stdout "** open_process_full\n";
-  test_open_process_full ocamlrunparam
+  test_open_process_full env
