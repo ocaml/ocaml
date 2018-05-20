@@ -15,7 +15,7 @@ semantics.
 \begin{itemize}
 
 \item Pierre Weis and Xavier Leroy. {\it Le langage Caml.}
-Inter…ditions, 1993.
+Inter√âditions, 1993.
 
 The natural companion to this manual, provided you read French. This
 book is a step-by-step introduction to programming in Caml, and
@@ -44,9 +44,9 @@ examples, but a very detailed presentation of the language constructs.
 
 A short, but nice introduction to programming in Standard ML.
 
-\item ThÈrËse Accart Hardin and VÈronique Donzeau-Gouge ViguiÈ. {\em
-Concepts et outils de la programmation. Du fonctionnel ‡
-l'impÈratif avec Caml et Ada.} Inter…ditions, 1992.
+\item Th√©r√®se Accart Hardin and V√©ronique Donzeau-Gouge Vigui√©. {\em
+Concepts et outils de la programmation. Du fonctionnel √†
+l'imp√©ratif avec Caml et Ada.} Inter√âditions, 1992.
 
 A first course in programming, that first introduces the main programming
 notions in Caml, then shows them underlying Ada. Intended for
@@ -60,8 +60,8 @@ types. Uses intensively the Standard ML module system.
 
 \item Harold Abelson and Gerald Jay Sussman.
 {\em Structure and Interpretation of Computer Programs.} The MIT
-press, 1985.  (French translation: {\em Structure et interprÈtation
-des programmes informatiques}, Inter…ditions, 1989.)
+press, 1985.  (French translation: {\em Structure et interpr√©tation
+des programmes informatiques}, Inter√âditions, 1989.)
 
 An outstanding course on programming, taught in Scheme, the modern
 dialect of Lisp. Well worth reading, even if you are more interested
@@ -76,8 +76,8 @@ languages from the ML family. They assume some familiarity with ML.
 
 \begin{itemize}
 
-\item Xavier Leroy and Pierre Weis. {\em Manuel de rÈfÈrence du
-langage Caml.} Inter…ditions, 1993.
+\item Xavier Leroy and Pierre Weis. {\em Manuel de r√©f√©rence du
+langage Caml.} Inter√âditions, 1993.
 
 The French edition of the present reference manual and user's manual.
 
@@ -104,7 +104,7 @@ A commentary on the book above, that attempts to explain the most
 delicate parts and motivate the design choices. Easier to read than the
 Definition, but still rather involving.
 
-\item Guy Cousineau and GÈrard Huet. {\em The CAML primer.} Technical
+\item Guy Cousineau and G√©rard Huet. {\em The CAML primer.} Technical
 report~122, INRIA, 1990.
 
 A short description of the original Caml system, from which Caml Light
@@ -190,18 +190,18 @@ unexpected, areas.
 \begin{itemize}
 
 \item Emmanuel Chailloux and Guy Cousineau. {\em The MLgraph primer.}
-Technical report 92-15, …cole Normale SupÈrieure, 1992. (Available by
+Technical report 92-15, √âcole Normale Sup√©rieure, 1992. (Available by
 anonymous FTP on "ftp.ens.fr".)
-%, rÈpertoire "biblio", fichier
+%, r√©pertoire "biblio", fichier
 % "liens-92-15.A4.300dpi.ps.Z".)
 
 Describes a Caml Light library that produces Postscript pictures
 through high-level drawing functions.
 
-\item Xavier Leroy. {\em Programmation du systËme Unix en Caml Light.}
+\item Xavier Leroy. {\em Programmation du syst√®me Unix en Caml Light.}
 Technical report~147, INRIA, 1992. (Available by anonymous FTP on
 "ftp.inria.fr".)
-%, rÈpertoire "INRIA/publication", fichier "RT-0147.ps.Z".)
+%, r√©pertoire "INRIA/publication", fichier "RT-0147.ps.Z".)
 
 A Unix systems programming course, demonstrating the use of the Caml
 Light library that gives access to Unix system calls.
@@ -209,7 +209,7 @@ Light library that gives access to Unix system calls.
 \item John H.\ Reppy. {\em Concurrent programming with events --- The
 concurrent ML manual.} Cornell University, 1990.
 (Available by anonymous FTP on "research.att.com".)
-%, rÈpertoire "dist/ml", fichier "CML-0.9.8.tar.Z".)
+%, r√©pertoire "dist/ml", fichier "CML-0.9.8.tar.Z".)
 
 Concurrent ML extends Standard ML of New Jersey with concurrent
 processes that communicate through channels and events.
@@ -219,13 +219,13 @@ Scottt Nettles. {\em Extensions to Standard ML to support
 transactions.} Technical report CMU-CS-92-132, Carnegie-Mellon
 University, 1992. (Available by anonymous FTP on
 "reports.adm.cs.cmu.edu".)
-% , rÈpertoire "1992", fichier "CMU-CS-92-132.ps".)
+% , r√©pertoire "1992", fichier "CMU-CS-92-132.ps".)
 
 How to integrate the basic database operations to Standard ML.
 
 \item Emden R.\ Gansner and John H.\ Reppy. {\em eXene.} Bell Labs,
 1991. (Available by anonymous FTP on "research.att.com".)
-%, rÈpertoire "dist/ml", fichier "eXene-0.4.tar.Z".)
+%, r√©pertoire "dist/ml", fichier "eXene-0.4.tar.Z".)
 
 An interface between Standard ML of New Jersey and the X Windows
 windowing system.
@@ -233,7 +233,7 @@ windowing system.
 %% \item Daniel de Rauglaudre. {\em X toolkit in Caml Light.} INRIA,
 %% 1992. (Included in the Caml Light distribution.)
 %% % Disponible par FTP anonyme sur
-%% % "ftp.inria.fr", rÈpertoire "lang/caml-light", fichier "rt5.tar.Z".)
+%% % "ftp.inria.fr", r√©pertoire "lang/caml-light", fichier "rt5.tar.Z".)
 %% 
 %% An interface between Caml Light and the X Windows windowing system. 
 
