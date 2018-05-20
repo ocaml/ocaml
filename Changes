@@ -53,6 +53,9 @@ Working version
   control installation of .cmt, .cmti, .mli and .ml files
   (Mark Shinwell, review by Nicolas Ojeda Bar and Sébastien Hinderer)
 
+- GPR#1781: cleanup of the manual's build process
+  (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
