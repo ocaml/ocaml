@@ -185,7 +185,8 @@ any character in a special way but requires that the
 sequence @'|' quoted-string-id '}'@ does not occur in the string itself.
 The identifier @quoted-string-id@ is a (possibly empty) sequence of
 lowercase letters and underscores that can be freely chosen to avoid
-such issue.
+such issue (e.g. "{|hello|}", "{ext|hello {|world|}|ext}", ...).
+
 
 The current implementation places practically no restrictions on the
 length of string literals.

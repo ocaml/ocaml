@@ -1799,8 +1799,9 @@ quotes. For instance, you can use "[%sql {|...|}]" to
 represent arbitrary SQL statements -- assuming you have a ppx-rewriter
 that recognizes the "%sql" extension.
 
-Note that the non-extension form, for example "{sql|...|sql}", should
-not be used for this purpose. Indeed, the user cannot see in the code that
+Note that the word-delimited form, for example "{sql|...|sql}", should
+not be used for signaling an extension is in use.
+Indeed, the user cannot see in the code that
 this string literal has a different semantics than they expect. Moreover,
 giving a semantics to a specific delimiter limits the freedom to
 change the delimiter to avoid escaping issues.
