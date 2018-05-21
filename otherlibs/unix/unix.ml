@@ -260,7 +260,7 @@ let execvpe_ml name args env =
          which looks up the PATH environment variable whether SUID or not. *)
 
 let execvpe name args env =
-  try  
+  try
     execvpe_c name args env
   with Unix_error(ENOSYS, _, _) ->
     execvpe_ml name args env
@@ -597,7 +597,7 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-external socket : 
+external socket :
   ?cloexec: bool -> socket_domain -> socket_type -> int -> file_descr
   = "unix_socket"
 external socketpair :
@@ -1006,26 +1006,24 @@ type popen_process =
 
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
-let open_proc cmd envopt proc input output error =
-   match fork() with
-     0 -> perform_redirections input output error;
-          let shell = "/bin/sh" in
-          let argv = [| shell; "-c"; cmd |] in
-          begin try
-            match envopt with
-            | Some env -> execve shell argv env
-            | None     -> execv shell argv
-          with _ ->
-            sys_exit 127
-          end
-   | id -> Hashtbl.add popen_processes proc id
+let open_proc prog args envopt proc input output error =
+  match fork() with
+    0 -> perform_redirections input output error;
+      begin try
+        match envopt with
+        | Some env -> execve prog args env
+        | None     -> execv prog args
+      with _ ->
+        sys_exit 127
+      end
+  | id -> Hashtbl.add popen_processes proc id
 
-let open_process_in cmd =
+let open_process_args_in prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let inchan = in_channel_of_descr in_read in
   begin
     try
-      open_proc cmd None (Process_in inchan) stdin in_write stderr
+      open_proc prog args None (Process_in inchan) stdin in_write stderr
     with e ->
       close_in inchan;
       close in_write;
@@ -1034,12 +1032,12 @@ let open_process_in cmd =
   close in_write;
   inchan
 
-let open_process_out cmd =
+let open_process_args_out prog args =
   let (out_read, out_write) = pipe ~cloexec:true () in
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process_out outchan) out_read stdout stderr
+      open_proc prog args None (Process_out outchan) out_read stdout stderr
     with e ->
     close_out outchan;
     close out_read;
@@ -1048,7 +1046,7 @@ let open_process_out cmd =
   close out_read;
   outchan
 
-let open_process cmd =
+let open_process_args prog args =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -1057,7 +1055,7 @@ let open_process cmd =
   let outchan = out_channel_of_descr out_write in
   begin
     try
-      open_proc cmd None (Process(inchan, outchan)) out_read in_write stderr
+      open_proc prog args None (Process(inchan, outchan)) out_read in_write stderr
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
@@ -1067,7 +1065,7 @@ let open_process cmd =
   close in_write;
   (inchan, outchan)
 
-let open_process_full cmd env =
+let open_process_args_full prog args env =
   let (in_read, in_write) = pipe ~cloexec:true () in
   let (out_read, out_write) =
     try pipe ~cloexec:true ()
@@ -1081,18 +1079,30 @@ let open_process_full cmd env =
   let errchan = in_channel_of_descr err_read in
   begin
     try
-      open_proc cmd (Some env) (Process_full(inchan, outchan, errchan))
+      open_proc prog args (Some env) (Process_full(inchan, outchan, errchan))
                 out_read in_write err_write
     with e ->
       close out_read; close out_write;
       close in_read; close in_write;
-      close err_read; close err_write; 
+      close err_read; close err_write;
       raise e
   end;
   close out_read;
   close in_write;
   close err_write;
   (inchan, outchan, errchan)
+
+let open_process_shell fn cmd =
+  let shell = "/bin/sh" in
+  fn shell [|shell; "-c"; cmd|]
+let open_process_in cmd =
+  open_process_shell open_process_args_in cmd
+let open_process_out cmd =
+  open_process_shell open_process_args_out cmd
+let open_process cmd =
+  open_process_shell open_process_args cmd
+let open_process_full cmd =
+  open_process_shell open_process_args_full cmd
 
 let find_proc_id fun_name proc =
   try
