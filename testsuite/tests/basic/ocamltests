@@ -17,6 +17,7 @@ maps.ml
 min_int.ml
 opt_variants.ml
 patmatch.ml
+pr7253.ml
 pr7533.ml
 pr7657.ml
 recvalues.ml
