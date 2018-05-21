@@ -15,6 +15,10 @@ Working version
 - GPR#1731: Format, use raise_notrace to preserve backtraces
   (Frédéric Bour, report by Jules Villard, review by Gabriel Scherer)
 
+- MPR#7794: Add Unix.open_process_args{,_in,_out,_full} similar to
+  Unix.open_process{,_in,_out,_full}, but passing an explicit argv array.
+  (Nicolás Ojeda Bär, review by ..., request by Volker Diels-Grabsch)
+
 ### Other libraries:
 
 ### Compiler user-interface and warnings:
