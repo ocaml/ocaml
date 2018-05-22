@@ -671,28 +671,35 @@ val open_process_args_in : string -> string array -> in_channel
    command to run, and the second argument specifies the argument array passed
    to the command.  This function runs the command in parallel with the program.
    The standard output of the command is redirected to a pipe, which can be read
-   via the returned input channel. *)
+   via the returned input channel.
+
+    @since 4.08.0 *)
 
 val open_process_args_out : string -> string array -> out_channel
-(** Same as {!Unix.open_process_in}, but redirect the standard input of
-   the command to a pipe.  Data written to the returned output channel
-   is sent to the standard input of the command.
-   Warning: writes on output channels are buffered, hence be careful
-   to call {!Pervasives.flush} at the right times to ensure
-   correct synchronization. *)
+(** Same as {!Unix.open_process_args_in}, but redirect the standard input of the
+   command to a pipe.  Data written to the returned output channel is sent to
+   the standard input of the command.  Warning: writes on output channels are
+   buffered, hence be careful to call {!Pervasives.flush} at the right times to
+   ensure correct synchronization.
+
+    @since 4.08.0 *)
 
 val open_process_args : string -> string array -> in_channel * out_channel
-(** Same as {!Unix.open_process_out}, but redirects both the standard input
-   and standard output of the command to pipes connected to the two
-   returned channels.  The input channel is connected to the output
-   of the command, and the output channel to the input of the command. *)
+(** Same as {!Unix.open_process_args_out}, but redirects both the standard input
+   and standard output of the command to pipes connected to the two returned
+   channels.  The input channel is connected to the output of the command, and
+   the output channel to the input of the command.
+
+    @since 4.08.0 *)
 
 val open_process_args_full :
   string -> string array -> string array -> in_channel * out_channel * in_channel
-(** Similar to {!Unix.open_process}, but the third argument specifies
-   the environment passed to the command.  The result is a triple
-   of channels connected respectively to the standard output, standard input,
-   and standard error of the command. *)
+(** Similar to {!Unix.open_process_args}, but the third argument specifies the
+   environment passed to the command.  The result is a triple of channels
+   connected respectively to the standard output, standard input, and standard
+   error of the command.
+
+    @since 4.08.0 *)
 
 val close_process_in : in_channel -> process_status
 (** Close channels opened by {!UnixLabels.open_process_in},
