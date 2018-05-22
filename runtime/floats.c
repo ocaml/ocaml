@@ -70,6 +70,9 @@
 #ifndef isfinite
 #define isfinite _finite
 #endif
+#ifndef nextafter
+#define nextafter _nextafter
+#endif
 #endif
 
 #ifdef ARCH_ALIGN_DOUBLE
@@ -461,9 +464,61 @@ CAMLprim value caml_exp_float(value f)
   return caml_copy_double(exp(Double_val(f)));
 }
 
+CAMLexport double caml_trunc(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return trunc(x);
+#else
+  return (x >= 0.0)? floor(x) : ceil(x);
+#endif
+}
+
+CAMLprim value caml_trunc_float(value f)
+{
+  return caml_copy_double(caml_trunc(Double_val(f)));
+}
+
+CAMLexport double caml_round(double f)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return round(f);
+#else
+  union { uint64_t i; double d; } u, pred_one_half; /* predecessor of 0.5 */
+  int e;  /* exponent */
+  u.d = f;
+  e = (u.i >> 52) & 0x7ff; /* - 0x3ff for the actual exponent */
+  pred_one_half.i = 0x3FDFFFFFFFFFFFFF; /* 0x1.FFFFFFFFFFFFFp-2 */
+
+  if (isfinite(f) && f != 0.) {
+    if (e >= 52 + 0x3ff) return f; /* f is an integer already */
+    if (f > 0.0)
+      return floor(f + pred_one_half.d);
+    else
+      return ceil(f - pred_one_half.d);
+  }
+  else
+    return f;
+#endif
+}
+
+CAMLprim value caml_round_float(value f)
+{
+  return caml_copy_double(caml_round(Double_val(f)));
+}
+
 CAMLprim value caml_floor_float(value f)
 {
   return caml_copy_double(floor(Double_val(f)));
+}
+
+CAMLexport double caml_nextafter(double x, double y)
+{
+  return nextafter(x, y);
+}
+
+CAMLprim value caml_nextafter_float(value x, value y)
+{
+  return caml_copy_double(caml_nextafter(Double_val(x), Double_val(y)));
 }
 
 CAMLprim value caml_fmod_float(value f1, value f2)

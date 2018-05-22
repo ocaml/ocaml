@@ -22,9 +22,14 @@ external div : float -> float -> float = "%divfloat"
 external rem : float -> float -> float = "caml_fmod_float" "fmod"
   [@@unboxed] [@@noalloc]
 external abs : float -> float = "%absfloat"
+
 let infinity = Stdlib.infinity
 let neg_infinity = Stdlib.neg_infinity
 let nan = Stdlib.nan
+let is_finite (x: float) = x -. x = 0.
+let is_infinite (x: float) = 1. /. x = 0.
+let is_nan (x: float) = x <> x
+
 let pi = 0x1.921fb54442d18p+1
 let max_float = Stdlib.max_float
 let min_float = Stdlib.min_float
@@ -73,10 +78,20 @@ external sinh : float -> float = "caml_sinh_float" "sinh"
   [@@unboxed] [@@noalloc]
 external tanh : float -> float = "caml_tanh_float" "tanh"
   [@@unboxed] [@@noalloc]
+external trunc : float -> float = "caml_trunc_float" "caml_trunc"
+  [@@unboxed] [@@noalloc]
+external round : float -> float = "caml_round_float" "caml_round"
+  [@@unboxed] [@@noalloc]
 external ceil : float -> float = "caml_ceil_float" "ceil"
   [@@unboxed] [@@noalloc]
 external floor : float -> float = "caml_floor_float" "floor"
 [@@unboxed] [@@noalloc]
+
+let is_integer x = x = trunc x && is_finite x
+
+external nextafter : float -> float -> float
+  = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
+
 external copysign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign"
                   [@@unboxed] [@@noalloc]
@@ -87,6 +102,21 @@ external modf : float -> float * float = "caml_modf_float"
 type t = float
 external compare : float -> float -> int = "%compare"
 let equal x y = compare x y = 0
+
+let min (x: float) (y: float) =
+  if x <= y then x (* not NaN *)
+  else if y <> y then x else y
+
+let max (x: float) (y: float) =
+  if x >= y then x (* not NaN *)
+  else if y <> y then x else y
+
+let nanmin (x: float) (y: float) =
+  if x <= y || x <> x then x else y
+
+let nanmax (x: float) (y: float) =
+  if x >= y || x <> x then x else y
+
 external seeded_hash_param : int -> int -> int -> float -> int
                            = "caml_hash" [@@noalloc]
 let hash x = seeded_hash_param 10 100 0 x
