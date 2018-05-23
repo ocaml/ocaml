@@ -314,7 +314,7 @@ make_opcodes: make_opcodes.ml
 	$(CAMLC) make_opcodes.ml -o $@
 
 opnames.ml: ../byterun/caml/instruct.h make_opcodes
-	$(CAMLRUN) make_opcodes -opnames < $< > $@
+	../byterun/ocamlrun make_opcodes -opnames < $< > $@
 
 clean::
 	rm -f opnames.ml make_opcodes make_opcodes.ml
