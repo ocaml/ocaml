@@ -538,7 +538,12 @@ let exit_function = ref flush_all
 
 let at_exit f =
   let g = !exit_function in
-  exit_function := (fun () -> f(); g())
+  (* MPR#7253, MPR#7796: make sure "f" is executed only once *)
+  let f_already_ran = ref false in
+  exit_function :=
+    (fun () -> 
+      if not !f_already_ran then begin f_already_ran := true; f() end;
+      g())
 
 let do_at_exit () = (!exit_function) ()
 
