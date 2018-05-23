@@ -297,11 +297,11 @@
      sigact.sa_flags = 0
 
   typedef unsigned long context_reg;
-  #define CONTEXT_PC (context->regs->nip)
-  #define CONTEXT_EXCEPTION_POINTER (context->regs->gpr[29])
-  #define CONTEXT_YOUNG_LIMIT (context->regs->gpr[30])
-  #define CONTEXT_YOUNG_PTR (context->regs->gpr[31])
-  #define CONTEXT_SP (context->regs->gpr[1])
+  #define CONTEXT_PC (context->gp_regs[32])
+  #define CONTEXT_EXCEPTION_POINTER (context->gp_regs[29])
+  #define CONTEXT_YOUNG_LIMIT (context->gp_regs[30])
+  #define CONTEXT_YOUNG_PTR (context->gp_regs[31])
+  #define CONTEXT_SP (context->gp_regs[1])
 
 /****************** PowerPC, NetBSD */
 
