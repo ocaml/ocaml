@@ -437,8 +437,8 @@ OCaml 4.07
   even in empty structures and signatures
   (Leo White, Florian Angeletti, report by Anton Bachin)
 
-- MPR#7253, MPR#7796, GPR#1790: Make sure a function registered with "at_exit"
-  is executed only once when the program exits
+- MPR#7178, MPR#7253, MPR#7796, GPR#1790: Make sure a function
+  registered with "at_exit" is executed only once when the program exits
   (Nicolás Ojeda Bär and Xavier Leroy, review by Max Mouratov)
 
 - MPR#7391, GPR#1620: Do not put a dummy method in object types
