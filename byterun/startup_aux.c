@@ -45,7 +45,7 @@ void caml_init_atom_table(void)
   }
   if (caml_page_table_add(In_static_data,
                           caml_atom_table, caml_atom_table + 256) != 0) {
-    caml_fatal_error("Fatal error: not enough memory for initial page table");
+    caml_fatal_error("not enough memory for initial page table");
   }
 }
 
@@ -123,7 +123,7 @@ static int shutdown_happened = 0;
 int caml_startup_aux(int pooling)
 {
   if (shutdown_happened == 1)
-    caml_fatal_error("Fatal error: caml_startup was called after the runtime "
+    caml_fatal_error("caml_startup was called after the runtime "
                      "was shut down with caml_shutdown");
 
   /* Second and subsequent calls are ignored,
@@ -148,7 +148,7 @@ static void call_registered_value(char* name)
 CAMLexport void caml_shutdown(void)
 {
   if (startup_count <= 0)
-    caml_fatal_error("Fatal error: a call to caml_shutdown has no "
+    caml_fatal_error("a call to caml_shutdown has no "
                      "corresponding call to caml_startup");
 
   /* Do nothing unless it's the last call remaining */

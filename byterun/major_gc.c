@@ -873,7 +873,7 @@ void caml_init_major_heap (asize_t heap_size)
   caml_heap_start =
     (char *) caml_alloc_for_heap (Bsize_wsize (caml_stat_heap_wsz));
   if (caml_heap_start == NULL)
-    caml_fatal_error ("Fatal error: cannot allocate initial major heap.\n");
+    caml_fatal_error ("cannot allocate initial major heap");
   Chunk_next (caml_heap_start) = NULL;
   caml_stat_heap_wsz = Wsize_bsize (Chunk_size (caml_heap_start));
   caml_stat_heap_chunks = 1;
@@ -882,8 +882,7 @@ void caml_init_major_heap (asize_t heap_size)
   if (caml_page_table_add(In_heap, caml_heap_start,
                           caml_heap_start + Bsize_wsize (caml_stat_heap_wsz))
       != 0) {
-    caml_fatal_error ("Fatal error: cannot allocate "
-                      "initial page table.\n");
+    caml_fatal_error ("cannot allocate initial page table");
   }
 
   caml_fl_init_merge ();
@@ -893,7 +892,7 @@ void caml_init_major_heap (asize_t heap_size)
   gray_vals_size = 2048;
   gray_vals = (value *) caml_stat_alloc_noexc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
-    caml_fatal_error ("Fatal error: not enough memory for the gray cache.\n");
+    caml_fatal_error ("not enough memory for the gray cache");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;

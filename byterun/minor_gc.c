@@ -89,7 +89,7 @@ static void alloc_generic_table (struct generic_table *tbl, asize_t sz,
   tbl->reserve = rsv;
   new_table = (void *) caml_stat_alloc_noexc((tbl->size + tbl->reserve) *
                                              element_size);
-  if (new_table == NULL) caml_fatal_error ("Fatal error: not enough memory\n");
+  if (new_table == NULL) caml_fatal_error ("not enough memory");
   if (tbl->base != NULL) caml_stat_free (tbl->base);
   tbl->base = new_table;
   tbl->ptr = tbl->base;
@@ -518,7 +518,7 @@ static void realloc_generic_table
     caml_gc_message (0x08, msg_growing, (intnat) sz/1024);
     tbl->base = caml_stat_resize_noexc (tbl->base, sz);
     if (tbl->base == NULL){
-      caml_fatal_error (msg_error);
+      caml_fatal_error ("%s", msg_error);
     }
     tbl->end = tbl->base + (tbl->size + tbl->reserve) * element_size;
     tbl->threshold = tbl->base + tbl->size * element_size;
@@ -534,7 +534,7 @@ void caml_realloc_ref_table (struct caml_ref_table *tbl)
      "request_minor/realloc_ref_table@",
      "ref_table threshold crossed\n",
      "Growing ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "Fatal error: ref_table overflow\n");
+     "ref_table overflow");
 }
 
 void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
@@ -544,7 +544,7 @@ void caml_realloc_ephe_ref_table (struct caml_ephe_ref_table *tbl)
      "request_minor/realloc_ephe_ref_table@",
      "ephe_ref_table threshold crossed\n",
      "Growing ephe_ref_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "Fatal error: ephe_ref_table overflow\n");
+     "ephe_ref_table overflow");
 }
 
 void caml_realloc_custom_table (struct caml_custom_table *tbl)
@@ -554,5 +554,5 @@ void caml_realloc_custom_table (struct caml_custom_table *tbl)
      "request_minor/realloc_custom_table@",
      "custom_table threshold crossed\n",
      "Growing custom_table to %" ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
-     "Fatal error: custom_table overflow\n");
+     "custom_table overflow");
 }

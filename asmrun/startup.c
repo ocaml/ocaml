@@ -66,7 +66,7 @@ static void init_static(void)
     if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
                             caml_data_segments[i].end + sizeof(value)) != 0)
-      caml_fatal_error("Fatal error: not enough memory for initial page table");
+      caml_fatal_error("not enough memory for initial page table");
   }
 
   caml_code_area_start = caml_code_segments[0].begin;
