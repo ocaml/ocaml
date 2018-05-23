@@ -236,7 +236,7 @@ found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
 ==== Github's CI: Travis and AppVeyor
 
 The script that is run on Travis continuous integration servers is
-link:.travis-ci.sh[]; its configuration can be found as
+link:tools/ci/travis/travis-ci.sh[]; its configuration can be found as
 a Travis configuration file in link:.travis.yml[].
 
 For example, if you want to reproduce the default build on your
@@ -244,7 +244,7 @@ machine, you can use the configuration values and run command taken from
 link:.travis.yml[]:
 
 ----
-CI_KIND=build XARCH=x64 bash -ex .travis-ci.sh
+CI_KIND=build XARCH=x64 bash -ex tools/ci/travis/travis-ci.sh
 ----
 
 The scripts support two other kinds of tests (values of the
