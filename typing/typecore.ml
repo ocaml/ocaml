@@ -1754,8 +1754,7 @@ let check_recursive_bindings env valbinds =
       (List.map (fun b -> pat_bound_idents b.vb_pat) valbinds) in
   List.iter
     (fun {vb_expr} ->
-       try Rec_check.check_recursive_expression ids vb_expr
-       with Rec_check.Illegal_expr ->
+       if not (Rec_check.is_valid_recursive_expression ids vb_expr) then
          raise(Error(vb_expr.exp_loc, env, Illegal_letrec_expr))
     )
     valbinds
@@ -1763,8 +1762,7 @@ let check_recursive_bindings env valbinds =
 let check_recursive_class_bindings env ids exprs =
   List.iter
     (fun expr ->
-       try Rec_check.check_class_expr ids expr
-       with Rec_check.Illegal_expr ->
+       if not (Rec_check.is_valid_class_expr ids expr) then
          raise(Error(expr.cl_loc, env, Illegal_class_expr)))
     exprs
 

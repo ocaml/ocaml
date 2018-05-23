@@ -696,18 +696,19 @@ and is_destructuring_pattern : Typedtree.pattern -> bool =
     | Tpat_or (l,r,_) -> is_destructuring_pattern l || is_destructuring_pattern r
     | Tpat_lazy _ -> true
 
-let check_recursive_expression idlist expr =
+let is_valid_recursive_expression idlist expr =
   let ty = expression (build_unguarded_env idlist) expr in
   match Use.unguarded ty, Use.dependent ty, classify_expression expr with
   | _ :: _, _, _ (* The expression inspects rec-bound variables *)
   | _, _ :: _, Dynamic -> (* The expression depends on rec-bound variables
                               and its size is unknown *)
-      raise Illegal_expr
+      false
   | [], _, Static (* The expression has known size *)
   | [], [], Dynamic -> (* The expression has unknown size,
                           but does not depend on rec-bound variables *)
-      ()
-let check_class_expr idlist ce =
+      true
+
+let is_valid_class_expr idlist ce =
   let rec class_expr : Env.env -> Typedtree.class_expr -> Use.t =
     fun env ce -> match ce.cl_desc with
       | Tcl_ident (_, _, _) -> Use.empty
@@ -723,5 +724,5 @@ let check_class_expr idlist ce =
           class_expr env ce
   in
   match Use.unguarded (class_expr (build_unguarded_env idlist) ce) with
-  | [] -> ()
-  | _ :: _ -> raise Illegal_expr
+  | [] -> true
+  | _ :: _ -> false

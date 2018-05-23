@@ -15,6 +15,6 @@
 
 exception Illegal_expr
 
-val check_recursive_expression : Ident.t list -> Typedtree.expression -> unit
+val is_valid_recursive_expression : Ident.t list -> Typedtree.expression -> bool
 
-val check_class_expr : Ident.t list -> Typedtree.class_expr -> unit
+val is_valid_class_expr : Ident.t list -> Typedtree.class_expr -> bool
