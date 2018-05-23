@@ -44,7 +44,7 @@ Working version
 ### Manual and documentation:
 
 - GPR#1788: move the quoted string description to the main chapters
-  (Florian Angeletti, review by Perry E. Metzger)
+  (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
 
 ### Compiler distribution build system:
 
