@@ -47,10 +47,10 @@ README*                  ocaml-typo=missing-header
 /Changes                 ocaml-typo=non-ascii,missing-header
 /INSTALL                 ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
-# appveyor_build.cmd only has missing-header because dra27 too lazy to update
-# check-typo to interpret Cmd-style comments!
-/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
-/appveyor_build.sh       ocaml-typo=non-ascii
+# tools/ci/appveyor/appveyor_build.cmd only has missing-header because
+# dra27 too lazy to update check-typo to interpret Cmd-style comments!
+/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
 
 
 asmcomp/*/emit.mlp       ocaml-typo=tab,long-line,unused-prop
