@@ -60,6 +60,9 @@ Working version
 - GPR#1781: cleanup of the manual's build process
   (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
 
+- GPR#1797: remove the deprecated Makefile.nt files
+  (Sébastien Hinderer, review by Nicolas Ojeda Bar)  
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables
