@@ -109,6 +109,10 @@ Working version
 - GPR#1966: Add Format semantic tags using extensible sum types.
   (Gabriel Radanne, review by Nicolás Ojeda Bär)
 
+- GPR#1794: Add functions is_finite, is_infinite, is_nan, is_integer,
+  trunc, round, nextafter, min, max, nanmin, nanmax to module Float.
+  (Christophe Troestler)
+
 ### Other libraries:
 
 - GPR#1061: Add ?follow parameter to Unix.link. This allows hardlinking
