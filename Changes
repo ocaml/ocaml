@@ -518,6 +518,13 @@ OCaml 4.07.0 (10 July 2018)
 - GPR#1753: avoid potential off-by-one overflow in debugger socket path length.
   (Anil Madhavapeddy)
 
+- GPR#1798: Introduce CAML_API_VERSION macro in "caml/compatibility.h" to
+  facilitate the orderly introduction of changes to the C-language interface
+  with back-compatibility aspects. Users of the C interface may #define this
+  value before inclusion of "caml/compatibility.h" to specify a minimum version
+  of back-compatibility later than the default. The default value 100
+  provides full backward compatibility.
+
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested

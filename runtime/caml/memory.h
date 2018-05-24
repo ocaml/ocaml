@@ -18,9 +18,6 @@
 #ifndef CAML_MEMORY_H
 #define CAML_MEMORY_H
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "config.h"
 #ifdef CAML_INTERNALS
 #include "gc.h"
@@ -235,10 +232,12 @@ extern uintnat caml_spacetime_my_profinfo(struct ext_table**, uintnat);
   Alloc_small_with_profinfo(result, wosize, tag, (uintnat) 0)
 #endif
 
+#if CAML_API_VERSION < 400
 /* Deprecated alias for [caml_modify] */
 
 #define Modify(fp,val) caml_modify((fp), (val))
 
+#endif /* CAML_API_VERSION < 400 */
 #endif /* CAML_INTERNALS */
 
 struct caml__roots_block {
@@ -466,6 +465,8 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   caml_modify (&Field ((block), caml__temp_offset), caml__temp_val); \
 }while(0)
 
+#if CAML_API_VERSION < 400
+
 /*
    NOTE: [Begin_roots] and [End_roots] are superseded by [CAMLparam]*,
    [CAMLxparam]*, [CAMLlocal]*, [CAMLreturn].
@@ -547,6 +548,8 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   caml__roots_block.tables[0] = (table);
 
 #define End_roots() caml_local_roots = caml__roots_block.next; }
+
+#endif /* CAML_API_VERSION < 400 */
 
 
 /* [caml_register_global_root] registers a global C variable as a memory root

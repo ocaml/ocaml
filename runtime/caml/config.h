@@ -25,9 +25,7 @@
 #undef SUPPORT_DYNAMIC_LINKING
 #endif
 
-#ifndef CAML_NAME_SPACE
 #include "compatibility.h"
-#endif
 
 #include <stddef.h>
 

@@ -18,9 +18,22 @@
 #ifndef CAML_COMPATIBILITY_H
 #define CAML_COMPATIBILITY_H
 
+/* minimum API version compatibility: default OCaml 1.0 */
+#ifndef CAML_API_VERSION
+#define CAML_API_VERSION 100
+#endif
+
+#if CAML_API_VERSION >= 400 && !defined(CAML_NAME_SPACE)
+#define CAML_NAME_SPACE
+#endif
+
+#if CAML_API_VERSION < 403
+
 /* internal global variables renamed between 4.02.1 and 4.03.0 */
 #define caml_stat_top_heap_size Bsize_wsize(caml_stat_top_heap_wsz)
 #define caml_stat_heap_size Bsize_wsize(caml_stat_heap_wsz)
+
+#endif /* CAML_API_VERSION < 403 */
 
 #ifndef CAML_NAME_SPACE
 

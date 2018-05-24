@@ -17,9 +17,6 @@
 #define CAML_CUSTOM_H
 
 
-#ifndef CAML_NAME_SPACE
-#include "compatibility.h"
-#endif
 #include "mlvalues.h"
 
 struct custom_operations {
