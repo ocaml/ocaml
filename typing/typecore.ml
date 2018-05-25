@@ -49,7 +49,6 @@ type existential_restriction =
   | In_self_pattern (** or in self pattern *)
 
 type error =
-    Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
@@ -1297,9 +1296,7 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
         with Not_found -> None, newvar ()
       in
       let type_label_pat (label_lid, label, sarg) k =
-        begin_def ();
-        let (vars, ty_arg, ty_res) = instance_label false label in
-        if vars = [] then end_def ();
+        let (_, ty_arg, ty_res) = instance_label false label in
         begin try
           unify_pat_types loc !env ty_res record_ty
         with Unify trace ->
@@ -1307,17 +1304,6 @@ and type_pat_aux ~constrs ~labels ~no_existentials ~mode ~explode ~env
                       Label_mismatch(label_lid.txt, trace)))
         end;
         type_pat sarg ty_arg (fun arg ->
-          if vars <> [] then begin
-            end_def ();
-            generalize ty_arg;
-            List.iter generalize vars;
-            let instantiated tv =
-              let tv = expand_head !env tv in
-              not (is_Tvar tv) || tv.level <> generic_level in
-            if List.exists instantiated vars then
-              raise
-                (Error(label_lid.loc, !env, Polymorphic_label label_lid.txt))
-          end;
           k (label_lid, label, arg))
       in
       let k' k lbl_pat_list =
@@ -4490,9 +4476,6 @@ let report_type_expected_explanation_opt expl ppf =
         (report_type_expected_explanation expl)
 
 let report_error env ppf = function
-  | Polymorphic_label lid ->
-      fprintf ppf "@[The record field %a is polymorphic.@ %s@]"
-        longident lid "You cannot instantiate it in a pattern."
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \

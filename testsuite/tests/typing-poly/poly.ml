@@ -35,13 +35,45 @@ val px : pty = {pv = []}
 match px with
 | {pv=[]} -> "OK"
 | {pv=5::_} -> "int"
-| {pv=true::_} -> "bool";;
+| {pv=true::_} -> "bool"
+;;
 [%%expect {|
-Line _, characters 3-5:
+Line _, characters 0-77:
+  match px with
+  | {pv=[]} -> "OK"
   | {pv=5::_} -> "int"
-     ^^
-Error: The record field pv is polymorphic.
-       You cannot instantiate it in a pattern.
+  | {pv=true::_} -> "bool"
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{pv=false::_}
+- : string = "OK"
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=true::_} -> "bool"
+| {pv=5::_} -> "int"
+;;
+[%%expect {|
+Line _, characters 0-77:
+  match px with
+  | {pv=[]} -> "OK"
+  | {pv=true::_} -> "bool"
+  | {pv=5::_} -> "int"
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+{pv=0::_}
+- : string = "OK"
+|}];;
+
+match px with
+| {pv=[]} -> "OK"
+| {pv=5::_} -> "int"
+| {pv=true::_} -> "bool"
+| {pv=false::_} -> "bool"
+;;
+[%%expect {|
+- : string = "OK"
 |}];;
 
 fun {pv=v} -> true::v, 1::v;;
