@@ -54,12 +54,27 @@ fib 10;;
 \pdfsection{Data types}
 
 In addition to integers and floating-point numbers, OCaml offers the
-usual basic data types: booleans, characters, and immutable character strings.
+usual basic data types:
+\begin{itemize}%
+\item booleans
 \begin{caml_example}{toplevel}
 (1 < 2) = false;;
-'a';;
-"Hello world";;
+let one = if true then 1 else 2;;
 \end{caml_example}
+\item characters
+\begin{caml_example}{toplevel}
+ 'a';;
+ int_of_char '\n';;
+\end{caml_example}
+\item immutable character strings
+\begin{caml_example}{toplevel}
+"Hello" ^ " " ^ "world";;
+{|This is a quoted string, here, neither \ nor " are special characters|};;
+{|"\\"|}="\"\\\\\"";;
+  {delimiter|the end of this|}quoted string is here|delimiter}
+=           "the end of this|}quoted string is here";;
+\end{caml_example}
+\end{itemize}
 
 Predefined data structures include tuples, arrays, and lists. There are also
 general mechanisms for defining your own data structures, such as records and

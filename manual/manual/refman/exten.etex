@@ -1792,6 +1792,20 @@ the attributes are considered to apply to the payload:
 fun%foo[@bar] x -> x + 1 === [%foo (fun x -> x + 1)[@bar ] ];
 \end{verbatim}
 
+Quoted strings "{|...|}" are particularly interesting for payloads
+that embed foreign syntax fragments. Those fragments can be interpreted
+by a preprocessor and turned into OCaml code without requiring escaping
+quotes. For instance, you can use "[%sql {|...|}]" to
+represent arbitrary SQL statements -- assuming you have a ppx-rewriter
+that recognizes the "%sql" extension.
+
+Note that the word-delimited form, for example "{sql|...|sql}", should
+not be used for signaling that an extension is in use.
+Indeed, the user cannot see from the code whether this string literal has
+different semantics than they expect. Moreover, giving semantics to a
+specific delimiter limits the freedom to change the delimiter to avoid
+escaping issues.
+
 \subsection{Built-in extension nodes}
 
 (Introduced in OCaml 4.03)
@@ -1814,52 +1828,6 @@ let y = [%extension_constructor Y]
 \begin{caml_example}{toplevel}
  x <> y;;
 \end{caml_example}
-
-\section{Quoted strings}\label{s:quoted-strings}
-
-(Introduced in OCaml 4.02)
-
-Quoted strings "{foo|...|foo}" provide a different lexical syntax to
-write string literals in OCaml code. They are useful to represent
-strings of arbitrary content without escaping -- as long as the
-delimiter you chose (here "|foo}") does not occur in the string
-itself.
-
-\begin{syntax}
-string-literal: ...
-     |  '{' quoted-string-id '|'  ........ '|' quoted-string-id '}'
-;
-quoted-string-id:
-     { 'a'...'z' || '_' }
-;
-\end{syntax}
-
-The opening delimiter has the form "{id|" where "id" is a (possibly
-empty) sequence of lowercase letters and underscores.  The
-corresponding closing delimiter is "|id}" (with the same
-identifier). Unlike regular OCaml string literals, quoted
-strings do not interpret any character in a special way.
-
-Example:
-
-\begin{verbatim}
-String.length {|\"|}         (* returns 2 *)
-String.length {foo|\"|foo}   (* returns 2 *)
-\end{verbatim}
-
-Quoted strings are interesting in particular in conjunction to
-extension nodes "[%foo ...]" (see \ref{s:extension-nodes}) to embed
-foreign syntax fragments to be interpreted by a preprocessor and
-turned into OCaml code: you can use "[%sql {|...|}]" for example to
-represent arbitrary SQL statements -- assuming you have a ppx-rewriter
-that recognizes the "%sql" extension -- without requiring escaping
-quotes.
-
-Note that the non-extension form, for example "{sql|...|sql}", should
-not be used for this purpose, as the user cannot see in the code that
-this string literal has a different semantics than they expect, and
-giving a semantics to a specific delimiter limits the freedom to
-change the delimiter to avoid escaping issues.
 
 \section{Exception cases in pattern matching}\label{s:exception-match}
 
