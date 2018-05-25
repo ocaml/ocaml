@@ -315,13 +315,7 @@ let simple_merged_annotated_under_record (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 26-27:
-    | { content = ( IntLit, 3
-                            ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_record : 'a t * 'a -> unit = <fun>
 |}]
 
 let simple_merged_annotated_under_mutable_record (type a) (pair : a t * a) =
@@ -331,13 +325,7 @@ let simple_merged_annotated_under_mutable_record (type a) (pair : a t * a) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 27-28:
-    | { contents = ( IntLit, 3
-                             ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_mutable_record : 'a t * 'a -> unit = <fun>
 |}]
 
 type 'a piref = { pcontent : 'b. 'a * 'b; };;
@@ -352,13 +340,8 @@ let simple_merged_annotated_under_poly_record1 (type a) (r : (a t * a) piref) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 27-28:
-    | { pcontent = ( IntLit, 3
-                             ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_poly_record1 : ('a t * 'a) piref -> unit =
+  <fun>
 |}]
 
 let simple_merged_annotated_under_poly_record2 (type a) (r : (a t * a) piref) =
@@ -368,13 +351,8 @@ let simple_merged_annotated_under_poly_record2 (type a) (r : (a t * a) piref) =
   | _ -> ()
 ;;
 [%%expect{|
-Line _, characters 28-29:
-    | { pcontent = ( (IntLit, 3), _
-                              ^
-Error: This pattern matches values of type int
-       but a pattern was expected which matches values of type a = int
-       This instance of int is ambiguous:
-       it would escape the scope of its equation
+val simple_merged_annotated_under_poly_record2 : ('a t * 'a) piref -> unit =
+  <fun>
 |}]
 
 let simple_merged_annotated_under_constructor (type a) (pair : a t * a) =
@@ -740,12 +718,12 @@ let f_amb (type a) (t : a t) (a : bool ref) (b : a ref) =
   | _, _, _ -> ()
 ;;
 [%%expect{|
-Line _, characters 40-65:
-    | BoolLit,  _,                        ({ contents = true} as x) -> ignore x
-                                          ^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This pattern matches values of type a ref
-       but a pattern was expected which matches values of type 'a
-       This instance of a is ambiguous:
-       it would escape the scope of its equation
+Line _, characters 4-108:
+  ....IntLit,  ({ contents = true } as x), _
+    | BoolLit,  _,                        ({ contents = true} as x)............
+Error: The variable x on the left-hand side of this or-pattern has type
+         bool ref
+       but on the right-hand side it has type a ref
+       Type bool is not compatible with type a
 |}]
 
