@@ -185,9 +185,14 @@
 
 /* Define HAS_PUTENV if you have putenv(). */
 
-#define HAS_LOCALE
+#define HAS_LOCALE_H
 
-/* Define HAS_LOCALE if you have the include file <locale.h> and the
+/* Define HAS_LOCALE_H if you have the include file <locale.h> and the
+   uselocale() function. */
+
+#define HAS_XLOCALE_H
+
+/* Define HAS_XLOCALE_H if you have the include file <xlocale.h> and the
    uselocale() function. */
 
 #define HAS_STRTOD_L

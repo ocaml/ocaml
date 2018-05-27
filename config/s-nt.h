@@ -30,7 +30,7 @@
 #define HAS_MKTIME
 #define HAS_PUTENV
 #ifndef __MINGW32__
-#define HAS_LOCALE
+#define HAS_LOCALE_H
 #define HAS_STRTOD_L
 #endif
 #define HAS_BROKEN_PRINTF

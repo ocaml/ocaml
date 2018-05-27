@@ -39,7 +39,14 @@
 #include "caml/stacks.h"
 
 #if defined(HAS_LOCALE) || defined(__MINGW32__)
+
+#if defined(HAS_LOCALE_H) || defined(__MINGW32__)
 #include <locale.h>
+#endif
+
+#if defined(HAS_XLOCALE_H)
+#include <xlocale.h>
+#endif
 
 #if defined(_MSC_VER)
 #ifndef locale_t
@@ -53,7 +60,7 @@
 #endif
 #endif
 
-#endif
+#endif /* defined(HAS_LOCALE) */
 
 #ifdef _MSC_VER
 #include <float.h>

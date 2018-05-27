@@ -1485,7 +1485,12 @@ fi
 
 if sh ./hasgot -i locale.h && sh ./hasgot newlocale freelocale uselocale; then
   inf "newlocale() and <locale.h> found."
-  echo "#define HAS_LOCALE" >> s.h
+  echo "#define HAS_LOCALE_H" >> s.h
+fi
+
+if sh ./hasgot -i xlocale.h && sh ./hasgot newlocale freelocale uselocale; then
+  inf "newlocale() and <xlocale.h> found."
+  echo "#define HAS_XLOCALE_H" >> s.h
 fi
 
 if sh ./hasgot strtod_l; then
