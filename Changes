@@ -40,6 +40,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
+  sign-extension operations
+  (LemonBoy, review by Alain Frisch and Xavier Leroy)
+
 ### Runtime system:
 - GPR#1793: add the -m and -M command-line options to ocamlrun
   (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
