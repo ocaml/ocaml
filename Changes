@@ -30,6 +30,10 @@ Working version
 
 ### Code generation and optimizations:
 
+- GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
+  sign-extension operations
+  (LemonBoy, review by Alain Frisch and Xavier Leroy)
+
 ### Runtime system:
 
 ### Tools:
@@ -282,10 +286,6 @@ OCaml 4.07
   "-output-complete-obj". Previously, it was always linked in only on some
   platforms, making this option unusable on platforms where it wasn't
   (Jérémie Dimino, review by Sébastien Hinderer and Xavier Leroy)
-
-- GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
-  sign-extension operations
-  (LemonBoy, review by Alain Frisch and Xavier Leroy)
 
 ### Runtime system:
 
