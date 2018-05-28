@@ -29,7 +29,7 @@ type loc = {
 type t =
   | Comment_start                           (*  1 *)
   | Comment_not_end                         (*  2 *)
-  | Deprecated of string * loc * loc        (*  3 *)
+  | Alert of {kind:string; message:string; def:loc; use:loc}        (*  3 *)
   | Fragile_match of string                 (*  4 *)
   | Partial_application                     (*  5 *)
   | Labels_omitted of string list           (*  6 *)
@@ -102,7 +102,7 @@ type t =
 let number = function
   | Comment_start -> 1
   | Comment_not_end -> 2
-  | Deprecated _ -> 3
+  | Alert _ -> 3
   | Fragile_match _ -> 4
   | Partial_application -> 5
   | Labels_omitted _ -> 6
@@ -318,14 +318,14 @@ let message = function
       "this `(*' is the start of a comment.\n\
        Hint: Did you forget spaces when writing the infix operator `( * )'?"
   | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated (s, _, _) ->
+  | Alert {kind; message; def=_; use=_} ->
       (* Reduce \r\n to \n:
            - Prevents any \r characters being printed on Unix when processing
              Windows sources
            - Prevents \r\r\n being generated on Windows, which affects the
              testsuite
        *)
-       "deprecated: " ^ Misc.normalise_eol s
+       kind ^ ": " ^ Misc.normalise_eol message
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
@@ -539,7 +539,7 @@ let message = function
 ;;
 
 let sub_locs = function
-  | Deprecated (_, def, use) ->
+  | Alert {def; use; _} ->
       if not def.loc_ghost && not use.loc_ghost then [
         def, "Definition";
         use, "Expected signature";
@@ -582,7 +582,7 @@ let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
     2, "Suspicious-looking end-of-comment mark.";
-    3, "Deprecated feature.";
+    3, "Alert on the use of specific kinds of features (deprecated, unsafe, etc).";
     4, "Fragile pattern matching: matching that will remain complete even\n\
    \    if additional constructors are added to one of the variant types\n\
    \    matched.";

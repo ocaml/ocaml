@@ -1245,7 +1245,7 @@ and type_pat_aux ~exception_allowed ~constrs ~labels ~no_existentials ~mode
       if constr.cstr_generalized && constrs <> None && mode = Inside_or
       then raise Need_backtrack;
       Env.mark_constructor Env.Pattern !env (Longident.last lid.txt) constr;
-      Builtin_attributes.check_deprecated loc constr.cstr_attributes
+      Builtin_attributes.check_alerts loc constr.cstr_attributes
         constr.cstr_name;
       begin match no_existentials, constr.cstr_existentials with
       | None, _ | _, [] -> ()
@@ -3920,7 +3920,7 @@ and type_construct env loc lid sarg ty_expected_explained attrs =
       ty_expected_explained
       (Constructor.disambiguate lid env opath) constrs in
   Env.mark_constructor Env.Positive env (Longident.last lid.txt) constr;
-  Builtin_attributes.check_deprecated loc constr.cstr_attributes
+  Builtin_attributes.check_alerts loc constr.cstr_attributes
     constr.cstr_name;
   let sargs =
     match sarg with

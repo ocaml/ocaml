@@ -589,8 +589,11 @@ let print_warning loc ppf w =
 
 let prerr_warning loc w = print_warning loc !formatter_for_warnings w
 
-let deprecated ?(def = none) ?(use = none) loc msg =
-  prerr_warning loc (Warnings.Deprecated (msg, def, use))
+let alert ?(def = none) ?(use = none) ~kind loc message =
+  prerr_warning loc (Warnings.Alert {kind; message; def; use})
+
+let deprecated ?def ?use loc message =
+  alert ?def ?use ~kind:"deprecated" loc message
 
 (******************************************************************************)
 (* Reporting errors on exceptions *)

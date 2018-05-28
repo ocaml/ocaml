@@ -201,7 +201,10 @@ val prerr_warning: t -> Warnings.t -> unit
    formatter. *)
 
 val deprecated: ?def:t -> ?use:t -> t -> string -> unit
-(** Prints a deprecation warning. *)
+(** Prints a deprecation alert. *)
+
+val alert: ?def:t -> ?use:t -> kind:string -> t -> string -> unit
+(** Prints an arbitrary alert. *)
 
 
 (** {1 Reporting errors} *)
