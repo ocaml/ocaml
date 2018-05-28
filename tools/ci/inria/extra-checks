@@ -18,6 +18,11 @@
 # from scratch, adding more run-time checks ("sanitizers") to the C code,
 # and run the test suite.  
 
+# In this context, it is necessary to skip a few tests whose behaviour
+# is modified by the instrumentation:
+
+export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml "
+
 # To know the slave's architecture, this script looks at the OCAML_ARCH
 # environment variable. For a given node NODe, this variable can be defined
 # in Jenkins at the following address:
