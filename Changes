@@ -48,6 +48,9 @@ Working version
 - GPR#1793: add the -m and -M command-line options to ocamlrun
   (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
 
+- GPR#1723: Remove internal Meta.static_{alloc,free} primitives.
+  (Stephen Dolan, review by Gabriel Scherer)
+
 ### Tools:
 
 - GPR#1711: the new 'open' flag in OCAMLRUNPARAM takes a comma-separated list of

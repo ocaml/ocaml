@@ -206,24 +206,17 @@ let check_unsafe_module cu =
 
 (* Load in-core and execute a bytecode object file *)
 
-external register_code_fragment: bytes -> int -> string -> unit
-                               = "caml_register_code_fragment"
-
 let load_compunit ic file_name file_digest compunit =
+  let open Misc in
   check_consistency file_name compunit;
   check_unsafe_module compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
-  let code = Meta.static_alloc code_size in
-  unsafe_really_input ic code 0 compunit.cu_codesize;
-  Bytes.unsafe_set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
-  Bytes.unsafe_set code (compunit.cu_codesize + 1) '\000';
-  Bytes.unsafe_set code (compunit.cu_codesize + 2) '\000';
-  Bytes.unsafe_set code (compunit.cu_codesize + 3) '\000';
-  Bytes.unsafe_set code (compunit.cu_codesize + 4) '\001';
-  Bytes.unsafe_set code (compunit.cu_codesize + 5) '\000';
-  Bytes.unsafe_set code (compunit.cu_codesize + 6) '\000';
-  Bytes.unsafe_set code (compunit.cu_codesize + 7) '\000';
+  let code = LongString.create code_size in
+  LongString.input_bytes_into code ic compunit.cu_codesize;
+  LongString.set code compunit.cu_codesize (Char.chr Opcodes.opRETURN);
+  LongString.blit_string "\000\000\000\001\000\000\000" 0
+                     code (compunit.cu_codesize + 1) 7;
   let initial_symtable = Symtable.current_state() in
   begin try
     Symtable.patch_object code compunit.cu_reloc;
@@ -242,16 +235,15 @@ let load_compunit ic file_name file_digest compunit =
      digest of file contents + unit name.
      Unit name is needed for .cma files, which produce several code fragments.*)
   let digest = Digest.string (file_digest ^ compunit.cu_name) in
-  register_code_fragment code code_size digest;
   let events =
     if compunit.cu_debug = 0 then [| |]
     else begin
       seek_in ic compunit.cu_debug;
       [| input_value ic |]
     end in
-  Meta.add_debug_info code code_size events;
   begin try
-    ignore((Meta.reify_bytecode code code_size) ())
+    let _, clos = Meta.reify_bytecode code events (Some digest) in
+    ignore (clos ())
   with exn ->
     Symtable.restore_state initial_symtable;
     raise exn
