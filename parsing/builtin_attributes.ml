@@ -174,6 +174,25 @@ let warning_attribute ?(ppwarning = true) =
           (Warnings.Attribute_payload
              (txt, "A single string literal is expected"))
   in
+  let process_alert loc txt = function
+  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply
+                                   ({pexp_desc=Pexp_ident{txt=Longident.Lident "~+"}},
+                                    [Nolabel,{pexp_desc=Pexp_ident{txt=Longident.Lident id}}])
+                              },_)}] ->
+      Warnings.set_alert id true
+  | PStr[{pstr_desc=Pstr_eval({pexp_desc=Pexp_apply
+                                   ({pexp_desc=Pexp_ident{txt=Longident.Lident "~-"}},
+                                    [Nolabel,{pexp_desc=Pexp_ident{txt=Longident.Lident id}}])
+                              },_)}] ->
+      Warnings.set_alert id false
+  | k ->
+      match kind_and_message k with
+      | Some _ -> ()
+      | None ->
+          Location.prerr_warning loc
+            (Warnings.Attribute_payload
+               (txt, "Invalid payload"))
+  in
   function
   | {attr_name = {txt = ("ocaml.warning"|"warning") as txt; _};
      attr_loc;
@@ -195,6 +214,11 @@ let warning_attribute ?(ppwarning = true) =
        ];
     } when ppwarning ->
      Location.prerr_warning pstr_loc (Warnings.Preprocessor s)
+  | {attr_name = {txt = ("ocaml.alert"|"alert") as txt; _};
+     attr_loc;
+     attr_payload;
+     } ->
+      process_alert attr_loc txt attr_payload
   | _ ->
      ()
 

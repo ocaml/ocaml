@@ -207,6 +207,7 @@ type state =
   {
     active: bool array;
     error: bool array;
+    alerts: (Misc.Stdlib.String.Set.t * bool); (* true/false: positive/negative set *)
   }
 
 let current =
@@ -214,6 +215,7 @@ let current =
     {
       active = Array.make (last_warning_number + 1) true;
       error = Array.make (last_warning_number + 1) false;
+      alerts = (Misc.Stdlib.String.Set.empty, false);
     }
 
 let disabled = ref false
@@ -225,7 +227,15 @@ let backup () = !current
 
 let restore x = current := x
 
-let is_active x = not !disabled && (!current).active.(number x);;
+let is_active x =
+  not !disabled && (!current).active.(number x) &&
+  match x with
+  | Alert {kind; _} ->
+      let (set, pos) = (!current).alerts in
+      Misc.Stdlib.String.Set.mem kind set = pos
+  | _ ->
+      true
+
 let is_error x = not !disabled && (!current).error.(number x);;
 
 let mk_lazy f =
@@ -298,7 +308,7 @@ let parse_options errflag s =
   let error = Array.copy (!current).error in
   let active = Array.copy (!current).active in
   parse_opt error active (if errflag then error else active) s;
-  current := {error; active}
+  current := {error; active; alerts = (!current).alerts}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
@@ -306,6 +316,21 @@ let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
+
+let set_alert s b =
+  let alerts =
+    match s with
+    | "all" ->
+        (Misc.Stdlib.String.Set.empty, not b)
+    | s ->
+        let (set, pos) = (!current).alerts in
+        let f =
+          if b = pos then Misc.Stdlib.String.Set.add
+          else Misc.Stdlib.String.Set.remove
+        in
+        (f s set, pos)
+  in
+  current := {(!current) with alerts}
 
 let ref_manual_explanation () =
   (* manual references are checked a posteriori by the manual

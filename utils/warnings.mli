@@ -118,3 +118,8 @@ val restore: state -> unit
 val mk_lazy: (unit -> 'a) -> 'a Lazy.t
     (** Like [Lazy.of_fun], but the function is applied with
         the warning settings at the time [mk_lazy] is called. *)
+
+
+val set_alert: string -> bool -> unit
+  (** Enable(=true) or disable(=false) a given alert,
+      or all alerts (if the string argument is "all"). *)
