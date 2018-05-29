@@ -281,9 +281,9 @@ let buffer_contents buf =
 
 (* Convert an integer conversion to char. *)
 let char_of_iconv iconv = match iconv with
-  | Int_d | Int_pd | Int_sd -> 'd' | Int_i | Int_pi | Int_si -> 'i'
+  | Int_d | Int_pd | Int_sd | Int_Cd -> 'd' | Int_i | Int_pi | Int_si | Int_Ci -> 'i'
   | Int_x | Int_Cx -> 'x' | Int_X | Int_CX -> 'X' | Int_o | Int_Co -> 'o'
-  | Int_u -> 'u'
+  | Int_u | Int_Cu -> 'u'
 
 (* Convert a float conversion to char. *)
 let char_of_fconv fconv = match fconv with
@@ -407,7 +407,7 @@ let bprint_precision : type a b . buffer -> (a, b) precision -> unit =
 let bprint_iconv_flag buf iconv = match iconv with
   | Int_pd | Int_pi -> buffer_add_char buf '+'
   | Int_sd | Int_si -> buffer_add_char buf ' '
-  | Int_Cx | Int_CX | Int_Co -> buffer_add_char buf '#'
+  | Int_Cx | Int_CX | Int_Co | Int_Cd | Int_Ci | Int_Cu -> buffer_add_char buf '#'
   | Int_d | Int_i | Int_x | Int_X | Int_o | Int_u -> ()
 
 (* Print an complete int format in a buffer (ex: "%3.*d"). *)
@@ -1373,36 +1373,36 @@ let string_to_caml_string str =
 (* Generate the format_int/int32/nativeint/int64 first argument
    from an int_conv. *)
 let format_of_iconv = function
-  | Int_d -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
-  | Int_i -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
+  | Int_d | Int_Cd -> "%d" | Int_pd -> "%+d" | Int_sd -> "% d"
+  | Int_i | Int_Ci -> "%i" | Int_pi -> "%+i" | Int_si -> "% i"
   | Int_x -> "%x" | Int_Cx -> "%#x"
   | Int_X -> "%X" | Int_CX -> "%#X"
   | Int_o -> "%o" | Int_Co -> "%#o"
-  | Int_u -> "%u"
+  | Int_u | Int_Cu -> "%u"
 
 let format_of_iconvL = function
-  | Int_d -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
-  | Int_i -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
+  | Int_d | Int_Cd -> "%Ld" | Int_pd -> "%+Ld" | Int_sd -> "% Ld"
+  | Int_i | Int_Ci -> "%Li" | Int_pi -> "%+Li" | Int_si -> "% Li"
   | Int_x -> "%Lx" | Int_Cx -> "%#Lx"
   | Int_X -> "%LX" | Int_CX -> "%#LX"
   | Int_o -> "%Lo" | Int_Co -> "%#Lo"
-  | Int_u -> "%Lu"
+  | Int_u | Int_Cu -> "%Lu"
 
 let format_of_iconvl = function
-  | Int_d -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
-  | Int_i -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
+  | Int_d | Int_Cd -> "%ld" | Int_pd -> "%+ld" | Int_sd -> "% ld"
+  | Int_i | Int_Ci -> "%li" | Int_pi -> "%+li" | Int_si -> "% li"
   | Int_x -> "%lx" | Int_Cx -> "%#lx"
   | Int_X -> "%lX" | Int_CX -> "%#lX"
   | Int_o -> "%lo" | Int_Co -> "%#lo"
-  | Int_u -> "%lu"
+  | Int_u | Int_Cu -> "%lu"
 
 let format_of_iconvn = function
-  | Int_d -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
-  | Int_i -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
+  | Int_d | Int_Cd -> "%nd" | Int_pd -> "%+nd" | Int_sd -> "% nd"
+  | Int_i | Int_Ci -> "%ni" | Int_pi -> "%+ni" | Int_si -> "% ni"
   | Int_x -> "%nx" | Int_Cx -> "%#nx"
   | Int_X -> "%nX" | Int_CX -> "%#nX"
   | Int_o -> "%no" | Int_Co -> "%#no"
-  | Int_u -> "%nu"
+  | Int_u | Int_Cu -> "%nu"
 
 (* Generate the format_float first argument form a float_conv. *)
 let format_of_fconv fconv prec =
@@ -1417,11 +1417,35 @@ let format_of_fconv fconv prec =
     buffer_add_char buf symb;
     buffer_contents buf
 
+let transform_int_alt iconv s =
+  match iconv with
+  | Int_Cd | Int_Ci | Int_Cu ->
+    let digits =
+      let n = ref 0 in
+      for i = 0 to String.length s - 1 do
+        match String.unsafe_get s i with
+        | '0'..'9' -> incr n
+        | _ -> ()
+      done;
+      !n
+    in
+    let buf = Bytes.create (String.length s + (digits - 1) / 3) in
+    let pos = ref 0 in
+    let put c = Bytes.set buf !pos c; incr pos in
+    let left = ref ((digits - 1) mod 3 + 1) in
+    for i = 0 to String.length s - 1 do
+      match String.unsafe_get s i with
+      | '0'..'9' as c -> if !left = 0 then (put '_'; left := 3); decr left; put c
+      | c -> put c
+    done;
+    Bytes.unsafe_to_string buf
+  | _ -> s
+
 (* Convert an integer to a string according to a conversion. *)
-let convert_int iconv n = format_int (format_of_iconv iconv) n
-let convert_int32 iconv n = format_int32 (format_of_iconvl iconv) n
-let convert_nativeint iconv n = format_nativeint (format_of_iconvn iconv) n
-let convert_int64 iconv n = format_int64 (format_of_iconvL iconv) n
+let convert_int iconv n = transform_int_alt iconv (format_int (format_of_iconv iconv) n)
+let convert_int32 iconv n = transform_int_alt iconv (format_int32 (format_of_iconvl iconv) n)
+let convert_nativeint iconv n = transform_int_alt iconv (format_nativeint (format_of_iconvn iconv) n)
+let convert_int64 iconv n = transform_int_alt iconv (format_int64 (format_of_iconvL iconv) n)
 
 (* Convert a float to string. *)
 (* Fix special case of "OCaml float format". *)
@@ -2883,6 +2907,9 @@ let fmt_ebb_of_string ?legacy_behavior str =
     | false, false, false, 'o' -> Int_o
     | false,  true, false, 'o' -> Int_Co
     | false, false, false, 'u' -> Int_u
+    | false,  true, false, 'd' -> Int_Cd
+    | false,  true, false, 'i' -> Int_Ci
+    | false,  true, false, 'u' -> Int_Cu
     | _, true, _, 'x' when legacy_behavior -> Int_Cx
     | _, true, _, 'X' when legacy_behavior -> Int_CX
     | _, true, _, 'o' when legacy_behavior -> Int_Co

@@ -19,8 +19,13 @@ try
   test (sprintf "%04d/%05i" 42 43 = "0042/00043");
   test (sprintf "%+d/%+i" 42 43 = "+42/+43");
   test (sprintf "% d/% i" 42 43 = " 42/ 43");
-  (*test (sprintf "%#d/%#i" 42 43 = "42/43");*)
-    (* >> '#' is incompatible with 'd' *)
+  test (sprintf "%#d/%#i" 42 43 = "42/43");
+  test (sprintf "%#d/%#i" 123 123 = "123/123");
+  test (sprintf "%#d/%#i" 1234 1234 = "1_234/1_234");
+  test (sprintf "%#d/%#i" 12345 12345 = "12_345/12_345");
+  test (sprintf "%#d/%#i" 123456 123456 = "123_456/123_456");
+  test (sprintf "%#4d/%#5i" 1234 1234 = "1_234/1_234");
+  test (sprintf "%#-6d/%#-7i" 1234 1234 = "1_234 /1_234  ");
   test (sprintf "%4d/%5i" 42 43 = "  42/   43");
   test (sprintf "%*d" (-4) 42 = "42  ");
   test (sprintf "%*d/%*i" 4 42 5 43 = "  42/   43");
@@ -33,8 +38,13 @@ try
   test (sprintf "%04d/%05i" (-42) (-43) = "-042/-0043");
   test (sprintf "%+d/%+i" (-42) (-43) = "-42/-43");
   test (sprintf "% d/% i" (-42) (-43) = "-42/-43");
-  (*test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");*)
-    (* >> '#' is incompatible with 'd' *)
+  test (sprintf "%#d/%#i" (-42) (-43) = "-42/-43");
+  test (sprintf "%#d/%#i" (-123) (-123) = "-123/-123");
+  test (sprintf "%#d/%#i" (-1234) (-1234) = "-1_234/-1_234");
+  test (sprintf "%#d/%#i" (-12345) (-12345) = "-12_345/-12_345");
+  test (sprintf "%#d/%#i" (-123456) (-123456) = "-123_456/-123_456");
+  test (sprintf "%#4d/%#5i" (-1234) (-1234) = "-1_234/-1_234");
+  test (sprintf "%#-6d/%#-7i" (-1234) (-1234) = "-1_234/-1_234 ");
   test (sprintf "%4d/%5i" (-42) (-43) = " -42/  -43");
   test (sprintf "%*d" (-4) (-42) = "-42 ");
   test (sprintf "%*d/%*i" 4 (-42) 5 (-43) = " -42/  -43");
@@ -49,8 +59,13 @@ try
     (* >> '+' is incompatible with 'u' *)
   (*test (sprintf "% u" 42 = "42");*)
     (* >> ' ' is incompatible with 'u' *)
-  (*test (sprintf "%#u" 42 = "42");*)
-    (* >> '#' is incompatible with 'u' *)
+  test (sprintf "%#u" 42 = "42");
+  test (sprintf "%#u" 123 = "123");
+  test (sprintf "%#u" 1234 = "1_234");
+  test (sprintf "%#u" 12345 = "12_345");
+  test (sprintf "%#u" 123456 = "123_456");
+  test (sprintf "%#4u" 1234 = "1_234");
+  test (sprintf "%#6u" 1234 = " 1_234");
   test (sprintf "%4u" 42 = "  42");
   test (sprintf "%*u" 4 42 = "  42");
   test (sprintf "%*u" (-4) 42 = "42  ");
@@ -59,8 +74,10 @@ try
   begin match Sys.word_size with
   | 32 ->
      test (sprintf "%u" (-1) = "2147483647");
+     test (sprintf "%#u" (-1) = "2_147_483_647");
   | 64 ->
      test (sprintf "%u" (-1) = "9223372036854775807");
+     test (sprintf "%#u" (-1) = "9_223_372_036_854_775_807");
   | _ -> test false
   end;
 
