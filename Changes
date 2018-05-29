@@ -5,6 +5,9 @@ Working version
 
 ### Language features:
 
+- GRP#1705: Allow @@attributes on exceptions
+  (Hugo Heuzard, review by Gabriel Radanne and Thomas Refis)
+
 ### Type system:
 
 ### Standard library:
@@ -117,9 +120,6 @@ OCaml 4.07
 
 - GPR#1546: Allow empty variants
   (Runhang Li, review by Gabriel Radanne and Jacques Garrigue)
-
-- GRP#1705: Allow @@attributes on exceptions
-  (Hugo Heuzard, review by Gabriel Radanne)
 
 ### Type system:
 
