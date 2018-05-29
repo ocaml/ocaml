@@ -44,11 +44,15 @@ Working version
 
 ### Code generation and optimizations:
 
+- MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values
+  (Stephen Dolan)
+
 - GPR#1631: AMD64 code generator: emit shorter instruction sequences for the
   sign-extension operations
   (LemonBoy, review by Alain Frisch and Xavier Leroy)
 
 ### Runtime system:
+
 - GPR#1793: add the -m and -M command-line options to ocamlrun
   (Sébastien Hinderer, review by Xavier Clerc and Damien Doligez)
 
@@ -94,14 +98,6 @@ Working version
   (Thomas Refis, review by Jacques Garrigue)
 
 ### Bug fixes:
-
-- GPR#1623: Segfault on Windows 64 bits when expanding wildcards in arguments.
-  (Marc Lasson, review by David Allsopp, Alain Frisch, Sébastien Hinderer,
-   Xavier Leroy, Nicolas Ojeda Bar)
-
-- MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
-  ignored when used on streams based on input channels.
-  (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows
   (Alain Frisch)
@@ -370,9 +366,6 @@ OCaml 4.07
 
 - GPR#1752: do not alias function arguments to sigprocmask (Anil Madhavapeddy)
 
-- GPR#1754, MPR#7725: improve AFL instrumentation for objects and lazy values
-  (Stephen Dolan)
-
 - GPR#1753: avoid potential off-by-one overflow in debugger socket path
   length (Anil Madhavapeddy)
 
@@ -603,10 +596,14 @@ OCaml 4.07
   (Xavier Leroy, report by Maximilian Tschirschnitz,
    review by Gabriel Scherer)
 
-- PR#7760, GPR#1713: Exact selection of lexing engine, that is
+- MPR#7760, GPR#1713: Exact selection of lexing engine, that is
   correct "Segfault in ocamllex-generated code using 'shortest'"
   (Luc Maranget, Frédéric Bour, report by Stephen Dolan,
   review by Gabriel Scherer)
+
+- MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
+  ignored when used on streams based on input channels.
+  (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
@@ -626,6 +623,10 @@ OCaml 4.07
 - GPR#1622: fix bug in the expansion of command-line arguments under Windows
   which could result in some elements of Sys.argv being truncated in some cases.
   (Nicolás Ojeda Bär, review by Sébastien Hinderer)
+
+- GPR#1623: Segfault on Windows 64 bits when expanding wildcards in arguments.
+  (Marc Lasson, review by David Allsopp, Alain Frisch, Sébastien Hinderer,
+   Xavier Leroy, Nicolas Ojeda Bar)
 
 - GPR#1661: more precise principality warning regarding record fields
   disambiguation
@@ -3066,7 +3067,6 @@ OCaml 4.03.0 (25 Apr 2016):
 
 - PR#7119: the toplevel does not respect [@@@warning]
   (Alain Frisch, report by Gabriel Radanne)
-
 
 ### Other libraries:
 
