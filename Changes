@@ -92,6 +92,10 @@ Working version
 - GPR#1797: remove the deprecated Makefile.nt files
   (Sébastien Hinderer, review by Nicolas Ojeda Bar)  
 
+- GPR#1805: fix the bootstrap procedure and its documentation
+  (Sébastien Hinderer, Xavier Leroy and Damien Doligez; review by
+  Gabriel Scherer)
+
 ### Internal/compiler-libs changes:
 
 - GPR#1745: do not generalize the type of every sub-pattern, only of variables

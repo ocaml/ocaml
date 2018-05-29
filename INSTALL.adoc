@@ -213,25 +213,10 @@ fairly verbose; consider redirecting the output to a file:
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
-[[bootstrap]]
-3. (Optional) To be sure everything works well, you can try to bootstrap the
-   system -- that is, to recompile all OCaml sources with the newly created
-   compiler. From the top directory, do:
+3. (Optional) To be sure everything works well, you can run the test suite
+   that comes with the compiler. To do so, do:
 
-        make bootstrap
-+
-or, better:
-
-        make bootstrap > log.bootstrap 2>&1     # in sh
-        make bootstrap >& log.bootstrap         # in csh
-+
-The `make bootstrap` checks that the bytecode programs compiled with the new
-compiler are identical to the bytecode programs compiled with the old compiler.
-If this is the case, you can be pretty sure the system has been correctly
-compiled. Otherwise, this does not necessarily mean something went wrong.  The
-best thing to do is to try a second bootstrapping phase: just do
-`make bootstrap` again.  It will either crash almost immediately, or
-re-re-compile everything correctly and reach the fix-point.
+        make tests
 
 4. You can now install the OCaml system. This will create the following commands
    (in the binary directory selected during autoconfiguration):
