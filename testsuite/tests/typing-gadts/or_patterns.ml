@@ -727,3 +727,26 @@ Error: The variable x on the left-hand side of this or-pattern has type
        Type bool is not compatible with type a
 |}]
 
+(********************************************)
+
+type t =
+  | A : 'a -> t
+  | B : 'a -> t
+;;
+[%%expect{|
+type t = A : 'a -> t | B : 'a -> t
+|}]
+
+let f = function
+  | A x
+  | B x -> ignore x
+;;
+[%%expect{|
+Line _, characters 4-15:
+  ....A x
+    | B x............
+Error: The variable x on the left-hand side of this or-pattern has type
+       $A_'a but on the right-hand side it has type $B_'a
+$A_'a is abstract because no corresponding cmi file was found in path.
+$B_'a is abstract because no corresponding cmi file was found in path.
+|}]
