@@ -21,7 +21,7 @@
 # In this context, it is necessary to skip a few tests whose behaviour
 # is modified by the instrumentation:
 
-export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml "
+export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml tests/runtime-errors/stackoverflow.ml"
 
 # To know the slave's architecture, this script looks at the OCAML_ARCH
 # environment variable. For a given node NODe, this variable can be defined
@@ -152,9 +152,6 @@ set_config_var CFLAGS "-O1 \
 -Wall -Werror \
 -fsanitize=address \
 -fsanitize-trap=$ubsan"
-
-# AddressSanitizer reacts poorly to stack overflow, so don't test for it.
-undefine_macro HAS_STACK_OVERFLOW_DETECTION byterun/caml/s.h
 
 # Build the system.  We want to check for memory leaks, hence
 # 1- force ocamlrun to free memory before exiting
