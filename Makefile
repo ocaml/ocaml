@@ -398,7 +398,7 @@ coldstart:
 
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
-coreall:
+coreall: runtime
 	$(MAKE) ocamlc
 	$(MAKE) ocamllex ocamlyacc ocamltools library
 
@@ -408,30 +408,15 @@ core:
 	$(MAKE) coldstart
 	$(MAKE) coreall
 
-# Save the current bootstrap compiler
-.PHONY: backup
-backup:
-	$(MKDIR) boot/Saved
-	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); fi
-	mv boot/Saved boot/Saved.prev
-	mkdir boot/Saved
-	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/ocamlrun$(EXE) boot/Saved
-	cd boot; mv ocamlc ocamllex ocamlyacc$(EXE) Saved
-	cd boot; cp $(LIBFILES) Saved
-
-# Restore the saved bootstrap compiler if a problem arises
-.PHONY: restore
-restore:
-	cd boot; mv Saved/* .; rmdir Saved; mv Saved.prev Saved
-
 # Check if fixpoint reached
 .PHONY: compare
 compare:
 	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
          && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
-	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	else \
+	  echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	  exit 1; \
 	fi
 
 # Promote a compiler
@@ -493,8 +478,6 @@ opt.opt:
 # Core bootstrapping cycle
 .PHONY: coreboot
 coreboot:
-# Save the original bootstrap compiler
-	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
 # This compiler runs on boot/ocamlrun and produces bytecode for
 # byterun/ocamlrun
@@ -515,8 +498,7 @@ coreboot:
 # Recompile the system using the bootstrap compiler
 
 .PHONY: all
-all: runtime
-	$(MAKE) coreall
+all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
@@ -526,7 +508,6 @@ all: runtime
 .PHONY: bootstrap
 bootstrap: coreboot
 	$(MAKE) all
-	$(MAKE) compare
 
 # Compile everything the first time
 
