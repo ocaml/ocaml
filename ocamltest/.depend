@@ -126,8 +126,8 @@ ocamltest_config.cmi :
 ocamltest_stdlib.cmo : ocamltest_stdlib.cmi
 ocamltest_stdlib.cmx : ocamltest_stdlib.cmi
 ocamltest_stdlib.cmi :
-options.cmo : tests.cmi actions.cmi options.cmi
-options.cmx : tests.cmx actions.cmx options.cmi
+options.cmo : variables.cmi tests.cmi actions.cmi options.cmi
+options.cmx : variables.cmx tests.cmx actions.cmx options.cmi
 options.cmi :
 result.cmo : result.cmi
 result.cmx : result.cmi

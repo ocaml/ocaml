@@ -66,3 +66,7 @@ let find_variable variable_name =
 
 let string_of_binding variable value =
   variable.variable_exporter value
+
+let get_registered_variables () =
+  let f _variable_name variable variable_list = variable::variable_list in
+  List.sort compare (Hashtbl.fold f variables [])
