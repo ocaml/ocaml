@@ -296,10 +296,6 @@ OCaml 4.07
 
 ### Manual and documentation:
 
-- PR#1757: style the html manual, changing type and layout
-  (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
-  Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
-
 - MPR#7613: minor reword of the "refutation cases" paragraph
   (Florian Angeletti, review by Jacques Garrigue)
 
@@ -325,6 +321,10 @@ OCaml 4.07
 
 - GPR#1741: manual, improve typesetting and legibility in HTML output
   (steinuil, review by Gabriel Scherer)
+
+- GPR#1757: style the html manual, changing type and layout
+  (Charles Chamberlain, review by Florian Angeletti, Xavier Leroy,
+  Gabriel Radanne, Perry E. Metzger, and Gabriel Scherer)
 
 - GPR#1765: manual, ellipsis in code examples
   (Florian Angeletti, review and suggestion by Gabriel Scherer)
@@ -482,10 +482,14 @@ OCaml 4.07
   (Xavier Leroy, report by Maximilian Tschirschnitz,
    review by Gabriel Scherer)
 
-- PR#7760, GPR#1713: Exact selection of lexing engine, that is
+- MPR#7760, GPR#1713: Exact selection of lexing engine, that is
   correct "Segfault in ocamllex-generated code using 'shortest'"
   (Luc Maranget, Frédéric Bour, report by Stephen Dolan,
   review by Gabriel Scherer)
+
+- MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
+  ignored when used on streams based on input channels.
+  (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
 - GPR#1517: More robust handling of type variables in mcomp
   (Leo White and Thomas Refis, review by Jacques Garrigue)
@@ -513,10 +517,6 @@ OCaml 4.07
 - GPR#1661: more precise principality warning regarding record fields
   disambiguation
   (Thomas Refis, review by Leo White)
-
-- MPR#7769, GPR#1714: calls to Stream.junk could, under some conditions, be
-  ignored when used on streams based on input channels.
-  (Nicolás Ojeda Bär, report by Michael Perin, review by Gabriel Scherer)
 
 - GPR#1722: Scrape types in Typeopt.maybe_pointer
   (Leo White, review by Thomas Refis)
