@@ -1174,11 +1174,6 @@ lintapidiff:
 	    grep -Ev internal\|obj\|spacetime\|stdLabels\|moreLabels |\
 	    tools/lintapidiff.opt $(VERSIONS)
 
-# Make clean in the test suite
-
-clean::
-	cd testsuite; $(MAKE) clean
-
 # The middle end (whose .cma library is currently only used for linking
 # the "ocamlobjinfo" program, since we cannot depend on the whole native code
 # compiler for "make world" and the list of dependencies for
