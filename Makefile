@@ -787,8 +787,8 @@ endif
 # Run all tests
 
 .PHONY: tests
-tests: opt.opt ocamltest
-	cd testsuite; $(MAKE) clean && $(MAKE) all
+tests:
+	$(MAKE) -C testsuite all
 
 # Make clean in the test suite
 
