@@ -471,7 +471,7 @@ and transl_exp0 e =
         (* A constant expr (of type <> float if [Config.flat_float_array] is
            true) gets compiled as itself. *)
          transl_exp e
-      | `Flattenable_float ->
+      | `Float_that_cannot_be_shortcut ->
           (* We don't need to wrap with Popaque: this forward
              block will never be shortcutted since it points to a float
              and Config.flat_float_array is true. *)
