@@ -1459,7 +1459,7 @@ let simplif_primitive_32bits = function
       Pccall (default_prim ("caml_ba_set_" ^ Int.to_string n))
   | Pstring_load(Sixty_four, _) -> Pccall (default_prim "caml_string_get64")
   | Pbytes_load(Sixty_four, _) -> Pccall (default_prim "caml_bytes_get64")
-  | Pbytes_set(Sixty_four, _) -> Pccall (default_prim "caml_string_set64")
+  | Pbytes_set(Sixty_four, _) -> Pccall (default_prim "caml_bytes_set64")
   | Pbigstring_load(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_get64")
   | Pbigstring_set(Sixty_four,_) -> Pccall (default_prim "caml_ba_uint8_set64")
   | Pbbswap Pint64 -> Pccall (default_prim "caml_int64_bswap")
