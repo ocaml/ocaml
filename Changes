@@ -283,6 +283,9 @@ OCaml 4.07
   emitted by the bytecode compiler appear more in-order than before.
   (Luc Maranget, advice and review by Damien Doligez)
 
+- GPR#1806: add linscan to OCAMLPARAM options
+  (Raja Boujbel)
+
 ### Code generation and optimizations:
 
 - MPR#7630, GPR#1401: Faster compilation of large modules with Flambda.
