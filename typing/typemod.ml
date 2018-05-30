@@ -473,13 +473,15 @@ let merge_constraint initial_env remove_aliases loc sg constr =
             then raise(Error(loc, initial_env, With_cannot_remove_constrained_type));
             fun s path -> Subst.add_type_function path ~params ~body s
        in
-       let sub = List.fold_left how_to_extend_subst Subst.identity !real_ids in
+       let sub = Subst.change_locs Subst.identity loc in
+       let sub = List.fold_left how_to_extend_subst sub !real_ids in
        Subst.signature sub sg
     | (_, _, Twith_modsubst (real_path, _)) ->
+       let sub = Subst.change_locs Subst.identity loc in
        let sub =
          List.fold_left
            (fun s path -> Subst.add_module_path path real_path s)
-           Subst.identity
+           sub
            !real_ids
        in
        Subst.signature sub sg
