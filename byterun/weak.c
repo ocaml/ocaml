@@ -15,8 +15,6 @@
 
 #define CAML_INTERNALS
 
-#define DEBUG_SPECIAL
-
 /* Operations on weak arrays and ephemerons (named ephe here)*/
 
 #include <string.h>
@@ -78,19 +76,7 @@ CAMLprim value caml_ephe_create (value len)
 
 CAMLprim value caml_weak_create (value len)
 {
-#ifdef DEBUG_SPECIAL
-  mlsize_t size, i;
-  value res;
-
-  size = Long_val (len) + 1 /* weak_list */ + 1 /* the value */;
-  if (size <= 0 || size > Max_wosize) caml_invalid_argument ("Weak.create");
-  res = caml_alloc_shr (size, 0);
-  for (i = 1; i < size; i++)
-    caml_initialize_field(res, i, None_val);
-  return res;
-#else
   return caml_ephe_create(len);
-#endif
 }
 
 /**
@@ -192,7 +178,7 @@ CAMLprim value caml_ephe_unset_key (value e, value n)
 value caml_ephe_set_key_option (value e, value n, value el)
 {
   if (el != None_val && Is_block (el)) {
-    return caml_ephe_set_key (e, n, el);
+    return caml_ephe_set_key (e, n, Op_val(el)[0]);
   } else {
     return caml_ephe_unset_key (e, n);
   }
@@ -200,22 +186,7 @@ value caml_ephe_set_key_option (value e, value n, value el)
 
 CAMLprim value caml_weak_set (value ar, value n, value el)
 {
-#ifdef DEBUG_SPECIAL
-  CAMLparam3(ar,n,el);
-  mlsize_t offset = Long_val (n) + 2;
-  if (offset < 2 || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.set");
-  }
-  if (el != None_val && Is_block (el)){
-    CAMLassert (Wosize_val (el) == 1);
-    caml_modify_field (ar, offset, Field (el, 0));
-  }else{
-    caml_modify_field (ar, offset, None_val);
-  }
-  CAMLreturn(Val_unit);
-#else
   return caml_ephe_set_key_option(ar,n,el);
-#endif
 }
 
 CAMLprim value caml_ephe_set_data (value e, value el)
@@ -267,26 +238,7 @@ CAMLprim value caml_ephe_get_key (value e, value n)
 
 CAMLprim value caml_weak_get (value ar, value n)
 {
-#ifdef DEBUG_SPECIAL
-  CAMLparam2(ar, n);
-  mlsize_t offset = Long_val (n) + 2;
-  CAMLlocal2 (res, elt);
-  if (offset < 2 || offset >= Wosize_val (ar)){
-    caml_invalid_argument ("Weak.get_key");
-  }
-  caml_read_field(ar, offset, &elt);
-  if (elt == None_val){
-    res = None_val;
-  }else{
-    res = caml_alloc_small (1, Some_tag);
-    caml_initialize_field(res, 0, elt);
-  }
-#else
-  CAMLparam2(ar, n);
-  CAMLlocal1(res);
-  res = caml_ephe_get_key(ar, n);
-#endif
-  CAMLreturn (res);
+  return caml_ephe_get_key(ar, n);
 }
 
 CAMLprim value caml_ephe_get_data (value e)
