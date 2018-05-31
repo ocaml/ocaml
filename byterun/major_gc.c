@@ -367,7 +367,7 @@ void caml_darken(void* state, value v, value* ignored) {
   }
 }
 
-static intnat ephe_mark (intnat budget)
+intnat ephe_mark (intnat budget)
 {
   value v, data, key, prev, f;
   header_t hd;
@@ -643,7 +643,8 @@ static intnat major_collection_slice(intnat howmuch,
       atomic_fetch_add(&num_domains_to_sweep, -1);
     }
 
-    caml_ev_end("major_gc/end");
+    caml_ev_end("major_gc/sweep");
+    sweep_work -= budget;
 
     caml_handle_incoming_interrupts();
   }
@@ -722,7 +723,8 @@ mark_again:
 
   caml_restore_stack_gc();
 
-  if (atomic_load_acq(&num_domains_to_ephe_sweep) == 0) {
+  if (caml_gc_phase == Phase_sweep_ephe &&
+      atomic_load_acq(&num_domains_to_ephe_sweep) == 0) {
     saved_major_cycle = major_cycles_completed;
     /* To handle the case where multiple domains try to finish the major
       cycle simultaneously, we loop until the current cycle has ended,

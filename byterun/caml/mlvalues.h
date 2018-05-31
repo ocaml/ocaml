@@ -246,7 +246,9 @@ static inline void caml_read_field(value x, int i, value* ret) {
 }
 
 static inline value Field_imm(value x, int i) {
-  value v = (Op_val(x)[i] + 0);
+  Assert (Hd_val(x));
+  Assert (i < Wosize_val(x));
+  value v = Op_val(x)[i];
   Assert (!Is_foreign(v));
   return v;
 }

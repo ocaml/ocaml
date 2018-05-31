@@ -447,7 +447,7 @@ static struct {
 barrier_status caml_global_barrier_begin()
 {
   uintnat b = 1 + atomic_fetch_add(&stw_request.barrier, 1);
-  caml_gc_log("domain %d to barrier", (int)b);
+  caml_gc_log("domain %d to barrier", (int)b & ~BARRIER_SENSE_BIT);
   return b;
 }
 

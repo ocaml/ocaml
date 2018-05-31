@@ -581,7 +581,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
 {
   caml_domain_state* domain_state = domain->state;
   struct caml_remembered_set *remembered_set = domain_state->remembered_set;
-  unsigned rewritten = 0;
+  unsigned rewrite_successes = 0;
+  unsigned rewrite_failures = 0;
   int saved_stack = 0;
   char* young_ptr = domain_state->young_ptr;
   char* young_end = domain_state->young_end;
@@ -609,7 +610,8 @@ void caml_empty_minor_heap_domain (struct domain* domain)
       caml_scan_dirty_stack_domain (&oldify_one, &st, (value)*r, domain);
     }
 
-    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) { value x = **r;
+    for (r = remembered_set->major_ref.base; r < remembered_set->major_ref.ptr; r++) {
+      value x = **r;
       oldify_one (&st, x, &x);
     }
     caml_ev_end("minor_gc/roots");
@@ -651,8 +653,12 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         vnew = Op_val(v)[0] + offset;
         CAMLassert (Is_block(vnew) && !Is_minor(vnew));
         CAMLassert (Hd_val(vnew));
-        if (Tag_hd(hd) == Infix_tag) { CAMLassert(Tag_val(vnew) == Infix_tag); }
-        if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
+        if (Tag_hd(hd) == Infix_tag) {
+          CAMLassert(Tag_val(vnew) == Infix_tag);
+          v += offset;
+        }
+        if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewrite_successes;
+        else ++rewrite_failures;
         caml_darken(0, vnew,0);
       }
     }
@@ -667,10 +673,10 @@ void caml_empty_minor_heap_domain (struct domain* domain)
     domain_state->stat_promoted_words += domain_state->allocated_words - prev_alloc_words;
 
     caml_ev_end("minor_gc");
-    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, %u pointers rewritten",
+    caml_gc_log ("Minor collection of domain %d completed: %2.0f%% of %u KB live, rewrite: successes=%u failures=%u",
                  domain->state->id,
                  100.0 * (double)st.live_bytes / (double)minor_allocated_bytes,
-                 (unsigned)(minor_allocated_bytes + 512)/1024, rewritten);
+                 (unsigned)(minor_allocated_bytes + 512)/1024, rewrite_successes, rewrite_failures);
   }
   else {
     caml_gc_log ("Minor collection of domain %d: skipping", domain->state->id);

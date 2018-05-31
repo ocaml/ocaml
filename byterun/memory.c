@@ -429,6 +429,10 @@ int is_young(value v) {
 int has_status_hd(value v, status s) {
   return Has_status_hd(v,s);
 }
+
+int tag_val(value v) {
+  return (int)Tag_val(v);
+}
 #endif
 
 /* Global memory pool.
