@@ -731,6 +731,22 @@ CAMLprim value caml_copysign_float(value f, value g)
   return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
 }
 
+CAMLprim value caml_signbit(double x)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return Val_bool(signbit(x));
+#else
+  union double_as_two_int32 ux;
+  ux.d = x;
+  return Val_bool(ux.i.h >> 31);
+#endif
+}
+
+CAMLprim value caml_signbit_float(value f)
+{
+  return caml_signbit(Double_val(f));
+}
+
 #ifdef LACKS_SANE_NAN
 
 CAMLprim value caml_neq_float(value vf, value vg)

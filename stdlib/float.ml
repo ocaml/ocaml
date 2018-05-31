@@ -95,6 +95,9 @@ external nextafter : float -> float -> float
 external copysign : float -> float -> float
                   = "caml_copysign_float" "caml_copysign"
                   [@@unboxed] [@@noalloc]
+external signbit : (float [@unboxed]) -> bool
+  = "caml_signbit_float" "caml_signbit" [@@noalloc]
+
 external frexp : float -> float * int = "caml_frexp_float"
 external ldexp : (float [@unboxed]) -> (int [@untagged]) -> (float [@unboxed]) =
   "caml_ldexp_float" "caml_ldexp_float_unboxed" [@@noalloc]

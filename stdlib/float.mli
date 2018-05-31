@@ -258,6 +258,12 @@ external copysign : float -> float -> float
     If [y] is [nan], returns either [x] or [-. x], but it is not
     specified which. *)
 
+external signbit : (float [@unboxed]) -> bool
+  = "caml_signbit_float" "caml_signbit" [@@noalloc]
+(** [signbit x] returns [true] iff the sign bit of [x] is set.
+    For example [signbit 1.] and [signbit 0.] are [false] while
+    [signbit (-1.)] and [signbit (-0.)] are [true]. *)
+
 external frexp : float -> float * int = "caml_frexp_float"
 (** [frexp f] returns the pair of the significant
     and the exponent of [f].  When [f] is zero, the

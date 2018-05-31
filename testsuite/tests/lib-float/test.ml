@@ -44,6 +44,13 @@ let () =
   assert(Float.(is_nan(nextafter nan 1.)));
   assert(Float.(is_nan(nextafter 3. nan)));
 
+  assert(not(Float.signbit 1.));
+  assert(Float.signbit (-1.));
+  assert(not(Float.signbit 0.));
+  assert(Float.signbit (-0.));
+  assert(not(Float.signbit infinity));
+  assert(Float.signbit neg_infinity);
+
   assert(Float.min 1. 2. = 1.);
   assert(Float.min 1. Float.nan = 1.);
   assert(Float.min Float.nan 2. = 2.);
