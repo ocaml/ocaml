@@ -154,6 +154,9 @@ Working version
 - #12551: Propagate classification of recursive bindings from Rec_check
   (Vincent Laviron, review by Gabriel Scherer)
 
+- #1809: rewrite `compare x y op 0` to `x op y` when values are integers
+  (Xavier Clerc, review by Gabriel Scherer and Vincent Laviron)
+
 ### Standard library:
 
 * #10775, #12499: Half-precision floating-point elements in Bigarray.
@@ -857,6 +860,129 @@ Some of those changes will benefit all OCaml packages.
 
 - #11134: Optimise 'include struct' in more cases
   (Stephen Dolan, review by Leo White and Vincent Laviron)
+
+### Standard library:
+
+* #11565: Enable -strict-formats by default. Some incorrect format
+  specifications (for `printf`) where silently ignored and now fail.
+  Those new failures occur at compile-time, except if you use advanced
+  format features like `%(...%)` that parse format strings dynamically.
+  Pass -no-strict-formats to revert to the previous lenient behavior.
+  (Nicolás Ojeda Bär, review by David Allsopp)
+
+- #11883, #11884: Update documentation for In_channel and Out_channel
+  with examples and sections to group related functions.
+  (Kiran Gopinathan, review by Daniel Bünzli and Xavier Leroy)
+
+- #11878, #11965: Prevent seek_in from marking buffer data as valid after
+  closing the channel. This could lead to inputting uninitialized bytes.
+  (Samuel Hym, review by Xavier Leroy and Olivier Nicole)
+
+- #11848: Add `List.find_mapi`, `List.find_index`, `Seq.find_mapi`,
+  `Seq.find_index`, `Array.find_mapi`, `Array.find_index`,
+  `Float.Array.find_opt`, `Float.Array.find_index`, `Float.Array.find_map`,
+  `Float.Array.find_mapi`.
+  (Sima Kinsart, review by Daniel Bünzli and Nicolás Ojeda Bär)
+
+- #11859: Make Stdlib.(@) and List.append tail-recursive and faster.
+  (Jeremy Yallop, review by Daniel Bünzli, Anil Madhavapeddy, and Bannerets)
+
+- #11856: Rewrite List.concat_map using TRMC, making it faster
+  as well as tail-recursive.
+  (Jeremy Yallop, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #11836, #11837: Add `Array.map_inplace`, `Array.mapi_inplace`,
+  `Float.Array.mapi_inplace` and `Float.Array.mapi_inplace`.
+  (Léo Andrès, review by Gabriel Scherer, KC Sivaramakrishnan and
+  Nicolás Ojeda Bär)
+
+- #11410: Add Set.to_list, Map.to_list, Map.of_list, Map.add_to_list,
+  (Daniel Bünzli, review by Nicolás Ojeda Bär and Gabriel Scherer)
+
+- #11128: Add In_channel.isatty, Out_channel.isatty.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer and Florian Angeletti)
+
+- #10859: Add `Format.pp_print_iter` and `Format.pp_print_array`.
+  (Léo Andrès and Daniel Bünzli, review by David Allsopp and Hugo Heuzard)
+
+- #10789: Add `Stack.drop`
+  (Léo Andrès, review by Gabriel Scherer)
+
+* #10899: Change Stdlib.nan from signaling NaN to quiet NaN.
+  (Greta Yorsh, review by Xavier Leroy, Guillaume Melquiond and
+  Gabriel Scherer)
+
+- #10967: Add Filename.temp_dir.
+  (David Turner, review by Anil Madhavapeddy, Valentin Gatien-Baron, Nicolás
+  Ojeda Bär, Gabriel Scherer, and Daniel Bünzli)
+
+- #11026, #11667, #11858: Rename the type of the accumulator
+  of fold functions to 'acc:
+  fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
+  fold_right : ('a -> 'acc -> 'acc) -> 'a list -> 'acc -> 'acc
+  fold_left_map : ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
+  ...
+  (Valentin Gatien-Baron and Francois Berenger,
+  review by Gabriel Scherer and Nicolás Ojeda Bär)
+
+- #11246: Add "hash" and "seeded_hash" functions to Bool, Int, Char, Float,
+  Int32, Int64, and Nativeint.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
+- #11354: Hashtbl.find_all is now tail-recursive.
+  (Fermín Reig, review by Gabriel Scherer)
+
+- #11500: Make Hashtbl.mem non-allocating.
+  (Simmo Saan, review by Nicolás Ojeda Bär)
+
+- #11362: Rewrite List.map, List.mapi and List.map2 using TRMC, making them
+  faster as well as tail-recursive.
+  (Nicolás Ojeda Bär, review by Gabriel Scherer)
+
+- #11412: Add Sys.is_regular_file
+  (Xavier Leroy, review by Anil Madhavapeddy, Nicolás Ojeda Bär, David Allsopp)
+
+- #11402: Rewrite List.init, List.filter, List.filteri, List.filter_map and
+  List.of_seq using TRMC instead of an accumulator, making them faster and
+  halving memory usage while remaining tail-recursive.
+  (Nicolás Ojeda Bär, review by Xavier Leroy and Gabriel Scherer)
+
+- #11476: Add examples in documentation of Hashtbl, Queue, Atomic, Format
+  (Simon Cruanes, review by Yotam Barnoy, Gabriel Scherer, Daniel Bünzli,
+   Ulugbek Abdullaev, and Nicolás Ojeda Bär)
+
+- #11488: Add Mutex.protect for resource-safe critical sections protected by
+  a mutex.
+  (Simon Cruanes, review by Gabriel Scherer, Xavier Leroy,
+   Guillaume Munch-Maccagnoni)
+
+- #11581: Add type equality witness `type (_, _) eq = Equal: ('a, 'a) eq` in a
+  new module Stdlib.Type.
+  (Nicolás Ojeda Bär, review by Daniel Bünzli, Jacques Garrigue, Florian
+  Angeletti, Alain Frisch, Gabriel Scherer, Jeremy Yallop and Xavier Leroy)
+
+- #11322, #11329: serialization functions Random.State.{of,to}_binary_string
+  between Random.State.t and string
+  (Gabriel Scherer, report by Yotam Barnoy,
+   review by Daniel Bünzli, Damien Doligez, Hugo Heuzard and Xavier Leroy)
+
+- #11830: Add Type.Id
+  (Daniel Bünzli, review by Jeremy Yallop, Gabriel Scherer, Wiktor Kuchta,
+   Nicolás Ojeda Bär)
+
+- #11843: Add `In_channel.input_lines` and `In_channel.fold_lines`.
+  (Xavier Leroy, review by Nicolás Ojeda Bär and Wiktor Kuchta).
+
+- #11892: Document the semantic differences of Unix.exec* between Unix and
+  Windows.
+  (Boris Yakobowski, review by Daniel Bünzli, Gabriel Scherer and Nicolás Ojeda
+  Bär)
+
+- #12006, #12064: Add `Marshal.Compression` flag to `Marshal.to_*` functions,
+  causing marshaled data to be compressed using ZSTD.
+  (Xavier Leroy, review by Edwin Török and Gabriel Scherer, fix by Damien
+   Doligez)
+>>>>>>> 9fc99e9985 (Simplify calls to `caml_int_compare` (and similar functions).)
 
 ### Other libraries:
 
