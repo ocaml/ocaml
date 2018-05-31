@@ -68,7 +68,7 @@ type lexbuf =
    Lexers can optionally maintain the [lex_curr_p] and [lex_start_p]
    position fields.  This "position tracking" mode is the default, and
    it corresponds to passing [~with_position:true] to functions that
-   create lexer buffer. In this mode, the lexing engine and lexer
+   create lexer buffers. In this mode, the lexing engine and lexer
    actions are co-responsible for properly updating the position
    fields, as described in the next paragraph.  When the mode is
    explicitly disabled (with [~with_position:false]), the lexing
@@ -110,8 +110,8 @@ val from_function : ?with_positions:bool -> (bytes -> int -> int) -> lexbuf
 
 val with_positions : lexbuf -> bool
 (** Tell whether the lexer buffer keeps track of position fields
-    [lex_curr_p] / [lex_start_p], as determined by the correspond
-    optional argument for function that create lexer buffers
+    [lex_curr_p] / [lex_start_p], as determined by the corresponding
+    optional argument for functions that create lexer buffers
     (whose default value is [true]).
 
     When [with_positions] is [false], lexer actions should not
