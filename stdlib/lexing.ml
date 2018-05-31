@@ -145,7 +145,7 @@ let zero_pos = {
   pos_cnum = 0;
 }
 
-let from_function f =
+let from_function ?(with_positions = true) f =
   { refill_buff = lex_refill f (Bytes.create 512);
     lex_buffer = Bytes.create 1024;
     lex_buffer_len = 0;
@@ -156,14 +156,14 @@ let from_function f =
     lex_last_action = 0;
     lex_mem = [||];
     lex_eof_reached = false;
-    lex_start_p = zero_pos;
-    lex_curr_p = zero_pos;
+    lex_start_p = if with_positions then zero_pos else dummy_pos;
+    lex_curr_p = if with_positions then zero_pos else dummy_pos;
   }
 
-let from_channel ic =
-  from_function (fun buf n -> input ic buf 0 n)
+let from_channel ?with_positions ic =
+  from_function ?with_positions (fun buf n -> input ic buf 0 n)
 
-let from_string s =
+let from_string ?(with_positions = true) s =
   { refill_buff = (fun lexbuf -> lexbuf.lex_eof_reached <- true);
     lex_buffer = Bytes.of_string s; (* have to make a copy for compatibility
                                        with unsafe-string mode *)
@@ -175,9 +175,11 @@ let from_string s =
     lex_last_action = 0;
     lex_mem = [||];
     lex_eof_reached = true;
-    lex_start_p = zero_pos;
-    lex_curr_p = zero_pos;
+    lex_start_p = if with_positions then zero_pos else dummy_pos;
+    lex_curr_p = if with_positions then zero_pos else dummy_pos;
   }
+
+let with_positions lexbuf = lexbuf.lex_curr_p != dummy_pos
 
 let lexeme lexbuf =
   let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
