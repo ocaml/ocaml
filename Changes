@@ -12,6 +12,11 @@ Working version
 
 ### Standard library:
 
+- GPR#1590: ocamllex-generated lexers can be instructed not to update
+  their lex_curr_p/lex_start_p fields, resulting in a significant
+  performance gain when those fields are not required
+  (Alain Frisch, Jérémie Dimino)
+
 - MPR#7795, GPR#1782: Fix off-by-one error in Weak.create
   (KC Sivaramakrishnan)
 
@@ -90,7 +95,7 @@ Working version
   (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
 
 - GPR#1797: remove the deprecated Makefile.nt files
-  (Sébastien Hinderer, review by Nicolas Ojeda Bar)  
+  (Sébastien Hinderer, review by Nicolas Ojeda Bar)
 
 ### Internal/compiler-libs changes:
 
@@ -391,12 +396,6 @@ OCaml 4.07
 
 - GPR#1585: optimize output of "ocamllex -ml"
   (Alain Frisch, review by Frédéric Bour and Gabriel Scherer)
-
-- GPR#1590: ocamllex-generated lexers can be instructed not to update their
-  lex_curr_p/lex_start_p by setting lex_curr_p to Lexing.dummy_pos,
-  resuting in a significant performance gain when those fields are not
-  required
-  (Alain Frisch, Jérémie Dimino)
 
 - GPR#1667: add command-line options -no-propt, -no-version, -no-time,
   -no-breakpoint and -topdirs-path to ocamldebug
