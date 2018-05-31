@@ -804,6 +804,19 @@ static void domain_terminate() {
     caml_finish_marking();
 
     caml_plat_lock(&s->lock);
+
+    /* The interaction of termination and major GC is quite subtle.
+     *
+     * At the end of the major GC, we decide the number of domains to mark and
+     * sweep for the next cycle. If the following [handle_incoming] participates
+     * in a major GC cycle, then we need to finish marking and sweeping again in
+     * order to decrement the globals [num_domains_to_mark] and
+     * [num_domains_to_sweep] (see major_gc.c). Luckily, if the following
+     * [handle_incoming] does participate in a major GC cycle, then
+     * [Caml_state->sweeping_done] will be set to 0 making conditional check to
+     * fail, which forces this domain to finish marking and sweeping again.
+     */
+
     if (handle_incoming(s) == 0 &&
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
