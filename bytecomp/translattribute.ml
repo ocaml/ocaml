@@ -196,10 +196,12 @@ let get_and_remove_inlined_attribute_on_module e =
       match mod_expr.Typedtree.mod_desc with
       | Tmod_constraint (me, mt, mtc, mc) ->
         let inner_attr, me = get_and_remove me in
-        begin match attr with
-        | Some _ -> attr
-        | None -> inner_attr
-        end, Tmod_constraint (me, mt, mtc, mc)
+        let attr =
+          match attr with
+          | Some _ -> attr
+          | None -> inner_attr
+        in
+        attr, Tmod_constraint (me, mt, mtc, mc)
       | md -> attr, md
     in
     attr, { mod_expr with mod_desc; mod_attributes }
