@@ -48,6 +48,8 @@ extern uintnat caml_major_heap_increment; /* percent or words; see major_gc.c */
 extern uintnat caml_percent_free;         /*        see major_gc.c */
 extern uintnat caml_percent_max;          /*        see compact.c */
 extern uintnat caml_allocation_policy;    /*        see freelist.c */
+extern value caml_ephe_none;              /*        see weak.c */
+extern gc_phase_t caml_gc_phase;          /*        see major_gc.c */
 
 CAMLprim value caml_gc_quick_stat(value v)
 {
@@ -318,10 +320,12 @@ void caml_init_gc ()
   caml_gc_log ("Initial stack limit: %luk bytes",
                caml_max_stack_size / 1024 * sizeof (value));
   caml_setup_eventlog();
+  caml_gc_phase = Phase_sweep_and_mark_main;
   caml_init_domains(caml_params->init_minor_heap_wsz);
   #ifdef NATIVE_CODE
   caml_init_frame_descriptors();
   #endif
+
 /*
   caml_major_heap_increment = major_incr;
   caml_percent_free = norm_pfree (percent_fr);

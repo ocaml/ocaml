@@ -18,6 +18,13 @@
 
 #ifdef CAML_INTERNALS
 
+typedef enum {
+  Phase_sweep_and_mark_main,
+  Phase_mark_final,
+  Phase_sweep_ephe
+} gc_phase_t;
+extern gc_phase_t caml_gc_phase;
+
 intnat caml_major_collection_slice (intnat, intnat* left /* out */);
 void caml_finish_sweeping(void);
 void caml_finish_marking (void);
@@ -28,7 +35,6 @@ void caml_darken(void*, value, value* ignored);
 void caml_mark_root(value, value*);
 void caml_empty_mark_stack(void);
 void caml_finish_major_cycle(void);
-
 
 struct heap_stats {
   intnat pool_words;
