@@ -15,6 +15,8 @@
 
 #define CAML_INTERNALS
 
+#define DEBUG_SPECIAL
+
 /* Operations on weak arrays and ephemerons (named ephe here)*/
 
 #include <string.h>
@@ -27,13 +29,13 @@
 #include "caml/shared_heap.h"
 #include "caml/weak.h"
 
-/*
 value caml_dummy[] =
   {(value)Make_header(0,Abstract_tag, NOT_MARKABLE),
    Val_unit};
 value caml_ephe_none = (value)&caml_dummy[1];
-*/
-value caml_ephe_none = 0xDEADBEEF;
+
+#define None_val (Val_int(0))
+#define Some_tag 0
 
 /** The minor heap is considered alive.
     Outside minor and major heap, x must be black.
@@ -48,7 +50,7 @@ static inline int Is_Dead_during_clean(value x)
 static inline int Must_be_Marked_during_mark (value x)
 {
   CAMLassert (x != caml_ephe_none);
-  CAMLassert (caml_gc_phase == Phase_sweep_and_mark_main);
+  CAMLassert (caml_gc_phase != Phase_sweep_ephe);
   return Is_block (x) && !Is_minor(x);
 }
 
@@ -76,7 +78,19 @@ CAMLprim value caml_ephe_create (value len)
 
 CAMLprim value caml_weak_create (value len)
 {
+#ifdef DEBUG_SPECIAL
+  mlsize_t size, i;
+  value res;
+
+  size = Long_val (len) + 1 /* weak_list */ + 1 /* the value */;
+  if (size <= 0 || size > Max_wosize) caml_invalid_argument ("Weak.create");
+  res = caml_alloc_shr (size, 0);
+  for (i = 1; i < size; i++)
+    caml_initialize_field(res, i, None_val);
+  return res;
+#else
   return caml_ephe_create(len);
+#endif
 }
 
 /**
@@ -108,9 +122,6 @@ CAMLprim value caml_weak_create (value len)
      We must always try to clean the ephemerons.
 
  */
-
-#define None_val (Val_int(0))
-#define Some_tag 0
 
 /* If we are in Phase_sweep_ephe we need to check if the key
    that is going to disappear is dead and so should trigger a cleaning
@@ -180,13 +191,31 @@ CAMLprim value caml_ephe_unset_key (value e, value n)
 
 value caml_ephe_set_key_option (value e, value n, value el)
 {
-  if (el != None_val && Is_block (el))
+  if (el != None_val && Is_block (el)) {
     return caml_ephe_set_key (e, n, el);
-  return caml_ephe_unset_key (e, Op_val(e)[0]);
+  } else {
+    return caml_ephe_unset_key (e, n);
+  }
 }
 
-CAMLprim value caml_weak_set (value e, value n, value el){
-  return caml_ephe_set_key_option(e,n,el);
+CAMLprim value caml_weak_set (value ar, value n, value el)
+{
+#ifdef DEBUG_SPECIAL
+  CAMLparam3(ar,n,el);
+  mlsize_t offset = Long_val (n) + 2;
+  if (offset < 2 || offset >= Wosize_val (ar)){
+    caml_invalid_argument ("Weak.set");
+  }
+  if (el != None_val && Is_block (el)){
+    CAMLassert (Wosize_val (el) == 1);
+    caml_modify_field (ar, offset, Field (el, 0));
+  }else{
+    caml_modify_field (ar, offset, None_val);
+  }
+  CAMLreturn(Val_unit);
+#else
+  return caml_ephe_set_key_option(ar,n,el);
+#endif
 }
 
 CAMLprim value caml_ephe_set_data (value e, value el)
@@ -223,7 +252,7 @@ CAMLprim value caml_ephe_get_key (value e, value n)
       res = None_val;
     } else {
       elt = Op_val(e)[offset];
-      if (caml_gc_phase == Phase_sweep_and_mark_main &&
+      if (caml_gc_phase != Phase_sweep_ephe &&
           Must_be_Marked_during_mark(elt)) {
         caml_darken (0, elt, 0);
       }
@@ -236,9 +265,28 @@ CAMLprim value caml_ephe_get_key (value e, value n)
   CAMLreturn (res);
 }
 
-CAMLprim value caml_weak_get (value e, value n)
+CAMLprim value caml_weak_get (value ar, value n)
 {
-  return caml_ephe_get_key(e, n);
+#ifdef DEBUG_SPECIAL
+  CAMLparam2(ar, n);
+  mlsize_t offset = Long_val (n) + 2;
+  CAMLlocal2 (res, elt);
+  if (offset < 2 || offset >= Wosize_val (ar)){
+    caml_invalid_argument ("Weak.get_key");
+  }
+  caml_read_field(ar, offset, &elt);
+  if (elt == None_val){
+    res = None_val;
+  }else{
+    res = caml_alloc_small (1, Some_tag);
+    caml_initialize_field(res, 0, elt);
+  }
+#else
+  CAMLparam2(ar, n);
+  CAMLlocal1(res);
+  res = caml_ephe_get_key(ar, n);
+#endif
+  CAMLreturn (res);
 }
 
 CAMLprim value caml_ephe_get_data (value e)
@@ -255,7 +303,7 @@ CAMLprim value caml_ephe_get_data (value e)
     if (elt == caml_ephe_none) {
       res = None_val;
     } else {
-      if (caml_gc_phase == Phase_sweep_and_mark_main &&
+      if (caml_gc_phase != Phase_sweep_ephe &&
           Must_be_Marked_during_mark(elt)) {
         caml_darken (0, elt, 0);
       }
@@ -357,8 +405,7 @@ void caml_ephe_clean (value v) {
           } else {
             Op_val(v)[i] = child = f;
             if (Is_block (f) && Is_young (f))
-              add_to_ephe_ref_table(&Caml_state->remembered_set->ephe_ref,
-                                    v, i);
+              add_to_ephe_ref_table(&Caml_state->remembered_set->ephe_ref, v, i);
             goto ephemeron_again;
           }
         }

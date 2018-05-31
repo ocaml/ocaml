@@ -216,6 +216,11 @@ static __thread intnat caml_bcodcount;
 
 static caml_root raise_unhandled;
 
+static void check_value (void* state, value v, value* ignored)
+{
+  CAMLassert (!Is_block(v) || v >> 32 > 0);
+}
+
 /* The interpreter itself */
 value caml_interprete(code_t prog, asize_t prog_size)
 {
@@ -299,6 +304,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   env = Atom(0);
   accu = Val_int(0);
 
+
 #ifdef THREADED_CODE
 #ifdef DEBUG
  next_instr:
@@ -325,6 +331,8 @@ value caml_interprete(code_t prog, asize_t prog_size)
       fflush(stdout);
     };
     CAMLassert(sp == domain_state->stack_high || caml_on_current_stack(sp));
+
+    check_value(0, sp[0], 0);
 #endif
     curr_instr = *pc++;
 

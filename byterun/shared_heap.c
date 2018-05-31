@@ -532,8 +532,7 @@ static void verify_object(struct heap_verify_state* st, value v) {
   if (Has_status_hd(Hd_val(v), NOT_MARKABLE)) return;
   st->objs++;
 
-  // caml_gc_log ("verify_object: v=0x%lx hd=0x%lx tag=%u", v, Hd_val(v), Tag_val(v));
-  Assert (!Is_minor(v));
+  //caml_gc_log ("verify_object: v=0x%lx hd=0x%lx tag=%u", v, Hd_val(v), Tag_val(v));
   if (!Is_minor(v)) {
     Assert(Has_status_hd(Hd_val(v), global.UNMARKED));
   }
