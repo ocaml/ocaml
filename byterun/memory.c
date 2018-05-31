@@ -425,6 +425,10 @@ int is_foreign(value v) {
 int is_young(value v) {
   return Is_young(v);
 }
+
+int has_status_hd(value v, status s) {
+  return Has_status_hd(v,s);
+}
 #endif
 
 /* Global memory pool.
