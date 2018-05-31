@@ -188,11 +188,25 @@ let get_and_remove_inlined_attribute e =
   inlined, { e with exp_attributes }
 
 let get_and_remove_inlined_attribute_on_module e =
-  let attr, mod_attributes =
-    find_attribute is_inlined_attribute e.mod_attributes
+  let rec get_and_remove mod_expr =
+    let attr, mod_attributes =
+      find_attribute is_inlined_attribute mod_expr.mod_attributes
+    in
+    let attr, mod_desc =
+      match mod_expr.Typedtree.mod_desc with
+      | Tmod_constraint (me, mt, mtc, mc) ->
+        let inner_attr, me = get_and_remove me in
+        begin match attr with
+        | Some _ -> attr
+        | None -> inner_attr
+        end, Tmod_constraint (me, mt, mtc, mc)
+      | md -> attr, md
+    in
+    attr, { mod_expr with mod_desc; mod_attributes }
   in
+  let attr, mod_expr = get_and_remove e in
   let inlined = parse_inline_attribute attr in
-  inlined, { e with mod_attributes }
+  inlined, mod_expr
 
 let get_and_remove_specialised_attribute e =
   let attr, exp_attributes =
