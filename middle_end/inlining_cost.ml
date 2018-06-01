@@ -182,8 +182,7 @@ module Threshold = struct
     | Never_inline, Never_inline -> true
     | Can_inline_if_no_larger_than i1, Can_inline_if_no_larger_than i2 ->
       i1 = i2
-    | Never_inline, Can_inline_if_no_larger_than _
-    | Can_inline_if_no_larger_than _, Never_inline ->
+    | (Never_inline | Can_inline_if_no_larger_than _), _ ->
       false
 
 end
