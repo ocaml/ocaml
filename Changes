@@ -120,7 +120,7 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
-- GPR#????: use bit-pattern comparison when meeting float approximations
+- GPR#1810: use bit-pattern comparison when meeting float approximations
   (Xavier Clerc, report by Christophe Troestler, review by ???)
 
 OCaml 4.07
