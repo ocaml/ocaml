@@ -26,12 +26,12 @@ type t =
   | String of string
   | Immutable_string of string
 
+let compare_floats x1 x2 =
+  (* It is important to compare the bit patterns here, so as not to
+     be subject to bugs such as GPR#295. *)
+  Int64.compare (Int64.bits_of_float x1) (Int64.bits_of_float x2)
+
 let compare (x : t) (y : t) =
-  let compare_floats x1 x2 =
-    (* It is important to compare the bit patterns here, so as not to
-       be subject to bugs such as GPR#295. *)
-    Int64.compare (Int64.bits_of_float x1) (Int64.bits_of_float x2)
-  in
   let rec compare_float_lists l1 l2 =
     match l1, l2 with
     | [], [] -> 0
