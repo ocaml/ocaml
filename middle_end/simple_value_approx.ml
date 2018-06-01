@@ -655,6 +655,12 @@ let equal_boxed_int (type t1) (type t2)
   | Nativeint, Nativeint -> Nativeint.equal i1 i2
   | _ -> false
 
+let compare_floats f1 f2 =
+  match f1, f2 with
+  | None, None -> true
+  | None, Some _ | Some _, None -> false
+  | Some f1, Some f2 -> Allocated_const.compare_floats f1 f2 = 0
+
 (* Closures and set of closures descriptions cannot be merged.
 
    let f x =
@@ -685,7 +691,7 @@ let rec meet_descr ~really_import_approx d1 d2 = match d1, d2 with
       d1
   | Value_extern e1, Value_extern e2 when Export_id.equal e1 e2 ->
       d1
-  | Value_float i, Value_float j when i = j ->
+  | Value_float i, Value_float j when compare_floats i j ->
       d1
   | Value_boxed_int (bi1, i1), Value_boxed_int (bi2, i2) when
       equal_boxed_int bi1 i1 bi2 i2 ->
