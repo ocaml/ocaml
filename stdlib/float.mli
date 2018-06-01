@@ -300,6 +300,10 @@ val max : float -> float -> float
 (** [max x y] returns the maximum of [x] and [y].  It returns [nan]
    when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.] *)
 
+val minmax : float -> float -> float * float
+(** [minmax x y] returns [(x, y)] is [x <= y] and [(y, x)] otherwise.
+   It returns [(nan, nan)] when [x] or [y] is [nan]. *)
+
 val nanmin : t -> t -> t
 (** [nanmin x y] returns the minimum of [x] and [y] ignoring [nan] except
    if both [x] and [y] are [nan], in which case [nan] is returned.
