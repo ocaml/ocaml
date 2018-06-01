@@ -157,13 +157,14 @@ has excellent documentation.
 
 === Complete file listing
 
+  BOOTSTRAP.adoc::        instructions for bootstrapping
   Changes::               what's new with each release
-  configure::             configure script
   CONTRIBUTING.md::       how to contribute to OCaml
   HACKING.adoc::          this file
   INSTALL.adoc::          instructions for installation
   LICENSE::               license and copyright notice
   Makefile::              main Makefile
+  Makefile.common::       common Makefile definitions
   Makefile.tools::        used by manual/ and testsuite/ Makefiles
   README.adoc::           general information on the compiler distribution
   README.win32.adoc::     general information on the Windows ports of OCaml
@@ -175,6 +176,7 @@ has excellent documentation.
   byterun/::              bytecode interpreter and runtime system
   compilerlibs/::         the OCaml compiler as a library
   config/::               configuration files
+  configure::             configure script
   debugger/::             source-level replay debugger
   driver/::               driver code for the compilers
   emacs/::                editing mode and debugger interface for GNU Emacs
@@ -185,6 +187,7 @@ has excellent documentation.
   manual/::               system to generate the manual
   middle_end/::           the flambda optimisation phase
   ocamldoc/::             documentation generator
+  ocamltest/::            test driver
   otherlibs/::            several additional libraries
   parsing/::              syntax analysis -- see link:parsing/HACKING.adoc[]
   stdlib/::               standard library
@@ -223,12 +226,12 @@ installation, the following targets may be of use:
 === Bootstrapping
 
 The OCaml compiler is bootstrapped. This means that
-previously-compiled bytecode versions of the compiler, dependency
-generator and lexer are included in the repository under the
+previously-compiled bytecode versions of the compiler and lexer are
+included in the repository under the
 link:boot/[] directory. These bytecode images are used once the
 bytecode runtime (which is written in C) has been built to compile the
 standard library and then to build a fresh compiler. Details can be
-found in link:INSTALL.adoc#bootstrap[INSTALL.adoc].
+found in link:BOOTSTRAP.adoc[].
 
 === Continuous integration
 

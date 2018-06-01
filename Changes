@@ -12,6 +12,11 @@ Working version
 
 ### Standard library:
 
+- GPR#1590: ocamllex-generated lexers can be instructed not to update
+  their lex_curr_p/lex_start_p fields, resulting in a significant
+  performance gain when those fields are not required
+  (Alain Frisch, Jérémie Dimino)
+
 - MPR#7795, GPR#1782: Fix off-by-one error in Weak.create
   (KC Sivaramakrishnan)
 
@@ -91,6 +96,10 @@ Working version
 
 - GPR#1797: remove the deprecated Makefile.nt files
   (Sébastien Hinderer, review by Nicolas Ojeda Bar)
+
+- GPR#1805: fix the bootstrap procedure and its documentation
+  (Sébastien Hinderer, Xavier Leroy and Damien Doligez; review by
+  Gabriel Scherer)
 
 ### Internal/compiler-libs changes:
 
@@ -664,6 +673,9 @@ OCaml 4.07
 - GPR#1808: handle `[@inlined]` attributes under a module constraint
   (Xavier Clerc, review by Leo White)
 
+- GPR#1810: use bit-pattern comparison when meeting float approximations
+  (Xavier Clerc, report by Christophe Troestler, review by Nicolás Ojeda Bär
+   and Gabriel Scherer)
 
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------

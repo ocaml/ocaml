@@ -15,21 +15,6 @@
 
 # The main Makefile
 
-# Hard bootstrap how-to:
-# (only necessary if you remove or rename some primitive)
-#
-# make core     [old system -- you were in a stable state]
-# make coreboot [optional -- check state stability]
-# <add new primitives and remove uses of old primitives>
-# make clean && make core
-# if the above fails:
-#     <debug your changes>
-#     make clean && make core
-# make coreboot [intermediate state with both old and new primitives]
-# <remove old primitives>
-# make clean && make runtime && make coreall
-# make coreboot [new system -- now in a stable state]
-
 include config/Makefile
 include Makefile.common
 
@@ -398,7 +383,7 @@ coldstart:
 
 # Recompile the core system using the bootstrap compiler
 .PHONY: coreall
-coreall:
+coreall: runtime
 	$(MAKE) ocamlc
 	$(MAKE) ocamllex ocamlyacc ocamltools library
 
@@ -408,45 +393,38 @@ core:
 	$(MAKE) coldstart
 	$(MAKE) coreall
 
-# Save the current bootstrap compiler
-.PHONY: backup
-backup:
-	$(MKDIR) boot/Saved
-	if test -d $(MAXSAVED); then rm -r $(MAXSAVED); fi
-	mv boot/Saved boot/Saved.prev
-	mkdir boot/Saved
-	mv boot/Saved.prev boot/Saved/Saved.prev
-	cp boot/ocamlrun$(EXE) boot/Saved
-	cd boot; mv ocamlc ocamllex ocamlyacc$(EXE) Saved
-	cd boot; cp $(LIBFILES) Saved
-
-# Restore the saved bootstrap compiler if a problem arises
-.PHONY: restore
-restore:
-	cd boot; mv Saved/* .; rmdir Saved; mv Saved.prev Saved
-
 # Check if fixpoint reached
 .PHONY: compare
 compare:
 	@if $(CAMLRUN) tools/cmpbyt boot/ocamlc ocamlc \
          && $(CAMLRUN) tools/cmpbyt boot/ocamllex lex/ocamllex; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
-	else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	else \
+	  echo "Fixpoint not reached, try one more bootstrapping cycle."; \
+	  exit 1; \
 	fi
+
+# Promote a compiler
+
+PROMOTE ?= cp
+
+.PHONY: promote-common
+promote-common:
+	$(PROMOTE) ocamlc boot/ocamlc
+	$(PROMOTE) lex/ocamllex boot/ocamllex
+	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of cross compiler
 # (Runs on the old runtime, produces code for the new runtime)
 .PHONY: promote-cross
-promote-cross:
-	$(CAMLRUN) tools/stripdebug ocamlc boot/ocamlc
-	$(CAMLRUN) tools/stripdebug lex/ocamllex boot/ocamllex
-	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cd stdlib; cp $(LIBFILES) ../boot
+promote-cross: promote-common
 
 # Promote the newly compiled system to the rank of bootstrap compiler
 # (Runs on the new runtime, produces code for the new runtime)
 .PHONY: promote
-promote: promote-cross
+promote: PROMOTE = $(CAMLRUN) tools/stripdebug
+promote: promote-common
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 
 # Remove old bootstrap compilers
@@ -485,8 +463,6 @@ opt.opt:
 # Core bootstrapping cycle
 .PHONY: coreboot
 coreboot:
-# Save the original bootstrap compiler
-	$(MAKE) backup
 # Promote the new compiler but keep the old runtime
 # This compiler runs on boot/ocamlrun and produces bytecode for
 # byterun/ocamlrun
@@ -507,8 +483,7 @@ coreboot:
 # Recompile the system using the bootstrap compiler
 
 .PHONY: all
-all: runtime
-	$(MAKE) coreall
+all: coreall
 	$(MAKE) ocaml
 	$(MAKE) otherlibraries $(WITH_DEBUGGER) $(WITH_OCAMLDOC) ocamltest
 
@@ -518,7 +493,6 @@ all: runtime
 .PHONY: bootstrap
 bootstrap: coreboot
 	$(MAKE) all
-	$(MAKE) compare
 
 # Compile everything the first time
 
@@ -1300,7 +1274,7 @@ toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
 # The numeric opcodes
 
 bytecomp/opcodes.ml: byterun/caml/instruct.h tools/make_opcodes
-	$(CAMLRUN) tools/make_opcodes -opcodes < $< > $@
+	byterun/ocamlrun tools/make_opcodes -opcodes < $< > $@
 
 tools/make_opcodes: tools/make_opcodes.mll
 	$(MAKE) -C tools make_opcodes
