@@ -52,24 +52,34 @@ let () =
   assert(Float.signbit neg_infinity);
 
   assert(Float.min 1. 2. = 1.);
-  assert(Float.min 1. Float.nan = 1.);
-  assert(Float.min Float.nan 2. = 2.);
+  assert(Float.min 2. 1. = 1.);
+  assert(Float.(is_nan(min 1. nan)));
+  assert(Float.(is_nan(min nan 2.)));
   assert(Float.(is_nan(min nan nan)));
+  assert(1. /. Float.min (-0.) (+0.) = neg_infinity);
+  assert(1. /. Float.min (+0.) (-0.) = neg_infinity);
 
   assert(Float.max 1. 2. = 2.);
-  assert(Float.max 1. Float.nan = 1.);
-  assert(Float.max Float.nan 2. = 2.);
+  assert(Float.max 2. 1. = 2.);
+  assert(Float.(is_nan(max 1. nan)));
+  assert(Float.(is_nan(max nan 2.)));
   assert(Float.(is_nan(max nan nan)));
+  assert(1. /. Float.max (-0.) (+0.) = infinity);
+  assert(1. /. Float.max (+0.) (-0.) = infinity);
 
   assert(Float.nanmin 1. 2. = 1.);
-  assert(Float.(is_nan(nanmin 1. Float.nan)));
-  assert(Float.(is_nan(nanmin nan 2.)));
+  assert(Float.(nanmin 1. nan = 1.));
+  assert(Float.(nanmin nan 2. = 2.));
   assert(Float.(is_nan(nanmin nan nan)));
+  assert(1. /. Float.nanmin (-0.) (+0.) = neg_infinity);
+  assert(1. /. Float.nanmin (+0.) (-0.) = neg_infinity);
 
-  assert(Float.max 1. 2. = 2.);
-  assert(Float.(is_nan(nanmax 1. nan)));
-  assert(Float.(is_nan(nanmax nan 2.)));
-  assert(Float.(is_nan(max nan nan)));
+  assert(Float.nanmax 1. 2. = 2.);
+  assert(Float.(nanmax 1. nan = 1.));
+  assert(Float.(nanmax nan 2. = 2.));
+  assert(Float.(is_nan(nanmax nan nan)));
+  assert(1. /. Float.nanmax (-0.) (+0.) = infinity);
+  assert(1. /. Float.nanmax (+0.) (-0.) = infinity);
 ;;
 
 let () = print_endline "OK"

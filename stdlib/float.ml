@@ -106,19 +106,25 @@ type t = float
 external compare : float -> float -> int = "%compare"
 let equal x y = compare x y = 0
 
-let min (x: float) (y: float) =
-  if x <= y then x (* not NaN *)
-  else if y <> y then x else y
+let[@inline] min (x: float) (y: float) =
+  if y > x || (not(signbit y) && signbit x) then
+    if is_nan y then y else x
+  else if is_nan x then x else y
 
-let max (x: float) (y: float) =
-  if x >= y then x (* not NaN *)
-  else if y <> y then x else y
+let[@inline] max (x: float) (y: float) =
+  if y > x || (not(signbit y) && signbit x) then
+    if is_nan x then x else y
+  else if is_nan y then y else x
 
-let nanmin (x: float) (y: float) =
-  if x <= y || x <> x then x else y
+let[@inline] nanmin (x: float) (y: float) =
+  if y > x || (not(signbit y) && signbit x) then
+    if is_nan x then y else x
+  else if is_nan y then x else y
 
-let nanmax (x: float) (y: float) =
-  if x >= y || x <> x then x else y
+let[@inline] nanmax (x: float) (y: float) =
+  if y > x || (not(signbit y) && signbit x) then
+    if is_nan y then x else y
+  else if is_nan x then y else x
 
 external seeded_hash_param : int -> int -> int -> float -> int
                            = "caml_hash" [@@noalloc]

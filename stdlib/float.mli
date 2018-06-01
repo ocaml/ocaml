@@ -293,20 +293,22 @@ val equal: t -> t -> bool
 (** The equal function for floating-point numbers, compared using {!compare}. *)
 
 val min : t -> t -> t
-(** [min x y] returns the minimum of [x] and [y] ignoring [nan] except
-   if both [x] and [y] are [nan], in which case [nan] is returned.  *)
+(** [min x y] returns the minimum of [x] and [y].  It returns [nan]
+   when [x] or [y] is [nan].  Moreover [min (-0.) (+0.) = -0.] *)
 
-val max : t -> t -> t
-(** [max x y] returns the maximum of [x] and [y] ignoring [nan] except
-   if both [x] and [y] are [nan], in which case [nan] is returned. *)
+val max : float -> float -> float
+(** [max x y] returns the maximum of [x] and [y].  It returns [nan]
+   when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.] *)
 
 val nanmin : t -> t -> t
-(** [nanmin x y] returns the minimum of [x] and [y].  It returns [nan]
-   when [x] or [y] is [nan]. *)
+(** [nanmin x y] returns the minimum of [x] and [y] ignoring [nan] except
+   if both [x] and [y] are [nan], in which case [nan] is returned.
+   Moreover [nanmin (-0.) (+0.) = -0.]  *)
 
 val nanmax : t -> t -> t
-(** [nanmax x y] returns the maximum of [x] and [y].  It returns [nan]
-   when [x] or [y] is [nan]. *)
+(** [nanmax x y] returns the maximum of [x] and [y] ignoring [nan] except
+   if both [x] and [y] are [nan], in which case [nan] is returned.
+   Moreover [nanmax (-0.) (+0.) = +0.] *)
 
 
 val hash: t -> int
