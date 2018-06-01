@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module A = Simple_value_approx
 module C = Inlining_cost
@@ -53,9 +54,10 @@ let const_boxed_int_expr expr t i =
   else expr, A.value_boxed_int t i, C.Benefit.zero
 
 let const_integer_comparison_expr expr (cmp : Lambda.integer_comparison) x y =
-  (* Using the [Pervasives] comparison functions here in the compiler
+  (* Using the [Stdlib] comparison functions here in the compiler
      coincides with the definitions of such functions in the code
      compiled by the user, and is thus correct. *)
+  let open! Stdlib in
   const_bool_expr expr
     (match cmp with
      | Ceq -> x = y
@@ -66,9 +68,10 @@ let const_integer_comparison_expr expr (cmp : Lambda.integer_comparison) x y =
      | Cge -> x >= y)
 
 let const_float_comparison_expr expr (cmp : Lambda.float_comparison) x y =
-  (* Using the [Pervasives] comparison functions here in the compiler
+  (* Using the [Stdlib] comparison functions here in the compiler
      coincides with the definitions of such functions in the code
      compiled by the user, and is thus correct. *)
+  let open! Stdlib in
   const_bool_expr expr
     (match cmp with
      | CFeq -> x = y

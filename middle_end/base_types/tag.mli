@@ -25,3 +25,5 @@ val to_int : t -> int
 
 val zero : t
 val object_tag : t
+
+val compare : t -> t -> int

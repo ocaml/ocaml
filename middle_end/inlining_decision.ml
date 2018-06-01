@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module A = Simple_value_approx
 module E = Inline_and_simplify_aux.Env
@@ -97,7 +98,7 @@ let inline env r ~lhs_of_application
     else if not (E.unrolling_allowed env set_of_closures_origin)
          && (Lazy.force recursive) then
       Don't_try_it S.Not_inlined.Unrolling_depth_exceeded
-    else if remaining_inlining_threshold = T.Never_inline then
+    else if T.equal remaining_inlining_threshold T.Never_inline then
       let threshold =
         match inlining_threshold with
         | T.Never_inline -> assert false
@@ -348,7 +349,7 @@ let specialise env r ~lhs_of_application
       Try_it
     else if never_specialise then
       Don't_try_it S.Not_specialised.Annotation
-    else if remaining_inlining_threshold = T.Never_inline then
+    else if T.equal remaining_inlining_threshold T.Never_inline then
       let threshold =
         match inlining_threshold with
         | T.Never_inline -> assert false

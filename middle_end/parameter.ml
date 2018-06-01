@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 [@@@ocaml.warning "+9"]
 (* Warning 9 is enabled to ensure correct update of each function when

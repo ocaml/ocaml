@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 let apply_on_subexpressions f f_named (flam : Flambda.t) =
   match flam with

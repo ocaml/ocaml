@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 (* CR-someday pchambart to pchambart: in fact partial application doesn't
    work because there are no 'known' partial application left: they are

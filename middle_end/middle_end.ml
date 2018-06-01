@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 let _dump_function_sizes flam ~backend =
   let module Backend = (val backend : Backend_intf.S) in

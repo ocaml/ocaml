@@ -30,6 +30,7 @@ module Threshold : sig
   val add : t -> t -> t
   val sub : t -> t -> t
   val min : t -> t -> t
+  val equal : t -> t -> bool
 
 end
 

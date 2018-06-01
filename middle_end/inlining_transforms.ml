@@ -15,6 +15,7 @@
 (**************************************************************************)
 
 [@@@ocaml.warning "+a-4-9-30-40-41-42"]
+open! Int_replace_polymorphic_compare
 
 module B = Inlining_cost.Benefit
 module E = Inline_and_simplify_aux.Env
@@ -108,8 +109,8 @@ let inline_by_copying_function_body ~env ~r
   in
   let body =
     if function_body.stub &&
-       ((inline_requested <> Lambda.Default_inline)
-        || (specialise_requested <> Lambda.Default_specialise)) then
+       ((not (Lambda.equal_inline_attribute inline_requested Default_inline))
+        || (Lambda.equal_specialise_attribute specialise_requested Default_specialise)) then
       (* When the function inlined function is a stub, the annotation
          is reported to the function applications inside the stub.
          This allows to report the annotation to the application the
