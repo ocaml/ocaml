@@ -111,6 +111,9 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
+- GPR#1808: handle `[@inlined]` attributes under a module constraint
+  (Xavier Clerc, review by Leo White)
+
 OCaml 4.07
 ----------
 
