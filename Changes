@@ -121,7 +121,8 @@ Working version
   (David Allsopp, review by Sébastien Hinderer)
 
 - GPR#1810: use bit-pattern comparison when meeting float approximations
-  (Xavier Clerc, report by Christophe Troestler, review by ???)
+  (Xavier Clerc, report by Christophe Troestler, review by Nicolas Ojeda Bar
+   and Gabriel Scherer)
 
 OCaml 4.07
 ----------
