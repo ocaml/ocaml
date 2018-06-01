@@ -670,6 +670,9 @@ OCaml 4.07
   offsets, rejected by the assembler.
   (Xavier Leroy, review by Mark Shinwell)
 
+- GPR#1808: handle `[@inlined]` attributes under a module constraint
+  (Xavier Clerc, review by Leo White)
+
 - GPR#1810: use bit-pattern comparison when meeting float approximations
   (Xavier Clerc, report by Christophe Troestler, review by Nicolás Ojeda Bär
    and Gabriel Scherer)
