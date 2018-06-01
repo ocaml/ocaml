@@ -605,10 +605,9 @@ let mk_nopervasives f =
 
 let mk_match_context_rows f =
   "-match-context-rows", Arg.Int f,
+  let[@manual.ref "s:comp-options"] chapter, section = 9, 2 in
   Printf.sprintf
-  "<n> Set number of rows of context used during pattern matching\n\
-  \    compilation. Lower values cause faster compilation, but\n\
-  \    less optimized code. The default value is 32."
+  "<n>  (advanced, see manual section %d.%d.)" chapter section
 ;;
 
 let mk_use_prims f =
