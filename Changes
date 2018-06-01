@@ -127,6 +127,9 @@ Working version
 - GPR#1747: type_cases: always propagate
   (Thomas Refis, review by Jacques Garrigue)
 
+- GPR#1833: allow non-val payloads in CMM Ccatch handlers
+  (Simon Fowler, review by Xavier Clerc)
+
 ### Bug fixes:
 
 - GPR#1719: fix Pervasives.LargeFile functions under Windows
