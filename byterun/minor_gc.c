@@ -340,7 +340,7 @@ static void oldify_mopup (struct oldify_state* st)
        re < ephe_ref_table.ptr; re++) {
     /* look only at ephemeron with data in the minor heap */
     if (re->offset == CAML_EPHE_DATA_OFFSET) {
-      value *data = &Ephe_link(re->ephe);
+      value *data = &Ephe_data(re->ephe);
       if (*data != caml_ephe_none && Is_block(*data) &&
           is_in_interval(*data, young_ptr, young_end)) {
         if (Hd_val(*data) == 0) { /* Value copied to major heap */
