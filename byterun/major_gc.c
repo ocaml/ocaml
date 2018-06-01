@@ -349,7 +349,6 @@ static intnat mark(intnat budget) {
 
 void caml_darken(void* state, value v, value* ignored) {
   header_t hd;
-  /* CAMLassert (Is_markable(v)); */
   if (!Is_markable (v)) return; /* foreign stack, at least */
 
   hd = Hd_val(v);
@@ -369,59 +368,59 @@ void caml_darken(void* state, value v, value* ignored) {
 
 intnat ephe_mark (intnat budget)
 {
-  value v, data, key, prev, f;
+  value v, data, key, f, todo;
+  value* prev_linkp;
   header_t hd;
   mlsize_t size, i;
   caml_domain_state* domain_state = Caml_state;
+  int alive_data;
 
-  prev = (value) NULL;
-  while (domain_state->ephe_list_todo != (value)NULL && budget > 0) {
-    v = domain_state->ephe_list_todo;
-    domain_state->ephe_list_todo = Ephe_link(v);
+  todo = domain_state->ephe_list_todo;
+  prev_linkp = &domain_state->ephe_list_todo;
+  while (todo != (value)NULL && budget > 0) {
+    v = todo;
+    todo = Ephe_link(v);
     CAMLassert (Tag_val(v) == Abstract_tag);
-
     hd = Hd_val(v);
     data = Ephe_data(v);
-    if (data != caml_ephe_none &&
-        Is_block(data) && is_unmarked (data)) {
-      int alive_data = 1;
+    alive_data = 1;
 
-      if (is_unmarked(v)) alive_data = 0;
+    /* If ephemeron is unmarked, data is dead */
+    if (is_unmarked(v)) alive_data = 0;
 
-      size = Wosize_hd(hd);
-      for (i = CAML_EPHE_FIRST_KEY; alive_data && i < size; i++) {
-        key = Op_val(v)[i];
-      ephemeron_again:
-        if (key != caml_ephe_none && Is_block(key)) {
-          if (Tag_val(key) == Forward_tag) {
-            f = Forward_val(key);
-            if (Is_block(f)) {
-              if (Tag_val(f) == Forward_tag || Tag_val(f) == Lazy_tag ||
-                  Tag_val(f) == Double_tag) {
-                /* Do not short-circuit the pointer */
-              } else {
-                Op_val(v)[i] = key = f;
-                goto ephemeron_again;
-              }
+    size = Wosize_hd(hd);
+    for (i = CAML_EPHE_FIRST_KEY; alive_data && i < size; i++) {
+      key = Op_val(v)[i];
+    ephemeron_again:
+      if (key != caml_ephe_none && Is_block(key)) {
+        if (Tag_val(key) == Forward_tag) {
+          f = Forward_val(key);
+          if (Is_block(f)) {
+            if (Tag_val(f) == Forward_tag || Tag_val(f) == Lazy_tag ||
+                Tag_val(f) == Double_tag) {
+              /* Do not short-circuit the pointer */
+            } else {
+              Op_val(v)[i] = key = f;
+              goto ephemeron_again;
             }
           }
-          if (is_unmarked (key))
-            alive_data = 0;
         }
+        if (is_unmarked (key))
+          alive_data = 0;
       }
-      budget -= Whsize_wosize(i);
+    }
+    budget -= Whsize_wosize(i);
 
-      if (alive_data) {
-        caml_darken (0, v, 0);
-        Ephe_link(v) = domain_state->ephe_list_live;
-        domain_state->ephe_list_live = v;
-        if (prev != (value)NULL)
-          Ephe_link(prev) = domain_state->ephe_list_todo;
-      } else {
-        prev = v;
+    if (alive_data) {
+      if (data != caml_ephe_none && Is_block(data) && is_unmarked(data)) {
+        caml_darken (0, data, 0);
       }
+      Ephe_link(v) = domain_state->ephe_list_live;
+      domain_state->ephe_list_live = v;
+      *prev_linkp = todo;
     } else {
-      budget -= 1;
+      /* Leave this ephemeron on the todo list */
+      prev_linkp = &Ephe_link(v);
     }
   }
   return budget;
@@ -439,10 +438,12 @@ static intnat ephe_sweep (intnat budget)
     CAMLassert (Tag_val(v) == Abstract_tag);
 
     if (is_unmarked(v)) {
-      /* The whole array is dead */
+      /* The whole array is dead, drop this ephemeron */
       budget -= 1;
     } else {
       caml_ephe_clean(v);
+      Ephe_link(v) = domain_state->ephe_list_live;
+      domain_state->ephe_list_live = v;
       budget -= Whsize_val(v);
     }
   }
@@ -585,6 +586,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   CAMLassert(domain->state->ephe_list_todo == (value) NULL);
   domain->state->ephe_list_todo = domain->state->ephe_list_live;
   domain->state->ephe_list_live = (value) NULL;
+  domain->state->ephe_cycle = 0;
   if (domain->state->ephe_list_todo == (value) NULL)
     decrement_ephe_domains_todo();
 
