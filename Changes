@@ -90,7 +90,7 @@ Working version
   (steinuil, review by Marcello Seri, Gabriel Scherer and Florian Angeletti)
 
 - GPR#1797: remove the deprecated Makefile.nt files
-  (Sébastien Hinderer, review by Nicolas Ojeda Bar)  
+  (Sébastien Hinderer, review by Nicolas Ojeda Bar)
 
 ### Internal/compiler-libs changes:
 
@@ -110,9 +110,6 @@ Working version
 
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
-
-- GPR#1808: handle `[@inlined]` attributes under a module constraint
-  (Xavier Clerc, review by Leo White)
 
 OCaml 4.07
 ----------
@@ -663,6 +660,9 @@ OCaml 4.07
 - GPR#1774: ocamlopt for ARM could generate VFP loads and stores with bad
   offsets, rejected by the assembler.
   (Xavier Leroy, review by Mark Shinwell)
+
+- GPR#1808: handle `[@inlined]` attributes under a module constraint
+  (Xavier Clerc, review by Leo White)
 
 
 OCaml 4.06.1 (16 Feb 2018):
