@@ -84,7 +84,7 @@ static void update_ephe_info_for_marking_done ()
   caml_plat_unlock(&ephe_lock);
 }
 
-static void decrement_ephe_domains_todo ()
+static void ephe_todo_list_emptied ()
 {
   caml_plat_lock(&ephe_lock);
   --ephe_cycle_info.num_domains_todo;
@@ -104,14 +104,7 @@ static void record_ephe_marking_done (uintnat ephe_cycle)
   caml_plat_lock(&ephe_lock);
   if (ephe_cycle == ephe_cycle_info.ephe_cycle) {
     Caml_state->ephe_cycle = ephe_cycle;
-    if (Caml_state->ephe_list_todo == (value) NULL) {
-      /* This domain's ephemeron list is empty and shall no longer need to
-       * scan its ephemerons in this major gc cycle. */
-      ephe_cycle_info.num_domains_todo--;
-      atomic_fetch_add(&num_domains_to_ephe_sweep, -1);
-    } else {
-      ephe_cycle_info.num_domains_done++;
-    }
+    ephe_cycle_info.num_domains_done++;
   }
   caml_plat_unlock(&ephe_lock);
 }
@@ -423,6 +416,7 @@ intnat ephe_mark (intnat budget)
       prev_linkp = &Ephe_link(v);
     }
   }
+
   return budget;
 }
 
@@ -588,7 +582,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   domain->state->ephe_list_live = (value) NULL;
   domain->state->ephe_cycle = 0;
   if (domain->state->ephe_list_todo == (value) NULL)
-    decrement_ephe_domains_todo();
+    ephe_todo_list_emptied();
 
 
   caml_ev_end("major_gc/stw");
@@ -684,11 +678,11 @@ mark_again:
       ephe_cycle_info.ephe_cycle > domain_state->ephe_cycle) {
     saved_ephe_cycle = ephe_cycle_info.ephe_cycle;
     budget = ephe_mark(budget);
-    if (budget > 0) { /* We've scanned the entire ephe_list_todo */
-      if (domain_state->marking_done) /* No mark work left */
-        record_ephe_marking_done(saved_ephe_cycle);
-      else goto mark_again;
-    }
+    if (domain_state->ephe_list_todo == (value) NULL)
+      ephe_todo_list_emptied ();
+    else if (budget > 0 && domain_state->marking_done)
+      record_ephe_marking_done(saved_ephe_cycle);
+    else if (budget > 0) goto mark_again;
   }
 
   if (atomic_load_acq(&num_domains_to_mark) == 0 &&

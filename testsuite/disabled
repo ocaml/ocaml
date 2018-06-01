@@ -6,7 +6,7 @@
 # If an entire directory is listed, those tests won't even be run.
 
 
-# These depend on marshalling of closures or Custom_tag (#75)
+# These depend on marshalling of closures or Custom_tag objects (#75)
 tests/lib-bigarray/bigarrays.ml
 tests/lib-marshal/
 tests/lib-num/
@@ -15,20 +15,11 @@ tests/typing-objects/Tests.ml.reference
 tests/lib-dynlink-bytecode/main
 tests/lib-dynlink-native/main
 
-# These depend on weak references and finalisers (#88, #92)
-tests/misc/weaklifetime.ml
-tests/misc/weaktest.ml
-tests/misc/ephetest3.ml
-tests/misc/ephetest.ml
-tests/misc/ephetest2.ml
+# These depend on finalisers (#181)
 tests/regression/pr5233/
-tests/tool-ocaml/t340-weak.ml
-tests/tool-ocaml/t350-heapcheck.ml
-tests/misc/finaliser.ml
+tests/weak-ephe-final/weaktest.ml
+tests/weak-ephe-final/finaliser.ml
 tests/regression/pr3612/
-tests/lib-hashtbl/htbl.ml
-tests/lib-bigarray/weak_bigarray.ml
-tests/basic/opt_variants.ml
 
 # ocamldebug is broken (#34)
 tool-debugger
