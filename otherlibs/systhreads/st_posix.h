@@ -93,7 +93,7 @@ static void st_thread_join(st_thread_id thr)
 
 /* Scheduling hints */
 
-static void INLINE st_thread_yield(void)
+static INLINE void st_thread_yield(void)
 {
 #ifdef __linux__
   /* sched_yield() doesn't do what we want in Linux 2.6 and up (PR#2663) */
