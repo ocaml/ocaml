@@ -513,7 +513,7 @@ void caml_compact_heap_maybe (void)
      Estimated free percentage: FP = 100 * FW / LW
      We compact the heap if FP > caml_percent_max
   */
-  float fw, fp;
+  double fw, fp;
   CAMLassert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;
