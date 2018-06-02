@@ -100,7 +100,7 @@ module Ephemeron = struct
 
   external create: int -> t = "caml_ephe_create"
 
-  let length x = size(repr x) - 2
+  let length x = size(repr x) - 3 (* CAML_EPHE_FIRST_KEY in weak.h *)
 
   external get_key: t -> int -> obj_t option = "caml_ephe_get_key"
   external get_key_copy: t -> int -> obj_t option = "caml_ephe_get_key_copy"

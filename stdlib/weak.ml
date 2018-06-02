@@ -23,7 +23,7 @@ external create : int -> 'a t = "caml_weak_create"
  *    - Link
  *    - Domain
  *    - Data *)
-let additional_values = 3
+let additional_values = 3 (* CAML_EPHE_FIRST_KEY in weak.h *)
 
 let length x = Obj.size(Obj.repr x) - additional_values
 
