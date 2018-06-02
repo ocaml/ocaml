@@ -337,6 +337,15 @@ See section~\ref{s:custom-runtime} for more information.
 }%comp
 
 \notop{%
+\item["-match-context-rows"]
+Set the number of rows of context used for optimization during
+pattern matching compilation. The default value is 32. Lower values
+cause faster compilation, but less optimized code. This advanced
+option is meant for use in the event that a pattern-match-heavy
+program leads to significant increases in compilation time.
+}%notop
+
+\notop{%
 \item["-no-alias-deps"]
 Do not record dependencies for module aliases. See
 section~\ref{s:module-alias} for more information.

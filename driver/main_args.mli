@@ -102,6 +102,7 @@ module type Compiler_options = sig
   val _color : string -> unit
 
   val _nopervasives : unit -> unit
+  val _match_context_rows : int -> unit
   val _dtimings : unit -> unit
   val _dprofile : unit -> unit
 

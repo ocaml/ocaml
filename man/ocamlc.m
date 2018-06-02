@@ -459,6 +459,11 @@ bytecode executables produced with the option
 .B ocamlc\ \-use\-runtime
 .IR runtime-name .
 .TP
+.B \-match\-context\-rows
+Set number of rows of context used during pattern matching
+compilation. Lower values cause faster compilation, but
+less optimized code. The default value is 32.
+.TP
 .B \-no-alias-deps
 Do not record dependencies for module aliases.
 .TP

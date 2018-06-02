@@ -87,6 +87,7 @@ val output_complete_object : bool ref
 val all_ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
+val match_context_rows : int ref
 val open_modules : string list ref
 val preprocessor : string option ref
 val all_ppx : string list ref

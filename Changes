@@ -57,6 +57,10 @@ Working version
 - GPR#1748: do not error when instantiating polymorphic fields in patterns
   (Thomas Refis, review by Gabriel Scherer)
 
+- MPR#6913: new -match-context-rows option
+  to control the degree of optimization in the pattern matching compiler
+  (Dwight Guth, review by Gabriel Scherer and Luc Maranget)
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values

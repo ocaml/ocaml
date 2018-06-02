@@ -16,6 +16,7 @@ check-cross-references: cross-reference-checker
 	  $(OCAMLRUN) ./cross-reference-checker \
 	  -auxfile $(MANUAL)/texstuff/manual.aux \
 	  $(TOPDIR)/utils/warnings.ml \
+	  $(TOPDIR)/driver/main_args.ml \
 	  $(TOPDIR)/bytecomp/translmod.ml
 
 .PHONY: check-stdlib
