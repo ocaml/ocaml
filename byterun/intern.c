@@ -264,6 +264,10 @@ static void intern_free_stack(void)
 }
 
 /* Same, then raise Out_of_memory */
+CAMLnoreturn_start
+static void intern_stack_overflow(void)
+CAMLnoreturn_end;
+
 static void intern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");
