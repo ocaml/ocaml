@@ -39,8 +39,10 @@
 #include "caml/spacetime.h"
 #endif
 
+#ifndef NATIVE_CODE
 /* Initial size of bytecode stack when a thread is created (4 Ko) */
 #define Thread_stack_size (Stack_size / 4)
+#endif
 
 /* Max computation time before rescheduling, in milliseconds */
 #define Thread_timeout 50

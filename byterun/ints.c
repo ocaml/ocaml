@@ -440,8 +440,6 @@ CAMLprim value caml_int64_sub(value v1, value v2)
 CAMLprim value caml_int64_mul(value v1, value v2)
 { return caml_copy_int64(Int64_val(v1) * Int64_val(v2)); }
 
-#define Int64_min_int ((intnat) 1 << (sizeof(intnat) * 8 - 1))
-
 CAMLprim value caml_int64_div(value v1, value v2)
 {
   int64_t dividend = Int64_val(v1);

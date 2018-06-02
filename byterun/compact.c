@@ -58,7 +58,9 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 #define Whsize_ehd(h) Whsize_hd (h)
 #define Wosize_ehd(h) Wosize_hd (h)
 #define Tag_ehd(h) (((h) >> 2) & 0xFF)
+#ifdef WITH_PROFINFO
 #define Profinfo_ehd(hd) Profinfo_hd(hd)
+#endif
 #define Ecolor(w) ((w) & 3)
 
 typedef uintnat word;
