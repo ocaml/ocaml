@@ -82,8 +82,8 @@ CAMLexport void caml_sys_error(value arg)
   if (arg == NO_ARG) {
     str = caml_copy_string(err);
   } else {
-    int err_len = strlen(err);
-    int arg_len = caml_string_length(arg);
+    mlsize_t err_len = strlen(err);
+    mlsize_t arg_len = caml_string_length(arg);
     str = caml_alloc_string(arg_len + 2 + err_len);
     memmove(&Byte(str, 0), String_val(arg), arg_len);
     memmove(&Byte(str, arg_len), ": ", 2);

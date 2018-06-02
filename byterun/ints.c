@@ -286,13 +286,13 @@ static int32_t caml_swap32(int32_t x)
 }
 
 value caml_int32_direct_bswap(value v)
-{ return caml_swap32(v); }
+{ return caml_swap32((int32_t) v); }
 
 CAMLprim value caml_int32_bswap(value v)
 { return caml_copy_int32(caml_swap32(Int32_val(v))); }
 
 CAMLprim value caml_int32_of_int(value v)
-{ return caml_copy_int32(Long_val(v)); }
+{ return caml_copy_int32((int32_t) Long_val(v)); }
 
 CAMLprim value caml_int32_to_int(value v)
 { return Val_long(Int32_val(v)); }
@@ -329,7 +329,7 @@ CAMLprim value caml_int32_format(value fmt, value arg)
 
 CAMLprim value caml_int32_of_string(value s)
 {
-  return caml_copy_int32(parse_intnat(s, 32, INT32_ERRMSG));
+  return caml_copy_int32((int32_t) parse_intnat(s, 32, INT32_ERRMSG));
 }
 
 int32_t caml_int32_bits_of_float_unboxed(double d)
@@ -801,7 +801,7 @@ CAMLprim value caml_nativeint_of_int32(value v)
 { return caml_copy_nativeint(Int32_val(v)); }
 
 CAMLprim value caml_nativeint_to_int32(value v)
-{ return caml_copy_int32(Nativeint_val(v)); }
+{ return caml_copy_int32((int32_t) Nativeint_val(v)); }
 
 intnat caml_nativeint_compare_unboxed(intnat i1, intnat i2)
 {

@@ -93,7 +93,7 @@ typedef struct {
 /* Hash table of frame descriptors */
 
 extern frame_descr ** caml_frame_descriptors;
-extern int caml_frame_descriptors_mask;
+extern uintnat caml_frame_descriptors_mask;
 
 #define Hash_retaddr(addr) \
   (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)

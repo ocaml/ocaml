@@ -508,7 +508,7 @@ CAMLexport value caml_startup_code_exn(
   caml_init_code_fragments();
   caml_init_debug_info();
   if (caml_debugger_in_use) {
-    int len, i;
+    uintnat len, i;
     len = code_size / sizeof(opcode_t);
     caml_saved_code = (unsigned char *) caml_stat_alloc(len);
     for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];

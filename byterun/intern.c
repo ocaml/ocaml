@@ -54,7 +54,7 @@ static asize_t obj_counter;
 static value * intern_obj_table = NULL;
 /* The pointers to objects already seen */
 
-static unsigned int intern_color;
+static color_t intern_color;
 /* Color to assign to newly created headers */
 
 static header_t intern_header;

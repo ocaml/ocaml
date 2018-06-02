@@ -130,7 +130,7 @@ CAMLexport value caml_alloc_final (mlsize_t len, final_fun fun,
 
 CAMLexport value caml_copy_string(char const *s)
 {
-  int len;
+  mlsize_t len;
   value res;
 
   len = strlen(s);

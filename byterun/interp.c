@@ -213,7 +213,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   value env;
   intnat extra_args;
   struct longjmp_buffer * initial_external_raise;
-  int initial_sp_offset;
+  intnat initial_sp_offset;
   /* volatile ensures that initial_local_roots and saved_pc
      will keep correct value across longjmp */
   struct caml__roots_block * volatile initial_local_roots;

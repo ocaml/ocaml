@@ -61,7 +61,7 @@ uintnat caml_init_max_stack_wsz = Max_stack_def;
 uintnat caml_init_major_window = Major_window_def;
 extern int caml_parser_trace;
 uintnat caml_trace_level = 0;
-uintnat caml_cleanup_on_exit = 0;
+int caml_cleanup_on_exit = 0;
 
 
 static void scanmult (char_os *opt, uintnat *var)
@@ -90,14 +90,14 @@ void caml_parse_ocamlrunparam(void)
       switch (*opt++){
       case _T('a'): scanmult (opt, &p); caml_set_allocation_policy (p); break;
       case _T('b'): scanmult (opt, &p); caml_record_backtrace(Val_bool (p)); break;
-      case _T('c'): scanmult (opt, &p); caml_cleanup_on_exit = p; break;
+      case _T('c'): scanmult (opt, &p); caml_cleanup_on_exit = (p != 0); break;
       case _T('h'): scanmult (opt, &caml_init_heap_wsz); break;
       case _T('H'): scanmult (opt, &caml_use_huge_pages); break;
       case _T('i'): scanmult (opt, &caml_init_heap_chunk_sz); break;
       case _T('l'): scanmult (opt, &caml_init_max_stack_wsz); break;
       case _T('o'): scanmult (opt, &caml_init_percent_free); break;
       case _T('O'): scanmult (opt, &caml_init_max_percent_free); break;
-      case _T('p'): scanmult (opt, &p); caml_parser_trace = p; break;
+      case _T('p'): scanmult (opt, &p); caml_parser_trace = (p != 0); break;
       case _T('R'): break; /*  see stdlib/hashtbl.mli */
       case _T('s'): scanmult (opt, &caml_init_minor_heap_wsz); break;
       case _T('t'): scanmult (opt, &caml_trace_level); break;

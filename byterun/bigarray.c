@@ -647,7 +647,7 @@ CAMLprim value caml_ba_uint8_get16(value vb, value vind)
 
 CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 {
-  intnat res;
+  uint32_t res;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);
