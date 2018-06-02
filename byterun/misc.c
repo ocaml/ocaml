@@ -33,7 +33,7 @@ caml_timing_hook caml_finalise_end_hook = NULL;
 
 #ifdef DEBUG
 
-int caml_failed_assert (char * expr, char * file, int line)
+void caml_failed_assert (char * expr, char * file, int line)
 {
   fprintf (stderr, "file %s; line %d ### Assertion failed: %s\n",
            file, line, expr);
