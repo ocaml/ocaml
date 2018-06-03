@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -216,7 +218,7 @@ let execvpe_ml name args env =
       let argc = Array.length args in
       (* Drop the original args.(0) if it is there *)
       let new_args = Array.append
-        [| "/bin/sh"; file |]
+        [| shell; file |]
         (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
       execve new_args.(0) new_args env in
   (* Try each path element in turn *)
@@ -941,7 +943,7 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             sys_exit 127
           end
@@ -1009,7 +1011,6 @@ let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 let open_proc cmd envopt proc input output error =
    match fork() with
      0 -> perform_redirections input output error;
-          let shell = "/bin/sh" in
           let argv = [| shell; "-c"; cmd |] in
           begin try
             match envopt with
