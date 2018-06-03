@@ -63,6 +63,8 @@ let _ = thread_initialize()
 
 (* Back to the Unix module *)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -962,7 +964,7 @@ let rec waitpid_non_intr pid =
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             exit 127
           end
@@ -1020,7 +1022,6 @@ let open_proc cmd envopt proc input output error =
   match fork() with
      0 -> begin try
             perform_redirections input output error;
-            let shell = "/bin/sh" in
             let argv = [| shell; "-c"; cmd |] in
             match envopt with
             | Some env -> execve shell argv env
