@@ -172,6 +172,11 @@ ocamlcdefaultflags :=
 
 ocamloptdefaultflags := $(shell ./getocamloptdefaultflags $(TARGET))
 
+.PHONY: all allopt opt.opt # allopt and opt.opt are synonyms
+all: ocamltest$(EXE)
+allopt: ocamltest.opt$(EXE)
+opt.opt: allopt
+
 ocamltest$(EXE): $(bytecode_modules)
 	$(ocamlc) -custom ocamlcommon.cma -o $@ $^
 
