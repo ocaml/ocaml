@@ -248,7 +248,11 @@ external nextafter : float -> float -> float
    value following [x] in the direction of [y].  If [y] is less than
    [x], it returns the largest representable number less than [x].  If
    [x] equals [y], the function returns [y].  If [x] or [y] is
-   [nan], a [nan] is returned. *)
+   [nan], a [nan] is returned.
+   Note that [nextafter max_float infinity = infinity] and that
+   [nextafter 0. infinity] is the smallest denormalized positive number.
+   If [x] is the smallest denormalized positive number,
+   [nextafter x 0. = 0.] *)
 
 external copysign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
