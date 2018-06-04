@@ -111,7 +111,7 @@ Working version
 
 - GPR#1794: Add functions is_finite, is_infinite, is_nan, is_integer,
   trunc, round, nextafter, min, max, nanmin, nanmax to module Float.
-  (Christophe Troestler)
+  (Christophe Troestler, review by Alain Frish and Xavier Clerc)
 
 ### Other libraries:
 

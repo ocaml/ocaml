@@ -92,7 +92,7 @@ val is_nan : float -> bool
 (** [is_nan x] returns [true] if and only if [x] represents a [nan]. *)
 
 val is_integer : float -> bool
-(** Says whether the floating point is an integer. *)
+(** Say whether the floating point is an integer. *)
 
 external of_int : int -> float = "%floatofint"
 (** Convert an integer to floating-point. *)
@@ -219,7 +219,7 @@ external tanh : float -> float = "caml_tanh_float" "tanh"
 
 external trunc : float -> float = "caml_trunc_float" "caml_trunc"
                                     [@@unboxed] [@@noalloc]
-(** [trunc x] round [x] to the nearest integer whose absolute value is
+(** [trunc x] rounds [x] to the nearest integer whose absolute value is
    less than or equal to [x]. *)
 
 external round : float -> float = "caml_round_float" "caml_round"
@@ -246,9 +246,9 @@ external nextafter : float -> float -> float
   = "caml_nextafter_float" "caml_nextafter" [@@unboxed] [@@noalloc]
 (** [nextafter x y] returns the next representable floating-point
    value following [x] in the direction of [y].  If [y] is less than
-   [x], these functions will return the largest representable number
-   less than [x].  If [x] equals [y], the function returns [y].
-   If [x] or [y] is a [nan], a [nan] is returned. *)
+   [x], it returns the largest representable number less than [x].  If
+   [x] equals [y], the function returns [y].  If [x] or [y] is
+   [nan], a [nan] is returned. *)
 
 external copysign : float -> float -> float
   = "caml_copysign_float" "caml_copysign"
@@ -301,7 +301,7 @@ val max : float -> float -> float
    when [x] or [y] is [nan].  Moreover [max (-0.) (+0.) = +0.] *)
 
 val minmax : float -> float -> float * float
-(** [minmax x y] returns [(x, y)] is [x <= y] and [(y, x)] otherwise.
+(** [minmax x y] returns [(x, y)] if [x <= y] and [(y, x)] otherwise.
    It returns [(nan, nan)] when [x] or [y] is [nan]. *)
 
 val nanmin : t -> t -> t
