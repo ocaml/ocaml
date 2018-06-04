@@ -537,6 +537,20 @@ let temporarily_set_reference ref newval funct =
     raise x;;
 \end{caml_example}
 
+An alternative to "try"\ldots"with" is to catch the exception while
+pattern matching:
+\begin{caml_example}{toplevel}
+let assoc_opt x l =
+  match List.assoc x l with
+  | exception Not_found -> None
+  | x -> Some x;;
+\end{caml_example}
+Note that this construction is only useful if the exception is raised
+between "match"\ldots"with". Moreover, exceptions can only
+appear at the toplevel of such a pattern matching.
+For instance, exceptions cannot be combined with a or-pattern:
+"exception A | exception B ->"\ldots .
+
 \section{Symbolic processing of expressions}
 \pdfsection{Symbolic processing of expressions}
 
