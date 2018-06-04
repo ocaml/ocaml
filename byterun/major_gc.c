@@ -231,7 +231,8 @@ static void init_sweep_phase(void)
 }
 
 /* auxillary function of mark_slice */
-static inline value* mark_slice_darken(value *gray_vals_ptr, value v, intnat i,
+static inline value* mark_slice_darken(value *gray_vals_ptr, 
+                                       value v, mlsize_t i,
                                        int in_ephemeron, int *slice_pointers)
 {
   value child;
