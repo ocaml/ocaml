@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -216,7 +218,7 @@ let execvpe_ml name args env =
       let argc = Array.length args in
       (* Drop the original args.(0) if it is there *)
       let new_args = Array.append
-        [| "/bin/sh"; file |]
+        [| shell; file |]
         (if argc = 0 then args else Array.sub args 1 (argc - 1)) in
       execve new_args.(0) new_args env in
   (* Try each path element in turn *)
@@ -941,7 +943,7 @@ external sys_exit : int -> 'a = "caml_sys_exit"
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             sys_exit 127
           end
@@ -1093,7 +1095,6 @@ let open_process_args_full prog args env =
   (inchan, outchan, errchan)
 
 let open_process_shell fn cmd =
-  let shell = "/bin/sh" in
   fn shell [|shell; "-c"; cmd|]
 let open_process_in cmd =
   open_process_shell open_process_args_in cmd
