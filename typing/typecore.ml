@@ -1736,8 +1736,7 @@ and is_nonexpansive_opt = function
   | Some e -> is_nonexpansive e
 
 let check_recursive_bindings env valbinds =
-  let ids = List.concat
-      (List.map (fun b -> pat_bound_idents b.vb_pat) valbinds) in
+  let ids = let_bound_idents valbinds in
   List.iter
     (fun {vb_expr} ->
        if not (Rec_check.is_valid_recursive_expression ids vb_expr) then
