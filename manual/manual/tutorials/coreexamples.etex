@@ -551,6 +551,25 @@ appear at the toplevel of such a pattern matching.
 For instance, exceptions cannot be combined with a or-pattern:
 "exception A | exception B ->"\ldots .
 
+When exceptions are used as a control structure, it can be useful to make
+them as local as possible by using a locally defined exception.
+For instance, with
+\begin{caml_eval}
+  let ref x: _ ref = {contents=x};;
+\end{caml_eval}
+\begin{caml_example}{toplevel}
+let fixpoint f x =
+  let exception Done in
+  let x = ref x in
+  try while true do
+      let y = f !x in
+      if !x = y then raise Done else x := y
+    done; assert false
+  with Done -> !x;;
+\end{caml_example}
+the function "f" cannot raise a "Done" exception, which removes an
+entire class of misbehaving functions.
+
 \section{Symbolic processing of expressions}
 \pdfsection{Symbolic processing of expressions}
 
