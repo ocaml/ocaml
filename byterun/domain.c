@@ -793,6 +793,7 @@ static void acknowledge_all_pending_interrupts()
 }
 
 static void domain_terminate() {
+  caml_domain_state* domain_state = domain_self->state.state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
 
@@ -827,11 +828,15 @@ static void domain_terminate() {
     caml_plat_unlock(&s->lock);
   }
 
+  if (domain_state->ephe_list_todo != (value)NULL) {
+    //XXX KC: Domains should handover ephemerons
+    caml_ephe_todo_list_emptied();
+  }
   caml_teardown_major_gc();
-  caml_teardown_shared_heap(domain_self->state.state->shared_heap);
-  domain_self->state.state->shared_heap = 0;
-  caml_free_remembered_set(domain_self->state.state->remembered_set);
-  domain_self->state.state->remembered_set = 0;
+  caml_teardown_shared_heap(domain_state->shared_heap);
+  domain_state->shared_heap = 0;
+  caml_free_remembered_set(domain_state->remembered_set);
+  domain_state->remembered_set = 0;
 
   if (Caml_state->critical_section_nesting) {
     Caml_state->critical_section_nesting = 0;

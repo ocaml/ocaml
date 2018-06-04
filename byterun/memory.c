@@ -426,8 +426,8 @@ int is_young(value v) {
   return Is_young(v);
 }
 
-int has_status_hd(value v, status s) {
-  return Has_status_hd(v,s);
+int has_status(value v, status s) {
+  return Has_status_hd(Hd_val(v),s);
 }
 
 int tag_val(value v) {
