@@ -63,6 +63,8 @@ let _ = thread_initialize()
 
 (* Back to the Unix module *)
 
+let shell = "/bin/sh"
+
 type error =
     E2BIG
   | EACCES
@@ -962,7 +964,7 @@ let rec waitpid_non_intr pid =
 let system cmd =
   match fork() with
      0 -> begin try
-            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+            execv shell [| shell; "-c"; cmd |]
           with _ ->
             exit 127
           end
@@ -1102,7 +1104,6 @@ let open_process_args_full prog args env =
     raise e
 
 let open_process_shell fn cmd =
-  let shell = "/bin/sh" in
   fn shell [|shell; "-c"; cmd|]
 let open_process_in cmd =
   open_process_shell open_process_args_in cmd
