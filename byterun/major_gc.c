@@ -84,7 +84,7 @@ static void update_ephe_info_for_marking_done ()
   caml_plat_unlock(&ephe_lock);
 }
 
-static void ephe_todo_list_emptied ()
+void caml_ephe_todo_list_emptied ()
 {
   caml_plat_lock(&ephe_lock);
   --ephe_cycle_info.num_domains_todo;
@@ -506,6 +506,8 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   CAMLassert(num_domains_to_sweep.val == 0);
   CAMLassert(num_domains_to_ephe_sweep.val == 0);
 
+  caml_empty_minor_heap_domain(domain);
+
   caml_gc_log("In STW callback");
   caml_ev_begin("major_gc/stw");
 
@@ -567,7 +569,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
 
   caml_ev_begin("major_gc/roots");
   caml_do_local_roots(&caml_darken, 0, caml_domain_self());
-  caml_scan_stack(&caml_darken, 0, Caml_state->current_stack);
+  caml_scan_stack(&caml_darken, 0, domain->state->current_stack);
   caml_scan_global_roots(&caml_darken, 0);
   caml_ev_end("major_gc/roots");
 
@@ -582,7 +584,7 @@ static void cycle_all_domains_callback(struct domain* domain, void* unused)
   domain->state->ephe_list_live = (value) NULL;
   domain->state->ephe_cycle = 0;
   if (domain->state->ephe_list_todo == (value) NULL)
-    ephe_todo_list_emptied();
+    caml_ephe_todo_list_emptied();
 
 
   caml_ev_end("major_gc/stw");
@@ -679,7 +681,7 @@ mark_again:
     saved_ephe_cycle = ephe_cycle_info.ephe_cycle;
     budget = ephe_mark(budget);
     if (domain_state->ephe_list_todo == (value) NULL)
-      ephe_todo_list_emptied ();
+      caml_ephe_todo_list_emptied ();
     else if (budget > 0 && domain_state->marking_done)
       record_ephe_marking_done(saved_ephe_cycle);
     else if (budget > 0) goto mark_again;
