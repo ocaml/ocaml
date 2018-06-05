@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "caml/alloc.h"
+#include "caml/domain.h"
 #include "caml/fail.h"
 #include "caml/major_gc.h"
 #include "caml/memory.h"
@@ -508,4 +509,16 @@ void caml_ephe_clean (value v) {
       CAMLassert (!Is_block(child) && !is_unmarked(child));
     }
   }
+}
+
+value caml_bias_ephe_list(value e, struct domain* d)
+{
+  value last = 0;
+  while (e != 0) {
+    CAMLassert (Tag_val(e) == Abstract_tag);
+    Ephe_domain(e) = d;
+    last = e;
+    e = Ephe_link(e);
+  }
+  return last;
 }

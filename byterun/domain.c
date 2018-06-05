@@ -23,6 +23,7 @@
 #include "caml/eventlog.h"
 #include "caml/gc_ctrl.h"
 #include "caml/osdeps.h"
+#include "caml/weak.h"
 
 /* Since we support both heavyweight OS threads and lightweight
    userspace threads, the word "thread" is ambiguous. This file deals
@@ -37,6 +38,7 @@ struct interruptor {
   caml_plat_cond cond;
 
   int running;
+  int terminating;
   /* unlike the domain ID, this ID number is not reused */
   uintnat unique_id;
 
@@ -264,6 +266,7 @@ void caml_init_domains(uintnat minor_size) {
                         &dom->interruptor.lock);
     dom->interruptor.qhead = dom->interruptor.qtail = NULL;
     dom->interruptor.running = 0;
+    dom->interruptor.terminating = 0;
     dom->interruptor.unique_id = i;
     dom->id = i;
 
@@ -781,17 +784,41 @@ static void acknowledge_all_pending_interrupts()
   }
 }
 
-static void domain_terminate() {
+static void handover_ephemerons(caml_domain_state* domain_state)
+{
+  value todo_tail = 0;
+  value live_tail = 0;
+
+  if (domain_state->ephe_list_todo == 0 &&
+      domain_state->ephe_list_live == 0)
+    return;
+
+  todo_tail = caml_bias_ephe_list(domain_state->ephe_list_todo, (struct domain*)NULL);
+  live_tail = caml_bias_ephe_list(domain_state->ephe_list_live, (struct domain*)NULL);
+  caml_add_orphaned_ephe(domain_state->ephe_list_todo, todo_tail,
+                         domain_state->ephe_list_live, live_tail);
+  if (domain_state->ephe_list_todo != 0) {
+    caml_ephe_todo_list_emptied();
+  }
+  domain_state->ephe_list_live = 0;
+  domain_state->ephe_list_todo = 0;
+
+}
+
+static void domain_terminate()
+{
   caml_domain_state* domain_state = domain_self->state.state;
   struct interruptor* s = &domain_self->interruptor;
   int finished = 0;
 
   caml_gc_log("Domain terminating");
   caml_ev_pause(EV_PAUSE_YIELD);
+  s->terminating = 1;
   while (!finished) {
     caml_finish_sweeping();
     caml_empty_minor_heap();
     caml_finish_marking();
+    handover_ephemerons(domain_state);
 
     caml_plat_lock(&s->lock);
 
@@ -811,6 +838,7 @@ static void domain_terminate() {
         Caml_state->marking_done &&
         Caml_state->sweeping_done) {
       finished = 1;
+      s->terminating = 0;
       s->running = 0;
       atomic_fetch_add(&num_domains_running, -1);
       s->unique_id += Max_domains;
@@ -818,10 +846,6 @@ static void domain_terminate() {
     caml_plat_unlock(&s->lock);
   }
 
-  if (domain_state->ephe_list_todo != (value)NULL) {
-    //XXX KC: Domains should handover ephemerons
-    caml_ephe_todo_list_emptied();
-  }
   caml_teardown_major_gc();
   caml_teardown_shared_heap(domain_state->shared_heap);
   domain_state->shared_heap = 0;
