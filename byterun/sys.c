@@ -157,7 +157,9 @@ CAMLprim value caml_sys_exit(value retcode_v)
   caml_restore_win32_terminal();
 #endif
   CAML_SYS_EXIT(retcode);
+#ifdef CAML_WITH_CPLUGINS
   return Val_unit;
+#endif
 }
 
 #ifndef O_BINARY
