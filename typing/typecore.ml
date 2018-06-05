@@ -2187,7 +2187,7 @@ struct
          begin match Typeopt.classify_lazy_argument e with
          | `Constant_or_function
          | `Identifier _
-         | `Float ->
+         | `Float_that_cannot_be_shortcut ->
             expression env e
          | `Other ->
             Use.delay (expression env e)
