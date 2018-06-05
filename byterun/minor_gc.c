@@ -449,8 +449,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
     if (Is_minor(root)) {
       /* While we do not in general promote stacks that we find, we
-         certainly want to promote the root if it happens to be a
-         stack */
+         certainly want to promote the root if it happens to be a stack */
       st.should_promote_stacks = 1;
       oldify_one (&st, root, &root);
       st.should_promote_stacks = 0;
@@ -464,9 +463,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   oldify_mopup (&st);
 
   CAMLassert (!Is_minor(root));
-  /* XXX KC: We might checking for rpc's just before a stw_phase of a major
-   * collection? Is this necessary? */
-  caml_darken(0, root, 0);
+  CAMLassert (Has_status_hd(Hd_val(root), global.MARKED));
 
   if (tag == Stack_tag) {
     /* Since we've promoted the objects on the stack, the stack is now clean. */
@@ -497,7 +494,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         value new_p = old_p;
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
-          __sync_bool_compare_and_swap (*r,old_p,new_p);
+          caml_atomic_cas_raw (*r,old_p,new_p);
       }
     }
 
@@ -659,9 +656,9 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         }
         if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewrite_successes;
         else ++rewrite_failures;
-        caml_darken(0, vnew,0);
       }
     }
+    CAMLassert (!caml_domain_alone() || rewrite_failures == 0);
     caml_ev_end("minor_gc/update_remembered_set");
 
     clear_table ((struct generic_table *)&remembered_set->major_ref);
@@ -683,7 +680,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   }
 
   for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack_domain (&caml_darken, 0, (value)*r, domain);
     caml_clean_stack_domain ((value)*r, domain);
   }
   clear_table ((struct generic_table *)&remembered_set->fiber_ref);

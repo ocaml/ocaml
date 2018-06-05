@@ -13,7 +13,7 @@ let test_domain_reuse () =
   (* checks that domain slots are getting reused quickly,
      by checking that subsequent domain IDs are an arithmetic
      progression (implies that you're getting the same domain
-     over and over, but its ID increases by Max_domains. 
+     over and over, but its ID increases by Max_domains.
 
      this test has to run first, since it makes assumptions
      about domain IDs *)

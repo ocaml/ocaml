@@ -81,6 +81,7 @@ static caml_plat_mutex all_domains_lock = CAML_PLAT_MUTEX_INITIALIZER;
 static caml_plat_cond all_domains_cond = CAML_PLAT_COND_INITIALIZER(&all_domains_lock);
 static dom_internal* stw_leader = 0;
 static struct dom_internal all_domains[Max_domains];
+static atomic_uintnat num_domains_running = {0};
 
 static uintnat minor_heaps_base;
 static __thread dom_internal* domain_self;
@@ -191,6 +192,7 @@ static void create_domain(uintnat initial_minor_heap_size) {
       }
       Assert(s->qhead == NULL);
       s->running = 1;
+      atomic_fetch_add(&num_domains_running, 1);
     }
     caml_plat_unlock(&s->lock);
   }
@@ -385,20 +387,7 @@ struct domain* caml_domain_self()
 
 int caml_domain_alone()
 {
-  int i, found = 0;
-  caml_plat_lock(&all_domains_lock);
-  for (i = 0;
-       i < Max_domains &&
-         !found;
-       i++) {
-    struct interruptor* s = &all_domains[i].interruptor;
-    if (s == &domain_self->interruptor) continue;
-    caml_plat_lock(&s->lock);
-    if (s->running) found = 1;
-    caml_plat_unlock(&s->lock);
-  }
-  caml_plat_unlock(&all_domains_lock);
-  return !found;
+  return atomic_load_acq(&num_domains_running) == 1;
 }
 
 struct domain* caml_owner_of_young_block(value v) {
@@ -823,6 +812,7 @@ static void domain_terminate() {
         Caml_state->sweeping_done) {
       finished = 1;
       s->running = 0;
+      atomic_fetch_add(&num_domains_running, -1);
       s->unique_id += Max_domains;
     }
     caml_plat_unlock(&s->lock);
