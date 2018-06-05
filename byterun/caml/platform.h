@@ -96,7 +96,6 @@ INLINE void atomic_store_rel(atomic_uintnat* p, uintnat v) {
 #error "unsupported platform (i.e. not x86)"
 #endif
 
-
 /* Spin-wait loops */
 
 #define Max_spins 1000
@@ -109,7 +108,6 @@ unsigned caml_plat_spin_wait(unsigned spins,
 #define GENSYM_2(name, l) GENSYM_3(name, l)
 #define GENSYM(name) GENSYM_2(name, __LINE__)
 
-
 #define SPIN_WAIT                                                       \
   unsigned GENSYM(caml__spins) = 0;                                     \
   for (; 1; cpu_relax(),                                                \
@@ -119,15 +117,12 @@ unsigned caml_plat_spin_wait(unsigned spins,
          caml_plat_spin_wait(GENSYM(caml__spins),                       \
                              __FILE__, __LINE__, __func__))
 
-
 INLINE uintnat atomic_load_wait_nonzero(atomic_uintnat* p) {
   SPIN_WAIT {
     uintnat v = atomic_load_acq(p);
     if (v) return v;
   }
 }
-
-
 
 /* Atomic read-modify-write instructions, with full fences */
 
@@ -152,10 +147,6 @@ INLINE void atomic_cas_strong(atomic_uintnat* p, uintnat vold, uintnat vnew) {
 #else
 #error "unsupported platform"
 #endif
-
-
-
-
 
 typedef pthread_mutex_t caml_plat_mutex;
 #define CAML_PLAT_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
