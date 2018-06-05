@@ -41,6 +41,7 @@ extern value caml_ephe_none;
 #define Ephe_data(e) (*(Op_val(e) + CAML_EPHE_DATA_OFFSET))
 
 void caml_ephe_clean(value e);
+value caml_bias_ephe_list(value, struct domain*);
 
 #endif /* CAML_INTERNALS */
 
