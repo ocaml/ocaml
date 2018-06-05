@@ -396,8 +396,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
 
     if (Is_minor(root)) {
       /* While we do not in general promote stacks that we find, we
-         certainly want to promote the root if it happens to be a
-         stack */
+         certainly want to promote the root if it happens to be a stack */
       st.should_promote_stacks = 1;
       oldify_one (&st, root, &root);
       st.should_promote_stacks = 0;
@@ -411,9 +410,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
   oldify_mopup (&st);
 
   CAMLassert (!Is_minor(root));
-  /* XXX KC: We might checking for rpc's just before a stw_phase of a major
-   * collection? Is this necessary? */
-  caml_darken(0, root, 0);
+  CAMLassert (Has_status_hd(Hd_val(root), global.MARKED));
 
   if (tag == Stack_tag) {
     /* Since we've promoted the objects on the stack, the stack is now clean. */
@@ -443,7 +440,7 @@ CAMLexport value caml_promote(struct domain* domain, value root)
         value new_p = old_p;
         forward_pointer (st.promote_domain, new_p, &new_p);
         if (old_p != new_p)
-          __sync_bool_compare_and_swap (*r,old_p,new_p);
+          caml_atomic_cas_raw (*r,old_p,new_p);
       }
     }
 
@@ -570,9 +567,11 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         vnew = Op_val(v)[0] + offset;
         CAMLassert (Is_block(vnew) && !Is_minor(vnew));
         CAMLassert (Hd_val(vnew));
-        if (Tag_hd(hd) == Infix_tag) { CAMLassert(Tag_val(vnew) == Infix_tag); }
-        if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewritten;
-        caml_darken(0, vnew,0);
+        if (Tag_hd(hd) == Infix_tag) {
+          CAMLassert(Tag_val(vnew) == Infix_tag);
+          v += offset;
+        }
+        if (caml_atomic_cas_raw(*r,v,vnew)) ++rewritten;
       }
     }
     caml_ev_end("minor_gc/update_remembered_set");
@@ -595,7 +594,6 @@ void caml_empty_minor_heap_domain (struct domain* domain)
   }
 
   for (r = remembered_set->fiber_ref.base; r < remembered_set->fiber_ref.ptr; r++) {
-    caml_scan_dirty_stack_domain (&caml_darken, 0, (value)*r, domain);
     caml_clean_stack_domain ((value)*r, domain);
   }
   clear_table (&remembered_set->fiber_ref);

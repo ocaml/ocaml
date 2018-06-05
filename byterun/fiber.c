@@ -37,8 +37,8 @@ static void dirty_stack(value stack)
       SPIN_WAIT {
         status = atomic_load_acq((atomic_uintnat*)&Stack_dirty_domain(stack));
         if(status == (uintnat)FIBER_SCANNING) continue;
-        if(__sync_bool_compare_and_swap(&Stack_dirty_domain(stack),
-                                        FIBER_CLEAN, caml_domain_self())) {
+        if(caml_atomic_cas_raw ((value*)&Stack_dirty_domain(stack),
+                                (value)FIBER_CLEAN, (value)caml_domain_self())) {
           caml_darken(0, stack, 0);
           /* XXX KC: Optimize. Since we cannot distinguish Grey from
            * Black, we might scan the stacks multiple times. */
@@ -433,8 +433,8 @@ void caml_darken_stack(value stack)
 {
   Assert(Tag_val(stack) == Stack_tag);
   if (Stack_dirty_domain(stack) == FIBER_CLEAN &&
-      __sync_bool_compare_and_swap (&Stack_dirty_domain(stack),
-                                    FIBER_CLEAN, FIBER_SCANNING)) {
+      caml_atomic_cas_raw ((value*)&Stack_dirty_domain(stack),
+                           (value)FIBER_CLEAN, (value)FIBER_SCANNING)) {
     caml_darken(0, stack, 0);
     /* XXX KC: Optimize. Since we cannot distinguish Grey from Black,
      * we might scan the stacks multiple times. */
