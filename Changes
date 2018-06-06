@@ -128,6 +128,11 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
+- MPR#7799, GPR#1820: fix bug where Scanf.format_from_string could fail when the
+  argument string contained characters that require escaping.
+  (Gabriel Scherer and Nicolás Ojeda Bär, report by Guillaume Melquiond, review
+  by Gabriel Scherer)
+
 OCaml 4.07
 ----------
 
