@@ -525,7 +525,7 @@ OCaml 4.07
   disambiguation
   (Thomas Refis, review by Leo White)
 
-- GPR#1687: fix bug in the printing of functor types by adding parentheses
+- GPR#1687: fix bug in the printing of short functor types "(S1 -> S2) -> S3"
   (Pieter Goetschalckx, review by Gabriel Scherer)
 
 - GPR#1722: Scrape types in Typeopt.maybe_pointer
@@ -554,7 +554,6 @@ OCaml 4.07
 - GPR#1810: use bit-pattern comparison when meeting float approximations
   (Xavier Clerc, report by Christophe Troestler, review by Nicolás Ojeda Bär
    and Gabriel Scherer)
-
 
 OCaml 4.06.1 (16 Feb 2018):
 ---------------------------
