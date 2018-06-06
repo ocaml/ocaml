@@ -32,6 +32,7 @@ open Cmxs_format
 module String = Misc.Stdlib.String
 module V = Backend_var
 module VP = Backend_var.With_provenance
+open Cmm_helpers
 
 (* Environments used for translation to Cmm. *)
 
@@ -63,15 +64,6 @@ let add_unboxed_id id unboxed_id bn env =
   { env with
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
-
-(* Local binding of complex expressions *)
-
-let bind name arg fn =
-  match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _
-  | Cblockheader _ -> fn arg
-  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
 
 let bind_load name arg fn =
   match arg with

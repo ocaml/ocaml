@@ -617,6 +617,7 @@ typing/includecore.cmx : \
 typing/includecore.cmi : \
     typing/types.cmi \
     typing/typedtree.cmi \
+    typing/path.cmi \
     parsing/location.cmi \
     typing/ident.cmi \
     typing/env.cmi
@@ -1835,6 +1836,8 @@ bytecomp/printinstr.cmx : \
     bytecomp/printinstr.cmi
 bytecomp/printinstr.cmi : \
     bytecomp/instruct.cmi
+bytecomp/runtimedef.cmo :
+bytecomp/runtimedef.cmx :
 bytecomp/symtable.cmo : \
     lambda/runtimedef.cmi \
     typing/predef.cmi \
@@ -2160,8 +2163,17 @@ asmcomp/cmm.cmi : \
     lambda/debuginfo.cmi \
     middle_end/backend_var.cmi \
     parsing/asttypes.cmi
+asmcomp/cmm_helpers.cmo : \
+    asmcomp/cmm.cmi \
+    middle_end/backend_var.cmi \
+    asmcomp/cmm_helpers.cmi
+asmcomp/cmm_helpers.cmx : \
+    asmcomp/cmm.cmx \
+    middle_end/backend_var.cmx \
+    asmcomp/cmm_helpers.cmi
+asmcomp/cmm_helpers.cmi : \
+    asmcomp/cmm.cmi
 asmcomp/cmmgen.cmo : \
-    middle_end/flambda/un_anf.cmi \
     typing/types.cmi \
     utils/targetint.cmi \
     lambda/switch.cmi \
@@ -2178,6 +2190,7 @@ asmcomp/cmmgen.cmo : \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
     asmcomp/cmmgen_state.cmi \
+    asmcomp/cmm_helpers.cmi \
     asmcomp/cmm.cmi \
     utils/clflags.cmi \
     middle_end/clambda_primitives.cmi \
@@ -2188,7 +2201,6 @@ asmcomp/cmmgen.cmo : \
     asmcomp/afl_instrument.cmi \
     asmcomp/cmmgen.cmi
 asmcomp/cmmgen.cmx : \
-    middle_end/flambda/un_anf.cmx \
     typing/types.cmx \
     utils/targetint.cmx \
     lambda/switch.cmx \
@@ -2205,6 +2217,7 @@ asmcomp/cmmgen.cmx : \
     file_formats/cmxs_format.cmi \
     file_formats/cmx_format.cmi \
     asmcomp/cmmgen_state.cmx \
+    asmcomp/cmm_helpers.cmx \
     asmcomp/cmm.cmx \
     utils/clflags.cmx \
     middle_end/clambda_primitives.cmx \
@@ -5510,6 +5523,30 @@ asmcomp/debug/reg_with_debug_info.cmx : \
 asmcomp/debug/reg_with_debug_info.cmi : \
     asmcomp/reg.cmi \
     middle_end/backend_var.cmi
+driver/compdynlink.cmi :
+driver/compdynlink_common.cmo : \
+    driver/compdynlink_types.cmi \
+    driver/compdynlink_platform_intf.cmi \
+    driver/compdynlink_common.cmi
+driver/compdynlink_common.cmx : \
+    driver/compdynlink_types.cmx \
+    driver/compdynlink_platform_intf.cmx \
+    driver/compdynlink_common.cmi
+driver/compdynlink_common.cmi : \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmo : \
+    driver/compdynlink_types.cmi \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmx : \
+    driver/compdynlink_types.cmx \
+    driver/compdynlink_platform_intf.cmi
+driver/compdynlink_platform_intf.cmi : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmo : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmx : \
+    driver/compdynlink_types.cmi
+driver/compdynlink_types.cmi :
 driver/compenv.cmo : \
     utils/warnings.cmi \
     utils/profile.cmi \
