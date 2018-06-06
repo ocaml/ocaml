@@ -500,3 +500,46 @@ let safe_div_bi is_safe =
 let safe_mod_bi is_safe =
   safe_divmod_bi mod_int is_safe (fun _ dbg -> Cconst_int (0, dbg))
 
+(* Bool *)
+
+let test_bool dbg cmm =
+  match cmm with
+  | Cop(Caddi, [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], _) ->
+      c
+  | Cconst_int (n, dbg) ->
+      if n = 1 then
+        Cconst_int (0, dbg)
+      else
+        Cconst_int (1, dbg)
+  | c -> Cop(Ccmpi Cne, [c; Cconst_int (1, dbg)], dbg)
+
+(* Float *)
+
+let box_float dbg c = Cop(Calloc, [alloc_float_header dbg; c], dbg)
+
+let map_ccatch f rec_flag handlers body =
+  let handlers = List.map
+      (fun (n, ids, handler, dbg) -> (n, ids, f handler, dbg))
+      handlers in
+  Ccatch(rec_flag, handlers, f body)
+
+let rec unbox_float dbg cmm =
+  match cmm with
+  | Cop(Calloc, [Cblockheader (header, _); c], _) when header = float_header ->
+      c
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_float dbg body)
+  | Cifthenelse(cond, ifso_dbg, e1, ifnot_dbg, e2, dbg) ->
+      Cifthenelse(cond,
+        ifso_dbg, unbox_float dbg e1,
+        ifnot_dbg, unbox_float dbg e2,
+        dbg)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_float dbg e2)
+  | Cswitch(e, tbl, el, dbg') ->
+    Cswitch(e, tbl,
+      Array.map (fun (expr, dbg) -> unbox_float dbg expr, dbg) el, dbg')
+  | Ccatch(rec_flag, handlers, body) ->
+    map_ccatch (unbox_float dbg) rec_flag handlers body
+  | Ctrywith(e1, id, e2, dbg) ->
+      Ctrywith(unbox_float dbg e1, id, unbox_float dbg e2, dbg)
+  | c -> Cop(Cload (Double_u, Asttypes.Immutable), [c], dbg)
+

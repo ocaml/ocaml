@@ -161,3 +161,16 @@ val mk_not : Debuginfo.t -> expression -> expression
 val raise_regular : Debuginfo.t -> expression -> expression
 val raise_symbol : Debuginfo.t -> string -> expression
 
+(** Convert a tagged integer into a raw integer with boolean meaning *)
+val test_bool : Debuginfo.t -> expression -> expression
+
+(** Float boxing and unboxing *)
+val box_float : Debuginfo.t -> expression -> expression
+val unbox_float : Debuginfo.t -> expression -> expression
+
+(** Map the given function over a Ccatch expression's handlers and body *)
+val map_ccatch :
+  (expression -> expression) -> rec_flag ->
+  (int * (Backend_var.With_provenance.t * machtype) list * expression
+   * Debuginfo.t) list ->
+  expression -> expression
