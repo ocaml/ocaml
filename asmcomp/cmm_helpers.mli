@@ -28,6 +28,8 @@ val bind_load :
 val bind_nonvar :
   string -> expression -> (expression -> expression) -> expression
 
+(** Headers *)
+
 (** A null header with GC bits set to black *)
 val caml_black : nativeint
 
@@ -70,4 +72,92 @@ val alloc_infix_header : int -> Debuginfo.t -> expression
 val alloc_boxedint32_header : Debuginfo.t -> expression
 val alloc_boxedint64_header : Debuginfo.t -> expression
 val alloc_boxedintnat_header : Debuginfo.t -> expression
+
+(** Integers *)
+
+(** Minimal/maximal OCaml integer values whose backend representation fits
+    in a regular OCaml integer *)
+val max_repr_int : int
+val min_repr_int : int
+
+(** Make an integer constant from the given integer (tags the integer) *)
+val int_const : Debuginfo.t -> int -> expression
+val cint_const : int -> data_item
+val targetint_const : int -> Targetint.t
+
+(** Make a Cmm constant holding the given nativeint value.
+    Uses [Cconst_int] instead of [Cconst_nativeint] when possible
+    to preserve peephole optimisations. *)
+val natint_const_untagged : Debuginfo.t -> Nativeint.t -> expression
+
+(** Add an integer to the given expression *)
+val add_const : expression -> int -> Debuginfo.t -> expression
+
+(** Increment/decrement of integers *)
+val incr_int : expression -> Debuginfo.t -> expression
+val decr_int : expression -> Debuginfo.t -> expression
+
+(** Simplify the given expression knowing its last bit will be
+    irrelevant *)
+val ignore_low_bit_int : expression -> expression
+
+(** Arithmetical operations on integers *)
+val add_int : expression -> expression -> Debuginfo.t -> expression
+val sub_int : expression -> expression -> Debuginfo.t -> expression
+val lsl_int : expression -> expression -> Debuginfo.t -> expression
+val mul_int : expression -> expression -> Debuginfo.t -> expression
+val lsr_int : expression -> expression -> Debuginfo.t -> expression
+val asr_int : expression -> expression -> Debuginfo.t -> expression
+val div_int :
+  expression -> expression -> Lambda.is_safe -> Debuginfo.t -> expression
+val mod_int :
+  expression -> expression -> Lambda.is_safe -> Debuginfo.t -> expression
+
+(** Integer tagging
+    [tag_int] and [force_tag_int] are functionnaly equivalent, but
+    produce syntactically different expressions ([tag_int] produces
+    an addition, while [force_tag_int] produces a logical or).
+    The difference marks the fact that the shift operation in [tag_int]
+    is assumed not to overflow, and so [untag_int (tag_int i)] can be
+    simplified to [i]. With [force_tag_int], the initial shift might
+    overflow, so the above simplification would be wrong. *)
+val tag_int : expression -> Debuginfo.t -> expression
+val force_tag_int : expression -> Debuginfo.t -> expression
+
+(** Integer untagging *)
+val untag_int : expression -> Debuginfo.t -> expression
+
+(** Specific division operations for boxed integers *)
+val safe_div_bi :
+  Lambda.is_safe ->
+  expression ->
+  expression ->
+  Primitive.boxed_integer ->
+  Debuginfo.t ->
+  expression
+val safe_mod_bi :
+  Lambda.is_safe ->
+  expression ->
+  expression ->
+  Primitive.boxed_integer ->
+  Debuginfo.t ->
+  expression
+
+(** If-Then-Else expression
+    [mk_if_then_else dbg cond ifso_dbg ifso ifnot_dbg ifnot] associates
+    [dbg] to the global if-then-else expression, [ifso_dbg] to the
+    then branch [ifso], and [ifnot_dbg] to the else branch [ifnot] *)
+val mk_if_then_else :
+  Debuginfo.t ->
+  expression ->
+  Debuginfo.t -> expression ->
+  Debuginfo.t -> expression ->
+  expression
+
+(** Boolean negation *)
+val mk_not : Debuginfo.t -> expression -> expression
+
+(** Exception raising *)
+val raise_regular : Debuginfo.t -> expression -> expression
+val raise_symbol : Debuginfo.t -> string -> expression
 
