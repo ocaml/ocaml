@@ -65,18 +65,6 @@ let add_unboxed_id id unboxed_id bn env =
     unboxed_ids = V.add id (unboxed_id, bn) env.unboxed_ids;
   }
 
-let bind_load name arg fn =
-  match arg with
-  | Cop(Cload _, [Cvar _], _) -> fn arg
-  | _ -> bind name arg fn
-
-let bind_nonvar name arg fn =
-  match arg with
-    Cconst_int _ | Cconst_natint _ | Cconst_symbol _
-  | Cconst_pointer _ | Cconst_natpointer _
-  | Cblockheader _ -> fn arg
-  | _ -> let id = V.create_local name in Clet(VP.create id, arg, fn (Cvar id))
-
 let caml_black = Nativeint.shift_left (Nativeint.of_int 3) 8
     (* cf. runtime/caml/gc.h *)
 

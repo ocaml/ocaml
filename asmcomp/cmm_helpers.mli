@@ -15,7 +15,16 @@
 
 open Cmm
 
-(** [bind name arg fn] binds [arg] to an identifier [name] (unless [arg]
-    is already simple enough) then feeds the result to [fn] *)
+(** [bind name arg fn] is equivalent to [let name = arg in fn name],
+    or simply [fn arg] if [arg] is simple enough *)
+val bind :
+  string -> expression -> (expression -> expression) -> expression
 
-val bind : string -> expression -> (expression -> expression) -> expression
+(** Same as [bind], but also treats loads from a variable as simple *)
+val bind_load :
+  string -> expression -> (expression -> expression) -> expression
+
+(** Same as [bind], but does not treat variables as simple *)
+val bind_nonvar :
+  string -> expression -> (expression -> expression) -> expression
+
