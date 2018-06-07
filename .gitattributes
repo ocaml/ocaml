@@ -44,7 +44,7 @@ README*                  ocaml-typo=missing-header
 
 /.mailmap                ocaml-typo=long-line,missing-header,non-ascii
 /.merlin                 ocaml-typo=missing-header
-/Changes                 ocaml-typo=non-ascii,missing-header
+/Changes                 ocaml-typo=utf8,missing-header
 /INSTALL                 ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
@@ -87,8 +87,8 @@ testsuite/tests/**                            ocaml-typo=missing-header
 testsuite/tests/lib-bigarray-2/bigarrf.f      ocaml-typo=missing-header,tab
 testsuite/tests/lib-unix/win-stat/fakeclock.c ocaml-typo=
 testsuite/tests/misc-unsafe/almabench.ml      ocaml-typo=missing-header,long-line
-testsuite/tests/tool-toplevel/strings.ml      ocaml-typo=non-ascii,missing-header
-testsuite/tests/win-unicode/*.ml              ocaml-typo=non-ascii,missing-header
+testsuite/tests/tool-toplevel/strings.ml      ocaml-typo=utf8,missing-header
+testsuite/tests/win-unicode/*.ml              ocaml-typo=utf8,missing-header
 testsuite/typing                              ocaml-typo=missing-header
 
 tools/magic         ocaml-typo=missing-header
