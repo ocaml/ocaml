@@ -578,7 +578,7 @@ and class_expr i ppf x =
   | Tcl_let (rf, l1, l2, ce) ->
       line i ppf "Tcl_let %a\n" fmt_rec_flag rf;
       list i value_binding ppf l1;
-      list i ident_x_loc_x_expression_def ppf l2;
+      list i ident_x_expression_def ppf l2;
       class_expr i ppf ce;
   | Tcl_constraint (ce, Some ct, _, _, _) ->
       line i ppf "Tcl_constraint\n";
@@ -877,7 +877,7 @@ and label_x_expression i ppf (l, e) =
   arg_label (i+1) ppf l;
   (match e with None -> () | Some e -> expression (i+1) ppf e)
 
-and ident_x_loc_x_expression_def i ppf (l,_, e) =
+and ident_x_expression_def i ppf (l, e) =
   line i ppf "<def> \"%a\"\n" fmt_ident l;
   expression (i+1) ppf e;
 

@@ -496,7 +496,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
         | Tcl_structure clstr -> iter_class_structure clstr
         | Tcl_fun (_label, pat, priv, cl, _partial) ->
           iter_pattern pat;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) priv;
+          List.iter (fun (_id, exp) -> iter_expression exp) priv;
           iter_class_expr cl
 
         | Tcl_apply (cl, args) ->
@@ -509,7 +509,7 @@ module MakeIterator(Iter : IteratorArgument) : sig
 
         | Tcl_let (rec_flat, bindings, ivars, cl) ->
           iter_bindings rec_flat bindings;
-          List.iter (fun (_id, _, exp) -> iter_expression exp) ivars;
+          List.iter (fun (_id, exp) -> iter_expression exp) ivars;
             iter_class_expr cl
 
         | Tcl_constraint (cl, Some clty, _vals, _meths, _concrs) ->
