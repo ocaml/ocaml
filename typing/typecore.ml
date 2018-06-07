@@ -537,8 +537,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | {pv_id = x; _}::_, [] -> raise (Error (loc, env, Orpat_vars (x, [])))
-      | [],{pv_id = y; _}::_  -> raise (Error (loc, env, Orpat_vars (y, [])))
+      | {pv_id; _}::_, [] | [],{pv_id; _}::_ -> raise (Error (loc, env, Orpat_vars (pv_id, [])))
       | {pv_id = x; _}::_, {pv_id = y; _}::_ ->
           let err =
             if Ident.name x < Ident.name y
