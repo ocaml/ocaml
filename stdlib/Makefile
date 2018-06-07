@@ -57,6 +57,7 @@ OTHERS=$(P)seq.cmo $(P)char.cmo $(P)uchar.cmo $(P)sys.cmo $(P)list.cmo \
   $(P)spacetime.cmo $(P)bigarray.cmo
 
 PREFIXED_OBJS=$(filter stdlib__%.cmo,$(OBJS))
+UNPREFIXED_OBJS=$(PREFIXED_OBJS:stdlib__%.cmo=%)
 
 .PHONY: all
 all: stdlib.cma std_exit.cmo camlheader target_camlheader camlheader_ur
@@ -85,11 +86,13 @@ allopt-noprof:
 allopt-prof: stdlib.p.cmxa std_exit.p.cmx
 	rm -f std_exit.p.cmi
 
+LEGACY_OBJS=$(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", \
+                                  $(filter stdlib__%,$(OBJS)))
 .PHONY: install
 install::
 # Transitional: when upgrading from 4.06 -> 4.07, module M is in stdlib__m.cm*,
 # while previously it was in m.cm*, which confuses the compiler.
-	rm -f $(patsubst stdlib__%,"$(INSTALL_LIBDIR)/%", $(filter stdlib__%,$(OBJS)))
+	rm -f $(LEGACY_OBJS)
 # Remove "old" pervasives.* and bigarray.* to avoid getting confused with the
 # Stdlib versions.
 	rm -f "$(INSTALL_LIBDIR)/pervasives.*" "$(INSTALL_LIBDIR)/bigarray.*"
@@ -304,6 +307,6 @@ depend:
 	$(CAMLDEP) -slash -pp "$(AWK) -f remove_module_aliases.awk" stdlib.ml \
 	  | sed -e 's/\.cmx : /.p.cmx : /g' >> .depend.tmp
 	sed -Ee \
-	  's#(^| )(${subst ${SPACE},|,${PREFIXED_OBJS:stdlib__%.cmo=%}})[.]#\1stdlib__\2.#g' \
+	  's#(^| )(${subst ${SPACE},|,${UNPREFIXED_OBJS}})[.]#\1stdlib__\2.#g' \
 	  .depend.tmp > .depend
 	rm -f .depend.tmp
