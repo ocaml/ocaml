@@ -93,6 +93,13 @@ testsuite/tools/*.S                           ocaml-typo=missing-header
 testsuite/tools/*.asm                         ocaml-typo=missing-header
 testsuite/typing                              ocaml-typo=missing-header
 
+# Expect tests with overly long lines of expected output
+testsuite/tests/parsing/docstrings.ml        ocaml-typo=long-line,very-long-line,missing-header
+testsuite/tests/typing-objects/Exemples.ml   ocaml-typo=long-line,missing-header
+testsuite/tests/typing-modules/firstclass.ml ocaml-typo=long-line,missing-header
+testsuite/tests/typing-gadts/test.ml         ocaml-typo=long-line,missing-header
+testsuite/tests/typing-gadts/pr7160.ml       ocaml-typo=long-line,missing-header
+
 tools/magic         ocaml-typo=missing-header
 
 yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
