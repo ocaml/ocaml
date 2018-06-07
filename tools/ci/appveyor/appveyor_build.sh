@@ -85,6 +85,7 @@ case "$1" in
     run "test mingw32" make -C $FULL_BUILD_PREFIX-mingw32 tests
     run "install msvc64" make -C $FULL_BUILD_PREFIX-msvc64 install
     run "install mingw32" make -C $FULL_BUILD_PREFIX-mingw32 install
+    run "check_all_arches" make -C $FULL_BUILD_PREFIX-msvc64 check_all_arches
     ;;
   *)
     cd $APPVEYOR_BUILD_FOLDER/../$BUILD_PREFIX-msvc64
