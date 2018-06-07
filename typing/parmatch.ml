@@ -72,11 +72,11 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
                                                    S
                                                 -------> | "" |
                              U     | S, "" | __/         | () |
-                         --------> | _, () |   \  ¬ S
+                         --------> | _, () |   \ not S
         | U, _, () | __/                        -------> | () |
         | _, S, "" |   \
                         ---------> | S, "" | ----------> | "" |
-                           ¬ U                    S
+                          not U                    S
    v}
 
    where following an edge labelled by a pattern P means "assuming the value I
