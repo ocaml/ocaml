@@ -64,6 +64,11 @@ Working version
 - GPR#1822: keep attributes attached to pattern variables from being discarded.
   (Nicolás Ojeda Bär, review by Thomas Refis)
 
+- GPR#1802: OCaml source files are now officially UTF-8, Latin-1
+  identifiers etc. are no longer supported.
+  (Perry E. Metzger)
+
+
 ### Code generation and optimizations:
 
 - MPR#7725, GPR#1754: improve AFL instrumentation for objects and lazy values
@@ -91,6 +96,9 @@ Working version
 
 - GPR#1788: move the quoted string description to the main chapters
   (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
+
+- GPR#1802: Explain that OCaml source files are now officially UTF-8
+  (Perry E. Metzger)
 
 ### Compiler distribution build system:
 
