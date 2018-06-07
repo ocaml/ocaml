@@ -81,9 +81,9 @@
 # You can ignore a rule by giving the option -<rule> on the command
 # line (before any file names).
 
-# Files which include the utf8 rule will have line-length computations take
-# UTF-8 sequences into account. As a special case, UTF-8 sequences are always
-# allowed in the copyright headers.
+# Files which include the utf8 rule will be validated using grep and line-length
+# computations will take UTF-8 sequences into account. As a special case, UTF-8
+# sequences are always allowed in the copyright headers.
 
 # First prevent i18n from messing up everything.
 export LC_ALL=C
@@ -161,6 +161,19 @@ IGNORE_DIRS="
     esac
     case "$f" in
       ocamldoc/*|*/ocamldoc/*) rules="long-line,$rules";;
+    esac
+
+    case ,$svnrules, in
+      *,utf8,*)
+        # grep -a is used to force the file to be considered as text and -x
+        # requires the entire line to match. This specifically detects the
+        # presence of lines containing malformed UTF-8. It may be tested using
+        # https://www.cl.cam.ac.uk/~mgk25/ucs/examples/UTF-8-test.txt
+        if LC_ALL=en_US.UTF8 grep -qaxv '.*' "$f" ; then
+          echo File "$f" is not correctly encoded in UTF-8
+          exit 2
+        fi
+        ;;
     esac
 
     (cat "$f" | tr -d '\r'; echo) \
