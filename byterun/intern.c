@@ -54,7 +54,7 @@ static asize_t obj_counter;
 static value * intern_obj_table = NULL;
 /* The pointers to objects already seen */
 
-static unsigned int intern_color;
+static color_t intern_color;
 /* Color to assign to newly created headers */
 
 static header_t intern_header;
@@ -264,6 +264,10 @@ static void intern_free_stack(void)
 }
 
 /* Same, then raise Out_of_memory */
+CAMLnoreturn_start
+static void intern_stack_overflow(void)
+CAMLnoreturn_end;
+
 static void intern_stack_overflow(void)
 {
   caml_gc_message (0x04, "Stack overflow in un-marshaling value\n");

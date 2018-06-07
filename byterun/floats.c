@@ -487,7 +487,7 @@ CAMLprim value caml_frexp_float(value f)
 // Seems dumb but intnat could not correspond to int type.
 double caml_ldexp_float_unboxed(double f, intnat i)
 {
-  return ldexp(f, i);
+  return ldexp(f, (int) i);
 }
 
 

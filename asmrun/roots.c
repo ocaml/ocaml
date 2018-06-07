@@ -37,7 +37,7 @@ void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
 frame_descr ** caml_frame_descriptors = NULL;
-int caml_frame_descriptors_mask = 0;
+uintnat caml_frame_descriptors_mask = 0;
 
 /* Linked-list */
 
@@ -61,7 +61,7 @@ static link *cons(void *data, link *tl) {
 static link *frametables = NULL;
 static intnat num_descr = 0;
 
-static int count_descriptors(link *list) {
+static intnat count_descriptors(link *list) {
   intnat num_descr = 0;
   link *lnk;
   iter_list(list,lnk) {
@@ -241,7 +241,8 @@ void caml_oldify_local_roots (void)
   value * regs;
   frame_descr * d;
   uintnat h;
-  int i, j, n, ofs;
+  intnat i, j;
+  int n, ofs;
 #ifdef Stack_grows_upwards
   short * p;  /* PR#4339: stack offsets are negative in this case */
 #else

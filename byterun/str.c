@@ -133,7 +133,7 @@ CAMLprim value caml_bytes_get16(value str, value index)
 
 CAMLprim value caml_string_get32(value str, value index)
 {
-  intnat res;
+  int32_t res;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(index);
   if (idx < 0 || idx + 3 >= caml_string_length(str)) caml_array_bound_error();

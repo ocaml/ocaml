@@ -480,7 +480,7 @@ CAMLprim value caml_gc_minor(value v)
 
 static void test_and_compact (void)
 {
-  float fp;
+  double fp;
 
   fp = 100.0 * caml_fl_cur_wsz / (caml_stat_heap_wsz - caml_fl_cur_wsz);
   if (fp > 999999.0) fp = 999999.0;

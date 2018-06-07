@@ -83,6 +83,10 @@ static void st_thread_cleanup(void)
 
 /* Thread termination */
 
+CAMLnoreturn_start
+static void st_thread_exit(void)
+CAMLnoreturn_end;
+
 static void st_thread_exit(void)
 {
   TRACE("st_thread_exit");

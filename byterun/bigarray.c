@@ -573,7 +573,7 @@ value caml_ba_get_N(value vb, value * vind, int nind)
   default:
     CAMLassert(0);
   case CAML_BA_FLOAT32:
-    return caml_copy_double(((float *) b->data)[offset]);
+    return caml_copy_double((double) ((float *) b->data)[offset]);
   case CAML_BA_FLOAT64:
     return caml_copy_double(((double *) b->data)[offset]);
   case CAML_BA_SINT8:
@@ -594,7 +594,7 @@ value caml_ba_get_N(value vb, value * vind, int nind)
     return Val_long(((intnat *) b->data)[offset]);
   case CAML_BA_COMPLEX32:
     { float * p = ((float *) b->data) + offset * 2;
-      return copy_two_doubles(p[0], p[1]); }
+      return copy_two_doubles((double) p[0], (double) p[1]); }
   case CAML_BA_COMPLEX64:
     { double * p = ((double *) b->data) + offset * 2;
       return copy_two_doubles(p[0], p[1]); }
@@ -647,7 +647,7 @@ CAMLprim value caml_ba_uint8_get16(value vb, value vind)
 
 CAMLprim value caml_ba_uint8_get32(value vb, value vind)
 {
-  intnat res;
+  uint32_t res;
   unsigned char b1, b2, b3, b4;
   intnat idx = Long_val(vind);
   struct caml_ba_array * b = Caml_ba_array_val(vb);

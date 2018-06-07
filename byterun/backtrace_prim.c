@@ -321,10 +321,6 @@ CAMLprim value caml_get_current_callstack(value max_frames_value)
 
 /* Read the debugging info contained in the current bytecode executable. */
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 static void read_main_debug_info(struct debug_info *di)
 {
   CAMLparam0();

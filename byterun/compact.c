@@ -58,7 +58,9 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 #define Whsize_ehd(h) Whsize_hd (h)
 #define Wosize_ehd(h) Wosize_hd (h)
 #define Tag_ehd(h) (((h) >> 2) & 0xFF)
+#ifdef WITH_PROFINFO
 #define Profinfo_ehd(hd) Profinfo_hd(hd)
+#endif
 #define Ecolor(w) ((w) & 3)
 
 typedef uintnat word;
@@ -513,7 +515,7 @@ void caml_compact_heap_maybe (void)
      Estimated free percentage: FP = 100 * FW / LW
      We compact the heap if FP > caml_percent_max
   */
-  float fw, fp;
+  double fw, fp;
   CAMLassert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
   if (caml_stat_major_collections < 3) return;

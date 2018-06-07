@@ -642,7 +642,7 @@ CAMLprim value caml_ml_output_int(value vchannel, value w)
   struct channel * channel = Channel(vchannel);
 
   Lock(channel);
-  caml_putword(channel, Long_val(w));
+  caml_putword(channel, (uint32_t) Long_val(w));
   Unlock(channel);
   CAMLreturn (Val_unit);
 }

@@ -100,7 +100,7 @@ extern caml_timing_hook caml_finalise_begin_hook, caml_finalise_end_hook;
 #define CAMLassert(x) \
   ((x) ? (void) 0 : caml_failed_assert ( #x , __FILE__, __LINE__))
 CAMLnoreturn_start
-CAMLextern int caml_failed_assert (char *, char *, int)
+CAMLextern void caml_failed_assert (char *, char *, int)
 CAMLnoreturn_end;
 #else
 #define CAMLassert(x) ((void) 0)
