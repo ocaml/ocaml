@@ -64,9 +64,11 @@ change_exe_magic_number() {
   new="$1"
   echo Changing executable magic number from ${old} to ${new}
   # Change magic number in byterun/caml/exec.h
-  sed -i 's/\x23define \+EXEC_MAGIC \+\x22'${old}'\x22/#define EXEC_MAGIC "'${new}'"/' byterun/caml/exec.h
+  sed -i 's/\x23define \+EXEC_MAGIC \+\x22'${old}\
+'\x22/#define EXEC_MAGIC "'${new}'"/' byterun/caml/exec.h
   # Change magic number in utils/config.mlp
-  sed -i 's/let \+exec_magic_number \+= \+\x22'${old}'\x22/let exec_magic_number = "'${new}'"/' utils/config.mlp
+  sed -i 's/let \+exec_magic_number \+= \+\x22'${old}\
+'\x22/let exec_magic_number = "'${new}'"/' utils/config.mlp
 }
 
 remove_primitive()
