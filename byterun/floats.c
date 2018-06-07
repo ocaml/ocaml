@@ -304,10 +304,10 @@ static int caml_float_of_hex(const char * s, double * res)
       if (*s == 0) return -1;   /* nothing after exponent mark */
       e = strtol(s, &p, 10);
       if (*p != 0) return -1;   /* ill-formed exponent */
-      /* Handle exponents larger than int by returning 0/∞ directly.
-	 Mind that INT_MIN/INT_MAX are included in the test so as to capture
-	 the overflow case of strtol on Win64 — long and int have the same
-	 size there. */
+      /* Handle exponents larger than int by returning 0/infinity directly.
+         Mind that INT_MIN/INT_MAX are included in the test so as to capture
+         the overflow case of strtol on Win64 -- long and int have the same
+         size there. */
       if (e <= INT_MIN) {
         *res = 0.;
         return 0;
