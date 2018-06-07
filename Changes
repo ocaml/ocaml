@@ -61,8 +61,8 @@ Working version
   to control the degree of optimization in the pattern matching compiler
   (Dwight Guth, review by Gabriel Scherer and Luc Maranget)
 
-- GPR#????: attributes attached to pattern variables are not ignored anymore.
-  (Nicolás Ojeda Bär, review by ...)
+- GPR#1822: keep attributes attached to pattern variables from being discarded.
+  (Nicolás Ojeda Bär, review by Thomas Refis)
 
 ### Code generation and optimizations:
 
