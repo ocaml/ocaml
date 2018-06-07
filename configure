@@ -670,9 +670,11 @@ if test "$?" -eq 0; then
   case "$3" in
     4) inf "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h
+       config ARCH64 "false"
        arch64=false;;
     8) inf "Wow! A 64 bit architecture!"
        echo "#define ARCH_SIXTYFOUR" >> m.h
+       config ARCH64 "true"
        arch64=true;;
     *) err "This architecture seems to be neither 32 bits nor 64 bits.\n" \
            "OCaml won't run on this architecture.";;

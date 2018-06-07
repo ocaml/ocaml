@@ -173,6 +173,7 @@ ARCMD=
 
 ### Name of architecture for the native-code compiler
 ARCH=i386
+ARCH64=false
 
 ### Name of architecture model for the native-code compiler.
 MODEL=default
