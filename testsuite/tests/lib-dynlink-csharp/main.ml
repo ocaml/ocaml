@@ -33,7 +33,8 @@ flags = "-output-obj"
 program = "main_obj.${objext}"
 all_modules = "dynlink.cma entry.c main.ml"
 ****** script
-script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} ${ocamlsrcdir}/byterun/libcamlrun.lib ${bytecc_libs}"
+script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} \
+                   ${ocamlsrcdir}/byterun/libcamlrun.lib ${bytecc_libs}"
 ******* script
 script = "${csharp_cmd}"
 ******** run
@@ -68,7 +69,8 @@ flags = "-output-obj"
 program = "main_obj.${objext}"
 all_modules = "dynlink.cmxa entry.c main.ml"
 ****** script
-script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} ${ocamlsrcdir}/asmrun/libasmrun.lib ${nativecc_libs}"
+script = "${mkdll} -maindll -o main.dll main_obj.${objext} entry.${objext} \
+                   ${ocamlsrcdir}/asmrun/libasmrun.lib ${nativecc_libs}"
 ******* script
 script = "${csharp_cmd}"
 ******** run

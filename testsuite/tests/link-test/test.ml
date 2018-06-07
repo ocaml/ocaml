@@ -1,6 +1,7 @@
 (* TEST
 
-modules = "aliases.ml external_for_pack.ml external.ml submodule.ml test.ml use_in_pack.ml"
+modules = "aliases.ml external_for_pack.ml external.ml submodule.ml test.ml \
+           use_in_pack.ml"
 
 * setup-ocamlc.byte-build-env
 program = "${test_build_directory}/test.byte"
