@@ -21,7 +21,8 @@
 # In this context, it is necessary to skip a few tests whose behaviour
 # is modified by the instrumentation:
 
-export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml tests/runtime-errors/stackoverflow.ml"
+export OCAMLTEST_SKIP_TESTS="tests/afl-instrumentation/afltest.ml \
+tests/runtime-errors/stackoverflow.ml"
 
 # To know the slave's architecture, this script looks at the OCAML_ARCH
 # environment variable. For a given node NODe, this variable can be defined
