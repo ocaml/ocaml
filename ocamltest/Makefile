@@ -196,7 +196,7 @@ ocamltest.opt$(EXE): $(native_modules)
 %.$(O): %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(BYTECCCOMPOPTS) -c $<
 
-ocamltest_config.ml: ocamltest_config.ml.in
+ocamltest_config.ml: ocamltest_config.ml.in Makefile
 	sed \
 	  -e 's|@@AFL_INSTRUMENT@@|$(AFL_INSTRUMENT)|' \
 	  -e 's|@@ARCH@@|$(ARCH)|' \
