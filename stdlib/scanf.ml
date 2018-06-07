@@ -1547,21 +1547,8 @@ let sscanf_format :
   fun s format f -> bscanf_format (Scanning.from_string s) format f
 
 
-let string_to_String s =
-  let l = String.length s in
-  let b = Buffer.create (l + 2) in
-  Buffer.add_char b '\"';
-  for i = 0 to l - 1 do
-    let c = s.[i] in
-    if c = '\"' then Buffer.add_char b '\\';
-    Buffer.add_char b c;
-  done;
-  Buffer.add_char b '\"';
-  Buffer.contents b
-
-
 let format_from_string s fmt =
-  sscanf_format (string_to_String s) fmt (fun x -> x)
+  sscanf_format ("\"" ^ String.escaped s ^ "\"") fmt (fun x -> x)
 
 
 let unescaped s =
