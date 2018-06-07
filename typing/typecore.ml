@@ -162,21 +162,6 @@ let mk_expected ?explanation ty = { ty; explanation; }
 let case lhs rhs =
   {c_lhs = lhs; c_guard = None; c_rhs = rhs}
 
-let maybe_add_pattern_variables_ghost loc_let env pv =
-  List.fold_right
-    (fun (id, ty, _name, _loc, _as_var) env ->
-       let lid = Longident.Lident (Ident.name id) in
-       match Env.lookup_value ~mark:false lid env with
-       | _ -> env
-       | exception Not_found ->
-         Env.add_value id
-           { val_type = ty;
-             val_kind = Val_unbound Val_unbound_ghost_recursive;
-             val_loc = loc_let;
-             val_attributes = [];
-           } env
-    ) pv env
-
 (* Upper approximation of free identifiers on the parse tree *)
 
 let iter_expression f e =
@@ -462,7 +447,14 @@ let has_variants p =
 
 (* pattern environment *)
 type pattern_variable =
-  Ident.t * type_expr * string loc * Location.t * bool (* as-variable *)
+  {
+    pv_id: Ident.t;
+    pv_type: type_expr;
+    pv_name: string loc;
+    pv_loc: Location.t;
+    pv_as_var: bool;
+  }
+
 type module_variable =
   string loc * Location.t
 
@@ -479,13 +471,32 @@ let reset_pattern scope allow =
   module_variables := [];
 ;;
 
+let maybe_add_pattern_variables_ghost loc_let env pv =
+  List.fold_right
+    (fun {pv_id; pv_type; _} env ->
+       let lid = Longident.Lident (Ident.name pv_id) in
+       match Env.lookup_value ~mark:false lid env with
+       | _ -> env
+       | exception Not_found ->
+         Env.add_value pv_id
+           { val_type = pv_type;
+             val_kind = Val_unbound Val_unbound_ghost_recursive;
+             val_loc = loc_let;
+             val_attributes = [];
+           } env
+    ) pv env
+
 let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty =
-  if List.exists (fun (id, _, _, _, _) -> Ident.name id = name.txt)
+  if List.exists (fun {pv_id; _} -> Ident.name pv_id = name.txt)
       !pattern_variables
   then raise(Error(loc, Env.empty, Multiply_bound_variable name.txt));
   let id = Ident.create name.txt in
   pattern_variables :=
-    (id, ty, name, loc, is_as_variable) :: !pattern_variables;
+    {pv_id = id;
+     pv_type = ty;
+     pv_name = name;
+     pv_loc = loc;
+     pv_as_var = is_as_variable} :: !pattern_variables;
   if is_module then begin
     (* Note: unpack patterns enter a variable of the same name *)
     if not !allow_modules then
@@ -499,7 +510,7 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty =
 
 let sort_pattern_variables vs =
   List.sort
-    (fun (x,_,_,_,_) (y,_,_,_,_) ->
+    (fun {pv_id = x; _} {pv_id = y; _} ->
       Pervasives.compare (Ident.name x) (Ident.name y))
     vs
 
@@ -510,9 +521,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
   and p2_vs = sort_pattern_variables p2_vs in
 
   let rec unify_vars p1_vs p2_vs =
-    let vars vs = List.map (fun (x,_t,_,_l,_a) -> x) vs in
+    let vars vs = List.map (fun {pv_id; _} -> pv_id) vs in
     match p1_vs, p2_vs with
-      | (x1,t1,_,_l1,_a1)::rem1, (x2,t2,_,_l2,_a2)::rem2
+      | {pv_id = x1; pv_type = t1; _}::rem1, {pv_id = x2; pv_type = t2; _}::rem2
         when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
@@ -526,9 +537,9 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
-      | (x,_,_,_,_)::_, [] -> raise (Error (loc, env, Orpat_vars (x, [])))
-      | [],(y,_,_,_,_)::_  -> raise (Error (loc, env, Orpat_vars (y, [])))
-      | (x,_,_,_,_)::_, (y,_,_,_,_)::_ ->
+      | {pv_id = x; _}::_, [] -> raise (Error (loc, env, Orpat_vars (x, [])))
+      | [],{pv_id = y; _}::_  -> raise (Error (loc, env, Orpat_vars (y, [])))
+      | {pv_id = x; _}::_, {pv_id = y; _}::_ ->
           let err =
             if Ident.name x < Ident.name y
             then Orpat_vars (x, vars p2_vs)
@@ -1492,14 +1503,14 @@ let check_unused ?(lev=get_current_level ()) env expected_ty cases =
     cases
 
 let iter_pattern_variables_type f : pattern_variable list -> unit =
-  List.iter (fun (_, t, _, _, _) -> f t)
+  List.iter (fun {pv_type; _} -> f pv_type)
 
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
-    (fun (id, ty, _name, loc, as_var) env ->
-       let check = if as_var then check_as else check in
-       Env.add_value ?check id
-         {val_type = ty; val_kind = Val_reg; Types.val_loc = loc;
+    (fun {pv_id; pv_type; pv_name = _; pv_loc; pv_as_var} env ->
+       let check = if pv_as_var then check_as else check in
+       Env.add_value ?check pv_id
+         {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
           val_attributes = [];
          } env
     )
@@ -1540,16 +1551,16 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
-      (fun (id, ty, name, loc, as_var) (pv, env) ->
+      (fun {pv_id; pv_type; pv_name; pv_loc; pv_as_var} (pv, env) ->
          let check s =
-           if as_var then Warnings.Unused_var s
+           if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
-         let id' = Ident.create (Ident.name id) in
-         ((id', name, id, ty)::pv,
-          Env.add_value id' {val_type = ty;
+         let id' = Ident.create (Ident.name pv_id) in
+         ((id', pv_name, pv_id, pv_type)::pv,
+          Env.add_value id' {val_type = pv_type;
                              val_kind = Val_ivar (Immutable, cl_num);
                              val_attributes = [];
-                             Types.val_loc = loc;
+                             Types.val_loc = pv_loc;
                             } ~check
             env))
       !pattern_variables ([], met_env)
@@ -1573,27 +1584,27 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
   pattern_variables := [];
   let (val_env, met_env, par_env) =
     List.fold_right
-      (fun (id, ty, _name, loc, as_var) (val_env, met_env, par_env) ->
-         (Env.add_value id {val_type = ty;
-                            val_kind =
-                              Val_unbound Val_unbound_instance_variable;
-                            val_attributes = [];
-                            Types.val_loc = loc;
-                           } val_env,
-          Env.add_value id {val_type = ty;
-                            val_kind = Val_self (meths, vars, cl_num, privty);
-                            val_attributes = [];
-                            Types.val_loc = loc;
-                           }
-            ~check:(fun s -> if as_var then Warnings.Unused_var s
+      (fun {pv_id; pv_type; pv_name = _; pv_loc; pv_as_var} (val_env, met_env, par_env) ->
+         (Env.add_value pv_id {val_type = pv_type;
+                               val_kind =
+                                 Val_unbound Val_unbound_instance_variable;
+                               val_attributes = [];
+                               Types.val_loc = pv_loc;
+                              } val_env,
+          Env.add_value pv_id {val_type = pv_type;
+                               val_kind = Val_self (meths, vars, cl_num, privty);
+                               val_attributes = [];
+                               Types.val_loc = pv_loc;
+                              }
+            ~check:(fun s -> if pv_as_var then Warnings.Unused_var s
                              else Warnings.Unused_var_strict s)
             met_env,
-          Env.add_value id {val_type = ty;
-                            val_kind =
-                              Val_unbound Val_unbound_instance_variable;
-                            val_attributes = [];
-                            Types.val_loc = loc;
-                           } par_env))
+          Env.add_value pv_id {val_type = pv_type;
+                               val_kind =
+                                 Val_unbound Val_unbound_instance_variable;
+                               val_attributes = [];
+                               Types.val_loc = pv_loc;
+                              } par_env))
       pv (val_env, met_env, par_env)
   in
   (pat, meths, vars, val_env, met_env, par_env)
