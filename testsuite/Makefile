@@ -21,6 +21,8 @@ FIND=find
 TOPDIR := ..
 include $(TOPDIR)/Makefile.tools
 
+OCAMLTESTDIR_CYGPATH=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)
+
 ifeq "$(UNIX_OR_WIN32)" "unix"
   ifeq "$(SYSTEM)" "cygwin"
     find := /usr/bin/find
@@ -203,7 +205,7 @@ exec-one:
 	elif [ -f $(DIR)/ocamltests ] && [ -z $(LEGACY) ] ; then \
 	  echo "Running tests from '$$DIR' ..."; \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)" \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
 	    OCAMLTESTFLAGS=""; \
 	fi
 
@@ -242,7 +244,7 @@ promote:
 	fi
 	@if [ -f $(DIR)/ocamltests ]; then \
 	  $(MAKE) exec-ocamltest DIR=$(DIR) \
-	    OCAMLTESTENV="OCAMLTESTDIR=$(shell $(CYGPATH) $(BASEDIR)/$(DIR)/_ocamltest)" \
+	    OCAMLTESTENV="OCAMLTESTDIR=$(OCAMLTESTDIR_CYGPATH)" \
 	    OCAMLTESTFLAGS="-promote"; \
 	else \
 	  cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote; \
