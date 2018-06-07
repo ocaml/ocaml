@@ -1008,11 +1008,11 @@ and class_expr_aux cl_num val_env met_env scl =
       end;
       let pv =
         List.map
-          begin fun (id, id_loc, id', _ty) ->
+          begin fun (id, id', _ty) ->
             let path = Pident id' in
             (* do not mark the value as being used *)
             let vd = Env.find_value path val_env' in
-            (id, id_loc,
+            (id,
              {exp_desc =
               Texp_ident(path, mknoloc (Longident.Lident (Ident.name id)), vd);
               exp_loc = Location.none; exp_extra = [];
@@ -1158,7 +1158,7 @@ and class_expr_aux cl_num val_env met_env scl =
         Typecore.type_let In_class_def val_env rec_flag sdefs None in
       let (vals, met_env) =
         List.fold_right
-          (fun (id, id_loc) (vals, met_env) ->
+          (fun (id, _id_loc) (vals, met_env) ->
              let path = Pident id in
              (* do not mark the value as used *)
              let vd = Env.find_value path val_env in
@@ -1182,7 +1182,7 @@ and class_expr_aux cl_num val_env met_env scl =
                }
              in
              let id' = Ident.create (Ident.name id) in
-             ((id', id_loc, expr)
+             ((id', expr)
               :: vals,
               Env.add_value id' desc met_env))
           (let_bound_idents_with_loc defs)

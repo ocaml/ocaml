@@ -78,7 +78,7 @@ val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:
         string -> Env.t -> Env.t -> arg_label -> Parsetree.pattern ->
-        Typedtree.pattern * (Ident.t * string loc * Ident.t * type_expr) list *
+        Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:
         string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->

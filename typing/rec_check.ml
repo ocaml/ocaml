@@ -606,7 +606,7 @@ and class_expr : Env.env -> Typedtree.class_expr -> Use.t =
     | Tcl_structure cs ->
         class_structure env cs
     | Tcl_fun (_, _, args, ce, _) ->
-        let arg env (_, _, e) = expression env e in
+        let arg env (_, e) = expression env e in
         Use.inspect (Use.join (list arg env args)
                         (class_expr env ce))
     | Tcl_apply (ce, args) ->

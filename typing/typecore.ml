@@ -450,7 +450,6 @@ type pattern_variable =
   {
     pv_id: Ident.t;
     pv_type: type_expr;
-    pv_name: string loc;
     pv_loc: Location.t;
     pv_as_var: bool;
     pv_attributes: attributes;
@@ -495,7 +494,6 @@ let enter_variable ?(is_module=false) ?(is_as_variable=false) loc name ty attrs 
   pattern_variables :=
     {pv_id = id;
      pv_type = ty;
-     pv_name = name;
      pv_loc = loc;
      pv_as_var = is_as_variable;
      pv_attributes = attrs} :: !pattern_variables;
@@ -1509,7 +1507,7 @@ let iter_pattern_variables_type f : pattern_variable list -> unit =
 
 let add_pattern_variables ?check ?check_as env pv =
   List.fold_right
-    (fun {pv_id; pv_type; pv_name = _; pv_loc; pv_as_var; pv_attributes} env ->
+    (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} env ->
        let check = if pv_as_var then check_as else check in
        Env.add_value ?check pv_id
          {val_type = pv_type; val_kind = Val_reg; Types.val_loc = pv_loc;
@@ -1553,12 +1551,12 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
   if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
-      (fun {pv_id; pv_type; pv_name; pv_loc; pv_as_var; pv_attributes} (pv, env) ->
+      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} (pv, env) ->
          let check s =
            if pv_as_var then Warnings.Unused_var s
            else Warnings.Unused_var_strict s in
          let id' = Ident.create (Ident.name pv_id) in
-         ((id', pv_name, pv_id, pv_type)::pv,
+         ((id', pv_id, pv_type)::pv,
           Env.add_value id' {val_type = pv_type;
                              val_kind = Val_ivar (Immutable, cl_num);
                              val_attributes = pv_attributes;
@@ -1586,7 +1584,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat =
   pattern_variables := [];
   let (val_env, met_env, par_env) =
     List.fold_right
-      (fun {pv_id; pv_type; pv_name = _; pv_loc; pv_as_var; pv_attributes} (val_env, met_env, par_env) ->
+      (fun {pv_id; pv_type; pv_loc; pv_as_var; pv_attributes} (val_env, met_env, par_env) ->
          (Env.add_value pv_id {val_type = pv_type;
                                val_kind =
                                  Val_unbound Val_unbound_instance_variable;
