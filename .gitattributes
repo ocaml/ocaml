@@ -121,6 +121,7 @@ ocamldoc/remove_DEBUG text eol=lf
 ocamltest/getocamloptdefaultflags text eol=lf
 stdlib/Compflags text eol=lf
 stdlib/sharpbang text eol=lf
+tools/ci/inria/remove-sinh-primitive.patch text eol=lf ocaml-typo=white-at-eol,missing-header
 tools/check-typo text eol=lf
 tools/ci-build text eol=lf
 tools/msvs-promote-path text eol=lf
