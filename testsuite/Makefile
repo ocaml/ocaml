@@ -52,7 +52,12 @@ ocamltest_program := $(or \
   $(wildcard $(ocamltest_directory)/ocamltest.opt$(EXE)),\
   $(wildcard $(ocamltest_directory)/ocamltest$(EXE)))
 
-ocamltest := $(FLEXLINK_PREFIX) SORT=$(SORT) MAKE=$(MAKE) $(ocamltest_program)
+ifneq "$(FLEXLINK_PREFIX)" ""
+  MKDLL=$(WINTOPDIR)/boot/ocamlrun $(WINTOPDIR)/flexdll/flexlink.exe \
+                                   $(FLEXLINK_FLAGS)
+endif
+ocamltest := $(FLEXLINK_PREFIX) MKDLL="$(MKDLL)" SORT=$(SORT) MAKE=$(MAKE) \
+                                $(ocamltest_program)
 
 .PHONY: default
 default:
