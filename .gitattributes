@@ -49,7 +49,7 @@ README*                  ocaml-typo=missing-header
 /LICENSE                 ocaml-typo=long-line,very-long-line,missing-header
 # tools/ci/appveyor/appveyor_build.cmd only has missing-header because
 # dra27 too lazy to update check-typo to interpret Cmd-style comments!
-/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header text eol=crlf
+/tools/ci/appveyor/appveyor_build.cmd      ocaml-typo=long-line,very-long-line,missing-header,non-ascii text eol=crlf
 /tools/ci/appveyor/appveyor_build.sh       ocaml-typo=non-ascii
 
 
