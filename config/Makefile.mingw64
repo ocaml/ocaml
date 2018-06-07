@@ -178,6 +178,7 @@ ARCMD=$(TOOLPREF)ar
 
 ### Name of architecture for the native-code compiler
 ARCH=amd64
+ARCH64=true
 
 ### Name of architecture model for the native-code compiler.
 MODEL=default
