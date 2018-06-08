@@ -142,7 +142,7 @@ void caml_add_orphaned_ephe(value todo_head, value todo_tail,
   caml_plat_unlock(&orphaned_lock);
 }
 
-static void steal_ephe_work()
+void caml_steal_ephe_work()
 {
   struct domain* d = caml_domain_self();
   caml_domain_state* domain_state = Caml_state;
@@ -739,7 +739,7 @@ mark_again:
     caml_ev_end("major_gc/mark");
   mark_work -= budget;
 
-  steal_ephe_work(domain_state);
+  caml_steal_ephe_work();
 
   if (domain_state->ephe_list_todo != (value) NULL &&
       ephe_cycle_info.ephe_cycle > domain_state->ephe_cycle) {
