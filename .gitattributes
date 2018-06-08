@@ -101,7 +101,9 @@ yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 # Test suite command fragments
 *.checker text eol=lf
 *.precheck text eol=lf
-*.runner text eol=lf
+# ocamltest hooks which are used in the testsuite
+*.check-program-output text eol=lf
+*.run text eol=lf
 
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
