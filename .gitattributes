@@ -111,9 +111,12 @@ yacc/*.[ch]   ocaml-typo=long-line,very-long-line,unused-prop
 *.awk text eol=lf
 
 # Test suite command fragments
-*.checker text eol=lf
+# .precheck is a legacy from the old system - it's now (by convention) used for
+# "has-*" style probe scripts.
 *.precheck text eol=lf
-*.runner text eol=lf
+# ocamltest hooks which are used in the testsuite
+*.check-program-output text eol=lf
+*.run text eol=lf
 
 configure text eol=lf
 config/auto-aux/hasgot text eol=lf
