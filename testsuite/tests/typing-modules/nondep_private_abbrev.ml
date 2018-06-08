@@ -25,5 +25,5 @@ module G : functor (X : sig  end) -> sig type t = F(X).t end
 
 module Indirect = G(struct end);;
 [%%expect{|
-module Indirect : sig type t end
+module Indirect : sig type t = private int end
 |}]
