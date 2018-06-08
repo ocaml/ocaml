@@ -184,9 +184,6 @@ set_config_var CFLAGS "-O1 \
 -fsanitize=thread \
 -fsanitize-blacklist=$(pwd)/tools/ci/inria/tsan-suppr.txt"
 
-# ThreadSanitizer reacts poorly to stack overflow, so don't test for it.
-undefine_macro HAS_STACK_OVERFLOW_DETECTION byterun/caml/s.h
-
 # Build the system
 make $jobs world.opt
 
