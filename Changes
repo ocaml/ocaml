@@ -377,7 +377,7 @@ OCaml 4.07
 ### Tools:
 
 - MPR#7643, GPR#1377: ocamldep, fix an exponential blowup in presence of nested
-  structures and signatures (e.g. "include struct … include(struct … end) … end")
+  structures and signatures, e.g. "include struct … include(struct … end) … end"
   (Florian Angeletti, review by Gabriel Scherer, report by Christophe Raffalli)
 
 - MPR#7687, GPR#1653: deprecate -thread option,
@@ -2133,7 +2133,8 @@ OCaml 4.04.1 (14 Apr 2017):
   (David Allsopp, report and initial fix by Nicolás Ojeda Bär, review and
    superior implementation suggestion by Xavier Leroy)
 
-- PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink modules
+- PR#7405, GPR#903: s390x: Fix address of caml_raise_exn in native dynlink
+  modules.
   (Richard Jones, review by Xavier Leroy)
 
 - PR#7417, GPR#930: ensure 16 byte stack alignment inside caml_allocN on x86-64
@@ -2144,7 +2145,8 @@ OCaml 4.04.1 (14 Apr 2017):
   of similar debugging information location entries
   (Mark Shinwell)
 
-- PR#7457: a case of double free in the systhreads library (POSIX implementation)
+- PR#7457: a case of double free in the systhreads library (POSIX
+  implementation).
   (Xavier Leroy, report by Chet Murthy)
 
 - PR#7460, GPR#1011: catch uncaught exception when unknown files are passed
