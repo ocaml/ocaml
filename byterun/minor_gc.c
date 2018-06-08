@@ -628,7 +628,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
         } else {
           CAMLassert(!ephe_check_alive_data(re,young_ptr,young_end));
           *key = caml_ephe_none;
-          Op_val(re->ephe)[CAML_EPHE_DATA_OFFSET] = caml_ephe_none;
+          Ephe_data(re->ephe) = caml_ephe_none;
         }
       }
     }
