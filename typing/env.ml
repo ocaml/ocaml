@@ -346,7 +346,11 @@ module IdTbl =
               if mark then begin match using with
               | None -> ()
               | Some f ->
-                  begin try f name (Some (snd (find_name ~mark:false name next), snd res))
+                  begin try
+                    let res =
+                      (snd (find_name ~mark:false name next), snd res)
+                    in
+                    f name (Some res)
                   with Not_found -> f name None
                   end
               end;
