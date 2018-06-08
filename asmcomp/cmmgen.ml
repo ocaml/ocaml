@@ -90,48 +90,6 @@ let create_loop body dbg =
   let body = Csequence (body, call_cont) in
   Ccatch (Recursive, [cont, [], body, dbg], call_cont)
 
-(* Complex *)
-
-let box_complex dbg c_re c_im =
-  Cop(Calloc, [alloc_floatarray_header 2 dbg; c_re; c_im], dbg)
-
-let complex_re c dbg = Cop(Cload (Double_u, Immutable), [c], dbg)
-let complex_im c dbg = Cop(Cload (Double_u, Immutable),
-                        [Cop(Cadda, [c; Cconst_int (size_float, dbg)], dbg)],
-                        dbg)
-
-(* Unit *)
-
-let return_unit dbg c = Csequence(c, Cconst_pointer (1, dbg))
-
-let rec remove_unit = function
-    Cconst_pointer (1, _) -> Ctuple []
-  | Csequence(c, Cconst_pointer (1, _)) -> c
-  | Csequence(c1, c2) ->
-      Csequence(c1, remove_unit c2)
-  | Cifthenelse(cond, ifso_dbg, ifso, ifnot_dbg, ifnot, dbg) ->
-      Cifthenelse(cond,
-        ifso_dbg, remove_unit ifso,
-        ifnot_dbg,
-        remove_unit ifnot, dbg)
-  | Cswitch(sel, index, cases, dbg) ->
-      Cswitch(sel, index,
-        Array.map (fun (case, dbg) -> remove_unit case, dbg) cases,
-        dbg)
-  | Ccatch(rec_flag, handlers, body) ->
-      map_ccatch remove_unit rec_flag handlers body
-  | Ctrywith(body, exn, handler, dbg) ->
-      Ctrywith(remove_unit body, exn, remove_unit handler, dbg)
-  | Clet(id, c1, c2) ->
-      Clet(id, c1, remove_unit c2)
-  | Cop(Capply _mty, args, dbg) ->
-      Cop(Capply typ_void, args, dbg)
-  | Cop(Cextcall(proc, _mty, alloc, label_after), args, dbg) ->
-      Cop(Cextcall(proc, typ_void, alloc, label_after), args, dbg)
-  | Cexit (_,_) as c -> c
-  | Ctuple [] as c -> c
-  | c -> Csequence(c, Ctuple [])
-
 (* Access to block fields *)
 
 let field_address ptr n dbg =

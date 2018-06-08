@@ -174,3 +174,15 @@ val map_ccatch :
   (int * (Backend_var.With_provenance.t * machtype) list * expression
    * Debuginfo.t) list ->
   expression -> expression
+
+(** Complex number creation and access *)
+val box_complex : Debuginfo.t -> expression -> expression -> expression
+val complex_re : expression -> Debuginfo.t -> expression
+val complex_im : expression -> Debuginfo.t -> expression
+
+(** Make the given expression return a unit value *)
+val return_unit : Debuginfo.t -> expression -> expression
+
+(** Remove a trailing unit return if any *)
+val remove_unit : expression -> expression
+
