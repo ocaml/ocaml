@@ -12,6 +12,9 @@ Working version
 
 ### Standard library:
 
+- GPR#1835: Fix off-by-one errors in Weak.get_copy and Weak.blit
+  (KC Sivaramakrishnan)
+
 - MPR#6701, GPR#1185, GPR#1803: make float_of_string and string_of_float
   locale-independent
   (ygrek, review by Xavier Leroy and Damien Doligez)
