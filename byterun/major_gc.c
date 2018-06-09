@@ -482,11 +482,11 @@ intnat ephe_mark (intnat budget)
   return budget;
 }
 
-static intnat ephe_sweep (intnat budget)
+static intnat ephe_sweep (struct domain* d, intnat budget)
 {
   CAMLassert (caml_gc_phase == Phase_sweep_ephe);
   value v;
-  caml_domain_state* domain_state = Caml_state;
+  caml_domain_state* domain_state = d->state;
 
   while (domain_state->ephe_list_todo != 0 && budget > 0) {
     v = domain_state->ephe_list_todo;
@@ -497,7 +497,7 @@ static intnat ephe_sweep (intnat budget)
       /* The whole array is dead, drop this ephemeron */
       budget -= 1;
     } else {
-      caml_ephe_clean(v);
+      caml_ephe_clean(d, v);
       Ephe_link(v) = domain_state->ephe_list_live;
       domain_state->ephe_list_live = v;
       budget -= Whsize_val(v);
@@ -674,7 +674,8 @@ static intnat major_collection_slice(intnat howmuch,
                                      intnat from_barrier,
                                      intnat* budget_left /* out */)
 {
-  caml_domain_state* domain_state = Caml_state;
+  struct domain* d = caml_domain_self();
+  caml_domain_state* domain_state = d->state;
   intnat computed_work = howmuch ? howmuch : default_slice_budget();
   intnat budget = computed_work;
   intnat sweep_work = 0, mark_work = 0;
@@ -766,7 +767,7 @@ mark_again:
 
   if (caml_gc_phase == Phase_sweep_ephe) {
     if (domain_state->ephe_list_todo != 0) {
-      budget = ephe_sweep (budget);
+      budget = ephe_sweep (d, budget);
       if (budget > 0) {
         atomic_fetch_add(&num_domains_to_ephe_sweep, -1);
       }
