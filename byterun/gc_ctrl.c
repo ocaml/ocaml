@@ -62,6 +62,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat majcoll = Caml_state->stat_major_collections;
 
   res = caml_alloc_tuple (16);
+  for (int i = 0; i < 16; i++) Op_val(res)[i] = Val_unit;
   Store_field (res, 0, caml_copy_double ((double)s.minor_words));
   Store_field (res, 1, caml_copy_double ((double)s.promoted_words));
   Store_field (res, 2, caml_copy_double ((double)s.major_words));
