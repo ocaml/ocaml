@@ -168,7 +168,8 @@ static void clean_field (struct domain* d, value e, mlsize_t offset)
 static void do_set (struct domain* d, value e, mlsize_t offset, value v)
 {
   CAMLassert (!(Is_block(v) && Is_foreign(v)));
-  CAMLassert (Ephe_domain(e) == d);
+  CAMLassert (Ephe_domain(e) == d ||
+              !Is_block(v) || !Is_minor(v)); //blit operations
 
   if (Is_block(v) && Is_young(v)) {
     value old = Op_val(e)[offset];
@@ -350,7 +351,7 @@ static value ephe_blit_field_domain (value es, value ofs, value ed, value ofd, v
 
   if (rpc_success && Ephe_domain(es) == d) {
     for (i = 0; i < length; i++) {
-      Op_val(es)[i] = caml_promote(d, Op_val(es)[i]);
+      Op_val(es)[offset_s + i] = caml_promote(d, Op_val(es)[offset_s + i]);
     }
   }
 
@@ -627,7 +628,8 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
       /* Needs RPC */
       if (source == d1) {
         for (i = 0; i < length; i++) {
-          Op_val(es)[i] = caml_promote(source, Op_val(es)[i]);
+          Op_val(es)[offset_s + i] =
+            caml_promote(source, Op_val(es)[offset_s + i]);
         }
         target = d2;
       } else {
