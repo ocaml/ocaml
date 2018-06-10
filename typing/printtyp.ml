@@ -38,60 +38,66 @@ let rec longident ppf = function
 let printing_env = ref Env.empty
 let human_unique n id = Printf.sprintf "%s/%d" (Ident.name id) n
 
+type namespace =
+  | Type
+  | Module
+  | Module_type
+  | Class
+  | Class_type
+  | Other (** Other bypasses the unique name identifier mechanism *)
+
 module Namespace = struct
 
-  type t = [`Type|`Module|`Module_type|`Class|`Class_type|`Other]
   let id = function
-    | `Type -> 0
-    | `Module -> 1
-    | `Module_type -> 2
-    | `Class -> 3
-    | `Class_type -> 4
-    | `Other -> 5
+    | Type -> 0
+    | Module -> 1
+    | Module_type -> 2
+    | Class -> 3
+    | Class_type -> 4
+    | Other -> 5
 
-  let size = 1 + id `Other
+  let size = 1 + id Other
 
   let show =
     function
-    | `Type -> "type"
-    | `Module -> "module"
-    | `Module_type -> "module type"
-    | `Class -> "class"
-    | `Class_type -> "class type"
-    | `Other -> ""
-
+    | Type -> "type"
+    | Module -> "module"
+    | Module_type -> "module type"
+    | Class -> "class"
+    | Class_type -> "class type"
+    | Other -> ""
 
   let lookup =
     let to_lookup f lid =
       fst @@ f ?loc:None ?mark:(Some false) (Lident lid) !printing_env in
     function
-    | `Type -> fun id -> Env.lookup_type ?loc:None (Lident id) !printing_env
-    | `Module -> fun id ->
+    | Type -> fun id -> Env.lookup_type ?loc:None (Lident id) !printing_env
+    | Module -> fun id ->
       Env.lookup_module ~load:false ?loc:None (Lident id) !printing_env
-    | `Module_type -> to_lookup Env.lookup_modtype
-    | `Class -> to_lookup Env.lookup_class
-    | `Class_type -> to_lookup Env.lookup_cltype
-    | `Other -> fun _ -> raise Not_found
+    | Module_type -> to_lookup Env.lookup_modtype
+    | Class -> to_lookup Env.lookup_class
+    | Class_type -> to_lookup Env.lookup_cltype
+    | Other -> fun _ -> raise Not_found
 
   let location namespace id =
     let env = !printing_env in
     let path = Path.Pident id in
     try Some (
         match namespace with
-        | `Type -> (Env.find_type path env).type_loc
-        | `Module -> (Env.find_module path env).md_loc
-        | `Module_type -> (Env.find_modtype path env).mtd_loc
-        | `Class -> (Env.find_class path env).cty_loc
-        | `Class_type -> (Env.find_cltype path env).clty_loc
-        | `Other -> Location.none
+        | Type -> (Env.find_type path env).type_loc
+        | Module -> (Env.find_module path env).md_loc
+        | Module_type -> (Env.find_modtype path env).mtd_loc
+        | Class -> (Env.find_class path env).cty_loc
+        | Class_type -> (Env.find_cltype path env).clty_loc
+        | Other -> Location.none
       ) with Not_found -> None
 
   let best_class_namespace = function
-    | Papply _ | Pdot _ -> `Module
+    | Papply _ | Pdot _ -> Module
     | Pident c ->
-        match location `Class c with
-        | Some _ -> `Class
-        | None -> `Class_type
+        match location Class c with
+        | Some _ -> Class
+        | None -> Class_type
 
 end
 
@@ -103,7 +109,7 @@ end
 *)
 module Conflicts = struct
   module M = Misc.StringMap
-  type explanation = { kind: Namespace.t; name:string; location:Location.t}
+  type explanation = { kind: namespace; name:string; location:Location.t}
   let explanations = ref M.empty
   let explain namespace n id =
     let name = human_unique n id in
@@ -264,7 +270,7 @@ let ident_name = Naming_context.ident_name
 let reset_naming_context = Naming_context.reset
 
 let ident ppf id = pp_print_string ppf
-    !(Naming_context.ident_name_simple `Other id)
+    !(Naming_context.ident_name_simple Other id)
 
 (* Print a path *)
 
@@ -352,9 +358,9 @@ let rec tree_of_path namespace = function
   | Pdot(_, s, _pos) as path when non_shadowed_pervasive path ->
       Oide_ident (Naming_context.pervasives_name namespace s)
   | Pdot(p, s, _pos) ->
-      Oide_dot (tree_of_path `Module p, s)
+      Oide_dot (tree_of_path Module p, s)
   | Papply(p1, p2) ->
-      Oide_apply (tree_of_path `Module p1, tree_of_path `Module p2)
+      Oide_apply (tree_of_path Module p1, tree_of_path Module p2)
 
 let rec path ppf = function
   | Pident id ->
@@ -381,7 +387,7 @@ let rec string_of_out_ident = function
       String.concat ""
         [string_of_out_ident id1; "("; string_of_out_ident id2; ")"]
 
-let string_of_path p = string_of_out_ident (tree_of_path `Other p)
+let string_of_path p = string_of_out_ident (tree_of_path Other p)
 
 let strings_of_paths namespace p =
   reset_naming_context ();
@@ -918,7 +924,7 @@ let rec tree_of_typexp sch ty =
         let p', s = best_type_path p in
         let tyl' = apply_subst s tyl in
         if is_nth s && not (tyl'=[]) then tree_of_typexp sch (List.hd tyl') else
-        Otyp_constr (tree_of_path `Type p', tree_of_typlist sch tyl')
+        Otyp_constr (tree_of_path Type p', tree_of_typlist sch tyl')
     | Tvariant row ->
         let row = row_repr row in
         let fields =
@@ -937,7 +943,7 @@ let rec tree_of_typexp sch ty =
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
             let (p', s) = best_type_path p in
-            let id = tree_of_path `Type p' in
+            let id = tree_of_path Type p' in
             let args = tree_of_typlist sch (apply_subst s tyl) in
             let out_variant =
               if is_nth s then List.hd args else Otyp_constr (id, args) in
@@ -987,7 +993,7 @@ let rec tree_of_typexp sch ty =
     | Tpackage (p, n, tyl) ->
         let n =
           List.map (fun li -> String.concat "." (Longident.flatten li)) n in
-        Otyp_module (tree_of_path `Module_type p, n, tree_of_typlist sch tyl)
+        Otyp_module (tree_of_path Module_type p, n, tree_of_typlist sch tyl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
@@ -1031,7 +1037,7 @@ and tree_of_typobject sch fi nm =
       let args = tree_of_typlist sch tyl in
       let (p', s) = best_type_path p in
       assert (s = Id);
-      Otyp_class (non_gen, tree_of_path `Type p', args)
+      Otyp_class (non_gen, tree_of_path Type p', args)
   | _ ->
       fatal_error "Printtyp.tree_of_typobject"
   end
@@ -1554,7 +1560,7 @@ let still_in_type_group env' in_type_group item =
 
 let rec tree_of_modtype ?(ellipsis=false) = function
   | Mty_ident p ->
-      Omty_ident (tree_of_path `Module_type p)
+      Omty_ident (tree_of_path Module_type p)
   | Mty_signature sg ->
       Omty_signature (if ellipsis then [Osig_ellipsis]
                       else tree_of_signature sg)
@@ -1568,7 +1574,7 @@ let rec tree_of_modtype ?(ellipsis=false) = function
       Omty_functor (Ident.name param,
                     may_map (tree_of_modtype ~ellipsis:false) ty_arg, res)
   | Mty_alias(_, p) ->
-      Omty_alias (tree_of_path `Module p)
+      Omty_alias (tree_of_path Module p)
 
 and tree_of_signature sg =
   wrap_env (fun env -> env) (tree_of_signature_rec !printing_env false) sg
@@ -1720,8 +1726,8 @@ let type_expansion ppf = function
 let trees_of_trace = List.map trees_of_type_expansion
 
 let trees_of_type_path_expansion (tp,tp') =
-  if Path.same tp tp' then Same(tree_of_path `Type tp) else
-    Diff(tree_of_path `Type tp, tree_of_path `Type tp')
+  if Path.same tp tp' then Same(tree_of_path Type tp) else
+    Diff(tree_of_path Type tp, tree_of_path Type tp')
 
 let type_path_expansion ppf = function
   | Same p -> fprintf ppf "%s" (string_of_out_ident p)
@@ -2009,7 +2015,7 @@ let report_ambiguous_type_error ppf env tp0 tpl txt1 txt2 txt3 =
           txt3 type_path_expansion tp0)
 
 (* Adapt functions to exposed interface *)
-let tree_of_path = tree_of_path `Other
+let tree_of_path = tree_of_path Other
 let tree_of_modtype = tree_of_modtype ~ellipsis:false
 let type_expansion ty ppf ty' =
   type_expansion ppf (trees_of_type_expansion (ty,ty'))

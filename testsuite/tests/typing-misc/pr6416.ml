@@ -155,15 +155,7 @@ Error: Signature mismatch:
          val f : (module s/1) -> t/2 -> t/1
        is not included in
          val f : (module s/2) -> t/2 -> t/2
-       Line _, characters 9-22:
-    struct module type s type t = B let f (module X:s) A = B end
-           ^^^^^^^^^^^^^
-Definition of module type s/1
-Line _, characters 2-15:
-    module type s
-    ^^^^^^^^^^^^^
-Definition of module type s/2
-Line _, characters 23-33:
+       Line _, characters 23-33:
     struct module type s type t = B let f (module X:s) A = B end
                          ^^^^^^^^^^
 Definition of type t/1
@@ -171,6 +163,14 @@ Line _, characters 2-12:
     type t = A
     ^^^^^^^^^^
 Definition of type t/2
+Line _, characters 9-22:
+    struct module type s type t = B let f (module X:s) A = B end
+           ^^^^^^^^^^^^^
+Definition of module type s/1
+Line _, characters 2-15:
+    module type s
+    ^^^^^^^^^^^^^
+Definition of module type s/2
 |}]
 
 module P = struct

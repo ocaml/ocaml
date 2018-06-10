@@ -25,9 +25,15 @@ val tree_of_path: Path.t -> out_ident
 val path: formatter -> Path.t -> unit
 val string_of_path: Path.t -> string
 
-val strings_of_paths:
-  [`Type|`Module|`Module_type|`Class|`Class_type|`Other] ->
-  Path.t list -> string list
+type namespace =
+  | Type
+  | Module
+  | Module_type
+  | Class
+  | Class_type
+  | Other (** Other bypasses the unique name for identifier mechanism *)
+
+val strings_of_paths: namespace -> Path.t list -> string list
     (** Print a list of paths, using the same naming context to
         avoid name collisions *)
 
@@ -57,7 +63,7 @@ module Conflicts: sig
         an identifier to avoid a name collision *)
 
   type explanation =
-    { kind: [`Type|`Module|`Module_type|`Class|`Class_type|`Other];
+    { kind: namespace;
       name:string; location:Location.t}
 
   val take: unit -> explanation list
