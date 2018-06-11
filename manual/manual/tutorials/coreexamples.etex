@@ -521,7 +521,18 @@ name_of_binary_digit (-1);;
 The "with" part does pattern matching on the
 exception value with the same syntax and behavior as "match". Thus,
 several exceptions can be caught by one
-"try"\ldots"with" construct. Also, finalization can be performed by
+"try"\ldots"with" construct:
+\begin{caml_example}{toplevel}
+let rec first_named_value values names =
+  try
+    List.assoc (head values) names
+  with
+  | Empty_list -> "no named value"
+  | Not_found -> first_named_value (List.tl values) names;;
+first_named_value [ 0; 10 ] [ 1, "one"; 10, "ten"];;
+\end{caml_example}
+
+Also, finalization can be performed by
 trapping all exceptions, performing the finalization, then re-raising
 the exception:
 \begin{caml_example}{toplevel}
