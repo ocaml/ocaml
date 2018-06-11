@@ -53,6 +53,17 @@ G(caml_c_call):
         .comm   G(young_ptr), 4
         .comm   G(young_start), 4
 
+				.data
+        .globl  G(caml_extra_params)
+G(caml_extra_params):
+#ifndef SYS_solaris
+        .space  64
+#else
+        .zero   64
+#endif
+
+
+
 #if defined(SYS_linux_elf)
     /* Mark stack as non-executable */
         .section .note.GNU-stack,"",%progbits

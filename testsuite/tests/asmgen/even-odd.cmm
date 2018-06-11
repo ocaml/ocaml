@@ -6,9 +6,9 @@ arguments = "-DINT_INT -DFUN=is_even main.c"
 
 (function "is_even" (b:int)
   (catch (exit even b)
-   with (odd v)
+   with (odd v:val)
      (if (== v 0) 0
          (exit even (- v 1)))
-   and (even v)
+   and (even v:val)
      (if (== v 0) 1
          (exit odd (- v 1)))))
