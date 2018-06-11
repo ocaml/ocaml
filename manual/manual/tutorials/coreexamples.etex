@@ -558,8 +558,8 @@ let assoc_opt x l =
 \end{caml_example}
 Note that this construction is only useful if the exception is raised
 between "match"\ldots"with". Moreover, exceptions can only
-appear at the toplevel of such a pattern matching.
-For instance, exceptions cannot be combined with a or-pattern:
+appear at the toplevel of such a pattern match.
+For instance, exceptions cannot be combined with an or-pattern:
 "exception A | exception B ->"\ldots .
 
 When exceptions are used as a control structure, it can be useful to make
