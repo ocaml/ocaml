@@ -654,7 +654,7 @@ void caml_empty_minor_heap_domain (struct domain* domain)
           CAMLassert(Tag_val(vnew) == Infix_tag);
           v += offset;
         }
-        if (__sync_bool_compare_and_swap (*r,v,vnew)) ++rewrite_successes;
+        if (caml_atomic_cas_raw(*r,v,vnew)) ++rewrite_successes;
         else ++rewrite_failures;
       }
     }
