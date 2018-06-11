@@ -83,3 +83,56 @@ module IndirectPriv = I(struct end);;
 module IndirectPriv : sig type t = private [ `Foo of 'a ] as 'a end
 |}]
 
+(*** Test proposed by Jacques in
+     https://github.com/ocaml/ocaml/pull/1826#discussion_r194290729 ***)
+
+(* Baseline *)
+
+type t = private [ `Bar of int | `Foo of t -> int ];;
+[%%expect{|
+type t = private [ `Bar of int | `Foo of t -> int ]
+|}]
+
+module M : sig
+  type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
+end = struct
+  type s = t
+end;;
+[%%expect{|
+Line _, characters 6-29:
+  ......struct
+    type s = t
+  end..
+Error: Signature mismatch:
+       Modules do not match:
+         sig type s = t end
+       is not included in
+         sig type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a end
+       Type declarations do not match:
+         type s = t
+       is not included in
+         type s = private [ `Bar of int | `Foo of 'a -> int ] as 'a
+|}]
+
+(* nondep_type_decl + nondep_type_rec *)
+
+module Priv(_ : sig end) = struct
+  type t = private [ `Foo of t -> int | `Bar of int ]
+end;;
+[%%expect{|
+module Priv :
+  sig  end -> sig type t = private [ `Bar of int | `Foo of t -> int ] end
+|}]
+
+module I(X : sig end) : sig
+  type t = Priv(X).t
+end = Priv(X);;
+[%%expect{|
+module I : functor (X : sig  end) -> sig type t = Priv(X).t end
+|}]
+
+module IndirectPriv = I(struct end);;
+[%%expect{|
+module IndirectPriv :
+  sig type t = private [ `Bar of int | `Foo of 'a -> int ] as 'a end
+|}]
