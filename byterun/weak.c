@@ -331,40 +331,47 @@ static value ephe_check_field_domain (value e, value n, struct domain* d, int* r
   CAMLreturn(Val_bool(v != caml_ephe_none));
 }
 
-static value ephe_blit_field_domain (value es, value ofs, value ed, value ofd, value len,
-                                     struct domain* d, int* rpc_success)
+static value ephe_blit_field_produce_domain (value es, value ofs, value len,
+                                             struct domain* d, int* rpc_success)
 {
-  CAMLparam5(es,ofs,ed,ofd,len);
+  CAMLparam3(es, ofs, len);
+  CAMLlocal1(ar);
   mlsize_t offset_s = Long_val(ofs);
-  mlsize_t offset_d = Long_val(ofd);
   mlsize_t length = Long_val(len);
   long i;
 
-  if (rpc_success && (Ephe_domain(es) == 0 || Ephe_domain(ed) == 0)) {
+  if (rpc_success && Ephe_domain(es) == 0) {
     *rpc_success = 0;
     CAMLreturn(Val_unit);
   }
-  CAMLassert (Ephe_domain(es) == d || Ephe_domain(ed) == d);
+  CAMLassert (Ephe_domain(es) == d);
 
-  if (d == Ephe_domain(es)) caml_ephe_clean(d, es);
-  if (d == Ephe_domain(ed)) caml_ephe_clean(d, ed);
-
-  if (rpc_success && Ephe_domain(es) == d) {
-    for (i = 0; i < length; i++) {
-      Op_val(es)[offset_s + i] = caml_promote(d, Op_val(es)[offset_s + i]);
-    }
+  for (i = 0; i < length; i++) {
+    Op_val(es)[offset_s + i] = caml_promote(d, Op_val(es)[offset_s + i]);
   }
-
-  if (offset_d < offset_s) {
-    for (i = 0; i < length; i++) {
-      do_set(d, ed, offset_d + i, Op_val(es)[offset_s + i]);
-    }
-  } else {
-    for (i = length - 1; i >= 0; i--) {
-      do_set(d, ed, offset_d + i, Op_val(es)[offset_s + i]);
-    }
+  ar = caml_alloc_shr (length, 0);
+  for (i = 0; i < length; i++) {
+    caml_initialize_field (ar, i, Op_val(es)[offset_s + i]);
   }
+  CAMLreturn(ar);
+}
 
+static value ephe_blit_field_consume_domain (value ed, value ofd, value ar,
+                                             struct domain* d, int* rpc_success)
+{
+  CAMLparam3(ed,ofd,ar);
+  mlsize_t offset_d = Long_val(ofd);
+  long i;
+
+  if (rpc_success && Ephe_domain(ed) == 0) {
+    *rpc_success = 0;
+    CAMLreturn(Val_unit);
+  }
+  CAMLassert (Ephe_domain(ed) == d);
+
+  for (i = 0; i < Wosize_val(ar); i++) {
+    Op_val(ed)[offset_d + i] = Op_val(ar)[i];
+  }
   CAMLreturn(Val_unit);
 }
 
@@ -381,10 +388,12 @@ static void handle_ephe_rpc (struct domain* d, void* arg, interrupt* done)
     p->argv[0] = ephe_get_field_copy_domain (p->argv[0], p->argv[1], d, &p->success);
   } else if (p->f == (void*)&ephe_check_field_domain) {
     p->argv[0] = ephe_check_field_domain (p->argv[0], p->argv[1], d, &p->success);
-  } else if (p->f == (void*)&ephe_blit_field_domain) {
-    p->argv[0] = ephe_blit_field_domain (p->argv[0], p->argv[1], p->argv[2],
-                                         p->argv[3], p->argv[4], d, &p->success);
+  } else if (p->f == (void*)&ephe_blit_field_produce_domain) {
+    p->argv[0] = ephe_blit_field_produce_domain (p->argv[0], p->argv[1], p->argv[2], d, &p->success);
+  } else if (p->f == (void*)&ephe_blit_field_consume_domain) {
+    p->argv[0] = ephe_blit_field_consume_domain (p->argv[0], p->argv[1], p->argv[2], d, &p->success);
   }
+
   caml_acknowledge_interrupt(done);
 }
 
@@ -601,13 +610,75 @@ CAMLprim value caml_ephe_check_data (value e)
   return ephe_check_field (e, CAML_EPHE_DATA_OFFSET);
 }
 
+static value ephe_blit_field_produce (value es, mlsize_t offset_s,
+                                      mlsize_t length)
+{
+  CAMLparam1(es);
+  CAMLlocal1(ar);
+  struct domain* source = caml_domain_self();
+  struct domain* target;
+
+  while (1) {
+    target = Ephe_domain(es);
+    if (source == target) {
+      CAMLreturn(ephe_blit_field_produce_domain(es, Val_long(offset_s), Val_long(length), source, 0));
+    }
+    if (target == 0) {
+      caml_steal_ephe_work();
+    } else {
+      CAMLlocalN(argv, 3);
+      argv[0] = es;
+      argv[1] = Val_long(offset_s);
+      argv[2] = Val_long(length);
+      rpc_payload_t p;
+      p.f = (void*)&ephe_blit_field_produce_domain;
+      p.argv = argv;
+      p.success = 1;
+      if (caml_domain_rpc (target, &handle_ephe_rpc, &p) &&
+          p.success) {
+        CAMLreturn(argv[0]);
+      }
+    }
+  }
+}
+
+static value ephe_blit_field_consume (value ed, mlsize_t offset_d, value ar)
+{
+  CAMLparam2(ed,ar);
+  struct domain* source = caml_domain_self();
+  struct domain* target;
+
+  while (1) {
+    target = Ephe_domain(ed);
+    if (source == target) {
+      CAMLreturn(ephe_blit_field_consume_domain(ed, Val_long(offset_d), ar, source, 0));
+    }
+    if (target == 0) {
+      caml_steal_ephe_work();
+    } else {
+      CAMLlocalN(argv, 3);
+      argv[0] = ed;
+      argv[1] = Val_long(offset_d);
+      argv[2] = ar;
+      rpc_payload_t p;
+      p.f = (void*)&ephe_blit_field_consume_domain;
+      p.argv = argv;
+      p.success = 1;
+      if (caml_domain_rpc (target, &handle_ephe_rpc, &p) &&
+          p.success) {
+        CAMLreturn(Val_unit);
+      }
+    }
+  }
+}
+
 static value ephe_blit_field (value es, mlsize_t offset_s,
                               value ed, mlsize_t offset_d, mlsize_t length)
 {
   CAMLparam2(es,ed);
-  CAMLlocal1(etemp);
+  CAMLlocal1(ar);
   struct domain* my_domain = caml_domain_self();
-  struct domain *d1, *d2, *target;
+  struct domain *d1, *d2;
   long i;
 
   while (1) {
@@ -618,42 +689,22 @@ static value ephe_blit_field (value es, mlsize_t offset_s,
     if (my_domain == d2) caml_ephe_clean(d2, ed);
 
     if (my_domain == d1 && my_domain == d2) {
-      CAMLreturn(
-        ephe_blit_field_domain(es, Val_long(offset_s), ed, Val_long(offset_d),
-                               Val_long(length), my_domain, NULL));
+      if (offset_d < offset_s) {
+        for (i = 0; i < length; i++) {
+          do_set(my_domain, ed, offset_d + i, Op_val(es)[offset_s + i]);
+        }
+      } else {
+        for (i = length - 1; i >= 0; i--) {
+          do_set(my_domain, ed, offset_d + i, Op_val(es)[offset_s + i]);
+        }
+      }
+      CAMLreturn(Val_unit);
     } else if (d1 == 0 || d2 == 0) {
       caml_steal_ephe_work();
-    } else if (my_domain != d1 && my_domain != d2 && d1 != d2) {
-      /* Use a temporary */
-      etemp = caml_ephe_create (Val_long(Wosize_val(es) - CAML_EPHE_FIRST_KEY));
-      ephe_blit_field (es, offset_s, etemp, offset_s, length);
-      ephe_blit_field (etemp, offset_s, ed, offset_d, length);
-      CAMLreturn(Val_unit);
     } else {
-      /* Needs RPC */
-      if (my_domain == d1) {
-        for (i = 0; i < length; i++) {
-          Op_val(es)[offset_s + i] =
-            caml_promote(my_domain, Op_val(es)[offset_s + i]);
-        }
-        target = d2;
-      } else {
-        target = d1;
-      }
-      CAMLlocalN(argv,5);
-      argv[0] = es;
-      argv[1] = Val_long(offset_s);
-      argv[2] = ed;
-      argv[3] = Val_long(offset_d);
-      argv[4] = Val_long(length);
-      rpc_payload_t p;
-      p.f = (void*)&ephe_blit_field_domain;
-      p.argv = argv;
-      p.success = 1;
-      if (caml_domain_rpc(target, &handle_ephe_rpc, &p) &&
-          p.success) {
-        CAMLreturn(Val_unit);
-      }
+      ar = ephe_blit_field_produce (es, offset_s, length);
+      ephe_blit_field_consume (ed, offset_d, ar);
+      CAMLreturn(Val_unit);
     }
   }
 }
