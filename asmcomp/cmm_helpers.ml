@@ -585,3 +585,132 @@ let rec remove_unit = function
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
+(* Access to block fields *)
+
+let field_address ptr n dbg =
+  if n = 0
+  then ptr
+  else Cop(Cadda, [ptr; Cconst_int(n * size_addr, dbg)], dbg)
+
+let mk_get_field mut ptr n dbg =
+  Cop(Cload (Word_val, mut), [field_address ptr n dbg], dbg)
+
+let set_field ptr n newval init dbg =
+  Cop(Cstore (Word_val, init), [field_address ptr n dbg; newval], dbg)
+
+let non_profinfo_mask =
+  if Config.profinfo
+  then (1 lsl (64 - Config.profinfo_width)) - 1
+  else 0 (* [non_profinfo_mask] is unused in this case *)
+
+let get_header ptr dbg =
+  (* We cannot deem this as [Immutable] due to the presence of [Obj.truncate]
+     and [Obj.set_tag]. *)
+  Cop(Cload (Word_int, Asttypes.Mutable),
+    [Cop(Cadda, [ptr; Cconst_int(-size_int, dbg)], dbg)], dbg)
+
+let get_header_without_profinfo ptr dbg =
+  if Config.profinfo then
+    Cop(Cand, [get_header ptr dbg; Cconst_int (non_profinfo_mask, dbg)], dbg)
+  else
+    get_header ptr dbg
+
+let tag_offset =
+  if big_endian then -1 else -size_int
+
+let get_tag ptr dbg =
+  if Proc.word_addressed then           (* If byte loads are slow *)
+    Cop(Cand, [get_header ptr dbg; Cconst_int (255, dbg)], dbg)
+  else                                  (* If byte loads are efficient *)
+    (* Same comment as [get_header] above *)
+    Cop(Cload (Byte_unsigned, Asttypes.Mutable),
+        [Cop(Cadda, [ptr; Cconst_int(tag_offset, dbg)], dbg)], dbg)
+
+let get_size ptr dbg =
+  Cop(Clsr, [get_header_without_profinfo ptr dbg; Cconst_int (10, dbg)], dbg)
+
+(* Array indexing *)
+
+let log2_size_addr = Misc.log2 size_addr
+let log2_size_float = Misc.log2 size_float
+
+let wordsize_shift = 9
+let numfloat_shift = 9 + log2_size_float - log2_size_addr
+
+let is_addr_array_hdr hdr dbg =
+  Cop(Ccmpi Cne,
+    [Cop(Cand, [hdr; Cconst_int (255, dbg)], dbg); floatarray_tag dbg],
+    dbg)
+
+let is_addr_array_ptr ptr dbg =
+  Cop(Ccmpi Cne, [get_tag ptr dbg; floatarray_tag dbg], dbg)
+
+let addr_array_length hdr dbg =
+  Cop(Clsr, [hdr; Cconst_int (wordsize_shift, dbg)], dbg)
+let float_array_length hdr dbg =
+  Cop(Clsr, [hdr; Cconst_int (numfloat_shift, dbg)], dbg)
+
+let lsl_const c n dbg =
+  if n = 0 then c
+  else Cop(Clsl, [c; Cconst_int (n, dbg)], dbg)
+
+(* Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size. [ofs] is given as a
+   tagged int expression.
+   The optional ?typ argument is the C-- type of the result.
+   By default, it is Addr, meaning we are constructing a derived pointer
+   into the heap.  If we know the pointer is outside the heap
+   (this is the case for bigarray indexing), we give type Int instead. *)
+
+let array_indexing ?typ log2size ptr ofs dbg =
+  let add =
+    match typ with
+    | None | Some Addr -> Cadda
+    | Some Int -> Caddi
+    | _ -> assert false in
+  match ofs with
+  | Cconst_int (n, _) ->
+      let i = n asr 1 in
+      if i = 0 then ptr
+      else Cop(add, [ptr; Cconst_int(i lsl log2size, dbg)], dbg)
+  | Cop(Caddi,
+        [Cop(Clsl, [c; Cconst_int (1, _)], _); Cconst_int (1, _)], dbg') ->
+      Cop(add, [ptr; lsl_const c log2size dbg], dbg')
+  | Cop(Caddi, [c; Cconst_int (n, _)], dbg') when log2size = 0 ->
+      Cop(add,
+        [Cop(add, [ptr; untag_int c dbg], dbg); Cconst_int (n asr 1, dbg)],
+        dbg')
+  | Cop(Caddi, [c; Cconst_int (n, _)], _) ->
+      Cop(add, [Cop(add, [ptr; lsl_const c (log2size - 1) dbg], dbg);
+                    Cconst_int((n-1) lsl (log2size - 1), dbg)], dbg)
+  | _ when log2size = 0 ->
+      Cop(add, [ptr; untag_int ofs dbg], dbg)
+  | _ ->
+      Cop(add, [Cop(add, [ptr; lsl_const ofs (log2size - 1) dbg], dbg);
+                    Cconst_int((-1) lsl (log2size - 1), dbg)], dbg)
+
+let addr_array_ref arr ofs dbg =
+  Cop(Cload (Word_val, Asttypes.Mutable),
+    [array_indexing log2_size_addr arr ofs dbg], dbg)
+let int_array_ref arr ofs dbg =
+  Cop(Cload (Word_int, Asttypes.Mutable),
+    [array_indexing log2_size_addr arr ofs dbg], dbg)
+let unboxed_float_array_ref arr ofs dbg =
+  Cop(Cload (Double_u, Asttypes.Mutable),
+    [array_indexing log2_size_float arr ofs dbg], dbg)
+let float_array_ref arr ofs dbg =
+  box_float dbg (unboxed_float_array_ref arr ofs dbg)
+
+let addr_array_set arr ofs newval dbg =
+  Cop(Cextcall("caml_modify", typ_void, false, None),
+      [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+let addr_array_initialize arr ofs newval dbg =
+  Cop(Cextcall("caml_initialize", typ_void, false, None),
+      [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+let int_array_set arr ofs newval dbg =
+  Cop(Cstore (Word_int, Lambda.Assignment),
+    [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
+let float_array_set arr ofs newval dbg =
+  Cop(Cstore (Double_u, Lambda.Assignment),
+    [array_indexing log2_size_float arr ofs dbg; newval], dbg)
+

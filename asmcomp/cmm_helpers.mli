@@ -186,3 +186,85 @@ val return_unit : Debuginfo.t -> expression -> expression
 (** Remove a trailing unit return if any *)
 val remove_unit : expression -> expression
 
+(** Blocks *)
+
+(** [field_address ptr n dbg] returns an expression for the address of the
+    [n]th field of the block pointed to by [ptr] *)
+val field_address : expression -> int -> Debuginfo.t -> expression
+
+(** [mk_get_field mut ptr n dbg] returns an expression for the access to the
+    [n]th field of the block pointed to by [ptr] *)
+val mk_get_field :
+  Asttypes.mutable_flag -> expression -> int -> Debuginfo.t -> expression
+
+(** [set_field ptr n newval init dbg] returns an expression for setting the
+    [n]th field of the block pointed to by [ptr] to [newval] *)
+val set_field :
+  expression -> int -> expression -> Lambda.initialization_or_assignment ->
+  Debuginfo.t -> expression
+
+(** Load a block's header *)
+val get_header : expression -> Debuginfo.t -> expression
+
+(** Same as [get_header], but also set all profiling bits of the header
+    are to 0 (if profiling is enabled) *)
+val get_header_without_profinfo : expression -> Debuginfo.t -> expression
+
+(** Load a block's tag *)
+val get_tag : expression -> Debuginfo.t -> expression
+
+(** Load a block's size *)
+val get_size : expression -> Debuginfo.t -> expression
+
+(** Arrays *)
+
+(* TODO: remove from mli? *)
+val log2_size_addr : int
+val log2_size_float : int
+
+val wordsize_shift : int
+val numfloat_shift : int
+
+(** Check whether the given array is an array of regular OCaml values
+    (as opposed to unboxed floats), from its header or pointer *)
+val is_addr_array_hdr : expression -> Debuginfo.t -> expression
+val is_addr_array_ptr : expression -> Debuginfo.t -> expression
+
+(** Get the length of an array from its header *)
+val addr_array_length : expression -> Debuginfo.t -> expression
+val float_array_length : expression -> Debuginfo.t -> expression
+
+(* TODO: remove after objects have been moved *)
+val lsl_const : expression -> int -> Debuginfo.t -> expression
+
+(* TODO: consider removing from mli ? *)
+(** From the implementation of [array_indexing ?typ log2size ptr ofs dbg] :
+   Produces a pointer to the element of the array [ptr] on the position [ofs]
+   with the given element [log2size] log2 element size. [ofs] is given as a
+   tagged int expression.
+   The optional ?typ argument is the C-- type of the result.
+   By default, it is Addr, meaning we are constructing a derived pointer
+   into the heap.  If we know the pointer is outside the heap
+   (this is the case for bigarray indexing), we give type Int instead. *)
+val array_indexing :
+  ?typ:machtype_component -> int -> expression -> expression -> Debuginfo.t ->
+  expression
+
+(** Array loads and stores
+    [unboxed_float_array_ref] and [float_array_ref] differ in the
+    boxing of the result; [float_array_set] takes an unboxed float *)
+val addr_array_ref : expression -> expression -> Debuginfo.t -> expression
+val int_array_ref : expression -> expression -> Debuginfo.t -> expression
+val unboxed_float_array_ref :
+  expression -> expression -> Debuginfo.t -> expression
+val float_array_ref : expression -> expression -> Debuginfo.t -> expression
+val addr_array_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val addr_array_initialize :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val int_array_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+val float_array_set :
+  expression -> expression -> expression -> Debuginfo.t -> expression
+
+
