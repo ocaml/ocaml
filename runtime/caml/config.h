@@ -16,9 +16,6 @@
 #ifndef CAML_CONFIG_H
 #define CAML_CONFIG_H
 
-/* <include m.h> */
-/* <include s.h> */
-/* <private> */
 #include "m.h"
 #include "s.h"
 #ifdef BOOTSTRAPPING_FLEXLINK
