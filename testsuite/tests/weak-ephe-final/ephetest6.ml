@@ -9,8 +9,8 @@ let test1 =
     let e2 = E.create 16 in
     E.blit_key e1 0 e2 0 16;
     match E.get_key e2 1 with
-    | Some i -> assert (i = 1)
-    | None -> assert false)
+    | Some 1 -> ()
+    | _ -> assert false)
   in
   Domain.join d;
   print_endline "test1: ok"
@@ -26,20 +26,24 @@ let test2 =
     done;
     E.blit_key e2 0 e1 0 16;
     match E.get_key e1 1 with
-    | Some i -> assert (i = 1)
-    | None -> assert false)
+    | Some 1 -> ()
+    | _ -> assert false)
   in
   Domain.join d;
   print_endline "test2: ok"
 
 let test3 =
   let e1 = E.create 16 in
+  for i = 0 to 15 do
+    E.set_key e1 i i
+  done;
   let d1 = Domain.spawn (fun () ->
     let e2 = E.create 16 in
     let d2 = Domain.spawn (fun () ->
-      match E.blit_key e1 0 e2 0 16 with
-      | v -> assert false
-      | exception Invalid_argument _ -> ())
+      E.blit_key e1 0 e2 0 16;
+      match E.get_key e2 1 with
+      | Some 1 -> ()
+      | _ -> assert false)
     in
     Domain.join d2)
   in
@@ -55,8 +59,8 @@ let test4 =
   let d = Domain.spawn (fun () ->
     E.blit_key e1 0 e2 0 16;
     match E.get_key e2 1 with
-    | Some i -> assert (i = 1)
-    | None -> assert false)
+    | Some 1 -> ()
+    | _ -> assert false)
   in
   Domain.join d;
   print_endline "test4: ok"
