@@ -80,7 +80,7 @@ module IndirectPub : sig type t = [ `Foo of t ] end
    if we were unrolling the abbrev.  *)
 module IndirectPriv = I(struct end);;
 [%%expect{|
-module IndirectPriv : sig type t = private [ `Foo of 'a ] as 'a end
+module IndirectPriv : sig type t end
 |}]
 
 (*** Test proposed by Jacques in
@@ -133,6 +133,5 @@ module I : functor (X : sig  end) -> sig type t = Priv(X).t end
 
 module IndirectPriv = I(struct end);;
 [%%expect{|
-module IndirectPriv :
-  sig type t = private [ `Bar of int | `Foo of 'a -> int ] as 'a end
+module IndirectPriv : sig type t end
 |}]

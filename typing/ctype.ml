@@ -4370,7 +4370,6 @@ let clear_hash ()   =
   TypeHash.clear nondep_hash; TypeHash.clear nondep_variants
 
 let rec nondep_type_rec ?(expand_private=false) env id ty =
-  let nondep_type_rec env id t = nondep_type_rec ~expand_private env id t in
   let expand_abbrev env t =
     if expand_private then expand_abbrev_opt env t else expand_abbrev env t
   in
@@ -4386,7 +4385,7 @@ let rec nondep_type_rec ?(expand_private=false) env id ty =
       | Tconstr(p, tl, _abbrev) ->
           if Path.isfree id p then
             begin try
-              Tlink (nondep_type_rec env id
+              Tlink (nondep_type_rec ~expand_private env id
                        (expand_abbrev env (newty2 ty.level ty.desc)))
               (*
                  The [Tlink] is important. The expanded type may be a
