@@ -17,6 +17,15 @@
 #define CAML_CONFIG_H
 
 #include "m.h"
+
+/* If supported, tell gcc that we can use 32-bit code addresses for
+ * threaded code, unless we are compiled for a shared library (-fPIC option) */
+#ifdef HAS_ARCH_CODE32
+#ifndef __PIC__
+#  define ARCH_CODE32
+#endif /* __PIC__ */
+#endif /* HAS_ARCH_CODE32 */
+
 #include "s.h"
 #ifdef BOOTSTRAPPING_FLEXLINK
 #undef SUPPORT_DYNAMIC_LINKING

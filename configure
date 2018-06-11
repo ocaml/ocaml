@@ -493,9 +493,7 @@ case "$cc,$target" in
     mkexe="$mkexe -Wl,-no_compact_unwind"
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
-    echo "#ifndef __PIC__" >> m.h
-    echo "#  define ARCH_CODE32" >> m.h
-    echo "#endif" >> m.h;;
+    echo "#define HAS_ARCH_CODE32" >> m.h;;
   *,*-*-haiku*)
     # No -lm library
     mathlib="";;
@@ -549,9 +547,7 @@ case "$cc,$target" in
   *,x86_64-*-linux*)
     # Tell gcc that we can use 32-bit code addresses for threaded code
     # unless we are compiled for a shared library (-fPIC option)
-    echo "#ifndef __PIC__" >> m.h
-    echo "#  define ARCH_CODE32" >> m.h
-    echo "#endif" >> m.h;;
+    echo "#define HAS_ARCH_CODE32" >> m.h
 esac
 
 # Configure compiler options to use in further tests.
