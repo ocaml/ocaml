@@ -348,6 +348,7 @@ static value ephe_blit_field_produce_domain (value es, value ofs, value len,
 
   for (i = 0; i < length; i++) {
     Op_val(es)[offset_s + i] = caml_promote(d, Op_val(es)[offset_s + i]);
+    caml_darken(0, Op_val(es)[offset_s + i], 0);
   }
   ar = caml_alloc_shr (length, 0);
   for (i = 0; i < length; i++) {
