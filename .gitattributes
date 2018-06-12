@@ -170,6 +170,7 @@ testsuite/tests/letrec-disallowed/module_constraints.ml text eol=lf
 testsuite/tests/letrec-disallowed/unboxed.ml text eol=lf
 testsuite/tests/letrec-disallowed/pr7215.ml text eol=lf
 testsuite/tests/letrec-disallowed/pr7231.ml text eol=lf
+testsuite/tests/letrec-disallowed/pr7706.ml text eol=lf
 testsuite/tests/lexing/uchar_esc.ml text eol=lf
 testsuite/tests/match-exception-warnings/exhaustiveness_warnings.ml text eol=lf
 testsuite/tests/tool-toplevel/pr7060.ml text eol=lf
