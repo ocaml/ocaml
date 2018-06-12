@@ -1,0 +1,67 @@
+OCaml 4.07.0 (10 July 2018):
+----------------------------
+
+Some highlights of this release are:
+
+-   The way the standard library modules are organized internally has
+    changed (GPR#1010, by Jérémie Dimino):
+
+    1. the `List` module (for example) is now named `Stdlib__list`
+    2. a new Stdlib module contains a series of aliases
+    such as `module List = Stdlib__list`
+    3. the `Stdlib` module is implicitly opened when type-checking OCaml
+    programs (as `Pervasives` previously was), so that `Stdlib.List` can be
+    accessed as just `List`, as before.
+
+    This should be invisible to most users, although it is possible that
+    some tools show the `Stdlib.` or `Stdlib__` prefixes in
+    messages. (You might want to report these situations as usability
+    bugs.) The change prevents standard library modules from conflicting
+    with end-user filenames (please avoid `stdlib.ml` and the
+    `Stdlib__` prefix); we may introduce new standard library modules in
+    the future with less fear of breaking user code. In particular,
+    `Float` (GPR#1638, by Nicolás Ojeda Bär) and `Seq` (GPR#1002, by
+    Simon Cruanes) modules have now been added to the standard library.
+
+-   The error messages caused by various typing errors have been improved
+    to be easier to understand, in particular for beginners.
+    (GPR#1505, GPR#1510, by Arthur Charguéreau and Armaël Guéneau)
+
+    For example,
+
+        # while 1 do () done;;
+                ^
+        Error: This expression has type int but
+               an expression was expected of type bool
+
+    now adds the extra explanation
+
+        because it is in the condition of a while-loop
+
+-   Effort has been made to reduce the compilation time of flambda
+    programs, and the size of the produced `.cmx` files when using
+    the -Oclassic optimisation level.
+    (GPR#1401, GPR#1455, GPR#1627, GPR#1665, by Pierre Chambart, Xavier
+    Clerc, Fuyong Quah, and Leo White)
+
+-   The HTML manual has benefited from various style improvements
+    and should look visually nicer than previous editions.
+    (GPR#1741, GPR#1757, GPR#1767 by Charles Chamberlain and steinuil)
+
+    The new version of the manual can be consulted at
+    <http://caml.inria.fr/pub/docs/manual-ocaml-4.07/>; see the
+    previous version for comparison at
+    <http://caml.inria.fr/pub/docs/manual-ocaml-4.06/>.
+
+-   Since 4.01, it is possible to select a variant constructor or
+    record field from a sub-module that is not opened in the current
+    scope, if type information is available at the point of use. This
+    now also works for GADT constructors.
+    (GPR#1648, by Thomas Refis and Leo White)
+
+-   The GC should handle the accumulation of custom blocks in the minor
+    heap better; this solves some memory-usage issues observed by code
+    which allocates a lot of small custom blocks, typically small bigarrays
+    (GPR#1476, by Alain Frsich)
+
+See also the detailed list of changes: (Changes#4.07.0).
