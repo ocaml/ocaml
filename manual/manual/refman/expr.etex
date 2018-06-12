@@ -122,6 +122,7 @@ See also the following language extensions:
 \hyperref[s:local-exceptions]{local exceptions}
 \hyperref[s:index-operators]{extended indexing operators}.
 
+\subsection{Precedence and associativity}
 The table below shows the relative precedences and associativity of
 operators and non-closed constructions. The constructions with higher
 precedence come first. For infix and prefix symbols, we write
