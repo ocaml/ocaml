@@ -196,5 +196,6 @@ itself is in tail position in the current function, any function call
 in tail position in one of the case bodies results in an actual tail
 call.
 
-It is an error if all cases are exception cases in a given pattern
-matching.
+A pattern match must contain at least one value case. It is an error if
+all cases are exceptions, because there would be no code to handle
+the return of a value.

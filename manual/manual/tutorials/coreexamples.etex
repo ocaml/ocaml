@@ -551,16 +551,16 @@ let temporarily_set_reference ref newval funct =
 An alternative to "try"\ldots"with" is to catch the exception while
 pattern matching:
 \begin{caml_example}{toplevel}
-let assoc_opt x l =
+let assoc_may_map f x l =
   match List.assoc x l with
   | exception Not_found -> None
-  | x -> Some x;;
+  | y -> f y;;
 \end{caml_example}
 Note that this construction is only useful if the exception is raised
 between "match"\ldots"with". Moreover, exceptions can only
 appear at the toplevel of such a pattern match.
-For instance, exceptions cannot be combined with an or-pattern:
-"exception A | exception B ->"\ldots .
+For instance, exception cases cannot currently be combined with an
+or-pattern: "exception A | exception B ->" \ldots .
 
 When exceptions are used as a control structure, it can be useful to make
 them as local as possible by using a locally defined exception.

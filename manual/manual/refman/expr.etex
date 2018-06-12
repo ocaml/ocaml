@@ -436,7 +436,12 @@ The syntactic scope of the exception constructor is the inner
 expression, but nothing prevents exception values created with this
 constructor from escaping this scope.  Two executions of the definition
 above result in two incompatible exception constructors (as for any
-exception definition).
+exception definition). For instance, the following assertion is
+true:
+\begin{verbatim}
+  let gen () = let exception A in A
+  let () = assert(gen () <> gen ())
+\end{verbatim}
 
 \subsection{Control structures}
 
