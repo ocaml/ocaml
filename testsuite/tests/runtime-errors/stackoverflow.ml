@@ -15,7 +15,7 @@ flags = "-w a"
 
 * libunix
 ** script
-script = "sh ${test_source_directory}/has-stackoverflow-detection.precheck"
+script = "sh ${test_source_directory}/has-stackoverflow-detection.sh"
 *** setup-ocamlopt.byte-build-env
 **** ocamlopt.byte
 ***** run
