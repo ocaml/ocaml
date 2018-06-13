@@ -796,3 +796,13 @@ let make_checkbound dbg = function
   | args ->
       Cop(Ccheckbound, args, dbg)
 
+(* Record application and currying functions *)
+
+let apply_function n =
+  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
+let curry_function n =
+  Compilenv.need_curry_fun n;
+  if n >= 0
+  then "caml_curry" ^ Int.to_string n
+  else "caml_tuplify" ^ Int.to_string (-n)
+

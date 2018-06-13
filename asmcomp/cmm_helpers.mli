@@ -311,3 +311,14 @@ val make_float_alloc : Debuginfo.t -> int -> expression list -> expression
 
 (** Generate a [Ccheckbound] term *)
 val make_checkbound : Debuginfo.t -> expression list -> expression
+
+(** Generic application functions *)
+
+(** Get the symbol for the generic application with [n] arguments, and
+    ensure its presence in the set of defined symbols *)
+val apply_function : int -> string
+
+(** If [n] is positive, get the symbol for the generic curryfication with
+    [n] arguments, and ensure its presence in the set of defined symbols.
+    Otherwise, do the same for the generic tuplification with [-n] arguments. *)
+val curry_function : int -> string

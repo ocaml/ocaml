@@ -169,16 +169,6 @@ let rec expr_size env = function
       expr_size env exp'
   | _ -> RHS_nonrec
 
-(* Record application and currying functions *)
-
-let apply_function n =
-  Compilenv.need_apply_fun n; "caml_apply" ^ Int.to_string n
-let curry_function n =
-  Compilenv.need_curry_fun n;
-  if n >= 0
-  then "caml_curry" ^ Int.to_string n
-  else "caml_tuplify" ^ Int.to_string (-n)
-
 (* Comparisons *)
 
 let transl_int_comparison cmp = cmp
