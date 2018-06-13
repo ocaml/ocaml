@@ -1034,8 +1034,6 @@ case "$native_compiler" in
       arch=none; model=default; system=unknown; natdynlink=false;;
 esac
 
-nativeccprofopts=''
-
 case "$arch,$cc,$system,$model" in
   *,*,rhapsody,*)      if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
@@ -2112,7 +2110,6 @@ config MODEL "$model"
 config SYSTEM "$system"
 config OCAMLOPT_CFLAGS "$common_cflags"
 config OCAMLOPT_CPPFLAGS "$common_cppflags"
-config NATIVECCPROFOPTS "$nativeccprofopts"
 config NATIVECCLIBS "$cclibs $dllib"
 config ASM "$as"
 config ASPP "$aspp"
