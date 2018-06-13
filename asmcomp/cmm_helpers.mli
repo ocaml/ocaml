@@ -268,3 +268,34 @@ val float_array_set :
   expression -> expression -> expression -> Debuginfo.t -> expression
 
 
+(** Strings *)
+
+val string_length : expression -> Debuginfo.t -> expression
+val bigstring_length : expression -> Debuginfo.t -> expression
+
+(** Objects *)
+
+(** Lookup a method by its hash, using [caml_get_public_method]
+    Arguments :
+    - obj : the object from which to lookup
+    - tag : the hash of the method name, as a tagged integer *)
+val lookup_tag : expression -> expression -> Debuginfo.t -> expression
+
+(** Lookup a method by its offset in the method table
+    Arguments :
+    - obj : the object from which to lookup
+    - lab : the position of the required method in the object's
+    method array, as a tagged integer *)
+val lookup_label : expression -> expression -> Debuginfo.t -> expression
+
+(** Lookup and call a method using the method cache
+    Arguments :
+    - obj : the object from which to lookup
+    - tag : the hash of the method name, as a tagged integer
+    - cache : the method cache array
+    - pos : the position of the cache entry in the cache array
+    - args : the additional arguments to the method call *)
+val call_cached_method :
+  expression -> expression -> expression -> expression -> expression list ->
+  Debuginfo.t -> expression
+

@@ -104,51 +104,6 @@ let get_field env ptr n dbg =
   in
   mk_get_field mut ptr n dbg
 
-(* String length *)
-
-(* Length of string block *)
-
-let string_length exp dbg =
-  bind "str" exp (fun str ->
-    let tmp_var = V.create_local "*tmp*" in
-    Clet(VP.create tmp_var,
-         Cop(Csubi,
-             [Cop(Clsl,
-                   [get_size str dbg;
-                     Cconst_int (log2_size_addr, dbg)],
-                   dbg);
-              Cconst_int (1, dbg)],
-             dbg),
-         Cop(Csubi,
-             [Cvar tmp_var;
-               Cop(Cload (Byte_unsigned, Mutable),
-                     [Cop(Cadda, [str; Cvar tmp_var], dbg)], dbg)], dbg)))
-
-let bigstring_length ba dbg =
-  Cop(Cload (Word_int, Mutable), [field_address ba 5 dbg], dbg)
-
-(* Message sending *)
-
-let lookup_tag obj tag dbg =
-  bind "tag" tag (fun tag ->
-    Cop(Cextcall("caml_get_public_method", typ_val, false, None),
-        [obj; tag],
-        dbg))
-
-let lookup_label obj lab dbg =
-  bind "lab" lab (fun lab ->
-    let table = Cop (Cload (Word_val, Mutable), [obj], dbg) in
-    addr_array_ref table lab dbg)
-
-let call_cached_method obj tag cache pos args dbg =
-  let arity = List.length args in
-  let cache = array_indexing log2_size_addr cache pos dbg in
-  Compilenv.need_send_fun arity;
-  Cop(Capply typ_val,
-      Cconst_symbol("caml_send" ^ Int.to_string arity, dbg) ::
-        obj :: tag :: cache :: args,
-      dbg)
-
 (* Allocation *)
 
 let make_alloc_generic set_fn dbg tag wordsize args =
