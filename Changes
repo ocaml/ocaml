@@ -89,6 +89,9 @@ Working version
 - GPR#1788: move the quoted string description to the main chapters
   (Florian Angeletti, review by Xavier Clerc and Perry E. Metzger)
 
+- GPR#1831: move the local exceptions and exception cases to the main chapters.
+  (Florian Angeletti, review by Perry E. Metzger and Jeremy Yallop)
+
 ### Compiler distribution build system:
 
 - GPR#1776: add -no-install-bytecode-programs and related configure options to
