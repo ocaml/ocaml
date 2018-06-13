@@ -131,6 +131,12 @@ Working version
 - GPR#1739: ensure ocamltest waits for child processes to terminate on Windows
   (David Allsopp, review by Sébastien Hinderer)
 
+- MPR#7238, GPR#1825: in Unix.in_channel_of_descr and Unix.out_channel_of_descr,
+  raise an error if the given file description is not suitable for
+  character-oriented I/O, for example if it is a block device or a
+  datagram socket.
+  (Xavier Leroy, review by Jérémie Dimino and Perry E. Metzger)
+
 - MPR#7799, GPR#1820: fix bug where Scanf.format_from_string could fail when the
   argument string contained characters that require escaping.
   (Gabriel Scherer and Nicolás Ojeda Bär, report by Guillaume Melquiond, review
