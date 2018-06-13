@@ -68,7 +68,7 @@ CAMLprim value caml_ephe_create (value len)
   mlsize_t size, i;
   value res;
 
-  size = Long_val (len) + 1 /* weak_list */ + 1 /* the value */;
+  size = Long_val (len) + CAML_EPHE_FIRST_KEY;
   if (size < CAML_EPHE_FIRST_KEY || size > Max_wosize)
     caml_invalid_argument ("Weak.create");
   res = caml_alloc_shr (size, Abstract_tag);
