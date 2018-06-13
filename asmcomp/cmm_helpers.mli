@@ -299,3 +299,15 @@ val call_cached_method :
   expression -> expression -> expression -> expression -> expression list ->
   Debuginfo.t -> expression
 
+(** Allocations *)
+
+(** Allocate a block of regular values with the given tag *)
+val make_alloc : Debuginfo.t -> int -> expression list -> expression
+
+(** Allocate a block of unboxed floats with the given tag *)
+val make_float_alloc : Debuginfo.t -> int -> expression list -> expression
+
+(** Bounds checking *)
+
+(** Generate a [Ccheckbound] term *)
+val make_checkbound : Debuginfo.t -> expression list -> expression

@@ -104,43 +104,6 @@ let get_field env ptr n dbg =
   in
   mk_get_field mut ptr n dbg
 
-(* Allocation *)
-
-let make_alloc_generic set_fn dbg tag wordsize args =
-  if wordsize <= Config.max_young_wosize then
-    Cop(Calloc, Cblockheader(block_header tag wordsize, dbg) :: args, dbg)
-  else begin
-    let id = V.create_local "*alloc*" in
-    let rec fill_fields idx = function
-      [] -> Cvar id
-    | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int (idx, dbg)) e1 dbg,
-                          fill_fields (idx + 2) el) in
-    Clet(VP.create id,
-         Cop(Cextcall("caml_alloc", typ_val, true, None),
-                 [Cconst_int (wordsize, dbg); Cconst_int (tag, dbg)], dbg),
-         fill_fields 1 args)
-  end
-
-let make_alloc dbg tag args =
-  let addr_array_init arr ofs newval dbg =
-    Cop(Cextcall("caml_initialize", typ_void, false, None),
-        [array_indexing log2_size_addr arr ofs dbg; newval], dbg)
-  in
-  make_alloc_generic addr_array_init dbg tag (List.length args) args
-
-let make_float_alloc dbg tag args =
-  make_alloc_generic float_array_set dbg tag
-                     (List.length args * size_float / size_addr) args
-
-(* Bounds checking *)
-
-let make_checkbound dbg = function
-  | [Cop(Clsr, [a1; Cconst_int (n, _)], _); Cconst_int (m, _)]
-    when (m lsl n) > n ->
-      Cop(Ccheckbound, [a1; Cconst_int(m lsl n + 1 lsl n - 1, dbg)], dbg)
-  | args ->
-      Cop(Ccheckbound, args, dbg)
-
 (* To compile "let rec" over values *)
 
 let fundecls_size fundecls =
